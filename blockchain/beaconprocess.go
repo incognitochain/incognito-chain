@@ -761,11 +761,10 @@ func (curView *BeaconBestState) countMissingSignature(db incdb.Database, allShar
 			beaconHashForCommittee := shardState.CommitteeFromBlock
 			committees, ok := cacheCommittees[beaconHashForCommittee]
 			if !ok {
-				consensusStateDB, err := getBeaconConsensusStateDB(db, beaconHashForCommittee)
+				committees, err := getOneShardCommitteeFromBeaconDB(db, shardID, beaconHashForCommittee)
 				if err != nil {
 					return err
 				}
-				committees = statedb.GetOneShardCommittee(consensusStateDB, shardID)
 				cacheCommittees[beaconHashForCommittee] = committees
 			}
 			err := curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)

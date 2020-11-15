@@ -967,7 +967,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	committeeChange *committeestate.CommitteeChange,
 	beaconBlocks []*types.BeaconBlock,
 ) error {
-
 	startTimeProcessStoreShardBlock := time.Now()
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height
@@ -1032,12 +1031,10 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	//err = statedb.DeleteOneShardCommittee(newShardState.consensusStateDB, shardID, removedCommittees)
 	err = statedb.DeleteOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.ShardCommitteeRemoved[shardID])
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	//err = statedb.DeleteOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, removedSubstitutesValidator)
 	err = statedb.DeleteOneShardSubstitutesValidator(newShardState.consensusStateDB, shardID, committeeChange.ShardSubstituteRemoved[shardID])
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)

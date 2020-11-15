@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -334,4 +335,75 @@ func GetBeaconRootsHashByBlockHash(db incdb.Database, hash common.Hash) (*Beacon
 	bRH := &BeaconRootHash{}
 	err := json.Unmarshal(data, bRH)
 	return bRH, err
+}
+
+func getOneShardCommitteeFromShardDB(db incdb.Database, shardID byte, blockHash common.Hash) ([]incognitokey.CommitteePublicKey, error) {
+	consensusStateDB, err := getShardConsensusStateDB(db, shardID, blockHash)
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, err
+	}
+	committees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
+	return committees, nil
+}
+
+func getShardConsensusStateDB(db incdb.Database, shardID byte, blockHash common.Hash) (*statedb.StateDB, error) {
+	data, err := rawdbv2.GetShardRootsHash(db, shardID, blockHash)
+	if err != nil {
+		return nil, err
+	}
+	sRH := &ShardRootHash{}
+	err1 := json.Unmarshal(data, sRH)
+	if err1 != nil {
+		return nil, err1
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(sRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return nil, err
+	}
+	return stateDB, nil
+}
+
+func getOneShardCommitteeFromBeaconDB(db incdb.Database, shardID byte, beaconHashForCommittee common.Hash) ([]incognitokey.CommitteePublicKey, error) {
+	consensusStateDB, err := getBeaconConsensusStateDB(db, beaconHashForCommittee)
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, err
+	}
+	committees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
+	return committees, nil
+}
+
+func getBeaconConsensusStateDB(db incdb.Database, hash common.Hash) (*statedb.StateDB, error) {
+	data, err := rawdbv2.GetBeaconRootsHash(db, hash)
+	if err != nil {
+		return nil, err
+	}
+	bRH := &BeaconRootHash{}
+	err1 := json.Unmarshal(data, bRH)
+	if err1 != nil {
+		return nil, err1
+	}
+	stateDB, err := statedb.NewWithPrefixTrie(bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
+	if err != nil {
+		return nil, err
+	}
+	return stateDB, nil
+}
+
+func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash, error) {
+	h, e := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), height)
+	if e != nil {
+		return nil, e
+	}
+	data, e := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), *h)
+	if e != nil {
+		return nil, e
+	}
+	bRH := &BeaconRootHash{}
+	err := json.Unmarshal(data, bRH)
+	return bRH, err
+}
+
+//GetStakerInfo : Return staker info from statedb
+func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
+	return statedb.GetStakerInfo(beaconBestState.consensusStateDB, stakerPubkey)
 }

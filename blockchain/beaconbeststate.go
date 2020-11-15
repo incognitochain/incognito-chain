@@ -472,6 +472,10 @@ func (beaconBestState *BeaconBestState) GetPreviousHash() *common.Hash {
 	return &beaconBestState.BestBlock.Header.PreviousBlockHash
 }
 
+func (beaconBestState *BeaconBestState) GetPreviousBlockCommittee(db incdb.Database) ([]incognitokey.CommitteePublicKey, error) {
+	panic("not implement")
+}
+
 func (beaconBestState *BeaconBestState) GetHeight() uint64 {
 	return beaconBestState.BestBlock.GetHeight()
 }
@@ -800,40 +804,4 @@ func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 	}
 
 	return nil
-}
-
-func getBeaconConsensusStateDB(db incdb.Database, hash common.Hash) (*statedb.StateDB, error) {
-	data, err := rawdbv2.GetBeaconRootsHash(db, hash)
-	if err != nil {
-		return nil, err
-	}
-	bRH := &BeaconRootHash{}
-	err1 := json.Unmarshal(data, bRH)
-	if err1 != nil {
-		return nil, err1
-	}
-	stateDB, err := statedb.NewWithPrefixTrie(bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(db))
-	if err != nil {
-		return nil, err
-	}
-	return stateDB, nil
-}
-
-func (blockchain *BlockChain) GetBeaconRootsHash(height uint64) (*BeaconRootHash, error) {
-	h, e := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), height)
-	if e != nil {
-		return nil, e
-	}
-	data, e := rawdbv2.GetBeaconRootsHash(blockchain.GetBeaconChainDatabase(), *h)
-	if e != nil {
-		return nil, e
-	}
-	bRH := &BeaconRootHash{}
-	err := json.Unmarshal(data, bRH)
-	return bRH, err
-}
-
-//GetStakerInfo : Return staker info from statedb
-func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
-	return statedb.GetStakerInfo(beaconBestState.consensusStateDB, stakerPubkey)
 }

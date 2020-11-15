@@ -358,7 +358,10 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 		if e.ChainID == BEACON_CHAIN_ID {
 			e.processWithEnoughVotesBeaconChain(v)
 		} else {
-			previousCommittees := view.GetCommittee()
+			previousCommittees, err := view.GetPreviousBlockCommittee(e.Chain.GetChainDatabase())
+			if err != nil {
+				e.Logger.Errorf("Can not find previous shard committee, shardID %+v, blockHash %+v", e.Chain.GetShardID(), view.GetPreviousHash())
+			}
 			e.processWithEnoughVotesShardChain(v, previousCommittees)
 		}
 	}

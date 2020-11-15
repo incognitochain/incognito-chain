@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"sync"
 	"time"
 
@@ -340,4 +341,8 @@ func (chain *ShardChain) CommitteeStateVersion() uint {
 //BestViewCommitteeFromBlock ...
 func (chain *ShardChain) BestViewCommitteeFromBlock() common.Hash {
 	return chain.GetBestState().CommitteeFromBlock()
+}
+
+func (chain *ShardChain) GetChainDatabase() incdb.Database {
+	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }
