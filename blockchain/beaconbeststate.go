@@ -772,3 +772,7 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*statedb.StakerInfo, bool, error) {
 	return statedb.GetStakerInfo(beaconBestState.consensusStateDB, stakerPubkey)
 }
+
+func (beaconBestState *BeaconBestState) CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey {
+	return beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForNextRandom()
+}

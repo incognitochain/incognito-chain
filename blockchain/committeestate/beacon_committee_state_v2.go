@@ -502,7 +502,11 @@ func (engine *BeaconCommitteeEngineV2) BuildIncurredInstructions(env *BeaconComm
 	engine.finalBeaconCommitteeStateV2.clone(oldState)
 
 	oldState.mu.RLock()
+	defer oldState.mu.RUnlock()
+
 	newState.mu.Lock()
+	defer newState.mu.Unlock()
+
 	committeeChange := NewCommitteeChange()
 	incurredInstructions := [][]string{}
 	if env == nil {
@@ -556,8 +560,6 @@ func (engine *BeaconCommitteeEngineV2) BuildIncurredInstructions(env *BeaconComm
 		shardID := byte(key)
 		incurredInstructions = append(incurredInstructions, returnStakingInstructions[shardID].ToString())
 	}
-	newState.mu.Unlock()
-	oldState.mu.RUnlock()
 
 	return incurredInstructions, nil
 }
