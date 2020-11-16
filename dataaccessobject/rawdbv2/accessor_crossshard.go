@@ -33,7 +33,7 @@ func StoreCrossShardNextHeight(db incdb.KeyValueWriter, fromShard byte, toShard 
 	return nil
 }
 
-func hasCrossShardNextHeight(db incdb.Database, key []byte) (bool, error) {
+func hasCrossShardNextHeight(db incdb.KeyValueReader, key []byte) (bool, error) {
 	exist, err := db.Has(key)
 	if err != nil {
 		return false, err
@@ -42,7 +42,7 @@ func hasCrossShardNextHeight(db incdb.Database, key []byte) (bool, error) {
 	}
 }
 
-func GetCrossShardNextHeight(db incdb.Database, fromShard byte, toShard byte, curHeight uint64) ([]byte, error) {
+func GetCrossShardNextHeight(db incdb.KeyValueReader, fromShard byte, toShard byte, curHeight uint64) ([]byte, error) {
 	key := GetCrossShardNextHeightKey(fromShard, toShard, curHeight)
 	if _, err := hasCrossShardNextHeight(db, key); err != nil {
 		return nil, NewRawdbError(FetchCrossShardNextHeightError, err)

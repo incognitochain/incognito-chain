@@ -1583,7 +1583,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	for i := len(finalizedBlocks) - 1; i >= 0; i-- {
 		Logger.log.Debug("process beacon block", finalizedBlocks[i].Header.Height)
-		processBeaconForConfirmmingCrossShard(batch, finalizedBlocks[i], newBestState.LastCrossShardState)
+		processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
 	}
 
 	err = blockchain.BackupBeaconViews(batch)
@@ -1626,12 +1626,12 @@ type NextCrossShardInfo struct {
 	ConfirmBeaconHash    string
 }
 
-func processBeaconForConfirmmingCrossShard(database incdb.KeyValueWriter, beaconBlock *BeaconBlock, lastCrossShardState map[byte]map[byte]uint64) error {
+func processBeaconForConfirmmingCrossShard(blockchain *BlockChain, beaconBlock *BeaconBlock, lastCrossShardState map[byte]map[byte]uint64) error {
+	database := blockchain.GetBeaconChainDatabase()
 	if beaconBlock != nil && beaconBlock.Body.ShardState != nil {
 		for fromShard, shardBlocks := range beaconBlock.Body.ShardState {
 			for _, shardBlock := range shardBlocks {
 				for _, toShard := range shardBlock.CrossShard {
-
 					if fromShard == toShard {
 						continue
 					}
@@ -1649,11 +1649,19 @@ func processBeaconForConfirmmingCrossShard(database incdb.KeyValueWriter, beacon
 					}
 					fmt.Println("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
 					b, _ := json.Marshal(info)
-					fmt.Println("debug StoreCrossShardNextHeight", fromShard, toShard, lastHeight, string(b))
-					err := rawdbv2.StoreCrossShardNextHeight(database, fromShard, toShard, lastHeight, b)
-					if err != nil {
-						return err
+
+					//not update if already exit
+					existedInfo, _ := rawdbv2.GetCrossShardNextHeight(database, fromShard, toShard, lastHeight)
+					if existedInfo == nil || len(existedInfo) == 0 {
+						fmt.Println("debug StoreCrossShardNextHeight", fromShard, toShard, lastHeight, string(b))
+						err := rawdbv2.StoreCrossShardNextHeight(database, fromShard, toShard, lastHeight, b)
+						if err != nil {
+							return err
+						}
+					} else {
+						fmt.Println("debug StoreCrossShardNextHeight: already exit", fromShard, toShard, lastHeight, string(existedInfo))
 					}
+
 					if lastCrossShardState[fromShard] == nil {
 						lastCrossShardState[fromShard] = make(map[byte]uint64)
 					}
