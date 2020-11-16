@@ -2,11 +2,12 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"reflect"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -2431,7 +2432,7 @@ func TestBeaconCommitteeEngineV2_BuildIncurredInstructions(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Valid Input",
+			name: "Single unstake instruction",
 			fields: fields{
 				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					shardCommittee:  map[byte][]incognitokey.CommitteePublicKey{},
@@ -2470,6 +2471,110 @@ func TestBeaconCommitteeEngineV2_BuildIncurredInstructions(t *testing.T) {
 					"100",
 				},
 			},
+			wantErr: false,
+		},
+		{
+			name: "Single Swap shard instruction",
+			fields: fields{
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey2, *incKey3, *incKey4,
+						},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey0,
+						},
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{*incKey5},
+					autoStake: map[string]bool{
+						key: true,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey.GetIncKeyBase58(): paymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key: *hash,
+					},
+				},
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.SWAP_SHARD_ACTION,
+							key0,
+							key,
+							"0",
+							"0",
+						},
+					},
+					ConsensusStateDB: sDB,
+					unassignedCommonPool: []string{
+						key5,
+					},
+					MaxShardCommitteeSize:             4,
+					MinShardCommitteeSize:             4,
+					NumberOfFixedShardBlockValidators: 4,
+					ActiveShards:                      1,
+				},
+			},
+			want:    [][]string{},
+			wantErr: false,
+		},
+		{
+			name: "Swap shard instruction + unstake instruction",
+			fields: fields{
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey2, *incKey3, *incKey4,
+						},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey0,
+						},
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{*incKey5},
+					autoStake: map[string]bool{
+						key: true,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey.GetIncKeyBase58(): paymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key: *hash,
+					},
+				},
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.UNSTAKE_ACTION,
+							key,
+						},
+						[]string{
+							instruction.SWAP_SHARD_ACTION,
+							key0,
+							key,
+							"0",
+							"0",
+						},
+					},
+					ConsensusStateDB:                  sDB,
+					unassignedCommonPool:              []string{key},
+					MaxShardCommitteeSize:             4,
+					MinShardCommitteeSize:             4,
+					NumberOfFixedShardBlockValidators: 4,
+					ActiveShards:                      1,
+				},
+			},
+			want:    [][]string{},
 			wantErr: false,
 		},
 	}
