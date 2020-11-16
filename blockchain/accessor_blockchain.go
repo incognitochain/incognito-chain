@@ -362,12 +362,36 @@ func (blockchain *BlockChain) GetBeaconRootsHashFromBlockHeight(height uint64) (
 	return GetBeaconRootsHashByBlockHash(blockchain.GetBeaconChainDatabase(), *h)
 }
 
+func (blockchain *BlockChain) GetShardRootsHashFromBlockHeight(shardID byte, height uint64) (*ShardRootHash, error) {
+	h, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
+	if err != nil {
+		return nil, err
+	}
+	data, err := rawdbv2.GetShardRootsHash(blockchain.GetShardChainDatabase(shardID), shardID, *h)
+	if err != nil {
+		return nil, err
+	}
+	sRH := &ShardRootHash{}
+	err = json.Unmarshal(data, sRH)
+	return sRH, err
+}
+
 func GetBeaconRootsHashByBlockHash(db incdb.Database, hash common.Hash) (*BeaconRootHash, error) {
 	data, e := rawdbv2.GetBeaconRootsHash(db, hash)
 	if e != nil {
 		return nil, e
 	}
 	bRH := &BeaconRootHash{}
+	err := json.Unmarshal(data, bRH)
+	return bRH, err
+}
+
+func GetShardRootsHashByBlockHash(db incdb.Database, shardID byte, hash common.Hash) (*ShardRootHash, error) {
+	data, e := rawdbv2.GetShardRootsHash(db, shardID, hash)
+	if e != nil {
+		return nil, e
+	}
+	bRH := &ShardRootHash{}
 	err := json.Unmarshal(data, bRH)
 	return bRH, err
 }
