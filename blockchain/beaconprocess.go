@@ -1647,19 +1647,19 @@ func processBeaconForConfirmmingCrossShard(blockchain *BlockChain, beaconBlock *
 						beaconBlock.GetHeight(),
 						beaconBlock.Hash().String(),
 					}
-					fmt.Println("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
+					Logger.log.Info("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
 					b, _ := json.Marshal(info)
 
 					//not update if already exit
 					existedInfo, _ := rawdbv2.GetCrossShardNextHeight(database, fromShard, toShard, lastHeight)
 					if existedInfo == nil || len(existedInfo) == 0 {
-						fmt.Println("debug StoreCrossShardNextHeight", fromShard, toShard, lastHeight, string(b))
+						Logger.log.Info("debug StoreCrossShardNextHeight", fromShard, toShard, lastHeight, string(b))
 						err := rawdbv2.StoreCrossShardNextHeight(database, fromShard, toShard, lastHeight, b)
 						if err != nil {
 							return err
 						}
 					} else {
-						fmt.Println("debug StoreCrossShardNextHeight: already exit", fromShard, toShard, lastHeight, string(existedInfo))
+						Logger.log.Info("debug StoreCrossShardNextHeight: already exit", fromShard, toShard, lastHeight, string(existedInfo))
 					}
 
 					if lastCrossShardState[fromShard] == nil {
