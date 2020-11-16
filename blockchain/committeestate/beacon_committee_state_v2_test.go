@@ -2945,11 +2945,8 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	}
 
 	committeeChangeUnstakeAssign := NewCommitteeChange()
-	committeeChangeUnstakeAssign.ShardSubstituteAdded = map[byte][]incognitokey.CommitteePublicKey{
-		0: []incognitokey.CommitteePublicKey{
-			*incKey5,
-		},
-		1: []incognitokey.CommitteePublicKey{},
+	committeeChangeUnstakeAssign.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
+		*incKey5,
 	}
 	committeeChangeUnstakeAssign.StopAutoStake = []string{
 		key5,
@@ -2959,11 +2956,8 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	}
 
 	committeeChangeUnstakeAssign2 := NewCommitteeChange()
-	committeeChangeUnstakeAssign2.ShardSubstituteAdded = map[byte][]incognitokey.CommitteePublicKey{
-		0: []incognitokey.CommitteePublicKey{
-			*incKey6,
-		},
-		1: []incognitokey.CommitteePublicKey{},
+	committeeChangeUnstakeAssign2.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
+		*incKey6,
 	}
 	committeeChangeUnstakeAssign2.Unstake = []string{
 		key0,
@@ -2974,11 +2968,8 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	}
 
 	committeeChangeUnstakeAssign3 := NewCommitteeChange()
-	committeeChangeUnstakeAssign3.ShardSubstituteAdded = map[byte][]incognitokey.CommitteePublicKey{
-		0: []incognitokey.CommitteePublicKey{
-			*incKey6,
-		},
-		1: []incognitokey.CommitteePublicKey{},
+	committeeChangeUnstakeAssign3.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
+		*incKey6,
 	}
 	committeeChangeUnstakeAssign3.Unstake = []string{
 		key0,
@@ -2989,32 +2980,20 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	}
 
 	committeeChangeUnstakeSwap := NewCommitteeChange()
-	committeeChangeUnstakeSwap.ShardCommitteeRemoved = map[byte][]incognitokey.CommitteePublicKey{
-		0: []incognitokey.CommitteePublicKey{
-			*incKey,
-		},
-		1: []incognitokey.CommitteePublicKey{},
+	committeeChangeUnstakeSwap.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
+		*incKey,
 	}
 
-	committeeChangeUnstakeSwap.ShardCommitteeAdded = map[byte][]incognitokey.CommitteePublicKey{
-		0: []incognitokey.CommitteePublicKey{
-			*incKey0,
-		},
-		1: []incognitokey.CommitteePublicKey{},
+	committeeChangeUnstakeSwap.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
+		*incKey0,
 	}
 
-	committeeChangeUnstakeSwap.ShardSubstituteAdded = map[byte][]incognitokey.CommitteePublicKey{
-		0: []incognitokey.CommitteePublicKey{
-			*incKey,
-		},
-		1: []incognitokey.CommitteePublicKey{},
+	committeeChangeUnstakeSwap.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
+		*incKey,
 	}
 
-	committeeChangeUnstakeSwap.ShardSubstituteRemoved = map[byte][]incognitokey.CommitteePublicKey{
-		0: []incognitokey.CommitteePublicKey{
-			*incKey0,
-		},
-		1: []incognitokey.CommitteePublicKey{},
+	committeeChangeUnstakeSwap.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
+		*incKey0,
 	}
 
 	committeeChangeUnstakeSwap.StopAutoStake = []string{
@@ -3022,32 +3001,20 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	}
 
 	committeeChangeUnstakeSwapOut := NewCommitteeChange()
-	committeeChangeUnstakeSwapOut.ShardCommitteeRemoved = map[byte][]incognitokey.CommitteePublicKey{
-		0: []incognitokey.CommitteePublicKey{
-			*incKey0,
-		},
-		1: []incognitokey.CommitteePublicKey{},
+	committeeChangeUnstakeSwapOut.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
+		*incKey0,
 	}
 
-	committeeChangeUnstakeSwapOut.ShardCommitteeAdded = map[byte][]incognitokey.CommitteePublicKey{
-		0: []incognitokey.CommitteePublicKey{
-			*incKey,
-		},
-		1: []incognitokey.CommitteePublicKey{},
+	committeeChangeUnstakeSwapOut.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
+		*incKey,
 	}
 
-	committeeChangeUnstakeSwapOut.ShardSubstituteAdded = map[byte][]incognitokey.CommitteePublicKey{
-		0: []incognitokey.CommitteePublicKey{
-			*incKey0,
-		},
-		1: []incognitokey.CommitteePublicKey{},
+	committeeChangeUnstakeSwapOut.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
+		*incKey0,
 	}
 
-	committeeChangeUnstakeSwapOut.ShardSubstituteRemoved = map[byte][]incognitokey.CommitteePublicKey{
-		0: []incognitokey.CommitteePublicKey{
-			*incKey,
-		},
-		1: []incognitokey.CommitteePublicKey{},
+	committeeChangeUnstakeSwapOut.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
+		*incKey,
 	}
 
 	committeeChangeUnstakeSwapOut.StopAutoStake = []string{
