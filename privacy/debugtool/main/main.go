@@ -7,10 +7,10 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"math/big"
 	"os"
 	"strconv"
 	"strings"
-	"math/big"
 
 	//"os"
 	//"strconv"
@@ -48,14 +48,14 @@ func ListTokens(tool *debugtool.DebugTool) *debugtool.ListCustomToken {
 	return nil
 }
 
-func GetOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string, height uint64){
+func GetOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string, height uint64) {
 	fmt.Println("========== GET OUTPUT TOKEN ==========")
 	b, _ := tool.GetListOutputCoins(privKey, tokenID, height)
 	fmt.Println(string(b))
 	fmt.Println("========== END OUTPUT TOKEN ==========")
 }
 
-func GetUnspentOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string){
+func GetUnspentOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string) {
 	fmt.Println("========== GET UNSPENT OUTPUT TOKEN ==========")
 	b, _ := tool.GetListUnspentOutputTokens(privKey, tokenID)
 	fmt.Println(string(b))
@@ -174,15 +174,15 @@ func TransferPRV(tool *debugtool.DebugTool, fromPrivKey, paymentAddress, amount 
 	fmt.Println("========== END TRANSFER PRV  ==========")
 }
 
-func GenKeySet(b []byte)(string, string, string){
-	if b == nil{
+func GenKeySet(b []byte) (string, string, string) {
+	if b == nil {
 		b = privacy.RandomScalar().ToBytesS()
 	}
 
 	seed := operation.HashToScalar(b).ToBytesS()
 
 	keyWallet, err := wallet.NewMasterKey(seed)
-	if err != nil{
+	if err != nil {
 		return "", "", ""
 	}
 
@@ -193,18 +193,17 @@ func GenKeySet(b []byte)(string, string, string){
 	return privateKey, paymentAddress, readOnly
 }
 
-func GenKeySetApp()(string, string, string){
-	for i := 0; i< 10000;i++{
+func GenKeySetApp() (string, string, string) {
+	for i := 0; i < 10000; i++ {
 		seed := common.RandBytes(32)
 
-
 		keyWallet, err := wallet.NewMasterKey(seed)
-		if err != nil{
+		if err != nil {
 			return "", "", ""
 		}
 
 		privateKey := keyWallet.Base58CheckSerialize(wallet.PriKeyType)
-		if privateKey[:3] == "112"{
+		if privateKey[:3] == "112" {
 			paymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 			readOnly := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
 			return privateKey, paymentAddress, readOnly
@@ -213,7 +212,6 @@ func GenKeySetApp()(string, string, string){
 	}
 
 	return "", "", ""
-
 
 }
 
@@ -287,7 +285,6 @@ func PDEWithdrawContribution(tool *debugtool.DebugTool, privKey, tokenID1, token
 	fmt.Println("========== END PDE WITHDRAW  ==========")
 }
 
-
 func PDETradePRV(tool *debugtool.DebugTool, privKey, token, amount string) {
 	fmt.Println("========== PDE TRADE PRV   ==========")
 	b, _ := tool.PDETradePRV(privKey, token, amount)
@@ -301,7 +298,6 @@ func PDETradeToken(tool *debugtool.DebugTool, privKey, token, amount string) {
 	fmt.Println(string(b))
 	fmt.Println("========== END PDE TRADE TOKEN  ==========")
 }
-
 
 // func sendRawTxNoPrivacy(tool *debugtool.DebugTool, privKey, tokenID, paymentString string, txType int64){
 // 	fmt.Println("========== FAKE TRANSACTION ==========")
@@ -327,7 +323,7 @@ func PDETradeToken(tool *debugtool.DebugTool, privKey, token, amount string) {
 // 	fmt.Println("========== FAKE TRANSACTION FINISH ==========")
 // }
 
-func GetListRandomCommitments(tool *debugtool.DebugTool, privKey, tokenID string){
+func GetListRandomCommitments(tool *debugtool.DebugTool, privKey, tokenID string) {
 	fmt.Println("========== GET LIST RANDOM COMMITMENTS ==========")
 	outCoins, _, err := tool.GetPlainOutputCoin(privKey, tokenID)
 	if err != nil {
@@ -338,8 +334,7 @@ func GetListRandomCommitments(tool *debugtool.DebugTool, privKey, tokenID string
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentString := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
-
-	if err !=nil{
+	if err != nil {
 		panic(err)
 	}
 
@@ -353,7 +348,7 @@ func GetListRandomCommitments(tool *debugtool.DebugTool, privKey, tokenID string
 	fmt.Println("========== GET LIST RANDOM COMMITMENT FINISH ==========")
 }
 
-func GetListRandomCommitmentsAndPublicKeys(tool *debugtool.DebugTool, paymentAddress, tokenID string, numOutputs int){
+func GetListRandomCommitmentsAndPublicKeys(tool *debugtool.DebugTool, paymentAddress, tokenID string, numOutputs int) {
 	fmt.Println("========== GET LIST RANDOM COMMITMENTS AND PUBLIC KEYS ==========")
 
 	b, err := tool.GetRandomCommitmentsAndPublicKeys(tokenID, paymentAddress, numOutputs)
@@ -367,14 +362,14 @@ func GetListRandomCommitmentsAndPublicKeys(tool *debugtool.DebugTool, paymentAdd
 }
 
 //Blockchain
-func GetBlockchainInfo(tool *debugtool.DebugTool){
+func GetBlockchainInfo(tool *debugtool.DebugTool) {
 	fmt.Println("========== GET BLOCKCHAIN INFO ==========")
 	b, _ := tool.GetBlockchainInfo()
 	fmt.Println(string(b))
 	fmt.Println("========== END GET BLOCKCHAIN INFO ==========")
 }
 
-func GetShardIDFromPrivateKey(privateKey string) byte{
+func GetShardIDFromPrivateKey(privateKey string) byte {
 	pubkey := privateKeyToPublicKey(privateKey)
 	return common.GetShardIDFromLastByte(pubkey[len(pubkey)-1])
 }
@@ -444,16 +439,16 @@ func main() {
 		if args[0] == "port" {
 			tool = SwitchPort(args[1])
 		}
-		if args[0] == "inittestnet"{
+		if args[0] == "inittestnet" {
 			tool = new(debugtool.DebugTool).InitTestnet()
 		}
-		if args[0] == "initdevnet"{
+		if args[0] == "initdevnet" {
 			tool = new(debugtool.DebugTool).InitDevNet()
 		}
-		if args[0] == "initmainnet"{
+		if args[0] == "initmainnet" {
 			tool = new(debugtool.DebugTool).InitMainnet()
 		}
-		if args[0] == "initlocal"{
+		if args[0] == "initlocal" {
 			tool = new(debugtool.DebugTool).InitLocal(args[1])
 		}
 
@@ -469,39 +464,39 @@ func main() {
 		}
 		if args[0] == "outcoin" {
 			var privateKey string
-			if len(args[1]) < 10{
+			if len(args[1]) < 10 {
 				index, err := strconv.ParseInt(args[1], 10, 32)
 				if err != nil {
 					panic(err)
 				}
 				privateKey = privateKeys[index]
-			}else{
+			} else {
 				privateKey = args[1]
 			}
 			bi := big.NewInt(0)
-			if len(args)>=3{
+			if len(args) >= 3 {
 				_, ok := bi.SetString(args[2], 10)
-				if !ok{
+				if !ok {
 					continue
 				}
 			}
-			
+
 			GetPRVOutPutCoin(tool, privateKey, bi.Uint64())
 		}
 		if args[0] == "balance" {
 			var privateKey string
-			if len(args[1]) < 3{
+			if len(args[1]) < 3 {
 				index, err := strconv.ParseInt(args[1], 10, 32)
 				if err != nil {
 					fmt.Println(err)
 					panic(err)
 				}
-				if index >= int64(len(privateKeys)){
+				if index >= int64(len(privateKeys)) {
 					fmt.Println("Cannot find the private key")
 					continue
 				}
 				privateKey = privateKeys[index]
-			}else{
+			} else {
 				privateKey = args[1]
 			}
 
@@ -541,34 +536,34 @@ func main() {
 		}
 		if args[0] == "transfer" {
 			var privateKey string
-			if len(args[1]) < 3{
+			if len(args[1]) < 3 {
 				index, err := strconv.ParseInt(args[1], 10, 32)
 				if err != nil {
 					fmt.Println(err)
 					panic(err)
 				}
-				if index >= int64(len(privateKeys)){
+				if index >= int64(len(privateKeys)) {
 					fmt.Println("Cannot find the private key")
 					continue
 				}
 				privateKey = privateKeys[index]
-			}else{
+			} else {
 				privateKey = args[1]
 			}
 
 			var paymentAddress string
-			if len(args[2]) < 4{
+			if len(args[2]) < 4 {
 				index, err := strconv.ParseInt(args[2], 10, 32)
 				if err != nil {
 					fmt.Println(err)
 					panic(err)
 				}
-				if index >= int64(len(privateKeys)){
+				if index >= int64(len(privateKeys)) {
 					fmt.Println("Cannot find the private key")
 					continue
 				}
 				paymentAddress = privateKeyToPaymentAddress(privateKeys[index])
-			}else{
+			} else {
 				paymentAddress = args[2]
 			}
 
@@ -596,7 +591,7 @@ func main() {
 		if args[0] == "listtoken" {
 			ListTokens(tool)
 		}
-		if args[0] == "converttoken"{
+		if args[0] == "converttoken" {
 			if len(args) < 3 {
 				panic("Not enough params for converttoken")
 			}
@@ -607,34 +602,34 @@ func main() {
 			tokenID := args[2]
 			ConvertTokenCoinVersion(tool, privateKeys[index], tokenID)
 		}
-		if args[0] == "transfertoken"{
+		if args[0] == "transfertoken" {
 			if len(args) < 5 {
 				panic("Not enough params for transfertoken")
 			}
 			var privateKey string
-			if len(args[1]) < 3{
+			if len(args[1]) < 3 {
 				index, err := strconv.ParseInt(args[1], 10, 32)
 				if err != nil {
 					fmt.Println(err)
 					panic(err)
 				}
-				if index >= int64(len(privateKeys)){
+				if index >= int64(len(privateKeys)) {
 					fmt.Println("Cannot find the private key")
 					continue
 				}
 				privateKey = privateKeys[index]
-			}else{
+			} else {
 				privateKey = args[1]
 			}
 
 			paymentAddress := args[2]
-			if len(args[2]) < 3{
+			if len(args[2]) < 3 {
 				index, err := strconv.ParseInt(args[2], 10, 32)
 				if err != nil {
 					fmt.Println(err)
 					panic(err)
 				}
-				if index >= int64(len(privateKeys)){
+				if index >= int64(len(privateKeys)) {
 					fmt.Println("Cannot find the private key")
 					continue
 				}
@@ -642,7 +637,7 @@ func main() {
 			}
 
 			tokenID := args[3]
-			if len(args[3])<10 {
+			if len(args[3]) < 10 {
 				tokenID = tokenIDs[args[3]]
 			}
 			TransferToken(tool, privateKey, paymentAddress, tokenID, args[4])
@@ -650,25 +645,25 @@ func main() {
 		}
 		if args[0] == "balancetoken" {
 			var privateKey string
-			if len(args[1]) < 3{
+			if len(args[1]) < 3 {
 				index, err := strconv.ParseInt(args[1], 10, 32)
 				if err != nil {
 					fmt.Println(err)
 					panic(err)
 				}
-				if index >= int64(len(privateKeys)){
+				if index >= int64(len(privateKeys)) {
 					fmt.Println("Cannot find the private key")
 					continue
 				}
 				privateKey = privateKeys[index]
-			}else{
+			} else {
 				privateKey = args[1]
 			}
 
 			var tokenID string
-			if len(args[2])<10 {
+			if len(args[2]) < 10 {
 				tokenID = tokenIDs[args[2]]
-			}else{
+			} else {
 				tokenID = args[2]
 			}
 
@@ -679,7 +674,7 @@ func main() {
 				panic("Not enough param for outtoken")
 			}
 			var privateKey = args[1]
-			if len(args[1]) < 10{
+			if len(args[1]) < 10 {
 				index, err := strconv.ParseInt(args[1], 10, 32)
 				if err != nil {
 					panic(err)
@@ -689,14 +684,14 @@ func main() {
 			tokenID := common.PRVIDStr
 			if len(args) > 2 {
 				tokenID = args[2]
-				if len(args[2]) < 10{
+				if len(args[2]) < 10 {
 					tokenID = tokenIDs[args[2]]
 				}
 			}
 			bi := big.NewInt(0)
-			if len(args)>=4{
+			if len(args) >= 4 {
 				_, ok := bi.SetString(args[3], 10)
-				if !ok{
+				if !ok {
 					continue
 				}
 			}
@@ -709,22 +704,22 @@ func main() {
 				continue
 			}
 			tokenID := common.PRVIDStr
-			if len(args) > 2{
+			if len(args) > 2 {
 				tokenID = args[2]
-				if len(args[2]) < 10{
+				if len(args[2]) < 10 {
 					tokenID = tokenIDs[args[2]] //Make sure you have the right token name
 				}
 			}
 
 			var privateKey string
-			if len(args[1])<3{
+			if len(args[1]) < 3 {
 				index, err := strconv.ParseInt(args[1], 10, 32)
 				if err != nil {
 					fmt.Println(err)
 					continue
 				}
 				privateKey = privateKeys[index]
-			}else{
+			} else {
 				privateKey = args[1]
 			}
 
@@ -751,12 +746,12 @@ func main() {
 				panic(err)
 			}
 			tokenID1 := args[2]
-			if len(args[2]) < 10{
+			if len(args[2]) < 10 {
 				tokenID1 = tokenIDs[args[2]]
 			}
 
 			tokenID2 := args[3]
-			if len(args[3]) < 10{
+			if len(args[3]) < 10 {
 				tokenID2 = tokenIDs[args[3]]
 			}
 
@@ -770,7 +765,7 @@ func main() {
 			}
 
 			privateKey := args[1]
-			if len(args[1])<3{
+			if len(args[1]) < 3 {
 				index, err := strconv.ParseInt(args[1], 10, 32)
 				if err != nil {
 					panic(err)
@@ -779,10 +774,9 @@ func main() {
 			}
 
 			tokenID := args[2]
-			if len(args[2]) < 10{
+			if len(args[2]) < 10 {
 				tokenID = tokenIDs[args[2]]
 			}
-
 
 			PDETradePRV(tool, privateKey, tokenID, args[3])
 		}
@@ -794,7 +788,7 @@ func main() {
 			}
 
 			privateKey := args[1]
-			if len(args[1])<3{
+			if len(args[1]) < 3 {
 				index, err := strconv.ParseInt(args[1], 10, 32)
 				if err != nil {
 					panic(err)
@@ -803,7 +797,7 @@ func main() {
 			}
 
 			tokenID := args[2]
-			if len(args[2]) < 10{
+			if len(args[2]) < 10 {
 				tokenID = tokenIDs[args[2]]
 			}
 			PDETradeToken(tool, privateKey, tokenID, args[3])
@@ -811,18 +805,18 @@ func main() {
 
 		if args[0] == "sub" {
 			var privateKey string
-			if len(args[1]) < 3{
+			if len(args[1]) < 3 {
 				index, err := strconv.ParseInt(args[1], 10, 32)
 				if err != nil {
 					fmt.Println(err)
 					panic(err)
 				}
-				if index >= int64(len(privateKeys)){
+				if index >= int64(len(privateKeys)) {
 					fmt.Println("Cannot find the private key")
 					continue
 				}
 				privateKey = privateKeys[index]
-			}else{
+			} else {
 				privateKey = args[1]
 			}
 
@@ -1015,8 +1009,8 @@ func main() {
 		// 	}
 		// }
 
-		if args[0] == "cmtandpubkey"{
-			if len(args)<3{
+		if args[0] == "cmtandpubkey" {
+			if len(args) < 3 {
 				fmt.Println("Need at least 3 arguments")
 				continue
 			}
@@ -1029,7 +1023,7 @@ func main() {
 					fmt.Println(err)
 					continue
 				}
-				if idx > int64(len(privateKeys) - 1) {
+				if idx > int64(len(privateKeys)-1) {
 					fmt.Println("Privatekey index out of range")
 					continue
 				}
@@ -1038,23 +1032,77 @@ func main() {
 
 			//#2 - numOutputs
 			numOutputs, err := strconv.ParseInt(args[2], 10, 32)
-			if err != nil{
+			if err != nil {
 				fmt.Println(err)
 				continue
 			}
 
 			//#3- TokenID
 			tokenID := common.PRVIDStr
-			if len(args)>3{
+			if len(args) > 3 {
 				tokenID = args[3]
 			}
 
 			GetListRandomCommitmentsAndPublicKeys(tool, paymentAddress, tokenID, int(numOutputs))
 		}
 
-		if args[0] == "genkeyset"{
+		if args[0] == "genkeyset" {
 			privateKey, payment, _ := GenKeySet([]byte(args[1]))
 			fmt.Println(privateKey, payment)
+		}
+
+		if args[0] == "testeqdl" {
+			for i:=0;i<100;i++{
+				x := privacy.RandomScalar()
+				g := privacy.RandomPoint()
+				h := privacy.RandomPoint()
+
+				a := new(privacy.Point).ScalarMult(g, x)
+				b := new(privacy.Point).ScalarMult(h, x)
+
+				eqdlWitness := debugtool.NewEQDLWitness(x, g, h, a, b)
+
+
+				msg := operation.RandomScalar().ToBytesS()
+				pi := eqdlWitness.Prove(msg)
+
+				//For testing purpose only, will be expanded to cover more cases
+				isModified := (common.RandInt() % 5) == 1
+				if isModified{
+					msg = operation.RandomScalar().ToBytesS()
+				}
+
+				isValid, err := pi.Verify(msg, g, h, a, b)
+
+				fmt.Printf("Step %d, isModified: %v, isValid: %v, err: %v\n", i, isModified, isValid, err)
+			}
+
+		}
+
+		if args[0] == "testvrf" {
+			for i:=0;i<100;i++{
+				x := privacy.RandomScalar()
+				g := privacy.RandomPoint()
+				pubKey := new(privacy.Point).ScalarMult(g, x)
+
+
+				vrfWitness := debugtool.NewVRFWitness(x, g)
+
+
+				msg := operation.RandomScalar().ToBytesS()
+				y, pi := vrfWitness.Compute(msg)
+
+				//For testing purpose only, will be expanded to cover more cases
+				isModified := (common.RandInt() % 5) == 1
+				if isModified{
+					msg = operation.RandomScalar().ToBytesS()
+				}
+
+				isValid, err := pi.Verify(msg, g, pubKey, y)
+
+				fmt.Printf("Step %d, output: %d, isModified: %v, isValid: %v, err: %v\n", i, y.ToUint64Little(), isModified, isValid, err)
+			}
+
 		}
 	}
 }
