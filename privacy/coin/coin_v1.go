@@ -567,6 +567,7 @@ func (c CoinV1) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		err := errors.New("Cannot decrypt coinv1 with empty key")
 		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
 	}
+
 	if len(keySet.ReadonlyKey.Rk) == 0 && len(keySet.PrivateKey) == 0 {
 		err := errors.New("Cannot Decrypt CoinV1: Keyset does not contain viewkey or privatekey")
 		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)

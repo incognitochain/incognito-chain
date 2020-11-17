@@ -82,6 +82,7 @@ const (
 	getPrivacyCustomToken                      = "getprivacycustomtoken"
 	listPrivacyCustomTokenByShard              = "listprivacycustomtokenbyshard"
 	getBalancePrivacyCustomToken               = "getbalanceprivacycustomtoken"
+	listUnspentOutputTokens					   = "listunspentoutputtokens"
 	customTokenTxs                             = "customtoken"
 	listCustomTokenHolders                     = "customtokenholder"
 	privacyCustomTokenTxs                      = "privacycustomtoken"
@@ -100,6 +101,7 @@ const (
 	createAndSendStakingTransaction            = "createandsendstakingtransaction"
 	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
 	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
+	randomCommitmentsAndPublicKeys			   = "randomcommitmentsandpublickeys"
 
 	//===========For Testing and Benchmark==============
 	getAndSendTxsFromFile   = "getandsendtxsfromfile"

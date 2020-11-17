@@ -1310,13 +1310,19 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVCrossPoolTradeReq(params i
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+	traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
 	meta, _ := metadata.NewPDECrossPoolTradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
 		sellAmount,
 		minAcceptableAmount,
 		tradingFee,
-		traderAddressStr,
+		traderOTAPublicKeyStr,
+		traderOTAtxRandomStr,
 		metadata.PDECrossPoolTradeRequestMeta,
 	)
 
@@ -1402,13 +1408,19 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenCrossPoolTradeReq(param
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
+	traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
 	meta, _ := metadata.NewPDECrossPoolTradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
 		sellAmount,
 		minAcceptableAmount,
 		tradingFee,
-		traderAddressStr,
+		traderOTAPublicKeyStr,
+		traderOTAtxRandomStr,
 		metadata.PDECrossPoolTradeRequestMeta,
 	)
 

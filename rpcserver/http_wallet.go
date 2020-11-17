@@ -549,12 +549,13 @@ func (httpServer *HttpServer) createRawDefragmentAccountTokenTransaction(params 
 		Logger.log.Error(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
+
 	result := jsonresult.CreateTransactionTokenResult{
-		ShardID:         common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
+		ShardID:         common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte()),
 		TxID:            tx.Hash().String(),
-		TokenID:         tx.TxPrivacyTokenData.PropertyID.String(),
-		TokenName:       tx.TxPrivacyTokenData.PropertyName,
-		TokenAmount:     tx.TxPrivacyTokenData.Amount,
+		TokenID:         tx.GetTxTokenData().PropertyID.String(),
+		TokenName:       tx.GetTxTokenData().PropertyName,
+		TokenAmount:     tx.GetTxTokenData().Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil

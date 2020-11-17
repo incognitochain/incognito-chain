@@ -168,6 +168,11 @@ func (c *CoinV2) ConcealInputCoin() {
 
 //Decrypt a coin using the corresponding KeySet
 func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
+	if keySet == nil {
+		err := errors.New("Cannot Decrypt CoinV2: Keyset is empty")
+		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
+	}
+
 	// Must parse keyImage first in any situation
 	if len(keySet.PrivateKey) > 0 {
 		keyImage, err := c.ParseKeyImageWithPrivateKey(keySet.PrivateKey)
@@ -177,13 +182,11 @@ func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 		}
 		c.SetKeyImage(keyImage)
 	}
+
 	if !c.IsEncrypted() {
 		return c, nil
 	}
-	if keySet == nil {
-		err := errors.New("Cannot Decrypt CoinV2: Keyset is empty")
-		return nil, errhandler.NewPrivacyErr(errhandler.DecryptOutputCoinErr, err)
-	}
+
 	viewKey := keySet.ReadonlyKey
 	if len(viewKey.Rk) == 0 && len(keySet.PrivateKey) == 0 {
 		err := errors.New("Cannot Decrypt CoinV2: Keyset does not contain viewkey or privatekey")
