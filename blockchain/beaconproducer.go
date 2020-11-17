@@ -860,6 +860,7 @@ func (shardInstruction *shardInstruction) compose() {
 				committeePublicKeys = append(committeePublicKeys, key)
 			}
 		}
+
 		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, committeePublicKeys...)
 	}
 
@@ -874,5 +875,9 @@ func (shardInstruction *shardInstruction) compose() {
 	if !stopAutoStakeInstruction.IsEmpty() {
 		shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
 		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
+	} else {
+		if len(shardInstruction.stopAutoStakeInstructions) != 0 {
+			shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
+		}
 	}
 }

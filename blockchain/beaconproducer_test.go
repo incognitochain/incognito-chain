@@ -942,6 +942,7 @@ func TestBeaconBestState_processUnstakeInstructionFromShardBlock(t *testing.T) {
 }
 
 func Test_shardInstruction_compose(t *testing.T) {
+	initLog()
 	type fields struct {
 		stakeInstructions         []*instruction.StakeInstruction
 		unstakeInstructions       []*instruction.UnstakeInstruction
