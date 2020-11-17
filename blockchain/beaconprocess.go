@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -203,6 +204,8 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	if err2 := newBestState.beaconCommitteeEngine.Commit(hashes); err2 != nil {
 		return err2
 	}
+
+	Logger.log.Info("[slashing] total Instructions:", beaconBlock.Body.Instructions)
 
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange); err2 != nil {
@@ -1049,6 +1052,7 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
 		)
 		if err != nil {
+			Logger.log.Info("[slashing]")
 			return err
 		}
 	}
