@@ -10,12 +10,17 @@ import (
 const EQDLProofLength = 96
 const VRFProofLength = 128
 
+//Witness for proving equality of discrete logarithms
+//i.e. g^x = a and h^x = b
 type EQDLWitness struct {
 	x    *privacy.Scalar
 	g, h *privacy.Point
 	a, b *privacy.Point
 }
 
+
+//Proof for discrete logarithm equality with respect to two different bases
+//i.e. g^x = a and h^x = b
 type EQDLProof struct {
 	k      *privacy.Point
 	kPrime *privacy.Point
@@ -49,9 +54,6 @@ func (eqdlProof EQDLProof) SetBytes(data []byte) (*EQDLProof, error) {
 	}
 
 	z := new(privacy.Scalar).FromBytesS(data[64:])
-	if err != nil{
-		return nil, err
-	}
 
 	return &EQDLProof{k, kPrime, z}, nil
 }
@@ -107,6 +109,10 @@ func (eqdlProof EQDLProof) Verify(msg []byte, g, h, a, b *privacy.Point) (bool, 
 	return true, nil
 }
 
+
+//Witness for proving the validity of VRF output
+//x: the secret key
+//g: the base point
 type VRFWitness struct {
 	x *privacy.Scalar //the privateKey
 	g *privacy.Point
@@ -145,8 +151,9 @@ func (vrfProof VRFProof) SetBytes(data []byte) (*VRFProof, error) {
 	return &VRFProof{u, eqdlProof}, nil
 }
 
+//This module implements the VRF algorithm described in the Ouroboros Praos Paper
+//https://eprint.iacr.org/2017/573.pdf
 func (vrfWitness VRFWitness) Compute(msg []byte) (*privacy.Scalar, *VRFProof) {
-
 	hPrime := privacy.HashToPoint(msg)
 	u := new(privacy.Point).ScalarMult(hPrime, vrfWitness.x)
 	y := operation.HashToScalar(append(msg, u.ToBytesS()...))
