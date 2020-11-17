@@ -845,11 +845,7 @@ func (shardInstruction *shardInstruction) compose() {
 		}
 		for _, key := range v.CommitteePublicKeys {
 			unstakeKeys[key] = true
-			Logger.log.Info("[slashing] key:", key)
-			Logger.log.Info("[slashing] unstakeKeys[key]:", unstakeKeys[key])
-
 		}
-		Logger.log.Info("[slashing] v.CommitteePublicKeys:", v.CommitteePublicKeys)
 		unstakeInstruction.CommitteePublicKeys = append(unstakeInstruction.CommitteePublicKeys, v.CommitteePublicKeys...)
 		unstakeInstruction.CommitteePublicKeysStruct = append(unstakeInstruction.CommitteePublicKeysStruct, v.CommitteePublicKeysStruct...)
 	}
@@ -860,9 +856,9 @@ func (shardInstruction *shardInstruction) compose() {
 		}
 		committeePublicKeys := []string{}
 		for _, key := range v.CommitteePublicKeys {
-			Logger.log.Info("[slashing] key:", key)
-			Logger.log.Info("[slashing] unstakeKeys[key]:", unstakeKeys[key])
 			if !unstakeKeys[key] {
+				Logger.log.Info("[slashing] key:", key)
+				Logger.log.Info("[slashing] unstakeKeys[key]:", unstakeKeys[key])
 				committeePublicKeys = append(committeePublicKeys, key)
 			}
 		}
