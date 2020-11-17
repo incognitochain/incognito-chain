@@ -1,11 +1,12 @@
 package signaturecounter
 
 import (
-	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"sort"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type Penalty struct {

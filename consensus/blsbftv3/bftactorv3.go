@@ -386,6 +386,7 @@ func (e *BLSBFT_V3) processWithEnoughVotesShardChain(
 	v *ProposeBlockInfo,
 	previousCommittees []incognitokey.CommitteePublicKey,
 ) {
+	// validationData at present block
 	validationData, err := createBLSAggregatedSignatures(v.committees, v.block.GetValidationField(), v.votes)
 	if err != nil {
 		e.Logger.Error(err)
@@ -393,17 +394,18 @@ func (e *BLSBFT_V3) processWithEnoughVotesShardChain(
 	}
 	v.block.(blockValidation).AddValidationField(validationData)
 
-	if previousV, ok := e.receiveBlockByHash[v.block.GetPrevHash().String()]; ok {
-		previousValidationData, err := createBLSAggregatedSignatures(previousCommittees, previousV.block.GetValidationField(), previousV.votes)
+	// validate and previous block
+	if previousProposeBlockInfo, ok := e.receiveBlockByHash[v.block.GetPrevHash().String()]; ok {
+		previousValidationData, err := createBLSAggregatedSignatures(previousCommittees, previousProposeBlockInfo.block.GetValidationField(), previousProposeBlockInfo.votes)
 		if err != nil {
 			e.Logger.Error(err)
 			return
 		}
-		previousV.block.(blockValidation).AddValidationField(previousValidationData)
+		previousProposeBlockInfo.block.(blockValidation).AddValidationField(previousValidationData) // Is this necessary?
 
 		go e.Chain.InsertAndBroadcastBlockWithPrevValidationData(v.block, previousValidationData)
 
-		delete(e.receiveBlockByHash, previousV.block.GetPrevHash().String())
+		delete(e.receiveBlockByHash, previousProposeBlockInfo.block.GetPrevHash().String())
 	} else {
 		go e.Chain.InsertAndBroadcastBlock(v.block)
 	}
