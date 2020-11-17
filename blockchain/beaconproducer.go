@@ -877,8 +877,9 @@ func (shardInstruction *shardInstruction) compose() {
 	if !stopAutoStakeInstruction.IsEmpty() {
 		shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
 		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
-		Logger.log.Info("[slashing] stopAutoStakeInstruction.CommitteePublicKeys:", stopAutoStakeInstruction.CommitteePublicKeys)
-		Logger.log.Info("[slashing] stopAutoStakeInstruction:", stopAutoStakeInstruction)
-		Logger.log.Info("[slashing] shardInstruction.stopAutoStakeInstructions:", shardInstruction.stopAutoStakeInstructions)
 	}
+	Logger.log.Info("[slashing] stopAutoStakeInstruction.CommitteePublicKeys:", stopAutoStakeInstruction.CommitteePublicKeys)
+	Logger.log.Info("[slashing] stopAutoStakeInstruction:", stopAutoStakeInstruction)
+	Logger.log.Info("[slashing] shardInstruction.stopAutoStakeInstructions:", shardInstruction.stopAutoStakeInstructions)
+
 }
