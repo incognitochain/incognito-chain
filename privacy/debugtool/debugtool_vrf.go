@@ -156,6 +156,8 @@ func (vrfProof VRFProof) SetBytes(data []byte) (*VRFProof, error) {
 func (vrfWitness VRFWitness) Compute(msg []byte) (*privacy.Scalar, *VRFProof) {
 	hPrime := privacy.HashToPoint(msg)
 	u := new(privacy.Point).ScalarMult(hPrime, vrfWitness.x)
+
+	//compute the output of the VRF, with respect to the input msg
 	y := operation.HashToScalar(append(msg, u.ToBytesS()...))
 
 	eqdlWitness := EQDLWitness{
@@ -166,6 +168,7 @@ func (vrfWitness VRFWitness) Compute(msg []byte) (*privacy.Scalar, *VRFProof) {
 		b: u,
 	}
 
+	//Produce the proof for correct computation of y on input msg.
 	eqdlProof := eqdlWitness.Prove(msg)
 
 	vrfProof := VRFProof{
