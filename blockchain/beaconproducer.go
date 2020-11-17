@@ -850,6 +850,14 @@ func (shardInstruction *shardInstruction) compose() {
 		unstakeInstruction.CommitteePublicKeysStruct = append(unstakeInstruction.CommitteePublicKeysStruct, v.CommitteePublicKeysStruct...)
 	}
 
+	Logger.log.Info("[slashing] unstakeInstruction.CommitteePublicKeys 0:", unstakeInstruction.CommitteePublicKeys)
+	Logger.log.Info("[slashing] unstakeInstruction 0:", unstakeInstruction)
+	Logger.log.Info("[slashing] shardInstruction.unstakeInstructions 0:", shardInstruction.unstakeInstructions)
+
+	Logger.log.Info("[slashing] stopAutoStakeInstruction.CommitteePublicKeys 0:", stopAutoStakeInstruction.CommitteePublicKeys)
+	Logger.log.Info("[slashing] stopAutoStakeInstruction 0:", stopAutoStakeInstruction)
+	Logger.log.Info("[slashing] shardInstruction.stopAutoStakeInstructions 0:", shardInstruction.stopAutoStakeInstructions)
+
 	for _, v := range shardInstruction.stopAutoStakeInstructions {
 		if v.IsEmpty() {
 			continue
@@ -861,9 +869,15 @@ func (shardInstruction *shardInstruction) compose() {
 			}
 		}
 		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, committeePublicKeys...)
-		Logger.log.Info("[slashing] committeePublicKeys:", committeePublicKeys)
-		Logger.log.Info("[slashing] stopAutoStakeInstruction.CommitteePublicKeys:", stopAutoStakeInstruction.CommitteePublicKeys)
 	}
+
+	Logger.log.Info("[slashing] unstakeInstruction.CommitteePublicKeys 1:", unstakeInstruction.CommitteePublicKeys)
+	Logger.log.Info("[slashing] unstakeInstruction 1:", unstakeInstruction)
+	Logger.log.Info("[slashing] shardInstruction.unstakeInstructions 1:", shardInstruction.unstakeInstructions)
+
+	Logger.log.Info("[slashing] stopAutoStakeInstruction.CommitteePublicKeys 1:", stopAutoStakeInstruction.CommitteePublicKeys)
+	Logger.log.Info("[slashing] stopAutoStakeInstruction 1:", stopAutoStakeInstruction)
+	Logger.log.Info("[slashing] shardInstruction.stopAutoStakeInstructions 1:", shardInstruction.stopAutoStakeInstructions)
 
 	if !stakeInstruction.IsEmpty() {
 		shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
@@ -878,8 +892,12 @@ func (shardInstruction *shardInstruction) compose() {
 		shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
 		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
 	}
-	Logger.log.Info("[slashing] stopAutoStakeInstruction.CommitteePublicKeys:", stopAutoStakeInstruction.CommitteePublicKeys)
-	Logger.log.Info("[slashing] stopAutoStakeInstruction:", stopAutoStakeInstruction)
-	Logger.log.Info("[slashing] shardInstruction.stopAutoStakeInstructions:", shardInstruction.stopAutoStakeInstructions)
+	Logger.log.Info("[slashing] unstakeInstruction.CommitteePublicKeys 2:", unstakeInstruction.CommitteePublicKeys)
+	Logger.log.Info("[slashing] unstakeInstruction 2:", unstakeInstruction)
+	Logger.log.Info("[slashing] shardInstruction.unstakeInstructions 2:", shardInstruction.unstakeInstructions)
+
+	Logger.log.Info("[slashing] stopAutoStakeInstruction.CommitteePublicKeys 2:", stopAutoStakeInstruction.CommitteePublicKeys)
+	Logger.log.Info("[slashing] stopAutoStakeInstruction 2:", stopAutoStakeInstruction)
+	Logger.log.Info("[slashing] shardInstruction.stopAutoStakeInstructions 2:", shardInstruction.stopAutoStakeInstructions)
 
 }
