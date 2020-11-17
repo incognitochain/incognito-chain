@@ -860,7 +860,6 @@ func (shardInstruction *shardInstruction) compose() {
 				committeePublicKeys = append(committeePublicKeys, key)
 			}
 		}
-
 		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, committeePublicKeys...)
 		Logger.log.Info("[slashing] committeePublicKeys:", committeePublicKeys)
 		Logger.log.Info("[slashing] stopAutoStakeInstruction.CommitteePublicKeys:", stopAutoStakeInstruction.CommitteePublicKeys)
