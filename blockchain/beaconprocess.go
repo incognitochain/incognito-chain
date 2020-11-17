@@ -205,8 +205,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		return err2
 	}
 
-	Logger.log.Info("[slashing] total Instructions:", beaconBlock.Body.Instructions)
-
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange); err2 != nil {
 		return err2
@@ -455,8 +453,13 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 
 	shardInstruction.compose()
 
-	Logger.log.Info("[slashing] shardInstruction.unstakeInstructions:", shardInstruction.unstakeInstructions)
-	Logger.log.Info("[slashing] shardInstruction.stopAutoStakeInstructions:", shardInstruction.stopAutoStakeInstructions)
+	for _, v := range shardInstruction.unstakeInstructions {
+		Logger.log.Info("[slashing] v.CommitteePublicKeys:", v.CommitteePublicKeys)
+	}
+
+	for _, v := range shardInstruction.stopAutoStakeInstructions {
+		Logger.log.Info("[slashing] v.CommitteePublicKeys:", v.CommitteePublicKeys)
+	}
 
 	tempInstruction, err := curView.GenerateInstruction(
 		beaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstructions,

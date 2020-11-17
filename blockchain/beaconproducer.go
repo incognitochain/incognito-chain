@@ -138,9 +138,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 
 	shardInstruction.compose()
 
-	Logger.log.Info("[slashing] shardInstruction.unstakeInstructions:", shardInstruction.unstakeInstructions)
-	Logger.log.Info("[slashing] shardInstruction.stopAutoStakeInstructions:", shardInstruction.stopAutoStakeInstructions)
-
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
 		beaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstruction,
@@ -848,7 +845,11 @@ func (shardInstruction *shardInstruction) compose() {
 		}
 		for _, key := range v.CommitteePublicKeys {
 			unstakeKeys[key] = true
+			Logger.log.Info("[slashing] key:", key)
+			Logger.log.Info("[slashing] unstakeKeys[key]:", unstakeKeys[key])
+
 		}
+		Logger.log.Info("[slashing] v.CommitteePublicKeys:", v.CommitteePublicKeys)
 		unstakeInstruction.CommitteePublicKeys = append(unstakeInstruction.CommitteePublicKeys, v.CommitteePublicKeys...)
 		unstakeInstruction.CommitteePublicKeysStruct = append(unstakeInstruction.CommitteePublicKeysStruct, v.CommitteePublicKeysStruct...)
 	}
@@ -859,6 +860,8 @@ func (shardInstruction *shardInstruction) compose() {
 		}
 		committeePublicKeys := []string{}
 		for _, key := range v.CommitteePublicKeys {
+			Logger.log.Info("[slashing] key:", key)
+			Logger.log.Info("[slashing] unstakeKeys[key]:", unstakeKeys[key])
 			if !unstakeKeys[key] {
 				committeePublicKeys = append(committeePublicKeys, key)
 			}
