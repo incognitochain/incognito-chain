@@ -857,11 +857,11 @@ func (shardInstruction *shardInstruction) compose() {
 		committeePublicKeys := []string{}
 		for _, key := range v.CommitteePublicKeys {
 			if !unstakeKeys[key] {
-				Logger.log.Info("[slashing] key:", key)
-				Logger.log.Info("[slashing] unstakeKeys[key]:", unstakeKeys[key])
 				committeePublicKeys = append(committeePublicKeys, key)
 			}
 		}
+
+		Logger.log.Info("[slashing] committeePublicKeys:", committeePublicKeys)
 		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, committeePublicKeys...)
 	}
 
