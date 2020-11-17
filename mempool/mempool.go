@@ -1092,4 +1092,15 @@ func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
 	return txsInMem
 }
 
+func (tp TxPool) GetOTAHashH() map[common.Hash][]common.Hash{
+	res := make(map[common.Hash][]common.Hash)
+	for txHash, txDesc := range tp.pool {
+		res[txHash] = []common.Hash{}
+		for _, otaHash := range txDesc.Desc.Tx.ListOTAHashH() {
+			res[txHash] = append(res[txHash], otaHash)
+		}
+	}
+	return res
+}
+
 // ----------- end of transaction.MempoolRetriever's implementation -----------------

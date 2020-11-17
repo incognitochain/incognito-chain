@@ -58,6 +58,7 @@ type TxDesc struct {
 type MempoolRetriever interface {
 	GetSerialNumbersHashH() map[common.Hash][]common.Hash
 	GetTxsInMem() map[common.Hash]TxDesc
+	GetOTAHashH() map[common.Hash][]common.Hash
 }
 
 type ChainRetriever interface {
@@ -128,6 +129,7 @@ type Transaction interface {
 	GetTxMintData() (bool, coin.Coin, *common.Hash, error)
 	GetTxBurnData() (bool, coin.Coin, *common.Hash, error)
 
+	ListOTAHashH() []common.Hash
 	ListSerialNumbersHashH() []common.Hash
 	String() string
 	Hash() *common.Hash
