@@ -132,15 +132,19 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		}
 	}
 
-	tempShardState, shardInstruction, duplicateKeyStakeInstruction,
+	tempShardState, shardInstruction, duplicateKeyStakeInstructions,
 		bridgeInstructions, acceptedRewardInstructions := blockchain.GetShardState(
 		beaconBestState, rewardForCustodianByEpoch, portalParams)
 
 	shardInstruction.compose()
 
+	for _, v := range duplicateKeyStakeInstructions.instructions {
+		Logger.log.Info("[slashing] PublicKeys", v.PublicKeys)
+	}
+
 	Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
 	tempInstruction, err := beaconBestState.GenerateInstruction(
-		beaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstruction,
+		beaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstructions,
 		bridgeInstructions, acceptedRewardInstructions, blockchain.config.ChainParams.Epoch,
 		blockchain.config.ChainParams.RandomTime, blockchain,
 		tempShardState,
