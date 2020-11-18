@@ -274,6 +274,13 @@ func (blockchain *BlockChain) GetShardState(
 			bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 			acceptedRewardInstructions = append(acceptedRewardInstructions, acceptedRewardInstruction)
 			// group stateful actions by shardID
+
+			tempValidStakePublicKeys := []string{}
+			for _, v := range newShardInstruction.stakeInstructions {
+				tempValidStakePublicKeys = append(tempValidStakePublicKeys, v.PublicKeys...)
+			}
+			validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
+
 			_, found := statefulActionsByShardID[shardID]
 			if !found {
 				statefulActionsByShardID[shardID] = statefulActions
