@@ -53,6 +53,8 @@ const (
 	DefaultPersistMempool = false
 	DefaultBtcClient      = 0
 	DefaultBtcClientPort  = "8332"
+
+	DefaultOutcoinDirname             	= "_coins_"
 )
 
 var (
@@ -156,6 +158,10 @@ type config struct {
 	//backup
 	PreloadAddress string `long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
 	ForceBackup    bool   `long:"forcebackup" description:"Force node to backup"`
+
+	// Optional : db to store coin by OTA key (for v2)
+	OutcoinDatabaseDir string `long:"coindatapre" description:"Output coins by OTA key database dir"`
+	UseOutcoinDatabase []bool `long:"usecoindata" description:"Store output coins by known OTA keys"`
 }
 
 func (cfg config) IsTestnet() bool {
@@ -345,6 +351,7 @@ func loadConfig() (*config, []string, error) {
 		BtcClient:                   DefaultBtcClient,
 		BtcClientPort:               DefaultBtcClientPort,
 		EnableMining:                DefaultEnableMining,
+		OutcoinDatabaseDir: 		 DefaultOutcoinDirname,
 	}
 
 	// Service options which are only added on Windows.

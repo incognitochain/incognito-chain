@@ -88,6 +88,12 @@ const (
 	StoreRelayingBNBHeaderError
 	GetRelayingBNBHeaderError
 	GetBNBDataHashError
+
+	// output coins by OTA key
+	StoreOutcoinByOTAKeyError
+	GetOutcoinByOTAKeyError
+	StoreOTAKeyError
+	GetOTAKeyError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -173,6 +179,11 @@ var ErrCodeMessage = map[int]struct {
 	StoreRelayingBNBHeaderError: {-5001, "Store relaying header bnb error"},
 	GetRelayingBNBHeaderError:   {-5002, "Get relaying header bnb error"},
 	GetBNBDataHashError:         {-5003, "Get bnb data hash by block height error"},
+
+	StoreOutcoinByOTAKeyError: 	 {-6001, "Store output coin by OTA key error"},
+	GetOutcoinByOTAKeyError: 	 {-6002, "Get output coin by OTA key error"},
+	StoreOTAKeyError: 	 {-6003, "Store OTA key error"},
+	GetOTAKeyError: 	 {-6004, "Get OTA keys error"},
 }
 
 type RawdbError struct {

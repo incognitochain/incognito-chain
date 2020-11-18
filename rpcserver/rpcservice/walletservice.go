@@ -3,11 +3,11 @@ package rpcservice
 import (
 	"encoding/hex"
 	"errors"
-	"log"
 	"math/rand"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -44,6 +44,32 @@ func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPC
 		result.Accounts[accountName] = amount
 	}
 
+	return result, nil
+}
+
+func (walletService WalletService) SubmitKey(keyStr string) (jsonresult.ReceivedInfo, *RPCError) {
+	// this function accepts a private key or a hex-encoded OTA key
+	var otaKey privacy.OTAKey
+	keySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(keyStr)
+	if err==nil{
+		otaKey = keySet.OTAKey
+	}else{
+		keySlice, err := hex.DecodeString(keyStr)
+		if err!=nil || len(keySlice)!=64{
+			return jsonresult.ReceivedInfo{}, NewRPCError(InvalidSenderViewingKeyError, errors.New("OTA key must be hex-encoded 64 bytes"))
+		}
+		var b [64]byte
+		copy(b[:], keySlice)
+		otaKey = blockchain.OTAKeyFromRaw(b)
+		shardIDSender = common.GetShardIDFromLastByte(keySlice[len(keySlice)-1])
+	}
+	result := jsonresult.ReceivedInfo{}
+	
+	err = walletService.BlockChain.SubmitOTAKey(otaKey, shardIDSender)
+	if err != nil {
+		return jsonresult.ReceivedInfo{}, NewRPCError(UnexpectedError, err)
+	}
+	
 	return result, nil
 }
 
@@ -125,7 +151,6 @@ func (walletService WalletService) GetBalanceByPrivateKey(privateKey string) (ui
 
 	// Get balance by private key should return all tokens belong to this private key, so start at 0
 	outcoints, err := walletService.BlockChain.TryGetAllOutputCoinsByKeyset(keySet, shardIDSender, prvCoinID, true)
-	log.Println(err)
 	if err != nil {
 		return uint64(0), NewRPCError(UnexpectedError, err)
 	}
@@ -134,7 +159,6 @@ func (walletService WalletService) GetBalanceByPrivateKey(privateKey string) (ui
 	for _, out := range outcoints {
 		balance += out.GetValue()
 	}
-	log.Println(balance)
 
 	return balance, nil
 }

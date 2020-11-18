@@ -21,7 +21,8 @@ import (
 )
 
 var(
-	outcoinReindexer = NewOutcoinReindexer(OutcoinReindexerRoutines)
+	EnableIndexingCoinByOTAKey bool
+	outcoinReindexer *coinReindexer
 )
 
 // DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
@@ -364,7 +365,7 @@ func getCoinFilterByOTAKeyAndToken() coinMatcher{
 //If there is a ReadonlyKey, return decrypted coins; otherwise, just return raw coins
 func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, upToHeight uint64, versionsIncluded map[int]bool) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
 	var outCoins []privacy.Coin
-	var fromHeight uint64 = 0
+	var lowerHeight uint64 = 0
 	if keyset == nil {
 		return nil, nil, 0, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
@@ -389,8 +390,10 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 		if upToHeight > latest || upToHeight==0{
 			upToHeight = latest
 		}
-		if upToHeight > MaxOutcoinQueryInterval{
-			fromHeight = upToHeight - MaxOutcoinQueryInterval
+		lowerHeight = getLowerHeight(upToHeight)
+		fromHeight := uint64(0)
+		if lowerHeight!=0{
+			fromHeight = lowerHeight
 		}
 		results, err := queryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, getCoinFilterByOTAKeyAndToken())
 		if err != nil {
@@ -409,9 +412,9 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 			}
 		}
 		
-		return resultPlainCoins, nil, fromHeight, nil
+		return resultPlainCoins, nil, lowerHeight, nil
 	}else{//Just return the raw coins
-		return nil, outCoins, fromHeight, nil
+		return nil, outCoins, lowerHeight, nil
 	}
 	
 }
@@ -436,11 +439,27 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 	return blockchain.getOutputCoins(keyset, shardID, tokenID, shardHeight, map[int]bool{1:true, 2:true})
 }
 
+func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, shardID byte) error{
+	if !EnableIndexingCoinByOTAKey{
+		return errors.New("OTA key submission not supported by this node configuration")
+	}
+	bss := blockchain.GetBestStateShard(shardID)
+	transactionStateDB := bss.transactionStateDB
+	go outcoinReindexer.ReindexOutcoin(bss.ShardHeight, theKey, transactionStateDB, shardID)
+	return nil
+}
+
 func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin,  error) {
 	bss := blockchain.GetBestStateShard(shardID)
 	transactionStateDB := bss.transactionStateDB
 
-	outCoins, state, err := outcoinReindexer.GetReindexedOutcoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
+	if !EnableIndexingCoinByOTAKey{
+		return nil, errors.New("Getting all coins not supported by this node configuration")
+		// results, _, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, bss.ShardHeight, map[int]bool{1:withVersion1, 2:true})
+		// return results, err
+	}
+
+	outCoins, state, err := outcoinReindexer.GetReindexedOutcoin(keyset.OTAKey, tokenID, shardID)
 	switch state{
 	case 2:
 		var results []privacy.PlainCoin
@@ -459,12 +478,12 @@ func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.
 		Logger.log.Infof("Retrieved output coins ver2 for view key %v", keyset.OTAKey.GetOTASecretKey())
 		return results, nil
 	case 1:
-		return nil, err
+		return nil, errors.New("OTA Key indexing is in progress")
 	case 0:
-		go outcoinReindexer.ReindexOutcoin(bss.ShardHeight, keyset.OTAKey, transactionStateDB, shardID)
-		return nil, errors.New("View Key indexing is in progress")
+		// go outcoinReindexer.ReindexOutcoin(bss.ShardHeight, keyset.OTAKey, transactionStateDB, shardID)
+		return nil, errors.New("Must subscribe to OTA key to view all coins")
 	default:
-		return nil, errors.New("View Key indexing state is corrupted")
+		return nil, errors.New("OTA Key indexing state is corrupted")
 	}
 }
 
@@ -668,19 +687,29 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 				if outputCoin.GetVersion() != 2 {
 					continue
 				}
-				for vkArr, state := range outcoinReindexer.getOrLoadIndexedOTAKeys(stateDB){
-					if state==0{
-						continue
+				if EnableIndexingCoinByOTAKey{
+					handler := func(k, v interface{}) bool{
+						vkArr, ok := k.([64]byte)
+						if !ok{
+							return false
+						}
+						processing, ok := v.(int)
+						if !ok{
+							return false
+						}
+						if processing!=1 && processing!=2{
+							return false
+						}
+						otaKey := OTAKeyFromRaw(vkArr)
+						ks := &incognitokey.KeySet{}
+						ks.OTAKey = otaKey
+						belongs, _ := outputCoin.DoesCoinBelongToKeySet(ks)
+						if belongs{
+							outcoinReindexer.StoreReindexedOutputCoins(otaKey, []privacy.Coin{outputCoin}, shardID)
+						}
+						return true
 					}
-					vk := &privacy.OTAKey{}
-					vk.SetOTASecretKey(vkArr[0:32])
-					vk.SetPublicSpend(vkArr[32:64])
-					ks := &incognitokey.KeySet{}
-					ks.OTAKey = *vk
-					belongs, _ := outputCoin.DoesCoinBelongToKeySet(ks)
-					if belongs{
-						outcoinReindexer.StoreReindexedOutputCoins(stateDB, *vk, []privacy.Coin{outputCoin}, shardID)
-					}
+					outcoinReindexer.ManagedOTAKeys.Range(handler)
 				}
 				otaCoinArray = append(otaCoinArray, outputCoin.Bytes())
 				onetimeAddressArray = append(onetimeAddressArray, outputCoin.GetPublicKey().ToBytesS())

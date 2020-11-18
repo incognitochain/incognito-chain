@@ -1,31 +1,44 @@
 package blockchain
 
- import (
- 	"errors"
- 	"fmt"
- 	"os"
- 	"time"
- 	"context"
+import (
+	"errors"
+	"fmt"
+	"time"
+	"context"
+	"sync"
 
- 	"golang.org/x/sync/semaphore"
- 	"github.com/incognitochain/incognito-chain/common"
- 	"github.com/incognitochain/incognito-chain/incognitokey"
- 	"github.com/incognitochain/incognito-chain/privacy"
- 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"golang.org/x/sync/semaphore"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 
- )
-
+)
 type coinReindexer struct{
-	sem 					*semaphore.Weighted
-	ManagedOTAKeys	map[[64]byte]int
+	sem 			*semaphore.Weighted
+	ManagedOTAKeys	*sync.Map
+	db 				incdb.Database
 }
-func NewOutcoinReindexer(numWorkers int64) *coinReindexer{
+func NewOutcoinReindexer(numWorkers int64, db incdb.Database) (*coinReindexer, error){
 	sem := semaphore.NewWeighted(numWorkers)
 	// view key :-> indexing status
 	// 2 means indexer finished
 	// while <2 : `balance` & `createTx` RPCs are not available
 	// viewKey map will be loaded from db later
-	return &coinReindexer{sem:sem, ManagedOTAKeys: nil}
+
+	m  := &sync.Map{}
+	// load from db once after startup
+	loadedKeysRaw, err := rawdbv2.GetReindexedOTAkeys(db)
+	if err==nil{	
+		for _, b := range loadedKeysRaw{
+			var temp [64]byte
+			copy(temp[:], b[0:64])
+			m.Store(temp, 2)
+		}
+	}
+	return &coinReindexer{sem:sem, ManagedOTAKeys: m, db: db}, nil
 }
 
 func getCoinFilterByOTAKey() coinMatcher{
@@ -46,72 +59,68 @@ func getCoinFilterByOTAKey() coinMatcher{
 	}
 }
 
-func (ci *coinReindexer) ReindexOutcoin(toHeight uint64, vk privacy.OTAKey, db *statedb.StateDB, shardID byte) error{
-	keyMap := ci.getOrLoadIndexedOTAKeys(db)
-	vkb := toRawViewKey(vk)
-	keyMap[vkb] = 1
+func (ci *coinReindexer) ReindexOutcoin(toHeight uint64, vk privacy.OTAKey, txdb *statedb.StateDB, shardID byte) error{
+	vkb := OTAKeyToRaw(vk)
+	Logger.log.Infof("Re-indexing started for %x", vkb)
+	keyExists, processing := ci.HasOTAKey(vkb)
+	if keyExists && (processing==1 || processing==2){
+		return nil
+	}
+	ci.ManagedOTAKeys.Store(vkb, 1)
 	defer func(){
-		if keyMap[vkb]==1{
-			delete(keyMap, vkb)
+		if exists, processing := ci.HasOTAKey(vkb); exists && processing==1{
+			ci.ManagedOTAKeys.Delete(vkb)
 		}
 	}()
 	var allOutputCoins []privacy.Coin
 	// read
-	for ; toHeight > 0;{
-		fromHeight := getLowerHeight(toHeight)
+	// if err!=nil{
+	// 	return err
+	// }
+	for height:=uint64(0); height <= toHeight;{
+		nextHeight := height + MaxOutcoinQueryInterval
+		
 		ctx, cancel := context.WithTimeout(context.Background(), OutcoinReindexerTimeout * time.Second)
 		defer cancel()
 		err := ci.sem.Acquire(ctx, 1)
 		if err!=nil{
 			return err
 		}
-		currentOutputCoinsToken, err1 := queryDbCoinVer2(vk, shardID, &common.ConfidentialAssetID, fromHeight, toHeight, db, getCoinFilterByOTAKey())
-		currentOutputCoinsPRV, err2 := queryDbCoinVer2(vk, shardID, &common.PRVCoinID, fromHeight, toHeight, db, getCoinFilterByOTAKey())
+		currentOutputCoinsToken, err1 := queryDbCoinVer2(vk, shardID, &common.ConfidentialAssetID, height, nextHeight-1, txdb, getCoinFilterByOTAKey())
+		currentOutputCoinsPRV, err2 := queryDbCoinVer2(vk, shardID, &common.PRVCoinID, height, nextHeight-1 , txdb, getCoinFilterByOTAKey())
 		ci.sem.Release(1)
 		if err1!=nil || err2!=nil{
 			return errors.New(fmt.Sprintf("Error while querying coins from db - %v - %v", err1, err2))
 		}
-		fmt.Fprintf(os.Stderr, "%d to %d : found %d + %d coins\n", fromHeight, toHeight, len(currentOutputCoinsPRV), len(currentOutputCoinsToken))
+		Logger.log.Infof("%d to %d : found %d PRV + %d pToken coins", height, nextHeight-1, len(currentOutputCoinsPRV), len(currentOutputCoinsToken))
 		// yield
-		time.Sleep(50 * time.Millisecond)
+		// time.Sleep(50 * time.Millisecond)
 		allOutputCoins = append(allOutputCoins, append(currentOutputCoinsToken, currentOutputCoinsPRV...)...)
-		toHeight = fromHeight
+		height = nextHeight
 	}
 	// write
-	ctx, cancel := context.WithTimeout(context.Background(), OutcoinReindexerTimeout * time.Second)
-	defer cancel()
-	err := ci.sem.Acquire(ctx, 1)
-	if err!=nil{
-		return err
-	}
-	err = ci.StoreReindexedOutputCoins(db, vk, allOutputCoins, shardID)
+	err := rawdbv2.StoreReindexedOTAkey(ci.db, vkb[:])
 	if err==nil{
-		err = statedb.StoreReindexedOTAkey(db, vkb[:])
-		if err==nil{
-			db.Commit(false)
-		}
+		err = ci.StoreReindexedOutputCoins(vk, allOutputCoins, shardID)	
 	}
-	ci.sem.Release(1)
-	if err!=nil{
-		return err
-	}
-	
-	keyMap[vkb] = 2
+	ci.ManagedOTAKeys.Store(vkb, 2)
+	Logger.log.Infof("Indexing complete for %x", vkb)
 	return nil
 }
 
-func (ci *coinReindexer) GetReindexedOutcoin(viewKey privacy.OTAKey, tokenID *common.Hash, db *statedb.StateDB, shardID byte) ([]privacy.Coin, int, error){
-	keyMap := ci.getOrLoadIndexedOTAKeys(db)
-	vkb := toRawViewKey(viewKey)
-	processing := keyMap[vkb]
+func (ci *coinReindexer) GetReindexedOutcoin(viewKey privacy.OTAKey, tokenID *common.Hash, shardID byte) ([]privacy.Coin, int, error){
+	// keyMap := ci.getOrLoadIndexedOTAKeys(db)
+	vkb := OTAKeyToRaw(viewKey)
+	Logger.log.Infof("Will get coins for %x from db %v", vkb, ci.db)
+	_,  processing := ci.HasOTAKey(vkb)
 	if processing==1{
 		return nil, 1, errors.New(fmt.Sprintf("View Key %x not ready : Sync still in progress", viewKey))
 	}
 	if processing==0{
 		// this is a new view key
-		return nil, 0, nil
+		return nil, 0, errors.New(fmt.Sprintf("View Key %x not synced", viewKey))
 	}
-	ocBytes, err := statedb.GetOutcoinsByReindexedOTAKey(db, common.ConfidentialAssetID, vkb[:], shardID)
+	ocBytes, err := rawdbv2.GetOutcoinsByReindexedOTAKey(ci.db, common.ConfidentialAssetID, shardID, vkb[:])
 	if err!=nil{
 		return nil, 0, err
 	}
@@ -133,32 +142,27 @@ func (ci *coinReindexer) GetReindexedOutcoin(viewKey privacy.OTAKey, tokenID *co
 	return result, 2, nil
 }
 
-func (ci coinReindexer) StoreReindexedOutputCoins(db *statedb.StateDB, viewKey privacy.OTAKey, outputCoins []privacy.Coin, shardID byte) error{
+func (ci *coinReindexer) StoreReindexedOutputCoins(viewKey privacy.OTAKey, outputCoins []privacy.Coin, shardID byte) error{
 	// has a default element to check for existence
 	var ocBytes [][]byte
 	for _, c := range outputCoins{
 		ocBytes = append(ocBytes, c.Bytes())
 	}
-	vkb := toRawViewKey(viewKey)
-	fmt.Fprintf(os.Stderr, "Storing %d indexed coins\n", len(ocBytes))
+	vkb := OTAKeyToRaw(viewKey)
+	Logger.log.Infof("Storing %d indexed coins to db %v", len(ocBytes), ci.db)
 	// all token and PRV coins are grouped together; match them to desired tokenID upon retrieval
-	return statedb.StoreReindexedOutputCoins(db, common.ConfidentialAssetID, vkb[:], ocBytes, shardID)
-}
-
-func (ci *coinReindexer) getOrLoadIndexedOTAKeys(db *statedb.StateDB) map[[64]byte]int{
-	if ci.ManagedOTAKeys==nil{
-		// load from db once after startup
-		ci.ManagedOTAKeys = make(map[[64]byte]int)
-		loadedKeysRaw, err := statedb.GetReindexedOTAKeys(db)
-		if err==nil{	
-			for _, b := range loadedKeysRaw{
-				var temp [64]byte
-				copy(temp[:], b[0:64])
-				ci.ManagedOTAKeys[temp] = 2
-			}
-		}
+	ctx, cancel := context.WithTimeout(context.Background(), OutcoinReindexerTimeout * time.Second)
+	defer cancel()
+	err := ci.sem.Acquire(ctx, 1)
+	if err!=nil{
+		return err
 	}
-	return ci.ManagedOTAKeys
+	err = rawdbv2.StoreReindexedOutputCoins(ci.db, common.ConfidentialAssetID, vkb[:], ocBytes, shardID)
+	ci.sem.Release(1)
+	if err!=nil{
+		return err
+	}
+	return err
 }
 
 func getLowerHeight(upper uint64) uint64{
@@ -169,10 +173,25 @@ func getLowerHeight(upper uint64) uint64{
 }
 
 // avoid overlap with version 1 coin entries
-func toRawViewKey(vk privacy.OTAKey) [64]byte{
+func OTAKeyToRaw(vk privacy.OTAKey) [64]byte{
 	var result [64]byte
 	copy(result[0:32], vk.GetOTASecretKey().ToBytesS())
 	copy(result[32:64], vk.GetPublicSpend().ToBytesS())
 	return result
 }
 
+func OTAKeyFromRaw(b [64]byte) privacy.OTAKey {
+	result := &privacy.OTAKey{}
+	result.SetOTASecretKey(b[0:32])
+	result.SetPublicSpend(b[32:64])
+	return *result
+}
+
+func (ci *coinReindexer) HasOTAKey(k [64]byte) (bool, int){
+	var result int
+	val, ok := ci.ManagedOTAKeys.Load(k)
+	if ok{
+		result, ok = val.(int)
+	}
+	return ok, result
+}

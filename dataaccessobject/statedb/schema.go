@@ -26,8 +26,6 @@ var (
 	commitmentLengthPrefix             = []byte("com-length-")
 	snDerivatorPrefix                  = []byte("sn-derivator-")
 	outputCoinPrefix                   = []byte("output-coin-")
-	reindexedOutputCoinPrefix          = []byte("reindexed-output-coin-")
-	reindexedKeysPrefix                = []byte("reindexed-key")
 	otaCoinPrefix                      = []byte("ota-coin-")
 	otaCoinIndexPrefix                 = []byte("ota-index-")
 	otaCoinLengthPrefix                = []byte("ota-length-")
@@ -179,16 +177,6 @@ func GetSNDerivatorPrefix(tokenID common.Hash) []byte {
 
 func GetOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []byte {
 	h := common.HashH(append(outputCoinPrefix, append(tokenID[:], append(publicKey, shardID)...)...))
-	return h[:][:prefixHashKeyLength]
-}
-
-func GetReindexedOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []byte {
-	h := common.HashH(append(reindexedOutputCoinPrefix, append(tokenID[:], append(publicKey, shardID)...)...))
-	return h[:][:prefixHashKeyLength]
-}
-
-func GetReindexedKeysPrefix() []byte {
-	h := common.HashH(reindexedKeysPrefix)
 	return h[:][:prefixHashKeyLength]
 }
 
