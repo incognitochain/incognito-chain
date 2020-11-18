@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"strings"
 )
 
 /*
@@ -464,7 +465,7 @@ func (httpServer *HttpServer) createCustodianTopupV3(params interface{}, closeCh
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenId param is invalid"))
 	}
-	collateralTokenId = common.Remove0xPrefix(collateralTokenId)
+	collateralTokenId = strings.ToLower(common.Remove0xPrefix(collateralTokenId))
 	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	if !metadata.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata collateral tokenID is not supported currently"))
@@ -594,7 +595,7 @@ func (httpServer *HttpServer) createTopUpWaitingPortingV3(params interface{}, cl
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenId param is invalid"))
 	}
-	collateralTokenId = common.Remove0xPrefix(collateralTokenId)
+	collateralTokenId = strings.ToLower(common.Remove0xPrefix(collateralTokenId))
 	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	if !metadata.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata collateral tokenID is not supported currently"))
@@ -769,7 +770,7 @@ func (httpServer *HttpServer) handleGetTopupAmountForCustodianState(params inter
 	collateralTokenID := common.PRVIDStr
 	collateralTokenIDParam, ok := data["CollateralTokenID"].(string)
 	if ok && collateralTokenIDParam != "" {
-		collateralTokenID = collateralTokenIDParam
+		collateralTokenID = strings.ToLower(collateralTokenIDParam)
 	}
 	if !metadata.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenID) && collateralTokenID != common.PRVIDStr {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenID is not supported"))
@@ -825,7 +826,7 @@ func (httpServer *HttpServer) handleGetAmountTopUpWaitingPorting(params interfac
 	collateralTokenID := common.PRVIDStr
 	collateralTokenIDParam, ok := data["CollateralTokenID"].(string)
 	if ok && collateralTokenIDParam != "" {
-		collateralTokenID = collateralTokenIDParam
+		collateralTokenID = strings.ToLower(collateralTokenIDParam)
 	}
 	if !metadata.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenID) && collateralTokenID != common.PRVIDStr {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenID is not supported"))

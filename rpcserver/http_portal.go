@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"strings"
 )
 
 /*
@@ -784,7 +785,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalExchangeRate(params int
 
 	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	for tokenID, value := range exchangeRateMap {
-		tokenID = common.Remove0xPrefix(tokenID)
+		tokenID = strings.ToLower(common.Remove0xPrefix(tokenID))
 		if !metadata.IsPortalExchangeRateToken(tokenID, httpServer.config.BlockChain, beaconHeight) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is not portal exchange rate token"))
 		}
@@ -919,14 +920,14 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 	tokenIDFrom := ""
 	tokenIDFromParam, ok := data["TokenIDFrom"].(string)
 	if ok {
-		tokenIDFrom = tokenIDFromParam
+		tokenIDFrom = strings.ToLower(tokenIDFromParam)
 	}
 
 	// default convert to USDT
 	tokenIDTo := ""
 	tokenIDToParam, ok := data["TokenIDTo"].(string)
 	if ok {
-		tokenIDTo = tokenIDToParam
+		tokenIDTo = strings.ToLower(tokenIDToParam)
 	}
 
 	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetBeaconBestState(), beaconHeight)

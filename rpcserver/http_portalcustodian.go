@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"sort"
+	"strings"
 )
 
 /*
@@ -341,7 +342,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianWithdrawRequestV3(pa
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CustodianIncAddress is invalid"))
 	}
-	externalTokenID = common.Remove0xPrefix(externalTokenID)
+	externalTokenID = strings.ToLower(common.Remove0xPrefix(externalTokenID))
 
 	amount, err := common.AssertAndConvertStrToNumber(data["Amount"])
 	if err != nil {
