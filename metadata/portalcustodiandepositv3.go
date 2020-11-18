@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 // PortalCustodianDepositV3 - portal custodian deposit collaterals on SC (ETH/ERC20)
@@ -230,7 +231,7 @@ func ParseInfoFromLogMap(logMap map[string]interface{}) (string, string, uint64,
 		Logger.log.Info("WARNING: could not parse eth token id from log map.")
 		return "", "", 0, errors.New("could not parse eth token id from log map")
 	}
-	ethereumAddrStr := ethereumAddr.String()
+	ethereumAddrStr := strings.ToLower(ethereumAddr.String())
 
 	// custodian incognito address
 	addressStr, ok := logMap["incognitoAddress"].(string)
