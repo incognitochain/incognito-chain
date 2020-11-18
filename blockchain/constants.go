@@ -30,9 +30,6 @@ const (
 	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 )
 
-// this param is configured based on network ID. Testnet = 4, Mainnet = 22
-var NumberOfFixedBlockValidators = 4
-
 // burning addresses
 const (
 	burningAddress  = "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"

@@ -152,7 +152,7 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 		if err == nil {
 			lastBeaconHeightConfirmCrossX++
 			if lastBeaconHeightConfirmCrossX%1000 == 0 {
-				fmt.Println("store lastBeaconHeightConfirmCrossX", lastBeaconHeightConfirmCrossX)
+				Logger.Info("store lastBeaconHeightConfirmCrossX", lastBeaconHeightConfirmCrossX)
 				rawdbv2.StoreLastBeaconStateConfirmCrossShard(s.chain.GetDatabase(), LastCrossShardBeaconProcess{lastBeaconHeightConfirmCrossX, s.lastCrossShardState})
 			}
 		} else {
@@ -184,9 +184,9 @@ func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock 
 						beaconBlock.GetHeight(),
 						beaconBlock.Hash().String(),
 					}
-					fmt.Println("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
+					//Logger.Info("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
 					b, _ := json.Marshal(info)
-					fmt.Println("debug StoreCrossShardNextHeight", fromShard, toShard, lastHeight, string(b))
+					Logger.Info("debug StoreCrossShardNextHeight", fromShard, toShard, lastHeight, string(b))
 					err := rawdbv2.StoreCrossShardNextHeight(database, fromShard, toShard, lastHeight, b)
 					if err != nil {
 						return err

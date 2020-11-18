@@ -43,6 +43,7 @@ type Params struct {
 	MaxShardBlockCreation            time.Duration
 	MinBeaconBlockInterval           time.Duration
 	MaxBeaconBlockCreation           time.Duration
+	NumberOfFixedBlockValidators     int
 	StakingAmountShard               uint64
 	ActiveShards                     int
 	GenesisBeaconBlock               *BeaconBlock // GenesisBlock defines the first block of the chain.
@@ -64,17 +65,17 @@ type Params struct {
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
 	BTCDataFolderName                string
-	BNBFullNodeProtocol       string
-	BNBFullNodeHost           string
-	BNBFullNodePort           string
-	PortalParams              map[uint64]PortalParams
-	PortalFeederAddress       string
-	EpochBreakPointSwapNewKey []uint64
-	IsBackup                  bool
-	PreloadAddress            string
-	ReplaceStakingTxHeight    uint64
-	ETHRemoveBridgeSigEpoch   uint64
-	BCHeightBreakPointNewZKP  uint64
+	BNBFullNodeProtocol              string
+	BNBFullNodeHost                  string
+	BNBFullNodePort                  string
+	PortalParams                     map[uint64]PortalParams
+	PortalFeederAddress              string
+	EpochBreakPointSwapNewKey        []uint64
+	IsBackup                         bool
+	PreloadAddress                   string
+	ReplaceStakingTxHeight           uint64
+	ETHRemoveBridgeSigEpoch          uint64
+	BCHeightBreakPointNewZKP         uint64
 }
 
 type GenesisParams struct {
@@ -136,6 +137,7 @@ func SetupParam() {
 		MaxShardBlockCreation:            TestNetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           TestNetMaxBeaconBlkCreation,
+		NumberOfFixedBlockValidators:     4,
 		BasicReward:                      TestnetBasicReward,
 		Epoch:                            TestnetEpoch,
 		RandomTime:                       TestnetRandomTime,
@@ -219,6 +221,7 @@ func SetupParam() {
 		MaxShardBlockCreation:            TestNet2MaxShardBlkCreation,
 		MinBeaconBlockInterval:           TestNet2MinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           TestNet2MaxBeaconBlkCreation,
+		NumberOfFixedBlockValidators:     4,
 		BasicReward:                      Testnet2BasicReward,
 		Epoch:                            Testnet2Epoch,
 		RandomTime:                       Testnet2RandomTime,
@@ -300,6 +303,7 @@ func SetupParam() {
 		MaxShardBlockCreation:            MainnetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           MainnetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           MainnetMaxBeaconBlkCreation,
+		NumberOfFixedBlockValidators:     22,
 		BasicReward:                      MainnetBasicReward,
 		Epoch:                            MainnetEpoch,
 		RandomTime:                       MainnetRandomTime,

@@ -757,6 +757,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 }
 
 func (shardBestState *ShardBestState) processShardBlockInstruction(blockchain *BlockChain, shardBlock *ShardBlock, committeeChange *committeeChange) error {
+	NumberOfFixedBlockValidators := blockchain.GetChainParams().NumberOfFixedBlockValidators
 	var err error
 	shardID := shardBestState.ShardID
 	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator)

@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"context"
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -77,4 +78,9 @@ type Syncker interface {
 
 type Pubsub interface {
 	PublishMessage(message *pubsub.Message)
+}
+
+type ChainInterface interface {
+	GetBestView() multiview.View
+	GetFinalView() multiview.View
 }
