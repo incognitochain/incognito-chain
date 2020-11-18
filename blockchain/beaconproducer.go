@@ -2,10 +2,11 @@ package blockchain
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"math/big"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -271,6 +272,13 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 			acceptedRewardInstructions = append(acceptedRewardInstructions, acceptedRewardInstruction)
 			// group stateful actions by shardID
+
+			tempValidStakePublicKeys := []string{}
+			for _, v := range newShardInstruction.stakeInstructions {
+				tempValidStakePublicKeys = append(tempValidStakePublicKeys, v.PublicKeys...)
+			}
+			validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
+
 			_, found := statefulActionsByShardID[shardID]
 			if !found {
 				statefulActionsByShardID[shardID] = statefulActions
