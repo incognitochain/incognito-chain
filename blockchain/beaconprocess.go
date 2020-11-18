@@ -453,10 +453,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 
 	shardInstruction.compose()
 
-	for _, v := range duplicateKeyStakeInstructions.instructions {
-		Logger.log.Info("[slashing] PublicKeys", v.PublicKeys)
-	}
-
 	tempInstruction, err := curView.GenerateInstruction(
 		beaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstructions,
 		bridgeInstructions, acceptedBlockRewardInstructions,
