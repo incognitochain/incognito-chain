@@ -418,7 +418,7 @@ func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.
 		// return results, err
 	}
 
-	outCoins, state, err := outcoinReindexer.GetReindexedOutcoin(keyset.OTAKey, tokenID, shardID)
+	outCoins, state, err := outcoinReindexer.GetReindexedOutcoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
 	switch state{
 	case 2:
 		var results []privacy.PlainCoin
@@ -439,8 +439,11 @@ func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.
 	case 1:
 		return nil, errors.New("OTA Key indexing is in progress")
 	case 0:
-		// go outcoinReindexer.ReindexOutcoin(bss.ShardHeight, keyset.OTAKey, transactionStateDB, shardID)
-		return nil, errors.New("Must subscribe to OTA key to view all coins")
+		err := blockchain.SubmitOTAKey(keyset.OTAKey, shardID)
+		if err==nil{
+			return nil, errors.New("Subscribed to OTA key to view all coins")
+		}
+		return nil, err
 	default:
 		return nil, errors.New("OTA Key indexing state is corrupted")
 	}

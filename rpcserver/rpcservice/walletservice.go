@@ -47,7 +47,7 @@ func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPC
 	return result, nil
 }
 
-func (walletService WalletService) SubmitKey(keyStr string) (jsonresult.ReceivedInfo, *RPCError) {
+func (walletService WalletService) SubmitKey(keyStr string) (struct{}, *RPCError) {
 	// this function accepts a private key or a hex-encoded OTA key
 	var otaKey privacy.OTAKey
 	keySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(keyStr)
@@ -56,18 +56,18 @@ func (walletService WalletService) SubmitKey(keyStr string) (jsonresult.Received
 	}else{
 		keySlice, err := hex.DecodeString(keyStr)
 		if err!=nil || len(keySlice)!=64{
-			return jsonresult.ReceivedInfo{}, NewRPCError(InvalidSenderViewingKeyError, errors.New("OTA key must be hex-encoded 64 bytes"))
+			return struct{}{}, NewRPCError(InvalidSenderViewingKeyError, errors.New("OTA key must be hex-encoded 64 bytes"))
 		}
 		var b [64]byte
 		copy(b[:], keySlice)
 		otaKey = blockchain.OTAKeyFromRaw(b)
 		shardIDSender = common.GetShardIDFromLastByte(keySlice[len(keySlice)-1])
 	}
-	result := jsonresult.ReceivedInfo{}
+	result := struct{}{}
 	
 	err = walletService.BlockChain.SubmitOTAKey(otaKey, shardIDSender)
 	if err != nil {
-		return jsonresult.ReceivedInfo{}, NewRPCError(UnexpectedError, err)
+		return struct{}{}, NewRPCError(UnexpectedError, err)
 	}
 	
 	return result, nil
