@@ -725,9 +725,10 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *BeaconBl
 	// for k, v := range beaconBestState.AutoStaking {
 	// 	snapshotAutoStaking[k] = v
 	// }
+	allCommitteeValidatorCandidate := oldBestState.getAllCommitteeValidatorCandidateFlattenList()
 	for _, instruction := range beaconBlock.Body.Instructions {
 		err, tempRandomFlag, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain,
-			committeeChange, beaconBestState.consensusStateDB.Copy())
+			committeeChange, beaconBestState.consensusStateDB.Copy(), allCommitteeValidatorCandidate)
 		if err != nil {
 			return nil, err
 		}
@@ -866,10 +867,11 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.SlashStateDBRootHash = common.EmptyRoot
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
+
 	//statedb===========================END
 	for _, instruction := range genesisBeaconBlock.Body.Instructions {
 		err, _, tempNewBeaconCandidate, tempNewShardCandidate := beaconBestState.processInstruction(instruction, blockchain,
-			newCommitteeChange(), beaconBestState.consensusStateDB.Copy())
+			newCommitteeChange(), beaconBestState.consensusStateDB.Copy(), []string{})
 		if err != nil {
 			return err
 		}
@@ -911,7 +913,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 //		+ doesn't call any of methods provided by blockchain object.
 //		+ variables get from blockchain object are golang built-in types
 //		+ easier for functional testing
-func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *committeeChange, consensusStateDB *statedb.StateDB) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
+func (beaconBestState *BeaconBestState) processInstruction(instruction []string, blockchain *BlockChain, committeeChange *committeeChange, consensusStateDB *statedb.StateDB, allCommitteeValidatorCandidate []string) (error, bool, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey) {
 	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
 	newShardCandidates := []incognitokey.CommitteePublicKey{}
 	if len(instruction) < 1 {
@@ -931,7 +933,6 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 	if instruction[0] == StopAutoStake {
 		committeePublicKeys := strings.Split(instruction[1], ",")
 		for _, committeePublicKey := range committeePublicKeys {
-			allCommitteeValidatorCandidate := beaconBestState.getAllCommitteeValidatorCandidateFlattenList()
 			// check existence in all committee list
 			if common.IndexOfStr(committeePublicKey, allCommitteeValidatorCandidate) == -1 {
 				// if not found then delete auto staking data for this public key if present
