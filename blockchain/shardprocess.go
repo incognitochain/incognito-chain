@@ -927,7 +927,27 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 	}
 	defer blockchain.config.TempTxPool.EmptyPool()
 	listTxs := []metadata.Transaction{}
+	listSerialNumbersHashH := make(map[common.Hash]bool)
+	listOTAHashH := make(map[common.Hash]bool)
 	for _, tx := range txs {
+		tmpSerialNumbers := tx.ListSerialNumbersHashH()
+		for _, sn := range tmpSerialNumbers{
+			if _, ok := listSerialNumbersHashH[sn]; ok{
+				Logger.log.Errorf("verifyTransactionFromNewBlock FAILED: double spend")
+				return errors.Errorf("verifyTransactionFromNewBlock FAILED: double spend")
+			}
+			listSerialNumbersHashH[sn] = true
+		}
+
+		tmpOTAs := tx.ListOTAHashH()
+		for _, ota := range tmpOTAs{
+			if _, ok := listSerialNumbersHashH[ota]; ok{
+				Logger.log.Errorf("verifyTransactionFromNewBlock FAILED: OTA duplicate found")
+				return errors.Errorf("verifyTransactionFromNewBlock FAILED: OTA duplicate found")
+			}
+			listOTAHashH[ota] = true
+		}
+
 		if !tx.IsSalaryTx() {
 			listTxs = append(listTxs, tx)
 		}
