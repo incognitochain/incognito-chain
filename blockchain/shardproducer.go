@@ -526,10 +526,10 @@ func (blockchain *BlockChain) processInstructionFromBeacon(curView *ShardBestSta
 //	#4: error
 func (blockchain *BlockChain) generateInstruction(view *ShardBestState, shardID byte, beaconHeight uint64, isOldBeaconHeight bool, beaconBlocks []*BeaconBlock, shardPendingValidator []string, shardCommittee []string) ([][]string, []string, []string, error) {
 	var (
-		instructions          = [][]string{}
-		bridgeSwapConfirmInst = []string{}
-		swapInstruction       = []string{}
-		// err                   error
+		instructions                 = [][]string{}
+		bridgeSwapConfirmInst        = []string{}
+		swapInstruction              = []string{}
+		NumberOfFixedBlockValidators = blockchain.GetChainParams().NumberOfFixedBlockValidators
 	)
 	// if this beacon height has been seen already then DO NOT generate any more instruction
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
