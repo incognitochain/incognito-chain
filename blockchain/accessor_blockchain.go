@@ -395,3 +395,29 @@ func GetShardRootsHashByBlockHash(db incdb.Database, shardID byte, hash common.H
 	err := json.Unmarshal(data, bRH)
 	return bRH, err
 }
+
+func (s *BlockChain) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *NextCrossShardInfo {
+	b, err := rawdbv2.GetCrossShardNextHeight(s.GetBeaconChainDatabase(), byte(fromSID), byte(toSID), uint64(currentHeight))
+	if err != nil {
+		//Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
+		return nil
+	}
+	var res = new(NextCrossShardInfo)
+	err = json.Unmarshal(b, res)
+	if err != nil {
+		return nil
+	}
+	return res
+}
+
+func (s *BlockChain) FetchConfirmBeaconBlockByHeight(height uint64) (*BeaconBlock, error) {
+	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.GetBeaconChainDatabase(), height)
+	if err != nil {
+		return nil, err
+	}
+	beaconBlock, _, err := s.GetBeaconBlockByHash(*blkhash)
+	if err != nil {
+		return nil, err
+	}
+	return beaconBlock, nil
+}

@@ -2098,32 +2098,6 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	return "", -2
 }
 
-//func (s *Server) FetchNextCrossShard(fromSID, toSID int, currentHeight uint64) *blockchain.NextCrossShardInfo {
-//	b, err := rawdbv2.GetCrossShardNextHeight(s.dataBase[common.BeaconChainDataBaseID], byte(fromSID), byte(toSID), uint64(currentHeight))
-//	if err != nil {
-//		//Logger.log.Error(fmt.Sprintf("Cannot FetchCrossShardNextHeight fromSID %d toSID %d with currentHeight %d", fromSID, toSID, currentHeight))
-//		return nil
-//	}
-//	var res = new(blockchain.NextCrossShardInfo)
-//	err = json.Unmarshal(b, res)
-//	if err != nil {
-//		return nil
-//	}
-//	return res
-//}
-
-//func (s *Server) FetchConfirmBeaconBlockByHeight(height uint64) (*blockchain.BeaconBlock, error) {
-//	blkhash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(s.blockChain.GetBeaconChainDatabase(), height)
-//	if err != nil {
-//		return nil, err
-//	}
-//	beaconBlock, _, err := s.blockChain.GetBeaconBlockByHash(*blkhash)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return beaconBlock, nil
-//}
-
 func (s *Server) GetBeaconChainDatabase() incdb.Database {
 	return s.dataBase[common.BeaconChainDataBaseID]
 }
