@@ -854,6 +854,7 @@ func (shardInstruction *shardInstruction) compose() {
 		if v.IsEmpty() {
 			continue
 		}
+
 		committeePublicKeys := []string{}
 		for _, key := range v.CommitteePublicKeys {
 			if !unstakeKeys[key] {
@@ -864,21 +865,18 @@ func (shardInstruction *shardInstruction) compose() {
 		stopAutoStakeInstruction.CommitteePublicKeys = append(stopAutoStakeInstruction.CommitteePublicKeys, committeePublicKeys...)
 	}
 
+	shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
 	if !stakeInstruction.IsEmpty() {
-		shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
 		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeInstruction)
 	}
+
+	shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
 	if !unstakeInstruction.IsEmpty() {
-		shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
 		shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, unstakeInstruction)
 	}
 
+	shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
 	if !stopAutoStakeInstruction.IsEmpty() {
-		shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
 		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
-	} else {
-		if len(shardInstruction.stopAutoStakeInstructions) != 0 {
-			shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
-		}
 	}
 }
