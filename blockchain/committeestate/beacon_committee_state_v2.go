@@ -789,11 +789,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 	// b == newstate -> only write
 	// oldstate -> only read
 	newCommitteeChange := committeeChange
-	shardCommonPoolStr := make([]string, len(b.shardCommonPool))
-	for i, v := range b.shardCommonPool {
-		key, _ := v.ToBase58()
-		shardCommonPoolStr[i] = key
-	}
+	shardCommonPoolStr, _ := incognitokey.CommitteeKeyListToString(b.shardCommonPool)
 	for index, publicKey := range unstakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(publicKey, env.newUnassignedCommonPool) == -1 {
 			if common.IndexOfStr(publicKey, env.newAllSubstituteCommittees) != -1 {

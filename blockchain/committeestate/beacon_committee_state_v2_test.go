@@ -2494,12 +2494,12 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 	rewardReceiverkey := incKey.GetIncKeyBase58()
 	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
 
-	validSDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	validSDB1, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 	assert.Nil(t, err)
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
 	statedb.StoreStakerInfoV1(
-		validSDB,
+		validSDB1,
 		[]incognitokey.CommitteePublicKey{*incKey},
 		map[string]privacy.PaymentAddress{
 			rewardReceiverkey: paymentAddress,
@@ -2512,10 +2512,10 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 		},
 	)
 
-	tempValidStateDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	validSDB2, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 	assert.Nil(t, err)
 	statedb.StoreStakerInfoV1(
-		tempValidStateDB,
+		validSDB2,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey2, *incKey5, *incKey6},
 		map[string]privacy.PaymentAddress{
 			rewardReceiverkey:         paymentAddress,
@@ -2617,7 +2617,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				},
 				env: &BeaconCommitteeStateEnvironment{
 					newUnassignedCommonPool: []string{key2},
-					ConsensusStateDB:        validSDB,
+					ConsensusStateDB:        validSDB1,
 				},
 				committeeChange:           &CommitteeChange{},
 				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
@@ -2660,7 +2660,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				},
 				env: &BeaconCommitteeStateEnvironment{
 					newUnassignedCommonPool: []string{key},
-					ConsensusStateDB:        validSDB,
+					ConsensusStateDB:        validSDB1,
 				},
 				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
 				oldState: &BeaconCommitteeStateV2{
@@ -2750,7 +2750,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				},
 				env: &BeaconCommitteeStateEnvironment{
 					newAllSubstituteCommittees: []string{key, key2, key3, key4, key5, key6},
-					ConsensusStateDB:           tempValidStateDB,
+					ConsensusStateDB:           validSDB2,
 					newUnassignedCommonPool:    []string{key, key2, key3, key4, key5, key6},
 				},
 				committeeChange:           &CommitteeChange{},
