@@ -669,7 +669,7 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 					if index == -1 {
 						check, ok := beaconBestState.GetAutoStakingList()[v]
 						if !ok {
-							Logger.log.Errorf("Committee %s is not found or has already been unstaked:", v)
+							Logger.log.Errorf("[unstaking] Committee %s is not found or has already been unstaked:", v)
 						}
 						if !ok || !check {
 							tempUnstakeInstruction.DeleteSingleElement(i)

@@ -2511,6 +2511,38 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 			key: *hash,
 		},
 	)
+
+	tempValidStateDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	assert.Nil(t, err)
+	statedb.StoreStakerInfoV1(
+		tempValidStateDB,
+		[]incognitokey.CommitteePublicKey{*incKey, *incKey2, *incKey5, *incKey6},
+		map[string]privacy.PaymentAddress{
+			rewardReceiverkey:         paymentAddress,
+			incKey2.GetIncKeyBase58(): paymentAddress,
+			incKey3.GetIncKeyBase58(): paymentAddress,
+			incKey4.GetIncKeyBase58(): paymentAddress,
+			incKey5.GetIncKeyBase58(): paymentAddress,
+			incKey6.GetIncKeyBase58(): paymentAddress,
+		},
+		map[string]bool{
+			key:  false,
+			key2: false,
+			key3: true,
+			key4: true,
+			key5: false,
+			key6: false,
+		},
+		map[string]common.Hash{
+			key:  *hash,
+			key2: *hash,
+			key3: *hash,
+			key4: *hash,
+			key5: *hash,
+			key6: *hash,
+		},
+	)
+
 	committeePublicKeyWrongFormat := incognitokey.CommitteePublicKey{}
 	committeePublicKeyWrongFormat.MiningPubKey = nil
 
@@ -2689,6 +2721,82 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				StopAutoStake: []string{key},
 			},
 			want1:   make(map[byte]*instruction.ReturnStakeInstruction),
+			wantErr: false,
+		},
+		{
+			name: "Remove 4 keys in shard common pool",
+			fields: fields{
+				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{},
+				},
+				autoStake: map[string]bool{
+					key:  false,
+					key2: false,
+					key3: true,
+					key4: true,
+					key5: false,
+					key6: false,
+				},
+				shardCommonPool: []incognitokey.CommitteePublicKey{
+					*incKey, *incKey2, *incKey3, *incKey4, *incKey5, *incKey6,
+				},
+			},
+			args: args{
+				unstakeInstruction: &instruction.UnstakeInstruction{
+					CommitteePublicKeys: []string{key, key2, key5, key6},
+					CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey2, *incKey5, *incKey6,
+					},
+				},
+				env: &BeaconCommitteeStateEnvironment{
+					newAllSubstituteCommittees: []string{key, key2, key3, key4, key5, key6},
+					ConsensusStateDB:           tempValidStateDB,
+					newUnassignedCommonPool:    []string{key, key2, key3, key4, key5, key6},
+				},
+				committeeChange:           &CommitteeChange{},
+				returnStakingInstructions: make(map[byte]*instruction.ReturnStakeInstruction),
+				oldState: &BeaconCommitteeStateV2{
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{},
+					},
+					autoStake: map[string]bool{
+						key:  false,
+						key2: false,
+						key3: true,
+						key4: true,
+						key5: false,
+						key6: false,
+					},
+				},
+			},
+			want: &CommitteeChange{
+				NextEpochShardCandidateRemoved: []incognitokey.CommitteePublicKey{
+					*incKey, *incKey2, *incKey5, *incKey6,
+				},
+				Unstake: []string{key, key2, key5, key6},
+			},
+			want1: map[byte]*instruction.ReturnStakeInstruction{
+				0: &instruction.ReturnStakeInstruction{
+					PublicKeys: []string{key, key2, key5, key6},
+					PublicKeysStruct: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey2, *incKey5, *incKey6,
+					},
+					StakingTXIDs: []string{
+						hash.String(),
+						hash.String(),
+						hash.String(),
+						hash.String(),
+					},
+					ShardID: 0,
+					StakingTxHashes: []common.Hash{
+						*hash,
+						*hash,
+						*hash,
+						*hash,
+					},
+					PercentReturns: []uint{100, 100, 100, 100},
+				},
+			},
 			wantErr: false,
 		},
 	}
