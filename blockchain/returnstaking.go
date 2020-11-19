@@ -253,35 +253,20 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 				if err != nil {
 					Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", returnStakingIns, err)
 					continue
-					// return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
-				if beaconConsensusStateDB == nil {
-					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight()-1)
-					if err != nil {
-						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found, error %+v", beaconBlock.GetHeight(), err))
-					}
-					beaconConsensusStateDB, err = statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+				if shardID != returnStakingIns.ShardID {
+					Logger.log.Infof("SKIP Return Staking Instruction | Processed SHARD %+v, Return Staking SHARD %+v", shardID, returnStakingIns.ShardID)
 				}
 				for i, v := range returnStakingIns.GetPublicKey() {
-					emptyHash := common.Hash{}
-					if returnStakingIns.GetStakingTX()[i] == emptyHash.String() {
-						Logger.log.Error(errors.Errorf("Staker info is null %v", returnStakingIns.GetStakingTX()[i]))
-						continue
-					}
-					txHash, _ := common.Hash{}.NewHashFromStr(returnStakingIns.GetStakingTX()[i])
-					if _, ok := res[*txHash]; ok {
-						err = errors.Errorf("Duplicate return staking using tx staking %v", txHash.String())
-						Logger.log.Error(err)
-						return nil, nil, err
-					}
-					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), *txHash)
+					txHash := returnStakingIns.StakingTxHashes[i]
+					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
 					if err != nil {
 						Logger.log.Error("Can't get transaction hash %v from database error %v", txHash.String(), err)
 						continue
 					}
 					shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
 					if err != nil || shardBlock == nil {
-						Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", shardBlock.Body.Transactions[index])
+						Logger.log.Error("ERROR", err, "SHARD ", shardID, "NO Transaction in block with hash", blockHash, "and index", index)
 						continue
 					}
 					txData := shardBlock.Body.Transactions[index]
@@ -305,7 +290,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						Logger.log.Error(err)
 						continue
 					}
-					res[*txHash] = returnStakingInfo{
+					res[txHash] = returnStakingInfo{
 						SwapoutPubKey: v,
 						FunderAddress: keyWallet.KeySet.PaymentAddress,
 						StakingTx:     txData,
