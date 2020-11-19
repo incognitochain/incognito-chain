@@ -1516,7 +1516,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 		for _, txHash := range txHashs {
 			item := jsonresult.ReceivedTransaction{
 				FromShardID:     shardID,
-				ReceivedAmounts: map[common.Hash][]jsonresult.ReceivedInfo{},
+				ReceivedAmounts: map[common.Hash]jsonresult.ReceivedInfo{},
 			}
 			if len(keySet.ReadonlyKey.Rk) != 0 {
 				_, blockHash, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
@@ -1562,7 +1562,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedAmounts[common.PRVCoinID] = append(item.ReceivedAmounts[common.PRVCoinID], info)
+									item.ReceivedAmounts[common.PRVCoinID] = info
 								}
 							}
 						}
@@ -1607,7 +1607,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedAmounts[common.PRVCoinID] = append(item.ReceivedAmounts[common.PRVCoinID], info)
+									item.ReceivedAmounts[common.PRVCoinID] = info
 								}
 							}
 						}
@@ -1640,7 +1640,7 @@ func (txService TxService) buildTxInfosFromTxHashs(
 									if temp.CoinDetailsEncrypted != nil {
 										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 									}
-									item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID] = append(item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID], info)
+									item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID] = info
 								}
 							}
 						}
@@ -1676,10 +1676,10 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 func (txService TxService) buildTxDetails(
 	txInfos []TxInfo,
 	keySet incognitokey.KeySet,
-) []jsonresult.ReceivedTransaction {
-	txDetails := []jsonresult.ReceivedTransaction{}
+) []jsonresult.ReceivedTransactionV2 {
+	txDetails := []jsonresult.ReceivedTransactionV2{}
 	for _, txInfo := range txInfos {
-		item := jsonresult.ReceivedTransaction{
+		item := jsonresult.ReceivedTransactionV2{
 			ReceivedAmounts: map[common.Hash][]jsonresult.ReceivedInfo{},
 			InputSerialNumbers: map[common.Hash][]string{},
 		}
@@ -1695,10 +1695,19 @@ func (txService TxService) buildTxDetails(
 			switch item.Type {
 			case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 				{
-					normalTx := txDetail.(*transaction.Tx)
+					normalTx, ok := txDetail.(*transaction.Tx)
+					if !ok || normalTx == nil {
+						continue
+					}
 					item.Version = normalTx.Version
 					item.IsPrivacy = normalTx.IsPrivacy()
 					item.Fee = normalTx.Fee
+
+					// marshal metadata
+					if txDetail.GetMetadata() != nil {
+						metaData, _ := json.MarshalIndent(txDetail.GetMetadata(), "", "\t")
+						item.Metadata = string(metaData)
+					}
 
 					proof := normalTx.GetProof()
 					if proof != nil {
@@ -1741,7 +1750,10 @@ func (txService TxService) buildTxDetails(
 				}
 			case common.TxCustomTokenPrivacyType:
 				{
-					privacyTokenTx := txDetail.(*transaction.TxCustomTokenPrivacy)
+					privacyTokenTx, ok := txDetail.(*transaction.TxCustomTokenPrivacy)
+					if !ok || privacyTokenTx == nil {
+						continue
+					}
 					item.Version = privacyTokenTx.Version
 					item.IsPrivacy = privacyTokenTx.IsPrivacy()
 					item.PrivacyCustomTokenIsPrivacy = privacyTokenTx.TxPrivacyTokenData.TxNormal.IsPrivacy()
@@ -1750,6 +1762,12 @@ func (txService TxService) buildTxDetails(
 					item.PrivacyCustomTokenID = privacyTokenTx.TxPrivacyTokenData.PropertyID.String()
 					item.PrivacyCustomTokenName = privacyTokenTx.TxPrivacyTokenData.PropertyName
 					item.PrivacyCustomTokenSymbol = privacyTokenTx.TxPrivacyTokenData.PropertySymbol
+
+					// marshal metadata
+					if txDetail.GetMetadata() != nil {
+						metaData, _ := json.MarshalIndent(txDetail.GetMetadata(), "", "\t")
+						item.Metadata = string(metaData)
+					}
 
 					// prv proof
 					proof := privacyTokenTx.GetProof()
@@ -1838,10 +1856,65 @@ func (txService TxService) buildTxDetails(
 	return txDetails
 }
 
-func (txService TxService) getTxsByHashs(txHashs []common.Hash, ch chan []TxInfo) {
+func (txService TxService) getTxsByHashs(txHashs []common.Hash, ch chan []TxInfo, tokenID common.Hash, pubKey []byte) {
 	txInfos := []TxInfo{}
 	for _, txHash := range txHashs {
 		_, blockHash, _, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
+		// filter by tokenID
+		if bytes.Equal(tokenID.Bytes(), common.PRVCoinID.Bytes()) {
+			// case 1: tokenID is PRVID, include normal Tx and privacyTx that have native output coins for public key
+			if txDetail.GetType() == common.TxCustomTokenPrivacyType {
+				txPToken, ok := txDetail.(*transaction.TxCustomTokenPrivacy)
+				if !ok || txPToken == nil {
+					continue
+				}
+				nativeProof := txPToken.GetProof()
+				if nativeProof == nil {
+					continue
+				}
+				nativeOutputCoins := nativeProof.GetOutputCoins()
+				hasNativeOutCoin := false
+				for _, out := range nativeOutputCoins {
+					if bytes.Equal(out.CoinDetails.GetPublicKey().ToBytesS(), pubKey) {
+						hasNativeOutCoin = true
+						break
+					}
+				}
+				if !hasNativeOutCoin {
+					continue
+				}
+			}
+		} else {
+			// case 2: tokenID is others, include privacyTx that have ptoken output coins for public key
+			if txDetail.GetType() != common.TxCustomTokenPrivacyType {
+				continue
+			}
+
+			txPToken, ok := txDetail.(*transaction.TxCustomTokenPrivacy)
+			if !ok || txPToken == nil {
+				continue
+			}
+			if !bytes.Equal(txPToken.GetTokenID().Bytes(), tokenID.Bytes()) {
+				continue
+			}
+
+			pTokenProof := txPToken.TxPrivacyTokenData.TxNormal.GetProof()
+			if pTokenProof == nil {
+				continue
+			}
+			pTokenOutputCoins := pTokenProof.GetOutputCoins()
+			hasPTokenOutCoin := false
+			for _, out := range pTokenOutputCoins {
+				if bytes.Equal(out.CoinDetails.GetPublicKey().ToBytesS(), pubKey) {
+					hasPTokenOutCoin = true
+					break
+				}
+			}
+			if !hasPTokenOutCoin {
+				continue
+			}
+		}
+
 		txInfo := TxInfo{
 			BlockHash: blockHash,
 			Tx: txDetail,
@@ -1858,9 +1931,10 @@ func (txService TxService) getTxsByHashs(txHashs []common.Hash, ch chan []TxInfo
 func (txService TxService) GetTransactionByReceiverV2(
 	keySet incognitokey.KeySet,
 	skip, limit uint,
-) (*jsonresult.ListReceivedTransaction, uint, *RPCError) {
-	result := &jsonresult.ListReceivedTransaction{
-		ReceivedTransactions: []jsonresult.ReceivedTransaction{},
+	tokenIDHash common.Hash,
+) (*jsonresult.ListReceivedTransactionV2, uint, *RPCError) {
+	result := &jsonresult.ListReceivedTransactionV2{
+		ReceivedTransactions: []jsonresult.ReceivedTransactionV2{},
 	}
 	if len(keySet.PaymentAddress.Pk) == 0 {
 		return nil, 0, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))
@@ -1890,7 +1964,7 @@ func (txService TxService) GetTransactionByReceiverV2(
 		start := chunkSize * i
 		end := start + chunkSize
 		chunk := allTxHashs[start : end]
-		go txService.getTxsByHashs(chunk, ch)
+		go txService.getTxsByHashs(chunk, ch, tokenIDHash, keySet.PaymentAddress.Pk)
 	}
 
 	txInfos := []TxInfo{}
