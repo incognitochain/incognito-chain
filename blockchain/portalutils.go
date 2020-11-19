@@ -824,7 +824,7 @@ func CalUnlockCollateralAmountAfterLiquidationV3(
 		}
 		if tokenValueInUSDT > 0 {
 			if liquidatedAmountInUSDT > 0 {
-				if liquidatedAmountInUSDT > tokenValueInUSDT {
+				if liquidatedAmountInUSDT >= tokenValueInUSDT {
 					liquidatedAmountInUSDT -= tokenValueInUSDT
 					liquidatedAmounts[tokenCollateralID] = listAvailableToUnlock[tokenCollateralID]
 					continue
@@ -835,27 +835,34 @@ func CalUnlockCollateralAmountAfterLiquidationV3(
 						Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidationV3 error converting rate : %v\n", err)
 						return 0, 0, nil, nil, err
 					}
+					if listAvailableToUnlock[tokenCollateralID] < tokenValueInCollateralToken {
+						Logger.log.Error("CalUnlockCollateralAmountAfterLiquidationV3 error when calculating liquidated amount")
+						return 0, 0, nil, nil, err
+					}
 					liquidatedAmounts[tokenCollateralID] = tokenValueInCollateralToken
+					listAvailableToUnlock[tokenCollateralID] -= tokenValueInCollateralToken
 					liquidatedAmountInUSDT = 0
 				}
 			}
 
 			if remainUnlockAmountForCustodian > 0 {
 				if tokenValueInUSDT > 0 {
-					tmpTokenValueInUSDT := uint64(0)
-					if remainUnlockAmountForCustodian > tokenValueInUSDT {
+					if remainUnlockAmountForCustodian >= tokenValueInUSDT {
 						remainUnlockAmountForCustodian -= tokenValueInUSDT
-						tmpTokenValueInUSDT = tokenValueInUSDT
+						remainUnlockAmountsForCustodian[tokenCollateralID] = listAvailableToUnlock[tokenCollateralID]
 					} else {
-						tmpTokenValueInUSDT = remainUnlockAmountForCustodian
+						tokenValueInCollateralToken, err := convertRateTool.ConvertFromUSDT(tokenCollateralID, remainUnlockAmountForCustodian)
+						if err != nil {
+							Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidationV3 error converting rate : %v\n", err)
+							return 0, 0, nil, nil, err
+						}
+						if listAvailableToUnlock[tokenCollateralID] < tokenValueInCollateralToken {
+							Logger.log.Error("CalUnlockCollateralAmountAfterLiquidationV3 error when calculating remain amount")
+							return 0, 0, nil, nil, err
+						}
+						remainUnlockAmountsForCustodian[tokenCollateralID] = tokenValueInCollateralToken
 						remainUnlockAmountForCustodian = 0
 					}
-					tokenValueInCollateralToken, err := convertRateTool.ConvertFromUSDT(tokenCollateralID, tmpTokenValueInUSDT)
-					if err != nil {
-						Logger.log.Errorf("CalUnlockCollateralAmountAfterLiquidationV3 error converting rate : %v\n", err)
-						return 0, 0, nil, nil, err
-					}
-					remainUnlockAmountsForCustodian[tokenCollateralID] = tokenValueInCollateralToken
 					if remainUnlockAmountForCustodian == 0 {
 						break
 					}
