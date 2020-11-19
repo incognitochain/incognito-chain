@@ -4329,7 +4329,7 @@ func calAndCheckLiquidationRatioV3(
 		if ratio > portalParams.TP120 {
 			continue
 		}
-		Logger.log.Errorf("Custodian %v - PortalTokenID %v - Ratio %v", custodianState.GetIncognitoAddress(), tokenID, ratio)
+		Logger.log.Infof("Custodian %v - PortalTokenID %v - Ratio %v", custodianState.GetIncognitoAddress(), tokenID, ratio)
 
 		// calculate liquidated amount hold public tokens (exclude matched redeem reqs, because we don't liquidate matched redeem)
 		// and liquidated amount locked collaterals
