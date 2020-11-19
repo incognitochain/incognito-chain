@@ -207,6 +207,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					if stakerInfo.AutoStaking() || (stakerInfo.TxStakingID() == common.HashH([]byte{0})) {
 						continue
 					}
+					Logger.log.Info("stakerInfo.TxStakingID().String():", stakerInfo.TxStakingID().String())
 					if _, ok := res[stakerInfo.TxStakingID()]; ok {
 						err = errors.Errorf("Dupdate return staking using tx staking %v", stakerInfo.TxStakingID().String())
 						return nil, nil, err
@@ -276,6 +277,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						Logger.log.Error(errors.Errorf("Staker info is null %v", stakerInfo.TxStakingID()))
 						continue
 					}
+					Logger.log.Info("stakerInfo.TxStakingID().String():", stakerInfo.TxStakingID().String())
 					if _, ok := res[stakerInfo.TxStakingID()]; ok {
 						err = errors.Errorf("Duplicate return staking using tx staking %v", stakerInfo.TxStakingID())
 						Logger.log.Error(err)
