@@ -141,7 +141,7 @@ func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
 	}
 }
 
-// external tokenID there is no 0x prefix
+// external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
 func getSupportedPortalCollateralsMainnet() []PortalCollateral {
 	return []PortalCollateral{
@@ -151,7 +151,7 @@ func getSupportedPortalCollateralsMainnet() []PortalCollateral {
 	}
 }
 
-// external tokenID there is no 0x prefix
+// external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
 func getSupportedPortalCollateralsTestnet() []PortalCollateral {
 	return []PortalCollateral{
@@ -161,7 +161,7 @@ func getSupportedPortalCollateralsTestnet() []PortalCollateral {
 	}
 }
 
-// external tokenID there is no 0x prefix
+// external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
 func getSupportedPortalCollateralsTestnet2() []PortalCollateral {
 	return []PortalCollateral{
