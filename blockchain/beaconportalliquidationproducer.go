@@ -317,14 +317,8 @@ func buildInstForExpiredPortingReqByPortingID(
 	expiredByLiquidation bool) ([][]string, error) {
 	insts := [][]string{}
 
-	//get shardId of redeemer
-	redeemerKey, err := wallet.Base58CheckDeserialize(portingReq.PorterAddress())
-	if err != nil {
-		Logger.log.Errorf("[buildInstForExpiredPortingReqByPortingID] Error when deserializing redeemer address string in redeemID %v - %v\n: ",
-			portingReq.UniquePortingID, err)
-		return insts, err
-	}
-	shardID := common.GetShardIDFromLastByte(redeemerKey.KeySet.PaymentAddress.Pk[len(redeemerKey.KeySet.PaymentAddress.Pk)-1])
+	//get shardId
+	shardID := portingReq.ShardID()
 
 	// get tokenID from redeemTokenID
 	tokenID := portingReq.TokenID()
@@ -338,7 +332,7 @@ func buildInstForExpiredPortingReqByPortingID(
 			Logger.log.Errorf("[checkAndBuildInstForExpiredWaitingPortingRequest] Error when get custodian state with key %v\n: ", cusStateKey)
 			continue
 		}
-		err = updateCustodianStateAfterExpiredPortingReq(custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.LockedTokenCollaterals, tokenID)
+		err := updateCustodianStateAfterExpiredPortingReq(custodianState, matchCusDetail.LockedAmountCollateral, matchCusDetail.LockedTokenCollaterals, tokenID)
 		if err != nil {
 			return insts, err
 		}

@@ -986,12 +986,15 @@ func updateCustodianStateAfterExpiredPortingReq(
 	custodianState *statedb.CustodianState, unlockedAmount uint64, unlockedTokensAmount map[string]uint64, tokenID string) error {
 	custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + unlockedAmount)
 
-	lockedAmountTmp := custodianState.GetLockedAmountCollateral()
-	if lockedAmountTmp[tokenID] < unlockedAmount {
-		return errors.New("[updateCustodianStateAfterExpiredPortingReq] locked amount custodian state less than token locked in porting request")
+	if unlockedAmount > 0 {
+		lockedAmountTmp := custodianState.GetLockedAmountCollateral()
+		if lockedAmountTmp[tokenID] < unlockedAmount {
+			return errors.New("[updateCustodianStateAfterExpiredPortingReq] locked amount custodian state less than token locked in porting request")
+		}
+		lockedAmountTmp[tokenID] -= unlockedAmount
+		custodianState.SetLockedAmountCollateral(lockedAmountTmp)
 	}
-	lockedAmountTmp[tokenID] -= unlockedAmount
-	custodianState.SetLockedAmountCollateral(lockedAmountTmp)
+
 	if len(unlockedTokensAmount) > 0 {
 		lockedTokensAmount := custodianState.GetLockedTokenCollaterals()
 		freeTokensAmount := custodianState.GetFreeTokenCollaterals()
@@ -4327,7 +4330,7 @@ func calAndCheckLiquidationRatioV3(
 		if ratio > portalParams.TP120 {
 			continue
 		}
-		Logger.log.Errorf("Custodian %v - PortalTokenID %v - Ratio %v", custodianState.GetIncognitoAddress(), tokenID, ratio)
+		Logger.log.Infof("Custodian %v - PortalTokenID %v - Ratio %v", custodianState.GetIncognitoAddress(), tokenID, ratio)
 
 		// calculate liquidated amount hold public tokens (exclude matched redeem reqs, because we don't liquidate matched redeem)
 		// and liquidated amount locked collaterals
@@ -4337,7 +4340,9 @@ func calAndCheckLiquidationRatioV3(
 		}
 
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(custodianState.GetIncognitoAddress()).String()
-		liquidatedPRVCollateral, remainUnlockPRVCollateral, liquidatedExtTokens, remainUnlockTokenCollaterals, err := CalUnlockCollateralAmountAfterLiquidationV3(portalState, custodianStateKey, liquidatedHoldPubTokenAmount, tokenID, portalParams)
+		liquidatedPRVCollateral, remainUnlockPRVCollateral, liquidatedExtTokens, remainUnlockTokenCollaterals, err :=
+			CalUnlockCollateralAmountAfterLiquidationV3(
+				portalState, custodianStateKey, liquidatedHoldPubTokenAmount, tokenID, portalParams)
 		if err != nil {
 			Logger.log.Errorf("Error when calculating and checking liquidation ratio v3: %v", err)
 			return nil, nil, nil, fmt.Errorf("Error when calculating and checking liquidation ratio v3: %v", err)

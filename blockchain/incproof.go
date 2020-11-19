@@ -123,6 +123,6 @@ func (withdrawProof PortalWithdrawCollateralProof) ConvertInstToBytes(inst []str
 	flatten = append(flatten, exteralCollaterals...)
 	flatten = append(flatten, txID[:]...)
 	flatten = append(flatten, bcHeightBytes...)
-	Logger.log.Errorf("flatten: %v - %v", flatten, len(flatten))
+	Logger.log.Infof("flatten: %v - %v", flatten, len(flatten))
 	return flatten, nil
 }

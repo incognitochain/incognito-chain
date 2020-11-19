@@ -141,7 +141,7 @@ func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
 	}
 }
 
-// external tokenID there is no 0x prefix
+// external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
 func getSupportedPortalCollateralsMainnet() []PortalCollateral {
 	return []PortalCollateral{
@@ -151,23 +151,23 @@ func getSupportedPortalCollateralsMainnet() []PortalCollateral {
 	}
 }
 
-// external tokenID there is no 0x prefix
+// external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
 func getSupportedPortalCollateralsTestnet() []PortalCollateral {
 	return []PortalCollateral{
 		{"0000000000000000000000000000000000000000", 9}, // eth
-		{"64fbdbc6bf5b228814b58706d91ed03777f0edf6", 6}, // usdt, kovan testnet
-		{"7079f3762805cff9c979a5bdc6f5648bcfee76c8", 6}, // usdc, kovan testnet
+		{"3a829f4b97660d970428cd370c4e41cbad62092b", 6}, // usdt, kovan testnet
+		{"75b0622cec14130172eae9cf166b92e5c112faff", 6}, // usdc, kovan testnet
 	}
 }
 
-// external tokenID there is no 0x prefix
+// external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
 func getSupportedPortalCollateralsTestnet2() []PortalCollateral {
 	return []PortalCollateral{
-		{"0000000000000000000000000000000000000000", 9},
-		{"64fbdbc6bf5b228814b58706d91ed03777f0edf6", 6}, // usdt
-		{"7079f3762805cff9c979a5bdc6f5648bcfee76c8", 6}, // usdc
+		{"0000000000000000000000000000000000000000", 9}, // eth
+		{"3a829f4b97660d970428cd370c4e41cbad62092b", 6}, // usdt, kovan testnet
+		{"75b0622cec14130172eae9cf166b92e5c112faff", 6}, // usdc, kovan testnet
 	}
 }
 
