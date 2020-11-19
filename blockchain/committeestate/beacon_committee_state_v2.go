@@ -789,13 +789,10 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 	// b == newstate -> only write
 	// oldstate -> only read
 	newCommitteeChange := committeeChange
-	indexNextEpochShardCandidate := make(map[string]int)
+	shardCommonPoolStr := make([]string, len(b.shardCommonPool))
 	for i, v := range b.shardCommonPool {
-		key, err := v.ToBase58()
-		if err != nil {
-			return newCommitteeChange, returnStakingInstructions, err
-		}
-		indexNextEpochShardCandidate[key] = i
+		key, _ := v.ToBase58()
+		shardCommonPoolStr[i] = key
 	}
 	for index, publicKey := range unstakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(publicKey, env.newUnassignedCommonPool) == -1 {
@@ -806,7 +803,11 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 				}
 			}
 		} else {
-			indexCandidate := indexNextEpochShardCandidate[publicKey]
+			indexCandidate := common.IndexOfStr(publicKey, shardCommonPoolStr)
+			if indexCandidate == -1 {
+				return newCommitteeChange, returnStakingInstructions, errors.Errorf("Committee public key: %s is not valid for any committee sets", publicKey)
+			}
+			shardCommonPoolStr = append(shardCommonPoolStr[:indexCandidate], shardCommonPoolStr[indexCandidate+1:]...)
 			b.shardCommonPool = append(b.shardCommonPool[:indexCandidate], b.shardCommonPool[indexCandidate+1:]...)
 			stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, publicKey)
 			if err != nil {
