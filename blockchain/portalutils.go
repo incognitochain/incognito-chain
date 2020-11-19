@@ -705,16 +705,14 @@ func CalUnlockCollateralAmountV3(
 	}
 
 	totalHoldingPubToken := GetTotalHoldPubTokenAmount(portalState, custodianState, tokenID)
-
-	// convert free collaterals of custodians to usdt to compare and sort descending
-	convertRateTool := NewPortalExchangeRateTool(portalState.FinalExchangeRatesState, portalParams.SupportedCollateralTokens)
-
-	tokenAmountList := GetTotalLockedCollateralAmountInWaitingPortingsV3(portalState, custodianState, tokenID)
 	if totalHoldingPubToken == 0 {
 		Logger.log.Errorf("[CalUnlockCollateralAmount] Total holding public token amount of custodianAddr %v is zero", custodianState.GetIncognitoAddress())
 		return 0, nil, errors.New("[CalUnlockCollateralAmount] Total holding public token amount is zero")
 	}
 
+	// convert free collaterals of custodians to usdt to compare and sort descending
+	convertRateTool := NewPortalExchangeRateTool(portalState.FinalExchangeRatesState, portalParams.SupportedCollateralTokens)
+	tokenAmountList := GetTotalLockedCollateralAmountInWaitingPortingsV3(portalState, custodianState, tokenID)
 	lockedAmountCollateral := uint64(0)
 	listLockedTokens := cloneMap(custodianState.GetLockedTokenCollaterals()[tokenID])
 	if listLockedTokens == nil {
@@ -806,8 +804,11 @@ func CalUnlockCollateralAmountAfterLiquidationV3(
 	remainUnlockAmountForCustodian := totalUnlockCollateralAmount - liquidatedAmountInUSDT
 
 	tokenIDKeys := make([]string, 0)
-	for tokenID := range listAvailableToUnlock {
-		tokenIDKeys = append(tokenIDKeys, tokenID)
+	for tokenIDToUnlock := range listAvailableToUnlock {
+		if tokenIDToUnlock == common.PRVIDStr {
+			continue
+		}
+		tokenIDKeys = append(tokenIDKeys, tokenIDToUnlock)
 	}
 	sort.Strings(tokenIDKeys)
 	tokenIDKeys = append([]string{common.PRVIDStr}, tokenIDKeys...)
@@ -952,14 +953,14 @@ func updateCustodianStateAfterLiquidateCustodianV3(custodianState *statedb.Custo
 
 	custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + remainUnlockAmountForCustodian)
 
-	if len(liquidatedAmounts) > 0 || len(remainUnlockAmounts) > 0 {
+	if len(liquidatedAmounts) > 0 {
 		lockedCollaterals := custodianState.GetLockedTokenCollaterals()
 		freeCollaterals := custodianState.GetFreeTokenCollaterals()
 		totalTokenCollaterals := custodianState.GetTotalTokenCollaterals()
 		for tokenCollateralId, tokenValue := range lockedCollaterals[tokenID] {
-			if totalTokenCollaterals[tokenCollateralId] < liquidatedAmounts[tokenCollateralId] {
-				Logger.log.Errorf("[updateCustodianStateAfterLiquidateCustodianV3] total collateral less than liquidated amount")
-				return errors.New("[updateCustodianStateAfterLiquidateCustodianV3] total collateral less than liquidated amount")
+			if totalTokenCollaterals[tokenCollateralId] < tokenValue {
+				Logger.log.Errorf("[updateCustodianStateAfterLiquidateCustodianV3] total collateral less than locked amount")
+				return errors.New("[updateCustodianStateAfterLiquidateCustodianV3] total collateral less than locked amount")
 			}
 			if tokenValue < liquidatedAmounts[tokenCollateralId]+remainUnlockAmounts[tokenCollateralId] {
 				Logger.log.Errorf("[updateCustodianStateAfterLiquidateCustodianV3] locked amount less than total unlock amount")
