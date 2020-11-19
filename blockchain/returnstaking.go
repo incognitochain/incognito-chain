@@ -179,6 +179,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 	var err error
 	for _, beaconBlock := range beaconBlocks {
 		beaconConsensusStateDB = nil
+		Logger.log.Info("[slashing] beaconBlock.Body.Instructions:", beaconBlock.Body.Instructions)
 		for _, l := range beaconBlock.Body.Instructions {
 			switch l[0] {
 			case instruction.SWAP_ACTION:
