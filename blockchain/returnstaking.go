@@ -206,6 +206,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					if stakerInfo.AutoStaking() || (stakerInfo.TxStakingID() == common.HashH([]byte{0})) {
 						continue
 					}
+					Logger.log.Info("stakerInfo.TxStakingID().String():", stakerInfo.TxStakingID().String())
 					if _, ok := res[stakerInfo.TxStakingID()]; ok {
 						err = errors.Errorf("Dupdate return staking using tx staking %v", stakerInfo.TxStakingID().String())
 						return nil, nil, err
@@ -261,28 +262,21 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					}
 					beaconConsensusStateDB, err = statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
 				}
-				for _, v := range returnStakingIns.GetPublicKey() {
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, v)
-					if err != nil {
-						Logger.log.Error(errors.Errorf("Error in trying get information of this public key %v", v))
+				for i, v := range returnStakingIns.GetPublicKey() {
+					emptyHash := common.Hash{}
+					if returnStakingIns.GetStakingTX()[i] == emptyHash.String() {
+						Logger.log.Error(errors.Errorf("Staker info is null %v", returnStakingIns.GetStakingTX()[i]))
 						continue
 					}
-					if !has || stakerInfo == nil {
-						Logger.log.Error(errors.Errorf("Can not found information of this public key %v", v))
-						continue
-					}
-					if stakerInfo.TxStakingID() == common.HashH([]byte{0}) {
-						Logger.log.Error(errors.Errorf("Staker info is null %v", stakerInfo.TxStakingID()))
-						continue
-					}
-					if _, ok := res[stakerInfo.TxStakingID()]; ok {
-						err = errors.Errorf("Duplicate return staking using tx staking %v", stakerInfo.TxStakingID())
+					txHash, _ := common.Hash{}.NewHashFromStr(returnStakingIns.GetStakingTX()[i])
+					if _, ok := res[*txHash]; ok {
+						err = errors.Errorf("Duplicate return staking using tx staking %v", txHash.String())
 						Logger.log.Error(err)
 						return nil, nil, err
 					}
-					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), stakerInfo.TxStakingID())
+					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), *txHash)
 					if err != nil {
-						Logger.log.Error("Can't get transaction hash %v from database error %v", stakerInfo.TxStakingID(), err)
+						Logger.log.Error("Can't get transaction hash %v from database error %v", txHash.String(), err)
 						continue
 					}
 					shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
@@ -311,7 +305,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						Logger.log.Error(err)
 						continue
 					}
-					res[stakerInfo.TxStakingID()] = returnStakingInfo{
+					res[*txHash] = returnStakingInfo{
 						SwapoutPubKey: v,
 						FunderAddress: keyWallet.KeySet.PaymentAddress,
 						StakingTx:     txData,
