@@ -718,7 +718,8 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 	// Process Stake Instruction form Shard Block
 	// Validate stake instruction => extract only valid stake instruction
 	for _, stakeInstruction := range shardInstructions.stakeInstructions {
-		tempStakePublicKey := stakeInstruction.PublicKeys
+		tempStakePublicKey := make([]string, len(stakeInstruction.PublicKeys))
+		copy(tempStakePublicKey, stakeInstruction.PublicKeys)
 		duplicateStakePublicKeys := []string{}
 		// list of stake public keys and stake transaction and reward receiver must have equal length
 
