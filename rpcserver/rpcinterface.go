@@ -87,7 +87,9 @@ var HttpHandler = map[string]httpHandler{
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
 	unlockMempool:           (*HttpServer).handleUnlockMempool,
 	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
+	getCommitteeState:       (*HttpServer).handleGetCommitteeState,
 	getRewardAmountByEpoch:  (*HttpServer).handleGetRewardAmountByEpoch,
+
 	//=================================
 
 	// Beststate
