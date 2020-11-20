@@ -471,27 +471,11 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	isFoundRandomInstruction := false
 	isBeaconRandomTime := false
 
-	// processing instruction
-	for _, inst := range beaconBlock.Body.Instructions {
-		if inst[0] == instruction.RANDOM_ACTION {
-			if err := instruction.ValidateRandomInstructionSanity(inst); err != nil {
-				return NewBlockChainError(ProcessRandomInstructionError, err)
-			}
-			isFoundRandomInstruction = true
-		}
-	}
-
-	Logger.log.Info("[slashing] chainParamEpoch:", chainParamEpoch)
-	Logger.log.Info("[slashing] randomTime:", randomTime)
-
-	if !(curView.BeaconHeight%chainParamEpoch == 1 && curView.BeaconHeight != 1) &&
-		curView.BeaconHeight%chainParamEpoch == randomTime {
-		curView.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
+	if !(beaconBlock.Header.Height%chainParamEpoch == 1 &&
+		beaconBlock.Header.Height != 1) &&
+		beaconBlock.Header.Height%chainParamEpoch == randomTime {
 		isBeaconRandomTime = true
 	}
-
-	Logger.log.Info("[slashing] isFoundRandomInstruction:", isFoundRandomInstruction)
-	Logger.log.Info("[slashing] isBeaconRandomTime:", isBeaconRandomTime)
 
 	beaconCommitteeStateEnv := curView.NewBeaconCommitteeStateEnvironmentWithValue(
 		blockchain.config.ChainParams,
