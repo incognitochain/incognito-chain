@@ -349,6 +349,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	shardInstruction := &shardInstruction{
 		swapInstructions: make(map[byte][]*instruction.SwapInstruction),
 	}
+	chainParamEpoch := blockchain.config.ChainParams.Epoch
+	randomTime := blockchain.config.ChainParams.RandomTime
 	duplicateKeyStakeInstructions := &duplicateKeyStakeInstruction{}
 	validStakePublicKeys := []string{}
 	validUnstakePublicKeys := make(map[string]bool)
@@ -468,6 +470,22 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 
 	isFoundRandomInstruction := false
 	isBeaconRandomTime := false
+
+	// processing instruction
+	for _, inst := range beaconBlock.Body.Instructions {
+		if inst[0] == instruction.RANDOM_ACTION {
+			if err := instruction.ValidateRandomInstructionSanity(inst); err != nil {
+				return NewBlockChainError(ProcessRandomInstructionError, err)
+			}
+			isFoundRandomInstruction = true
+		}
+	}
+
+	if !(curView.BeaconHeight%chainParamEpoch == 1 && curView.BeaconHeight != 1) &&
+		curView.BeaconHeight%chainParamEpoch == randomTime {
+		curView.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
+		isBeaconRandomTime = true
+	}
 
 	beaconCommitteeStateEnv := curView.NewBeaconCommitteeStateEnvironmentWithValue(
 		blockchain.config.ChainParams,
