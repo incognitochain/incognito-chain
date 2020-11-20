@@ -680,14 +680,6 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 				if len(tempUnstakeInstruction.CommitteePublicKeys) != 0 {
 					shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, tempUnstakeInstruction)
 				}
-				for _, v := range tempUnstakeInstruction.CommitteePublicKeys {
-					Logger.log.Info("[slashing] key:", v)
-				}
-				for _, v := range shardInstruction.unstakeInstructions {
-					for _, value := range v.CommitteePublicKeys {
-						Logger.log.Info("[slashing] key:", value)
-					}
-				}
 			}
 		}
 	}

@@ -517,6 +517,18 @@ func (engine *BeaconCommitteeEngineV2) BuildIncurredInstructions(env *BeaconComm
 	}
 	var err error
 	returnStakingInstructions := make(map[byte]*instruction.ReturnStakeInstruction)
+
+	if env.IsBeaconRandomTime {
+		newState.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
+			oldState.shardCommonPool,
+			oldState.shardCommittee,
+			oldState.shardSubstitute,
+			env.NumberOfFixedShardBlockValidators,
+			env.MinShardCommitteeSize,
+		)
+		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newState.numberOfAssignedCandidates)
+	}
+
 	env.newUnassignedCommonPool, err = newState.unassignedCommonPool()
 	if err != nil {
 		return incurredInstructions, err
