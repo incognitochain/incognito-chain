@@ -481,11 +481,17 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		}
 	}
 
+	Logger.log.Info("[slashing] chainParamEpoch:", chainParamEpoch)
+	Logger.log.Info("[slashing] randomTime:", randomTime)
+
 	if !(curView.BeaconHeight%chainParamEpoch == 1 && curView.BeaconHeight != 1) &&
 		curView.BeaconHeight%chainParamEpoch == randomTime {
 		curView.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
 		isBeaconRandomTime = true
 	}
+
+	Logger.log.Info("[slashing] isFoundRandomInstruction:", isFoundRandomInstruction)
+	Logger.log.Info("[slashing] isBeaconRandomTime:", isBeaconRandomTime)
 
 	beaconCommitteeStateEnv := curView.NewBeaconCommitteeStateEnvironmentWithValue(
 		blockchain.config.ChainParams,
@@ -500,6 +506,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	if len(incurredInstructions) != 0 {
 		tempInstruction = append(tempInstruction, incurredInstructions...)
 	}
+	Logger.log.Info("incurredInstructions:", incurredInstructions)
 
 	tempInstructionArr := []string{}
 	for _, strs := range tempInstruction {
