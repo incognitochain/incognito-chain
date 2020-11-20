@@ -251,11 +251,12 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 			case instruction.RETURN_ACTION:
 				returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(l)
 				if err != nil {
-					Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", returnStakingIns, err)
+					Logger.log.Errorf("SKIP Return staking instruction %+v, error %+v", returnStakingIns, err)
 					continue
 				}
 				if shardID != returnStakingIns.ShardID {
 					Logger.log.Infof("SKIP Return Staking Instruction | Processed SHARD %+v, Return Staking SHARD %+v", shardID, returnStakingIns.ShardID)
+					continue
 				}
 				for i, v := range returnStakingIns.GetPublicKey() {
 					txHash := returnStakingIns.StakingTxHashes[i]
