@@ -1060,7 +1060,6 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
 		)
 		if err != nil {
-			Logger.log.Info("[slashing]")
 			return err
 		}
 	}
