@@ -80,11 +80,13 @@ CONTINUE_VERIFY:
 	}
 
 	// Update best state with new block
-	newBestState, hashes, _, _, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, _, incurredInstructions, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		return err
 	}
-
+	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(curView, beaconBlock, incurredInstructions); err != nil {
+		return err
+	}
 	// Post verififcation: verify new beaconstate with corresponding block
 	if err := newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err != nil {
 		return err
@@ -314,11 +316,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 	}
 	// if pool does not have one of needed block, fail to verify
 	beaconVerifyPreprocesingTimer.UpdateSince(startTimeVerifyPreProcessingBeaconBlock)
-	if isPreSign {
-		if err := blockchain.verifyPreProcessingBeaconBlockForSigning(curView, beaconBlock); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -340,16 +337,12 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 //		* Block Reward Instruction
 //	+ Generate Instruction Hash from all recently got instructions
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
-func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
-	var err error
-	chainParamEpoch := blockchain.config.ChainParams.Epoch
-	randomTime := blockchain.config.ChainParams.RandomTime
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
-	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
-	isFoundRandomInstruction := false
-	isBeaconRandomTime := false
-	allRequiredShardBlockHeight := make(map[byte][]uint64)
 
+	var err error
+	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
+	allRequiredShardBlockHeight := make(map[byte][]uint64)
 	for shardID, shardstates := range beaconBlock.Body.ShardState {
 		heights := []uint64{}
 		for _, state := range shardstates {
@@ -373,31 +366,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		allShardBlocks,
 	)
 
-	// processing instruction
-	for _, inst := range beaconBlock.Body.Instructions {
-		if inst[0] == instruction.RANDOM_ACTION {
-			if err := instruction.ValidateRandomInstructionSanity(inst); err != nil {
-				return NewBlockChainError(ProcessRandomInstructionError, err)
-			}
-			isFoundRandomInstruction = true
-		}
-	}
-
-	if !(curView.BeaconHeight%chainParamEpoch == 1 && curView.BeaconHeight != 1) &&
-		curView.BeaconHeight%chainParamEpoch == randomTime {
-		curView.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
-		isBeaconRandomTime = true
-	}
-
-	beaconCommitteeStateEnv := curView.NewBeaconCommitteeStateEnvironmentWithValue(
-		blockchain.config.ChainParams,
-		instructions,
-		isFoundRandomInstruction, isBeaconRandomTime,
-	)
-	incurredInstructions, err := curView.beaconCommitteeEngine.BuildIncurredInstructions(beaconCommitteeStateEnv)
-	if err != nil {
-		return NewBlockChainError(BuildIncurredInstructionError, err)
-	}
 	if len(incurredInstructions) != 0 {
 		instructions = append(instructions, incurredInstructions...)
 	}
@@ -415,7 +383,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 			"Expect Instruction Hash in Beacon Header to be %+v, but get %+v, validator instructions: %+v",
 			beaconBlock.Header.InstructionHash, tempInstructionHash, instructions))
 	}
+
 	beaconVerifyPreprocesingForPreSignTimer.UpdateSince(startTimeVerifyPreProcessingBeaconBlockForSigning)
+
 	return nil
 }
 
