@@ -69,7 +69,7 @@ CONTINUE_VERIFY:
 
 	// Verify block only
 	Logger.log.Infof("BEACON | Verify block for signing process %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
-	if err = blockchain.verifyPreProcessingBeaconBlock(beaconBestState, beaconBlock, isPreSign); err != nil {
+	if err = blockchain.verifyPreProcessingBeaconBlock(beaconBlock); err != nil {
 		return err
 	}
 
@@ -128,7 +128,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	Logger.log.Debugf("BEACON | Begin Insert new Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-		if err := blockchain.verifyPreProcessingBeaconBlock(curView, beaconBlock, false); err != nil {
+		if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock); err != nil {
 			return err
 		}
 	} else {
@@ -255,7 +255,7 @@ func (beaconBestState *BeaconBestState) updateNumOfBlocksByProducers(beaconBlock
 	- InstructionMerkleRoot: rebuild instruction merkle root from instruction body and compare with instruction merkle root in block header
 	- If verify block for signing then verifyPreProcessingBeaconBlockForSigning
 */
-func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBestState, beaconBlock *types.BeaconBlock, isPreSign bool) error {
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.BeaconBlock) error {
 	// if len(beaconBlock.Header.Producer) == 0 {
 	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.Producer)))
 	// }

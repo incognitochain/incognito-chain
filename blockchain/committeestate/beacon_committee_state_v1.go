@@ -500,14 +500,6 @@ func (b *BeaconCommitteeEngineV1) GenerateAllSwapShardInstructions(env *BeaconCo
 	return []*instruction.SwapShardInstruction{}, nil
 }
 
-//BuildIncurredInstructions : BuildIncurredInstruction from instructions
-func (engine BeaconCommitteeEngineV1) BuildIncurredInstructions(
-	env *BeaconCommitteeStateEnvironment) (
-	[][]string, error) {
-	incurredInstructions := [][]string{}
-	return incurredInstructions, nil
-}
-
 func (b *BeaconCommitteeStateV1) processStakeInstruction(
 	stakeInstruction *instruction.StakeInstruction,
 	env *BeaconCommitteeStateEnvironment,
