@@ -342,10 +342,14 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
 	var err error
+	chainParamEpoch := blockchain.config.ChainParams.Epoch
+	randomTime := blockchain.config.ChainParams.RandomTime
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
 	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
-
+	isFoundRandomInstruction := false
+	isBeaconRandomTime := false
 	allRequiredShardBlockHeight := make(map[byte][]uint64)
+
 	for shardID, shardstates := range beaconBlock.Body.ShardState {
 		heights := []uint64{}
 		for _, state := range shardstates {
@@ -368,115 +372,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		portalParams,
 		allShardBlocks,
 	)
-	//// Get Reward Instruction By Epoch
-	//if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
-	//	featureStateDB := curView.GetBeaconFeatureStateDB()
-	//	totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
-	//	if err != nil {
-	//		return NewBlockChainError(GetTotalLockedCollateralError, err)
-	//	}
-	//	isSplitRewardForCustodian := totalLockedCollateral > 0
-	//	percentCustodianRewards := portalParams.MaxPercentCustodianRewards
-	//	if totalLockedCollateral < portalParams.MinLockCollateralAmountInEpoch {
-	//		percentCustodianRewards = portalParams.MinPercentCustodianRewards
-	//	}
-	//
-	//	rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
-	//	if err != nil {
-	//		return NewBlockChainError(BuildRewardInstructionError, err)
-	//	}
-	//}
-	//// get shard to beacon blocks from pool
-	//allRequiredShardBlockHeight := make(map[byte][]uint64)
-	//for shardID, shardstates := range beaconBlock.Body.ShardState {
-	//	heights := []uint64{}
-	//	for _, state := range shardstates {
-	//		heights = append(heights, state.Height)
-	//	}
-	//	sort.Slice(heights, func(i, j int) bool {
-	//		return heights[i] < heights[j]
-	//	})
-	//	allRequiredShardBlockHeight[shardID] = heights
-	//}
-	//allShardBlocks, err := blockchain.GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight)
-	//if err != nil {
-	//	Logger.log.Error(err)
-	//	return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
-	//}
-	//
-	//keys := []int{}
-	//for shardID, shardBlocks := range allShardBlocks {
-	//	strs := fmt.Sprintf("GetShardState shardID: %+v, Height", shardID)
-	//	for _, shardBlock := range shardBlocks {
-	//		strs += fmt.Sprintf(" %d", shardBlock.Header.Height)
-	//	}
-	//	Logger.log.Info(strs)
-	//	keys = append(keys, int(shardID))
-	//}
-	//
-	//sort.Ints(keys)
-	//for _, v := range keys {
-	//	shardID := byte(v)
-	//	shardBlocks := allShardBlocks[shardID]
-	//	shardStates := beaconBlock.Body.ShardState[shardID]
-	//	// repeatly compare each shard to beacon block and shard state in new beacon block body
-	//	if len(shardBlocks) >= len(shardStates) {
-	//		shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
-	//		for i, shardBlock := range shardBlocks {
-	//			if shardStates[i].Height != shardBlock.GetHeight() {
-	//				return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Shard %v Block Height not correct: %v (expect %v)", shardID, shardStates[i].Height, shardBlock.GetHeight()))
-	//			}
-	//			//check hash in shardstate
-	//			if shardStates[i].Hash.String() != shardBlock.Hash().String() {
-	//				return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Shard %v Block %v Hash not correct: %v (expect %v)", shardID, shardBlock.GetHeight(), shardStates[i].Hash.String(), shardBlock.Hash().String()))
-	//			}
-	//			tempShardState, newShardInstruction, newDuplicateKeyStakeInstructions,
-	//				bridgeInstruction, acceptedBlockRewardInstruction, statefulActions := blockchain.GetShardStateFromBlock(
-	//				curView, beaconBlock.Header.Height, shardBlock, shardID, false, validUnstakePublicKeys, validStakePublicKeys)
-	//			tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
-	//			duplicateKeyStakeInstructions.add(newDuplicateKeyStakeInstructions)
-	//			shardInstruction.add(newShardInstruction)
-	//			bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
-	//			acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
-	//
-	//			tempValidStakePublicKeys := []string{}
-	//			for _, v := range newShardInstruction.stakeInstructions {
-	//				tempValidStakePublicKeys = append(tempValidStakePublicKeys, v.PublicKeys...)
-	//			}
-	//			validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
-	//
-	//			// group stateful actions by shardID
-	//			_, found := statefulActionsByShardID[shardID]
-	//			if !found {
-	//				statefulActionsByShardID[shardID] = statefulActions
-	//			} else {
-	//				statefulActionsByShardID[shardID] = append(statefulActionsByShardID[shardID], statefulActions...)
-	//			}
-	//		}
-	//	} else {
-	//		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Expect to get more than %+v Shard Block but only get %+v (shard %v)", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks), shardID))
-	//	}
-	//}
-	//// build stateful instructions
-	//statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch, portalParams)
-	//bridgeInstructions = append(bridgeInstructions, statefulInsts...)
-	//
-	//shardInstruction.compose()
-	//tempInstruction, err := curView.GenerateInstruction(
-	//	beaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstructions,
-	//	bridgeInstructions, acceptedBlockRewardInstructions,
-	//	blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime, blockchain,
-	//	tempShardStates)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//if len(rewardByEpochInstruction) != 0 {
-	//	tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
-	//}
-
-	isFoundRandomInstruction := false
-	isBeaconRandomTime := false
 
 	// processing instruction
 	for _, inst := range beaconBlock.Body.Instructions {
@@ -497,7 +392,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	beaconCommitteeStateEnv := curView.NewBeaconCommitteeStateEnvironmentWithValue(
 		blockchain.config.ChainParams,
 		instructions,
-		false, false,
+		isFoundRandomInstruction, isBeaconRandomTime,
 	)
 	incurredInstructions, err := curView.beaconCommitteeEngine.BuildIncurredInstructions(beaconCommitteeStateEnv)
 	if err != nil {

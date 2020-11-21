@@ -123,43 +123,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
 
-	//if copiedCurView.BeaconHeight%blockchain.config.ChainParams.Epoch == 0 {
-	//	featureStateDB := copiedCurView.GetBeaconFeatureStateDB()
-	//	totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
-	//	if err != nil {
-	//		return nil, NewBlockChainError(GetTotalLockedCollateralError, err)
-	//	}
-	//	isSplitRewardForCustodian := totalLockedCollateral > 0
-	//	percentCustodianRewards := portalParams.MaxPercentCustodianRewards
-	//	if totalLockedCollateral < portalParams.MinLockCollateralAmountInEpoch {
-	//		percentCustodianRewards = portalParams.MinPercentCustodianRewards
-	//	}
-	//	rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(copiedCurView, newBeaconBlock.Header.Height, copiedCurView.Epoch, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
-	//	if err != nil {
-	//		return nil, NewBlockChainError(BuildRewardInstructionError, err)
-	//	}
-	//}
-	//
-	//tempShardState, shardInstruction, duplicateKeyStakeInstruction,
-	//	bridgeInstructions, acceptedRewardInstructions := blockchain.GetShardState(
-	//	copiedCurView, rewardForCustodianByEpoch, portalParams)
-	//
-	//shardInstruction.compose()
-	//
-	//Logger.log.Infof("In NewBlockBeacon tempShardState: %+v", tempShardState)
-	//tempInstruction, err := copiedCurView.GenerateInstruction(
-	//	newBeaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstruction,
-	//	bridgeInstructions, acceptedRewardInstructions, blockchain.config.ChainParams.Epoch,
-	//	blockchain.config.ChainParams.RandomTime, blockchain,
-	//	tempShardState,
-	//)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//if len(rewardByEpochInstruction) != 0 {
-	//	tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
-	//}
-
 	// Process new block with new view
 	_, hashes, _, incurredInstructions, err := copiedCurView.updateBeaconBestState(newBeaconBlock, blockchain)
 	if err != nil {
@@ -207,6 +170,24 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	return newBeaconBlock, nil
 }
 
+// GenerateBeaconBlockBody get Shard To Beacon Block
+// Rule:
+// 1. Shard To Beacon Blocks will be get from Shard To Beacon Pool (only valid block)
+// 2. Process shards independently, for each shard:
+//	a. Shard To Beacon Block List must be compatible with current shard state in beacon best state:
+//  + Increased continuosly in height (10, 11, 12,...)
+//	  Ex: Shard state in beacon best state has height 11 then shard to beacon block list must have first block in list with height 12
+//  + Shard To Beacon Block List must have incremental height in list (10, 11, 12,... NOT 10, 12,...)
+//  + Shard To Beacon Block List can be verify with and only with current shard committee in beacon best state
+//  + DO NOT accept Shard To Beacon Block List that can have two arbitrary blocks that can be verify with two different committee set
+//  + If in Shard To Beacon Block List have one block with Swap Instruction, then this block must be the last block in this list (or only block in this list)
+// return param:
+// 1. shard state
+// 2. valid stake instruction
+// 3. valid swap instruction
+// 4. bridge instructions
+// 5. accepted reward instructions
+// 6. stop auto staking instructions
 func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	newBeaconBlock *types.BeaconBlock,
 	curView *BeaconBestState,
@@ -318,84 +299,6 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	}
 
 	return instructions, shardStates, nil
-}
-
-// GetShardState get Shard To Beacon Block
-// Rule:
-// 1. Shard To Beacon Blocks will be get from Shard To Beacon Pool (only valid block)
-// 2. Process shards independently, for each shard:
-//	a. Shard To Beacon Block List must be compatible with current shard state in beacon best state:
-//  + Increased continuosly in height (10, 11, 12,...)
-//	  Ex: Shard state in beacon best state has height 11 then shard to beacon block list must have first block in list with height 12
-//  + Shard To Beacon Block List must have incremental height in list (10, 11, 12,... NOT 10, 12,...)
-//  + Shard To Beacon Block List can be verify with and only with current shard committee in beacon best state
-//  + DO NOT accept Shard To Beacon Block List that can have two arbitrary blocks that can be verify with two different committee set
-//  + If in Shard To Beacon Block List have one block with Swap Instruction, then this block must be the last block in this list (or only block in this list)
-// return param:
-// 1. shard state
-// 2. valid stake instruction
-// 3. valid swap instruction
-// 4. bridge instructions
-// 5. accepted reward instructions
-// 6. stop auto staking instructions
-func (blockchain *BlockChain) GetShardState(
-	beaconBestState *BeaconBestState,
-	rewardForCustodianByEpoch map[common.Hash]uint64,
-	portalParams PortalParams,
-) (map[byte][]types.ShardState, *shardInstruction, *duplicateKeyStakeInstruction,
-	[][]string, [][]string) {
-	shardStates := make(map[byte][]types.ShardState)
-	shardInstruction := &shardInstruction{
-		swapInstructions: make(map[byte][]*instruction.SwapInstruction),
-	}
-	duplicateKeyStakeInstructions := &duplicateKeyStakeInstruction{}
-	validStakePublicKeys := []string{}
-	validUnstakePublicKeys := make(map[string]bool)
-	//Get shard to beacon block from pool
-	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(beaconBestState.BestShardHeight)
-	keys := []int{}
-	for shardID, shardBlocks := range allShardBlocks {
-		strs := fmt.Sprintf("GetShardState shardID: %+v, Height", shardID)
-		for _, shardBlock := range shardBlocks {
-			strs += fmt.Sprintf(" %d", shardBlock.Header.Height)
-		}
-		Logger.log.Info(strs)
-		keys = append(keys, int(shardID))
-	}
-	sort.Ints(keys)
-	//Shard block is a map ShardId -> array of shard block
-	bridgeInstructions := [][]string{}
-	acceptedRewardInstructions := [][]string{}
-	statefulActionsByShardID := map[byte][][]string{}
-	for _, v := range keys {
-		shardID := byte(v)
-		shardBlocks := allShardBlocks[shardID]
-		for _, shardBlock := range shardBlocks {
-			shardState, newShardInstruction, newDuplicateKeyStakeInstruction,
-				bridgeInstruction, acceptedRewardInstruction, statefulActions := blockchain.GetShardStateFromBlock(
-				beaconBestState, beaconBestState.BeaconHeight+1, shardBlock, shardID, true, validUnstakePublicKeys, validStakePublicKeys)
-			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
-			duplicateKeyStakeInstructions.add(newDuplicateKeyStakeInstruction)
-			shardInstruction.add(newShardInstruction)
-			bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
-			acceptedRewardInstructions = append(acceptedRewardInstructions, acceptedRewardInstruction)
-			for _, v := range newShardInstruction.stakeInstructions {
-				validStakePublicKeys = append(validStakePublicKeys, v.PublicKeys...)
-			}
-			// group stateful actions by shardID
-			_, found := statefulActionsByShardID[shardID]
-			if !found {
-				statefulActionsByShardID[shardID] = statefulActions
-			} else {
-				statefulActionsByShardID[shardID] = append(statefulActionsByShardID[shardID], statefulActions...)
-			}
-		}
-	}
-
-	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(beaconBestState.featureStateDB, statefulActionsByShardID, beaconBestState.BeaconHeight+1, rewardForCustodianByEpoch, portalParams)
-	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
-	return shardStates, shardInstruction, duplicateKeyStakeInstructions, bridgeInstructions, acceptedRewardInstructions
 }
 
 // GetShardStateFromBlock get state (information) from shard-to-beacon block
