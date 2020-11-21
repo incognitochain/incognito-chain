@@ -475,6 +475,25 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	//	tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
 	//}
 
+	isFoundRandomInstruction := false
+	isBeaconRandomTime := false
+
+	// processing instruction
+	for _, inst := range beaconBlock.Body.Instructions {
+		if inst[0] == instruction.RANDOM_ACTION {
+			if err := instruction.ValidateRandomInstructionSanity(inst); err != nil {
+				return NewBlockChainError(ProcessRandomInstructionError, err)
+			}
+			isFoundRandomInstruction = true
+		}
+	}
+
+	if !(curView.BeaconHeight%chainParamEpoch == 1 && curView.BeaconHeight != 1) &&
+		curView.BeaconHeight%chainParamEpoch == randomTime {
+		curView.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
+		isBeaconRandomTime = true
+	}
+
 	beaconCommitteeStateEnv := curView.NewBeaconCommitteeStateEnvironmentWithValue(
 		blockchain.config.ChainParams,
 		instructions,
