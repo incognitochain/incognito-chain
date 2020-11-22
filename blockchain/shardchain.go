@@ -24,11 +24,30 @@ type ShardChain struct {
 	ChainName   string
 	Ready       bool
 
+	TxsCrawler  TxsCrawler
+	TxsVerifier TxsVerifier
+
 	insertLock sync.Mutex
 }
 
-func NewShardChain(shardID int, multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *ShardChain {
-	return &ShardChain{shardID: shardID, multiView: multiView, BlockGen: blockGen, Blockchain: blockchain, ChainName: chainName}
+func NewShardChain(
+	shardID int,
+	multiView *multiview.MultiView,
+	blockGen *BlockGenerator,
+	blockchain *BlockChain,
+	chainName string,
+	crawler TxsCrawler,
+	verifier TxsVerifier,
+) *ShardChain {
+	return &ShardChain{
+		shardID:     shardID,
+		multiView:   multiView,
+		BlockGen:    blockGen,
+		Blockchain:  blockchain,
+		ChainName:   chainName,
+		TxsCrawler:  crawler,
+		TxsVerifier: verifier,
+	}
 }
 
 func (chain *ShardChain) GetFinalView() multiview.View {

@@ -76,3 +76,18 @@ type Syncker interface {
 	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 }
+
+type TxsCrawler interface {
+	// RemoveTx remove tx from tx resource
+	RemoveTxs(txs []metadata.Transaction)
+	GetTxsTranferForNewBlock(sView interface{}, bcView interface{}, maxSize uint64, maxTime time.Duration) []metadata.Transaction
+	CheckValidatedTxs(txs []metadata.Transaction) (valid []metadata.Transaction, needValidate []metadata.Transaction)
+}
+
+type TxsVerifier interface {
+	ValidateBlockTransactions(txP TxPool, sView interface{}, bcView interface{}, txs []metadata.Transaction) bool
+	ValidateBatchRangeProof([]metadata.Transaction) (bool, error)
+	ValidateAuthentications(metadata.Transaction) (bool, error)
+	ValidateDataCorrectness(metadata.Transaction) (bool, error)
+	ValidateTxZKProof(metadata.Transaction) (bool, error)
+}

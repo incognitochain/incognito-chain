@@ -2,9 +2,10 @@ package consensus
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
@@ -237,4 +238,35 @@ func (engine *Engine) NotifyBeaconRole(beaconRole bool) {
 }
 func (engine *Engine) NotifyShardRole(shardRole int) {
 	engine.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, shardRole))
+}
+
+func (engine *Engine) NotifyRoleDetail(curCID, newCID int, curRole, newRole string) {
+	if curCID != newCID {
+		if curRole == common.CommitteeRole {
+			engine.config.PubSubManager.PublishMessage(
+				pubsub.NewMessage(pubsub.NodeRoleDetailTopic, pubsub.NodeRole{
+					CID:  curCID,
+					Role: common.WaitingRole,
+				}),
+			)
+		}
+		if newRole == common.CommitteeRole {
+			engine.config.PubSubManager.PublishMessage(
+				pubsub.NewMessage(pubsub.NodeRoleDetailTopic, pubsub.NodeRole{
+					CID:  newCID,
+					Role: newRole,
+				}),
+			)
+		}
+	} else {
+		if curRole == newRole {
+			return
+		}
+		engine.config.PubSubManager.PublishMessage(
+			pubsub.NewMessage(pubsub.NodeRoleDetailTopic, pubsub.NodeRole{
+				CID:  newCID,
+				Role: newRole,
+			}),
+		)
+	}
 }
