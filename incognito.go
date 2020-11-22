@@ -179,7 +179,6 @@ func mainMaster(serverChan chan<- *Server) error {
 	server := Server{}
 	server.wallet = walletObj
 	activeNetParams.Params.IsBackup = cfg.ForceBackup
-	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, btcChain, bnbChainState, interrupt)
 	err = server.NewServer(cfg.Listener, db, dbmp, outcoinDb, activeNetParams.Params, version, btcChain, bnbChainState, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)

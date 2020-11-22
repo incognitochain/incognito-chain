@@ -102,17 +102,17 @@ const (
 	TestnetName             = "testnet"
 	TestnetDefaultPort      = "9444"
 	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch            = 100
-	TestnetRandomTime       = 50
+	TestnetEpoch            = 20
+	TestnetRandomTime       = 10
 	TestnetOffset           = 1
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
 
-	TestNetShardCommitteeSize     = 32
+	TestNetShardCommitteeSize     = 5
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetActiveShards           = 1
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
@@ -144,17 +144,17 @@ const (
 	Testnet2Name             = "testnet-2"
 	Testnet2DefaultPort      = "9444"
 	Testnet2GenesisBlockTime = "2020-08-11T00:00:00.000Z"
-	Testnet2Epoch            = 100
-	Testnet2RandomTime       = 50
+	Testnet2Epoch            = 20
+	Testnet2RandomTime       = 10
 	Testnet2Offset           = 1
 	Testnet2SwapOffset       = 1
 	Testnet2AssignOffset     = 2
 
-	TestNet2ShardCommitteeSize     = 32
+	TestNet2ShardCommitteeSize     = 5
 	TestNet2MinShardCommitteeSize  = 4
 	TestNet2BeaconCommitteeSize    = 4
 	TestNet2MinBeaconCommitteeSize = 4
-	TestNet2ActiveShards           = 8
+	TestNet2ActiveShards           = 1
 	TestNet2StakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNet2MinBeaconBlkInterval = 10 * time.Second //second

@@ -844,7 +844,7 @@ func (tool *DebugTool) SignTransactionV2(tx *transaction.TxVersion2, tokenIDStri
 		for _, keyImage := range keys{
 			fmt.Println("BUGLOG2", keyImage.ToBytesS())
 		}
-		fmt.Println("BUGLOG2\n")
+		fmt.Println("BUGLOG2")
 	}
 
 	fmt.Println("BUGLOG2 indices in Prove", indices)

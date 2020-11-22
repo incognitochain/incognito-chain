@@ -41,7 +41,7 @@ func (eqdlProof EQDLProof) Bytes() []byte {
 
 func (eqdlProof EQDLProof) SetBytes(data []byte) (*EQDLProof, error) {
 	if len(data) != EQDLProofLength{
-		return nil, errors.New(fmt.Sprint("length of EQDLProof should be equal to %d", EQDLProofLength))
+		return nil, fmt.Errorf("length of EQDLProof should be equal to %v", EQDLProofLength)
 	}
 	k, err := new(privacy.Point).FromBytesS(data[:32])
 	if err != nil{
@@ -136,7 +136,7 @@ func (vrfProof VRFProof) Bytes() []byte {
 
 func (vrfProof VRFProof) SetBytes(data []byte) (*VRFProof, error) {
 	if len(data) != VRFProofLength{
-		return nil, errors.New(fmt.Sprint("length of EQDLProof should be equal to %d", EQDLProofLength))
+		return nil, fmt.Errorf("length of EQDLProof should be equal to %v", EQDLProofLength)
 	}
 	u, err := new(privacy.Point).FromBytesS(data[:32])
 	if err != nil{
