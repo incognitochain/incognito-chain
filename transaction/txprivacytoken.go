@@ -437,10 +437,10 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(chainR
 
 // ValidateSanityData - validate sanity data of PRV and pToken
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	if txCustomTokenPrivacy.GetType() != common.TxCustomTokenPrivacyType{
+	if txCustomTokenPrivacy.GetType() != common.TxCustomTokenPrivacyType {
 		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.Tx should have type tp"))
 	}
-	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.GetType() != common.TxNormalType{
+	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.GetType() != common.TxNormalType {
 		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.TxNormal should have type n"))
 	}
 	meta := txCustomTokenPrivacy.Tx.Metadata
@@ -964,4 +964,14 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsFullBurning(
 	beaconHeight uint64,
 ) bool {
 	return txCustomTokenPrivacy.Tx.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight) && txCustomTokenPrivacy.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight)
+}
+
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifySigTx() (bool, error) {
+	ok, err := txCustomTokenPrivacy.Tx.VerifySigTx()
+	if ok {
+		if txCustomTokenPrivacy.TxPrivacyTokenData.Type != CustomTokenInit {
+			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.VerifySigTx()
+		}
+	}
+	return ok, err
 }

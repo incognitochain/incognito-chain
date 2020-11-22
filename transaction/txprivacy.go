@@ -17,11 +17,12 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type Tx struct {
+	valEnv *ValidationEnv
 	// Basic data, required
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
@@ -65,6 +66,14 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		return parseErr
 	}
 	tx.SetMetadata(meta)
+	valEnv := DefaultValEnv()
+	if tx.IsPrivacy() {
+		valEnv = valEnv.WithPrivacy()
+	} else {
+		valEnv = valEnv.WithNoPrivacy()
+	}
+	valEnv = valEnv.WithType(tx.GetType())
+	tx.SetValidationEnv(valEnv)
 	return nil
 }
 
@@ -421,8 +430,8 @@ func (tx *Tx) signTx() error {
 	return nil
 }
 
-// verifySigTx - verify signature on tx
-func (tx *Tx) verifySigTx() (bool, error) {
+// VerifySigTx - verify signature on tx
+func (tx *Tx) VerifySigTx() (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
@@ -477,7 +486,7 @@ func (tx *Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB
 	var valid bool
 	var err error
 
-	valid, err = tx.verifySigTx()
+	valid, err = tx.VerifySigTx()
 	if !valid {
 		if err != nil {
 			Logger.log.Errorf("Error verifying signature with tx hash %s: %+v \n", tx.Hash().String(), err)
@@ -932,7 +941,7 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 				return false, errors.New("invalid cmValues in Bullet proof")
 			}
 
-			if len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetSerialNumberProof()) || len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetOneOfManyProof()){
+			if len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetSerialNumberProof()) || len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetOneOfManyProof()) {
 				return false, errors.New("the number of input coins must be equal to the number of serialnumber proofs and the number of one-of-many proofs")
 			}
 
@@ -1031,17 +1040,17 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 				return false, errors.New("validate sanity ComInputShardID of proof failed")
 			}
 
-			fixedRand := bcr.GetFixedRandomForShardIDCommitment(beaconHeight)
-			if fixedRand != nil {
-				shardIDSender := common.GetShardIDFromLastByte(txN.GetSenderAddrLastByte())
-				expectedCMShardID := privacy.PedCom.CommitAtIndex(
-					new(privacy.Scalar).FromUint64(uint64(shardIDSender)),
-					fixedRand, privacy.PedersenShardIDIndex)
+			// fixedRand := bcr.GetFixedRandomForShardIDCommitment(beaconHeight)
+			// if fixedRand != nil {
+			// 	shardIDSender := common.GetShardIDFromLastByte(txN.GetSenderAddrLastByte())
+			// 	expectedCMShardID := privacy.PedCom.CommitAtIndex(
+			// 		new(privacy.Scalar).FromUint64(uint64(shardIDSender)),
+			// 		fixedRand, privacy.PedersenShardIDIndex)
 
-				if !privacy.IsPointEqual(expectedCMShardID, txN.Proof.GetCommitmentInputShardID()) {
-					return false, errors.New("ComInputShardID must be committed with the fixed randomness")
-				}
-			}
+			// 	if !privacy.IsPointEqual(expectedCMShardID, txN.Proof.GetCommitmentInputShardID()) {
+			// 		return false, errors.New("ComInputShardID must be committed with the fixed randomness")
+			// 	}
+			// }
 
 			// check ComOutputShardID
 			for i := 0; i < len(txN.Proof.GetCommitmentOutputShardID()); i++ {
@@ -1076,7 +1085,7 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 			}
 			inputCoins := txN.Proof.GetInputCoins()
 
-			if len(inputCoins) != len(txN.Proof.GetSerialNumberNoPrivacyProof()){
+			if len(inputCoins) != len(txN.Proof.GetSerialNumberNoPrivacyProof()) {
 				return false, errors.New("the number of input coins must be equal to the number of serialnumbernoprivacy proofs")
 			}
 
@@ -1193,7 +1202,6 @@ func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *
 	return true, nil
 }
 
-
 // GetMetadataType returns the type of underlying metadata if is existed
 func (tx Tx) GetMetadataType() int {
 	if tx.Metadata != nil {
@@ -1210,6 +1218,25 @@ func (tx Tx) GetMetadata() metadata.Metadata {
 // SetMetadata sets metadata to tx
 func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 	tx.Metadata = meta
+}
+
+func (tx *Tx) GetValidationEnv() metadata.ValidationEnviroment {
+	return tx.valEnv
+}
+
+func (tx *Tx) SetValidationEnv(vEnv metadata.ValidationEnviroment) {
+	if vE, ok := vEnv.(*ValidationEnv); ok {
+		tx.valEnv = vE
+	} else {
+		valEnv := DefaultValEnv()
+		if tx.IsPrivacy() {
+			valEnv = WithPrivacy(valEnv)
+		} else {
+			valEnv = WithNoPrivacy(valEnv)
+		}
+		valEnv = WithType(valEnv, tx.GetType())
+		tx.valEnv = valEnv
+	}
 }
 
 // GetMetadata returns metadata of tx is existed
@@ -1386,7 +1413,7 @@ func (tx Tx) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool {
 
 func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	// verify signature
-	valid, err := tx.verifySigTx()
+	valid, err := tx.VerifySigTx()
 	if !valid {
 		if err != nil {
 			Logger.log.Debugf("Error verifying signature of tx: %+v", err)
@@ -1442,7 +1469,7 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.Tran
 		}
 	}
 	//if type is reward and not have metadata
-	if tx.GetType() == common.TxRewardType && meta == nil  {
+	if tx.GetType() == common.TxRewardType && meta == nil {
 		return false, nil
 	}
 	//if type is return staking and not have metadata
