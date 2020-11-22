@@ -47,13 +47,22 @@ func (eqdlProof EQDLProof) SetBytes(data []byte) (*EQDLProof, error) {
 	if err != nil{
 		return nil, err
 	}
+	if !k.PointValid(){
+		return nil, errors.New("EQDLProof Setbytes: k is not valid")
+	}
 
 	kPrime, err := new(privacy.Point).FromBytesS(data[32:64])
 	if err != nil{
 		return nil, err
 	}
+	if !kPrime.PointValid(){
+		return nil, errors.New("EQDLProof Setbytes: kPrime is not valid")
+	}
 
 	z := new(privacy.Scalar).FromBytesS(data[64:])
+	if !z.ScalarValid(){
+		return nil, errors.New("EQDLProof Setbytes: z is not valid")
+	}
 
 	return &EQDLProof{k, kPrime, z}, nil
 }
@@ -64,16 +73,16 @@ func (eqdlWitness EQDLWitness) Prove(msg []byte) *EQDLProof {
 	k := new(privacy.Point).ScalarMult(eqdlWitness.g, r)
 	kPrime := new(privacy.Point).ScalarMult(eqdlWitness.h, r)
 
-	msgToBeHased := []byte{}
-	msgToBeHased = append(msgToBeHased, msg...)
-	msgToBeHased = append(msgToBeHased, eqdlWitness.g.ToBytesS()...)
-	msgToBeHased = append(msgToBeHased, eqdlWitness.a.ToBytesS()...)
-	msgToBeHased = append(msgToBeHased, k.ToBytesS()...)
-	msgToBeHased = append(msgToBeHased, eqdlWitness.h.ToBytesS()...)
-	msgToBeHased = append(msgToBeHased, eqdlWitness.b.ToBytesS()...)
-	msgToBeHased = append(msgToBeHased, kPrime.ToBytesS()...)
+	msgToBeHashed := []byte{}
+	msgToBeHashed = append(msgToBeHashed, msg...)
+	msgToBeHashed = append(msgToBeHashed, eqdlWitness.g.ToBytesS()...)
+	msgToBeHashed = append(msgToBeHashed, eqdlWitness.a.ToBytesS()...)
+	msgToBeHashed = append(msgToBeHashed, k.ToBytesS()...)
+	msgToBeHashed = append(msgToBeHashed, eqdlWitness.h.ToBytesS()...)
+	msgToBeHashed = append(msgToBeHashed, eqdlWitness.b.ToBytesS()...)
+	msgToBeHashed = append(msgToBeHashed, kPrime.ToBytesS()...)
 
-	c := privacy.HashToScalar(msgToBeHased)
+	c := privacy.HashToScalar(msgToBeHashed)
 
 	z := new(privacy.Scalar).Add(r, new(privacy.Scalar).Mul(eqdlWitness.x, c))
 
@@ -81,16 +90,16 @@ func (eqdlWitness EQDLWitness) Prove(msg []byte) *EQDLProof {
 }
 
 func (eqdlProof EQDLProof) Verify(msg []byte, g, h, a, b *privacy.Point) (bool, error) {
-	msgToBeHased := []byte{}
-	msgToBeHased = append(msgToBeHased, msg...)
-	msgToBeHased = append(msgToBeHased, g.ToBytesS()...)
-	msgToBeHased = append(msgToBeHased, a.ToBytesS()...)
-	msgToBeHased = append(msgToBeHased, eqdlProof.k.ToBytesS()...)
-	msgToBeHased = append(msgToBeHased, h.ToBytesS()...)
-	msgToBeHased = append(msgToBeHased, b.ToBytesS()...)
-	msgToBeHased = append(msgToBeHased, eqdlProof.kPrime.ToBytesS()...)
+	msgToBeHashed := []byte{}
+	msgToBeHashed = append(msgToBeHashed, msg...)
+	msgToBeHashed = append(msgToBeHashed, g.ToBytesS()...)
+	msgToBeHashed = append(msgToBeHashed, a.ToBytesS()...)
+	msgToBeHashed = append(msgToBeHashed, eqdlProof.k.ToBytesS()...)
+	msgToBeHashed = append(msgToBeHashed, h.ToBytesS()...)
+	msgToBeHashed = append(msgToBeHashed, b.ToBytesS()...)
+	msgToBeHashed = append(msgToBeHashed, eqdlProof.kPrime.ToBytesS()...)
 
-	c := operation.HashToScalar(msgToBeHased)
+	c := operation.HashToScalar(msgToBeHashed)
 
 	leftPoint1 := new(privacy.Point).Add(eqdlProof.k, new(privacy.Point).ScalarMult(a, c))
 	rightPoint1 := new(privacy.Point).ScalarMult(g, eqdlProof.z)
@@ -142,6 +151,9 @@ func (vrfProof VRFProof) SetBytes(data []byte) (*VRFProof, error) {
 	if err != nil{
 		return nil, err
 	}
+	if !u.PointValid(){
+		return nil, errors.New("VRFProof Setbytes: u is not valid")
+	}
 
 	eqdlProof, err := new(EQDLProof).SetBytes(data[32:])
 	if err != nil{
@@ -153,12 +165,15 @@ func (vrfProof VRFProof) SetBytes(data []byte) (*VRFProof, error) {
 
 //This module implements the VRF algorithm described in the Ouroboros Praos Paper
 //https://eprint.iacr.org/2017/573.pdf
-func (vrfWitness VRFWitness) Compute(msg []byte) (*privacy.Scalar, *VRFProof) {
+func (vrfWitness VRFWitness) Compute(msg []byte) (*privacy.Scalar, *VRFProof, error) {
 	hPrime := privacy.HashToPoint(msg)
 	u := new(privacy.Point).ScalarMult(hPrime, vrfWitness.x)
 
 	//compute the output of the VRF, with respect to the input msg
 	y := operation.HashToScalar(append(msg, u.ToBytesS()...))
+	if y == nil{
+		return nil, nil, errors.New("hash to scalar INVALID")
+	}
 
 	eqdlWitness := EQDLWitness{
 		x: vrfWitness.x,
@@ -176,7 +191,7 @@ func (vrfWitness VRFWitness) Compute(msg []byte) (*privacy.Scalar, *VRFProof) {
 		eqdlProof: eqdlProof,
 	}
 
-	return y, &vrfProof
+	return y, &vrfProof, nil
 }
 
 func (vrfProof VRFProof) Verify(msg []byte, g, pubKey *privacy.Point, output *privacy.Scalar) (bool, error) {

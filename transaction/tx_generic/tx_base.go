@@ -598,3 +598,7 @@ func (tx TxBase) ValidateType() bool {
 }
 
 func (tx TxBase) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { return true }
+
+func (tx TxBase) ListOTAHashH() []common.Hash {
+	return []common.Hash{}
+}

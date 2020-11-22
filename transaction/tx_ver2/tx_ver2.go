@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -754,5 +755,77 @@ func (tx Tx) GetTxActualSize() uint64 {
 		return 0
 	}
 	return uint64(math.Ceil(float64(len(jsb)) / 1024))
+}
+
+func (tx Tx) ListOTAHashH() []common.Hash {
+	result := make([]common.Hash, 0)
+	if tx.Proof != nil {
+		for _, outputCoin := range tx.Proof.GetOutputCoins() {
+			//Discard coins sent to the burning address
+			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+				continue
+			}
+			hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
+			result = append(result, hash)
+		}
+	}
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+	return result
+}
+
+func (tx Tx) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map[common.Hash][]common.Hash) error {
+	if tx.Proof == nil {
+		return nil
+	}
+	temp := make(map[common.Hash]interface{})
+	for _, outputCoin := range tx.Proof.GetOutputCoins() {
+		//Skip coins sent to the burning address
+		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+			continue
+		}
+		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
+		temp[hash] = nil
+	}
+
+	for _, listOTAs := range poolOTAHashH {
+		for _, otaHash := range listOTAs {
+			if _, ok := temp[otaHash]; ok {
+				return fmt.Errorf("duplicate OTA with current mempool %v",
+					otaHash.String())
+			}
+		}
+	}
+	return nil
+}
+
+func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+	if tx.Proof == nil {
+		return nil
+	}
+
+	//Check if any OTA has been produced in current mempool
+	poolSNDOutputsHashH := mr.GetOTAHashH()
+	err := tx.validateDuplicateOTAsWithCurrentMempool(poolSNDOutputsHashH)
+	if err != nil {
+		return err
+	}
+
+	//Check if any serial number has been used in current mempool
+	temp := make(map[common.Hash]interface{})
+	for _, desc := range tx.Proof.GetInputCoins() {
+		hash := common.HashH(desc.GetKeyImage().ToBytesS())
+		temp[hash] = nil
+	}
+	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
+	for _, listSerialNumbers := range poolSerialNumbersHashH {
+		for _, serialNumberHash := range listSerialNumbers {
+			if _, ok := temp[serialNumberHash]; ok {
+				return errors.New("double spend in mempool")
+			}
+		}
+	}
+	return nil
 }
 

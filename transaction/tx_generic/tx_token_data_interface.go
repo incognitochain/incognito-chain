@@ -52,6 +52,7 @@ type TransactionToken interface {
 	GetReceiverData() ([]privacy.Coin, error)
 	GetTxMintData() (bool, privacy.Coin, *common.Hash, error)
 	GetTxBurnData() (bool, privacy.Coin, *common.Hash, error)
+	ListOTAHashH() []common.Hash
 	GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash, error)
 	ListSerialNumbersHashH() []common.Hash
 	String() string

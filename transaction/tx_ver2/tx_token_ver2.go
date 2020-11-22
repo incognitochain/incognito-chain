@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -905,8 +906,17 @@ func (txToken TxToken) ValidateType() bool {
 }
 
 func (txToken *TxToken) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+	//Validate duplicate OTA
+	poolOTAHashH := mr.GetOTAHashH()
+	err := txToken.validateDuplicateOTAsWithCurrentMempool(poolOTAHashH)
+	if err != nil {
+		utils.Logger.Log.Error(err)
+		return utils.NewTransactionErr(utils.DoubleSpendError, err)
+	}
+
+	//Validate duplicate serial numbers
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
-	err := txToken.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
+	err = txToken.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 	if err != nil {
 		utils.Logger.Log.Error(err)
 		return utils.NewTransactionErr(utils.DoubleSpendError, err)
@@ -960,6 +970,44 @@ func (txToken *TxToken) validateDoubleSpendTxWithCurrentMempool(poolSerialNumber
 		for _, serialNumberHash := range listSerialNumbers {
 			if _, ok := temp[serialNumberHash]; ok {
 				return errors.New("double spend")
+			}
+		}
+	}
+	return nil
+}
+
+func (txToken *TxToken) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map[common.Hash][]common.Hash) error {
+	if txToken.GetTxBase().GetProof() == nil {
+		return nil
+	}
+	temp := make(map[common.Hash]interface{})
+	for _, outputCoin := range txToken.GetTxBase().GetProof().GetOutputCoins() {
+		//Skip coins sent to the burning address
+		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+			continue
+		}
+		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
+		temp[hash] = nil
+	}
+
+	if txToken.GetTxNormal().GetProof() == nil {
+		return nil
+	}
+
+	for _, outputCoin := range txToken.GetTxNormal().GetProof().GetOutputCoins() {
+		//Skip coins sent to the burning address
+		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+			continue
+		}
+		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
+		temp[hash] = nil
+	}
+
+	for _, listOTAs := range poolOTAHashH {
+		for _, otaHash := range listOTAs {
+			if _, ok := temp[otaHash]; ok {
+				return fmt.Errorf("duplicate OTA with current mempool %v",
+					otaHash.String())
 			}
 		}
 	}
@@ -1091,3 +1139,37 @@ func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	txToken.cachedTxNormal = makeTxToken(&txToken.Tx, txToken.TokenData.SigPubKey, txToken.TokenData.Sig, txToken.TokenData.Proof)
 	return nil
 }
+
+func (txToken TxToken) ListOTAHashH() []common.Hash {
+	result := make([]common.Hash, 0)
+
+	//Retrieve PRV output coins
+	if txToken.GetTxBase().GetProof() != nil {
+		for _, outputCoin := range txToken.GetTxBase().GetProof().GetOutputCoins() {
+			//Discard coins sent to the burning address
+			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+				continue
+			}
+			hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
+			result = append(result, hash)
+		}
+	}
+
+	//Retrieve token output coins
+	if txToken.GetTxNormal().GetProof() != nil {
+		for _, outputCoin := range txToken.GetTxNormal().GetProof().GetOutputCoins() {
+			//Discard coins sent to the burning address
+			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+				continue
+			}
+			hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
+			result = append(result, hash)
+		}
+	}
+
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+	return result
+}
+

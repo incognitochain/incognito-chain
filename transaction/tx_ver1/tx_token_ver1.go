@@ -308,3 +308,7 @@ func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
+
+func (txToken TxToken) ListOTAHashH() []common.Hash {
+	return []common.Hash{}
+}

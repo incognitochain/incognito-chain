@@ -298,6 +298,27 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	return txDesc, err
 }
 
+func (tp *TxPool) MaybeAcceptSalaryTransactionForBlockProducing(shardID byte, tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
+	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
+	err := tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardView, beaconView, shardID, shardView.GetCopiedTransactionStateDB())
+	if err!=nil{
+		return nil, err
+	}
+	err = tx.ValidateTxWithCurrentMempool(tp)
+	if err!=nil{
+		return nil, err
+	}
+	bestHeight := tp.config.BlockChain.GetBestStateShard(byte(shardID)).BestBlock.Header.Height
+	txD := createTxDescMempool(tx, bestHeight, 0, 0)
+	err = tp.addTx(txD, false)
+	if err != nil {
+		return nil, err
+	}
+	return &txD.Desc, err
+}
+
 func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, shardID byte, txs []metadata.Transaction, beaconHeight int64) ([]common.Hash, []*metadata.TxDesc, error) {
 	txDescs := []*metadata.TxDesc{}
 	txHashes := []common.Hash{}
@@ -1112,6 +1133,17 @@ func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
 		txsInMem[hash] = txDesc.Desc
 	}
 	return txsInMem
+}
+
+func (tp TxPool) GetOTAHashH() map[common.Hash][]common.Hash{
+	res := make(map[common.Hash][]common.Hash)
+	for txHash, txDesc := range tp.pool {
+		res[txHash] = []common.Hash{}
+		for _, otaHash := range txDesc.Desc.Tx.ListOTAHashH() {
+			res[txHash] = append(res[txHash], otaHash)
+		}
+	}
+	return res
 }
 
 // ----------- end of transaction.MempoolRetriever's implementation -----------------
