@@ -261,7 +261,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					txHash := returnStakingIns.StakingTxHashes[i]
 					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
 					if err != nil {
-						Logger.log.Error("Can't get transaction hash %v from database error %v", txHash.String(), err)
+						Logger.log.Error("Can't get transaction hash %v from database error %v", txHash, err)
 						continue
 					}
 					shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)

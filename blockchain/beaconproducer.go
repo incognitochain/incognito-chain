@@ -253,13 +253,9 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
 			acceptedRewardInstructions = append(acceptedRewardInstructions, acceptedRewardInstruction)
 			// group stateful actions by shardID
-
-			tempValidStakePublicKeys := []string{}
 			for _, v := range newShardInstruction.stakeInstructions {
-				tempValidStakePublicKeys = append(tempValidStakePublicKeys, v.PublicKeys...)
+				validStakePublicKeys = append(validStakePublicKeys, v.PublicKeys...)
 			}
-			validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
-
 			_, found := statefulActionsByShardID[shardID]
 			if !found {
 				statefulActionsByShardID[shardID] = statefulActions
@@ -638,7 +634,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 
 	duplicateKeyStakeInstruction := &duplicateKeyStakeInstruction{}
 	newShardInstructions := shardInstructions
-	stakeInstructions := []*instruction.StakeInstruction{}
+	newStakeInstructions := []*instruction.StakeInstruction{}
 	stakeShardPublicKeys := []string{}
 	stakeShardTx := []string{}
 	stakeShardRewardReceiver := []string{}
@@ -701,11 +697,10 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 			stakeShardTx, stakeShardRewardReceiver,
 			stakeShardAutoStaking,
 		)
-		stakeInstructions = append(stakeInstructions, tempStakeShardInstruction)
-		validStakePublicKeys = append(validStakePublicKeys, stakeShardPublicKeys...)
+		newStakeInstructions = append(newStakeInstructions, tempStakeShardInstruction)
 	}
 
-	newShardInstructions.stakeInstructions = stakeInstructions
+	newShardInstructions.stakeInstructions = newStakeInstructions
 	return newShardInstructions, duplicateKeyStakeInstruction
 }
 
