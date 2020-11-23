@@ -1,11 +1,12 @@
 package blsbft
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
-	"time"
 )
 
 type NodeInterface interface {
