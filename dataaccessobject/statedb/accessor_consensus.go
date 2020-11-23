@@ -117,7 +117,7 @@ func ReplaceAllShardCommittee(stateDB *StateDB, allShardCommittees map[byte][2][
 	return nil
 }
 
-func GetAShardCandidateForNextEpoch(
+func IsInShardCandidateForNextEpoch(
 	stateDB *StateDB,
 	committee incognitokey.CommitteePublicKey,
 ) (*CommitteeState, bool, error) {
@@ -130,7 +130,7 @@ func GetAShardCandidateForNextEpoch(
 
 }
 
-func GetAShardCandidateForCurrentEpoch(
+func IsInShardCandidateForCurrentEpoch(
 	stateDB *StateDB,
 	committee incognitokey.CommitteePublicKey,
 ) (*CommitteeState, bool, error) {

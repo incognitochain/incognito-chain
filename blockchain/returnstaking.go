@@ -195,11 +195,11 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					if err != nil {
 						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Cannot parse outpubickey %v", outPublicKey))
 					}
-					_, has, err := statedb.GetAShardCandidateForNextEpoch(beaconConsensusStateDB, key)
+					_, has, err := statedb.IsInShardCandidateForNextEpoch(beaconConsensusStateDB, key)
 					if has { //still in committee process (next epoch)
 						continue
 					}
-					_, has, err = statedb.GetAShardCandidateForCurrentEpoch(beaconConsensusStateDB, key)
+					_, has, err = statedb.IsInShardCandidateForCurrentEpoch(beaconConsensusStateDB, key)
 					if has { //still in committee process (current epoch: swap and random at same time -> validator will go into this queue)
 						continue
 					}
