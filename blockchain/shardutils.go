@@ -12,7 +12,28 @@ import (
 	"sort"
 )
 
-func createCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) []byte {
+func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*BeaconBlock, error) {
+	beaconBlocks := []*BeaconBlock{}
+	for i := from; i <= to; i++ {
+		beaconHash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), i)
+		if err != nil {
+			return nil, err
+		}
+		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), *beaconHash)
+		if err != nil {
+			return beaconBlocks, err
+		}
+		beaconBlock := BeaconBlock{}
+		err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
+		if err != nil {
+			return beaconBlocks, NewBlockChainError(UnmashallJsonShardBlockError, err)
+		}
+		beaconBlocks = append(beaconBlocks, &beaconBlock)
+	}
+	return beaconBlocks, nil
+}
+
+func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) []byte {
 	crossIDs := []byte{}
 	byteMap := make([]byte, common.MaxShardNumber)
 	for _, tx := range txList {

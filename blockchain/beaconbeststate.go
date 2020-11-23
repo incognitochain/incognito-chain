@@ -122,6 +122,14 @@ func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
 	return bc.BeaconChain.multiView.GetBestView().(*BeaconBestState)
 }
 
+func (bc *BlockChain) GetChain(cid int) ChainInterface {
+	if cid == -1 {
+		return bc.BeaconChain
+	} else {
+		return bc.ShardChain[cid]
+	}
+}
+
 func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error {
 	db := bc.GetBeaconChainDatabase()
 	var err error
@@ -761,4 +769,18 @@ func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*sta
 
 func (beaconBestState *BeaconBestState) CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey {
 	return beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForNextRandom()
+}
+
+func (bc *BlockChain) GetTotalStaker() (int, error) {
+	// var beaconConsensusRootHash common.Hash
+	bcBestState := bc.GetBeaconBestState()
+	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bcBestState, bcBestState.GetHeight())
+	if err != nil {
+		return 0, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", bcBestState.GetHeight(), err)
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+	if err != nil {
+		return 0, fmt.Errorf("init beacon consensus statedb return error", err)
+	}
+	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }

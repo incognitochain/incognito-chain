@@ -45,20 +45,6 @@ func (_m *ShardViewRetriever) GetCopiedFeatureStateDB() *statedb.StateDB {
 	return r0
 }
 
-// GetShardID provides a mock function with given fields:
-func (_m *ShardViewRetriever) GetShardID() byte {
-	ret := _m.Called()
-
-	var r0 byte
-	if rf, ok := ret.Get(0).(func() byte); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(byte)
-	}
-
-	return r0
-}
-
 // GetShardRewardStateDB provides a mock function with given fields:
 func (_m *ShardViewRetriever) GetShardRewardStateDB() *statedb.StateDB {
 	ret := _m.Called()

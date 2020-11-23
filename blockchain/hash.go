@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"math"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/metadata"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -372,6 +373,7 @@ func generateHashFromMapStringString(maps1 map[string]string) (common.Hash, erro
 	}
 	return generateHashFromStringArray(res)
 }
+
 func generateHashFromMapStringBool(maps1 map[string]bool) (common.Hash, error) {
 	var keys []string
 	var res []string
@@ -389,7 +391,8 @@ func generateHashFromMapStringBool(maps1 map[string]bool) (common.Hash, error) {
 	}
 	return generateHashFromStringArray(res)
 }
-func generateHashFromShardState(allShardState map[byte][]types.ShardState) (common.Hash, error) {
+
+func generateHashFromShardState(allShardState map[byte][]ShardState) (common.Hash, error) {
 	allShardStateStr := []string{}
 	var keys []int
 	for k := range allShardState {
@@ -490,19 +493,6 @@ func verifyHashFromShardState(allShardState map[byte][]types.ShardState, hash co
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
-// NOTICE: this function is deprecate, just return empty data
-func calHashFromTxTokenDataList() (common.Hash, error) {
-	hashes := []common.Hash{}
-	hash, err := generateHashFromHashArray(hashes)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	return hash, nil
-}
-func verifyLastCrossShardStateHash(lastCrossShardState map[byte]map[byte]uint64, targetHash common.Hash) (common.Hash, bool) {
-	hash := generateLastCrossShardStateHash(lastCrossShardState)
-	return hash, hash.IsEqual(&targetHash)
-}
 func verifyHashFromMapStringString(maps1 map[string]string, targetHash common.Hash) (common.Hash, bool) {
 	hash, err := generateHashFromMapStringString(maps1)
 	if err != nil {
@@ -510,6 +500,7 @@ func verifyHashFromMapStringString(maps1 map[string]string, targetHash common.Ha
 	}
 	return hash, hash.IsEqual(&targetHash)
 }
+
 func verifyHashFromMapStringBool(maps1 map[string]bool, targetHash common.Hash) (common.Hash, bool) {
 	hash, err := generateHashFromMapStringBool(maps1)
 	if err != nil {

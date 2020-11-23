@@ -134,29 +134,6 @@ func (_m *ChainRetriever) GetPortalFeederAddress() string {
 	return r0
 }
 
-// GetShardStakingTx provides a mock function with given fields: shardID, beaconHeight
-func (_m *ChainRetriever) GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error) {
-	ret := _m.Called(shardID, beaconHeight)
-
-	var r0 map[string]string
-	if rf, ok := ret.Get(0).(func(byte, uint64) map[string]string); ok {
-		r0 = rf(shardID, beaconHeight)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string]string)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(byte, uint64) error); ok {
-		r1 = rf(shardID, beaconHeight)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetStakingAmountShard provides a mock function with given fields:
 func (_m *ChainRetriever) GetStakingAmountShard() uint64 {
 	ret := _m.Called()

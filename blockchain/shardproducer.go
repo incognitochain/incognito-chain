@@ -172,8 +172,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
-	blockCreationLeftOver := shardBestState.BlockMaxCreateTime.Nanoseconds() - time.Since(start).Nanoseconds()
-	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(shardBestState, &tempPrivateKey, shardID, beaconBlocks, blockCreationLeftOver, beaconProcessHeight)
+	blockCreationLeftOver := curView.BlockMaxCreateTime.Nanoseconds() - time.Since(time1).Nanoseconds()
+	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(curView, &tempPrivateKey, shardID, beaconBlocks, blockCreationLeftOver, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +319,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	newShardBlock.Header.CommitteeRoot = hashes.ShardCommitteeHash
 	newShardBlock.Header.PendingValidatorRoot = hashes.ShardSubstituteHash
 	newShardBlock.Header.StakingTxRoot = stakingTxRoot
-	newShardBlock.Header.Timestamp = start.Unix()
+	newShardBlock.Header.Timestamp = start
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 
 	return newShardBlock, nil
@@ -589,10 +589,10 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 	}
 	// Pick BurningConfirm inst and save to bridge block
 	bridgeID := byte(common.BridgeShardID)
-	if shardID == bridgeID {
+	if shardID == bridgeID { // Pick burning confirm inst for V1
 		prevBlock := view.BestBlock
 		height := view.ShardHeight + 1
-		confirmInsts := pickBurningConfirmInstruction(beaconBlocks, height)
+		confirmInsts := pickBurningConfirmInstructionV1(beaconBlocks, height)
 		if len(confirmInsts) > 0 {
 			bid := []uint64{}
 			for _, b := range beaconBlocks {
@@ -662,7 +662,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	spareTime := SpareTime * time.Millisecond
 	maxBlockCreationTimeLeftTime := blockCreationTimeLeftOver - spareTime.Nanoseconds()
 	startTime := time.Now()
-	sourceTxns := blockGenerator.GetPendingTxsV2()
+	sourceTxns := blockGenerator.GetPendingTxsV2(shardID)
 	var elasped int64
 	Logger.log.Info("Number of transaction get from Block Generator: ", len(sourceTxns))
 	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
@@ -740,8 +740,8 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	return txsToAdd, txToRemove, totalFee
 }
 
-func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
-	rand.Seed(time.Now().UnixNano())
+func (blockGenerator *BlockGenerator) createTempKeyset(seedNumber int64) privacy.PrivateKey {
+	rand.Seed(seedNumber)
 	seed := make([]byte, 16)
 	rand.Read(seed)
 	return privacy.GeneratePrivateKey(seed)

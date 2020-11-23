@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"sync"
 	"time"
 
@@ -37,6 +38,10 @@ func (chain *BeaconChain) GetAllViewHash() (res []common.Hash) {
 		res = append(res, *v.GetHash())
 	}
 	return
+}
+
+func (chain *BeaconChain) GetDatabase() incdb.Database {
+	return chain.Blockchain.GetBeaconChainDatabase()
 }
 
 func (chain *BeaconChain) GetBestView() multiview.View {

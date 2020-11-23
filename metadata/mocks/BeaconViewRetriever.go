@@ -16,22 +16,6 @@ type BeaconViewRetriever struct {
 	mock.Mock
 }
 
-// CandidateWaitingForNextRandom provides a mock function with given fields:
-func (_m *BeaconViewRetriever) CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey {
-	ret := _m.Called()
-
-	var r0 []incognitokey.CommitteePublicKey
-	if rf, ok := ret.Get(0).(func() []incognitokey.CommitteePublicKey); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]incognitokey.CommitteePublicKey)
-		}
-	}
-
-	return r0
-}
-
 // GetAllBridgeTokens provides a mock function with given fields:
 func (_m *BeaconViewRetriever) GetAllBridgeTokens() ([]common.Hash, error) {
 	ret := _m.Called()
@@ -180,22 +164,6 @@ func (_m *BeaconViewRetriever) GetAutoStakingList() map[string]bool {
 	return r0
 }
 
-// GetBeaconConsensusStateDB provides a mock function with given fields:
-func (_m *BeaconViewRetriever) GetBeaconConsensusStateDB() *statedb.StateDB {
-	ret := _m.Called()
-
-	var r0 *statedb.StateDB
-	if rf, ok := ret.Get(0).(func() *statedb.StateDB); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*statedb.StateDB)
-		}
-	}
-
-	return r0
-}
-
 // GetBeaconFeatureStateDB provides a mock function with given fields:
 func (_m *BeaconViewRetriever) GetBeaconFeatureStateDB() *statedb.StateDB {
 	ret := _m.Called()
@@ -242,34 +210,4 @@ func (_m *BeaconViewRetriever) GetBeaconSlashStateDB() *statedb.StateDB {
 	}
 
 	return r0
-}
-
-// GetStakerInfo provides a mock function with given fields: _a0
-func (_m *BeaconViewRetriever) GetStakerInfo(_a0 string) (*statedb.StakerInfo, bool, error) {
-	ret := _m.Called(_a0)
-
-	var r0 *statedb.StakerInfo
-	if rf, ok := ret.Get(0).(func(string) *statedb.StakerInfo); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*statedb.StakerInfo)
-		}
-	}
-
-	var r1 bool
-	if rf, ok := ret.Get(1).(func(string) bool); ok {
-		r1 = rf(_a0)
-	} else {
-		r1 = ret.Get(1).(bool)
-	}
-
-	var r2 error
-	if rf, ok := ret.Get(2).(func(string) error); ok {
-		r2 = rf(_a0)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
 }
