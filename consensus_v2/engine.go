@@ -5,12 +5,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/common/consensus"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	blsbft2 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
+	blsbft3 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -129,6 +129,12 @@ func (s *Engine) WatchCommitteeChange() {
 					s.initProcess(chainID, chainName)
 				}
 			}
+			if s.version[chainID] == 3 {
+				if _, ok := s.BFTProcess[chainID].(*blsbft3.BLSBFT_V3); !ok {
+					s.BFTProcess[chainID].Stop()
+					s.initProcess(chainID, chainName)
+				}
+			}
 		}
 		validatorMiningKey := []signatureschemes2.MiningKey{}
 		for _, validator := range validators {
@@ -165,11 +171,25 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 		} else {
 			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
 		}
-	} else {
+	} else if engine.version[chainID] == 2 {
 		if chainID == -1 {
 			engine.BFTProcess[chainID] = blsbft2.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
 		} else {
 			engine.BFTProcess[chainID] = blsbft2.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
+		}
+	} else if engine.version[chainID] == 3 {
+		if chainID == -1 {
+			engine.BFTProcess[chainID] = blsbft3.NewInstance(
+				engine.config.Blockchain.BeaconChain,
+				engine.config.Blockchain.BeaconChain,
+				chainName, chainID,
+				engine.config.Node, Logger.Log)
+		} else {
+			engine.BFTProcess[chainID] = blsbft3.NewInstance(
+				engine.config.Blockchain.ShardChain[chainID],
+				engine.config.Blockchain.BeaconChain,
+				chainName, chainID,
+				engine.config.Node, Logger.Log)
 		}
 	}
 }
@@ -184,8 +204,10 @@ func (engine *Engine) updateVersion(chainID int) {
 
 	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
 		engine.version[chainID] = 2
-	} else {
-		engine.version[chainID] = 1
+	}
+
+	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV3Epoch {
+		engine.version[chainID] = 3
 	}
 }
 

@@ -1,27 +1,21 @@
-package blsbftv2
+package blsbftv3
 
 import (
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type blockValidation interface {
 	types.BlockInterface
 	AddValidationField(validationData string)
-}
-
-func (e BLSBFT_V2) CreateValidationData(block types.BlockInterface) consensustypes.ValidationData {
-	var valData consensustypes.ValidationData
-	valData.ProducerBLSSig, _ = e.UserKeySet.BriSignData(block.Hash().GetBytes())
-	return valData
 }
 
 func ValidateProducerSig(block types.BlockInterface) error {
@@ -35,38 +29,16 @@ func ValidateProducerSig(block types.BlockInterface) error {
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
-	//start := time.Now()
 	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
-	//end := time.Now().Sub(start)
-	//fmt.Printf("ConsLog just verify %v\n", end.Seconds())
 	return nil
-}
-
-func CheckValidationDataWithCommittee(valData *consensustypes.ValidationData, committee []incognitokey.CommitteePublicKey) bool {
-	if len(committee) < 1 {
-		return false
-	}
-	if len(valData.ValidatiorsIdx) < len(committee)*2/3+1 {
-		return false
-	}
-	for i := 0; i < len(valData.ValidatiorsIdx)-1; i++ {
-		if valData.ValidatiorsIdx[i] >= valData.ValidatiorsIdx[i+1] {
-			return false
-		}
-	}
-	return true
 }
 
 func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
-	}
-	valid := CheckValidationDataWithCommittee(valData, committee)
-	if !valid {
-		return NewConsensusError(UnExpectedError, errors.Errorf("This validation Idx %v is not valid with this committee %v", valData.ValidatiorsIdx, committee))
 	}
 	committeeBLSKeys := []blsmultisig.PublicKey{}
 	for _, member := range committee {
@@ -80,16 +52,12 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 	return nil
 }
 
-func (e BLSBFT_V2) ValidateData(data []byte, sig string, publicKey string) error {
+func (e BLSBFT_V3) ValidateData(data []byte, sig string, publicKey string) error {
 	sigByte, _, err := base58.Base58Check{}.Decode(sig)
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	publicKeyByte := []byte(publicKey)
-	// if err != nil {
-	// 	return NewConsensusError(UnExpectedError, err)
-	// }
-	//fmt.Printf("ValidateData data %v, sig %v, publicKey %v\n", data, sig, publicKeyByte)
 	dataHash := new(common.Hash)
 	dataHash.NewHash(data)
 	_, err = bridgesig.Verify(publicKeyByte, dataHash.GetBytes(), sigByte) //blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
@@ -105,10 +73,7 @@ func validateSingleBLSSig(
 	selfIdx int,
 	committee []blsmultisig.PublicKey,
 ) error {
-	//start := time.Now()
 	result, err := blsmultisig.Verify(blsSig, dataHash.GetBytes(), []int{selfIdx}, committee)
-	//end := time.Now().Sub(start)
-	//fmt.Printf("ConsLog single verify %v\n", end.Seconds())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
@@ -149,7 +114,6 @@ func validateBLSSig(
 	return nil
 }
 
-func (e BLSBFT_V2) ValidateBlockWithConsensus(block types.BlockInterface) error {
-
+func (e BLSBFT_V3) ValidateBlockWithConsensus(block types.BlockInterface) error {
 	return nil
 }

@@ -32,7 +32,6 @@ type ConsensusInterface interface {
 	GetConsensusName() string
 	GetChainKey() string
 	GetChainID() int
-
 	// Start - start consensus
 	Start() error
 	// Stop - stop consensus
