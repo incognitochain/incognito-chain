@@ -3,22 +3,22 @@ package peerv2
 import (
 	"context"
 	"encoding/hex"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
+	"errors"
 	"io"
 	"reflect"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/peerv2/rpcclient"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/pkg/errors"
 )
 
 var HighwayBeaconID = byte(255)
@@ -127,7 +127,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 
 // BroadcastCommittee floods message to topic `chain_committee` for highways
 // Only masternode actually does the broadcast, other's messages will be ignored by highway
-func (cm *ConnManager) NewCrossShardBlockBroadcastCommittee(
+func (cm *ConnManager) BroadcastCommittee(
 	epoch uint64,
 	newBeaconCommittee []incognitokey.CommitteePublicKey,
 	newAllShardCommittee map[byte][]incognitokey.CommitteePublicKey,
