@@ -3,8 +3,9 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type BeaconBlock struct {
