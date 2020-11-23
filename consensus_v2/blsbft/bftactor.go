@@ -237,7 +237,7 @@ func (e *BLSBFT) Start() error {
 
 					if e.Blocks[roundKey] != nil {
 						monitor.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
-						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]); err != nil {
+						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey], []incognitokey.CommitteePublicKey{}); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
 							continue
@@ -458,7 +458,7 @@ func (e *BLSBFT) createNewBlock(userKey *signatureschemes2.MiningKey) (types.Blo
 			return
 		}
 
-		block, err = e.Chain.CreateNewBlock(1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix())
+		block, err = e.Chain.CreateNewBlock(1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix(), []incognitokey.CommitteePublicKey{}, common.Hash{})
 		if block != nil {
 			e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
 		} else {

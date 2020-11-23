@@ -96,7 +96,7 @@ func (synckerManager *SynckerManager) Stop() {
 	}
 }
 
-func (s *SynckerManager) InsertCrossShardBlock(blk *blockchain.CrossShardBlock) {
+func (s *SynckerManager) InsertCrossShardBlock(blk *types.CrossShardBlock) {
 	s.CrossShardSyncProcess[int(blk.ToShardID)].InsertCrossShardBlock(blk)
 }
 

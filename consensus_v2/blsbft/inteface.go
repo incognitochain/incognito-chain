@@ -35,10 +35,15 @@ type ChainInterface interface {
 	UnmarshalBlock(blockString []byte) (types.BlockInterface, error)
 
 	InsertAndBroadcastBlock(block types.BlockInterface) error
-	CreateNewBlock(version int, proposer string, round int, startTime int64) (types.BlockInterface, error)
-	// ValidateAndInsertBlock(block types.BlockInterface) error
+	CreateNewBlock(
+		version int,
+		proposer string,
+		round int,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (types.BlockInterface, error)
 	ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block types.BlockInterface) error
+	ValidatePreSignBlock(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 
 	//for new syncker

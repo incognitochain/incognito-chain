@@ -4,18 +4,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
-	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
-	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func GetMiningKeyFromPrivateSeed(privateSeed string) (*signatureschemes2.MiningKey, error) {
@@ -113,7 +114,7 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 	return engine.currentMiningProcess.ValidateData(data, sig, string(mapPublicKey[common.BridgeConsensus]))
 }
 
-func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error {
+func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error {
 
 	//check producer,proposer,agg sig with this version
 	producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
@@ -150,7 +151,7 @@ func (engine *Engine) ValidateProducerPosition(blk common.BlockInterface, lastPr
 	return nil
 }
 
-func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensusType string) error {
+func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusType string) error {
 	if block.GetVersion() == 1 {
 		return blsbft.ValidateProducerSig(block)
 	} else if block.GetVersion() == 2 {
@@ -159,7 +160,7 @@ func (engine *Engine) ValidateProducerSig(block common.BlockInterface, consensus
 	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }
 
-func (engine *Engine) ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	if block.GetVersion() == 1 {
 		return blsbft.ValidateCommitteeSig(block, committee)
 	} else if block.GetVersion() == 2 {
@@ -176,7 +177,7 @@ func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, err
 	return privateSeed, nil
 }
 
-func (engine *Engine) ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error) {
+func (engine *Engine) ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error) {
 	if block.GetVersion() == 1 {
 		return blsbft.ExtractBridgeValidationData(block)
 	} else if block.GetVersion() == 2 {
