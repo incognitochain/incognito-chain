@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/privacy/key"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
 )
 

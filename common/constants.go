@@ -66,6 +66,7 @@ var (
 	PRVCoinName = "PRV"   // To send PRV in custom token
 	ConfidentialAssetID = Hash{5}
 	ConfidentialAssetName = "CA"
+	MaxShardNumber = 8       //programmatically config based on networkID
 )
 
 // CONSENSUS
@@ -83,7 +84,6 @@ const (
 	PendingRole    = "pending"
 	SyncingRole    = "syncing" //this is for shard case - when beacon tell it is committee, but its state not
 	WaitingRole    = "waiting"
-	MaxShardNumber = 1
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"

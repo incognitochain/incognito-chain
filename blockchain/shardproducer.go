@@ -60,7 +60,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 		newShardBlock           = NewShardBlock()
 		instructions            = [][]string{}
 		isOldBeaconHeight       = false
-		tempPrivateKey          = blockchain.config.BlockGen.createTempKeyset(start)
+		tempPrivateKey          = blockchain.config.BlockGen.createTempKeyset()
 		shardBestState          = NewShardBestState()
 		beaconHeight            = blockchain.BeaconChain.GetFinalView().GetHeight()
 		shardID                 = curView.ShardID

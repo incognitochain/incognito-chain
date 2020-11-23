@@ -135,10 +135,10 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 		if (pc.SellAmount + pc.TradingFee) != burnedCoin.GetValue() {
 			return false, false, fmt.Errorf("total of selling amount and trading fee should be equal to the tx value")
 		}
-		if pc.SellAmount > txValue || pc.TradingFee > txValue {
+		if pc.SellAmount > burnedCoin.GetValue() || pc.TradingFee > burnedCoin.GetValue() {
 			return false, false, errors.New("Neither selling amount nor trading fee allows to be larger than the tx value")
 		}
-		if (pc.SellAmount + pc.TradingFee) != txValue {
+		if (pc.SellAmount + pc.TradingFee) != burnedCoin.GetValue() {
 			return false, false, errors.New("Total of selling amount and trading fee should be equal to the tx value")
 		}
 	}
