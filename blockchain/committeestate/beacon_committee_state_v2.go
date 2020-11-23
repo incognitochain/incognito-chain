@@ -466,9 +466,6 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		shardID := byte(i)
 		committees := engine.finalBeaconCommitteeStateV2.shardCommittee[shardID]
 		substitutes := engine.finalBeaconCommitteeStateV2.shardSubstitute[shardID]
-		if len(substitutes) == 0 {
-			continue
-		}
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 

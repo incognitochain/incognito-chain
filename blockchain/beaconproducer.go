@@ -475,6 +475,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 			}
 			for _, swapShardInstruction := range swapShardInstructions {
 				instructions = append(instructions, swapShardInstruction.ToString())
+
 			}
 		}
 	}
