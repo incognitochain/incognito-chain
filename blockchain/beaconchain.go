@@ -2,6 +2,7 @@
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"sync"
 	"time"
 
@@ -35,6 +36,10 @@ func (chain *BeaconChain) GetAllViewHash() (res []common.Hash) {
 		res = append(res, *v.GetHash())
 	}
 	return
+}
+
+func (chain *BeaconChain) GetDatabase() incdb.Database {
+	return chain.Blockchain.GetBeaconChainDatabase()
 }
 
 func (chain *BeaconChain) GetBestView() multiview.View {
@@ -212,7 +217,11 @@ func (chain *BeaconChain) GetChainName() string {
 }
 
 func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
+	err := chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
+	if err != nil {
+		Logger.log.Error("ValidatePreSignBlock Beacon", err)
+	}
+	return err
 }
 
 // func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {

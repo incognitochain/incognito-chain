@@ -268,6 +268,9 @@ const (
 	getRewardFeature = "getrewardfeature"
 
 	getTotalStaker = "gettotalstaker"
+
+	//validator state
+	getValKeyState = "getvalkeystate"
 )
 
 const (

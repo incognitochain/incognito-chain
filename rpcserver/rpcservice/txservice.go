@@ -32,7 +32,23 @@ type TxService struct {
 	BlockChain   *blockchain.BlockChain
 	Wallet       *wallet.Wallet
 	FeeEstimator map[byte]*mempool.FeeEstimator
-	TxMemPool    *mempool.TxPool
+	TxMemPool    MempoolInterface
+}
+
+type MempoolInterface interface {
+	ValidateSerialNumberHashH(serialNumber []byte) error
+	MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight int64) (*common.Hash, *mempool.TxDesc, error)
+	GetTx(txHash *common.Hash) (metadata.Transaction, error)
+	GetClonedPoolCandidate() map[common.Hash]string
+	ListTxs() []string
+	RemoveTx(txs []metadata.Transaction, isInBlock bool)
+	TriggerCRemoveTxs(tx metadata.Transaction)
+	MarkForwardedTransaction(txHash common.Hash)
+	MaxFee() uint64
+	ListTxsDetail() []metadata.Transaction
+	Count() int
+	Size() uint64
+	SendTransactionToBlockGen()
 }
 
 type TxInfo struct {
@@ -522,7 +538,8 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 		return unitFee, nil
 	} else {
 		// convert limit fee native token to limit fee ptoken
-		limitFeePTokenTmp, err := metadata.ConvertNativeTokenToPrivacyToken(limitFee, tokenId, beaconHeight, txService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB())
+		beaconStateDB, err := txService.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), txService.BlockChain.GetBeaconChainDatabase())
+		limitFeePTokenTmp, err := metadata.ConvertNativeTokenToPrivacyToken(limitFee, tokenId, beaconHeight, beaconStateDB)
 		limitFeePToken := uint64(math.Ceil(limitFeePTokenTmp))
 		if err != nil {
 			return uint64(0), err

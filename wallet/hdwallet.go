@@ -186,6 +186,10 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		keyLength := int(data[38])
 		key.KeySet.PrivateKey = make([]byte, keyLength)
 		copy(key.KeySet.PrivateKey[:], data[39:39+keyLength])
+		err := key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
+		if err != nil {
+			return nil, err
+		}
 	} else if keyType == PaymentAddressType {
 		if !bytes.Equal(burnAddress1BytesDecode, data){
 			if len(data) != paymentAddrSerializedBytesLen && len(data) != paymentAddrSerializedBytesLen + 1 +operation.Ed25519KeySize{
