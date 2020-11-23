@@ -8,6 +8,35 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
+func (proof PaymentProof) VerifySanityData(
+	vEnv privacy.ValidationEnviroment,
+) (
+	bool,
+	error,
+) {
+	if IsNewZKP(vEnv.BeaconHeight()) {
+		expectedCMShardID := privacy.PedCom.CommitAtIndex(
+			new(privacy.Scalar).FromUint64(uint64(shardIDSender)),
+			fixedRandomnessShardID,
+			privacy.PedersenShardIDIndex,
+		)
+	}
+	senderSID := vEnv.ShardID()
+	proof.GetCommitmentInputShardID()
+	// fixedRand := bcr.GetFixedRandomForShardIDCommitment(beaconHeight)
+	// if fixedRand != nil {
+	// 	shardIDSender := common.GetShardIDFromLastByte(txN.GetSenderAddrLastByte())
+	// 	expectedCMShardID := privacy.PedCom.CommitAtIndex(
+	// 		new(privacy.Scalar).FromUint64(uint64(shardIDSender)),
+	// 		fixedRand, privacy.PedersenShardIDIndex)
+
+	// 	if !privacy.IsPointEqual(expectedCMShardID, txN.Proof.GetCommitmentInputShardID()) {
+	// 		return false, errors.New("ComInputShardID must be committed with the fixed randomness")
+	// 	}
+	// }
+
+	return false, nil
+}
 func (proof PaymentProof) VerifyV2(vEnv privacy.ValidationEnviroment, pubKey privacy.PublicKey, fee uint64, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	// has no privacy
 	if !vEnv.IsPrivacy() {
