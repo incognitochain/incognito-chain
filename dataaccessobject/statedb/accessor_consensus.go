@@ -130,6 +130,19 @@ func GetAShardCandidateForNextEpoch(
 
 }
 
+func GetAShardCandidateForCurrentEpoch(
+	stateDB *StateDB,
+	committee incognitokey.CommitteePublicKey,
+) (*CommitteeState, bool, error) {
+	key, err := GenerateCommitteeObjectKeyWithRole(CurrentEpochBeaconCandidate, CandidateShardID, committee)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return stateDB.getCommitteeState(key)
+
+}
+
 func StoreNextEpochShardCandidate(
 	stateDB *StateDB,
 	candidate []incognitokey.CommitteePublicKey,
