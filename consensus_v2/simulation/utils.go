@@ -1,15 +1,11 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
-	"math"
-	"time"
 )
-
-var START_TIME = time.Now().Unix()
 
 func failOnError(err error) {
 	if err != nil {
@@ -31,15 +27,18 @@ func NewBlock(height uint64, time int64, producer string, prev common.Hash) comm
 			Timestamp:         time,
 			PreviousBlockHash: prev,
 			Producer:          producer,
+			ProposeTime:       time,
+			Proposer:          producer,
 		},
 		Body: blockchain.ShardBody{},
 	}
 }
 
-func GetTimeSlot(t int64) int64 {
-	fmt.Println(t+1, START_TIME)
-	return int64(math.Ceil(float64(t+1-START_TIME) / blsbftv2.TIMESLOT))
-}
-func NextTimeSlot(t int64) int64 {
-	return t + blsbftv2.TIMESLOT
+func GetIndexOfBytes(b []byte, arr [][]byte) int {
+	for i, item := range arr {
+		if bytes.Equal(b, item) {
+			return i
+		}
+	}
+	return -1
 }

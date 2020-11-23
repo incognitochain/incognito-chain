@@ -271,7 +271,11 @@ const (
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
-	getTotalStaker   = "gettotalstaker"
+
+	getTotalStaker = "gettotalstaker"
+
+	//validator state
+	getValKeyState = "getvalkeystate"
 )
 
 const (

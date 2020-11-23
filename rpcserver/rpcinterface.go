@@ -257,6 +257,9 @@ var HttpHandler = map[string]httpHandler{
 	// get committeeByHeight
 
 	getTotalStaker: (*HttpServer).handleGetTotalStaker,
+
+	//validators state
+	getValKeyState: (*HttpServer).handleGetValKeyState,
 }
 
 // Commands that are available to a limited user
