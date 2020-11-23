@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"time"
 
@@ -33,7 +34,7 @@ type BLSBFT struct {
 
 	RoundData struct {
 		TimeStart         time.Time
-		Block             common.BlockInterface
+		Block             types.BlockInterface
 		BlockHash         common.Hash
 		BlockValidateData ValidationData
 		lockVotes         sync.Mutex
@@ -49,7 +50,7 @@ type BLSBFT struct {
 		}
 		LastProposerIndex int
 	}
-	Blocks         map[string]common.BlockInterface
+	Blocks         map[string]types.BlockInterface
 	EarlyVotes     map[string]map[string]vote
 	lockEarlyVotes sync.Mutex
 	isOngoing      bool
@@ -97,7 +98,7 @@ func (e *BLSBFT) Start() error {
 	e.isOngoing = false
 	e.StopCh = make(chan struct{})
 	e.EarlyVotes = make(map[string]map[string]vote)
-	e.Blocks = map[string]common.BlockInterface{}
+	e.Blocks = map[string]types.BlockInterface{}
 	e.ProposeMessageCh = make(chan BFTPropose)
 	e.VoteMessageCh = make(chan BFTVote)
 	e.InitRoundData()
@@ -438,10 +439,10 @@ func (e *BLSBFT) addEarlyVote(voteMsg BFTVote) {
 	return
 }
 
-func (e *BLSBFT) createNewBlock(userKey *signatureschemes2.MiningKey) (common.BlockInterface, error) {
+func (e *BLSBFT) createNewBlock(userKey *signatureschemes2.MiningKey) (types.BlockInterface, error) {
 
 	var errCh chan error
-	var block common.BlockInterface = nil
+	var block types.BlockInterface = nil
 	errCh = make(chan error)
 	timeout := time.NewTimer(timeout / 2).C
 

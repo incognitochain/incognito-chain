@@ -165,7 +165,7 @@ func (chain *ShardChain) CreateNewBlock(
 	newBlock, err := chain.Blockchain.NewBlockShard(
 		chain.GetBestState(),
 		version, proposer, round,
-		time.Unix(startTime, 0), committees, committeeViewHash)
+		startTime, committees, committeeViewHash)
 	Logger.log.Infof("Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		Logger.log.Error(err)

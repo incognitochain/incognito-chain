@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -9,16 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/instruction"
-	"github.com/pkg/errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -61,16 +59,17 @@ import (
 //	5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
 func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	version int, proposer string,
-	round int, start time.Time,
+	round int, start int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeFinalViewHash common.Hash) (*types.ShardBlock, error) {
 	var (
+		newShardBlockBeginTime            = time.Now()
 		transactionsForNewBlock           = make([]metadata.Transaction, 0)
 		totalTxsFee                       = make(map[common.Hash]uint64)
 		newShardBlock                     = types.NewShardBlock()
 		shardInstructions                 = [][]string{}
 		isOldBeaconHeight                 = false
-		tempPrivateKey                    = blockchain.config.BlockGen.createTempKeyset()
+		tempPrivateKey                    = blockchain.config.BlockGen.createTempKeyset(start)
 		shardBestState                    = NewShardBestState()
 		shardID                           = curView.ShardID
 		currentCommitteePublicKeys        = []string{}
@@ -172,8 +171,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
-	blockCreationLeftOver := curView.BlockMaxCreateTime.Nanoseconds() - time.Since(time1).Nanoseconds()
-	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(curView, &tempPrivateKey, shardID, beaconBlocks, blockCreationLeftOver, beaconHeight)
+	blockCreationLeftOver := curView.BlockMaxCreateTime.Nanoseconds() - time.Since(newShardBlockBeginTime).Nanoseconds()
+	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(curView, &tempPrivateKey, shardID, beaconBlocks, blockCreationLeftOver, beaconBlock.Header.Height)
 	if err != nil {
 		return nil, err
 	}
@@ -826,38 +825,6 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 	}
 
 	return instructions, stakingTx, nil
-}
-
-// committeeChanged checks if swap instructions really changed the committee list
-// (not just empty swap instruction)
-func committeeChanged(swap []string) bool {
-	if len(swap) < 3 {
-		return false
-	}
-	in := swap[1]
-	out := swap[2]
-	return len(in) > 0 || len(out) > 0
-}
-
-func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) ([]*types.BeaconBlock, error) {
-	beaconBlocks := []*types.BeaconBlock{}
-	for i := from; i <= to; i++ {
-		beaconHash, err := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), i)
-		if err != nil {
-			return nil, err
-		}
-		beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), *beaconHash)
-		if err != nil {
-			return beaconBlocks, err
-		}
-		beaconBlock := types.BeaconBlock{}
-		err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
-		if err != nil {
-			return beaconBlocks, NewBlockChainError(UnmashallJsonShardBlockError, err)
-		}
-		beaconBlocks = append(beaconBlocks, &beaconBlock)
-	}
-	return beaconBlocks, nil
 }
 
 // CreateShardInstructionsFromTransactionAndInstruction create inst from transactions in shard block

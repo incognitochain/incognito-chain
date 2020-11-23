@@ -3,9 +3,10 @@ package syncker
 import (
 	"context"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -71,7 +72,7 @@ func (s *CrossShardSyncProcess) stop() {
 }
 
 func (s *CrossShardSyncProcess) InsertCrossShardBlock(blk interface{}) {
-	s.crossShardPool.AddBlock(blk.(common.BlockPoolInterface))
+	s.crossShardPool.AddBlock(blk.(types.BlockPoolInterface))
 }
 
 //check beacon state and retrieve needed crossshard block, then add to request pool

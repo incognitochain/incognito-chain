@@ -178,13 +178,8 @@ func pickInstructionFromBeaconBlocks(beaconBlocks []*types.BeaconBlock, instType
 }
 
 // pickBurningConfirmInstruction finds all BurningConfirmMeta instructions
-<<<<<<< HEAD
-func pickBurningConfirmInstruction(
-	beaconBlocks []*types.BeaconBlock,
-=======
 func pickBurningConfirmInstructionV1(
-	beaconBlocks []*BeaconBlock,
->>>>>>> development
+	beaconBlocks []*types.BeaconBlock,
 	height uint64,
 ) [][]string {
 	metas := []string{

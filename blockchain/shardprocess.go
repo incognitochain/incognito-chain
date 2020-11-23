@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -20,7 +21,6 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/pkg/errors"
 )
 
 // VerifyPreSignShardBlock Verify Shard Block Before Signing
@@ -684,7 +684,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	}
 
 	if isVerifySig {
-		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, shardBestState.ShardCommittee); err != nil {
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, shardBestState.GetShardCommittee()); err != nil {
 			return err
 		}
 	}

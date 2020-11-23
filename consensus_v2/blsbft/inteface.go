@@ -1,6 +1,7 @@
 package blsbft
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -30,13 +31,13 @@ type ChainInterface interface {
 	GetPendingCommittee() []incognitokey.CommitteePublicKey
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
-	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
+	UnmarshalBlock(blockString []byte) (types.BlockInterface, error)
 
-	InsertAndBroadcastBlock(block common.BlockInterface) error
-	CreateNewBlock(version int, proposer string, round int, startTime int64) (common.BlockInterface, error)
-	// ValidateAndInsertBlock(block common.BlockInterface) error
-	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block common.BlockInterface) error
+	InsertAndBroadcastBlock(block types.BlockInterface) error
+	CreateNewBlock(version int, proposer string, round int, startTime int64) (types.BlockInterface, error)
+	// ValidateAndInsertBlock(block types.BlockInterface) error
+	ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface) error
 	GetShardID() int
 
 	//for new syncker

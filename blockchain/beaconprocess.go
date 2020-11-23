@@ -4,29 +4,25 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/wallet"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"github.com/pkg/errors"
 )
 
 // VerifyPreSignBeaconBlock should receives block in consensus round
@@ -73,7 +69,7 @@ CONTINUE_VERIFY:
 
 	// Verify block only
 	Logger.log.Infof("BEACON | Verify block for signing process %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
-	if err = blockchain.verifyPreProcessingBeaconBlock(beaconBlock); err != nil {
+	if err = blockchain.verifyPreProcessingBeaconBlock(beaconBlock, curView); err != nil {
 		return err
 	}
 
@@ -135,7 +131,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	Logger.log.Debugf("BEACON | Begin Insert new Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-		if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock); err != nil {
+		if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock, curView); err != nil {
 			return err
 		}
 	} else {
@@ -258,7 +254,7 @@ func (beaconBestState *BeaconBestState) updateNumOfBlocksByProducers(beaconBlock
 	- InstructionMerkleRoot: rebuild instruction merkle root from instruction body and compare with instruction merkle root in block header
 	- If verify block for signing then verifyPreProcessingBeaconBlockForSigning
 */
-func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.BeaconBlock) error {
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.BeaconBlock, curView *BeaconBestState) error {
 	// if len(beaconBlock.Header.Producer) == 0 {
 	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.Producer)))
 	// }
@@ -418,7 +414,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 		return err
 	}
 	if isVerifySig {
-		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, beaconBestState.BeaconCommittee); err != nil {
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, beaconBestState.GetBeaconCommittee()); err != nil {
 			return err
 		}
 	}
@@ -857,7 +853,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	storeBlock := newFinalView.GetBlock()
 
-	finalizedBlocks := []*BeaconBlock{}
+	finalizedBlocks := []*types.BeaconBlock{}
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
@@ -867,7 +863,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 			break
 		}
 
-		finalizedBlocks = append(finalizedBlocks, storeBlock.(*BeaconBlock))
+		finalizedBlocks = append(finalizedBlocks, storeBlock.(*types.BeaconBlock))
 		prevHash := storeBlock.GetPrevHash()
 		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
 		if newFinalView == nil {
@@ -927,7 +923,7 @@ type NextCrossShardInfo struct {
 	ConfirmBeaconHash    string
 }
 
-func processBeaconForConfirmmingCrossShard(blockchain *BlockChain, beaconBlock *BeaconBlock, lastCrossShardState map[byte]map[byte]uint64) error {
+func processBeaconForConfirmmingCrossShard(blockchain *BlockChain, beaconBlock *types.BeaconBlock, lastCrossShardState map[byte]map[byte]uint64) error {
 	database := blockchain.GetBeaconChainDatabase()
 	if beaconBlock != nil && beaconBlock.Body.ShardState != nil {
 		for fromShard, shardBlocks := range beaconBlock.Body.ShardState {
@@ -974,8 +970,6 @@ func processBeaconForConfirmmingCrossShard(blockchain *BlockChain, beaconBlock *
 	return nil
 }
 
-func isNil(v interface{}) bool {
-	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
 	beacon := []string{}
 	shard := []string{}
