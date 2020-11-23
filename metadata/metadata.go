@@ -90,6 +90,7 @@ type ShardViewRetriever interface {
 }
 
 type ValidationEnviroment interface {
+	// ShardView() ShardViewRetriever
 	IsPrivacy() bool
 	IsConfimed() bool
 	TxType() string

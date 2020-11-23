@@ -1,4 +1,4 @@
-package zeroknowledge
+package zkp
 
 import (
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -10,6 +10,8 @@ var (
 	beaconHeightBreakPointNewZKP = uint64(0)
 	isInitCheckPoint             = false
 )
+
+const validateTimeForOneoutOfManyProof = int64(1574985600)
 
 func InitCheckpoint(
 	bcHeightNewZKP uint64,
@@ -24,6 +26,10 @@ func InitCheckpoint(
 
 func IsNewZKP(bcHeight uint64) bool {
 	return (bcHeight >= beaconHeightBreakPointNewZKP)
+}
+
+func IsNewOneOfManyProof(lockTime int64) bool {
+	return (lockTime >= validateTimeForOneoutOfManyProof)
 }
 
 func GetFixedRandomnessShardID() privacy.Scalar {

@@ -1,6 +1,8 @@
 package transaction
 
-import "github.com/incognitochain/incognito-chain/metadata"
+import (
+	"github.com/incognitochain/incognito-chain/metadata"
+)
 
 type ValidationEnv struct {
 	isPrivacy    bool

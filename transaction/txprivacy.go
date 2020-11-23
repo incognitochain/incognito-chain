@@ -68,11 +68,11 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 	tx.SetMetadata(meta)
 	valEnv := DefaultValEnv()
 	if tx.IsPrivacy() {
-		valEnv = valEnv.WithPrivacy()
+		valEnv = WithPrivacy(valEnv)
 	} else {
-		valEnv = valEnv.WithNoPrivacy()
+		valEnv = WithNoPrivacy(valEnv)
 	}
-	valEnv = valEnv.WithType(tx.GetType())
+	valEnv = WithType(valEnv, tx.GetType())
 	tx.SetValidationEnv(valEnv)
 	return nil
 }
@@ -1040,17 +1040,17 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 				return false, errors.New("validate sanity ComInputShardID of proof failed")
 			}
 
-			// fixedRand := bcr.GetFixedRandomForShardIDCommitment(beaconHeight)
-			// if fixedRand != nil {
-			// 	shardIDSender := common.GetShardIDFromLastByte(txN.GetSenderAddrLastByte())
-			// 	expectedCMShardID := privacy.PedCom.CommitAtIndex(
-			// 		new(privacy.Scalar).FromUint64(uint64(shardIDSender)),
-			// 		fixedRand, privacy.PedersenShardIDIndex)
+			fixedRand := bcr.GetFixedRandomForShardIDCommitment(beaconHeight)
+			if fixedRand != nil {
+				shardIDSender := common.GetShardIDFromLastByte(txN.GetSenderAddrLastByte())
+				expectedCMShardID := privacy.PedCom.CommitAtIndex(
+					new(privacy.Scalar).FromUint64(uint64(shardIDSender)),
+					fixedRand, privacy.PedersenShardIDIndex)
 
-			// 	if !privacy.IsPointEqual(expectedCMShardID, txN.Proof.GetCommitmentInputShardID()) {
-			// 		return false, errors.New("ComInputShardID must be committed with the fixed randomness")
-			// 	}
-			// }
+				if !privacy.IsPointEqual(expectedCMShardID, txN.Proof.GetCommitmentInputShardID()) {
+					return false, errors.New("ComInputShardID must be committed with the fixed randomness")
+				}
+			}
 
 			// check ComOutputShardID
 			for i := 0; i < len(txN.Proof.GetCommitmentOutputShardID()); i++ {
