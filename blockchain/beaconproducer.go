@@ -811,16 +811,17 @@ func (shardInstruction *shardInstruction) compose() {
 	}
 
 	shardInstruction.stakeInstructions = []*instruction.StakeInstruction{}
+	shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
+	shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
+
 	if !stakeInstruction.IsEmpty() {
 		shardInstruction.stakeInstructions = append(shardInstruction.stakeInstructions, stakeInstruction)
 	}
 
-	shardInstruction.unstakeInstructions = []*instruction.UnstakeInstruction{}
 	if !unstakeInstruction.IsEmpty() {
 		shardInstruction.unstakeInstructions = append(shardInstruction.unstakeInstructions, unstakeInstruction)
 	}
 
-	shardInstruction.stopAutoStakeInstructions = []*instruction.StopAutoStakeInstruction{}
 	if !stopAutoStakeInstruction.IsEmpty() {
 		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
 	}
