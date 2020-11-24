@@ -668,6 +668,10 @@ func (blockchain *BlockChain) buildInstForLiquidationByExchangeRatesV3(
 			continue
 		}
 
+		if len(tpRatios) == 0 {
+			continue
+		}
+
 		// reject waiting redeem requests that matching with liquidated custodians
 		for _, wRedeemId := range rejectedWRedeemIDs {
 			inst, err := buildInstRejectRedeemRequestByLiquidationExchangeRate(beaconHeight, currentPortalState, wRedeemId)
@@ -676,10 +680,6 @@ func (blockchain *BlockChain) buildInstForLiquidationByExchangeRatesV3(
 				continue
 			}
 			insts = append(insts, inst)
-		}
-
-		if len(tpRatios) == 0 {
-			continue
 		}
 
 		// update current portal state after liquidation custodianKey
