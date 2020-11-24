@@ -14,6 +14,18 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
+// PortalRedeemRequestV2 - portal user redeem requests to get public token by burning ptoken
+// metadata - redeem request - create normal tx with this metadata
+type PortalRedeemRequestV2 struct {
+	MetadataBase
+	UniqueRedeemID        string
+	TokenID               string // pTokenID in incognito chain
+	RedeemAmount          uint64
+	RedeemerIncAddressStr string
+	RemoteAddress         string // btc/bnb/etc address
+	RedeemFee             uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
+}
+
 // PortalRedeemRequest - portal user redeem requests to get public token by burning ptoken
 // metadata - redeem request - create normal tx with this metadata
 type PortalRedeemRequest struct {
@@ -29,9 +41,9 @@ type PortalRedeemRequest struct {
 
 // PortalRedeemRequestAction - shard validator creates instruction that contain this action content
 type PortalRedeemRequestAction struct {
-	Meta        PortalRedeemRequest
-	TxReqID     common.Hash
-	ShardID     byte
+	Meta    PortalRedeemRequestV2
+	TxReqID common.Hash
+	ShardID byte
 }
 
 // PortalRedeemRequestAction - shard validator creates instruction that contain this action content
@@ -218,9 +230,17 @@ func (redeemReq PortalRedeemRequest) Hash() *common.Hash {
 func (redeemReq *PortalRedeemRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	if redeemReq.Type == PortalRedeemRequestMeta {
 		actionContent := PortalRedeemRequestAction{
-			Meta:        *redeemReq,
-			TxReqID:     *tx.Hash(),
-			ShardID:     shardID,
+			Meta: PortalRedeemRequestV2{
+				MetadataBase:          redeemReq.MetadataBase,
+				UniqueRedeemID:        redeemReq.UniqueRedeemID,
+				TokenID:               redeemReq.TokenID,
+				RedeemAmount:          redeemReq.RedeemAmount,
+				RedeemerIncAddressStr: redeemReq.RedeemerIncAddressStr,
+				RemoteAddress:         redeemReq.RemoteAddress,
+				RedeemFee:             redeemReq.RedeemFee,
+			},
+			TxReqID: *tx.Hash(),
+			ShardID: shardID,
 		}
 		actionContentBytes, err := json.Marshal(actionContent)
 		if err != nil {
