@@ -117,6 +117,32 @@ func ReplaceAllShardCommittee(stateDB *StateDB, allShardCommittees map[byte][2][
 	return nil
 }
 
+func IsInShardCandidateForNextEpoch(
+	stateDB *StateDB,
+	committee incognitokey.CommitteePublicKey,
+) (*CommitteeState, bool, error) {
+	key, err := GenerateCommitteeObjectKeyWithRole(NextEpochShardCandidate, CandidateShardID, committee)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return stateDB.getCommitteeState(key)
+
+}
+
+func IsInShardCandidateForCurrentEpoch(
+	stateDB *StateDB,
+	committee incognitokey.CommitteePublicKey,
+) (*CommitteeState, bool, error) {
+	key, err := GenerateCommitteeObjectKeyWithRole(CurrentEpochBeaconCandidate, CandidateShardID, committee)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return stateDB.getCommitteeState(key)
+
+}
+
 func StoreNextEpochShardCandidate(
 	stateDB *StateDB,
 	candidate []incognitokey.CommitteePublicKey,
