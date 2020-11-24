@@ -25,6 +25,10 @@ func NewBeaconBody(shardState map[byte][]ShardState, instructions [][]string) Be
 	return BeaconBody{ShardState: shardState, Instructions: instructions}
 }
 
+func (b *BeaconBody) SetInstructions(inst [][]string) {
+	b.Instructions = inst
+}
+
 type BeaconHeader struct {
 	Version           int         `json:"Version"`
 	Height            uint64      `json:"Height"`

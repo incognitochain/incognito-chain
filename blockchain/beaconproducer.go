@@ -103,7 +103,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		epoch,
 		round,
 		startTime,
-		copiedCurView.PreviousBestBlockHash,
+		copiedCurView.BestBlockHash,
 		copiedCurView.ConsensusAlgorithm,
 		proposer,
 		proposer,
@@ -122,7 +122,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
-
+	newBeaconBlock.Body = types.NewBeaconBody(shardStates, instructions)
 	// Process new block with new view
 	_, hashes, _, incurredInstructions, err := copiedCurView.updateBeaconBestState(newBeaconBlock, blockchain)
 	if err != nil {
@@ -131,8 +131,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	copiedCurView.beaconCommitteeEngine.AbortUncommittedBeaconState()
 
 	instructions = append(instructions, incurredInstructions...)
-
-	newBeaconBlock.Body = types.NewBeaconBody(shardStates, instructions)
+	newBeaconBlock.Body.SetInstructions(instructions)
 	if len(newBeaconBlock.Body.Instructions) != 0 {
 		Logger.log.Info("Beacon Produce: Beacon Instruction", newBeaconBlock.Body.Instructions)
 	}

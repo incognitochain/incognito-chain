@@ -60,9 +60,9 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *types.Beacon
 CONTINUE_VERIFY:
 
 	curView := view.(*BeaconBestState)
-	beaconBestState := NewBeaconBestState()
+	copiedCurView := NewBeaconBestState()
 	// produce new block with current beststate
-	err := beaconBestState.cloneBeaconBestStateFrom(curView)
+	err := copiedCurView.cloneBeaconBestStateFrom(curView)
 	if err != nil {
 		return err
 	}
@@ -75,12 +75,12 @@ CONTINUE_VERIFY:
 
 	// Verify block with previous best state
 	// not verify agg signature in this function
-	if err := beaconBestState.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, false, blockchain.config.ChainParams.Epoch); err != nil {
+	if err := copiedCurView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, false, blockchain.config.ChainParams.Epoch); err != nil {
 		return err
 	}
 
 	// Update best state with new block
-	newBestState, hashes, _, incurredInstructions, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, _, incurredInstructions, err := copiedCurView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		return err
 	}
