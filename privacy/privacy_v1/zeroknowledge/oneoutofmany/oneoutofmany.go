@@ -503,11 +503,8 @@ func (proof OneOutOfManyProof) VerifyOld() (bool, error) {
 	n := privacy_util.CommitmentRingSizeExp
 
 	//Calculate x
-	cmtsInBytes := make([][]byte, 0)
-	for _, cmts := range proof.Statement.Commitments{
-		cmtsInBytes = append(cmtsInBytes, cmts.ToBytesS())
-	}
-	x := utils.GenerateChallenge(cmtsInBytes)
+	x := new(operation.Scalar).FromUint64(0)
+
 	for j := 0; j < n; j++ {
 		x = utils.GenerateChallenge([][]byte{x.ToBytesS(), proof.cl[j].ToBytesS(), proof.ca[j].ToBytesS(), proof.cb[j].ToBytesS(), proof.cd[j].ToBytesS()})
 	}
