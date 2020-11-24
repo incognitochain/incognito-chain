@@ -1090,7 +1090,7 @@ func main() {
 
 
 				msg := operation.RandomScalar().ToBytesS()
-				y, pi := vrfWitness.Compute(msg)
+				y, pi, _ := vrfWitness.Compute(msg)
 
 				//For testing purpose only, will be expanded to cover more cases
 				isModified := (common.RandInt() % 5) == 1
