@@ -452,7 +452,7 @@ func checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate(
 				redeemReq.GetRedeemerRemoteAddress(),
 				redeemReq.GetRedeemFee(),
 				redeemReq.GetCustodians(),
-				metadata.PortalRedeemRequestMeta,
+				metadata.PortalRedeemRequestMetaV3,
 				shardID,
 				common.Hash{},
 				common.PortalRedeemReqCancelledByLiquidationChainStatus,
@@ -505,7 +505,7 @@ func buildInstRejectRedeemRequestByLiquidationExchangeRate(
 		redeemReq.GetRedeemerRemoteAddress(),
 		redeemReq.GetRedeemFee(),
 		redeemReq.GetCustodians(),
-		metadata.PortalRedeemRequestMeta,
+		metadata.PortalRedeemRequestMetaV3,
 		shardID,
 		common.Hash{},
 		common.PortalRedeemReqCancelledByLiquidationChainStatus,
@@ -1518,7 +1518,7 @@ func (p *portalCustodianTopupProcessorV3) buildNewInsts(
 		}
 
 		if depositAmount != meta.DepositAmount {
-			Logger.log.Errorf("Topup v3: Custodian incognito address in meta %v is different from in deposit proof %+v", meta.IncogAddressStr, custodianIncAddr)
+			Logger.log.Errorf("Topup v3: Deposit amount in meta %v is different from in deposit proof %+v", meta.DepositAmount, depositAmount)
 			return [][]string{rejectInst2}, nil
 		}
 	}

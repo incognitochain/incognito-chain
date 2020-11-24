@@ -42,7 +42,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PDEPRVRequiredContributionRequestMeta,
 			metadata.PDECrossPoolTradeRequestMeta,
 			metadata.PortalCustodianDepositMeta,
-			metadata.PortalUserRegisterMeta,
+			metadata.PortalRequestPortingMeta,
 			metadata.PortalUserRequestPTokenMeta,
 			metadata.PortalExchangeRatesMeta,
 			metadata.RelayingBNBHeaderMeta,
@@ -63,7 +63,9 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalCustodianWithdrawRequestMetaV3,
 			metadata.PortalRedeemFromLiquidationPoolMetaV3,
 			metadata.PortalCustodianTopupMetaV3,
-			metadata.PortalTopUpWaitingPortingRequestMetaV3:
+			metadata.PortalTopUpWaitingPortingRequestMetaV3,
+			metadata.PortalRequestPortingMetaV3,
+			metadata.PortalRedeemRequestMetaV3:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -184,8 +186,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				)
 			case metadata.PortalCustodianDepositMeta:
 				pm.portalInstructions[metadata.PortalCustodianDepositMeta].putAction(action, shardID)
-			case metadata.PortalUserRegisterMeta:
-				pm.portalInstructions[metadata.PortalUserRegisterMeta].putAction(action, shardID)
+			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:
+				pm.portalInstructions[metadata.PortalRequestPortingMeta].putAction(action, shardID)
 			case metadata.PortalUserRequestPTokenMeta:
 				pm.portalInstructions[metadata.PortalUserRequestPTokenMeta].putAction(action, shardID)
 			case metadata.PortalExchangeRatesMeta:
@@ -193,7 +195,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.PortalCustodianWithdrawRequestMeta:
 				pm.portalInstructions[metadata.PortalCustodianWithdrawRequestMeta].putAction(action, shardID)
 
-			case metadata.PortalRedeemRequestMeta:
+			case metadata.PortalRedeemRequestMeta, metadata.PortalRedeemRequestMetaV3:
 				pm.portalInstructions[metadata.PortalRedeemRequestMeta].putAction(action, shardID)
 			case metadata.PortalRequestUnlockCollateralMeta, metadata.PortalRequestUnlockCollateralMetaV3:
 				pm.portalInstructions[metadata.PortalRequestUnlockCollateralMeta].putAction(action, shardID)

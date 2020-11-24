@@ -32,7 +32,7 @@ func (blockchain *BlockChain) GetETHRemoveBridgeSigEpoch() uint64 {
 }
 
 func (blockchain *BlockChain) GetRedeemPortalV3Epoch() uint64 {
-	return blockchain.config.ChainParams.RedeemPortalV3Epoch
+	return blockchain.config.ChainParams.PortalV3Epoch
 }
 
 func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {

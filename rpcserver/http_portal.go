@@ -189,7 +189,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortingRequest(params interfa
 		pTokenId,
 		registerAmount,
 		portingFee,
-		metadata.PortalUserRegisterMeta,
+		metadata.PortalRequestPortingMetaV3,
 	)
 
 	// create new param to build raw tx from param interface
@@ -469,7 +469,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{},
 		redeemerExternalAddress = redeemerExternalAddress[2:]
 	}
 
-	meta, _ := metadata.NewPortalRedeemRequest(metadata.PortalRedeemRequestMeta, uniqueRedeemID,
+	meta, _ := metadata.NewPortalRedeemRequest(metadata.PortalRedeemRequestMetaV3, uniqueRedeemID,
 		redeemTokenID, redeemAmount, redeemerIncAddressStr, remoteAddress, redeemFee, redeemerExternalAddress)
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)

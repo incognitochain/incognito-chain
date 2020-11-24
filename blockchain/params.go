@@ -84,7 +84,7 @@ type Params struct {
 	ETHRemoveBridgeSigEpoch          uint64
 	BCHeightBreakPointNewZKP         uint64
 	PortalETHContractAddressStr      string // smart contract of ETH for portal
-	RedeemPortalV3Epoch              uint64
+	PortalV3Epoch                    uint64
 }
 
 type GenesisParams struct {
@@ -258,7 +258,7 @@ func SetupParam() {
 		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:     21920,
 		PortalETHContractAddressStr: "0x21Ab34649777e94e30d60319cDBa472759B00AaA", // todo: update sc address
-		RedeemPortalV3Epoch:         1,
+		PortalV3Epoch:               1,
 	}
 	// END TESTNET
 
@@ -344,10 +344,10 @@ func SetupParam() {
 		ReplaceStakingTxHeight:      1,
 		IsBackup:                    false,
 		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    260000, //TODO: change this value when deployed testnet2
+		BCHeightBreakPointNewZKP:    791000, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:     2085,
 		PortalETHContractAddressStr: "", // todo: update sc address
-		RedeemPortalV3Epoch:         40,
+		PortalV3Epoch:               8974,
 	}
 	// END TESTNET-2
 
@@ -434,7 +434,7 @@ func SetupParam() {
 		BCHeightBreakPointNewZKP:    737450,
 		ETHRemoveBridgeSigEpoch:     1e18,
 		PortalETHContractAddressStr: "", // todo: update sc address
-		RedeemPortalV3Epoch:         40,
+		PortalV3Epoch:               40,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

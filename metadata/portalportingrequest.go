@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -25,6 +24,12 @@ type PortalUserRegister struct {
 }
 
 type PortalUserRegisterAction struct {
+	Meta    PortalUserRegister
+	TxReqID common.Hash
+	ShardID byte
+}
+
+type PortalUserRegisterActionV3 struct {
 	Meta        PortalUserRegister
 	TxReqID     common.Hash
 	ShardID     byte
@@ -101,10 +106,6 @@ func (portalUserRegister PortalUserRegister) ValidateTxWithBlockChain(
 }
 
 func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
-
 	if len(portalUserRegister.IncogAddressStr) <= 0 {
 		return false, false, errors.New("IncogAddressStr should be not empty")
 	}
@@ -152,11 +153,16 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever C
 		return false, false, errors.New("Total of register amount and porting fee should be equal to the tx value")
 	}
 
+	// validate metadata type
+	if shardViewRetriever.GetEpoch() >= chainRetriever.GetRedeemPortalV3Epoch() && portalUserRegister.Type != PortalRequestPortingMetaV3 {
+		return false, false, fmt.Errorf("Metadata type should be %v", PortalRequestPortingMetaV3)
+	}
+
 	return true, true, nil
 }
 
 func (portalUserRegister PortalUserRegister) ValidateMetadataByItself() bool {
-	return portalUserRegister.Type == PortalUserRegisterMeta
+	return portalUserRegister.Type == PortalRequestPortingMeta || portalUserRegister.Type == PortalRequestPortingMetaV3
 }
 
 func (portalUserRegister PortalUserRegister) Hash() *common.Hash {
@@ -173,19 +179,35 @@ func (portalUserRegister PortalUserRegister) Hash() *common.Hash {
 }
 
 func (portalUserRegister *PortalUserRegister) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
-	actionContent := PortalUserRegisterAction{
-		Meta:        *portalUserRegister,
-		TxReqID:     *tx.Hash(),
-		ShardID:     shardID,
-		ShardHeight: shardHeight,
+	if portalUserRegister.Type == PortalRequestPortingMeta {
+		actionContent := PortalUserRegisterAction{
+			Meta:    *portalUserRegister,
+			TxReqID: *tx.Hash(),
+			ShardID: shardID,
+		}
+		actionContentBytes, err := json.Marshal(actionContent)
+		if err != nil {
+			return [][]string{}, err
+		}
+		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+		action := []string{strconv.Itoa(PortalRequestPortingMeta), actionContentBase64Str}
+		return [][]string{action}, nil
+	} else if portalUserRegister.Type == PortalRequestPortingMetaV3 {
+		actionContent := PortalUserRegisterActionV3{
+			Meta:        *portalUserRegister,
+			TxReqID:     *tx.Hash(),
+			ShardID:     shardID,
+			ShardHeight: shardHeight,
+		}
+		actionContentBytes, err := json.Marshal(actionContent)
+		if err != nil {
+			return [][]string{}, err
+		}
+		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+		action := []string{strconv.Itoa(PortalRequestPortingMetaV3), actionContentBase64Str}
+		return [][]string{action}, nil
 	}
-	actionContentBytes, err := json.Marshal(actionContent)
-	if err != nil {
-		return [][]string{}, err
-	}
-	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalUserRegisterMeta), actionContentBase64Str}
-	return [][]string{action}, nil
+	return nil, nil
 }
 
 func (portalUserRegister *PortalUserRegister) CalculateSize() uint64 {

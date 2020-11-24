@@ -313,7 +313,7 @@ func processPortalInstructions(
 
 		// ============ Porting flow ============
 		// porting request
-		case strconv.Itoa(metadata.PortalUserRegisterMeta):
+		case strconv.Itoa(metadata.PortalRequestPortingMeta), strconv.Itoa(metadata.PortalRequestPortingMetaV3):
 			err = blockchain.processPortalUserRegister(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// request ptoken
 		case strconv.Itoa(metadata.PortalUserRequestPTokenMeta):
@@ -321,7 +321,7 @@ func processPortalInstructions(
 
 		// ============ Redeem flow ============
 		// redeem request
-		case strconv.Itoa(metadata.PortalRedeemRequestMeta):
+		case strconv.Itoa(metadata.PortalRedeemRequestMeta), strconv.Itoa(metadata.PortalRedeemRequestMetaV3):
 			err = blockchain.processPortalRedeemRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 		// custodian request matching waiting redeem requests
 		case strconv.Itoa(metadata.PortalReqMatchingRedeemMeta):
@@ -540,7 +540,7 @@ func buildPortalUserRegisterAction(
 ) []string {
 	data := metadata.PortalUserRegister{
 		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalUserRegisterMeta,
+			Type: metadata.PortalRequestPortingMetaV3,
 		},
 		UniqueRegisterId: portingID,
 		IncogAddressStr:  incAddressStr,
@@ -549,7 +549,7 @@ func buildPortalUserRegisterAction(
 		PortingFee:       portingFee,
 	}
 
-	actionContent := metadata.PortalUserRegisterAction{
+	actionContent := metadata.PortalUserRegisterActionV3{
 		Meta:        data,
 		TxReqID:     common.Hash{},
 		ShardID:     shardID,
@@ -557,7 +557,7 @@ func buildPortalUserRegisterAction(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalUserRegisterMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(metadata.PortalRequestPortingMetaV3), actionContentBase64Str}
 }
 
 func buildPortalUserReqPTokenAction(
@@ -658,7 +658,7 @@ func buildPortalRequestRedeemActionV3(
 ) []string {
 	data := metadata.PortalRedeemRequest{
 		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalRedeemRequestMeta,
+			Type: metadata.PortalRedeemRequestMetaV3,
 		},
 		UniqueRedeemID:          uniqueRedeemID,
 		TokenID:                 tokenID,
@@ -677,7 +677,7 @@ func buildPortalRequestRedeemActionV3(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalRedeemRequestMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(metadata.PortalRedeemRequestMetaV3), actionContentBase64Str}
 }
 
 func buildPortalRequestMatchingWRedeemActionV3(

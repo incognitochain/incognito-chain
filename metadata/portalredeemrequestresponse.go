@@ -94,7 +94,7 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 || instMetaType != strconv.Itoa(PortalRedeemRequestMeta) {
+		if instUsed[i] > 0 || (instMetaType != strconv.Itoa(PortalRedeemRequestMeta) && instMetaType != strconv.Itoa(PortalRedeemRequestMetaV3)) {
 			continue
 		}
 		instReqStatus := inst[2]

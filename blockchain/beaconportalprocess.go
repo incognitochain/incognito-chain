@@ -11,9 +11,9 @@ import (
 
 func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
 	// Note: should comment this code if you need to create local chain.
-	//if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {
-	//	return nil
-	//}
+	if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {
+		return nil
+	}
 	beaconHeight := block.Header.Height - 1
 	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB)
 	if err != nil {
@@ -53,7 +53,7 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 
 		// ============ Porting flow ============
 		// porting request
-		case strconv.Itoa(metadata.PortalUserRegisterMeta):
+		case strconv.Itoa(metadata.PortalRequestPortingMeta), strconv.Itoa(metadata.PortalRequestPortingMetaV3):
 			err = blockchain.processPortalUserRegister(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		// request ptoken
 		case strconv.Itoa(metadata.PortalUserRequestPTokenMeta):
@@ -61,7 +61,7 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 
 		// ============ Redeem flow ============
 		// redeem request
-		case strconv.Itoa(metadata.PortalRedeemRequestMeta):
+		case strconv.Itoa(metadata.PortalRedeemRequestMeta), strconv.Itoa(metadata.PortalRedeemRequestMetaV3):
 			err = blockchain.processPortalRedeemRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 		// custodian request matching waiting redeem requests
 		case strconv.Itoa(metadata.PortalReqMatchingRedeemMeta):

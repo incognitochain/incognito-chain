@@ -1470,7 +1470,7 @@ package blockchain
 //	Feature 5: auto-liquidation: the proportion between the collateral and public token is drop down below 120%
 //*/
 //
-//func (s *PortalTestSuite) SetupTestAutoLiquidationByExchangeRate() {
+//func (s *PortalTestSuite) SetupTestAutoLiquidationByRates() {
 //	s.SetupTestAutoLiquidation()
 //	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
 //		map[string]statedb.FinalExchangeRatesDetail{
@@ -1491,7 +1491,7 @@ package blockchain
 //	//newMatchedRedeemReqIDs := []string{}
 //	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 //
-//	s.SetupTestAutoLiquidationByExchangeRate()
+//	s.SetupTestAutoLiquidationByRates()
 //
 //	// producer instructions
 //	newInsts, err := buildInstForLiquidationTopPercentileExchangeRates(
@@ -1591,7 +1591,7 @@ package blockchain
 //*/
 //
 //func (s *PortalTestSuite) SetupTestTopupCustodian() {
-//	s.SetupTestAutoLiquidationByExchangeRate()
+//	s.SetupTestAutoLiquidationByRates()
 //}
 //
 //type TestCaseTopupCustodian struct {
@@ -1638,7 +1638,7 @@ package blockchain
 //	shardID := byte(0)
 //	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 //
-//	s.SetupTestAutoLiquidationByExchangeRate()
+//	s.SetupTestAutoLiquidationByRates()
 //
 //	// build test cases for topup custodian
 //	testcases := []TestCaseTopupCustodian{

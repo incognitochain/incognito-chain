@@ -93,7 +93,7 @@ func NewPortalManager() *portalManager {
 				actions: map[byte][][]string{},
 			},
 		},
-		metadata.PortalUserRegisterMeta: &portalPortingRequestProcessor{
+		metadata.PortalRequestPortingMeta: &portalPortingRequestProcessor{
 			portalInstProcessor: &portalInstProcessor{
 				actions: map[byte][][]string{},
 			},

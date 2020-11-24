@@ -51,7 +51,7 @@ const (
 
 	// portal
 	PortalCustodianDepositMeta                  = 100
-	PortalUserRegisterMeta                      = 101
+	PortalRequestPortingMeta                    = 101
 	PortalUserRequestPTokenMeta                 = 102
 	PortalCustodianDepositResponseMeta          = 103
 	PortalUserRequestPTokenResponseMeta         = 104
@@ -90,6 +90,8 @@ const (
 	PortalRedeemFromLiquidationPoolResponseMetaV3 = 138
 	PortalCustodianTopupMetaV3                    = 139
 	PortalTopUpWaitingPortingRequestMetaV3        = 140
+	PortalRequestPortingMetaV3                    = 141
+	PortalRedeemRequestMetaV3                     = 142
 
 	// Incognito => Ethereum's SC for portal
 	PortalCustodianWithdrawConfirmMetaV3         = 170
@@ -153,6 +155,16 @@ var (
 	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "http")
 	EthereumLightNodePort     = common.GetENV("GETH_PORT", "8545")
 )
+
+// Kovan testnet
+//var (
+//	// if the blockchain is running in Docker container
+//	// then using GETH_NAME env's value (aka geth container name)
+//	// otherwise using localhost
+//	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "kovan.infura.io/v3/93fe721349134964aa71071a713c5cef")
+//	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "https")
+//	EthereumLightNodePort     = common.GetENV("GETH_PORT", "")
+//)
 
 //const (
 //	EthereumLightNodeProtocol = "http"

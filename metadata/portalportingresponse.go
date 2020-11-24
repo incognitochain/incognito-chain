@@ -102,7 +102,7 @@ func (iRes PortalFeeRefundResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 || instMetaType != strconv.Itoa(PortalUserRegisterMeta) {
+		if instUsed[i] > 0 || (instMetaType != strconv.Itoa(PortalRequestPortingMeta) && instMetaType != strconv.Itoa(PortalRequestPortingMetaV3)) {
 			continue
 		}
 		status := inst[2]

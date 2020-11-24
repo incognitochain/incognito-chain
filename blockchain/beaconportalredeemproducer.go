@@ -40,7 +40,7 @@ func (p *portalRedeemRequestProcessor) prepareDataBeforeProcessing(stateDB *stat
 		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal redeem request action: %+v", err)
 		return nil, fmt.Errorf("ERROR: an error occured while decoding content string of portal redeem request action: %+v", err)
 	}
-	var actionData metadata.PortalRedeemRequestAction
+	var actionData metadata.PortalRedeemRequestActionV3
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshal portal redeem request action: %+v", err)
@@ -113,7 +113,7 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal redeem request action: %+v", err)
 		return [][]string{}, nil
 	}
-	var actionData metadata.PortalRedeemRequestAction
+	var actionData metadata.PortalRedeemRequestActionV3
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshal portal redeem request action: %+v", err)
@@ -444,7 +444,7 @@ func (blockchain *BlockChain) checkAndPickMoreCustodianForWaitingRedeemRequest(
 				waitingRedeem.GetRedeemerRemoteAddress(),
 				waitingRedeem.GetRedeemFee(),
 				waitingRedeem.GetCustodians(),
-				metadata.PortalRedeemRequestMeta,
+				metadata.PortalRedeemRequestMetaV3,
 				shardID,
 				common.Hash{},
 				common.PortalRedeemReqCancelledByLiquidationChainStatus,

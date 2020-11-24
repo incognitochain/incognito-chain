@@ -86,7 +86,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PDEContributionResponse{}
 	case PortalCustodianDepositMeta:
 		md = &PortalCustodianDeposit{}
-	case PortalUserRegisterMeta:
+	case PortalRequestPortingMeta, PortalRequestPortingMetaV3:
 		md = &PortalUserRegister{}
 	case PortalUserRequestPTokenMeta:
 		md = &PortalRequestPTokens{}
@@ -94,7 +94,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalCustodianDepositResponse{}
 	case PortalUserRequestPTokenResponseMeta:
 		md = &PortalRequestPTokensResponse{}
-	case PortalRedeemRequestMeta:
+	case PortalRedeemRequestMeta, PortalRedeemRequestMetaV3:
 		md = &PortalRedeemRequest{}
 	case PortalRedeemRequestResponseMeta:
 		md = &PortalRedeemRequestResponse{}

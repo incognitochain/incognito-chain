@@ -37,7 +37,7 @@ func (p *portalPortingRequestProcessor) prepareDataBeforeProcessing(stateDB *sta
 		return nil, fmt.Errorf("Porting request: an error occurred while decoding content string of portal porting request action: %+v", err)
 	}
 
-	var actionData metadata.PortalUserRegisterAction
+	var actionData metadata.PortalUserRegisterActionV3
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
 		Logger.log.Errorf("Porting request: an error occurred while unmarshal portal porting request action: %+v", err)
@@ -106,7 +106,7 @@ func (p *portalPortingRequestProcessor) buildNewInsts(
 		return [][]string{}, nil
 	}
 
-	var actionData metadata.PortalUserRegisterAction
+	var actionData metadata.PortalUserRegisterActionV3
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
 		Logger.log.Errorf("Porting request: an error occurred while unmarshal portal porting request action: %+v", err)
