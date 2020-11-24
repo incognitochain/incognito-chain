@@ -3,11 +3,12 @@ package peerv2
 import (
 	"context"
 	"encoding/hex"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"io"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -28,7 +29,7 @@ func NewConnManager(
 	ikey *incognitokey.CommitteePublicKey,
 	cd ConsensusData,
 	dispatcher *Dispatcher,
-	nodeMode string,
+	// nodeMode string,
 	relayShard []byte,
 ) *ConnManager {
 	pubkey, _ := ikey.ToBase58()
@@ -37,8 +38,8 @@ func NewConnManager(
 			consensusData: cd,
 			pubkey:        pubkey,
 			relayShard:    relayShard,
-			nodeMode:      nodeMode,
-			peerID:        host.Host.ID(),
+			// nodeMode:      nodeMode,
+			peerID: host.Host.ID(),
 		},
 		keeper:               NewAddrKeeper(),
 		LocalHost:            host,

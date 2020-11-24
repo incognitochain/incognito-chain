@@ -67,10 +67,10 @@ var (
 
 // CONSENSUS
 const (
-	NodeModeRelay  = "relay"
-	NodeModeShard  = "shard"
-	NodeModeAuto   = "auto"
-	NodeModeBeacon = "beacon"
+	// NodeModeRelay  = "relay"
+	// NodeModeShard  = "shard"
+	// NodeModeAuto   = "auto"
+	// NodeModeBeacon = "beacon"
 
 	BeaconRole    = "beacon"
 	ShardRole     = "shard"

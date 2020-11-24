@@ -38,15 +38,15 @@ type BlockChain struct {
 
 // Config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
-	BTCChain          *btcrelaying.BlockChain
-	BNBChainState     *bnbrelaying.BNBChainState
-	DataBase          map[int]incdb.Database
-	MemCache          *memcache.MemoryCache
-	Interrupt         <-chan struct{}
-	ChainParams       *Params
-	GenesisParams     *GenesisParams
-	RelayShards       []byte
-	NodeMode          string
+	BTCChain      *btcrelaying.BlockChain
+	BNBChainState *bnbrelaying.BNBChainState
+	DataBase      map[int]incdb.Database
+	MemCache      *memcache.MemoryCache
+	Interrupt     <-chan struct{}
+	ChainParams   *Params
+	GenesisParams *GenesisParams
+	RelayShards   []byte
+	// NodeMode          string
 	BlockGen          *BlockGenerator
 	TxPool            TxPool
 	TempTxPool        TxPool
@@ -602,9 +602,9 @@ func (blockchain *BlockChain) GetShardStakingTx(shardView *ShardBestState) (map[
 
 // -------------- End of Blockchain BackUp And Restore --------------
 
-func (blockchain *BlockChain) GetNodeMode() string {
-	return blockchain.config.NodeMode
-}
+// func (blockchain *BlockChain) GetNodeMode() string {
+// 	return blockchain.config.NodeMode
+// }
 
 func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]struct{} {
 	res := map[byte]struct{}{}

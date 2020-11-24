@@ -3,9 +3,10 @@ package peerv2
 import (
 	"context"
 	"fmt"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
@@ -39,8 +40,8 @@ type SubManager struct {
 type info struct {
 	consensusData ConsensusData
 
-	pubkey     string
-	nodeMode   string
+	pubkey string
+	// nodeMode   string
 	relayShard []byte
 	peerID     peer.ID
 }
@@ -99,7 +100,7 @@ func (sub *SubManager) Subscribe(forced bool) error {
 		rolehash = common.HashH([]byte(str)).String()
 
 	} else {
-		shardIDs = getWantedShardIDs(userRole{}, sub.nodeMode, sub.relayShard)
+		shardIDs = getWantedShardIDs(userRole{}, sub.relayShard)
 	}
 
 	if rolehash == sub.rolehash && !forced { // Not forced => no need to subscribe when role stays the same
@@ -173,17 +174,18 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	return nil
 }
 
-func getWantedShardIDs(role userRole, nodeMode string, relayShard []byte) []byte {
+//TODO: @hy
+func getWantedShardIDs(role userRole, relayShard []byte) []byte {
 	roleSID := role.shardID
 	if roleSID == -2 { // not waiting/pending/validator right now
 		roleSID = -1 // wanted only beacon chain (shardID == -1 == byte(255))
 	}
 	shardIDs := []byte{}
-	if nodeMode == common.NodeModeRelay {
-		shardIDs = append(relayShard, HighwayBeaconID)
-	} else {
-		shardIDs = append(shardIDs, byte(roleSID))
-	}
+	// if nodeMode == common.NodeModeRelay {
+	shardIDs = append(relayShard, HighwayBeaconID)
+	// } else {
+	shardIDs = append(shardIDs, byte(roleSID))
+	// }
 	return shardIDs
 }
 
@@ -304,9 +306,9 @@ func (sub *SubManager) registerToProxy(
 	role string,
 	shardID []byte,
 ) (msgToTopics, userRole, error) {
-	messagesWanted := getMessagesForLayer(sub.nodeMode, layer, shardID)
+	messagesWanted := getMessagesForLayer(layer, shardID)
 	Logger.Infof("Registering: message: %v", messagesWanted)
-	Logger.Infof("Registering: nodeMode: %v", sub.nodeMode)
+	// Logger.Infof("Registering: nodeMode: %v", sub.nodeMode)
 	Logger.Infof("Registering: layer: %v", layer)
 	Logger.Infof("Registering: role: %v", role)
 	Logger.Infof("Registering: shardID: %v", shardID)
@@ -343,46 +345,38 @@ func (sub *SubManager) registerToProxy(
 	return topics, r, nil
 }
 
-func getMessagesForLayer(mode, layer string, shardID []byte) []string {
-	switch mode {
-	case common.NodeModeAuto:
-		if layer == common.ShardRole {
-			return []string{
-				wire.CmdBlockShard,
-				wire.CmdBlockBeacon,
-				wire.CmdBFT,
-				wire.CmdPeerState,
-				wire.CmdCrossShard,
-				wire.CmdTx,
-				wire.CmdPrivacyCustomToken,
-			}
-		} else if layer == common.BeaconRole {
-			return []string{
-				wire.CmdBlockBeacon,
-				wire.CmdBFT,
-				wire.CmdPeerState,
-				wire.CmdBlockShard,
-			}
-		} else {
-			return []string{
-				wire.CmdBlockBeacon,
-				wire.CmdPeerState,
-				wire.CmdTx,
-				wire.CmdPrivacyCustomToken,
-			}
+//TODO: @hy
+func getMessagesForLayer(layer string, shardID []byte) []string {
+	// switch mode {
+	// case common.NodeModeAuto:
+	if layer == common.ShardRole {
+		return []string{
+			wire.CmdBlockShard,
+			wire.CmdBlockBeacon,
+			wire.CmdBFT,
+			wire.CmdPeerState,
+			wire.CmdCrossShard,
+			wire.CmdTx,
+			wire.CmdPrivacyCustomToken,
 		}
-	case common.NodeModeRelay:
+	} else if layer == common.BeaconRole {
+		return []string{
+			wire.CmdBlockBeacon,
+			wire.CmdBFT,
+			wire.CmdPeerState,
+			wire.CmdBlockShard,
+		}
+	} else {
 		containShard := false
 		for _, s := range shardID {
 			if s != HighwayBeaconID {
 				containShard = true
 			}
 		}
-
 		msgs := []string{
-			wire.CmdTx,
 			wire.CmdBlockBeacon,
 			wire.CmdPeerState,
+			wire.CmdTx,
 			wire.CmdPrivacyCustomToken,
 		}
 		if containShard {
@@ -390,5 +384,24 @@ func getMessagesForLayer(mode, layer string, shardID []byte) []string {
 		}
 		return msgs
 	}
+	// case common.NodeModeRelay:
+	// 	containShard := false
+	// 	for _, s := range shardID {
+	// 		if s != HighwayBeaconID {
+	// 			containShard = true
+	// 		}
+	// 	}
+
+	// 	msgs := []string{
+	// 		wire.CmdTx,
+	// 		wire.CmdBlockBeacon,
+	// 		wire.CmdPeerState,
+	// 		wire.CmdPrivacyCustomToken,
+	// 	}
+	// 	if containShard {
+	// 		msgs = append(msgs, wire.CmdBlockShard)
+	// 	}
+	// 	return msgs
+	// }
 	return []string{}
 }
