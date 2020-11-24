@@ -138,6 +138,7 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 			// get tokenID from redeemTokenID
 			tokenID := redeemReq.GetTokenID()
 			metaType := metadata.PortalLiquidateCustodianMeta
+			unlockCollateralsForUser := make(map[string]uint64)
 
 			liquidatedCustodians := make([]*statedb.MatchingRedeemCustodianDetail, 0)
 			for _, matchCusDetail := range redeemReq.GetCustodians() {
@@ -171,6 +172,11 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 						matchCusDetail.GetAmount(),
 						tokenID,
 						portalParams)
+					if len(liquidatedAmounts) > 0 {
+						for i, v := range liquidatedAmounts {
+							unlockCollateralsForUser[i] += v
+						}
+					}
 				}
 				if err != nil {
 					Logger.log.Errorf("[checkAndBuildInstForCustodianLiquidation] Error when calculating unlock collateral amount %v\n: ", err)
@@ -241,35 +247,30 @@ func (blockchain *BlockChain) checkAndBuildInstForCustodianLiquidation(
 					common.PortalLiquidateCustodianSuccessChainStatus,
 				)
 				insts = append(insts, inst)
-
-				// create inst to liquidate token from custodian to user
-				var confirmInst []string
-				if metaType == metadata.PortalLiquidateCustodianMetaV3 && len(liquidatedAmounts) > 0 {
-					liquidatedBigIntAmounts := make(map[string]*big.Int)
-					for tokenLiquidateId, tokenAmount := range liquidatedAmounts {
-						amountBN := big.NewInt(0).SetUint64(tokenAmount)
-						if bytes.Equal(common.FromHex(tokenLiquidateId), common.FromHex(common.EthAddrStr)) {
-							// Convert Gwei to Wei for Ether
-							amountBN = amountBN.Mul(amountBN, big.NewInt(1000000000))
-						}
-						liquidatedBigIntAmounts[tokenLiquidateId] = amountBN
-					}
-					confirmInst = buildConfirmWithdrawCollateralInstV3(
-						metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3,
-						shardID,
-						redeemReq.GetRedeemerAddress(),
-						redeemReq.GetRedeemerExternalAddress(),
-						liquidatedBigIntAmounts,
-						redeemReq.GetTxReqID(),
-						beaconHeight+1,
-					)
-				}
-				if confirmInst != nil {
-					insts = append(insts, confirmInst)
-				}
-
 			}
 
+			// create proof to liquidate runaway custodian
+			if metaType == metadata.PortalLiquidateCustodianMetaV3 && len(unlockCollateralsForUser) > 0 {
+				liquidatedBigIntAmounts := make(map[string]*big.Int)
+				for tokenLiquidateId, tokenAmount := range unlockCollateralsForUser {
+					amountBN := big.NewInt(0).SetUint64(tokenAmount)
+					if bytes.Equal(common.FromHex(tokenLiquidateId), common.FromHex(common.EthAddrStr)) {
+						// Convert Gwei to Wei for Ether
+						amountBN = amountBN.Mul(amountBN, big.NewInt(1000000000))
+					}
+					liquidatedBigIntAmounts[tokenLiquidateId] = amountBN
+				}
+				confirmInst := buildConfirmWithdrawCollateralInstV3(
+					metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3,
+					shardID,
+					redeemReq.GetRedeemerAddress(),
+					redeemReq.GetRedeemerExternalAddress(),
+					liquidatedBigIntAmounts,
+					redeemReq.GetTxReqID(),
+					beaconHeight+1,
+				)
+				insts = append(insts, confirmInst)
+			}
 			updatedCustodians := currentPortalState.MatchedRedeemRequests[redeemReqKey].GetCustodians()
 			for _, cus := range liquidatedCustodians {
 				updatedCustodians, _ = removeCustodianFromMatchingRedeemCustodians(
