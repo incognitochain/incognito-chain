@@ -391,7 +391,7 @@ func (proof SNPrivacyProof) VerifyOld(mess []byte) (bool, error) {
 
 	if !operation.IsPointEqual(leftPoint1, rightPoint1) {
 		//Logger.Log.Errorf("verify serial number privacy proof statement 1 failed")
-		return false, errors.New("verify serial number privacy proof statement 1 failed")
+		return false, errors.New("verifyOld serial number privacy proof statement 1 failed")
 	}
 
 	// Check gSK^zSeed * h^zRSeed = vKey^x * tSeed
@@ -401,8 +401,8 @@ func (proof SNPrivacyProof) VerifyOld(mess []byte) (bool, error) {
 	rightPoint2.Add(rightPoint2, proof.tSK)
 
 	if !operation.IsPointEqual(leftPoint2, rightPoint2) {
-		Logger.Log.Errorf("verify serial number privacy proof statement 2 failed")
-		return false, errors.New("verify serial number privacy proof statement 2 failed")
+		Logger.Log.Errorf("verifyOld serial number privacy proof statement 2 failed")
+		return false, errors.New("verifyOld serial number privacy proof statement 2 failed")
 	}
 
 	// Check sn^(zSeed + zInput) = gSK^x * tOutput
@@ -413,7 +413,7 @@ func (proof SNPrivacyProof) VerifyOld(mess []byte) (bool, error) {
 
 	if !operation.IsPointEqual(leftPoint3, rightPoint3) {
 		//privacy.Logger.Log.Errorf("verify serial number privacy proof statement 3 failed")
-		return false, errors.New("verify serial number privacy proof statement 3 failed")
+		return false, errors.New("verifyOld serial number privacy proof statement 3 failed")
 	}
 
 	return true, nil

@@ -520,8 +520,8 @@ func (proof OneOutOfManyProof) VerifyOld() (bool, error) {
 		rightPoint1 := operation.PedCom.CommitAtIndex(proof.f[i], proof.za[i], operation.PedersenPrivateKeyIndex)
 
 		if !operation.IsPointEqual(leftPoint1, rightPoint1) {
-			Logger.Log.Errorf("verify one out of many proof statement 1 failed")
-			return false, errors.New("verify one out of many proof statement 1 failed")
+			Logger.Log.Errorf("verifyOld one out of many proof statement 1 failed")
+			return false, errors.New("verifyOld one out of many proof statement 1 failed")
 		}
 
 		//Check cl^(x-f) * cb = Com(0, zb)
@@ -532,8 +532,8 @@ func (proof OneOutOfManyProof) VerifyOld() (bool, error) {
 		rightPoint2 := operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(0), proof.zb[i], operation.PedersenPrivateKeyIndex)
 
 		if !operation.IsPointEqual(leftPoint2, rightPoint2) {
-			Logger.Log.Errorf("verify one out of many proof statement 2 failed")
-			return false, errors.New("verify one out of many proof statement 2 failed")
+			Logger.Log.Errorf("verifyOld one out of many proof statement 2 failed")
+			return false, errors.New("verifyOld one out of many proof statement 2 failed")
 		}
 	}
 
@@ -570,8 +570,8 @@ func (proof OneOutOfManyProof) VerifyOld() (bool, error) {
 	rightPoint3 := operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(0), proof.zd, operation.PedersenPrivateKeyIndex)
 
 	if !operation.IsPointEqual(leftPoint3, rightPoint3) {
-		Logger.Log.Errorf("verify one out of many proof statement 3 failed")
-		return false, errors.New("verify one out of many proof statement 3 failed")
+		Logger.Log.Errorf("verifyOld one out of many proof statement 3 failed")
+		return false, errors.New("verifyOld one out of many proof statement 3 failed")
 	}
 
 	return true, nil
