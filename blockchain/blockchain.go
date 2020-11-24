@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strconv"
+	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
@@ -59,6 +61,8 @@ type Config struct {
 	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
+
+	relayShardLck sync.Mutex
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
@@ -613,9 +617,11 @@ func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]st
 			res[sID] = struct{}{}
 		}
 	} else {
+		blockchain.config.relayShardLck.Lock()
 		for _, sID := range blockchain.config.RelayShards {
 			res[sID] = struct{}{}
 		}
+		blockchain.config.relayShardLck.Unlock()
 	}
 	return res
 }
@@ -728,4 +734,29 @@ func (blockchain *BlockChain) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool 
 
 func (s *BlockChain) GetChainParams() *Params {
 	return s.config.ChainParams
+}
+
+func (s *BlockChain) AddRelayShard(sid int) error {
+	s.config.relayShardLck.Lock()
+	for _, shard := range s.config.RelayShards {
+		if shard == byte(sid) {
+			s.config.relayShardLck.Unlock()
+			return errors.New("already relay this shard" + strconv.Itoa(sid))
+		}
+	}
+	s.config.RelayShards = append(s.config.RelayShards, byte(sid))
+	s.config.relayShardLck.Unlock()
+	return nil
+}
+
+func (s *BlockChain) RemoveRelayShard(sid int) {
+	s.config.relayShardLck.Lock()
+	for idx, shard := range s.config.RelayShards {
+		if shard == byte(sid) {
+			s.config.RelayShards = append(s.config.RelayShards[:idx], s.config.RelayShards[idx+1:]...)
+			break
+		}
+	}
+	s.config.relayShardLck.Unlock()
+	return
 }
