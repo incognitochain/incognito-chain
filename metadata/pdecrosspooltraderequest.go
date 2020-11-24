@@ -132,13 +132,16 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 		if burnedPrv == nil || common.PRVIDStr != pc.TokenIDToSellStr {
 			return false, false, fmt.Errorf("token to sell must be PRV")
 		}
-		if (pc.SellAmount + pc.TradingFee) != burnedCoin.GetValue() {
+		b, _ := json.Marshal(burnedPrv)
+		fmt.Println("BUGLOG burn coin detail", string(b))
+
+		if (pc.SellAmount + pc.TradingFee) != burnedPrv.GetValue() {
 			return false, false, fmt.Errorf("total of selling amount and trading fee should be equal to the tx value")
 		}
-		if pc.SellAmount > burnedCoin.GetValue() || pc.TradingFee > burnedCoin.GetValue() {
+		if pc.SellAmount > burnedPrv.GetValue() || pc.TradingFee > burnedPrv.GetValue() {
 			return false, false, errors.New("Neither selling amount nor trading fee allows to be larger than the tx value")
 		}
-		if (pc.SellAmount + pc.TradingFee) != burnedCoin.GetValue() {
+		if (pc.SellAmount + pc.TradingFee) != burnedPrv.GetValue() {
 			return false, false, errors.New("Total of selling amount and trading fee should be equal to the tx value")
 		}
 	}

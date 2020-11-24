@@ -111,7 +111,7 @@ func MdValidateWithBlockChain(tx metadata.Transaction, chainRetriever metadata.C
 func MdValidate(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte) (bool, error) {
 	meta := tx.GetMetadata()
 	if meta != nil {
-		if hasPrivacy && tx.GetVersion() == 1{
+		if hasPrivacy && tx.GetVersion() <= 1{
 			return false, errors.New("Metadata can only exist in non-privacy tx")
 		}
 		validateMetadata := meta.ValidateMetadataByItself()
@@ -169,7 +169,7 @@ func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetrie
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		additionalData := make(map[string]interface{})
 
-		if tx.GetVersion() == 1{
+		if tx.GetVersion() <= 1{
 			if chainRetriever != nil {
 				additionalData["isNewZKP"] = chainRetriever.IsAfterNewZKPCheckPoint(beaconHeight)
 			}

@@ -27,7 +27,7 @@ func ConvertByte2BigInt(b []byte) *big.Int {
 
 func GenerateRandomValue() *big.Int {
 	msg := operation.RandomScalar().ToBytesS()
-	y, pi := vrfWitness.Compute(msg)
+	y, pi, _ := vrfWitness.Compute(msg)
 	isValid, err := pi.Verify(msg, g, pubKey, y)
 	if err != nil || !isValid {
 		panic("something went wrong ...")
