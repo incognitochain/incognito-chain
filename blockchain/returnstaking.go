@@ -256,7 +256,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 				}
 				if shardID != returnStakingIns.ShardID {
 					Logger.log.Infof("SKIP Return Staking Instruction | Processed SHARD %+v, Return Staking SHARD %+v", shardID, returnStakingIns.ShardID)
-					continue
+					//continue
 				}
 				for i, v := range returnStakingIns.GetPublicKey() {
 					txHash := returnStakingIns.StakingTxHashes[i]
