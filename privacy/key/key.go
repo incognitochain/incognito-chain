@@ -1,9 +1,7 @@
 package key
 
 import (
-	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
@@ -94,41 +92,7 @@ func (otaKey *OTAKey) SetPublicSpend(publicSpend []byte){
 type PaymentAddress struct {
 	Pk PublicKey       // 32 bytes, use to receive coin (CoinV1)
 	Tk TransmissionKey // 32 bytes, use to encrypt pointByte
-	OTAPublic PublicOTAKey `json:"OTAPublic, omitempty"` //32 bytes, used to receive coin (CoinV2)
-}
-
-func (addr *PaymentAddress) UnmarshalJSON(data []byte) error {
-
-	tmp:= &struct {
-		Pk string
-		Tk string
-		OTAPublic string `json:"OTAPublic, omitempty"`
-	}{}
-
-	err := json.Unmarshal(data, &tmp)
-	if err != nil{
-		return err
-	}
-
-	addr.Pk, err = base64.StdEncoding.DecodeString(tmp.Pk)
-	if err !=nil{
-		return err
-	}
-
-	addr.Tk, err = base64.StdEncoding.DecodeString(tmp.Tk)
-	if err !=nil{
-		return err
-	}
-
-	if len(tmp.OTAPublic) != 0 {
-		addr.OTAPublic, err = base64.StdEncoding.DecodeString(tmp.OTAPublic)
-	}else{
-		addr.OTAPublic = nil
-	}
-
-	//fmt.Println("BUGLOG2 addr", string(data), addr.Pk, addr.Tk, addr.OTAPublic)
-
-	return nil
+	OTAPublic PublicOTAKey //32 bytes, used to receive coin (CoinV2)
 }
 
 // Bytes converts payment address to bytes array

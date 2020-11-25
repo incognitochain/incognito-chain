@@ -77,10 +77,11 @@ func GetTxBurnData(tx metadata.Transaction) (bool, privacy.Coin, *common.Hash, e
 		utils.Logger.Log.Errorf("Cannot get receiver data, error %v", err)
 		return false, nil, nil, err
 	}
-	if len(outputCoins) > 2 {
-		utils.Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
-		return false, nil, nil, err
-	}
+	// remove rule only accept maximum 2 outputs in tx burn
+	//if len(outputCoins) > 2 {
+	//	utils.Logger.Log.Error("GetAndCheckBurning receiver: More than 2 receivers")
+	//	return false, nil, nil, err
+	//}
 	for _, coin := range outputCoins {
 		if wallet.IsPublicKeyBurningAddress(coin.GetPublicKey().ToBytesS()) {
 			return true, coin, &common.PRVCoinID, nil

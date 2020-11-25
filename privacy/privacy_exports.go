@@ -69,6 +69,7 @@ func HashToScalar(data []byte) *Scalar {
 }
 
 type PublicKey = key.PublicKey
+type TransmissionKey = key.TransmissionKey
 type ViewingKey = key.ViewingKey
 type PrivateKey = key.PrivateKey
 type OTAKey = key.OTAKey

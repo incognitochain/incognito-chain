@@ -16,6 +16,7 @@ func calculateSize(meta Metadata) uint64 {
 }
 
 func ParseMetadata(meta interface{}) (Metadata, error) {
+
 	if meta == nil {
 		return nil, nil
 	}
@@ -29,6 +30,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var md Metadata
 	typeFloat,ok := mtTemp["Type"].(float64)
 	if !ok{
@@ -153,6 +155,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	if err != nil {
 		return nil, err
 	}
+	
 	return md, nil
 }
 
