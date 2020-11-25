@@ -159,12 +159,18 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	//============Update Beacon Best State================
 	// Process new block with beststate
 
-	_, hashes, _, beaconInstructions, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
+	_, hashes, _, incurredInstructions, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
 	beaconBestState.beaconCommitteeEngine.AbortUncommittedBeaconState()
 	if err != nil {
 		return nil, err
 	}
-	beaconBlock.Body.Instructions = beaconInstructions
+	if len(incurredInstructions) != 0 {
+		incurredInstructions, err = beaconBestState.postProcessIncurredInstructions(incurredInstructions, blockchain)
+		if err != nil {
+			return nil, NewBlockChainError(BuildIncurredInstructionError, err)
+		}
+		beaconBlock.Body.Instructions = append(beaconBlock.Body.Instructions, incurredInstructions...)
+	}
 
 	if len(beaconBlock.Body.Instructions) != 0 {
 		Logger.log.Info("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
@@ -599,11 +605,9 @@ func (beaconBestState *BeaconBestState) postProcessIncurredInstructions(instruct
 				continue
 			}
 			for i, v := range returnStakingIns.StakingTxHashes {
-
 				shardID, _, _, _, _, err := blockchain.GetTransactionByHash(v)
 				if err != nil {
 					Logger.log.Info("[staking-v2] Skip post process incurred instructions | with return staking Ins %s")
-					continue
 					return [][]string{}, err
 				}
 				stakingTxs[shardID] = append(stakingTxs[shardID], returnStakingIns.StakingTXIDs[i])
@@ -614,16 +618,17 @@ func (beaconBestState *BeaconBestState) postProcessIncurredInstructions(instruct
 		}
 	}
 
-	shardNumbers := []byte{}
+	shardNumbers := []int{}
 	for shardID, _ := range publicKeys {
-		shardNumbers = append(shardNumbers, shardID)
+		shardNumbers = append(shardNumbers, int(shardID))
 	}
+	sort.Ints(shardNumbers)
 
 	for _, v := range shardNumbers {
 		returnStakingIns := instruction.NewReturnStakeInsWithValue(
-			publicKeys[v],
-			v,
-			stakingTxs[v],
+			publicKeys[byte(v)],
+			byte(v),
+			stakingTxs[byte(v)],
 		)
 		res = append(res, returnStakingIns.ToString())
 	}

@@ -164,12 +164,11 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	Logger.log.Debugf("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
 
-	newBestState, hashes, committeeChange, beaconInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, committeeChange, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		curView.beaconCommitteeEngine.AbortUncommittedBeaconState()
 		return err
 	}
-	beaconBlock.Body.Instructions = beaconInstructions
 
 	var err2 error
 	defer func() {
@@ -706,18 +705,10 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 	if err != nil {
 		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
-	if len(incurredInstructions) != 0 {
-		incurredInstructions, err = beaconBestState.postProcessIncurredInstructions(incurredInstructions, blockchain)
-		if err != nil {
-			return nil, nil, nil, nil, NewBlockChainError(BuildIncurredInstructionError, err)
-		}
-	}
-	beaconInstructions := append(beaconBlock.Body.Instructions, incurredInstructions...)
-
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
-	return beaconBestState, hashes, committeeChange, beaconInstructions, nil
+	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
 }
 
 func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *types.BeaconBlock, blockchain *BlockChain, db incdb.Database) error {
