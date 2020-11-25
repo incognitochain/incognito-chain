@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -160,15 +159,13 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	//============Update Beacon Best State================
 	// Process new block with beststate
 
-	_, hashes, _, incurredInstructions, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
+	_, hashes, _, beaconInstructions, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
 	beaconBestState.beaconCommitteeEngine.AbortUncommittedBeaconState()
-
 	if err != nil {
 		return nil, err
 	}
+	beaconBlock.Body.Instructions = beaconInstructions
 
-	tempInstruction = append(tempInstruction, incurredInstructions...)
-	beaconBlock.Body.Instructions = tempInstruction
 	if len(beaconBlock.Body.Instructions) != 0 {
 		Logger.log.Info("Beacon Produce: Beacon Instruction", beaconBlock.Body.Instructions)
 	}
@@ -182,7 +179,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	}
 
 	tempInstructionArr := []string{}
-	for _, strs := range tempInstruction {
+	for _, strs := range beaconBlock.Body.Instructions {
 		tempInstructionArr = append(tempInstructionArr, strs...)
 	}
 	tempInstructionHash, err := generateHashFromStringArray(tempInstructionArr)
@@ -191,7 +188,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		return nil, NewBlockChainError(GenerateInstructionHashError, err)
 	}
 	// Instruction merkle root
-	flattenInsts, err := FlattenAndConvertStringInst(tempInstruction)
+	flattenInsts, err := FlattenAndConvertStringInst(beaconBlock.Body.Instructions)
 	if err != nil {
 		return nil, NewBlockChainError(FlattenAndConvertStringInstError, err)
 	}
@@ -589,23 +586,49 @@ func CreateBeaconSwapActionForKeyListV2(
 	return swapInstruction, append(newBeaconCommittees, remainBeaconCommittees...)
 }
 
-func (beaconBestState *BeaconBestState) postProcessIncurredInstructions(instructions [][]string) error {
+func (beaconBestState *BeaconBestState) postProcessIncurredInstructions(instructions [][]string, blockchain *BlockChain) ([][]string, error) {
+	res := [][]string{}
+	publicKeys := make(map[byte][]string)
+	stakingTxs := make(map[byte][]string)
 
 	for _, inst := range instructions {
 		switch inst[0] {
 		case instruction.RETURN_ACTION:
 			returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(inst)
 			if err != nil {
-				return err
+				continue
 			}
-			err = statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, returnStakingIns.PublicKeysStruct)
-			if err != nil {
-				return err
+			for i, v := range returnStakingIns.StakingTxHashes {
+
+				shardID, _, _, _, _, err := blockchain.GetTransactionByHash(v)
+				if err != nil {
+					Logger.log.Info("[staking-v2] Skip post process incurred instructions | with return staking Ins %s")
+					continue
+					return [][]string{}, err
+				}
+				stakingTxs[shardID] = append(stakingTxs[shardID], returnStakingIns.StakingTXIDs[i])
+				publicKeys[shardID] = append(publicKeys[shardID], returnStakingIns.PublicKeys[i])
 			}
+		default:
+			res = append(res, inst)
 		}
 	}
 
-	return nil
+	shardNumbers := []byte{}
+	for shardID, _ := range publicKeys {
+		shardNumbers = append(shardNumbers, shardID)
+	}
+
+	for _, v := range shardNumbers {
+		returnStakingIns := instruction.NewReturnStakeInsWithValue(
+			publicKeys[v],
+			v,
+			stakingTxs[v],
+		)
+		res = append(res, returnStakingIns.ToString())
+	}
+
+	return res, nil
 }
 
 func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(instructions [][]string, shardID byte) *shardInstruction {

@@ -831,6 +831,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 				publicKey,
 				stakerInfo,
 			)
+
 			if err != nil {
 				return newCommitteeChange, returnStakingInstructions, errors.New("Can't find staker info")
 			}
@@ -1008,7 +1009,7 @@ func (b *BeaconCommitteeStateV2) buildReturnStakingInstructionAndDeleteStakerInf
 	returnStakingInstructions = buildReturnStakingInstruction(
 		returnStakingInstructions,
 		publicKey,
-		stakerInfo.ShardID(),
+		0, // temporary shardID -> it will be changed in package blockchain later
 		stakerInfo.TxStakingID().String(),
 	)
 	err := b.deleteStakerInfo(committeePublicKeyStruct, publicKey)
