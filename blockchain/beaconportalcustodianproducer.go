@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"math/big"
+	"sort"
 	"strconv"
 )
 
@@ -499,7 +500,13 @@ func buildConfirmWithdrawCollateralInstV3(
 	// convert extCollaterals to bytes (include padding)
 	// the first byte is len(extCollaterals)
 	extCollateralBytes := []byte{}
-	for tokenID, amount := range extCollaterals {
+	tokenIDs := []string{}
+	for tokenId := range extCollaterals {
+		tokenIDs = append(tokenIDs, tokenId)
+	}
+	sort.Strings(tokenIDs)
+	for _, tokenID := range tokenIDs {
+		amount := extCollaterals[tokenID]
 		tokenIDBytes, _ := common.DecodeETHAddr(tokenID)
 		amountBytes := common.AddPaddingBigInt(amount, common.BigIntSize)
 		extCollateralBytes = append(extCollateralBytes, tokenIDBytes...)
