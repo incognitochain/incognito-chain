@@ -1048,8 +1048,16 @@ func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
 	return beacon, shard
 }
 
+func (beaconBestState *BeaconBestState) StoreCommitteeStateWithCurrentState(
+	committeeChange *committeestate.CommitteeChange, blockchain *BlockChain,
+) error {
+	stakingTxs := make(map[string]map[common.Hash]byte)
+	for 
+	return beaconBestState.storeCommitteeStateWithCurrentState(committeeChange, stakingTxs)
+}
+
 func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
-	committeeChange *committeestate.CommitteeChange) error {
+	committeeChange *committeestate.CommitteeChange, stakingTxs map[string]map[common.Hash]byte) error {
 	stakerKeys := committeeChange.StakerKeys()
 	if len(stakerKeys) != 0 {
 		err := statedb.StoreStakerInfoV1(
@@ -1057,7 +1065,7 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			stakerKeys,
 			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
 			beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
-			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
+			stakingTxs,
 		)
 		if err != nil {
 			return err
@@ -1071,7 +1079,7 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			stopAutoStakerKeys,
 			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
 			beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
-			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
+			stakingTxs,
 		)
 		if err != nil {
 			return err

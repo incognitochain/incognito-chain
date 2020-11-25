@@ -24,11 +24,13 @@ func NewStakerInfoWithValue(
 	rewardReceiver privacy.PaymentAddress,
 	autoStaking bool,
 	txStakingID common.Hash,
+	shardID byte,
 ) *StakerInfo {
 	return &StakerInfo{
 		rewardReceiver: rewardReceiver,
 		autoStaking:    autoStaking,
 		txStakingID:    txStakingID,
+		shardID:        shardID,
 	}
 }
 
