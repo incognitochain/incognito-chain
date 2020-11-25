@@ -154,7 +154,7 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever C
 	}
 
 	// validate metadata type
-	if shardViewRetriever.GetEpoch() >= chainRetriever.GetRedeemPortalV3Epoch() && portalUserRegister.Type != PortalRequestPortingMetaV3 {
+	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() && portalUserRegister.Type != PortalRequestPortingMetaV3 {
 		return false, false, fmt.Errorf("Metadata type should be %v", PortalRequestPortingMetaV3)
 	}
 

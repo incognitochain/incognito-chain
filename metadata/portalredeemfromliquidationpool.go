@@ -123,9 +123,9 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetr
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID is not in portal tokens list"))
 	}
 
-	// reject Redeem Request from Liquidation pool from PortalV3Epoch
-	if shardViewRetriever.GetEpoch() >= chainRetriever.GetRedeemPortalV3Epoch() {
-		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, fmt.Errorf("Should create redeem request from liquidation pool v3 after epoch %v", chainRetriever.GetRedeemPortalV3Epoch()))
+	// reject Redeem Request from Liquidation pool from BCHeightBreakPointPortalV3
+	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() {
+		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, fmt.Errorf("Should create redeem request from liquidation pool v3 after epoch %v", chainRetriever.GetBCHeightBreakPointPortalV3()))
 	}
 	return true, true, nil
 }

@@ -191,7 +191,7 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(chainRetriever ChainRetr
 		return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", redeemReq.RemoteAddress, redeemReq.TokenID)
 	}
 
-	if shardViewRetriever.GetEpoch() >= chainRetriever.GetRedeemPortalV3Epoch() {
+	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() {
 		// validate metadata type
 		if redeemReq.Type != PortalRedeemRequestMetaV3 {
 			return false, false, fmt.Errorf("Metadata type should be %v", PortalRedeemRequestMetaV3)
