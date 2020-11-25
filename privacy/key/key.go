@@ -1,8 +1,11 @@
 package key
 
 import (
-"encoding/hex"
-"github.com/incognitochain/incognito-chain/privacy/operation"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
 func SliceToArray(slice []byte) [operation.Ed25519KeySize]byte {
@@ -91,7 +94,73 @@ func (otaKey *OTAKey) SetPublicSpend(publicSpend []byte){
 type PaymentAddress struct {
 	Pk PublicKey       // 32 bytes, use to receive coin (CoinV1)
 	Tk TransmissionKey // 32 bytes, use to encrypt pointByte
-	OTAPublic PublicOTAKey //32 bytes, used to receive coin (CoinV2)
+	OTAPublic PublicOTAKey `json:"OTAPublic, omitempty"` //32 bytes, used to receive coin (CoinV2)
+}
+
+func (addr *PaymentAddress) UnmarshalJSON(data []byte) error {
+
+	tmp:= &struct {
+		Pk string
+		Tk string
+		OTAPublic string `json:"OTAPublic, omitempty"`
+	}{}
+
+	err := json.Unmarshal(data, &tmp)
+	if err != nil{
+		return err
+	}
+
+	addr.Pk, err = base64.StdEncoding.DecodeString(tmp.Pk)
+	if err !=nil{
+		return err
+	}
+
+	addr.Tk, err = base64.StdEncoding.DecodeString(tmp.Tk)
+	if err !=nil{
+		return err
+	}
+
+	if len(tmp.OTAPublic) != 0 {
+		addr.OTAPublic, err = base64.StdEncoding.DecodeString(tmp.OTAPublic)
+	}else{
+		addr.OTAPublic = nil
+	}
+
+	//fmt.Println("BUGLOG2 addr", string(data), addr.Pk, addr.Tk, addr.OTAPublic)
+
+	return nil
+}
+
+// Bytes converts payment address to bytes array
+func (addr *PaymentAddress) Bytes() []byte {
+	res := append(addr.Pk[:], addr.Tk[:]...)
+	if addr.OTAPublic != nil {
+		return append(res, addr.OTAPublic[:]...)
+	}
+	return res
+}
+
+// SetBytes reverts bytes array to payment address
+func (addr *PaymentAddress) SetBytes(bytes []byte) error {
+	if len(bytes) != 2*operation.Ed25519KeySize && len(bytes) != 3*operation.Ed25519KeySize{
+		return errors.New("length of payment address not valid")
+	}
+	// the first 33 bytes are public key
+	addr.Pk = bytes[:operation.Ed25519KeySize]
+	// the last 33 bytes are transmission key
+	addr.Tk = bytes[operation.Ed25519KeySize:2*operation.Ed25519KeySize]
+	if len(bytes) == 3 * operation.Ed25519KeySize{
+		addr.OTAPublic = bytes[2*operation.Ed25519KeySize:]
+	}else{
+		addr.OTAPublic = nil
+	}
+	return nil
+}
+
+// String encodes a payment address as a hex string
+func (addr PaymentAddress) String() string {
+	byteArrays := addr.Bytes()
+	return hex.EncodeToString(byteArrays[:])
 }
 
 func (addr PaymentAddress) GetPublicSpend() *operation.Point {
@@ -184,33 +253,4 @@ func GeneratePaymentAddress(privateKey []byte) PaymentAddress {
 	paymentAddress.Tk = GenerateTransmissionKey(GenerateReceivingKey(privateKey))
 	paymentAddress.OTAPublic = GeneratePublicOTAKey(GeneratePrivateOTAKey(privateKey))
 	return paymentAddress
-}
-
-// Bytes converts payment address to bytes array
-func (addr *PaymentAddress) Bytes() []byte {
-	res := append(addr.Pk[:], addr.Tk[:]...)
-	if addr.OTAPublic != nil {
-		return append(res, addr.OTAPublic[:]...)
-	}
-	return res
-}
-
-// SetBytes reverts bytes array to payment address
-func (addr *PaymentAddress) SetBytes(bytes []byte) *PaymentAddress {
-	// the first 33 bytes are public key
-	addr.Pk = bytes[:operation.Ed25519KeySize]
-	// the last 33 bytes are transmission key
-	addr.Tk = bytes[operation.Ed25519KeySize:2*operation.Ed25519KeySize]
-	if len(bytes) == 3 * operation.Ed25519KeySize{
-		addr.OTAPublic = bytes[2*operation.Ed25519KeySize:]
-	}else{
-		addr.OTAPublic = nil
-	}
-	return addr
-}
-
-// String encodes a payment address as a hex string
-func (addr PaymentAddress) String() string {
-	byteArrays := addr.Bytes()
-	return hex.EncodeToString(byteArrays[:])
 }
