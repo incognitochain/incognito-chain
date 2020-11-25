@@ -71,8 +71,8 @@ func (t *PortalExchangeRateTool) Convert(tokenIDFrom string, tokenIDTo string, a
 	return res.Uint64(), nil
 }
 
-// ConvertToUSDT converts amount to usdt amount (in nano)
-func (t *PortalExchangeRateTool) ConvertToUSDT(tokenIDFrom string, amount uint64) (uint64, error) {
+// ConvertToUSD converts amount to usdt amount (in nano)
+func (t *PortalExchangeRateTool) ConvertToUSD(tokenIDFrom string, amount uint64) (uint64, error) {
 	rateFrom := t.Rates[tokenIDFrom]
 	if rateFrom.Rate == 0 {
 		return 0, errors.New("invalid exchange rate to convert to usdt")
@@ -84,8 +84,8 @@ func (t *PortalExchangeRateTool) ConvertToUSDT(tokenIDFrom string, amount uint64
 	return res.Uint64(), nil
 }
 
-// ConvertToUSDT converts amount from usdt to token amount (in nano)
-func (t *PortalExchangeRateTool) ConvertFromUSDT(tokenIDTo string, amount uint64) (uint64, error) {
+// ConvertToUSD converts amount from usdt to token amount (in nano)
+func (t *PortalExchangeRateTool) ConvertFromUSD(tokenIDTo string, amount uint64) (uint64, error) {
 	rateTo := t.Rates[tokenIDTo]
 	if rateTo.Rate == 0 {
 		return 0, errors.New("invalid exchange rate to convert to usdt")
@@ -97,14 +97,14 @@ func (t *PortalExchangeRateTool) ConvertFromUSDT(tokenIDTo string, amount uint64
 	return res.Uint64(), nil
 }
 
-func (t *PortalExchangeRateTool) ConvertMapTokensToUSDT(tokens map[string]uint64) (uint64, error) {
+func (t *PortalExchangeRateTool) ConvertMapTokensToUSD(tokens map[string]uint64) (uint64, error) {
 	if len(tokens) == 0 {
 		return 0, nil
 	}
 
 	res := uint64(0)
 	for tokenID, amount := range tokens {
-		amountInUSDT, err := t.ConvertToUSDT(tokenID, amount)
+		amountInUSDT, err := t.ConvertToUSD(tokenID, amount)
 		if err != nil {
 			return 0, nil
 		}
@@ -113,7 +113,7 @@ func (t *PortalExchangeRateTool) ConvertMapTokensToUSDT(tokens map[string]uint64
 	return res, nil
 }
 
-func (t *PortalExchangeRateTool) ConvertMapTokensFromUSDT(amountInUSDT uint64, maxPRVAmount uint64, maxTokenAmounts map[string]uint64) (uint64, map[string]uint64, error) {
+func (t *PortalExchangeRateTool) ConvertMapTokensFromUSD(amountInUSDT uint64, maxPRVAmount uint64, maxTokenAmounts map[string]uint64) (uint64, map[string]uint64, error) {
 	if amountInUSDT == 0 {
 		return 0, nil, nil
 	}
@@ -122,7 +122,7 @@ func (t *PortalExchangeRateTool) ConvertMapTokensFromUSDT(amountInUSDT uint64, m
 	tokenAmountsRes := map[string]uint64{}
 
 	// convert to prv amount first
-	maxPRVInUSDT, err := t.ConvertToUSDT(common.PRVIDStr, maxPRVAmount)
+	maxPRVInUSDT, err := t.ConvertToUSD(common.PRVIDStr, maxPRVAmount)
 	if err != nil {
 		return 0, nil, nil
 	}
@@ -131,7 +131,7 @@ func (t *PortalExchangeRateTool) ConvertMapTokensFromUSDT(amountInUSDT uint64, m
 		prvAmountRes = maxPRVAmount
 		amountInUSDT -= maxPRVInUSDT
 	} else {
-		prvAmountRes, err = t.ConvertFromUSDT(common.PRVIDStr, amountInUSDT)
+		prvAmountRes, err = t.ConvertFromUSD(common.PRVIDStr, amountInUSDT)
 		if err != nil {
 			return 0, nil, nil
 		}
@@ -144,20 +144,20 @@ func (t *PortalExchangeRateTool) ConvertMapTokensFromUSDT(amountInUSDT uint64, m
 
 	// sort token by amountInUSDT descending
 	type tokenInfo struct {
-		tokenID string
-		amount uint64
+		tokenID      string
+		amount       uint64
 		amountInUSDT uint64
 	}
 	tokenInfos := make([]tokenInfo, 0)
 	for tokenID, maxAmount := range maxTokenAmounts {
-		maxAmountInUSDT, err := t.ConvertToUSDT(tokenID, maxAmount)
+		maxAmountInUSDT, err := t.ConvertToUSD(tokenID, maxAmount)
 		if err != nil {
 			return 0, nil, nil
 		}
 
 		tokenInfos = append(tokenInfos, tokenInfo{
 			tokenID:      tokenID,
-			amount: maxAmount,
+			amount:       maxAmount,
 			amountInUSDT: maxAmountInUSDT,
 		})
 	}
@@ -170,7 +170,7 @@ func (t *PortalExchangeRateTool) ConvertMapTokensFromUSDT(amountInUSDT uint64, m
 			tokenAmountsRes[tInfo.tokenID] = tInfo.amount
 			amountInUSDT -= tInfo.amountInUSDT
 		} else {
-			tokenAmountsRes[tInfo.tokenID], err = t.ConvertFromUSDT(tInfo.tokenID, amountInUSDT)
+			tokenAmountsRes[tInfo.tokenID], err = t.ConvertFromUSD(tInfo.tokenID, amountInUSDT)
 			if err != nil {
 				return 0, nil, nil
 			}
