@@ -120,7 +120,7 @@ func (txToken TxTokenBase) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin
 		return false, nil, nil, nil, fmt.Errorf("%v and %v", errPrv, errToken)
 	}
 
-	return isBurnPrv || isBurnToken, burnToken, burnPrv, burnedTokenID, nil
+	return isBurnPrv || isBurnToken, burnPrv, burnToken, burnedTokenID, nil
 }
 // ========== CHECK FUNCTION ===========
 
