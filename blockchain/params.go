@@ -74,17 +74,17 @@ type Params struct {
 	BNBFullNodeProtocol              string
 	BNBFullNodeHost                  string
 	BNBFullNodePort                  string
-	PortalParams                     map[uint64]PortalParams
-	PortalTokens                     map[string]PortalTokenProcessor
-	PortalFeederAddress              string
-	EpochBreakPointSwapNewKey        []uint64
-	IsBackup                         bool
-	PreloadAddress                   string
-	ReplaceStakingTxHeight           uint64
-	ETHRemoveBridgeSigEpoch          uint64
-	BCHeightBreakPointNewZKP         uint64
-	PortalETHContractAddressStr      string // smart contract of ETH for portal
-	PortalV3Epoch                    uint64
+	PortalParams                map[uint64]PortalParams
+	PortalTokens                map[string]PortalTokenProcessor
+	PortalFeederAddress         string
+	EpochBreakPointSwapNewKey   []uint64
+	IsBackup                    bool
+	PreloadAddress              string
+	ReplaceStakingTxHeight      uint64
+	ETHRemoveBridgeSigEpoch     uint64
+	BCHeightBreakPointNewZKP    uint64
+	PortalETHContractAddressStr string // smart contract of ETH for portal
+	BCHeightBreakPointPortalV3  uint64
 }
 
 type GenesisParams struct {
@@ -258,7 +258,7 @@ func SetupParam() {
 		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:     21920,
 		PortalETHContractAddressStr: "0x21Ab34649777e94e30d60319cDBa472759B00AaA", // todo: update sc address
-		PortalV3Epoch:               1,
+		BCHeightBreakPointPortalV3:  1,  // todo: should update before deploying
 	}
 	// END TESTNET
 
@@ -346,8 +346,8 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    791000, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:     2085,
-		PortalETHContractAddressStr: "", // todo: update sc address
-		PortalV3Epoch:               8974,
+		PortalETHContractAddressStr: "",  // todo: update sc address
+		BCHeightBreakPointPortalV3:  8974,  // todo: should update before deploying
 	}
 	// END TESTNET-2
 
@@ -434,7 +434,7 @@ func SetupParam() {
 		BCHeightBreakPointNewZKP:    737450,
 		ETHRemoveBridgeSigEpoch:     1e18,
 		PortalETHContractAddressStr: "", // todo: update sc address
-		PortalV3Epoch:               40,
+		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
