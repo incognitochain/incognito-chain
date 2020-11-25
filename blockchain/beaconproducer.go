@@ -9,8 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -47,46 +45,14 @@ func (shardInstruction *shardInstruction) add(newShardInstruction *shardInstruct
 	}
 }
 
-// NewBlockBeacon create new beacon block:
-// 1. Clone Current Best State
-// 2. Build Essential Header Data:
-//	- Version: Get Proper version value
-//	- Height: Previous block height + 1
-//	- Epoch: Increase Epoch if next height mod epoch is 1 (begin of new epoch), otherwise use current epoch value
-//	- Round: Get Round Value from consensus
-//	- Previous Block Hash: Get Current Best Block Hash
-//	- Producer: Get producer value from round and current beacon committee
-//	- Consensus type: get from beaacon best state
-// 3. Build Body:
-//	a. Build Reward Instruction:
-//		- These instruction will only be built at the begining of each epoch (for previous committee)
-//	b. Get Shard State and Instruction:
-//		- These information will be extracted from all shard block, which got from shard to beacon pool
-//	c. Create Instruction:
-//		- Instruction created from beacon data
-//		- Instruction created from shard instructions
-// 4. Update Cloned Beacon Best State to Build Root Hash for Header
-//	+ Beacon Root Hash will be calculated from new beacon best state (beacon best state after process by this new block)
-//	+ Some data may changed if beacon best state is updated:
-//		+ Beacon Committee, Pending Validator, Candidate List
-//		+ Shard Committee, Pending Validator, Candidate List
-// 5. Build Root Hash in Header
-//	a. Beacon Committee and Validator Root Hash: Hash from Beacon Committee and Pending Validator
-//	b. Beacon Caiddate Root Hash: Hash from Beacon candidate list
-//	c. Shard Committee and Validator Root Hash: Hash from Shard Committee and Pending Validator
-//	d. Shard Caiddate Root Hash: Hash from Shard candidate list
-//	+ These Root Hash will be used to verify that, either Two arbitray Nodes have the same data
-//		after they update beacon best state by new block.
-//	e. ShardStateHash: shard states from blocks of all shard
-//	f. InstructionHash: from instructions in beacon block body
-//	g. InstructionMerkleRoot
+// NewBlockBeacon create new beacon block
 func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version int, proposer string, round int, startTime int64) (*types.BeaconBlock, error) {
 	Logger.log.Infof("⛏ Creating Beacon Block %+v", curView.BeaconHeight+1)
-	//============Init Variable============
 	var err error
 	var epoch uint64
 	newBeaconBlock := types.NewBeaconBlock()
 	copiedCurView := NewBeaconBestState()
+
 	err = copiedCurView.cloneBeaconBestStateFrom(curView)
 	if err != nil {
 		return nil, err
@@ -97,6 +63,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	} else {
 		epoch = copiedCurView.Epoch
 	}
+
 	newBeaconBlock.Header = types.NewBeaconHeader(
 		version,
 		copiedCurView.BeaconHeight+1,
@@ -108,6 +75,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		proposer,
 		proposer,
 	)
+
 	BLogger.log.Infof("Producing block: %d (epoch %d)", newBeaconBlock.Header.Height, newBeaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	portalParams := blockchain.GetPortalParams(newBeaconBlock.GetHeight())
@@ -122,7 +90,9 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
+
 	newBeaconBlock.Body = types.NewBeaconBody(shardStates, instructions)
+
 	// Process new block with new view
 	_, hashes, _, incurredInstructions, err := copiedCurView.updateBeaconBestState(newBeaconBlock, blockchain)
 	if err != nil {
@@ -169,24 +139,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	return newBeaconBlock, nil
 }
 
-// GenerateBeaconBlockBody get Shard To Beacon Block
-// Rule:
-// 1. Shard To Beacon Blocks will be get from Shard To Beacon Pool (only valid block)
-// 2. Process shards independently, for each shard:
-//	a. Shard To Beacon Block List must be compatible with current shard state in beacon best state:
-//  + Increased continuosly in height (10, 11, 12,...)
-//	  Ex: Shard state in beacon best state has height 11 then shard to beacon block list must have first block in list with height 12
-//  + Shard To Beacon Block List must have incremental height in list (10, 11, 12,... NOT 10, 12,...)
-//  + Shard To Beacon Block List can be verify with and only with current shard committee in beacon best state
-//  + DO NOT accept Shard To Beacon Block List that can have two arbitrary blocks that can be verify with two different committee set
-//  + If in Shard To Beacon Block List have one block with Swap Instruction, then this block must be the last block in this list (or only block in this list)
-// return param:
-// 1. shard state
-// 2. valid stake instruction
-// 3. valid swap instruction
-// 4. bridge instructions
-// 5. accepted reward instructions
-// 6. stop auto staking instructions
+// GenerateBeaconBlockBody generate beacon instructions and shard states
 func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	newBeaconBlock *types.BeaconBlock,
 	curView *BeaconBestState,
@@ -245,7 +198,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		for _, shardBlock := range shardBlocks {
 			shardState, newShardInstruction, newDuplicateKeyStakeInstruction,
 				bridgeInstruction, acceptedRewardInstruction, statefulActions := blockchain.GetShardStateFromBlock(
-				curView, curView.BeaconHeight+1, shardBlock, shardID, true, validUnstakePublicKeys, validStakePublicKeys)
+				curView, curView.BeaconHeight+1, shardBlock, shardID, validUnstakePublicKeys, validStakePublicKeys)
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			duplicateKeyStakeInstructions.add(newDuplicateKeyStakeInstruction)
 			shardInstruction.add(newShardInstruction)
@@ -310,7 +263,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	newBeaconHeight uint64,
 	shardBlock *types.ShardBlock,
 	shardID byte,
-	isProducer bool,
 	validUnstakePublicKeys map[string]bool,
 	validStakePublicKeys []string,
 ) (map[byte]types.ShardState, *shardInstruction, *duplicateKeyStakeInstruction,
@@ -343,8 +295,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 
 	allCommitteeValidatorCandidate := []string{}
 	if len(shardInstruction.stopAutoStakeInstructions) != 0 || len(shardInstruction.unstakeInstructions) != 0 {
-		// avoid dead lock
-		// if producer new block then lock beststate
 		allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
 	}
 
@@ -376,6 +326,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	// Collect stateful actions
 	statefulActions := blockchain.collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
+
 	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstructions, statefulActions
 }
 
@@ -447,6 +398,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 		}
 		Logger.log.Info("assignInstructions:", assignInstructions)
 	}
+
 	// Generate swap shard instruction at block height %chainParamEpoch == 0
 	if curView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		if newBeaconHeight%chainParamEpoch == 0 {
@@ -522,25 +474,6 @@ func CreateBeaconSwapActionForKeyListV2(
 	swapInstruction, newBeaconCommittees := GetBeaconSwapInstructionKeyListV2(genesisParam, epoch)
 	remainBeaconCommittees := beaconCommittees[minCommitteeSize:]
 	return swapInstruction, append(newBeaconCommittees, remainBeaconCommittees...)
-}
-
-func (beaconBestState *BeaconBestState) postProcessIncurredInstructions(instructions [][]string) error {
-
-	for _, inst := range instructions {
-		switch inst[0] {
-		case instruction.RETURN_ACTION:
-			returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(inst)
-			if err != nil {
-				return err
-			}
-			err = statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, returnStakingIns.PublicKeysStruct)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(instructions [][]string, shardID byte) *shardInstruction {

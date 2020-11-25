@@ -828,12 +828,6 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 }
 
 // CreateShardInstructionsFromTransactionAndInstruction create inst from transactions in shard block
-// Stake:
-//  ["stake", "pubkey1,pubkey2,..." "shard" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
-// Stop Auto Staking:
-//	["stopautostaking" "pubkey1,pubkey2,..."]
-// Unstake:
-//  ["unstake", "pubkey1,pubkey2,..."]
 func CreateShardInstructionsFromTransactionAndInstruction(
 	transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
 	// Generate stake action
