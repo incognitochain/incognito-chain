@@ -84,12 +84,12 @@ func (s *PortalTestSuiteV3) SetupTest() {
 
 	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
 		map[string]statedb.FinalExchangeRatesDetail{
-			common.PRVIDStr:       {Amount: 1000000},
-			common.PortalBNBIDStr: {Amount: 20000000},
-			common.PortalBTCIDStr: {Amount: 10000000000},
-			ETH_ID:                {Amount: 400000000},
-			USDT_ID:               {Amount: 1000000},
-			DAI_ID:                {Amount: 1000000},
+			common.PRVIDStr:       {Amount: 1000000000},
+			common.PortalBNBIDStr: {Amount: 20000000000},
+			common.PortalBTCIDStr: {Amount: 10000000000000},
+			ETH_ID:                {Amount: 400000000000},
+			USDT_ID:               {Amount: 1000000000},
+			DAI_ID:                {Amount: 1000000000},
 		})
 	s.currentPortalStateForProducer = CurrentPortalState{
 		CustodianPoolState:         map[string]*statedb.CustodianState{},
@@ -217,12 +217,12 @@ func (s *PortalTestSuiteV3) TestExchangeRate() {
 	// uncomment this code to update final exchange rate for converting
 	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
 		map[string]statedb.FinalExchangeRatesDetail{
-			common.PRVIDStr:       {Amount: 1000000},
-			common.PortalBNBIDStr: {Amount: 35000000}, // x1.75
-			common.PortalBTCIDStr: {Amount: 10000000000},
-			ETH_ID:                {Amount: 400000000},
-			USDT_ID:               {Amount: 1000000},
-			DAI_ID:                {Amount: 1000000},
+			common.PRVIDStr:       {Amount: 1000000000},
+			common.PortalBNBIDStr: {Amount: 35000000000}, // x1.75
+			common.PortalBTCIDStr: {Amount: 10000000000000},
+			ETH_ID:                {Amount: 400000000000},
+			USDT_ID:               {Amount: 1000000000},
+			DAI_ID:                {Amount: 1000000000},
 		})
 	s.currentPortalStateForProducer.FinalExchangeRatesState = finalExchangeRate
 
@@ -255,6 +255,12 @@ func producerPortalInstructions(
 
 		metaType, _ := strconv.Atoi(inst[0])
 		contentStr := inst[1]
+		if metaType == metadata.PortalRequestPortingMetaV3 {
+			metaType = metadata.PortalRequestPortingMeta
+		}
+		if metaType == metadata.PortalRedeemRequestMetaV3 {
+			metaType = metadata.PortalRedeemRequestMeta
+		}
 		portalProcessor := pm.portalInstructions[metaType]
 		newInst, err := portalProcessor.buildNewInsts(
 			blockchain,
@@ -669,7 +675,7 @@ func buildPortalRequestRedeemActionV3(
 		RedeemerExternalAddress: redeemerExternalAddress,
 	}
 
-	actionContent := metadata.PortalRedeemRequestAction{
+	actionContent := metadata.PortalRedeemRequestActionV3{
 		Meta:        data,
 		TxReqID:     common.Hash{},
 		ShardID:     shardID,
@@ -4142,12 +4148,12 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
 
 	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
 		map[string]statedb.FinalExchangeRatesDetail{
-			common.PRVIDStr:       {Amount: 1000000},
-			common.PortalBNBIDStr: {Amount: 40000000}, // x2
-			common.PortalBTCIDStr: {Amount: 10000000000},
-			ETH_ID:                {Amount: 400000000},
-			USDT_ID:               {Amount: 1000000},
-			DAI_ID:                {Amount: 1000000},
+			common.PRVIDStr:       {Amount: 1000000000},
+			common.PortalBNBIDStr: {Amount: 40000000000}, // x2
+			common.PortalBTCIDStr: {Amount: 10000000000000},
+			ETH_ID:                {Amount: 400000000000},
+			USDT_ID:               {Amount: 1000000000},
+			DAI_ID:                {Amount: 1000000000},
 		})
 	s.currentPortalStateForProducer.FinalExchangeRatesState = finalExchangeRate
 	s.currentPortalStateForProcess.FinalExchangeRatesState = finalExchangeRate
