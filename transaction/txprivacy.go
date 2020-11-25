@@ -804,6 +804,8 @@ func (tx Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[
 }
 
 func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+	mr.RLock()
+	defer mr.RUnlock()
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 }

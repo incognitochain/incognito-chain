@@ -53,6 +53,10 @@ type TxDesc struct {
 type MempoolRetriever interface {
 	GetSerialNumbersHashH() map[common.Hash][]common.Hash
 	GetTxsInMem() map[common.Hash]TxDesc
+	Lock()
+	Unlock()
+	RLock()
+	RUnlock()
 }
 
 type ChainRetriever interface {

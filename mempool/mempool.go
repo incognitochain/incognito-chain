@@ -89,6 +89,23 @@ type TxPool struct {
 /*
 Init Txpool from config
 */
+
+func (tp* TxPool) Lock() {
+	tp.mtx.Lock()
+}
+
+func (tp* TxPool) Unlock() {
+	tp.mtx.Unlock()
+}
+
+func (tp* TxPool) RLock() {
+	tp.mtx.RLock()
+}
+
+func (tp* TxPool) RUnlock() {
+	tp.mtx.RUnlock()
+}
+
 func (tp *TxPool) Init(cfg *Config) {
 	tp.config = *cfg
 	tp.pool = make(map[common.Hash]*TxDesc)
@@ -215,8 +232,8 @@ func (tp *TxPool) MonitorPool() {
 // #2: default nil, contain input coins hash, which are used for creating this tx
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight int64) (*common.Hash, *TxDesc, error) {
 	//beaconView.BeaconHeight
-	tp.mtx.Lock()
-	defer tp.mtx.Unlock()
+//	tp.mtx.Lock()
+//	defer tp.mtx.Unlock()
 	if tp.IsTest {
 		return &common.Hash{}, &TxDesc{}, nil
 	}
@@ -267,8 +284,8 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 
 // This function is safe for concurrent access.
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
-	tp.mtx.Lock()
-	defer tp.mtx.Unlock()
+//	tp.mtx.Lock()
+//	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
 	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
@@ -286,8 +303,8 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 }
 
 func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs []metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) ([]*metadata.TxDesc, error) {
-	tp.mtx.Lock()
-	defer tp.mtx.Unlock()
+//	tp.mtx.Lock()
+//	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
 	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
@@ -354,6 +371,7 @@ func (tp *TxPool) maybeAcceptTransaction(shardView *blockchain.ShardBestState, b
 	txFee := tx.GetTxFee()
 	txFeeToken := tx.GetTxFeeToken()
 	txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)
+
 	err = tp.addTx(txD, isStore)
 	if err != nil {
 		return nil, nil, err
@@ -532,6 +550,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 			fmt.Errorf("Transaction %+v has invalid fees.",
 				tx.Hash().String()))
 	}
+
 	// Condition 5: check tx with all txs in current mempool
 	err = tx.ValidateTxWithCurrentMempool(tp)
 	if err != nil {
@@ -546,6 +565,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 			return NewMempoolTxError(RejectDoubleSpendWithMempoolTx, err)
 		}
 	}
+
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
 		isNewZKP := tp.config.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
@@ -616,6 +636,9 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 
 // check transaction in pool
 func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
+	tp.mtx.RLock()
+	defer tp.mtx.RUnlock()
+
 	if _, exists := tp.pool[*hash]; exists {
 		return true
 	}
@@ -623,6 +646,10 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 }
 
 func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error, bool) {
+
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
+
 	// calculate match serial number list in pool for replaced tx
 	serialNumberHashList := tx.ListSerialNumbersHashH()
 	hash := common.HashArrayOfHashArray(serialNumberHashList)
@@ -702,6 +729,8 @@ func (tp *TxPool) TriggerCRemoveTxs(tx metadata.Transaction) {
 // #3: default nil, contain input coins hash, which are used for creating this tx
 */
 func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
 	tx := txD.Desc.Tx
 	txHash := tx.Hash()
 	if isStore {
@@ -1023,8 +1052,6 @@ func (tp *TxPool) LastUpdated() time.Time {
 */
 func (tp *TxPool) HaveTransaction(hash *common.Hash) bool {
 	// Protect concurrent access.
-	tp.mtx.RLock()
-	defer tp.mtx.RUnlock()
 	haveTx := tp.isTxInPool(hash)
 	return haveTx
 }
