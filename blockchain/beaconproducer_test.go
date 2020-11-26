@@ -1020,6 +1020,28 @@ func Test_shardInstruction_compose(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Compose stop auto stake and unstake",
+			fields: fields{
+				stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
+					&instruction.StopAutoStakeInstruction{
+						CommitteePublicKeys: []string{"key1"},
+					},
+				},
+				unstakeInstructions: []*instruction.UnstakeInstruction{
+					&instruction.UnstakeInstruction{
+						CommitteePublicKeys: []string{"key1"},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				unstakeInstructions: []*instruction.UnstakeInstruction{
+					&instruction.UnstakeInstruction{
+						CommitteePublicKeys: []string{"key1"},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

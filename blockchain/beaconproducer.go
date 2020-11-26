@@ -354,17 +354,8 @@ func (curView *BeaconBestState) GenerateInstruction(
 	// Duplicate Staking Instruction
 	for _, stakeInstruction := range duplicateKeyStakeInstruction.instructions {
 		if len(stakeInstruction.TxStakes) > 0 {
-			txHash, err := common.Hash{}.NewHashFromStr(stakeInstruction.TxStakes[0])
-			if err != nil {
-				return [][]string{}, err
-			}
-			shardID, _, _, _, _, err := blockchain.GetTransactionByHash(*txHash)
-			if err != nil {
-				return [][]string{}, err
-			}
 			returnStakingIns := instruction.NewReturnStakeInsWithValue(
 				stakeInstruction.PublicKeys,
-				shardID,
 				stakeInstruction.TxStakes,
 			)
 			instructions = append(instructions, returnStakingIns.ToString())
@@ -476,6 +467,49 @@ func CreateBeaconSwapActionForKeyListV2(
 	return swapInstruction, append(newBeaconCommittees, remainBeaconCommittees...)
 }
 
+func (beaconBestState *BeaconBestState) postProcessIncurredInstructions(instructions [][]string, blockchain *BlockChain) ([][]string, error) {
+	res := [][]string{}
+	publicKeys := make(map[byte][]string)
+	stakingTxs := make(map[byte][]string)
+
+	for _, inst := range instructions {
+		switch inst[0] {
+		case instruction.RETURN_ACTION:
+			returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(inst)
+			if err != nil {
+				continue
+			}
+			for i, v := range returnStakingIns.StakingTxHashes {
+				shardID, _, _, _, _, err := blockchain.GetTransactionByHash(v)
+				if err != nil {
+					Logger.log.Info("[staking-v2] Skip post process incurred instructions | with return staking Ins %s")
+					return [][]string{}, err
+				}
+				stakingTxs[shardID] = append(stakingTxs[shardID], returnStakingIns.StakingTXIDs[i])
+				publicKeys[shardID] = append(publicKeys[shardID], returnStakingIns.PublicKeys[i])
+			}
+		default:
+			res = append(res, inst)
+		}
+	}
+
+	shardNumbers := []int{}
+	for shardID, _ := range publicKeys {
+		shardNumbers = append(shardNumbers, int(shardID))
+	}
+	sort.Ints(shardNumbers)
+
+	for _, v := range shardNumbers {
+		returnStakingIns := instruction.NewReturnStakeInsWithValue(
+			publicKeys[byte(v)],
+			stakingTxs[byte(v)],
+		)
+		res = append(res, returnStakingIns.ToString())
+	}
+
+	return res, nil
+}
+
 func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(instructions [][]string, shardID byte) *shardInstruction {
 	shardInstruction := newShardInstruction()
 	// extract instructions
@@ -515,7 +549,7 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 					v := tempStopAutoStakeInstruction.CommitteePublicKeys[i]
 					check, ok := beaconBestState.GetAutoStakingList()[v]
 					if !ok {
-						Logger.log.Errorf("Committee %s is not found or has already been unstaked:", v)
+						Logger.log.Errorf("[stop-autoStaking] Committee %s is not found or has already been unstaked:", v)
 					}
 					if !ok || !check {
 						tempStopAutoStakeInstruction.DeleteSingleElement(i)
@@ -528,7 +562,7 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 			}
 			if inst[0] == instruction.UNSTAKE_ACTION {
 				if err := instruction.ValidateUnstakeInstructionSanity(inst); err != nil {
-					Logger.log.Errorf("SKIP Stop Auto Stake Instruction Error %+v", err)
+					Logger.log.Errorf("[unstaking] SKIP Stop Auto Stake Instruction Error %+v", err)
 					continue
 				}
 				tempUnstakeInstruction := instruction.ImportUnstakeInstructionFromString(inst)
@@ -579,7 +613,8 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 	// Process Stake Instruction form Shard Block
 	// Validate stake instruction => extract only valid stake instruction
 	for _, stakeInstruction := range shardInstructions.stakeInstructions {
-		tempStakePublicKey := stakeInstruction.PublicKeys
+		tempStakePublicKey := make([]string, len(stakeInstruction.PublicKeys))
+		copy(tempStakePublicKey, stakeInstruction.PublicKeys)
 		duplicateStakePublicKeys := []string{}
 		// list of stake public keys and stake transaction and reward receiver must have equal length
 

@@ -222,7 +222,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					if stakerInfo.TxStakingID() == common.HashH([]byte{0}) {
 						continue
 					}
-
+					Logger.log.Info("stakerInfo.TxStakingID().String():", stakerInfo.TxStakingID().String())
 					if _, ok := res[stakerInfo.TxStakingID()]; ok {
 						err = errors.Errorf("Dupdate return staking using tx staking %v", stakerInfo.TxStakingID().String())
 						return nil, nil, err
@@ -270,15 +270,11 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					Logger.log.Errorf("SKIP Return staking instruction %+v, error %+v", returnStakingIns, err)
 					continue
 				}
-				if shardID != returnStakingIns.ShardID {
-					Logger.log.Infof("SKIP Return Staking Instruction | Processed SHARD %+v, Return Staking SHARD %+v", shardID, returnStakingIns.ShardID)
-					continue
-				}
 				for i, v := range returnStakingIns.GetPublicKey() {
 					txHash := returnStakingIns.StakingTxHashes[i]
 					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
 					if err != nil {
-						Logger.log.Error("Can't get transaction hash %v from database error %v", txHash, err)
+						Logger.log.Error("Can't get transaction hash %v from database error %v", txHash.String(), err)
 						continue
 					}
 					shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)

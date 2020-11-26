@@ -178,7 +178,9 @@ func (blockchain *BlockChain) GetShardBlockHashByView(view multiview.View, heigh
 
 func (blockchain *BlockChain) GetShardBlockByHeight(height uint64, shardID byte) (map[common.Hash]*types.ShardBlock, error) {
 	shardBlockMap := make(map[common.Hash]*types.ShardBlock)
-	blkhash, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
+	blkhash, err := blockchain.
+		GetShardBlockHashByHeight(blockchain.ShardChain[shardID].
+			GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
 	if err != nil {
 		return nil, err
 	}

@@ -2292,6 +2292,173 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 		},
 	)
 
+		{
+			name: "Invalid Unstake Instruction Format",
+			fields: fields{
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					shardCommittee:  map[byte][]incognitokey.CommitteePublicKey{},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{},
+					shardCommonPool: []incognitokey.CommitteePublicKey{*incKey},
+					autoStake: map[string]bool{
+						key: true,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey.GetIncKeyBase58(): paymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key: *hash,
+					},
+				},
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{instruction.UNSTAKE_ACTION},
+					},
+				},
+			},
+			want:    [][]string{},
+			wantErr: true,
+		},
+		{
+			name: "Error In Processing Unstake Instruction",
+			fields: fields{
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					shardCommittee:  map[byte][]incognitokey.CommitteePublicKey{},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{},
+					shardCommonPool: []incognitokey.CommitteePublicKey{*incKey2},
+					autoStake: map[string]bool{
+						key2: true,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey2.GetIncKeyBase58(): paymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key2: *hash,
+					},
+				},
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.UNSTAKE_ACTION,
+							key2,
+						},
+					},
+					ConsensusStateDB:        sDB,
+					newUnassignedCommonPool: []string{key2},
+				},
+			},
+			want:    [][]string{},
+			wantErr: true,
+		},
+		{
+			name: "Valid Input",
+			fields: fields{
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					shardCommittee:  map[byte][]incognitokey.CommitteePublicKey{},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{},
+					shardCommonPool: []incognitokey.CommitteePublicKey{*incKey},
+					autoStake: map[string]bool{
+						key: true,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey.GetIncKeyBase58(): paymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key: *hash,
+					},
+				},
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.UNSTAKE_ACTION,
+							key,
+						},
+					},
+					ConsensusStateDB:        sDB,
+					newUnassignedCommonPool: []string{key},
+				},
+			},
+			want: [][]string{
+				[]string{
+					instruction.RETURN_ACTION,
+					key,
+					"0",
+					hash.String(),
+					"100",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			engine := &BeaconCommitteeEngineV2{
+				beaconHeight:                      tt.fields.beaconHeight,
+				beaconHash:                        tt.fields.beaconHash,
+				finalBeaconCommitteeStateV2:       tt.fields.finalBeaconCommitteeStateV2,
+				uncommittedBeaconCommitteeStateV2: tt.fields.uncommittedBeaconCommitteeStateV2,
+			}
+			got, err := engine.BuildIncurredInstructions(tt.args.env)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BuildIncurredInstructions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BuildIncurredInstructions() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
+
+	// Init data for testcases
+	initStateDB()
+	initPublicKey()
+	initLog()
+
+	rewardReceiverkey := incKey.GetIncKeyBase58()
+	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
+
+	validSDB1, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	assert.Nil(t, err)
+	statedb.StoreStakerInfoV1(
+		validSDB1,
+		[]incognitokey.CommitteePublicKey{*incKey},
+		map[string]privacy.PaymentAddress{
+			rewardReceiverkey:         paymentAddress,
+			incKey2.GetIncKeyBase58(): paymentAddress,
+			incKey3.GetIncKeyBase58(): paymentAddress,
+			incKey4.GetIncKeyBase58(): paymentAddress,
+			incKey5.GetIncKeyBase58(): paymentAddress,
+			incKey6.GetIncKeyBase58(): paymentAddress,
+		},
+		map[string]bool{
+			key:  false,
+			key2: false,
+			key3: true,
+			key4: true,
+			key5: false,
+			key6: false,
+		},
+		map[string]common.Hash{
+			key:  *hash,
+			key2: *hash,
+			key3: *hash,
+			key4: *hash,
+			key5: *hash,
+			key6: *hash,
+		},
+	)
+
 	validSDB2, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 	assert.Nil(t, err)
 	statedb.StoreStakerInfoV1(
