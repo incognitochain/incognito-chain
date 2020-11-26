@@ -398,17 +398,8 @@ func (beaconBestState *BeaconBestState) GenerateInstruction(
 	// Duplicate Staking Instruction
 	for _, stakeInstruction := range duplicateKeyStakeInstruction.instructions {
 		if len(stakeInstruction.TxStakes) > 0 {
-			txHash, err := common.Hash{}.NewHashFromStr(stakeInstruction.TxStakes[0])
-			if err != nil {
-				return [][]string{}, err
-			}
-			shardID, _, _, _, _, err := blockchain.GetTransactionByHash(*txHash)
-			if err != nil {
-				return [][]string{}, err
-			}
 			returnStakingIns := instruction.NewReturnStakeInsWithValue(
 				stakeInstruction.PublicKeys,
-				shardID,
 				stakeInstruction.TxStakes,
 			)
 			instructions = append(instructions, returnStakingIns.ToString())

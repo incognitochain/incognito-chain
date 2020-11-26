@@ -787,7 +787,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	var err error
 	//statedb===========================START
 	// Added
-	err = newBestState.storeCommitteeStateWithCurrentState(committeeChange)
+	err = newBestState.storeCommitteeStateWithCurrentState(committeeChange, blockchain)
 	if err != nil {
 		return err
 	}
@@ -1048,38 +1048,20 @@ func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
 	return beacon, shard
 }
 
-func (beaconBestState *BeaconBestState) StoreCommitteeStateWithCurrentState(
-	committeeChange *committeestate.CommitteeChange, blockchain *BlockChain,
-) error {
-	stakingTxs := make(map[string]map[common.Hash]byte)
-	for 
-	return beaconBestState.storeCommitteeStateWithCurrentState(committeeChange, stakingTxs)
-}
-
 func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
-	committeeChange *committeestate.CommitteeChange, stakingTxs map[string]map[common.Hash]byte) error {
+	committeeChange *committeestate.CommitteeChange,
+	blockchain *BlockChain,
+) error {
 	stakerKeys := committeeChange.StakerKeys()
-	if len(stakerKeys) != 0 {
-		err := statedb.StoreStakerInfoV1(
-			beaconBestState.consensusStateDB,
-			stakerKeys,
-			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
-			beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
-			stakingTxs,
-		)
-		if err != nil {
-			return err
-		}
-	}
-
 	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
-	if len(stopAutoStakerKeys) != 0 {
+	committees := append(stakerKeys, stopAutoStakerKeys...)
+	if len(committees) != 0 {
 		err := statedb.StoreStakerInfoV1(
 			beaconBestState.consensusStateDB,
-			stopAutoStakerKeys,
+			committees,
 			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
 			beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
-			stakingTxs,
+			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
 		)
 		if err != nil {
 			return err

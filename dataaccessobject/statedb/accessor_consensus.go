@@ -529,7 +529,7 @@ func storeStakerInfo(
 	committees []incognitokey.CommitteePublicKey,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	autoStaking map[string]bool,
-	stakingTx map[string]map[common.Hash]byte,
+	stakingTx map[string]common.Hash,
 ) error {
 	for _, committee := range committees {
 		keyBytes, err := committee.RawBytes()
@@ -538,17 +538,10 @@ func storeStakerInfo(
 		}
 		key := GetStakerInfoKey(keyBytes)
 		committeeString, err := committee.ToBase58()
-		txHash := common.Hash{}
-		shardID := byte(0)
-		for h, v := range stakingTx[committeeString] {
-			txHash = h
-			shardID = v
-		}
 		value := NewStakerInfoWithValue(
 			rewardReceiver[committee.GetIncKeyBase58()],
 			autoStaking[committeeString],
-			txHash,
-			shardID,
+			stakingTx[committeeString],
 		)
 		err = stateDB.SetStateObject(StakerObjectType, key, value)
 		if err != nil {
@@ -563,7 +556,7 @@ func StoreStakerInfoV1(
 	committees []incognitokey.CommitteePublicKey,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	autoStaking map[string]bool,
-	stakingTx map[string]map[common.Hash]byte,
+	stakingTx map[string]common.Hash,
 ) error {
 	return storeStakerInfo(stateDB, committees, rewardReceiver, autoStaking, stakingTx)
 }
