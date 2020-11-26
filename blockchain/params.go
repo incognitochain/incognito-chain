@@ -45,6 +45,7 @@ type Params struct {
 	MaxShardBlockCreation            time.Duration
 	MinBeaconBlockInterval           time.Duration
 	MaxBeaconBlockCreation           time.Duration
+	NumberOfFixedBlockValidators     int
 	StakingAmountShard               uint64
 	ActiveShards                     int
 	GenesisBeaconBlock               *types.BeaconBlock // GenesisBlock defines the first block of the chain.
@@ -76,7 +77,8 @@ type Params struct {
 	IsBackup                         bool
 	PreloadAddress                   string
 	ReplaceStakingTxHeight           uint64
-	BCHeightBreakPointFixRandShardCM uint64
+	ETHRemoveBridgeSigEpoch          uint64
+	BCHeightBreakPointNewZKP         uint64
 }
 
 type GenesisParams struct {
@@ -105,7 +107,7 @@ var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
 var EpochLengthV2 uint64
 
-func init() {
+func SetupParam() {
 	// FOR TESTNET
 	genesisParamsTestnetNew = &GenesisParams{
 		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeTestnetSerializedPubkey,
@@ -133,12 +135,13 @@ func init() {
 		StakingAmountShard:     TestNetStakingAmountShard,
 		ActiveShards:           TestNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
-		GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
+		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
+		// GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
 		MinShardBlockInterval:            TestNetMinShardBlkInterval,
 		MaxShardBlockCreation:            TestNetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           TestNetMaxBeaconBlkCreation,
+		NumberOfFixedBlockValidators:     4,
 		BasicReward:                      TestnetBasicReward,
 		Epoch:                            TestnetEpoch,
 		RandomTime:                       TestnetRandomTime,
@@ -181,11 +184,12 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           1,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 2070000,
+		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    1,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  2300000, //TODO: change this value when deployed testnet
+		ETHRemoveBridgeSigEpoch:   21920,
 	}
 	// END TESTNET
 
@@ -216,12 +220,13 @@ func init() {
 		StakingAmountShard:     TestNet2StakingAmountShard,
 		ActiveShards:           TestNet2ActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
-		GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
+		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
+		// GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
 		MinShardBlockInterval:            TestNet2MinShardBlkInterval,
 		MaxShardBlockCreation:            TestNet2MaxShardBlkCreation,
 		MinBeaconBlockInterval:           TestNet2MinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           TestNet2MaxBeaconBlkCreation,
+		NumberOfFixedBlockValidators:     4,
 		BasicReward:                      Testnet2BasicReward,
 		Epoch:                            Testnet2Epoch,
 		RandomTime:                       Testnet2RandomTime,
@@ -264,11 +269,12 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           1,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 120000,
+		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    1,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  260000, //TODO: change this value when deployed testnet2
+		ETHRemoveBridgeSigEpoch:   2085,
 	}
 	// END TESTNET-2
 
@@ -297,12 +303,13 @@ func init() {
 		StakingAmountShard:     MainNetStakingAmountShard,
 		ActiveShards:           MainNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
-		GenesisShardBlock:                CreateGenesisShardBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
+		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
+		// GenesisShardBlock:                CreateGenesisShardBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
 		MinShardBlockInterval:            MainnetMinShardBlkInterval,
 		MaxShardBlockCreation:            MainnetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           MainnetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           MainnetMaxBeaconBlkCreation,
+		NumberOfFixedBlockValidators:     22,
 		BasicReward:                      MainnetBasicReward,
 		Epoch:                            MainnetEpoch,
 		RandomTime:                       MainnetRandomTime,
@@ -345,11 +352,13 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey:        MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           559380,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 644000,
+
+		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    559380,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  737450,
+		ETHRemoveBridgeSigEpoch:   1973,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
@@ -363,4 +372,19 @@ func init() {
 		GenesisParam = genesisParamsMainnetNew
 		EpochLengthV2 = MainnetEpochV2
 	}
+}
+
+func (p *Params) CreateGenesisBlocks() {
+	blockTime := ""
+	switch p.Net {
+	case Mainnet:
+		blockTime = MainnetGenesisBlockTime
+	case Testnet:
+		blockTime = TestnetGenesisBlockTime
+	case Testnet2:
+		blockTime = Testnet2GenesisBlockTime
+	}
+	p.GenesisBeaconBlock = CreateGenesisBeaconBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
+	p.GenesisShardBlock = CreateGenesisShardBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
+	return
 }

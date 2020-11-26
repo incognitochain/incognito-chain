@@ -104,6 +104,20 @@ func (_m *ChainRetriever) GetCentralizedWebsitePaymentAddress(_a0 uint64) string
 	return r0
 }
 
+// GetETHRemoveBridgeSigEpoch provides a mock function with given fields:
+func (_m *ChainRetriever) GetETHRemoveBridgeSigEpoch() uint64 {
+	ret := _m.Called()
+
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func() uint64); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(uint64)
+	}
+
+	return r0
+}
+
 // GetFixedRandomForShardIDCommitment provides a mock function with given fields: beaconHeight
 func (_m *ChainRetriever) GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar {
 	ret := _m.Called(beaconHeight)
