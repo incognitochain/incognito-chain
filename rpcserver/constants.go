@@ -52,6 +52,7 @@ const (
 	getBlockHash                = "getblockhash"
 
 	listOutputCoins                            = "listoutputcoins"
+	listOutputCoinsFromCache                   = "listoutputcoinsfromcache"
 	listOutputTokens                            = "listoutputtokens"
 	createRawTransaction                       = "createtransaction"
 	sendRawTransaction                         = "sendtransaction"
