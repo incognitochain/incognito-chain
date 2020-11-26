@@ -148,7 +148,6 @@ func validateSingleBriSig(
 	}
 	if !result {
 		return NewConsensusError(UnExpectedError, errors.New("invalid BRI Signature"))
-		panic(100)
 	}
 	return nil
 }
