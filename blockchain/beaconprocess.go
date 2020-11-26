@@ -164,17 +164,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	Logger.log.Debugf("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
 
-	newBestState, hashes, committeeChange, incurredInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, committeeChange, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		curView.beaconCommitteeEngine.AbortUncommittedBeaconState()
 		return err
-	}
-
-	if len(incurredInstructions) != 0 {
-		err := curView.postProcessIncurredInstructions(incurredInstructions)
-		if err != nil {
-			return err
-		}
 	}
 
 	var err2 error
@@ -195,7 +188,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
-	err2 = newBestState.storeCommitteeStateWithPreviousState(committeeChange)
+	err2 = newBestState.storeCommitteeStateWithPreviousState(beaconBlock.Body.Instructions)
 	if err2 != nil {
 		return err2
 	}
@@ -991,6 +984,9 @@ func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
 
 func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 	committeeChange *committeestate.CommitteeChange) error {
+	if beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+		return nil
+	}
 	stakerKeys := committeeChange.StakerKeys()
 	if len(stakerKeys) != 0 {
 		err := statedb.StoreStakerInfoV1(
@@ -1023,13 +1019,20 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 }
 
 func (beaconBestState *BeaconBestState) storeCommitteeStateWithPreviousState(
-	committeeChange *committeestate.CommitteeChange) error {
+	instructions [][]string,
+) error {
 
-	removedStakerKeys := committeeChange.UnstakeKeys()
-	if len(removedStakerKeys) != 0 {
-		err := statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, removedStakerKeys)
-		if err != nil {
-			return err
+	for _, inst := range instructions {
+		switch inst[0] {
+		case instruction.RETURN_ACTION:
+			returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(inst)
+			if err != nil {
+				return err
+			}
+			err = statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, returnStakingIns.PublicKeysStruct)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
