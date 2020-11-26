@@ -113,6 +113,20 @@ func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string, height uint64) 
 	fmt.Println("========== END GET PRV OUTPUT COIN ==========")
 }
 
+
+func GetPRVOutPutCoinCached(tool *debugtool.DebugTool, privkey string) {
+	fmt.Println("========== GET CACHED PRV OUTPUT COIN ==========")
+	b, _ := tool.GetListOutputCoinsCached(privkey, common.PRVIDStr, uint64(0))
+	fmt.Println(string(b))
+	fmt.Println("========== END GET CACHED PRV OUTPUT COIN ==========")
+}
+func GetOutputTokenCached(tool *debugtool.DebugTool, privKey string, tokenID string) {
+	fmt.Println("========== GET CACHED OUTPUT TOKEN ==========")
+	b, _ := tool.GetListOutputCoinsCached(privKey, tokenID, uint64(0))
+	fmt.Println(string(b))
+	fmt.Println("========== END GET CACHED OUTPUT TOKEN ==========")
+}
+
 func GetPRVBalance(tool *debugtool.DebugTool, privkey string) {
 	fmt.Println("========== GET PRV BALANCE ==========")
 	b, _ := tool.GetBalanceByPrivatekey(privkey)
@@ -483,6 +497,20 @@ func main() {
 
 			GetPRVOutPutCoin(tool, privateKey, bi.Uint64())
 		}
+		if args[0] == "outcoincached" {
+			var privateKey string
+			if len(args[1]) < 10 {
+				index, err := strconv.ParseInt(args[1], 10, 32)
+				if err != nil {
+					panic(err)
+				}
+				privateKey = privateKeys[index]
+			} else {
+				privateKey = args[1]
+			}
+
+			GetPRVOutPutCoinCached(tool, privateKey)
+		}
 		if args[0] == "balance" {
 			var privateKey string
 			if len(args[1]) < 3 {
@@ -697,6 +725,28 @@ func main() {
 			}
 
 			GetOutputToken(tool, privateKey, tokenID, bi.Uint64())
+		}
+		if args[0] == "outtokencached" {
+			if len(args) < 2 {
+				panic("Not enough param for outtoken")
+			}
+			var privateKey = args[1]
+			if len(args[1]) < 10 {
+				index, err := strconv.ParseInt(args[1], 10, 32)
+				if err != nil {
+					panic(err)
+				}
+				privateKey = privateKeys[index]
+			}
+			tokenID := common.PRVIDStr
+			if len(args) > 2 {
+				tokenID = args[2]
+				if len(args[2]) < 10 {
+					tokenID = tokenIDs[args[2]]
+				}
+			}
+
+			GetOutputTokenCached(tool, privateKey, tokenID)
 		}
 		if args[0] == "uot" {
 			if len(args) < 2 {

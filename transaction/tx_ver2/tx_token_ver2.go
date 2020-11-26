@@ -877,8 +877,8 @@ func (txToken *TxToken) IsCoinsBurning(bcr metadata.ChainRetriever, retriever me
 	return txToken.GetTxNormal().IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight)
 }
 
-func (txToken *TxToken) CheckAuthorizedSender([]byte) (bool, error) {
-	return false, errors.New("TxToken does not have CheckAuthorizedSender")
+func (txToken *TxToken) CheckAuthorizedSender(pk []byte) (bool, error) {
+	return txToken.Tx.CheckAuthorizedSender(pk)
 }
 
 func (tx *TxToken) GetReceiverData() ([]privacy.Coin, error) {

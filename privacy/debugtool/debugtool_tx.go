@@ -178,6 +178,41 @@ func (this *DebugTool) GetListOutputCoins(privKeyStr, tokenID string, h uint64) 
 	return this.SendPostRequestWithQuery(query)
 }
 
+func (this *DebugTool) GetListOutputCoinsCached(privKeyStr, tokenID string, h uint64) ([]byte, error) {
+	if len(this.url) == 0 {
+		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
+	}
+
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	otaSecretKey := keyWallet.Base58CheckSerialize(wallet.OTAKeyType)
+	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
+
+	query := fmt.Sprintf(`{
+		"jsonrpc": "1.0",
+		"method": "listoutputcoinsfromcache",
+		"params": [
+			0,
+			999999,
+			[
+				{
+			  "PaymentAddress": "%s",
+			  "OTASecretKey": "%s",
+			  "ReadonlyKey" : "%s",
+			  "StartHeight": %d
+				}
+			],
+		  "%s"
+		  ],
+		"id": 1
+	}`, paymentAddStr, otaSecretKey, viewingKeyStr, h, tokenID)
+
+	//fmt.Println("==============")
+
+	return this.SendPostRequestWithQuery(query)
+}
+
 func (this *DebugTool) GetListOutputTokens(privKeyStr, tokenID string) ([]byte, error) {
 	if len(this.url) == 0 {
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
