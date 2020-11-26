@@ -617,6 +617,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 					} else {
 						delete(b.rewardReceiver, swapInstruction.OutPublicKeyStructs[index].GetIncKeyBase58())
 						delete(b.autoStake, outPublicKey)
+						delete(b.stakingTx, outPublicKey)
 					}
 				}
 			}
@@ -672,6 +673,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 					} else {
 						delete(b.rewardReceiver, swapInstruction.OutPublicKeyStructs[index].GetIncKeyBase58())
 						delete(b.autoStake, outPublicKey)
+						delete(b.stakingTx, outPublicKey)
 					}
 				}
 			}
