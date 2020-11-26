@@ -648,7 +648,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	var err error
 	//statedb===========================START
 	// Added
-	err = newBestState.storeCommitteeStateWithCurrentState(committeeChange, blockchain)
+	err = newBestState.storeCommitteeStateWithCurrentState(committeeChange)
 	if err != nil {
 		return err
 	}

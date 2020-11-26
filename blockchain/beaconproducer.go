@@ -467,49 +467,6 @@ func CreateBeaconSwapActionForKeyListV2(
 	return swapInstruction, append(newBeaconCommittees, remainBeaconCommittees...)
 }
 
-func (beaconBestState *BeaconBestState) postProcessIncurredInstructions(instructions [][]string, blockchain *BlockChain) ([][]string, error) {
-	res := [][]string{}
-	publicKeys := make(map[byte][]string)
-	stakingTxs := make(map[byte][]string)
-
-	for _, inst := range instructions {
-		switch inst[0] {
-		case instruction.RETURN_ACTION:
-			returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(inst)
-			if err != nil {
-				continue
-			}
-			for i, v := range returnStakingIns.StakingTxHashes {
-				shardID, _, _, _, _, err := blockchain.GetTransactionByHash(v)
-				if err != nil {
-					Logger.log.Info("[staking-v2] Skip post process incurred instructions | with return staking Ins %s")
-					return [][]string{}, err
-				}
-				stakingTxs[shardID] = append(stakingTxs[shardID], returnStakingIns.StakingTXIDs[i])
-				publicKeys[shardID] = append(publicKeys[shardID], returnStakingIns.PublicKeys[i])
-			}
-		default:
-			res = append(res, inst)
-		}
-	}
-
-	shardNumbers := []int{}
-	for shardID, _ := range publicKeys {
-		shardNumbers = append(shardNumbers, int(shardID))
-	}
-	sort.Ints(shardNumbers)
-
-	for _, v := range shardNumbers {
-		returnStakingIns := instruction.NewReturnStakeInsWithValue(
-			publicKeys[byte(v)],
-			stakingTxs[byte(v)],
-		)
-		res = append(res, returnStakingIns.ToString())
-	}
-
-	return res, nil
-}
-
 func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(instructions [][]string, shardID byte) *shardInstruction {
 	shardInstruction := newShardInstruction()
 	// extract instructions
