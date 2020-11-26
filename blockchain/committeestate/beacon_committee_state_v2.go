@@ -814,6 +814,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 				publicKey,
 				stakerInfo,
 			)
+
 			if err != nil {
 				return newCommitteeChange, returnStakingInstruction, errors.New("Can't find staker info")
 			}
