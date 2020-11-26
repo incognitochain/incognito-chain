@@ -31,10 +31,10 @@ func TestPortalExchangeRateTool(t *testing.T) {
 	fmt.Println("Res2: ", res2)
 
 
-	res3, _ := tool.ConvertToUSDT(common.EthAddrStr,  10)
+	res3, _ := tool.ConvertToUSD(common.EthAddrStr,  10)
 	fmt.Println("Res3: ", res3)
 
-	res4, _ := tool.ConvertFromUSDT(common.EthAddrStr,  4)
+	res4, _ := tool.ConvertFromUSD(common.EthAddrStr,  4)
 	fmt.Println("res4: ", res4)
 
 }

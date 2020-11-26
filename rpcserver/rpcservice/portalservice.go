@@ -110,9 +110,9 @@ func (s *PortalService) ConvertExchangeRates(
 	if tokenIDTo != "" && tokenIDFrom != "" {
 		result, err = exchangeTool.Convert(tokenIDFrom, tokenIDTo, amount)
 	} else if tokenIDTo == "" {
-		result, err = exchangeTool.ConvertToUSDT(tokenIDFrom, amount)
+		result, err = exchangeTool.ConvertToUSD(tokenIDFrom, amount)
 	} else if tokenIDFrom == "" {
-		result, err = exchangeTool.ConvertFromUSDT(tokenIDTo, amount)
+		result, err = exchangeTool.ConvertFromUSD(tokenIDTo, amount)
 	}
 
 	return result, err
