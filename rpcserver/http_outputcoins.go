@@ -134,3 +134,59 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 	}
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleListOutputCoinsFromCache(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	// get component
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 3 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
+	}
+
+	minTemp, ok := paramsArray[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min param is invalid"))
+	}
+	min := int(minTemp)
+
+	maxTemp, ok := paramsArray[1].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("max param is invalid"))
+	}
+	max := int(maxTemp)
+
+	_ = min
+	_ = max
+
+	//#3: list key component
+	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	if listKeyParams == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("list key is invalid"))
+	}
+
+	//#4: optional token type - default prv coin
+	tokenID := &common.Hash{}
+	err := tokenID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err)
+	}
+	if len(paramsArray) > 3 {
+		var err1 error
+		tokenIdParam, ok := paramsArray[3].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
+		}
+
+		tokenID, err1 = common.Hash{}.NewHashFromStr(tokenIdParam)
+		if err1 != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err1)
+		}
+	}
+	result, err1 := httpServer.outputCoinService.ListCachedOutputCoinsByKey(listKeyParams, *tokenID)
+	if err1 != nil {
+		return nil, err1
+	}
+	return result, nil
+}
+
+

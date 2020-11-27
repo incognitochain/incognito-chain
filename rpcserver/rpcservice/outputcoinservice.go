@@ -250,6 +250,146 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 	return result, nil
 }
 
+func (coinService CoinService) ListCachedOutputCoinsByKey(listKeyParams []interface{}, tokenID common.Hash) (*jsonresult.ListOutputCoins, *RPCError) {
+	result := &jsonresult.ListOutputCoins{
+		Outputs: make(map[string][]jsonresult.OutCoin),
+	}
+	for _, keyParam := range listKeyParams {
+		keys, ok := keyParam.(map[string]interface{})
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid params: %+v", keyParam))
+		}
+		// get OTA secretKey deserializing (compulsory for V2, optional for V1)
+		var otaKey *wallet.KeyWallet
+		var err error
+		otaKeyStr, ok := keys["OTASecretKey"].(string)
+		if !ok || otaKeyStr == "" {
+			Logger.log.Info("otaKey is optional")
+		} else {
+			otaKey, err = wallet.Base58CheckDeserialize(otaKeyStr)
+			if err != nil {
+				Logger.log.Debugf("otaKey is invalid: err: %+v", err)
+				return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
+			}
+		}
+		// get keyset only contain read only key by deserializing (optional)
+		var readonlyKey *wallet.KeyWallet
+		readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
+		if !ok || readonlyKeyStr == "" {
+			Logger.log.Info("Read onlyKey is optional")
+		} else {
+			readonlyKey, err = wallet.Base58CheckDeserialize(readonlyKeyStr)
+			if err != nil {
+				Logger.log.Debugf("Read onlyKey is invalid: err: %+v", err)
+				return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
+			}
+		}
+		// get keyset only contain public key by deserializing (required)
+		paymentAddressStr, ok := keys["PaymentAddress"].(string)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))
+		}
+		paymentAddressKey, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
+		}
+
+		// Get start height
+		// startHeightTemp, ok := keys["StartHeight"].(float64)
+		// if !ok {
+		// 	return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid start height"))
+		// }
+		// startHeight := uint64(startHeightTemp)
+
+		// create a key set
+		keySet := incognitokey.KeySet{
+			PaymentAddress: paymentAddressKey.KeySet.PaymentAddress,
+		}
+		// readonly key is optional
+		if readonlyKey != nil && len(readonlyKey.KeySet.ReadonlyKey.Rk) > 0 {
+			keySet.ReadonlyKey = readonlyKey.KeySet.ReadonlyKey
+		}
+		if otaKey != nil && otaKey.KeySet.OTAKey.GetOTASecretKey()!= nil {
+			keySet.OTAKey = otaKey.KeySet.OTAKey
+		}
+
+		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
+		plainOutputCoins, err := coinService.BlockChain.TryGetAllOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID, true)
+		var outputCoins []coin.Coin
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
+		}
+		result.ToHeight = 0
+		result.FromHeight = 0
+		item := make([]jsonresult.OutCoin, 0)
+
+		//If the ReadonlyKey is provided, return decrypted coins
+		if len(outputCoins) == 0{
+			for _, outCoin := range plainOutputCoins {
+				tmp := jsonresult.NewOutCoin(outCoin)
+				db := coinService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
+
+				if outCoin.GetVersion() == 2{
+					tmpCoin, ok := outCoin.(*coin.CoinV2)
+					if !ok{
+						continue
+					}
+
+					//Retrieve coin's index
+					publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
+					idx, err := statedb.GetOTACoinIndex(db, tokenID, publicKeyBytes)
+					if err != nil{
+						return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
+					}
+
+					tmp.Index = base58.Base58Check{}.Encode(idx.Bytes(), common.ZeroByte)
+					if tmpCoin.GetSharedRandom() != nil{
+						tmp.SharedRandom = base58.Base58Check{}.Encode(tmpCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
+					}
+				}
+
+				item = append(item, tmp)
+			}
+			if readonlyKey != nil && len(readonlyKey.KeySet.ReadonlyKey.Rk) > 0 {
+				result.Outputs[readonlyKeyStr] = item
+			} else {
+				result.Outputs[paymentAddressStr] = item
+			}
+		}else{//ReadonlyKey is not provided, return raw coins
+			for _, outCoin := range outputCoins {
+				tmp := jsonresult.NewOutCoin(outCoin)
+				db := coinService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
+
+				if outCoin.GetVersion() == 2{
+					tmpCoin, ok := outCoin.(*coin.CoinV2)
+					if !ok{
+						continue
+					}
+
+					//Retrieve coin's index
+					publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
+					idx, err := statedb.GetOTACoinIndex(db, tokenID, publicKeyBytes)
+					if err != nil{
+						return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
+					}
+
+					tmp.Index = base58.Base58Check{}.Encode(idx.Bytes(), common.ZeroByte)
+					if tmpCoin.GetSharedRandom() != nil{
+						tmp.SharedRandom = base58.Base58Check{}.Encode(tmpCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
+					}
+				}
+
+				item = append(item, tmp)
+			}
+			result.Outputs[paymentAddressStr] = item
+		}
+	}
+	return result, nil
+}
+
 func (coinService CoinService) ListUnspentOutputTokensByKey(listKeyParams []interface{}) (*jsonresult.ListOutputCoins, *RPCError) {
 	result := &jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
