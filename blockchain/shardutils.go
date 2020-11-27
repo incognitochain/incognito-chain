@@ -35,7 +35,7 @@ func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) 
 	return beaconBlocks, nil
 }
 
-func createCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) []byte {
+func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) []byte {
 	crossIDs := []byte{}
 	byteMap := make([]byte, common.MaxShardNumber)
 	for _, tx := range txList {
