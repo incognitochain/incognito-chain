@@ -319,10 +319,7 @@ func (sub *SubManager) registerToProxy(
 	return topics, r, nil
 }
 
-//TODO: @hy
 func getMessagesForLayer(layer string, shardID []byte) []string {
-	// switch mode {
-	// case common.NodeModeAuto:
 	if layer == common.ShardRole {
 		return []string{
 			wire.CmdBlockShard,
