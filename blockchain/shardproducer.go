@@ -573,7 +573,9 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 				Logger.log.Error(err)
 				return instructions, shardPendingValidator, shardCommittee, err
 			}
-			swapOrConfirmShardSwapInstruction = tempSwapInstruction.ToString()
+			if !tempSwapInstruction.IsEmpty() {
+				swapOrConfirmShardSwapInstruction = tempSwapInstruction.ToString()
+			}
 			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		}
 	}

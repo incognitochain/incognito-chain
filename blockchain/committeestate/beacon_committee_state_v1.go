@@ -867,11 +867,6 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 	return nil
 }
 
-//HasSwappedCommittees ...
-func (engine *BeaconCommitteeEngineV1) HasSwappedCommittees(env *BeaconCommitteeStateEnvironment) (bool, error) {
-	return false, nil
-}
-
 //ActiveShards ...
 func (engine *BeaconCommitteeEngineV1) ActiveShards() int {
 	return len(engine.beaconCommitteeStateV1.shardCommittee)

@@ -837,23 +837,6 @@ func (b *BeaconCommitteeStateV2) getAllCandidateSubstituteCommittee() []string {
 	return res
 }
 
-//HasSwappedCommittees ...
-func (engine *BeaconCommitteeEngineV2) HasSwappedCommittees(env *BeaconCommitteeStateEnvironment) (bool, error) {
-	if env.BeaconHeight%env.ParamEpoch == 0 {
-		for _, inst := range env.BeaconInstructions {
-			switch inst[0] {
-			case instruction.SWAP_SHARD_ACTION:
-				err := instruction.ValidateSwapShardInstructionSanity(inst)
-				if err != nil {
-					return false, err
-				}
-				return true, nil
-			}
-		}
-	}
-	return false, nil
-}
-
 func (b *BeaconCommitteeStateV2) stopAutoStake(publicKey string, committeeChange *CommitteeChange) *CommitteeChange {
 	b.autoStake[publicKey] = false
 	committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, publicKey)
