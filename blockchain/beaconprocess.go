@@ -935,7 +935,7 @@ func processBeaconForConfirmmingCrossShard(blockchain *BlockChain, beaconBlock *
 						beaconBlock.GetHeight(),
 						beaconBlock.Hash().String(),
 					}
-					Logger.log.Info("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
+					Logger.log.Info("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, lastHeight, info)
 					b, _ := json.Marshal(info)
 
 					//not update if already exit
