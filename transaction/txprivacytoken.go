@@ -424,6 +424,19 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) validateDoubleSpendTxWithCurren
 }
 
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
+	if txCustomTokenPrivacy.Metadata != nil {
+		isContinued, err := txCustomTokenPrivacy.Metadata.ValidateTxWithBlockChain(&txCustomTokenPrivacy, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
+		// fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
+		if err != nil {
+			Logger.log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", txCustomTokenPrivacy.GetMetadataType(), txCustomTokenPrivacy.Hash().String(), isContinued, err)
+			return NewTransactionErr(RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", txCustomTokenPrivacy.Hash().String(), err))
+		}
+		if !isContinued {
+			fmt.Println("haha 3 not continue")
+			return nil
+		}
+	}
+
 	err := txCustomTokenPrivacy.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 	if err != nil {
 		return NewTransactionErr(InvalidDoubleSpendPRVError, err)
