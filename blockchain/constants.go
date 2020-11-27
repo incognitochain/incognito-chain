@@ -2,11 +2,10 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
-	"os"
-	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 )
 
 //Network fixed params
@@ -24,11 +23,9 @@ const (
 	UpperBoundPercentForIncDAO    = 10
 	GetValidBlock                 = 20
 	TestRandom                    = true
-	NumberOfFixedBlockValidators  = 4
-	BEACON_ID                     = -1         // CommitteeID of beacon chain, used for highway
 	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize          = 30
-	SpareTime                     = 1000 // in mili-second
+	SpareTime                     = 1000             // in mili-second
 	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 )
 
@@ -201,22 +198,24 @@ var TestnetReplaceCommitteeEpoch = []uint64{}
 var IsTestNet = true
 var IsTestNet2 = true
 
-func init() {
-	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
-		return
-	}
-	var keyData []byte
-	var keyDataV2 []byte
+func ReadKey(v1, v2 []byte) {
+
+	var keyData []byte = v1
+	var keyDataV2 []byte = v2
 	var err error
 
-	keyData, err = ioutil.ReadFile("keylist.json")
-	if err != nil {
-		panic(err)
+	if len(v1) == 0 {
+		keyData, err = ioutil.ReadFile("keylist.json")
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	keyDataV2, err = ioutil.ReadFile("keylist-v2.json")
-	if err != nil {
-		panic(err)
+	if len(v2) == 0 {
+		keyDataV2, err = ioutil.ReadFile("keylist-v2.json")
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	type AccountKey struct {
