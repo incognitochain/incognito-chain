@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"math/big"
 	"strconv"
 	"strings"
@@ -26,7 +28,7 @@ type IssuingETHRequest struct {
 	TxIndex    uint
 	ProofStrs  []string
 	IncTokenID common.Hash
-	MetadataBase
+	basemeta.MetadataBase
 }
 
 type IssuingETHReqAction struct {
@@ -80,7 +82,7 @@ func NewIssuingETHRequest(
 	incTokenID common.Hash,
 	metaType int,
 ) (*IssuingETHRequest, error) {
-	metadataBase := MetadataBase{
+	metadataBase := basemeta.MetadataBase{
 		Type: metaType,
 	}
 	issuingETHReq := &IssuingETHRequest{
@@ -114,12 +116,12 @@ func NewIssuingETHRequestFromMap(
 		txIdx,
 		proofStrs,
 		*incTokenID,
-		IssuingETHRequestMeta,
+		basemeta.IssuingETHRequestMeta,
 	)
 	return req, nil
 }
 
-func (iReq IssuingETHRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (iReq IssuingETHRequest) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		return false, NewMetadataTxError(IssuingEthRequestValidateTxWithBlockChainError, err)
@@ -133,9 +135,9 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(tx Transaction, chainRetr
 		isBridgeToken, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), iReq.IncTokenID, false)
 		if !isBridgeToken {
 			if err != nil {
-				return false, NewMetadataTxError(InvalidMeta, err)
+				return false, NewMetadataTxError(basemeta.InvalidMeta, err)
 			} else {
-				return false, NewMetadataTxError(InvalidMeta, errors.New("token is invalid"))
+				return false, NewMetadataTxError(basemeta.InvalidMeta, errors.New("token is invalid"))
 			}
 		}
 	}
@@ -143,7 +145,7 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(tx Transaction, chainRetr
 	return true, nil
 }
 
-func (iReq IssuingETHRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (iReq IssuingETHRequest) ValidateSanityData(chainRetriever  basemeta.ChainRetriever, shardViewRetriever  basemeta.ShardViewRetriever, beaconViewRetriever  basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	if len(iReq.ProofStrs) == 0 {
 		return false, false, NewMetadataTxError(IssuingEthRequestValidateSanityDataError, errors.New("Wrong request info's proof"))
 	}
@@ -151,7 +153,7 @@ func (iReq IssuingETHRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 }
 
 func (iReq IssuingETHRequest) ValidateMetadataByItself() bool {
-	if iReq.Type != IssuingETHRequestMeta {
+	if iReq.Type != basemeta.IssuingETHRequestMeta {
 		return false
 	}
 	return true
@@ -173,7 +175,7 @@ func (iReq IssuingETHRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (iReq *IssuingETHRequest) BuildReqActions(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
@@ -192,7 +194,7 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, chainRetriever Ch
 		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(IssuingETHRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(basemeta.IssuingETHRequestMeta), actionContentBase64Str}
 
 	//err = statedb.TrackBridgeReqWithStatus(bcr.GetBeaconFeatureStateDB(), txReqID, byte(common.BridgeRequestProcessingStatus))
 	//if err != nil {
@@ -202,7 +204,7 @@ func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, chainRetriever Ch
 }
 
 func (iReq *IssuingETHRequest) CalculateSize() uint64 {
-	return calculateSize(iReq)
+	return basemeta.CalculateSize(iReq)
 }
 
 func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
@@ -221,7 +223,7 @@ func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, err)
 	}
 
-	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(ethHeader.Number, big.NewInt(ETHConfirmationBlocks))) == -1 {
+	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(ethHeader.Number, big.NewInt(basemeta.ETHConfirmationBlocks))) == -1 {
 		errMsg := fmt.Sprintf("WARNING: It needs 15 confirmation blocks for the process, the requested block (%s) but the latest block (%s)", ethHeader.Number.String(), mostRecentBlkNum.String())
 		Logger.log.Info(errMsg)
 		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, errors.New(errMsg))
@@ -287,9 +289,9 @@ func GetETHHeader(
 	getETHHeaderByHashParams := []interface{}{ethBlockHash, false}
 	var getETHHeaderByHashRes GetETHHeaderByHashRes
 	err := rpcClient.RPCCall(
-		EthereumLightNodeProtocol,
-		EthereumLightNodeHost,
-		EthereumLightNodePort,
+		basemeta.EthereumLightNodeProtocol,
+		basemeta.EthereumLightNodeHost,
+		basemeta.EthereumLightNodePort,
 		"eth_getBlockByHash",
 		getETHHeaderByHashParams,
 		&getETHHeaderByHashRes,
@@ -308,9 +310,9 @@ func GetETHHeader(
 	getETHHeaderByNumberParams := []interface{}{fmt.Sprintf("0x%x", headerNum), false}
 	var getETHHeaderByNumberRes GetETHHeaderByNumberRes
 	err = rpcClient.RPCCall(
-		EthereumLightNodeProtocol,
-		EthereumLightNodeHost,
-		EthereumLightNodePort,
+		basemeta.EthereumLightNodeProtocol,
+		basemeta.EthereumLightNodeHost,
+		basemeta.EthereumLightNodePort,
 		"eth_getBlockByNumber",
 		getETHHeaderByNumberParams,
 		&getETHHeaderByNumberRes,
@@ -336,9 +338,9 @@ func GetMostRecentETHBlockHeight() (*big.Int, error) {
 	params := []interface{}{}
 	var getETHBlockNumRes GetETHBlockNumRes
 	err := rpcClient.RPCCall(
-		EthereumLightNodeProtocol,
-		EthereumLightNodeHost,
-		EthereumLightNodePort,
+		basemeta.EthereumLightNodeProtocol,
+		basemeta.EthereumLightNodeHost,
+		basemeta.EthereumLightNodePort,
 		"eth_blockNumber",
 		params,
 		&getETHBlockNumRes,

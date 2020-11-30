@@ -2,11 +2,11 @@ package rpcservice
 
 import (
 	"encoding/json"
+	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
@@ -21,7 +21,7 @@ func (s *PortalService) GetPortingRequestByByTxID(txId string) (jsonresult.Porta
 		return jsonresult.PortalPortingRequest{}, err
 	}
 
-	var portingRequestStatus metadata.PortingRequestStatus
+	var portingRequestStatus metadata2.PortingRequestStatus
 	err = json.Unmarshal(portingRequestItem, &portingRequestStatus)
 	if err != nil {
 		return jsonresult.PortalPortingRequest{}, err
@@ -41,7 +41,7 @@ func (s *PortalService) GetPortingRequestByByPortingId(portingId string) (jsonre
 		return jsonresult.PortalPortingRequest{}, err
 	}
 
-	var portingRequestStatus metadata.PortingRequestStatus
+	var portingRequestStatus metadata2.PortingRequestStatus
 	err = json.Unmarshal(portingRequestItem, &portingRequestStatus)
 	if err != nil {
 		return jsonresult.PortalPortingRequest{}, err
@@ -66,7 +66,7 @@ func (s *PortalService) GetCustodianWithdrawRequestStatusByTxId(txId string) (js
 		return jsonresult.PortalCustodianWithdrawRequest{}, NewRPCError(GetCustodianWithdrawError, err)
 	}
 
-	var custodianWithdrawRequestStatus metadata.CustodianWithdrawRequestStatus
+	var custodianWithdrawRequestStatus metadata2.CustodianWithdrawRequestStatus
 	err = json.Unmarshal(custodianWithdraw, &custodianWithdrawRequestStatus)
 	if err != nil {
 		return jsonresult.PortalCustodianWithdrawRequest{}, err
@@ -171,8 +171,8 @@ func (s *PortalService) GetLiquidateExchangeRatesPool(
 	return result, nil
 }
 
-func (s *PortalService) GetCustodianWithdrawRequestStatusV3ByTxId(txId string) (metadata.CustodianWithdrawRequestStatusV3, error) {
-	var res metadata.CustodianWithdrawRequestStatusV3
+func (s *PortalService) GetCustodianWithdrawRequestStatusV3ByTxId(txId string) (metadata2.CustodianWithdrawRequestStatusV3, error) {
+	var res metadata2.CustodianWithdrawRequestStatusV3
 
 	portalStateDB := s.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	statusBytes, err := statedb.GetPortalCustodianWithdrawCollateralStatusV3(portalStateDB, txId)

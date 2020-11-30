@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math"
 	"reflect"
 	"strings"
@@ -579,7 +580,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	pubkey := ""
 	foundPubkey := -1
 	if tx.GetMetadata() != nil {
-		if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+		if tx.GetMetadata().GetType() == basemeta.ShardStakingMeta || tx.GetMetadata().GetType() == basemeta.BeaconStakingMeta {
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
 				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
@@ -597,7 +598,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	requestedPublicKey := ""
 	foundRequestStopAutoStaking := -1
 	if tx.GetMetadata() != nil {
-		if tx.GetMetadata().GetType() == metadata.StopAutoStakingMeta {
+		if tx.GetMetadata().GetType() == basemeta.StopAutoStakingMeta {
 			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
 			if !ok {
 				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
@@ -745,7 +746,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 	if tx.GetMetadata() != nil {
 		metadataType := tx.GetMetadata().GetType()
 		switch metadataType {
-		case metadata.ShardStakingMeta, metadata.BeaconStakingMeta:
+		case basemeta.ShardStakingMeta, basemeta.BeaconStakingMeta:
 			{
 				stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 				if !ok {
@@ -753,7 +754,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 				}
 				tp.addCandidateToList(*txHash, stakingMetadata.CommitteePublicKey)
 			}
-		case metadata.StopAutoStakingMeta:
+		case basemeta.StopAutoStakingMeta:
 			{
 				stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
 				if !ok {

@@ -4,32 +4,15 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type SlashLevel struct {
 	MinRange        uint8
 	PunishedEpoches uint8
 }
-type PortalCollateral struct {
-	ExternalTokenID string
-	Decimal         uint8
-}
-type PortalParams struct {
-	TimeOutCustodianReturnPubToken       time.Duration
-	TimeOutWaitingPortingRequest         time.Duration
-	TimeOutWaitingRedeemRequest          time.Duration
-	MaxPercentLiquidatedCollateralAmount uint64
-	MaxPercentCustodianRewards           uint64
-	MinPercentCustodianRewards           uint64
-	MinLockCollateralAmountInEpoch       uint64
-	MinPercentLockedCollateral           uint64
-	TP120                                uint64
-	TP130                                uint64
-	MinPercentPortingFee                 float64
-	MinPercentRedeemFee                  float64
-	SupportedCollateralTokens            []PortalCollateral
-	MinPortalFee                         uint64 // nano PRV
-}
+
+
 
 /*
 Params defines a network by its component. These component may be used by Applications
@@ -68,23 +51,14 @@ type Params struct {
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
 	BeaconHeightBreakPointBurnAddr   uint64
-	BNBRelayingHeaderChainID         string
-	BTCRelayingHeaderChainID         string
-	BTCDataFolderName                string
-	BNBFullNodeProtocol              string
-	BNBFullNodeHost                  string
-	BNBFullNodePort                  string
-	PortalParams                map[uint64]PortalParams
-	PortalTokens                map[string]PortalTokenProcessor
-	PortalFeederAddress         string
-	EpochBreakPointSwapNewKey   []uint64
-	IsBackup                    bool
-	PreloadAddress              string
-	ReplaceStakingTxHeight      uint64
-	ETHRemoveBridgeSigEpoch     uint64
-	BCHeightBreakPointNewZKP    uint64
-	PortalETHContractAddressStr string // smart contract of ETH for portal
-	BCHeightBreakPointPortalV3  uint64
+	PortalParams                     map[uint64]PortalParams
+	EpochBreakPointSwapNewKey        []uint64
+	IsBackup                         bool
+	PreloadAddress                   string
+	ReplaceStakingTxHeight           uint64
+	ETHRemoveBridgeSigEpoch          uint64
+	BCHeightBreakPointNewZKP         uint64
+	BCHeightBreakPointPortalV3       uint64
 }
 
 type GenesisParams struct {
@@ -225,13 +199,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               16930,
 		BeaconHeightBreakPointBurnAddr: 250000,
-		BNBRelayingHeaderChainID:       TestnetBNBChainID,
-		BTCRelayingHeaderChainID:       TestnetBTCChainID,
-		BTCDataFolderName:              TestnetBTCDataFolderName,
-		BNBFullNodeProtocol:            TestnetBNBFullNodeProtocol,
-		BNBFullNodeHost:                TestnetBNBFullNodeHost,
-		BNBFullNodePort:                TestnetBNBFullNodePort,
-		PortalFeederAddress:            TestnetPortalFeeder,
+
 		PortalParams: map[uint64]PortalParams{
 			0: {
 				TimeOutCustodianReturnPubToken:       1 * time.Hour,
@@ -248,17 +216,26 @@ func SetupParam() {
 				MinPercentRedeemFee:                  0.01,
 				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(), // todo: need to be updated before deploying
 				MinPortalFee:                         100,
+
+				PortalTokens:                initPortalTokensForTestNet(),
+				BNBRelayingHeaderChainID:    TestnetBNBChainID,
+				BTCRelayingHeaderChainID:    TestnetBTCChainID,
+				BTCDataFolderName:           TestnetBTCDataFolderName,
+				BNBFullNodeProtocol:         TestnetBNBFullNodeProtocol,
+				BNBFullNodeHost:             TestnetBNBFullNodeHost,
+				BNBFullNodePort:             TestnetBNBFullNodePort,
+				PortalFeederAddress:         TestnetPortalFeeder,
+				PortalETHContractAddressStr: "0x21Ab34649777e94e30d60319cDBa472759B00AaA", // todo: update sc address
 			},
 		},
-		PortalTokens:                initPortalTokensForTestNet(),
-		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:      1,
-		IsBackup:                    false,
-		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
-		ETHRemoveBridgeSigEpoch:     21920,
-		PortalETHContractAddressStr: "0x21Ab34649777e94e30d60319cDBa472759B00AaA", // todo: update sc address
-		BCHeightBreakPointPortalV3:  1,  // todo: should update before deploying
+
+		EpochBreakPointSwapNewKey:  TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:     1,
+		IsBackup:                   false,
+		PreloadAddress:             "",
+		BCHeightBreakPointNewZKP:   2300000, //TODO: change this value when deployed testnet
+		ETHRemoveBridgeSigEpoch:    21920,
+		BCHeightBreakPointPortalV3: 1, // todo: should update before deploying
 	}
 	// END TESTNET
 
@@ -314,13 +291,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
 		BeaconHeightBreakPointBurnAddr: 1,
-		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
-		BTCRelayingHeaderChainID:       Testnet2BTCChainID,
-		BTCDataFolderName:              Testnet2BTCDataFolderName,
-		BNBFullNodeProtocol:            Testnet2BNBFullNodeProtocol,
-		BNBFullNodeHost:                Testnet2BNBFullNodeHost,
-		BNBFullNodePort:                Testnet2BNBFullNodePort,
-		PortalFeederAddress:            Testnet2PortalFeeder,
+
 		PortalParams: map[uint64]PortalParams{
 			0: {
 				TimeOutCustodianReturnPubToken:       5 * time.Minute,
@@ -337,17 +308,25 @@ func SetupParam() {
 				MinPercentRedeemFee:                  0.01,
 				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet2(),
 				MinPortalFee:                         100,
+				PortalTokens:                         initPortalTokensForTestNet(),
+				BNBRelayingHeaderChainID:             Testnet2BNBChainID,
+				BTCRelayingHeaderChainID:             Testnet2BTCChainID,
+				BTCDataFolderName:                    Testnet2BTCDataFolderName,
+				BNBFullNodeProtocol:                  Testnet2BNBFullNodeProtocol,
+				BNBFullNodeHost:                      Testnet2BNBFullNodeHost,
+				BNBFullNodePort:                      Testnet2BNBFullNodePort,
+				PortalFeederAddress:                  Testnet2PortalFeeder,
+				PortalETHContractAddressStr:          "", // todo: update sc address
 			},
 		},
-		PortalTokens:                initPortalTokensForTestNet(),
-		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:      1,
-		IsBackup:                    false,
-		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    791000, //TODO: change this value when deployed testnet2
-		ETHRemoveBridgeSigEpoch:     2085,
-		PortalETHContractAddressStr: "",  // todo: update sc address
-		BCHeightBreakPointPortalV3:  8974,  // todo: should update before deploying
+
+		EpochBreakPointSwapNewKey:  TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:     1,
+		IsBackup:                   false,
+		PreloadAddress:             "",
+		BCHeightBreakPointNewZKP:   791000, //TODO: change this value when deployed testnet2
+		ETHRemoveBridgeSigEpoch:    2085,
+		BCHeightBreakPointPortalV3: 8974, // todo: should update before deploying
 	}
 	// END TESTNET-2
 
@@ -401,13 +380,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
 		BeaconHeightBreakPointBurnAddr: 150500,
-		BNBRelayingHeaderChainID:       MainnetBNBChainID,
-		BTCRelayingHeaderChainID:       MainnetBTCChainID,
-		BTCDataFolderName:              MainnetBTCDataFolderName,
-		BNBFullNodeProtocol:            MainnetBNBFullNodeProtocol,
-		BNBFullNodeHost:                MainnetBNBFullNodeHost,
-		BNBFullNodePort:                MainnetBNBFullNodePort,
-		PortalFeederAddress:            MainnetPortalFeeder,
+
 		PortalParams: map[uint64]PortalParams{
 			0: {
 				TimeOutCustodianReturnPubToken:       24 * time.Hour,
@@ -424,17 +397,26 @@ func SetupParam() {
 				MinPercentRedeemFee:                  0.01,
 				SupportedCollateralTokens:            getSupportedPortalCollateralsMainnet(),
 				MinPortalFee:                         100,
+				PortalTokens:                         initPortalTokensForMainNet(),
+				BNBRelayingHeaderChainID:             MainnetBNBChainID,
+				BTCRelayingHeaderChainID:             MainnetBTCChainID,
+				BTCDataFolderName:                    MainnetBTCDataFolderName,
+				BNBFullNodeProtocol:                  MainnetBNBFullNodeProtocol,
+				BNBFullNodeHost:                      MainnetBNBFullNodeHost,
+				BNBFullNodePort:                      MainnetBNBFullNodePort,
+				PortalFeederAddress:                  MainnetPortalFeeder,
+				PortalETHContractAddressStr:          "", // todo: update sc address
 			},
 		},
-		PortalTokens:                initPortalTokensForMainNet(),
-		EpochBreakPointSwapNewKey:   MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:      559380,
-		IsBackup:                    false,
-		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    737450,
-		ETHRemoveBridgeSigEpoch:     1e18,
-		PortalETHContractAddressStr: "", // todo: update sc address
-		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
+
+		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    559380,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  737450,
+		ETHRemoveBridgeSigEpoch:   1e18,
+
+		BCHeightBreakPointPortalV3: 40, // todo: should update before deploying
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

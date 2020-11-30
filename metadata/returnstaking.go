@@ -4,11 +4,12 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/pkg/errors"
 )
 
 type ReturnStakingMetadata struct {
-	MetadataBase
+	basemeta.MetadataBase
 	TxID          string
 	StakerAddress privacy.PaymentAddress
 }
@@ -18,7 +19,7 @@ func NewReturnStaking(
 	producerAddress privacy.PaymentAddress,
 	metaType int,
 ) *ReturnStakingMetadata {
-	metadataBase := MetadataBase{
+	metadataBase := basemeta.MetadataBase{
 		Type: metaType,
 	}
 	return &ReturnStakingMetadata{
@@ -28,16 +29,16 @@ func NewReturnStaking(
 	}
 }
 
-func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
+func (sbsRes ReturnStakingMetadata) CheckTransactionFee(tr basemeta.Transaction, minFee uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (sbsRes ReturnStakingMetadata) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	return true, nil
 }
 
-func (sbsRes ReturnStakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (sbsRes ReturnStakingMetadata) ValidateSanityData(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	if len(sbsRes.StakerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}

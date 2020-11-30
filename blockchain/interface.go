@@ -3,12 +3,12 @@ package blockchain
 import (
 	"context"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/basemeta"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 type TxPool interface {
@@ -17,20 +17,20 @@ type TxPool interface {
 	// LastUpdated() time.Time
 	// MiningDescs returns a slice of mining descriptors for all the
 	// transactions in the source pool.
-	// MiningDescs() []*metadata.TxDesc
+	// MiningDescs() []*retriever.TxDesc
 	// HaveTransaction returns whether or not the passed transaction hash
 	// exists in the source pool.
 	HaveTransaction(hash *common.Hash) bool
 	// RemoveTx remove tx from tx resource
-	RemoveTx(txs []metadata.Transaction, isInBlock bool)
+	RemoveTx(txs []basemeta.Transaction, isInBlock bool)
 	RemoveCandidateList([]string)
 	EmptyPool() bool
-	MaybeAcceptTransactionForBlockProducing(metadata.Transaction, int64, *ShardBestState) (*metadata.TxDesc, error)
-	MaybeAcceptBatchTransactionForBlockProducing(byte, []metadata.Transaction, int64, *ShardBestState) ([]*metadata.TxDesc, error)
+	MaybeAcceptTransactionForBlockProducing(basemeta.Transaction, int64, *ShardBestState) (*basemeta.TxDesc, error)
+	MaybeAcceptBatchTransactionForBlockProducing(byte, []basemeta.Transaction, int64, *ShardBestState) ([]*basemeta.TxDesc, error)
 	//CheckTransactionFee
-	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
+	// CheckTransactionFee(tx retriever.Transaction) (uint64, error)
 	// Check tx validate by it self
-	// ValidateTxByItSelf(tx metadata.Transaction) bool
+	// ValidateTxByItSelf(tx retriever.Transaction) bool
 }
 
 type FeeEstimator interface {

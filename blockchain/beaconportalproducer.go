@@ -4,13 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
 
 	//"github.com/binance-chain/go-sdk/types/msg"
 	//"github.com/incognitochain/incognito-chain/relaying/bnb"
 	//btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"strconv"
 )
 
@@ -50,7 +50,7 @@ func (p *portalExchangeRateProcessor) buildNewInsts(
 		return [][]string{}, nil
 	}
 
-	var actionData metadata.PortalExchangeRatesAction
+	var actionData metadata2.PortalExchangeRatesAction
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while unmarshal portal exchange rates action: %+v", err)
@@ -64,7 +64,7 @@ func (p *portalExchangeRateProcessor) buildNewInsts(
 		if ok {
 			Logger.log.Errorf("ERROR: exchange rates key is duplicated")
 
-			portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
+			portalExchangeRatesContent := metadata2.PortalExchangeRatesContent{
 				SenderAddress: actionData.Meta.SenderAddress,
 				Rates:         actionData.Meta.Rates,
 				TxReqID:       actionData.TxReqID,
@@ -85,7 +85,7 @@ func (p *portalExchangeRateProcessor) buildNewInsts(
 	}
 
 	//success
-	portalExchangeRatesContent := metadata.PortalExchangeRatesContent{
+	portalExchangeRatesContent := metadata2.PortalExchangeRatesContent{
 		SenderAddress: actionData.Meta.SenderAddress,
 		Rates:         actionData.Meta.Rates,
 		TxReqID:       actionData.TxReqID,
@@ -103,15 +103,15 @@ func (p *portalExchangeRateProcessor) buildNewInsts(
 
 	//update E-R request
 	if currentPortalState.ExchangeRatesRequests != nil {
-		currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = metadata.NewExchangeRatesRequestStatus(
+		currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = metadata2.NewExchangeRatesRequestStatus(
 			common.PortalExchangeRatesAcceptedStatus,
 			actionData.Meta.SenderAddress,
 			actionData.Meta.Rates,
 		)
 	} else {
 		//new object
-		newExchangeRatesRequest := make(map[string]*metadata.ExchangeRatesRequestStatus)
-		newExchangeRatesRequest[actionData.TxReqID.String()] = metadata.NewExchangeRatesRequestStatus(
+		newExchangeRatesRequest := make(map[string]*metadata2.ExchangeRatesRequestStatus)
+		newExchangeRatesRequest[actionData.TxReqID.String()] = metadata2.NewExchangeRatesRequestStatus(
 			common.PortalExchangeRatesAcceptedStatus,
 			actionData.Meta.SenderAddress,
 			actionData.Meta.Rates,

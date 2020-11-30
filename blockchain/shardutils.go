@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"reflect"
 	"sort"
 	"strconv"
@@ -38,7 +39,7 @@ func FetchBeaconBlockFromHeight(blockchain *BlockChain, from uint64, to uint64) 
 	return beaconBlocks, nil
 }
 
-func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) []byte {
+func CreateCrossShardByteArray(txList []basemeta.Transaction, fromShardID byte) []byte {
 	crossIDs := []byte{}
 	byteMap := make([]byte, common.MaxShardNumber)
 	for _, tx := range txList {
@@ -123,7 +124,7 @@ func CreateShardSwapActionForKeyListV2(
 //	["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
 // Stop Auto Staking:
 //	["stopautostaking" "pubkey1,pubkey2,..."]
-func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte, shardHeight uint64) (instructions [][]string, err error) {
+func CreateShardInstructionsFromTransactionAndInstruction(transactions []basemeta.Transaction, bc *BlockChain, shardID byte, shardHeight uint64) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
 	stakeBeaconPublicKey := []string{}
@@ -146,7 +147,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			}
 		}
 		switch tx.GetMetadataType() {
-		case metadata.ShardStakingMeta:
+		case basemeta.ShardStakingMeta:
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
 				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
@@ -159,7 +160,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			} else {
 				stakeShardAutoStaking = append(stakeShardAutoStaking, "false")
 			}
-		case metadata.BeaconStakingMeta:
+		case basemeta.BeaconStakingMeta:
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
 				return nil, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata()))
@@ -172,7 +173,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 			} else {
 				stakeBeaconAutoStaking = append(stakeBeaconAutoStaking, "false")
 			}
-		case metadata.StopAutoStakingMeta:
+		case basemeta.StopAutoStakingMeta:
 			{
 				stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
 				if !ok {
@@ -217,7 +218,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 func checkReturnStakingTxExistence(txId string, shardBlock *ShardBlock) bool {
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadata() != nil {
-			if tx.GetMetadata().GetType() == metadata.ReturnStakingMeta {
+			if tx.GetMetadata().GetType() == basemeta.ReturnStakingMeta {
 				if returnStakingMeta, ok := tx.GetMetadata().(*metadata.ReturnStakingMetadata); ok {
 					if returnStakingMeta.TxID == txId {
 						return true
@@ -235,11 +236,11 @@ func getRequesterFromPKnCoinID(pk privacy.PublicKey, coinID common.Hash) string 
 }
 
 func reqTableFromReqTxs(
-	transactions []metadata.Transaction,
-) map[string]metadata.Transaction {
-	txRequestTable := map[string]metadata.Transaction{}
+	transactions []basemeta.Transaction,
+) map[string]basemeta.Transaction {
+	txRequestTable := map[string]basemeta.Transaction{}
 	for _, tx := range transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+		if tx.GetMetadataType() == basemeta.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
 			key := getRequesterFromPKnCoinID(requestMeta.PaymentAddress.Pk, requestMeta.TokenID)
 			txRequestTable[key] = tx
@@ -249,12 +250,12 @@ func reqTableFromReqTxs(
 }
 
 func filterReqTxs(
-	transactions []metadata.Transaction,
-	txRequestTable map[string]metadata.Transaction,
-) []metadata.Transaction {
-	res := []metadata.Transaction{}
+	transactions []basemeta.Transaction,
+	txRequestTable map[string]basemeta.Transaction,
+) []basemeta.Transaction {
+	res := []basemeta.Transaction{}
 	for _, tx := range transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+		if tx.GetMetadataType() == basemeta.WithDrawRewardRequestMeta {
 			requestMeta := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
 			key := getRequesterFromPKnCoinID(requestMeta.PaymentAddress.Pk, requestMeta.TokenID)
 			txReq, ok := txRequestTable[key]
@@ -274,7 +275,7 @@ func filterReqTxs(
 //====================New Merkle Tree================
 // CreateShardTxRoot create root hash for cross shard transaction
 // this root hash will be used be received shard
-func CreateShardTxRoot(txList []metadata.Transaction) ([]common.Hash, []common.Hash) {
+func CreateShardTxRoot(txList []basemeta.Transaction) ([]common.Hash, []common.Hash) {
 	//calculate output coin hash for each shard
 	crossShardDataHash := getCrossShardDataHash(txList)
 	// calculate merkel path for a shardID
@@ -290,7 +291,7 @@ func CreateShardTxRoot(txList []metadata.Transaction) ([]common.Hash, []common.H
 	merkleData := merkleTree.BuildMerkleTreeOfHashes2(crossShardDataHash, common.MaxShardNumber)
 	return crossShardDataHash, merkleData
 }
-func GetMerklePathCrossShard(txList []metadata.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
+func GetMerklePathCrossShard(txList []basemeta.Transaction, shardID byte) (merklePathShard []common.Hash, merkleShardRoot common.Hash) {
 	_, merkleTree := CreateShardTxRoot(txList)
 	merklePathShard, merkleShardRoot = Merkle{}.GetMerklePathForCrossShard(common.MaxShardNumber, merkleTree, shardID)
 	return merklePathShard, merkleShardRoot
@@ -342,7 +343,7 @@ func VerifyCrossShardBlockUTXO(block *CrossShardBlock, merklePathShard []common.
 //	- Using Key-Value structure for accessing one token ID data:
 //	  key: token ID
 //	  value: TokenData of that token
-func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
+func getCrossShardDataHash(txList []basemeta.Transaction) []common.Hash {
 	// group transaction by shardID
 	outCoinEachShard := make([][]privacy.OutputCoin, common.MaxShardNumber)
 	txTokenPrivacyDataMap := make([]map[common.Hash]*ContentCrossShardTokenPrivacyData, common.MaxShardNumber)
@@ -410,7 +411,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 // 1. (Privacy) PRV: Output coin
 // 2. Tx Custom Token: Tx Token Data
 // 3. Privacy Custom Token: Token Data + Output coin
-func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.OutputCoin, []ContentCrossShardTokenPrivacyData) {
+func getCrossShardData(txList []basemeta.Transaction, shardID byte) ([]privacy.OutputCoin, []ContentCrossShardTokenPrivacyData) {
 	coinList := []privacy.OutputCoin{}
 	txTokenPrivacyDataMap := make(map[common.Hash]*ContentCrossShardTokenPrivacyData)
 	var txTokenPrivacyDataList []ContentCrossShardTokenPrivacyData

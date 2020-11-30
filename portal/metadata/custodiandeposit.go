@@ -1,0 +1,207 @@
+package metadata
+
+import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/basemeta"
+	"github.com/incognitochain/incognito-chain/wallet"
+	"sort"
+	"strconv"
+)
+
+// PortalCustodianDeposit - portal custodian deposit collateral (PRV)
+// metadata - custodian deposit - create normal tx with this metadata
+type PortalCustodianDeposit struct {
+	basemeta.MetadataBase
+	IncogAddressStr string
+	RemoteAddresses map[string]string // tokenID: remote address
+	DepositedAmount uint64
+}
+
+func (object *PortalCustodianDeposit) UnmarshalJSON(data []byte) error {
+	type Alias PortalCustodianDeposit
+	temp := &struct {
+		RemoteAddresses interface{}
+		*Alias
+	}{
+		Alias: (*Alias)(object),
+	}
+
+	err := json.Unmarshal(data, &temp)
+	if err != nil {
+		Logger.log.Error("UnmarshalJSON PortalCustodianDeposit", string(data))
+		return errors.New("can not parse data for PortalCustodianDeposit")
+	}
+
+	remoteAddreses := make(map[string]string)
+	tempJson, _ := json.MarshalIndent(temp.RemoteAddresses, "  ", "  ")
+	err2 := json.Unmarshal(tempJson, &remoteAddreses)
+	if err2 != nil {
+		// int testnet, exception:
+		type RemoteAddress struct {
+			PTokenID string
+			Address  string
+		}
+
+		tmpRemoteAddress := make([]RemoteAddress, 0)
+		tempJson, _ := json.MarshalIndent(temp.RemoteAddresses, "  ", "  ")
+		err1 := json.Unmarshal(tempJson, &tmpRemoteAddress)
+		if err1 != nil {
+			Logger.log.Error("Parse []RemoteAddress fail %+v err %+v", temp.RemoteAddresses, err)
+			return errors.New("can not parse data for PortalCustodianDeposit RemoteAddress")
+		} else {
+			remoteAddreses = make(map[string]string)
+			for _, v := range tmpRemoteAddress {
+				remoteAddreses[v.PTokenID] = v.Address
+			}
+		}
+	}
+	object.RemoteAddresses = remoteAddreses
+	return nil
+
+}
+
+// PortalCustodianDepositAction - shard validator creates instruction that contain this action content
+type PortalCustodianDepositAction struct {
+	Meta    PortalCustodianDeposit
+	TxReqID common.Hash
+	ShardID byte
+}
+
+// PortalCustodianDepositContent - Beacon builds a new instruction with this content after receiving a instruction from shard
+// It will be appended to beaconBlock
+// both accepted and refund status
+type PortalCustodianDepositContent struct {
+	IncogAddressStr string
+	RemoteAddresses map[string]string // tokenID: remote address
+	DepositedAmount uint64
+	TxReqID         common.Hash
+	ShardID         byte
+}
+
+// PortalCustodianDepositStatus - Beacon tracks status of custodian deposit tx into db
+type PortalCustodianDepositStatus struct {
+	Status          byte
+	IncogAddressStr string
+	RemoteAddresses map[string]string // tokenID: remote address
+	DepositedAmount uint64
+}
+
+func NewPortalCustodianDeposit(metaType int, incognitoAddrStr string, remoteAddrs map[string]string, amount uint64) (*PortalCustodianDeposit, error) {
+	metadataBase := basemeta.MetadataBase{
+		Type: metaType,
+	}
+	custodianDepositMeta := &PortalCustodianDeposit{
+		IncogAddressStr: incognitoAddrStr,
+		RemoteAddresses: remoteAddrs,
+		DepositedAmount: amount,
+	}
+	custodianDepositMeta.MetadataBase = metadataBase
+	return custodianDepositMeta, nil
+}
+
+func (custodianDeposit PortalCustodianDeposit) ValidateTxWithBlockChain(
+	txr basemeta.Transaction,
+	chainRetriever basemeta.ChainRetriever,
+	shardViewRetriever basemeta.ShardViewRetriever,
+	beaconViewRetriever basemeta.BeaconViewRetriever,
+	shardID byte,
+	db *statedb.StateDB,
+) (bool, error) {
+	return true, nil
+}
+
+func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(
+	chainRetriever basemeta.ChainRetriever,
+	shardViewRetriever basemeta.ShardViewRetriever,
+	beaconViewRetriever basemeta.BeaconViewRetriever,
+	beaconHeight uint64,
+	txr basemeta.Transaction) (bool, bool, error) {
+	// validate IncogAddressStr
+	keyWallet, err := wallet.Base58CheckDeserialize(custodianDeposit.IncogAddressStr)
+	if err != nil {
+		return false, false, errors.New("IncogAddressStr of custodian incorrect")
+	}
+	incogAddr := keyWallet.KeySet.PaymentAddress
+	if len(incogAddr.Pk) == 0 {
+		return false, false, errors.New("wrong custodian incognito address")
+	}
+	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
+		return false, false, errors.New("custodian incognito address is not signer tx")
+	}
+
+	// check tx type
+	if txr.GetType() != common.TxNormalType {
+		return false, false, errors.New("tx custodian deposit must be TxNormalType")
+	}
+
+	// check burning tx
+	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
+		return false, false, errors.New("must send coin to burning address")
+	}
+
+	// validate amount deposit
+	if custodianDeposit.DepositedAmount == 0 {
+		return false, false, errors.New("deposit amount should be larger than 0")
+	}
+	if custodianDeposit.DepositedAmount != txr.CalculateTxValue() {
+		return false, false, errors.New("deposit amount should be equal to the tx value")
+	}
+
+	// validate remote addresses
+	isValid, err := ValidatePortalRemoteAddresses(custodianDeposit.RemoteAddresses, chainRetriever)
+	if !isValid || err != nil {
+		return false, false, err
+	}
+
+	return true, true, nil
+}
+
+func (custodianDeposit PortalCustodianDeposit) ValidateMetadataByItself() bool {
+	return custodianDeposit.Type == basemeta.PortalCustodianDepositMeta
+}
+
+func (custodianDeposit PortalCustodianDeposit) Hash() *common.Hash {
+	record := custodianDeposit.MetadataBase.Hash().String()
+	record += custodianDeposit.IncogAddressStr
+	tokenIDKeys := make([]string, 0)
+	for tokenID := range custodianDeposit.RemoteAddresses {
+		tokenIDKeys = append(tokenIDKeys, tokenID)
+	}
+	sort.Strings(tokenIDKeys)
+	for _, tokenID := range tokenIDKeys {
+		record += custodianDeposit.RemoteAddresses[tokenID]
+	}
+	record += strconv.FormatUint(custodianDeposit.DepositedAmount, 10)
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (custodianDeposit *PortalCustodianDeposit) BuildReqActions(
+	tx basemeta.Transaction,
+	chainRetriever basemeta.ChainRetriever,
+	shardViewRetriever basemeta.ShardViewRetriever,
+	beaconViewRetriever basemeta.BeaconViewRetriever,
+	shardID byte, shardHeight uint64) ([][]string, error) {
+	actionContent := PortalCustodianDepositAction{
+		Meta:    *custodianDeposit,
+		TxReqID: *tx.Hash(),
+		ShardID: shardID,
+	}
+	actionContentBytes, err := json.Marshal(actionContent)
+	if err != nil {
+		return [][]string{}, err
+	}
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(basemeta.PortalCustodianDepositMeta), actionContentBase64Str}
+	return [][]string{action}, nil
+}
+
+func (custodianDeposit *PortalCustodianDeposit) CalculateSize() uint64 {
+	return basemeta.CalculateSize(custodianDeposit)
+}

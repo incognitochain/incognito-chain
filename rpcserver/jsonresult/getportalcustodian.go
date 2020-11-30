@@ -1,7 +1,9 @@
 package jsonresult
 
-import "github.com/incognitochain/incognito-chain/metadata"
+import (
+	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
+)
 
 type PortalCustodianWithdrawRequest struct {
-	CustodianWithdrawRequest metadata.CustodianWithdrawRequestStatus `json:"CustodianWithdraw"`
+	CustodianWithdrawRequest metadata2.CustodianWithdrawRequestStatus `json:"CustodianWithdraw"`
 }

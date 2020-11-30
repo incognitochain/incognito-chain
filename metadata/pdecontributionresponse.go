@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -12,7 +14,7 @@ import (
 )
 
 type PDEContributionResponse struct {
-	MetadataBase
+	basemeta.MetadataBase
 	ContributionStatus string
 	RequestedTxID      common.Hash
 	TokenIDStr         string
@@ -24,7 +26,7 @@ func NewPDEContributionResponse(
 	tokenIDStr string,
 	metaType int,
 ) *PDEContributionResponse {
-	metadataBase := MetadataBase{
+	metadataBase := basemeta.MetadataBase{
 		Type: metaType,
 	}
 	return &PDEContributionResponse{
@@ -35,23 +37,23 @@ func NewPDEContributionResponse(
 	}
 }
 
-func (iRes PDEContributionResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PDEContributionResponse) CheckTransactionFee(tr basemeta.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes PDEContributionResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (iRes PDEContributionResponse) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PDEContributionResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (iRes PDEContributionResponse) ValidateSanityData(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
 func (iRes PDEContributionResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PDEContributionResponseMeta
+	return iRes.Type == basemeta.PDEContributionResponseMeta
 }
 
 func (iRes PDEContributionResponse) Hash() *common.Hash {
@@ -66,10 +68,10 @@ func (iRes PDEContributionResponse) Hash() *common.Hash {
 }
 
 func (iRes *PDEContributionResponse) CalculateSize() uint64 {
-	return calculateSize(iRes)
+	return basemeta.CalculateSize(iRes)
 }
 
-func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []basemeta.Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, ac *basemeta.AccumulatedValues, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
 		if len(inst) < 4 { // this is not PDEContribution or PDEPRVRequiredContributionRequestMeta instruction
@@ -77,7 +79,7 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txs
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			(instMetaType != strconv.Itoa(PDEContributionMeta) && instMetaType != strconv.Itoa(PDEPRVRequiredContributionRequestMeta)) {
+			(instMetaType != strconv.Itoa(basemeta.PDEContributionMeta) && instMetaType != strconv.Itoa(basemeta.PDEPRVRequiredContributionRequestMeta)) {
 			continue
 		}
 		instContributionStatus := inst[2]

@@ -1,17 +1,18 @@
 package blockchain
 
 import (
-	"io/ioutil"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
+	"io/ioutil"
 	"os"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/stretchr/testify/suite"
 	"strconv"
@@ -62,7 +63,7 @@ func buildPDEPRVRequiredContributionAction(
 	tokenIDStr string,
 ) []string {
 	metadataBase := metadata.MetadataBase{
-		Type: metadata.PDEPRVRequiredContributionRequestMeta,
+		Type: basemeta.PDEPRVRequiredContributionRequestMeta,
 	}
 	pdeContribution := metadata.PDEContribution{
 		PDEContributionPairID: pdeContributionPairID,
@@ -77,7 +78,7 @@ func buildPDEPRVRequiredContributionAction(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(metadata.PDEPRVRequiredContributionRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(basemeta.PDEPRVRequiredContributionRequestMeta), actionContentBase64Str}
 	return action
 }
 
@@ -127,7 +128,7 @@ func buildPDECrossPoolTradeReqAction(
 	traderAddressStr string,
 ) []string {
 	metadataBase := metadata.MetadataBase{
-		Type: metadata.PDECrossPoolTradeRequestMeta,
+		Type: basemeta.PDECrossPoolTradeRequestMeta,
 	}
 	pdeTradeRequest := metadata.PDECrossPoolTradeRequest{
 		TokenIDToBuyStr:     tokenIDToBuyStr,
@@ -145,7 +146,7 @@ func buildPDECrossPoolTradeReqAction(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PDECrossPoolTradeRequestMeta), actionContentBase64Str}
 }
 
 func buildPDEFeeWithdrawalRequestAction(
@@ -160,7 +161,7 @@ func buildPDEFeeWithdrawalRequestAction(
 		WithdrawalToken2IDStr: withdrawalToken2IDStr,
 		WithdrawalFeeAmt:      withdrawalFeeAmt,
 		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PDEFeeWithdrawalRequestMeta,
+			Type: basemeta.PDEFeeWithdrawalRequestMeta,
 		},
 	}
 	actionContent := metadata.PDEFeeWithdrawalRequestAction{
@@ -169,7 +170,7 @@ func buildPDEFeeWithdrawalRequestAction(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(metadata.PDEFeeWithdrawalRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(basemeta.PDEFeeWithdrawalRequestMeta), actionContentBase64Str}
 	return action
 }
 
@@ -185,7 +186,7 @@ func buildPDEWithdrawalRequestAction(
 		WithdrawalToken2IDStr: withdrawalToken2IDStr,
 		WithdrawalShareAmt:    withdrawalShareAmt,
 		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PDEWithdrawalRequestMeta,
+			Type: basemeta.PDEWithdrawalRequestMeta,
 		},
 	}
 	actionContent := metadata.PDEWithdrawalRequestAction{
@@ -194,7 +195,7 @@ func buildPDEWithdrawalRequestAction(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(metadata.PDEWithdrawalRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(basemeta.PDEWithdrawalRequestMeta), actionContentBase64Str}
 	return action
 }
 
@@ -211,19 +212,19 @@ func processAllNewInsts(
 		}
 		var err error
 		switch inst[0] {
-		case strconv.Itoa(metadata.PDEContributionMeta):
+		case strconv.Itoa(basemeta.PDEContributionMeta):
 			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDEPRVRequiredContributionRequestMeta):
+		case strconv.Itoa(basemeta.PDEPRVRequiredContributionRequestMeta):
 			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDETradeRequestMeta):
+		case strconv.Itoa(basemeta.PDETradeRequestMeta):
 			err = blockchain.processPDETrade(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta):
+		case strconv.Itoa(basemeta.PDECrossPoolTradeRequestMeta):
 			err = blockchain.processPDECrossPoolTrade(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
+		case strconv.Itoa(basemeta.PDEWithdrawalRequestMeta):
 			err = blockchain.processPDEWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDEFeeWithdrawalRequestMeta):
+		case strconv.Itoa(basemeta.PDEFeeWithdrawalRequestMeta):
 			err = blockchain.processPDEFeeWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDETradingFeesDistributionMeta):
+		case strconv.Itoa(basemeta.PDETradingFeesDistributionMeta):
 			err = blockchain.processPDETradingFeesDistribution(pdexStateDB, beaconHeight, inst, currentPDEState)
 		}
 		if err != nil {
@@ -326,7 +327,7 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1001() {
 		newInst := [][]string{}
 		var err error
 		switch metaType {
-		case metadata.PDEPRVRequiredContributionRequestMeta:
+		case basemeta.PDEPRVRequiredContributionRequestMeta:
 			newInst, err = bc.buildInstructionsForPDEContribution(contentStr, shardID, metaType, &s.currentPDEStateForProducer, beaconHeight-1, true)
 		//case metadata.PDETradeRequestMeta:
 		//	newInst, err = bc.buildInstructionsForPDETrade(contentStr, shardID, metaType, &suite.currentPDEStateForProducer, beaconHeight-1)
@@ -494,7 +495,7 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1002() {
 		newInst := [][]string{}
 		var err error
 		switch metaType {
-		case metadata.PDEPRVRequiredContributionRequestMeta:
+		case basemeta.PDEPRVRequiredContributionRequestMeta:
 			newInst, err = bc.buildInstructionsForPDEContribution(contentStr, shardID, metaType, &s.currentPDEStateForProducer, beaconHeight-1, true)
 		default:
 			continue
@@ -1023,13 +1024,13 @@ func (s *PDETestSuiteV2) TestSimulatedBeaconBlock1003() {
 		newInst := [][]string{}
 		var err error
 		switch metaType {
-		case metadata.PDEFeeWithdrawalRequestMeta:
+		case basemeta.PDEFeeWithdrawalRequestMeta:
 			newInst, err = bc.buildInstructionsForPDEFeeWithdrawal(
-				inst[1], shardID, metadata.PDEFeeWithdrawalRequestMeta,
+				inst[1], shardID, basemeta.PDEFeeWithdrawalRequestMeta,
 				&s.currentPDEStateForProducer, beaconHeight-1)
-		case metadata.PDEWithdrawalRequestMeta:
+		case basemeta.PDEWithdrawalRequestMeta:
 			newInst, err = bc.buildInstructionsForPDEWithdrawal(
-				inst[1], shardID, metadata.PDEWithdrawalRequestMeta,
+				inst[1], shardID, basemeta.PDEWithdrawalRequestMeta,
 				&s.currentPDEStateForProducer, beaconHeight-1)
 		}
 		s.Equal(nil, err)

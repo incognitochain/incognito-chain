@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -113,7 +114,7 @@ func (httpServer *HttpServer) handleCreateAndSendContractingRequest(params inter
 
 func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return processBurningReq(
-		metadata.BurningRequestMetaV2,
+		basemeta.BurningRequestMetaV2,
 		params,
 		closeChan,
 		httpServer,
@@ -325,7 +326,7 @@ func processBurningReq(
 
 func (httpServer *HttpServer) handleCreateRawTxWithBurningForDepositToSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return processBurningReq(
-		metadata.BurningForDepositToSCRequestMetaV2,
+		basemeta.BurningForDepositToSCRequestMetaV2,
 		params,
 		closeChan,
 		httpServer,

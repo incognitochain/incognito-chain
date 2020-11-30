@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -36,7 +37,7 @@ func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers in
 		paymentAddr,
 		uint64(voutsAmount),
 		*tokenIDHash,
-		metadata.ContractingRequestMeta,
+		basemeta.ContractingRequestMeta,
 	)
 
 	return meta, nil
@@ -159,7 +160,7 @@ func NewPaymentInfosFromReceiversParam(receiversParam map[string]interface{}) ([
 
 func GetStakingAmount(stakingType int, stakingShardAmountParam uint64) uint64 {
 	amount := uint64(0)
-	stakingData, _ := metadata.NewStakingMetadata(metadata.ShardStakingMeta, "", "", stakingShardAmountParam, "", true)
+	stakingData, _ := metadata.NewStakingMetadata(basemeta.ShardStakingMeta, "", "", stakingShardAmountParam, "", true)
 	if stakingType == 1 {
 		amount = stakingData.GetBeaconStakeAmount()
 	}

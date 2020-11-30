@@ -6,11 +6,13 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type StakingMetadata struct {
-	MetadataBase
+	basemeta.MetadataBase
 	FunderPaymentAddress         string
 	RewardReceiverPaymentAddress string
 	StakingAmountShard           uint64
@@ -32,10 +34,10 @@ func NewStakingMetadata(
 	*StakingMetadata,
 	error,
 ) {
-	if stakingType != ShardStakingMeta && stakingType != BeaconStakingMeta {
+	if stakingType != basemeta.ShardStakingMeta && stakingType != basemeta.BeaconStakingMeta {
 		return nil, errors.New("invalid staking type")
 	}
-	metadataBase := NewMetadataBase(stakingType)
+	metadataBase := basemeta.NewMetadataBase(stakingType)
 	return &StakingMetadata{
 		MetadataBase:                 *metadataBase,
 		FunderPaymentAddress:         funderPaymentAddress,
@@ -66,10 +68,10 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 		return false
 	}
 	// only stake to shard
-	return sm.Type == ShardStakingMeta
+	return sm.Type == basemeta.ShardStakingMeta
 }
 
-func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := beaconViewRetriever.GetAllCommitteeValidatorCandidate()
 	if err != nil {
 		return false, err
@@ -101,7 +103,7 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, 
 // Have only one amount corresponding to receiver
 // Receiver Is Burning Address
 // TODO: @hung only one of these 2 combinations of 'true, true' and 'false, false' is return instead of 4 possible combinations -> only return true or false and error is enough
-func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever  basemeta.ChainRetriever, shardViewRetriever  basemeta.ShardViewRetriever, beaconViewRetriever  basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	if tx.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
@@ -120,10 +122,10 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 		return false, false, errors.New("receiver Should be Burning Address")
 	}
 
-	if stakingMetadata.Type == ShardStakingMeta && amount != chainRetriever.GetStakingAmountShard() {
+	if stakingMetadata.Type == basemeta.ShardStakingMeta && amount != chainRetriever.GetStakingAmountShard() {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
-	if stakingMetadata.Type == BeaconStakingMeta && amount != chainRetriever.GetStakingAmountShard()*3 {
+	if stakingMetadata.Type == basemeta.BeaconStakingMeta && amount != chainRetriever.GetStakingAmountShard()*3 {
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 
@@ -157,7 +159,7 @@ func (stakingMetadata StakingMetadata) GetType() int {
 }
 
 func (stakingMetadata *StakingMetadata) CalculateSize() uint64 {
-	return calculateSize(stakingMetadata)
+	return basemeta.CalculateSize(stakingMetadata)
 }
 
 func (stakingMetadata StakingMetadata) GetBeaconStakeAmount() uint64 {

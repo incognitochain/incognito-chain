@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"io"
 	"sort"
 
@@ -50,7 +51,7 @@ type Config struct {
 	BlockGen          *BlockGenerator
 	TxPool            TxPool
 	TempTxPool        TxPool
-	CRemovedTxs       chan metadata.Transaction
+	CRemovedTxs       chan basemeta.Transaction
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
 	PubSubManager     Pubsub
@@ -335,7 +336,7 @@ func (blockchain *BlockChain) SetFeeEstimator(feeEstimator FeeEstimator, shardID
 	blockchain.config.FeeEstimator[shardID] = feeEstimator
 }
 
-func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Transaction) {
+func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan basemeta.Transaction) {
 	blockchain.config.CRemovedTxs = cRemovedTxs
 }
 

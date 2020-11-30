@@ -3,8 +3,9 @@ package blockchain
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
+	pMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -15,10 +16,10 @@ func (curView *ShardBestState) buildPortalRefundCustodianDepositTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Info("[Portal refund custodian deposit] Starting...")
 	contentBytes := []byte(contentStr)
-	var refundDeposit metadata.PortalCustodianDepositContent
+	var refundDeposit pMeta.PortalCustodianDepositContent
 	err := json.Unmarshal(contentBytes, &refundDeposit)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal custodian deposit content: %+v", err)
@@ -28,11 +29,11 @@ func (curView *ShardBestState) buildPortalRefundCustodianDepositTx(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalCustodianDepositResponse(
+	meta := pMeta.NewPortalCustodianDepositResponse(
 		"refund",
 		refundDeposit.TxReqID,
 		refundDeposit.IncogAddressStr,
-		metadata.PortalCustodianDepositResponseMeta,
+		basemeta.PortalCustodianDepositResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(refundDeposit.IncogAddressStr)
@@ -64,10 +65,10 @@ func (curView *ShardBestState) buildPortalRejectedTopUpWaitingPortingTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Info("[buildPortalRejectedTopUpWaitingPortingTx] Starting...")
 	contentBytes := []byte(contentStr)
-	var topUpInfo metadata.PortalTopUpWaitingPortingRequestContent
+	var topUpInfo pMeta.PortalTopUpWaitingPortingRequestContent
 	err := json.Unmarshal(contentBytes, &topUpInfo)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal top up waiting porting content: %+v", err)
@@ -77,10 +78,10 @@ func (curView *ShardBestState) buildPortalRejectedTopUpWaitingPortingTx(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalTopUpWaitingPortingResponse(
+	meta := pMeta.NewPortalTopUpWaitingPortingResponse(
 		common.PortalCustodianTopupRejectedChainStatus,
 		topUpInfo.TxReqID,
-		metadata.PortalTopUpWaitingPortingResponseMeta,
+		basemeta.PortalTopUpWaitingPortingResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(topUpInfo.IncogAddressStr)
@@ -110,10 +111,10 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Info("[buildPortalLiquidationCustodianDepositReject] Starting...")
 	contentBytes := []byte(contentStr)
-	var refundDeposit metadata.PortalLiquidationCustodianDepositContent
+	var refundDeposit pMeta.PortalLiquidationCustodianDepositContent
 	err := json.Unmarshal(contentBytes, &refundDeposit)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal liquidation custodian deposit content: %+v", err)
@@ -123,12 +124,12 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalLiquidationCustodianDepositResponse(
+	meta := pMeta.NewPortalLiquidationCustodianDepositResponse(
 		common.PortalCustodianTopupRejectedChainStatus,
 		refundDeposit.TxReqID,
 		refundDeposit.IncogAddressStr,
 		refundDeposit.DepositedAmount,
-		metadata.PortalCustodianTopupResponseMeta,
+		basemeta.PortalCustodianTopupResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(refundDeposit.IncogAddressStr)
@@ -160,10 +161,10 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositRejectV2(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Info("[buildPortalLiquidationCustodianDepositRejectV2] Starting...")
 	contentBytes := []byte(contentStr)
-	var refundDeposit metadata.PortalLiquidationCustodianDepositContentV2
+	var refundDeposit pMeta.PortalLiquidationCustodianDepositContentV2
 	err := json.Unmarshal(contentBytes, &refundDeposit)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal liquidation custodian deposit content: %+v", err)
@@ -173,12 +174,12 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositRejectV2(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalLiquidationCustodianDepositResponseV2(
+	meta := pMeta.NewPortalLiquidationCustodianDepositResponseV2(
 		common.PortalCustodianTopupRejectedChainStatus,
 		refundDeposit.TxReqID,
 		refundDeposit.IncogAddressStr,
 		refundDeposit.DepositedAmount,
-		metadata.PortalCustodianTopupResponseMetaV2,
+		basemeta.PortalCustodianTopupResponseMetaV2,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(refundDeposit.IncogAddressStr)
@@ -213,10 +214,10 @@ func (curView *ShardBestState) buildPortalAcceptedRequestPTokensTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Errorf("[Shard buildPortalAcceptedRequestPTokensTx] Starting...")
 	contentBytes := []byte(contentStr)
-	var acceptedReqPToken metadata.PortalRequestPTokensContent
+	var acceptedReqPToken pMeta.PortalRequestPTokensContent
 	err := json.Unmarshal(contentBytes, &acceptedReqPToken)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal custodian deposit content: %+v", err)
@@ -227,13 +228,13 @@ func (curView *ShardBestState) buildPortalAcceptedRequestPTokensTx(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalRequestPTokensResponse(
+	meta := pMeta.NewPortalRequestPTokensResponse(
 		"accepted",
 		acceptedReqPToken.TxReqID,
 		acceptedReqPToken.IncogAddressStr,
 		acceptedReqPToken.PortingAmount,
 		acceptedReqPToken.TokenID,
-		metadata.PortalUserRequestPTokenResponseMeta,
+		basemeta.PortalUserRequestPTokenResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(acceptedReqPToken.IncogAddressStr)
@@ -293,10 +294,10 @@ func (curView *ShardBestState) buildPortalCustodianWithdrawRequest(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Infof("[Shard buildPortalCustodianWithdrawRequest] Starting...")
 	contentBytes := []byte(contentStr)
-	var custodianWithdrawRequest metadata.PortalCustodianWithdrawRequestContent
+	var custodianWithdrawRequest pMeta.PortalCustodianWithdrawRequestContent
 	err := json.Unmarshal(contentBytes, &custodianWithdrawRequest)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal custodian withdraw request content: %+v", err)
@@ -307,12 +308,12 @@ func (curView *ShardBestState) buildPortalCustodianWithdrawRequest(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalCustodianWithdrawResponse(
+	meta := pMeta.NewPortalCustodianWithdrawResponse(
 		common.PortalCustodianWithdrawRequestAcceptedChainStatus,
 		custodianWithdrawRequest.TxReqID,
 		custodianWithdrawRequest.PaymentAddress,
 		custodianWithdrawRequest.Amount,
-		metadata.PortalCustodianWithdrawResponseMeta,
+		basemeta.PortalCustodianWithdrawResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(custodianWithdrawRequest.PaymentAddress)
@@ -345,10 +346,10 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Errorf("[Shard buildPortalRedeemLiquidateExchangeRatesRequestTx] Starting...")
 	contentBytes := []byte(contentStr)
-	var redeemReqContent metadata.PortalRedeemLiquidateExchangeRatesContent
+	var redeemReqContent pMeta.PortalRedeemLiquidateExchangeRatesContent
 	err := json.Unmarshal(contentBytes, &redeemReqContent)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal redeem liquidate exchange rates content: %+v", err)
@@ -359,14 +360,14 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTx(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
+	meta := pMeta.NewPortalRedeemLiquidateExchangeRatesResponse(
 		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
 		redeemReqContent.TotalPTokenReceived,
 		redeemReqContent.TokenID,
-		metadata.PortalRedeemFromLiquidationPoolResponseMeta,
+		basemeta.PortalRedeemFromLiquidationPoolResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
@@ -399,10 +400,10 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTxV
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Errorf("[Shard buildPortalRedeemLiquidateExchangeRatesRequestTxV3] Starting...")
 	contentBytes := []byte(contentStr)
-	var redeemReqContent metadata.PortalRedeemFromLiquidationPoolContentV3
+	var redeemReqContent pMeta.PortalRedeemFromLiquidationPoolContentV3
 	err := json.Unmarshal(contentBytes, &redeemReqContent)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal redeem liquidate exchange rates content: %+v", err)
@@ -417,14 +418,14 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTxV
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalRedeemFromLiquidationPoolResponseV3(
+	meta := pMeta.NewPortalRedeemFromLiquidationPoolResponseV3(
 		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
 		redeemReqContent.MintedPRVCollateral,
 		redeemReqContent.TokenID,
-		metadata.PortalRedeemFromLiquidationPoolResponseMetaV3,
+		basemeta.PortalRedeemFromLiquidationPoolResponseMetaV3,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
@@ -460,10 +461,10 @@ func (curView *ShardBestState) buildPortalRejectedRedeemRequestTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Errorf("[Shard buildPortalRejectedRedeemRequestTx] Starting...")
 	contentBytes := []byte(contentStr)
-	var redeemReqContent metadata.PortalRedeemRequestContent
+	var redeemReqContent pMeta.PortalRedeemRequestContent
 	err := json.Unmarshal(contentBytes, &redeemReqContent)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal redeem request content: %+v", err)
@@ -474,13 +475,13 @@ func (curView *ShardBestState) buildPortalRejectedRedeemRequestTx(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalRedeemRequestResponse(
+	meta := pMeta.NewPortalRedeemRequestResponse(
 		"rejected",
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
 		redeemReqContent.TokenID,
-		metadata.PortalRedeemRequestResponseMeta,
+		basemeta.PortalRedeemRequestResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
@@ -542,10 +543,10 @@ func (curView *ShardBestState) buildPortalLiquidateCustodianResponseTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Info("[Portal liquidate custodian response] Starting...")
 	contentBytes := []byte(contentStr)
-	var liqCustodian metadata.PortalLiquidateCustodianContent
+	var liqCustodian pMeta.PortalLiquidateCustodianContent
 	err := json.Unmarshal(contentBytes, &liqCustodian)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal liquidation custodian content: %+v", err)
@@ -560,12 +561,12 @@ func (curView *ShardBestState) buildPortalLiquidateCustodianResponseTx(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalLiquidateCustodianResponse(
+	meta := pMeta.NewPortalLiquidateCustodianResponse(
 		liqCustodian.UniqueRedeemID,
 		liqCustodian.LiquidatedCollateralAmount,
 		liqCustodian.RedeemerIncAddressStr,
 		liqCustodian.CustodianIncAddressStr,
-		metadata.PortalLiquidateCustodianResponseMeta,
+		basemeta.PortalLiquidateCustodianResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(liqCustodian.RedeemerIncAddressStr)
@@ -600,10 +601,10 @@ func (curView *ShardBestState) buildPortalAcceptedWithdrawRewardTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Info("[buildPortalAcceptedWithdrawRewardTx] Starting...")
 	contentBytes := []byte(contentStr)
-	var withdrawRewardContent metadata.PortalRequestWithdrawRewardContent
+	var withdrawRewardContent pMeta.PortalRequestWithdrawRewardContent
 	err := json.Unmarshal(contentBytes, &withdrawRewardContent)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal withdraw reward content: %+v", err)
@@ -613,12 +614,12 @@ func (curView *ShardBestState) buildPortalAcceptedWithdrawRewardTx(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalWithdrawRewardResponse(
+	meta := pMeta.NewPortalWithdrawRewardResponse(
 		withdrawRewardContent.TxReqID,
 		withdrawRewardContent.CustodianAddressStr,
 		withdrawRewardContent.TokenID,
 		withdrawRewardContent.RewardAmount,
-		metadata.PortalRequestWithdrawRewardResponseMeta,
+		basemeta.PortalRequestWithdrawRewardResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(withdrawRewardContent.CustodianAddressStr)
@@ -694,10 +695,10 @@ func (curView *ShardBestState) buildPortalRefundPortingFeeTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Info("[Portal refund porting fee] Starting...")
 	contentBytes := []byte(contentStr)
-	var portalPortingRequest metadata.PortalPortingRequestContent
+	var portalPortingRequest pMeta.PortalPortingRequestContent
 	err := json.Unmarshal(contentBytes, &portalPortingRequest)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal porting request content: %+v", err)
@@ -707,10 +708,10 @@ func (curView *ShardBestState) buildPortalRefundPortingFeeTx(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalFeeRefundResponse(
+	meta := pMeta.NewPortalFeeRefundResponse(
 		common.PortalPortingRequestRejectedChainStatus,
 		portalPortingRequest.TxReqID,
-		metadata.PortalPortingResponseMeta,
+		basemeta.PortalPortingResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(portalPortingRequest.IncogAddressStr)
@@ -744,10 +745,10 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Errorf("[Shard buildPortalRefundRedeemFromLiquidationTx] Starting...")
 	contentBytes := []byte(contentStr)
-	var redeemReqContent metadata.PortalRedeemLiquidateExchangeRatesContent
+	var redeemReqContent pMeta.PortalRedeemLiquidateExchangeRatesContent
 	err := json.Unmarshal(contentBytes, &redeemReqContent)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal redeem request content: %+v", err)
@@ -758,14 +759,14 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
+	meta := pMeta.NewPortalRedeemLiquidateExchangeRatesResponse(
 		common.PortalRedeemFromLiquidationPoolRejectedChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
 		redeemReqContent.TotalPTokenReceived,
 		redeemReqContent.TokenID,
-		metadata.PortalRedeemFromLiquidationPoolResponseMeta,
+		basemeta.PortalRedeemFromLiquidationPoolResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
@@ -828,10 +829,10 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTxV3
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	Logger.log.Errorf("[Shard buildPortalRefundRedeemFromLiquidationTx] Starting...")
 	contentBytes := []byte(contentStr)
-	var redeemReqContent metadata.PortalRedeemFromLiquidationPoolContentV3
+	var redeemReqContent pMeta.PortalRedeemFromLiquidationPoolContentV3
 	err := json.Unmarshal(contentBytes, &redeemReqContent)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal redeem request content: %+v", err)
@@ -842,14 +843,14 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTxV3
 		return nil, nil
 	}
 
-	meta := metadata.NewPortalRedeemFromLiquidationPoolResponseV3(
+	meta := pMeta.NewPortalRedeemFromLiquidationPoolResponseV3(
 		common.PortalRedeemFromLiquidationPoolRejectedChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
 		redeemReqContent.MintedPRVCollateral,
 		redeemReqContent.TokenID,
-		metadata.PortalRedeemFromLiquidationPoolResponseMetaV3,
+		basemeta.PortalRedeemFromLiquidationPoolResponseMetaV3,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)

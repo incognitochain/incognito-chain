@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"reflect"
 	"strconv"
 
@@ -19,7 +21,7 @@ type PDEContribution struct {
 	ContributorAddressStr string
 	ContributedAmount     uint64 // must be equal to vout value
 	TokenIDStr            string
-	MetadataBase
+	basemeta.MetadataBase
 }
 
 type PDEContributionAction struct {
@@ -81,7 +83,7 @@ func NewPDEContribution(
 	tokenIDStr string,
 	metaType int,
 ) (*PDEContribution, error) {
-	metadataBase := MetadataBase{
+	metadataBase := basemeta.MetadataBase{
 		Type: metaType,
 	}
 	pdeContribution := &PDEContribution{
@@ -94,12 +96,12 @@ func NewPDEContribution(
 	return pdeContribution, nil
 }
 
-func (pc PDEContribution) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (pc PDEContribution) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil
 }
 
-func (pc PDEContribution) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (pc PDEContribution) ValidateSanityData(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
 		return true, true, nil
@@ -151,7 +153,7 @@ func (pc PDEContribution) ValidateSanityData(chainRetriever ChainRetriever, shar
 }
 
 func (pc PDEContribution) ValidateMetadataByItself() bool {
-	return pc.Type == PDEContributionMeta || pc.Type == PDEPRVRequiredContributionRequestMeta
+	return pc.Type == basemeta.PDEContributionMeta || pc.Type == basemeta.PDEPRVRequiredContributionRequestMeta
 }
 
 func (pc PDEContribution) Hash() *common.Hash {
@@ -165,7 +167,7 @@ func (pc PDEContribution) Hash() *common.Hash {
 	return &hash
 }
 
-func (pc *PDEContribution) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (pc *PDEContribution) BuildReqActions(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PDEContributionAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),
@@ -181,5 +183,5 @@ func (pc *PDEContribution) BuildReqActions(tx Transaction, chainRetriever ChainR
 }
 
 func (pc *PDEContribution) CalculateSize() uint64 {
-	return calculateSize(pc)
+	return basemeta.CalculateSize(pc)
 }

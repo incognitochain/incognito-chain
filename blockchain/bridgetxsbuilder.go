@@ -2,16 +2,17 @@ package blockchain
 
 import (
 	"bytes"
-	"errors"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -57,7 +58,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 	contentStr string,
 	shardID byte,
 	metaType int,
-	ac *metadata.AccumulatedValues,
+	ac *basemeta.AccumulatedValues,
 ) ([][]string, error) {
 	Logger.log.Info("[Centralized bridge token issuance] Starting...")
 	instructions := [][]string{}
@@ -113,7 +114,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 	return append(instructions, returnedInst), nil
 }
 
-func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(stateDB *statedb.StateDB, contentStr string, shardID byte, metaType int, ac *metadata.AccumulatedValues) ([][]string, error) {
+func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(stateDB *statedb.StateDB, contentStr string, shardID byte, metaType int, ac *basemeta.AccumulatedValues) ([][]string, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	instructions := [][]string{}
 	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
@@ -233,7 +234,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(stateDB *statedb
 	return append(instructions, acceptedInst), nil
 }
 
-func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (basemeta.Transaction, error) {
 	Logger.log.Info("[Centralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -252,7 +253,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 	}
 	issuingRes := metadata.NewIssuingResponse(
 		issuingAcceptedInst.TxReqID,
-		metadata.IssuingResponseMeta,
+		basemeta.IssuingResponseMeta,
 	)
 	receiver := &privacy.PaymentInfo{
 		Amount:         issuingAcceptedInst.DepositedAmount,
@@ -294,7 +295,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (basemeta.Transaction, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -338,7 +339,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 		issuingETHAcceptedInst.TxReqID,
 		issuingETHAcceptedInst.UniqETHTx,
 		issuingETHAcceptedInst.ExternalTokenID,
-		metadata.IssuingETHResponseMeta,
+		basemeta.IssuingETHResponseMeta,
 	)
 	resTx := &transaction.TxCustomTokenPrivacy{}
 	initErr := resTx.Init(

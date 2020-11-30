@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math/big"
 	"sort"
 	"strconv"
@@ -454,7 +455,7 @@ func (blockchain *BlockChain) buildInstsForSortedTradableActions(
 			tradeMeta.MinAcceptableAmount,
 			tradeMeta.TradingFee,
 			tradeAction.ShardID,
-			metadata.PDECrossPoolTradeRequestMeta,
+			basemeta.PDECrossPoolTradeRequestMeta,
 			currentPDEState,
 			beaconHeight,
 			tradeAction.Meta.TraderAddressStr,
@@ -481,7 +482,7 @@ func (blockchain *BlockChain) buildInstsForUntradableActions(
 			tradeAction.Meta.TraderAddressStr,
 			common.PRVCoinID.String(),
 			tradeAction.Meta.TradingFee,
-			metadata.PDECrossPoolTradeRequestMeta,
+			basemeta.PDECrossPoolTradeRequestMeta,
 			common.PDECrossPoolTradeFeeRefundChainStatus,
 			tradeAction.ShardID,
 			tradeAction.TxReqID,
@@ -491,7 +492,7 @@ func (blockchain *BlockChain) buildInstsForUntradableActions(
 			tradeAction.Meta.TraderAddressStr,
 			tradeAction.Meta.TokenIDToSellStr,
 			tradeAction.Meta.SellAmount,
-			metadata.PDECrossPoolTradeRequestMeta,
+			basemeta.PDECrossPoolTradeRequestMeta,
 			common.PDECrossPoolTradeSellingTokenRefundChainStatus,
 			tradeAction.ShardID,
 			tradeAction.TxReqID,
@@ -1050,7 +1051,7 @@ func (blockchain *BlockChain) buildInstForTradingFeesDist(
 		return []string{}
 	}
 	return []string{
-		strconv.Itoa(metadata.PDETradingFeesDistributionMeta),
+		strconv.Itoa(basemeta.PDETradingFeesDistributionMeta),
 		"",
 		"",
 		string(feesForContributorsByPairBytes),

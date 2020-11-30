@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/pkg/errors"
 )
@@ -58,7 +58,7 @@ func (httpServer *HttpServer) handleGetBeaconSwapProof(params interface{}, close
 	}
 	beaconHeigh := uint64(heightParam)
 	// Get proof of instruction on beacon
-	beaconInstProof, _, errProof := getSwapProofOnBeacon(beaconHeigh, httpServer.config.BlockChain, httpServer.config.ConsensusEngine, metadata.BeaconSwapConfirmMeta)
+	beaconInstProof, _, errProof := getSwapProofOnBeacon(beaconHeigh, httpServer.config.BlockChain, httpServer.config.ConsensusEngine, basemeta.BeaconSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}

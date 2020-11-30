@@ -5,6 +5,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 	"strconv"
@@ -12,7 +14,7 @@ import (
 
 type WithDrawRewardRequest struct {
 	privacy.PaymentAddress
-	MetadataBase
+	basemeta.MetadataBase
 	TokenID common.Hash
 	Version int
 }
@@ -30,9 +32,9 @@ func (withDrawRewardRequest WithDrawRewardRequest) Hash() *common.Hash {
 	}
 }
 
-func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, error) {
-	metadataBase := MetadataBase{
-		Type: WithDrawRewardRequestMeta,
+func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (basemeta.Metadata, error) {
+	metadataBase := basemeta.MetadataBase{
+		Type: basemeta.WithDrawRewardRequestMeta,
 	}
 	requesterPaymentStr, ok := data["CustodianIncAddress"].(string)
 	if !ok {
@@ -61,22 +63,22 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 		version := int(versionFloat)
 		result.Version = version
 	}
-	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, result.Version); !ok || err != nil {
+	if ok, err := common.SliceExists(basemeta.AcceptedWithdrawRewardRequestVersion, result.Version); !ok || err != nil {
 		return nil, errors.Errorf("Invalid version %d", result.Version)
 	}
 	return result, nil
 }
 
 type WithDrawRewardResponse struct {
-	MetadataBase
+	basemeta.MetadataBase
 	TxRequest *common.Hash
 	TokenID   common.Hash
 	Version   int
 }
 
-func NewWithDrawRewardResponse(txRequest *WithDrawRewardRequest, reqID *common.Hash) (Metadata, error) {
-	metadataBase := MetadataBase{
-		Type: WithDrawRewardResponseMeta,
+func NewWithDrawRewardResponse(txRequest *WithDrawRewardRequest, reqID *common.Hash) (basemeta.Metadata, error) {
+	metadataBase := basemeta.MetadataBase{
+		Type: basemeta.WithDrawRewardResponseMeta,
 	}
 	result := &WithDrawRewardResponse{
 		MetadataBase: metadataBase,
@@ -85,7 +87,7 @@ func NewWithDrawRewardResponse(txRequest *WithDrawRewardRequest, reqID *common.H
 	}
 	result.Version = txRequest.Version
 
-	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, result.Version); !ok || err != nil {
+	if ok, err := common.SliceExists(basemeta.AcceptedWithdrawRewardRequestVersion, result.Version); !ok || err != nil {
 		return nil, errors.Errorf("Invalid version %d", result.Version)
 	}
 
@@ -107,11 +109,11 @@ func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
 	}
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
+func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr basemeta.Transaction, minFee uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
 	return true
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	if tx.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
@@ -158,7 +160,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx T
 	return true, nil
 }
 
-func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(chainRetriever  basemeta.ChainRetriever, shardViewRetriever  basemeta.ShardViewRetriever, beaconViewRetriever  basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
@@ -167,12 +169,12 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateMetadataByItself() bo
 	return true
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr basemeta.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	//this transaction can be a zero-fee transaction, but in fact, user can set nonzero-fee for this tx
 	return true
 }
 
-func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	if tx.IsPrivacy() {
 		return false, errors.New("This transaction is not private")
 	}
@@ -195,7 +197,7 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	return true, nil
 }
 
-func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(chainRetriever  basemeta.ChainRetriever, shardViewRetriever  basemeta.ShardViewRetriever, beaconViewRetriever  basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -56,7 +57,7 @@ import (
 func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int, proposer string, round int, start int64) (*ShardBlock, error) {
 	time1 := time.Now()
 	var (
-		transactionsForNewBlock = make([]metadata.Transaction, 0)
+		transactionsForNewBlock = make([]retriever.Transaction, 0)
 		totalTxsFee             = make(map[common.Hash]uint64)
 		newShardBlock           = NewShardBlock()
 		instructions            = [][]string{}
@@ -269,13 +270,13 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 // 3. Build response Transaction For Shard
 // 4. Build response Transaction For Beacon
 // 5. Return valid transaction from pending, response transactions from shard and beacon
-func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBestState, privatekey *privacy.PrivateKey, shardID byte, beaconBlocks []*BeaconBlock, blockCreation int64, beaconHeight uint64) ([]metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBestState, privatekey *privacy.PrivateKey, shardID byte, beaconBlocks []*BeaconBlock, blockCreation int64, beaconHeight uint64) ([]retriever.Transaction, error) {
 	txsToAdd, txToRemove, _ := blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreation, beaconHeight, curView)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
 	go blockGenerator.txPool.RemoveTx(txToRemove, false)
-	var responseTxsBeacon []metadata.Transaction
+	var responseTxsBeacon []retriever.Transaction
 	var errInstructions [][]string
 	var cError chan error
 	cError = make(chan error)
@@ -303,8 +304,8 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBe
 }
 
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
-func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(curView *ShardBestState, beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, [][]string, error) {
-	responsedTxs := []metadata.Transaction{}
+func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(curView *ShardBestState, beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]retriever.Transaction, [][]string, error) {
+	responsedTxs := []retriever.Transaction{}
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
 	beaconView := blockGenerator.chain.BeaconChain.GetFinalView().(*BeaconBestState)
@@ -321,33 +322,33 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 			if err != nil {
 				return nil, nil, err
 			}
-			var newTx metadata.Transaction
+			var newTx retriever.Transaction
 			switch metaType {
-			case metadata.IssuingETHRequestMeta:
+			case basemeta.IssuingETHRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					newTx, err = blockGenerator.buildETHIssuanceTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
-			case metadata.IssuingRequestMeta:
+			case basemeta.IssuingRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
 					newTx, err = blockGenerator.buildIssuanceTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
-			case metadata.PDETradeRequestMeta:
+			case basemeta.PDETradeRequestMeta:
 				if len(l) >= 4 {
 					newTx, err = blockGenerator.buildPDETradeIssuanceTx(l[2], l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
-			case metadata.PDECrossPoolTradeRequestMeta:
+			case basemeta.PDECrossPoolTradeRequestMeta:
 				if len(l) >= 4 {
 					newTx, err = blockGenerator.buildPDECrossPoolTradeIssuanceTx(l[2], l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
-			case metadata.PDEWithdrawalRequestMeta:
+			case basemeta.PDEWithdrawalRequestMeta:
 				if len(l) >= 4 && l[2] == common.PDEWithdrawalAcceptedChainStatus {
 					newTx, err = blockGenerator.buildPDEWithdrawalTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
-			case metadata.PDEFeeWithdrawalRequestMeta:
+			case basemeta.PDEFeeWithdrawalRequestMeta:
 				if len(l) >= 4 && l[2] == common.PDEFeeWithdrawalAcceptedChainStatus {
 					newTx, err = blockGenerator.buildPDEFeeWithdrawalTx(l[3], producerPrivateKey, shardID, curView, beaconView)
 				}
-			case metadata.PDEContributionMeta, metadata.PDEPRVRequiredContributionRequestMeta:
+			case basemeta.PDEContributionMeta, basemeta.PDEPRVRequiredContributionRequestMeta:
 				if len(l) >= 4 {
 					if l[2] == common.PDEContributionRefundChainStatus {
 						newTx, err = blockGenerator.buildPDERefundContributionTx(l[3], producerPrivateKey, shardID, curView, beaconView)
@@ -673,7 +674,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	blockCreationTimeLeftOver int64,
 	beaconHeight uint64,
 	curView *ShardBestState,
-) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
+) (txsToAdd []retriever.Transaction, txToRemove []retriever.Transaction, totalFee uint64) {
 	spareTime := SpareTime * time.Millisecond
 	maxBlockCreationTimeLeftTime := blockCreationTimeLeftOver - spareTime.Nanoseconds()
 	startTime := time.Now()
@@ -682,10 +683,10 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	Logger.log.Info("Number of transaction get from Block Generator: ", len(sourceTxns))
 	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
-		return []metadata.Transaction{}, []metadata.Transaction{}, 0
+		return []retriever.Transaction{}, []retriever.Transaction{}, 0
 	}
 	currentSize := uint64(0)
-	preparedTxForNewBlock := []metadata.Transaction{}
+	preparedTxForNewBlock := []retriever.Transaction{}
 	for _, tx := range sourceTxns {
 		tempSize := tx.GetTxActualSize()
 		if currentSize+tempSize >= common.MaxBlockSize {
@@ -698,7 +699,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 			break
 		}
 	}
-	listBatchTxs := []metadata.Transaction{}
+	listBatchTxs := []retriever.Transaction{}
 	for index, tx := range preparedTxForNewBlock {
 		elasped = time.Since(startTime).Nanoseconds()
 		if elasped >= maxBlockCreationTimeLeftTime {
@@ -744,7 +745,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 				txsToAdd = append(txsToAdd, tempTx)
 			}
 			// reset list batch and add new txs
-			listBatchTxs = []metadata.Transaction{}
+			listBatchTxs = []retriever.Transaction{}
 
 		} else {
 			continue

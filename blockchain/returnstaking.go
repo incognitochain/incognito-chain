@@ -3,6 +3,7 @@ package blockchain
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -18,7 +19,7 @@ import (
 type returnStakingInfo struct {
 	SwapoutPubKey string
 	FunderAddress privacy.PaymentAddress
-	StakingTx     metadata.Transaction
+	StakingTx     basemeta.Transaction
 	StakingAmount uint64
 }
 
@@ -28,11 +29,11 @@ func (blockchain *BlockChain) buildReturnStakingTxFromBeaconInstructions(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (
-	[]metadata.Transaction,
+	[]basemeta.Transaction,
 	[][]string,
 	error,
 ) {
-	responsedTxs := []metadata.Transaction{}
+	responsedTxs := []basemeta.Transaction{}
 	responsedHashTxs := map[common.Hash]struct{}{} // capture hash of responsed tx
 	errorInstructions := [][]string{}
 	var err error
@@ -132,7 +133,7 @@ func (blockchain *BlockChain) buildReturnStakingAmountTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (
-	metadata.Transaction,
+	basemeta.Transaction,
 	uint64,
 	error,
 ) {
@@ -141,7 +142,7 @@ func (blockchain *BlockChain) buildReturnStakingAmountTx(
 	returnStakingMeta := metadata.NewReturnStaking(
 		txStakingHash,
 		info.FunderAddress,
-		metadata.ReturnStakingMeta,
+		basemeta.ReturnStakingMeta,
 	)
 	returnStakingTx := new(transaction.Tx)
 	stakeAmount := info.StakingTx.CalculateTxValue()

@@ -3,11 +3,11 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
@@ -21,9 +21,9 @@ func (httpServer *HttpServer) handleGetBurnProof(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	confirmMeta := metadata.BurningConfirmMeta
+	confirmMeta := basemeta.BurningConfirmMeta
 	if onBeacon {
-		confirmMeta = metadata.BurningConfirmMetaV2
+		confirmMeta = basemeta.BurningConfirmMetaV2
 	}
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }
@@ -37,9 +37,9 @@ func (httpServer *HttpServer) handleGetBurnProofForDepositToSC(
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	confirmMeta := metadata.BurningConfirmForDepositToSCMeta
+	confirmMeta := basemeta.BurningConfirmForDepositToSCMeta
 	if onBeacon {
-		confirmMeta = metadata.BurningConfirmForDepositToSCMetaV2
+		confirmMeta = basemeta.BurningConfirmForDepositToSCMetaV2
 	}
 	return retrieveBurnProof(confirmMeta, onBeacon, height, txID, httpServer)
 }

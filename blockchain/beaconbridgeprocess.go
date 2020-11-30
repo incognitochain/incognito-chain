@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math/big"
 	"strconv"
 
@@ -39,16 +40,16 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 		}
 		var err error
 		switch inst[0] {
-		case strconv.Itoa(metadata.IssuingETHRequestMeta):
+		case strconv.Itoa(basemeta.IssuingETHRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingETHReq(bridgeStateDB, inst, updatingInfoByTokenID)
 
-		case strconv.Itoa(metadata.IssuingRequestMeta):
+		case strconv.Itoa(basemeta.IssuingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(bridgeStateDB, inst, updatingInfoByTokenID)
 
-		case strconv.Itoa(metadata.ContractingRequestMeta):
+		case strconv.Itoa(basemeta.ContractingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processContractingReq(inst, updatingInfoByTokenID)
 
-		case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2):
+		case strconv.Itoa(basemeta.BurningConfirmMeta), strconv.Itoa(basemeta.BurningConfirmForDepositToSCMeta), strconv.Itoa(basemeta.BurningConfirmMetaV2), strconv.Itoa(basemeta.BurningConfirmForDepositToSCMetaV2):
 			updatingInfoByTokenID, err = blockchain.processBurningReq(inst, updatingInfoByTokenID)
 
 		}
@@ -276,21 +277,21 @@ func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.
 		metaType := tx.GetMetadataType()
 		var err error
 		var reqTxID common.Hash
-		if metaType == metadata.IssuingETHRequestMeta || metaType == metadata.IssuingRequestMeta {
+		if metaType == basemeta.IssuingETHRequestMeta || metaType == basemeta.IssuingRequestMeta {
 			reqTxID = *tx.Hash()
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestProcessingStatus)
 			if err != nil {
 				return err
 			}
 		}
-		if metaType == metadata.IssuingETHResponseMeta {
+		if metaType == basemeta.IssuingETHResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingETHResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)
 			if err != nil {
 				return err
 			}
-		} else if metaType == metadata.IssuingResponseMeta {
+		} else if metaType == basemeta.IssuingResponseMeta {
 			meta := tx.GetMetadata().(*metadata.IssuingResponse)
 			reqTxID = meta.RequestedTxID
 			err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, reqTxID, common.BridgeRequestAcceptedStatus)

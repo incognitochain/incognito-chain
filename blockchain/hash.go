@@ -3,11 +3,10 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math"
 	"sort"
 	"strconv"
-
-	"github.com/incognitochain/incognito-chain/metadata"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -123,7 +122,7 @@ type Merkle struct {
 // using witness transaction id's rather than regular transaction id's. This
 // also presents an additional case wherein the wtxid of the salary transaction
 // is the zeroHash.
-func (merkle Merkle) BuildMerkleTreeStore(transactions []metadata.Transaction) []*common.Hash {
+func (merkle Merkle) BuildMerkleTreeStore(transactions []basemeta.Transaction) []*common.Hash {
 	if len(transactions) == 0 {
 		return []*common.Hash{}
 	}
@@ -308,12 +307,12 @@ func (merkle Merkle) hashMerkleBranches(left *common.Hash, right *common.Hash) *
 	return &newHash
 }
 
-func CalcMerkleRoot(txns []metadata.Transaction) common.Hash {
+func CalcMerkleRoot(txns []basemeta.Transaction) common.Hash {
 	if len(txns) == 0 {
 		return common.Hash{}
 	}
 
-	utilTxns := make([]metadata.Transaction, 0, len(txns))
+	utilTxns := make([]basemeta.Transaction, 0, len(txns))
 	utilTxns = append(utilTxns, txns...)
 	merkles := Merkle{}.BuildMerkleTreeStore(utilTxns)
 	return *merkles[len(merkles)-1]

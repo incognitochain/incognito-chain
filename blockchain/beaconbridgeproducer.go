@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math/big"
 	"strconv"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 )
 
@@ -34,27 +34,27 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 		contentStr := inst[1]
 		newInst := [][]string{}
 		switch metaType {
-		case metadata.ContractingRequestMeta:
+		case basemeta.ContractingRequestMeta:
 			newInst, err = blockchain.buildInstructionsForContractingReq(contentStr, shardID, metaType)
 
-		case metadata.BurningRequestMeta:
+		case basemeta.BurningRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMeta, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, basemeta.BurningConfirmMeta, inst, beaconHeight)
 			newInst = [][]string{burningConfirm}
 
-		case metadata.BurningRequestMetaV2:
+		case basemeta.BurningRequestMetaV2:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMetaV2, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, basemeta.BurningConfirmMetaV2, inst, beaconHeight)
 			newInst = [][]string{burningConfirm}
 
-		case metadata.BurningForDepositToSCRequestMeta:
+		case basemeta.BurningForDepositToSCRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMeta, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, basemeta.BurningConfirmForDepositToSCMeta, inst, beaconHeight)
 			newInst = [][]string{burningConfirm}
 
-		case metadata.BurningForDepositToSCRequestMetaV2:
+		case basemeta.BurningForDepositToSCRequestMetaV2:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMetaV2, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, basemeta.BurningConfirmForDepositToSCMetaV2, inst, beaconHeight)
 			newInst = [][]string{burningConfirm}
 
 		default:

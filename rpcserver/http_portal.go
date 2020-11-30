@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -183,7 +184,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortingRequest(params interfa
 	}
 
 	//check exchange rates
-	meta, _ := metadata.NewPortalUserRegister(
+	meta, _ := metadata2.NewPortalUserRegister(
 		uniqueRegisterId,
 		incogAddressStr,
 		pTokenId,
@@ -337,7 +338,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqPToken(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingProof param is invalid"))
 	}
 
-	meta, _ := metadata.NewPortalRequestPTokens(
+	meta, _ := metadata2.NewPortalRequestPTokens(
 		metadata.PortalUserRequestPTokenMeta,
 		uniquePortingID,
 		tokenID,
@@ -469,7 +470,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{},
 		redeemerExternalAddress = redeemerExternalAddress[2:]
 	}
 
-	meta, _ := metadata.NewPortalRedeemRequest(metadata.PortalRedeemRequestMetaV3, uniqueRedeemID,
+	meta, _ := metadata2.NewPortalRedeemRequest(metadata.PortalRedeemRequestMetaV3, uniqueRedeemID,
 		redeemTokenID, redeemAmount, redeemerIncAddressStr, remoteAddress, redeemFee, redeemerExternalAddress)
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
@@ -571,7 +572,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqMatchingRedeem(params inte
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RemoteAddresses param is invalid"))
 	}
 
-	meta, _ := metadata.NewPortalReqMatchingRedeem(
+	meta, _ := metadata2.NewPortalReqMatchingRedeem(
 		metadata.PortalReqMatchingRedeemMeta,
 		incognitoAddress,
 		redeemID,
@@ -681,7 +682,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqUnlockCollateral(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RedeemProof param is invalid"))
 	}
 
-	meta, _ := metadata.NewPortalRequestUnlockCollateral(
+	meta, _ := metadata2.NewPortalRequestUnlockCollateral(
 		metadata.PortalRequestUnlockCollateralMetaV3,
 		uniqueRedeemID,
 		tokenID,
@@ -774,7 +775,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalExchangeRate(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SenderAddress is invalid"))
 	}
 
-	var exchangeRate = make([]*metadata.ExchangeRateInfo, 0)
+	var exchangeRate = make([]*metadata2.ExchangeRateInfo, 0)
 	exchangeRateMap, ok := data["Rates"].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Rates is invalid"))
@@ -797,13 +798,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalExchangeRate(params int
 
 		exchangeRate = append(
 			exchangeRate,
-			&metadata.ExchangeRateInfo{
+			&metadata2.ExchangeRateInfo{
 				PTokenID: tokenID,
 				Rate:     amount,
 			})
 	}
 
-	meta, _ := metadata.NewPortalExchangeRates(
+	meta, _ := metadata2.NewPortalExchangeRates(
 		metadata.PortalExchangeRatesMeta,
 		senderAddress,
 		exchangeRate,

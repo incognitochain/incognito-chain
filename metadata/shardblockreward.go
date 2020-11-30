@@ -2,6 +2,8 @@ package metadata
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"strconv"
 
 	// "errors"
@@ -33,7 +35,7 @@ func BuildInstForShardReward(reward map[common.Hash]uint64, epoch uint64, shardI
 	}
 
 	returnedInst := []string{
-		strconv.Itoa(ShardBlockRewardRequestMeta),
+		strconv.Itoa(basemeta.ShardBlockRewardRequestMeta),
 		strconv.Itoa(int(shardID)),
 		"shardRewardInst", //TODO: change to constant
 		string(contentStr),
@@ -80,8 +82,8 @@ func (blockRewardInfo *AcceptedBlockRewardInfo) GetStringFormat() ([]string, err
 		return nil, err
 	}
 	return []string{
-		strconv.Itoa(AcceptedBlockRewardInfoMeta),
-		strconv.Itoa(BeaconOnly),
+		strconv.Itoa(basemeta.AcceptedBlockRewardInfoMeta),
+		strconv.Itoa(basemeta.BeaconOnly),
 		string(content),
 	}, nil
 }

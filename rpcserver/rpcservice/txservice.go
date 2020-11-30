@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math"
 	"math/big"
 	"sort"
@@ -244,7 +245,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 		if metadataParam != nil {
 			metadataType := metadataParam.GetType()
 			switch metadataType {
-			case metadata.WithDrawRewardRequestMeta:
+			case basemeta.WithDrawRewardRequestMeta:
 				{
 					return nil, realFee, nil
 				}

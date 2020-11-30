@@ -1,7 +1,9 @@
 package jsonresult
 
-import "github.com/incognitochain/incognito-chain/metadata"
+import (
+	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
+)
 
 type PortalPortingRequest struct {
-	PortingRequest metadata.PortingRequestStatus `json:"PortingRequest"`
+	PortingRequest metadata2.PortingRequestStatus `json:"PortingRequest"`
 }

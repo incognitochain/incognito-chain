@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"sort"
 	"strconv"
 	"strings"
@@ -76,7 +77,7 @@ func storePRV(transactionStateRoot *statedb.StateDB) error {
 	return nil
 }
 
-func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, uint64, int, metadata.Transaction, error) {
+func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, common.Hash, uint64, int, basemeta.Transaction, error) {
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
 		blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
@@ -93,7 +94,7 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, co
 	return byte(255), common.Hash{}, 0, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, fmt.Errorf("Not found transaction with tx hash %+v", txHash))
 }
 
-func (blockchain *BlockChain) GetTransactionByHashWithShardID(txHash common.Hash, shardID byte) (common.Hash, int, metadata.Transaction, error) {
+func (blockchain *BlockChain) GetTransactionByHashWithShardID(txHash common.Hash, shardID byte) (common.Hash, int, basemeta.Transaction, error) {
 	blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
 	if err != nil {
 		return common.Hash{}, -1, nil, NewBlockChainError(GetTransactionFromDatabaseError, fmt.Errorf("Not found transaction with tx hash %+v", txHash))
@@ -159,7 +160,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 	}
 	for _, tx := range shardBlock.Body.Transactions {
 		switch tx.GetMetadataType() {
-		case metadata.WithDrawRewardResponseMeta:
+		case basemeta.WithDrawRewardResponseMeta:
 			_, requesterRes, amountRes, coinID := tx.GetTransferData()
 			requester := getRequesterFromPKnCoinID(requesterRes, *coinID)
 			txReq, isExist := txRequestTable[requester]
@@ -234,10 +235,10 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	payByPrivateKey *privacy.PrivateKey,
 	transactionStateDB *statedb.StateDB,
 	bridgeStateDB *statedb.StateDB,
-	meta metadata.Metadata,
+	meta basemeta.Metadata,
 	coinID common.Hash,
 	shardID byte,
-) (metadata.Transaction, error) {
+) (basemeta.Transaction, error) {
 	txType := -1
 	if res, err := coinID.Cmp(&common.PRVCoinID); err == nil && res == 0 {
 		txType = transaction.NormalCoinType
@@ -272,9 +273,9 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 }
 
 // @Notice: change from body.Transaction -> transactions
-func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *ShardBestState, transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
+func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *ShardBestState, transactions []basemeta.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]basemeta.Transaction, error) {
 	txRequestTable := reqTableFromReqTxs(transactions)
-	txsResponse := []metadata.Transaction{}
+	txsResponse := []basemeta.Transaction{}
 	for key, value := range txRequestTable {
 		txRes, err := blockchain.buildWithDrawTransactionResponse(view, &value, blkProducerPrivateKey, shardID)
 		if err != nil {

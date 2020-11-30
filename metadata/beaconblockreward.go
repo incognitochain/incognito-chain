@@ -3,6 +3,7 @@ package metadata
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -34,7 +35,7 @@ func BuildInstForBeaconReward(reward map[common.Hash]uint64, payToPublicKey []by
 	}
 
 	returnedInst := []string{
-		strconv.Itoa(BeaconRewardRequestMeta),
+		strconv.Itoa(basemeta.BeaconRewardRequestMeta),
 		strconv.Itoa(int(common.GetShardIDFromLastByte(payToPublicKey[len(payToPublicKey)-1]))),
 		"beaconRewardInst",
 		string(contentStr),
@@ -53,7 +54,7 @@ func NewBeaconBlockRewardInfoFromStr(inst string) (*BeaconRewardInfo, error) {
 }
 
 type BeaconBlockSalaryRes struct {
-	MetadataBase
+	basemeta.MetadataBase
 	BeaconBlockHeight uint64
 	ProducerAddress   *privacy.PaymentAddress
 	InfoHash          *common.Hash
@@ -66,17 +67,17 @@ type BeaconBlockSalaryInfo struct {
 	InfoHash          *common.Hash
 }
 
-func (sbsRes BeaconBlockSalaryRes) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (sbsRes BeaconBlockSalaryRes) CheckTransactionFee(tr basemeta.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (sbsRes BeaconBlockSalaryRes) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (sbsRes BeaconBlockSalaryRes) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with request tx (via RequestedTxID) in current block
 	return false, nil
 }
 
-func (sbsRes BeaconBlockSalaryRes) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (sbsRes BeaconBlockSalaryRes) ValidateSanityData(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	if len(sbsRes.ProducerAddress.Pk) == 0 {
 		return false, false, errors.New("Wrong request info's producer address")
 	}

@@ -2,19 +2,19 @@ package blockchain
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/basemeta"
 )
 
 func (blockchain *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 	insts [][]string,
-	txs []metadata.Transaction,
+	txs []basemeta.Transaction,
 	shardID byte,
-) ([]metadata.Transaction, error) {
+) ([]basemeta.Transaction, error) {
 
 	instUsed := make([]int, len(insts))
 	txsUsed := make([]int, len(txs))
-	invalidTxs := []metadata.Transaction{}
-	accumulatedValues := &metadata.AccumulatedValues{
+	invalidTxs := []basemeta.Transaction{}
+	accumulatedValues := &basemeta.AccumulatedValues{
 		UniqETHTxsUsed:   [][]byte{},
 		DBridgeTokenPair: map[string][]byte{},
 		CBridgeTokens:    []*common.Hash{},

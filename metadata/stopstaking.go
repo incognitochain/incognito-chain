@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,15 +15,15 @@ import (
 )
 
 type StopAutoStakingMetadata struct {
-	MetadataBase
+	basemeta.MetadataBase
 	CommitteePublicKey string
 }
 
 func NewStopAutoStakingMetadata(stopStakingType int, committeePublicKey string) (*StopAutoStakingMetadata, error) {
-	if stopStakingType != StopAutoStakingMeta {
+	if stopStakingType != basemeta.StopAutoStakingMeta {
 		return nil, errors.New("invalid stop staking type")
 	}
-	metadataBase := NewMetadataBase(stopStakingType)
+	metadataBase := basemeta.NewMetadataBase(stopStakingType)
 	return &StopAutoStakingMetadata{
 		MetadataBase:       *metadataBase,
 		CommitteePublicKey: committeePublicKey,
@@ -38,7 +40,7 @@ func (stopAutoStakingMetadata *StopAutoStakingMetadata) ValidateMetadataByItself
 	if !CommitteePublicKey.CheckSanityData() {
 		return false
 	}
-	return (stopAutoStakingMetadata.Type == StopAutoStakingMeta)
+	return (stopAutoStakingMetadata.Type == basemeta.StopAutoStakingMeta)
 }
 
 //ValidateTxWithBlockChain Validate Condition to Request Stop AutoStaking With Blockchain
@@ -46,7 +48,7 @@ func (stopAutoStakingMetadata *StopAutoStakingMetadata) ValidateMetadataByItself
 //- Requested Committee Publickey is in staking tx list,
 //- Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
 //- Not yet requested to stop auto-restaking
-func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	stopStakingMetadata, ok := tx.GetMetadata().(*StopAutoStakingMetadata)
 	if !ok {
 		return false, NewMetadataTxError(StopAutoStakingRequestTypeAssertionError, fmt.Errorf("Expect *StopAutoStakingMetadata type but get %+v", reflect.TypeOf(tx.GetMetadata())))
@@ -90,7 +92,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 // Have only one receiver
 // Have only one amount corresponding to receiver
 // Receiver Is Burning Address
-func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(chainRetriever  basemeta.ChainRetriever, shardViewRetriever  basemeta.ShardViewRetriever, beaconViewRetriever  basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	if tx.IsPrivacy() {
 		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
 	}
@@ -108,7 +110,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(chainR
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
 		return false, false, errors.New("receiver Should be Burning Address")
 	}
-	if stopAutoStakingMetadata.Type != StopAutoStakingMeta || amount != StopAutoStakingAmount {
+	if stopAutoStakingMetadata.Type != basemeta.StopAutoStakingMeta || amount != basemeta.StopAutoStakingAmount {
 		return false, false, errors.New("receiver amount should be zero")
 	}
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
@@ -126,5 +128,5 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) GetType() int {
 }
 
 func (stopAutoStakingMetadata *StopAutoStakingMetadata) CalculateSize() uint64 {
-	return calculateSize(stopAutoStakingMetadata)
+	return basemeta.CalculateSize(stopAutoStakingMetadata)
 }

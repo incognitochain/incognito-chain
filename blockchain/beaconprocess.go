@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"reflect"
 	"sort"
 	"strconv"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/blockchain/btc"
@@ -1465,8 +1465,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	// Save result of BurningConfirm instruction to get proof later
 	metas := []string{ // Burning v2: sig on beacon only
-		strconv.Itoa(metadata.BurningConfirmMetaV2),
-		strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2),
+		strconv.Itoa(basemeta.BurningConfirmMetaV2),
+		strconv.Itoa(basemeta.BurningConfirmForDepositToSCMetaV2),
 	}
 	if err := blockchain.storeBurningConfirm(newBestState.featureStateDB, beaconBlock.Body.Instructions, beaconBlock.Header.Height, metas); err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)

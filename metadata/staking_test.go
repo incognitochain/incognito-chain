@@ -3,6 +3,7 @@ package metadata_test
 import (
 	"errors"
 	"fmt"
+
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -319,7 +320,7 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "check wallet.chainRetriever.GetStakingAmountShard() && Stake Shard error case",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{metadata.ShardStakingMeta},
+				MetadataBase: metadata.MetadataBase{basemeta.ShardStakingMeta},
 			},
 			args: args{
 				tx:             txGetStakingAmountShardError,
@@ -332,7 +333,7 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "check wallet.chainRetriever.GetStakingAmountShard() * 3 && Stake Beacon error case",
 			fields: fields{
-				MetadataBase: metadata.MetadataBase{metadata.BeaconStakingMeta},
+				MetadataBase: metadata.MetadataBase{basemeta.BeaconStakingMeta},
 			},
 			args: args{
 				tx:             txGetStakingAmountBeaconError,
@@ -344,7 +345,7 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "check wallet.Base58CheckDeserialize(funderPaymentAddress) error case",
 			fields: fields{
-				MetadataBase:                 metadata.MetadataBase{metadata.ShardStakingMeta},
+				MetadataBase:                 metadata.MetadataBase{basemeta.ShardStakingMeta},
 				FunderPaymentAddress:         "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gRpmgkqD4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
 				RewardReceiverPaymentAddress: "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
 			},
@@ -359,7 +360,7 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "check wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress) error case",
 			fields: fields{
-				MetadataBase:                 metadata.MetadataBase{metadata.ShardStakingMeta},
+				MetadataBase:                 metadata.MetadataBase{basemeta.ShardStakingMeta},
 				FunderPaymentAddress:         "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
 				RewardReceiverPaymentAddress: "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVaNomBK1yYC",
 			},
@@ -374,7 +375,7 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "check CommitteePublicKey.FromString error case",
 			fields: fields{
-				MetadataBase:                 metadata.MetadataBase{metadata.ShardStakingMeta},
+				MetadataBase:                 metadata.MetadataBase{basemeta.ShardStakingMeta},
 				FunderPaymentAddress:         "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
 				RewardReceiverPaymentAddress: "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
 				CommitteePublicKey:           invalidCommitteePublicKeys[0],
@@ -390,7 +391,7 @@ func TestStakingMetadata_ValidateSanityData(t *testing.T) {
 		{
 			name: "happy case",
 			fields: fields{
-				MetadataBase:                 metadata.MetadataBase{metadata.ShardStakingMeta},
+				MetadataBase:                 metadata.MetadataBase{basemeta.ShardStakingMeta},
 				FunderPaymentAddress:         "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
 				RewardReceiverPaymentAddress: "12RrjUWjyCNPXoCChrpEVLxucs3WEw9KyFxzP3UrdRzped2UouDzBM9gNugySqt4RpmgkqL1H7xxE8PfNmDwAatnSXPUVdNomBK1yYC",
 				CommitteePublicKey:           validCommitteePublicKeys[0],
@@ -472,7 +473,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			name: "happy case",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{
-					metadata.ShardStakingMeta,
+					basemeta.ShardStakingMeta,
 				},
 				FunderPaymentAddress:         validPaymentAddresses[0],
 				RewardReceiverPaymentAddress: validPaymentAddresses[0],
@@ -493,7 +494,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			name: "stake already error case",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{
-					metadata.ShardStakingMeta,
+					basemeta.ShardStakingMeta,
 				},
 				FunderPaymentAddress:         validPaymentAddresses[0],
 				RewardReceiverPaymentAddress: validPaymentAddresses[0],
@@ -514,7 +515,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			name: "get committee error case",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{
-					metadata.ShardStakingMeta,
+					basemeta.ShardStakingMeta,
 				},
 				FunderPaymentAddress:         validPaymentAddresses[0],
 				RewardReceiverPaymentAddress: validPaymentAddresses[0],
@@ -536,7 +537,7 @@ func TestStakingMetadata_ValidateTxWithBlockChain(t *testing.T) {
 			name: "CommitteeBase58KeyListToStruct error case",
 			fields: fields{
 				MetadataBase: metadata.MetadataBase{
-					metadata.ShardStakingMeta,
+					basemeta.ShardStakingMeta,
 				},
 				FunderPaymentAddress:         validPaymentAddresses[0],
 				RewardReceiverPaymentAddress: validPaymentAddresses[0],

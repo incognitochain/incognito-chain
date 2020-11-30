@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -18,7 +20,7 @@ type PDEFeeWithdrawalRequest struct {
 	WithdrawalToken1IDStr string
 	WithdrawalToken2IDStr string
 	WithdrawalFeeAmt      uint64
-	MetadataBase
+	basemeta.MetadataBase
 }
 
 type PDEFeeWithdrawalRequestAction struct {
@@ -34,7 +36,7 @@ func NewPDEFeeWithdrawalRequest(
 	withdrawalFeeAmt uint64,
 	metaType int,
 ) (*PDEFeeWithdrawalRequest, error) {
-	metadataBase := MetadataBase{
+	metadataBase := basemeta.MetadataBase{
 		Type: metaType,
 	}
 	pdeFeeWithdrawalRequest := &PDEFeeWithdrawalRequest{
@@ -47,12 +49,12 @@ func NewPDEFeeWithdrawalRequest(
 	return pdeFeeWithdrawalRequest, nil
 }
 
-func (pc PDEFeeWithdrawalRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (pc PDEFeeWithdrawalRequest) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil
 }
 
-func (pc PDEFeeWithdrawalRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (pc PDEFeeWithdrawalRequest) ValidateSanityData(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	keyWallet, err := wallet.Base58CheckDeserialize(pc.WithdrawerAddressStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(PDEFeeWithdrawalRequestFromMapError, errors.New("WithdrawerAddressStr incorrect"))
@@ -79,7 +81,7 @@ func (pc PDEFeeWithdrawalRequest) ValidateSanityData(chainRetriever ChainRetriev
 }
 
 func (pc PDEFeeWithdrawalRequest) ValidateMetadataByItself() bool {
-	return pc.Type == PDEFeeWithdrawalRequestMeta
+	return pc.Type == basemeta.PDEFeeWithdrawalRequestMeta
 }
 
 func (pc PDEFeeWithdrawalRequest) Hash() *common.Hash {
@@ -93,7 +95,7 @@ func (pc PDEFeeWithdrawalRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (pc *PDEFeeWithdrawalRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (pc *PDEFeeWithdrawalRequest) BuildReqActions(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PDEFeeWithdrawalRequestAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),
@@ -109,5 +111,5 @@ func (pc *PDEFeeWithdrawalRequest) BuildReqActions(tx Transaction, chainRetrieve
 }
 
 func (pc *PDEFeeWithdrawalRequest) CalculateSize() uint64 {
-	return calculateSize(pc)
+	return basemeta.CalculateSize(pc)
 }

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"strconv"
 	"testing"
 
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -86,11 +86,11 @@ func (suite *PDEFlowsSuite) TestSimulatedBeaconBlock1001() {
 		newInst := [][]string{}
 		var err error
 		switch metaType {
-		case metadata.PDEContributionMeta:
+		case basemeta.PDEContributionMeta:
 			newInst, err = bc.buildInstructionsForPDEContribution(contentStr, shardID, metaType)
-		case metadata.PDETradeRequestMeta:
+		case basemeta.PDETradeRequestMeta:
 			newInst, err = bc.buildInstructionsForPDETrade(contentStr, shardID, metaType, &suite.currentPDEStateForProducer, beaconHeight-1)
-		case metadata.PDEWithdrawalRequestMeta:
+		case basemeta.PDEWithdrawalRequestMeta:
 			newInst, err = bc.buildInstructionsForPDEWithdrawal(contentStr, shardID, metaType, &suite.currentPDEStateForProducer, beaconHeight-1)
 		default:
 			continue
@@ -115,11 +115,11 @@ func (suite *PDEFlowsSuite) TestSimulatedBeaconBlock1001() {
 		}
 		var err error
 		switch inst[0] {
-		case strconv.Itoa(metadata.PDEContributionMeta):
+		case strconv.Itoa(basemeta.PDEContributionMeta):
 			err = bc.processPDEContribution(beaconHeight-1, inst, &suite.currentPDEStateForProcess)
-		case strconv.Itoa(metadata.PDETradeRequestMeta):
+		case strconv.Itoa(basemeta.PDETradeRequestMeta):
 			err = bc.processPDETrade(beaconHeight-1, inst, &suite.currentPDEStateForProcess)
-		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
+		case strconv.Itoa(basemeta.PDEWithdrawalRequestMeta):
 			err = bc.processPDEWithdrawal(beaconHeight-1, inst, &suite.currentPDEStateForProcess)
 		}
 		suite.Equal(err, nil)
@@ -276,11 +276,11 @@ func (suite *PDEFlowsSuite) TestSimulatedBeaconBlock1002() {
 		newInst := [][]string{}
 		var err error
 		switch metaType {
-		case metadata.PDEContributionMeta:
+		case basemeta.PDEContributionMeta:
 			newInst, err = bc.buildInstructionsForPDEContribution(contentStr, shardID, metaType)
-		case metadata.PDETradeRequestMeta:
+		case basemeta.PDETradeRequestMeta:
 			newInst, err = bc.buildInstructionsForPDETrade(contentStr, shardID, metaType, &suite.currentPDEStateForProducer, beaconHeight-1)
-		case metadata.PDEWithdrawalRequestMeta:
+		case basemeta.PDEWithdrawalRequestMeta:
 			newInst, err = bc.buildInstructionsForPDEWithdrawal(contentStr, shardID, metaType, &suite.currentPDEStateForProducer, beaconHeight-1)
 		default:
 			continue
@@ -294,8 +294,8 @@ func (suite *PDEFlowsSuite) TestSimulatedBeaconBlock1002() {
 	suite.Equal(newInsts[4][2], "refund")
 	suite.Equal(newInsts[8][2], "refund")
 	suite.Equal(newInsts[9][2], "refund")
-	suite.Equal(newInsts[10][0], strconv.Itoa(metadata.PDEWithdrawalRequestMeta))
-	suite.Equal(newInsts[11][0], strconv.Itoa(metadata.PDEWithdrawalRequestMeta))
+	suite.Equal(newInsts[10][0], strconv.Itoa(basemeta.PDEWithdrawalRequestMeta))
+	suite.Equal(newInsts[11][0], strconv.Itoa(basemeta.PDEWithdrawalRequestMeta))
 
 	poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight-1, "token-id-1", "token-id-2"))
 	suite.Equal(suite.currentPDEStateForProducer.PDEPoolPairs[poolPairKey].Token1PoolValue, uint64(500000125063))
@@ -313,11 +313,11 @@ func (suite *PDEFlowsSuite) TestSimulatedBeaconBlock1002() {
 		}
 		var err error
 		switch inst[0] {
-		case strconv.Itoa(metadata.PDEContributionMeta):
+		case strconv.Itoa(basemeta.PDEContributionMeta):
 			err = bc.processPDEContribution(beaconHeight-1, inst, &suite.currentPDEStateForProcess)
-		case strconv.Itoa(metadata.PDETradeRequestMeta):
+		case strconv.Itoa(basemeta.PDETradeRequestMeta):
 			err = bc.processPDETrade(beaconHeight-1, inst, &suite.currentPDEStateForProcess)
-		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
+		case strconv.Itoa(basemeta.PDEWithdrawalRequestMeta):
 			err = bc.processPDEWithdrawal(beaconHeight-1, inst, &suite.currentPDEStateForProcess)
 		}
 		suite.Equal(err, nil)

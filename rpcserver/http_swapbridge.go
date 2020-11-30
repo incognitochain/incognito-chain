@@ -3,11 +3,11 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
@@ -40,7 +40,7 @@ func (httpServer *HttpServer) handleGetBridgeSwapProof(params interface{}, close
 	}
 	beaconHeigh := uint64(heightParam)
 	// Get proof of instruction on beacon
-	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(beaconHeigh, httpServer.config.BlockChain, httpServer.config.ConsensusEngine, metadata.BridgeSwapConfirmMeta)
+	beaconInstProof, beaconBlock, errProof := getSwapProofOnBeacon(beaconHeigh, httpServer.config.BlockChain, httpServer.config.ConsensusEngine, basemeta.BridgeSwapConfirmMeta)
 	if errProof != nil {
 		return nil, errProof
 	}
@@ -90,7 +90,7 @@ func findBridgeBlockWithInst(
 			return nil, 0, err
 		}
 
-		_, bridgeInstID := findCommSwapInst(bridgeBlock.Body.Instructions, metadata.BridgeSwapConfirmMeta)
+		_, bridgeInstID := findCommSwapInst(bridgeBlock.Body.Instructions, basemeta.BridgeSwapConfirmMeta)
 		BLogger.log.Debugf("Finding swap bridge inst in bridge block %d %d", state.Height, bridgeInstID)
 		if bridgeInstID >= 0 {
 			return bridgeBlock, bridgeInstID, nil

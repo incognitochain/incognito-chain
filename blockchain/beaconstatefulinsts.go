@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math/big"
 	"sort"
 	"strconv"
@@ -33,14 +34,14 @@ func (blockchain *BlockChain) collectStatefulActions(
 			continue
 		}
 		switch metaType {
-		case metadata.IssuingRequestMeta,
-			metadata.IssuingETHRequestMeta,
-			metadata.PDEContributionMeta,
-			metadata.PDETradeRequestMeta,
-			metadata.PDEWithdrawalRequestMeta,
-			metadata.PDEFeeWithdrawalRequestMeta,
-			metadata.PDEPRVRequiredContributionRequestMeta,
-			metadata.PDECrossPoolTradeRequestMeta,
+		case basemeta.IssuingRequestMeta,
+			basemeta.IssuingETHRequestMeta,
+			basemeta.PDEContributionMeta,
+			basemeta.PDETradeRequestMeta,
+			basemeta.PDEWithdrawalRequestMeta,
+			basemeta.PDEFeeWithdrawalRequestMeta,
+			basemeta.PDEPRVRequiredContributionRequestMeta,
+			basemeta.PDECrossPoolTradeRequestMeta,
 			metadata.PortalCustodianDepositMeta,
 			metadata.PortalRequestPortingMeta,
 			metadata.PortalUserRequestPTokenMeta,
@@ -142,43 +143,43 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			contentStr := action[1]
 			newInst := [][]string{}
 			switch metaType {
-			case metadata.IssuingRequestMeta:
+			case basemeta.IssuingRequestMeta:
 				newInst, err = blockchain.buildInstructionsForIssuingReq(stateDB, contentStr, shardID, metaType, accumulatedValues)
 
-			case metadata.IssuingETHRequestMeta:
+			case basemeta.IssuingETHRequestMeta:
 				newInst, err = blockchain.buildInstructionsForIssuingETHReq(stateDB, contentStr, shardID, metaType, accumulatedValues)
 
-			case metadata.PDEContributionMeta:
+			case basemeta.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(
 					pdeContributionActionsByShardID,
 					action,
 					shardID,
 				)
-			case metadata.PDEPRVRequiredContributionRequestMeta:
+			case basemeta.PDEPRVRequiredContributionRequestMeta:
 				pdePRVRequiredContributionActionsByShardID = groupPDEActionsByShardID(
 					pdePRVRequiredContributionActionsByShardID,
 					action,
 					shardID,
 				)
-			case metadata.PDETradeRequestMeta:
+			case basemeta.PDETradeRequestMeta:
 				pdeTradeActionsByShardID = groupPDEActionsByShardID(
 					pdeTradeActionsByShardID,
 					action,
 					shardID,
 				)
-			case metadata.PDECrossPoolTradeRequestMeta:
+			case basemeta.PDECrossPoolTradeRequestMeta:
 				pdeCrossPoolTradeActionsByShardID = groupPDEActionsByShardID(
 					pdeCrossPoolTradeActionsByShardID,
 					action,
 					shardID,
 				)
-			case metadata.PDEWithdrawalRequestMeta:
+			case basemeta.PDEWithdrawalRequestMeta:
 				pdeWithdrawalActionsByShardID = groupPDEActionsByShardID(
 					pdeWithdrawalActionsByShardID,
 					action,
 					shardID,
 				)
-			case metadata.PDEFeeWithdrawalRequestMeta:
+			case basemeta.PDEFeeWithdrawalRequestMeta:
 				pdeFeeWithdrawalActionsByShardID = groupPDEActionsByShardID(
 					pdeFeeWithdrawalActionsByShardID,
 					action,
@@ -516,7 +517,7 @@ func (blockchain *BlockChain) handlePDEInsts(
 		actions := pdeFeeWithdrawalActionsByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEFeeWithdrawal(contentStr, shardID, metadata.PDEFeeWithdrawalRequestMeta, currentPDEState, beaconHeight)
+			newInst, err := blockchain.buildInstructionsForPDEFeeWithdrawal(contentStr, shardID, basemeta.PDEFeeWithdrawalRequestMeta, currentPDEState, beaconHeight)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
@@ -536,7 +537,7 @@ func (blockchain *BlockChain) handlePDEInsts(
 	for _, tradeAction := range sortedTradesActions {
 		actionContentBytes, _ := json.Marshal(tradeAction)
 		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-		newInst, err := blockchain.buildInstructionsForPDETrade(actionContentBase64Str, tradeAction.ShardID, metadata.PDETradeRequestMeta, currentPDEState, beaconHeight)
+		newInst, err := blockchain.buildInstructionsForPDETrade(actionContentBase64Str, tradeAction.ShardID, basemeta.PDETradeRequestMeta, currentPDEState, beaconHeight)
 		if err != nil {
 			Logger.log.Error(err)
 			continue
@@ -574,7 +575,7 @@ func (blockchain *BlockChain) handlePDEInsts(
 		actions := pdeWithdrawalActionsByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEWithdrawal(contentStr, shardID, metadata.PDEWithdrawalRequestMeta, currentPDEState, beaconHeight)
+			newInst, err := blockchain.buildInstructionsForPDEWithdrawal(contentStr, shardID, basemeta.PDEWithdrawalRequestMeta, currentPDEState, beaconHeight)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
@@ -596,7 +597,7 @@ func (blockchain *BlockChain) handlePDEInsts(
 		actions := pdeContributionActionsByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEContributionMeta, currentPDEState, beaconHeight, false)
+			newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, basemeta.PDEContributionMeta, currentPDEState, beaconHeight, false)
 			if err != nil {
 				Logger.log.Error(err)
 				continue
@@ -618,7 +619,7 @@ func (blockchain *BlockChain) handlePDEInsts(
 		actions := pdePRVRequiredContributionActionsByShardID[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEPRVRequiredContributionRequestMeta, currentPDEState, beaconHeight, true)
+			newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, basemeta.PDEPRVRequiredContributionRequestMeta, currentPDEState, beaconHeight, true)
 			if err != nil {
 				Logger.log.Error(err)
 				continue

@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -116,7 +117,7 @@ func (httpServer *HttpServer) createRawTxRedeemFromLiquidationPoolV3(params inte
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RedeemerExtAddressStr is invalid"))
 	}
 
-	meta, _ := metadata.NewPortalRedeemFromLiquidationPoolV3(
+	meta, _ := metadata2.NewPortalRedeemFromLiquidationPoolV3(
 		metadata.PortalRedeemFromLiquidationPoolMetaV3, redeemTokenID,
 		redeemAmount, redeemerIncAddressStr, redeemerExtAddressStr)
 
@@ -238,7 +239,7 @@ func (httpServer *HttpServer) createCustodianTopup(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	meta, _ := metadata.NewPortalLiquidationCustodianDepositV2(
+	meta, _ := metadata2.NewPortalLiquidationCustodianDepositV2(
 		metadata.PortalCustodianTopupMetaV2,
 		incognitoAddress,
 		pTokenId,
@@ -334,7 +335,7 @@ func (httpServer *HttpServer) createTopUpWaitingPorting(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	meta, _ := metadata.NewPortalTopUpWaitingPortingRequest(
+	meta, _ := metadata2.NewPortalTopUpWaitingPortingRequest(
 		metadata.PortalTopUpWaitingPortingRequestMeta,
 		portingID,
 		incognitoAddress,
@@ -502,7 +503,7 @@ func (httpServer *HttpServer) createCustodianTopupV3(params interface{}, closeCh
 		proofStrs = append(proofStrs, item.(string))
 	}
 
-	meta, _ := metadata.NewPortalLiquidationCustodianDepositV3(
+	meta, _ := metadata2.NewPortalLiquidationCustodianDepositV3(
 		metadata.PortalCustodianTopupMetaV3,
 		incognitoAddress,
 		pTokenId,
@@ -632,7 +633,7 @@ func (httpServer *HttpServer) createTopUpWaitingPortingV3(params interface{}, cl
 		proofStrs = append(proofStrs, item.(string))
 	}
 
-	meta, _ := metadata.NewPortalTopUpWaitingPortingRequestV3(
+	meta, _ := metadata2.NewPortalTopUpWaitingPortingRequestV3(
 		metadata.PortalTopUpWaitingPortingRequestMetaV3,
 		incognitoAddress,
 		pTokenId,

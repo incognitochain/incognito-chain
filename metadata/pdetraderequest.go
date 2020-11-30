@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"reflect"
 	"strconv"
 
@@ -21,7 +23,7 @@ type PDETradeRequest struct {
 	MinAcceptableAmount uint64
 	TradingFee          uint64
 	TraderAddressStr    string
-	MetadataBase
+	basemeta.MetadataBase
 }
 
 type PDETradeRequestAction struct {
@@ -56,7 +58,7 @@ func NewPDETradeRequest(
 	traderAddressStr string,
 	metaType int,
 ) (*PDETradeRequest, error) {
-	metadataBase := MetadataBase{
+	metadataBase := basemeta.MetadataBase{
 		Type: metaType,
 	}
 	pdeTradeRequest := &PDETradeRequest{
@@ -71,12 +73,12 @@ func NewPDETradeRequest(
 	return pdeTradeRequest, nil
 }
 
-func (pc PDETradeRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (pc PDETradeRequest) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil
 }
 
-func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (pc PDETradeRequest) ValidateSanityData(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
 		return true, true, nil
@@ -131,7 +133,7 @@ func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shar
 }
 
 func (pc PDETradeRequest) ValidateMetadataByItself() bool {
-	return pc.Type == PDETradeRequestMeta
+	return pc.Type == basemeta.PDETradeRequestMeta
 }
 
 func (pc PDETradeRequest) Hash() *common.Hash {
@@ -147,7 +149,7 @@ func (pc PDETradeRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (pc *PDETradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (pc *PDETradeRequest) BuildReqActions(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PDETradeRequestAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),
@@ -158,10 +160,10 @@ func (pc *PDETradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainR
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PDETradeRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(basemeta.PDETradeRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
 func (pc *PDETradeRequest) CalculateSize() uint64 {
-	return calculateSize(pc)
+	return basemeta.CalculateSize(pc)
 }

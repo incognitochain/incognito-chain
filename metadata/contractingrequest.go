@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"reflect"
 	"strconv"
 
@@ -19,7 +21,7 @@ type ContractingRequest struct {
 	BurnerAddress privacy.PaymentAddress
 	BurnedAmount  uint64 // must be equal to vout value
 	TokenID       common.Hash
-	MetadataBase
+	basemeta.MetadataBase
 }
 
 type ContractingReqAction struct {
@@ -33,7 +35,7 @@ func NewContractingRequest(
 	tokenID common.Hash,
 	metaType int,
 ) (*ContractingRequest, error) {
-	metadataBase := MetadataBase{
+	metadataBase := basemeta.MetadataBase{
 		Type: metaType,
 	}
 	contractingReq := &ContractingRequest{
@@ -45,7 +47,7 @@ func NewContractingRequest(
 	return contractingReq, nil
 }
 
-func (cReq ContractingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (cReq ContractingRequest) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), cReq.TokenID, true)
 	if err != nil {
 		return false, err
@@ -56,14 +58,14 @@ func (cReq ContractingRequest) ValidateTxWithBlockChain(tx Transaction, chainRet
 	return true, nil
 }
 
-func (cReq ContractingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (cReq ContractingRequest) ValidateSanityData(chainRetriever  basemeta.ChainRetriever, shardViewRetriever  basemeta.ShardViewRetriever, beaconViewRetriever  basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if reflect.TypeOf(tx).String() == "*transaction.Tx" {
 		return true, true, nil
 	}
 
-	if cReq.Type != ContractingRequestMeta {
+	if cReq.Type != basemeta.ContractingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
 	}
 	if len(cReq.BurnerAddress.Pk) == 0 {
@@ -88,7 +90,7 @@ func (cReq ContractingRequest) ValidateSanityData(chainRetriever ChainRetriever,
 }
 
 func (cReq ContractingRequest) ValidateMetadataByItself() bool {
-	return cReq.Type == ContractingRequestMeta
+	return cReq.Type == basemeta.ContractingRequestMeta
 }
 
 func (cReq ContractingRequest) Hash() *common.Hash {
@@ -103,7 +105,7 @@ func (cReq ContractingRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (cReq *ContractingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (cReq *ContractingRequest) BuildReqActions(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := map[string]interface{}{
 		"meta":          *cReq,
 		"RequestedTxID": tx.Hash(),
@@ -113,10 +115,10 @@ func (cReq *ContractingRequest) BuildReqActions(tx Transaction, chainRetriever C
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(ContractingRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(basemeta.ContractingRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
 func (cReq *ContractingRequest) CalculateSize() uint64 {
-	return calculateSize(cReq)
+	return basemeta.CalculateSize(cReq)
 }

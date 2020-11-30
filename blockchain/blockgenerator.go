@@ -1,11 +1,11 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 type BlockGenerator struct {
@@ -14,18 +14,18 @@ type BlockGenerator struct {
 	syncker     Syncker
 	chain       *BlockChain
 	CQuit       chan struct{}
-	CPendingTxs <-chan metadata.Transaction
-	CRemovedTxs <-chan metadata.Transaction
-	PendingTxs  map[common.Hash]metadata.Transaction
+	CPendingTxs <-chan basemeta.Transaction
+	CRemovedTxs <-chan basemeta.Transaction
+	PendingTxs  map[common.Hash]basemeta.Transaction
 	mtx         sync.RWMutex
 }
 
-func NewBlockGenerator(txPool TxPool, chain *BlockChain, syncker Syncker, cPendingTxs chan metadata.Transaction, cRemovedTxs chan metadata.Transaction) (*BlockGenerator, error) {
+func NewBlockGenerator(txPool TxPool, chain *BlockChain, syncker Syncker, cPendingTxs chan basemeta.Transaction, cRemovedTxs chan basemeta.Transaction) (*BlockGenerator, error) {
 	return &BlockGenerator{
 		txPool:      txPool,
 		syncker:     syncker,
 		chain:       chain,
-		PendingTxs:  make(map[common.Hash]metadata.Transaction),
+		PendingTxs:  make(map[common.Hash]basemeta.Transaction),
 		CPendingTxs: cPendingTxs,
 		CRemovedTxs: cRemovedTxs,
 	}, nil
@@ -46,32 +46,32 @@ func (blockGenerator *BlockGenerator) Start(cQuit chan struct{}) {
 		}
 	}
 }
-func (blockGenerator *BlockGenerator) AddTransactionV2(tx metadata.Transaction) {
+func (blockGenerator *BlockGenerator) AddTransactionV2(tx basemeta.Transaction) {
 	blockGenerator.mtx.Lock()
 	defer blockGenerator.mtx.Unlock()
 	blockGenerator.PendingTxs[*tx.Hash()] = tx
 }
-func (blockGenerator *BlockGenerator) AddTransactionV2Worker(cPendingTx <-chan metadata.Transaction) {
+func (blockGenerator *BlockGenerator) AddTransactionV2Worker(cPendingTx <-chan basemeta.Transaction) {
 	for tx := range cPendingTx {
 		blockGenerator.AddTransactionV2(tx)
 		time.Sleep(time.Nanosecond)
 	}
 }
-func (blockGenerator *BlockGenerator) RemoveTransactionV2(tx metadata.Transaction) {
+func (blockGenerator *BlockGenerator) RemoveTransactionV2(tx basemeta.Transaction) {
 	blockGenerator.mtx.Lock()
 	defer blockGenerator.mtx.Unlock()
 	delete(blockGenerator.PendingTxs, *tx.Hash())
 }
-func (blockGenerator *BlockGenerator) RemoveTransactionV2Worker(cRemoveTx <-chan metadata.Transaction) {
+func (blockGenerator *BlockGenerator) RemoveTransactionV2Worker(cRemoveTx <-chan basemeta.Transaction) {
 	for tx := range cRemoveTx {
 		blockGenerator.RemoveTransactionV2(tx)
 		time.Sleep(time.Nanosecond)
 	}
 }
-func (blockGenerator *BlockGenerator) GetPendingTxsV2(shardID byte) []metadata.Transaction {
+func (blockGenerator *BlockGenerator) GetPendingTxsV2(shardID byte) []basemeta.Transaction {
 	blockGenerator.mtx.Lock()
 	defer blockGenerator.mtx.Unlock()
-	pendingTxs := []metadata.Transaction{}
+	pendingTxs := []basemeta.Transaction{}
 	for _, tx := range blockGenerator.PendingTxs {
 		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		if shardID != 255 && txShardID != shardID {

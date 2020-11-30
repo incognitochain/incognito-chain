@@ -3,22 +3,22 @@ package transaction
 import (
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
 )
 
 type batchTransaction struct {
-	txs []metadata.Transaction
+	txs []basemeta.Transaction
 }
 
-func NewBatchTransaction(txs []metadata.Transaction) *batchTransaction {
+func NewBatchTransaction(txs []basemeta.Transaction) *batchTransaction {
 	return &batchTransaction{txs: txs}
 }
 
-func (b *batchTransaction) AddTxs(txs []metadata.Transaction) {
+func (b *batchTransaction) AddTxs(txs []basemeta.Transaction) {
 	b.txs = append(b.txs, txs...)
 }
 
@@ -26,7 +26,7 @@ func (b *batchTransaction) Validate(transactionStateDB *statedb.StateDB, bridgeS
 	return b.validateBatchTxsByItself(b.txs, transactionStateDB, bridgeStateDB, boolParams)
 }
 
-func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transaction, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, boolParams map[string]bool) (bool, error, int) {
+func (b *batchTransaction) validateBatchTxsByItself(txList []basemeta.Transaction, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, boolParams map[string]bool) (bool, error, int) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {

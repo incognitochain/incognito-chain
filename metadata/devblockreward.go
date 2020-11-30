@@ -2,6 +2,8 @@ package metadata
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -29,7 +31,7 @@ func BuildInstForIncDAOReward(reward map[common.Hash]uint64, incDAOAddress strin
 		return nil, err
 	}
 	returnedInst := []string{
-		strconv.Itoa(IncDAORewardRequestMeta),
+		strconv.Itoa(basemeta.IncDAORewardRequestMeta),
 		strconv.Itoa(int(common.GetShardIDFromLastByte(keyWalletDevAccount.KeySet.PaymentAddress.Pk[len(keyWalletDevAccount.KeySet.PaymentAddress.Pk)-1]))),
 		"devRewardInst",
 		string(contentStr),

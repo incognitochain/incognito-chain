@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,7 +15,7 @@ import (
 )
 
 type PDEFeeWithdrawalResponse struct {
-	MetadataBase
+	basemeta.MetadataBase
 	RequestedTxID common.Hash
 }
 
@@ -21,7 +23,7 @@ func NewPDEFeeWithdrawalResponse(
 	requestedTxID common.Hash,
 	metaType int,
 ) *PDEFeeWithdrawalResponse {
-	metadataBase := MetadataBase{
+	metadataBase := basemeta.MetadataBase{
 		Type: metaType,
 	}
 	return &PDEFeeWithdrawalResponse{
@@ -30,23 +32,23 @@ func NewPDEFeeWithdrawalResponse(
 	}
 }
 
-func (iRes PDEFeeWithdrawalResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PDEFeeWithdrawalResponse) CheckTransactionFee(tr basemeta.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes PDEFeeWithdrawalResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (iRes PDEFeeWithdrawalResponse) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PDEFeeWithdrawalResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (iRes PDEFeeWithdrawalResponse) ValidateSanityData(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
 func (iRes PDEFeeWithdrawalResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PDEFeeWithdrawalResponseMeta
+	return iRes.Type == basemeta.PDEFeeWithdrawalResponseMeta
 }
 
 func (iRes PDEFeeWithdrawalResponse) Hash() *common.Hash {
@@ -59,10 +61,10 @@ func (iRes PDEFeeWithdrawalResponse) Hash() *common.Hash {
 }
 
 func (iRes *PDEFeeWithdrawalResponse) CalculateSize() uint64 {
-	return calculateSize(iRes)
+	return basemeta.CalculateSize(iRes)
 }
 
-func (iRes PDEFeeWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes PDEFeeWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []basemeta.Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, ac *basemeta.AccumulatedValues, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
 		if len(inst) < 4 { // this is not PDEFeeWithdrawalRequest instruction
@@ -70,7 +72,7 @@ func (iRes PDEFeeWithdrawalResponse) VerifyMinerCreatedTxBeforeGettingInBlock(tx
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PDEFeeWithdrawalRequestMeta) {
+			instMetaType != strconv.Itoa(basemeta.PDEFeeWithdrawalRequestMeta) {
 			continue
 		}
 

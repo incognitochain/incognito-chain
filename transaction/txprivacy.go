@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math"
 	"math/big"
 	"sort"
@@ -15,7 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -34,7 +34,7 @@ type Tx struct {
 	Proof                *zkp.PaymentProof
 	PubKeyLastByteSender byte
 	// Metadata, optional
-	Metadata metadata.Metadata
+	Metadata basemeta.Metadata
 	// private field, not use for json parser, only use as temp variable
 	sigPrivKey       []byte       // is ALWAYS private property of struct, if privacy: 64 bytes, and otherwise, 32 bytes
 	cachedHash       *common.Hash // cached hash data of tx
@@ -59,7 +59,7 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+	meta, parseErr := ParseMetadata(temp.Metadata)
 	if parseErr != nil {
 		Logger.log.Error(parseErr)
 		return parseErr
@@ -76,7 +76,7 @@ type TxPrivacyInitParams struct {
 	hasPrivacy  bool
 	stateDB     *statedb.StateDB
 	tokenID     *common.Hash // default is nil -> use for prv coin
-	metaData    metadata.Metadata
+	metaData    basemeta.Metadata
 	info        []byte // 512 bytes
 }
 
@@ -87,7 +87,7 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	hasPrivacy bool,
 	stateDB *statedb.StateDB,
 	tokenID *common.Hash, // default is nil -> use for prv coin
-	metaData metadata.Metadata,
+	metaData basemeta.Metadata,
 	info []byte) *TxPrivacyInitParams {
 	params := &TxPrivacyInitParams{
 		stateDB:     stateDB,
@@ -803,7 +803,7 @@ func (tx Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[
 	return nil
 }
 
-func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+func (tx Tx) ValidateTxWithCurrentMempool(mr basemeta.MempoolRetriever) error {
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 }
@@ -836,7 +836,7 @@ func (tx Tx) ValidateDoubleSpendWithBlockchain(
 	return nil
 }
 
-func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
+func (tx Tx) ValidateTxWithBlockChain(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
 		return nil
 	}
@@ -856,7 +856,7 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 	return tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 }
 
-func (tx Tx) validateNormalTxSanityData(bcr metadata.ChainRetriever, beaconHeight uint64) (bool, error) {
+func (tx Tx) validateNormalTxSanityData(bcr basemeta.ChainRetriever, beaconHeight uint64) (bool, error) {
 	//check version
 	if tx.Version > txVersion {
 		return false, NewTransactionErr(RejectTxVersion, fmt.Errorf("tx version is %d. Wrong version tx. Only support for version >= %d", tx.Version, txVersion))
@@ -901,7 +901,7 @@ func (tx Tx) validateNormalTxSanityData(bcr metadata.ChainRetriever, beaconHeigh
 	return true, nil
 }
 
-func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeight uint64) (bool, error) {
+func (txN Tx) validateSanityDataOfProof(bcr basemeta.ChainRetriever, beaconHeight uint64) (bool, error) {
 	if txN.Proof != nil {
 		if len(txN.Proof.GetInputCoins()) > 255 {
 			return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(txN.Proof.GetInputCoins())))
@@ -1150,7 +1150,7 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 	return true, nil
 }
 
-func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+func (tx Tx) ValidateSanityData(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	Logger.log.Debugf("\n\n\n START Validating sanity data of metadata %+v\n\n\n", tx.Metadata)
 	if tx.Metadata != nil {
 		Logger.log.Debug("tx.Metadata.ValidateSanityData")
@@ -1164,7 +1164,7 @@ func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardVie
 	return tx.validateNormalTxSanityData(chainRetriever, beaconHeight)
 }
 
-func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever basemeta.ChainRetriever, shardID byte, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
@@ -1199,16 +1199,16 @@ func (tx Tx) GetMetadataType() int {
 	if tx.Metadata != nil {
 		return tx.Metadata.GetType()
 	}
-	return metadata.InvalidMeta
+	return basemeta.InvalidMeta
 }
 
 // GetMetadata returns metadata of tx is existed
-func (tx Tx) GetMetadata() metadata.Metadata {
+func (tx Tx) GetMetadata() basemeta.Metadata {
 	return tx.Metadata
 }
 
 // SetMetadata sets metadata to tx
-func (tx *Tx) SetMetadata(meta metadata.Metadata) {
+func (tx *Tx) SetMetadata(meta basemeta.Metadata) {
 	tx.Metadata = meta
 }
 
@@ -1240,7 +1240,7 @@ func (tx Tx) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
 }
 
-func (tx Tx) CalculateBurningTxValue(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, uint64) {
+func (tx Tx) CalculateBurningTxValue(bcr basemeta.ChainRetriever, retriever basemeta.ShardViewRetriever, viewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64) (bool, uint64) {
 	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
 		return false, 0
 	}
@@ -1267,7 +1267,7 @@ func (tx Tx) CalculateBurningTxValue(bcr metadata.ChainRetriever, retriever meta
 	return false, 0
 }
 
-func (tx Tx) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) bool {
+func (tx Tx) IsCoinsBurning(bcr basemeta.ChainRetriever, retriever basemeta.ShardViewRetriever, viewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64) bool {
 	if tx.Proof == nil || len(tx.Proof.GetOutputCoins()) == 0 {
 		return false
 	}
@@ -1325,7 +1325,7 @@ func (tx Tx) CalculateTxValue() uint64 {
 // #2 - receiverAddr:
 // #3 - privKey:
 // #4 - snDerivators:
-func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
+func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData basemeta.Metadata) error {
 	var err error
 	sndOut := privacy.RandomScalar()
 	tx.Version = txVersion
@@ -1419,7 +1419,7 @@ func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	return ok, nil
 }
 
-func (tx Tx) GetMetadataFromVinsTx(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (metadata.Metadata, error) {
+func (tx Tx) GetMetadataFromVinsTx(bcr basemeta.ChainRetriever, retriever basemeta.ShardViewRetriever, viewRetriever basemeta.BeaconViewRetriever) (basemeta.Metadata, error) {
 	// implement this func if needed
 	return nil, nil
 }
@@ -1428,7 +1428,7 @@ func (tx Tx) GetTokenID() *common.Hash {
 	return &common.PRVCoinID
 }
 
-func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.Transaction, txsUsed []int, insts [][]string, instsUsed []int, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []basemeta.Transaction, txsUsed []int, insts [][]string, instsUsed []int, shardID byte, bcr basemeta.ChainRetriever, accumulatedValues *basemeta.AccumulatedValues, retriever basemeta.ShardViewRetriever, viewRetriever basemeta.BeaconViewRetriever) (bool, error) {
 	if tx.IsPrivacy() {
 		return true, nil
 	}
@@ -1446,7 +1446,7 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.Tran
 		return false, nil
 	}
 	//if type is return staking and not have metadata
-	if tx.GetType() == common.TxReturnStakingType && (meta == nil || (meta.GetType() != metadata.ReturnStakingMeta)) {
+	if tx.GetType() == common.TxReturnStakingType && (meta == nil || (meta.GetType() != basemeta.ReturnStakingMeta)) {
 		return false, nil
 	}
 	if meta != nil {
@@ -1475,7 +1475,7 @@ func NewTxPrivacyInitParamsForASM(
 	fee uint64,
 	hasPrivacy bool,
 	tokenID *common.Hash, // default is nil -> use for prv coin
-	metaData metadata.Metadata,
+	metaData basemeta.Metadata,
 	info []byte,
 	commitmentIndices []uint64,
 	commitmentBytes [][]byte,
@@ -1502,7 +1502,7 @@ func NewTxPrivacyInitParamsForASM(
 	return params
 }
 
-func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata) {
+func (param *TxPrivacyInitParamsForASM) SetMetaData(meta basemeta.Metadata) {
 	param.txParam.metaData = meta
 }
 
@@ -1753,9 +1753,9 @@ func (tx Tx) GetFullTxValues() (uint64, uint64) {
 
 // IsFullBurning returns whether the tx is full burning tx
 func (tx Tx) IsFullBurning(
-	bcr metadata.ChainRetriever,
-	retriever metadata.ShardViewRetriever,
-	viewRetriever metadata.BeaconViewRetriever,
+	bcr basemeta.ChainRetriever,
+	retriever basemeta.ShardViewRetriever,
+	viewRetriever basemeta.BeaconViewRetriever,
 	beaconHeight uint64,
 ) bool {
 	return tx.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight)

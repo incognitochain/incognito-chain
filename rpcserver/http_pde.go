@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math/big"
 	"sort"
 	"strconv"
@@ -131,7 +132,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interf
 		contributorAddressStr,
 		contributedAmount,
 		tokenIDStr,
-		metadata.PDEContributionMeta,
+		basemeta.PDEContributionMeta,
 	)
 
 	// create new param to build raw tx from param interface
@@ -208,7 +209,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params int
 		contributorAddressStr,
 		contributedAmount,
 		tokenIDStr,
-		metadata.PDEContributionMeta,
+		basemeta.PDEContributionMeta,
 	)
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
@@ -286,7 +287,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 		minAcceptableAmount,
 		tradingFee,
 		traderAddressStr,
-		metadata.PDETradeRequestMeta,
+		basemeta.PDETradeRequestMeta,
 	)
 
 	// create new param to build raw tx from param interface
@@ -381,7 +382,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 		minAcceptableAmount,
 		tradingFee,
 		traderAddressStr,
-		metadata.PDETradeRequestMeta,
+		basemeta.PDETradeRequestMeta,
 	)
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
@@ -456,7 +457,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReq(params interfac
 		withdrawalToken1IDStr,
 		withdrawalToken2IDStr,
 		withdrawalShareAmt,
-		metadata.PDEWithdrawalRequestMeta,
+		basemeta.PDEWithdrawalRequestMeta,
 	)
 
 	// create new param to build raw tx from param interface
@@ -944,26 +945,26 @@ func (httpServer *HttpServer) handleExtractPDEInstsFromBeaconBlock(
 			continue // Not error, just not PDE instruction
 		}
 		switch inst[0] {
-		case strconv.Itoa(metadata.PDEContributionMeta):
+		case strconv.Itoa(basemeta.PDEContributionMeta):
 			pdeContrib, err := parsePDEContributionInst(inst, bcHeight)
 			if err != nil || pdeContrib == nil {
 				continue
 			}
 			pdeInfoFromBeaconBlock.PDEContributions = append(pdeInfoFromBeaconBlock.PDEContributions, pdeContrib)
-		case strconv.Itoa(metadata.PDETradeRequestMeta):
+		case strconv.Itoa(basemeta.PDETradeRequestMeta):
 			pdeTrade, err := parsePDETradeInst(inst, bcHeight)
 			if err != nil || pdeTrade == nil {
 				continue
 			}
 			pdeInfoFromBeaconBlock.PDETrades = append(pdeInfoFromBeaconBlock.PDETrades, pdeTrade)
-		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
+		case strconv.Itoa(basemeta.PDEWithdrawalRequestMeta):
 			pdeWithdrawal, err := parsePDEWithdrawalInst(inst, bcHeight)
 			if err != nil || pdeWithdrawal == nil {
 				continue
 			}
 			pdeInfoFromBeaconBlock.PDEWithdrawals = append(pdeInfoFromBeaconBlock.PDEWithdrawals, pdeWithdrawal)
 
-		case strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta):
+		case strconv.Itoa(basemeta.PDECrossPoolTradeRequestMeta):
 			if inst[2] == common.PDECrossPoolTradeAcceptedChainStatus {
 				acceptedTradeV2, err := parsePDEAcceptedTradeV2Inst(inst, bcHeight)
 				if err != nil || acceptedTradeV2 == nil {
@@ -1142,7 +1143,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContributionV2(params inte
 		contributorAddressStr,
 		contributedAmount,
 		tokenIDStr,
-		metadata.PDEPRVRequiredContributionRequestMeta,
+		basemeta.PDEPRVRequiredContributionRequestMeta,
 	)
 
 	// create new param to build raw tx from param interface
@@ -1218,7 +1219,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenContributionV2(params i
 		contributorAddressStr,
 		contributedAmount,
 		tokenIDStr,
-		metadata.PDEPRVRequiredContributionRequestMeta,
+		basemeta.PDEPRVRequiredContributionRequestMeta,
 	)
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
@@ -1297,7 +1298,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVCrossPoolTradeReq(params i
 		minAcceptableAmount,
 		tradingFee,
 		traderAddressStr,
-		metadata.PDECrossPoolTradeRequestMeta,
+		basemeta.PDECrossPoolTradeRequestMeta,
 	)
 
 	// create new param to build raw tx from param interface
@@ -1389,7 +1390,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenCrossPoolTradeReq(param
 		minAcceptableAmount,
 		tradingFee,
 		traderAddressStr,
-		metadata.PDECrossPoolTradeRequestMeta,
+		basemeta.PDECrossPoolTradeRequestMeta,
 	)
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
@@ -1463,7 +1464,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReqV2(params interf
 		withdrawalToken1IDStr,
 		withdrawalToken2IDStr,
 		withdrawalShareAmt,
-		metadata.PDEWithdrawalRequestMeta,
+		basemeta.PDEWithdrawalRequestMeta,
 	)
 
 	// create new param to build raw tx from param interface
@@ -1541,7 +1542,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDEFeeWithdrawalReq(params in
 		withdrawalToken1IDStr,
 		withdrawalToken2IDStr,
 		withdrawalFeeAmt,
-		metadata.PDEFeeWithdrawalRequestMeta,
+		basemeta.PDEFeeWithdrawalRequestMeta,
 	)
 
 	// create new param to build raw tx from param interface

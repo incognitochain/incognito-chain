@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
+	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -60,7 +61,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRelayingHeader(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	meta, _ := metadata.NewRelayingHeader(
+	meta, _ := metadata2.NewRelayingHeader(
 		metaType,
 		senderAddress,
 		header,

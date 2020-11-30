@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"reflect"
 	"strconv"
 
@@ -37,19 +38,19 @@ func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateD
 		}
 		var err error
 		switch inst[0] {
-		case strconv.Itoa(metadata.PDEContributionMeta):
+		case strconv.Itoa(basemeta.PDEContributionMeta):
 			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDEPRVRequiredContributionRequestMeta):
+		case strconv.Itoa(basemeta.PDEPRVRequiredContributionRequestMeta):
 			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDETradeRequestMeta):
+		case strconv.Itoa(basemeta.PDETradeRequestMeta):
 			err = blockchain.processPDETrade(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta):
+		case strconv.Itoa(basemeta.PDECrossPoolTradeRequestMeta):
 			err = blockchain.processPDECrossPoolTrade(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
+		case strconv.Itoa(basemeta.PDEWithdrawalRequestMeta):
 			err = blockchain.processPDEWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDEFeeWithdrawalRequestMeta):
+		case strconv.Itoa(basemeta.PDEFeeWithdrawalRequestMeta):
 			err = blockchain.processPDEFeeWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
-		case strconv.Itoa(metadata.PDETradingFeesDistributionMeta):
+		case strconv.Itoa(basemeta.PDETradingFeesDistributionMeta):
 			err = blockchain.processPDETradingFeesDistribution(pdexStateDB, beaconHeight, inst, currentPDEState)
 		}
 		if err != nil {
@@ -75,25 +76,25 @@ func hasPDEInstruction(instructions [][]string) bool {
 			continue // Not error, just not PDE instruction
 		}
 		switch inst[0] {
-		case strconv.Itoa(metadata.PDEContributionMeta):
+		case strconv.Itoa(basemeta.PDEContributionMeta):
 			hasPDEXInstruction = true
 			break
-		case strconv.Itoa(metadata.PDETradeRequestMeta):
+		case strconv.Itoa(basemeta.PDETradeRequestMeta):
 			hasPDEXInstruction = true
 			break
-		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
+		case strconv.Itoa(basemeta.PDEWithdrawalRequestMeta):
 			hasPDEXInstruction = true
 			break
-		case strconv.Itoa(metadata.PDEFeeWithdrawalRequestMeta):
+		case strconv.Itoa(basemeta.PDEFeeWithdrawalRequestMeta):
 			hasPDEXInstruction = true
 			break
-		case strconv.Itoa(metadata.PDEPRVRequiredContributionRequestMeta):
+		case strconv.Itoa(basemeta.PDEPRVRequiredContributionRequestMeta):
 			hasPDEXInstruction = true
 			break
-		case strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta):
+		case strconv.Itoa(basemeta.PDECrossPoolTradeRequestMeta):
 			hasPDEXInstruction = true
 			break
-		case strconv.Itoa(metadata.PDETradingFeesDistributionMeta):
+		case strconv.Itoa(basemeta.PDETradingFeesDistributionMeta):
 			hasPDEXInstruction = true
 			break
 		}

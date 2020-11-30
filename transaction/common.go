@@ -1,7 +1,10 @@
 package transaction
 
 import (
+	"encoding/json"
 	"errors"
+	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math"
 	"math/big"
 	"math/rand"
@@ -142,13 +145,13 @@ type EstimateTxSizeParam struct {
 	numInputCoins            int
 	numPayments              int
 	hasPrivacy               bool
-	metadata                 metadata.Metadata
+	metadata                 basemeta.Metadata
 	privacyCustomTokenParams *CustomTokenPrivacyParamTx
 	limitFee                 uint64
 }
 
 func NewEstimateTxSizeParam(numInputCoins, numPayments int,
-	hasPrivacy bool, metadata metadata.Metadata,
+	hasPrivacy bool, metadata basemeta.Metadata,
 	privacyCustomTokenParams *CustomTokenPrivacyParamTx,
 	limitFee uint64) *EstimateTxSizeParam {
 	estimateTxSizeParam := &EstimateTxSizeParam{
@@ -234,7 +237,7 @@ type BuildCoinBaseTxByCoinIDParams struct {
 	payByPrivateKey    *privacy.PrivateKey
 	transactionStateDB *statedb.StateDB
 	bridgeStateDB      *statedb.StateDB
-	meta               metadata.Metadata
+	meta               basemeta.Metadata
 	coinID             common.Hash
 	txType             int
 	coinName           string
@@ -245,7 +248,7 @@ func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
 	amount uint64,
 	payByPrivateKey *privacy.PrivateKey,
 	stateDB *statedb.StateDB,
-	meta metadata.Metadata,
+	meta basemeta.Metadata,
 	coinID common.Hash,
 	txType int,
 	coinName string,
@@ -266,7 +269,7 @@ func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
 	return params
 }
 
-func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
+func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (basemeta.Transaction, error) {
 	switch params.txType {
 	case NormalCoinType:
 		tx := &Tx{}
@@ -310,4 +313,28 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		return tx, nil
 	}
 	return nil, nil
+}
+
+
+func ParseMetadata(meta interface{}) (basemeta.Metadata, error) {
+	if meta == nil {
+		return nil, nil
+	}
+
+	mtTemp := map[string]interface{}{}
+	metaInBytes, err := json.Marshal(meta)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(metaInBytes, &mtTemp)
+	if err != nil {
+		return nil, err
+	}
+
+	metaType := int(mtTemp["Type"].(float64))
+	if basemeta.IsPortalMetadata(metaType) {
+		return portalMeta.ParseMetadata(meta)
+	}
+
+	return metadata.ParseMetadata(meta)
 }

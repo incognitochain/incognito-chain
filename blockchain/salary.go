@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -39,7 +40,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *BeaconB
 			continue
 		}
 		switch metaType {
-		case metadata.AcceptedBlockRewardInfoMeta:
+		case basemeta.AcceptedBlockRewardInfoMeta:
 			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
 			if err != nil {
 				return err
@@ -88,7 +89,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 			}
 			if shardToProcess == int(shardID) {
 				switch metaType {
-				case metadata.BeaconRewardRequestMeta:
+				case basemeta.BeaconRewardRequestMeta:
 					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
@@ -102,7 +103,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					}
 					continue
 
-				case metadata.IncDAORewardRequestMeta:
+				case basemeta.IncDAORewardRequestMeta:
 					incDAORewardInfo, err := metadata.NewIncDAORewardInfoFromStr(l[3])
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
@@ -123,7 +124,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				}
 			}
 			switch metaType {
-			case metadata.ShardBlockRewardRequestMeta:
+			case basemeta.ShardBlockRewardRequestMeta:
 				shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
 				if err != nil {
 					return NewBlockChainError(ProcessSalaryInstructionsError, err)
@@ -302,8 +303,8 @@ func (blockchain *BlockChain) buildInstRewardForShards(epoch uint64, totalReward
 	return resInst, nil
 }
 
-func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestState, txRequest *metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) (metadata.Transaction, error) {
-	if (*txRequest).GetMetadataType() != metadata.WithDrawRewardRequestMeta {
+func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestState, txRequest *basemeta.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) (basemeta.Transaction, error) {
+	if (*txRequest).GetMetadataType() != basemeta.WithDrawRewardRequestMeta {
 		return nil, errors.New("Can not understand this request!")
 	}
 	requestDetail := (*txRequest).GetMetadata().(*metadata.WithDrawRewardRequest)

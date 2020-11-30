@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/hex"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"math/big"
 	"strconv"
 
@@ -31,13 +32,13 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 	flatten := []byte{}
 	var err error
 	switch inst[0] {
-	case strconv.Itoa(metadata.BeaconSwapConfirmMeta), strconv.Itoa(metadata.BridgeSwapConfirmMeta):
+	case strconv.Itoa(basemeta.BeaconSwapConfirmMeta), strconv.Itoa(basemeta.BridgeSwapConfirmMeta):
 		flatten, err = decodeSwapConfirmInst(inst)
 		if err != nil {
 			return nil, err
 		}
 
-	case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2):
+	case strconv.Itoa(basemeta.BurningConfirmMeta), strconv.Itoa(basemeta.BurningConfirmForDepositToSCMeta), strconv.Itoa(basemeta.BurningConfirmMetaV2), strconv.Itoa(basemeta.BurningConfirmForDepositToSCMetaV2):
 		var err error
 		flatten, err = decodeBurningConfirmInst(inst)
 		if err != nil {
@@ -194,8 +195,8 @@ func pickBurningConfirmInstructionV1(
 	height uint64,
 ) [][]string {
 	metas := []string{
-		strconv.Itoa(metadata.BurningConfirmMeta),
-		strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta),
+		strconv.Itoa(basemeta.BurningConfirmMeta),
+		strconv.Itoa(basemeta.BurningConfirmForDepositToSCMeta),
 	}
 
 	insts := [][]string{}
@@ -216,7 +217,7 @@ func pickBurningConfirmInstructionV1(
 func pickBridgeSwapConfirmInst(
 	instructions [][]string,
 ) [][]string {
-	metaType := strconv.Itoa(metadata.BridgeSwapConfirmMeta)
+	metaType := strconv.Itoa(basemeta.BridgeSwapConfirmMeta)
 	return pickInstructionWithType(instructions, metaType)
 }
 
@@ -268,12 +269,12 @@ func buildSwapConfirmInstruction(meta int, currentValidators []string, startHeig
 // new beacon validators and the block that they start signing on
 func buildBeaconSwapConfirmInstruction(currentValidators []string, blockHeight uint64) ([]string, error) {
 	BLogger.log.Infof("New beaconComm - startHeight: %d comm: %x", blockHeight+1, currentValidators)
-	return buildSwapConfirmInstruction(metadata.BeaconSwapConfirmMeta, currentValidators, blockHeight+1)
+	return buildSwapConfirmInstruction(basemeta.BeaconSwapConfirmMeta, currentValidators, blockHeight+1)
 }
 
 // buildBridgeSwapConfirmInstruction stores in an instruction the list of
 // new bridge validators and the block that they start signing on
 func buildBridgeSwapConfirmInstruction(currentValidators []string, blockHeight uint64) ([]string, error) {
 	BLogger.log.Infof("New bridgeComm - startHeight: %d comm: %x", blockHeight+1, currentValidators)
-	return buildSwapConfirmInstruction(metadata.BridgeSwapConfirmMeta, currentValidators, blockHeight+1)
+	return buildSwapConfirmInstruction(basemeta.BridgeSwapConfirmMeta, currentValidators, blockHeight+1)
 }

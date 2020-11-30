@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/basemeta"
 
 	"strconv"
 
@@ -107,7 +107,7 @@ func CreateCustomTokenPrivacyReceiverArray(dataReceiver interface{}) ([]*privacy
 	return result, voutsAmount, nil
 }
 
-func CreateCustomTokenPrivacyBurningReceiverArray(dataReceiver interface{}, bcr metadata.ChainRetriever, beaconHeight uint64) ([]*privacy.PaymentInfo, int64, error) {
+func CreateCustomTokenPrivacyBurningReceiverArray(dataReceiver interface{}, bcr basemeta.ChainRetriever, beaconHeight uint64) ([]*privacy.PaymentInfo, int64, error) {
 	if dataReceiver == nil {
 		return nil, 0, fmt.Errorf("data receiver is in valid")
 	}

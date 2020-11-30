@@ -8,7 +8,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
+	bMeta "github.com/incognitochain/incognito-chain/metadata"
+	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -44,7 +45,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 	remoteAddresses := make(map[string]string, 0)
 	tokenIDKeys := make([]string, 0)
 	for pTokenID, remoteAddress := range remoteAddressesMap {
-		if !metadata.IsPortalToken(pTokenID) {
+		if !portalMeta.IsPortalToken(pTokenID) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 		}
 		_, ok := remoteAddress.(string)
@@ -63,8 +64,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	meta, _ := metadata.NewPortalCustodianDeposit(
-		metadata.PortalCustodianDepositMeta,
+	meta, _ := portalMeta.NewPortalCustodianDeposit(
+		bMeta.PortalCustodianDepositMeta,
 		incognitoAddress,
 		remoteAddresses,
 		depositedAmount,
@@ -150,7 +151,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDepositV3(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
 	}
 
-	meta, err := metadata.NewPortalCustodianDepositV3FromMap(data)
+	meta, err := portalMeta.NewPortalCustodianDepositV3FromMap(data)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -242,8 +243,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianWithdrawRequest(para
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	meta, _ := metadata.NewPortalCustodianWithdrawRequest(
-		metadata.PortalCustodianWithdrawRequestMeta,
+	meta, _ := portalMeta.NewPortalCustodianWithdrawRequest(
+		bMeta.PortalCustodianWithdrawRequestMeta,
 		paymentAddress,
 		amount,
 	)
@@ -349,8 +350,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianWithdrawRequestV3(pa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	meta, _ := metadata.NewPortalCustodianWithdrawRequestV3(
-		metadata.PortalCustodianWithdrawRequestMetaV3,
+	meta, _ := portalMeta.NewPortalCustodianWithdrawRequestV3(
+		bMeta.PortalCustodianWithdrawRequestMetaV3,
 		custodianIncAddress,
 		custodianExtAddress,
 		externalTokenID,
@@ -452,8 +453,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqWithdrawRewardPortal(param
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
-	meta, _ := metadata.NewPortalRequestWithdrawReward(
-		metadata.PortalRequestWithdrawRewardMeta,
+	meta, _ := portalMeta.NewPortalRequestWithdrawReward(
+		bMeta.PortalRequestWithdrawRewardMeta,
 		incognitoAddress,
 		*tokenID)
 

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
@@ -51,7 +51,7 @@ type ShardHeader struct {
 type ShardBody struct {
 	Instructions      [][]string
 	CrossTransactions map[byte][]CrossTransaction //CrossOutputCoin from all other shard
-	Transactions      []metadata.Transaction
+	Transactions      []basemeta.Transaction
 }
 
 type CrossShardBlock struct {
@@ -71,7 +71,7 @@ func NewShardBlock() *ShardBlock {
 		Body: ShardBody{
 			Instructions:      [][]string{},
 			CrossTransactions: make(map[byte][]CrossTransaction),
-			Transactions:      make([]metadata.Transaction, 0),
+			Transactions:      make([]basemeta.Transaction, 0),
 		},
 	}
 }
@@ -81,7 +81,7 @@ func NewShardBlockWithHeader(header ShardHeader) *ShardBlock {
 		Body: ShardBody{
 			Instructions:      [][]string{},
 			CrossTransactions: make(map[byte][]CrossTransaction),
-			Transactions:      make([]metadata.Transaction, 0),
+			Transactions:      make([]basemeta.Transaction, 0),
 		},
 	}
 }
@@ -118,7 +118,7 @@ func (shardBlock *ShardBlock) GetPrevHash() common.Hash {
 	return shardBlock.Header.PreviousBlockHash
 }
 
-func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, crossTransaction map[byte][]CrossTransaction, transactions []metadata.Transaction) {
+func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, crossTransaction map[byte][]CrossTransaction, transactions []basemeta.Transaction) {
 	shardBlock.Body.Instructions = append(shardBlock.Body.Instructions, instructions...)
 	shardBlock.Body.CrossTransactions = crossTransaction
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, transactions...)
@@ -275,7 +275,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	}
 	shardBlock.Header = tempShardBlock.Header
 	if shardBlock.Body.Transactions == nil {
-		shardBlock.Body.Transactions = []metadata.Transaction{}
+		shardBlock.Body.Transactions = []basemeta.Transaction{}
 	}
 	if shardBlock.Body.Instructions == nil {
 		shardBlock.Body.Instructions = [][]string{}
@@ -294,7 +294,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
+func (shardBlock *ShardBlock) AddTransaction(tx basemeta.Transaction) error {
 	if shardBlock.Body.Transactions == nil {
 		return NewBlockChainError(UnExpectedError, errors.New("not init tx arrays"))
 	}
@@ -379,7 +379,7 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 		txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
 		//Logger.log.Debugf("Tx json data: ", string(txTempJson))
 
-		var tx metadata.Transaction
+		var tx basemeta.Transaction
 		var parseErr error
 		txType := ""
 		err = json.Unmarshal(*txTemp["Type"], &txType)

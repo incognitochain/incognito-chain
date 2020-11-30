@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"reflect"
 	"strconv"
 
@@ -23,7 +25,7 @@ type PDECrossPoolTradeRequest struct {
 	MinAcceptableAmount uint64
 	TradingFee          uint64
 	TraderAddressStr    string
-	MetadataBase
+	basemeta.MetadataBase
 }
 
 type PDECrossPoolTradeRequestAction struct {
@@ -62,7 +64,7 @@ func NewPDECrossPoolTradeRequest(
 	traderAddressStr string,
 	metaType int,
 ) (*PDECrossPoolTradeRequest, error) {
-	metadataBase := MetadataBase{
+	metadataBase := basemeta.MetadataBase{
 		Type: metaType,
 	}
 	pdeCrossPoolTradeRequest := &PDECrossPoolTradeRequest{
@@ -77,12 +79,12 @@ func NewPDECrossPoolTradeRequest(
 	return pdeCrossPoolTradeRequest, nil
 }
 
-func (pc PDECrossPoolTradeRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (pc PDECrossPoolTradeRequest) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
 	return true, nil
 }
 
-func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
 		return true, true, nil
@@ -165,7 +167,7 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 }
 
 func (pc PDECrossPoolTradeRequest) ValidateMetadataByItself() bool {
-	return pc.Type == PDECrossPoolTradeRequestMeta
+	return pc.Type == basemeta.PDECrossPoolTradeRequestMeta
 }
 
 func (pc PDECrossPoolTradeRequest) Hash() *common.Hash {
@@ -181,7 +183,7 @@ func (pc PDECrossPoolTradeRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (pc *PDECrossPoolTradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (pc *PDECrossPoolTradeRequest) BuildReqActions(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PDECrossPoolTradeRequestAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),
@@ -197,5 +199,5 @@ func (pc *PDECrossPoolTradeRequest) BuildReqActions(tx Transaction, chainRetriev
 }
 
 func (pc *PDECrossPoolTradeRequest) CalculateSize() uint64 {
-	return calculateSize(pc)
+	return basemeta.CalculateSize(pc)
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"reflect"
 	"sort"
 	"strconv"
@@ -972,7 +973,7 @@ func (blockchain *BlockChain) verifyPostProcessingShardBlock(shardBestState *Sha
 //	9. Not accept a salary tx
 //	10. Check duplicate staker public key in block
 //	11. Check duplicate Init Custom Token in block
-func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHeight int64, curView *ShardBestState) error {
+func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []basemeta.Transaction, beaconHeight int64, curView *ShardBestState) error {
 	if len(txs) == 0 {
 		return nil
 	}
@@ -981,7 +982,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 		panic("TempTxPool Is not Empty")
 	}
 	defer blockchain.config.TempTxPool.EmptyPool()
-	listTxs := []metadata.Transaction{}
+	listTxs := []basemeta.Transaction{}
 	for _, tx := range txs {
 		if !tx.IsSalaryTx() {
 			listTxs = append(listTxs, tx)
@@ -1034,7 +1035,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		}
 		// Process Transaction Metadata
 		metaType := tx.GetMetadataType()
-		if metaType == metadata.WithDrawRewardResponseMeta {
+		if metaType == basemeta.WithDrawRewardResponseMeta {
 			_, publicKey, amountRes, coinID := tx.GetTransferData()
 			err := statedb.RemoveCommitteeReward(newShardState.rewardStateDB, publicKey, amountRes, *coinID)
 			if err != nil {
@@ -1049,8 +1050,8 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	}
 	// Save result of BurningConfirm instruction to get proof later
 	metas := []string{ // Burning v1: sig on both beacon and bridge
-		strconv.Itoa(metadata.BurningConfirmMeta),
-		strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta),
+		strconv.Itoa(basemeta.BurningConfirmMeta),
+		strconv.Itoa(basemeta.BurningConfirmForDepositToSCMeta),
 	}
 	err := blockchain.storeBurningConfirm(newShardState.featureStateDB, shardBlock.Body.Instructions, shardBlock.Header.Height, metas)
 	if err != nil {
@@ -1258,7 +1259,7 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 				blockchain.config.CRemovedTxs <- tx
 			}
 			if tx.GetMetadata() != nil {
-				if tx.GetMetadata().GetType() == metadata.ShardStakingMeta || tx.GetMetadata().GetType() == metadata.BeaconStakingMeta {
+				if tx.GetMetadata().GetType() == basemeta.ShardStakingMeta || tx.GetMetadata().GetType() == basemeta.BeaconStakingMeta {
 					stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 					if !ok {
 						continue

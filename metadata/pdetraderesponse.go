@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
+
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,7 +15,7 @@ import (
 )
 
 type PDETradeResponse struct {
-	MetadataBase
+	basemeta.MetadataBase
 	TradeStatus   string
 	RequestedTxID common.Hash
 }
@@ -23,7 +25,7 @@ func NewPDETradeResponse(
 	requestedTxID common.Hash,
 	metaType int,
 ) *PDETradeResponse {
-	metadataBase := MetadataBase{
+	metadataBase := basemeta.MetadataBase{
 		Type: metaType,
 	}
 	return &PDETradeResponse{
@@ -33,23 +35,23 @@ func NewPDETradeResponse(
 	}
 }
 
-func (iRes PDETradeResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PDETradeResponse) CheckTransactionFee(tr basemeta.Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes PDETradeResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (iRes PDETradeResponse) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PDETradeResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (iRes PDETradeResponse) ValidateSanityData(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64, tx basemeta.Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
 func (iRes PDETradeResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PDETradeResponseMeta
+	return iRes.Type == basemeta.PDETradeResponseMeta
 }
 
 func (iRes PDETradeResponse) Hash() *common.Hash {
@@ -63,10 +65,10 @@ func (iRes PDETradeResponse) Hash() *common.Hash {
 }
 
 func (iRes *PDETradeResponse) CalculateSize() uint64 {
-	return calculateSize(iRes)
+	return basemeta.CalculateSize(iRes)
 }
 
-func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []basemeta.Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, ac *basemeta.AccumulatedValues, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
 		if len(inst) < 4 { // this is not PDETradeRequest or PDECrossPoolTradeRequestMeta instruction
@@ -74,7 +76,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			(instMetaType != strconv.Itoa(PDETradeRequestMeta) && instMetaType != strconv.Itoa(PDECrossPoolTradeRequestMeta)) {
+			(instMetaType != strconv.Itoa(basemeta.PDETradeRequestMeta) && instMetaType != strconv.Itoa(basemeta.PDECrossPoolTradeRequestMeta)) {
 			continue
 		}
 		instTradeStatus := inst[2]

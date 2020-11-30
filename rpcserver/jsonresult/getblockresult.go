@@ -2,7 +2,7 @@ package jsonresult
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/basemeta"
 )
 
 type GetBeaconBlockResult struct {
@@ -105,9 +105,9 @@ func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash 
 	getBlockResult.Epoch = block.Header.Epoch
 	if len(block.Body.Transactions) > 0 {
 		for _, tx := range block.Body.Transactions {
-			if tx.GetMetadataType() == metadata.ShardBlockReward {
+			if tx.GetMetadataType() == basemeta.ShardBlockReward {
 				getBlockResult.Reward += tx.GetProof().GetOutputCoins()[0].CoinDetails.GetValue()
-			} else if tx.GetMetadataType() == metadata.BeaconSalaryResponseMeta {
+			} else if tx.GetMetadataType() == basemeta.BeaconSalaryResponseMeta {
 				getBlockResult.RewardBeacon += tx.GetProof().GetOutputCoins()[0].CoinDetails.GetValue()
 			}
 		}
