@@ -113,7 +113,7 @@ func (httpServer *HttpServer) handleCreateAndSendContractingRequest(params inter
 
 func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return processBurningReq(
-		metadata.BurningRequestMeta,
+		metadata.BurningRequestMetaV2,
 		params,
 		closeChan,
 		httpServer,
@@ -325,7 +325,7 @@ func processBurningReq(
 
 func (httpServer *HttpServer) handleCreateRawTxWithBurningForDepositToSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return processBurningReq(
-		metadata.BurningForDepositToSCRequestMeta,
+		metadata.BurningForDepositToSCRequestMetaV2,
 		params,
 		closeChan,
 		httpServer,

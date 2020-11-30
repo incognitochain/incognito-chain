@@ -103,6 +103,10 @@ func (shardBestState *ShardBestState) GetHeight() uint64 {
 	return shardBestState.BestBlock.GetHeight()
 }
 
+func (shardBestState *ShardBestState) GetEpoch() uint64 {
+	return shardBestState.Epoch
+}
+
 func (shardBestState *ShardBestState) GetBlockTime() int64 {
 	return shardBestState.BestBlock.Header.Timestamp
 }

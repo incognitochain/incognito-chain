@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -84,7 +85,7 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 	mReturnStakingInfoGot := map[common.Hash]returnStakingInfo{}
 	returnStakingTxs := map[common.Hash]struct{}{}
 	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetMetadataType() == metadata.ReturnStakingMeta {
+		if tx.GetType() == common.TxReturnStakingType {
 			txHash := tx.Hash()
 			returnMeta, ok := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
 			if !ok {
@@ -193,17 +194,35 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					if len(outPublicKey) == 0 {
 						continue
 					}
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKey)
+					key := incognitokey.CommitteePublicKey{}
+					err := key.FromBase58(outPublicKey)
 					if err != nil {
-						Logger.log.Error(err)
+						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Cannot parse outpubickey %v", outPublicKey))
+					}
+					_, has, err := statedb.IsInShardCandidateForNextEpoch(beaconConsensusStateDB, key)
+					if has { //still in committee process (next epoch)
 						continue
 					}
-					if !has || stakerInfo == nil {
-						Logger.log.Error(errors.Errorf("Can not found information of this public key %v", outPublicKey))
+					_, has, err = statedb.IsInShardCandidateForCurrentEpoch(beaconConsensusStateDB, key)
+					if has { //still in committee process (current epoch: swap and random at same time -> validator will go into this queue)
 						continue
 					}
+
+					//dont have shard candidate for next epoch => kickout => return staking amount
+					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKey)
+					if err != nil || !has || stakerInfo == nil {
+						Logger.log.Errorf("fmt.Errorf(\"Cannot get staker info for outpubickey %v\", outPublicKey), error %+v", outPublicKey, err)
+						//return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Cannot get staker info for outpubickey %v", outPublicKey))
+						continue
+					}
+
+					if stakerInfo.AutoStaking() {
+						continue
+						//return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon kick out this key, but autostaking still true %v", outPublicKey))
+					}
+
 					// If autostaking or staker who not has tx staking, do nothing
-					if stakerInfo.AutoStaking() || (stakerInfo.TxStakingID() == common.HashH([]byte{0})) {
+					if stakerInfo.TxStakingID() == common.HashH([]byte{0}) {
 						continue
 					}
 					Logger.log.Info("stakerInfo.TxStakingID().String():", stakerInfo.TxStakingID().String())
@@ -253,10 +272,6 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 				if err != nil {
 					Logger.log.Errorf("SKIP Return staking instruction %+v, error %+v", returnStakingIns, err)
 					continue
-				}
-				if shardID != returnStakingIns.ShardID {
-					Logger.log.Infof("SKIP Return Staking Instruction | Processed SHARD %+v, Return Staking SHARD %+v", shardID, returnStakingIns.ShardID)
-					//continue
 				}
 				for i, v := range returnStakingIns.GetPublicKey() {
 					txHash := returnStakingIns.StakingTxHashes[i]

@@ -3,7 +3,6 @@ package committeestate
 import (
 	"fmt"
 	"reflect"
-	"sort"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -352,7 +351,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	*BeaconCommitteeStateHash, *CommitteeChange, [][]string, error) {
 	var err error
 	incurredInstructions := [][]string{}
-	returnStakingInstructions := make(map[byte]*instruction.ReturnStakeInstruction)
+	returnStakingInstruction := instruction.NewReturnStakeIns()
 	committeeChange := NewCommitteeChange()
 	oldState := engine.finalBeaconCommitteeStateV2
 
@@ -419,8 +418,8 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, returnStakingInstructions, err = newState.processUnstakeInstruction(
-				unstakeInstruction, env, committeeChange, returnStakingInstructions, oldState)
+			committeeChange, returnStakingInstruction, err = newState.processUnstakeInstruction(
+				unstakeInstruction, env, committeeChange, returnStakingInstruction, oldState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -429,8 +428,8 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, returnStakingInstructions, err = newState.processSwapShardInstruction(
-				swapShardInstruction, env, committeeChange, returnStakingInstructions, oldState)
+			committeeChange, returnStakingInstruction, err = newState.processSwapShardInstruction(
+				swapShardInstruction, env, committeeChange, returnStakingInstruction, oldState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -438,18 +437,8 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	}
 
 	hashes, err := engine.generateCommitteeHashes(newState)
-	if err != nil {
-		return nil, nil, incurredInstructions, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	}
-
-	keys := []int{}
-	for k, _ := range returnStakingInstructions {
-		keys = append(keys, int(k))
-	}
-	sort.Ints(keys)
-	for _, key := range keys {
-		shardID := byte(key)
-		incurredInstructions = append(incurredInstructions, returnStakingInstructions[shardID].ToString())
+	if !returnStakingInstruction.IsEmpty() {
+		incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
 	}
 
 	return hashes, committeeChange, incurredInstructions, nil
@@ -490,87 +479,6 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 
 func (engine *BeaconCommitteeEngineV2) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string) {
 	return []*instruction.AssignInstruction{}, []string{}, make(map[byte][]string)
-}
-
-func (engine *BeaconCommitteeEngineV2) BuildIncurredInstructions(env *BeaconCommitteeStateEnvironment) ([][]string, error) {
-	newState := NewBeaconCommitteeStateV2()
-	oldState := NewBeaconCommitteeStateV2()
-	engine.finalBeaconCommitteeStateV2.clone(newState)
-	engine.finalBeaconCommitteeStateV2.clone(oldState)
-
-	oldState.mu.RLock()
-	defer oldState.mu.RUnlock()
-
-	newState.mu.Lock()
-	defer newState.mu.Unlock()
-
-	committeeChange := NewCommitteeChange()
-	incurredInstructions := [][]string{}
-	if env == nil {
-		return incurredInstructions, errors.New("Environment Variable Is Null")
-	}
-	if len(env.BeaconInstructions) == 0 {
-		return incurredInstructions, nil
-	}
-	var err error
-	returnStakingInstructions := make(map[byte]*instruction.ReturnStakeInstruction)
-
-	if env.IsBeaconRandomTime {
-		newState.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
-			oldState.shardCommonPool,
-			oldState.shardCommittee,
-			oldState.shardSubstitute,
-			env.NumberOfFixedShardBlockValidators,
-			env.MinShardCommitteeSize,
-		)
-		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newState.numberOfAssignedCandidates)
-	}
-
-	env.newUnassignedCommonPool, err = newState.unassignedCommonPool()
-	if err != nil {
-		return incurredInstructions, err
-	}
-	env.newAllSubstituteCommittees, err = newState.getAllSubstituteCommittees()
-	if err != nil {
-		return incurredInstructions, err
-	}
-	for _, inst := range env.BeaconInstructions {
-		switch inst[0] {
-		case instruction.UNSTAKE_ACTION:
-			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
-			if err != nil {
-				Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", inst, err)
-				return incurredInstructions, err
-			}
-			_, returnStakingInstructions, err =
-				newState.processUnstakeInstruction(unstakeInstruction, env, committeeChange, returnStakingInstructions, oldState)
-			if err != nil {
-				return incurredInstructions, NewCommitteeStateError(ErrBuildIncurredInstruction, err)
-			}
-		case instruction.SWAP_SHARD_ACTION:
-			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
-			if err != nil {
-				return incurredInstructions, err
-			}
-			committeeChange, returnStakingInstructions, err = newState.
-				processSwapShardInstruction(swapShardInstruction, env, committeeChange, returnStakingInstructions, oldState)
-			if err != nil {
-				return incurredInstructions, err
-			}
-		}
-	}
-
-	keys := []int{}
-	for k, _ := range returnStakingInstructions {
-		keys = append(keys, int(k))
-	}
-	sort.Ints(keys)
-	for _, key := range keys {
-		shardID := byte(key)
-		incurredInstructions = append(incurredInstructions, returnStakingInstructions[shardID].ToString())
-	}
-
-	return incurredInstructions, nil
 }
 
 func SnapshotShardCommonPoolV2(
@@ -693,10 +601,10 @@ func (b *BeaconCommitteeStateV2) assign(
 func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	swapShardInstruction *instruction.SwapShardInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
-	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
+	returnStakingInstruction *instruction.ReturnStakeInstruction,
 	oldState *BeaconCommitteeStateV2,
 ) (
-	*CommitteeChange, map[byte]*instruction.ReturnStakeInstruction, error) {
+	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 
 	var err error
 	chainID := byte(swapShardInstruction.ChainID)
@@ -708,7 +616,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	// process list shard committees
 	oldSwappedOutShardCommittee := oldState.shardCommittee[chainID][numberFixedValidators : numberFixedValidators+len(tempSwapOutPublicKeys)]
 	if !reflect.DeepEqual(oldSwappedOutShardCommittee, tempSwapOutPublicKeys) {
-		return nil, returnStakingInstructions, fmt.Errorf("Swap Out Not Valid In List Committees Public Key, "+
+		return nil, returnStakingInstruction, fmt.Errorf("Swap Out Not Valid In List Committees Public Key, "+
 			"expect new %+v, got %+v", tempSwapOutPublicKeys, oldSwappedOutShardCommittee)
 	}
 
@@ -720,7 +628,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 
 	// process list shard pool
 	if !reflect.DeepEqual(tempSwapInPublicKeys, oldState.shardSubstitute[chainID][:len(tempSwapInPublicKeys)]) {
-		return nil, returnStakingInstructions, fmt.Errorf("Swap In Not Valid In List Subtitutes Public Key, "+
+		return nil, returnStakingInstruction, fmt.Errorf("Swap In Not Valid In List Subtitutes Public Key, "+
 			"expect new %+v, got %+v", tempSwapInPublicKeys, oldState.shardSubstitute[chainID])
 	}
 	b.shardSubstitute[chainID] = b.shardSubstitute[chainID][len(tempSwapInPublicKeys):]
@@ -728,20 +636,20 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPublicKeys...)
 
 	// process after swap for assign old committees to current shard pool
-	newCommitteeChange, returnStakingInstructions, err = b.processAfterSwap(env,
+	newCommitteeChange, returnStakingInstruction, err = b.processAfterSwap(env,
 		swapShardInstruction.OutPublicKeys,
 		swapShardInstruction.OutPublicKeyStructs,
 		chainID,
 		newCommitteeChange,
-		returnStakingInstructions,
+		returnStakingInstruction,
 		oldState,
 	)
 
 	if err != nil {
-		return nil, returnStakingInstructions, err
+		return nil, returnStakingInstruction, err
 	}
 
-	return newCommitteeChange, returnStakingInstructions, nil
+	return newCommitteeChange, returnStakingInstruction, nil
 }
 
 // processAfterSwap process swapped out committee public key
@@ -755,36 +663,36 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 	outPublicKeyStructs []incognitokey.CommitteePublicKey,
 	shardID byte,
 	committeeChange *CommitteeChange,
-	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
+	returnStakingInstruction *instruction.ReturnStakeInstruction,
 	oldState *BeaconCommitteeStateV2,
-) (*CommitteeChange, map[byte]*instruction.ReturnStakeInstruction, error) {
+) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	candidates := []string{}
 	newCommitteeChange := committeeChange
 	for index, outPublicKey := range outPublicKeys {
 		stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
 		if err != nil {
-			return newCommitteeChange, returnStakingInstructions, err
+			return newCommitteeChange, returnStakingInstruction, err
 		}
 		if !has {
-			return newCommitteeChange, returnStakingInstructions, errors.Errorf("Can not found info of this public key %v", outPublicKey)
+			return newCommitteeChange, returnStakingInstruction, errors.Errorf("Can not found info of this public key %v", outPublicKey)
 		}
 		if stakerInfo.AutoStaking() {
 			candidates = append(candidates, outPublicKey)
 		} else {
-			returnStakingInstructions, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
-				returnStakingInstructions,
+			returnStakingInstruction, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
+				returnStakingInstruction,
 				outPublicKeyStructs[index],
 				outPublicKey,
 				stakerInfo,
 			)
 			if err != nil {
-				return newCommitteeChange, returnStakingInstructions, err
+				return newCommitteeChange, returnStakingInstruction, err
 			}
 		}
 	}
 
 	newCommitteeChange = b.assign(candidates, env.RandomNumber, env.ActiveShards, newCommitteeChange, oldState)
-	return newCommitteeChange, returnStakingInstructions, nil
+	return newCommitteeChange, returnStakingInstruction, nil
 }
 
 //processUnstakeInstruction : process unstake instruction from beacon block
@@ -792,9 +700,9 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 	unstakeInstruction *instruction.UnstakeInstruction,
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
-	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
+	returnStakingInstruction *instruction.ReturnStakeInstruction,
 	oldState *BeaconCommitteeStateV2,
-) (*CommitteeChange, map[byte]*instruction.ReturnStakeInstruction, error) {
+) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	// b == newstate -> only write
 	// oldstate -> only read
 	newCommitteeChange := committeeChange
@@ -810,35 +718,36 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 		} else {
 			indexCandidate := common.IndexOfStr(publicKey, shardCommonPoolStr)
 			if indexCandidate == -1 {
-				return newCommitteeChange, returnStakingInstructions, errors.Errorf("Committee public key: %s is not valid for any committee sets", publicKey)
+				return newCommitteeChange, returnStakingInstruction, errors.Errorf("Committee public key: %s is not valid for any committee sets", publicKey)
 			}
 			shardCommonPoolStr = append(shardCommonPoolStr[:indexCandidate], shardCommonPoolStr[indexCandidate+1:]...)
 			b.shardCommonPool = append(b.shardCommonPool[:indexCandidate], b.shardCommonPool[indexCandidate+1:]...)
 			stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, publicKey)
 			if err != nil {
-				return newCommitteeChange, returnStakingInstructions, err
+				return newCommitteeChange, returnStakingInstruction, err
 			}
 			if !has {
-				return newCommitteeChange, returnStakingInstructions, errors.New("Can't find staker info")
+				return newCommitteeChange, returnStakingInstruction, errors.New("Can't find staker info")
 			}
 
 			newCommitteeChange.NextEpochShardCandidateRemoved =
 				append(newCommitteeChange.NextEpochShardCandidateRemoved, unstakeInstruction.CommitteePublicKeysStruct[index])
 
-			returnStakingInstructions, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
-				returnStakingInstructions,
+			returnStakingInstruction, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
+				returnStakingInstruction,
 				unstakeInstruction.CommitteePublicKeysStruct[index],
 				publicKey,
 				stakerInfo,
 			)
+
 			if err != nil {
-				return newCommitteeChange, returnStakingInstructions, errors.New("Can't find staker info")
+				return newCommitteeChange, returnStakingInstruction, errors.New("Can't find staker info")
 			}
 			newCommitteeChange.Unstake = append(newCommitteeChange.Unstake, publicKey)
 		}
 	}
 
-	return newCommitteeChange, returnStakingInstructions, nil
+	return newCommitteeChange, returnStakingInstruction, nil
 }
 
 func (engine *BeaconCommitteeEngineV2) generateCommitteeHashes(state *BeaconCommitteeStateV2) (*BeaconCommitteeStateHash, error) {
@@ -928,23 +837,6 @@ func (b *BeaconCommitteeStateV2) getAllCandidateSubstituteCommittee() []string {
 	return res
 }
 
-//HasSwappedCommittees ...
-func (engine *BeaconCommitteeEngineV2) HasSwappedCommittees(env *BeaconCommitteeStateEnvironment) (bool, error) {
-	if env.BeaconHeight%env.ParamEpoch == 0 {
-		for _, inst := range env.BeaconInstructions {
-			switch inst[0] {
-			case instruction.SWAP_SHARD_ACTION:
-				err := instruction.ValidateSwapShardInstructionSanity(inst)
-				if err != nil {
-					return false, err
-				}
-				return true, nil
-			}
-		}
-	}
-	return false, nil
-}
-
 func (b *BeaconCommitteeStateV2) stopAutoStake(publicKey string, committeeChange *CommitteeChange) *CommitteeChange {
 	b.autoStake[publicKey] = false
 	committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, publicKey)
@@ -1000,42 +892,30 @@ func (engine *BeaconCommitteeEngineV2) ActiveShards() int {
 }
 
 func (b *BeaconCommitteeStateV2) buildReturnStakingInstructionAndDeleteStakerInfo(
-	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
+	returnStakingInstruction *instruction.ReturnStakeInstruction,
 	committeePublicKeyStruct incognitokey.CommitteePublicKey,
 	publicKey string,
 	stakerInfo *statedb.StakerInfo,
-) (map[byte]*instruction.ReturnStakeInstruction, error) {
-	returnStakingInstructions = buildReturnStakingInstruction(
-		returnStakingInstructions,
+) (*instruction.ReturnStakeInstruction, error) {
+	returnStakingInstruction = buildReturnStakingInstruction(
+		returnStakingInstruction,
 		publicKey,
-		stakerInfo.ShardID(),
 		stakerInfo.TxStakingID().String(),
 	)
 	err := b.deleteStakerInfo(committeePublicKeyStruct, publicKey)
 	if err != nil {
-		return returnStakingInstructions, err
+		return returnStakingInstruction, err
 	}
-	return returnStakingInstructions, nil
+	return returnStakingInstruction, nil
 }
 
 func buildReturnStakingInstruction(
-	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
+	returnStakingInstruction *instruction.ReturnStakeInstruction,
 	publicKey string,
-	shardID byte,
 	txStake string,
-) map[byte]*instruction.ReturnStakeInstruction {
-	returnStakingInstruction, ok := returnStakingInstructions[shardID]
-	if !ok {
-		returnStakingInstruction = instruction.NewReturnStakeInsWithValue(
-			[]string{publicKey},
-			shardID,
-			[]string{txStake},
-		)
-	} else {
-		returnStakingInstruction.AddInTheSameShard(publicKey, txStake)
-	}
-	returnStakingInstructions[shardID] = returnStakingInstruction
-	return returnStakingInstructions
+) *instruction.ReturnStakeInstruction {
+	returnStakingInstruction.AddNewRequest(publicKey, txStake)
+	return returnStakingInstruction
 }
 
 func (b *BeaconCommitteeStateV2) deleteStakerInfo(

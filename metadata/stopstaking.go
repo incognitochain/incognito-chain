@@ -91,12 +91,9 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-/*
-	// Have only one receiver
-	// Have only one amount corresponding to receiver
-	// Receiver Is Burning Address
-	//
-*/
+// Have only one receiver
+// Have only one amount corresponding to receiver
+// Receiver Is Burning Address
 func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	if tx.IsPrivacy() {
 		return false, false, errors.New("Stop AutoStaking Request Transaction Is No Privacy Transaction")
@@ -115,7 +112,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(chainR
 	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
 		return false, false, errors.New("receiver Should be Burning Address")
 	}
-	if stopAutoStakingMetadata.Type != StopAutoStakingMeta && amount != StopAutoStakingAmount {
+	if stopAutoStakingMetadata.Type != StopAutoStakingMeta || amount != StopAutoStakingAmount {
 		return false, false, errors.New("receiver amount should be zero")
 	}
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)

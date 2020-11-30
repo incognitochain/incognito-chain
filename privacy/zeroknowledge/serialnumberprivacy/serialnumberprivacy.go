@@ -262,59 +262,7 @@ func (proof *SNPrivacyProof) SetBytes(bytes []byte) error {
 	return nil
 }
 
-func (wit SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
-
-	eSK := privacy.RandomScalar()
-	eSND := privacy.RandomScalar()
-	dSK := privacy.RandomScalar()
-	dSND := privacy.RandomScalar()
-
-	// calculate tSeed = g_SK^eSK * h^dSK
-	tSeed := privacy.PedCom.CommitAtIndex(eSK, dSK, privacy.PedersenPrivateKeyIndex)
-
-	// calculate tSND = g_SND^eSND * h^dSND
-	tInput := privacy.PedCom.CommitAtIndex(eSND, dSND, privacy.PedersenSndIndex)
-
-	// calculate tSND = g_SK^eSND * h^dSND2
-	tOutput := new(privacy.Point).ScalarMult(wit.stmt.sn, new(privacy.Scalar).Add(eSK, eSND))
-
-	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
-	x := new(privacy.Scalar)
-	if mess == nil {
-		x = utils.GenerateChallenge([][]byte{
-			tSeed.ToBytesS(),
-			tInput.ToBytesS(),
-			tOutput.ToBytesS()})
-	} else {
-		x.FromBytesS(mess)
-	}
-
-	// Calculate zSeed = sk * x + eSK
-	zSeed := new(privacy.Scalar).Mul(wit.sk, x)
-	zSeed.Add(zSeed, eSK)
-	//zSeed.Mod(zSeed, privacy.Curve.Params().N)
-
-	// Calculate zRSeed = rSK * x + dSK
-	zRSeed := new(privacy.Scalar).Mul(wit.rSK, x)
-	zRSeed.Add(zRSeed, dSK)
-	//zRSeed.Mod(zRSeed, privacy.Curve.Params().N)
-
-	// Calculate zInput = input * x + eSND
-	zInput := new(privacy.Scalar).Mul(wit.input, x)
-	zInput.Add(zInput, eSND)
-	//zInput.Mod(zInput, privacy.Curve.Params().N)
-
-	// Calculate zRInput = rInput * x + dSND
-	zRInput := new(privacy.Scalar).Mul(wit.rInput, x)
-	zRInput.Add(zRInput, dSND)
-	//zRInput.Mod(zRInput, privacy.Curve.Params().N)
-
-	proof := new(SNPrivacyProof).Init()
-	proof.Set(wit.stmt, tSeed, tInput, tOutput, zSeed, zRSeed, zInput, zRInput)
-	return proof, nil
-}
-
-func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
+func (proof SNPrivacyProof) VerifyOld(mess []byte) (bool, error) {
 	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
 	x := new(privacy.Scalar)
 	if mess == nil {
@@ -325,39 +273,114 @@ func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
 	} else {
 		x.FromBytesS(mess)
 	}
-
 	// Check gSND^zInput * h^zRInput = input^x * tInput
 	leftPoint1 := privacy.PedCom.CommitAtIndex(proof.zInput, proof.zRInput, privacy.PedersenSndIndex)
-
 	rightPoint1 := new(privacy.Point).ScalarMult(proof.stmt.comInput, x)
 	rightPoint1.Add(rightPoint1, proof.tInput)
-
 	if !privacy.IsPointEqual(leftPoint1, rightPoint1) {
 		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 1 failed")
 		return false, errors.New("verify serial number privacy proof statement 1 failed")
 	}
-
 	// Check gSK^zSeed * h^zRSeed = vKey^x * tSeed
 	leftPoint2 := privacy.PedCom.CommitAtIndex(proof.zSK, proof.zRSK, privacy.PedersenPrivateKeyIndex)
-
 	rightPoint2 := new(privacy.Point).ScalarMult(proof.stmt.comSK, x)
 	rightPoint2.Add(rightPoint2, proof.tSK)
-
 	if !privacy.IsPointEqual(leftPoint2, rightPoint2) {
 		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 2 failed")
 		return false, errors.New("verify serial number privacy proof statement 2 failed")
 	}
-
 	// Check sn^(zSeed + zInput) = gSK^x * tOutput
 	leftPoint3 := new(privacy.Point).ScalarMult(proof.stmt.sn, new(privacy.Scalar).Add(proof.zSK, proof.zInput))
-
 	rightPoint3 := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], x)
 	rightPoint3.Add(rightPoint3, proof.tSN)
-
 	if !privacy.IsPointEqual(leftPoint3, rightPoint3) {
 		//privacy.Logger.Log.Errorf("verify serial number privacy proof statement 3 failed")
 		return false, errors.New("verify serial number privacy proof statement 3 failed")
 	}
-
 	return true, nil
 }
+
+func (wit SNPrivacyWitness) Prove(mess []byte) (*SNPrivacyProof, error) {
+	eSK := privacy.RandomScalar()
+	eSND := privacy.RandomScalar()
+	dSK := privacy.RandomScalar()
+	dSND := privacy.RandomScalar()
+	// calculate tSeed = g_SK^eSK * h^dSK
+	tSeed := privacy.PedCom.CommitAtIndex(eSK, dSK, privacy.PedersenPrivateKeyIndex)
+	// calculate tSND = g_SND^eSND * h^dSND
+	tInput := privacy.PedCom.CommitAtIndex(eSND, dSND, privacy.PedersenSndIndex)
+	// calculate tSND = g_SK^eSND * h^dSND2
+	tOutput := new(privacy.Point).ScalarMult(wit.stmt.sn, new(privacy.Scalar).Add(eSK, eSND))
+	// calculate x = hash(tSeed || tInput || tSND2 || tOutput)
+	x := new(privacy.Scalar)
+	if mess == nil {
+		x = utils.GenerateChallenge([][]byte{
+			wit.stmt.sn.ToBytesS(),
+			wit.stmt.comSK.ToBytesS(),
+			tSeed.ToBytesS(),
+			tInput.ToBytesS(),
+			tOutput.ToBytesS()})
+	} else {
+		x.FromBytesS(mess)
+	}
+	// Calculate zSeed = sk * x + eSK
+	zSeed := new(privacy.Scalar).Mul(wit.sk, x)
+	zSeed.Add(zSeed, eSK)
+	//zSeed.Mod(zSeed, privacy.Curve.Params().N)
+	// Calculate zRSeed = rSK * x + dSK
+	zRSeed := new(privacy.Scalar).Mul(wit.rSK, x)
+	zRSeed.Add(zRSeed, dSK)
+	//zRSeed.Mod(zRSeed, privacy.Curve.Params().N)
+	// Calculate zInput = input * x + eSND
+	zInput := new(privacy.Scalar).Mul(wit.input, x)
+	zInput.Add(zInput, eSND)
+	//zInput.Mod(zInput, privacy.Curve.Params().N)
+	// Calculate zRInput = rInput * x + dSND
+	zRInput := new(privacy.Scalar).Mul(wit.rInput, x)
+	zRInput.Add(zRInput, dSND)
+	//zRInput.Mod(zRInput, privacy.Curve.Params().N)
+	proof := new(SNPrivacyProof).Init()
+	proof.Set(wit.stmt, tSeed, tInput, tOutput, zSeed, zRSeed, zInput, zRInput)
+	return proof, nil
+}
+
+func (proof SNPrivacyProof) Verify(mess []byte) (bool, error) {
+	// re-calculate x = hash(tSeed || tInput || tSND2 || tOutput)
+	x := new(privacy.Scalar)
+	if mess == nil {
+		x = utils.GenerateChallenge([][]byte{
+			proof.stmt.sn.ToBytesS(),
+			proof.stmt.comSK.ToBytesS(),
+			proof.tSK.ToBytesS(),
+			proof.tInput.ToBytesS(),
+			proof.tSN.ToBytesS()})
+	} else {
+		x.FromBytesS(mess)
+	}
+	// Check gSND^zInput * h^zRInput = input^x * tInput
+	leftPoint1 := privacy.PedCom.CommitAtIndex(proof.zInput, proof.zRInput, privacy.PedersenSndIndex)
+	rightPoint1 := new(privacy.Point).ScalarMult(proof.stmt.comInput, x)
+	rightPoint1.Add(rightPoint1, proof.tInput)
+	if !privacy.IsPointEqual(leftPoint1, rightPoint1) {
+		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 1 failed")
+		return false, errors.New("verify serial number privacy proof statement 1 failed")
+	}
+	// Check gSK^zSeed * h^zRSeed = vKey^x * tSeed
+	leftPoint2 := privacy.PedCom.CommitAtIndex(proof.zSK, proof.zRSK, privacy.PedersenPrivateKeyIndex)
+	rightPoint2 := new(privacy.Point).ScalarMult(proof.stmt.comSK, x)
+	rightPoint2.Add(rightPoint2, proof.tSK)
+	if !privacy.IsPointEqual(leftPoint2, rightPoint2) {
+		privacy.Logger.Log.Errorf("verify serial number privacy proof statement 2 failed")
+		return false, errors.New("verify serial number privacy proof statement 2 failed")
+	}
+	// Check sn^(zSeed + zInput) = gSK^x * tOutput
+	leftPoint3 := new(privacy.Point).ScalarMult(proof.stmt.sn, new(privacy.Scalar).Add(proof.zSK, proof.zInput))
+	rightPoint3 := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], x)
+	rightPoint3.Add(rightPoint3, proof.tSN)
+	if !privacy.IsPointEqual(leftPoint3, rightPoint3) {
+		//privacy.Logger.Log.Errorf("verify serial number privacy proof statement 3 failed")
+		return false, errors.New("verify serial number privacy proof statement 3 failed")
+	}
+	return true, nil
+}
+

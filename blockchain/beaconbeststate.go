@@ -122,6 +122,14 @@ func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
 	return bc.BeaconChain.multiView.GetBestView().(*BeaconBestState)
 }
 
+func (bc *BlockChain) GetChain(cid int) ChainInterface {
+	if cid == -1 {
+		return bc.BeaconChain
+	} else {
+		return bc.ShardChain[cid]
+	}
+}
+
 func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error {
 	db := bc.GetBeaconChainDatabase()
 	var err error
@@ -376,16 +384,6 @@ func (beaconBestState *BeaconBestState) GetCandidateShardWaitingForCurrentRandom
 
 func (beaconBestState *BeaconBestState) GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey {
 	return beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForNextRandom()
-}
-
-//HasSwappedCommittee ..
-func (beaconBestState *BeaconBestState) HasSwappedCommittee(shardID byte, chainParamEpoch uint64) (bool, error) {
-	env := &committeestate.BeaconCommitteeStateEnvironment{}
-	env.ShardID = shardID
-	env.BeaconHeight = beaconBestState.BeaconHeight
-	env.ParamEpoch = chainParamEpoch
-	env.BeaconInstructions = beaconBestState.GetBlock().GetInstructions()
-	return beaconBestState.beaconCommitteeEngine.HasSwappedCommittees(env)
 }
 
 //CommitteeEngineVersion ...
@@ -761,4 +759,18 @@ func (beaconBestState *BeaconBestState) GetStakerInfo(stakerPubkey string) (*sta
 
 func (beaconBestState *BeaconBestState) CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey {
 	return beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForNextRandom()
+}
+
+func (bc *BlockChain) GetTotalStaker() (int, error) {
+	// var beaconConsensusRootHash common.Hash
+	bcBestState := bc.GetBeaconBestState()
+	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bcBestState, bcBestState.GetHeight())
+	if err != nil {
+		return 0, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", bcBestState.GetHeight(), err)
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+	if err != nil {
+		return 0, fmt.Errorf("init beacon consensus statedb return error %+v", err)
+	}
+	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }

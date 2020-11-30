@@ -4,31 +4,27 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
-
-	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"strconv"
+	"sync"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-
-	"github.com/incognitochain/incognito-chain/multiview"
-
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
-
-	"github.com/pkg/errors"
 )
 
 type BlockChain struct {
@@ -44,27 +40,28 @@ type BlockChain struct {
 
 // Config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
-	BTCChain          *btcrelaying.BlockChain
-	BNBChainState     *bnbrelaying.BNBChainState
-	DataBase          map[int]incdb.Database
-	MemCache          *memcache.MemoryCache
-	Interrupt         <-chan struct{}
-	ChainParams       *Params
-	GenesisParams     *GenesisParams
-	RelayShards       []byte
-	NodeMode          string
+	BTCChain      *btcrelaying.BlockChain
+	BNBChainState *bnbrelaying.BNBChainState
+	DataBase      map[int]incdb.Database
+	MemCache      *memcache.MemoryCache
+	Interrupt     <-chan struct{}
+	ChainParams   *Params
+	GenesisParams *GenesisParams
+	RelayShards   []byte
+	// NodeMode          string
 	BlockGen          *BlockGenerator
 	TxPool            TxPool
 	TempTxPool        TxPool
 	CRemovedTxs       chan metadata.Transaction
 	FeeEstimator      map[byte]FeeEstimator
 	IsBlockGenStarted bool
-	PubSubManager     *pubsub.PubSubManager
-	RandomClient      btc.RandomClient
+	PubSubManager     Pubsub
 	Syncker           Syncker
 	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
+
+	relayShardLck sync.Mutex
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
@@ -269,14 +266,24 @@ func (blockchain *BlockChain) GetClonedBeaconBestState() (*BeaconBestState, erro
 func (blockchain *BlockChain) GetClonedAllShardBestState() map[byte]*ShardBestState {
 	result := make(map[byte]*ShardBestState)
 	for _, v := range blockchain.ShardChain {
-		result[byte(v.GetShardID())] = v.GetBestState()
+		sidState := NewShardBestState()
+		err := sidState.cloneShardBestStateFrom(blockchain.ShardChain[v.GetShardID()].GetBestState())
+		if err != nil {
+			return nil
+		}
+		result[byte(v.GetShardID())] = sidState
 	}
 	return result
 }
 
 // GetReadOnlyShard - return a copy of Shard of BestState
 func (blockchain *BlockChain) GetClonedAShardBestState(shardID byte) (*ShardBestState, error) {
-	return blockchain.ShardChain[int(shardID)].GetBestState(), nil
+	result := NewShardBestState()
+	err := result.cloneShardBestStateFrom(blockchain.ShardChain[int(shardID)].GetBestState())
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (blockchain *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
@@ -476,7 +483,7 @@ func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID 
 	for _, v := range blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS() {
 		allViews = append(allViews, v.(*ShardBestState))
 	}
-	fmt.Println("debug BackupShardViews", len(allViews))
+	// fmt.Println("debug BackupShardViews", len(allViews))
 	return rawdbv2.StoreShardBestState(db, shardID, allViews)
 }
 
@@ -495,7 +502,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		fmt.Println("debug Cannot unmarshall shard best state", string(b))
 		return err
 	}
-	fmt.Println("debug RestoreShardViews", len(allViews))
+	// fmt.Println("debug RestoreShardViews", len(allViews))
 	blockchain.ShardChain[shardID].multiView.Reset()
 
 	for _, v := range allViews {
@@ -584,9 +591,9 @@ func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint6
 
 // -------------- End of Blockchain BackUp And Restore --------------
 
-func (blockchain *BlockChain) GetNodeMode() string {
-	return blockchain.config.NodeMode
-}
+// func (blockchain *BlockChain) GetNodeMode() string {
+// 	return blockchain.config.NodeMode
+// }
 
 func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]struct{} {
 	res := map[byte]struct{}{}
@@ -595,9 +602,11 @@ func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]st
 			res[sID] = struct{}{}
 		}
 	} else {
+		blockchain.config.relayShardLck.Lock()
 		for _, sID := range blockchain.config.RelayShards {
 			res[sID] = struct{}{}
 		}
+		blockchain.config.relayShardLck.Unlock()
 	}
 	return res
 }
@@ -687,9 +696,46 @@ func (blockchain *BlockChain) GetFixedRandomForShardIDCommitment(beaconHeight ui
 	if beaconHeight == 0 {
 		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
 	}
-	if beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointFixRandShardCM {
+	if beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP {
 		return privacy.FixedRandomnessShardID
 	}
 
 	return nil
+}
+
+func (blockchain *BlockChain) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool {
+	if beaconHeight == 0 {
+		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
+	}
+
+	return beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP
+}
+
+func (s *BlockChain) GetChainParams() *Params {
+	return s.config.ChainParams
+}
+
+func (s *BlockChain) AddRelayShard(sid int) error {
+	s.config.relayShardLck.Lock()
+	for _, shard := range s.config.RelayShards {
+		if shard == byte(sid) {
+			s.config.relayShardLck.Unlock()
+			return errors.New("already relay this shard" + strconv.Itoa(sid))
+		}
+	}
+	s.config.RelayShards = append(s.config.RelayShards, byte(sid))
+	s.config.relayShardLck.Unlock()
+	return nil
+}
+
+func (s *BlockChain) RemoveRelayShard(sid int) {
+	s.config.relayShardLck.Lock()
+	for idx, shard := range s.config.RelayShards {
+		if shard == byte(sid) {
+			s.config.RelayShards = append(s.config.RelayShards[:idx], s.config.RelayShards[idx+1:]...)
+			break
+		}
+	}
+	s.config.relayShardLck.Unlock()
+	return
 }
