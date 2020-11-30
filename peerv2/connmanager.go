@@ -299,15 +299,17 @@ func (cm *ConnManager) manageRoleSubscription() {
 			target := cm.Requester.Target()
 			if hwID.Pretty() != target {
 				cm.Requester.UpdateTarget(hwID)
-				Logger.Errorf("Waiting to establish connection to highway: new highway = %v, current = %v", hwID.Pretty(), target)
+				Logger.Warnf("Waiting to establish connection to highway: new highway = %v, current = %v", hwID.Pretty(), target)
 				continue
 			}
 
-			err = cm.subscriber.Subscribe(forced)
-			if err != nil {
-				Logger.Errorf("Subscribe failed: forced = %v hwID = %s err = %+v", forced, hwID.String(), err)
-			} else {
-				forced = false
+			if hwID != peer.ID("") {
+				err = cm.subscriber.Subscribe(forced)
+				if err != nil {
+					Logger.Errorf("Subscribe failed: forced = %v hwID = %s err = %+v", forced, hwID.String(), err)
+				} else {
+					forced = false
+				}
 			}
 
 		case newID := <-cm.registerRequests:
