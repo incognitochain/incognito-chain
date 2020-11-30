@@ -64,6 +64,9 @@ type Server interface {
 	PushMessageGetBlockCrossShardBySpecificHeight(fromShard byte, toShard byte, blksHeight []uint64, getFromPool bool, peerID libp2p.ID) error
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	PushBlockToAll(block common.BlockInterface, isBeacon bool) error
+
+	PublishBeaconState(beaconState *BeaconBestState)
+	PublishShardState(shardBestState *ShardBestState)
 }
 
 type Highway interface {

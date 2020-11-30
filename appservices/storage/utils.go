@@ -7,10 +7,12 @@ import (
 )
 
 func StoreLatestBeaconFinalState(ctx context.Context, beacon *data.Beacon) error {
+	Logger.log.Infof("Store beacon with block hash %v and block height %d", beacon.BlockHash, beacon.Height)
 	beaconState := getBeaconFromBeaconState(beacon)
 	if err := GetDBDriver(MONGODB).GetBeaconStorer().StoreBeaconState(ctx, beaconState); err != nil {
 		return err
 	}
+	Logger.log.Infof("This beacon contain %d PDE Share ", len(beacon.PDEShare))
 	if len(beacon.PDEShare) > 0 {
 		pdeShares := getPDEShareFromBeaconState(beacon)
 		for _, pdeShare := range pdeShares {
@@ -20,7 +22,7 @@ func StoreLatestBeaconFinalState(ctx context.Context, beacon *data.Beacon) error
 	return nil
 }
 
-func getBeaconFromBeaconState (beacon *data.Beacon) model.BeaconState {
+func getBeaconFromBeaconState(beacon *data.Beacon) model.BeaconState {
 	return model.BeaconState{
 		ShardID:                                beacon.ShardID,
 		BlockHash:                              beacon.BlockHash,
@@ -54,8 +56,8 @@ func getBeaconFromBeaconState (beacon *data.Beacon) model.BeaconState {
 	}
 }
 
-func getPDEShareFromBeaconState (beacon *data.Beacon) []model.PDEShare {
-	pdeShares := make([]model.PDEShare,0, len(beacon.PDEShare))
+func getPDEShareFromBeaconState(beacon *data.Beacon) []model.PDEShare {
+	pdeShares := make([]model.PDEShare, 0, len(beacon.PDEShare))
 	for _, share := range beacon.PDEShare {
 		pdeShares = append(pdeShares, model.PDEShare{
 			BeaconBlockHash:    beacon.BlockHash,
@@ -71,7 +73,6 @@ func getPDEShareFromBeaconState (beacon *data.Beacon) []model.PDEShare {
 	return pdeShares
 }
 
-
 func StoreLatestShardFinalState(ctx context.Context, shard *data.Shard) error {
 	shardState := getShardFromShardState(shard)
 	if err := GetDBDriver(MONGODB).GetShardStorer().StoreShardState(ctx, shardState); err != nil {
@@ -80,7 +81,7 @@ func StoreLatestShardFinalState(ctx context.Context, shard *data.Shard) error {
 	return nil
 }
 
-func getShardFromShardState (shard *data.Shard) model.ShardState {
+func getShardFromShardState(shard *data.Shard) model.ShardState {
 	return model.ShardState{
 		ShardID:                shard.ShardID,
 		BlockHash:              shard.BlockHash,
@@ -107,7 +108,7 @@ func getShardFromShardState (shard *data.Shard) model.ShardState {
 		CrossShardBitMap:       shard.CrossShardBitMap,
 		NumTxns:                shard.NumTxns,
 		TotalTxns:              shard.TotalTxns,
-		NumTxnsExcludeSalary:	shard.NumTxnsExcludeSalary,
+		NumTxnsExcludeSalary:   shard.NumTxnsExcludeSalary,
 		TotalTxnsExcludeSalary: shard.TotalTxnsExcludeSalary,
 		ActiveShards:           shard.ActiveShards,
 		ConsensusAlgorithm:     shard.ConsensusType,

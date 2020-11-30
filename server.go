@@ -432,7 +432,7 @@ func (serverObj *Server) NewServer(
 	//===============
 
 	serverObj.appServices.Init(&appservices.AppConfig{
-		BlockChain: serverObj.blockChain,
+		BlockChain:         serverObj.blockChain,
 		DataBaseAppService: dbapp,
 	})
 	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
@@ -745,7 +745,6 @@ func (serverObj Server) Start() {
 	}
 	go serverObj.appServices.Start(serverObj.cQuit)
 	go serverObj.pusubManager.Start()
-
 
 	err := serverObj.consensusEngine.Start()
 	if err != nil {
@@ -2285,4 +2284,12 @@ func (serverObj *Server) RequestMissingViewViaStream(peerID string, hashes [][]b
 
 func (serverObj *Server) GetSelfPeerID() libp2p.ID {
 	return serverObj.highway.LocalHost.Host.ID()
+}
+
+func (serverObj *Server) PublishBeaconState(beaconState *blockchain.BeaconBestState) {
+	serverObj.appServices.PublishBeaconState(beaconState)
+}
+
+func (serverObj *Server) PublishShardState(shardBestState *blockchain.ShardBestState) {
+
 }

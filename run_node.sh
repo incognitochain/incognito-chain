@@ -150,3 +150,9 @@ fi
 #if [ "$1" == "relaynode" ]; then
 #./incognito --relayshards "all" --datadir "data/relaynode" --listen "0.0.0.0:9463" --externaladdress "0.0.0.0:9463" --norpcauth --rpclisten "0.0.0.0:9363" --enablewallet --wallet "wallet3" --walletpassphrase "12345678" --walletautoinit
 #fi
+
+
+
+if [ "$1" == "fullnode-mainnet-console" ]; then
+GO111MODULE=on GETH_NAME=mainnet.infura.io/v3/1f15d22470684b4a8c92c130925fc679 GETH_PROTOCOL=https GETH_PORT="" ./incognito --testnet false --nodemode "relay" --relayshards "[0]" --externaladdress "127.0.0.1:5433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "data/mainnet/fullnode" --discoverpeersaddress "51.91.72.45:9330" --norpcauth --rpclisten "0.0.0.0:5334" --rpcwslisten "127.0.0.1:15338"
+fi
