@@ -85,7 +85,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
 		}
 
-		customPrivacyTokenParam, err = httpServer.txService.BuildTokenParam(tokenParamsRaw, senderKeySet, shardIDSender)
+		customPrivacyTokenParam, err = httpServer.txService.BuildTokenParamV2(tokenParamsRaw, senderKeySet, shardIDSender)
 		if err.(*rpcservice.RPCError) != nil {
 			return nil, err.(*rpcservice.RPCError)
 		}
