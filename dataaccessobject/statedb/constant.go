@@ -49,6 +49,8 @@ const (
 	PDETradingFeeObjectType
 
 	StakerObjectType
+
+	BestShardStateObjectType
 )
 
 // Prefix length

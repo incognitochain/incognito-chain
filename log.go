@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/appservices"
 	"os"
 	"path/filepath"
 
@@ -54,6 +55,7 @@ var (
 	blockchainLogger       = backendLog.Logger("BlockChain log", false)
 	consensusLogger        = backendLog.Logger("Consensus log", false)
 	mempoolLogger          = backendLog.Logger("Mempool log", false)
+	appServiceLogger       = backendLog.Logger("AppService log", false)
 	transactionLogger      = backendLog.Logger("Transaction log", false)
 	privacyLogger          = backendLog.Logger("Privacy log", false)
 	randomLogger           = backendLog.Logger("RandomAPI log", false)
@@ -95,6 +97,7 @@ func init() {
 	blockchain.Logger.Init(blockchainLogger)
 	consensus.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
+	appservices.Logger.Init(appServiceLogger)
 	main2.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)
 	privacy.Logger.Init(privacyLogger)

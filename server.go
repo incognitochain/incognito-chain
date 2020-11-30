@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/appservices"
 	"io"
 	"io/ioutil"
 	"log"
@@ -72,6 +73,7 @@ type Server struct {
 	rpcServer       *rpcserver.RpcServer
 	memPool         *mempool.TxPool
 	tempMemPool     *mempool.TxPool
+	appServices     *appservices.AppService
 	waitGroup       sync.WaitGroup
 	netSync         *netsync.NetSync
 	addrManager     *addrmanager.AddrManager
@@ -200,6 +202,7 @@ func (serverObj *Server) NewServer(
 	listenAddrs string,
 	db map[int]incdb.Database,
 	dbmp databasemp.DatabaseInterface,
+	dbapp databasemp.DatabaseInterface,
 	chainParams *blockchain.Params,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
@@ -236,6 +239,7 @@ func (serverObj *Server) NewServer(
 	serverObj.isEnableMining = cfg.EnableMining
 	// create mempool tx
 	serverObj.memPool = &mempool.TxPool{}
+	serverObj.appServices = &appservices.AppService{}
 
 	relayShards := []byte{}
 	if cfg.RelayShards == "all" {
@@ -427,6 +431,10 @@ func (serverObj *Server) NewServer(
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
 
+	serverObj.appServices.Init(&appservices.AppConfig{
+		BlockChain: serverObj.blockChain,
+		DataBaseAppService: dbapp,
+	})
 	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
 
 	// Init Net Sync manager to process messages
@@ -735,7 +743,9 @@ func (serverObj Server) Start() {
 		go serverObj.memPool.Start(serverObj.cQuit)
 		go serverObj.memPool.MonitorPool()
 	}
+	go serverObj.appServices.Start(serverObj.cQuit)
 	go serverObj.pusubManager.Start()
+
 
 	err := serverObj.consensusEngine.Start()
 	if err != nil {

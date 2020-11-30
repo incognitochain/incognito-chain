@@ -8,7 +8,7 @@ import (
 
 //======================  Redeem  ======================
 func GetWaitingRedeemRequests(stateDB *StateDB) (map[string]*RedeemRequest, error) {
-	waitingRedeemRequests := stateDB.getAllWaitingRedeemRequest()
+	waitingRedeemRequests := stateDB.GetAllWaitingRedeemRequest()
 	return waitingRedeemRequests, nil
 }
 
@@ -110,7 +110,7 @@ func GetPortalReqMatchingRedeemByTxIDStatus(stateDB *StateDB, txID string) ([]by
 }
 
 func GetMatchedRedeemRequests(stateDB *StateDB) (map[string]*RedeemRequest, error) {
-	waitingRedeemRequests := stateDB.getAllMatchedRedeemRequest()
+	waitingRedeemRequests := stateDB.GetAllMatchedRedeemRequest()
 	return waitingRedeemRequests, nil
 }
 
@@ -150,7 +150,7 @@ func DeleteMatchedRedeemRequest(stateDB *StateDB, redeemID string) {
 func GetCustodianPoolState(
 	stateDB *StateDB,
 ) (map[string]*CustodianState, error) {
-	waitingRedeemRequests := stateDB.getAllCustodianStatePool()
+	waitingRedeemRequests := stateDB.GetAllCustodianStatePool()
 	return waitingRedeemRequests, nil
 }
 
@@ -420,7 +420,7 @@ func IsPortingRequestIdExist(stateDB *StateDB, statusSuffix []byte) (bool, error
 func GetWaitingPortingRequests(
 	stateDB *StateDB,
 ) (map[string]*WaitingPortingRequest, error) {
-	waitingPortingRequestList := stateDB.getWaitingPortingRequests()
+	waitingPortingRequestList := stateDB.GetWaitingPortingRequests()
 	return waitingPortingRequestList, nil
 }
 

@@ -652,6 +652,98 @@ func (blockchain *BlockChain) GetShardChainDatabase(shardID byte) incdb.Database
 	return blockchain.config.DataBase[int(shardID)]
 }
 
+func (blockchain *BlockChain) GetDetailsShardViewStateDataFromBlockHash(shardID byte, blockHash common.Hash) (*ShardBestState, error) {
+	v := blockchain.ShardChain[shardID].GetViewByHash(blockHash)
+	if v != nil {
+		return v.(*ShardBestState), nil
+	}
+
+	shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
+	if err != nil || shardBlock == nil {
+		return nil, err
+	}
+
+	shardDB := blockchain.GetShardChainDatabase(shardID)
+	rootHash, err := rawdbv2.GetShardRootsHash(shardDB, shardID, blockHash)
+	if err != nil {
+		return nil, err
+	}
+	sRH := &ShardRootHash{}
+	err = json.Unmarshal(rootHash, sRH)
+	if err != nil {
+		return nil, err
+	}
+
+	prevRootHash, err := rawdbv2.GetShardRootsHash(shardDB, shardID, shardBlock.Header.PreviousBlockHash)
+	if err != nil {
+		return nil, err
+	}
+	prevShardRH := &ShardRootHash{}
+	err = json.Unmarshal(prevRootHash, prevShardRH)
+	if err != nil {
+		return nil, err
+	}
+
+	shardView := &ShardBestState{
+		BestBlockHash:            blockHash,
+		ActiveShards:             blockchain.config.ChainParams.ActiveShards, //we assume active shard not change (if not, we must store active shard in db)
+		ConsensusStateDBRootHash: sRH.ConsensusStateDBRootHash,
+		FeatureStateDBRootHash:   sRH.FeatureStateDBRootHash,
+		RewardStateDBRootHash:    sRH.RewardStateDBRootHash,
+		TransactionStateDBRootHash:     sRH.TransactionStateDBRootHash,
+		SlashStateDBRootHash:     sRH.SlashStateDBRootHash,
+		PrevTransactionStateDBRootHash: prevShardRH.TransactionStateDBRootHash,
+	}
+
+	err = shardView.RestoreDetailsShardViewStateFromHash(shardBlock, blockchain)
+	return shardView, err
+}
+
+func (blockchain *BlockChain) GetDetailsBeaconViewStateDataFromBlockHash(blockHash common.Hash) (*BeaconBestState, error) {
+	v, ok := blockchain.beaconViewCache.Get(blockHash)
+	if ok {
+		return v.(*BeaconBestState), nil
+	}
+
+	bcDB := blockchain.GetBeaconChainDatabase()
+	rootHash, err := rawdbv2.GetBeaconRootsHash(bcDB, blockHash)
+	if err != nil {
+		return nil, err
+	}
+	bRH := &BeaconRootHash{}
+	err = json.Unmarshal(rootHash, bRH)
+	if err != nil {
+		return nil, err
+	}
+
+	beaconView := &BeaconBestState{
+		BestBlockHash:            blockHash,
+		ActiveShards:             blockchain.config.ChainParams.ActiveShards, //we assume active shard not change (if not, we must store active shard in db)
+		ConsensusStateDBRootHash: bRH.ConsensusStateDBRootHash,
+		FeatureStateDBRootHash:   bRH.FeatureStateDBRootHash,
+		RewardStateDBRootHash:    bRH.RewardStateDBRootHash,
+		SlashStateDBRootHash:     bRH.SlashStateDBRootHash,
+	}
+
+	err = beaconView.RestoreDetailsBeaconViewStateFromHash(blockchain)
+	if err != nil {
+		Logger.log.Error(err)
+	}
+	sID := []int{}
+	for i := 0; i < blockchain.config.ChainParams.ActiveShards; i++ {
+		sID = append(sID, i)
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconView.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(bcDB))
+	if err != nil {
+		return nil, NewBlockChainError(BeaconError, err)
+	}
+	beaconView.AutoStaking = NewMapStringBool()
+	beaconView.AutoStaking.data = statedb.GetMapAutoStaking(beaconConsensusStateDB, sID)
+	blockchain.beaconViewCache.Add(blockHash, beaconView)
+	return beaconView, err
+}
+
+
 func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash common.Hash) (*BeaconBestState, error) {
 	v, ok := blockchain.beaconViewCache.Get(blockHash)
 	if ok {

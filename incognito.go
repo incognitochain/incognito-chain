@@ -101,11 +101,20 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 	// Create db for mempool and use it
 	dbmp, err := databasemp.Open("leveldbmempool", filepath.Join(cfg.DataDir, cfg.DatabaseMempoolDir))
+
 	if err != nil {
 		Logger.log.Error("could not open connection to leveldb")
 		Logger.log.Error(err)
 		panic(err)
 	}
+
+	dbapp, err := databasemp.Open("leveldbmempool", filepath.Join(cfg.DataDir, "appservice"))
+	if err != nil {
+		Logger.log.Error("could not open connection to leveldb")
+		Logger.log.Error(err)
+		panic(err)
+	}
+
 	// Check wallet and start it
 	var walletObj *wallet.Wallet
 	if cfg.Wallet {
@@ -169,7 +178,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	server := Server{}
 	server.wallet = walletObj
 	activeNetParams.Params.IsBackup = cfg.ForceBackup
-	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, btcChain, bnbChainState, interrupt)
+	err = server.NewServer(cfg.Listener, db, dbmp, dbapp, activeNetParams.Params, version, btcChain, bnbChainState, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
 		Logger.log.Error(err)

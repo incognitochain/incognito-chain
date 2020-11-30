@@ -670,6 +670,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 			temp++
 		}
 	}
+	shardBestState.NumTxnsExcludeSalary = uint64(temp)
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
 	//======END
 	shardUpdateBestStateTimer.UpdateSince(startTimeUpdateShardBestState)

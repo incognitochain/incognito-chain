@@ -1222,7 +1222,7 @@ func (stateDB *StateDB) getAllToken() map[common.Hash]*TokenState {
 }
 
 // ================================= PDE OBJECT =======================================
-func (stateDB *StateDB) getAllWaitingPDEContributionState() []*WaitingPDEContributionState {
+func (stateDB *StateDB) GetAllWaitingPDEContributionState() []*WaitingPDEContributionState {
 	waitingPDEContributionStates := []*WaitingPDEContributionState{}
 	temp := stateDB.trie.NodeIterator(GetWaitingPDEContributionPrefix())
 	it := trie.NewIterator(temp)
@@ -1240,7 +1240,7 @@ func (stateDB *StateDB) getAllWaitingPDEContributionState() []*WaitingPDEContrib
 	return waitingPDEContributionStates
 }
 
-func (stateDB *StateDB) getAllPDEPoolPairState() []*PDEPoolPairState {
+func (stateDB *StateDB) GetAllPDEPoolPairState() []*PDEPoolPairState {
 	pdePoolPairStates := []*PDEPoolPairState{}
 	temp := stateDB.trie.NodeIterator(GetPDEPoolPairPrefix())
 	it := trie.NewIterator(temp)
@@ -1269,7 +1269,7 @@ func (stateDB *StateDB) getPDEPoolPairState(key common.Hash) (*PDEPoolPairState,
 	return NewPDEPoolPairState(), false, nil
 }
 
-func (stateDB *StateDB) getAllPDEShareState() []*PDEShareState {
+func (stateDB *StateDB) GetAllPDEShareState() []*PDEShareState {
 	pdeShareStates := []*PDEShareState{}
 	temp := stateDB.trie.NodeIterator(GetPDESharePrefix())
 	it := trie.NewIterator(temp)
@@ -1287,7 +1287,7 @@ func (stateDB *StateDB) getAllPDEShareState() []*PDEShareState {
 	return pdeShareStates
 }
 
-func (stateDB *StateDB) getAllPDETradingFeeState() []*PDETradingFeeState {
+func (stateDB *StateDB) GetAllPDETradingFeeState() []*PDETradingFeeState {
 	pdeTradingFeeStates := []*PDETradingFeeState{}
 	temp := stateDB.trie.NodeIterator(GetPDETradingFeePrefix())
 	it := trie.NewIterator(temp)
@@ -1399,7 +1399,7 @@ func (stateDB *StateDB) getBurningConfirmState(key common.Hash) (*BurningConfirm
 }
 
 // ================================= Portal OBJECT =======================================
-func (stateDB *StateDB) getWaitingPortingRequests() map[string]*WaitingPortingRequest {
+func (stateDB *StateDB) GetWaitingPortingRequests() map[string]*WaitingPortingRequest {
 	waitingPortingRequest := make(map[string]*WaitingPortingRequest)
 	temp := stateDB.trie.NodeIterator(GetPortalWaitingPortingRequestPrefix())
 	it := trie.NewIterator(temp)
@@ -1487,7 +1487,7 @@ func (stateDB *StateDB) getFinalExchangeRatesState() (*FinalExchangeRatesState, 
 }
 
 //B
-func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*RedeemRequest {
+func (stateDB *StateDB) GetAllWaitingRedeemRequest() map[string]*RedeemRequest {
 	waitingRedeemRequests := make(map[string]*RedeemRequest)
 	temp := stateDB.trie.NodeIterator(GetWaitingRedeemRequestPrefix())
 	it := trie.NewIterator(temp)
@@ -1507,7 +1507,7 @@ func (stateDB *StateDB) getAllWaitingRedeemRequest() map[string]*RedeemRequest {
 	return waitingRedeemRequests
 }
 
-func (stateDB *StateDB) getAllMatchedRedeemRequest() map[string]*RedeemRequest {
+func (stateDB *StateDB) GetAllMatchedRedeemRequest() map[string]*RedeemRequest {
 	matchedRedeemRequests := make(map[string]*RedeemRequest)
 	temp := stateDB.trie.NodeIterator(GetMatchedRedeemRequestPrefix())
 	it := trie.NewIterator(temp)
@@ -1527,7 +1527,7 @@ func (stateDB *StateDB) getAllMatchedRedeemRequest() map[string]*RedeemRequest {
 	return matchedRedeemRequests
 }
 
-func (stateDB *StateDB) getAllCustodianStatePool() map[string]*CustodianState {
+func (stateDB *StateDB) GetAllCustodianStatePool() map[string]*CustodianState {
 	custodians := make(map[string]*CustodianState)
 	temp := stateDB.trie.NodeIterator(GetPortalCustodianStatePrefix())
 	it := trie.NewIterator(temp)

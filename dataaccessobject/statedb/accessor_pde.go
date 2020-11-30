@@ -25,7 +25,7 @@ func StoreWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64, waiting
 
 func GetWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64) (map[string]*rawdbv2.PDEContribution, error) {
 	waitingPDEContributions := make(map[string]*rawdbv2.PDEContribution)
-	waitingPDEContributionStates := stateDB.getAllWaitingPDEContributionState()
+	waitingPDEContributionStates := stateDB.GetAllWaitingPDEContributionState()
 	for _, wcState := range waitingPDEContributionStates {
 		key := string(GetWaitingPDEContributionKey(beaconHeight, wcState.PairID()))
 		value := rawdbv2.NewPDEContribution(wcState.ContributorAddress(), wcState.TokenID(), wcState.Amount(), wcState.TxReqID())
@@ -57,7 +57,7 @@ func StorePDEPoolPairs(stateDB *StateDB, beaconHeight uint64, pdePoolPairs map[s
 
 func GetPDEPoolPair(stateDB *StateDB, beaconHeight uint64) (map[string]*rawdbv2.PDEPoolForPair, error) {
 	pdePoolPairs := make(map[string]*rawdbv2.PDEPoolForPair)
-	pdePoolPairStates := stateDB.getAllPDEPoolPairState()
+	pdePoolPairStates := stateDB.GetAllPDEPoolPairState()
 	for _, ppState := range pdePoolPairStates {
 		key := string(GetPDEPoolForPairKey(beaconHeight, ppState.Token1ID(), ppState.Token2ID()))
 		value := rawdbv2.NewPDEPoolForPair(ppState.Token1ID(), ppState.Token1PoolValue(), ppState.Token2ID(), ppState.Token2PoolValue())
@@ -100,7 +100,7 @@ func StorePDETradingFees(stateDB *StateDB, beaconHeight uint64, pdeTradingFees m
 
 func GetPDEShares(stateDB *StateDB, beaconHeight uint64) (map[string]uint64, error) {
 	pdeShares := make(map[string]uint64)
-	pdeShareStates := stateDB.getAllPDEShareState()
+	pdeShareStates := stateDB.GetAllPDEShareState()
 	for _, sState := range pdeShareStates {
 		key := string(GetPDEShareKey(beaconHeight, sState.Token1ID(), sState.Token2ID(), sState.ContributorAddress()))
 		value := sState.Amount()
@@ -177,7 +177,7 @@ func GetPDEContributionStatus(stateDB *StateDB, statusType []byte, statusSuffix 
 
 func GetPDETradingFees(stateDB *StateDB, beaconHeight uint64) (map[string]uint64, error) {
 	pdeTradingFees := make(map[string]uint64)
-	pdeTradingFeeStates := stateDB.getAllPDETradingFeeState()
+	pdeTradingFeeStates := stateDB.GetAllPDETradingFeeState()
 	for _, tfState := range pdeTradingFeeStates {
 		key := string(GetPDETradingFeeKey(beaconHeight, tfState.Token1ID(), tfState.Token2ID(), tfState.ContributorAddress()))
 		value := tfState.Amount()

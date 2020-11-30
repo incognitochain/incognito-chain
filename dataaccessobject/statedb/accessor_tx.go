@@ -128,6 +128,19 @@ func GetCommitmentByIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex
 	return c.commitment, nil
 }
 
+func GetCommitmentStateByIndex(stateDB *StateDB, tokenID common.Hash, commitmentIndex uint64, shardID byte) (*CommitmentState, error) {
+	commitmentIndexTemp := new(big.Int).SetUint64(commitmentIndex)
+	key := GenerateCommitmentIndexObjectKey(tokenID, shardID, commitmentIndexTemp)
+	c, has, err := stateDB.getCommitmentIndexState(key)
+	if err != nil  {
+		return nil, NewStatedbError(GetCommitmentIndexError, err)
+	}
+	if !has {
+		return nil, NewStatedbError(GetCommitmentIndexError, errors.New("no value exist"))
+	}
+	return c, nil
+}
+
 // GetCommitmentIndex - return index of commitment in db list
 func GetCommitmentIndex(stateDB *StateDB, tokenID common.Hash, commitment []byte, shardID byte) (*big.Int, error) {
 	key := GenerateCommitmentObjectKey(tokenID, shardID, commitment)

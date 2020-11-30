@@ -44,6 +44,8 @@ const (
 	ErrInvalidRewardFeatureStateType          = "invalid feature reward state type"
 	ErrInvalidPDETradingFeeStateType          = "invalid pde trading fee state type"
 	ErrInvalidBlockHashType                   = "invalid block hash type"
+
+	ErrInvalidBestShardStateType              = "invalid best shard state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -208,8 +210,11 @@ const (
 
 	// PDEX v2
 	StorePDETradingFeeError
-	
+
 	InvalidStakerInfoTypeError
+
+	//SharBest
+	StoreBestShardStateError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -338,6 +343,8 @@ var ErrCodeMessage = map[int]struct {
 	ResetAllFeatureRewardByTokenIDError:  {-15003, "Reset all reward feature state by tokenID error"},
 	GetRewardFeatureAmountByTokenIDError: {-15004, "Get reward feature amount by tokenID error"},
 	InvalidStakerInfoTypeError:           {-15005, "Staker info invalid"},
+
+	StoreBestShardStateError:			  {-15006, "Store shard best state error"},
 }
 
 type StatedbError struct {

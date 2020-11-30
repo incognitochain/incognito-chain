@@ -51,6 +51,7 @@ type ShardBestState struct {
 	StakingTx              *MapStringString                  `json:"-"`
 	NumTxns                uint64                            `json:"NumTxns"`                // The number of txns in the block.
 	TotalTxns              uint64                            `json:"TotalTxns"`              // The total number of txns in the chain.
+	NumTxnsExcludeSalary   uint64                            `json:"NumTxnsExcludeSalary"`              // The total number of txns in the chain.
 	TotalTxnsExcludeSalary uint64                            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int                               `json:"ActiveShards"`
 	ConsensusAlgorithm     string                            `json:"ConsensusAlgorithm"`
@@ -59,6 +60,7 @@ type ShardBestState struct {
 	BlockInterval          time.Duration
 	BlockMaxCreateTime     time.Duration
 	MetricBlockHeight      uint64
+
 	//================================ StateDB Method
 	// block height => root hash
 	consensusStateDB           *statedb.StateDB
@@ -71,6 +73,10 @@ type ShardBestState struct {
 	RewardStateDBRootHash      common.Hash
 	slashStateDB               *statedb.StateDB
 	SlashStateDBRootHash       common.Hash
+
+	PrevTransactionStateDBRootHash common.Hash
+	prevTransactionStateDB         *statedb.StateDB
+
 }
 
 func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
@@ -88,6 +94,11 @@ func (shardBestState *ShardBestState) GetCopiedFeatureStateDB() *statedb.StateDB
 func (shardBestState *ShardBestState) GetShardRewardStateDB() *statedb.StateDB {
 	return shardBestState.rewardStateDB.Copy()
 }
+
+func (shardBestState *ShardBestState) GetPrevTransactionStateDB() *statedb.StateDB {
+	return shardBestState.prevTransactionStateDB.Copy()
+}
+
 
 func (shardBestState *ShardBestState) GetHash() *common.Hash {
 	return shardBestState.BestBlock.Hash()
@@ -169,6 +180,10 @@ func (shardBestState *ShardBestState) InitStateRootHash(db incdb.Database, bc *B
 		return err
 	}
 	shardBestState.slashStateDB, err = statedb.NewWithPrefixTrie(shardBestState.SlashStateDBRootHash, dbAccessWarper)
+	if err != nil {
+		return err
+	}
+	shardBestState.prevTransactionStateDB, err = statedb.NewWithPrefixTrie(shardBestState.PrevTransactionStateDBRootHash, dbAccessWarper)
 	if err != nil {
 		return err
 	}
@@ -321,6 +336,7 @@ func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestS
 	shardBestState.featureStateDB = target.featureStateDB.Copy()
 	shardBestState.rewardStateDB = target.rewardStateDB.Copy()
 	shardBestState.slashStateDB = target.slashStateDB.Copy()
+	shardBestState.prevTransactionStateDB = target.transactionStateDB.Copy()
 
 	shardBestState.BestBlock = target.BestBlock
 
