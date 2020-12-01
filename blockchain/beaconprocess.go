@@ -989,7 +989,7 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
 	committees := append(stakerKeys, stopAutoStakerKeys...)
 	if len(committees) != 0 {
-		err := statedb.StoreStakerInfoV1(
+		err := statedb.StoreStakerInfo(
 			beaconBestState.consensusStateDB,
 			committees,
 			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),

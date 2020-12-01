@@ -577,7 +577,7 @@ func storeStakerInfo(
 	return nil
 }
 
-func StoreStakerInfoV1(
+func StoreStakerInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
 	rewardReceiver map[string]privacy.PaymentAddress,

@@ -329,13 +329,16 @@ func (engine *BeaconCommitteeEngineV2) InitCommitteeState(env *BeaconCommitteeSt
 			} else {
 				newShardCandidates = append(newShardCandidates, stakeInstruction.PublicKeyStructs...)
 			}
-			_ = statedb.StoreStakerInfoV1(
+			err := statedb.StoreStakerInfo(
 				env.ConsensusStateDB,
 				stakeInstruction.PublicKeyStructs,
 				b.rewardReceiver,
 				b.autoStake,
 				b.stakingTx,
 			)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 	b.beaconCommittee = append(b.beaconCommittee, newBeaconCandidates...)

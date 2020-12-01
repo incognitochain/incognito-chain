@@ -586,7 +586,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 
 	hash, _ := common.Hash{}.NewHashFromStr("123")
 	hash6, _ := common.Hash{}.NewHashFromStr("456")
-	statedb.StoreStakerInfoV1(
+	statedb.StoreStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -1054,7 +1054,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 	committeeChangeProcessUnstakeInstruction.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{*incKey0}
 	committeeChangeProcessUnstakeInstruction.Unstake = []string{key0}
 
-	statedb.StoreStakerInfoV1(
+	statedb.StoreStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey4},
 		map[string]privacy.PaymentAddress{
@@ -1792,7 +1792,7 @@ func TestBeaconCommitteeStateV2_processAfterSwap(t *testing.T) {
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
 	hash6, err := common.Hash{}.NewHashFromStr("456")
-	statedb.StoreStakerInfoV1(
+	statedb.StoreStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -1808,7 +1808,7 @@ func TestBeaconCommitteeStateV2_processAfterSwap(t *testing.T) {
 			key6: *hash6,
 		},
 	)
-	statedb.StoreStakerInfoV1(
+	statedb.StoreStakerInfo(
 		sDB2,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -1824,7 +1824,7 @@ func TestBeaconCommitteeStateV2_processAfterSwap(t *testing.T) {
 			key6: *hash6,
 		},
 	)
-	statedb.StoreStakerInfoV1(
+	statedb.StoreStakerInfo(
 		sDB3,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -2271,7 +2271,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 	assert.Nil(t, err)
 
 	hash, err := common.Hash{}.NewHashFromStr("123")
-	statedb.StoreStakerInfoV1(
+	statedb.StoreStakerInfo(
 		validSDB1,
 		[]incognitokey.CommitteePublicKey{*incKey},
 		map[string]privacy.PaymentAddress{
@@ -2287,7 +2287,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 
 	validSDB2, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 	assert.Nil(t, err)
-	statedb.StoreStakerInfoV1(
+	statedb.StoreStakerInfo(
 		validSDB2,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey2, *incKey5, *incKey6},
 		map[string]privacy.PaymentAddress{
@@ -2902,7 +2902,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	committeeChangeStopAutoStakeAndRandomTime := NewCommitteeChange()
 	committeeChangeStopAutoStakeAndRandomTime.StopAutoStake = []string{key0}
 
-	statedb.StoreStakerInfoV1(
+	statedb.StoreStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey0},
 		map[string]privacy.PaymentAddress{
@@ -2916,7 +2916,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 		},
 	)
 
-	statedb.StoreStakerInfoV1(
+	statedb.StoreStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey},
 		map[string]privacy.PaymentAddress{
