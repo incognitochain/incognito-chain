@@ -102,6 +102,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalRequestUnlockCollateral{}
 	case PortalExchangeRatesMeta:
 		md = &PortalExchangeRates{}
+	case PortalUnlockOverRateCollateralsMeta:
+		md = &PortalUnlockOverRateCollaterals{}
 	case RelayingBNBHeaderMeta:
 		md = &RelayingHeader{}
 	case RelayingBTCHeaderMeta:
@@ -214,7 +216,7 @@ func ValidatePortalExternalAddress(chainName string, tokenID string, address str
 }
 
 // Validate portal remote addresses for portal tokens (BTC, BNB)
-func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetriever ChainRetriever) (bool, error){
+func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetriever ChainRetriever) (bool, error) {
 	if len(remoteAddresses) == 0 {
 		return false, errors.New("remote addresses should be at least one address")
 	}

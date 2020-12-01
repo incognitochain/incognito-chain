@@ -26,6 +26,8 @@ type CurrentPortalState struct {
 	LockedCollateralForRewards *statedb.LockedCollateralState
 	//Store temporary exchange rates requests
 	ExchangeRatesRequests map[string]*metadata.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
+	// Store temporary custodian unlock over rate collaterals
+	UnlockOverRateCollaterals map[string]*metadata.UnlockOverRateCollateralsRequestStatus
 }
 
 type CustodianStateSlice struct {

@@ -184,6 +184,8 @@ const (
 	InsertPortalExternalTxHashSubmittedError
 	StoreWithdrawCollateralConfirmError
 	GetWithdrawCollateralConfirmError
+	StorePortalUnlockOverRateCollateralsError
+	GetPortalUnlockOverRateCollateralsStatusError
 
 	// PDEX v2
 	StorePDETradingFeeError
@@ -323,6 +325,9 @@ var ErrCodeMessage = map[int]struct {
 	// portal proof
 	StoreWithdrawCollateralConfirmError: {-14046, "Store portal withdraw collateral confirm proof error"},
 	GetWithdrawCollateralConfirmError:   {-14047, "Get portal withdraw collateral confirm proof error"},
+	// portal unlock over rate collaterals
+	StorePortalUnlockOverRateCollateralsError:     {-14048, "Store portal unlock over rate collaterals error"},
+	GetPortalUnlockOverRateCollateralsStatusError: {-14049, "Get portal unlock over rate collaterals error"},
 	// feature reward
 	StoreRewardFeatureError:              {-15000, "Store reward feature state error"},
 	GetRewardFeatureError:                {-15001, "Get reward feature state error"},

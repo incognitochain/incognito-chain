@@ -752,6 +752,28 @@ func StorePortalExchangeRateStatus(stateDB *StateDB, txID string, statusContent 
 	return nil
 }
 
+func StorePortalUnlockOverRateCollaterals(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalUnlockOverRateCollateralsRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalUnlockOverRateCollateralsError, err)
+	}
+
+	return nil
+}
+
+func GetPortalUnlockOverRateCollateralsStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalUnlockOverRateCollateralsRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalUnlockOverRateCollateralsStatusError, err)
+	}
+
+	return data, nil
+}
+
 func GetPortalExchangeRateStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	statusType := PortalExchangeRatesRequestStatusPrefix()
 	statusSuffix := []byte(txID)

@@ -29,6 +29,7 @@ type PortalParams struct {
 	MinPercentRedeemFee                  float64
 	SupportedCollateralTokens            []PortalCollateral
 	MinPortalFee                         uint64 // nano PRV
+	MinUnlockOverRateCollaterals         uint64
 }
 
 /*
@@ -74,17 +75,17 @@ type Params struct {
 	BNBFullNodeProtocol              string
 	BNBFullNodeHost                  string
 	BNBFullNodePort                  string
-	PortalParams                map[uint64]PortalParams
-	PortalTokens                map[string]PortalTokenProcessor
-	PortalFeederAddress         string
-	EpochBreakPointSwapNewKey   []uint64
-	IsBackup                    bool
-	PreloadAddress              string
-	ReplaceStakingTxHeight      uint64
-	ETHRemoveBridgeSigEpoch     uint64
-	BCHeightBreakPointNewZKP    uint64
-	PortalETHContractAddressStr string // smart contract of ETH for portal
-	BCHeightBreakPointPortalV3  uint64
+	PortalParams                     map[uint64]PortalParams
+	PortalTokens                     map[string]PortalTokenProcessor
+	PortalFeederAddress              string
+	EpochBreakPointSwapNewKey        []uint64
+	IsBackup                         bool
+	PreloadAddress                   string
+	ReplaceStakingTxHeight           uint64
+	ETHRemoveBridgeSigEpoch          uint64
+	BCHeightBreakPointNewZKP         uint64
+	PortalETHContractAddressStr      string // smart contract of ETH for portal
+	BCHeightBreakPointPortalV3       uint64
 }
 
 type GenesisParams struct {
@@ -216,7 +217,7 @@ func SetupParam() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -248,6 +249,7 @@ func SetupParam() {
 				MinPercentRedeemFee:                  0.01,
 				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(), // todo: need to be updated before deploying
 				MinPortalFee:                         100,
+				MinUnlockOverRateCollaterals:         25,
 			},
 		},
 		PortalTokens:                initPortalTokensForTestNet(),
@@ -258,7 +260,7 @@ func SetupParam() {
 		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:     21920,
 		PortalETHContractAddressStr: "0x21Ab34649777e94e30d60319cDBa472759B00AaA", // todo: update sc address
-		BCHeightBreakPointPortalV3:  1,  // todo: should update before deploying
+		BCHeightBreakPointPortalV3:  1,                                            // todo: should update before deploying
 	}
 	// END TESTNET
 
@@ -305,7 +307,7 @@ func SetupParam() {
 		EthContractAddressStr:            Testnet2ETHContractAddressStr,
 		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -346,8 +348,8 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    791000, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:     2085,
-		PortalETHContractAddressStr: "",  // todo: update sc address
-		BCHeightBreakPointPortalV3:  8974,  // todo: should update before deploying
+		PortalETHContractAddressStr: "",   // todo: update sc address
+		BCHeightBreakPointPortalV3:  8974, // todo: should update before deploying
 	}
 	// END TESTNET-2
 
@@ -392,7 +394,7 @@ func SetupParam() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},

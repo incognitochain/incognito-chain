@@ -92,6 +92,7 @@ const (
 	PortalTopUpWaitingPortingRequestMetaV3        = 140
 	PortalRequestPortingMetaV3                    = 141
 	PortalRedeemRequestMetaV3                     = 142
+	PortalUnlockOverRateCollateralsMeta           = 143
 
 	// Incognito => Ethereum's SC for portal
 	PortalCustodianWithdrawConfirmMetaV3         = 170
