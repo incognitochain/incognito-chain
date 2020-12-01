@@ -584,7 +584,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		IsBeaconRandomTime:                 isBeaconRandomTime,
 		ActiveShards:                       beaconBestState.ActiveShards,
 		MinShardCommitteeSize:              beaconBestState.MinShardCommitteeSize,
-		ConsensusStateDB:                   beaconBestState.consensusStateDB,
+		ConsensusStateDB:                   beaconBestState.consensusStateDB.Copy(),
 		NumberOfFixedBeaconBlockValidators: NumberOfFixedBeaconBlockValidators,
 		NumberOfFixedShardBlockValidators:  NumberOfFixedShardBlockValidators,
 		MaxShardCommitteeSize:              params.MaxShardCommitteeSize,
