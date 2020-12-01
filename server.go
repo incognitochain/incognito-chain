@@ -703,14 +703,8 @@ func (serverObj Server) Start() {
 		serverObj.rpcServer.Start()
 	}
 
-	if cfg.MiningKeys != "" && cfg.PrivateKey != "" {
-		serverObj.memPool.IsBlockGenStarted = true
-		serverObj.blockChain.SetIsBlockGenStarted(true)
-		// for _, shardPool := range serverObj.shardPool {
-		// 	go shardPool.Start(serverObj.cQuit)
-		// }
-		// go serverObj.beaconPool.Start(serverObj.cQuit)
-	}
+	serverObj.memPool.IsBlockGenStarted = true
+	serverObj.blockChain.SetIsBlockGenStarted(true)
 
 	//go serverObj.blockChain.Synker.Start()
 	go serverObj.syncker.Start()
