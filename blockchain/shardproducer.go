@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -139,7 +140,12 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	// Get Transaction for new block
 	// // startStep = time.Now()
 	blockCreationLeftOver := curView.BlockMaxCreateTime.Nanoseconds() - time.Since(time1).Nanoseconds()
+	start_time := time.Now()
 	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(curView, &tempPrivateKey, shardID, beaconBlocks, blockCreationLeftOver, beaconHeight)
+	t := time.Now()
+	elapsed_time := t.Sub(start_time)
+	fmt.Fprintf(os.Stderr,"\nXXXXXXXXXXXXXXX getTransactionForNewBlock: ", elapsed_time)
+
 	if err != nil {
 		return nil, err
 	}
@@ -273,6 +279,9 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBe
 	txsToAdd, txToRemove, _ := blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreation, beaconHeight, curView)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
+		fmt.Fprintf(os.Stderr,"\n Empty block............................")
+	} else {
+		fmt.Fprintf(os.Stderr,"\n YYYYYYYYYYYY Number of transactions:", len(txsToAdd))
 	}
 	go blockGenerator.txPool.RemoveTx(txToRemove, false)
 	var responseTxsBeacon []metadata.Transaction
@@ -670,7 +679,6 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	startTime := time.Now()
 	sourceTxns := blockGenerator.GetPendingTxsV2(shardID)
 	var elasped int64
-	Logger.log.Info("Number of transaction get from Block Generator: ", len(sourceTxns))
 	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
 		return []metadata.Transaction{}, []metadata.Transaction{}, 0

@@ -67,7 +67,7 @@ if [ "$1" == "shard3-3" ]; then
 fi
 # Beacon
 if [ "$1" == "beacon-0" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXCerQX2RRd8KhPfsFCj2rrBYUx42FZJKgRFcdBfg36Mid3ygKyMn5LSc5LBHsxqapRaN6xMav7bGhA6VtGUzNNYuA9Y78CB5oGkti" --nodemode "auto" --datadir "data/beacon-0" --listen "0.0.0.0:9450" --externaladdress "0.0.0.0:9450" --norpcauth --rpclisten "0.0.0.0:9350" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXCerQX2RRd8KhPfsFCj2rrBYUx42FZJKgRFcdBfg36Mid3ygKyMn5LSc5LBHsxqapRaN6xMav7bGhA6VtGUzNNYuA9Y78CB5oGkti" --nodemode "auto" --datadir "data/beacon-0" --listen "0.0.0.0:9450" --externaladdress "0.0.0.0:9450" --norpcauth --rpclisten "0.0.0.0:9350" --rpcwslisten "0.0.0.0:19350"
 fi
 if [ "$1" == "beacon-1" ]; then
 ./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXYgxipKvTJJfHg7tQhcdmA2R1jPpCPmXg37Xi1VfgrFzWFuNy4U6828q1yfbD7VEdutD63HfVYAqL6U32joXVjqdkfUP52LnNGXda" --nodemode "auto" --datadir "data/beacon-1" --listen "0.0.0.0:9451" --externaladdress "0.0.0.0:9451" --norpcauth --rpclisten "0.0.0.0:9351" --rpcwslisten "0.0.0.0:19351"
@@ -148,5 +148,5 @@ fi
 #fi
 ## Relay node
 if [ "$1" == "relaynode" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --relayshards "0" --datadir "data/relaynode" --listen "0.0.0.0:9463" --externaladdress "0.0.0.0:9463" --norpcauth --rpclisten "0.0.0.0:9363" --rpcwslisten "0.0.0.0:19363" --enablewallet --wallet "wallet3" --walletpassphrase "12345678" --walletautoinit
+./incognito --discoverpeersaddress "0.0.0.0:9330" --relayshards "0" --datadir "data/relaynode" --listen "0.0.0.0:9463" --externaladdress "0.0.0.0:9463" --norpcauth --rpclisten "0.0.0.0:9369" --rpcwslisten "0.0.0.0:19369" --enablewallet --wallet "wallet3" --walletpassphrase "12345678" --walletautoinit
 fi

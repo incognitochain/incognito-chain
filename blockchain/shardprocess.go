@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -454,9 +455,14 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	// Verify Transaction
 	//get beacon height from shard block
 	beaconHeight := shardBlock.Header.BeaconHeight
+	start_time := time.Now()
 	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(beaconHeight), curView); err != nil {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
+	t := time.Now()
+	elapsed_time := t.Sub(start_time)
+	fmt.Fprintf(os.Stderr,"\n\n verifyTransactionFromNewBlock: %v", elapsed_time)
+
 	// Verify Instruction
 	instructions := [][]string{}
 	shardCommittee, err := incognitokey.CommitteeKeyListToString(curView.ShardCommittee)
@@ -987,20 +993,34 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 			listTxs = append(listTxs, tx)
 		}
 	}
-	_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listTxs, beaconHeight, curView)
-	if err != nil {
-		Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
-		for index, tx := range listTxs {
-			if blockchain.config.TempTxPool.HaveTransaction(tx.Hash()) {
-				continue
+	count := 0
+	fmt.Fprintf(os.Stderr,"\n verifyTransactionFromNewBlock- Pool size: %v", blockchain.config.TxPool.GetPoolSize())
+	fmt.Fprintf(os.Stderr,"\n verifyTransactionFromNewBlock- number tx in proposed block: %v", len(listTxs))
+	for index, tx := range listTxs {
+		if !blockchain.config.TxPool.HaveTransaction(tx.Hash()) {
+			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight, curView)
+			if err != nil {
+				Logger.log.Errorf("One by one verify txs at index %d error: %+v", index, err)
+				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err))
 			}
-			_, err1 := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight, curView)
-			if err1 != nil {
-				Logger.log.Errorf("One by one verify txs at index %d error: %+v", index, err1)
-				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err1))
-			}
+		} else {
+			count ++
 		}
 	}
+	fmt.Fprintf(os.Stderr,"\n verifyTransactionFromNewBlock- Total TX already in pool %v ", count)
+	//if err != nil {
+	//	Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
+	//	for index, tx := range listTxs {
+	//		if blockchain.config.TempTxPool.HaveTransaction(tx.Hash()) {
+	//			continue
+	//		}
+	//		_, err1 := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight, curView)
+	//		if err1 != nil {
+	//			Logger.log.Errorf("One by one verify txs at index %d error: %+v", index, err1)
+	//			return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err1))
+	//		}
+	//	}
+	//}
 	return nil
 }
 
