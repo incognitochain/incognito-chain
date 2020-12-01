@@ -114,6 +114,9 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	Logger.Infof("Role changed %+v", rolehash)
 
 	// Registering relay
+	if len(relayShardIDs) == 0 {
+		relayShardIDs = []byte{255}
+	}
 	if len(relayShardIDs) > 0 {
 		nodePK, _ := new(incognitokey.CommitteePublicKey).ToBase58()
 		validator := sub.consensusData.GetOneValidator()
