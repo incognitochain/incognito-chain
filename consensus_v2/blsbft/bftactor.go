@@ -361,17 +361,18 @@ func (e *BLSBFT) enterListenPhase() {
 }
 
 func (e *BLSBFT) enterVotePhase() {
-	e.logger.Info("enter voting phase")
-	if !e.isInTimeFrame() || e.RoundData.State == votePhase {
+	if !e.isInTimeFrame() || e.RoundData.State == votePhase || e.RoundData.Block == nil {
 		return
 	}
+	e.logger.Info("enter voting phase")
 	e.isOngoing = true
 	e.setState(votePhase)
-	e.logger.Info(e.ChainKey, "sending vote...")
 	err := e.sendVote()
 	if err != nil {
 		e.logger.Error(err)
+		return
 	}
+	e.logger.Info(e.ChainKey, "sending vote...")
 }
 
 func (e *BLSBFT) enterNewRound() {
