@@ -124,7 +124,7 @@ func (e *BLSBFT_V3) Start() error {
 				}
 
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
-					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, make(map[string]BFTVote), false, false)
+					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, make(map[string]*BFTVote), false, false)
 					e.receiveBlockByHash[blkHash] = proposeBlockInfo
 					e.Logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
@@ -144,16 +144,16 @@ func (e *BLSBFT_V3) Start() error {
 				}
 
 			case voteMsg := <-e.VoteMessageCh:
-				voteMsg.isValid = 0
+				voteMsg.IsValid = 0
 				if b, ok := e.receiveBlockByHash[voteMsg.BlockHash]; ok { //if receiveblock is already initiated
 					if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
-						b.votes[voteMsg.Validator] = voteMsg // store it
+						b.votes[voteMsg.Validator] = &voteMsg // store it
 						e.Logger.Infof("Receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
 						b.hasNewVote = true
 					}
 				} else {
 					e.receiveBlockByHash[voteMsg.BlockHash] = newBlockInfoForVoteMsg()
-					e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = voteMsg
+					e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
 					e.Logger.Infof("[Monitor] receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
 				}
 				// e.Logger.Infof("receive vote for block %s (%d)", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes))
@@ -328,7 +328,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	errVote := 0
 	for _, vote := range v.votes {
 		dsaKey := []byte{}
-		if vote.isValid == 0 {
+		if vote.IsValid == 0 {
 			for _, c := range v.committees {
 				//e.Logger.Error(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
 				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
@@ -343,10 +343,10 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 				e.Logger.Error("")
 				e.Logger.Error(dsaKey)
 				e.Logger.Error(err)
-				vote.isValid = -1
+				vote.IsValid = -1
 				errVote++
 			} else {
-				vote.isValid = 1
+				vote.IsValid = 1
 				validVote++
 			}
 		} else {
@@ -356,7 +356,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	//e.Logger.Debug(validVote, committees), errVote)
 	v.hasNewVote = false
 	for key, value := range v.votes {
-		if value.isValid == -1 {
+		if value.IsValid == -1 {
 			delete(v.votes, key)
 		}
 	}
@@ -368,7 +368,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 			e.Logger.Error(err)
 			return
 		}
-		aggSig, brigSigs, validatorIdx, err := combineVotes(v.votes, committeeBLSString)
+		aggSig, brigSigs, validatorIdx, err := CombineVotes(v.votes, committeeBLSString)
 		if err != nil {
 			e.Logger.Error(err)
 			return
@@ -429,39 +429,7 @@ func (e *BLSBFT_V3) validateAndVote(
 
 	//if valid then vote
 	for _, userKey := range e.UserKeySet {
-		//if valid then vote
-		var Vote = new(BFTVote)
-		bytelist := []blsmultisig.PublicKey{}
-		selfIdx := 0
-		userBLSPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-		for i, v := range committees {
-			if v.GetMiningKeyBase58(common.BlsConsensus) == userBLSPk {
-				selfIdx = i
-			}
-			bytelist = append(bytelist, v.MiningPubKey[common.BlsConsensus])
-		}
-
-		blsSig, err := userKey.BLSSignData(v.block.Hash().GetBytes(), selfIdx, bytelist)
-		if err != nil {
-			e.Logger.Error(err)
-			return NewConsensusError(UnExpectedError, err)
-		}
-		bridgeSig := []byte{}
-		if metadata.HasBridgeInstructions(v.block.GetInstructions()) {
-			bridgeSig, err = userKey.BriSignData(v.block.Hash().GetBytes())
-			if err != nil {
-				e.Logger.Error(err)
-				return NewConsensusError(UnExpectedError, err)
-			}
-		}
-		Vote.BLS = blsSig
-		Vote.BRI = bridgeSig
-		Vote.BlockHash = v.block.Hash().String()
-
-		userPk := userKey.GetPublicKey()
-		Vote.Validator = userPk.GetMiningKeyBase58(common.BlsConsensus)
-		Vote.PrevBlockHash = v.block.GetPrevHash().String()
-		err = Vote.signVote(&userKey)
+		Vote, err := CreateVote(&userKey, v.block, committees)
 		if err != nil {
 			e.Logger.Error(err)
 			return NewConsensusError(UnExpectedError, err)
@@ -474,12 +442,51 @@ func (e *BLSBFT_V3) validateAndVote(
 		}
 
 		v.isValid = true
-		v.isVoted = true
 		e.voteHistory[v.block.GetHeight()] = v.block
-		e.Logger.Info("sending vote...")
+		e.Logger.Info(e.ChainKey, "sending vote...")
+		go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
 		go e.Node.PushMessageToChain(msg, e.Chain)
 	}
+
 	return nil
+}
+
+func CreateVote(userKey *signatureschemes2.MiningKey, block types.BlockInterface, committees []incognitokey.CommitteePublicKey) (*BFTVote, error) {
+	var Vote = new(BFTVote)
+	bytelist := []blsmultisig.PublicKey{}
+	selfIdx := 0
+	userBLSPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
+	for i, v := range committees {
+		if v.GetMiningKeyBase58(common.BlsConsensus) == userBLSPk {
+			selfIdx = i
+		}
+		bytelist = append(bytelist, v.MiningPubKey[common.BlsConsensus])
+	}
+
+	blsSig, err := userKey.BLSSignData(block.Hash().GetBytes(), selfIdx, bytelist)
+	if err != nil {
+
+		return nil, NewConsensusError(UnExpectedError, err)
+	}
+	bridgeSig := []byte{}
+	if metadata.HasBridgeInstructions(block.GetInstructions()) {
+		bridgeSig, err = userKey.BriSignData(block.Hash().GetBytes())
+		if err != nil {
+			return nil, NewConsensusError(UnExpectedError, err)
+		}
+	}
+	Vote.BLS = blsSig
+	Vote.BRI = bridgeSig
+	Vote.BlockHash = block.Hash().String()
+
+	userPk := userKey.GetPublicKey()
+	Vote.Validator = userPk.GetMiningKeyBase58(common.BlsConsensus)
+	Vote.PrevBlockHash = block.GetPrevHash().String()
+	err = Vote.signVote(userKey)
+	if err != nil {
+		return nil, NewConsensusError(UnExpectedError, err)
+	}
+	return Vote, nil
 }
 
 func (e *BLSBFT_V3) proposeBlock(

@@ -8,7 +8,7 @@ import (
 type ProposeBlockInfo struct {
 	block      types.BlockInterface
 	committees []incognitokey.CommitteePublicKey
-	votes      map[string]BFTVote //pk->BFTVote
+	votes      map[string]*BFTVote //pk->BFTVote
 	isValid    bool
 	hasNewVote bool
 	isVoted    bool
@@ -18,7 +18,7 @@ type ProposeBlockInfo struct {
 func newProposeBlockForProposeMsg(
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
-	votes map[string]BFTVote,
+	votes map[string]*BFTVote,
 	isValid, hasNewVote bool,
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
@@ -39,7 +39,7 @@ func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
 
 func newBlockInfoForVoteMsg() *ProposeBlockInfo {
 	return &ProposeBlockInfo{
-		votes:      make(map[string]BFTVote),
+		votes:      make(map[string]*BFTVote),
 		hasNewVote: true,
 	}
 }
