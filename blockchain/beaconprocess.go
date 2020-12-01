@@ -187,11 +187,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
-	err2 = newBestState.storeCommitteeStateWithPreviousState(beaconBlock.Body.Instructions)
-	if err2 != nil {
-		return err2
-	}
-
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err2 := newBestState.beaconCommitteeEngine.Commit(hashes); err2 != nil {
 		return err2
@@ -653,6 +648,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return err
 	}
 
+	err = statedb.DeleteStakerInfo(newBestState.consensusStateDB, committeeChange.RemovedStakers())
+	if err != nil {
+		return err
+	}
+
 	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateAdded)
 	if err != nil {
 		return err
@@ -998,27 +998,6 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 		)
 		if err != nil {
 			return err
-		}
-	}
-
-	return nil
-}
-
-func (beaconBestState *BeaconBestState) storeCommitteeStateWithPreviousState(
-	instructions [][]string,
-) error {
-
-	for _, inst := range instructions {
-		switch inst[0] {
-		case instruction.RETURN_ACTION:
-			returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(inst)
-			if err != nil {
-				return err
-			}
-			err = statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, returnStakingIns.PublicKeysStruct)
-			if err != nil {
-				return err
-			}
 		}
 	}
 

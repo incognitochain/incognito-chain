@@ -688,6 +688,7 @@ func (b *BeaconCommitteeStateV2) processAfterSwap(
 				outPublicKey,
 				stakerInfo,
 			)
+			newCommitteeChange.RemovedStaker = append(newCommitteeChange.RemovedStaker, outPublicKey)
 			if err != nil {
 				return newCommitteeChange, returnStakingInstruction, err
 			}
@@ -746,7 +747,7 @@ func (b *BeaconCommitteeStateV2) processUnstakeInstruction(
 			if err != nil {
 				return newCommitteeChange, returnStakingInstruction, errors.New("Can't find staker info")
 			}
-			newCommitteeChange.Unstake = append(newCommitteeChange.Unstake, publicKey)
+			newCommitteeChange.RemovedStaker = append(newCommitteeChange.RemovedStaker, publicKey)
 		}
 	}
 

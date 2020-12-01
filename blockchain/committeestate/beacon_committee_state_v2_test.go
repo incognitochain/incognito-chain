@@ -1052,7 +1052,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 
 	committeeChangeProcessUnstakeInstruction := NewCommitteeChange()
 	committeeChangeProcessUnstakeInstruction.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{*incKey0}
-	committeeChangeProcessUnstakeInstruction.Unstake = []string{key0}
+	committeeChangeProcessUnstakeInstruction.RemovedStaker = []string{key0}
 
 	statedb.StoreStakerInfo(
 		sDB,
@@ -2450,7 +2450,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 			},
 			want: &CommitteeChange{
 				NextEpochShardCandidateRemoved: []incognitokey.CommitteePublicKey{*incKey},
-				Unstake:                        []string{key},
+				RemovedStaker:                  []string{key},
 			},
 			want1: instruction.NewReturnStakeInsWithValue(
 				[]string{key},
@@ -2543,7 +2543,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				NextEpochShardCandidateRemoved: []incognitokey.CommitteePublicKey{
 					*incKey, *incKey2, *incKey5, *incKey6,
 				},
-				Unstake: []string{key, key2, key5, key6},
+				RemovedStaker: []string{key, key2, key5, key6},
 			},
 			want1: &instruction.ReturnStakeInstruction{
 				PublicKeys: []string{key, key2, key5, key6},
@@ -2834,7 +2834,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	committeeChangeUnstakeAssign2.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
 		*incKey6,
 	}
-	committeeChangeUnstakeAssign2.Unstake = []string{
+	committeeChangeUnstakeAssign2.RemovedStaker = []string{
 		key0,
 	}
 	committeeChangeUnstakeAssign2.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{
@@ -2846,7 +2846,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	committeeChangeUnstakeAssign3.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
 		*incKey6,
 	}
-	committeeChangeUnstakeAssign3.Unstake = []string{
+	committeeChangeUnstakeAssign3.RemovedStaker = []string{
 		key0,
 	}
 	committeeChangeUnstakeAssign3.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{
@@ -2895,7 +2895,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 		*incKey0,
 	}
 
-	committeeChangeUnstakeAndRandomTime.Unstake = []string{key0}
+	committeeChangeUnstakeAndRandomTime.RemovedStaker = []string{key0}
 	committeeChangeUnstakeAndRandomTime2 := NewCommitteeChange()
 	committeeChangeUnstakeAndRandomTime2.StopAutoStake = []string{key0}
 
