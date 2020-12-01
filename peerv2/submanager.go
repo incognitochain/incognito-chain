@@ -114,21 +114,22 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	Logger.Infof("Role changed %+v", rolehash)
 
 	// Registering relay
-	if len(relayShardIDs) > 0 {
-		nodePK, _ := new(incognitokey.CommitteePublicKey).ToBase58()
-		validator := sub.consensusData.GetOneValidator()
-		if validator != nil {
-			nodePK = validator.MiningKey.GetPublicKeyBase58()
-		}
-		newTopics, _, err = sub.registerToProxy(
-			nodePK,
-			"",
-			"",
-			relayShardIDs,
-		)
-		if err != nil {
-			return err
-		}
+	if len(relayShardIDs) == 0 {
+		relayShardIDs = []byte{255}
+	}
+	nodePK, _ := new(incognitokey.CommitteePublicKey).ToBase58()
+	validator := sub.consensusData.GetOneValidator()
+	if validator != nil {
+		nodePK = validator.MiningKey.GetPublicKeyBase58()
+	}
+	newTopics, _, err = sub.registerToProxy(
+		nodePK,
+		"",
+		"",
+		relayShardIDs,
+	)
+	if err != nil {
+		return err
 	}
 
 	// Registering mining
