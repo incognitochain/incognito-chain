@@ -54,13 +54,11 @@ func (blockchain *BlockChain) processPortalUnlockOverRateCollaterals(
 		)
 
 		if err != nil {
-			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
+			Logger.log.Errorf("ERROR: Save UnlockOverRateCollaterals error: %+v", err)
 			return nil
 		}
 
 		currentPortalState.UnlockOverRateCollaterals[unlockOverRateCollateralsContent.TxReqID.String()] = newUnlockOverRateCollaterals
-
-		Logger.log.Infof("Portal exchange rates, exchange rates request: total exchange rate request %v", len(currentPortalState.ExchangeRatesRequests))
 
 	case common.PortalCusUnlockOverRateCollateralsRejectedChainStatus:
 		//save db
