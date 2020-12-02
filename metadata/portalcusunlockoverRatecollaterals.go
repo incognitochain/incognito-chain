@@ -23,20 +23,15 @@ type PortalUnlockOverRateCollateralsAction struct {
 	ShardID byte
 }
 
-type UnlockOverRateCollateralsInfo struct {
-	PTokenID string
-	Rate     uint64
-}
-
 type UnlockOverRateCollateralsRequestStatus struct {
 	Status              byte
 	CustodianAddressStr string
 	TokenID             string
-	UnlockedAmount      uint64
+	UnlockedAmounts     map[string]uint64
 }
 
-func NewUnlockOverRateCollateralsRequestStatus(status byte, custodianAddr string, tokenID string, unlockAmount uint64) *UnlockOverRateCollateralsRequestStatus {
-	return &UnlockOverRateCollateralsRequestStatus{Status: status, CustodianAddressStr: custodianAddr, TokenID: tokenID, UnlockedAmount: unlockAmount}
+func NewUnlockOverRateCollateralsRequestStatus(status byte, custodianAddr string, tokenID string, unlockAmount map[string]uint64) *UnlockOverRateCollateralsRequestStatus {
+	return &UnlockOverRateCollateralsRequestStatus{Status: status, CustodianAddressStr: custodianAddr, TokenID: tokenID, UnlockedAmounts: unlockAmount}
 }
 
 func NewPortalUnlockOverRateCollaterals(metaType int, custodianAddr string, tokenID string) (*PortalUnlockOverRateCollaterals, error) {
@@ -56,7 +51,7 @@ type PortalUnlockOverRateCollateralsContent struct {
 	CustodianAddressStr string
 	TokenID             string
 	TxReqID             common.Hash
-	UnlockedAmount      uint64
+	UnlockedAmounts     map[string]uint64
 }
 
 func (portalUnlockCs PortalUnlockOverRateCollaterals) ValidateTxWithBlockChain(

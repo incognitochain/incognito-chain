@@ -274,6 +274,20 @@ func StoreBulkFinalExchangeRatesState(
 	return nil
 }
 
+//======================  Custodian unlock over rate collaterals  ======================
+func StoreBulkUnlockOverRateCollateralsState(
+	stateDB *StateDB,
+	unlockOverRateCollaterals map[string]*UnlockOverRateCollaterals) error {
+	for _, value := range unlockOverRateCollaterals {
+		key := GeneratePortalUnlockOverRateCollateralsStateObjectKey()
+		err := stateDB.SetStateObject(PortalUnlockOverRateCollaterals, key, value)
+		if err != nil {
+			return NewStatedbError(StorePortalUnlockOverRateCollateralsError, err)
+		}
+	}
+	return nil
+}
+
 //======================  Liquidation  ======================
 func StorePortalLiquidationCustodianRunAwayStatus(stateDB *StateDB, redeemID string, custodianIncognitoAddress string, statusContent []byte) error {
 	statusType := PortalLiquidateCustodianRunAwayPrefix()

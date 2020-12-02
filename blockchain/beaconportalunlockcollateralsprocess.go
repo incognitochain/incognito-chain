@@ -33,17 +33,28 @@ func (blockchain *BlockChain) processPortalUnlockOverRateCollaterals(
 	case common.PortalCusUnlockOverRateCollateralsAcceptedChainStatus:
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(unlockOverRateCollateralsContent.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
-		err = updateCustodianStateAfterReqUnlockCollateralV3(currentPortalState.CustodianPoolState[custodianStateKeyStr], unlockOverRateCollateralsContent.UnlockedAmount, unlockOverRateCollateralsContent.TokenID, portalParams, currentPortalState)
+		listTokensWithValue := unlockOverRateCollateralsContent.UnlockedAmounts
+		unlockPrvAmount := listTokensWithValue[common.PRVIDStr]
+		delete(listTokensWithValue, common.PRVIDStr)
+		err = updateCustodianStateUnlockOverRateCollaterals(currentPortalState.CustodianPoolState[custodianStateKeyStr], unlockPrvAmount, listTokensWithValue, unlockOverRateCollateralsContent.TokenID)
 		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while updateCustodianStateAfterReqUnlockCollateralV3: %+v", err)
+			Logger.log.Errorf("ERROR: an error occurred while updateCustodianStateUnlockOverRateCollaterals: %+v", err)
 			return nil
 		}
+
+		newUnlockOverRateCollateralsRequest := statedb.NewUnlockOverRateCollateralsWithValue(
+			unlockOverRateCollateralsContent.CustodianAddressStr,
+			unlockOverRateCollateralsContent.TokenID,
+			unlockOverRateCollateralsContent.UnlockedAmounts,
+		)
+		currentPortalState.UnlockOverRateCollaterals[unlockOverRateCollateralsContent.TxReqID.String()] = newUnlockOverRateCollateralsRequest
+
 		//save db
 		newUnlockOverRateCollaterals := metadata.NewUnlockOverRateCollateralsRequestStatus(
 			common.PortalUnlockOverRateCollateralsAcceptedStatus,
 			unlockOverRateCollateralsContent.CustodianAddressStr,
 			unlockOverRateCollateralsContent.TokenID,
-			unlockOverRateCollateralsContent.UnlockedAmount,
+			unlockOverRateCollateralsContent.UnlockedAmounts,
 		)
 
 		newUnlockOverRateCollateralsStatusBytes, _ := json.Marshal(newUnlockOverRateCollaterals)
@@ -58,15 +69,13 @@ func (blockchain *BlockChain) processPortalUnlockOverRateCollaterals(
 			return nil
 		}
 
-		currentPortalState.UnlockOverRateCollaterals[unlockOverRateCollateralsContent.TxReqID.String()] = newUnlockOverRateCollaterals
-
 	case common.PortalCusUnlockOverRateCollateralsRejectedChainStatus:
 		//save db
 		newExchangeRates := metadata.NewUnlockOverRateCollateralsRequestStatus(
 			common.PortalUnlockOverRateCollateralsRejectedStatus,
 			unlockOverRateCollateralsContent.CustodianAddressStr,
 			unlockOverRateCollateralsContent.TokenID,
-			uint64(0),
+			map[string]uint64{},
 		)
 
 		newExchangeRatesStatusBytes, _ := json.Marshal(newExchangeRates)

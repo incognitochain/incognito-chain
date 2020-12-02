@@ -14,7 +14,7 @@ import (
 func buildReqUnlockOverRateCollateralsInst(
 	custodianAddresStr string,
 	tokenID string,
-	unlockedAmount uint64,
+	unlockedAmounts map[string]uint64,
 	metaType int,
 	shardID byte,
 	status string,
@@ -22,7 +22,7 @@ func buildReqUnlockOverRateCollateralsInst(
 	unlockOverRateCollateralsContent := metadata.PortalUnlockOverRateCollateralsContent{
 		CustodianAddressStr: custodianAddresStr,
 		TokenID:             tokenID,
-		UnlockedAmount:      unlockedAmount,
+		UnlockedAmounts:     unlockedAmounts,
 	}
 	unlockOverRateCollateralsContentBytes, _ := json.Marshal(unlockOverRateCollateralsContent)
 	return []string{
@@ -81,7 +81,7 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 	rejectInst := buildReqUnlockOverRateCollateralsInst(
 		actionData.Meta.CustodianAddressStr,
 		actionData.Meta.TokenID,
-		uint64(0),
+		map[string]uint64{},
 		metaType,
 		shardID,
 		common.PortalCusUnlockOverRateCollateralsRejectedChainStatus,
@@ -130,23 +130,22 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 	amountToUnlock := big.NewInt(0).Sub(new(big.Int).SetUint64(totalAmountInUSD), minHoldUnlockedAmountInBigInt).Uint64()
-	err = updateCustodianStateAfterReqUnlockCollateralV3(custodianState, amountToUnlock, actionData.Meta.TokenID, portalParams, currentPortalState)
+	listUnlockTokens, err := updateCustodianStateAfterReqUnlockCollateralV3(custodianState, amountToUnlock, actionData.Meta.TokenID, portalParams, currentPortalState)
 	if err != nil {
 		Logger.log.Errorf("Error when converting holding public token to prv: %v", err)
 		return [][]string{rejectInst}, nil
 	}
 
-	unlockCollateralsResult := metadata.NewUnlockOverRateCollateralsRequestStatus(
-		common.PortalUnlockOverRateCollateralsAcceptedStatus,
+	unlockCollateralsResult := statedb.NewUnlockOverRateCollateralsWithValue(
 		actionData.Meta.CustodianAddressStr,
 		actionData.Meta.TokenID,
-		amountToUnlock,
+		listUnlockTokens,
 	)
 	if currentPortalState.UnlockOverRateCollaterals != nil {
 		currentPortalState.UnlockOverRateCollaterals[actionData.TxReqID.String()] = unlockCollateralsResult
 	} else {
 		//new object
-		newUnlockOverRateCollaterals := make(map[string]*metadata.UnlockOverRateCollateralsRequestStatus)
+		newUnlockOverRateCollaterals := make(map[string]*statedb.UnlockOverRateCollaterals)
 		newUnlockOverRateCollaterals[actionData.TxReqID.String()] = unlockCollateralsResult
 
 		currentPortalState.UnlockOverRateCollaterals = newUnlockOverRateCollaterals
@@ -155,7 +154,7 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 	inst := buildReqUnlockOverRateCollateralsInst(
 		actionData.Meta.CustodianAddressStr,
 		actionData.Meta.TokenID,
-		amountToUnlock,
+		listUnlockTokens,
 		metaType,
 		shardID,
 		common.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,

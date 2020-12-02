@@ -25,9 +25,8 @@ type CurrentPortalState struct {
 	// it used for calculate reward for custodian at the end epoch
 	LockedCollateralForRewards *statedb.LockedCollateralState
 	//Store temporary exchange rates requests
-	ExchangeRatesRequests map[string]*metadata.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
-	// Store temporary custodian unlock over rate collaterals
-	UnlockOverRateCollaterals map[string]*metadata.UnlockOverRateCollateralsRequestStatus
+	ExchangeRatesRequests     map[string]*metadata.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
+	UnlockOverRateCollaterals map[string]*statedb.UnlockOverRateCollaterals   // key : hash(TxID)
 }
 
 type CustodianStateSlice struct {
@@ -117,6 +116,10 @@ func storePortalStateToDB(
 		return err
 	}
 	err = statedb.StoreLockedCollateralState(stateDB, currentPortalState.LockedCollateralForRewards)
+	if err != nil {
+		return err
+	}
+	err = statedb.StoreBulkUnlockOverRateCollateralsState(stateDB, currentPortalState.UnlockOverRateCollaterals)
 	if err != nil {
 		return err
 	}
@@ -564,11 +567,12 @@ func updateCustodianStateAfterReqUnlockCollateral(custodianState *statedb.Custod
 }
 
 // updateCustodianStateAfterReqUnlockCollateralV3 updates custodian state (amount collaterals) when custodian returns redeemAmount public token to user
-func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.CustodianState, unlockedAmount uint64, tokenID string, portalParams PortalParams, portalState *CurrentPortalState) error {
+func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.CustodianState, unlockedAmount uint64, tokenID string, portalParams PortalParams, portalState *CurrentPortalState) (map[string]uint64, error) {
 	lockedTokenAmounts := custodianState.GetLockedTokenCollaterals()
 	lockedPrvAmount := custodianState.GetLockedAmountCollateral()
+	tokenAmountsUnlocked := make(map[string]uint64, 0)
 	if lockedTokenAmounts == nil && lockedPrvAmount == nil {
-		return errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Locked amount is nil")
+		return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Locked amount is nil")
 	}
 
 	// convert free collaterals of custodians to usdt to compare and sort descending
@@ -576,12 +580,12 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 	tokenAmountListInWaitingPoring := GetTotalLockedCollateralAmountInWaitingPortingsV3(portalState, custodianState, tokenID)
 	if lockedPrvAmount != nil && lockedPrvAmount[tokenID] > 0 {
 		if lockedPrvAmount[tokenID] < tokenAmountListInWaitingPoring[common.PRVIDStr] {
-			return errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Locked amount must greater then amount in waiting porting")
+			return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Locked amount must greater then amount in waiting porting")
 		}
 		lockedPrvAmount[tokenID] -= tokenAmountListInWaitingPoring[common.PRVIDStr]
 		tokenAmtInUSD, err := convertRateTool.ConvertToUSD(common.PRVIDStr, lockedPrvAmount[tokenID])
 		if err != nil {
-			return errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Can not convert prv to usd")
+			return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Can not convert prv to usd")
 		}
 		prvCollateralAmountToUpdate := uint64(0)
 		if unlockedAmount >= tokenAmtInUSD {
@@ -592,11 +596,12 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 			unlockedAmount = 0
 		}
 		if err != nil || prvCollateralAmountToUpdate > lockedPrvAmount[tokenID] {
-			return errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Can not convert usd to collateral prv")
+			return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Can not convert usd to collateral prv")
 		}
 
 		// update collateral prv token
 		lockedPrvAmount[tokenID] -= prvCollateralAmountToUpdate
+		tokenAmountsUnlocked[common.PRVIDStr] = prvCollateralAmountToUpdate
 		custodianState.SetLockedAmountCollateral(lockedPrvAmount)
 		// update free prv token
 		custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + prvCollateralAmountToUpdate)
@@ -606,7 +611,7 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 
 	if unlockedAmount > 0 {
 		if lockedTokenAmounts == nil {
-			return errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] can not unlock nil tokens")
+			return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] can not unlock nil tokens")
 		}
 		// lock other token collaterals
 		sortedTokenIDs := []string{}
@@ -617,13 +622,13 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 
 		for _, tokenCollateralID := range sortedTokenIDs {
 			if lockedTokenAmounts[tokenID][tokenCollateralID] < tokenAmountListInWaitingPoring[tokenCollateralID] {
-				return errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Locked amount must greater then amount in waiting porting")
+				return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Locked amount must greater then amount in waiting porting")
 			}
 			lockedTokenAmounts[tokenID][tokenCollateralID] -= tokenAmountListInWaitingPoring[tokenCollateralID]
 			tokenValueLocked, err := convertRateTool.ConvertToUSD(tokenCollateralID, lockedTokenAmounts[tokenID][tokenCollateralID])
 			if err != nil {
 				Logger.log.Errorf("[portal-updateCustodianStateAfterReqUnlockCollateral] got error %v", err.Error())
-				return errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] got error while get convert from collateral to USDT ")
+				return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] got error while get convert from collateral to USDT ")
 			}
 			tokenCollateralAmountToUpdate := uint64(0)
 			if unlockedAmount >= tokenValueLocked {
@@ -634,9 +639,10 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 				unlockedAmount = 0
 			}
 			if err != nil || tokenCollateralAmountToUpdate > lockedTokenAmounts[tokenID][tokenCollateralID] {
-				return errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Can not convert usd to collateral token")
+				return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Can not convert usd to collateral token")
 			}
 			lockedTokenAmounts[tokenID][tokenCollateralID] -= tokenCollateralAmountToUpdate
+			tokenAmountsUnlocked[tokenCollateralID] = tokenCollateralAmountToUpdate
 			freeTokenCollaterals[tokenCollateralID] += tokenCollateralAmountToUpdate
 
 			if unlockedAmount == 0 {
@@ -645,12 +651,12 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 		}
 
 		if unlockedAmount > 0 {
-			return errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] not enough collateral tokens to unlock for custodian")
+			return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] not enough collateral tokens to unlock for custodian")
 		}
 		custodianState.SetLockedTokenCollaterals(lockedTokenAmounts)
 		custodianState.SetFreeTokenCollaterals(freeTokenCollaterals)
 	}
-	return nil
+	return tokenAmountsUnlocked, nil
 }
 
 // CalUnlockCollateralAmount returns unlock collateral amount by percentage of redeem amount
@@ -987,6 +993,11 @@ func updateCustodianStateAfterLiquidateCustodianV3(custodianState *statedb.Custo
 	}
 
 	return nil
+}
+
+func updateCustodianStateUnlockOverRateCollaterals(
+	custodianState *statedb.CustodianState, unlockedAmount uint64, unlockedTokensAmount map[string]uint64, tokenID string) error {
+	return updateCustodianStateAfterExpiredPortingReq(custodianState, unlockedAmount, unlockedTokensAmount, tokenID)
 }
 
 func updateCustodianStateAfterExpiredPortingReq(

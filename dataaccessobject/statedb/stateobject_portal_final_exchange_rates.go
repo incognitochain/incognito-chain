@@ -182,6 +182,6 @@ func (f FinalExchangeRatesStateObject) IsDeleted() bool {
 
 // value is either default or nil
 func (f FinalExchangeRatesStateObject) IsEmpty() bool {
-	temp := NewPDEStatusState()
+	temp := NewFinalExchangeRatesState()
 	return reflect.DeepEqual(temp, f.finalExchangeRatesState) || f.finalExchangeRatesState == nil
 }
