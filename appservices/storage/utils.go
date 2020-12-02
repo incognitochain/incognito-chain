@@ -373,13 +373,12 @@ func StoreLatestShardFinalState(ctx context.Context, shard *data.Shard) error {
 	}
 
 	if len(shard.TokenState) > 0 {
-		tokenStates := GetTokenStateFromShardState(shard)
-		for _, token := range tokenStates {
-			if err := GetDBDriver(MONGODB).GetTokenStateStorer().StoreTokenState(ctx, token); err != nil {
+		tokenState := GetTokenStateFromShardState(shard)
+		if err := GetDBDriver(MONGODB).GetTokenStateStorer().StoreTokenState(ctx, tokenState); err != nil {
 				panic(err)
 				return err
-			}
 		}
+
 	}
 	return nil
 }
@@ -559,14 +558,16 @@ func getCommitmentFromShardState(shard *data.Shard) []model.Commitment {
 	return commitments
 }
 
-func GetTokenStateFromShardState(shard *data.Shard) []model.TokenState {
-	tokenStates := make([]model.TokenState, 0, len(shard.TokenState))
+func GetTokenStateFromShardState(shard *data.Shard) model.TokenState {
+	tokenState := model.TokenState{
+		ShardID:     shard.ShardID,
+		ShardHash:   shard.BlockHash,
+		ShardHeight: shard.Height,
+	}
+	tokenInformations := make([]model.TokenInformation, 0, len(shard.TokenState))
 
 	for _, token:= range shard.TokenState {
-		tokenStates = append(tokenStates, model.TokenState{
-			ShardID:        shard.ShardID,
-			ShardHash:      shard.BlockHash,
-			ShardHeight:    shard.Height,
+		tokenInformations = append(tokenInformations, model.TokenInformation{
 			TokenID:        token.TokenID,
 			PropertyName:   token.PropertyName,
 			PropertySymbol: token.PropertySymbol,
@@ -578,5 +579,6 @@ func GetTokenStateFromShardState(shard *data.Shard) []model.TokenState {
 			Txs:            token.Txs,
 		})
 	}
-	return tokenStates
+	tokenState.TokenInformations = tokenInformations
+	return tokenState
 }

@@ -121,6 +121,10 @@ type TokenState struct {
 	ShardID		   byte
 	ShardHash 			string `json:"ShardHash"`
 	ShardHeight 		uint64 `json:"ShardHeight"`
+	TokenInformations   []TokenInformation `json:"TokenInformation"`
+}
+
+type TokenInformation struct {
 	TokenID        string
 	PropertyName   string
 	PropertySymbol string
