@@ -1,4 +1,4 @@
-package instructions
+package portalprocess
 
 import (
 	bMeta "github.com/incognitochain/incognito-chain/basemeta"
@@ -12,7 +12,7 @@ type relayingProcessor interface {
 	getActions() [][]string
 	putAction(action []string)
 	buildRelayingInst(
-		blockchain *BlockChain,
+		bc bMeta.ChainRetriever,
 		relayingHeaderAction portalMeta.RelayingHeaderAction,
 		relayingState *RelayingHeaderChainState,
 	) [][]string
@@ -30,28 +30,40 @@ type relayingProcessor interface {
 type portalInstructionProcessor interface {
 	getActions() map[byte][][]string
 	putAction(action []string, shardID byte)
-	prepareDataBeforeProcessing(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error)
+	// get necessary db from stateDB to verify instructions when producing new block
+	prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error)
+	// validate and create new instructions in new beacon blocks
 	buildNewInsts(
 		bc bMeta.ChainRetriever,
 		contentStr string,
 		shardID byte,
 		currentPortalState *CurrentPortalState,
 		beaconHeight uint64,
+		shardHeights map[byte]uint64,
 		portalParams portal.PortalParams,
 		optionalData map[string]interface{},
 	) ([][]string, error)
+	// process instructions that confirmed in beacon blocks
+	processInsts(
+		stateDB *statedb.StateDB,
+		beaconHeight uint64,
+		instructions []string,
+		currentPortalState *CurrentPortalState,
+		portalParams portal.PortalParams,
+		updatingInfoByTokenID map[common.Hash]bMeta.UpdatingInfo,
+	) error
 }
 
 type portalInstProcessor struct {
 	actions map[byte][][]string
 }
 
-type portalManager struct {
-	relayingChains     map[int]relayingProcessor
-	portalInstructions map[int]portalInstructionProcessor
+type PortalManager struct {
+	RelayingChains     map[int]relayingProcessor
+	PortalInstructions map[int]portalInstructionProcessor
 }
 
-func NewPortalManager() *portalManager {
+func NewPortalManager() *PortalManager {
 	rbnbChain := &relayingBNBChain{
 		relayingChain: &relayingChain{
 			actions: [][]string{},
@@ -162,10 +174,30 @@ func NewPortalManager() *portalManager {
 				actions: map[byte][][]string{},
 			},
 		},
+		bMeta.PortalPickMoreCustodianForRedeemMeta: &portalPickMoreCustodianForRedeemProcessor{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
+		bMeta.PortalLiquidateCustodianMetaV3: &portalLiquidationCustodianRunAwayProcessor{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
+		bMeta.PortalExpiredWaitingPortingReqMeta: &portalExpiredWaitingPortingProcessor{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
+		bMeta.PortalLiquidateByRatesMetaV3: &portalLiquidationByRatesProcessor{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
 	}
 
-	return &portalManager{
-		relayingChains:     relayingChainProcessor,
-		portalInstructions: portalInstProcessor,
+	return &PortalManager{
+		RelayingChains:     relayingChainProcessor,
+		PortalInstructions: portalInstProcessor,
 	}
 }

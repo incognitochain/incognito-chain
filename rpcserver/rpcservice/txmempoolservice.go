@@ -1,8 +1,8 @@
 package rpcservice
 
 import (
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -29,7 +29,7 @@ func (txMemPoolService TxMemPoolService) GetNumberOfTxsInMempool() int {
 	return len(txMemPoolService.TxMemPool.ListTxs())
 }
 
-func (txMemPoolService TxMemPoolService) MempoolEntry(txIDString string) (metadata.Transaction, byte, *RPCError) {
+func (txMemPoolService TxMemPoolService) MempoolEntry(txIDString string) (basemeta.Transaction, byte, *RPCError) {
 	txID, err := common.Hash{}.NewHashFromStr(txIDString)
 	if err != nil {
 		Logger.log.Debugf("handleMempoolEntry result: nil %+v", err)
@@ -57,7 +57,7 @@ func (txMemPoolService *TxMemPoolService) RemoveTxInMempool(txIDString string) (
 	if err != nil {
 		return false, NewRPCError(GeTxFromPoolError, err)
 	}
-	txMemPoolService.TxMemPool.RemoveTx([]metadata.Transaction{tempTx}, false)
+	txMemPoolService.TxMemPool.RemoveTx([]basemeta.Transaction{tempTx}, false)
 	txMemPoolService.TxMemPool.TriggerCRemoveTxs(tempTx)
 
 	return true, nil

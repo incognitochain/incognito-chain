@@ -1,4 +1,4 @@
-package instructions
+package portalprocess
 
 import (
 	"encoding/json"
@@ -29,15 +29,6 @@ type CurrentPortalState struct {
 type CustodianStateSlice struct {
 	Key   string
 	Value *statedb.CustodianState
-}
-
-type RedeemMemoBNB struct {
-	RedeemID                  string `json:"RedeemID"`
-	CustodianIncognitoAddress string `json:"CustodianIncognitoAddress"`
-}
-
-type PortingMemoBNB struct {
-	PortingID string `json:"PortingID"`
 }
 
 func InitCurrentPortalStateFromDB(
@@ -538,10 +529,7 @@ func pickupCustodianForRedeem(redeemAmount uint64, tokenID string, portalState *
 	return nil, errors.New("Not enough amount public token to return user")
 }
 
-// ConvertIncPBNBAmountToExternalBNBAmount converts amount in inc chain (decimal 9) to amount in bnb chain (decimal 8)
-func ConvertIncPBNBAmountToExternalBNBAmount(incPBNBAmount int64) int64 {
-	return incPBNBAmount / 10 // incPBNBAmount / 1^9 * 1^8
-}
+
 
 // updateCustodianStateAfterReqUnlockCollateral updates custodian state (amount collaterals) when custodian returns redeemAmount public token to user
 func updateCustodianStateAfterReqUnlockCollateral(custodianState *statedb.CustodianState, unlockedAmount uint64, tokenID string) error {
@@ -1185,7 +1173,7 @@ func updateCurrentPortalStateAfterLiquidationByRatesV3(
 	currentPortalState.LiquidationPool[liquidationPoolKey.String()] = liquidationPool
 }
 
-func getTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB) (uint64, error) {
+func GetTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB) (uint64, error) {
 	currentPortalState, err := InitCurrentPortalStateFromDB(featureStateDB)
 	if err != nil {
 		return 0, nil

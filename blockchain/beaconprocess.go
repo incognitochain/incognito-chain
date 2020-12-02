@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	"github.com/incognitochain/incognito-chain/portal/portalprocess"
 	"reflect"
 	"sort"
 	"strconv"
@@ -374,7 +375,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	// Get Reward Instruction By Epoch
 	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
 		featureStateDB := curView.GetBeaconFeatureStateDB()
-		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
+		totalLockedCollateral, err := portalprocess.GetTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {
 			return NewBlockChainError(GetTotalLockedCollateralError, err)
 		}

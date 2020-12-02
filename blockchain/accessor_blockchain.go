@@ -342,20 +342,20 @@ func (blockchain *BlockChain) GetBestStateBeaconFeatureStateDBByHeight(height ui
 	return statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(db))
 }
 
-func (blockchain *BlockChain) GetBNBChainID() string {
-	return blockchain.GetConfig().ChainParams.BNBRelayingHeaderChainID
+func (blockchain *BlockChain) GetBNBChainID(beaconHeight uint64) string {
+	return blockchain.GetPortalParams(0).RelayingParams.BNBRelayingHeaderChainID
 }
 
-func (blockchain *BlockChain) GetBTCChainID() string {
-	return blockchain.GetConfig().ChainParams.BTCRelayingHeaderChainID
+func (blockchain *BlockChain) GetBTCChainID(beaconHeight uint64) string {
+	return blockchain.GetPortalParams(beaconHeight).RelayingParams.BTCRelayingHeaderChainID
 }
 
 func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
 	return blockchain.GetConfig().BTCChain
 }
 
-func (blockchain *BlockChain) GetPortalFeederAddress() string {
-	return blockchain.GetConfig().ChainParams.PortalFeederAddress
+func (blockchain *BlockChain) GetPortalFeederAddress(beaconHeight uint64) string {
+	return blockchain.GetPortalParams(beaconHeight).PortalFeederAddress
 }
 
 func (blockchain *BlockChain) GetBeaconRootsHashFromBlockHeight(height uint64) (*BeaconRootHash, error) {
@@ -431,10 +431,11 @@ func (s *BlockChain) FetchConfirmBeaconBlockByHeight(height uint64) (*BeaconBloc
 func (blockchain *BlockChain) GetBNBHeader(
 	blockHeight int64,
 ) (*types.Header, error) {
+	portalRelayingParams := blockchain.GetPortalParams(0).RelayingParams
 	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
-		blockchain.GetConfig().ChainParams.BNBFullNodeProtocol,
-		blockchain.GetConfig().ChainParams.BNBFullNodeHost,
-		blockchain.GetConfig().ChainParams.BNBFullNodePort,
+		portalRelayingParams.BNBFullNodeProtocol,
+		portalRelayingParams.BNBFullNodeHost,
+		portalRelayingParams.BNBFullNodePort,
 	)
 	bnbClient := client.NewHTTP(bnbFullNodeAddress, "/websocket")
 	result, err := bnbClient.Block(&blockHeight)
@@ -461,10 +462,12 @@ func (blockchain *BlockChain) GetBNBDataHash(
 
 // GetBNBHeader calls RPC to fullnode bnb to get latest bnb block height
 func (blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
+	portalRelayingParams := blockchain.GetPortalParams(0).RelayingParams
 	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
-		blockchain.GetConfig().ChainParams.BNBFullNodeProtocol,
-		blockchain.GetConfig().ChainParams.BNBFullNodeHost,
-		blockchain.GetConfig().ChainParams.BNBFullNodePort)
+		portalRelayingParams.BNBFullNodeProtocol,
+		portalRelayingParams.BNBFullNodeHost,
+		portalRelayingParams.BNBFullNodePort,
+	)
 	bnbClient := client.NewHTTP(bnbFullNodeAddress, "/websocket")
 	result, err := bnbClient.Status()
 	if err != nil {

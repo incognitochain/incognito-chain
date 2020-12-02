@@ -1,4 +1,4 @@
-package instructions
+package portalprocess
 
 import "github.com/incognitochain/incognito-chain/common"
 

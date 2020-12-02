@@ -50,7 +50,7 @@ func NewBurningRequestMetadata(
 	tokenName string,
 	remoteAddress string,
 	burningMetaType int,
-	bcr metadata.ChainRetriever,
+	bcr basemeta.ChainRetriever,
 	beaconHeight uint64,
 ) (*metadata.BurningRequest, *RPCError) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)

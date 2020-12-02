@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 )
 
@@ -46,9 +45,9 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 		}
 
 	// for portal instructions
-	case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3),
-		strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3),
-		strconv.Itoa(metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3):
+	case strconv.Itoa(basemeta.PortalCustodianWithdrawConfirmMetaV3),
+		strconv.Itoa(basemeta.PortalRedeemFromLiquidationPoolConfirmMetaV3),
+		strconv.Itoa(basemeta.PortalLiquidateRunAwayCustodianConfirmMetaV3):
 		var err error
 		metaType, _ := strconv.Atoi(inst[0])
 		incProof := NewIncProof(metaType)

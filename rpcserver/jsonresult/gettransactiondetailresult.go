@@ -3,9 +3,9 @@ package jsonresult
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -48,7 +48,7 @@ type TransactionDetail struct {
 	Info string `json:"Info"`
 }
 
-func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, blockHeight uint64, index int, shardID byte) (*TransactionDetail, error) {
+func NewTransactionDetail(tx basemeta.Transaction, blockHash *common.Hash, blockHeight uint64, index int, shardID byte) (*TransactionDetail, error) {
 	var result *TransactionDetail
 	blockHashStr := ""
 	if blockHash != nil {

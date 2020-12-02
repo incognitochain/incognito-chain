@@ -28,6 +28,7 @@ func HashAndEncodeBase58(msg string) string {
 	h.Read(hash)
 	b58 := new(base58.Base58)
 	return b58.Encode(hash)
+	
 }
 
 func HexToBytes(s string) ([]byte, error) {

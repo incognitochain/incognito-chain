@@ -74,7 +74,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(
 }
 
 func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, beaconHeight uint64, txr basemeta.Transaction) (bool, bool, error) {
-	feederAddress := chainbMeta.GetPortalFeederAddress()
+	feederAddress := chainRetriever.GetPortalFeederAddress(beaconHeight)
 	if portalExchangeRates.SenderAddress != feederAddress {
 		return false, false, fmt.Errorf("Sender must be feeder's address %v\n", feederAddress)
 	}

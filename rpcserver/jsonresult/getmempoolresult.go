@@ -1,9 +1,8 @@
 package jsonresult
 
 import (
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"sort"
-
-	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 type GetMempoolInfo struct {
@@ -18,7 +17,7 @@ type GetMempoolInfo struct {
 
 func NewGetMempoolInfo(txMempool interface {
 	MaxFee() uint64
-	ListTxsDetail() []metadata.Transaction
+	ListTxsDetail() []basemeta.Transaction
 	Count() int
 	Size() uint64
 }) *GetMempoolInfo {
@@ -50,7 +49,7 @@ type GetMempoolInfoTx struct {
 	LockTime int64  `json:"LockTime"`
 }
 
-func NewGetMempoolInfoTx(tx metadata.Transaction) *GetMempoolInfoTx {
+func NewGetMempoolInfoTx(tx basemeta.Transaction) *GetMempoolInfoTx {
 	result := &GetMempoolInfoTx{
 		LockTime: tx.GetLockTime(),
 		TxID:     tx.Hash().String(),
@@ -73,7 +72,7 @@ type GetPendingTxsInBlockgenResult struct {
 	TxHashes []string
 }
 
-func NewGetPendingTxsInBlockgenResult(txs []metadata.Transaction) GetPendingTxsInBlockgenResult {
+func NewGetPendingTxsInBlockgenResult(txs []basemeta.Transaction) GetPendingTxsInBlockgenResult {
 	txHashes := []string{}
 	for _, tx := range txs {
 		txHash := tx.Hash().String()

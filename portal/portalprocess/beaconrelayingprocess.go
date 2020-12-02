@@ -1,4 +1,4 @@
-package instructions
+package portalprocess
 
 import (
 	"encoding/base64"
@@ -6,23 +6,15 @@ import (
 	"errors"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"github.com/tendermint/tendermint/types"
 	"strconv"
 )
 
-func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock) error {
-	relayingState, err := blockchain.InitRelayingHeaderChainStateFromDB()
-	if err != nil {
-		Logger.log.Error(err)
-		return nil
-	}
-
+func ProcessRelayingInstructions(instructions [][]string, relayingState *RelayingHeaderChainState) error {
 	// because relaying instructions in received beacon block were sorted already as desired so dont need to do sorting again over here
-	for _, inst := range block.Body.Instructions {
+	for _, inst := range instructions {
 		if len(inst) < 4 {
 			continue // Not error, just not relaying instruction
 		}
@@ -30,8 +22,8 @@ func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock) er
 		switch inst[0] {
 		//case strconv.Itoa(metadata.RelayingBNBHeaderMeta):
 		//	err = blockchain.processRelayingBNBHeaderInst(inst, relayingState)
-		case strconv.Itoa(metadata.RelayingBTCHeaderMeta):
-			err = blockchain.processRelayingBTCHeaderInst(inst, relayingState)
+		case strconv.Itoa(basemeta.RelayingBTCHeaderMeta):
+			err = ProcessRelayingBTCHeaderInst(inst, relayingState)
 		}
 		if err != nil {
 			Logger.log.Error(err)
@@ -46,7 +38,7 @@ func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock) er
 	return nil
 }
 
-func (blockchain *BlockChain) processRelayingBTCHeaderInst(
+func ProcessRelayingBTCHeaderInst(
 	instruction []string,
 	relayingState *RelayingHeaderChainState,
 ) error {
@@ -85,46 +77,46 @@ func (blockchain *BlockChain) processRelayingBTCHeaderInst(
 	return nil
 }
 
-func (blockchain *BlockChain) processRelayingBNBHeaderInst(
-	instructions []string,
-	relayingState *RelayingHeaderChainState,
-) error {
-	if relayingState == nil {
-		Logger.log.Errorf("relaying block state is nil")
-		return errors.New("relaying block state is nil")
-	}
-	if len(instructions) != 4 {
-		return nil // skip the instruction
-	}
-
-	// unmarshal instructions content
-	var actionData metadata2.RelayingHeaderContent
-	err := json.Unmarshal([]byte(instructions[3]), &actionData)
-	if err != nil {
-		Logger.log.Errorf("Can not unmarshal bnb block meta data %v - %v\n", instructions[3], err)
-		return err
-	}
-
-	var block types.Block
-	blockBytes, err := base64.StdEncoding.DecodeString(actionData.Header)
-	if err != nil {
-		Logger.log.Errorf("Can not decode bnb block %v - %v\n", actionData.Header, err)
-		return err
-	}
-	err = json.Unmarshal(blockBytes, &block)
-	if err != nil {
-		Logger.log.Errorf("Can not unmarshal bnb block %v - %v\n", string(blockBytes), err)
-		return err
-	}
-
-	reqStatus := instructions[2]
-	if reqStatus == common.RelayingHeaderConsideringChainStatus {
-		err := relayingState.BNBHeaderChain.ProcessNewBlock(&block, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
-		if err != nil {
-			Logger.log.Errorf("Error when process new block %v\n", err)
-			return err
-		}
-	}
-
-	return nil
-}
+//func (blockchain *BlockChain) processRelayingBNBHeaderInst(
+//	instructions []string,
+//	relayingState *RelayingHeaderChainState,
+//) error {
+//	if relayingState == nil {
+//		Logger.log.Errorf("relaying block state is nil")
+//		return errors.New("relaying block state is nil")
+//	}
+//	if len(instructions) != 4 {
+//		return nil // skip the instruction
+//	}
+//
+//	// unmarshal instructions content
+//	var actionData metadata2.RelayingHeaderContent
+//	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+//	if err != nil {
+//		Logger.log.Errorf("Can not unmarshal bnb block meta data %v - %v\n", instructions[3], err)
+//		return err
+//	}
+//
+//	var block types.Block
+//	blockBytes, err := base64.StdEncoding.DecodeString(actionData.Header)
+//	if err != nil {
+//		Logger.log.Errorf("Can not decode bnb block %v - %v\n", actionData.Header, err)
+//		return err
+//	}
+//	err = json.Unmarshal(blockBytes, &block)
+//	if err != nil {
+//		Logger.log.Errorf("Can not unmarshal bnb block %v - %v\n", string(blockBytes), err)
+//		return err
+//	}
+//
+//	reqStatus := instructions[2]
+//	if reqStatus == common.RelayingHeaderConsideringChainStatus {
+//		err := relayingState.BNBHeaderChain.ProcessNewBlock(&block, blockchain.config.ChainParams.BNBRelayingHeaderChainID)
+//		if err != nil {
+//			Logger.log.Errorf("Error when process new block %v\n", err)
+//			return err
+//		}
+//	}
+//
+//	return nil
+//}

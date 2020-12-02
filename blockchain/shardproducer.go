@@ -3,16 +3,15 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/basemeta"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
@@ -57,7 +56,7 @@ import (
 func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int, proposer string, round int, start int64) (*ShardBlock, error) {
 	time1 := time.Now()
 	var (
-		transactionsForNewBlock = make([]retriever.Transaction, 0)
+		transactionsForNewBlock = make([]basemeta.Transaction, 0)
 		totalTxsFee             = make(map[common.Hash]uint64)
 		newShardBlock           = NewShardBlock()
 		instructions            = [][]string{}
@@ -270,13 +269,13 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 // 3. Build response Transaction For Shard
 // 4. Build response Transaction For Beacon
 // 5. Return valid transaction from pending, response transactions from shard and beacon
-func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBestState, privatekey *privacy.PrivateKey, shardID byte, beaconBlocks []*BeaconBlock, blockCreation int64, beaconHeight uint64) ([]retriever.Transaction, error) {
+func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBestState, privatekey *privacy.PrivateKey, shardID byte, beaconBlocks []*BeaconBlock, blockCreation int64, beaconHeight uint64) ([]basemeta.Transaction, error) {
 	txsToAdd, txToRemove, _ := blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreation, beaconHeight, curView)
 	if len(txsToAdd) == 0 {
 		Logger.log.Info("Creating empty block...")
 	}
 	go blockGenerator.txPool.RemoveTx(txToRemove, false)
-	var responseTxsBeacon []retriever.Transaction
+	var responseTxsBeacon []basemeta.Transaction
 	var errInstructions [][]string
 	var cError chan error
 	cError = make(chan error)
@@ -304,8 +303,8 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBe
 }
 
 // buildResponseTxsFromBeaconInstructions builds response txs from beacon instructions
-func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(curView *ShardBestState, beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]retriever.Transaction, [][]string, error) {
-	responsedTxs := []retriever.Transaction{}
+func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(curView *ShardBestState, beaconBlocks []*BeaconBlock, producerPrivateKey *privacy.PrivateKey, shardID byte) ([]basemeta.Transaction, [][]string, error) {
+	responsedTxs := []basemeta.Transaction{}
 	responsedHashTxs := []common.Hash{} // capture hash of responsed tx
 	errorInstructions := [][]string{}   // capture error instruction -> which instruction can not create tx
 	beaconView := blockGenerator.chain.BeaconChain.GetFinalView().(*BeaconBestState)
@@ -322,7 +321,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 			if err != nil {
 				return nil, nil, err
 			}
-			var newTx retriever.Transaction
+			var newTx basemeta.Transaction
 			switch metaType {
 			case basemeta.IssuingETHRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
@@ -357,29 +356,29 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					}
 				}
 			// portal
-			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:
+			case basemeta.PortalRequestPortingMeta, basemeta.PortalRequestPortingMetaV3:
 				if len(l) >= 4 && l[2] == common.PortalPortingRequestRejectedChainStatus {
 					newTx, err = curView.buildPortalRefundPortingFeeTx(l[3], producerPrivateKey, shardID)
 				}
-			case metadata.PortalCustodianDepositMeta:
+			case basemeta.PortalCustodianDepositMeta:
 				if len(l) >= 4 && l[2] == common.PortalCustodianDepositRefundChainStatus {
 					newTx, err = curView.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
 				}
-			case metadata.PortalUserRequestPTokenMeta:
+			case basemeta.PortalUserRequestPTokenMeta:
 				if len(l) >= 4 && l[2] == common.PortalReqPTokensAcceptedChainStatus {
 					newTx, err = curView.buildPortalAcceptedRequestPTokensTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 				//custodian withdraw
-			case metadata.PortalCustodianWithdrawRequestMeta:
+			case basemeta.PortalCustodianWithdrawRequestMeta:
 				if len(l) >= 4 && l[2] == common.PortalCustodianWithdrawRequestAcceptedChainStatus {
 					newTx, err = curView.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
 				}
-			case metadata.PortalRedeemRequestMeta, metadata.PortalRedeemRequestMetaV3:
+			case basemeta.PortalRedeemRequestMeta, basemeta.PortalRedeemRequestMetaV3:
 				if len(l) >= 4 && (l[2] == common.PortalRedeemRequestRejectedChainStatus || l[2] == common.PortalRedeemReqCancelledByLiquidationChainStatus) {
 					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: redeem ptoken
-			case metadata.PortalRedeemFromLiquidationPoolMeta:
+			case basemeta.PortalRedeemFromLiquidationPoolMeta:
 				if len(l) >= 4 {
 					if l[2] == common.PortalRedeemFromLiquidationPoolSuccessChainStatus {
 						newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
@@ -387,30 +386,30 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 						newTx, err = curView.buildPortalRefundRedeemLiquidateExchangeRatesTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 					}
 				}
-			case metadata.PortalLiquidateCustodianMeta, metadata.PortalLiquidateCustodianMetaV3:
+			case basemeta.PortalLiquidateCustodianMeta, basemeta.PortalLiquidateCustodianMetaV3:
 				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {
 					newTx, err = curView.buildPortalLiquidateCustodianResponseTx(l[3], producerPrivateKey, shardID)
 				}
-			case metadata.PortalRequestWithdrawRewardMeta:
+			case basemeta.PortalRequestWithdrawRewardMeta:
 				if len(l) >= 4 && l[2] == common.PortalReqWithdrawRewardAcceptedChainStatus {
 					newTx, err = curView.buildPortalAcceptedWithdrawRewardTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: custodian deposit
-			case metadata.PortalCustodianTopupMeta:
+			case basemeta.PortalCustodianTopupMeta:
 				if len(l) >= 4 && l[2] == common.PortalCustodianTopupRejectedChainStatus {
 					newTx, err = curView.buildPortalLiquidationCustodianDepositReject(l[3], producerPrivateKey, shardID)
 				}
-			case metadata.PortalCustodianTopupMetaV2:
+			case basemeta.PortalCustodianTopupMetaV2:
 				if len(l) >= 4 && l[2] == common.PortalCustodianTopupRejectedChainStatus {
 					newTx, err = curView.buildPortalLiquidationCustodianDepositRejectV2(l[3], producerPrivateKey, shardID)
 				}
 			//
-			case metadata.PortalTopUpWaitingPortingRequestMeta:
+			case basemeta.PortalTopUpWaitingPortingRequestMeta:
 				if len(l) >= 4 && l[2] == common.PortalTopUpWaitingPortingRejectedChainStatus {
 					newTx, err = curView.buildPortalRejectedTopUpWaitingPortingTx(l[3], producerPrivateKey, shardID)
 				}
 			//redeem from liquidation pool
-			case metadata.PortalRedeemFromLiquidationPoolMetaV3:
+			case basemeta.PortalRedeemFromLiquidationPoolMetaV3:
 				if len(l) >= 4 {
 					if l[2] == common.PortalRedeemFromLiquidationPoolSuccessChainStatus {
 						newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTxV3(l[3], producerPrivateKey, shardID)
@@ -674,7 +673,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	blockCreationTimeLeftOver int64,
 	beaconHeight uint64,
 	curView *ShardBestState,
-) (txsToAdd []retriever.Transaction, txToRemove []retriever.Transaction, totalFee uint64) {
+) (txsToAdd []basemeta.Transaction, txToRemove []basemeta.Transaction, totalFee uint64) {
 	spareTime := SpareTime * time.Millisecond
 	maxBlockCreationTimeLeftTime := blockCreationTimeLeftOver - spareTime.Nanoseconds()
 	startTime := time.Now()
@@ -683,10 +682,10 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	Logger.log.Info("Number of transaction get from Block Generator: ", len(sourceTxns))
 	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()
 	if !isEmpty {
-		return []retriever.Transaction{}, []retriever.Transaction{}, 0
+		return []basemeta.Transaction{}, []basemeta.Transaction{}, 0
 	}
 	currentSize := uint64(0)
-	preparedTxForNewBlock := []retriever.Transaction{}
+	preparedTxForNewBlock := []basemeta.Transaction{}
 	for _, tx := range sourceTxns {
 		tempSize := tx.GetTxActualSize()
 		if currentSize+tempSize >= common.MaxBlockSize {
@@ -699,7 +698,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 			break
 		}
 	}
-	listBatchTxs := []retriever.Transaction{}
+	listBatchTxs := []basemeta.Transaction{}
 	for index, tx := range preparedTxForNewBlock {
 		elasped = time.Since(startTime).Nanoseconds()
 		if elasped >= maxBlockCreationTimeLeftTime {
@@ -745,7 +744,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 				txsToAdd = append(txsToAdd, tempTx)
 			}
 			// reset list batch and add new txs
-			listBatchTxs = []retriever.Transaction{}
+			listBatchTxs = []basemeta.Transaction{}
 
 		} else {
 			continue

@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	"time"
 )
 
 // Interface for all types of metadata in tx
@@ -39,15 +40,16 @@ type ChainRetriever interface {
 	GetBurningAddress(blockHeight uint64) string
 	GetTransactionByHash(common.Hash) (byte, common.Hash, uint64, int, Transaction, error)
 	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
-	GetBNBChainID() string
-	GetBTCChainID() string
+	GetBNBChainID(beaconHeight uint64) string
+	GetBTCChainID(beaconHeight uint64) string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
-	GetPortalFeederAddress() string
+	GetPortalFeederAddress(beaconHeight uint64) string
 	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
 	GetSupportedCollateralTokenIDs(beaconHeight uint64) []string
-	GetPortalETHContractAddrStr() string
+	GetPortalETHContractAddrStr(beaconHeight uint64) string
 	GetLatestBNBBlkHeight() (int64, error)
 	GetBNBDataHash(blockHeight int64) ([]byte, error)
+	CheckBlockTimeIsReached(recentBeaconHeight, beaconHeight, recentShardHeight, shardHeight uint64, duration time.Duration) bool
 }
 
 type BeaconViewRetriever interface {

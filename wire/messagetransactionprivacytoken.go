@@ -3,10 +3,10 @@ package wire
 import (
 	"encoding/hex"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/libp2p/go-libp2p-peer"
 )
 
@@ -15,7 +15,7 @@ const (
 )
 
 type MessageTxPrivacyToken struct {
-	Transaction metadata.Transaction
+	Transaction basemeta.Transaction
 }
 
 func (msg *MessageTxPrivacyToken) Hash() string {

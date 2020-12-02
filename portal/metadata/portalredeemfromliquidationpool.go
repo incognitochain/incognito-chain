@@ -125,8 +125,8 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetr
 	}
 
 	// reject Redeem Request from Liquidation pool from BCHeightBreakPointPortalV3
-	if beaconHeight >= chainbMeta.GetBCHeightBreakPointPortalV3() {
-		return false, false, basemeta.NewMetadataTxError(basemeta.PortalRedeemLiquidateExchangeRatesParamError, fmt.Errorf("Should create redeem request from liquidation pool v3 after epoch %v", chainbMeta.GetBCHeightBreakPointPortalV3()))
+	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() {
+		return false, false, basemeta.NewMetadataTxError(basemeta.PortalRedeemLiquidateExchangeRatesParamError, fmt.Errorf("Should create redeem request from liquidation pool v3 after epoch %v", chainRetriever.GetBCHeightBreakPointPortalV3()))
 	}
 	return true, true, nil
 }

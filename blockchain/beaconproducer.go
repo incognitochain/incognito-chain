@@ -3,6 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalprocess"
 	"math/rand"
 	"reflect"
 	"sort"
@@ -86,7 +88,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 
 	if (beaconBestState.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
 		featureStateDB := curView.GetBeaconFeatureStateDB()
-		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
+		totalLockedCollateral, err := portalprocess.GetTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {
 			return nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
@@ -249,7 +251,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 // 4. bridge instructions
 // 5. accepted reward instructions
 // 6. stop auto staking instructions
-func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, rewardForCustodianByEpoch map[common.Hash]uint64, portalParams PortalParams) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string, [][]string, [][]string) {
+func (blockchain *BlockChain) GetShardState(beaconBestState *BeaconBestState, rewardForCustodianByEpoch map[common.Hash]uint64, portalParams portal.PortalParams) (map[byte][]ShardState, [][]string, map[byte][][]string, [][]string, [][]string, [][]string) {
 	shardStates := make(map[byte][]ShardState)
 	validStakeInstructions := [][]string{}
 	validStakePublicKeys := []string{}

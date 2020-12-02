@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
-	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
+	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
+	"github.com/incognitochain/incognito-chain/portal/portalprocess"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -40,7 +40,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 	}
 	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
 
-	portalState, err := blockchain.InitCurrentPortalStateFromDB(beaconFeatureStateDB)
+	portalState, err := portalprocess.InitCurrentPortalStateFromDB(beaconFeatureStateDB)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
 	}
@@ -104,7 +104,7 @@ func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, cl
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
-	if !metadata.IsPortalToken(tokenID) {
+	if !portalMeta.IsPortalToken(tokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID should be a portal token"))
 	}
 
@@ -169,7 +169,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortingRequest(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId is invalid"))
 	}
 
-	if !metadata.IsPortalToken(pTokenId) {
+	if !portalMeta.IsPortalToken(pTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -184,13 +184,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortingRequest(params interfa
 	}
 
 	//check exchange rates
-	meta, _ := metadata2.NewPortalUserRegister(
+	meta, _ := portalMeta.NewPortalUserRegister(
 		uniqueRegisterId,
 		incogAddressStr,
 		pTokenId,
 		registerAmount,
 		portingFee,
-		metadata.PortalRequestPortingMetaV3,
+		basemeta.PortalRequestPortingMetaV3,
 	)
 
 	// create new param to build raw tx from param interface
@@ -338,8 +338,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqPToken(params interface{},
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingProof param is invalid"))
 	}
 
-	meta, _ := metadata2.NewPortalRequestPTokens(
-		metadata.PortalUserRequestPTokenMeta,
+	meta, _ := portalMeta.NewPortalRequestPTokens(
+		basemeta.PortalUserRequestPTokenMeta,
 		uniquePortingID,
 		tokenID,
 		incognitoAddress,
@@ -470,7 +470,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRedeemReq(params interface{},
 		redeemerExternalAddress = redeemerExternalAddress[2:]
 	}
 
-	meta, _ := metadata2.NewPortalRedeemRequest(metadata.PortalRedeemRequestMetaV3, uniqueRedeemID,
+	meta, _ := portalMeta.NewPortalRedeemRequest(basemeta.PortalRedeemRequestMetaV3, uniqueRedeemID,
 		redeemTokenID, redeemAmount, redeemerIncAddressStr, remoteAddress, redeemFee, redeemerExternalAddress)
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
@@ -572,8 +572,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqMatchingRedeem(params inte
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RemoteAddresses param is invalid"))
 	}
 
-	meta, _ := metadata2.NewPortalReqMatchingRedeem(
-		metadata.PortalReqMatchingRedeemMeta,
+	meta, _ := portalMeta.NewPortalReqMatchingRedeem(
+		basemeta.PortalReqMatchingRedeemMeta,
 		incognitoAddress,
 		redeemID,
 	)
@@ -682,8 +682,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqUnlockCollateral(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata RedeemProof param is invalid"))
 	}
 
-	meta, _ := metadata2.NewPortalRequestUnlockCollateral(
-		metadata.PortalRequestUnlockCollateralMetaV3,
+	meta, _ := portalMeta.NewPortalRequestUnlockCollateral(
+		basemeta.PortalRequestUnlockCollateralMetaV3,
 		uniqueRedeemID,
 		tokenID,
 		incognitoAddress,
@@ -775,7 +775,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalExchangeRate(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SenderAddress is invalid"))
 	}
 
-	var exchangeRate = make([]*metadata2.ExchangeRateInfo, 0)
+	var exchangeRate = make([]*portalMeta.ExchangeRateInfo, 0)
 	exchangeRateMap, ok := data["Rates"].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Rates is invalid"))
@@ -787,7 +787,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalExchangeRate(params int
 	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	for tokenID, value := range exchangeRateMap {
 		tokenID = strings.ToLower(common.Remove0xPrefix(tokenID))
-		if !metadata.IsPortalExchangeRateToken(tokenID, httpServer.config.BlockChain, beaconHeight) {
+		if !portalMeta.IsPortalExchangeRateToken(tokenID, httpServer.config.BlockChain, beaconHeight) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is not portal exchange rate token"))
 		}
 
@@ -798,14 +798,14 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalExchangeRate(params int
 
 		exchangeRate = append(
 			exchangeRate,
-			&metadata2.ExchangeRateInfo{
+			&portalMeta.ExchangeRateInfo{
 				PTokenID: tokenID,
 				Rate:     amount,
 			})
 	}
 
-	meta, _ := metadata2.NewPortalExchangeRates(
-		metadata.PortalExchangeRatesMeta,
+	meta, _ := portalMeta.NewPortalExchangeRates(
+		basemeta.PortalExchangeRatesMeta,
 		senderAddress,
 		exchangeRate,
 	)

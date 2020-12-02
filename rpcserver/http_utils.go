@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
@@ -12,7 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
-type metaConstructorType func(map[string]interface{}) (metadata.Metadata, error)
+type metaConstructorType func(map[string]interface{}) (basemeta.Metadata, error)
 
 var metaConstructors = map[string]metaConstructorType{
 	createAndSendIssuingRequest: metadata.NewIssuingRequestFromMap,

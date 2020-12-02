@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	"github.com/incognitochain/incognito-chain/portal"
 	"io"
 	"sort"
 
@@ -627,7 +628,7 @@ func (blockchain *BlockChain) GetConfig() *Config {
 }
 
 // GetPortalParams returns portal params in beaconheight
-func (blockchain *BlockChain) GetPortalParams(beaconHeight uint64) PortalParams {
+func (blockchain *BlockChain) GetPortalParams(beaconHeight uint64) portal.PortalParams {
 	portalParamMap := blockchain.GetConfig().ChainParams.PortalParams
 	// only has one value - default value
 	if len(portalParamMap) == 1 {
@@ -643,6 +644,12 @@ func (blockchain *BlockChain) GetPortalParams(beaconHeight uint64) PortalParams 
 	})
 
 	bchKey := bchs[len(bchs)-1]
+
+	// beaconHeight = 0 : return the latest params
+	if beaconHeight == 0 {
+		return portalParamMap[bchKey]
+	}
+
 	for i := len(bchs) - 1; i >= 0; i-- {
 		if beaconHeight < bchs[i] {
 			continue
@@ -663,13 +670,13 @@ func (blockchain *BlockChain) GetSupportedCollateralTokenIDs(beaconHeight uint64
 	return tokenIDs
 }
 
-func (blockchain *BlockChain) GetSupportedCollateralInfo(beaconHeight uint64) []PortalCollateral {
+func (blockchain *BlockChain) GetSupportedCollateralInfo(beaconHeight uint64) []portal.PortalCollateral {
 	portalParams := blockchain.GetPortalParams(beaconHeight)
 	return portalParams.SupportedCollateralTokens
 }
 
-func (blockchain *BlockChain) GetPortalETHContractAddrStr() string {
-	return blockchain.GetConfig().ChainParams.PortalETHContractAddressStr
+func (blockchain *BlockChain) GetPortalETHContractAddrStr(beaconHeight uint64) string {
+	return blockchain.GetPortalParams(beaconHeight).PortalETHContractAddressStr
 }
 
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {

@@ -1,8 +1,9 @@
-package instructions
+package portalprocess
 
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
 	"sort"
 
@@ -12,7 +13,7 @@ import (
 func buildRelayingInstsFromActions(
 	rc relayingProcessor,
 	relayingState *RelayingHeaderChainState,
-	blockchain *BlockChain,
+	bc basemeta.ChainRetriever,
 ) [][]string {
 	actions := rc.getActions()
 	Logger.log.Infof("[Blocks Relaying] - Processing buildRelayingInstsFromActions for %d actions", len(actions))
@@ -59,28 +60,29 @@ func buildRelayingInstsFromActions(
 		blockHeight := uint64(value)
 		actions := actionsGroupByBlockHeight[blockHeight]
 		for _, action := range actions {
-			inst := rc.buildRelayingInst(blockchain, action, relayingState)
+			inst := rc.buildRelayingInst(bc, action, relayingState)
 			relayingInsts = append(relayingInsts, inst...)
 		}
 	}
 	return relayingInsts
 }
 
-func (blockchain *BlockChain) handleRelayingInsts(
+func HandleRelayingInsts(
+	bc basemeta.ChainRetriever,
 	relayingState *RelayingHeaderChainState,
-	pm *portalManager,
+	pm *PortalManager,
 ) [][]string {
 	Logger.log.Info("[Blocks Relaying] - Processing handleRelayingInsts...")
 	newInsts := [][]string{}
-	// sort relayingChains map to make it consistent for every run
+	// sort RelayingChains map to make it consistent for every run
 	var metaTypes []int
-	for metaType := range pm.relayingChains {
+	for metaType := range pm.RelayingChains {
 		metaTypes = append(metaTypes, metaType)
 	}
 	sort.Ints(metaTypes)
 	for _, metaType := range metaTypes {
-		rc := pm.relayingChains[metaType]
-		insts := buildRelayingInstsFromActions(rc, relayingState, blockchain)
+		rc := pm.RelayingChains[metaType]
+		insts := buildRelayingInstsFromActions(rc, relayingState, bc)
 		newInsts = append(newInsts, insts...)
 	}
 	return newInsts

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/metadata"
 	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
@@ -17,7 +17,7 @@ import (
 
 func (httpServer *HttpServer) handleCreateRawTxWithRelayingBTCHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.handleCreateRawTxWithRelayingHeader(
-		metadata.RelayingBTCHeaderMeta,
+		basemeta.RelayingBTCHeaderMeta,
 		params,
 		closeChan,
 	)
@@ -25,7 +25,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRelayingBTCHeader(params inte
 
 func (httpServer *HttpServer) handleCreateRawTxWithRelayingBNBHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.handleCreateRawTxWithRelayingHeader(
-		metadata.RelayingBNBHeaderMeta,
+		basemeta.RelayingBNBHeaderMeta,
 		params,
 		closeChan,
 	)
@@ -184,7 +184,7 @@ func (httpServer *HttpServer) handleGetLatestBNBHeaderBlockHeight(params interfa
 	bc := httpServer.config.BlockChain
 	result, err := bc.GetLatestBNBBlockHeight()
 	if err != nil {
-		result, _ = bnbrelaying.GetGenesisBNBHeaderBlockHeight(bc.GetConfig().ChainParams.BNBRelayingHeaderChainID)
+		result, _ = bnbrelaying.GetGenesisBNBHeaderBlockHeight(bc.GetPortalParams(0).RelayingParams.BNBRelayingHeaderChainID)
 	}
 	return result, nil
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"io/ioutil"
 	"log"
 	"net"
@@ -38,7 +39,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -213,8 +213,8 @@ func (serverObj *Server) NewServer(
 	serverObj.consensusEngine = consensus.NewConsensusEngine()
 	serverObj.syncker = syncker.NewSynckerManager()
 	//Init channel
-	cPendingTxs := make(chan metadata.Transaction, 500)
-	cRemovedTxs := make(chan metadata.Transaction, 500)
+	cPendingTxs := make(chan basemeta.Transaction, 500)
+	cRemovedTxs := make(chan basemeta.Transaction, 500)
 
 	var err error
 	// init an pubsub manager

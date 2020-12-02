@@ -28,74 +28,70 @@ func ParseMetadata(meta interface{}) (basemeta.Metadata, error) {
 	switch int(mtTemp["Type"].(float64)) {
 	case basemeta.PortalCustodianDepositMeta:
 		md = &PortalCustodianDeposit{}
-	//case PortalRequestPortingMeta, PortalRequestPortingMetaV3:
-	//	md = &PortalUserRegister{}
-	//case PortalUserRequestPTokenMeta:
-	//	md = &PortalRequestPTokens{}
-	//case PortalCustodianDepositResponseMeta:
-	//	md = &PortalCustodianDepositResponse{}
-	//case PortalUserRequestPTokenResponseMeta:
-	//	md = &PortalRequestPTokensResponse{}
-	//case PortalRedeemRequestMeta, PortalRedeemRequestMetaV3:
-	//	md = &PortalRedeemRequest{}
-	//case PortalRedeemRequestResponseMeta:
-	//	md = &PortalRedeemRequestResponse{}
-	//case PortalRequestUnlockCollateralMeta, PortalRequestUnlockCollateralMetaV3:
-	//	md = &PortalRequestUnlockCollateral{}
-	//case PortalExchangeRatesMeta:
-	//	md = &PortalExchangeRates{}
-	//case RelayingBNBHeaderMeta:
-	//	md = &RelayingHeader{}
-	//case RelayingBTCHeaderMeta:
-	//	md = &RelayingHeader{}
-	//case PortalCustodianWithdrawRequestMeta:
-	//	md = &PortalCustodianWithdrawRequest{}
-	//case PortalCustodianWithdrawResponseMeta:
-	//	md = &PortalCustodianWithdrawResponse{}
-	//case PortalLiquidateCustodianMeta, PortalLiquidateCustodianMetaV3:
-	//	md = &PortalLiquidateCustodian{}
-	//case PortalLiquidateCustodianResponseMeta:
-	//	md = &PortalLiquidateCustodianResponse{}
-	//case PortalRequestWithdrawRewardMeta:
-	//	md = &PortalRequestWithdrawReward{}
-	//case PortalRequestWithdrawRewardResponseMeta:
-	//	md = &PortalWithdrawRewardResponse{}
-	//case PortalRedeemFromLiquidationPoolMeta:
-	//	md = &PortalRedeemLiquidateExchangeRates{}
-	//case PortalRedeemFromLiquidationPoolResponseMeta:
-	//	md = &PortalRedeemLiquidateExchangeRatesResponse{}
-	//case PortalCustodianTopupMetaV2:
-	//	md = &PortalLiquidationCustodianDepositV2{}
-	//case PortalCustodianTopupResponseMetaV2:
-	//	md = &PortalLiquidationCustodianDepositResponseV2{}
-	//case PortalCustodianTopupMeta:
-	//	md = &PortalLiquidationCustodianDeposit{}
-	//case PortalCustodianTopupResponseMeta:
-	//	md = &PortalLiquidationCustodianDepositResponse{}
-	//case BurningForDepositToSCRequestMeta:
-	//	md = &BurningRequest{}
-	//case BurningForDepositToSCRequestMetaV2:
-	//	md = &BurningRequest{}
-	//case PortalPortingResponseMeta:
-	//	md = &PortalFeeRefundResponse{}
-	//case PortalReqMatchingRedeemMeta:
-	//	md = &PortalReqMatchingRedeem{}
-	//case PortalTopUpWaitingPortingRequestMeta:
-	//	md = &PortalTopUpWaitingPortingRequest{}
-	//case PortalTopUpWaitingPortingResponseMeta:
-	//	md = &PortalTopUpWaitingPortingResponse{}
-	//case PortalCustodianDepositMetaV3:
-	//	md = &PortalCustodianDepositV3{}
-	//case PortalCustodianWithdrawRequestMetaV3:
-	//	md = &PortalCustodianWithdrawRequestV3{}
-	//case PortalRedeemFromLiquidationPoolMetaV3:
-	//	md = &PortalRedeemFromLiquidationPoolV3{}
-	//case PortalRedeemFromLiquidationPoolResponseMetaV3:
-	//	md = &PortalRedeemFromLiquidationPoolResponseV3{}
-	//case PortalCustodianTopupMetaV3:
-	//	md = &PortalLiquidationCustodianDepositV3{}
-	//case PortalTopUpWaitingPortingRequestMetaV3:
-	//	md = &PortalTopUpWaitingPortingRequestV3{}
+	case basemeta.PortalRequestPortingMeta, basemeta.PortalRequestPortingMetaV3:
+		md = &PortalUserRegister{}
+	case basemeta.PortalUserRequestPTokenMeta:
+		md = &PortalRequestPTokens{}
+	case basemeta.PortalCustodianDepositResponseMeta:
+		md = &PortalCustodianDepositResponse{}
+	case basemeta.PortalUserRequestPTokenResponseMeta:
+		md = &PortalRequestPTokensResponse{}
+	case basemeta.PortalRedeemRequestMeta, basemeta.PortalRedeemRequestMetaV3:
+		md = &PortalRedeemRequest{}
+	case basemeta.PortalRedeemRequestResponseMeta:
+		md = &PortalRedeemRequestResponse{}
+	case basemeta.PortalRequestUnlockCollateralMeta, basemeta.PortalRequestUnlockCollateralMetaV3:
+		md = &PortalRequestUnlockCollateral{}
+	case basemeta.PortalExchangeRatesMeta:
+		md = &PortalExchangeRates{}
+	case basemeta.RelayingBNBHeaderMeta:
+		md = &RelayingHeader{}
+	case basemeta.RelayingBTCHeaderMeta:
+		md = &RelayingHeader{}
+	case basemeta.PortalCustodianWithdrawRequestMeta:
+		md = &PortalCustodianWithdrawRequest{}
+	case basemeta.PortalCustodianWithdrawResponseMeta:
+		md = &PortalCustodianWithdrawResponse{}
+	case basemeta.PortalLiquidateCustodianMeta, basemeta.PortalLiquidateCustodianMetaV3:
+		md = &PortalLiquidateCustodian{}
+	case basemeta.PortalLiquidateCustodianResponseMeta:
+		md = &PortalLiquidateCustodianResponse{}
+	case basemeta.PortalRequestWithdrawRewardMeta:
+		md = &PortalRequestWithdrawReward{}
+	case basemeta.PortalRequestWithdrawRewardResponseMeta:
+		md = &PortalWithdrawRewardResponse{}
+	case basemeta.PortalRedeemFromLiquidationPoolMeta:
+		md = &PortalRedeemLiquidateExchangeRates{}
+	case basemeta.PortalRedeemFromLiquidationPoolResponseMeta:
+		md = &PortalRedeemLiquidateExchangeRatesResponse{}
+	case basemeta.PortalCustodianTopupMetaV2:
+		md = &PortalLiquidationCustodianDepositV2{}
+	case basemeta.PortalCustodianTopupResponseMetaV2:
+		md = &PortalLiquidationCustodianDepositResponseV2{}
+	case basemeta.PortalCustodianTopupMeta:
+		md = &PortalLiquidationCustodianDeposit{}
+	case basemeta.PortalCustodianTopupResponseMeta:
+		md = &PortalLiquidationCustodianDepositResponse{}
+	case basemeta.PortalPortingResponseMeta:
+		md = &PortalFeeRefundResponse{}
+	case basemeta.PortalReqMatchingRedeemMeta:
+		md = &PortalReqMatchingRedeem{}
+	case basemeta.PortalTopUpWaitingPortingRequestMeta:
+		md = &PortalTopUpWaitingPortingRequest{}
+	case basemeta.PortalTopUpWaitingPortingResponseMeta:
+		md = &PortalTopUpWaitingPortingResponse{}
+	case basemeta.PortalCustodianDepositMetaV3:
+		md = &PortalCustodianDepositV3{}
+	case basemeta.PortalCustodianWithdrawRequestMetaV3:
+		md = &PortalCustodianWithdrawRequestV3{}
+	case basemeta.PortalRedeemFromLiquidationPoolMetaV3:
+		md = &PortalRedeemFromLiquidationPoolV3{}
+	case basemeta.PortalRedeemFromLiquidationPoolResponseMetaV3:
+		md = &PortalRedeemFromLiquidationPoolResponseV3{}
+	case basemeta.PortalCustodianTopupMetaV3:
+		md = &PortalLiquidationCustodianDepositV3{}
+	case basemeta.PortalTopUpWaitingPortingRequestMetaV3:
+		md = &PortalTopUpWaitingPortingRequestV3{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
@@ -114,9 +110,10 @@ func IsValidPortalRemoteAddress(
 	bcr basemeta.ChainRetriever,
 	remoteAddress string,
 	tokenID string,
+	beaconHeight uint64,
 ) bool {
 	if tokenID == common.PortalBNBIDStr {
-		return bnb.IsValidBNBAddress(remoteAddress, bcr.GetBNBChainID())
+		return bnb.IsValidBNBAddress(remoteAddress, bcr.GetBNBChainID(beaconHeight))
 	} else if tokenID == common.PortalBTCIDStr {
 		btcHeaderChain := bcr.GetBTCHeaderChain()
 		if btcHeaderChain == nil {
@@ -143,7 +140,7 @@ func IsPortalExchangeRateToken(tokenIDStr string, bcr basemeta.ChainRetriever, b
 
 
 // Validate portal remote addresses for portal tokens (BTC, BNB)
-func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetriever basemeta.ChainRetriever) (bool, error){
+func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetriever basemeta.ChainRetriever, beaconHeight uint64) (bool, error){
 	if len(remoteAddresses) == 0 {
 		return false, errors.New("remote addresses should be at least one address")
 	}
@@ -154,7 +151,7 @@ func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetri
 		if len(remoteAddr) == 0 {
 			return false, errors.New("Remote address is invalid")
 		}
-		if !IsValidPortalRemoteAddress(chainRetriever, remoteAddr, tokenID) {
+		if !IsValidPortalRemoteAddress(chainRetriever, remoteAddr, tokenID, beaconHeight) {
 			return false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", remoteAddr, tokenID)
 		}
 	}

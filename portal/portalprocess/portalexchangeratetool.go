@@ -1,11 +1,11 @@
-package instructions
+package portalprocess
 
 import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal"
+	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"math"
 	"math/big"
 	"sort"
@@ -21,7 +21,7 @@ type PortalExchangeRateTool struct {
 
 // getDecimal returns decimal for portal token or collateral tokens
 func getDecimal(supportPortalCollateral []portal.PortalCollateral, tokenID string) uint8 {
-	if metadata.IsPortalToken(tokenID) || tokenID == common.PRVIDStr {
+	if portalMeta.IsPortalToken(tokenID) || tokenID == common.PRVIDStr {
 		return 9
 	}
 	for _, col := range supportPortalCollateral {

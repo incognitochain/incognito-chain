@@ -56,7 +56,7 @@ type Config struct {
 
 // TxDesc is transaction message in mempool
 type TxDesc struct {
-	Desc            metadata.TxDesc // transaction details
+	Desc            basemeta.TxDesc // transaction details
 	StartTime       time.Time       //Unix Time that transaction enter mempool
 	IsFowardMessage bool
 }
@@ -73,8 +73,8 @@ type TxPool struct {
 	candidateMtx              sync.RWMutex
 	poolRequestStopStaking    map[common.Hash]string //request stop staking list in mempool
 	requestStopStakingMtx     sync.RWMutex
-	CPendingTxs               chan<- metadata.Transaction // channel to deliver txs to block gen
-	CRemoveTxs                chan<- metadata.Transaction // channel to deliver txs to block gen
+	CPendingTxs               chan<- basemeta.Transaction // channel to deliver txs to block gen
+	CRemoveTxs                chan<- basemeta.Transaction // channel to deliver txs to block gen
 	// RoleInCommittees          int                         //Current Role of Node
 	roleMtx           sync.RWMutex
 	ScanTime          time.Duration
@@ -109,7 +109,7 @@ func (tp *TxPool) Init(cfg *Config) {
 }
 
 // InitChannelMempool - init channel
-func (tp *TxPool) InitChannelMempool(cPendingTxs chan metadata.Transaction, cRemoveTxs chan metadata.Transaction) {
+func (tp *TxPool) InitChannelMempool(cPendingTxs chan basemeta.Transaction, cRemoveTxs chan basemeta.Transaction) {
 	tp.CPendingTxs = cPendingTxs
 	tp.CRemoveTxs = cRemoveTxs
 }
@@ -214,7 +214,7 @@ func (tp *TxPool) MonitorPool() {
 // This function is safe for concurrent access.
 // #1: tx
 // #2: default nil, contain input coins hash, which are used for creating this tx
-func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight int64) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) MaybeAcceptTransaction(tx basemeta.Transaction, beaconHeight int64) (*common.Hash, *TxDesc, error) {
 	//beaconView.BeaconHeight
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
@@ -255,7 +255,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	} else {
 		if tp.IsBlockGenStarted {
 			if tp.IsUnlockMempool {
-				go func(tx metadata.Transaction) {
+				go func(tx basemeta.Transaction) {
 					tp.CPendingTxs <- tx
 				}(tx)
 			}
@@ -267,7 +267,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 }
 
 // This function is safe for concurrent access.
-func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
+func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx basemeta.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*basemeta.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
@@ -286,7 +286,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	return tempTxDesc, err
 }
 
-func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs []metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) ([]*metadata.TxDesc, error) {
+func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs []basemeta.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) ([]*basemeta.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
@@ -300,8 +300,8 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	return txDesc, err
 }
 
-func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, shardID byte, txs []metadata.Transaction, beaconHeight int64) ([]common.Hash, []*metadata.TxDesc, error) {
-	txDescs := []*metadata.TxDesc{}
+func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, shardID byte, txs []basemeta.Transaction, beaconHeight int64) ([]common.Hash, []*basemeta.TxDesc, error) {
+	txDescs := []*basemeta.TxDesc{}
 	txHashes := []common.Hash{}
 	batch := transaction.NewBatchTransaction(txs)
 
@@ -344,7 +344,7 @@ func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestSta
 // #2: store into db
 // #3: default nil, contain input coins hash, which are used for creating this tx
 */
-func (tp *TxPool) maybeAcceptTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx metadata.Transaction, isStore bool, isNewTransaction bool, beaconHeight int64) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) maybeAcceptTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx basemeta.Transaction, isStore bool, isNewTransaction bool, beaconHeight int64) (*common.Hash, *TxDesc, error) {
 	// validate tx
 	err := tp.validateTransaction(shardView, beaconView, tx, beaconHeight, false, isNewTransaction)
 	if err != nil {
@@ -366,9 +366,9 @@ func (tp *TxPool) maybeAcceptTransaction(shardView *blockchain.ShardBestState, b
 }
 
 // createTxDescMempool - return an object TxDesc for mempool from original Tx
-func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, feeToken uint64) *TxDesc {
+func createTxDescMempool(tx basemeta.Transaction, height uint64, fee uint64, feeToken uint64) *TxDesc {
 	txDesc := &TxDesc{
-		Desc: metadata.TxDesc{
+		Desc: basemeta.TxDesc{
 			Tx:       tx,
 			Height:   height,
 			Fee:      fee,
@@ -382,7 +382,7 @@ func createTxDescMempool(tx metadata.Transaction, height uint64, fee uint64, fee
 
 func (tp *TxPool) checkFees(
 	beaconView *blockchain.BeaconBestState,
-	tx metadata.Transaction,
+	tx basemeta.Transaction,
 	shardID byte,
 	beaconHeight int64,
 ) bool {
@@ -416,7 +416,7 @@ func (tp *TxPool) checkFees(
 		feePToken := tx.GetTxFeeToken()
 		//convert fee in Ptoken to fee in native token (if feePToken > 0)
 		if feePToken > 0 {
-			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, beaconStateDB)
+			feePTokenToNativeTokenTmp, err := basemeta.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, beaconStateDB)
 			if err != nil {
 				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 					fmt.Errorf("transaction %+v: %+v %v can not convert to native token %+v",
@@ -482,7 +482,7 @@ In Param#2: isStore: store transaction to persistence storage only work for tran
 9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
 10. RequestStopAutoStaking
 */
-func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx metadata.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool) error {
+func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx basemeta.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool) error {
 	var err error
 	txHash := tx.Hash()
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
@@ -583,7 +583,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 		if tx.GetMetadata().GetType() == basemeta.ShardStakingMeta || tx.GetMetadata().GetType() == basemeta.BeaconStakingMeta {
 			stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 			if !ok {
-				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
+				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *basemeta.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
 			}
 			pubkey = stakingMetadata.CommitteePublicKey
 			tp.candidateMtx.RLock()
@@ -601,7 +601,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 		if tx.GetMetadata().GetType() == basemeta.StopAutoStakingMeta {
 			stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
 			if !ok {
-				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
+				return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *basemeta.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
 			}
 			requestedPublicKey = stopAutoStakingMetadata.CommitteePublicKey
 			tp.requestStopStakingMtx.RLock()
@@ -623,7 +623,7 @@ func (tp *TxPool) isTxInPool(hash *common.Hash) bool {
 	return false
 }
 
-func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error, bool) {
+func (tp *TxPool) validateTransactionReplacement(tx basemeta.Transaction) (error, bool) {
 	// calculate match serial number list in pool for replaced tx
 	serialNumberHashList := tx.ListSerialNumbersHashH()
 	hash := common.HashArrayOfHashArray(serialNumberHashList)
@@ -688,9 +688,9 @@ func (tp *TxPool) validateTransactionReplacement(tx metadata.Transaction) (error
 }
 
 // TriggerCRemoveTxs - send a tx channel into CRemoveTxs of tx mempool
-func (tp *TxPool) TriggerCRemoveTxs(tx metadata.Transaction) {
+func (tp *TxPool) TriggerCRemoveTxs(tx basemeta.Transaction) {
 	if tp.IsBlockGenStarted {
-		go func(tx metadata.Transaction) {
+		go func(tx basemeta.Transaction) {
 			tp.CRemoveTxs <- tx
 		}(tx)
 	}
@@ -750,7 +750,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 			{
 				stakingMetadata, ok := tx.GetMetadata().(*metadata.StakingMetadata)
 				if !ok {
-					return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
+					return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *basemeta.StakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
 				}
 				tp.addCandidateToList(*txHash, stakingMetadata.CommitteePublicKey)
 			}
@@ -758,7 +758,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 			{
 				stopAutoStakingMetadata, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata)
 				if !ok {
-					return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *metadata.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
+					return NewMempoolTxError(GetStakingMetadataError, fmt.Errorf("Expect metadata type to be *basemeta.StopAutoStakingMetadata but get %+v", reflect.TypeOf(tx.GetMetadata())))
 				}
 				tp.addRequestStopStakingToList(*txHash, stopAutoStakingMetadata.CommitteePublicKey)
 			}
@@ -773,7 +773,7 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 }
 
 // Check relay shard and public key role before processing transaction
-func (tp *TxPool) checkRelayShard(tx metadata.Transaction) bool {
+func (tp *TxPool) checkRelayShard(tx basemeta.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	if common.IndexOfByte(senderShardID, tp.config.RelayShards) > -1 {
 		return true
@@ -781,7 +781,7 @@ func (tp *TxPool) checkRelayShard(tx metadata.Transaction) bool {
 	return false
 }
 
-func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
+func (tp *TxPool) checkPublicKeyRole(tx basemeta.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	tp.roleMtx.RLock()
 	if tp.config.ConsensusEngine.IsCommitteeInShard(senderShardID) {
@@ -794,7 +794,7 @@ func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 }
 
 // RemoveTx safe remove transaction for pool
-func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
+func (tp *TxPool) RemoveTx(txs []basemeta.Transaction, isInBlock bool) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	// remove transaction from database mempool
@@ -820,7 +820,7 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		+ New tx (Replacement tx) still exist in pool
 		+ Using the same list serial number to delete new transaction out of pool
 */
-func (tp *TxPool) removeTx(tx metadata.Transaction) {
+func (tp *TxPool) removeTx(tx basemeta.Transaction) {
 	//Logger.log.Infof((*tx).Hash().String())
 	if _, exists := tp.pool[*tx.Hash()]; exists {
 		delete(tp.pool, *tx.Hash())
@@ -931,7 +931,7 @@ func (tp *TxPool) MarkForwardedTransaction(txHash common.Hash) {
 }
 
 // GetTx get transaction info by hash
-func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
+func (tp *TxPool) GetTx(txHash *common.Hash) (basemeta.Transaction, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	Logger.log.Info(txHash.String())
@@ -946,10 +946,10 @@ func (tp *TxPool) GetTx(txHash *common.Hash) (metadata.Transaction, error) {
 
 // // MiningDescs returns a slice of mining descriptors for all the transactions
 // // in the pool.
-func (tp *TxPool) MiningDescs() []*metadata.TxDesc {
+func (tp *TxPool) MiningDescs() []*basemeta.TxDesc {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	descs := []*metadata.TxDesc{}
+	descs := []*basemeta.TxDesc{}
 	for _, desc := range tp.pool {
 		descs = append(descs, &desc.Desc)
 	}
@@ -1053,10 +1053,10 @@ func (tp *TxPool) listTxs() []string {
 /*
 List all tx ids in mempool
 */
-func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
+func (tp *TxPool) ListTxsDetail() []basemeta.Transaction {
 	tp.mtx.RLock()
 	defer tp.mtx.RUnlock()
-	result := make([]metadata.Transaction, 0)
+	result := make([]basemeta.Transaction, 0)
 	for _, tx := range tp.pool {
 		result = append(result, tx.Desc.Tx)
 	}
@@ -1128,10 +1128,10 @@ func (tp TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
 	return m
 }
 
-func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
+func (tp TxPool) GetTxsInMem() map[common.Hash]basemeta.TxDesc {
 	//tp.mtx.RLock()
 	//defer tp.mtx.RUnlock()
-	txsInMem := make(map[common.Hash]metadata.TxDesc)
+	txsInMem := make(map[common.Hash]basemeta.TxDesc)
 	for hash, txDesc := range tp.pool {
 		txsInMem[hash] = txDesc.Desc
 	}

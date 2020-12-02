@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	bMeta "github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
+	"github.com/incognitochain/incognito-chain/portal/portalprocess"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -65,7 +65,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 	}
 
 	meta, _ := portalMeta.NewPortalCustodianDeposit(
-		bMeta.PortalCustodianDepositMeta,
+		basemeta.PortalCustodianDepositMeta,
 		incognitoAddress,
 		remoteAddresses,
 		depositedAmount,
@@ -244,7 +244,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianWithdrawRequest(para
 	}
 
 	meta, _ := portalMeta.NewPortalCustodianWithdrawRequest(
-		bMeta.PortalCustodianWithdrawRequestMeta,
+		basemeta.PortalCustodianWithdrawRequestMeta,
 		paymentAddress,
 		amount,
 	)
@@ -351,7 +351,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianWithdrawRequestV3(pa
 	}
 
 	meta, _ := portalMeta.NewPortalCustodianWithdrawRequestV3(
-		bMeta.PortalCustodianWithdrawRequestMetaV3,
+		basemeta.PortalCustodianWithdrawRequestMetaV3,
 		custodianIncAddress,
 		custodianExtAddress,
 		externalTokenID,
@@ -454,7 +454,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithReqWithdrawRewardPortal(param
 	}
 
 	meta, _ := portalMeta.NewPortalRequestWithdrawReward(
-		bMeta.PortalRequestWithdrawRewardMeta,
+		basemeta.PortalRequestWithdrawRewardMeta,
 		incognitoAddress,
 		*tokenID)
 
@@ -543,7 +543,7 @@ func (httpServer *HttpServer) handleGetPortalReward(params interface{}, closeCha
 	}
 	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
 
-	portalState, err := blockchain.InitCurrentPortalStateFromDB(beaconFeatureStateDB)
+	portalState, err := portalprocess.InitCurrentPortalStateFromDB(beaconFeatureStateDB)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalRewardError, err)
 	}

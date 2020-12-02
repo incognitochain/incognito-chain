@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/portal"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -141,9 +142,11 @@ func mainMaster(serverChan chan<- *Server) error {
 		}
 	}
 	// Create btcrelaying chain
+	portalParams := portal.GetLatestPortalParams(activeNetParams.Params.PortalParams)
+
 	btcChain, err := getBTCRelayingChain(
-		activeNetParams.Params.BTCRelayingHeaderChainID,
-		activeNetParams.Params.BTCDataFolderName,
+		portalParams.RelayingParams.BTCRelayingHeaderChainID,
+		portalParams.RelayingParams.BTCDataFolderName,
 	)
 	if err != nil {
 		Logger.log.Error("could not get or create btc relaying chain")
@@ -157,7 +160,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}()
 
 	// Create bnbrelaying chain state
-	bnbChainState, err := getBNBRelayingChainState(activeNetParams.Params.BNBRelayingHeaderChainID)
+	bnbChainState, err := getBNBRelayingChainState(portalParams.RelayingParams.BNBRelayingHeaderChainID)
 	if err != nil {
 		Logger.log.Error("could not get or create bnb relaying chain state")
 		Logger.log.Error(err)

@@ -77,6 +77,10 @@ func ParseMetadata(meta interface{}) (basemeta.Metadata, error) {
 		md = &PDEFeeWithdrawalResponse{}
 	case basemeta.PDEContributionResponseMeta:
 		md = &PDEContributionResponse{}
+	case basemeta.BurningForDepositToSCRequestMeta:
+		md = &BurningRequest{}
+	case basemeta.BurningForDepositToSCRequestMetaV2:
+		md = &BurningRequest{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))

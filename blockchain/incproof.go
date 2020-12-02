@@ -2,9 +2,9 @@ package blockchain
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"math/big"
 	"strconv"
 )
@@ -21,7 +21,7 @@ type IncProof struct {
 
 func NewIncProof(metaType int) IncProofInterface {
 	switch metaType {
-	case metadata.PortalCustodianWithdrawConfirmMetaV3, metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3, metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3:
+	case basemeta.PortalCustodianWithdrawConfirmMetaV3, basemeta.PortalRedeemFromLiquidationPoolConfirmMetaV3, basemeta.PortalLiquidateRunAwayCustodianConfirmMetaV3:
 		return PortalWithdrawCollateralProof{
 			&IncProof{
 				metaType: metaType,

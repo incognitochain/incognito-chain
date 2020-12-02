@@ -1,8 +1,9 @@
-package instructions
+package portalprocess
 
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -13,12 +14,12 @@ import (
 	"strconv"
 )
 
-func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewardInfos map[string]*statedb.PortalRewardInfo) []string {
+func buildInstForPortalReward(beaconHeight uint64, rewardInfos map[string]*statedb.PortalRewardInfo) []string {
 	portalRewardContent := metadata.NewPortalReward(beaconHeight, rewardInfos)
 	contentStr, _ := json.Marshal(portalRewardContent)
 
 	inst := []string{
-		strconv.Itoa(metadata.PortalRewardMetaV3),
+		strconv.Itoa(basemeta.PortalRewardMetaV3),
 		strconv.Itoa(-1), // no need shardID
 		"portalRewardInst",
 		string(contentStr),
@@ -27,12 +28,12 @@ func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewa
 	return inst
 }
 
-func (blockchain *BlockChain) buildInstForPortalTotalReward(rewardInfos map[string]uint64) []string {
+func buildInstForPortalTotalReward(rewardInfos map[string]uint64) []string {
 	portalRewardContent := metadata.NewPortalTotalCustodianReward(rewardInfos)
 	contentStr, _ := json.Marshal(portalRewardContent)
 
 	inst := []string{
-		strconv.Itoa(metadata.PortalTotalRewardCustodianMeta),
+		strconv.Itoa(basemeta.PortalTotalRewardCustodianMeta),
 		strconv.Itoa(-1), // no need shardID
 		"portalTotalRewardInst",
 		string(contentStr),
@@ -140,7 +141,7 @@ func splitRewardForCustodians(
 	return rewardInfos
 }
 
-func (blockchain *BlockChain) buildPortalRewardsInsts(
+func buildPortalRewardsInsts(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
@@ -207,7 +208,7 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 				amount := rewardForCustodianByEpoch[key]
 				totalRewardForCustodians[tokenID.String()] = amount
 			}
-			instTotalReward := blockchain.buildInstForPortalTotalReward(totalRewardForCustodians)
+			instTotalReward := buildInstForPortalTotalReward(totalRewardForCustodians)
 			rewardInsts = append(rewardInsts, instTotalReward)
 		}
 	}
@@ -237,7 +238,7 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 		sortedRewardInfos[key] = new(statedb.PortalRewardInfo)
 		sortedRewardInfos[key].SetRewards(rewardInfoTmp)
 	}
-	inst := blockchain.buildInstForPortalReward(beaconHeight+1, sortedRewardInfos)
+	inst := buildInstForPortalReward(beaconHeight+1, sortedRewardInfos)
 	rewardInsts = append(rewardInsts, inst)
 
 	return rewardInsts, nil
@@ -265,16 +266,43 @@ func (p *portalReqWithdrawRewardProcessor) putAction(action []string, shardID by
 	}
 }
 
-func (p *portalReqWithdrawRewardProcessor) prepareDataBeforeProcessing(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalReqWithdrawRewardProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
+// beacon build new instruction from instruction received from ShardToBeaconBlock
+func buildWithdrawPortalRewardInst(
+	custodianAddressStr string,
+	tokenID common.Hash,
+	rewardAmount uint64,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	status string,
+) []string {
+	withdrawRewardContent := metadata2.PortalRequestWithdrawRewardContent{
+		CustodianAddressStr: custodianAddressStr,
+		TokenID:             tokenID,
+		RewardAmount:        rewardAmount,
+		TxReqID:             txReqID,
+		ShardID:             shardID,
+	}
+	withdrawRewardContentBytes, _ := json.Marshal(withdrawRewardContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(withdrawRewardContentBytes),
+	}
+}
+
 func (p *portalReqWithdrawRewardProcessor) buildNewInsts(
-	bc *BlockChain,
+	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
+	shardHeights map[byte]uint64,
 	portalParams portal.PortalParams,
 	optionalData map[string]interface{},
 ) ([][]string, error) {
@@ -340,28 +368,16 @@ func (p *portalReqWithdrawRewardProcessor) buildNewInsts(
 	}
 }
 
-// beacon build new instruction from instruction received from ShardToBeaconBlock
-func buildWithdrawPortalRewardInst(
-	custodianAddressStr string,
-	tokenID common.Hash,
-	rewardAmount uint64,
-	metaType int,
-	shardID byte,
-	txReqID common.Hash,
-	status string,
-) []string {
-	withdrawRewardContent := metadata2.PortalRequestWithdrawRewardContent{
-		CustodianAddressStr: custodianAddressStr,
-		TokenID:             tokenID,
-		RewardAmount:        rewardAmount,
-		TxReqID:             txReqID,
-		ShardID:             shardID,
-	}
-	withdrawRewardContentBytes, _ := json.Marshal(withdrawRewardContent)
-	return []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		status,
-		string(withdrawRewardContentBytes),
-	}
+func (p *portalReqWithdrawRewardProcessor) processInsts(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams portal.PortalParams,
+	updatingInfoByTokenID map[common.Hash]basemeta.UpdatingInfo,
+) error {
+	return nil
 }
+
+
+

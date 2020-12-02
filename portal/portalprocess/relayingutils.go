@@ -1,13 +1,13 @@
-package instructions
+package portalprocess
 
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
 	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/types"
 	"strconv"
 )
@@ -55,7 +55,7 @@ func (rChain *relayingChain) buildHeaderRelayingInst(
 }
 
 func (rbnbChain *relayingBNBChain) buildRelayingInst(
-	blockchain *BlockChain,
+	bc basemeta.ChainRetriever,
 	relayingHeaderAction metadata2.RelayingHeaderAction,
 	relayingHeaderChain *RelayingHeaderChainState,
 ) [][]string {
@@ -119,7 +119,7 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 }
 
 func (rbtcChain *relayingBTCChain) buildRelayingInst(
-	blockchain *BlockChain,
+	bc basemeta.ChainRetriever,
 	relayingHeaderAction metadata2.RelayingHeaderAction,
 	relayingState *RelayingHeaderChainState,
 ) [][]string {
@@ -143,32 +143,3 @@ type RelayingHeaderChainState struct {
 	BTCHeaderChain *btcrelaying.BlockChain
 }
 
-func (bc *BlockChain) InitRelayingHeaderChainStateFromDB() (*RelayingHeaderChainState, error) {
-	bnbChain := bc.GetBNBChainState()
-	btcChain := bc.config.BTCChain
-	return &RelayingHeaderChainState{
-		BNBHeaderChain: bnbChain,
-		BTCHeaderChain: btcChain,
-	}, nil
-}
-
-// GetBNBChainState gets bnb header chain state
-func (bc *BlockChain) GetBNBChainState() *bnbrelaying.BNBChainState {
-	return bc.config.BNBChainState
-}
-
-// GetLatestBNBBlockHeight return latest block height of bnb chain
-func (bc *BlockChain) GetLatestBNBBlockHeight() (int64, error) {
-	bnbChainState := bc.GetBNBChainState()
-
-	if bnbChainState.LatestBlock == nil {
-		return int64(0), errors.New("Latest bnb block is nil")
-	}
-	return bnbChainState.LatestBlock.Height, nil
-}
-
-// GetBNBBlockByHeight gets bnb header by height
-func (bc *BlockChain) GetBNBBlockByHeight(blockHeight int64) (*types.Block, error) {
-	bnbChainState := bc.GetBNBChainState()
-	return bnbChainState.GetBNBBlockByHeight(blockHeight)
-}

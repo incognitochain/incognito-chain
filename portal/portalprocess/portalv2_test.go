@@ -1,4 +1,4 @@
-package instructions
+package portalprocess
 //
 //import (
 //	"encoding/base64"
@@ -369,7 +369,7 @@ package instructions
 //	currentPortalState *CurrentPortalState,
 //	portalParams PortalParams,
 //	shardID byte,
-//	pm *portalManager,
+//	pm *PortalManager,
 //) ([][]string, error) {
 //	var newInsts [][]string
 //
@@ -377,8 +377,8 @@ package instructions
 //		metaType, _ := strconv.Atoi(inst[0])
 //		contentStr := inst[1]
 //
-//		portalProcessor := pm.portalInstructions[metaType]
-//		optionalData, err := portalProcessor.prepareDataBeforeProcessing(stateDB, contentStr)
+//		portalProcessor := pm.PortalInstructions[metaType]
+//		optionalData, err := portalProcessor.prepareDataForBlockProducer(stateDB, contentStr)
 //		if err != nil {
 //			Logger.log.Errorf("Error when preparing data before processing instruction %+v", err)
 //			continue
@@ -410,7 +410,7 @@ package instructions
 //	portalStateDB *statedb.StateDB,
 //	currentPortalState *CurrentPortalState,
 //	portalParams PortalParams,
-//	updatingInfoByTokenID map[common.Hash]UpdatingInfo,
+//	updatingInfoByTokenID map[common.Hash]basemeta.UpdatingInfo,
 //) error {
 //	var err error
 //	for _, inst := range insts {
@@ -705,7 +705,7 @@ package instructions
 //	pm := NewPortalManager()
 //	beaconHeight := uint64(999)
 //	shardID := byte(0)
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	// build test cases
 //	testcases := []TestCaseRelayExchangeRate{
@@ -784,7 +784,7 @@ package instructions
 //	beaconHeight := uint64(1000)
 //	shardID := byte(0)
 //	//newMatchedRedeemReqIDs := []string{}
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	// build test cases
 //	testcases := []TestCaseCustodianDeposit{
@@ -943,7 +943,7 @@ package instructions
 //	beaconHeight := uint64(1001)
 //	shardID := byte(0)
 //	shardHeight := uint64(1001)
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	s.SetupTestPortingRequest()
 //
@@ -1216,7 +1216,7 @@ package instructions
 //	pm := NewPortalManager()
 //	beaconHeight := uint64(1002)
 //	shardID := byte(0)
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	s.SetupTestRequestPtokens()
 //
@@ -1391,12 +1391,12 @@ package instructions
 //	beaconHeight := uint64(3161) // ~ after 24 hours from redeem request
 //	//shardID := byte(0)
 //	//newMatchedRedeemReqIDs := []string{}
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	s.SetupTestAutoLiquidation()
 //
 //	// producer instructions
-//	newInsts, err := bc.checkAndBuildInstForCustodianLiquidation(
+//	newInsts, err := bc.CheckAndBuildInstForCustodianLiquidation(
 //		beaconHeight-1, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0))
 //	s.Equal(nil, err)
 //
@@ -1489,7 +1489,7 @@ package instructions
 //	beaconHeight := uint64(1501)
 //	//shardID := byte(0)
 //	//newMatchedRedeemReqIDs := []string{}
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	s.SetupTestAutoLiquidationByRates()
 //
@@ -1636,7 +1636,7 @@ package instructions
 //	beaconHeight := uint64(1501)
 //	pm := NewPortalManager()
 //	shardID := byte(0)
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	s.SetupTestAutoLiquidationByRates()
 //
@@ -1808,7 +1808,7 @@ package instructions
 //	beaconHeight := uint64(3161) // after 24 hours from requesting porting (bch = 100)
 //	//shardID := byte(0)
 //	//newMatchedRedeemReqIDs := []string{}
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	s.SetupTestPortingRequestExpired()
 //
@@ -2014,7 +2014,7 @@ package instructions
 //		common.PRVCoinID: 100000000000, // 100 prv
 //		common.Hash{1}:   200000,
 //	}
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	s.SetupTestCustodianRewards()
 //

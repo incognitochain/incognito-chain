@@ -564,7 +564,7 @@ func (httpServer *HttpServer) handleConvertNativeTokenToPrivacyToken(params inte
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	res, err := metadata.ConvertNativeTokenToPrivacyToken(
+	res, err := basemeta.ConvertNativeTokenToPrivacyToken(
 		uint64(nativeTokenAmount),
 		tokenID,
 		int64(beaconHeight),
@@ -599,7 +599,7 @@ func (httpServer *HttpServer) handleConvertPrivacyTokenToNativeToken(params inte
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	res, err := metadata.ConvertPrivacyTokenToNativeToken(
+	res, err := basemeta.ConvertPrivacyTokenToNativeToken(
 		uint64(privacyTokenAmount),
 		tokenID,
 		int64(beaconHeight),

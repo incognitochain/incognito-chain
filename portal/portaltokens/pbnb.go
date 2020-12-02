@@ -1,186 +1,16 @@
-package portal
+package portaltokens
 
 import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/binance-chain/go-sdk/types/msg"
 	bMeta "github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/portal/instructions"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
-
-type PortalTokenProcessor interface {
-	ParseAndVerifyProofForPorting(proof string, portingReq *statedb.WaitingPortingRequest, bc bMeta.ChainRetriever) (bool, error)
-	ParseAndVerifyProofForRedeem(proof string, redeemReq *statedb.RedeemRequest, bc bMeta.ChainRetriever, matchedCustodian *statedb.MatchingRedeemCustodianDetail) (bool, error)
-	IsValidRemoteAddress(address string) (bool, error)
-	GetChainID() (string)
-}
-
-type PortalToken struct {
-	ChainID string
-}
-
-type PortalBTCTokenProcessor struct {
-	*PortalToken
-}
-
-func (p *PortalBTCTokenProcessor) ParseAndVerifyProofForPorting(proof string, portingReq *statedb.WaitingPortingRequest, bc bMeta.ChainRetriever) (bool, error){
-	btcChain := bc.GetBTCHeaderChain()
-	if btcChain == nil {
-		Logger.log.Error("BTC relaying chain should not be null")
-		return false, errors.New("BTC relaying chain should not be null")
-	}
-	// parse PortingProof in meta
-	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
-	if err != nil {
-		Logger.log.Errorf("PortingProof is invalid %v\n", err)
-		return false, fmt.Errorf("PortingProof is invalid %v\n", err)
-	}
-
-	isValid, err := btcChain.VerifyTxWithMerkleProofs(btcTxProof)
-	if !isValid || err != nil {
-		Logger.log.Errorf("Verify btcTxProof failed %v", err)
-		return false, fmt.Errorf("Verify btcTxProof failed %v", err)
-	}
-
-	// extract attached message from txOut's OP_RETURN
-	btcAttachedMsg, err := btcrelaying.ExtractAttachedMsgFromTx(btcTxProof.BTCTx)
-	if err != nil {
-		Logger.log.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
-		return false, fmt.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
-	}
-
-	encodedMsg := btcrelaying.HashAndEncodeBase58(portingReq.UniquePortingID())
-	if btcAttachedMsg != encodedMsg {
-		Logger.log.Errorf("PortingId in the btc attached message is not matched with portingID in metadata")
-		return false, fmt.Errorf("PortingId in the btc attached message %v is not matched with portingID in metadata %v", btcAttachedMsg, encodedMsg)
-	}
-
-	// check whether amount transfer in txBNB is equal porting amount or not
-	// check receiver and amount in tx
-	// get list matching custodians in waitingPortingRequest
-	custodians := portingReq.Custodians()
-	outputs := btcTxProof.BTCTx.TxOut
-	for _, cusDetail := range custodians {
-		remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
-		amountNeedToBeTransfer := cusDetail.Amount
-		amountNeedToBeTransferInBTC := btcrelaying.ConvertIncPBTCAmountToExternalBTCAmount(int64(amountNeedToBeTransfer))
-
-		isChecked := false
-		for _, out := range outputs {
-			addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
-			if err != nil {
-				Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
-				continue
-			}
-			if addrStr != remoteAddressNeedToBeTransfer {
-				continue
-			}
-			if out.Value < amountNeedToBeTransferInBTC {
-				Logger.log.Errorf("BTC-TxProof is invalid - the transferred amount to %s must be equal to or greater than %d, but got %d", addrStr, amountNeedToBeTransferInBTC, out.Value)
-				return false, fmt.Errorf("BTC-TxProof is invalid - the transferred amount to %s must be equal to or greater than %d, but got %d", addrStr, amountNeedToBeTransferInBTC, out.Value)
-			} else {
-				isChecked = true
-				break
-			}
-		}
-		if !isChecked {
-			Logger.log.Error("BTC-TxProof is invalid")
-			return false, errors.New("BTC-TxProof is invalid")
-		}
-	}
-
-	return true, nil
-}
-
-func (p *PortalBTCTokenProcessor) ParseAndVerifyProofForRedeem(
-	proof string,
-	redeemReq *statedb.RedeemRequest,
-	bc bMeta.ChainRetriever,
-	matchedCustodian *statedb.MatchingRedeemCustodianDetail) (bool, error){
-	btcChain := bc.GetBTCHeaderChain()
-	if btcChain == nil {
-		Logger.log.Error("BTC relaying chain should not be null")
-		return false, errors.New("BTC relaying chain should not be null")
-	}
-	// parse PortingProof in meta
-	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
-	if err != nil {
-		Logger.log.Errorf("RedeemProof is invalid %v\n", err)
-		return false, fmt.Errorf("RedeemProof is invalid %v\n", err)
-	}
-
-	isValid, err := btcChain.VerifyTxWithMerkleProofs(btcTxProof)
-	if !isValid || err != nil {
-		Logger.log.Errorf("Verify btcTxProof failed %v", err)
-		return false, fmt.Errorf("Verify btcTxProof failed %v", err)
-	}
-
-	// extract attached message from txOut's OP_RETURN
-	btcAttachedMsg, err := btcrelaying.ExtractAttachedMsgFromTx(btcTxProof.BTCTx)
-	if err != nil {
-		Logger.log.Errorf("Could not extract message from btc proof with error: %v", err)
-		return false, fmt.Errorf("Could not extract message from btc proof with error: %v", err)
-	}
-
-	rawMsg := fmt.Sprintf("%s%s", redeemReq.GetUniqueRedeemID(), matchedCustodian.GetIncognitoAddress())
-	encodedMsg := btcrelaying.HashAndEncodeBase58(rawMsg)
-	if btcAttachedMsg != encodedMsg {
-		Logger.log.Errorf("The hash of combination of UniqueRedeemID(%s) and CustodianAddressStr(%s) is not matched to tx's attached message",
-			redeemReq.GetUniqueRedeemID(),  matchedCustodian.GetIncognitoAddress())
-		return false, fmt.Errorf("The hash of combination of UniqueRedeemID(%s) and CustodianAddressStr(%s) is not matched to tx's attached message",
-			redeemReq.GetUniqueRedeemID(),  matchedCustodian.GetIncognitoAddress())
-	}
-
-	// check whether amount transfer in txBNB is equal redeem amount or not
-	// check receiver and amount in tx
-	// get list matching custodians in matchedRedeemRequest
-
-	outputs := btcTxProof.BTCTx.TxOut
-	remoteAddressNeedToBeTransfer := redeemReq.GetRedeemerRemoteAddress()
-	amountNeedToBeTransfer := matchedCustodian.GetAmount()
-	amountNeedToBeTransferInBTC := btcrelaying.ConvertIncPBTCAmountToExternalBTCAmount(int64(amountNeedToBeTransfer))
-
-	isChecked := false
-	for _, out := range outputs {
-		addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
-		if err != nil {
-			Logger.log.Warnf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
-			continue
-		}
-		if addrStr != remoteAddressNeedToBeTransfer {
-			continue
-		}
-		if out.Value < amountNeedToBeTransferInBTC {
-			Logger.log.Errorf("BTC-TxProof is invalid - the transferred amount to %s must be equal to or greater than %d, but got %d", addrStr, amountNeedToBeTransferInBTC, out.Value)
-			return false, fmt.Errorf("BTC-TxProof is invalid - the transferred amount to %s must be equal to or greater than %d, but got %d", addrStr, amountNeedToBeTransferInBTC, out.Value)
-		} else {
-			isChecked = true
-			break
-		}
-	}
-
-	if !isChecked {
-		Logger.log.Error("BTC-TxProof is invalid")
-		return false, errors.New("BTC-TxProof is invalid")
-	}
-	return true, nil
-}
-
-//todo:
-func (p *PortalBTCTokenProcessor) IsValidRemoteAddress(address string) (bool, error) {
-	return true, nil
-}
-
-func (p *PortalBTCTokenProcessor) GetChainID() string {
-	return p.ChainID
-}
 
 type PortalBNBTokenProcessor struct {
 	*PortalToken
@@ -236,7 +66,10 @@ func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForPorting(proof string, po
 		return false, fmt.Errorf("Data in PortingProof is invalid %v", err)
 	}
 
-	var portingMemo instructions.PortingMemoBNB
+	type PortingMemoBNB struct {
+		PortingID string `json:"PortingID"`
+	}
+	var portingMemo PortingMemoBNB
 	err2 = json.Unmarshal(memoBytes, &portingMemo)
 	if err2 != nil {
 		Logger.log.Errorf("Can not unmarshal memo in tx bnb proof", err2)
@@ -256,11 +89,11 @@ func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForPorting(proof string, po
 	for _, cusDetail := range custodians {
 		remoteAddressNeedToBeTransfer := cusDetail.RemoteAddress
 		amountNeedToBeTransfer := cusDetail.Amount
-		amountNeedToBeTransferInBNB := instructions.ConvertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
+		amountNeedToBeTransferInBNB := ConvertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
 
 		isChecked := false
 		for _, out := range outputs {
-			addr, _ := bnb.GetAccAddressString(&out.Address, bc.GetBNBChainID())
+			addr, _ := bnb.GetAccAddressString(&out.Address, bc.GetBNBChainID(0))
 			if addr != remoteAddressNeedToBeTransfer {
 				Logger.log.Warnf("[portal] remoteAddressNeedToBeTransfer: %v - addr: %v\n", remoteAddressNeedToBeTransfer, addr)
 				continue
@@ -344,7 +177,12 @@ func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForRedeem(proof string, red
 		return false, fmt.Errorf("Can not decode memo in tx bnb proof %v", err2)
 	}
 
-	expectedRedeemMemo := instructions.RedeemMemoBNB{
+	type RedeemMemoBNB struct {
+		RedeemID                  string `json:"RedeemID"`
+		CustodianIncognitoAddress string `json:"CustodianIncognitoAddress"`
+	}
+
+	expectedRedeemMemo := RedeemMemoBNB{
 		RedeemID:                  redeemReq.GetUniqueRedeemID(),
 		CustodianIncognitoAddress: matchedCustodian.GetIncognitoAddress()}
 	expectedRedeemMemoBytes, _ := json.Marshal(expectedRedeemMemo)
@@ -363,11 +201,11 @@ func (p *PortalBNBTokenProcessor) ParseAndVerifyProofForRedeem(proof string, red
 
 	remoteAddressNeedToBeTransfer := redeemReq.GetRedeemerRemoteAddress()
 	amountNeedToBeTransfer := matchedCustodian.GetAmount()
-	amountNeedToBeTransferInBNB := instructions.ConvertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
+	amountNeedToBeTransferInBNB := ConvertIncPBNBAmountToExternalBNBAmount(int64(amountNeedToBeTransfer))
 
 	isChecked := false
 	for _, out := range outputs {
-		addr, _ := bnb.GetAccAddressString(&out.Address, bc.GetBNBChainID())
+		addr, _ := bnb.GetAccAddressString(&out.Address, bc.GetBNBChainID(0))
 		if addr != remoteAddressNeedToBeTransfer {
 			continue
 		}
@@ -409,3 +247,9 @@ func (p *PortalBNBTokenProcessor) IsValidRemoteAddress(address string) (bool, er
 func (p *PortalBNBTokenProcessor) GetChainID() string {
 	return p.ChainID
 }
+
+// ConvertIncPBNBAmountToExternalBNBAmount converts amount in inc chain (decimal 9) to amount in bnb chain (decimal 8)
+func ConvertIncPBNBAmountToExternalBNBAmount(incPBNBAmount int64) int64 {
+	return incPBNBAmount / 10 // incPBNBAmount / 1^9 * 1^8
+}
+

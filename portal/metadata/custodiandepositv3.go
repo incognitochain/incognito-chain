@@ -160,7 +160,7 @@ func (custodianDeposit PortalCustodianDepositV3) ValidateSanityData(
 	}
 
 	// validate remote addresses
-	isValid, err := ValidatePortalRemoteAddresses(custodianDeposit.RemoteAddresses, chainRetriever)
+	isValid, err := ValidatePortalRemoteAddresses(custodianDeposit.RemoteAddresses, chainRetriever, beaconHeight)
 	if !isValid || err != nil {
 		return false, false, basemeta.NewMetadataTxError(basemeta.PortalCustodianDepositV3ValidateSanityDataError, err)
 	}

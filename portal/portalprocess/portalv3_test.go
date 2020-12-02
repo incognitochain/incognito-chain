@@ -1,10 +1,11 @@
-package instructions
+package portalprocess
 
 import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	eCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -12,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/portal"
 	common2 "github.com/incognitochain/incognito-chain/portal/common"
 	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
+	"github.com/incognitochain/incognito-chain/portal/portaltokens"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/stretchr/testify/suite"
 	"io/ioutil"
@@ -120,14 +122,14 @@ func (s *PortalTestSuiteV3) SetupTest() {
 				MinBeaconBlockInterval: 40 * time.Second,
 				MinShardBlockInterval:  40 * time.Second,
 				Epoch:                  100,
-				PortalTokens: map[string]portal.PortalTokenProcessor{
-					common.PortalBTCIDStr: &portal.PortalBTCTokenProcessor{
-						&portal.PortalToken{
+				PortalTokens: map[string]portaltokens.PortalTokenProcessor{
+					common.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
+						&portaltokens.PortalToken{
 							ChainID: "Bitcoin-Testnet",
 						},
 					},
-					common.PortalBNBIDStr: &portal.PortalBNBTokenProcessor{
-						&portal.PortalToken{
+					common.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
+						&portaltokens.PortalToken{
 							ChainID: "Binance-Chain-Ganges",
 						},
 					},
@@ -248,7 +250,7 @@ func producerPortalInstructions(
 	currentPortalState *CurrentPortalState,
 	portalParams portal.PortalParams,
 	shardID byte,
-	pm *portalManager,
+	pm *PortalManager,
 ) ([][]string, error) {
 	var newInsts [][]string
 
@@ -264,7 +266,7 @@ func producerPortalInstructions(
 		if metaType == metadata.PortalRedeemRequestMetaV3 {
 			metaType = metadata.PortalRedeemRequestMeta
 		}
-		portalProcessor := pm.portalInstructions[metaType]
+		portalProcessor := pm.PortalInstructions[metaType]
 		newInst, err := portalProcessor.buildNewInsts(
 			blockchain,
 			contentStr,
@@ -292,7 +294,7 @@ func processPortalInstructions(
 	portalStateDB *statedb.StateDB,
 	currentPortalState *CurrentPortalState,
 	portalParams portal.PortalParams,
-	updatingInfoByTokenID map[common.Hash]UpdatingInfo,
+	updatingInfoByTokenID map[common.Hash]basemeta.UpdatingInfo,
 ) error {
 	var err error
 	for _, inst := range insts {
@@ -766,7 +768,7 @@ func buildPortalExchangeRateActionsFromTcs(tcs []TestCaseRelayExchangeRate, shar
 //	pm := NewPortalManager()
 //	beaconHeight := uint64(999)
 //	shardID := byte(0)
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	// build test cases
 //	testcases := []TestCaseRelayExchangeRate{
@@ -937,7 +939,7 @@ func (s *PortalTestSuiteV3) TestCustodianDepositCollateral() {
 	pm := NewPortalManager()
 	beaconHeight := uint64(1000)
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	// build test cases
 	testcases, expectedRes := buildTestCaseAndExpectedResultCustodianDeposit()
@@ -1145,7 +1147,7 @@ func (s *PortalTestSuiteV3) TestCustodianDepositCollateralV3() {
 	pm := NewPortalManager()
 	beaconHeight := uint64(1000)
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	// build test cases and expected results
 	testcases, expectedRes := buildTestCaseAndExpectedResultCustodianDepositV3()
@@ -1364,7 +1366,7 @@ func (s *PortalTestSuiteV3) TestCustodianWithdrawCollateralV3() {
 	pm := NewPortalManager()
 	beaconHeight := uint64(1000)
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestCustodianWithdrawV3()
 
@@ -1667,7 +1669,7 @@ func (s *PortalTestSuiteV3) TestPortingRequest() {
 	pm := NewPortalManager()
 	beaconHeight := uint64(1001)
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestPortingRequest()
 
@@ -2009,7 +2011,7 @@ func (s *PortalTestSuiteV3) TestRequestPtokens() {
 	pm := NewPortalManager()
 	beaconHeight := uint64(1002)
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestRequestPtokens()
 
@@ -2413,7 +2415,7 @@ func (s *PortalTestSuiteV3) TestRequestRedeemV3() {
 	beaconHeight := uint64(1003)
 	shardHeight := uint64(1003)
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestRequestRedeemV3()
 
@@ -2818,7 +2820,7 @@ func (s *PortalTestSuiteV3) TestRequestMatchingWRedeemV3() {
 	beaconHeight := uint64(1004)
 	shardHeight := uint64(1004)
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestRequestMatchingWRedeemV3()
 
@@ -3018,7 +3020,7 @@ func (s *PortalTestSuiteV3) TestAutoPickMoreCustodiansForWRedeemRequest() {
 	shardHeights := map[byte]uint64{
 		0: 1019,
 	}
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestRequestMatchingWRedeemV3()
 
@@ -3424,7 +3426,7 @@ func (s *PortalTestSuiteV3) TestRequestUnlockCollateralsV3() {
 	beaconHeight := uint64(1004)
 	shardHeight := uint64(1004)
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestRequestUnlockCollateralsV3()
 
@@ -3686,7 +3688,7 @@ func (s *PortalTestSuiteV3) TestExpiredPortingRequest() {
 	shardHeights := map[byte]uint64{
 		0: 3162,
 	}
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestExpiredPortingRequest()
 	expectedResult := buildExpectedResultExpiredPortingRequest()
@@ -3952,11 +3954,11 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationCustodian() {
 	//shardID := byte(0)
 	//pm := NewPortalManager()
 	//newMatchedRedeemReqIDs := []string{}
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestAutoLiquidation()
 
-	newInsts, err := s.blockChain.checkAndBuildInstForCustodianLiquidation(beaconHeight, shardHeights, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0))
+	newInsts, err := s.blockChain.CheckAndBuildInstForCustodianLiquidation(beaconHeight, shardHeights, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0))
 	s.Equal(nil, err)
 
 	// process new instructions redeem
@@ -4344,7 +4346,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 	beaconHeight := uint64(1501)
 	//shardID := byte(0)
 	//newMatchedRedeemReqIDs := []string{}
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestAutoLiquidationByRates()
 
@@ -4430,7 +4432,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //	beaconHeight := uint64(1501)
 //	pm := NewPortalManager()
 //	shardID := byte(0)
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	s.SetupTestAutoLiquidationByRates()
 //
@@ -4733,7 +4735,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //		common.PRVCoinID: 100000000000, // 100 prv
 //		common.Hash{1}:   200000,
 //	}
-//	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+//	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 //
 //	s.SetupTestCustodianRewards()
 //

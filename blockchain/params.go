@@ -1,9 +1,10 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portaltokens"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -51,7 +52,7 @@ type Params struct {
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
 	BeaconHeightBreakPointBurnAddr   uint64
-	PortalParams                     map[uint64]PortalParams
+	PortalParams                     map[uint64]portal.PortalParams
 	EpochBreakPointSwapNewKey        []uint64
 	IsBackup                         bool
 	PreloadAddress                   string
@@ -86,30 +87,30 @@ var genesisParamsTestnet2New *GenesisParams
 var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
 
-func initPortalTokensForTestNet() map[string]PortalTokenProcessor {
-	return map[string]PortalTokenProcessor{
-		common.PortalBTCIDStr: &PortalBTCTokenProcessor{
-			&PortalToken{
+func initPortalTokensForTestNet() map[string]portaltokens.PortalTokenProcessor {
+	return map[string]portaltokens.PortalTokenProcessor{
+		common.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
+			&portaltokens.PortalToken{
 				ChainID: TestnetBTCChainID,
 			},
 		},
-		common.PortalBNBIDStr: &PortalBNBTokenProcessor{
-			&PortalToken{
+		common.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
+			&portaltokens.PortalToken{
 				ChainID: TestnetBNBChainID,
 			},
 		},
 	}
 }
 
-func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
-	return map[string]PortalTokenProcessor{
-		common.PortalBTCIDStr: &PortalBTCTokenProcessor{
-			&PortalToken{
+func initPortalTokensForMainNet() map[string]portaltokens.PortalTokenProcessor {
+	return map[string]portaltokens.PortalTokenProcessor{
+		common.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
+			&portaltokens.PortalToken{
 				ChainID: MainnetBTCChainID,
 			},
 		},
-		common.PortalBNBIDStr: &PortalBNBTokenProcessor{
-			&PortalToken{
+		common.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
+			&portaltokens.PortalToken{
 				ChainID: MainnetBNBChainID,
 			},
 		},
@@ -118,8 +119,8 @@ func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
 
 // external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
-func getSupportedPortalCollateralsMainnet() []PortalCollateral {
-	return []PortalCollateral{
+func getSupportedPortalCollateralsMainnet() []portal.PortalCollateral {
+	return []portal.PortalCollateral{
 		{"0000000000000000000000000000000000000000", 9}, // eth
 		{"dac17f958d2ee523a2206206994597c13d831ec7", 6}, // usdt
 		{"a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", 6}, // usdc
@@ -128,8 +129,8 @@ func getSupportedPortalCollateralsMainnet() []PortalCollateral {
 
 // external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
-func getSupportedPortalCollateralsTestnet() []PortalCollateral {
-	return []PortalCollateral{
+func getSupportedPortalCollateralsTestnet() []portal.PortalCollateral {
+	return []portal.PortalCollateral{
 		{"0000000000000000000000000000000000000000", 9}, // eth
 		{"3a829f4b97660d970428cd370c4e41cbad62092b", 6}, // usdt, kovan testnet
 		{"75b0622cec14130172eae9cf166b92e5c112faff", 6}, // usdc, kovan testnet
@@ -138,8 +139,8 @@ func getSupportedPortalCollateralsTestnet() []PortalCollateral {
 
 // external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
-func getSupportedPortalCollateralsTestnet2() []PortalCollateral {
-	return []PortalCollateral{
+func getSupportedPortalCollateralsTestnet2() []portal.PortalCollateral {
+	return []portal.PortalCollateral{
 		{"0000000000000000000000000000000000000000", 9}, // eth
 		{"3a829f4b97660d970428cd370c4e41cbad62092b", 6}, // usdt, kovan testnet
 		{"75b0622cec14130172eae9cf166b92e5c112faff", 6}, // usdc, kovan testnet
@@ -200,7 +201,7 @@ func SetupParam() {
 		ConsensusV2Epoch:               16930,
 		BeaconHeightBreakPointBurnAddr: 250000,
 
-		PortalParams: map[uint64]PortalParams{
+		PortalParams: map[uint64]portal.PortalParams{
 			0: {
 				TimeOutCustodianReturnPubToken:       1 * time.Hour,
 				TimeOutWaitingPortingRequest:         1 * time.Hour,
@@ -218,14 +219,17 @@ func SetupParam() {
 				MinPortalFee:                         100,
 
 				PortalTokens:                initPortalTokensForTestNet(),
-				BNBRelayingHeaderChainID:    TestnetBNBChainID,
-				BTCRelayingHeaderChainID:    TestnetBTCChainID,
-				BTCDataFolderName:           TestnetBTCDataFolderName,
-				BNBFullNodeProtocol:         TestnetBNBFullNodeProtocol,
-				BNBFullNodeHost:             TestnetBNBFullNodeHost,
-				BNBFullNodePort:             TestnetBNBFullNodePort,
 				PortalFeederAddress:         TestnetPortalFeeder,
 				PortalETHContractAddressStr: "0x21Ab34649777e94e30d60319cDBa472759B00AaA", // todo: update sc address
+
+				RelayingParams: portal.RelayingParams{
+					BNBRelayingHeaderChainID:    TestnetBNBChainID,
+					BTCRelayingHeaderChainID:    TestnetBTCChainID,
+					BTCDataFolderName:           TestnetBTCDataFolderName,
+					BNBFullNodeProtocol:         TestnetBNBFullNodeProtocol,
+					BNBFullNodeHost:             TestnetBNBFullNodeHost,
+					BNBFullNodePort:             TestnetBNBFullNodePort,
+				},
 			},
 		},
 
@@ -292,7 +296,7 @@ func SetupParam() {
 		ConsensusV2Epoch:               1e9,
 		BeaconHeightBreakPointBurnAddr: 1,
 
-		PortalParams: map[uint64]PortalParams{
+		PortalParams: map[uint64]portal.PortalParams{
 			0: {
 				TimeOutCustodianReturnPubToken:       5 * time.Minute,
 				TimeOutWaitingPortingRequest:         5 * time.Minute,
@@ -309,14 +313,17 @@ func SetupParam() {
 				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet2(),
 				MinPortalFee:                         100,
 				PortalTokens:                         initPortalTokensForTestNet(),
-				BNBRelayingHeaderChainID:             Testnet2BNBChainID,
-				BTCRelayingHeaderChainID:             Testnet2BTCChainID,
-				BTCDataFolderName:                    Testnet2BTCDataFolderName,
-				BNBFullNodeProtocol:                  Testnet2BNBFullNodeProtocol,
-				BNBFullNodeHost:                      Testnet2BNBFullNodeHost,
-				BNBFullNodePort:                      Testnet2BNBFullNodePort,
 				PortalFeederAddress:                  Testnet2PortalFeeder,
 				PortalETHContractAddressStr:          "", // todo: update sc address
+
+				RelayingParams: portal.RelayingParams{
+					BNBRelayingHeaderChainID:             Testnet2BNBChainID,
+					BTCRelayingHeaderChainID:             Testnet2BTCChainID,
+					BTCDataFolderName:                    Testnet2BTCDataFolderName,
+					BNBFullNodeProtocol:                  Testnet2BNBFullNodeProtocol,
+					BNBFullNodeHost:                      Testnet2BNBFullNodeHost,
+					BNBFullNodePort:                      Testnet2BNBFullNodePort,
+				},
 			},
 		},
 
@@ -381,7 +388,7 @@ func SetupParam() {
 		ConsensusV2Epoch:               1e9,
 		BeaconHeightBreakPointBurnAddr: 150500,
 
-		PortalParams: map[uint64]PortalParams{
+		PortalParams: map[uint64]portal.PortalParams{
 			0: {
 				TimeOutCustodianReturnPubToken:       24 * time.Hour,
 				TimeOutWaitingPortingRequest:         24 * time.Hour,
@@ -398,14 +405,17 @@ func SetupParam() {
 				SupportedCollateralTokens:            getSupportedPortalCollateralsMainnet(),
 				MinPortalFee:                         100,
 				PortalTokens:                         initPortalTokensForMainNet(),
-				BNBRelayingHeaderChainID:             MainnetBNBChainID,
-				BTCRelayingHeaderChainID:             MainnetBTCChainID,
-				BTCDataFolderName:                    MainnetBTCDataFolderName,
-				BNBFullNodeProtocol:                  MainnetBNBFullNodeProtocol,
-				BNBFullNodeHost:                      MainnetBNBFullNodeHost,
-				BNBFullNodePort:                      MainnetBNBFullNodePort,
 				PortalFeederAddress:                  MainnetPortalFeeder,
 				PortalETHContractAddressStr:          "", // todo: update sc address
+
+				RelayingParams: portal.RelayingParams{
+					BNBRelayingHeaderChainID:             MainnetBNBChainID,
+					BTCRelayingHeaderChainID:             MainnetBTCChainID,
+					BTCDataFolderName:                    MainnetBTCDataFolderName,
+					BNBFullNodeProtocol:                  MainnetBNBFullNodeProtocol,
+					BNBFullNodeHost:                      MainnetBNBFullNodeHost,
+					BNBFullNodePort:                      MainnetBNBFullNodePort,
+				},
 			},
 		},
 
