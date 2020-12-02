@@ -14,14 +14,31 @@ const (
 type DatabaseDriver interface {
 	//StoreFullBeaconState(beacon data.Beacon) error //TODO: will use this function for atomic/bulk insert.
 	GetBeaconStorer () repository.BeaconStateStorer
-	GetPDEShareStorer () repository.PDEShareStorer
-
 	GetShardStorer () repository.ShardStateStorer
-	GetTransactionStorer() repository.TransactionStorer
 
+	GetPDEShareStorer () repository.PDEShareStorer
+	GetPDEPoolForPairStateStorer() repository.PDEPoolForPairStateStorer
+	GetPDETradingFeeStorer() repository.PDETradingFeeStorer
+	GetWaitingPDEContributionStorer() repository.WaitingPDEContributionStorer
+
+	GetCustodianStorer() repository.CustodianStorer
+	GetWaitingPortingRequestStorer() repository.WaitingPortingRequestStorer
+	GetFinalExchangeRatesStorer() repository.FinalExchangeRatesStorer
+	GetWaitingRedeemRequestStorer() repository.WaitingRedeemRequestStorer
+	GetMatchedRedeemRequestStorer() repository.MatchedRedeemRequestStorer
+	GetLockedCollateralStorer() repository.LockedCollateralStorer
+
+
+
+
+	GetTransactionStorer() repository.TransactionStorer
 	GetInputCoinStorer() repository.InputCoinStorer
 	GetOutputCoinStorer() repository.OutputCoinStorer
 	GetCommitmentStorer() repository.CommitmentStorer
+
+	GetTokenStateStorer() repository.TokenStateStorer
+
+
 }
 
 var dbDriver = make(map[KindDB]DatabaseDriver)

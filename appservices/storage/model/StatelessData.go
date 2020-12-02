@@ -20,6 +20,17 @@ type Transaction struct {
 	Proof *zkp.PaymentProof  `json:"Proof,omitempty"`
 	PubKeyLastByteSender byte
 	Metadata metadata.Metadata
+	TransactionCustomToken *TransactionCustomToken
+}
+
+type TransactionCustomToken struct {
+	Tx			   Transaction          // used for privacy functionality
+	PropertyID     string// = hash of TxCustomTokenprivacy data
+	PropertyName   string
+	PropertySymbol string
+	Type     int    // action type
+	Mintable bool   // default false
+	Amount   uint64 // init amount
 }
 
 type Instruction struct {
@@ -38,6 +49,8 @@ type InputCoin struct {
 	Randomness     []byte `json:"Randomness"`
 	Value          uint64 `json:"Value"`
 	Info           []byte `json:"Info"` //256 bytes
+	TokenID		   string `json:"TokenID"`
+
 }
 
 type OutputCoin struct {
@@ -52,14 +65,16 @@ type OutputCoin struct {
 	Randomness     []byte `json:"Randomness"`
 	Value          uint64 `json:"Value"`
 	Info           []byte `json:"Info"` //256 bytes
+	TokenID		   string  `json:"TokenID"`
+
 }
 
 type Commitment struct {
 	ShardId  			byte `json:"ShardId"`
 	ShardHash 			string `json:"ShardHash"`
 	ShardHeight 		uint64 `json:"ShardHeight"`
-	TransactionHash string
-	TokenID    string
-	Commitment []byte
-	Index      uint64
+	TransactionHash string `json:"TransactionHash"`
+	TokenID    string `json:"TokenID"`
+	Commitment []byte `json:"Commitment"`
+	Index      uint64 `json:"Index"`
 }

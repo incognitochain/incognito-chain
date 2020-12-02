@@ -41,7 +41,7 @@ type WaitingPDEContributionState struct {
 	ContributorAddress string
 	TokenID            string
 	Amount             uint64
-	TXReqID            common.Hash
+	TXReqID            string
 }
 
 type CustodianState struct {
@@ -62,7 +62,7 @@ type WaitingPortingRequest struct {
 	Custodians      []statedb.MatchingPortingCustodianDetail
 	PortingFee      uint64
 	BeaconHeight    uint64
-	TXReqID         common.Hash
+	TXReqID         string
 }
 
 type FinalExchangeRatesState struct {
@@ -78,7 +78,7 @@ type RedeemRequest struct {
 	Custodians            []MatchingRedeemCustodianDetail
 	RedeemFee             uint64
 	BeaconHeight          uint64
-	TXReqID               common.Hash
+	TXReqID               string
 }
 
 type MatchingRedeemCustodianDetail struct {
@@ -287,7 +287,7 @@ func getWaitingPDEContributionStateFromBeaconState(PDEStateDB *statedb.StateDB) 
 			ContributorAddress: waiting.ContributorAddress(),
 			TokenID:            waiting.TokenID(),
 			Amount:             waiting.Amount(),
-			TXReqID:            waiting.TxReqID(),
+			TXReqID:            waiting.TxReqID().String(),
 		})
 	}
 	return newWaitingPDEContributionState
@@ -382,7 +382,7 @@ func getWaitingPortingRequestFromBeaconState(PortalStateDB *statedb.StateDB) []W
 			Custodians:      getCustodianOfWaitingPortingRequest(waiting.Custodians()),
 			PortingFee:      waiting.PortingFee(),
 			BeaconHeight:    waiting.BeaconHeight(),
-			TXReqID:         common.Hash{},
+			TXReqID:         waiting.TxReqID().String(),
 		})
 	}
 	return waitingPortalRequest
@@ -417,7 +417,7 @@ func getAllWaitingRedeemRequestFromBeaconState (PortalStateDB *statedb.StateDB) 
 			Custodians:            getCustodianOfRedeemRequest(redeem.GetCustodians()),
 			RedeemFee:             redeem.GetRedeemFee(),
 			BeaconHeight:          redeem.GetBeaconHeight(),
-			TXReqID:               redeem.GetTxReqID(),
+			TXReqID:               redeem.GetTxReqID().String(),
 		})
 	}
 	return waitingRedeemRequest
@@ -452,7 +452,7 @@ func getAllMatchedRedeemRequestFromBeaconState (PortalStateDB *statedb.StateDB) 
 			Custodians:            getCustodianOfRedeemRequest(redeem.GetCustodians()),
 			RedeemFee:             redeem.GetRedeemFee(),
 			BeaconHeight:          redeem.GetBeaconHeight(),
-			TXReqID:               redeem.GetTxReqID(),
+			TXReqID:               redeem.GetTxReqID().String(),
 		})
 	}
 	return matchedRedeemRequest

@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/incognitochain/incognito-chain/appservices/data"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
@@ -48,7 +47,7 @@ type WaitingPDEContribution struct {
 	ContributorAddress string
 	TokenID            string
 	Amount             uint64
-	TXReqID            common.Hash
+	TXReqID            string
 }
 
 
@@ -77,16 +76,17 @@ type WaitingPortingRequest struct {
 	Amount          		uint64
 	Custodians      		[]statedb.MatchingPortingCustodianDetail
 	PortingFee      		uint64
-	WaitingBeaconHeight    uint64
-	TXReqID         		common.Hash
+	WaitingBeaconHeight    	uint64
+	TXReqID         		string
 }
 
-type FinalExchangeRates struct {
+type FinalExchangeRate struct {
 	BeaconBlockHash    		string					 	`json:"BeaconBlockHash"`
 	BeaconEpoch				uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight			uint64					 					`json:"BeaconHeight"`
 	BeaconTime				int64 `json:"BeaconTime"`
-	Rates map[string]statedb.FinalExchangeRatesDetail
+	Amount					uint64
+	TokenID					string
 }
 
 type RedeemRequest struct {
@@ -102,7 +102,7 @@ type RedeemRequest struct {
 	Custodians            []data.MatchingRedeemCustodianDetail
 	RedeemFee             uint64
 	RedeemBeaconHeight    uint64
-	TXReqID               common.Hash
+	TXReqID               string
 }
 
 type LockedCollateral struct {
@@ -111,5 +111,23 @@ type LockedCollateral struct {
 	BeaconHeight			uint64					 					`json:"BeaconHeight"`
 	BeaconTime				int64 `json:"BeaconTime"`
 	TotalLockedCollateralForRewards uint64
-	LockedCollateralDetail          map[string]uint64 // custodianAddress : amount
+	CustodianAddress		string
+	Amount                  uint64
+	//LockedCollateralDetail          map[string]uint64 // custodianAddress : amount
+}
+
+
+type TokenState struct {
+	ShardID		   byte
+	ShardHash 			string `json:"ShardHash"`
+	ShardHeight 		uint64 `json:"ShardHeight"`
+	TokenID        string
+	PropertyName   string
+	PropertySymbol string
+	TokenType      int    // action type
+	Mintable       bool   // default false
+	Amount         uint64 // init amount
+	Info           []byte
+	InitTx         string
+	Txs            []string
 }

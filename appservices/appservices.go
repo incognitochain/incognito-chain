@@ -68,9 +68,9 @@ func (app *AppService) Start(cQuit chan struct{}) {
 }
 
 func (app *AppService) PublishBeaconState(beaconState *blockchain.BeaconBestState) {
-	//Logger.log.Infof("Publish beaconState with hash %v at height %d", beaconState.BestBlock.Hash().String(), beaconState.BeaconHeight)
-/*	beacon := data.NewBeaconFromBeaconState(beaconState)
-	storage.StoreLatestBeaconFinalState(context.TODO(), beacon)*/
+	Logger.log.Infof("Publish beaconState with hash %v at height %d", beaconState.BestBlock.Hash().String(), beaconState.BeaconHeight)
+	beacon := data.NewBeaconFromBeaconState(beaconState)
+	storage.StoreLatestBeaconFinalState(context.TODO(), beacon)
 }
 
 func (app *AppService) PublishShardState(shardBestState *blockchain.ShardBestState) {

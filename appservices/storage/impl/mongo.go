@@ -31,6 +31,9 @@ const (
 	//Commitment
 	Commitment= "Commitment"
 
+	//TokenState
+	TokenState = "TokenState"
+
 	//PDE Collections
 	PDEShare               = "PDEShare"
 	PDEPoolForPair         = "PDEPoolForPair"
@@ -88,6 +91,9 @@ type mongoDBDriver struct {
 	//Commitment
 	commitmentStorer *mongoCommitmentStorer
 
+	//TokenState
+	tokenStateStorer *mongoTokenStateStorer
+
 	//PDE
 	pdeShareStorer               *mongoPDEShareStorer
 	pdePoolForPairStorer         *mongoPDEPoolForPairStorer
@@ -143,6 +149,14 @@ type mongoCommitmentStorer struct {
 	prefix     string
 	collection [256]*mongo.Collection
 }
+
+//Token State
+type mongoTokenStateStorer struct {
+	mongo 		*mongoDBDriver
+	prefix     string
+	collection [256]*mongo.Collection
+}
+
 
 //PDE
 type mongoPDEShareStorer struct {
@@ -240,6 +254,14 @@ func (mongo *mongoDBDriver) GetCommitmentStorer() repository.CommitmentStorer {
 	return mongo.commitmentStorer
 }
 
+//Get TokenState Storer
+func (mongo *mongoDBDriver) GetTokenStateStorer() repository.TokenStateStorer {
+	if mongo.tokenStateStorer == nil {
+		mongo.tokenStateStorer = &mongoTokenStateStorer{prefix: TokenState, mongo: mongo}
+	}
+	return mongo.tokenStateStorer
+}
+
 //PDE Get Storer
 func (mongo *mongoDBDriver) GetPDEShareStorer() repository.PDEShareStorer {
 	if mongo.pdeShareStorer == nil {
@@ -249,7 +271,7 @@ func (mongo *mongoDBDriver) GetPDEShareStorer() repository.PDEShareStorer {
 	return mongo.pdeShareStorer
 }
 
-func (mongo *mongoDBDriver) GetPDEPoolForPairStorer() repository.PDEPoolForPairStateStorer {
+func (mongo *mongoDBDriver) GetPDEPoolForPairStateStorer() repository.PDEPoolForPairStateStorer {
 	if mongo.pdePoolForPairStorer == nil {
 		collection := mongo.client.Database(DataBaseName).Collection(PDEPoolForPair)
 		mongo.pdePoolForPairStorer = &mongoPDEPoolForPairStorer{collection: collection}
@@ -367,7 +389,6 @@ func (commitmentStorer *mongoCommitmentStorer) StoreCommitment(ctx context.Conte
 		commitmentStorer.collection[commitment.ShardId] =
 			commitmentStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
 	}
-	commitmentStorer.mongo.client.Database(DataBaseName).Collection("Test").InsertOne(ctx, commitment)
 	_, err := commitmentStorer.collection[commitment.ShardId].InsertOne(ctx, commitment)
 	return err
 }
@@ -404,7 +425,7 @@ func (waitingPortingRequestStorer *mongoWaitingPortingRequestStorer) StoreWaitin
 	return err
 }
 
-func (finalExchangeRatesStorer *mongoFinalExchangeRatesStorer) StoreFinalExchangeRates(ctx context.Context, finalExchangeRates model.FinalExchangeRates) error {
+func (finalExchangeRatesStorer *mongoFinalExchangeRatesStorer) StoreFinalExchangeRates(ctx context.Context, finalExchangeRates model.FinalExchangeRate) error {
 	_, err := finalExchangeRatesStorer.collection.InsertOne(ctx, finalExchangeRates)
 	return err
 }
@@ -421,5 +442,17 @@ func (matchedRedeemRequestStorer *mongoMatchedRedeemRequestStorer) StoreMatchedR
 
 func (lockedCollateralStorer *mongoLockedCollateralStorer) StoreLockedCollateral(ctx context.Context, lockedCollateral model.LockedCollateral) error {
 	_, err := lockedCollateralStorer.collection.InsertOne(ctx, lockedCollateral)
+	return err
+}
+
+//Store Token State data
+
+func (tokenStateStorer *mongoTokenStateStorer)StoreTokenState (ctx context.Context, tokenState model.TokenState) error {
+	if tokenStateStorer.collection[tokenState.ShardID]  == nil {
+		collectionName := fmt.Sprintf("%s-%d", tokenStateStorer.prefix, tokenState.ShardID)
+		tokenStateStorer.collection[tokenState.ShardID] =
+			tokenStateStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
+	}
+	_, err := tokenStateStorer.collection[tokenState.ShardID].InsertOne(ctx, tokenState)
 	return err
 }

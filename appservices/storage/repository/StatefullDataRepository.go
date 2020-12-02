@@ -104,13 +104,13 @@ type WaitingPortingRequestRepository interface {
 
 
 type FinalExchangeRatesStorer interface {
-	StoreFinalExchangeRates(ctx context.Context, finalExchangeRates model.FinalExchangeRates) error
+	StoreFinalExchangeRates(ctx context.Context, finalExchangeRates model.FinalExchangeRate) error
 }
 
 type FinalExchangeRatesRetriver interface {
-	GetFinalExchangeRatesByBeaconHash (hash common.Hash, offset uint, limit uint) []model.FinalExchangeRates
-	GetFinalExchangeRatesByBeaconHeight(height uint64, offset uint, limit uint) []model.FinalExchangeRates
-	GetLatestFinalExchangeRatesState (offset uint, limit uint) []model.FinalExchangeRates
+	GetFinalExchangeRatesByBeaconHash (hash common.Hash, offset uint, limit uint) []model.FinalExchangeRate
+	GetFinalExchangeRatesByBeaconHeight(height uint64, offset uint, limit uint) []model.FinalExchangeRate
+	GetLatestFinalExchangeRatesState (offset uint, limit uint) []model.FinalExchangeRate
 
 }
 
@@ -162,7 +162,14 @@ type LockedCollateralRetriver interface {
 
 }
 
+
+
 type LockedCollateralRepository interface {
 	LockedCollateralStorer
 	LockedCollateralRetriver
+}
+
+
+type TokenStateStorer interface {
+	StoreTokenState (ctx context.Context, tokenState model.TokenState) error
 }
