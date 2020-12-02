@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -167,7 +168,7 @@ func (custodianDeposit PortalCustodianDepositV3) ValidateSanityData(
 	if len(custodianDeposit.ProofStrs) == 0 {
 		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("ProofStrs should be not empty"))
 	}
-	if len(custodianDeposit.BlockHash.Bytes()) == 0 {
+	if len(custodianDeposit.BlockHash.Bytes()) == 0 || bytes.Equal(custodianDeposit.BlockHash.Bytes(), eCommon.HexToHash("").Bytes()) {
 		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, errors.New("BlockHash should be not empty"))
 	}
 

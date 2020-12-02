@@ -148,7 +148,7 @@ func (req PortalLiquidationCustodianDepositV3) ValidateSanityData(chainRetriever
 	// validate amount deposit
 	if req.DepositAmount > 0 {
 		// validate deposit proof
-		if len(req.BlockHash.Bytes()) == 0 {
+		if len(req.BlockHash.Bytes()) == 0 || bytes.Equal(req.BlockHash.Bytes(), eCommon.HexToHash("").Bytes()){
 			return false, false, errors.New("BlockHash should be not empty")
 		}
 		if len(req.ProofStrs) == 0 {
