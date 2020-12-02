@@ -2291,5 +2291,5 @@ func (serverObj *Server) PublishBeaconState(beaconState *blockchain.BeaconBestSt
 }
 
 func (serverObj *Server) PublishShardState(shardBestState *blockchain.ShardBestState) {
-
+	serverObj.appServices.PublishShardState(shardBestState)
 }

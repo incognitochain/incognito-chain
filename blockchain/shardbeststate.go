@@ -32,6 +32,7 @@ type ShardRootHash struct {
 	FeatureStateDBRootHash     common.Hash
 	RewardStateDBRootHash      common.Hash
 	SlashStateDBRootHash       common.Hash
+	PrevTransactionStateDBRootHash common.Hash
 }
 
 type ShardBestState struct {

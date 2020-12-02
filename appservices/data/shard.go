@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -30,18 +31,14 @@ type InputCoin struct {
 	CoinDetails Coin
 }
 
-
 type Coin struct {
-	PublicKey      privacy.Point
-	CoinCommitment privacy.Point
-	SNDerivator    privacy.Scalar
-	SerialNumber   privacy.Point
-	Randomness     privacy.Scalar
+	PublicKey      *privacy.Point
+	CoinCommitment *privacy.Point
+	SNDerivator    *privacy.Scalar
+	SerialNumber   *privacy.Point
+	Randomness     *privacy.Scalar
 	Value          uint64
 	Info           []byte //256 bytes
-	Index          uint64
-	TokenID    	   string
-	ShardID    	   byte
 }
 
 
@@ -50,7 +47,6 @@ type TxPrivacyTokenData struct {
 	PropertyID     string// = hash of TxCustomTokenprivacy data
 	PropertyName   string
 	PropertySymbol string
-
 	Type     int    // action type
 	Mintable bool   // default false
 	Amount   uint64 // init amount
@@ -71,11 +67,9 @@ type Transaction struct {
 	// Metadata, optional
 	Metadata metadata.Metadata
 	Proof                *zkp.PaymentProof `json:"Proof,omitempty"`
-	TxPrivacy 	*TxPrivacyTokenData `json:"TxPrivacy,omitempty"` //NormalTX this field null don't serialize it
+	TxPrivacy 	*TxPrivacyTokenData `json:"TxPrivacy,omitempty"` //NormalTX if this field null don't serialize it
 	Hash   string
 }
-
-
 
 type TokenState struct {
 	TokenID        string
@@ -90,6 +84,7 @@ type TokenState struct {
 }
 
 type CommitmentState struct {
+	TransactionHash string
 	TokenID    string
 	ShardID    byte
 	Commitment []byte
@@ -132,7 +127,8 @@ type Shard struct {
 
 	CommitteeRewardState map[string]map[common.Hash]uint64 `json:"CommitteeRewardState"`
 	TokenState 				[]TokenState  `json:"TokenState"`
-	Transactions			[]Transaction  `json:"Transaction"`
+	Transactions			[]Transaction  `json:"Transactions"`
+	Commitments			[]CommitmentState `json:"Commitments"`
 }
 
 
@@ -172,7 +168,7 @@ func NewShardFromShardState (shardState *blockchain.ShardBestState) *Shard {
 		ShardPendingValidator: incognitokey.CommitteeKeyListToStringList(shardState.ShardPendingValidator),
 		CommitteeRewardState: getRewardCommittee(shardState.GetShardRewardStateDB()),
 		TokenState: getPrivacyToken(shardState.GetCopiedTransactionStateDB()),
-		Transactions: parseTransactions(shardState),
+
 	}
 	if len(shardState.BestBlock.Body.Transactions) > 0 {
 		for _, tx := range shardState.BestBlock.Body.Transactions {
@@ -187,6 +183,7 @@ func NewShardFromShardState (shardState *blockchain.ShardBestState) *Shard {
 		shard.TxHashes = append(shard.TxHashes, tx.Hash().String())
 		shard.Fee += tx.GetTxFee()
 	}
+	shard.Transactions, shard.Commitments = parseTransactions(shardState)
 	return shard
 }
 
@@ -292,14 +289,13 @@ func convertHashSliceToHashString(hashes []common.Hash ) []string {
 
 func convertPrivacyInputCoinToInputCoin (privacyCoin *privacy.InputCoin) InputCoin {
 	return InputCoin {CoinDetails: Coin{
-		PublicKey:      *privacyCoin.CoinDetails.GetPublicKey(),
-		CoinCommitment: *privacyCoin.CoinDetails.GetCoinCommitment(),
-		SNDerivator:    *privacyCoin.CoinDetails.GetSNDerivator(),
-		SerialNumber:   *privacyCoin.CoinDetails.GetSerialNumber(),
-		Randomness:     *privacyCoin.CoinDetails.GetRandomness(),
+		PublicKey:      privacyCoin.CoinDetails.GetPublicKey(),
+		CoinCommitment: privacyCoin.CoinDetails.GetCoinCommitment(),
+		SNDerivator:    privacyCoin.CoinDetails.GetSNDerivator(),
+		SerialNumber:   privacyCoin.CoinDetails.GetSerialNumber(),
+		Randomness:     privacyCoin.CoinDetails.GetRandomness(),
 		Value:          privacyCoin.CoinDetails.GetValue(),
 		Info:           privacyCoin.CoinDetails.GetInfo(),
-		Index:          0,
 	}}
 }
 
@@ -312,15 +308,15 @@ func convertSlicePrivacyInputCoinToSliceInputCoin(privacyCoins []*privacy.InputC
 }
 
 func convertPrivacyOutputCoinToOutputCoin (coin *privacy.OutputCoin) OutputCoin {
+	//fmt.Printf("Handle output coin %v", coin)
 	return OutputCoin {CoinDetails: Coin{
-		PublicKey:      *coin.CoinDetails.GetPublicKey(),
-		CoinCommitment: *coin.CoinDetails.GetCoinCommitment(),
-		SNDerivator:    *coin.CoinDetails.GetSNDerivator(),
-		SerialNumber:   *coin.CoinDetails.GetSerialNumber(),
-		Randomness:     *coin.CoinDetails.GetRandomness(),
+		PublicKey:      coin.CoinDetails.GetPublicKey(),
+		CoinCommitment: coin.CoinDetails.GetCoinCommitment(),
+		SNDerivator:    coin.CoinDetails.GetSNDerivator(),
+		SerialNumber:   coin.CoinDetails.GetSerialNumber(),
+		Randomness:     coin.CoinDetails.GetRandomness(),
 		Value:          coin.CoinDetails.GetValue(),
 		Info:           coin.CoinDetails.GetInfo(),
-		Index:          0,
 	}}
 }
 
@@ -333,7 +329,7 @@ func convertSlicePrivacyOutputCoinToSliceOutputCoin(privacyCoins []*privacy.Outp
 }
 
 func convertNormalInternalTransactionToTransaction (normalTx *transaction.Tx) Transaction {
-	return Transaction{
+	tx:= Transaction{
 		Version:              normalTx.Version,
 		Type:                 normalTx.Type,
 		LockTime:             normalTx.LockTime,
@@ -341,13 +337,20 @@ func convertNormalInternalTransactionToTransaction (normalTx *transaction.Tx) Tr
 		Info:                 normalTx.Info,
 		SigPubKey:            normalTx.SigPubKey,
 		Sig:                  normalTx.Sig,
-		InputCoins:           convertSlicePrivacyInputCoinToSliceInputCoin(normalTx.Proof.GetInputCoins()),
-		OutputCoins:          convertSlicePrivacyOutputCoinToSliceOutputCoin(normalTx.Proof.GetOutputCoins()),
+		InputCoins:           nil,
+		OutputCoins:          nil,
 		PubKeyLastByteSender: normalTx.PubKeyLastByteSender,
 		Metadata:             normalTx.Metadata,
 		Proof:                normalTx.Proof,
 		Hash:                 normalTx.Hash().String(),
 	}
+
+	if normalTx.Proof != nil {
+		tx.InputCoins = convertSlicePrivacyInputCoinToSliceInputCoin(normalTx.Proof.GetInputCoins())
+		tx.OutputCoins = convertSlicePrivacyOutputCoinToSliceOutputCoin(normalTx.Proof.GetOutputCoins())
+	}
+
+	return tx
 }
 
 func convertInternalTokenPrivacyToTokenPrivacy(data *transaction.TxCustomTokenPrivacy) *TxPrivacyTokenData {
@@ -374,7 +377,7 @@ func getTransaction(transactions []metadata.Transaction) []Transaction {
 		case common.TxCustomTokenPrivacyType:
 			{
 				tx := tx.(*transaction.TxCustomTokenPrivacy)
-				newTransactions = append(newTransactions, Transaction{
+				newTx := Transaction{
 					Version:              tx.Version,
 					Type:                 tx.Type,
 					LockTime:             tx.LockTime,
@@ -382,22 +385,29 @@ func getTransaction(transactions []metadata.Transaction) []Transaction {
 					Info:                 tx.Info,
 					SigPubKey:            tx.SigPubKey,
 					Sig:                  tx.Sig,
-					InputCoins:           convertSlicePrivacyInputCoinToSliceInputCoin(tx.Proof.GetInputCoins()),
-					OutputCoins:          convertSlicePrivacyOutputCoinToSliceOutputCoin(tx.Proof.GetOutputCoins()),
+					InputCoins:           nil,
+					OutputCoins:          nil,
 					PubKeyLastByteSender: tx.PubKeyLastByteSender,
 					Metadata:             tx.Metadata,
 					Proof:                tx.Proof,
 					Hash:                 tx.Hash().String(),
-					TxPrivacy:			  convertInternalTokenPrivacyToTokenPrivacy(tx),
-				})
+					TxPrivacy:            convertInternalTokenPrivacyToTokenPrivacy(tx),
+				}
+				if tx.Proof != nil {
+					newTx.InputCoins = convertSlicePrivacyInputCoinToSliceInputCoin(tx.Proof.GetInputCoins())
+					newTx.OutputCoins =  convertSlicePrivacyOutputCoinToSliceOutputCoin(tx.Proof.GetOutputCoins())
+				}
 
+
+				newTransactions = append(newTransactions, newTx)
 			}
 		}
 	}
+	Logger.log.Infof("num Transaction on block %d, num parse transaction %d", len(transactions), len(newTransactions))
 	return newTransactions
 }
 
-func parseTransactions(shardBestState *blockchain.ShardBestState)  []Transaction {
+func parseTransactions(shardBestState *blockchain.ShardBestState)  ([]Transaction, []CommitmentState) {
 	prevTransactionDB := shardBestState.GetPrevTransactionStateDB()
 	currentTransactionDB := shardBestState.GetCopiedTransactionStateDB()
 	tokenState := statedb.ListPrivacyToken(currentTransactionDB)  //TODO: Should enhance to get only token in this block
@@ -412,16 +422,18 @@ func parseTransactions(shardBestState *blockchain.ShardBestState)  []Transaction
 		if previousLength == nil {
 			continue
 		}
-		if previousLength.Uint64() != 0 {
+/*		if previousLength.Uint64() != 0 {
 			temp := previousLength.Uint64() + 1
 			previousLength = new(big.Int).SetUint64(temp)
-		}
+		}*/
 		currentLength, _ := statedb.GetCommitmentLength(currentTransactionDB, tokenID, shardBestState.ShardID)
 		if currentLength == nil {
 			continue
 		}
-		for previousLength.Cmp(currentLength) <= 0  {
-			if commitmentState, err := statedb.GetCommitmentStateByIndex(currentTransactionDB, tokenID, previousLength.Uint64(), shardBestState.ShardID); err != nil {
+		///Logger.log.Infof("Previously Length %d and Current Length %d of coin %v", previousLength.Uint64(), currentLength.Uint64(), tokenID.String())
+ 		for previousLength.Cmp(currentLength) <= 0  {
+			if commitmentState, err := statedb.GetCommitmentStateByIndex(currentTransactionDB, tokenID, previousLength.Uint64(), shardBestState.ShardID); err == nil {
+				//Logger.log.Infof("Commitment data %v ", commitmentState)
 				commitmentStates = append(commitmentStates, CommitmentState{
 					TokenID:    commitmentState.TokenID().String(),
 					ShardID:    commitmentState.ShardID(),
@@ -431,22 +443,25 @@ func parseTransactions(shardBestState *blockchain.ShardBestState)  []Transaction
 			temp2 := previousLength.Uint64() + 1
 			previousLength = new(big.Int).SetUint64(temp2)
 		}
+		Logger.log.Infof("Commitment total size: %d", len(commitmentStates) )
+
 	}
+
+	fmt.Scanln()
 	for _ , commitmentState := range commitmentStates {
 		for _, transaction := range transactions {
-			updateIndexForTransactionOutputCoin(transaction,commitmentState)
+			updateTransactionHashForCommitment(transaction,&commitmentState)
 		}
 	}
-	return transactions
+	return transactions, commitmentStates
 }
 
-func updateIndexForTransactionOutputCoin(transaction Transaction, commitment CommitmentState) {
+func updateTransactionHashForCommitment(transaction Transaction, commitment *CommitmentState) {
 	for _, outputCoin := range transaction.OutputCoins {
 		if bytes.Compare(commitment.Commitment, outputCoin.CoinDetails.CoinCommitment.ToBytesS()) == 0 {
-			outputCoin.CoinDetails.ShardID = commitment.ShardID
-			outputCoin.CoinDetails.TokenID = commitment.TokenID
-			outputCoin.CoinDetails.Index = commitment.Index
+			commitment.TransactionHash = transaction.Hash
 		}
 	}
 
 }
+

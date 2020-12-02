@@ -185,9 +185,9 @@ func processBeaconForConfirmmingCrossShard(database incdb.Database, beaconBlock 
 						beaconBlock.GetHeight(),
 						beaconBlock.Hash().String(),
 					}
-					fmt.Println("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
+					//fmt.Println("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
 					b, _ := json.Marshal(info)
-					fmt.Println("debug StoreCrossShardNextHeight", fromShard, toShard, lastHeight, string(b))
+					//fmt.Println("debug StoreCrossShardNextHeight", fromShard, toShard, lastHeight, string(b))
 					err := rawdbv2.StoreCrossShardNextHeight(database, fromShard, toShard, lastHeight, b)
 					if err != nil {
 						return err

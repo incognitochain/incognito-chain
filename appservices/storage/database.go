@@ -17,6 +17,11 @@ type DatabaseDriver interface {
 	GetPDEShareStorer () repository.PDEShareStorer
 
 	GetShardStorer () repository.ShardStateStorer
+	GetTransactionStorer() repository.TransactionStorer
+
+	GetInputCoinStorer() repository.InputCoinStorer
+	GetOutputCoinStorer() repository.OutputCoinStorer
+	GetCommitmentStorer() repository.CommitmentStorer
 }
 
 var dbDriver = make(map[KindDB]DatabaseDriver)

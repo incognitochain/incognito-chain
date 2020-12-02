@@ -733,11 +733,16 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	if err != nil {
 		return err
 	}
+	shardBestState.prevTransactionStateDB, err = statedb.NewWithPrefixTrie(common.EmptyRoot, dbAccessWarper)
+	if err != nil {
+		return err
+	}
 	shardBestState.ConsensusStateDBRootHash = common.EmptyRoot
 	shardBestState.SlashStateDBRootHash = common.EmptyRoot
 	shardBestState.RewardStateDBRootHash = common.EmptyRoot
 	shardBestState.FeatureStateDBRootHash = common.EmptyRoot
 	shardBestState.TransactionStateDBRootHash = common.EmptyRoot
+	shardBestState.PrevTransactionStateDBRootHash = common.EmptyRoot
 	//statedb===========================END
 	return nil
 }
@@ -1010,6 +1015,8 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
+	previousTransactionHash := newShardState.TransactionStateDBRootHash
+	previousTransactionDB := newShardState.GetCopiedTransactionStateDB()
 
 	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, blockHeight, *shardBlock.Hash())
 	if len(shardBlock.Body.CrossTransactions) != 0 {
@@ -1124,6 +1131,9 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 	newShardState.TransactionStateDBRootHash = transactionRootHash
+	newShardState.PrevTransactionStateDBRootHash = previousTransactionHash
+	newShardState.prevTransactionStateDB = previousTransactionDB
+
 	// feature root hash
 	featureRootHash, err := newShardState.featureStateDB.Commit(true)
 	if err != nil {
@@ -1166,6 +1176,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		RewardStateDBRootHash:      rewardRootHash,
 		SlashStateDBRootHash:       slashRootHash,
 		TransactionStateDBRootHash: transactionRootHash,
+		PrevTransactionStateDBRootHash: previousTransactionHash,
 	}
 
 	if err := rawdbv2.StoreShardRootsHash(batchData, shardID, blockHash, sRH); err != nil {
@@ -1187,6 +1198,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
+		blockchain.config.Server.PublishShardState(newFinalView.(*ShardBestState))
 		if storeBlock.GetHeight() == 1 {
 			break
 		}

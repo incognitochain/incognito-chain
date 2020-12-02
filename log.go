@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/appservices"
+	"github.com/incognitochain/incognito-chain/appservices/data"
 	"github.com/incognitochain/incognito-chain/appservices/storage"
 	"os"
 	"path/filepath"
@@ -58,6 +59,7 @@ var (
 	mempoolLogger          = backendLog.Logger("Mempool log", true)
 	appServiceLogger       = backendLog.Logger("AppService log", false)
 	storageLogger          = backendLog.Logger("Storage log", false)
+	dataLogger             = backendLog.Logger("Data log", false)
 	transactionLogger      = backendLog.Logger("Transaction log", true)
 	privacyLogger          = backendLog.Logger("Privacy log", true)
 	randomLogger           = backendLog.Logger("RandomAPI log", true)
@@ -101,6 +103,7 @@ func init() {
 	mempool.Logger.Init(mempoolLogger)
 	appservices.Logger.Init(appServiceLogger)
 	storage.Logger.Init(storageLogger)
+	data.Logger.Init(dataLogger)
 	main2.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)
 	privacy.Logger.Init(privacyLogger)

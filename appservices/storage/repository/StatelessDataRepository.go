@@ -1,12 +1,13 @@
 package repository
 
 import (
+	"context"
 	"github.com/incognitochain/incognito-chain/appservices/storage/model"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
 type TransactionStorer interface {
-	StoreBeaconState (beaconState model.Transaction) error
+	StoreTransaction (ctx context.Context, transaction model.Transaction) error
 }
 
 type TransactionRetriver interface {
@@ -17,11 +18,23 @@ type TransactionRetriver interface {
 
 }
 
+type InputCoinStorer interface {
+	StoreInputCoin (ctx context.Context, inputCoin model.InputCoin) error
+}
+
+type CommitmentStorer interface {
+	StoreCommitment (ctx context.Context, commitment model.Commitment) error
+}
+
+type OutputCoinStorer interface {
+	StoreOutputCoin (ctx context.Context, outputCoin model.OutputCoin) error
+}
+
+
 type TransactionRepository interface {
 	TransactionStorer
 	TransactionRetriver
 }
-
 
 type InstructionStorer interface {
 	StoreBeaconState (beaconState model.Instruction) error
