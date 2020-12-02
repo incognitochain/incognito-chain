@@ -144,7 +144,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState, version int
 	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(curView, &tempPrivateKey, shardID, beaconBlocks, blockCreationLeftOver, beaconHeight)
 	t := time.Now()
 	elapsed_time := t.Sub(start_time)
-	fmt.Fprintf(os.Stderr,"\nXXXXXXXXXXXXXXX getTransactionForNewBlock: ", elapsed_time)
+	fmt.Fprintf(os.Stderr,"\nXXXXXXXXXXXXXXX getTransactionForNewBlock: %v", elapsed_time)
 
 	if err != nil {
 		return nil, err
@@ -281,7 +281,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBe
 		Logger.log.Info("Creating empty block...")
 		fmt.Fprintf(os.Stderr,"\n Empty block............................")
 	} else {
-		fmt.Fprintf(os.Stderr,"\n YYYYYYYYYYYY Number of transactions:", len(txsToAdd))
+		fmt.Fprintf(os.Stderr,"\n Number of transactions: %v", len(txsToAdd))
 	}
 	go blockGenerator.txPool.RemoveTx(txToRemove, false)
 	var responseTxsBeacon []metadata.Transaction
@@ -697,58 +697,83 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 			break
 		}
 	}
-	listBatchTxs := []metadata.Transaction{}
-	for index, tx := range preparedTxForNewBlock {
+
+	for _, tx := range preparedTxForNewBlock {
 		elasped = time.Since(startTime).Nanoseconds()
 		if elasped >= maxBlockCreationTimeLeftTime {
 			Logger.log.Info("Shard Producer/Elapsed, Break: ", elasped)
 			break
 		}
-		listBatchTxs = append(listBatchTxs, tx)
-		if ((index+1)%TransactionBatchSize == 0) || (index == len(preparedTxForNewBlock)-1) {
-			tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listBatchTxs, int64(beaconHeight), curView)
-			if err != nil {
-				Logger.log.Errorf("SHARD %+v | Verify Batch Transaction for new block error %+v", shardID, err)
-				for _, tx2 := range listBatchTxs {
-					if blockGenerator.chain.config.TempTxPool.HaveTransaction(tx2.Hash()) {
-						continue
-					}
-					txShardID := common.GetShardIDFromLastByte(tx2.GetSenderAddrLastByte())
-					if txShardID != shardID {
-						continue
-					}
-					tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx2, int64(beaconHeight), curView)
-					if err != nil {
-						txToRemove = append(txToRemove, tx2)
-						continue
-					}
-					tempTx := tempTxDesc.Tx
-					totalFee += tempTx.GetTxFee()
-					tempSize := tempTx.GetTxActualSize()
-					if currentSize+tempSize >= common.MaxBlockSize {
-						break
-					}
-					currentSize += tempSize
-					txsToAdd = append(txsToAdd, tempTx)
-				}
-			}
-			for _, tempToAddTxDesc := range tempTxDesc {
-				tempTx := tempToAddTxDesc.Tx
-				totalFee += tempTx.GetTxFee()
-				tempSize := tempTx.GetTxActualSize()
-				if currentSize+tempSize >= common.MaxBlockSize {
-					break
-				}
-				currentSize += tempSize
-				txsToAdd = append(txsToAdd, tempTx)
-			}
-			// reset list batch and add new txs
-			listBatchTxs = []metadata.Transaction{}
-
-		} else {
+		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		if txShardID != shardID {
 			continue
 		}
+		tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, int64(beaconHeight), curView, false)
+		if err != nil {
+			txToRemove = append(txToRemove, tx)
+			continue
+		}
+		tempTx := tempTxDesc.Tx
+		totalFee += tempTx.GetTxFee()
+		tempSize := tempTx.GetTxActualSize()
+		if currentSize+tempSize >= common.MaxBlockSize {
+			break
+		}
+		currentSize += tempSize
+		txsToAdd = append(txsToAdd, tempTx)
 	}
+
+	//for index, tx := range preparedTxForNewBlock {
+	//	elasped = time.Since(startTime).Nanoseconds()
+	//	if elasped >= maxBlockCreationTimeLeftTime {
+	//		Logger.log.Info("Shard Producer/Elapsed, Break: ", elasped)
+	//		break
+	//	}
+	//	listBatchTxs = append(listBatchTxs, tx)
+	//	if ((index+1)%TransactionBatchSize == 0) || (index == len(preparedTxForNewBlock)-1) {
+	//		tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listBatchTxs, int64(beaconHeight), curView, false)
+	//		if err != nil {
+	//			Logger.log.Errorf("SHARD %+v | Verify Batch Transaction for new block error %+v", shardID, err)
+	//			for _, tx2 := range listBatchTxs {
+	//				if blockGenerator.chain.config.TempTxPool.HaveTransaction(tx2.Hash()) {
+	//					continue
+	//				}
+	//				txShardID := common.GetShardIDFromLastByte(tx2.GetSenderAddrLastByte())
+	//				if txShardID != shardID {
+	//					continue
+	//				}
+	//				tempTxDesc, err := blockGenerator.chain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx2, int64(beaconHeight), curView, false)
+	//				if err != nil {
+	//					txToRemove = append(txToRemove, tx2)
+	//					continue
+	//				}
+	//				tempTx := tempTxDesc.Tx
+	//				totalFee += tempTx.GetTxFee()
+	//				tempSize := tempTx.GetTxActualSize()
+	//				if currentSize+tempSize >= common.MaxBlockSize {
+	//					break
+	//				}
+	//				currentSize += tempSize
+	//				txsToAdd = append(txsToAdd, tempTx)
+	//			}
+	//		}
+	//		for _, tempToAddTxDesc := range tempTxDesc {
+	//			tempTx := tempToAddTxDesc.Tx
+	//			totalFee += tempTx.GetTxFee()
+	//			tempSize := tempTx.GetTxActualSize()
+	//			if currentSize+tempSize >= common.MaxBlockSize {
+	//				break
+	//			}
+	//			currentSize += tempSize
+	//			txsToAdd = append(txsToAdd, tempTx)
+	//		}
+	//		// reset list batch and add new txs
+	//		listBatchTxs = []metadata.Transaction{}
+	//
+	//	} else {
+	//		continue
+	//	}
+	//}
 	Logger.log.Criticalf(" 🔎 %+v transactions for New Block from pool \n", len(txsToAdd))
 	blockGenerator.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee

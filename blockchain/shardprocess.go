@@ -998,7 +998,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 	fmt.Fprintf(os.Stderr,"\n verifyTransactionFromNewBlock- number tx in proposed block: %v", len(listTxs))
 	for index, tx := range listTxs {
 		if !blockchain.config.TxPool.HaveTransaction(tx.Hash()) {
-			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight, curView)
+			_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight, curView, true)
 			if err != nil {
 				Logger.log.Errorf("One by one verify txs at index %d error: %+v", index, err)
 				return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err))

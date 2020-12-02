@@ -122,7 +122,7 @@ func (tp *TxPool) loadDatabaseMP() ([]TxDesc, error) {
 		senderShardID := common.GetShardIDFromLastByte(txDesc.Desc.Tx.GetSenderAddrLastByte())
 		beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
 		shardView := tp.config.BlockChain.ShardChain[senderShardID].GetBestView().(*blockchain.ShardBestState)
-		err = tp.validateTransaction(shardView, beaconView, txDesc.Desc.Tx, -1, false, false)
+		err = tp.validateTransaction(shardView, beaconView, txDesc.Desc.Tx, -1, false, false, true)
 		if err != nil {
 			Logger.log.Error(err)
 			err1 := tp.removeTransactionFromDatabaseMP(txDesc.Desc.Tx.Hash())

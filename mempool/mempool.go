@@ -247,7 +247,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
 		}
 	}
-	hash, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, tp.config.PersistMempool, true, beaconHeight)
+	hash, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, tp.config.PersistMempool, true, beaconHeight, true)
 	//==========
 	if err != nil {
 		Logger.log.Error(err)
@@ -266,7 +266,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 }
 
 // This function is safe for concurrent access.
-func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
+func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState, isVerifyAll bool) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
@@ -276,7 +276,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 		Logger.log.Error(err)
 		return nil, err
 	}
-	_, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, false, false, int64(bHeight))
+	_, txDesc, err := tp.maybeAcceptTransaction(shardView, beaconView, tx, false, false, int64(bHeight), isVerifyAll)
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -285,7 +285,7 @@ func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transactio
 	return tempTxDesc, err
 }
 
-func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs []metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) ([]*metadata.TxDesc, error) {
+func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs []metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState, isVerifyAll bool) ([]*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
@@ -295,11 +295,11 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 		Logger.log.Error(err)
 		return nil, err
 	}
-	_, txDesc, err := tp.maybeAcceptBatchTransaction(shardView, beaconView, shardID, txs, int64(bHeight))
+	_, txDesc, err := tp.maybeAcceptBatchTransaction(shardView, beaconView, shardID, txs, int64(bHeight), isVerifyAll)
 	return txDesc, err
 }
 
-func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, shardID byte, txs []metadata.Transaction, beaconHeight int64) ([]common.Hash, []*metadata.TxDesc, error) {
+func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, shardID byte, txs []metadata.Transaction, beaconHeight int64, isVerifyAll bool) ([]common.Hash, []*metadata.TxDesc, error) {
 	txDescs := []*metadata.TxDesc{}
 	txHashes := []common.Hash{}
 	batch := transaction.NewBatchTransaction(txs)
@@ -318,7 +318,7 @@ func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestSta
 	}
 	for _, tx := range txs {
 		// validate tx
-		err := tp.validateTransaction(shardView, beaconView, tx, beaconHeight, true, false)
+		err := tp.validateTransaction(shardView, beaconView, tx, beaconHeight, true, false, isVerifyAll)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -343,9 +343,9 @@ func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestSta
 // #2: store into db
 // #3: default nil, contain input coins hash, which are used for creating this tx
 */
-func (tp *TxPool) maybeAcceptTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx metadata.Transaction, isStore bool, isNewTransaction bool, beaconHeight int64) (*common.Hash, *TxDesc, error) {
+func (tp *TxPool) maybeAcceptTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx metadata.Transaction, isStore bool, isNewTransaction bool, beaconHeight int64, isVerifyAll bool) (*common.Hash, *TxDesc, error) {
 	// validate tx
-	err := tp.validateTransaction(shardView, beaconView, tx, beaconHeight, false, isNewTransaction)
+	err := tp.validateTransaction(shardView, beaconView, tx, beaconHeight, false, isNewTransaction, isVerifyAll)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -465,26 +465,17 @@ func (tp *TxPool) checkFees(
 	return true
 }
 
-/*
-// maybeAcceptTransaction is the internal function which implements the public
-// See the comment for MaybeAcceptTransaction for more details.
-// This function MUST be called with the mempool lock held (for writes).
-In Param#2: isStore: store transaction to persistence storage only work for transaction come from user (not for validation process)
-1. Validate sanity data of tx
-2. Validate duplicate tx
-3. Do not accept a salary tx
-4. Validate fee with tx size
-5. Validate with other txs in mempool
-5.1 Check for Replacement or Cancel transaction
-6. Validate data in tx: privacy proof, metadata,...
-7. Validate tx with blockchain: douple spend, ...
-9. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
-10. RequestStopAutoStaking
-*/
-func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx metadata.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool) error {
+func (tp *TxPool) validateTransactionBySelf(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx metadata.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool) error {
 	var err error
 	txHash := tx.Hash()
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+
+	// Condition 2: Don't accept the transaction if it already exists in the pool.
+	isTxInPool := tp.isTxInPool(txHash)
+	if isTxInPool {
+		return NewMempoolTxError(RejectDuplicateTx, fmt.Errorf("already had transaction %+v in mempool", txHash.String()))
+	}
+
 	// Condition 1: sanity data
 	validated := false
 	if !isNewTransaction {
@@ -514,12 +505,6 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 		}
 		return NewMempoolTxError(RejectSanityTx, fmt.Errorf("transaction's sansity %v is error %v", txHash.String(), err))
 	}
-
-	// Condition 2: Don't accept the transaction if it already exists in the pool.
-	isTxInPool := tp.isTxInPool(txHash)
-	if isTxInPool {
-		return NewMempoolTxError(RejectDuplicateTx, fmt.Errorf("already had transaction %+v in mempool", txHash.String()))
-	}
 	// Condition 3: A standalone transaction must not be a salary transaction.
 	isSalaryTx := tx.IsSalaryTx()
 	if isSalaryTx {
@@ -531,20 +516,6 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 		return NewMempoolTxError(RejectInvalidFee,
 			fmt.Errorf("Transaction %+v has invalid fees.",
 				tx.Hash().String()))
-	}
-	// Condition 5: check tx with all txs in current mempool
-	err = tx.ValidateTxWithCurrentMempool(tp)
-	if err != nil {
-		replaceErr, isReplacedTx := tp.validateTransactionReplacement(tx)
-		// if replace tx success (no replace error found) then continue with next validate condition
-		if isReplacedTx {
-			if replaceErr != nil {
-				return replaceErr
-			}
-		} else {
-			// replace fail
-			return NewMempoolTxError(RejectDoubleSpendWithMempoolTx, err)
-		}
 	}
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
@@ -558,6 +529,27 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 		validated, errValidateTxByItself := tx.ValidateTxByItself(boolParams, shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, nil, nil)
 		if !validated {
 			return NewMempoolTxError(RejectInvalidTx, errValidateTxByItself)
+		}
+	}
+	return nil
+}
+func (tp *TxPool) validateTransactionWithOther(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx metadata.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool) error {
+	var err error
+	//txHash := tx.Hash()
+	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+
+	// Condition 5: check tx with all txs in current mempool
+	err = tx.ValidateTxWithCurrentMempool(tp)
+	if err != nil {
+		replaceErr, isReplacedTx := tp.validateTransactionReplacement(tx)
+		// if replace tx success (no replace error found) then continue with next validate condition
+		if isReplacedTx {
+			if replaceErr != nil {
+				return replaceErr
+			}
+		} else {
+			// replace fail
+			return NewMempoolTxError(RejectDoubleSpendWithMempoolTx, err)
 		}
 	}
 	// Condition 7: validate tx with data of blockchain
@@ -575,7 +567,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 		}
 		return NewMempoolTxError(RejectDoubleSpendWithBlockchainTx, err)
 	}
-	// Condition 9: check duplicate stake public key ONLY with staking transaction
+	// Condition 8: check duplicate stake public key ONLY with staking transaction
 	pubkey := ""
 	foundPubkey := -1
 	if tx.GetMetadata() != nil {
@@ -593,7 +585,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	if foundPubkey > 0 {
 		return NewMempoolTxError(RejectDuplicateStakePubkey, fmt.Errorf("This public key already stake and still in pool %+v", pubkey))
 	}
-	// Condition 10: check duplicate request stop auto staking
+	// Condition 9: check duplicate request stop auto staking
 	requestedPublicKey := ""
 	foundRequestStopAutoStaking := -1
 	if tx.GetMetadata() != nil {
@@ -610,6 +602,33 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	}
 	if foundRequestStopAutoStaking > 0 {
 		return NewMempoolTxError(RejectDuplicateRequestStopAutoStaking, fmt.Errorf("This public key already request to stop auto staking and still in pool %+v", requestedPublicKey))
+	}
+	return nil
+}
+/*
+// maybeAcceptTransaction is the internal function which implements the public
+// See the comment for MaybeAcceptTransaction for more details.
+// This function MUST be called with the mempool lock held (for writes).
+In Param#2: isStore: store transaction to persistence storage only work for transaction come from user (not for validation process)
+1. Validate sanity data of tx //self
+2. Validate duplicate tx
+3. Do not accept a salary tx //self
+4. Validate fee with tx size //self
+5. Validate with other txs in mempool
+5.1 Check for Replacement or Cancel transaction
+6. Validate data in tx: privacy proof, metadata,... //self
+7. Validate tx with blockchain: douple spend, ...
+8. Staking Transaction: Check Duplicate stake public key in pool ONLY with staking transaction
+9. RequestStopAutoStaking
+*/
+func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, tx metadata.Transaction, beaconHeight int64, isBatch bool, isNewTransaction bool, isVerifyAll bool) error {
+	if isVerifyAll {
+		if err := tp.validateTransactionBySelf(shardView, beaconView, tx, beaconHeight, isBatch, isNewTransaction); err != nil {
+			return err
+		}
+	}
+	if err := tp.validateTransactionWithOther(shardView, beaconView, tx, beaconHeight, isBatch , isNewTransaction ); err != nil{
+		return err
 	}
 	return nil
 }
