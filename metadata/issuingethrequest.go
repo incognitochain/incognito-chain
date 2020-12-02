@@ -297,7 +297,7 @@ func GetETHHeader(
 	if err != nil {
 		return nil, err
 	}
-	if getETHHeaderByHashRes.RPCError != nil {
+	if getETHHeaderByHashRes.RPCError != nil || getETHHeaderByHashRes.Result == nil {
 		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByHash: %s", getETHHeaderByHashRes.RPCError.Message)
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByHash: %s", getETHHeaderByHashRes.RPCError.Message))
 	}
@@ -318,7 +318,7 @@ func GetETHHeader(
 	if err != nil {
 		return nil, err
 	}
-	if getETHHeaderByNumberRes.RPCError != nil {
+	if getETHHeaderByNumberRes.RPCError != nil || getETHHeaderByNumberRes.Result == nil {
 		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByNumber: %s", getETHHeaderByNumberRes.RPCError.Message)
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: %s", getETHHeaderByNumberRes.RPCError.Message))
 	}
