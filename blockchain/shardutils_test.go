@@ -38,7 +38,7 @@ var (
 
 func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	type args struct {
-		transactions []retriever.Transaction
+		transactions []basemeta.Transaction
 		bc           *BlockChain
 		shardID      byte
 	}
@@ -57,9 +57,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 
 	//staking happy case args start
 	stakingTx1 := &mocks.Transaction{}
-	var stakingTx1Meta metadata.Metadata
+	var stakingTx1Meta basemeta.Metadata
 	stakingTx1Meta = &metadata.StakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.ShardStakingMeta,
 		},
 		FunderPaymentAddress:         validPaymentAddresses[0],
@@ -76,9 +76,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stakingTx1.On("Hash").Return(validTxHash[0])
 
 	stakingTx2 := &mocks.Transaction{}
-	var stakingTx2Meta metadata.Metadata
+	var stakingTx2Meta basemeta.Metadata
 	stakingTx2Meta = &metadata.StakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.ShardStakingMeta,
 		},
 		FunderPaymentAddress:         validPaymentAddresses[1],
@@ -94,9 +94,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stakingTx2.On("Hash").Return(validTxHash[1])
 
 	stakingTx3 := &mocks.Transaction{}
-	var stakingTx3Meta metadata.Metadata
+	var stakingTx3Meta basemeta.Metadata
 	stakingTx3Meta = &metadata.StakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.ShardStakingMeta,
 		},
 		FunderPaymentAddress:         validPaymentAddresses[2],
@@ -114,9 +114,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 
 	//stop auto staking case args start
 	stopStakeTx1 := &mocks.Transaction{}
-	var stopStakeTx1Meta metadata.Metadata
+	var stopStakeTx1Meta basemeta.Metadata
 	stopStakeTx1Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.StopAutoStakingMeta,
 		},
 		CommitteePublicKey: validCommitteePublicKeys[0],
@@ -127,9 +127,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx1.On("GetMetadata").Times(3).Return(stopStakeTx1Meta)
 
 	stopStakeTx2 := &mocks.Transaction{}
-	var stopStakeTx2Meta metadata.Metadata
+	var stopStakeTx2Meta basemeta.Metadata
 	stopStakeTx2Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.StopAutoStakingMeta,
 		},
 		CommitteePublicKey: validCommitteePublicKeys[1],
@@ -140,9 +140,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx2.On("GetMetadata").Times(3).Return(stopStakeTx2Meta)
 
 	stopStakeTx3 := &mocks.Transaction{}
-	var stopStakeTx3Meta metadata.Metadata
+	var stopStakeTx3Meta basemeta.Metadata
 	stopStakeTx3Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.StopAutoStakingMeta,
 		},
 		CommitteePublicKey: validCommitteePublicKeys[2],
@@ -153,9 +153,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx3.On("GetMetadata").Times(3).Return(stopStakeTx3Meta) //staking happy case args start
 
 	stakingTx4 := &mocks.Transaction{}
-	var stakingTx4Meta metadata.Metadata
+	var stakingTx4Meta basemeta.Metadata
 	stakingTx4Meta = &metadata.StakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.ShardStakingMeta,
 		},
 		FunderPaymentAddress:         validPaymentAddresses[0],
@@ -171,9 +171,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stakingTx4.On("Hash").Return(validTxHash[0])
 
 	stakingTx5 := &mocks.Transaction{}
-	var stakingTx5Meta metadata.Metadata
+	var stakingTx5Meta basemeta.Metadata
 	stakingTx5Meta = &metadata.StakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.ShardStakingMeta,
 		},
 		FunderPaymentAddress:         validPaymentAddresses[1],
@@ -189,9 +189,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stakingTx5.On("Hash").Return(validTxHash[1])
 
 	stakingTx6 := &mocks.Transaction{}
-	var stakingTx6Meta metadata.Metadata
+	var stakingTx6Meta basemeta.Metadata
 	stakingTx6Meta = &metadata.StakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.ShardStakingMeta,
 		},
 		FunderPaymentAddress:         validPaymentAddresses[2],
@@ -209,9 +209,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 
 	//stop auto staking case args start
 	stopStakeTx4 := &mocks.Transaction{}
-	var stopStakeTx4Meta metadata.Metadata
+	var stopStakeTx4Meta basemeta.Metadata
 	stopStakeTx4Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.StopAutoStakingMeta,
 		},
 		CommitteePublicKey: validCommitteePublicKeys[0],
@@ -222,9 +222,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx4.On("GetMetadata").Times(3).Return(stopStakeTx4Meta)
 
 	stopStakeTx5 := &mocks.Transaction{}
-	var stopStakeTx5Meta metadata.Metadata
+	var stopStakeTx5Meta basemeta.Metadata
 	stopStakeTx5Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.StopAutoStakingMeta,
 		},
 		CommitteePublicKey: validCommitteePublicKeys[1],
@@ -235,9 +235,9 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 	stopStakeTx5.On("GetMetadata").Times(3).Return(stopStakeTx5Meta)
 
 	stopStakeTx6 := &mocks.Transaction{}
-	var stopStakeTx6Meta metadata.Metadata
+	var stopStakeTx6Meta basemeta.Metadata
 	stopStakeTx6Meta = &metadata.StopAutoStakingMetadata{
-		MetadataBase: metadata.MetadataBase{
+		MetadataBase: basemeta.MetadataBase{
 			basemeta.StopAutoStakingMeta,
 		},
 		CommitteePublicKey: validCommitteePublicKeys[2],
@@ -256,7 +256,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 		{
 			name: "staking happy case",
 			args: args{
-				transactions: []retriever.Transaction{
+				transactions: []basemeta.Transaction{
 					stakingTx1, stakingTx2, stakingTx3,
 				},
 				bc:      happyCaseBC,
@@ -268,7 +268,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 		{
 			name: "stop auto stake happy case",
 			args: args{
-				transactions: []retriever.Transaction{
+				transactions: []basemeta.Transaction{
 					stopStakeTx1, stopStakeTx2, stopStakeTx3,
 				},
 				bc:      happyCaseBC,
@@ -280,7 +280,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 		{
 			name: "staking & stop auto stake happy case",
 			args: args{
-				transactions: []retriever.Transaction{
+				transactions: []basemeta.Transaction{
 					stakingTx4, stakingTx5, stakingTx6, stopStakeTx4, stopStakeTx5, stopStakeTx6,
 				},
 				bc:      happyCaseBC,
