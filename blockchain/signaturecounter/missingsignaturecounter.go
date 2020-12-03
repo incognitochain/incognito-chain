@@ -2,7 +2,6 @@ package signaturecounter
 
 import (
 	"reflect"
-	"sort"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
@@ -82,13 +81,10 @@ func NewDefaultSignatureCounter() *MissingSignatureCounter {
 	}
 }
 
-func NewSignatureCounterWithValue(missingSignature map[string]MissingSignature, rule []Penalty) *MissingSignatureCounter {
-	sort.Slice(rule, func(i, j int) bool {
-		return rule[i].MinPercent < rule[j].MinPercent
-	})
+func NewSignatureCounterWithValue(missingSignature map[string]MissingSignature) *MissingSignatureCounter {
 	return &MissingSignatureCounter{
 		missingSignature: missingSignature,
-		penalties:        rule,
+		penalties:        defaultRule,
 		lock:             new(sync.RWMutex),
 	}
 }
