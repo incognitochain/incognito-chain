@@ -33,8 +33,9 @@ type DatabaseDriver interface {
 
 	GetTransactionStorer() repository.TransactionStorer
 	GetInputCoinStorer() repository.InputCoinStorer
-	GetOutputCoinStorer() repository.OutputCoinStorer
-	GetCommitmentStorer() repository.CommitmentStorer
+	GetOutputCoinStorer() repository.ShardOutputCoinStorer
+	GetCrossShardOutputCoinStorer() repository.CrossShardOutputCoinStorer
+	GetCommitmentStorer() repository.ShardCommitmentIndexStorer
 
 	GetTokenStateStorer() repository.TokenStateStorer
 

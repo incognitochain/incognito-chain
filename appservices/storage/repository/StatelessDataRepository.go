@@ -22,12 +22,16 @@ type InputCoinStorer interface {
 	StoreInputCoin (ctx context.Context, inputCoin model.InputCoin) error
 }
 
-type CommitmentStorer interface {
+type ShardCommitmentIndexStorer interface {
 	StoreCommitment (ctx context.Context, commitment model.Commitment) error
 }
 
-type OutputCoinStorer interface {
+type ShardOutputCoinStorer interface {
 	StoreOutputCoin (ctx context.Context, outputCoin model.OutputCoin) error
+}
+
+type CrossShardOutputCoinStorer interface {
+	StoreCrossShardOutputCoin (ctx context.Context, outputCoin model.OutputCoin) error
 }
 
 

@@ -57,15 +57,25 @@ type OutputCoin struct {
 	ShardId  			byte `json:"ShardId"`
 	ShardHash 			string `json:"ShardHash"`
 	ShardHeight 		uint64 `json:"ShardHeight"`
-	TransactionHash                string `json:"TransactionHash"`
-	PublicKey      []byte `json:"PublicKey"`
-	CoinCommitment []byte `json:"CoinCommitment"`
-	SNDerivator    []byte `json:"SNDerivator"`
-	SerialNumber   []byte `json:"SerialNumber"`
-	Randomness     []byte `json:"Randomness"`
-	Value          uint64 `json:"Value"`
-	Info           []byte `json:"Info"` //256 bytes
-	TokenID		   string  `json:"TokenID"`
+	TransactionHash     string `json:"TransactionHash"`
+	PublicKey      		[]byte `json:"PublicKey"`
+	CoinCommitment 		[]byte `json:"CoinCommitment"`
+	SNDerivator    		[]byte `json:"SNDerivator"`
+	SerialNumber   		[]byte `json:"SerialNumber"`
+	Randomness     		[]byte `json:"Randomness"`
+	Value          		uint64 `json:"Value"`
+	Info           		[]byte `json:"Info"` //256 bytes
+	TokenID		   		string  `json:"TokenID"`
+	FromShardID      	byte `json:"FromShardID"`
+	ToShardID        	byte `json:"ToShardID"`
+	FromCrossShard   	bool `json:"FromCrossShard"`
+	CrossBlockHash   	string `json:"CrossBlockHash"`
+	CrossBlockHeight 	uint64 `json:"CrossBlockHeight"`
+	PropertyName     	string `json:"PropertyName"`
+	PropertySymbol   	string `json:"PropertySymbol"`
+	Type             	int `json:"Type"`   // action type
+	Mintable         	bool `json:"Mintable"`  // default false
+	Amount           	uint64 `json:"Amount"` // init amount
 
 }
 

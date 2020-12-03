@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/appservices/data"
 	"github.com/incognitochain/incognito-chain/appservices/storage/model"
 )
@@ -112,7 +113,6 @@ func StoreLatestBeaconFinalState(ctx context.Context, beacon *data.Beacon) error
 		}
 	}
 
-
 	return nil
 }
 
@@ -188,12 +188,12 @@ func getPDETradingFeeFromBeaconState(beacon *data.Beacon) []model.PDETradingFee 
 	pdeTradingFees := make([]model.PDETradingFee, 0, len(beacon.PDETradingFee))
 	for _, pdeTradingFee := range beacon.PDETradingFee {
 		pdeTradingFees = append(pdeTradingFees, model.PDETradingFee{
-			BeaconBlockHash: beacon.BlockHash,
-			BeaconEpoch:     beacon.Epoch,
-			BeaconHeight:    beacon.Height,
-			BeaconTime:      beacon.Time,
-			Token1ID:        pdeTradingFee.Token1ID,
-			Token2ID:        pdeTradingFee.Token2ID,
+			BeaconBlockHash:    beacon.BlockHash,
+			BeaconEpoch:        beacon.Epoch,
+			BeaconHeight:       beacon.Height,
+			BeaconTime:         beacon.Time,
+			Token1ID:           pdeTradingFee.Token1ID,
+			Token2ID:           pdeTradingFee.Token2ID,
 			ContributorAddress: pdeTradingFee.ContributorAddress,
 			Amount:             pdeTradingFee.Amount,
 		})
@@ -222,10 +222,10 @@ func getCustodianFromBeaconState(beacon *data.Beacon) []model.Custodian {
 	custodians := make([]model.Custodian, 0, len(beacon.Custodian))
 	for _, custodian := range beacon.Custodian {
 		custodians = append(custodians, model.Custodian{
-			BeaconBlockHash: beacon.BlockHash,
-			BeaconEpoch:     beacon.Epoch,
-			BeaconHeight:    beacon.Height,
-			BeaconTime:      beacon.Time,
+			BeaconBlockHash:        beacon.BlockHash,
+			BeaconEpoch:            beacon.Epoch,
+			BeaconHeight:           beacon.Height,
+			BeaconTime:             beacon.Time,
 			IncognitoAddress:       custodian.IncognitoAddress,
 			TotalCollateral:        custodian.TotalCollateral,
 			FreeCollateral:         custodian.FreeCollateral,
@@ -242,10 +242,10 @@ func getWaitingPortingRequestFromBeaconState(beacon *data.Beacon) []model.Waitin
 	waitingPortingRequests := make([]model.WaitingPortingRequest, 0, len(beacon.WaitingPortingRequest))
 	for _, w := range beacon.WaitingPortingRequest {
 		waitingPortingRequests = append(waitingPortingRequests, model.WaitingPortingRequest{
-			BeaconBlockHash: beacon.BlockHash,
-			BeaconEpoch:     beacon.Epoch,
-			BeaconHeight:    beacon.Height,
-			BeaconTime:      beacon.Time,
+			BeaconBlockHash:     beacon.BlockHash,
+			BeaconEpoch:         beacon.Epoch,
+			BeaconHeight:        beacon.Height,
+			BeaconTime:          beacon.Time,
 			UniquePortingID:     w.UniquePortingID,
 			TokenID:             w.TokenID,
 			PorterAddress:       w.PorterAddress,
@@ -274,14 +274,14 @@ func getFinalExchangeRatesFromBeaconState(beacon *data.Beacon) []model.FinalExch
 	return finalExchangeRates
 }
 
-func getMatchedRedeemRequestFromBeaconState (beacon *data.Beacon) []model.RedeemRequest {
-	redeemRequests := make ([]model.RedeemRequest, 0, len(beacon.MatchedRedeemRequest))
+func getMatchedRedeemRequestFromBeaconState(beacon *data.Beacon) []model.RedeemRequest {
+	redeemRequests := make([]model.RedeemRequest, 0, len(beacon.MatchedRedeemRequest))
 	for _, matchedRedeem := range beacon.MatchedRedeemRequest {
 		redeemRequests = append(redeemRequests, model.RedeemRequest{
-			BeaconBlockHash: beacon.BlockHash,
-			BeaconEpoch:     beacon.Epoch,
-			BeaconHeight:    beacon.Height,
-			BeaconTime:      beacon.Time,
+			BeaconBlockHash:       beacon.BlockHash,
+			BeaconEpoch:           beacon.Epoch,
+			BeaconHeight:          beacon.Height,
+			BeaconTime:            beacon.Time,
 			UniqueRedeemID:        matchedRedeem.UniqueRedeemID,
 			TokenID:               matchedRedeem.TokenID,
 			RedeemerAddress:       matchedRedeem.RedeemerAddress,
@@ -296,14 +296,14 @@ func getMatchedRedeemRequestFromBeaconState (beacon *data.Beacon) []model.Redeem
 	return redeemRequests
 }
 
-func getWaitingRedeemRequestFromBeaconState (beacon *data.Beacon) []model.RedeemRequest {
-	redeemRequests := make ([]model.RedeemRequest, 0, len(beacon.WaitingRedeemRequest))
+func getWaitingRedeemRequestFromBeaconState(beacon *data.Beacon) []model.RedeemRequest {
+	redeemRequests := make([]model.RedeemRequest, 0, len(beacon.WaitingRedeemRequest))
 	for _, waitingRedeem := range beacon.WaitingRedeemRequest {
 		redeemRequests = append(redeemRequests, model.RedeemRequest{
-			BeaconBlockHash: beacon.BlockHash,
-			BeaconEpoch:     beacon.Epoch,
-			BeaconHeight:    beacon.Height,
-			BeaconTime:      beacon.Time,
+			BeaconBlockHash:       beacon.BlockHash,
+			BeaconEpoch:           beacon.Epoch,
+			BeaconHeight:          beacon.Height,
+			BeaconTime:            beacon.Time,
 			UniqueRedeemID:        waitingRedeem.UniqueRedeemID,
 			TokenID:               waitingRedeem.TokenID,
 			RedeemerAddress:       waitingRedeem.RedeemerAddress,
@@ -318,14 +318,14 @@ func getWaitingRedeemRequestFromBeaconState (beacon *data.Beacon) []model.Redeem
 	return redeemRequests
 }
 
-func getLockedCollateralFromBeaconState (beacon *data.Beacon) []model.LockedCollateral {
-	lockedCollaterals := make ([]model.LockedCollateral, 0, len(beacon.LockedCollateralState.LockedCollateralDetail))
-	for key , lockedDetail := range beacon.LockedCollateralState.LockedCollateralDetail {
+func getLockedCollateralFromBeaconState(beacon *data.Beacon) []model.LockedCollateral {
+	lockedCollaterals := make([]model.LockedCollateral, 0, len(beacon.LockedCollateralState.LockedCollateralDetail))
+	for key, lockedDetail := range beacon.LockedCollateralState.LockedCollateralDetail {
 		lockedCollaterals = append(lockedCollaterals, model.LockedCollateral{
-			BeaconBlockHash: beacon.BlockHash,
-			BeaconEpoch:     beacon.Epoch,
-			BeaconHeight:    beacon.Height,
-			BeaconTime:      beacon.Time,
+			BeaconBlockHash:                 beacon.BlockHash,
+			BeaconEpoch:                     beacon.Epoch,
+			BeaconHeight:                    beacon.Height,
+			BeaconTime:                      beacon.Time,
 			TotalLockedCollateralForRewards: beacon.LockedCollateralState.TotalLockedCollateralForRewards,
 			CustodianAddress:                key,
 			Amount:                          lockedDetail,
@@ -333,8 +333,6 @@ func getLockedCollateralFromBeaconState (beacon *data.Beacon) []model.LockedColl
 	}
 	return lockedCollaterals
 }
-
-
 
 func StoreLatestShardFinalState(ctx context.Context, shard *data.Shard) error {
 	Logger.log.Infof("Store shard with block hash %v and block height %d of Shard ID %d", shard.BlockHash, shard.Height, shard.ShardID)
@@ -349,25 +347,33 @@ func StoreLatestShardFinalState(ctx context.Context, shard *data.Shard) error {
 			GetDBDriver(MONGODB).GetTransactionStorer().StoreTransaction(ctx, transaction)
 		}
 
-		outputCoins := getOutputCoinFromShardState(shard)
 		inputCoins := getInputCoinFromShardState(shard)
 
 		for _, inputCoin := range inputCoins {
 			GetDBDriver(MONGODB).GetInputCoinStorer().StoreInputCoin(ctx, inputCoin)
 		}
+	}
 
+	if len(shard.OutputCoins) > 0 {
+		outputCoins := getOutputCoinForThisShardFromShardState(shard)
 		for _, outputCoin := range outputCoins {
 			GetDBDriver(MONGODB).GetOutputCoinStorer().StoreOutputCoin(ctx, outputCoin)
 		}
+	}
 
+	if len(shard.OutputCoins) > 0 {
+		outputCoins := getCrossShardOutputCoinFromShardState(shard)
+		Logger.log.Debugf("Store cross shard output coin with size %d", len(outputCoins))
+		for _, outputCoin := range outputCoins {
+			GetDBDriver(MONGODB).GetCrossShardOutputCoinStorer().StoreCrossShardOutputCoin(ctx, outputCoin)
+		}
 	}
 
 	if len(shard.Commitments) > 0 {
 		commitments := getCommitmentFromShardState(shard)
 		Logger.log.Infof("Store commitment with size %d", len(commitments))
-
 		for _, commitment := range commitments {
-			Logger.log.Infof("Store commitment %v", commitment)
+			Logger.log.Debugf("Store commitment %v", commitment)
 			GetDBDriver(MONGODB).GetCommitmentStorer().StoreCommitment(ctx, commitment)
 		}
 	}
@@ -375,11 +381,12 @@ func StoreLatestShardFinalState(ctx context.Context, shard *data.Shard) error {
 	if len(shard.TokenState) > 0 {
 		tokenState := GetTokenStateFromShardState(shard)
 		if err := GetDBDriver(MONGODB).GetTokenStateStorer().StoreTokenState(ctx, tokenState); err != nil {
-				panic(err)
-				return err
+			panic(err)
+			return err
 		}
 
 	}
+	//fmt.Scanln()
 	return nil
 }
 
@@ -440,21 +447,21 @@ func getTransactionFromShardState(shard *data.Shard) []model.Transaction {
 
 		if transaction.TxPrivacy != nil {
 			customTokenTransaction := &model.TransactionCustomToken{
-					Tx:             model.Transaction{
-					ShardId:                shard.ShardID,
-					ShardHash:              shard.BlockHash,
-					ShardHeight:            shard.Height,
-					Hash:                   transaction.Hash,
-					Version:                transaction.Version,
-					Type:                   transaction.TxPrivacy.Tx.Type,
-					LockTime:               transaction.LockTime,
-					Fee:                    transaction.Fee,
-					Info:                   transaction.Info,
-					SigPubKey:              transaction.TxPrivacy.Tx.SigPubKey,
-					Sig:                    transaction.TxPrivacy.Tx.Sig,
-					Proof:                  transaction.TxPrivacy.Tx.Proof,
-					PubKeyLastByteSender:   transaction.TxPrivacy.Tx.PubKeyLastByteSender,
-					Metadata:               transaction.Metadata,
+				Tx: model.Transaction{
+					ShardId:              shard.ShardID,
+					ShardHash:            shard.BlockHash,
+					ShardHeight:          shard.Height,
+					Hash:                 transaction.Hash,
+					Version:              transaction.Version,
+					Type:                 transaction.TxPrivacy.Tx.Type,
+					LockTime:             transaction.LockTime,
+					Fee:                  transaction.Fee,
+					Info:                 transaction.Info,
+					SigPubKey:            transaction.TxPrivacy.Tx.SigPubKey,
+					Sig:                  transaction.TxPrivacy.Tx.Sig,
+					Proof:                transaction.TxPrivacy.Tx.Proof,
+					PubKeyLastByteSender: transaction.TxPrivacy.Tx.PubKeyLastByteSender,
+					Metadata:             transaction.Metadata,
 				},
 				PropertyID:     transaction.TxPrivacy.PropertyID,
 				PropertyName:   transaction.TxPrivacy.PropertyName,
@@ -465,11 +472,10 @@ func getTransactionFromShardState(shard *data.Shard) []model.Transaction {
 			}
 			newTransaction.TransactionCustomToken = customTokenTransaction
 		}
-		transactions = append(transactions,newTransaction)
+		transactions = append(transactions, newTransaction)
 	}
 	return transactions
 }
-
 
 func getInputCoinFromShardState(shard *data.Shard) []model.InputCoin {
 	inputCoins := make([]model.InputCoin, 0, len(shard.Transactions))
@@ -480,24 +486,24 @@ func getInputCoinFromShardState(shard *data.Shard) []model.InputCoin {
 				ShardHash:       shard.BlockHash,
 				ShardHeight:     shard.BeaconHeight,
 				TransactionHash: transaction.Hash,
-				Value:           input.CoinDetails.Value,
-				Info:            input.CoinDetails.Info,
-				TokenID: input.CoinDetails.TokenID,
+				Value:           input.Value,
+				Info:            input.Info,
+				TokenID:         input.TokenID,
 			}
-			if input.CoinDetails.PublicKey != nil {
-				inputCoin.PublicKey = input.CoinDetails.PublicKey.ToBytesS()
+			if input.PublicKey != nil {
+				inputCoin.PublicKey = input.PublicKey.ToBytesS()
 			}
-			if input.CoinDetails.CoinCommitment != nil {
-				inputCoin.CoinCommitment = input.CoinDetails.CoinCommitment.ToBytesS()
+			if input.CoinCommitment != nil {
+				inputCoin.CoinCommitment = input.CoinCommitment.ToBytesS()
 			}
-			if input.CoinDetails.SNDerivator != nil {
-				inputCoin.SNDerivator = input.CoinDetails.SNDerivator.ToBytesS()
+			if input.SNDerivator != nil {
+				inputCoin.SNDerivator = input.SNDerivator.ToBytesS()
 			}
-			if input.CoinDetails.SerialNumber != nil {
-				inputCoin.SerialNumber = input.CoinDetails.SerialNumber.ToBytesS()
+			if input.SerialNumber != nil {
+				inputCoin.SerialNumber = input.SerialNumber.ToBytesS()
 			}
-			if input.CoinDetails.Randomness != nil {
-				inputCoin.Randomness = input.CoinDetails.Randomness.ToBytesS()
+			if input.Randomness != nil {
+				inputCoin.Randomness = input.Randomness.ToBytesS()
 			}
 			inputCoins = append(inputCoins, inputCoin)
 		}
@@ -505,38 +511,91 @@ func getInputCoinFromShardState(shard *data.Shard) []model.InputCoin {
 	}
 	return inputCoins
 }
-
-func getOutputCoinFromShardState(shard *data.Shard) []model.OutputCoin {
-	outputCoins := make([]model.OutputCoin, 0, len(shard.Transactions))
-	for _, transaction := range shard.Transactions {
-		for _, output := range transaction.OutputCoins {
-			outputCoin := model.OutputCoin{
-				ShardId:         shard.ShardID,
-				ShardHash:       shard.BlockHash,
-				ShardHeight:     shard.BeaconHeight,
-				TransactionHash: transaction.Hash,
-				Value:           output.CoinDetails.Value,
-				Info:            output.CoinDetails.Info,
-				TokenID: output.CoinDetails.TokenID,
-			}
-			if output.CoinDetails.PublicKey != nil {
-				outputCoin.PublicKey = output.CoinDetails.PublicKey.ToBytesS()
-			}
-			if output.CoinDetails.CoinCommitment != nil {
-				outputCoin.CoinCommitment = output.CoinDetails.CoinCommitment.ToBytesS()
-			}
-			if output.CoinDetails.SNDerivator != nil {
-				outputCoin.SNDerivator = output.CoinDetails.SNDerivator.ToBytesS()
-			}
-			if output.CoinDetails.SerialNumber != nil {
-				outputCoin.SerialNumber = output.CoinDetails.SerialNumber.ToBytesS()
-			}
-			if output.CoinDetails.Randomness != nil {
-				outputCoin.Randomness = output.CoinDetails.Randomness.ToBytesS()
-			}
-			outputCoins = append(outputCoins, outputCoin)
+func getCrossShardOutputCoinFromShardState(shard *data.Shard) []model.OutputCoin {
+	outputCoins := make([]model.OutputCoin, 0, len(shard.OutputCoins))
+	for _, output := range shard.OutputCoins {
+		if output.ToShardID == shard.ShardID {
+			continue
 		}
-
+		outputCoin := model.OutputCoin{
+			ShardId:          shard.ShardID,
+			ShardHash:        shard.BlockHash,
+			ShardHeight:      shard.BeaconHeight,
+			TransactionHash:  output.TransactionHash,
+			Value:            output.Value,
+			Info:             output.Info,
+			TokenID:          output.TokenID,
+			FromShardID:      output.FromShardID,
+			ToShardID:        output.ToShardID,
+			FromCrossShard:   output.FromCrossShard,
+			CrossBlockHash:   output.CrossBlockHash,
+			CrossBlockHeight: output.CrossBlockHeight,
+			PropertyName:     output.PropertyName,
+			PropertySymbol:   output.PropertySymbol,
+			Type:             output.Type,
+			Mintable:         output.Mintable,
+			Amount:           output.Amount,
+		}
+		if output.PublicKey != nil {
+			outputCoin.PublicKey = output.PublicKey.ToBytesS()
+		}
+		if output.CoinCommitment != nil {
+			outputCoin.CoinCommitment = output.CoinCommitment.ToBytesS()
+		}
+		if output.SNDerivator != nil {
+			outputCoin.SNDerivator = output.SNDerivator.ToBytesS()
+		}
+		if output.SerialNumber != nil {
+			outputCoin.SerialNumber = output.SerialNumber.ToBytesS()
+		}
+		if output.Randomness != nil {
+			outputCoin.Randomness = output.Randomness.ToBytesS()
+		}
+		outputCoins = append(outputCoins, outputCoin)
+	}
+	return outputCoins
+}
+func getOutputCoinForThisShardFromShardState(shard *data.Shard) []model.OutputCoin {
+	outputCoins := make([]model.OutputCoin, 0, len(shard.OutputCoins))
+	for _, output := range shard.OutputCoins {
+		if output.ToShardID != shard.ShardID {
+			continue
+		}
+		outputCoin := model.OutputCoin{
+			ShardId:          shard.ShardID,
+			ShardHash:        shard.BlockHash,
+			ShardHeight:      shard.BeaconHeight,
+			TransactionHash:  output.TransactionHash,
+			Value:            output.Value,
+			Info:             output.Info,
+			TokenID:          output.TokenID,
+			FromShardID:      output.FromShardID,
+			ToShardID:        output.ToShardID,
+			FromCrossShard:   output.FromCrossShard,
+			CrossBlockHash:   output.CrossBlockHash,
+			CrossBlockHeight: output.CrossBlockHeight,
+			PropertyName:     output.PropertyName,
+			PropertySymbol:   output.PropertySymbol,
+			Type:             output.Type,
+			Mintable:         output.Mintable,
+			Amount:           output.Amount,
+		}
+		if output.PublicKey != nil {
+			outputCoin.PublicKey = output.PublicKey.ToBytesS()
+		}
+		if output.CoinCommitment != nil {
+			outputCoin.CoinCommitment = output.CoinCommitment.ToBytesS()
+		}
+		if output.SNDerivator != nil {
+			outputCoin.SNDerivator = output.SNDerivator.ToBytesS()
+		}
+		if output.SerialNumber != nil {
+			outputCoin.SerialNumber = output.SerialNumber.ToBytesS()
+		}
+		if output.Randomness != nil {
+			outputCoin.Randomness = output.Randomness.ToBytesS()
+		}
+		outputCoins = append(outputCoins, outputCoin)
 	}
 	return outputCoins
 }
@@ -544,7 +603,7 @@ func getOutputCoinFromShardState(shard *data.Shard) []model.OutputCoin {
 func getCommitmentFromShardState(shard *data.Shard) []model.Commitment {
 	commitments := make([]model.Commitment, 0, len(shard.Commitments))
 
-	for _, commitment:= range shard.Commitments {
+	for _, commitment := range shard.Commitments {
 		commitments = append(commitments, model.Commitment{
 			ShardHash:       shard.BlockHash,
 			ShardHeight:     shard.Height,
@@ -566,7 +625,7 @@ func GetTokenStateFromShardState(shard *data.Shard) model.TokenState {
 	}
 	tokenInformations := make([]model.TokenInformation, 0, len(shard.TokenState))
 
-	for _, token:= range shard.TokenState {
+	for _, token := range shard.TokenState {
 		tokenInformations = append(tokenInformations, model.TokenInformation{
 			TokenID:        token.TokenID,
 			PropertyName:   token.PropertyName,

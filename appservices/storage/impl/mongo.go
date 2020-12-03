@@ -25,11 +25,15 @@ const (
 	//InputCoin
 	InputCoin = "InputCoin"
 
-	//OutputCoin
-	OutputCoin = "OutputCoin"
+	//Shard OutputCoin
+	ShardOutputCoin = "ShardOutputCoin"
 
 	//Commitment
-	Commitment= "Commitment"
+	ShardCommitmentIndex = "ShardCommitmentIndex"
+
+	//Cross Shard Output Coin
+
+	CrossShardOutputCoin= "CrossShardOutputCoin"
 
 	//TokenState
 	TokenState = "TokenState"
@@ -85,11 +89,14 @@ type mongoDBDriver struct {
 	//InputCoin
 	inputCoinStorer *mongoInputCoinStorer
 
-	//InputCoin
-	outputCoinStorer *mongoOutputCoinStorer
+	//Shard OutputCoin
+	shardOutputCoinStorer *mongoShardOutputCoinStorer
+
+	//Cross Shard OutputCoin
+	crossShardOutputCoinStorer *mongoCrossShardOutputCoinStorer
 
 	//Commitment
-	commitmentStorer *mongoCommitmentStorer
+	shardCommitmentIndexStorer *mongoShardCommitmentIndexStorer
 
 	//TokenState
 	tokenStateStorer *mongoTokenStateStorer
@@ -125,26 +132,33 @@ type mongoShardStateStorer struct {
 type mongoTransactionStorer struct {
 	mongo 		*mongoDBDriver
 	prefix     string
-	collection *mongo.Collection
+	collection [256]*mongo.Collection
 }
 
 //InputCoin
 type mongoInputCoinStorer struct {
 	mongo 		*mongoDBDriver
 	prefix     string
-	collection *mongo.Collection
+	collection [256]*mongo.Collection
 }
 
-//OutputCoin
-type mongoOutputCoinStorer struct {
+//Shard OutputCoin
+type mongoShardOutputCoinStorer struct {
 	mongo 		*mongoDBDriver
 	prefix     string
-	collection *mongo.Collection
+	collection [256]*mongo.Collection
+}
+
+//Shard OutputCoin
+type mongoCrossShardOutputCoinStorer struct {
+	mongo 		*mongoDBDriver
+	prefix     string
+	collection [256]*mongo.Collection
 }
 
 
 //Commitment
-type mongoCommitmentStorer struct {
+type mongoShardCommitmentIndexStorer struct {
 	mongo 		*mongoDBDriver
 	prefix     string
 	collection [256]*mongo.Collection
@@ -214,11 +228,9 @@ func (mongo *mongoDBDriver) GetShardStorer() repository.ShardStateStorer {
 }
 
 //Get Transaction Storer
-
 func (mongo *mongoDBDriver)  GetTransactionStorer() repository.TransactionStorer {
 	if mongo.transactionStorer == nil {
-		collection := mongo.client.Database(DataBaseName).Collection(Transaction)
-		mongo.transactionStorer = &mongoTransactionStorer{prefix: Transaction, mongo: mongo, collection: collection}
+		mongo.transactionStorer = &mongoTransactionStorer{prefix: Transaction, mongo: mongo}
 	}
 	return mongo.transactionStorer
 
@@ -228,8 +240,7 @@ func (mongo *mongoDBDriver)  GetTransactionStorer() repository.TransactionStorer
 
 func (mongo *mongoDBDriver)  GetInputCoinStorer() repository.InputCoinStorer {
 	if mongo.inputCoinStorer == nil {
-		collection := mongo.client.Database(DataBaseName).Collection(InputCoin)
-		mongo.inputCoinStorer = &mongoInputCoinStorer{prefix: InputCoin, mongo: mongo, collection: collection}
+		mongo.inputCoinStorer = &mongoInputCoinStorer{prefix: InputCoin, mongo: mongo}
 	}
 	return mongo.inputCoinStorer
 
@@ -237,21 +248,29 @@ func (mongo *mongoDBDriver)  GetInputCoinStorer() repository.InputCoinStorer {
 
 //Get OutputCoin Storer
 
-func (mongo *mongoDBDriver)  GetOutputCoinStorer() repository.OutputCoinStorer {
-	if mongo.outputCoinStorer == nil {
-		collection := mongo.client.Database(DataBaseName).Collection(OutputCoin)
-		mongo.outputCoinStorer = &mongoOutputCoinStorer{prefix: OutputCoin, mongo: mongo, collection: collection}
+func (mongo *mongoDBDriver)  GetOutputCoinStorer() repository.ShardOutputCoinStorer {
+	if mongo.shardOutputCoinStorer == nil {
+		mongo.shardOutputCoinStorer = &mongoShardOutputCoinStorer{prefix: ShardOutputCoin, mongo: mongo}
 	}
-	return mongo.outputCoinStorer
+	return mongo.shardOutputCoinStorer
+
+}
+
+//Get CrossShard Output Coin
+func (mongo *mongoDBDriver)  GetCrossShardOutputCoinStorer() repository.CrossShardOutputCoinStorer {
+	if mongo.crossShardOutputCoinStorer == nil {
+		mongo.crossShardOutputCoinStorer = &mongoCrossShardOutputCoinStorer{prefix: CrossShardOutputCoin, mongo: mongo}
+	}
+	return mongo.crossShardOutputCoinStorer
 
 }
 
 //Get Commitment Storer
-func (mongo *mongoDBDriver) GetCommitmentStorer() repository.CommitmentStorer {
-	if mongo.commitmentStorer == nil {
-		mongo.commitmentStorer = &mongoCommitmentStorer{prefix: Commitment, mongo: mongo}
+func (mongo *mongoDBDriver) GetCommitmentStorer() repository.ShardCommitmentIndexStorer {
+	if mongo.shardCommitmentIndexStorer == nil {
+		mongo.shardCommitmentIndexStorer = &mongoShardCommitmentIndexStorer{prefix: ShardCommitmentIndex, mongo: mongo}
 	}
-	return mongo.commitmentStorer
+	return mongo.shardCommitmentIndexStorer
 }
 
 //Get TokenState Storer
@@ -364,32 +383,56 @@ func (shardStateStorer *mongoShardStateStorer) StoreShardState(ctx context.Conte
 
 //Store Transaction
 func (transactionStorer *mongoTransactionStorer) StoreTransaction (ctx context.Context, transaction model.Transaction) error {
-	_, err := transactionStorer.collection.InsertOne(ctx, transaction)
+	if transactionStorer.collection[transaction.ShardId]  == nil {
+		collectionName := fmt.Sprintf("%s-%d", transactionStorer.prefix, transaction.ShardId)
+		transactionStorer.collection[transaction.ShardId] =
+			transactionStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
+	}
+	_, err := transactionStorer.collection[transaction.ShardId].InsertOne(ctx, transaction)
 	return err
 }
 
 //Store InputCoin
 func (inputCoinStorer *mongoInputCoinStorer) StoreInputCoin (ctx context.Context, inputCoin model.InputCoin) error {
-	_, err := inputCoinStorer.collection.InsertOne(ctx, inputCoin)
+	if inputCoinStorer.collection[inputCoin.ShardId]  == nil {
+		collectionName := fmt.Sprintf("%s-%d", inputCoinStorer.prefix, inputCoin.ShardId)
+		inputCoinStorer.collection[inputCoin.ShardId] =
+			inputCoinStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
+	}
+	_, err := inputCoinStorer.collection[inputCoin.ShardId].InsertOne(ctx, inputCoin)
 	return err
 }
 
 //Store OutputCoin
-func (outputCoinStorer *mongoOutputCoinStorer) StoreOutputCoin (ctx context.Context, outputCoin model.OutputCoin) error {
-	_, err := outputCoinStorer.collection.InsertOne(ctx, outputCoin)
+func (outputCoinStorer *mongoShardOutputCoinStorer) StoreOutputCoin (ctx context.Context, outputCoin model.OutputCoin) error {
+	if outputCoinStorer.collection[outputCoin.ToShardID]  == nil {
+		collectionName := fmt.Sprintf("%s-%d", outputCoinStorer.prefix, outputCoin.ToShardID)
+		outputCoinStorer.collection[outputCoin.ToShardID] =
+			outputCoinStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
+	}
+	_, err := outputCoinStorer.collection[outputCoin.ToShardID].InsertOne(ctx, outputCoin)
 	return err
 }
 
-//Store Commitment
-func (commitmentStorer *mongoCommitmentStorer) StoreCommitment(ctx context.Context, commitment model.Commitment) error {
-	if commitmentStorer.collection[commitment.ShardId]  == nil {
-
-		collectionName := fmt.Sprintf("%s-%d", commitmentStorer.prefix, commitment.ShardId)
-		fmt.Printf("Collection Name %s", collectionName)
-		commitmentStorer.collection[commitment.ShardId] =
-			commitmentStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
+//Store Cross Shard OutputCoin
+func (crossShardOutputCoinStorer *mongoCrossShardOutputCoinStorer) StoreCrossShardOutputCoin (ctx context.Context, outputCoin model.OutputCoin) error {
+	if crossShardOutputCoinStorer.collection[outputCoin.ShardId]  == nil {
+		collectionName := fmt.Sprintf("%s-%d", crossShardOutputCoinStorer.prefix, outputCoin.ShardId)
+		crossShardOutputCoinStorer.collection[outputCoin.ShardId] =
+			crossShardOutputCoinStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
 	}
-	_, err := commitmentStorer.collection[commitment.ShardId].InsertOne(ctx, commitment)
+	_, err := crossShardOutputCoinStorer.collection[outputCoin.ShardId].InsertOne(ctx, outputCoin)
+	return err
+}
+
+//Store Shard Commitment Index
+func (shardCommitmentIndexStorer *mongoShardCommitmentIndexStorer) StoreCommitment(ctx context.Context, commitment model.Commitment) error {
+	if shardCommitmentIndexStorer.collection[commitment.ShardId]  == nil {
+		collectionName := fmt.Sprintf("%s-%d", shardCommitmentIndexStorer.prefix, commitment.ShardId)
+		shardCommitmentIndexStorer.collection[commitment.ShardId] =
+			shardCommitmentIndexStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
+	}
+	_, err := shardCommitmentIndexStorer.collection[commitment.ShardId].InsertOne(ctx, commitment)
 	return err
 }
 
