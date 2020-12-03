@@ -87,18 +87,14 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 		common.PortalCusUnlockOverRateCollateralsRejectedChainStatus,
 	)
 	//check key from db
-	if currentPortalState.UnlockOverRateCollaterals != nil {
-		_, ok := currentPortalState.UnlockOverRateCollaterals[actionData.TxReqID.String()]
-		if ok {
-			Logger.log.Errorf("ERROR: unlock over rate collaterals rates key is duplicated")
-			return [][]string{rejectInst}, nil
-		}
-	}
 	exchangeTool := NewPortalExchangeRateTool(currentPortalState.FinalExchangeRatesState, portalParams.SupportedCollateralTokens)
 	custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.Meta.CustodianAddressStr).String()
 	custodianState := currentPortalState.CustodianPoolState[custodianStateKey]
 	tokenAmountListInWaitingPoring := GetTotalLockedCollateralAmountInWaitingPortingsV3(currentPortalState, custodianState, actionData.Meta.TokenID)
-	lockedCollaters := custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID]
+	lockedCollaters := cloneMap(custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID])
+	if lockedCollaters == nil {
+		lockedCollaters = make(map[string]uint64, 0)
+	}
 	lockedCollaters[common.PRVIDStr] = custodianState.GetLockedAmountCollateral()[actionData.Meta.TokenID]
 	lockedCollatersExceptPorting := make(map[string]uint64, 0)
 	totalAmountInUSD := uint64(0)
@@ -107,7 +103,7 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 			Logger.log.Errorf("ERROR: total %v locked less than amount lock in porting", collateralID)
 			return [][]string{rejectInst}, nil
 		}
-		lockedCollatersExceptPorting[collateralID] = lockedCollaters[collateralID] - tokenAmountListInWaitingPoring[collateralID]
+		lockedCollatersExceptPorting[collateralID] = tokenValue - tokenAmountListInWaitingPoring[collateralID]
 		// convert to usd
 		pubTokenAmountInUSDT, err := exchangeTool.ConvertToUSD(collateralID, lockedCollatersExceptPorting[collateralID])
 		if err != nil {
@@ -130,25 +126,15 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 	amountToUnlock := big.NewInt(0).Sub(new(big.Int).SetUint64(totalAmountInUSD), minHoldUnlockedAmountInBigInt).Uint64()
+	// amountToUnlock need greater than 1 USD to unlock
+	if amountToUnlock < 1e9 {
+		Logger.log.Errorf("Error locked collaterals amount not greater than 1 USD")
+		return [][]string{rejectInst}, nil
+	}
 	listUnlockTokens, err := updateCustodianStateAfterReqUnlockCollateralV3(custodianState, amountToUnlock, actionData.Meta.TokenID, portalParams, currentPortalState)
 	if err != nil {
 		Logger.log.Errorf("Error when converting holding public token to prv: %v", err)
 		return [][]string{rejectInst}, nil
-	}
-
-	unlockCollateralsResult := statedb.NewUnlockOverRateCollateralsWithValue(
-		actionData.Meta.CustodianAddressStr,
-		actionData.Meta.TokenID,
-		listUnlockTokens,
-	)
-	if currentPortalState.UnlockOverRateCollaterals != nil {
-		currentPortalState.UnlockOverRateCollaterals[actionData.TxReqID.String()] = unlockCollateralsResult
-	} else {
-		//new object
-		newUnlockOverRateCollaterals := make(map[string]*statedb.UnlockOverRateCollaterals)
-		newUnlockOverRateCollaterals[actionData.TxReqID.String()] = unlockCollateralsResult
-
-		currentPortalState.UnlockOverRateCollaterals = newUnlockOverRateCollaterals
 	}
 
 	inst := buildReqUnlockOverRateCollateralsInst(

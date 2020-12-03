@@ -25,8 +25,7 @@ type CurrentPortalState struct {
 	// it used for calculate reward for custodian at the end epoch
 	LockedCollateralForRewards *statedb.LockedCollateralState
 	//Store temporary exchange rates requests
-	ExchangeRatesRequests     map[string]*metadata.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
-	UnlockOverRateCollaterals map[string]*statedb.UnlockOverRateCollaterals   // key : hash(TxID)
+	ExchangeRatesRequests map[string]*metadata.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
 }
 
 type CustodianStateSlice struct {
@@ -116,10 +115,6 @@ func storePortalStateToDB(
 		return err
 	}
 	err = statedb.StoreLockedCollateralState(stateDB, currentPortalState.LockedCollateralForRewards)
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreBulkUnlockOverRateCollateralsState(stateDB, currentPortalState.UnlockOverRateCollaterals)
 	if err != nil {
 		return err
 	}
@@ -623,6 +618,9 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 		for _, tokenCollateralID := range sortedTokenIDs {
 			if lockedTokenAmounts[tokenID][tokenCollateralID] < tokenAmountListInWaitingPoring[tokenCollateralID] {
 				return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Locked amount must greater then amount in waiting porting")
+			}
+			if lockedTokenAmounts[tokenID][tokenCollateralID] == 0 {
+				continue
 			}
 			lockedTokenAmounts[tokenID][tokenCollateralID] -= tokenAmountListInWaitingPoring[tokenCollateralID]
 			tokenValueLocked, err := convertRateTool.ConvertToUSD(tokenCollateralID, lockedTokenAmounts[tokenID][tokenCollateralID])

@@ -145,6 +145,7 @@ func (s *PortalTestSuiteV3) SetupTest() {
 						MinPercentRedeemFee:                  0.01,
 						SupportedCollateralTokens:            supportedCollaterals,
 						MinPortalFee:                         100,
+						MinUnlockOverRateCollaterals:         25,
 					},
 				},
 				BNBFullNodeProtocol:         TestnetBNBFullNodeProtocol,
@@ -316,6 +317,9 @@ func processPortalInstructions(
 		// custodian request withdraw collateral v3
 		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMetaV3):
 			err = blockchain.processPortalCustodianWithdrawV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+		// custodian request unlock over rate collaterals
+		case strconv.Itoa(metadata.PortalUnlockOverRateCollateralsMeta):
+			err = blockchain.processPortalUnlockOverRateCollaterals(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 
 		// ============ Porting flow ============
 		// porting request
@@ -3460,10 +3464,10 @@ func (s *PortalTestSuiteV3) TestRequestUnlockCollateralsV3() {
 	+ auto-unlockCollaterals: when porting request expired
 */
 type ExpectedResultExpiredPortingRequest struct {
-	waitingPortingRes    map[string]*statedb.WaitingPortingRequest
-	custodianPool        map[string]*statedb.CustodianState
-	numBeaconInsts       uint
-	statusInsts          []string
+	waitingPortingRes map[string]*statedb.WaitingPortingRequest
+	custodianPool     map[string]*statedb.CustodianState
+	numBeaconInsts    uint
+	statusInsts       []string
 }
 
 func (s *PortalTestSuiteV3) SetupTestExpiredPortingRequest() {
@@ -3703,7 +3707,6 @@ func (s *PortalTestSuiteV3) TestExpiredPortingRequest() {
 
 	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
 }
-
 
 /*
 	Feature 11:
@@ -3968,7 +3971,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationCustodian() {
 	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
 }
 
- */
+*/
 
 /*
 	Feature 12: auto-liquidation: the proportion between the collateral and public token is drop down below 120%
@@ -4774,6 +4777,356 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //	s.Equal(reward2, s.currentPortalStateForProcess.CustodianPoolState[custodianKey2].GetRewardAmount())
 //	s.Equal(reward3, s.currentPortalStateForProcess.CustodianPoolState[custodianKey3].GetRewardAmount())
 //}
+
+/**
+	Feature 15: Custodian unlock over rate collaterals
+**/
+
+type TestCaseUnlockOverRateCollaterals struct {
+	custodianIncAddress string
+	tokenID             string
+}
+
+type ExpectedResultUnlockOverRateCollaterals struct {
+	custodianPool         map[string]*statedb.CustodianState
+	waitingPortingRes     map[string]*statedb.WaitingPortingRequest
+	waitingRedeemRequests map[string]*statedb.RedeemRequest
+	matchedRedeemRequest  map[string]*statedb.RedeemRequest
+	liquidationPool       map[string]*statedb.LiquidationPool
+	numBeaconInsts        uint
+	statusInsts           []string
+}
+
+func (s *PortalTestSuiteV3) SetupTestUnlockOverRateCollaterals() {
+	//beaconHeight := uint64(1004)
+	//shardHeight := uint64(1004)
+	//shardID := byte(0)
+
+	custodianKey1 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_1).String()
+	custodianKey2 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_2).String()
+	custodianKey3 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_3).String()
+
+	// process 3 => 2 => 1
+	custodian1 := statedb.NewCustodianState()
+	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
+	custodian1.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+		})
+	custodian1.SetTotalCollateral(1000 * 1e9)
+	custodian1.SetFreeCollateral(0)
+	custodian1.SetTotalTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  10 * 1e9,
+			USDT_ID: 500 * 1e6,
+		})
+	custodian1.SetFreeTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  0,
+			USDT_ID: 0,
+		})
+	custodian1.SetLockedAmountCollateral(
+		map[string]uint64{
+			common.PortalBNBIDStr: 1000 * 1e9,
+		})
+	custodian1.SetLockedTokenCollaterals(
+		map[string]map[string]uint64{
+			common.PortalBNBIDStr: {
+				ETH_ID:  10 * 1e9,
+				USDT_ID: 500 * 1e6,
+			},
+		})
+	custodian1.SetHoldingPublicTokens(
+		map[string]uint64{
+			common.PortalBNBIDStr: 137.5 * 1e9,
+		})
+
+	custodian2 := statedb.NewCustodianState()
+	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
+	custodian2.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+		})
+	custodian2.SetTotalTokenCollaterals(
+		map[string]uint64{
+			ETH_ID: 10 * 1e9,
+		})
+	custodian2.SetFreeTokenCollaterals(
+		map[string]uint64{
+			ETH_ID: 5 * 1e9,
+		})
+	custodian2.SetLockedTokenCollaterals(
+		map[string]map[string]uint64{
+			common.PortalBNBIDStr: {
+				ETH_ID: 5 * 1e9,
+			}})
+	custodian2.SetHoldingPublicTokens(
+		map[string]uint64{
+			common.PortalBNBIDStr: 100 * 1e9,
+		})
+
+	custodian3 := statedb.NewCustodianState()
+	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
+	custodian3.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+		})
+	custodian3.SetTotalCollateral(1000 * 1e9)
+	custodian3.SetFreeCollateral(500 * 1e9)
+	custodian3.SetHoldingPublicTokens(
+		map[string]uint64{
+			common.PortalBNBIDStr: 12.5 * 1e9,
+		})
+	custodian3.SetLockedAmountCollateral(
+		map[string]uint64{
+			common.PortalBNBIDStr: 500 * 1e9,
+		})
+
+	custodians := map[string]*statedb.CustodianState{
+		custodianKey1: custodian1,
+		custodianKey2: custodian2,
+		custodianKey3: custodian3,
+	}
+	wPortingRequests := map[string]*statedb.WaitingPortingRequest{}
+	matchedRedeemRequests := map[string]*statedb.RedeemRequest{}
+	waitingRedeemRequests := map[string]*statedb.RedeemRequest{}
+
+	s.currentPortalStateForProducer.CustodianPoolState = custodians
+	s.currentPortalStateForProducer.WaitingPortingRequests = wPortingRequests
+	s.currentPortalStateForProducer.WaitingRedeemRequests = waitingRedeemRequests
+	s.currentPortalStateForProducer.MatchedRedeemRequests = matchedRedeemRequests
+
+	s.currentPortalStateForProcess.CustodianPoolState = cloneCustodians(custodians)
+	s.currentPortalStateForProcess.WaitingPortingRequests = cloneWPortingRequests(wPortingRequests)
+	s.currentPortalStateForProcess.WaitingRedeemRequests = cloneRedeemRequests(waitingRedeemRequests)
+	s.currentPortalStateForProcess.MatchedRedeemRequests = cloneRedeemRequests(matchedRedeemRequests)
+
+	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
+		map[string]statedb.FinalExchangeRatesDetail{
+			common.PRVIDStr:       {Amount: 3000000000}, // x3
+			common.PortalBNBIDStr: {Amount: 20000000000},
+			common.PortalBTCIDStr: {Amount: 10000000000000},
+			ETH_ID:                {Amount: 1200000000000}, // x3
+			USDT_ID:               {Amount: 1000000000},
+			DAI_ID:                {Amount: 1000000000},
+		})
+	s.currentPortalStateForProducer.FinalExchangeRatesState = finalExchangeRate
+	s.currentPortalStateForProcess.FinalExchangeRatesState = finalExchangeRate
+}
+
+func buildUnlockOverRateCollateralsActionsFromTcs(tcs []TestCaseUnlockOverRateCollaterals, shardID byte) []instructionForProducer {
+	insts := []instructionForProducer{}
+
+	for _, tc := range tcs {
+		inst := buildPortalCustodianUnlockOverRateCollateralsAction(tc.custodianIncAddress, tc.tokenID, shardID)
+		insts = append(insts, instructionForProducer{
+			inst:         inst,
+			optionalData: nil,
+		})
+	}
+
+	return insts
+}
+
+func buildPortalCustodianUnlockOverRateCollateralsAction(
+	incAddressStr string,
+	tokenID string,
+	shardID byte,
+) []string {
+	data := metadata.PortalUnlockOverRateCollaterals{
+		MetadataBase: metadata.MetadataBase{
+			Type: metadata.PortalUnlockOverRateCollateralsMeta,
+		},
+		CustodianAddressStr: incAddressStr,
+		TokenID:             tokenID,
+	}
+
+	actionContent := metadata.PortalUnlockOverRateCollateralsAction{
+		Meta:    data,
+		TxReqID: common.Hash{},
+		ShardID: shardID,
+	}
+	actionContentBytes, _ := json.Marshal(actionContent)
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	return []string{strconv.Itoa(metadata.PortalUnlockOverRateCollateralsMeta), actionContentBase64Str}
+}
+
+func buildExpectedResultUnlockOverRateCollaterals() ([]TestCaseUnlockOverRateCollaterals, *ExpectedResultUnlockOverRateCollaterals) {
+
+	testcases := []TestCaseUnlockOverRateCollaterals{
+		// unlocked both prv and eth
+		{
+			custodianIncAddress: CUS_INC_ADDRESS_1,
+			tokenID:             common.PortalBNBIDStr,
+		},
+		// only eth unlocked
+		{
+			custodianIncAddress: CUS_INC_ADDRESS_2,
+			tokenID:             common.PortalBNBIDStr,
+		},
+		// only prv unlocked
+		{
+			custodianIncAddress: CUS_INC_ADDRESS_3,
+			tokenID:             common.PortalBNBIDStr,
+		},
+		// can not unlock cause rate not changed
+		{
+			custodianIncAddress: CUS_INC_ADDRESS_2,
+			tokenID:             common.PortalBNBIDStr,
+		},
+	}
+
+	// build expected results
+	// custodian state after liquidated
+	custodianKey1 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_1).String()
+	custodianKey2 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_2).String()
+	custodianKey3 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_3).String()
+
+	custodian1 := statedb.NewCustodianState()
+	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
+	custodian1.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+		})
+	custodian1.SetTotalCollateral(1000 * 1e9)
+	custodian1.SetFreeCollateral(1000 * 1e9)
+	custodian1.SetTotalTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  10 * 1e9,
+			USDT_ID: 500 * 1e6,
+		})
+	custodian1.SetFreeTokenCollaterals(
+		map[string]uint64{
+			ETH_ID:  4.6875 * 1e9,
+			USDT_ID: 0,
+		})
+	custodian1.SetLockedAmountCollateral(
+		map[string]uint64{
+			common.PortalBNBIDStr: 0,
+		})
+	custodian1.SetLockedTokenCollaterals(
+		map[string]map[string]uint64{
+			common.PortalBNBIDStr: {
+				ETH_ID:  5.3125 * 1e9,
+				USDT_ID: 500 * 1e6,
+			},
+		})
+	custodian1.SetHoldingPublicTokens(
+		map[string]uint64{
+			common.PortalBNBIDStr: 137.5 * 1e9,
+		})
+
+	custodian2 := statedb.NewCustodianState()
+	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
+	custodian2.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+		})
+	custodian2.SetTotalTokenCollaterals(
+		map[string]uint64{
+			ETH_ID: 10 * 1e9,
+		})
+	custodian2.SetFreeTokenCollaterals(
+		map[string]uint64{
+			ETH_ID: 5.833333333 * 1e9,
+		})
+	custodian2.SetLockedTokenCollaterals(
+		map[string]map[string]uint64{
+			common.PortalBNBIDStr: {
+				ETH_ID: 4166666667,
+			}})
+	custodian2.SetHoldingPublicTokens(
+		map[string]uint64{
+			common.PortalBNBIDStr: 100 * 1e9,
+		})
+
+	custodian3 := statedb.NewCustodianState()
+	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
+	custodian3.SetRemoteAddresses(
+		map[string]string{
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+		})
+	custodian3.SetTotalCollateral(1000 * 1e9)
+	custodian3.SetLockedAmountCollateral(
+		map[string]uint64{
+			common.PortalBNBIDStr: 208333333334,
+		})
+	custodian3.SetFreeCollateral(791666666666)
+	custodian3.SetHoldingPublicTokens(
+		map[string]uint64{
+			common.PortalBNBIDStr: 12.5 * 1e9,
+		})
+
+	expectedRes := &ExpectedResultUnlockOverRateCollaterals{
+		custodianPool: map[string]*statedb.CustodianState{
+			custodianKey1: custodian1,
+			custodianKey2: custodian2,
+			custodianKey3: custodian3,
+		},
+		waitingPortingRes:     map[string]*statedb.WaitingPortingRequest{},
+		waitingRedeemRequests: map[string]*statedb.RedeemRequest{},
+		matchedRedeemRequest:  map[string]*statedb.RedeemRequest{},
+		numBeaconInsts:        4,
+		liquidationPool:       map[string]*statedb.LiquidationPool{},
+		statusInsts: []string{
+			common.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
+			common.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
+			common.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
+			common.PortalCusUnlockOverRateCollateralsRejectedChainStatus,
+		},
+	}
+
+	return testcases, expectedRes
+}
+
+func (s *PortalTestSuiteV3) TestUnlockOverRateCollaterals() {
+	fmt.Println("Running TestUnlockOverRateCollaterals - beacon height 1501 ...")
+	bc := s.blockChain
+	beaconHeight := uint64(1501)
+	shardID := byte(0)
+	//newMatchedRedeemReqIDs := []string{}
+	pm := NewPortalManager()
+	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+
+	s.SetupTestUnlockOverRateCollaterals()
+
+	custodianPool := s.currentPortalStateForProducer.CustodianPoolState
+	for cusKey, cus := range custodianPool {
+		fmt.Printf("cusKey %v - custodian address: %v\n", cusKey, cus.GetIncognitoAddress())
+	}
+
+	testcases, expectedResult := buildExpectedResultUnlockOverRateCollaterals()
+
+	// build actions from testcases
+	instsForProducer := buildUnlockOverRateCollateralsActionsFromTcs(testcases, shardID)
+
+	// producer instructions
+	newInsts, err := producerPortalInstructions(
+		bc, beaconHeight, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+	s.Equal(nil, err)
+
+	// process new instructions
+	err = processPortalInstructions(
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+
+	// check results
+	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
+	s.Equal(nil, err)
+
+	for i, inst := range newInsts {
+		s.Equal(expectedResult.statusInsts[i], inst[2], "Instruction index %v", i)
+	}
+
+	s.Equal(expectedResult.custodianPool, s.currentPortalStateForProducer.CustodianPoolState)
+	s.Equal(expectedResult.waitingPortingRes, s.currentPortalStateForProducer.WaitingPortingRequests)
+	s.Equal(expectedResult.waitingRedeemRequests, s.currentPortalStateForProducer.WaitingRedeemRequests)
+	s.Equal(expectedResult.matchedRedeemRequest, s.currentPortalStateForProducer.MatchedRedeemRequests)
+	s.Equal(expectedResult.liquidationPool, s.currentPortalStateForProducer.LiquidationPool)
+
+	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
+}
 
 func TestPortalSuiteV3(t *testing.T) {
 	suite.Run(t, new(PortalTestSuiteV3))

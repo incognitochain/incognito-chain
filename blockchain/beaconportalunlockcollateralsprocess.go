@@ -42,13 +42,6 @@ func (blockchain *BlockChain) processPortalUnlockOverRateCollaterals(
 			return nil
 		}
 
-		newUnlockOverRateCollateralsRequest := statedb.NewUnlockOverRateCollateralsWithValue(
-			unlockOverRateCollateralsContent.CustodianAddressStr,
-			unlockOverRateCollateralsContent.TokenID,
-			unlockOverRateCollateralsContent.UnlockedAmounts,
-		)
-		currentPortalState.UnlockOverRateCollaterals[unlockOverRateCollateralsContent.TxReqID.String()] = newUnlockOverRateCollateralsRequest
-
 		//save db
 		newUnlockOverRateCollaterals := metadata.NewUnlockOverRateCollateralsRequestStatus(
 			common.PortalUnlockOverRateCollateralsAcceptedStatus,
@@ -71,21 +64,21 @@ func (blockchain *BlockChain) processPortalUnlockOverRateCollaterals(
 
 	case common.PortalCusUnlockOverRateCollateralsRejectedChainStatus:
 		//save db
-		newExchangeRates := metadata.NewUnlockOverRateCollateralsRequestStatus(
+		newUnlockOverRateCollaterals := metadata.NewUnlockOverRateCollateralsRequestStatus(
 			common.PortalUnlockOverRateCollateralsRejectedStatus,
 			unlockOverRateCollateralsContent.CustodianAddressStr,
 			unlockOverRateCollateralsContent.TokenID,
 			map[string]uint64{},
 		)
 
-		newExchangeRatesStatusBytes, _ := json.Marshal(newExchangeRates)
+		newUnlockOverRateCollateralsStatusBytes, _ := json.Marshal(newUnlockOverRateCollaterals)
 		err = statedb.StorePortalUnlockOverRateCollaterals(
 			portalStateDB,
 			unlockOverRateCollateralsContent.TxReqID.String(),
-			newExchangeRatesStatusBytes,
+			newUnlockOverRateCollateralsStatusBytes,
 		)
 		if err != nil {
-			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
+			Logger.log.Errorf("ERROR: Save UnlockOverRateCollaterals error: %+v", err)
 			return nil
 		}
 	}
