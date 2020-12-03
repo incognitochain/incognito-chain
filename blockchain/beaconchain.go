@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"sync"
 	"time"
 

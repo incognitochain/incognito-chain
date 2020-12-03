@@ -68,7 +68,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		if !chain.CheckExistedBlk(v) {
 			var err error
 			if i == 0 {
-				err = chain.InsertBlk(v, true)
+				err = chain.InsertBlock(v, true)
 			} else {
 				err = chain.InsertBlock(v, false)
 			}

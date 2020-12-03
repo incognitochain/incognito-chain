@@ -633,25 +633,18 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	b.shardCommittee[shardID], _ = incognitokey.CommitteeBase58KeyListToStruct(newCommittees)
 	b.shardSubstitute[shardID], _ = incognitokey.CommitteeBase58KeyListToStruct(newSubstitutes)
 
-	newCommitteeChange := committeeChange
-	tempSwapOutPublicKeys := swapShardInstruction.OutPublicKeyStructs
-	tempSwapInPublicKeys := swapShardInstruction.InPublicKeyStructs
+	committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID],
+		incognitokey.DeepCopy(swapShardInstruction.OutPublicKeyStructs)...)
 
-	for _, v := range tempSwapOutPublicKeys {
-		newCommitteeChange.ShardCommitteeRemoved[shardID] = append(newCommitteeChange.ShardCommitteeRemoved[shardID], v)
-	}
-
-	for _, v := range tempSwapInPublicKeys {
-		newCommitteeChange.ShardSubstituteRemoved[shardID] = append(newCommitteeChange.ShardSubstituteRemoved[shardID], v)
-		newCommitteeChange.ShardCommitteeAdded[shardID] = append(newCommitteeChange.ShardCommitteeAdded[shardID], v)
-	}
+	committeeChange.ShardSubstituteRemoved[shardID] = append(committeeChange.ShardSubstituteRemoved[shardID],
+		incognitokey.DeepCopy(swapShardInstruction.InPublicKeyStructs)...)
+	committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID],
+		incognitokey.DeepCopy(swapShardInstruction.InPublicKeyStructs)...)
 
 	// process after swap for assign old committees to current shard pool
-	newCommitteeChange, returnStakingInstruction, err = b.processAfterSwap(env,
-		swapShardInstruction.OutPublicKeys,
-		swapShardInstruction.OutPublicKeyStructs,
-		chainID,
-		newCommitteeChange,
+	committeeChange, returnStakingInstruction, err = b.processAfterNormalSwap(env,
+		normalSwapOutCommittees,
+		committeeChange,
 		returnStakingInstruction,
 		oldState,
 	)
@@ -660,22 +653,20 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		return nil, returnStakingInstruction, err
 	}
 
-	returnStakingInstructions, err = b.processSlashing(
+	returnStakingInstruction, err = b.processSlashing(
 		env,
 		slashingCommittees,
-		returnStakingInstructions,
+		returnStakingInstruction,
 	)
 
 	if err != nil {
-		return nil, returnStakingInstructions, err
+		return nil, returnStakingInstruction, err
 	}
 
-	return newCommitteeChange, returnStakingInstructions, nil
+	return committeeChange, returnStakingInstruction, nil
 }
 
 // processAfterNormalSwap process swapped out committee public key
-// if number of round is less than MAX_NUMBER_OF_ROUND go back to THAT shard pool, and increase number of round
-// if number of round is equal to or greater than MAX_NUMBER_OF_ROUND
 // - auto stake is false then remove completely out of any committee, candidate, substitute list
 // - auto stake is true then using assignment rule v2 to assign this committee public key
 func (b *BeaconCommitteeStateV2) processAfterNormalSwap(
@@ -686,8 +677,8 @@ func (b *BeaconCommitteeStateV2) processAfterNormalSwap(
 	oldState *BeaconCommitteeStateV2,
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	candidates := []string{}
-	outPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(outPublicKeys)
 	newCommitteeChange := committeeChange
+	outPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(outPublicKeys)
 	for index, outPublicKey := range outPublicKeys {
 		stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
 		if err != nil {
@@ -724,29 +715,29 @@ func (b *BeaconCommitteeStateV2) processAfterNormalSwap(
 func (b *BeaconCommitteeStateV2) processSlashing(
 	env *BeaconCommitteeStateEnvironment,
 	slashingPublicKeys []string,
-	returnStakingInstructions map[byte]*instruction.ReturnStakeInstruction,
-) (map[byte]*instruction.ReturnStakeInstruction, error) {
+	returnStakingInstruction *instruction.ReturnStakeInstruction,
+) (*instruction.ReturnStakeInstruction, error) {
 	slashingPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(slashingPublicKeys)
 	for index, outPublicKey := range slashingPublicKeys {
 		stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
 		if err != nil {
-			return returnStakingInstructions, err
+			return returnStakingInstruction, err
 		}
 		if !has {
-			return returnStakingInstructions, errors.Errorf("Can not found info of this public key %v", outPublicKey)
+			return returnStakingInstruction, errors.Errorf("Can not found info of this public key %v", outPublicKey)
 		}
-		returnStakingInstructions, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
-			returnStakingInstructions,
+		returnStakingInstruction, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
+			returnStakingInstruction,
 			slashingPublicKeyStructs[index],
 			outPublicKey,
 			stakerInfo,
 		)
 		if err != nil {
-			return returnStakingInstructions, err
+			return returnStakingInstruction, err
 		}
 	}
 
-	return returnStakingInstructions, nil
+	return returnStakingInstruction, nil
 }
 
 //processUnstakeInstruction : process unstake instruction from beacon block

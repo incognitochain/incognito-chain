@@ -192,9 +192,7 @@ func SetupParam() {
 		PreloadAddress:            "",
 		BCHeightBreakPointNewZKP:  2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:   21920,
-		MissingSignaturePenalty: []signaturecounter.Penalty{
-			},
-		},
+		MissingSignaturePenalty:   []signaturecounter.Penalty{},
 	}
 	// END TESTNET
 
@@ -280,9 +278,7 @@ func SetupParam() {
 		PreloadAddress:            "",
 		BCHeightBreakPointNewZKP:  260000, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:   2085,
-		MissingSignaturePenalty: []signaturecounter.Penalty{
-			},
-		},
+		MissingSignaturePenalty:   []signaturecounter.Penalty{},
 	}
 	// END TESTNET-2
 
@@ -367,9 +363,7 @@ func SetupParam() {
 		PreloadAddress:            "",
 		BCHeightBreakPointNewZKP:  737450,
 		ETHRemoveBridgeSigEpoch:   1973,
-		MissingSignaturePenalty: []signaturecounter.Penalty{
-			},
-		},
+		MissingSignaturePenalty:   []signaturecounter.Penalty{},
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
