@@ -183,7 +183,7 @@ func NewPortalManager() *PortalManager {
 				actions: map[byte][][]string{},
 			},
 		},
-		bMeta.PortalLiquidateTPExchangeRatesMeta: &portalLiquidationByRatesV3Processor{
+		bMeta.PortalLiquidateTPExchangeRatesMeta: &portalLiquidationByRatesProcessor{
 			portalInstProcessor: &portalInstProcessor{
 				actions: map[byte][][]string{},
 			},
