@@ -12,11 +12,12 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 	}
 
 	beaconHeight := block.Header.Height - 1
+	epoch := blockchain.config.ChainParams.Epoch
 	instructions := block.Body.Instructions
 	portalParams := blockchain.GetPortalParams(block.GetHeight())
 	pm := portalprocess.NewPortalManager()
 
-	return portalprocess.ProcessPortalInstructions(portalStateDB, portalParams, beaconHeight, instructions, pm)
+	return portalprocess.ProcessPortalInstructions(portalStateDB, portalParams, beaconHeight, instructions, pm, epoch)
 }
 
 func (blockchain *BlockChain) processRelayingInstructions(block *BeaconBlock) error {

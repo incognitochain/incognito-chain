@@ -174,8 +174,6 @@ func handlePortalRewardInsts(
 	return instructions, nil
 }
 
-
-
 // handle portal instructions for block producer
 func HandlePortalInsts(
 	bc basemeta.ChainRetriever,
@@ -267,15 +265,13 @@ func HandlePortalInsts(
 	return instructions, nil
 }
 
-
-
 func ProcessPortalInstructions(
 	portalStateDB *statedb.StateDB,
 	portalParams portal.PortalParams,
 	beaconHeight uint64,
 	instructions [][]string,
 	pm *PortalManager,
-	) error {
+	epoch uint64) error {
 	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB)
 	if err != nil {
 		Logger.log.Error(err)
@@ -296,110 +292,36 @@ func ProcessPortalInstructions(
 
 		metaType, _ := strconv.Atoi(inst[0])
 		processor, ok := pm.PortalInstructions[metaType]
-		if !ok || processor == nil {
+
+		if ok && processor != nil {
+			err = processor.processInsts(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
+			if err != nil {
+				Logger.log.Errorf("Process portal instruction err: %v, inst %+v", err, inst)
+			}
 			continue
 		}
 
-		err = processor.processInsts(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
-		if err != nil {
-			Logger.log.Errorf("Process portal instruction err: %v, inst %+v", err, inst)
-			return nil
+		switch inst[0] {
+		// ============ Reward ============
+		// portal reward
+		case strconv.Itoa(basemeta.PortalRewardMeta), strconv.Itoa(basemeta.PortalRewardMetaV3):
+			err = processPortalReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, epoch)
+		// total custodian reward instruction
+		case strconv.Itoa(basemeta.PortalTotalRewardCustodianMeta):
+			err = processPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, epoch)
+
+		// ============ Portal smart contract ============
+		// todo: add more metadata need to unlock token from sc
+		case strconv.Itoa(basemeta.PortalCustodianWithdrawConfirmMetaV3),
+			strconv.Itoa(basemeta.PortalRedeemFromLiquidationPoolConfirmMetaV3),
+			strconv.Itoa(basemeta.PortalLiquidateRunAwayCustodianConfirmMetaV3):
+			err = processPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		}
 
+		if err != nil {
+			Logger.log.Errorf("Process portal instruction err: %v, inst %+v", err, inst)
+		}
 
-
-
-		//switch inst[0] {
-		//// ============ Exchange rate ============
-		//case strconv.Itoa(basemeta.PortalExchangeRatesMeta):
-		//	err = blockchain.processPortalExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//
-		//// ============ Custodian ============
-		//// custodian deposit collateral
-		//case strconv.Itoa(basemeta.PortalCustodianDepositMeta):
-		//	err = blockchain.processPortalCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// custodian withdraw collateral
-		//case strconv.Itoa(basemeta.PortalCustodianWithdrawRequestMeta):
-		//	err = blockchain.processPortalCustodianWithdrawRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// custodian deposit collateral v3
-		//case strconv.Itoa(basemeta.PortalCustodianDepositMetaV3):
-		//	err = blockchain.processPortalCustodianDepositV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// custodian request withdraw collateral v3
-		//case strconv.Itoa(basemeta.PortalCustodianWithdrawRequestMetaV3):
-		//	err = blockchain.processPortalCustodianWithdrawV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//
-		//// ============ Porting flow ============
-		//// porting request
-		//case strconv.Itoa(basemeta.PortalRequestPortingMeta), strconv.Itoa(basemeta.PortalRequestPortingMetaV3):
-		//	err = blockchain.processPortalUserRegister(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// request ptoken
-		//case strconv.Itoa(basemeta.PortalUserRequestPTokenMeta):
-		//	err = blockchain.processPortalUserReqPToken(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
-		//
-		//// ============ Redeem flow ============
-		//// redeem request
-		//case strconv.Itoa(basemeta.PortalRedeemRequestMeta), strconv.Itoa(basemeta.PortalRedeemRequestMetaV3):
-		//	err = blockchain.processPortalRedeemRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
-		//// custodian request matching waiting redeem requests
-		//case strconv.Itoa(basemeta.PortalReqMatchingRedeemMeta):
-		//	err = blockchain.processPortalReqMatchingRedeem(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//case strconv.Itoa(basemeta.PortalPickMoreCustodianForRedeemMeta):
-		//	err = blockchain.processPortalPickMoreCustodiansForTimeOutWaitingRedeemReq(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// request unlock collateral
-		//case strconv.Itoa(basemeta.PortalRequestUnlockCollateralMeta), strconv.Itoa(basemeta.PortalRequestUnlockCollateralMetaV3):
-		//	err = blockchain.processPortalUnlockCollateral(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//
-		//// ============ Liquidation ============
-		//// liquidation custodian run away
-		//case strconv.Itoa(basemeta.PortalLiquidateCustodianMeta), strconv.Itoa(basemeta.PortalLiquidateCustodianMetaV3):
-		//	err = blockchain.processPortalLiquidateCustodian(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		////liquidation exchange rates
-		//case strconv.Itoa(basemeta.PortalLiquidateTPExchangeRatesMeta):
-		//	err = blockchain.processLiquidationTopPercentileExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// custodian topup
-		//case strconv.Itoa(basemeta.PortalCustodianTopupMetaV2):
-		//	err = blockchain.processPortalCustodianTopup(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// top up for waiting porting
-		//case strconv.Itoa(basemeta.PortalTopUpWaitingPortingRequestMeta):
-		//	err = blockchain.processPortalTopUpWaitingPorting(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// redeem from liquidation pool
-		//case strconv.Itoa(basemeta.PortalRedeemFromLiquidationPoolMeta):
-		//	err = blockchain.processPortalRedeemLiquidateExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
-		//// expired waiting porting request
-		//case strconv.Itoa(basemeta.PortalExpiredWaitingPortingReqMeta):
-		//	err = blockchain.processPortalExpiredPortingRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//
-		//// liquidation by exchange rate v3
-		//case strconv.Itoa(basemeta.PortalLiquidateByRatesMetaV3):
-		//	err = blockchain.processLiquidationByExchangeRatesV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// redeem from liquidation pool v3
-		//case strconv.Itoa(basemeta.PortalRedeemFromLiquidationPoolMetaV3):
-		//	err = blockchain.processPortalRedeemFromLiquidationPoolV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
-		//// custodian topup v3
-		//case strconv.Itoa(basemeta.PortalCustodianTopupMetaV3):
-		//	err = blockchain.processPortalCustodianTopupV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// top up for waiting porting v3
-		//case strconv.Itoa(basemeta.PortalTopUpWaitingPortingRequestMetaV3):
-		//	err = blockchain.processPortalTopUpWaitingPortingV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//
-		//// ============ Reward ============
-		//// portal reward
-		//case strconv.Itoa(basemeta.PortalRewardMeta), strconv.Itoa(basemeta.PortalRewardMetaV3):
-		//	err = blockchain.processPortalReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// request withdraw reward
-		//case strconv.Itoa(basemeta.PortalRequestWithdrawRewardMeta):
-		//	err = blockchain.processPortalWithdrawReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//// total custodian reward instruction
-		//case strconv.Itoa(basemeta.PortalTotalRewardCustodianMeta):
-		//	err = blockchain.processPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//
-		//// ============ Portal smart contract ============
-		//// todo: add more metadata need to unlock token from sc
-		//case strconv.Itoa(basemeta.PortalCustodianWithdrawConfirmMetaV3),
-		//	strconv.Itoa(basemeta.PortalRedeemFromLiquidationPoolConfirmMetaV3),
-		//	strconv.Itoa(basemeta.PortalLiquidateRunAwayCustodianConfirmMetaV3):
-		//	err = blockchain.processPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//}
 	}
 
 	// pick the final exchangeRates
