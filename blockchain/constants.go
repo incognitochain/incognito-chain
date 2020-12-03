@@ -11,21 +11,21 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                       = 1
-	RANDOM_NUMBER                 = 3
-	SHARD_BLOCK_VERSION           = 1
-	DefaultMaxBlkReqPerPeer       = 900
-	MinCommitteeSize              = 3 // min size to run bft
-	WorkerNumber                  = 5
-	MAX_S2B_BLOCK                 = 30
-	MAX_BEACON_BLOCK              = 5
-	LowerBoundPercentForIncDAO    = 3
-	UpperBoundPercentForIncDAO    = 10
-	TestRandom                    = true
-	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
-	TransactionBatchSize          = 30
-	SpareTime                     = 1000             // in mili-second
-	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
+	VERSION                            = 1
+	RANDOM_NUMBER                      = 3
+	SHARD_BLOCK_VERSION                = 1
+	DefaultMaxBlkReqPerPeer            = 900
+	MinCommitteeSize                   = 3 // min size to run bft
+	WorkerNumber                       = 5
+	MAX_S2B_BLOCK                      = 30
+	MAX_BEACON_BLOCK                   = 5
+	LowerBoundPercentForIncDAO         = 3
+	UpperBoundPercentForIncDAO         = 10
+	TestRandom                         = true
+	ValidateTimeForSpamRequestTxs      = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
+	TransactionBatchSize               = 30
+	SpareTime                          = 1000             // in mili-second
+	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
 	NumberOfFixedBeaconBlockValidators = 4
 	NumberOfFixedShardBlockValidators  = 4
 )
@@ -111,7 +111,7 @@ const (
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
 
-	TestNetShardCommitteeSize     = 8
+	TestNetShardCommitteeSize     = 10
 	TestNetMinShardCommitteeSize  = 8
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
