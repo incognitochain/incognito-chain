@@ -9,10 +9,9 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal"
-	common2 "github.com/incognitochain/incognito-chain/portal/common"
-	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
+	portalCommon "github.com/incognitochain/incognito-chain/portal/common"
+	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"github.com/incognitochain/incognito-chain/portal/portaltokens"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/stretchr/testify/suite"
@@ -33,7 +32,8 @@ type PortalTestSuiteV3 struct {
 	currentPortalStateForProducer CurrentPortalState
 	currentPortalStateForProcess  CurrentPortalState
 	sdb                           *statedb.StateDB
-	blockChain                    *BlockChain
+	portalParams portal.PortalParams
+	blockChain                    basemeta.ChainRetriever
 }
 
 const USER_INC_ADDRESS_1 = "12S5pBBRDf1GqfRHouvCV86sWaHzNfvakAWpVMvNnWu2k299xWCgQzLLc9wqPYUHfMYGDprPvQ794dbi6UU1hfRN4tPiU61txWWenhC"
@@ -104,7 +104,7 @@ func (s *PortalTestSuiteV3) SetupTest() {
 		FinalExchangeRatesState:    finalExchangeRate,
 		LiquidationPool:            map[string]*statedb.LiquidationPool{},
 		LockedCollateralForRewards: new(statedb.LockedCollateralState),
-		ExchangeRatesRequests:      map[string]*metadata2.ExchangeRatesRequestStatus{},
+		ExchangeRatesRequests:      map[string]*portalMeta.ExchangeRatesRequestStatus{},
 	}
 	s.currentPortalStateForProcess = CurrentPortalState{
 		CustodianPoolState:         map[string]*statedb.CustodianState{},
@@ -114,57 +114,62 @@ func (s *PortalTestSuiteV3) SetupTest() {
 		FinalExchangeRatesState:    finalExchangeRate,
 		LiquidationPool:            map[string]*statedb.LiquidationPool{},
 		LockedCollateralForRewards: new(statedb.LockedCollateralState),
-		ExchangeRatesRequests:      map[string]*metadata2.ExchangeRatesRequestStatus{},
+		ExchangeRatesRequests:      map[string]*portalMeta.ExchangeRatesRequestStatus{},
 	}
-	s.blockChain = &BlockChain{
-		config: Config{
-			ChainParams: &Params{
-				MinBeaconBlockInterval: 40 * time.Second,
-				MinShardBlockInterval:  40 * time.Second,
-				Epoch:                  100,
-				PortalTokens: map[string]portaltokens.PortalTokenProcessor{
-					common.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
-						&portaltokens.PortalToken{
-							ChainID: "Bitcoin-Testnet",
-						},
-					},
-					common.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
-						&portaltokens.PortalToken{
-							ChainID: "Binance-Chain-Ganges",
-						},
-					},
+	s.portalParams = portal.PortalParams{
+			TimeOutCustodianReturnPubToken:       24 * time.Hour,
+			TimeOutWaitingPortingRequest:         24 * time.Hour,
+			TimeOutWaitingRedeemRequest:          10 * time.Minute,
+			MaxPercentLiquidatedCollateralAmount: 120,
+			MaxPercentCustodianRewards:           10,
+			MinPercentCustodianRewards:           1,
+			MinLockCollateralAmountInEpoch:       10000 * 1e6, // 10000 usd
+			MinPercentLockedCollateral:           200,
+			TP120:                                120,
+			TP130:                                130,
+			MinPercentPortingFee:                 0.01,
+			MinPercentRedeemFee:                  0.01,
+			SupportedCollateralTokens:            supportedCollaterals,
+			MinPortalFee:                         100,
+		PortalTokens: map[string]portaltokens.PortalTokenProcessor{
+			common.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
+				&portaltokens.PortalToken{
+					ChainID: "Bitcoin-Testnet",
 				},
-				portal.PortalParams: map[uint64]portal.PortalParams{
-					0: {
-						TimeOutCustodianReturnPubToken:       24 * time.Hour,
-						TimeOutWaitingPortingRequest:         24 * time.Hour,
-						TimeOutWaitingRedeemRequest:          10 * time.Minute,
-						MaxPercentLiquidatedCollateralAmount: 120,
-						MaxPercentCustodianRewards:           10,
-						MinPercentCustodianRewards:           1,
-						MinLockCollateralAmountInEpoch:       10000 * 1e6, // 10000 usd
-						MinPercentLockedCollateral:           200,
-						TP120:                                120,
-						TP130:                                130,
-						MinPercentPortingFee:                 0.01,
-						MinPercentRedeemFee:                  0.01,
-						SupportedCollateralTokens:            supportedCollaterals,
-						MinPortalFee:                         100,
-					},
+			},
+			common.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
+				&portaltokens.PortalToken{
+					ChainID: "Binance-Chain-Ganges",
 				},
-				BNBFullNodeProtocol:         TestnetBNBFullNodeProtocol,
-				BNBFullNodeHost:             TestnetBNBFullNodeHost,
-				BNBFullNodePort:             TestnetBNBFullNodePort,
-				BNBRelayingHeaderChainID:    TestnetBNBChainID,
-				PortalETHContractAddressStr: "0xDdFe62F1022a62bF8Dc007cb4663228C71F5235b",
 			},
 		},
+
+			PortalETHContractAddressStr: "0xDdFe62F1022a62bF8Dc007cb4663228C71F5235b",
+			RelayingParams: portal.RelayingParams{
+				BNBFullNodeProtocol:         "https",
+				BNBFullNodeHost:             "data-seed-pre-0-s3.binance.org",
+				BNBFullNodePort:             "443",
+				BNBRelayingHeaderChainID:    "Binance-Chain-Ganges",
+			},
+
+
+
 	}
 }
 
 /*
  Utility functions
 */
+
+// external tokenID there is no 0x prefix, in lower case
+// @@Note: need to update before deploying
+func getSupportedPortalCollateralsTestnet() []portal.PortalCollateral {
+	return []portal.PortalCollateral{
+		{"0000000000000000000000000000000000000000", 9}, // eth
+		{"3a829f4b97660d970428cd370c4e41cbad62092b", 6}, // usdt, kovan testnet
+		{"75b0622cec14130172eae9cf166b92e5c112faff", 6}, // usdc, kovan testnet
+	}
+}
 
 func exchangeRates(amount uint64, tokenIDFrom string, tokenIDTo string, finalExchangeRate *statedb.FinalExchangeRatesState) uint64 {
 	convertTool := NewPortalExchangeRateTool(finalExchangeRate, getSupportedPortalCollateralsTestnet())
@@ -195,7 +200,7 @@ func (s *PortalTestSuiteV3) TestGetLockedCollateralAmount() {
 	tokenID := common.PortalBNBIDStr
 	collateralTokenID := USDT_ID
 
-	percent := s.blockChain.GetPortalParams(0).MinPercentLockedCollateral
+	percent := s.portalParams.MinPercentLockedCollateral
 	amount := getLockedCollateralAmount(portingAmount, tokenID, collateralTokenID, s.currentPortalStateForProducer.FinalExchangeRatesState, percent)
 	fmt.Println("Result from TestGetLockedCollateralAmount: ", amount)
 }
@@ -203,7 +208,7 @@ func (s *PortalTestSuiteV3) TestGetLockedCollateralAmount() {
 func (s *PortalTestSuiteV3) TestGetMinFee() {
 	amount := uint64(140 * 1e9)
 	tokenID := common.PortalBNBIDStr
-	percent := s.blockChain.GetPortalParams(0).MinPercentPortingFee
+	percent := s.portalParams.MinPercentPortingFee
 
 	fee := getMinFee(amount, tokenID, s.currentPortalStateForProducer.FinalExchangeRatesState, percent)
 	fmt.Println("Result from TestGetMinFee: ", fee)
@@ -244,8 +249,9 @@ type instructionForProducer struct {
 }
 
 func producerPortalInstructions(
-	blockchain *BlockChain,
+	blockchain basemeta.ChainRetriever,
 	beaconHeight uint64,
+	shardHeights map[byte]uint64,
 	insts []instructionForProducer,
 	currentPortalState *CurrentPortalState,
 	portalParams portal.PortalParams,
@@ -260,19 +266,14 @@ func producerPortalInstructions(
 
 		metaType, _ := strconv.Atoi(inst[0])
 		contentStr := inst[1]
-		if metaType == metadata.PortalRequestPortingMetaV3 {
-			metaType = metadata.PortalRequestPortingMeta
-		}
-		if metaType == metadata.PortalRedeemRequestMetaV3 {
-			metaType = metadata.PortalRedeemRequestMeta
-		}
-		portalProcessor := pm.PortalInstructions[metaType]
+		portalProcessor := pm.GetPortalInstProcessorByMetaType(metaType)
 		newInst, err := portalProcessor.buildNewInsts(
 			blockchain,
 			contentStr,
 			shardID,
 			currentPortalState,
 			beaconHeight,
+			shardHeights,
 			portalParams,
 			optionalData,
 		)
@@ -288,139 +289,76 @@ func producerPortalInstructions(
 }
 
 func processPortalInstructions(
-	blockchain *BlockChain,
+	blockchain basemeta.ChainRetriever,
 	beaconHeight uint64,
 	insts [][]string,
 	portalStateDB *statedb.StateDB,
 	currentPortalState *CurrentPortalState,
 	portalParams portal.PortalParams,
-	updatingInfoByTokenID map[common.Hash]basemeta.UpdatingInfo,
+	pm *PortalManager,
 ) error {
-	var err error
+	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
+	//todo
+	epoch := uint64(100)
 	for _, inst := range insts {
 		if len(inst) < 4 {
 			continue // Not error, just not Portal instruction
 		}
 
 		var err error
+		metaType, _ := strconv.Atoi(inst[0])
+		processor := pm.GetPortalInstProcessorByMetaType(metaType)
+		if processor != nil {
+			err = processor.processInsts(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
+			if err != nil {
+				Logger.log.Errorf("Process portal instruction err: %v, inst %+v", err, inst)
+			}
+			continue
+		}
+
 		switch inst[0] {
-		// ============ Exchange rate ============
-		case strconv.Itoa(metadata.PortalExchangeRatesMeta):
-			err = blockchain.processPortalExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-
-		// ============ Custodian ============
-		// custodian deposit collateral
-		case strconv.Itoa(metadata.PortalCustodianDepositMeta):
-			err = blockchain.processPortalCustodianDeposit(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		// custodian withdraw collateral
-		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMeta):
-			err = blockchain.processPortalCustodianWithdrawRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		// custodian deposit collateral v3
-		case strconv.Itoa(metadata.PortalCustodianDepositMetaV3):
-			err = blockchain.processPortalCustodianDepositV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		// custodian request withdraw collateral v3
-		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMetaV3):
-			err = blockchain.processPortalCustodianWithdrawV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-
-		// ============ Porting flow ============
-		// porting request
-		case strconv.Itoa(metadata.PortalRequestPortingMeta), strconv.Itoa(metadata.PortalRequestPortingMetaV3):
-			err = blockchain.processPortalUserRegister(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		// request ptoken
-		case strconv.Itoa(metadata.PortalUserRequestPTokenMeta):
-			err = blockchain.processPortalUserReqPToken(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
-
-		// ============ Redeem flow ============
-		// redeem request
-		case strconv.Itoa(metadata.PortalRedeemRequestMeta), strconv.Itoa(metadata.PortalRedeemRequestMetaV3):
-			err = blockchain.processPortalRedeemRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
-		// custodian request matching waiting redeem requests
-		case strconv.Itoa(metadata.PortalReqMatchingRedeemMeta):
-			err = blockchain.processPortalReqMatchingRedeem(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		case strconv.Itoa(metadata.PortalPickMoreCustodianForRedeemMeta):
-			err = blockchain.processPortalPickMoreCustodiansForTimeOutWaitingRedeemReq(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		// request unlock collateral
-		case strconv.Itoa(metadata.PortalRequestUnlockCollateralMeta), strconv.Itoa(metadata.PortalRequestUnlockCollateralMetaV3):
-			err = blockchain.processPortalUnlockCollateral(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-
-		// ============ Liquidation ============
-		// liquidation custodian run away
-		case strconv.Itoa(metadata.PortalLiquidateCustodianMeta), strconv.Itoa(metadata.PortalLiquidateCustodianMetaV3):
-			err = blockchain.processPortalLiquidateCustodian(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		//liquidation exchange rates
-		case strconv.Itoa(metadata.PortalLiquidateTPExchangeRatesMeta):
-			err = blockchain.processLiquidationTopPercentileExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		// custodian topup
-		case strconv.Itoa(metadata.PortalCustodianTopupMetaV2):
-			err = blockchain.processPortalCustodianTopup(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		// top up for waiting porting
-		case strconv.Itoa(metadata.PortalTopUpWaitingPortingRequestMeta):
-			err = blockchain.processPortalTopUpWaitingPorting(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		// redeem from liquidation pool
-		case strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolMeta):
-			err = blockchain.processPortalRedeemLiquidateExchangeRates(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
-		// expired waiting porting request
-		case strconv.Itoa(metadata.PortalExpiredWaitingPortingReqMeta):
-			err = blockchain.processPortalExpiredPortingRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-
-		// liquidation by exchange rate v3
-		case strconv.Itoa(metadata.PortalLiquidateByRatesMetaV3):
-			err = blockchain.processLiquidationByExchangeRatesV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		// redeem from liquidation pool v3
-		case strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolMetaV3):
-			err = blockchain.processPortalRedeemFromLiquidationPoolV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
-		// custodian topup v3
-		case strconv.Itoa(metadata.PortalCustodianTopupMetaV3):
-			err = blockchain.processPortalCustodianTopupV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		// top up for waiting porting v3
-		case strconv.Itoa(metadata.PortalTopUpWaitingPortingRequestMetaV3):
-			err = blockchain.processPortalTopUpWaitingPortingV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-
 		// ============ Reward ============
 		// portal reward
-		case strconv.Itoa(metadata.PortalRewardMeta), strconv.Itoa(metadata.PortalRewardMetaV3):
-			err = blockchain.processPortalReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
-		// request withdraw reward
-		case strconv.Itoa(metadata.PortalRequestWithdrawRewardMeta):
-			err = blockchain.processPortalWithdrawReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+		case strconv.Itoa(basemeta.PortalRewardMeta), strconv.Itoa(basemeta.PortalRewardMetaV3):
+			err = processPortalReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, epoch)
 		// total custodian reward instruction
-		case strconv.Itoa(metadata.PortalTotalRewardCustodianMeta):
-			err = blockchain.processPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+		case strconv.Itoa(basemeta.PortalTotalRewardCustodianMeta):
+			err = processPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, epoch)
 
 		// ============ Portal smart contract ============
 		// todo: add more metadata need to unlock token from sc
-		case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3),
-			strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3),
-			strconv.Itoa(metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3):
-			err = blockchain.processPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+		case strconv.Itoa(basemeta.PortalCustodianWithdrawConfirmMetaV3),
+			strconv.Itoa(basemeta.PortalRedeemFromLiquidationPoolConfirmMetaV3),
+			strconv.Itoa(basemeta.PortalLiquidateRunAwayCustodianConfirmMetaV3):
+			err = processPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 		}
 
 		if err != nil {
-			Logger.log.Error(err)
-			return nil
+			Logger.log.Errorf("Process portal instruction err: %v, inst %+v", err, inst)
 		}
+
 	}
 
-	//save final exchangeRates
-	blockchain.pickExchangesRatesFinal(currentPortalState)
+	// pick the final exchangeRates
+	pickExchangesRatesFinal(currentPortalState)
 
 	// update info of bridge portal token
 	for _, updatingInfo := range updatingInfoByTokenID {
 		var updatingAmt uint64
 		var updatingType string
-		if updatingInfo.countUpAmt > updatingInfo.deductAmt {
-			updatingAmt = updatingInfo.countUpAmt - updatingInfo.deductAmt
+		if updatingInfo.CountUpAmt > updatingInfo.DeductAmt {
+			updatingAmt = updatingInfo.CountUpAmt - updatingInfo.DeductAmt
 			updatingType = "+"
 		}
-		if updatingInfo.countUpAmt < updatingInfo.deductAmt {
-			updatingAmt = updatingInfo.deductAmt - updatingInfo.countUpAmt
+		if updatingInfo.CountUpAmt < updatingInfo.DeductAmt {
+			updatingAmt = updatingInfo.DeductAmt - updatingInfo.CountUpAmt
 			updatingType = "-"
 		}
 		err := statedb.UpdateBridgeTokenInfo(
 			portalStateDB,
-			updatingInfo.tokenID,
-			updatingInfo.externalTokenID,
-			updatingInfo.isCentralized,
+			updatingInfo.TokenID,
+			updatingInfo.ExternalTokenID,
+			updatingInfo.IsCentralized,
 			updatingAmt,
 			updatingType,
 		)
@@ -430,7 +368,7 @@ func processPortalInstructions(
 	}
 
 	// store updated currentPortalState to leveldb with new beacon height
-	err = storePortalStateToDB(portalStateDB, currentPortalState)
+	err := storePortalStateToDB(portalStateDB, currentPortalState)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -440,25 +378,25 @@ func processPortalInstructions(
 
 func buildPortalRelayExchangeRateAction(
 	incAddressStr string,
-	rates []*metadata2.ExchangeRateInfo,
+	rates []*portalMeta.ExchangeRateInfo,
 	shardID byte,
 ) []string {
-	data := metadata2.PortalExchangeRates{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalExchangeRatesMeta,
+	data := portalMeta.PortalExchangeRates{
+		MetadataBase: basemeta.MetadataBase{
+			Type: basemeta.PortalExchangeRatesMeta,
 		},
 		SenderAddress: incAddressStr,
 		Rates:         rates,
 	}
 
-	actionContent := metadata2.PortalExchangeRatesAction{
+	actionContent := portalMeta.PortalExchangeRatesAction{
 		Meta:    data,
 		TxReqID: common.Hash{},
 		ShardID: shardID,
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalExchangeRatesMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PortalExchangeRatesMeta), actionContentBase64Str}
 }
 
 func buildPortalCustodianDepositAction(
@@ -467,23 +405,23 @@ func buildPortalCustodianDepositAction(
 	depositAmount uint64,
 	shardID byte,
 ) []string {
-	data := metadata.PortalCustodianDeposit{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalCustodianDepositMeta,
+	data := portalMeta.PortalCustodianDeposit{
+		MetadataBase: basemeta.MetadataBase{
+			Type: basemeta.PortalCustodianDepositMeta,
 		},
 		IncogAddressStr: incAddressStr,
 		RemoteAddresses: remoteAddress,
 		DepositedAmount: depositAmount,
 	}
 
-	actionContent := metadata.PortalCustodianDepositAction{
+	actionContent := portalMeta.PortalCustodianDepositAction{
 		Meta:    data,
 		TxReqID: common.Hash{},
 		ShardID: shardID,
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalCustodianDepositMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PortalCustodianDepositMeta), actionContentBase64Str}
 }
 
 func buildPortalCustodianDepositActionV3(
@@ -493,9 +431,9 @@ func buildPortalCustodianDepositActionV3(
 	proofStrs []string,
 	shardID byte,
 ) []string {
-	data := metadata2.PortalCustodianDepositV3{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalCustodianDepositMetaV3,
+	data := portalMeta.PortalCustodianDepositV3{
+		MetadataBase: basemeta.MetadataBase{
+			Type: basemeta.PortalCustodianDepositMetaV3,
 		},
 		RemoteAddresses: remoteAddress,
 		BlockHash:       blockHash,
@@ -503,14 +441,14 @@ func buildPortalCustodianDepositActionV3(
 		ProofStrs:       proofStrs,
 	}
 
-	actionContent := metadata2.PortalCustodianDepositActionV3{
+	actionContent := portalMeta.PortalCustodianDepositActionV3{
 		Meta:    data,
 		TxReqID: common.Hash{},
 		ShardID: shardID,
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalCustodianDepositMetaV3), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PortalCustodianDepositMetaV3), actionContentBase64Str}
 }
 
 func buildPortalCustodianWithdrawActionV3(
@@ -520,9 +458,9 @@ func buildPortalCustodianWithdrawActionV3(
 	amount uint64,
 	shardID byte,
 ) []string {
-	data := metadata2.PortalCustodianWithdrawRequestV3{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalCustodianWithdrawRequestMetaV3,
+	data := portalMeta.PortalCustodianWithdrawRequestV3{
+		MetadataBase: basemeta.MetadataBase{
+			Type: basemeta.PortalCustodianWithdrawRequestMetaV3,
 		},
 		CustodianIncAddress:      custodianIncAddress,
 		CustodianExternalAddress: custodianExternalAddress,
@@ -530,14 +468,14 @@ func buildPortalCustodianWithdrawActionV3(
 		Amount:                   amount,
 	}
 
-	actionContent := metadata2.PortalCustodianWithdrawRequestActionV3{
+	actionContent := portalMeta.PortalCustodianWithdrawRequestActionV3{
 		Meta:    data,
 		TxReqID: common.Hash{},
 		ShardID: shardID,
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalCustodianWithdrawRequestMetaV3), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PortalCustodianWithdrawRequestMetaV3), actionContentBase64Str}
 }
 
 func buildPortalUserRegisterAction(
@@ -549,9 +487,9 @@ func buildPortalUserRegisterAction(
 	shardID byte,
 	shardHeight uint64,
 ) []string {
-	data := metadata2.PortalUserRegister{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalRequestPortingMetaV3,
+	data := portalMeta.PortalUserRegister{
+		MetadataBase: basemeta.MetadataBase{
+			Type: basemeta.PortalRequestPortingMetaV3,
 		},
 		UniqueRegisterId: portingID,
 		IncogAddressStr:  incAddressStr,
@@ -560,7 +498,7 @@ func buildPortalUserRegisterAction(
 		PortingFee:       portingFee,
 	}
 
-	actionContent := metadata2.PortalUserRegisterActionV3{
+	actionContent := portalMeta.PortalUserRegisterActionV3{
 		Meta:        data,
 		TxReqID:     common.Hash{},
 		ShardID:     shardID,
@@ -568,7 +506,7 @@ func buildPortalUserRegisterAction(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalRequestPortingMetaV3), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PortalRequestPortingMetaV3), actionContentBase64Str}
 }
 
 func buildPortalUserReqPTokenAction(
@@ -579,9 +517,9 @@ func buildPortalUserReqPTokenAction(
 	portingProof string,
 	shardID byte,
 ) []string {
-	data := metadata2.PortalRequestPTokens{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalUserRequestPTokenMeta,
+	data := portalMeta.PortalRequestPTokens{
+		MetadataBase: basemeta.MetadataBase{
+			Type: basemeta.PortalUserRequestPTokenMeta,
 		},
 		UniquePortingID: portingID,
 		TokenID:         pTokenID,
@@ -590,14 +528,14 @@ func buildPortalUserReqPTokenAction(
 		PortingProof:    portingProof,
 	}
 
-	actionContent := metadata2.PortalRequestPTokensAction{
+	actionContent := portalMeta.PortalRequestPTokensAction{
 		Meta:    data,
 		TxReqID: common.Hash{},
 		ShardID: shardID,
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalUserRequestPTokenMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PortalUserRequestPTokenMeta), actionContentBase64Str}
 }
 
 func buildTopupWaitingPortingAction(
@@ -608,9 +546,9 @@ func buildTopupWaitingPortingAction(
 	shardID byte,
 	freeCollateralAmount uint64,
 ) []string {
-	data := metadata2.PortalTopUpWaitingPortingRequest{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalTopUpWaitingPortingRequestMeta,
+	data := portalMeta.PortalTopUpWaitingPortingRequest{
+		MetadataBase: basemeta.MetadataBase{
+			Type: basemeta.PortalTopUpWaitingPortingRequestMeta,
 		},
 		IncogAddressStr:      incAddressStr,
 		PortingID:            portingID,
@@ -619,14 +557,14 @@ func buildTopupWaitingPortingAction(
 		FreeCollateralAmount: freeCollateralAmount,
 	}
 
-	actionContent := metadata2.PortalTopUpWaitingPortingRequestAction{
+	actionContent := portalMeta.PortalTopUpWaitingPortingRequestAction{
 		Meta:    data,
 		TxReqID: common.Hash{},
 		ShardID: shardID,
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalTopUpWaitingPortingRequestMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PortalTopUpWaitingPortingRequestMeta), actionContentBase64Str}
 }
 
 func buildPortalTopupCustodianAction(
@@ -636,9 +574,9 @@ func buildPortalTopupCustodianAction(
 	shardID byte,
 	freeCollateralAmount uint64,
 ) []string {
-	data := metadata2.PortalLiquidationCustodianDepositV2{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalCustodianTopupMetaV2,
+	data := portalMeta.PortalLiquidationCustodianDepositV2{
+		MetadataBase: basemeta.MetadataBase{
+			Type: basemeta.PortalCustodianTopupMetaV2,
 		},
 		IncogAddressStr:      incAddressStr,
 		PTokenId:             ptokenID,
@@ -646,14 +584,14 @@ func buildPortalTopupCustodianAction(
 		FreeCollateralAmount: freeCollateralAmount,
 	}
 
-	actionContent := metadata2.PortalLiquidationCustodianDepositActionV2{
+	actionContent := portalMeta.PortalLiquidationCustodianDepositActionV2{
 		Meta:    data,
 		TxReqID: common.Hash{},
 		ShardID: shardID,
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalCustodianTopupMetaV2), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PortalCustodianTopupMetaV2), actionContentBase64Str}
 }
 
 func buildPortalRequestRedeemActionV3(
@@ -667,9 +605,9 @@ func buildPortalRequestRedeemActionV3(
 	shardID byte,
 	shardHeight uint64,
 ) []string {
-	data := metadata2.PortalRedeemRequest{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalRedeemRequestMetaV3,
+	data := portalMeta.PortalRedeemRequest{
+		MetadataBase: basemeta.MetadataBase{
+			Type: basemeta.PortalRedeemRequestMetaV3,
 		},
 		UniqueRedeemID:          uniqueRedeemID,
 		TokenID:                 tokenID,
@@ -680,7 +618,7 @@ func buildPortalRequestRedeemActionV3(
 		RedeemerExternalAddress: redeemerExternalAddress,
 	}
 
-	actionContent := metadata2.PortalRedeemRequestActionV3{
+	actionContent := portalMeta.PortalRedeemRequestActionV3{
 		Meta:        data,
 		TxReqID:     common.Hash{},
 		ShardID:     shardID,
@@ -688,7 +626,7 @@ func buildPortalRequestRedeemActionV3(
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalRedeemRequestMetaV3), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PortalRedeemRequestMetaV3), actionContentBase64Str}
 }
 
 func buildPortalRequestMatchingWRedeemActionV3(
@@ -696,22 +634,22 @@ func buildPortalRequestMatchingWRedeemActionV3(
 	custodianIncAddress string,
 	shardID byte,
 ) []string {
-	data := metadata2.PortalReqMatchingRedeem{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalReqMatchingRedeemMeta,
+	data := portalMeta.PortalReqMatchingRedeem{
+		MetadataBase: basemeta.MetadataBase{
+			Type: basemeta.PortalReqMatchingRedeemMeta,
 		},
 		CustodianAddressStr: custodianIncAddress,
 		RedeemID:            uniqueRedeemID,
 	}
 
-	actionContent := metadata2.PortalReqMatchingRedeemAction{
+	actionContent := portalMeta.PortalReqMatchingRedeemAction{
 		Meta:    data,
 		TxReqID: common.Hash{},
 		ShardID: shardID,
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalReqMatchingRedeemMeta), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PortalReqMatchingRedeemMeta), actionContentBase64Str}
 }
 
 func buildPortalRequestUnlockCollateralsActionV3(
@@ -722,9 +660,9 @@ func buildPortalRequestUnlockCollateralsActionV3(
 	redeemProof string,
 	shardID byte,
 ) []string {
-	data := metadata2.PortalRequestUnlockCollateral{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalRequestUnlockCollateralMetaV3,
+	data := portalMeta.PortalRequestUnlockCollateral{
+		MetadataBase: basemeta.MetadataBase{
+			Type: basemeta.PortalRequestUnlockCollateralMetaV3,
 		},
 		UniqueRedeemID:      uniqueRedeemID,
 		TokenID:             portalTokenID,
@@ -733,14 +671,14 @@ func buildPortalRequestUnlockCollateralsActionV3(
 		RedeemProof:         redeemProof,
 	}
 
-	actionContent := metadata2.PortalRequestUnlockCollateralAction{
+	actionContent := portalMeta.PortalRequestUnlockCollateralAction{
 		Meta:    data,
 		TxReqID: common.Hash{},
 		ShardID: shardID,
 	}
 	actionContentBytes, _ := json.Marshal(actionContent)
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	return []string{strconv.Itoa(metadata.PortalRequestUnlockCollateralMetaV3), actionContentBase64Str}
+	return []string{strconv.Itoa(basemeta.PortalRequestUnlockCollateralMetaV3), actionContentBase64Str}
 }
 
 /*
@@ -748,7 +686,7 @@ func buildPortalRequestUnlockCollateralsActionV3(
 */
 type TestCaseRelayExchangeRate struct {
 	senderAddressStr string
-	rates            []*metadata2.ExchangeRateInfo
+	rates            []*portalMeta.ExchangeRateInfo
 }
 
 func buildPortalExchangeRateActionsFromTcs(tcs []TestCaseRelayExchangeRate, shardID byte) [][]string {
@@ -775,7 +713,7 @@ func buildPortalExchangeRateActionsFromTcs(tcs []TestCaseRelayExchangeRate, shar
 //		// valid
 //		{
 //			senderAddressStr: "feeder1",
-//			rates: []*metadata.ExchangeRateInfo{
+//			rates: []*basemeta.ExchangeRateInfo{
 //				{
 //					PTokenID: common.PRVIDStr,
 //					Rate:     1000000,
@@ -797,11 +735,11 @@ func buildPortalExchangeRateActionsFromTcs(tcs []TestCaseRelayExchangeRate, shar
 //
 //	// producer instructions
 //	newInsts, err := producerPortalInstructions(
-//		bc, beaconHeight, insts, s.sdb, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+//		bc, beaconHeight, insts, s.sdb, &s.currentPortalStateForProducer, s.portalParams, shardID, pm)
 //
 //	// process new instructions
 //	err = processPortalInstructions(
-//		bc, beaconHeight, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+//		bc, beaconHeight, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, updatingInfoByTokenID)
 //
 //	// check results
 //	s.Equal(1, len(newInsts))
@@ -938,8 +876,10 @@ func (s *PortalTestSuiteV3) TestCustodianDepositCollateral() {
 	bc := s.blockChain
 	pm := NewPortalManager()
 	beaconHeight := uint64(1000)
+	shardHeights := map[byte]uint64{
+		0: uint64(1000),
+	}
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	// build test cases
 	testcases, expectedRes := buildTestCaseAndExpectedResultCustodianDeposit()
@@ -949,11 +889,11 @@ func (s *PortalTestSuiteV3) TestCustodianDepositCollateral() {
 
 	// producer instructions
 	newInsts, err := producerPortalInstructions(
-		bc, beaconHeight, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+		bc, beaconHeight, shardHeights, instsForProducer, &s.currentPortalStateForProducer, s.portalParams, shardID, pm)
 
 	// process new instructions
 	err = processPortalInstructions(
-		bc, beaconHeight, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
 
 	// check results
 	s.Equal(expectedRes.numBeaconInsts, uint(len(newInsts)))
@@ -1128,7 +1068,7 @@ func buildCustodianDepositActionsV3FromTcs(tcs []TestCaseCustodianDepositV3, sha
 
 	for _, tc := range tcs {
 		inst := buildPortalCustodianDepositActionV3(tc.remoteAddress, tc.blockHash, tc.txIndex, tc.proofStrs, shardID)
-		uniqExternalTxID := common2.GetUniqExternalTxID(common.ETHChainName, tc.blockHash, tc.txIndex)
+		uniqExternalTxID := portalCommon.GetUniqExternalTxID(common.ETHChainName, tc.blockHash, tc.txIndex)
 		insts = append(insts, instructionForProducer{
 			inst: inst,
 			optionalData: map[string]interface{}{
@@ -1146,9 +1086,10 @@ func (s *PortalTestSuiteV3) TestCustodianDepositCollateralV3() {
 	bc := s.blockChain
 	pm := NewPortalManager()
 	beaconHeight := uint64(1000)
+	shardHeights := map[byte]uint64{
+		0: uint64(1000),
+	}
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
-
 	// build test cases and expected results
 	testcases, expectedRes := buildTestCaseAndExpectedResultCustodianDepositV3()
 
@@ -1157,11 +1098,11 @@ func (s *PortalTestSuiteV3) TestCustodianDepositCollateralV3() {
 
 	// producer instructions
 	newInsts, err := producerPortalInstructions(
-		bc, beaconHeight, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+		bc, beaconHeight, shardHeights, instsForProducer, &s.currentPortalStateForProducer, s.portalParams, shardID, pm)
 
 	// process new instructions
 	err = processPortalInstructions(
-		bc, beaconHeight, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
 
 	for i, inst := range newInsts {
 		s.Equal(expectedRes.statusInsts[i], inst[2])
@@ -1365,8 +1306,10 @@ func (s *PortalTestSuiteV3) TestCustodianWithdrawCollateralV3() {
 	bc := s.blockChain
 	pm := NewPortalManager()
 	beaconHeight := uint64(1000)
+	shardHeights := map[byte]uint64{
+		0: uint64(1000),
+	}
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestCustodianWithdrawV3()
 
@@ -1378,11 +1321,11 @@ func (s *PortalTestSuiteV3) TestCustodianWithdrawCollateralV3() {
 
 	// producer instructions
 	newInsts, err := producerPortalInstructions(
-		bc, beaconHeight, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+		bc, beaconHeight, shardHeights, instsForProducer, &s.currentPortalStateForProducer, s.portalParams, shardID, pm)
 
 	// process new instructions
 	err = processPortalInstructions(
-		bc, beaconHeight, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
 
 	// check results
 	s.Equal(expectedRes.numBeaconInsts, uint(len(newInsts)))
@@ -1668,8 +1611,10 @@ func (s *PortalTestSuiteV3) TestPortingRequest() {
 	bc := s.blockChain
 	pm := NewPortalManager()
 	beaconHeight := uint64(1001)
+	shardHeights := map[byte]uint64{
+		0: uint64(1001),
+	}
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestPortingRequest()
 
@@ -1681,12 +1626,12 @@ func (s *PortalTestSuiteV3) TestPortingRequest() {
 
 	// producer instructions
 	newInsts, err := producerPortalInstructions(
-		bc, beaconHeight-1, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+		bc, beaconHeight-1, shardHeights, instsForProducer, &s.currentPortalStateForProducer, s.portalParams, shardID, pm)
 	s.Equal(nil, err)
 
 	// process new instructions
 	err = processPortalInstructions(
-		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
 
 	// check results
 	s.Equal(expectedRes.numBeaconInsts, uint(len(newInsts)))
@@ -2010,8 +1955,10 @@ func (s *PortalTestSuiteV3) TestRequestPtokens() {
 	bc := s.blockChain
 	pm := NewPortalManager()
 	beaconHeight := uint64(1002)
+	shardHeights := map[byte]uint64{
+		0: uint64(1002),
+	}
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestRequestPtokens()
 
@@ -2023,12 +1970,12 @@ func (s *PortalTestSuiteV3) TestRequestPtokens() {
 
 	// producer instructions
 	newInsts, err := producerPortalInstructions(
-		bc, beaconHeight-1, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+		bc, beaconHeight-1, shardHeights, instsForProducer, &s.currentPortalStateForProducer, s.portalParams, shardID, pm)
 	s.Equal(nil, err)
 
 	// process new instructions
 	err = processPortalInstructions(
-		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
 
 	// check results
 	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
@@ -2414,8 +2361,10 @@ func (s *PortalTestSuiteV3) TestRequestRedeemV3() {
 	pm := NewPortalManager()
 	beaconHeight := uint64(1003)
 	shardHeight := uint64(1003)
+	shardHeights := map[byte]uint64{
+		0: uint64(1002),
+	}
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestRequestRedeemV3()
 
@@ -2427,12 +2376,12 @@ func (s *PortalTestSuiteV3) TestRequestRedeemV3() {
 
 	// producer instructions
 	newInsts, err := producerPortalInstructions(
-		bc, beaconHeight-1, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+		bc, beaconHeight-1, shardHeights, instsForProducer, &s.currentPortalStateForProducer, s.portalParams, shardID, pm)
 	s.Equal(nil, err)
 
 	// process new instructions
 	err = processPortalInstructions(
-		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
 
 	// check results
 	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
@@ -2819,8 +2768,10 @@ func (s *PortalTestSuiteV3) TestRequestMatchingWRedeemV3() {
 	pm := NewPortalManager()
 	beaconHeight := uint64(1004)
 	shardHeight := uint64(1004)
+	shardHeights := map[byte]uint64{
+		0: uint64(1004),
+	}
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestRequestMatchingWRedeemV3()
 
@@ -2832,12 +2783,12 @@ func (s *PortalTestSuiteV3) TestRequestMatchingWRedeemV3() {
 
 	// producer instructions
 	newInsts, err := producerPortalInstructions(
-		bc, beaconHeight-1, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+		bc, beaconHeight-1, shardHeights, instsForProducer, &s.currentPortalStateForProducer, s.portalParams, shardID, pm)
 	s.Equal(nil, err)
 
 	// process new instructions
 	err = processPortalInstructions(
-		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
 
 	// check results
 	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
@@ -3020,7 +2971,7 @@ func (s *PortalTestSuiteV3) TestAutoPickMoreCustodiansForWRedeemRequest() {
 	shardHeights := map[byte]uint64{
 		0: 1019,
 	}
-	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
+	pm := NewPortalManager()
 
 	s.SetupTestRequestMatchingWRedeemV3()
 
@@ -3033,12 +2984,13 @@ func (s *PortalTestSuiteV3) TestAutoPickMoreCustodiansForWRedeemRequest() {
 	// build test cases
 	expectedResult := buildExpectedResultPickMoreCustodianForWRequestRedeem()
 
-	newInsts, err := s.blockChain.checkAndPickMoreCustodianForWaitingRedeemRequest(beaconHeight, shardHeights, &s.currentPortalStateForProducer)
+	processor := pm.GetPortalInstProcessorByMetaType(basemeta.PortalPickMoreCustodianForRedeemMeta)
+	newInsts, err := processor.buildNewInsts(bc, "", 0, &s.currentPortalStateForProducer, beaconHeight, shardHeights, s.portalParams, nil)
 	s.Equal(nil, err)
 
 	// process new instructions
 	err = processPortalInstructions(
-		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
 
 	// check results
 	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
@@ -3425,8 +3377,10 @@ func (s *PortalTestSuiteV3) TestRequestUnlockCollateralsV3() {
 	pm := NewPortalManager()
 	beaconHeight := uint64(1004)
 	shardHeight := uint64(1004)
+	shardHeights := map[byte]uint64{
+		0: 1004,
+	}
 	shardID := byte(0)
-	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
 
 	s.SetupTestRequestUnlockCollateralsV3()
 
@@ -3438,12 +3392,12 @@ func (s *PortalTestSuiteV3) TestRequestUnlockCollateralsV3() {
 
 	// producer instructions
 	newInsts, err := producerPortalInstructions(
-		bc, beaconHeight-1, instsForProducer, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+		bc, beaconHeight-1, shardHeights, instsForProducer, &s.currentPortalStateForProducer, s.portalParams, shardID, pm)
 	s.Equal(nil, err)
 
 	// process new instructions
 	err = processPortalInstructions(
-		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
 
 	// check results
 	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
@@ -3688,17 +3642,18 @@ func (s *PortalTestSuiteV3) TestExpiredPortingRequest() {
 	shardHeights := map[byte]uint64{
 		0: 3162,
 	}
-	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
+	pm := NewPortalManager()
 
 	s.SetupTestExpiredPortingRequest()
 	expectedResult := buildExpectedResultExpiredPortingRequest()
 
-	newInsts, err := s.blockChain.checkAndBuildInstForExpiredWaitingPortingRequest(beaconHeight, shardHeights, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0))
+	processor := pm.GetPortalInstProcessorByMetaType(basemeta.PortalExpiredWaitingPortingReqMeta)
+	newInsts, err := processor.buildNewInsts(bc, "", 0, &s.currentPortalStateForProducer, beaconHeight, shardHeights, s.portalParams, nil)
 	s.Equal(nil, err)
 
 	// process new instructions
 	err = processPortalInstructions(
-		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
 	s.Equal(nil, err)
 
 	// check results
@@ -3958,12 +3913,12 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationCustodian() {
 
 	s.SetupTestAutoLiquidation()
 
-	newInsts, err := s.blockChain.CheckAndBuildInstForCustodianLiquidation(beaconHeight, shardHeights, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0))
+	newInsts, err := s.blockChain.CheckAndBuildInstForCustodianLiquidation(beaconHeight, shardHeights, &s.currentPortalStateForProducer, s.portalParams)
 	s.Equal(nil, err)
 
 	// process new instructions redeem
 	err = processPortalInstructions(
-		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, updatingInfoByTokenID)
 
 	// check results
 	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
@@ -4344,9 +4299,10 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 	fmt.Println("Running TestAutoLiquidationByExchangeRate - beacon height 1501 ...")
 	bc := s.blockChain
 	beaconHeight := uint64(1501)
-	//shardID := byte(0)
-	//newMatchedRedeemReqIDs := []string{}
-	updatingInfoByTokenID := map[common.Hash]basemeta.UpdatingInfo{}
+	shardHeights := map[byte]uint64{
+		0: 1501,
+	}
+	pm := NewPortalManager()
 
 	s.SetupTestAutoLiquidationByRates()
 
@@ -4358,13 +4314,13 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 	expectedResult := buildExpectedResultAutoLiquidationByRates()
 
 	// producer instructions
-	newInsts, err := bc.buildInstForLiquidationByExchangeRatesV3(
-		beaconHeight-1, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0))
+	processor := pm.GetPortalInstProcessorByMetaType(basemeta.PortalLiquidateByRatesMetaV3)
+	newInsts, err := processor.buildNewInsts(bc, "", 0, &s.currentPortalStateForProducer, beaconHeight, shardHeights, s.portalParams, nil)
 	s.Equal(nil, err)
 
 	// process new instructions
 	err = processPortalInstructions(
-		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
 
 	// check results
 	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
@@ -4484,17 +4440,17 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //
 //	// producer instructions
 //	newInsts, err := producerPortalInstructions(
-//		bc, beaconHeight, insts, s.sdb, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0), shardID, pm)
+//		bc, beaconHeight, insts, s.sdb, &s.currentPortalStateForProducer, s.portalParams, shardID, pm)
 //
 //	// check liquidation by exchange rates
 //	newInstsForLiquidationByExchangeRate, err := buildInstForLiquidationTopPercentileExchangeRates(
-//		beaconHeight-1, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0))
+//		beaconHeight-1, &s.currentPortalStateForProducer, s.portalParams)
 //
 //	s.Equal(0, len(newInstsForLiquidationByExchangeRate))
 //
 //	// process new instructions
 //	err = processPortalInstructions(
-//		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+//		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, updatingInfoByTokenID)
 //
 //	// check results
 //	s.Equal(4, len(newInsts))
@@ -4746,7 +4702,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //
 //	// process new instructions
 //	err = processPortalInstructions(
-//		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.blockChain.GetPortalParams(0), updatingInfoByTokenID)
+//		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, updatingInfoByTokenID)
 //
 //	// check results
 //	s.Equal(2, len(newInsts))

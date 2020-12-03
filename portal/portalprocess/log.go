@@ -6,8 +6,8 @@ type PortalInstLogger struct {
 	log common.Logger
 }
 
-func (metricLogger *PortalInstLogger) Init(inst common.Logger) {
-	metricLogger.log = inst
+func (portalInstLogger *PortalInstLogger) Init(inst common.Logger) {
+	portalInstLogger.log = inst
 }
 
 // Global instant to use

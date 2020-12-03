@@ -2,6 +2,12 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
+	"github.com/incognitochain/incognito-chain/portal"
+	portalCommon "github.com/incognitochain/incognito-chain/portal/common"
+	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
+	"github.com/incognitochain/incognito-chain/portal/portalprocess"
+	"github.com/incognitochain/incognito-chain/portal/portaltokens"
 	"os"
 	"path/filepath"
 
@@ -66,6 +72,14 @@ var (
 	daov2Logger            = backendLog.Logger("DAO log", false)
 	btcRelayingLogger      = backendLog.Logger("BTC relaying log", false)
 	synckerLogger          = backendLog.Logger("Syncker log ", false)
+
+	baseMetaLogger = backendLog.Logger("Base meta log ", false)
+
+	portalLogger       = backendLog.Logger("Portal log ", false)
+	portalCommonLogger = backendLog.Logger("Portal common log ", false)
+	portalInstLogger   = backendLog.Logger("Portal instruction log ", false)
+	portalMetaLogger   = backendLog.Logger("Portal meta log ", false)
+	portalTokenLogger  = backendLog.Logger("Portal token log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -109,6 +123,13 @@ func init() {
 	dataaccessobject.Logger.Init(daov2Logger)
 	btcRelaying.Logger.Init(btcRelayingLogger)
 	syncker.Logger.Init(synckerLogger)
+
+	basemeta.Logger.Init(baseMetaLogger)
+	portal.Logger.Init(portalLogger)
+	portalCommon.Logger.Init(portalCommonLogger)
+	portalMeta.Logger.Init(portalMetaLogger)
+	portalprocess.Logger.Init(portalInstLogger)
+	portaltokens.Logger.Init(portalTokenLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -138,6 +159,13 @@ var subsystemLoggers = map[string]common.Logger{
 	"DAO":               daov2Logger,
 	"BTCRELAYING":       btcRelayingLogger,
 	"SYNCKER":           synckerLogger,
+
+	"BASEMETA":     baseMetaLogger,
+	"PORTALMETA":   portalMetaLogger,
+	"PORTALCOMMON": portalCommonLogger,
+	"PORTAL":       portalLogger,
+	"PORTALINST":   portalInstLogger,
+	"PORTALTOKEN":  portalTokenLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
