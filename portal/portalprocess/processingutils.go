@@ -13,18 +13,28 @@ func CollectPortalInsts (pm *PortalManager, metaType int, action []string, shard
 	switch metaType {
 	case basemeta.PortalCustodianDepositMeta:
 		pm.PortalInstructions[basemeta.PortalCustodianDepositMeta].putAction(action, shardID)
-	case basemeta.PortalRequestPortingMeta, basemeta.PortalRequestPortingMetaV3:
-		pm.PortalInstructions[basemeta.PortalRequestPortingMeta].putAction(action, shardID)
+
+	// off this metatype in portal v3
+	//case basemeta.PortalRequestPortingMeta:
+	//	pm.PortalInstructions[basemeta.PortalRequestPortingMeta].putAction(action, shardID)
+	case basemeta.PortalRequestPortingMetaV3:
+		pm.PortalInstructions[basemeta.PortalRequestPortingMetaV3].putAction(action, shardID)
 	case basemeta.PortalUserRequestPTokenMeta:
 		pm.PortalInstructions[basemeta.PortalUserRequestPTokenMeta].putAction(action, shardID)
 	case basemeta.PortalExchangeRatesMeta:
 		pm.PortalInstructions[basemeta.PortalExchangeRatesMeta].putAction(action, shardID)
 	case basemeta.PortalCustodianWithdrawRequestMeta:
 		pm.PortalInstructions[basemeta.PortalCustodianWithdrawRequestMeta].putAction(action, shardID)
-	case basemeta.PortalRedeemRequestMeta, basemeta.PortalRedeemRequestMetaV3:
-		pm.PortalInstructions[basemeta.PortalRedeemRequestMeta].putAction(action, shardID)
-	case basemeta.PortalRequestUnlockCollateralMeta, basemeta.PortalRequestUnlockCollateralMetaV3:
-		pm.PortalInstructions[basemeta.PortalRequestUnlockCollateralMeta].putAction(action, shardID)
+	// off this metatype in portal v3
+	//case basemeta.PortalRedeemRequestMeta:
+	//	pm.PortalInstructions[basemeta.PortalRedeemRequestMeta].putAction(action, shardID)
+	case basemeta.PortalRedeemRequestMetaV3:
+		pm.PortalInstructions[basemeta.PortalRedeemRequestMetaV3].putAction(action, shardID)
+	// off this metatype in portal v3
+	//case basemeta.PortalRequestUnlockCollateralMeta:
+	//	pm.PortalInstructions[basemeta.PortalRequestUnlockCollateralMeta].putAction(action, shardID)
+	case basemeta.PortalRequestUnlockCollateralMetaV3:
+		pm.PortalInstructions[basemeta.PortalRequestUnlockCollateralMetaV3].putAction(action, shardID)
 	case basemeta.PortalRequestWithdrawRewardMeta:
 		pm.PortalInstructions[basemeta.PortalRequestWithdrawRewardMeta].putAction(action, shardID)
 	case basemeta.PortalRedeemFromLiquidationPoolMetaV3:
@@ -287,13 +297,9 @@ func ProcessPortalInstructions(
 		}
 
 		var err error
-		//todo: porting/redeem v3 meta type, PortalLiquidateCustodianMeta and v3
-		// use the same processor
-
 		metaType, _ := strconv.Atoi(inst[0])
-		processor, ok := pm.PortalInstructions[metaType]
-
-		if ok && processor != nil {
+		processor := pm.GetPortalInstProcessorByMetaType(metaType)
+		if processor != nil {
 			err = processor.processInsts(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
 			if err != nil {
 				Logger.log.Errorf("Process portal instruction err: %v, inst %+v", err, inst)

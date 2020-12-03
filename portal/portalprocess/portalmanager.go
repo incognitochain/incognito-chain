@@ -86,7 +86,6 @@ func NewPortalManager() *PortalManager {
 				actions: map[byte][][]string{},
 			},
 		},
-
 		bMeta.PortalCustodianDepositMeta: &portalCustodianDepositProcessor{
 			portalInstProcessor: &portalInstProcessor{
 				actions: map[byte][][]string{},
@@ -107,7 +106,7 @@ func NewPortalManager() *PortalManager {
 				actions: map[byte][][]string{},
 			},
 		},
-		bMeta.PortalRequestPortingMeta: &portalPortingRequestProcessor{
+		bMeta.PortalRequestPortingMetaV3: &portalPortingRequestProcessor{
 			portalInstProcessor: &portalInstProcessor{
 				actions: map[byte][][]string{},
 			},
@@ -118,18 +117,13 @@ func NewPortalManager() *PortalManager {
 			},
 		},
 
-		bMeta.PortalRedeemRequestMeta: &portalRedeemRequestProcessor{
+		bMeta.PortalRedeemRequestMetaV3: &portalRedeemRequestProcessor{
 			portalInstProcessor: &portalInstProcessor{
 				actions: map[byte][][]string{},
 			},
 		},
 
 		bMeta.PortalReqMatchingRedeemMeta: &portalRequestMatchingRedeemProcessor{
-			portalInstProcessor: &portalInstProcessor{
-				actions: map[byte][][]string{},
-			},
-		},
-		bMeta.PortalRequestUnlockCollateralMeta: &portalRequestUnlockCollateralProcessor{
 			portalInstProcessor: &portalInstProcessor{
 				actions: map[byte][][]string{},
 			},
@@ -206,4 +200,28 @@ func NewPortalManager() *PortalManager {
 		RelayingChains:     relayingChainProcessor,
 		PortalInstructions: portalInstProcessor,
 	}
+}
+
+func (pm PortalManager) GetPortalInstProcessorByMetaType(metaType int) portalInstructionProcessor {
+	// PortalRequestPortingMeta and PortalRequestPortingMetaV3 use the same processor
+	if metaType == bMeta.PortalRequestPortingMeta {
+		metaType = bMeta.PortalRequestPortingMetaV3
+	}
+
+	// PortalRedeemRequestMeta and PortalRedeemRequestMetaV3 use the same processor
+	if metaType == bMeta.PortalRedeemRequestMeta {
+		metaType = bMeta.PortalRedeemRequestMetaV3
+	}
+
+	// PortalRequestUnlockCollateralMeta and PortalRequestUnlockCollateralMetaV3 use the same processor
+	if metaType == bMeta.PortalRequestUnlockCollateralMeta {
+		metaType = bMeta.PortalRequestUnlockCollateralMetaV3
+	}
+
+	// PortalLiquidateCustodianMeta and PortalLiquidateCustodianMetaV3 use the same processor
+	if metaType == bMeta.PortalLiquidateCustodianMeta {
+		metaType = bMeta.PortalLiquidateCustodianMetaV3
+	}
+
+	return pm.PortalInstructions[metaType]
 }
