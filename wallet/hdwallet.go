@@ -238,6 +238,8 @@ func deserialize(data []byte) (*KeyWallet, error) {
 
 		key.KeySet.OTAKey.SetPublicSpend(data[2:2+pkKeyLength])
 		key.KeySet.OTAKey.SetOTASecretKey(data[3+pkKeyLength :3+pkKeyLength+skKeyLength])
+	} else{
+		return nil, NewWalletError(InvalidKeyTypeErr, errors.New("cannot detect key type"))
 	}
 
 	// validate checksum
