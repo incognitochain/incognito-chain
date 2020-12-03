@@ -60,3 +60,11 @@ func GetLatestPortalParams(params map[uint64]PortalParams) PortalParams {
 	bchKey := bchs[0]
 	return params[bchKey]
 }
+
+func (p PortalParams) GetSupportedCollateralTokenIDs() []string {
+	tokenIDs := []string{}
+	for _, col := range p.SupportedCollateralTokens {
+		tokenIDs = append(tokenIDs, col.ExternalTokenID)
+	}
+	return tokenIDs
+}

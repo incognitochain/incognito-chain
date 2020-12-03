@@ -592,6 +592,8 @@ func (p *portalRequestPTokenProcessor) processInsts(
 		waitingPortingReqKeyStr := waitingPortingReqKey.String()
 		waitingPortingReq := currentPortalState.WaitingPortingRequests[waitingPortingReqKeyStr]
 
+		Logger.log.Infof("waitingPortingReq : %+v\n", waitingPortingReq)
+
 		// update holding public token for custodians
 		for _, cusDetail := range waitingPortingReq.Custodians() {
 			custodianKey := statedb.GenerateCustodianStateObjectKey(cusDetail.IncAddress)

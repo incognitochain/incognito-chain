@@ -563,7 +563,7 @@ func (p *portalCustodianDepositProcessorV3) buildNewInsts(
 		return [][]string{rejectedInst}, nil
 	}
 
-	logMap, err := pCommon.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, bc.GetPortalETHContractAddrStr(beaconHeight), "Deposit")
+	logMap, err := pCommon.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
 	if err != nil {
 		Logger.log.Errorf("WARNING: an error occured while parsing log map from receipt: ", err)
 		return [][]string{rejectedInst}, nil
