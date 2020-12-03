@@ -694,14 +694,17 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 		elasped = time.Since(startTime).Nanoseconds()
 		if elasped >= maxBlockCreationTimeLeftTime {
 			Logger.log.Info("Shard Producer/Elapsed, Break: ", elasped)
+			fmt.Fprintf(os.Stderr,"Shard Producer/Elapsed, Break: %v", elasped)
 			break
 		}
 	}
 
+	fmt.Fprintf(os.Stderr,"preparedTxForNewBlock: %v", len(preparedTxForNewBlock))
 	for _, tx := range preparedTxForNewBlock {
 		elasped = time.Since(startTime).Nanoseconds()
 		if elasped >= maxBlockCreationTimeLeftTime {
 			Logger.log.Info("Shard Producer/Elapsed, Break: ", elasped)
+			fmt.Fprintf(os.Stderr,"Shard Producer/Elapsed, Break: %v", elasped)
 			break
 		}
 		txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
@@ -717,6 +720,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 		totalFee += tempTx.GetTxFee()
 		tempSize := tempTx.GetTxActualSize()
 		if currentSize+tempSize >= common.MaxBlockSize {
+			fmt.Fprintf(os.Stderr,"Shard Producer Max Block size Break: %v  %v", currentSize, common.MaxBlockSize )
 			break
 		}
 		currentSize += tempSize
@@ -775,6 +779,8 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 	//	}
 	//}
 	Logger.log.Criticalf(" 🔎 %+v transactions for New Block from pool \n", len(txsToAdd))
+	fmt.Fprintf(os.Stderr," 🔎 transactions for New Block from pool %+v \n", len(txsToAdd))
+
 	blockGenerator.chain.config.TempTxPool.EmptyPool()
 	return txsToAdd, txToRemove, totalFee
 }
