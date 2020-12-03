@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"io/ioutil"
 	"time"
 
@@ -90,7 +91,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
 	}
 
-	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
+	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
 	currentValidatorStr := make(map[int][]string)
 	for shardID, v := range currentValidator {
 		tempV, _ := incognitokey.CommitteeKeyListToString(v)
@@ -103,12 +104,26 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	}
 	nextEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
 	currentEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
+	tempStakingTx := make(map[string]string)
+	for k, v := range stakingTx {
+		tempStakingTx[k] = v.String()
+	}
+	tempRewardReceiver := make(map[string]string)
+	for k, v := range rewardReceivers {
+		wl := wallet.KeyWallet{}
+		wl.KeySet.PaymentAddress = v
+		paymentAddress := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+		tempRewardReceiver[k] = paymentAddress
+	}
 	return map[string]interface{}{
 		"root":             beaconConsensusStateRootHash.ConsensusStateDBRootHash,
 		"committee":        currentValidatorStr,
 		"substitute":       substituteValidatorStr,
 		"nextCandidate":    nextEpochShardCandidateStr,
 		"currentCandidate": currentEpochShardCandidateStr,
+		"rewardReceivers":  tempRewardReceiver,
+		"autoStaking":      autoStaking,
+		"stakingTx":        tempStakingTx,
 	}, nil
 }
 

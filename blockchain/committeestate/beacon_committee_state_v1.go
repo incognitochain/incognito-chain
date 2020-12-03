@@ -438,11 +438,6 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 		newB.beaconSubstitute = append(newB.beaconSubstitute, newBeaconSubstitute...)
 	}
 
-	committeeChange, err = newB.processUnstakeChange(committeeChange, env)
-	if err != nil {
-		return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	}
-
 	err = newB.processAutoStakingChange(committeeChange, env)
 	if err != nil {
 		return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -500,14 +495,6 @@ func (b *BeaconCommitteeEngineV1) GenerateAllSwapShardInstructions(env *BeaconCo
 	return []*instruction.SwapShardInstruction{}, nil
 }
 
-//BuildIncurredInstructions : BuildIncurredInstruction from instructions
-func (engine BeaconCommitteeEngineV1) BuildIncurredInstructions(
-	env *BeaconCommitteeStateEnvironment) (
-	[][]string, error) {
-	incurredInstructions := [][]string{}
-	return incurredInstructions, nil
-}
-
 func (b *BeaconCommitteeStateV1) processStakeInstruction(
 	stakeInstruction *instruction.StakeInstruction,
 	env *BeaconCommitteeStateEnvironment,
@@ -524,7 +511,7 @@ func (b *BeaconCommitteeStateV1) processStakeInstruction(
 	} else {
 		newShardCandidates = append(newShardCandidates, stakeInstruction.PublicKeyStructs...)
 	}
-	err := statedb.StoreStakerInfoV1(
+	err := statedb.StoreStakerInfo(
 		env.ConsensusStateDB,
 		stakeInstruction.PublicKeyStructs,
 		b.rewardReceiver,
@@ -630,6 +617,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 					} else {
 						delete(b.rewardReceiver, swapInstruction.OutPublicKeyStructs[index].GetIncKeyBase58())
 						delete(b.autoStake, outPublicKey)
+						delete(b.stakingTx, outPublicKey)
 					}
 				}
 			}
@@ -685,6 +673,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 					} else {
 						delete(b.rewardReceiver, swapInstruction.OutPublicKeyStructs[index].GetIncKeyBase58())
 						delete(b.autoStake, outPublicKey)
+						delete(b.stakingTx, outPublicKey)
 					}
 				}
 			}
@@ -718,12 +707,13 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 	}
 	for index := 0; index < removedCommittee; index++ {
 		delete(b.autoStake, swapInstruction.OutPublicKeys[index])
+		delete(b.stakingTx, swapInstruction.OutPublicKeys[index])
 		delete(b.rewardReceiver, swapInstruction.OutPublicKeyStructs[index].GetIncKeyBase58())
 		b.autoStake[swapInstruction.InPublicKeys[index]] = false
 		b.rewardReceiver[swapInstruction.InPublicKeyStructs[index].GetIncKeyBase58()] = swapInstruction.NewRewardReceiverStructs[index]
 		b.stakingTx[swapInstruction.InPublicKeys[index]] = common.HashH([]byte{0})
 	}
-	err := statedb.StoreStakerInfoV1(
+	err := statedb.StoreStakerInfo(
 		env.ConsensusStateDB,
 		swapInstruction.InPublicKeyStructs,
 		b.rewardReceiver,
@@ -867,7 +857,7 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreStakerInfoV1(
+	err = statedb.StoreStakerInfo(
 		env.ConsensusStateDB,
 		stopAutoStakingIncognitoKey,
 		b.rewardReceiver,
@@ -875,30 +865,6 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 		b.stakingTx,
 	)
 	return nil
-}
-
-func (b *BeaconCommitteeStateV1) processUnstakeChange(committeeChange *CommitteeChange, env *BeaconCommitteeStateEnvironment) (*CommitteeChange, error) {
-
-	newCommitteeChange := committeeChange
-
-	unstakingIncognitoKey, err := incognitokey.CommitteeBase58KeyListToStruct(newCommitteeChange.Unstake)
-	if err != nil {
-		return newCommitteeChange, err
-	}
-	err = statedb.StoreStakerInfoV1(
-		env.ConsensusStateDB,
-		unstakingIncognitoKey,
-		b.rewardReceiver,
-		b.autoStake,
-		b.stakingTx,
-	)
-
-	return newCommitteeChange, err
-}
-
-//HasSwappedCommittees ...
-func (engine *BeaconCommitteeEngineV1) HasSwappedCommittees(env *BeaconCommitteeStateEnvironment) (bool, error) {
-	return false, nil
 }
 
 //ActiveShards ...

@@ -2,6 +2,8 @@ package blsbft
 
 import (
 	"errors"
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -54,10 +56,29 @@ func ValidateProducerSig(block types.BlockInterface) error {
 	return nil
 }
 
+func CheckValidationDataWithCommittee(valData *ValidationData, committee []incognitokey.CommitteePublicKey) bool {
+	if len(committee) < 1 {
+		return false
+	}
+	if len(valData.ValidatiorsIdx) < len(committee)*2/3+1 {
+		return false
+	}
+	for i := 0; i < len(valData.ValidatiorsIdx)-1; i++ {
+		if valData.ValidatiorsIdx[i] >= valData.ValidatiorsIdx[i+1] {
+			return false
+		}
+	}
+	return true
+}
+
 func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
+	}
+	valid := CheckValidationDataWithCommittee(valData, committee)
+	if !valid {
+		return NewConsensusError(UnExpectedError, fmt.Errorf("This validation Idx %v is not valid with this committee %v", valData.ValidatiorsIdx, committee))
 	}
 	committeeBLSKeys := []blsmultisig.PublicKey{}
 	for _, member := range committee {

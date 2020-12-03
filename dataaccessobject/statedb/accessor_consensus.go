@@ -116,6 +116,32 @@ func ReplaceAllShardCommittee(stateDB *StateDB, allShardCommittees map[byte][2][
 	return nil
 }
 
+func IsInShardCandidateForNextEpoch(
+	stateDB *StateDB,
+	committee incognitokey.CommitteePublicKey,
+) (*CommitteeState, bool, error) {
+	key, err := GenerateCommitteeObjectKeyWithRole(NextEpochShardCandidate, CandidateChainID, committee)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return stateDB.getCommitteeState(key)
+
+}
+
+func IsInShardCandidateForCurrentEpoch(
+	stateDB *StateDB,
+	committee incognitokey.CommitteePublicKey,
+) (*CommitteeState, bool, error) {
+	key, err := GenerateCommitteeObjectKeyWithRole(CurrentEpochBeaconCandidate, CandidateChainID, committee)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return stateDB.getCommitteeState(key)
+
+}
+
 func StoreNextEpochShardCandidate(
 	stateDB *StateDB,
 	candidate []incognitokey.CommitteePublicKey,
@@ -551,7 +577,7 @@ func storeStakerInfo(
 	return nil
 }
 
-func StoreStakerInfoV1(
+func StoreStakerInfo(
 	stateDB *StateDB,
 	committees []incognitokey.CommitteePublicKey,
 	rewardReceiver map[string]privacy.PaymentAddress,
@@ -589,6 +615,10 @@ func GetOneShardCommitteeEnterTime(
 		list = append(list, tempShardCommitteeState.EnterTime())
 	}
 	return list
+}
+
+func GetAllStaker(stateDB *StateDB, shardIDs []int) int {
+	return stateDB.getAllStaker(shardIDs)
 }
 
 //DeleteStakerInfo :

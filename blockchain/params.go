@@ -46,6 +46,7 @@ type Params struct {
 	MaxShardBlockCreation            time.Duration
 	MinBeaconBlockInterval           time.Duration
 	MaxBeaconBlockCreation           time.Duration
+	NumberOfFixedBlockValidators     int
 	StakingAmountShard               uint64
 	ActiveShards                     int
 	GenesisBeaconBlock               *types.BeaconBlock // GenesisBlock defines the first block of the chain.
@@ -78,7 +79,8 @@ type Params struct {
 	IsBackup                         bool
 	PreloadAddress                   string
 	ReplaceStakingTxHeight           uint64
-	BCHeightBreakPointFixRandShardCM uint64
+	ETHRemoveBridgeSigEpoch          uint64
+	BCHeightBreakPointNewZKP         uint64
 	MissingSignaturePenalty          []signaturecounter.Penalty
 }
 
@@ -107,7 +109,7 @@ var genesisParamsTestnet2New *GenesisParams
 var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
 
-func init() {
+func SetupParam() {
 	// FOR TESTNET
 	genesisParamsTestnetNew = &GenesisParams{
 		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeTestnetSerializedPubkey,
@@ -119,8 +121,8 @@ func init() {
 		SelectShardNodeSerializedPubkeyV2:           SelectShardNodeTestnetSerializedPubkeyV2,
 		SelectShardNodeSerializedPaymentAddressV2:   SelectShardNodeTestnetSerializedPaymentAddressV2,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
-		InitialIncognito: IntegrationTestInitPRV,
-		//InitialIncognito:   TestnetInitPRV,
+		//InitialIncognito: IntegrationTestInitPRV,
+		InitialIncognito:   TestnetInitPRV,
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTestParam = Params{
@@ -135,12 +137,13 @@ func init() {
 		StakingAmountShard:     TestNetStakingAmountShard,
 		ActiveShards:           TestNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
-		GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
+		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
+		// GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
 		MinShardBlockInterval:            TestNetMinShardBlkInterval,
 		MaxShardBlockCreation:            TestNetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           TestNetMaxBeaconBlkCreation,
+		NumberOfFixedBlockValidators:     4,
 		BasicReward:                      TestnetBasicReward,
 		Epoch:                            TestnetEpoch,
 		RandomTime:                       TestnetRandomTime,
@@ -183,26 +186,13 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           1,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 2070000,
+		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    1,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  2300000, //TODO: change this value when deployed testnet
+		ETHRemoveBridgeSigEpoch:   21920,
 		MissingSignaturePenalty: []signaturecounter.Penalty{
-			{
-				MinPercent:   20 * TestnetEpoch / 100,
-				Time:         int64(TestnetEpoch * 2.5 * TestNetMinBeaconBlkInterval.Seconds()),
-				ForceUnstake: false,
-			},
-			{
-				MinPercent:   35 * TestnetEpoch / 100,
-				Time:         int64(TestnetEpoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
-				ForceUnstake: false,
-			},
-			{
-				MinPercent:   70 * TestnetEpoch / 100,
-				Time:         int64(TestnetEpoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
-				ForceUnstake: true,
 			},
 		},
 	}
@@ -235,12 +225,13 @@ func init() {
 		StakingAmountShard:     TestNet2StakingAmountShard,
 		ActiveShards:           TestNet2ActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
-		GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
+		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
+		// GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
 		MinShardBlockInterval:            TestNet2MinShardBlkInterval,
 		MaxShardBlockCreation:            TestNet2MaxShardBlkCreation,
 		MinBeaconBlockInterval:           TestNet2MinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           TestNet2MaxBeaconBlkCreation,
+		NumberOfFixedBlockValidators:     4,
 		BasicReward:                      Testnet2BasicReward,
 		Epoch:                            Testnet2Epoch,
 		RandomTime:                       Testnet2RandomTime,
@@ -283,26 +274,13 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey:        TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           1,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 120000,
+		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    1,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  260000, //TODO: change this value when deployed testnet2
+		ETHRemoveBridgeSigEpoch:   2085,
 		MissingSignaturePenalty: []signaturecounter.Penalty{
-			{
-				MinPercent:   20 * Testnet2Epoch / 100,
-				Time:         int64(Testnet2Epoch * 2.5 * TestNetMinBeaconBlkInterval.Seconds()),
-				ForceUnstake: false,
-			},
-			{
-				MinPercent:   35 * Testnet2Epoch / 100,
-				Time:         int64(Testnet2Epoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
-				ForceUnstake: false,
-			},
-			{
-				MinPercent:   70 * Testnet2Epoch / 100,
-				Time:         int64(Testnet2Epoch * 5 * TestNetMinBeaconBlkInterval.Seconds()),
-				ForceUnstake: true,
 			},
 		},
 	}
@@ -333,12 +311,13 @@ func init() {
 		StakingAmountShard:     MainNetStakingAmountShard,
 		ActiveShards:           MainNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
-		GenesisShardBlock:                CreateGenesisShardBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
+		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
+		// GenesisShardBlock:                CreateGenesisShardBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
 		MinShardBlockInterval:            MainnetMinShardBlkInterval,
 		MaxShardBlockCreation:            MainnetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           MainnetMinBeaconBlkInterval,
 		MaxBeaconBlockCreation:           MainnetMaxBeaconBlkCreation,
+		NumberOfFixedBlockValidators:     22,
 		BasicReward:                      MainnetBasicReward,
 		Epoch:                            MainnetEpoch,
 		RandomTime:                       MainnetRandomTime,
@@ -381,26 +360,14 @@ func init() {
 				MinPercentRedeemFee:                  0.01,
 			},
 		},
-		EpochBreakPointSwapNewKey:        MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:           559380,
-		IsBackup:                         false,
-		PreloadAddress:                   "",
-		BCHeightBreakPointFixRandShardCM: 644000,
+
+		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    559380,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  737450,
+		ETHRemoveBridgeSigEpoch:   1973,
 		MissingSignaturePenalty: []signaturecounter.Penalty{
-			{
-				MinPercent:   800,
-				Time:         302400,
-				ForceUnstake: false,
-			},
-			{
-				MinPercent:   1500,
-				Time:         302400 * 2,
-				ForceUnstake: false,
-			},
-			{
-				MinPercent:   3000,
-				Time:         302400 * 2,
-				ForceUnstake: true,
 			},
 		},
 	}
@@ -413,4 +380,19 @@ func init() {
 	} else {
 		GenesisParam = genesisParamsMainnetNew
 	}
+}
+
+func (p *Params) CreateGenesisBlocks() {
+	blockTime := ""
+	switch p.Net {
+	case Mainnet:
+		blockTime = MainnetGenesisBlockTime
+	case Testnet:
+		blockTime = TestnetGenesisBlockTime
+	case Testnet2:
+		blockTime = Testnet2GenesisBlockTime
+	}
+	p.GenesisBeaconBlock = CreateGenesisBeaconBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
+	p.GenesisShardBlock = CreateGenesisShardBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
+	return
 }

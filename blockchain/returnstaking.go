@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -84,7 +85,7 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 	mReturnStakingInfoGot := map[common.Hash]returnStakingInfo{}
 	returnStakingTxs := map[common.Hash]struct{}{}
 	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetMetadataType() == metadata.ReturnStakingMeta {
+		if tx.GetType() == common.TxReturnStakingType {
 			txHash := tx.Hash()
 			returnMeta, ok := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
 			if !ok {
@@ -193,19 +194,38 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 					if len(outPublicKey) == 0 {
 						continue
 					}
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKey)
+					key := incognitokey.CommitteePublicKey{}
+					err := key.FromBase58(outPublicKey)
 					if err != nil {
-						Logger.log.Error(err)
+						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Cannot parse outpubickey %v", outPublicKey))
+					}
+					_, has, err := statedb.IsInShardCandidateForNextEpoch(beaconConsensusStateDB, key)
+					if has { //still in committee process (next epoch)
 						continue
 					}
-					if !has || stakerInfo == nil {
-						Logger.log.Error(errors.Errorf("Can not found information of this public key %v", outPublicKey))
+					_, has, err = statedb.IsInShardCandidateForCurrentEpoch(beaconConsensusStateDB, key)
+					if has { //still in committee process (current epoch: swap and random at same time -> validator will go into this queue)
 						continue
 					}
+
+					//dont have shard candidate for next epoch => kickout => return staking amount
+					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, outPublicKey)
+					if err != nil || !has || stakerInfo == nil {
+						Logger.log.Errorf("fmt.Errorf(\"Cannot get staker info for outpubickey %v\", outPublicKey), error %+v", outPublicKey, err)
+						//return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Cannot get staker info for outpubickey %v", outPublicKey))
+						continue
+					}
+
+					if stakerInfo.AutoStaking() {
+						continue
+						//return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon kick out this key, but autostaking still true %v", outPublicKey))
+					}
+
 					// If autostaking or staker who not has tx staking, do nothing
-					if stakerInfo.AutoStaking() || (stakerInfo.TxStakingID() == common.HashH([]byte{0})) {
+					if stakerInfo.TxStakingID() == common.HashH([]byte{0}) {
 						continue
 					}
+					Logger.log.Info("stakerInfo.TxStakingID().String():", stakerInfo.TxStakingID().String())
 					if _, ok := res[stakerInfo.TxStakingID()]; ok {
 						err = errors.Errorf("Dupdate return staking using tx staking %v", stakerInfo.TxStakingID().String())
 						return nil, nil, err
@@ -250,44 +270,19 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 			case instruction.RETURN_ACTION:
 				returnStakingIns, err := instruction.ValidateAndImportReturnStakingInstructionFromString(l)
 				if err != nil {
-					Logger.log.Errorf("SKIP unstake instruction %+v, error %+v", returnStakingIns, err)
+					Logger.log.Errorf("SKIP Return staking instruction %+v, error %+v", returnStakingIns, err)
 					continue
-					// return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
-				if beaconConsensusStateDB == nil {
-					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(beaconView, beaconBlock.GetHeight()-1)
+				for i, v := range returnStakingIns.GetPublicKey() {
+					txHash := returnStakingIns.StakingTxHashes[i]
+					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
 					if err != nil {
-						return nil, nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found, error %+v", beaconBlock.GetHeight(), err))
-					}
-					beaconConsensusStateDB, err = statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-				}
-				for _, v := range returnStakingIns.GetPublicKey() {
-					stakerInfo, has, err := statedb.GetStakerInfo(beaconConsensusStateDB, v)
-					if err != nil {
-						Logger.log.Error(errors.Errorf("Error in trying get information of this public key %v", v))
-						continue
-					}
-					if !has || stakerInfo == nil {
-						Logger.log.Error(errors.Errorf("Can not found information of this public key %v", v))
-						continue
-					}
-					if stakerInfo.TxStakingID() == common.HashH([]byte{0}) {
-						Logger.log.Error(errors.Errorf("Staker info is null %v", stakerInfo.TxStakingID()))
-						continue
-					}
-					if _, ok := res[stakerInfo.TxStakingID()]; ok {
-						err = errors.Errorf("Duplicate return staking using tx staking %v", stakerInfo.TxStakingID())
-						Logger.log.Error(err)
-						return nil, nil, err
-					}
-					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), stakerInfo.TxStakingID())
-					if err != nil {
-						Logger.log.Error("Can't get transaction hash %v from database error %v", stakerInfo.TxStakingID(), err)
+						Logger.log.Error("Can't get transaction hash %v from database error %v", txHash.String(), err)
 						continue
 					}
 					shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)
 					if err != nil || shardBlock == nil {
-						Logger.log.Error("ERROR", err, "NO Transaction in block with hash", blockHash, "and index", index, "contains", shardBlock.Body.Transactions[index])
+						Logger.log.Error("ERROR", err, "SHARD ", shardID, "NO Transaction in block with hash", blockHash, "and index", index)
 						continue
 					}
 					txData := shardBlock.Body.Transactions[index]
@@ -311,7 +306,7 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 						Logger.log.Error(err)
 						continue
 					}
-					res[stakerInfo.TxStakingID()] = returnStakingInfo{
+					res[txHash] = returnStakingInfo{
 						SwapoutPubKey: v,
 						FunderAddress: keyWallet.KeySet.PaymentAddress,
 						StakingTx:     txData,

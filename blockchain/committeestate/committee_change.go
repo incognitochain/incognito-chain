@@ -25,7 +25,7 @@ type CommitteeChange struct {
 	BeaconCommitteeReplaced            [2][]incognitokey.CommitteePublicKey
 	ShardCommitteeReplaced             map[byte][2][]incognitokey.CommitteePublicKey
 	StopAutoStake                      []string
-	Unstake                            []string
+	RemovedStaker                      []string
 }
 
 //GetStakerKeys ...
@@ -33,9 +33,9 @@ func (committeeChange *CommitteeChange) StakerKeys() []incognitokey.CommitteePub
 	return committeeChange.NextEpochShardCandidateAdded
 }
 
-func (committeeChange *CommitteeChange) UnstakeKeys() []incognitokey.CommitteePublicKey {
+func (committeeChange *CommitteeChange) RemovedStakers() []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
-	res, _ = incognitokey.CommitteeBase58KeyListToStruct(committeeChange.Unstake)
+	res, _ = incognitokey.CommitteeBase58KeyListToStruct(committeeChange.RemovedStaker)
 	return res
 }
 
@@ -93,7 +93,7 @@ func (committeeChange *CommitteeChange) clone(root *CommitteeChange) {
 	}
 
 	committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, root.StopAutoStake...)
-	committeeChange.Unstake = append(committeeChange.Unstake, root.Unstake...)
+	committeeChange.RemovedStaker = append(committeeChange.RemovedStaker, root.RemovedStaker...)
 	committeeChange.NextEpochBeaconCandidateAdded =
 		append(committeeChange.NextEpochBeaconCandidateAdded, root.NextEpochBeaconCandidateAdded...)
 	committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, root.StopAutoStake...)

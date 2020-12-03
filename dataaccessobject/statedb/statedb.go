@@ -597,7 +597,8 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 				panic(err)
 			}
 			if !has || s == nil {
-				panic(errors.Errorf("Can not found staker info for this committee %v", v.committeePublicKey))
+				res, err2 := v.committeePublicKey.ToBase58()
+				panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
 			}
 			committeePublicKeyStr, err := v.committeePublicKey.ToBase58()
 			if err != nil {
@@ -605,6 +606,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			}
 			incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
 			autoStake[committeePublicKeyStr] = s.autoStaking
+			stakingTx[committeePublicKeyStr] = s.txStakingID
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 		}
 		currentValidator[shardID] = tempCurrentValidator
@@ -628,8 +630,10 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			}
 			incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
 			autoStake[committeePublicKeyStr] = s.autoStaking
+			stakingTx[committeePublicKeyStr] = s.txStakingID
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 		}
+
 		substituteValidator[shardID] = tempSubstituteValidator
 	}
 	// next epoch candidate
@@ -651,6 +655,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		}
 		incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
 		autoStake[committeePublicKeyStr] = s.autoStaking
+		stakingTx[committeePublicKeyStr] = s.txStakingID
 		rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 	}
 	// current epoch candidate
@@ -672,6 +677,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		}
 		incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
 		autoStake[committeePublicKeyStr] = s.autoStaking
+		stakingTx[committeePublicKeyStr] = s.txStakingID
 		rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 	}
 
@@ -694,6 +700,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		}
 		incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
 		autoStake[committeePublicKeyStr] = s.autoStaking
+		stakingTx[committeePublicKeyStr] = s.txStakingID
 		rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 	}
 	// current epoch candidate
@@ -837,7 +844,8 @@ func (stateDB *StateDB) getShardsCommitteeInfo(sIDs []int) (curValidatorInfo map
 				panic(err)
 			}
 			if !has || s == nil {
-				panic(errors.Errorf("Can not found staker info for this committee %v", c.committeePublicKey))
+				res, err2 := c.committeePublicKey.ToBase58()
+				panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
 			}
 			tempStakerInfos = append(tempStakerInfos, s)
 		}
@@ -1722,4 +1730,46 @@ func (stateDB *StateDB) getAllFeatureRewards(epoch uint64) (*RewardFeatureState,
 		}
 	}
 	return result, true, nil
+}
+
+func (stateDB *StateDB) getAllStaker(ids []int) int {
+	allStaker := []*CommitteeState{}
+
+	// Current Beacon Validator
+	prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, -1)
+	resCurrentValidator := stateDB.iterateWithCommitteeState(prefixCurrentValidator)
+	allStaker = append(allStaker, resCurrentValidator...)
+	// Substitute Beacon Validator
+	prefixSubstituteValidator := GetCommitteePrefixWithRole(SubstituteValidator, -1)
+	resSubstituteValidator := stateDB.iterateWithCommitteeState(prefixSubstituteValidator)
+	allStaker = append(allStaker, resSubstituteValidator...)
+
+	for _, shardID := range ids {
+		// Current Shard Validator
+		prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, shardID)
+		resCurrentValidator := stateDB.iterateWithCommitteeState(prefixCurrentValidator)
+		allStaker = append(allStaker, resCurrentValidator...)
+		// Substitute Shard sValidator
+		prefixSubstituteValidator := GetCommitteePrefixWithRole(SubstituteValidator, shardID)
+		resSubstituteValidator := stateDB.iterateWithCommitteeState(prefixSubstituteValidator)
+		allStaker = append(allStaker, resSubstituteValidator...)
+	}
+	// next epoch candidate
+	prefixNextEpochCandidate := GetCommitteePrefixWithRole(NextEpochShardCandidate, -2)
+	resNextEpochCandidate := stateDB.iterateWithCommitteeState(prefixNextEpochCandidate)
+	allStaker = append(allStaker, resNextEpochCandidate...)
+	// current epoch candidate
+	prefixCurrentEpochCandidate := GetCommitteePrefixWithRole(CurrentEpochShardCandidate, -2)
+	resCurrentEpochCandidate := stateDB.iterateWithCommitteeState(prefixCurrentEpochCandidate)
+	allStaker = append(allStaker, resCurrentEpochCandidate...)
+
+	// next epoch candidate
+	prefixNextEpochBeaconCandidate := GetCommitteePrefixWithRole(NextEpochBeaconCandidate, -2)
+	resNextEpochBeaconCandidate := stateDB.iterateWithCommitteeState(prefixNextEpochBeaconCandidate)
+	allStaker = append(allStaker, resNextEpochBeaconCandidate...)
+	// current epoch candidate
+	prefixCurrentEpochBeaconCandidate := GetCommitteePrefixWithRole(CurrentEpochBeaconCandidate, -2)
+	resCurrentEpochBeaconCandidate := stateDB.iterateWithCommitteeState(prefixCurrentEpochBeaconCandidate)
+	allStaker = append(allStaker, resCurrentEpochBeaconCandidate...)
+	return len(allStaker)
 }

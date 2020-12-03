@@ -77,14 +77,16 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 		return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), tx.GetSender()))
 	}
 
-	// TODO: @tin if node in candidate list => auto stake can be true or false, but if node in substitute/committee auto stake must be true
-	autoStakingList := beaconViewRetriever.GetAutoStakingList()
-	check, ok := autoStakingList[requestedPublicKey]
-	if !ok {
-		return false, NewMetadataTxError(UnStakingRequestNotFoundStakerInfoError, errors.New("Not found staker info"))
+	waitingValidatorsList, err := incognitokey.CommitteeKeyListToString(beaconViewRetriever.CandidateWaitingForNextRandom())
+	if err != nil {
+		return false, err
 	}
-	if !check {
-		return false, NewMetadataTxError(UnstakingRequestAlreadyUnstake, errors.New("Public Key Has Already Been Unstaked"))
+	index := common.IndexOfStr(requestedPublicKey, waitingValidatorsList)
+	if index == -1 {
+		if !stakerInfo.AutoStaking() {
+			return false, NewMetadataTxError(UnstakingRequestAlreadyUnstake, errors.New("Public Key Has Already Been Unstaked"))
+		}
+
 	}
 
 	return true, nil

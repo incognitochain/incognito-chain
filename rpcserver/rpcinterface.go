@@ -69,7 +69,9 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
 	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
 	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
+	gettransactionhashbyreceiverv2:          (*HttpServer).handleGetTransactionHashByReceiverV2,
 	gettransactionbyreceiver:                (*HttpServer).handleGetTransactionByReceiver,
+	gettransactionbyreceiverv2:              (*HttpServer).handleGetTransactionByReceiverV2,
 	createAndSendStakingTransaction:         (*HttpServer).handleCreateAndSendStakingTx,
 	createAndSendStopAutoStakingTransaction: (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
 	randomCommitments:                       (*HttpServer).handleRandomCommitments,
@@ -87,6 +89,7 @@ var HttpHandler = map[string]httpHandler{
 	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
 	getCommitteeState:       (*HttpServer).handleGetCommitteeState,
 	getRewardAmountByEpoch:  (*HttpServer).handleGetRewardAmountByEpoch,
+
 	//=================================
 
 	// Beststate
@@ -239,6 +242,11 @@ var HttpHandler = map[string]httpHandler{
 	getRewardFeature: (*HttpServer).handleGetRewardFeature,
 
 	// get committeeByHeight
+
+	getTotalStaker: (*HttpServer).handleGetTotalStaker,
+
+	//validators state
+	getValKeyState: (*HttpServer).handleGetValKeyState,
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,

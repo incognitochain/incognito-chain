@@ -10,7 +10,6 @@ import (
 )
 
 type StakerInfo struct {
-	shardID        byte
 	rewardReceiver privacy.PaymentAddress
 	txStakingID    common.Hash
 	autoStaking    bool
@@ -43,7 +42,6 @@ func (c StakerInfo) MarshalJSON() ([]byte, error) {
 		RewardReceiver: c.rewardReceiver,
 		TxStakingID:    c.txStakingID,
 		AutoStaking:    c.autoStaking,
-		ShardID:        c.shardID,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -56,7 +54,6 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 		RewardReceiver privacy.PaymentAddress
 		AutoStaking    bool
 		TxStakingID    common.Hash
-		FunderAddress  privacy.PaymentAddress
 		ShardID        byte
 		NumberOfRound  int
 	}{}
@@ -67,7 +64,6 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 	c.txStakingID = temp.TxStakingID
 	c.rewardReceiver = temp.RewardReceiver
 	c.autoStaking = temp.AutoStaking
-	c.shardID = temp.ShardID
 	return nil
 }
 
@@ -83,10 +79,6 @@ func (s *StakerInfo) SetAutoStaking(a bool) {
 	s.autoStaking = a
 }
 
-func (s *StakerInfo) SetShardID(sID byte) {
-	s.shardID = sID
-}
-
 func (s StakerInfo) RewardReceiver() privacy.PaymentAddress {
 	return s.rewardReceiver
 }
@@ -97,10 +89,6 @@ func (s StakerInfo) TxStakingID() common.Hash {
 
 func (s StakerInfo) AutoStaking() bool {
 	return s.autoStaking
-}
-
-func (s StakerInfo) ShardID() byte {
-	return s.shardID
 }
 
 type StakerObject struct {

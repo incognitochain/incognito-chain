@@ -71,7 +71,9 @@ const (
 	getBalanceCustomToken                      = "getbalancecustomtoken"
 	getTransactionByHash                       = "gettransactionbyhash"
 	gettransactionhashbyreceiver               = "gettransactionhashbyreceiver"
+	gettransactionhashbyreceiverv2             = "gettransactionhashbyreceiverv2"
 	gettransactionbyreceiver                   = "gettransactionbyreceiver"
+	gettransactionbyreceiverv2                 = "gettransactionbyreceiverv2"
 	listCustomToken                            = "listcustomtoken"
 	listPrivacyCustomToken                     = "listprivacycustomtoken"
 	getPrivacyCustomToken                      = "getprivacycustomtoken"
@@ -254,6 +256,11 @@ const (
 
 	// feature rewards
 	getRewardFeature = "getrewardfeature"
+
+	getTotalStaker = "gettotalstaker"
+
+	//validator state
+	getValKeyState = "getvalkeystate"
 
 	// stake
 	unstake = "createunstaketransaction"
