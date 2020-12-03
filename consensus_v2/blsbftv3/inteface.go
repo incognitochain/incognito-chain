@@ -1,6 +1,7 @@
 package blsbftv3
 
 import (
+	"github.com/incognitochain/incognito-chain/incdb"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -56,10 +57,11 @@ type ChainInterface interface {
 		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
 	InsertAndBroadcastBlock(block types.BlockInterface) error
-	// ValidateAndInsertBlock(block common.BlockInterface) error
+	InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, validationData string) error
 	ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetShardID() int
+	GetChainDatabase() incdb.Database
 
 	//for new syncker
 	GetBestViewHeight() uint64
