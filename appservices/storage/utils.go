@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/appservices/data"
 	"github.com/incognitochain/incognito-chain/appservices/storage/model"
 )
