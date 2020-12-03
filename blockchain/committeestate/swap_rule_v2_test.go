@@ -172,7 +172,7 @@ func Test_calculateCandidatePosition(t *testing.T) {
 
 func Test_assignShardCandidateV2(t *testing.T) {
 
-	initPublicKey()
+	initTestParams()
 
 	type args struct {
 		candidates         []string
@@ -463,7 +463,7 @@ func Test_removeValidatorV2(t *testing.T) {
 
 func Test_slashingSwapOut(t *testing.T) {
 
-	initPublicKey()
+	initTestParams()
 	initLog()
 
 	type args struct {

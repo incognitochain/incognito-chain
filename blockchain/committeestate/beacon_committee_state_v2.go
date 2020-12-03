@@ -376,7 +376,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			oldState.shardCommonPool,
 			oldState.shardCommittee,
 			oldState.shardSubstitute,
-			env.NumberOfFixedShardBlockValidators,
+			env.NumberOfFixedShardBlockValidator,
 			env.MinShardCommitteeSize,
 		)
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newState.numberOfAssignedCandidates)
@@ -503,7 +503,7 @@ func SnapshotShardCommonPoolV2(
 		)
 
 		if assignPerShard == 0 {
-			assignPerShard = len(v) / 3
+			assignPerShard = len(v) / MAX_SWAP_OR_ASSIGN_PERCENT
 		}
 
 		numberOfAssignedCandidates += assignPerShard
@@ -614,12 +614,13 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 
 	var err error
 	shardID := byte(swapShardInstruction.ChainID)
-	committees := b.shardCommittee[shardID]
-	substitutes := b.shardSubstitute[shardID]
+	committees := oldState.shardCommittee[shardID]
+	substitutes := oldState.shardSubstitute[shardID]
 	tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 	tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-	_, newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees := createSwapShardInstructionV3(
+	comparedShardSwapInstruction, newCommittees, newSubstitutes,
+		slashingCommittees, normalSwapOutCommittees := createSwapShardInstructionV3(
 		shardID,
 		tempSubstitutes,
 		tempCommittees,
@@ -629,6 +630,15 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		env.NumberOfFixedShardBlockValidator,
 		env.MissingSignaturePenalty,
 	)
+
+	if !reflect.DeepEqual(comparedShardSwapInstruction.InPublicKeys, swapShardInstruction.InPublicKeys) {
+		return nil, returnStakingInstruction, fmt.Errorf("expect swap in keys %+v, got %+v",
+			comparedShardSwapInstruction.InPublicKeys, swapShardInstruction.InPublicKeys)
+	}
+	if !reflect.DeepEqual(comparedShardSwapInstruction.OutPublicKeys, swapShardInstruction.OutPublicKeys) {
+		return nil, returnStakingInstruction, fmt.Errorf("expect swap out keys %+v, got %+v",
+			comparedShardSwapInstruction.OutPublicKeys, swapShardInstruction.OutPublicKeys)
+	}
 
 	b.shardCommittee[shardID], _ = incognitokey.CommitteeBase58KeyListToStruct(newCommittees)
 	b.shardSubstitute[shardID], _ = incognitokey.CommitteeBase58KeyListToStruct(newSubstitutes)

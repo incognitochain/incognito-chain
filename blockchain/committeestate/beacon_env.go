@@ -27,8 +27,6 @@ type BeaconCommitteeStateEnvironment struct {
 	MaxShardCommitteeSize              int
 	ConsensusStateDB                   *statedb.StateDB
 	IsReplace                          bool
-	NumberOfFixedBeaconBlockValidators uint64
-	NumberOfFixedShardBlockValidators  int
 	newAllCandidateSubstituteCommittee []string
 	newUnassignedCommonPool            []string
 	newAllSubstituteCommittees         []string

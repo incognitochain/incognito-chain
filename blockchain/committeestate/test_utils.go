@@ -49,8 +49,9 @@ var (
 	paymentAddreessKey0 string
 )
 
-//initPublicKey init incognito public key for testing by base 58 string
-func initPublicKey() {
+//initTestParams init incognito public key for testing by base 58 string
+func initTestParams() {
+	MAX_SWAP_OR_ASSIGN_PERCENT = 3
 	paymentAddreessKey0 = "12Rs8bHvYZELqHrv28bYezBQQpteZUEbYjUf2oqV9pJm6Gx4sD4n9mr4UgQe5cDeP9A2x1DsB4mbJ9LT8x2ShaY41cZJWrL7RpFpp2v"
 	incKey0 = new(incognitokey.CommitteePublicKey)
 	incKey = new(incognitokey.CommitteePublicKey)
@@ -171,9 +172,7 @@ func initPublicKey() {
 	if err != nil {
 		panic(err)
 	}
-}
 
-func initStateDB() {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "data")
 	if err != nil {
 		panic(err)
@@ -182,6 +181,7 @@ func initStateDB() {
 	wrarperDB = statedb.NewDatabaseAccessWarper(diskDB)
 	trie.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	dataaccessobject.Logger.Init(common.NewBackend(nil).Logger("test", true))
+
 	return
 }
 
