@@ -25,11 +25,15 @@ import (
 	"time"
 )
 
-//var _ = func() (_ struct{}) {
-//	portalprocess.Logger.Init(common.NewBackend(nil).Logger("test", true))
-//	Logger.log.Info("This runs before init()!")
-//	return
-//}()
+var _ = func() (_ struct{}) {
+	Logger.Init(common.NewBackend(nil).Logger("test", true))
+	portalprocess.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	portaltokens.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	portalMeta.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	portalCommon.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	Logger.log.Info("This runs before init()!")
+	return
+}()
 
 // Define the suite, and absorb the built-in basic suite
 // functionality from testify - including a T() method which
@@ -159,9 +163,12 @@ func (s *PortalTestSuiteV3) SetupTest() {
 			BNBRelayingHeaderChainID: "Binance-Chain-Ganges",
 		},
 	}
-	s.blockChain = BlockChain{
+	s.blockChain = &BlockChain{
 		config: Config{
 			ChainParams: &Params{
+				MinBeaconBlockInterval: 40 * time.Second,
+				MinShardBlockInterval:  40 * time.Second,
+				Epoch:                  100,
 				PortalParams: map[uint64]portal.PortalParams {
 					0: portal.PortalParams{
 						TimeOutCustodianReturnPubToken:       24 * time.Hour,
