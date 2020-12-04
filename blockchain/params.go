@@ -234,13 +234,13 @@ func SetupParam() {
 		PortalFeederAddress:            TestnetPortalFeeder,
 		PortalParams: map[uint64]PortalParams{
 			0: {
-				TimeOutCustodianReturnPubToken:       1 * time.Hour,
-				TimeOutWaitingPortingRequest:         1 * time.Hour,
+				TimeOutCustodianReturnPubToken:       15 * time.Minute,
+				TimeOutWaitingPortingRequest:         15 * time.Minute,
 				TimeOutWaitingRedeemRequest:          10 * time.Minute,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
 				MinPercentCustodianRewards:           1,
-				MinLockCollateralAmountInEpoch:       10000 * 1e6, // 10000 usd
+				MinLockCollateralAmountInEpoch:       10000 * 1e9, // 10000 usd
 				MinPercentLockedCollateral:           150,
 				TP120:                                120,
 				TP130:                                130,
@@ -257,7 +257,7 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:     21920,
-		PortalETHContractAddressStr: "0x21Ab34649777e94e30d60319cDBa472759B00AaA", // todo: update sc address
+		PortalETHContractAddressStr: "0x40d9Fa310F14E33009c8f5ffb3E45e1913b4f88E", // todo: update sc address
 		BCHeightBreakPointPortalV3:  1,  // todo: should update before deploying
 	}
 	// END TESTNET
@@ -323,13 +323,13 @@ func SetupParam() {
 		PortalFeederAddress:            Testnet2PortalFeeder,
 		PortalParams: map[uint64]PortalParams{
 			0: {
-				TimeOutCustodianReturnPubToken:       5 * time.Minute,
-				TimeOutWaitingPortingRequest:         5 * time.Minute,
-				TimeOutWaitingRedeemRequest:          5 * time.Minute,
+				TimeOutCustodianReturnPubToken:       1 * time.Hour,
+				TimeOutWaitingPortingRequest:         1 * time.Hour,
+				TimeOutWaitingRedeemRequest:          10 * time.Minute,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
 				MinPercentCustodianRewards:           1,
-				MinLockCollateralAmountInEpoch:       5000 * 1e9, // 5000 prv
+				MinLockCollateralAmountInEpoch:       10000 * 1e9, // 10000 usd = 100 * 100
 				MinPercentLockedCollateral:           150,
 				TP120:                                120,
 				TP130:                                130,
@@ -346,7 +346,7 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    791000, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:     2085,
-		PortalETHContractAddressStr: "",  // todo: update sc address
+		PortalETHContractAddressStr: "0x40d9Fa310F14E33009c8f5ffb3E45e1913b4f88E",  // todo: update sc address
 		BCHeightBreakPointPortalV3:  8974,  // todo: should update before deploying
 	}
 	// END TESTNET-2
@@ -417,7 +417,7 @@ func SetupParam() {
 				MaxPercentCustodianRewards:           20,
 				MinPercentCustodianRewards:           1,
 				MinPercentLockedCollateral:           200,
-				MinLockCollateralAmountInEpoch:       17500 * 1e9, // 17500 prv
+				MinLockCollateralAmountInEpoch:       35000 * 1e9, // 35000 usd = 350 * 100
 				TP120:                                120,
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
