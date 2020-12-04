@@ -100,17 +100,19 @@ func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, cl
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	tokenID, ok := data["TokenID"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
-	}
-	if !portalMeta.IsPortalToken(tokenID) {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID should be a portal token"))
-	}
+
 
 	beaconHeight, err := common.AssertAndConvertStrToNumber(data["BeaconHeight"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	tokenID, ok := data["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
+	}
+	if !httpServer.config.BlockChain.GetPortalParams(beaconHeight).IsPortalToken(tokenID) {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID should be a portal token"))
 	}
 
 	featureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetBeaconBestState(), uint64(beaconHeight))
@@ -169,7 +171,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortingRequest(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId is invalid"))
 	}
 
-	if !portalMeta.IsPortalToken(pTokenId) {
+	if !httpServer.config.BlockChain.GetPortalParams(0).IsPortalToken(pTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -787,7 +789,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalExchangeRate(params int
 	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	for tokenID, value := range exchangeRateMap {
 		tokenID = strings.ToLower(common.Remove0xPrefix(tokenID))
-		if !portalMeta.IsPortalExchangeRateToken(tokenID, httpServer.config.BlockChain, beaconHeight) {
+		if !httpServer.config.BlockChain.IsPortalExchangeRateToken(beaconHeight, tokenID) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is not portal exchange rate token"))
 		}
 

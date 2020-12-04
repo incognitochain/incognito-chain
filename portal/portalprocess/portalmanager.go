@@ -33,7 +33,7 @@ type portalInstructionProcessor interface {
 	// get necessary db from stateDB to verify instructions when producing new block
 	prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error)
 	// validate and create new instructions in new beacon blocks
-	buildNewInsts(
+	BuildNewInsts(
 		bc bMeta.ChainRetriever,
 		contentStr string,
 		shardID byte,
@@ -44,7 +44,7 @@ type portalInstructionProcessor interface {
 		optionalData map[string]interface{},
 	) ([][]string, error)
 	// process instructions that confirmed in beacon blocks
-	processInsts(
+	ProcessInsts(
 		stateDB *statedb.StateDB,
 		beaconHeight uint64,
 		instructions []string,

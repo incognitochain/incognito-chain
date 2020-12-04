@@ -296,7 +296,7 @@ func buildWithdrawPortalRewardInst(
 	}
 }
 
-func (p *portalReqWithdrawRewardProcessor) buildNewInsts(
+func (p *portalReqWithdrawRewardProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -368,7 +368,7 @@ func (p *portalReqWithdrawRewardProcessor) buildNewInsts(
 	}
 }
 
-func (p *portalReqWithdrawRewardProcessor) processInsts(
+func (p *portalReqWithdrawRewardProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -445,7 +445,7 @@ func (p *portalReqWithdrawRewardProcessor) processInsts(
 Portal reward process
  */
 
-func processPortalReward(
+func ProcessPortalReward(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
 	currentPortalState *CurrentPortalState,
@@ -495,7 +495,7 @@ func processPortalReward(
 	return nil
 }
 
-func processPortalTotalCustodianReward(
+func ProcessPortalTotalCustodianReward(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64, instructions []string,
 	currentPortalState *CurrentPortalState,

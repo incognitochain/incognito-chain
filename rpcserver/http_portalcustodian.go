@@ -45,7 +45,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDeposit(params inter
 	remoteAddresses := make(map[string]string, 0)
 	tokenIDKeys := make([]string, 0)
 	for pTokenID, remoteAddress := range remoteAddressesMap {
-		if !portalMeta.IsPortalToken(pTokenID) {
+		if !httpServer.config.BlockChain.GetPortalParams(0).IsPortalToken(pTokenID) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 		}
 		_, ok := remoteAddress.(string)
@@ -151,7 +151,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithCustodianDepositV3(params int
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
 	}
 
-	meta, err := portalMeta.NewPortalCustodianDepositV3FromMap(data)
+	meta, err := portalMeta.NewPortalCustodianDepositV3FromMap(data, httpServer.config.BlockChain.GetPortalParams(0))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}

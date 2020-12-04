@@ -46,7 +46,7 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params inter
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
-	if !portalMeta.IsPortalToken(pTokenID) {
+	if !httpServer.config.BlockChain.GetPortalParams(beaconHeight).IsPortalToken(pTokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
@@ -225,7 +225,7 @@ func (httpServer *HttpServer) createCustodianTopup(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
 	}
 
-	if !portalMeta.IsPortalToken(pTokenId) {
+	if !httpServer.config.BlockChain.GetPortalParams(0).IsPortalToken(pTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -321,7 +321,7 @@ func (httpServer *HttpServer) createTopUpWaitingPorting(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
 	}
 
-	if !portalMeta.IsPortalToken(pTokenId) {
+	if !httpServer.config.BlockChain.GetPortalParams(0).IsPortalToken(pTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -458,7 +458,7 @@ func (httpServer *HttpServer) createCustodianTopupV3(params interface{}, closeCh
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
 	}
 
-	if !portalMeta.IsPortalToken(pTokenId) {
+	if !httpServer.config.BlockChain.GetPortalParams(0).IsPortalToken(pTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -468,7 +468,7 @@ func (httpServer *HttpServer) createCustodianTopupV3(params interface{}, closeCh
 	}
 	collateralTokenId = strings.ToLower(common.Remove0xPrefix(collateralTokenId))
 	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
-	if !portalMeta.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenId) {
+	if !httpServer.config.BlockChain.IsSupportedTokenCollateralV3(beaconHeight, collateralTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata collateral tokenID is not supported currently"))
 	}
 
@@ -588,7 +588,7 @@ func (httpServer *HttpServer) createTopUpWaitingPortingV3(params interface{}, cl
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
 	}
-	if !portalMeta.IsPortalToken(pTokenId) {
+	if !httpServer.config.BlockChain.GetPortalParams(0).IsPortalToken(pTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -598,7 +598,7 @@ func (httpServer *HttpServer) createTopUpWaitingPortingV3(params interface{}, cl
 	}
 	collateralTokenId = strings.ToLower(common.Remove0xPrefix(collateralTokenId))
 	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
-	if !portalMeta.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenId) {
+	if !httpServer.config.BlockChain.IsSupportedTokenCollateralV3(beaconHeight, collateralTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata collateral tokenID is not supported currently"))
 	}
 
@@ -764,7 +764,7 @@ func (httpServer *HttpServer) handleGetTopupAmountForCustodianState(params inter
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortalTokenID is invalid"))
 	}
-	if !portalMeta.IsPortalToken(portalTokenID) {
+	if !httpServer.config.BlockChain.GetPortalParams(beaconHeight).IsPortalToken(portalTokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortalTokenID is not support"))
 	}
 
@@ -773,7 +773,7 @@ func (httpServer *HttpServer) handleGetTopupAmountForCustodianState(params inter
 	if ok && collateralTokenIDParam != "" {
 		collateralTokenID = strings.ToLower(collateralTokenIDParam)
 	}
-	if !portalMeta.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenID) && collateralTokenID != common.PRVIDStr {
+	if !httpServer.config.BlockChain.IsSupportedTokenCollateralV3(beaconHeight, collateralTokenID) && collateralTokenID != common.PRVIDStr {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenID is not supported"))
 	}
 
@@ -829,7 +829,7 @@ func (httpServer *HttpServer) handleGetAmountTopUpWaitingPorting(params interfac
 	if ok && collateralTokenIDParam != "" {
 		collateralTokenID = strings.ToLower(collateralTokenIDParam)
 	}
-	if !portalMeta.IsSupportedTokenCollateralV3(httpServer.config.BlockChain, beaconHeight, collateralTokenID) && collateralTokenID != common.PRVIDStr {
+	if !httpServer.config.BlockChain.IsSupportedTokenCollateralV3(beaconHeight, collateralTokenID) && collateralTokenID != common.PRVIDStr {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata CollateralTokenID is not supported"))
 	}
 

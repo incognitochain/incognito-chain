@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -19,7 +20,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	err = key.KeySet.InitFromPrivateKey(&key.KeySet.PrivateKey)
 	assert.Equal(t, nil, err)
 	paymentAddress := key.KeySet.PaymentAddress
-	responseMeta, err := retriever.NewWithDrawRewardResponse(&retriever.WithDrawRewardRequest{}, &common.Hash{})
+	responseMeta, err := metadata.NewWithDrawRewardResponse(&metadata.WithDrawRewardRequest{}, &common.Hash{})
 	tx, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&paymentAddress, 10, &key.KeySet.PrivateKey, db, responseMeta, common.Hash{}, NormalCoinType, "PRV", 0))
 	assert.Equal(t, nil, err)
 	assert.NotEqual(t, nil, tx)
@@ -185,7 +186,7 @@ func TestInitTx(t *testing.T) {
 		assert.Equal(t, true, isValid)
 
 		metaDataType := tx1.GetMetadataType()
-		assert.Equal(t, retriever.InvalidMeta, metaDataType)
+		assert.Equal(t, basemeta.InvalidMeta, metaDataType)
 
 		metaData := tx1.GetMetadata()
 		assert.Equal(t, nil, metaData)

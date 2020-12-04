@@ -5,7 +5,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/portal"
-	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"math"
 	"math/big"
 	"sort"
@@ -20,8 +19,9 @@ type PortalExchangeRateTool struct {
 }
 
 // getDecimal returns decimal for portal token or collateral tokens
-func getDecimal(supportPortalCollateral []portal.PortalCollateral, tokenID string) uint8 {
-	if portalMeta.IsPortalToken(tokenID) || tokenID == common.PRVIDStr {
+func getDecimal(portalParams portal.PortalParams, tokenID string) uint8 {
+	supportPortalCollateral := portalParams.SupportedCollateralTokens
+	if portalParams.IsPortalToken(tokenID) || tokenID == common.PRVIDStr {
 		return 9
 	}
 	for _, col := range supportPortalCollateral {
@@ -35,7 +35,7 @@ func getDecimal(supportPortalCollateral []portal.PortalCollateral, tokenID strin
 
 func NewPortalExchangeRateTool(
 	finalExchangeRate *statedb.FinalExchangeRatesState,
-	supportPortalCollateral []portal.PortalCollateral,
+	portalParams portal.PortalParams,
 ) *PortalExchangeRateTool {
 	t := new(PortalExchangeRateTool)
 	t.Rates = map[string]RateInfo{}
@@ -43,7 +43,7 @@ func NewPortalExchangeRateTool(
 	rates := finalExchangeRate.Rates()
 
 	for tokenID, detail := range rates {
-		decimal := getDecimal(supportPortalCollateral, tokenID)
+		decimal := getDecimal(portalParams, tokenID)
 		if decimal > 0 {
 			t.Rates[tokenID] = RateInfo{
 				Rate:    detail.Amount,

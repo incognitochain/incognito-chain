@@ -106,7 +106,7 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateSanityData(cha
 		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}
 
-	if !IsPortalToken(custodianDeposit.PTokenId) {
+	if !chainRetriever.IsPortalToken(beaconHeight, custodianDeposit.PTokenId) {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}
 

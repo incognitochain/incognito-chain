@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	"github.com/incognitochain/incognito-chain/portal"
 
 	"math/big"
 	"sort"
@@ -79,6 +80,7 @@ func NewPortalCustodianDepositV3(
 
 func NewPortalCustodianDepositV3FromMap(
 	data map[string]interface{},
+	portalParam portal.PortalParams,
 ) (*PortalCustodianDepositV3, error) {
 	remoteAddressesMap, ok := data["RemoteAddresses"].(map[string]interface{})
 	if !ok {
@@ -90,7 +92,7 @@ func NewPortalCustodianDepositV3FromMap(
 	remoteAddresses := make(map[string]string, 0)
 	tokenIDKeys := make([]string, 0)
 	for pTokenID, remoteAddress := range remoteAddressesMap {
-		if !IsPortalToken(pTokenID) {
+		if !portalParam.IsPortalToken(pTokenID) {
 			return nil, basemeta.NewMetadataTxError(basemeta.NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata public token is not supported currently"))
 		}
 		_, ok := remoteAddress.(string)

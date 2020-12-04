@@ -93,7 +93,7 @@ func buildRequestPortingInst(
 	}
 }
 
-func (p *portalPortingRequestProcessor) buildNewInsts(
+func (p *portalPortingRequestProcessor) BuildNewInsts(
 	bc bMeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -230,7 +230,7 @@ func (p *portalPortingRequestProcessor) buildNewInsts(
 	return [][]string{acceptInst}, nil
 }
 
-func (p *portalPortingRequestProcessor) processInsts(
+func (p *portalPortingRequestProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -464,7 +464,7 @@ func buildReqPTokensInst(
 	}
 }
 
-func (p *portalRequestPTokenProcessor) buildNewInsts(
+func (p *portalRequestPTokenProcessor) BuildNewInsts(
 	bc bMeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -561,7 +561,7 @@ func (p *portalRequestPTokenProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalRequestPTokenProcessor) processInsts(
+func (p *portalRequestPTokenProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -591,8 +591,6 @@ func (p *portalRequestPTokenProcessor) processInsts(
 		waitingPortingReqKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(actionData.UniquePortingID)
 		waitingPortingReqKeyStr := waitingPortingReqKey.String()
 		waitingPortingReq := currentPortalState.WaitingPortingRequests[waitingPortingReqKeyStr]
-
-		Logger.log.Infof("waitingPortingReq : %+v\n", waitingPortingReq)
 
 		// update holding public token for custodians
 		for _, cusDetail := range waitingPortingReq.Custodians() {

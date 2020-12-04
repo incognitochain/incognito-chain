@@ -124,28 +124,13 @@ func IsValidPortalRemoteAddress(
 	return false
 }
 
-func IsPortalToken(tokenIDStr string) bool {
-	isExisted, _ := common.SliceExists(common.PortalSupportedIncTokenIDs, tokenIDStr)
-	return isExisted
-}
-
-func IsSupportedTokenCollateralV3(bcr basemeta.ChainRetriever, beaconHeight uint64, externalTokenID string) bool {
-	isSupported, _ := common.SliceExists(bcr.GetSupportedCollateralTokenIDs(beaconHeight), externalTokenID)
-	return isSupported
-}
-
-func IsPortalExchangeRateToken(tokenIDStr string, bcr basemeta.ChainRetriever, beaconHeight uint64) bool {
-	return IsPortalToken(tokenIDStr) || tokenIDStr == common.PRVIDStr || IsSupportedTokenCollateralV3(bcr, beaconHeight, tokenIDStr)
-}
-
-
 // Validate portal remote addresses for portal tokens (BTC, BNB)
 func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetriever basemeta.ChainRetriever, beaconHeight uint64) (bool, error){
 	if len(remoteAddresses) == 0 {
 		return false, errors.New("remote addresses should be at least one address")
 	}
 	for tokenID, remoteAddr := range remoteAddresses {
-		if !IsPortalToken(tokenID) {
+		if !chainRetriever.IsPortalToken(beaconHeight, tokenID) {
 			return false, errors.New("TokenID in remote address is invalid")
 		}
 		if len(remoteAddr) == 0 {

@@ -70,7 +70,7 @@ func buildRedeemFromLiquidationPoolInst(
 	}
 }
 
-func (p *portalRedeemFromLiquidationPoolProcessor) buildNewInsts(
+func (p *portalRedeemFromLiquidationPoolProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -166,7 +166,7 @@ func (p *portalRedeemFromLiquidationPoolProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalRedeemFromLiquidationPoolProcessor) processInsts(
+func (p *portalRedeemFromLiquidationPoolProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -335,7 +335,7 @@ func buildRedeemFromLiquidationPoolInstV3(
 	}
 }
 
-func (p *portalRedeemFromLiquidationPoolProcessorV3) buildNewInsts(
+func (p *portalRedeemFromLiquidationPoolProcessorV3) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -385,7 +385,7 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) buildNewInsts(
 		Logger.log.Errorf("exchange rates not found")
 		return [][]string{rejectInst}, nil
 	}
-	exchangeTool := NewPortalExchangeRateTool(exchangeRatesState, portalParams.SupportedCollateralTokens)
+	exchangeTool := NewPortalExchangeRateTool(exchangeRatesState, portalParams)
 
 	// check liquidation pool
 	liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey()
@@ -456,7 +456,7 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) buildNewInsts(
 	return insts, nil
 }
 
-func (p *portalRedeemFromLiquidationPoolProcessorV3) processInsts(
+func (p *portalRedeemFromLiquidationPoolProcessorV3) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -593,7 +593,7 @@ func buildPortalCustodianTopupInst(
 	}
 }
 
-func (p *portalCustodianTopupProcessor) buildNewInsts(
+func (p *portalCustodianTopupProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -674,7 +674,7 @@ func (p *portalCustodianTopupProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalCustodianTopupProcessor) processInsts(
+func (p *portalCustodianTopupProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -813,7 +813,7 @@ func buildTopUpWaitingPortingInst(
 	}
 }
 
-func (p *portalTopupWaitingPortingReqProcessor) buildNewInsts(
+func (p *portalTopupWaitingPortingReqProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -904,7 +904,7 @@ func (p *portalTopupWaitingPortingReqProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalTopupWaitingPortingReqProcessor) processInsts(
+func (p *portalTopupWaitingPortingReqProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -1100,7 +1100,7 @@ func buildPortalCustodianTopupV3(
 	}
 }
 
-func (p *portalCustodianTopupProcessorV3) buildNewInsts(
+func (p *portalCustodianTopupProcessorV3) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -1216,7 +1216,7 @@ func (p *portalCustodianTopupProcessorV3) buildNewInsts(
 			return [][]string{rejectInst2}, nil
 		}
 
-		logMap, err := pCommon.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, bc.GetPortalETHContractAddrStr(beaconHeight), "Deposit")
+		logMap, err := pCommon.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
 		if err != nil {
 			Logger.log.Errorf("WARNING: an error occured while parsing log map from receipt: ", err)
 			return [][]string{rejectInst2}, nil
@@ -1274,7 +1274,7 @@ func (p *portalCustodianTopupProcessorV3) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalCustodianTopupProcessorV3) processInsts(
+func (p *portalCustodianTopupProcessorV3) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -1456,7 +1456,7 @@ func buildPortalTopupWaitingPortingInstV3(
 	}
 }
 
-func (p *portalTopupWaitingPortingReqProcessorV3) buildNewInsts(
+func (p *portalTopupWaitingPortingReqProcessorV3) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -1645,7 +1645,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalTopupWaitingPortingReqProcessorV3) processInsts(
+func (p *portalTopupWaitingPortingReqProcessorV3) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -1831,7 +1831,7 @@ func buildCustodianRunAwayLiquidationInst(
 	}
 }
 
-func (p *portalLiquidationCustodianRunAwayProcessor) buildNewInsts(
+func (p *portalLiquidationCustodianRunAwayProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -2022,7 +2022,7 @@ func (p *portalLiquidationCustodianRunAwayProcessor) buildNewInsts(
 	return insts, nil
 }
 
-func (p *portalLiquidationCustodianRunAwayProcessor) processInsts(
+func (p *portalLiquidationCustodianRunAwayProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -2238,7 +2238,7 @@ func buildInstForExpiredPortingReqByPortingID(
 	return insts, nil
 }
 
-func (p *portalExpiredWaitingPortingProcessor) buildNewInsts(
+func (p *portalExpiredWaitingPortingProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -2270,7 +2270,7 @@ func (p *portalExpiredWaitingPortingProcessor) buildNewInsts(
 	return insts, nil
 }
 
-func (p *portalExpiredWaitingPortingProcessor) processInsts(
+func (p *portalExpiredWaitingPortingProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -2497,7 +2497,7 @@ func buildLiquidationByExchangeRateInstV3(
 	}
 }
 
-func (p *portalLiquidationByRatesV3Processor) buildNewInsts(
+func (p *portalLiquidationByRatesV3Processor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -2564,7 +2564,7 @@ func (p *portalLiquidationByRatesV3Processor) buildNewInsts(
 	return insts, nil
 }
 
-func (p *portalLiquidationByRatesV3Processor) processInsts(
+func (p *portalLiquidationByRatesV3Processor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -2730,7 +2730,7 @@ func checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate(
 	return insts, nil
 }
 
-func (p *portalLiquidationByRatesProcessor) buildNewInsts(
+func (p *portalLiquidationByRatesProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -2850,7 +2850,7 @@ func (p *portalLiquidationByRatesProcessor) buildNewInsts(
 	return insts, nil
 }
 
-func (p *portalLiquidationByRatesProcessor) processInsts(
+func (p *portalLiquidationByRatesProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,

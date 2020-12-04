@@ -19,12 +19,14 @@ func TestPortalExchangeRateTool(t *testing.T) {
 			"Rose":     {Amount: 500000},
 		})
 
-	portalCollateral := []portal.PortalCollateral{
-		{common.EthAddrStr, 9},
-		{"USDT", 6},
-		{"Rose", 7},
+	portalParams := portal.PortalParams{
+		SupportedCollateralTokens: []portal.PortalCollateral{
+			{common.EthAddrStr, 9},
+			{"USDT", 6},
+			{"Rose", 7},
+		},
 	}
-	tool := NewPortalExchangeRateTool(finalExchangeRates, portalCollateral)
+	tool := NewPortalExchangeRateTool(finalExchangeRates, portalParams)
 
 	res, _ := tool.Convert(common.EthAddrStr, "USDT", 1)
 	fmt.Println("Res: ", res)

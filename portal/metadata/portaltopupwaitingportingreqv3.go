@@ -141,7 +141,7 @@ func (req PortalTopUpWaitingPortingRequestV3) ValidateSanityData(chainRetriever 
 	}
 
 	// check PortalTokenID
-	if !IsPortalToken(req.PortalTokenID) {
+	if !chainRetriever.IsPortalToken(beaconHeight, req.PortalTokenID) {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}
 
@@ -149,7 +149,7 @@ func (req PortalTopUpWaitingPortingRequestV3) ValidateSanityData(chainRetriever 
 	if common.Has0xPrefix(req.CollateralTokenID) {
 		return false, false, errors.New("CollateralTokenID shouldn't have 0x prefix")
 	}
-	if !IsSupportedTokenCollateralV3(chainRetriever, beaconHeight, req.CollateralTokenID) {
+	if !chainRetriever.IsSupportedTokenCollateralV3(beaconHeight, req.CollateralTokenID) {
 		return false, false, errors.New("CollateralTokenID is not portal collateral")
 	}
 

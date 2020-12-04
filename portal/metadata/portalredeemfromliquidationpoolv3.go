@@ -120,7 +120,7 @@ func (redeemReq PortalRedeemFromLiquidationPoolV3) ValidateSanityData(chainRetri
 		return false, false, basemeta.NewMetadataTxError(basemeta.PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
 	}
 	// check tokenId is portal token or not
-	if !IsPortalToken(redeemReq.TokenID) {
+	if !chainRetriever.IsPortalToken(beaconHeight, redeemReq.TokenID) {
 		return false, false, basemeta.NewMetadataTxError(basemeta.PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID is not in portal tokens list"))
 	}
 

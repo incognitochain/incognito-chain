@@ -1,6 +1,7 @@
 package portal
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/portal/portaltokens"
 	"sort"
 	"time"
@@ -68,3 +69,18 @@ func (p PortalParams) GetSupportedCollateralTokenIDs() []string {
 	}
 	return tokenIDs
 }
+
+func (p PortalParams) IsSupportedTokenCollateralV3(externalTokenID string) bool {
+	isSupported, _ := common.SliceExists(p.GetSupportedCollateralTokenIDs(), externalTokenID)
+	return isSupported
+}
+
+func (p PortalParams) IsPortalToken(tokenIDStr string) bool {
+	isExisted, _ := common.SliceExists(common.PortalSupportedIncTokenIDs, tokenIDStr)
+	return isExisted
+}
+
+func (p PortalParams) IsPortalExchangeRateToken(tokenIDStr string) bool {
+	return p.IsPortalToken(tokenIDStr) || tokenIDStr == common.PRVIDStr || p.IsSupportedTokenCollateralV3(tokenIDStr)
+}
+

@@ -68,7 +68,7 @@ func buildCustodianDepositInst(
 	}
 }
 
-func (p *portalCustodianDepositProcessor) buildNewInsts(
+func (p *portalCustodianDepositProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -130,7 +130,7 @@ func (p *portalCustodianDepositProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalCustodianDepositProcessor) processInsts(
+func (p *portalCustodianDepositProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -257,7 +257,7 @@ func buildCustodianWithdrawInst(
 	}
 }
 
-func (p *portalRequestWithdrawCollateralProcessor) buildNewInsts(
+func (p *portalRequestWithdrawCollateralProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -329,7 +329,7 @@ func (p *portalRequestWithdrawCollateralProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalRequestWithdrawCollateralProcessor) processInsts(
+func (p *portalRequestWithdrawCollateralProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -495,7 +495,7 @@ func buildCustodianDepositInstV3(
 	}
 }
 
-func (p *portalCustodianDepositProcessorV3) buildNewInsts(
+func (p *portalCustodianDepositProcessorV3) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -594,7 +594,7 @@ func (p *portalCustodianDepositProcessorV3) buildNewInsts(
 	)
 
 	// check externalTokenID should be one of supported collateral tokenIDs
-	if !portalMeta.IsSupportedTokenCollateralV3(bc, beaconHeight, externalTokenIDStr) {
+	if !portalParams.IsSupportedTokenCollateralV3(externalTokenIDStr) {
 		Logger.log.Errorf("Custodian deposit v3: external collateral tokenID is not supported on portal %v", externalTokenIDStr)
 		return [][]string{rejectedInst2}, nil
 	}
@@ -635,7 +635,7 @@ func (p *portalCustodianDepositProcessorV3) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalCustodianDepositProcessorV3) processInsts(
+func (p *portalCustodianDepositProcessorV3) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -808,7 +808,7 @@ func buildCustodianWithdrawCollateralInstV3(
 	}
 }
 
-func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
+func (p *portalRequestWithdrawCollateralProcessorV3) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -908,7 +908,7 @@ func (p *portalRequestWithdrawCollateralProcessorV3) buildNewInsts(
 	return [][]string{acceptedInst, confirmInst}, nil
 }
 
-func (p *portalRequestWithdrawCollateralProcessorV3) processInsts(
+func (p *portalRequestWithdrawCollateralProcessorV3) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,

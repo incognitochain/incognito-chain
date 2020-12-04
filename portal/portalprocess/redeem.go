@@ -100,7 +100,7 @@ func buildRedeemRequestInst(
 	}
 }
 
-func (p *portalRedeemRequestProcessor) buildNewInsts(
+func (p *portalRedeemRequestProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -233,7 +233,7 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalRedeemRequestProcessor) processInsts(
+func (p *portalRedeemRequestProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -497,7 +497,7 @@ func buildReqMatchingRedeemInst(
 	}
 }
 
-func (p *portalRequestMatchingRedeemProcessor) buildNewInsts(
+func (p *portalRequestMatchingRedeemProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -565,7 +565,7 @@ func (p *portalRequestMatchingRedeemProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalRequestMatchingRedeemProcessor) processInsts(
+func (p *portalRequestMatchingRedeemProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -853,7 +853,7 @@ func buildPortalPickMoreCustodianForRedeemInst(
 	}
 }
 
-func (p *portalPickMoreCustodianForRedeemProcessor) buildNewInsts(
+func (p *portalPickMoreCustodianForRedeemProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -965,7 +965,7 @@ func (p *portalPickMoreCustodianForRedeemProcessor) buildNewInsts(
 	return insts, nil
 }
 
-func (p *portalPickMoreCustodianForRedeemProcessor) processInsts(
+func (p *portalPickMoreCustodianForRedeemProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -1093,7 +1093,7 @@ func buildReqUnlockCollateralInst(
 	}
 }
 
-func (p *portalRequestUnlockCollateralProcessor) buildNewInsts(
+func (p *portalRequestUnlockCollateralProcessor) BuildNewInsts(
 	bc basemeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -1249,7 +1249,7 @@ func (p *portalRequestUnlockCollateralProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalRequestUnlockCollateralProcessor) processInsts(
+func (p *portalRequestUnlockCollateralProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,

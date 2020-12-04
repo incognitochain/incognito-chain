@@ -33,7 +33,7 @@ func (p *portalExchangeRateProcessor) prepareDataForBlockProducer(stateDB *state
 	return nil, nil
 }
 
-func (p *portalExchangeRateProcessor) buildNewInsts(
+func (p *portalExchangeRateProcessor) BuildNewInsts(
 	bc bMeta.ChainRetriever,
 	contentStr string,
 	shardID byte,
@@ -122,7 +122,7 @@ func (p *portalExchangeRateProcessor) buildNewInsts(
 	return [][]string{inst}, nil
 }
 
-func (p *portalExchangeRateProcessor) processInsts(
+func (p *portalExchangeRateProcessor) ProcessInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instructions []string,
@@ -195,7 +195,7 @@ func (p *portalExchangeRateProcessor) processInsts(
 }
 
 
-func pickExchangesRatesFinal(currentPortalState *CurrentPortalState) {
+func PickExchangesRatesFinal(currentPortalState *CurrentPortalState) {
 	// sort exchange rate requests by rate
 	sumRates := map[string][]uint64{}
 

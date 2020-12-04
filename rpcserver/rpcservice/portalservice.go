@@ -108,7 +108,7 @@ func (s *PortalService) ConvertExchangeRates(
 	amount uint64, tokenIDFrom string, tokenIDTo string) (uint64, error) {
 	result := uint64(0)
 	var err error
-	exchangeTool := portalprocess.NewPortalExchangeRateTool(finalExchangeRates, portalParams.SupportedCollateralTokens)
+	exchangeTool := portalprocess.NewPortalExchangeRateTool(finalExchangeRates, portalParams)
 	if tokenIDTo != "" && tokenIDFrom != "" {
 		result, err = exchangeTool.Convert(tokenIDFrom, tokenIDTo, amount)
 	} else if tokenIDTo == "" {

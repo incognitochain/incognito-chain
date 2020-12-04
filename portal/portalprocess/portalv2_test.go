@@ -240,7 +240,7 @@ package portalprocess
 //	return newReqs
 //}
 //
-////func cloneRedeemRequests(redeemReqs map[string]*statedb.RedeemRequest) map[string]*statedb.RedeemRequest {
+////func CloneRedeemRequests(redeemReqs map[string]*statedb.RedeemRequest) map[string]*statedb.RedeemRequest {
 ////	newReqs := make(map[string]*statedb.RedeemRequest, len(redeemReqs))
 ////	for key, req := range redeemReqs {
 ////		newReqs[key] = statedb.NewRedeemRequestWithValue(
@@ -383,7 +383,7 @@ package portalprocess
 //			Logger.log.Errorf("Error when preparing data before processing instruction %+v", err)
 //			continue
 //		}
-//		newInst, err := portalProcessor.buildNewInsts(
+//		newInst, err := portalProcessor.BuildNewInsts(
 //			blockchain,
 //			contentStr,
 //			shardID,
@@ -458,7 +458,7 @@ package portalprocess
 //			err = blockchain.processPortalLiquidateCustodian(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 //		// portal reward
 //		case strconv.Itoa(metadata.PortalRewardMeta), strconv.Itoa(metadata.PortalRewardMetaV3):
-//			err = blockchain.processPortalReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+//			err = blockchain.ProcessPortalReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 //		// request withdraw reward
 //		case strconv.Itoa(metadata.PortalRequestWithdrawRewardMeta):
 //			err = blockchain.processPortalWithdrawReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
@@ -467,7 +467,7 @@ package portalprocess
 //			err = blockchain.processPortalExpiredPortingRequest(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 //		// total custodian reward instruction
 //		case strconv.Itoa(metadata.PortalTotalRewardCustodianMeta):
-//			err = blockchain.processPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+//			err = blockchain.ProcessPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 //		// custodian request matching waiting redeem requests
 //		case strconv.Itoa(metadata.PortalReqMatchingRedeemMeta):
 //			err = blockchain.processPortalReqMatchingRedeem(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
@@ -482,7 +482,7 @@ package portalprocess
 //	}
 //
 //	//save final exchangeRates
-//	blockchain.pickExchangesRatesFinal(currentPortalState)
+//	blockchain.PickExchangesRatesFinal(currentPortalState)
 //
 //	// update info of bridge portal token
 //	for _, updatingInfo := range updatingInfoByTokenID {
@@ -510,7 +510,7 @@ package portalprocess
 //	}
 //
 //	// store updated currentPortalState to leveldb with new beacon height
-//	err = storePortalStateToDB(portalStateDB, currentPortalState)
+//	err = StorePortalStateToDB(portalStateDB, currentPortalState)
 //	if err != nil {
 //		Logger.log.Error(err)
 //	}
@@ -1380,8 +1380,8 @@ package portalprocess
 //	s.currentPortalStateForProducer.WaitingPortingRequests = wPortingRequests
 //
 //	s.currentPortalStateForProcess.CustodianPoolState = cloneCustodians(custodians)
-//	s.currentPortalStateForProcess.MatchedRedeemRequests = cloneRedeemRequests(matchedRedeemRequest)
-//	s.currentPortalStateForProcess.WaitingRedeemRequests = cloneRedeemRequests(wRedeemRequests)
+//	s.currentPortalStateForProcess.MatchedRedeemRequests = CloneRedeemRequests(matchedRedeemRequest)
+//	s.currentPortalStateForProcess.WaitingRedeemRequests = CloneRedeemRequests(wRedeemRequests)
 //	s.currentPortalStateForProcess.WaitingPortingRequests = cloneWPortingRequests(wPortingRequests)
 //}
 //
@@ -1999,7 +1999,7 @@ package portalprocess
 //
 //	s.currentPortalStateForProcess.CustodianPoolState = cloneCustodians(custodians)
 //	s.currentPortalStateForProcess.WaitingPortingRequests = cloneWPortingRequests(wPortingRequests)
-//	s.currentPortalStateForProcess.MatchedRedeemRequests = cloneRedeemRequests(matchedRedeemRequest)
+//	s.currentPortalStateForProcess.MatchedRedeemRequests = CloneRedeemRequests(matchedRedeemRequest)
 //	s.currentPortalStateForProcess.LockedCollateralForRewards = statedb.NewLockedCollateralStateWithValue(
 //		totalLockedCollateralInEpoch, cloneMap(lockedCollateralDetail))
 //}

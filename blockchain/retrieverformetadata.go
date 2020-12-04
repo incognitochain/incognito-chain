@@ -2,8 +2,11 @@ package blockchain
 
 import (
 	"errors"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/incognitochain/incognito-chain/portal/portalprocess"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
 	"time"
 )
@@ -101,3 +104,68 @@ func (bc *BlockChain) GetBNBBlockByHeight(blockHeight int64) (*types.Block, erro
 	return bnbChainState.GetBNBBlockByHeight(blockHeight)
 }
 
+
+// IsSupportedTokenCollateralV3 check externalTokenID is the supported token collateral on portal v3 or not
+func (blockchain *BlockChain) IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool {
+	return blockchain.GetPortalParams(beaconHeight).IsSupportedTokenCollateralV3(externalTokenID)
+}
+
+// IsPortalExchangeRateToken check tokenID is the valid token can be relayed the rate on portal v3 or not
+func (blockchain *BlockChain) IsPortalExchangeRateToken(beaconHeight uint64, tokenID string) bool {
+	return blockchain.GetPortalParams(beaconHeight).IsPortalExchangeRateToken(tokenID)
+}
+
+// IsPortalExchangeRateToken check tokenIDStr is the valid portal token on portal v3 or not
+func (blockchain *BlockChain) IsPortalToken(beaconHeight uint64, tokenIDStr string) bool {
+	return blockchain.GetPortalParams(beaconHeight).IsPortalExchangeRateToken(tokenIDStr)
+}
+
+// GetBNBHeader calls RPC to fullnode bnb to get bnb header by block height
+func (blockchain *BlockChain) GetBNBHeader(
+	blockHeight int64,
+) (*types.Header, error) {
+	portalRelayingParams := blockchain.GetPortalParams(0).RelayingParams
+	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
+		portalRelayingParams.BNBFullNodeProtocol,
+		portalRelayingParams.BNBFullNodeHost,
+		portalRelayingParams.BNBFullNodePort,
+	)
+	bnbClient := client.NewHTTP(bnbFullNodeAddress, "/websocket")
+	result, err := bnbClient.Block(&blockHeight)
+	if err != nil {
+		Logger.log.Errorf("An error occured during calling status method: %s", err)
+		return nil, fmt.Errorf("error occured during calling status method: %s", err)
+	}
+	return &result.Block.Header, nil
+}
+
+// GetBNBDataHash calls RPC to fullnode bnb to get bnb data hash in header
+func (blockchain *BlockChain) GetBNBDataHash(
+	blockHeight int64,
+) ([]byte, error) {
+	header, err := blockchain.GetBNBHeader(blockHeight)
+	if err != nil {
+		return nil, err
+	}
+	if header.DataHash == nil {
+		return nil, errors.New("Data hash is nil")
+	}
+	return header.DataHash, nil
+}
+
+// GetBNBHeader calls RPC to fullnode bnb to get latest bnb block height
+func (blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
+	portalRelayingParams := blockchain.GetPortalParams(0).RelayingParams
+	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
+		portalRelayingParams.BNBFullNodeProtocol,
+		portalRelayingParams.BNBFullNodeHost,
+		portalRelayingParams.BNBFullNodePort,
+	)
+	bnbClient := client.NewHTTP(bnbFullNodeAddress, "/websocket")
+	result, err := bnbClient.Status()
+	if err != nil {
+		Logger.log.Errorf("An error occured during calling status method: %s", err)
+		return 0, fmt.Errorf("error occured during calling status method: %s", err)
+	}
+	return result.SyncInfo.LatestBlockHeight, nil
+}

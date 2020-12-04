@@ -50,6 +50,9 @@ type ChainRetriever interface {
 	GetLatestBNBBlkHeight() (int64, error)
 	GetBNBDataHash(blockHeight int64) ([]byte, error)
 	CheckBlockTimeIsReached(recentBeaconHeight, beaconHeight, recentShardHeight, shardHeight uint64, duration time.Duration) bool
+	IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool
+	IsPortalExchangeRateToken(beaconHeight uint64, tokenID string) bool
+	IsPortalToken(beaconHeight uint64, tokenIDStr string) bool
 }
 
 type BeaconViewRetriever interface {
