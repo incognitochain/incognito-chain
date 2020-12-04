@@ -31,6 +31,10 @@ func (blockchain *BlockChain) GetETHRemoveBridgeSigEpoch() uint64 {
 	return blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch
 }
 
+func (blockchain *BlockChain) GetBCHeightBreakPointPortalV3() uint64 {
+	return blockchain.config.ChainParams.BCHeightBreakPointPortalV3
+}
+
 func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 	breakPoint := blockchain.GetBeaconHeightBreakPointBurnAddr()
 	if beaconHeight == 0 {

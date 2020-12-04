@@ -653,6 +653,24 @@ func (blockchain *BlockChain) GetPortalParams(beaconHeight uint64) PortalParams 
 	return portalParamMap[bchKey]
 }
 
+func (blockchain *BlockChain) GetSupportedCollateralTokenIDs(beaconHeight uint64) []string {
+	portalParams := blockchain.GetPortalParams(beaconHeight)
+	tokenIDs := []string{}
+	for _, col := range portalParams.SupportedCollateralTokens {
+		tokenIDs = append(tokenIDs, col.ExternalTokenID)
+	}
+	return tokenIDs
+}
+
+func (blockchain *BlockChain) GetSupportedCollateralInfo(beaconHeight uint64) []PortalCollateral {
+	portalParams := blockchain.GetPortalParams(beaconHeight)
+	return portalParams.SupportedCollateralTokens
+}
+
+func (blockchain *BlockChain) GetPortalETHContractAddrStr() string {
+	return blockchain.GetConfig().ChainParams.PortalETHContractAddressStr
+}
+
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {
 	return blockchain.config.DataBase[common.BeaconChainDataBaseID]
 }

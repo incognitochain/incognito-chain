@@ -54,7 +54,7 @@ func (iRes PortalLiquidationCustodianDepositResponseV2) ValidateSanityData(chain
 
 func (iRes PortalLiquidationCustodianDepositResponseV2) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PortalLiquidationCustodianDepositResponseMetaV2
+	return iRes.Type == PortalCustodianTopupResponseMetaV2
 }
 
 func (iRes PortalLiquidationCustodianDepositResponseV2) Hash() *common.Hash {
@@ -91,12 +91,12 @@ func (iRes PortalLiquidationCustodianDepositResponseV2) VerifyMinerCreatedTxBefo
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PortalLiquidationCustodianDepositMetaV2) {
+			instMetaType != strconv.Itoa(PortalCustodianTopupMetaV2) {
 			continue
 		}
 		instDepositStatus := inst[2]
 		if instDepositStatus != iRes.DepositStatus ||
-			(instDepositStatus != common.PortalLiquidationCustodianDepositRejectedChainStatus) {
+			(instDepositStatus != common.PortalCustodianTopupRejectedChainStatus) {
 			continue
 		}
 

@@ -67,7 +67,6 @@ func (iRes *PortalCustodianDepositResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-//todo:
 func (iRes PortalCustodianDepositResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,

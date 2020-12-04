@@ -157,7 +157,7 @@ func (iReq IssuingRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (iReq *IssuingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (iReq *IssuingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	txReqID := *(tx.Hash())
 	actionContent := map[string]interface{}{
 		"meta":    *iReq,

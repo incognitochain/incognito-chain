@@ -21,27 +21,6 @@ type relayingBNBChain struct {
 type relayingBTCChain struct {
 	*relayingChain
 }
-type relayingProcessor interface {
-	getActions() [][]string
-	putAction(action []string)
-	buildRelayingInst(
-		blockchain *BlockChain,
-		relayingHeaderAction metadata.RelayingHeaderAction,
-		relayingState *RelayingHeaderChainState,
-	) [][]string
-	buildHeaderRelayingInst(
-		senderAddressStr string,
-		header string,
-		blockHeight uint64,
-		metaType int,
-		shardID byte,
-		txReqID common.Hash,
-		status string,
-	) []string
-}
-type portalManager struct {
-	relayingChains map[int]relayingProcessor
-}
 
 func (rChain *relayingChain) getActions() [][]string {
 	return rChain.actions
@@ -157,24 +136,7 @@ func (rbtcChain *relayingBTCChain) buildRelayingInst(
 	return [][]string{inst}
 }
 
-func NewPortalManager() *portalManager {
-	rbnbChain := &relayingBNBChain{
-		relayingChain: &relayingChain{
-			actions: [][]string{},
-		},
-	}
-	rbtcChain := &relayingBTCChain{
-		relayingChain: &relayingChain{
-			actions: [][]string{},
-		},
-	}
-	return &portalManager{
-		relayingChains: map[int]relayingProcessor{
-			metadata.RelayingBNBHeaderMeta: rbnbChain,
-			metadata.RelayingBTCHeaderMeta: rbtcChain,
-		},
-	}
-}
+
 
 type RelayingHeaderChainState struct {
 	BNBHeaderChain *bnbrelaying.BNBChainState

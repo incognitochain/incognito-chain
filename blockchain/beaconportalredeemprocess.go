@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"strconv"
 )
 
 func (blockchain *BlockChain) processPortalRedeemRequest(
@@ -45,6 +46,9 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			actionData.RedeemFee,
 			beaconHeight+1,
 			actionData.TxReqID,
+			actionData.ShardID,
+			actionData.ShardHeight,
+			actionData.RedeemerExternalAddress,
 		)
 		currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr] = redeemRequest
 
@@ -59,6 +63,10 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			RedeemFee:               actionData.RedeemFee,
 			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
 			TxReqID:                 actionData.TxReqID,
+			ShardID:                 actionData.ShardID,
+			ShardHeight:             actionData.ShardHeight,
+			BeaconHeight:            beaconHeight + 1,
+			RedeemerExternalAddress: actionData.RedeemerExternalAddress,
 		}
 		redeemRequestStatusBytes, _ := json.Marshal(redeemRequestStatus)
 		err := statedb.StorePortalRedeemRequestStatus(
@@ -81,6 +89,10 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			RedeemFee:               actionData.RedeemFee,
 			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
 			TxReqID:                 actionData.TxReqID,
+			ShardID:                 actionData.ShardID,
+			ShardHeight:             actionData.ShardHeight,
+			BeaconHeight:            beaconHeight + 1,
+			RedeemerExternalAddress: actionData.RedeemerExternalAddress,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
 		err = statedb.StorePortalRedeemRequestByTxIDStatus(
@@ -122,6 +134,10 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			RedeemFee:               actionData.RedeemFee,
 			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
 			TxReqID:                 actionData.TxReqID,
+			ShardID:                 actionData.ShardID,
+			ShardHeight:             actionData.ShardHeight,
+			BeaconHeight:            beaconHeight + 1,
+			RedeemerExternalAddress: actionData.RedeemerExternalAddress,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
 		err = statedb.StorePortalRedeemRequestByTxIDStatus(
@@ -163,6 +179,10 @@ func (blockchain *BlockChain) processPortalRedeemRequest(
 			RedeemFee:               actionData.RedeemFee,
 			MatchingCustodianDetail: actionData.MatchingCustodianDetail,
 			TxReqID:                 redeemReq.GetTxReqID(),
+			ShardID:                 actionData.ShardID,
+			ShardHeight:             actionData.ShardHeight,
+			BeaconHeight:            redeemReq.GetBeaconHeight(),
+			RedeemerExternalAddress: actionData.RedeemerExternalAddress,
 		}
 		redeemRequestStatusBytes, _ := json.Marshal(redeemRequestStatus)
 		err = statedb.StorePortalRedeemRequestStatus(
@@ -250,6 +270,10 @@ func (blockchain *BlockChain) processPortalReqMatchingRedeem(
 			RedeemFee:               updatedRedeemRequest.GetRedeemFee(),
 			MatchingCustodianDetail: updatedRedeemRequest.GetCustodians(),
 			TxReqID:                 updatedRedeemRequest.GetTxReqID(),
+			ShardID:                 updatedRedeemRequest.ShardID(),
+			ShardHeight:             updatedRedeemRequest.ShardHeight(),
+			BeaconHeight:            updatedRedeemRequest.GetBeaconHeight(),
+			RedeemerExternalAddress: updatedRedeemRequest.GetRedeemerExternalAddress(),
 		}
 		newRedeemRequest, err := json.Marshal(redeemRequest)
 		if err != nil {
@@ -347,6 +371,10 @@ func (blockchain *BlockChain) processPortalPickMoreCustodiansForTimeOutWaitingRe
 			RedeemFee:               updatedRedeemRequest.GetRedeemFee(),
 			MatchingCustodianDetail: updatedRedeemRequest.GetCustodians(),
 			TxReqID:                 updatedRedeemRequest.GetTxReqID(),
+			ShardID:                 updatedRedeemRequest.ShardID(),
+			ShardHeight:             updatedRedeemRequest.ShardHeight(),
+			BeaconHeight:            updatedRedeemRequest.GetBeaconHeight(),
+			RedeemerExternalAddress: updatedRedeemRequest.GetRedeemerExternalAddress(),
 		}
 		newRedeemRequest, err := json.Marshal(redeemRequest)
 		if err != nil {
@@ -370,7 +398,8 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 
 	// unmarshal instructions content
 	var actionData metadata.PortalRequestUnlockCollateralContent
-	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	var err error
+	err = json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
 		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
 		return nil
@@ -383,9 +412,16 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
-		err := updateCustodianStateAfterReqUnlockCollateral(
-			currentPortalState.CustodianPoolState[custodianStateKeyStr],
-			actionData.UnlockAmount, tokenID)
+		// portal unlock collateral v2 and v3
+		if instructions[0] == strconv.Itoa(metadata.PortalRequestUnlockCollateralMeta) {
+			err = updateCustodianStateAfterReqUnlockCollateral(
+				currentPortalState.CustodianPoolState[custodianStateKeyStr],
+				actionData.UnlockAmount, tokenID)
+		} else {
+			err = updateCustodianStateAfterReqUnlockCollateralV3(
+				currentPortalState.CustodianPoolState[custodianStateKeyStr],
+				actionData.UnlockAmount, tokenID, portalParams, currentPortalState)
+		}
 		if err != nil {
 			Logger.log.Errorf("Error when update custodian state", err)
 			return nil

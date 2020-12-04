@@ -93,7 +93,7 @@ func (pc PDEFeeWithdrawalRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (pc *PDEFeeWithdrawalRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (pc *PDEFeeWithdrawalRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PDEFeeWithdrawalRequestAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),

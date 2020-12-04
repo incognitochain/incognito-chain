@@ -12,6 +12,8 @@ type MatchingPortingCustodianDetail struct {
 	RemoteAddress          string
 	Amount                 uint64
 	LockedAmountCollateral uint64
+
+	LockedTokenCollaterals map[string]uint64 // PubTokenID
 }
 
 type WaitingPortingRequest struct {
@@ -23,9 +25,12 @@ type WaitingPortingRequest struct {
 	portingFee      uint64
 	beaconHeight    uint64
 	txReqID         common.Hash
+
+	shardHeight uint64
+	shardID     byte
 }
 
-func (w *WaitingPortingRequest) BeaconHeight() uint64 {
+func (w WaitingPortingRequest) BeaconHeight() uint64 {
 	return w.beaconHeight
 }
 
@@ -33,7 +38,7 @@ func (w *WaitingPortingRequest) SetBeaconHeight(beaconHeight uint64) {
 	w.beaconHeight = beaconHeight
 }
 
-func (w *WaitingPortingRequest) PortingFee() uint64 {
+func (w WaitingPortingRequest) PortingFee() uint64 {
 	return w.portingFee
 }
 
@@ -41,7 +46,7 @@ func (w *WaitingPortingRequest) SetPortingFee(portingFee uint64) {
 	w.portingFee = portingFee
 }
 
-func (w *WaitingPortingRequest) Custodians() []*MatchingPortingCustodianDetail {
+func (w WaitingPortingRequest) Custodians() []*MatchingPortingCustodianDetail {
 	return w.custodians
 }
 
@@ -49,7 +54,7 @@ func (w *WaitingPortingRequest) SetCustodians(custodians []*MatchingPortingCusto
 	w.custodians = custodians
 }
 
-func (w *WaitingPortingRequest) Amount() uint64 {
+func (w WaitingPortingRequest) Amount() uint64 {
 	return w.amount
 }
 
@@ -57,7 +62,7 @@ func (w *WaitingPortingRequest) SetAmount(amount uint64) {
 	w.amount = amount
 }
 
-func (w *WaitingPortingRequest) PorterAddress() string {
+func (w WaitingPortingRequest) PorterAddress() string {
 	return w.porterAddress
 }
 
@@ -65,7 +70,7 @@ func (w *WaitingPortingRequest) SetPorterAddress(porterAddress string) {
 	w.porterAddress = porterAddress
 }
 
-func (w *WaitingPortingRequest) TokenID() string {
+func (w WaitingPortingRequest) TokenID() string {
 	return w.tokenID
 }
 
@@ -73,7 +78,7 @@ func (w *WaitingPortingRequest) SetTokenID(tokenID string) {
 	w.tokenID = tokenID
 }
 
-func (w *WaitingPortingRequest) TxReqID() common.Hash {
+func (w WaitingPortingRequest) TxReqID() common.Hash {
 	return w.txReqID
 }
 
@@ -81,12 +86,28 @@ func (w *WaitingPortingRequest) SetTxReqID(txReqID common.Hash) {
 	w.txReqID = txReqID
 }
 
-func (w *WaitingPortingRequest) UniquePortingID() string {
+func (w WaitingPortingRequest) UniquePortingID() string {
 	return w.uniquePortingID
 }
 
 func (w *WaitingPortingRequest) SetUniquePortingID(uniquePortingID string) {
 	w.uniquePortingID = uniquePortingID
+}
+
+func (w WaitingPortingRequest) ShardHeight() uint64 {
+	return w.shardHeight
+}
+
+func (w *WaitingPortingRequest) SetShardHeight(shardHeight uint64) {
+	w.shardHeight = shardHeight
+}
+
+func (w WaitingPortingRequest) ShardID() byte {
+	return w.shardID
+}
+
+func (w *WaitingPortingRequest) SetShardID(shardID byte) {
+	w.shardID = shardID
 }
 
 func NewWaitingPortingRequest() *WaitingPortingRequest {
@@ -101,8 +122,21 @@ func NewWaitingPortingRequestWithValue(
 	amount uint64,
 	custodians []*MatchingPortingCustodianDetail,
 	portingFee uint64,
-	beaconHeight uint64) *WaitingPortingRequest {
-	return &WaitingPortingRequest{uniquePortingID: uniquePortingID, txReqID: txReqID, tokenID: tokenID, porterAddress: porterAddress, amount: amount, custodians: custodians, portingFee: portingFee, beaconHeight: beaconHeight}
+	beaconHeight uint64,
+	shardHeight uint64,
+	shardID byte) *WaitingPortingRequest {
+	return &WaitingPortingRequest{
+		uniquePortingID: uniquePortingID,
+		txReqID:         txReqID,
+		tokenID:         tokenID,
+		porterAddress:   porterAddress,
+		amount:          amount,
+		custodians:      custodians,
+		portingFee:      portingFee,
+		beaconHeight:    beaconHeight,
+		shardHeight:     shardHeight,
+		shardID:         shardID,
+	}
 }
 
 func GeneratePortalWaitingPortingRequestObjectKey(portingRequestId string) common.Hash {
@@ -121,6 +155,8 @@ func (w *WaitingPortingRequest) MarshalJSON() ([]byte, error) {
 		Custodians      []*MatchingPortingCustodianDetail
 		PortingFee      uint64
 		BeaconHeight    uint64
+		ShardID         byte
+		ShardHeight     uint64
 	}{
 		UniquePortingID: w.uniquePortingID,
 		TxReqID:         w.txReqID,
@@ -130,6 +166,8 @@ func (w *WaitingPortingRequest) MarshalJSON() ([]byte, error) {
 		Custodians:      w.custodians,
 		PortingFee:      w.portingFee,
 		BeaconHeight:    w.beaconHeight,
+		ShardID:         w.shardID,
+		ShardHeight:     w.shardHeight,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -147,6 +185,8 @@ func (w *WaitingPortingRequest) UnmarshalJSON(data []byte) error {
 		Custodians      []*MatchingPortingCustodianDetail
 		PortingFee      uint64
 		BeaconHeight    uint64
+		ShardID         byte
+		ShardHeight     uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -161,6 +201,8 @@ func (w *WaitingPortingRequest) UnmarshalJSON(data []byte) error {
 	w.custodians = temp.Custodians
 	w.portingFee = temp.PortingFee
 	w.beaconHeight = temp.BeaconHeight
+	w.shardID = temp.ShardID
+	w.shardHeight = temp.ShardHeight
 
 	return nil
 }

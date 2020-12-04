@@ -86,11 +86,6 @@ func (meta PortalRequestUnlockCollateral) ValidateTxWithBlockChain(
 }
 
 func (meta PortalRequestUnlockCollateral) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	//if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-	//	return true, true, nil
-	//}
-
 	// validate CustodianAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(meta.CustodianAddressStr)
 	if err != nil {
@@ -115,7 +110,7 @@ func (meta PortalRequestUnlockCollateral) ValidateSanityData(chainRetriever Chai
 	}
 
 	// validate tokenID
-	if !common.IsPortalToken(meta.TokenID) {
+	if !IsPortalToken(meta.TokenID) {
 		return false, false, errors.New("TokenID is not a portal token")
 	}
 
@@ -123,7 +118,7 @@ func (meta PortalRequestUnlockCollateral) ValidateSanityData(chainRetriever Chai
 }
 
 func (meta PortalRequestUnlockCollateral) ValidateMetadataByItself() bool {
-	return meta.Type == PortalRequestUnlockCollateralMeta
+	return meta.Type == PortalRequestUnlockCollateralMeta || meta.Type == PortalRequestUnlockCollateralMetaV3
 }
 
 func (meta PortalRequestUnlockCollateral) Hash() *common.Hash {
@@ -138,7 +133,7 @@ func (meta PortalRequestUnlockCollateral) Hash() *common.Hash {
 	return &hash
 }
 
-func (meta *PortalRequestUnlockCollateral) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (meta *PortalRequestUnlockCollateral) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalRequestUnlockCollateralAction{
 		Meta:    *meta,
 		TxReqID: *tx.Hash(),
@@ -149,7 +144,7 @@ func (meta *PortalRequestUnlockCollateral) BuildReqActions(tx Transaction, chain
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalRequestUnlockCollateralMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(meta.Type), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

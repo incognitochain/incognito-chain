@@ -177,11 +177,11 @@ const (
 	PortalReqWithdrawRewardAcceptedStatus = 1
 	PortalReqWithdrawRewardRejectedStatus = 2
 
-	PortalRedeemLiquidateExchangeRatesSuccessStatus  = 1
-	PortalRedeemLiquidateExchangeRatesRejectedStatus = 2
+	PortalRedeemFromLiquidationPoolSuccessStatus  = 1
+	PortalRedeemFromLiquidationPoolRejectedStatus = 2
 
-	PortalLiquidationCustodianDepositSuccessStatus  = 1
-	PortalLiquidationCustodianDepositRejectedStatus = 2
+	PortalCustodianTopupSuccessStatus  = 1
+	PortalCustodianTopupRejectedStatus = 2
 
 	PortalExpiredPortingReqSuccessStatus = 1
 	PortalExpiredPortingReqFailedStatus  = 2
@@ -194,6 +194,12 @@ const (
 
 	PortalTopUpWaitingPortingSuccessStatus  = 1
 	PortalTopUpWaitingPortingRejectedStatus = 2
+
+	PortalCustodianDepositV3AcceptedStatus = 1
+	PortalCustodianDepositV3RejectedStatus = 2
+
+	PortalCustodianWithdrawReqV3AcceptedStatus = 1
+	PortalCustodianWithdrawReqV3RejectStatus   = 2
 )
 
 // PDE statuses for chain
@@ -239,8 +245,8 @@ const (
 	PortalRedeemRequestRejectedChainStatus           = "rejected"
 	PortalRedeemReqCancelledByLiquidationChainStatus = "cancelled"
 
-	PortalCustodianWithdrawRequestAcceptedStatus = "accepted"
-	PortalCustodianWithdrawRequestRejectedStatus = "rejected"
+	PortalCustodianWithdrawRequestAcceptedChainStatus = "accepted"
+	PortalCustodianWithdrawRequestRejectedChainStatus = "rejected"
 
 	PortalReqUnlockCollateralAcceptedChainStatus = "accepted"
 	PortalReqUnlockCollateralRejectedChainStatus = "rejected"
@@ -254,11 +260,11 @@ const (
 	PortalReqWithdrawRewardAcceptedChainStatus = "accepted"
 	PortalReqWithdrawRewardRejectedChainStatus = "rejected"
 
-	PortalRedeemLiquidateExchangeRatesSuccessChainStatus  = "success"
-	PortalRedeemLiquidateExchangeRatesRejectedChainStatus = "rejected"
+	PortalRedeemFromLiquidationPoolSuccessChainStatus  = "success"
+	PortalRedeemFromLiquidationPoolRejectedChainStatus = "rejected"
 
-	PortalLiquidationCustodianDepositSuccessChainStatus  = "success"
-	PortalLiquidationCustodianDepositRejectedChainStatus = "rejected"
+	PortalCustodianTopupSuccessChainStatus  = "success"
+	PortalCustodianTopupRejectedChainStatus = "rejected"
 
 	PortalExpiredWaitingPortingReqSuccessChainStatus = "success"
 	PortalExpiredWaitingPortingReqFailedChainStatus  = "failed"
@@ -271,6 +277,12 @@ const (
 
 	PortalTopUpWaitingPortingSuccessChainStatus  = "success"
 	PortalTopUpWaitingPortingRejectedChainStatus = "rejected"
+
+	// Portal v3
+	PortalCustodianDepositV3AcceptedChainStatus         = "accepted"
+	PortalCustodianDepositV3RejectedChainStatus         = "rejected"
+	PortalCustodianWithdrawRequestV3AcceptedChainStatus = "accepted"
+	PortalCustodianWithdrawRequestV3RejectedChainStatus = "rejected"
 )
 
 // Relaying header
@@ -294,6 +306,8 @@ var MinAmountPortalPToken = map[string]uint64{
 	PortalBTCIDStr: 10,
 	PortalBNBIDStr: 10,
 }
+
+const ETHChainName = "eth"
 
 const (
 	HexEmptyRoot = "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"

@@ -69,11 +69,6 @@ func (req PortalReqMatchingRedeem) ValidateTxWithBlockChain(
 }
 
 func (req PortalReqMatchingRedeem) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	//if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-	//	return true, true, nil
-	//}
-
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(req.CustodianAddressStr)
 	if err != nil {
@@ -112,7 +107,7 @@ func (req PortalReqMatchingRedeem) Hash() *common.Hash {
 	return &hash
 }
 
-func (req *PortalReqMatchingRedeem) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (req *PortalReqMatchingRedeem) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalReqMatchingRedeemAction{
 		Meta:    *req,
 		TxReqID: *tx.Hash(),

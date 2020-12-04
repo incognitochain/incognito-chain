@@ -10,6 +10,10 @@ type SlashLevel struct {
 	MinRange        uint8
 	PunishedEpoches uint8
 }
+type PortalCollateral struct {
+	ExternalTokenID string
+	Decimal         uint8
+}
 type PortalParams struct {
 	TimeOutCustodianReturnPubToken       time.Duration
 	TimeOutWaitingPortingRequest         time.Duration
@@ -23,6 +27,8 @@ type PortalParams struct {
 	TP130                                uint64
 	MinPercentPortingFee                 float64
 	MinPercentRedeemFee                  float64
+	SupportedCollateralTokens            []PortalCollateral
+	MinPortalFee                         uint64 // nano PRV
 }
 
 /*
@@ -68,14 +74,17 @@ type Params struct {
 	BNBFullNodeProtocol              string
 	BNBFullNodeHost                  string
 	BNBFullNodePort                  string
-	PortalParams                     map[uint64]PortalParams
-	PortalFeederAddress              string
-	EpochBreakPointSwapNewKey        []uint64
-	IsBackup                         bool
-	PreloadAddress                   string
-	ReplaceStakingTxHeight           uint64
-	ETHRemoveBridgeSigEpoch          uint64
-	BCHeightBreakPointNewZKP         uint64
+	PortalParams                map[uint64]PortalParams
+	PortalTokens                map[string]PortalTokenProcessor
+	PortalFeederAddress         string
+	EpochBreakPointSwapNewKey   []uint64
+	IsBackup                    bool
+	PreloadAddress              string
+	ReplaceStakingTxHeight      uint64
+	ETHRemoveBridgeSigEpoch     uint64
+	BCHeightBreakPointNewZKP    uint64
+	PortalETHContractAddressStr string // smart contract of ETH for portal
+	BCHeightBreakPointPortalV3  uint64
 }
 
 type GenesisParams struct {
@@ -102,6 +111,66 @@ var genesisParamsTestnetNew *GenesisParams
 var genesisParamsTestnet2New *GenesisParams
 var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
+
+func initPortalTokensForTestNet() map[string]PortalTokenProcessor {
+	return map[string]PortalTokenProcessor{
+		common.PortalBTCIDStr: &PortalBTCTokenProcessor{
+			&PortalToken{
+				ChainID: TestnetBTCChainID,
+			},
+		},
+		common.PortalBNBIDStr: &PortalBNBTokenProcessor{
+			&PortalToken{
+				ChainID: TestnetBNBChainID,
+			},
+		},
+	}
+}
+
+func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
+	return map[string]PortalTokenProcessor{
+		common.PortalBTCIDStr: &PortalBTCTokenProcessor{
+			&PortalToken{
+				ChainID: MainnetBTCChainID,
+			},
+		},
+		common.PortalBNBIDStr: &PortalBNBTokenProcessor{
+			&PortalToken{
+				ChainID: MainnetBNBChainID,
+			},
+		},
+	}
+}
+
+// external tokenID there is no 0x prefix, in lower case
+// @@Note: need to update before deploying
+func getSupportedPortalCollateralsMainnet() []PortalCollateral {
+	return []PortalCollateral{
+		{"0000000000000000000000000000000000000000", 9}, // eth
+		{"dac17f958d2ee523a2206206994597c13d831ec7", 6}, // usdt
+		{"a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", 6}, // usdc
+	}
+}
+
+// external tokenID there is no 0x prefix, in lower case
+// @@Note: need to update before deploying
+func getSupportedPortalCollateralsTestnet() []PortalCollateral {
+	return []PortalCollateral{
+		{"0000000000000000000000000000000000000000", 9}, // eth
+		{"3a829f4b97660d970428cd370c4e41cbad62092b", 6}, // usdt, kovan testnet
+		{"75b0622cec14130172eae9cf166b92e5c112faff", 6}, // usdc, kovan testnet
+	}
+}
+
+// external tokenID there is no 0x prefix, in lower case
+// @@Note: need to update before deploying
+func getSupportedPortalCollateralsTestnet2() []PortalCollateral {
+	return []PortalCollateral{
+		{"0000000000000000000000000000000000000000", 9}, // eth
+		{"3a829f4b97660d970428cd370c4e41cbad62092b", 6}, // usdt, kovan testnet
+		{"75b0622cec14130172eae9cf166b92e5c112faff", 6}, // usdc, kovan testnet
+	}
+}
 
 func SetupParam() {
 	// FOR TESTNET
@@ -147,7 +216,7 @@ func SetupParam() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -171,20 +240,25 @@ func SetupParam() {
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
 				MinPercentCustodianRewards:           1,
-				MinLockCollateralAmountInEpoch:       5000 * 1e9, // 5000 prv
+				MinLockCollateralAmountInEpoch:       10000 * 1e6, // 10000 usd
 				MinPercentLockedCollateral:           150,
 				TP120:                                120,
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
+				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(), // todo: need to be updated before deploying
+				MinPortalFee:                         100,
 			},
 		},
-		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    1,
-		IsBackup:                  false,
-		PreloadAddress:            "",
-		BCHeightBreakPointNewZKP:  2300000, //TODO: change this value when deployed testnet
-		ETHRemoveBridgeSigEpoch:   21920,
+		PortalTokens:                initPortalTokensForTestNet(),
+		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:      1,
+		IsBackup:                    false,
+		PreloadAddress:              "",
+		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
+		ETHRemoveBridgeSigEpoch:     21920,
+		PortalETHContractAddressStr: "0x21Ab34649777e94e30d60319cDBa472759B00AaA", // todo: update sc address
+		BCHeightBreakPointPortalV3:  1,  // todo: should update before deploying
 	}
 	// END TESTNET
 
@@ -231,7 +305,7 @@ func SetupParam() {
 		EthContractAddressStr:            Testnet2ETHContractAddressStr,
 		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -249,9 +323,9 @@ func SetupParam() {
 		PortalFeederAddress:            Testnet2PortalFeeder,
 		PortalParams: map[uint64]PortalParams{
 			0: {
-				TimeOutCustodianReturnPubToken:       1 * time.Hour,
-				TimeOutWaitingPortingRequest:         1 * time.Hour,
-				TimeOutWaitingRedeemRequest:          10 * time.Minute,
+				TimeOutCustodianReturnPubToken:       5 * time.Minute,
+				TimeOutWaitingPortingRequest:         5 * time.Minute,
+				TimeOutWaitingRedeemRequest:          5 * time.Minute,
 				MaxPercentLiquidatedCollateralAmount: 105,
 				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
 				MinPercentCustodianRewards:           1,
@@ -261,14 +335,19 @@ func SetupParam() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
+				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet2(),
+				MinPortalFee:                         100,
 			},
 		},
-		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    1,
-		IsBackup:                  false,
-		PreloadAddress:            "",
-		BCHeightBreakPointNewZKP:  260000, //TODO: change this value when deployed testnet2
-		ETHRemoveBridgeSigEpoch:   2085,
+		PortalTokens:                initPortalTokensForTestNet(),
+		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:      1,
+		IsBackup:                    false,
+		PreloadAddress:              "",
+		BCHeightBreakPointNewZKP:    791000, //TODO: change this value when deployed testnet2
+		ETHRemoveBridgeSigEpoch:     2085,
+		PortalETHContractAddressStr: "",  // todo: update sc address
+		BCHeightBreakPointPortalV3:  8974,  // todo: should update before deploying
 	}
 	// END TESTNET-2
 
@@ -313,7 +392,7 @@ func SetupParam() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -343,15 +422,19 @@ func SetupParam() {
 				TP130:                                130,
 				MinPercentPortingFee:                 0.01,
 				MinPercentRedeemFee:                  0.01,
+				SupportedCollateralTokens:            getSupportedPortalCollateralsMainnet(),
+				MinPortalFee:                         100,
 			},
 		},
-
-		EpochBreakPointSwapNewKey: MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:    559380,
-		IsBackup:                  false,
-		PreloadAddress:            "",
-		BCHeightBreakPointNewZKP:  737450,
-		ETHRemoveBridgeSigEpoch:   1973,
+		PortalTokens:                initPortalTokensForMainNet(),
+		EpochBreakPointSwapNewKey:   MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:      559380,
+		IsBackup:                    false,
+		PreloadAddress:              "",
+		BCHeightBreakPointNewZKP:    737450,
+		ETHRemoveBridgeSigEpoch:     1e18,
+		PortalETHContractAddressStr: "", // todo: update sc address
+		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

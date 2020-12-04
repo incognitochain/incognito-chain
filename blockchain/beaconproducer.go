@@ -347,7 +347,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(curView *BeaconBestState, n
 	shardState.Hash = shardBlock.Header.Hash()
 	shardState.Height = shardBlock.Header.Height
 	shardStates[shardID] = shardState
-	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardBlock.Header.ShardID)
+	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardBlock.Header.ShardID, shardBlock.Header.Height)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 
 	// extract instructions

@@ -1,9 +1,9 @@
 package statedb
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
 )
 
 //======================  Redeem  ======================
@@ -28,6 +28,9 @@ func StoreWaitingRedeemRequests(
 			waitingReq.redeemFee,
 			waitingReq.beaconHeight,
 			waitingReq.txReqID,
+			waitingReq.shardID,
+			waitingReq.shardHeight,
+			waitingReq.redeemerExternalAddress,
 		)
 		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
 		if err != nil {
@@ -130,6 +133,9 @@ func StoreMatchedRedeemRequests(
 			waitingReq.redeemFee,
 			waitingReq.beaconHeight,
 			waitingReq.txReqID,
+			waitingReq.shardID,
+			waitingReq.shardHeight,
+			waitingReq.redeemerExternalAddress,
 		)
 		err := stateDB.SetStateObject(WaitingRedeemRequestObjectType, key, value)
 		if err != nil {
@@ -168,6 +174,9 @@ func StoreCustodianState(
 			cus.lockedAmountCollateral,
 			cus.remoteAddresses,
 			cus.rewardAmount,
+			cus.totalTokenCollaterals,
+			cus.freeTokenCollaterals,
+			cus.lockedTokenCollaterals,
 		)
 		err := stateDB.SetStateObject(CustodianStateObjectType, key, value)
 		if err != nil {
@@ -208,7 +217,29 @@ func GetCustodianDepositStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	return data, nil
 }
 
-func GetOneCustodian(stateDB *StateDB, custodianAddress string) (*CustodianState, error) {
+func StoreCustodianDepositStatusV3(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalCustodianDepositStatusPrefixV3()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalCustodianDepositStatusError, err)
+	}
+
+	return nil
+}
+
+func GetCustodianDepositStatusV3(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalCustodianDepositStatusPrefixV3()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalCustodianDepositStatusError, err)
+	}
+
+	return data, nil
+}
+
+func GetCustodianByIncAddress(stateDB *StateDB, custodianAddress string) (*CustodianState, error) {
 	key := GenerateCustodianStateObjectKey(custodianAddress)
 	custodianState, has, err := stateDB.getCustodianByKey(key)
 	if err != nil {
@@ -323,70 +354,48 @@ func GetLiquidateExchangeRatesPoolByKey(stateDB *StateDB) (*LiquidationPool, err
 }
 
 //======================  Porting  ======================
-func TrackPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte, beaconHeight uint64) error {
-	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
-	value := NewPortalStatusStateWithValue(statusType, statusSuffix, statusContent)
-
-	dataaccessobject.Logger.Log.Infof("TrackPortalStateStatusMultiple [beaconHeight: %v] statusType: %+v, statusSuffix: %+v, value: %+v", beaconHeight, string(statusType), string(statusSuffix), value.ToString())
-
-	err := stateDB.SetStateObject(PortalStatusObjectType, key, value)
-
-	var errType int
-	switch string(statusType) {
-	case string(PortalLiquidationTpExchangeRatesStatusPrefix()):
-		errType = StoreLiquidateTopPercentileExchangeRatesError
-	case string(PortalLiquidationRedeemRequestStatusPrefix()):
-		errType = StoreRedeemLiquidationExchangeRatesError
-	case string(PortalLiquidationCustodianDepositStatusPrefix()):
-		errType = StoreLiquidationCustodianDepositError
-	case string(PortalPortingRequestStatusPrefix()):
-		errType = StorePortalStatusError
-	case string(PortalPortingRequestTxStatusPrefix()):
-		errType = StorePortalTxStatusError
-	case string(PortalExchangeRatesRequestStatusPrefix()):
-		errType = StorePortalExchangeRatesStatusError
-	case string(PortalCustodianWithdrawStatusPrefix()):
-		errType = StorePortalCustodianWithdrawRequestStatusError
-	default:
-		errType = StorePortalStatusError
-	}
-
+func StorePortalPortingRequestStatus(stateDB *StateDB, portingID string, statusContent []byte) error {
+	statusType := PortalPortingRequestStatusPrefix()
+	statusSuffix := []byte(portingID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
 	if err != nil {
-		return NewStatedbError(errType, err)
+		return NewStatedbError(StorePortalPortingRequestStatusError, err)
 	}
 
 	return nil
 }
 
-func GetPortalStateStatusMultiple(stateDB *StateDB, statusType []byte, statusSuffix []byte) ([]byte, error) {
-	key := GeneratePortalStatusObjectKey(statusType, statusSuffix)
-	s, has, err := stateDB.getPortalStatusByKey(key)
-
-	var errType int
-	switch string(statusType) {
-	case string(PortalPortingRequestStatusPrefix()):
-		errType = GetPortingRequestStatusError
-	case string(PortalPortingRequestTxStatusPrefix()):
-		errType = GetPortingRequestTxStatusError
-	case string(PortalLiquidationTpExchangeRatesStatusPrefix()):
-		errType = GetLiquidationTopPercentileExchangeRatesStatusError
-	case string(PortalCustodianWithdrawStatusPrefix()):
-		errType = GetPortalCustodianWithdrawStatusError
-	case string(PortalTopUpWaitingPortingStatusPrefix()):
-		errType = GetPortalTopupWaitingPortingStatusError
-	default:
-		errType = GetPortalStatusError
-	}
-
+func GetPortalPortingRequestStatus(stateDB *StateDB, portingID string) ([]byte, error) {
+	statusType := PortalPortingRequestStatusPrefix()
+	statusSuffix := []byte(portingID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
 	if err != nil {
-		return []byte{}, NewStatedbError(errType, err)
+		return nil, NewStatedbError(GetPortalPortingRequestStatusError, err)
 	}
 
-	if !has {
-		return []byte{}, NewStatedbError(errType, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
+	return data, nil
+}
+
+func StorePortalPortingRequestByTxIDStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalPortingRequestTxStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalPortingRequestByTxIDStatusError, err)
 	}
 
-	return s.statusContent, nil
+	return nil
+}
+
+func GetPortalPortingRequestByTxIDStatus(stateDB *StateDB, portingID string) ([]byte, error) {
+	statusType := PortalPortingRequestTxStatusPrefix()
+	statusSuffix := []byte(portingID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return nil, NewStatedbError(GetPortalPortingRequestByTxIDStatusError, err)
+	}
+
+	return data, nil
 }
 
 func GetRedeemRequestFromLiquidationPoolByTxIDStatus(stateDB *StateDB, txID string) ([]byte, error) {
@@ -400,12 +409,180 @@ func GetRedeemRequestFromLiquidationPoolByTxIDStatus(stateDB *StateDB, txID stri
 	return data, nil
 }
 
+func StoreRedeemRequestFromLiquidationPoolByTxIDStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalLiquidationRedeemRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalRedeemRequestFromLiquidationByTxIDStatusError, err)
+	}
+
+	return nil
+}
+
+func GetRedeemRequestFromLiquidationPoolByTxIDStatusV3(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalLiquidationRedeemRequestStatusPrefixV3()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalRedeemRequestFromLiquidationByTxIDStatusError, err)
+	}
+
+	return data, nil
+}
+
+func StoreRedeemRequestFromLiquidationPoolByTxIDStatusV3(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalLiquidationRedeemRequestStatusPrefixV3()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalRedeemRequestFromLiquidationByTxIDStatusError, err)
+	}
+
+	return nil
+}
+
+func StoreLiquidationByExchangeRateStatus(stateDB *StateDB, beaconHeight uint64, custodianAddress string, statusContent []byte) error {
+	statusType := PortalLiquidationTpExchangeRatesStatusPrefix()
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	statusSuffix := append(beaconHeightBytes, []byte(custodianAddress)...)
+
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StoreLiquidationByExchangeRatesStatusError, err)
+	}
+
+	return nil
+}
+
+func GetLiquidationByExchangeRateStatus(stateDB *StateDB, beaconHeight uint64, custodianAddress string) ([]byte, error) {
+	statusType := PortalLiquidationTpExchangeRatesStatusPrefix()
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	statusSuffix := append(beaconHeightBytes, []byte(custodianAddress)...)
+
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetLiquidationByExchangeRatesStatusError, err)
+	}
+
+	return data, nil
+}
+
+func StoreLiquidationByExchangeRateStatusV3(stateDB *StateDB, beaconHeight uint64, custodianAddress string, statusContent []byte) error {
+	statusType := PortalLiquidationTpExchangeRatesStatusPrefixV3()
+	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
+	statusSuffix := append(beaconHeightBytes, []byte(custodianAddress)...)
+
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StoreLiquidationByExchangeRatesStatusError, err)
+	}
+
+	return nil
+}
+
+func StoreCustodianTopupStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalLiquidationCustodianDepositStatusPrefix()
+	statusSuffix := []byte(txID)
+
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StoreCustodianTopupStatusError, err)
+	}
+
+	return nil
+}
+
+func GetCustodianTopupStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalLiquidationCustodianDepositStatusPrefix()
+	statusSuffix := []byte(txID)
+
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetCustodianTopupStatusError, err)
+	}
+
+	return data, nil
+}
+
+func StoreCustodianTopupStatusV3(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalLiquidationCustodianDepositStatusPrefixV3()
+	statusSuffix := []byte(txID)
+
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StoreCustodianTopupStatusError, err)
+	}
+
+	return nil
+}
+
+func GetCustodianTopupStatusV3(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalLiquidationCustodianDepositStatusPrefixV3()
+	statusSuffix := []byte(txID)
+
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetCustodianTopupStatusError, err)
+	}
+
+	return data, nil
+}
+
+func StoreCustodianTopupWaitingPortingStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalTopUpWaitingPortingStatusPrefix()
+	statusSuffix := []byte(txID)
+
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StoreCustodianTopupStatusError, err)
+	}
+
+	return nil
+}
+
+func GetCustodianTopupWaitingPortingStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalTopUpWaitingPortingStatusPrefix()
+	statusSuffix := []byte(txID)
+
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetCustodianTopupStatusError, err)
+	}
+
+	return data, nil
+}
+
+func StoreCustodianTopupWaitingPortingStatusV3(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalTopUpWaitingPortingStatusPrefixV3()
+	statusSuffix := []byte(txID)
+
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StoreCustodianTopupStatusError, err)
+	}
+
+	return nil
+}
+
+func GetCustodianTopupWaitingPortingStatusV3(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalTopUpWaitingPortingStatusPrefixV3()
+	statusSuffix := []byte(txID)
+
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetCustodianTopupStatusError, err)
+	}
+
+	return data, nil
+}
+
 func IsPortingRequestIdExist(stateDB *StateDB, statusSuffix []byte) (bool, error) {
 	key := GeneratePortalStatusObjectKey(PortalPortingRequestStatusPrefix(), statusSuffix)
 	_, has, err := stateDB.getPortalStatusByKey(key)
 
 	if err != nil {
-		return false, NewStatedbError(GetPortingRequestStatusError, err)
+		return false, NewStatedbError(GetPortalPortingRequestStatusError, err)
 	}
 
 	if !has {
@@ -515,6 +692,72 @@ func GetPortalRequestUnlockCollateralStatus(stateDB *StateDB, txID string) ([]by
 	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
 	if err != nil {
 		return []byte{}, NewStatedbError(GetPortalRequestUnlockCollateralStatusError, err)
+	}
+
+	return data, nil
+}
+
+func StorePortalCustodianWithdrawCollateralStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalCustodianWithdrawStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalCustodianWithdrawCollateralStatusError, err)
+	}
+
+	return nil
+}
+
+func GetPortalCustodianWithdrawCollateralStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalCustodianWithdrawStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalCustodianWithdrawCollateralStatusError, err)
+	}
+
+	return data, nil
+}
+
+func StorePortalCustodianWithdrawCollateralStatusV3(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalCustodianWithdrawStatusPrefixV3()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalCustodianWithdrawCollateralStatusError, err)
+	}
+
+	return nil
+}
+
+func GetPortalCustodianWithdrawCollateralStatusV3(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalCustodianWithdrawStatusPrefixV3()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalCustodianWithdrawCollateralStatusError, err)
+	}
+
+	return data, nil
+}
+
+func StorePortalExchangeRateStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalExchangeRatesRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalExchangeRatesStatusError, err)
+	}
+
+	return nil
+}
+
+func GetPortalExchangeRateStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalExchangeRatesRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalExchangeRatesStatusError, err)
 	}
 
 	return data, nil
@@ -646,4 +889,58 @@ func GetAllRewardFeatureState(
 	}
 
 	return result, nil
+}
+
+//======================  Portal external tx (ETH tx)  ======================
+func InsertPortalExternalTxHashSubmitted(stateDB *StateDB, uniqueEthTx []byte) error {
+	key := GeneratePortalExternalTxObjectKey(uniqueEthTx)
+	value := NewPortalExternalTxStateWithValue(uniqueEthTx)
+	err := stateDB.SetStateObject(PortalExternalTxObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(InsertPortalExternalTxHashSubmittedError, err)
+	}
+	return nil
+}
+
+// IsPortalExternalTxHashSubmitted returns true if eth tx hash was submitted to portal and otherwise
+func IsPortalExternalTxHashSubmitted(stateDB *StateDB, uniqueExtTx []byte) (bool, error) {
+	key := GeneratePortalExternalTxObjectKey(uniqueExtTx)
+	extTxState, has, err := stateDB.getPortalExternalTxState(key)
+	if err != nil {
+		return false, NewStatedbError(IsPortalExternalTxHashSubmittedError, err)
+	}
+	if !has {
+		return false, nil
+	}
+	if bytes.Compare(extTxState.UniqueExternalTx(), uniqueExtTx) != 0 {
+		panic("same key wrong value")
+	}
+	return has, nil
+}
+
+//======================  Portal proof  ======================
+func StoreWithdrawCollateralConfirmProof(stateDB *StateDB, txID common.Hash, height uint64) error {
+	key := GeneratePortalConfirmProofObjectKey(withdrawCollateralProofType, txID)
+	value := NewPortalConfirmProofStateWithValue(txID, height)
+	err := stateDB.SetStateObject(PortalConfirmProofObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreWithdrawCollateralConfirmError, err)
+	}
+	return nil
+}
+
+func GetWithdrawCollateralConfirmProof(stateDB *StateDB, txID common.Hash) (uint64, error) {
+	key := GeneratePortalConfirmProofObjectKey(withdrawCollateralProofType, txID)
+	confirmProofState, has, err := stateDB.getPortalConfirmProofState(key)
+	if err != nil {
+		return 0, NewStatedbError(GetWithdrawCollateralConfirmError, err)
+	}
+	if !has {
+		return 0, NewStatedbError(GetWithdrawCollateralConfirmError, fmt.Errorf("withdraw confirm with txID %+v not found", txID))
+	}
+	tempTxID := confirmProofState.TxID()
+	if !tempTxID.IsEqual(&txID) {
+		panic("panic withdraw collateral confirm state")
+	}
+	return confirmProofState.Height(), nil
 }

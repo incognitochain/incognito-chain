@@ -747,7 +747,7 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 	}
 	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
 	if err != nil {
-		return 0, fmt.Errorf("init beacon consensus statedb return error", err)
+		return 0, fmt.Errorf("init beacon consensus statedb return error %v", err)
 	}
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }
