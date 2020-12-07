@@ -2,25 +2,41 @@ package model
 
 import (
 	"github.com/incognitochain/incognito-chain/metadata"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
 type Transaction struct {
-	ShardId  			byte `json:"ShardId"`
-	ShardHash 			string `json:"ShardHash"`
-	ShardHeight 		uint64 `json:"ShardHeight"`
-	Hash                string `json:"Hash"`
-	Version  int8   `json:"Version"`
-	Type     string `json:"Type"` // Transaction type
-	LockTime int64  `json:"LockTime"`
-	Fee      uint64 `json:"Fee"` // Fee applies: always consant
-	Info     []byte // 512 bytes
-	SigPubKey            []byte `json:"SigPubKey,omitempty"` // 33 bytes
-	Sig                  []byte `json:"Sig,omitempty"`       //
-	Proof *zkp.PaymentProof  `json:"Proof,omitempty"`
+	ShardHash 			 string `json:"ShardHash"`
+	ShardHeight 		 uint64 `json:"ShardHeight"`
+	TxSize				 uint64 `json:"TxSize"`
+	Index                uint64 `json:"Index"`
+	ShardId  			 byte `json:"ShardId"`
+	Hash                 string `json:"Hash"`
+	Version  			 int8   `json:"Version"`
+	Type     			 string `json:"Type"` // Transaction type
+	LockTime 			 string  `json:"LockTime"`
+	Fee      			 uint64 `json:"Fee"` // Fee applies: always constant
+	Image                string  `json:"Image"`
+	IsPrivacy            bool `json:"IsPrivacy"`
+	Proof           	 *string `json:"Proof,omitempty"`
+	ProofDetail          jsonresult.ProofDetail       `json:"ProofDetail"`
+	InputCoinPubKey 	 string            `json:"InputCoinPubKey"`
+	SigPubKey            string `json:"SigPubKey,omitempty"` // 33 bytes
+	Sig                  string `json:"Sig,omitempty"`       //
 	PubKeyLastByteSender byte
-	Metadata metadata.Metadata
-	TransactionCustomToken *TransactionCustomToken
+	Metadata                      metadata.Metadata      `json:"Metadata"`
+	CustomTokenData               string      `json:"CustomTokenData"`
+	PrivacyCustomTokenID          string      `json:"PrivacyCustomTokenID"`
+	PrivacyCustomTokenName        string      `json:"PrivacyCustomTokenName"`
+	PrivacyCustomTokenSymbol      string      `json:"PrivacyCustomTokenSymbol"`
+	PrivacyCustomTokenData        string      `json:"PrivacyCustomTokenData"`
+	PrivacyCustomTokenProofDetail jsonresult.ProofDetail `json:"PrivacyCustomTokenProofDetail"`
+	PrivacyCustomTokenProof 		*string `json:"PrivacyCustomTokenProof"`
+	PrivacyCustomTokenIsPrivacy   bool        `json:"PrivacyCustomTokenIsPrivacy"`
+	PrivacyCustomTokenFee         uint64      `json:"PrivacyCustomTokenFee"`
+	IsInMempool bool `json:"IsInMempool"`
+	IsInBlock   bool `json:"IsInBlock"`
+	Info     			string `json:"Info"` // 512 bytes
 }
 
 type TransactionCustomToken struct {

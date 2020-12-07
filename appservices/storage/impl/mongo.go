@@ -54,12 +54,10 @@ const (
 	LockedCollateral      = "LockedCollateral"
 )
 
-var ctx = context.TODO()
-
 func init() {
 	log.Printf("Init mongodb")
 	clientOptions := options.Client().ApplyURI("mongodb://127.0.0.1:27017/")
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 		log.Fatal(err)
 	}

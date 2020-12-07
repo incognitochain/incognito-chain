@@ -4,6 +4,11 @@ import (
 	"context"
 	"github.com/incognitochain/incognito-chain/appservices/data"
 	"github.com/incognitochain/incognito-chain/appservices/storage/model"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"time"
 )
 
 func StoreLatestBeaconFinalState(ctx context.Context, beacon *data.Beacon) error {
@@ -431,50 +436,115 @@ func getTransactionFromShardState(shard *data.Shard) []model.Transaction {
 			ShardId:              shard.ShardID,
 			ShardHash:            shard.BlockHash,
 			ShardHeight:          shard.BeaconHeight,
+			Image:                 "",
+			IsPrivacy:             transaction.IsPrivacy,
+			TxSize:				  transaction.TxSize,
+			Index:                transaction.Index,
 			Hash:                 transaction.Hash,
 			Version:              transaction.Version,
 			Type:                 transaction.Type,
-			LockTime:             transaction.LockTime,
+			LockTime:             time.Unix(transaction.LockTime, 0).Format(common.DateOutputFormat),
 			Fee:                  transaction.Fee,
-			Info:                 transaction.Info,
-			SigPubKey:            transaction.SigPubKey,
-			Sig:                  transaction.Sig,
-			Proof:                transaction.Proof,
+			Info:                 string(transaction.Info),
+			SigPubKey:            base58.Base58Check{}.Encode(transaction.SigPubKey, 0x0),
+			Sig:                  base58.Base58Check{}.Encode(transaction.Sig, 0x0),
 			Metadata:             transaction.Metadata,
 			PubKeyLastByteSender: transaction.PubKeyLastByteSender,
+			InputCoinPubKey: transaction.InputCoinPubKey,
+			IsInBlock: true,
+			IsInMempool: false,
 		}
-
+		newTransaction.ProofDetail, newTransaction.Proof = 	getProofDetail(transaction)
+		newTransaction.CustomTokenData =  ""
 		if transaction.TxPrivacy != nil {
-			customTokenTransaction := &model.TransactionCustomToken{
-				Tx: model.Transaction{
-					ShardId:              shard.ShardID,
-					ShardHash:            shard.BlockHash,
-					ShardHeight:          shard.Height,
-					Hash:                 transaction.Hash,
-					Version:              transaction.Version,
-					Type:                 transaction.TxPrivacy.Tx.Type,
-					LockTime:             transaction.LockTime,
-					Fee:                  transaction.Fee,
-					Info:                 transaction.Info,
-					SigPubKey:            transaction.TxPrivacy.Tx.SigPubKey,
-					Sig:                  transaction.TxPrivacy.Tx.Sig,
-					Proof:                transaction.TxPrivacy.Tx.Proof,
-					PubKeyLastByteSender: transaction.TxPrivacy.Tx.PubKeyLastByteSender,
-					Metadata:             transaction.Metadata,
-				},
-				PropertyID:     transaction.TxPrivacy.PropertyID,
-				PropertyName:   transaction.TxPrivacy.PropertyName,
-				PropertySymbol: transaction.TxPrivacy.PropertySymbol,
-				Type:           transaction.TxPrivacy.Type,
-				Mintable:       transaction.TxPrivacy.Mintable,
-				Amount:         transaction.TxPrivacy.Amount,
-			}
-			newTransaction.TransactionCustomToken = customTokenTransaction
+			newTransaction.PrivacyCustomTokenID = transaction.TxPrivacy.PropertyID
+			newTransaction.PrivacyCustomTokenName = transaction.TxPrivacy.PropertyName
+			newTransaction.PrivacyCustomTokenSymbol = transaction.TxPrivacy.PropertySymbol
+			newTransaction.PrivacyCustomTokenData = transaction.PrivacyCustomTokenData
+			newTransaction.PrivacyCustomTokenIsPrivacy = transaction.TxPrivacy.Tx.IsPrivacy
+			newTransaction.PrivacyCustomTokenFee = transaction.TxPrivacy.Tx.Fee
+			newTransaction.PrivacyCustomTokenProofDetail, newTransaction.PrivacyCustomTokenProof = getProofDetail(transaction.TxPrivacy.Tx)
 		}
 		transactions = append(transactions, newTransaction)
 	}
 	return transactions
 }
+
+func getProofDetail (normalTx *data.Transaction) (jsonresult.ProofDetail, *string) {
+	if normalTx.Proof == nil {
+		return jsonresult.ProofDetail{}, nil
+	}
+	b, _:= normalTx.Proof.MarshalJSON()
+	proof := string(b)
+	return jsonresult.ProofDetail{
+		InputCoins:  getProofDetailInputCoin(normalTx.Proof),
+		OutputCoins: getProofDetailOutputCoin(normalTx.Proof),
+	}, &proof
+}
+
+func getProofDetailInputCoin(proof *zkp.PaymentProof) []*jsonresult.CoinDetail {
+	inputCoins := make([]*jsonresult.CoinDetail, 0)
+	for _, input := range proof.GetInputCoins() {
+		in := jsonresult.CoinDetail{
+			CoinDetails: jsonresult.Coin{},
+		}
+		if input.CoinDetails != nil {
+			in.CoinDetails.Value = input.CoinDetails.GetValue()
+			in.CoinDetails.Info = base58.Base58Check{}.Encode(input.CoinDetails.GetInfo(), 0x0)
+			if input.CoinDetails.GetCoinCommitment() != nil {
+				in.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(input.CoinDetails.GetCoinCommitment().ToBytesS(), 0x0)
+			}
+			if input.CoinDetails.GetRandomness() != nil {
+				in.CoinDetails.Randomness = *input.CoinDetails.GetRandomness()
+			}
+			if input.CoinDetails.GetSNDerivator() != nil {
+				in.CoinDetails.SNDerivator = *input.CoinDetails.GetSNDerivator()
+			}
+			if input.CoinDetails.GetSerialNumber() != nil {
+				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)
+			}
+			if input.CoinDetails.GetPublicKey() != nil {
+				in.CoinDetails.PublicKey = base58.Base58Check{}.Encode(input.CoinDetails.GetPublicKey().ToBytesS(), 0x0)
+			}
+		}
+		inputCoins = append(inputCoins, &in)
+	}
+	return inputCoins
+}
+
+func getProofDetailOutputCoin(proof *zkp.PaymentProof) []*jsonresult.CoinDetail {
+	outputCoins := make([]*jsonresult.CoinDetail, 0)
+	for _, output := range proof.GetOutputCoins() {
+		out := jsonresult.CoinDetail{
+			CoinDetails: jsonresult.Coin{},
+		}
+		if output.CoinDetails != nil {
+			out.CoinDetails.Value = output.CoinDetails.GetValue()
+			out.CoinDetails.Info = base58.Base58Check{}.Encode(output.CoinDetails.GetInfo(), 0x0)
+			if output.CoinDetails.GetCoinCommitment() != nil {
+				out.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(output.CoinDetails.GetCoinCommitment().ToBytesS(), 0x0)
+			}
+			if output.CoinDetails.GetRandomness() != nil {
+				out.CoinDetails.Randomness = *output.CoinDetails.GetRandomness()
+			}
+			if output.CoinDetails.GetSNDerivator() != nil {
+				out.CoinDetails.SNDerivator = *output.CoinDetails.GetSNDerivator()
+			}
+			if output.CoinDetails.GetSerialNumber() != nil {
+				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)
+			}
+			if output.CoinDetails.GetPublicKey() != nil {
+				out.CoinDetails.PublicKey = base58.Base58Check{}.Encode(output.CoinDetails.GetPublicKey().ToBytesS(), 0x0)
+			}
+			if output.CoinDetailsEncrypted != nil {
+				out.CoinDetailsEncrypted = base58.Base58Check{}.Encode(output.CoinDetailsEncrypted.Bytes(), 0x0)
+			}
+		}
+		outputCoins = append(outputCoins , &out)
+	}
+	return outputCoins
+}
+
 
 func getInputCoinFromShardState(shard *data.Shard) []model.InputCoin {
 	inputCoins := make([]model.InputCoin, 0, len(shard.Transactions))
