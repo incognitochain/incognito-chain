@@ -406,7 +406,8 @@ func (e *BLSBFT_V3) processWithEnoughVotesShardChain(
 	v.block.(blockValidation).AddValidationField(validationData)
 
 	// validate and previous block
-	if previousProposeBlockInfo, ok := e.receiveBlockByHash[v.block.GetPrevHash().String()]; ok {
+	if previousProposeBlockInfo, ok := e.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
+		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
 		previousValidationData, err := createBLSAggregatedSignatures(previousCommittees, previousProposeBlockInfo.block.GetValidationField(), previousProposeBlockInfo.votes)
 		if err != nil {
 			e.Logger.Error(err)

@@ -203,8 +203,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 				1, initBlock.Header.Hash(),
 				committeestate.NewBeaconCommitteeStateV1())
 	}
-	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter()
-	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeeEngine, missingSignatureCounter)
+	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeeEngine)
 	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
@@ -218,6 +217,10 @@ func (blockchain *BlockChain) initBeaconState() error {
 	if err := statedb.StoreBeaconCommittee(initBeaconBestState.consensusStateDB, initBeaconBestState.GetBeaconCommittee()); err != nil {
 		return err
 	}
+
+	committees := initBeaconBestState.GetShardCommitteeFlattenList()
+	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter(committees)
+	initBeaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
 
 	consensusRootHash, err := initBeaconBestState.consensusStateDB.Commit(true)
 	err = initBeaconBestState.consensusStateDB.Database().TrieDB().Commit(consensusRootHash, false)

@@ -102,7 +102,6 @@ func NewBeaconBestState() *BeaconBestState {
 }
 func NewBeaconBestStateWithConfig(netparam *Params,
 	beaconCommitteeEngine committeestate.BeaconCommitteeEngine,
-	missingSignatureCounter signaturecounter.IMissingSignatureCounter,
 ) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
@@ -120,8 +119,11 @@ func NewBeaconBestStateWithConfig(netparam *Params,
 	beaconBestState.BlockInterval = netparam.MinBeaconBlockInterval
 	beaconBestState.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
 	beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine
-	beaconBestState.missingSignatureCounter = missingSignatureCounter
 	return beaconBestState
+}
+
+func (curView *BeaconBestState) SetMissingSignatureCounter(missingSignatureCounter signaturecounter.IMissingSignatureCounter) {
+	curView.missingSignatureCounter = missingSignatureCounter
 }
 
 func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
@@ -226,6 +228,19 @@ func (beaconBestState *BeaconBestState) GetShardCommittee() (res map[byte][]inco
 		res[index] = element
 	}
 	return res
+}
+
+func (beaconBestState *BeaconBestState) GetShardCommitteeFlattenList() []string {
+
+	committees := []string{}
+	for _, committeeStructs := range beaconBestState.GetShardCommittee() {
+		for _, committee := range committeeStructs {
+			res, _ := committee.ToBase58()
+			committees = append(committees, res)
+		}
+	}
+
+	return committees
 }
 
 func (beaconBestState *BeaconBestState) GetAShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey {
@@ -584,12 +599,34 @@ func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, err
 	return bridgeTokenIDs, nil
 }
 
+func (beaconBestState *BeaconBestState) IsSwapTime(beaconHeight uint64, chainParamEpoch uint64) bool {
+	if beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+		if beaconHeight%chainParamEpoch == 0 {
+			return true
+		} else {
+			return false
+		}
+	}
+	if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+		if beaconHeight%chainParamEpoch == 1 {
+			return true
+		} else {
+			return false
+		}
+	}
+	return false
+}
+
 func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithValue(
 	params *Params,
 	beaconInstructions [][]string,
 	isFoundRandomInstruction bool,
 	isBeaconRandomTime bool,
 ) *committeestate.BeaconCommitteeStateEnvironment {
+	slashingPenalty := make(map[string]signaturecounter.Penalty)
+	if beaconBestState.BeaconHeight != 1 && beaconBestState.CommitteeEngineVersion() == 2 {
+		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
+	}
 	return &committeestate.BeaconCommitteeStateEnvironment{
 		BeaconHeight:                      beaconBestState.BeaconHeight,
 		BeaconHash:                        beaconBestState.BestBlockHash,
@@ -607,7 +644,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		NumberOfFixedBeaconBlockValidator: NumberOfFixedBeaconBlockValidators,
 		NumberOfFixedShardBlockValidator:  NumberOfFixedShardBlockValidators,
 		MaxShardCommitteeSize:             params.MaxShardCommitteeSize,
-		MissingSignaturePenalty:           beaconBestState.missingSignatureCounter.GetAllSlashingPenalty(),
+		MissingSignaturePenalty:           slashingPenalty,
 	}
 }
 
@@ -775,7 +812,10 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 }
 
 func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
-	curView.missingSignatureCounter = signaturecounter.NewSignatureCounterWithValue(make(map[string]signaturecounter.MissingSignature))
+	committees := curView.GetShardCommitteeFlattenList()
+	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter(committees)
+	curView.SetMissingSignatureCounter(missingSignatureCounter)
+
 	lastEpochBeaconHeight := (curView.Epoch-1)*bc.config.ChainParams.Epoch + 1
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height

@@ -30,6 +30,13 @@ var _ = func() (_ struct{}) {
 }()
 
 func TestSignatureCounter_AddMissingSignature(t *testing.T) {
+	missingSignatureFull := make(map[string]MissingSignature)
+	aggregatedMissingSignatureFull := make(map[string]uint)
+	for _, v := range committeePublicKeys {
+		missingSignatureFull[v] = NewMissingSignature()
+		aggregatedMissingSignatureFull[v] = 0
+	}
+
 	type fields struct {
 		missingSignature           map[string]MissingSignature
 		aggregatedMissingSignature map[string]MissingSignature
@@ -38,8 +45,6 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		data       string
 		committees []incognitokey.CommitteePublicKey
 	}
-
-	aggregatedMissingSignature := make(map[string]uint)
 
 	tests := []struct {
 		name       string
@@ -79,7 +84,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "valid input, committee slot 3 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]MissingSignature),
+				missingSignature: missingSignatureFull,
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"1I6pNHXngYdBKspO08xZvk3fkAaRQ9VpD+GhmwfT2b8p3PIYzouW4q/BFDxinllrIwUqq+XpugEiDjdmpfsHCAA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,1,2],\"AggSig\":\"LuFMS0uCziQOC/AL83xZb0Mortu+3lvx5mZ/kCtyJWE=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
@@ -110,7 +115,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "valid input, committee slot 3 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]MissingSignature),
+				missingSignature: missingSignatureFull,
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"4lEXt6Z5RwRJmG7vK/6q2pLwGc0EcWi3Pw2D+rYvwBM/3YwgDjElAnH8Qb2OrAX4Lx3APk0Wo3oHYp1eO9hj7gA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,1,2],\"AggSig\":\"B93JfdZq3Q110tbR4fC7BWQim3NYICJRG/DZ3xlHw04=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
@@ -141,7 +146,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "valid input, committee slot 2 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]MissingSignature),
+				missingSignature: missingSignatureFull,
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"LGcjV69UWOBv90wEVFgeq8pMNRWXaxqVPr82g1wqWA5XMmbdq7TZzECtPJl8pCkrSyzQnGVduAVaODGQrykTNQE=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,1,3],\"AggSig\":\"Flod04E7A67JW4uPp43RGGLJR6j5ZnS8ZMrmz7MdE/A=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
@@ -172,7 +177,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "valid input, committee slot 1 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]MissingSignature),
+				missingSignature: missingSignatureFull,
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"HrpGEaXOUzydou9S9YE96OD48dSAtgI3zzIC2eisytQJJhtj0MgEwqU9MP1HswRk87NW3msE8w7Uyi7C+npWogA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,2,3],\"AggSig\":\"HTraoh3hx22W3iRl3SB9a7kv+p1N+ESGodAp28yjRDk=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
@@ -203,7 +208,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "valid input, committee slot 1 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]MissingSignature),
+				missingSignature: missingSignatureFull,
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"uSpMynim78XpsufwR6imkWcNKT6c5wwz4Nyb1GR+d3FplCfBwSQXNCd3bCgNGhieBuwGqSg5C5KG+zThOpY4rAA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,2,3],\"AggSig\":\"ocFaeoEmrzq0Ivg1N5gAvkuW4xsyDnC+NQiDUnYqQPE=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
@@ -234,7 +239,7 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		{
 			name: "valid input, committee slot 1 miss 1 signature",
 			fields: fields{
-				missingSignature: make(map[string]MissingSignature),
+				missingSignature: missingSignatureFull,
 			},
 			args: args{
 				data:       "{\"ProducerBLSSig\":\"5fp+nanu4VJoVIU5ZpA+uRASzkrjJgZMZ5eZOfYY5kwRWfnhWW4HlZhZdJ+dw2nzVzoR0KTyiG4Hno+TfMPvewE=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,2,3],\"AggSig\":\"idOzTlb8oEoL6VsZ7UsQdPiFVf8HUX4Pad+8xxlE1/0=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
@@ -278,8 +283,11 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 			}
 			for k, v := range s.missingSignature {
 				if v.Missing != 0 {
-					aggregatedMissingSignature[k] += 1
+					aggregatedMissingSignatureFull[k] += 1
 				}
+			}
+			for k, _ := range missingSignatureFull {
+				missingSignatureFull[k] = NewMissingSignature()
 			}
 		})
 	}
@@ -289,13 +297,106 @@ func TestSignatureCounter_AddMissingSignature(t *testing.T) {
 		committeePublicKeys[3]: 2,
 	}
 	for wantK, wantV := range wantAggregatedMissingSignature {
-		if gotV, ok := aggregatedMissingSignature[wantK]; !ok {
-			t.Errorf("AddMissingSignature() missingSignature NOT FOUND want %v ", wantK)
+		if gotV, ok := aggregatedMissingSignatureFull[wantK]; !ok {
+			t.Errorf("aggregatedMissingSignatureFull missingSignature NOT FOUND want %v ", wantK)
 		} else {
 			if wantV != gotV {
-				t.Errorf("AddMissingSignature() number of missingSignature got = %+v, want = %v ", gotV, wantV)
+				t.Errorf("aggregatedMissingSignatureFull number of missingSignature got = %+v, want = %v ", gotV, wantV)
 			}
 		}
+	}
+}
+func TestSignatureCounter_AddMissingSignature2(t *testing.T) {
+	missingSignature1 := make(map[string]MissingSignature)
+	missingSignature1[committeePublicKeys[0]] = NewMissingSignature()
+	missingSignature1[committeePublicKeys[2]] = NewMissingSignature()
+
+	missingSignature2 := make(map[string]MissingSignature)
+	missingSignature2[committeePublicKeys[1]] = NewMissingSignature()
+	missingSignature2[committeePublicKeys[0]] = NewMissingSignature()
+	missingSignature2[committeePublicKeys[2]] = NewMissingSignature()
+
+	type fields struct {
+		missingSignature           map[string]MissingSignature
+		aggregatedMissingSignature map[string]MissingSignature
+	}
+	type args struct {
+		data       string
+		committees []incognitokey.CommitteePublicKey
+	}
+
+	tests := []struct {
+		name       string
+		fields     fields
+		args       args
+		wantFields fields
+		wantErr    bool
+	}{
+		{
+			name: "valid input, committee slot 1 miss 1 signature",
+			fields: fields{
+				missingSignature: missingSignature1,
+			},
+			args: args{
+				data:       "{\"ProducerBLSSig\":\"HrpGEaXOUzydou9S9YE96OD48dSAtgI3zzIC2eisytQJJhtj0MgEwqU9MP1HswRk87NW3msE8w7Uyi7C+npWogA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,2,3],\"AggSig\":\"HTraoh3hx22W3iRl3SB9a7kv+p1N+ESGodAp28yjRDk=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
+				committees: committeePublicKeyStructs,
+			},
+			wantFields: fields{
+				missingSignature: map[string]MissingSignature{
+					committeePublicKeys[0]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[2]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid input, committee slot 1 miss 1 signature",
+			fields: fields{
+				missingSignature: missingSignature2,
+			},
+			args: args{
+				data:       "{\"ProducerBLSSig\":\"uSpMynim78XpsufwR6imkWcNKT6c5wwz4Nyb1GR+d3FplCfBwSQXNCd3bCgNGhieBuwGqSg5C5KG+zThOpY4rAA=\",\"ProducerBriSig\":null,\"ValidatiorsIdx\":[0,2,3],\"AggSig\":\"ocFaeoEmrzq0Ivg1N5gAvkuW4xsyDnC+NQiDUnYqQPE=\",\"BridgeSig\":[\"\",\"\",\"\"]}",
+				committees: committeePublicKeyStructs,
+			},
+			wantFields: fields{
+				missingSignature: map[string]MissingSignature{
+					committeePublicKeys[0]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+					committeePublicKeys[1]: MissingSignature{
+						Missing: 1,
+						Total:   1,
+					},
+					committeePublicKeys[2]: MissingSignature{
+						Missing: 0,
+						Total:   1,
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &MissingSignatureCounter{
+				missingSignature: tt.fields.missingSignature,
+				lock:             new(sync.RWMutex),
+			}
+			if err := s.AddMissingSignature(tt.args.data, tt.args.committees); (err != nil) != tt.wantErr {
+				t.Errorf("AddMissingSignature() error = %v, wantErr %v", err, tt.wantErr)
+			} else {
+				if !reflect.DeepEqual(s.missingSignature, tt.wantFields.missingSignature) {
+					t.Errorf("AddMissingSignature() missingSignature = got %v, want %v", s.missingSignature, tt.wantFields.missingSignature)
+				}
+			}
+		})
 	}
 }
 

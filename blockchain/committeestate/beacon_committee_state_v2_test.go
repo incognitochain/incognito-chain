@@ -945,7 +945,8 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				),
 				env: &BeaconCommitteeStateEnvironment{
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
-						key: samplePenalty,
+						key:  samplePenalty,
+						key7: samplePenalty,
 					},
 					NumberOfFixedShardBlockValidator: 0,
 					ConsensusStateDB:                 sDB,

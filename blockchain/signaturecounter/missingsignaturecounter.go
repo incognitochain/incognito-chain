@@ -48,7 +48,7 @@ type IMissingSignatureCounter interface {
 	AddMissingSignature(validationData string, committees []incognitokey.CommitteePublicKey) error
 	GetAllSlashingPenalty() map[string]Penalty
 	GetSlashingPenalty(key *incognitokey.CommitteePublicKey) (bool, Penalty, error)
-	Reset()
+	Reset(committees []string)
 	Copy() IMissingSignatureCounter
 }
 
@@ -73,15 +73,11 @@ func (s *MissingSignatureCounter) MissingSignature() map[string]MissingSignature
 	return missingSignature
 }
 
-func NewDefaultSignatureCounter() *MissingSignatureCounter {
-	return &MissingSignatureCounter{
-		missingSignature: make(map[string]MissingSignature),
-		penalties:        defaultRule,
-		lock:             new(sync.RWMutex),
+func NewDefaultSignatureCounter(committees []string) *MissingSignatureCounter {
+	missingSignature := make(map[string]MissingSignature)
+	for _, v := range committees {
+		missingSignature[v] = NewMissingSignature()
 	}
-}
-
-func NewSignatureCounterWithValue(missingSignature map[string]MissingSignature) *MissingSignatureCounter {
 	return &MissingSignatureCounter{
 		missingSignature: missingSignature,
 		penalties:        defaultRule,
@@ -89,7 +85,7 @@ func NewSignatureCounterWithValue(missingSignature map[string]MissingSignature) 
 	}
 }
 
-func (s *MissingSignatureCounter) AddMissingSignature(data string, committees []incognitokey.CommitteePublicKey) error {
+func (s *MissingSignatureCounter) AddMissingSignature(data string, toBeSignedCommittees []incognitokey.CommitteePublicKey) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -97,21 +93,22 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, committees []
 	if err != nil {
 		return err
 	}
-	tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
+	tempToBeSignedCommittees, _ := incognitokey.CommitteeKeyListToString(toBeSignedCommittees)
 	signedCommittees := make(map[string]struct{})
 	for _, idx := range validationData.ValidatiorsIdx {
-		signedCommittees[tempCommittees[idx]] = struct{}{}
+		signedCommittees[tempToBeSignedCommittees[idx]] = struct{}{}
 	}
-	for _, committee := range tempCommittees {
-		missingSignature, ok := s.missingSignature[committee]
+	for _, toBeSignedCommittee := range tempToBeSignedCommittees {
+		missingSignature, ok := s.missingSignature[toBeSignedCommittee]
 		if !ok {
-			missingSignature = NewMissingSignature()
+			// skip toBeSignedCommittee not in current list
+			continue
 		}
 		missingSignature.Total++
-		if _, ok := signedCommittees[committee]; !ok {
+		if _, ok := signedCommittees[toBeSignedCommittee]; !ok {
 			missingSignature.Missing++
 		}
-		s.missingSignature[committee] = missingSignature
+		s.missingSignature[toBeSignedCommittee] = missingSignature
 	}
 	return nil
 }
@@ -132,8 +129,11 @@ func (s MissingSignatureCounter) GetAllSlashingPenalty() map[string]Penalty {
 
 func getSlashingPenalty(numberOfMissingSig uint, total uint, penalties []Penalty) Penalty {
 	penalty := NewPenalty()
+	if total == 0 {
+		return penalty
+	}
+	missedPercent := numberOfMissingSig * 100 / total
 	for _, penaltyLevel := range penalties {
-		missedPercent := numberOfMissingSig * 100 / total
 		if missedPercent >= penaltyLevel.MinPercent {
 			penalty = penaltyLevel
 		}
@@ -160,11 +160,16 @@ func (s MissingSignatureCounter) GetSlashingPenalty(key *incognitokey.CommitteeP
 	return true, penalty, nil
 }
 
-func (s *MissingSignatureCounter) Reset() {
+func (s *MissingSignatureCounter) Reset(committees []string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	s.missingSignature = make(map[string]MissingSignature)
+	missingSignature := make(map[string]MissingSignature)
+	for _, v := range committees {
+		missingSignature[v] = NewMissingSignature()
+	}
+
+	s.missingSignature = missingSignature
 }
 
 func (s *MissingSignatureCounter) Copy() IMissingSignatureCounter {
