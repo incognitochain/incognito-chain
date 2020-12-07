@@ -230,6 +230,10 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
+
+	if newBestState.BeaconHeight == blockchain.config.ChainParams.ConsensusV3Epoch {
+		newBestState.upgradeCommitteeEngineV2()
+	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, newBestState))
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v 🔗, "+

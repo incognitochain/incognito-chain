@@ -455,3 +455,25 @@ func (shardBestState *ShardBestState) ShardCommitteeEngine() committeestate.Shar
 func (shardBestState *ShardBestState) CommitteeEngineVersion() uint {
 	return shardBestState.shardCommitteeEngine.Version()
 }
+
+// @NOTICE: DO NOT UPDATE IN BLOCK WITH SWAP INSTRUCTION
+func (shardBestState *ShardBestState) upgradeCommitteeEngineV2() {
+	if shardBestState.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
+		return
+	}
+
+	shardCommitteeState := make([]incognitokey.CommitteePublicKey, len(shardBestState.GetShardCommittee()))
+	copy(shardCommitteeState, shardBestState.GetShardCommittee())
+
+	newShardCommitteeStateV2 := committeestate.NewShardCommitteeStateV2WithValue(
+		shardCommitteeState,
+		shardBestState.BestBeaconHash,
+	)
+
+	shardBestState.shardCommitteeEngine = committeestate.NewShardCommitteeEngineV2(
+		shardBestState.ShardHeight,
+		shardBestState.BestBlockHash,
+		shardBestState.ShardID,
+		newShardCommitteeStateV2,
+	)
+}

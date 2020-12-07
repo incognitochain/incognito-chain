@@ -108,6 +108,7 @@ var genesisParamsTestnetNew *GenesisParams
 var genesisParamsTestnet2New *GenesisParams
 var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
+var EpochLengthV2 uint64
 
 func SetupParam() {
 	// FOR TESTNET
@@ -365,11 +366,14 @@ func SetupParam() {
 	if IsTestNet {
 		if !IsTestNet2 {
 			GenesisParam = genesisParamsTestnetNew
+			EpochLengthV2 = TestnetEpochV2
 		} else {
 			GenesisParam = genesisParamsTestnet2New
+			EpochLengthV2 = Testnet2EpochV2
 		}
 	} else {
 		GenesisParam = genesisParamsMainnetNew
+		EpochLengthV2 = MainnetEpochV2
 	}
 }
 
