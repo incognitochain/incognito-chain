@@ -1332,11 +1332,10 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 		return nil, NewRPCError(RPCInvalidParamsError, errors.New("senderKeyParam is invalid"))
 	}
 
-	maxValTemp, ok := arrayParams[1].(float64)
-	if !ok {
-		return nil, NewRPCError(RPCInvalidParamsError, errors.New("maxVal is invalid"))
+	maxVal, err := common.AssertAndConvertStrToNumber(arrayParams[1])
+	if err != nil {
+		return nil, NewRPCError(RPCInvalidParamsError,fmt.Errorf("maxVal is invalid %v", err))
 	}
-	maxVal := uint64(maxValTemp)
 
 	estimateFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
 	if !ok {
@@ -2093,7 +2092,7 @@ func (txService TxService) DecryptOutputCoinByKey(outCoints []*privacy.OutputCoi
 }
 
 func (txService TxService) BuildRawDefragmentPrivacyCustomTokenTransaction(params interface{}, metaData metadata.Metadata) (*transaction.TxCustomTokenPrivacy, *RPCError) {
-	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParam(params)
+	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParamV2(params)
 	if errParam != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, errParam)
 	}
@@ -2180,13 +2179,13 @@ func (txService TxService) BuildDefragmentPrivacyCustomTokenParam(tokenParamsRaw
 	if !ok {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token Tx Type, Params %+v ", tokenParamsRaw))
 	}
-	tokenAmount, ok := tokenParamsRaw["TokenAmount"].(float64)
-	if !ok {
-		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token Amout, Params %+v ", tokenParamsRaw))
+	tokenAmount, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["TokenAmount"])
+	if err != nil {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token Amount %+v ", err))
 	}
-	tokenFee, ok := tokenParamsRaw["TokenFee"].(float64)
-	if !ok {
-		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token Fee, Params %+v ", tokenParamsRaw))
+	tokenFee, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["TokenFee"])
+	if err != nil {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token Fee %+v ", err))
 	}
 	if tokenTxType == transaction.CustomTokenInit {
 		tokenFee = 0
@@ -2196,9 +2195,9 @@ func (txService TxService) BuildDefragmentPrivacyCustomTokenParam(tokenParamsRaw
 		PropertyName:   tokenName,
 		PropertySymbol: tokenSymbol,
 		TokenTxType:    int(tokenTxType),
-		Amount:         uint64(tokenAmount),
+		Amount:         tokenAmount,
 		TokenInput:     nil,
-		Fee:            uint64(tokenFee),
+		Fee:            tokenFee,
 	}
 
 	maxDefragmentQuantity := 32

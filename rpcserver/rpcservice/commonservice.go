@@ -23,7 +23,7 @@ func NewContractingRequestMetadata(senderPrivateKeyStr string, tokenReceivers in
 	}
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
-	_, voutsAmount, err := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
+	_, voutsAmount, err := transaction.CreateCustomTokenPrivacyReceiverArrayV2(tokenReceivers)
 	if err != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, err)
 	}
@@ -147,8 +147,14 @@ func NewPaymentInfosFromReceiversParam(receiversParam map[string]interface{}) ([
 		if err != nil {
 			return nil, err
 		}
+
+		amountInt, err := common.AssertAndConvertStrToNumber(amount)
+		if err != nil {
+			return nil, err
+		}
+
 		paymentInfo := &privacy.PaymentInfo{
-			Amount:         uint64(amount.(float64)),
+			Amount:         amountInt,
 			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)
