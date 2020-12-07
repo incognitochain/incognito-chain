@@ -642,6 +642,12 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		env.MissingSignaturePenalty,
 	)
 
+	if len(slashingCommittees) > 0 {
+		Logger.log.Infof("SHARD %+v, Epoch %+v, Slashing Committees %+v", shardID, env.Epoch, slashingCommittees)
+	} else {
+		Logger.log.Infof("SHARD %+v, Epoch %+v, NO Slashing Committees", shardID, env.Epoch)
+	}
+
 	if !reflect.DeepEqual(comparedShardSwapInstruction.InPublicKeys, swapShardInstruction.InPublicKeys) {
 		return nil, returnStakingInstruction, fmt.Errorf("expect swap in keys %+v, got %+v",
 			comparedShardSwapInstruction.InPublicKeys, swapShardInstruction.InPublicKeys)
