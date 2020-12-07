@@ -654,7 +654,7 @@ func (p *portalRequestUnlockCollateralProcessor) buildNewInsts(
 
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
 		// unlock amount in usdt
-		err = updateCustodianStateAfterReqUnlockCollateralV3(
+		_, err = updateCustodianStateAfterReqUnlockCollateralV3(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
 			unlockAmount, meta.TokenID, portalParams, currentPortalState)
 		if err != nil {

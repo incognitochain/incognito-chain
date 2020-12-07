@@ -418,7 +418,7 @@ func (blockchain *BlockChain) processPortalUnlockCollateral(
 				currentPortalState.CustodianPoolState[custodianStateKeyStr],
 				actionData.UnlockAmount, tokenID)
 		} else {
-			err = updateCustodianStateAfterReqUnlockCollateralV3(
+			_, err = updateCustodianStateAfterReqUnlockCollateralV3(
 				currentPortalState.CustodianPoolState[custodianStateKeyStr],
 				actionData.UnlockAmount, tokenID, portalParams, currentPortalState)
 		}

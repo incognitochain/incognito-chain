@@ -992,6 +992,22 @@ func (blockService BlockService) GetPortalReqUnlockCollateralStatus(reqTxID stri
 	return &status, nil
 }
 
+func (blockService BlockService) GetPortalReqUnlockOverRateCollateralStatus(reqTxID string) (*metadata.UnlockOverRateCollateralsRequestStatus, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPortalUnlockOverRateCollateralsStatus(stateDB, reqTxID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.UnlockOverRateCollateralsRequestStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
 func (blockService BlockService) GetPortalRedeemReqStatus(redeemID string) (*metadata.PortalRedeemRequestStatus, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPortalRedeemRequestStatus(stateDB, redeemID)

@@ -67,6 +67,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newTokenTransactionObjectWithValue(db, hash, value)
 	case PortalFinalExchangeRatesStateObjectType:
 		return newFinalExchangeRatesStateObjectWithValue(db, hash, value)
+	case PortalUnlockOverRateCollaterals:
+		return newUnlockOverRateCollateralsStateObjectWithValue(db, hash, value)
 	case PortalLiquidationPoolObjectType:
 		return newLiquidationPoolObjectWithValue(db, hash, value)
 	case PortalWaitingPortingRequestObjectType:
@@ -136,6 +138,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBurningConfirmObject(db, hash)
 	case PortalFinalExchangeRatesStateObjectType:
 		return newFinalExchangeRatesStateObject(db, hash)
+	case PortalUnlockOverRateCollaterals:
+		return newUnlockOverRateCollateralsStateObject(db, hash)
 	case PortalLiquidationPoolObjectType:
 		return newLiquidationPoolObject(db, hash)
 	case PortalWaitingPortingRequestObjectType:

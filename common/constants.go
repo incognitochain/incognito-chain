@@ -200,6 +200,9 @@ const (
 
 	PortalCustodianWithdrawReqV3AcceptedStatus = 1
 	PortalCustodianWithdrawReqV3RejectStatus   = 2
+
+	PortalUnlockOverRateCollateralsAcceptedStatus = 1
+	PortalUnlockOverRateCollateralsRejectedStatus = 2
 )
 
 // PDE statuses for chain
@@ -283,6 +286,9 @@ const (
 	PortalCustodianDepositV3RejectedChainStatus         = "rejected"
 	PortalCustodianWithdrawRequestV3AcceptedChainStatus = "accepted"
 	PortalCustodianWithdrawRequestV3RejectedChainStatus = "rejected"
+
+	PortalCusUnlockOverRateCollateralsAcceptedChainStatus = "accepted"
+	PortalCusUnlockOverRateCollateralsRejectedChainStatus = "rejected"
 )
 
 // Relaying header
