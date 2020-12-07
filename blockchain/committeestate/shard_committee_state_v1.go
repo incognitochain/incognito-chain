@@ -168,9 +168,6 @@ func (engine *ShardCommitteeEngineV1) InitCommitteeState(env ShardCommitteeState
 	engine.shardCommitteeStateV1.mu.Lock()
 	defer engine.shardCommitteeStateV1.mu.Unlock()
 
-	committeeState := engine.shardCommitteeStateV1
-	committeeChange := NewCommitteeChange()
-
 	shardPendingValidator := []string{}
 	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
 
@@ -185,7 +182,6 @@ func (engine *ShardCommitteeEngineV1) InitCommitteeState(env ShardCommitteeState
 			if err == nil && assignInstruction.ChainID == int(env.ShardID()) {
 				shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
 				newShardPendingValidator = append(newShardPendingValidator, assignInstruction.ShardCandidatesStruct...)
-				committeeState.shardPendingValidator = append(committeeState.shardPendingValidator, assignInstruction.ShardCandidatesStruct...)
 			}
 		}
 	}
@@ -203,11 +199,6 @@ func (engine *ShardCommitteeEngineV1) InitCommitteeState(env ShardCommitteeState
 	addedCommittees := []incognitokey.CommitteePublicKey{}
 	addedCommittees = append(addedCommittees, newShardCandidateStructs[int(env.ShardID())*
 		env.MinShardCommitteeSize():(int(env.ShardID())*env.MinShardCommitteeSize())+env.MinShardCommitteeSize()]...)
-
-	_, err := committeeState.processShardBlockInstruction(env, committeeChange)
-	if err != nil {
-		panic(err)
-	}
 
 	engine.shardCommitteeStateV1.shardCommittee = append(engine.shardCommitteeStateV1.shardCommittee,
 		addedCommittees...)
