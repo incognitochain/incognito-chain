@@ -209,6 +209,17 @@ func (engine BeaconCommitteeEngineV1) GetShardCommittee() map[byte][]incognitoke
 	return shardCommittee
 }
 
+//GetShardCommittee :
+func (engine BeaconCommitteeEngineV1) GetUncommittedCommittee() map[byte][]incognitokey.CommitteePublicKey {
+	engine.uncommittedBeaconCommitteeStateV1.mu.RLock()
+	defer engine.uncommittedBeaconCommitteeStateV1.mu.RUnlock()
+	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+	for k, v := range engine.uncommittedBeaconCommitteeStateV1.shardCommittee {
+		shardCommittee[k] = v
+	}
+	return shardCommittee
+}
+
 //GetOneShardSubstitute :
 func (engine BeaconCommitteeEngineV1) GetOneShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey {
 	return engine.beaconCommitteeStateV1.shardSubstitute[shardID]

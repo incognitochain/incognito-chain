@@ -243,6 +243,19 @@ func (beaconBestState *BeaconBestState) GetShardCommitteeFlattenList() []string 
 	return committees
 }
 
+func (beaconBestState *BeaconBestState) getUncommittedShardCommitteeFlattenList() []string {
+
+	committees := []string{}
+	for _, committeeStructs := range beaconBestState.beaconCommitteeEngine.GetUncommittedCommittee() {
+		for _, committee := range committeeStructs {
+			res, _ := committee.ToBase58()
+			committees = append(committees, res)
+		}
+	}
+
+	return committees
+}
+
 func (beaconBestState *BeaconBestState) GetAShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey {
 
 	return beaconBestState.beaconCommitteeEngine.GetOneShardSubstitute(shardID)
