@@ -4083,8 +4083,14 @@ func addCustodianToPool(
 			newCustodian.SetFreeCollateral(existCustodian.GetFreeCollateral())
 
 			tmpTotalTokenCollaterals := existCustodian.GetTotalTokenCollaterals()
+			if tmpTotalTokenCollaterals == nil {
+				tmpTotalTokenCollaterals = make(map[string]uint64, 0)
+			}
 			tmpTotalTokenCollaterals[collateralTokenID] += depositAmount
 			tmpFreeTokenCollaterals := existCustodian.GetFreeTokenCollaterals()
+			if tmpFreeTokenCollaterals == nil {
+				tmpFreeTokenCollaterals = make(map[string]uint64, 0)
+			}
 			tmpFreeTokenCollaterals[collateralTokenID] += depositAmount
 			newCustodian.SetTotalTokenCollaterals(tmpTotalTokenCollaterals)
 			newCustodian.SetFreeTokenCollaterals(tmpFreeTokenCollaterals)
