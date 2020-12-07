@@ -44,7 +44,7 @@ const (
 	MainnetDefaultPort      = "9333"
 	MainnetGenesisBlockTime = "2019-10-29T00:00:00.000Z"
 	MainnetEpoch            = 350
-	MainnetEpochV2          = 4320
+	MainnetEpochV2          = 2160
 	MainnetRandomTime       = 175
 	MainnetOffset           = 4
 	MainnetSwapOffset       = 4
