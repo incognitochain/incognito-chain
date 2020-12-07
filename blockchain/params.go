@@ -349,13 +349,8 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    791000, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:     2085,
-<<<<<<< HEAD
-		PortalETHContractAddressStr: "0x40d9Fa310F14E33009c8f5ffb3E45e1913b4f88E",  // todo: update sc address
-		BCHeightBreakPointPortalV3:  8974,  // todo: should update before deploying
-=======
 		PortalETHContractAddressStr: "",   // todo: update sc address
 		BCHeightBreakPointPortalV3:  8974, // todo: should update before deploying
->>>>>>> portalv3-unlock-custodian-collaterals
 	}
 	// END TESTNET-2
 
