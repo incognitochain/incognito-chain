@@ -39,7 +39,11 @@ type BeaconCommitteeEngineV2 struct {
 	uncommittedBeaconCommitteeStateV2 *BeaconCommitteeStateV2
 }
 
-func NewBeaconCommitteeEngineV2(beaconHeight uint64, beaconHash common.Hash, finalBeaconCommitteeStateV2 *BeaconCommitteeStateV2) *BeaconCommitteeEngineV2 {
+func NewBeaconCommitteeEngineV2(
+	beaconHeight uint64,
+	beaconHash common.Hash,
+	finalBeaconCommitteeStateV2 *BeaconCommitteeStateV2) *BeaconCommitteeEngineV2 {
+	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconHeight)
 	return &BeaconCommitteeEngineV2{
 		beaconHeight:                      beaconHeight,
 		beaconHash:                        beaconHash,

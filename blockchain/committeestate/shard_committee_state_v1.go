@@ -57,6 +57,7 @@ func NewShardCommitteeStateV1WithValue(shardCommittee, shardPendingValidator []i
 //Output: pointer of ShardCommitteeEngineV1
 func NewShardCommitteeEngineV1(shardHeight uint64,
 	shardHash common.Hash, shardID byte, shardCommitteeStateV1 *ShardCommitteeStateV1) *ShardCommitteeEngineV1 {
+	Logger.log.Infof("SHARDID %+v | Shard Height %+v, Init Shard Committee Engine V1", shardID, shardHeight)
 	return &ShardCommitteeEngineV1{
 		shardHeight:                      shardHeight,
 		shardHash:                        shardHash,
@@ -249,7 +250,10 @@ func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
 func (engine *ShardCommitteeEngineV1) GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error) {
 	shardSubstitutes, _ := incognitokey.CommitteeKeyListToString(engine.shardCommitteeStateV1.shardPendingValidator)
 	shardCommittees, _ := incognitokey.CommitteeKeyListToString(engine.shardCommitteeStateV1.shardCommittee)
-	swapInstruction, shardPendingValidator, shardCommittee, err := createSwapInstruction(
+	fixedProducerShardValidators := make([]string, env.NumberOfFixedBlockValidators())
+	copy(fixedProducerShardValidators, shardCommittees[:env.NumberOfFixedBlockValidators()])
+	shardCommittees = shardCommittees[env.NumberOfFixedBlockValidators():]
+	swapInstruction, shardPendingValidator, shardCommittees, err := createSwapInstruction(
 		shardSubstitutes,
 		shardCommittees,
 		env.MaxShardCommitteeSize(),
@@ -260,9 +264,9 @@ func (engine *ShardCommitteeEngineV1) GenerateSwapInstruction(env ShardCommittee
 	)
 	if err != nil {
 		Logger.log.Error(err)
-		return swapInstruction, shardPendingValidator, shardCommittee, err
+		return swapInstruction, shardPendingValidator, shardCommittees, err
 	}
-	return swapInstruction, shardPendingValidator, shardCommittee, nil
+	return swapInstruction, shardPendingValidator, append(fixedProducerShardValidators, shardCommittees...), nil
 }
 
 //generateUncommittedCommitteeHashes generate hashes relate to uncommitted committees of struct ShardCommitteeEngineV1

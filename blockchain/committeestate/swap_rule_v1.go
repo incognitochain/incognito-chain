@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"strconv"
@@ -26,7 +27,8 @@ func createSwapInstruction(
 	offset int,
 	swapOffset int,
 ) (*instruction.SwapInstruction, []string, []string, error) {
-	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, swapOffset)
+	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err :=
+		SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, swapOffset)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -123,6 +125,12 @@ func swap(
 	maxCommittee int,
 	offset int,
 ) ([]string, []string, []string, []string, error) {
+	fmt.Println(">>>>> badPendingValidators ", badPendingValidators)
+	fmt.Println(">>>>> goodPendingValidators ", goodPendingValidators)
+	fmt.Println(">>>>> currentGoodProducers ", currentGoodProducers)
+	fmt.Println(">>>>> currentBadProducers ", currentBadProducers)
+	fmt.Println(">>>>> maxCommittee ", maxCommittee)
+	fmt.Println(">>>>> offset ", offset)
 	// if swap offset = 0 then do nothing
 	if offset == 0 {
 		// return pendingValidators, currentGoodProducers, currentBadProducers, []string{}, errors.New("no pending validator for swapping")

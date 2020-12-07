@@ -42,6 +42,7 @@ func NewBeaconCommitteeEngineV1(
 	beaconHeight uint64,
 	beaconHash common.Hash,
 	beaconCommitteeStateV1 *BeaconCommitteeStateV1) *BeaconCommitteeEngineV1 {
+	Logger.log.Infof("Init Beacon Committee Engine V1, %+v", beaconHeight)
 	return &BeaconCommitteeEngineV1{
 		beaconHeight:                      beaconHeight,
 		beaconHash:                        beaconHash,

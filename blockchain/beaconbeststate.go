@@ -699,7 +699,7 @@ func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForRew
 }
 
 func initBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestate.BeaconCommitteeEngine {
-	Logger.log.Infof("Init Committee Engine V1, %+v", beaconBestState.BeaconHeight)
+	Logger.log.Infof("Init Beacon Committee Engine V1, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
@@ -738,7 +738,7 @@ func initBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestat
 }
 
 func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Params, bc *BlockChain) committeestate.BeaconCommitteeEngine {
-	Logger.log.Infof("Init Committee Engine V2, %+v", beaconBestState.BeaconHeight)
+	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	var numberOfAssignedCandidate int
 	for i := 0; i < beaconBestState.ActiveShards; i++ {

@@ -211,17 +211,20 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 
 func (engine *Engine) updateVersion(chainID int) {
 	chainEpoch := uint64(1)
+	chainHeight := uint64(1)
 	if chainID == -1 {
 		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
+		chainHeight = engine.config.Blockchain.BeaconChain.GetBestViewHeight()
 	} else {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
+		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestViewHeight()
 	}
 
 	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
 		engine.version = 2
 	}
 
-	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV3Epoch {
+	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV3Height {
 		engine.version = 3
 	}
 }

@@ -190,7 +190,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	if beaconBlock.Header.Height%50 == 0 {
 		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
 	}
-	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Epoch {
+	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
 		newBestState.upgradeCommitteeEngineV2(blockchain)
 	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
@@ -545,7 +545,7 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	}
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 
-	if beaconBestState.CommitteeEngineVersion() >= committeestate.SLASHING_VERSION {
+	if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
 		if beaconBestState.BeaconHeight%chainParamEpoch == 1 {
 			// Reset missing signature counter after finish process the last beacon block in an epoch
 			beaconBestState.missingSignatureCounter.Reset(beaconBestState.getUncommittedShardCommitteeFlattenList())
@@ -628,6 +628,9 @@ func (curView *BeaconBestState) countMissingSignature(db incdb.Database, allShar
 				continue
 			}
 			beaconHashForCommittee := shardState.CommitteeFromBlock
+			if beaconHashForCommittee.IsZeroValue() {
+				continue
+			}
 			committees, ok := cacheCommittees[beaconHashForCommittee]
 			if !ok {
 				var err error
