@@ -50,6 +50,9 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		// custodian request withdraw collateral v3
 		case strconv.Itoa(metadata.PortalCustodianWithdrawRequestMetaV3):
 			err = blockchain.processPortalCustodianWithdrawV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+		// custodian request unlock over rate collaterals
+		case strconv.Itoa(metadata.PortalUnlockOverRateCollateralsMeta):
+			err = blockchain.processPortalUnlockOverRateCollaterals(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
 
 		// ============ Porting flow ============
 		// porting request

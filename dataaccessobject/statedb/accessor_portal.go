@@ -274,6 +274,20 @@ func StoreBulkFinalExchangeRatesState(
 	return nil
 }
 
+//======================  Custodian unlock over rate collaterals  ======================
+func StoreBulkUnlockOverRateCollateralsState(
+	stateDB *StateDB,
+	unlockOverRateCollaterals map[string]*UnlockOverRateCollaterals) error {
+	for _, value := range unlockOverRateCollaterals {
+		key := GeneratePortalUnlockOverRateCollateralsStateObjectKey()
+		err := stateDB.SetStateObject(PortalUnlockOverRateCollaterals, key, value)
+		if err != nil {
+			return NewStatedbError(StorePortalUnlockOverRateCollateralsError, err)
+		}
+	}
+	return nil
+}
+
 //======================  Liquidation  ======================
 func StorePortalLiquidationCustodianRunAwayStatus(stateDB *StateDB, redeemID string, custodianIncognitoAddress string, statusContent []byte) error {
 	statusType := PortalLiquidateCustodianRunAwayPrefix()
@@ -750,6 +764,28 @@ func StorePortalExchangeRateStatus(stateDB *StateDB, txID string, statusContent 
 	}
 
 	return nil
+}
+
+func StorePortalUnlockOverRateCollaterals(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalUnlockOverRateCollateralsRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalUnlockOverRateCollateralsError, err)
+	}
+
+	return nil
+}
+
+func GetPortalUnlockOverRateCollateralsStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalUnlockOverRateCollateralsRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalUnlockOverRateCollateralsStatusError, err)
+	}
+
+	return data, nil
 }
 
 func GetPortalExchangeRateStatus(stateDB *StateDB, txID string) ([]byte, error) {

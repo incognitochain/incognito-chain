@@ -73,6 +73,12 @@ func NewPortalManager() *portalManager {
 			},
 		},
 
+		metadata.PortalUnlockOverRateCollateralsMeta: &portalCusUnlockOverRateCollateralsProcessor{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
+
 		metadata.PortalCustodianDepositMeta: &portalCustodianDepositProcessor{
 			portalInstProcessor: &portalInstProcessor{
 				actions: map[byte][][]string{},
