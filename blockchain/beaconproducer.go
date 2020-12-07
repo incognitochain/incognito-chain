@@ -3,11 +3,12 @@ package blockchain
 import (
 	"fmt"
 	"math/big"
+	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -673,6 +674,22 @@ func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
 				unstakePublicKeys = append(unstakePublicKeys, tempUnstakePublicKey)
 			}
 			validUnstakePublicKeys[tempUnstakePublicKey] = true
+		}
+		_, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfPendingValidator, rand, blockchain.config.ChainParams.AssignOffset, curView.ActiveShards)
+		var keys []int
+		for k := range assignedCandidates {
+			keys = append(keys, int(k))
+		}
+		sort.Ints(keys)
+		for _, key := range keys {
+			shardID := byte(key)
+			candidates := assignedCandidates[shardID]
+			Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardID, candidates)
+			shardAssingInstruction := []string{AssignAction}
+			shardAssingInstruction = append(shardAssingInstruction, strings.Join(candidates, ","))
+			shardAssingInstruction = append(shardAssingInstruction, "shard")
+			shardAssingInstruction = append(shardAssingInstruction, fmt.Sprintf("%v", shardID))
+			instructions = append(instructions, shardAssingInstruction)
 		}
 	}
 	if len(unstakePublicKeys) > 0 {
