@@ -191,7 +191,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
 	}
 	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Epoch {
-		newBestState.upgradeCommitteeEngineV2()
+		newBestState.upgradeCommitteeEngineV2(blockchain)
 	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
