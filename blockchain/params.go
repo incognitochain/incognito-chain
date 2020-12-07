@@ -261,7 +261,7 @@ func SetupParam() {
 		ETHRemoveBridgeSigEpoch:     21920,
 
 		PortalETHContractAddressStr: "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address
-		BCHeightBreakPointPortalV3:  1,
+		BCHeightBreakPointPortalV3:  30158,
 	}
 	// END TESTNET
 
