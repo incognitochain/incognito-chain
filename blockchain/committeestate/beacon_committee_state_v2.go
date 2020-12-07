@@ -518,6 +518,9 @@ func SnapshotShardCommonPoolV2(
 
 		if assignPerShard == 0 {
 			assignPerShard = len(v) / MAX_SWAP_OR_ASSIGN_PERCENT
+			if len(v) < MAX_SWAP_OR_ASSIGN_PERCENT {
+				assignPerShard = 1
+			}
 		}
 
 		numberOfAssignedCandidates += assignPerShard
