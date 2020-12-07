@@ -73,7 +73,7 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 
 // getSwapOutOffset assumes that numberOfFixedValidator <= minCommitteeSize and won't replace fixed nodes
 // CONDITION:
-// #1 swapOutOffset <= floor(numberOfCommittees/3)
+// #1 swapOutOffset <= floor(numberOfCommittees/6)
 // #2 swapOutOffset <=  numberOfCommittees - numberOfFixedValidator
 // #3 committees length after both swap out and swap in must remain >= minCommitteeSize
 // #4 swap operation must begin from start position (which is fixed node validator position) as a queue
