@@ -190,7 +190,9 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	if beaconBlock.Header.Height%50 == 0 {
 		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
 	}
-
+	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
+		newBestState.upgradeCommitteeEngineV2(blockchain)
+	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
 	// For masternode: broadcast new committee to highways
@@ -543,14 +545,16 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	}
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 
-	if beaconBestState.BeaconHeight%chainParamEpoch == 1 {
-		// Reset missing signature counter after finish process the last beacon block in an epoch
-		beaconBestState.missingSignatureCounter.Reset(beaconBestState.GetShardCommitteeFlattenList())
-	}
+	if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+		if beaconBestState.BeaconHeight%chainParamEpoch == 1 {
+			// Reset missing signature counter after finish process the last beacon block in an epoch
+			beaconBestState.missingSignatureCounter.Reset(beaconBestState.getUncommittedShardCommitteeFlattenList())
+		}
 
-	err = beaconBestState.countMissingSignature(blockchain.GetBeaconChainDatabase(), beaconBlock.Body.ShardState)
-	if err != nil {
-		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+		err = beaconBestState.countMissingSignature(blockchain.GetBeaconChainDatabase(), beaconBlock.Body.ShardState)
+		if err != nil {
+			return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+		}
 	}
 
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
@@ -624,6 +628,11 @@ func (curView *BeaconBestState) countMissingSignature(db incdb.Database, allShar
 				continue
 			}
 			beaconHashForCommittee := shardState.CommitteeFromBlock
+			Logger.log.Infof("Add Missing Signature | ShardState %+v", shardState)
+			Logger.log.Infof("Add Missing Signature | committee from block %+v", beaconHashForCommittee)
+			if beaconHashForCommittee.IsZeroValue() {
+				continue
+			}
 			committees, ok := cacheCommittees[beaconHashForCommittee]
 			if !ok {
 				var err error
@@ -633,6 +642,10 @@ func (curView *BeaconBestState) countMissingSignature(db incdb.Database, allShar
 				}
 				cacheCommittees[beaconHashForCommittee] = committees
 			}
+
+			logCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
+			Logger.log.Infof("Add Missing Signature | Validation Data: %+v, \n Committees: %+v", shardState.ValidationData, logCommittees)
+
 			err := curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
 			if err != nil {
 				return err

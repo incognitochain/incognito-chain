@@ -377,10 +377,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		valData.ValidatiorsIdx = validatorIdx
 		validationDataString, _ := EncodeValidationData(*valData)
 		e.Logger.Infof("%v Validation Data", e.ChainKey, aggSig, brigSigs, validatorIdx, validationDataString)
-		if err := v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
-			e.Logger.Error(err)
-			return
-		}
+		v.block.(blockValidation).AddValidationField(validationDataString)
 
 		go e.Chain.InsertAndBroadcastBlock(v.block)
 

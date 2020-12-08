@@ -260,7 +260,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()
-	newShardBestState, hashes, _, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks, currentCommitteePublicKeysStructs)
+	_, hashes, _, err := shardBestState.updateShardBestState(blockchain, newShardBlock, beaconBlocks, currentCommitteePublicKeysStructs)
 	if err != nil {
 		return nil, err
 	}
@@ -293,10 +293,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
 
-	stakingTxRoot, err := generateHashFromMapStringString(newShardBestState.StakingTx.Data())
-	if err != nil {
-		return nil, NewBlockChainError(StakingTxHashError, err)
-	}
 	// Instruction merkle root
 	flattenTxInsts, err := FlattenAndConvertStringInst(txInstructions)
 	if err != nil {
@@ -317,7 +313,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	newShardBlock.Header.InstructionsRoot = instructionsHash
 	newShardBlock.Header.CommitteeRoot = hashes.ShardCommitteeHash
 	newShardBlock.Header.PendingValidatorRoot = hashes.ShardSubstituteHash
-	newShardBlock.Header.StakingTxRoot = stakingTxRoot
+	newShardBlock.Header.StakingTxRoot = common.Hash{}
 	newShardBlock.Header.Timestamp = start
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 
@@ -524,7 +520,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 	shardID byte, beaconHeight uint64,
 	isOldBeaconHeight bool, beaconBlocks []*types.BeaconBlock, beaconInstructions [][]string,
-	shardPendingValidator []string, shardCommittee []string) ([][]string, []string, []string, error) {
+	shardPendingValidators []string, shardCommittees []string) ([][]string, []string, []string, error) {
 	var (
 		instructions                      = [][]string{}
 		bridgeSwapConfirmInst             = []string{}
@@ -533,11 +529,8 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 	)
 	// if this beacon height has been seen already then DO NOT generate any more instruction
 	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
-		backupShardCommittee := shardCommittee
-		fixedProducerShardValidators := shardCommittee[:NumberOfFixedShardBlockValidators]
-		shardCommittee = shardCommittee[NumberOfFixedShardBlockValidators:]
-		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
-		Logger.log.Info("ShardCommittee", shardCommittee)
+		Logger.log.Info("ShardPendingValidator", shardPendingValidators)
+		Logger.log.Info("ShardCommittee", shardCommittees)
 		Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 		Logger.log.Info("ShardID", shardID)
 
@@ -550,9 +543,9 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		}
 		if common.IndexOfUint64(beaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 			epoch := beaconHeight / blockchain.config.ChainParams.Epoch
-			swapOrConfirmShardSwapInstruction, shardCommittee = createShardSwapActionForKeyListV2(
+			swapOrConfirmShardSwapInstruction, shardCommittees = createShardSwapActionForKeyListV2(
 				blockchain.config.GenesisParams,
-				backupShardCommittee,
+				shardCommittees,
 				NumberOfFixedShardBlockValidators,
 				blockchain.config.ChainParams.ActiveShards,
 				shardID,
@@ -567,16 +560,16 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 				BuildShardHeight(view.ShardHeight).
 				BuildOffset(blockchain.config.ChainParams.Offset).
 				BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
+				BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
 				Build()
-			tempSwapInstruction, shardPendingValidator, shardCommittee, err = view.shardCommitteeEngine.GenerateSwapInstruction(env)
+			tempSwapInstruction, shardPendingValidators, shardCommittees, err = view.shardCommitteeEngine.GenerateSwapInstruction(env)
 			if err != nil {
 				Logger.log.Error(err)
-				return instructions, shardPendingValidator, shardCommittee, err
+				return instructions, shardPendingValidators, shardCommittees, err
 			}
 			if !tempSwapInstruction.IsEmpty() {
 				swapOrConfirmShardSwapInstruction = tempSwapInstruction.ToString()
 			}
-			shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
 		}
 	}
 
@@ -604,7 +597,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		}
 	}
 
-	return instructions, shardPendingValidator, shardCommittee, nil
+	return instructions, shardPendingValidators, shardCommittees, nil
 }
 
 // getCrossShardData get cross shard data from cross shard block
@@ -818,7 +811,17 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 					continue
 				}
 				instructions = append(instructions, l)
-
+			case instruction.ASSIGN_ACTION:
+				//Only process swap shard action for that shard
+				assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(l)
+				if err != nil {
+					Logger.log.Errorf("Fail to ValidateAndImportSwapShardInstructionFromString %v", err)
+					continue
+				}
+				if byte(assignInstruction.ChainID) != shardID {
+					continue
+				}
+				instructions = append(instructions, l)
 			default:
 				instructions = append(instructions, l)
 				continue

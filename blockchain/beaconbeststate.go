@@ -243,6 +243,19 @@ func (beaconBestState *BeaconBestState) GetShardCommitteeFlattenList() []string 
 	return committees
 }
 
+func (beaconBestState *BeaconBestState) getUncommittedShardCommitteeFlattenList() []string {
+
+	committees := []string{}
+	for _, committeeStructs := range beaconBestState.beaconCommitteeEngine.GetUncommittedCommittee() {
+		for _, committee := range committeeStructs {
+			res, _ := committee.ToBase58()
+			committees = append(committees, res)
+		}
+	}
+
+	return committees
+}
+
 func (beaconBestState *BeaconBestState) GetAShardPendingValidator(shardID byte) []incognitokey.CommitteePublicKey {
 
 	return beaconBestState.beaconCommitteeEngine.GetOneShardSubstitute(shardID)
@@ -686,7 +699,7 @@ func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForRew
 }
 
 func initBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestate.BeaconCommitteeEngine {
-	Logger.log.Infof("Init Committee Engine V1, %+v", beaconBestState.BeaconHeight)
+	Logger.log.Infof("Init Beacon Committee Engine V1, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
@@ -725,10 +738,9 @@ func initBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestat
 }
 
 func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Params, bc *BlockChain) committeestate.BeaconCommitteeEngine {
-	Logger.log.Infof("Init Committee Engine V2, %+v", beaconBestState.BeaconHeight)
+	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	var numberOfAssignedCandidate int
-	numberOfRound := make(map[string]int)
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
 	}
@@ -799,7 +811,6 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		autoStaking,
 		rewardReceivers,
 		stakingTx,
-		numberOfRound,
 	)
 
 	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngineV2(
@@ -855,4 +866,58 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 		return 0, fmt.Errorf("init beacon consensus statedb return error %+v", err)
 	}
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
+}
+
+func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain) {
+	if beaconBestState.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
+		return
+	}
+	beaconCommittee := make([]incognitokey.CommitteePublicKey, len(beaconBestState.GetBeaconCommittee()))
+	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
+	shardCommonPool := make([]incognitokey.CommitteePublicKey, len(beaconBestState.GetShardCandidate()))
+	numberOfAssignedCandidates := len(beaconBestState.GetCandidateShardWaitingForCurrentRandom())
+	autoStake := make(map[string]bool)
+	rewardReceiver := make(map[string]privacy.PaymentAddress)
+	stakingTx := make(map[string]common.Hash)
+
+	copy(beaconCommittee, beaconBestState.GetBeaconCommittee())
+	for shardID, oneShardCommittee := range beaconBestState.GetShardCommittee() {
+		shardCommittee[shardID] = make([]incognitokey.CommitteePublicKey, len(oneShardCommittee))
+		copy(shardCommittee[shardID], oneShardCommittee)
+	}
+	for shardID, oneShardSubsitute := range beaconBestState.GetShardPendingValidator() {
+		shardSubstitute[shardID] = make([]incognitokey.CommitteePublicKey, len(oneShardSubsitute))
+		copy(shardSubstitute[shardID], oneShardSubsitute)
+	}
+	copy(shardCommonPool, beaconBestState.GetShardCandidate())
+	for k, v := range beaconBestState.GetAutoStaking() {
+		autoStake[k] = v
+	}
+	for k, v := range beaconBestState.GetRewardReceiver() {
+		rewardReceiver[k] = v
+	}
+	for k, v := range beaconBestState.GetStakingTx() {
+		stakingTx[k] = v
+	}
+
+	newBeaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
+		beaconCommittee,
+		shardCommittee,
+		shardSubstitute,
+		shardCommonPool,
+		numberOfAssignedCandidates,
+		autoStake,
+		rewardReceiver,
+		stakingTx,
+	)
+	newCommitteeEngineV2 := committeestate.NewBeaconCommitteeEngineV2(
+		beaconBestState.BeaconHeight,
+		beaconBestState.BestBlockHash,
+		newBeaconCommitteeStateV2,
+	)
+	beaconBestState.beaconCommitteeEngine = newCommitteeEngineV2
+
+	bc.config.ChainParams.Epoch = EpochLengthV2
+	bc.config.ChainParams.RandomTime = EpochLengthV2 / 2
 }

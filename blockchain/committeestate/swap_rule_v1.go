@@ -2,13 +2,13 @@ package committeestate
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 // createSwapInstruction creates swap inst and return new validator list
@@ -26,7 +26,8 @@ func createSwapInstruction(
 	offset int,
 	swapOffset int,
 ) (*instruction.SwapInstruction, []string, []string, error) {
-	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err := SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, swapOffset)
+	newPendingValidator, newShardCommittees, shardSwapedCommittees, shardNewCommittees, err :=
+		SwapValidator(pendingValidator, commitees, maxCommitteeSize, minCommitteeSize, offset, swapOffset)
 	if err != nil {
 		return nil, nil, nil, err
 	}

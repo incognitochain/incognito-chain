@@ -316,6 +316,5 @@ func (blockchain *BlockChain) getReturnStakingInfoFromBeaconInstructions(
 			}
 		}
 	}
-
 	return res, errorInstructions, nil
 }

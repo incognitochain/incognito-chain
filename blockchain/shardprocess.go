@@ -18,7 +18,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -230,6 +229,10 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
+
+	if newBestState.BeaconHeight == blockchain.config.ChainParams.ConsensusV3Height {
+		newBestState.upgradeCommitteeEngineV2()
+	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, newBestState))
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v 🔗, "+
@@ -282,11 +285,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 			beaconHeight = v.GetHeight()
 		}
 	}
-
-	if beaconHeight <= curView.BeaconHeight {
-		Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v curView.BeaconHeight %+v",
-			beaconHeight, curView.BeaconHeight)
-		return NewBlockChainError(WrongBlockHeightError, errors.New("Waiting For Beacon Produce Block"))
+	if curView.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+		if beaconHeight <= curView.BeaconHeight {
+			Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v curView.BeaconHeight %+v",
+				beaconHeight, curView.BeaconHeight)
+			return NewBlockChainError(WrongBlockHeightError, errors.New("Waiting For Beacon Produce Block"))
+		}
 	}
 
 	if shardBlock.Header.Height > curView.ShardHeight+1 {
@@ -761,27 +765,10 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		}
 	}
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
-	beaconInstructions, stakingTx, err := blockchain.
+	beaconInstructions, _, err := blockchain.
 		preProcessInstructionFromBeacon(beaconBlocks, shardBestState.ShardID)
 	if err != nil {
 		return nil, nil, nil, err
-	}
-	for stakePublicKey, txHash := range stakingTx {
-		shardBestState.StakingTx.Set(stakePublicKey, txHash)
-	}
-
-	for _, beaconInstruction := range beaconInstructions {
-		swapInstruction, err := instruction.ValidateAndImportSwapInstructionFromString(beaconInstruction)
-		if err == nil {
-			for _, v := range swapInstruction.OutPublicKeys {
-				shardBestState.StakingTx.Remove(v)
-				if txID, ok := shardBestState.StakingTx.Get(v); ok {
-					if checkReturnStakingTxExistence(txID, shardBlock) {
-						shardBestState.StakingTx.Remove(v)
-					}
-				}
-			}
-		}
 	}
 
 	env := committeestate.
@@ -832,17 +819,10 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	shardBestState.NumOfBlocksByProducers = make(map[string]uint64)
 
 	// Get all instructions from beacon here
-	instructions, stakingTx, err := blockchain.
+	instructions, _, err := blockchain.
 		preProcessInstructionFromBeacon([]*types.BeaconBlock{genesisBeaconBlock}, shardBestState.ShardID)
 	if err != nil {
 		return err
-	}
-
-	for stakePublicKey, txHash := range stakingTx {
-		shardBestState.StakingTx.Set(stakePublicKey, txHash)
-		//if err := statedb.StoreStakerInfoAtShardDB(shardBestState.consensusStateDB, stakePublicKey, txHash); err != nil {
-		//	return err
-		//}
 	}
 
 	env := committeestate.

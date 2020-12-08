@@ -59,6 +59,7 @@ func NewShardCommitteeStateV2WithValue(
 //Output: pointer of ShardCommitteeEngineV2
 func NewShardCommitteeEngineV2(shardHeight uint64,
 	shardHash common.Hash, shardID byte, shardCommitteeStateV2 *ShardCommitteeStateV2) *ShardCommitteeEngineV2 {
+	Logger.log.Infof("SHARDID %+v | Shard Height %+v, Init Shard Committee Engine V2", shardID, shardHeight)
 	return &ShardCommitteeEngineV2{
 		shardHeight:                      shardHeight,
 		shardHash:                        shardHash,

@@ -65,7 +65,7 @@ type Params struct {
 	ChainVersion                     string
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
-	ConsensusV3Epoch                 uint64
+	ConsensusV3Height                uint64
 	BeaconHeightBreakPointBurnAddr   uint64
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
@@ -108,6 +108,7 @@ var genesisParamsTestnetNew *GenesisParams
 var genesisParamsTestnet2New *GenesisParams
 var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
+var EpochLengthV2 uint64
 
 func SetupParam() {
 	// FOR TESTNET
@@ -121,8 +122,8 @@ func SetupParam() {
 		SelectShardNodeSerializedPubkeyV2:           SelectShardNodeTestnetSerializedPubkeyV2,
 		SelectShardNodeSerializedPaymentAddressV2:   SelectShardNodeTestnetSerializedPaymentAddressV2,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
-		//InitialIncognito: IntegrationTestInitPRV,
-		InitialIncognito:   TestnetInitPRV,
+		InitialIncognito: IntegrationTestInitPRV,
+		//InitialIncognito:   TestnetInitPRV,
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTestParam = Params{
@@ -160,8 +161,8 @@ func SetupParam() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		ConsensusV2Epoch:               1e9,
-		ConsensusV3Epoch:               1,
+		ConsensusV2Epoch:               1,
+		ConsensusV3Height:              TestnetEpoch*7 + 2,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
@@ -246,7 +247,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Epoch:               1,
+		ConsensusV3Height:              1,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
 		BTCRelayingHeaderChainID:       Testnet2BTCChainID,
@@ -329,7 +330,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Epoch:               1,
+		ConsensusV3Height:              1,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
 		BTCRelayingHeaderChainID:       MainnetBTCChainID,
@@ -365,11 +366,14 @@ func SetupParam() {
 	if IsTestNet {
 		if !IsTestNet2 {
 			GenesisParam = genesisParamsTestnetNew
+			EpochLengthV2 = TestnetEpochV2
 		} else {
 			GenesisParam = genesisParamsTestnet2New
+			EpochLengthV2 = Testnet2EpochV2
 		}
 	} else {
 		GenesisParam = genesisParamsMainnetNew
+		EpochLengthV2 = MainnetEpochV2
 	}
 }
 

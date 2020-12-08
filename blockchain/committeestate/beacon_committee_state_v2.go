@@ -39,7 +39,11 @@ type BeaconCommitteeEngineV2 struct {
 	uncommittedBeaconCommitteeStateV2 *BeaconCommitteeStateV2
 }
 
-func NewBeaconCommitteeEngineV2(beaconHeight uint64, beaconHash common.Hash, finalBeaconCommitteeStateV2 *BeaconCommitteeStateV2) *BeaconCommitteeEngineV2 {
+func NewBeaconCommitteeEngineV2(
+	beaconHeight uint64,
+	beaconHash common.Hash,
+	finalBeaconCommitteeStateV2 *BeaconCommitteeStateV2) *BeaconCommitteeEngineV2 {
+	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconHeight)
 	return &BeaconCommitteeEngineV2{
 		beaconHeight:                      beaconHeight,
 		beaconHash:                        beaconHash,
@@ -68,7 +72,6 @@ func NewBeaconCommitteeStateV2WithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
-	numberOfRound map[string]int,
 ) *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
 		beaconCommittee:            beaconCommittee,
@@ -196,6 +199,17 @@ func (engine BeaconCommitteeEngineV2) GetShardCommittee() map[byte][]incognitoke
 	defer engine.finalBeaconCommitteeStateV2.mu.RUnlock()
 	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 	for k, v := range engine.finalBeaconCommitteeStateV2.shardCommittee {
+		shardCommittee[k] = v
+	}
+	return shardCommittee
+}
+
+//GetUncommittedCommittee :
+func (engine BeaconCommitteeEngineV2) GetUncommittedCommittee() map[byte][]incognitokey.CommitteePublicKey {
+	engine.uncommittedBeaconCommitteeStateV2.mu.RLock()
+	defer engine.uncommittedBeaconCommitteeStateV2.mu.RUnlock()
+	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+	for k, v := range engine.uncommittedBeaconCommitteeStateV2.shardCommittee {
 		shardCommittee[k] = v
 	}
 	return shardCommittee
@@ -501,6 +515,14 @@ func SnapshotShardCommonPoolV2(
 			numberOfFixedValidator,
 			minCommitteeSize,
 		)
+
+		if assignPerShard == 0 {
+			assignPerShard = len(v) / MAX_SWAP_OR_ASSIGN_PERCENT
+			if len(v) < MAX_SWAP_OR_ASSIGN_PERCENT {
+				assignPerShard = 1
+			}
+		}
+
 		numberOfAssignedCandidates += assignPerShard
 		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, numberOfAssignedCandidates %+v", k, numberOfAssignedCandidates)
 	}
@@ -625,6 +647,12 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		env.NumberOfFixedShardBlockValidator,
 		env.MissingSignaturePenalty,
 	)
+
+	if len(slashingCommittees) > 0 {
+		Logger.log.Infof("SHARD %+v, Epoch %+v, Slashing Committees %+v", shardID, env.Epoch, slashingCommittees)
+	} else {
+		Logger.log.Infof("SHARD %+v, Epoch %+v, NO Slashing Committees", shardID, env.Epoch)
+	}
 
 	if !reflect.DeepEqual(comparedShardSwapInstruction.InPublicKeys, swapShardInstruction.InPublicKeys) {
 		return nil, returnStakingInstruction, fmt.Errorf("expect swap in keys %+v, got %+v",

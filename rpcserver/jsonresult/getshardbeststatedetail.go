@@ -58,9 +58,6 @@ func NewGetShardBestStateDetail(data *blockchain.ShardBestState) *GetShardBestSt
 		result.BestCrossShard[k] = v
 	}
 	result.StakingTx = make(map[string]string)
-	for k, v := range data.StakingTx.GetMap() {
-		result.StakingTx[k] = v
-	}
 
 	return result
 }
