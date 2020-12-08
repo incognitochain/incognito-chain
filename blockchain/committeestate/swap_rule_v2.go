@@ -2,8 +2,9 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -243,4 +244,21 @@ func getShardIDPositionFromArray(arr []byte) map[byte]byte {
 		m[v] = byte(i)
 	}
 	return m
+}
+
+func getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
+	assignPerShard := getSwapOutOffset(
+		lenShardSubstitute,
+		lenCommittees,
+		numberOfFixedValidators,
+		minCommitteeSize,
+	)
+
+	if assignPerShard == 0 {
+		assignPerShard = lenCommittees / MAX_SWAP_OR_ASSIGN_PERCENT
+		if lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT {
+			assignPerShard = 1
+		}
+	}
+	return assignPerShard
 }

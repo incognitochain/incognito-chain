@@ -509,7 +509,7 @@ func SnapshotShardCommonPoolV2(
 	minCommitteeSize int,
 ) (numberOfAssignedCandidates int) {
 	for k, v := range shardCommittee {
-		assignPerShard := getSwapOutOffset(
+		assignPerShard := getAssignOffset(
 			len(shardSubstitute[k]),
 			len(v),
 			numberOfFixedValidator,
