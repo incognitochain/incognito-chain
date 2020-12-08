@@ -229,10 +229,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
-
-	if newBestState.BeaconHeight == blockchain.config.ChainParams.ConsensusV3Height {
-		newBestState.upgradeCommitteeEngineV2()
-	}
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, newBestState))
 	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v 🔗, "+
@@ -1112,6 +1108,14 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+
+	if newShardState.BeaconHeight == blockchain.config.ChainParams.ConsensusV3Height {
+		err := newShardState.upgradeCommitteeEngineV2(blockchain)
+		if err != nil {
+			panic(NewBlockChainError(-11111, fmt.Errorf("Upgrade Committe Engine Error, %+v", err)))
+		}
+	}
+
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState)
 	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()

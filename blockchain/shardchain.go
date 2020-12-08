@@ -342,3 +342,7 @@ func (chain *ShardChain) BestViewCommitteeFromBlock() common.Hash {
 func (chain *ShardChain) GetChainDatabase() incdb.Database {
 	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }
+
+func (chain *ShardChain) CommitteeEngineVersion() uint {
+	return chain.multiView.GetBestView().CommitteeEngineVersion()
+}

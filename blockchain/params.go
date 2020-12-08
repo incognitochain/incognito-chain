@@ -162,7 +162,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               1,
-		ConsensusV3Height:              TestnetEpoch*7 + 2,
+		ConsensusV3Height:              TestnetEpoch*5 + 8,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,

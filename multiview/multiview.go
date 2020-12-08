@@ -16,8 +16,10 @@ type View interface {
 	GetHeight() uint64
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetPreviousBlockCommittee(db incdb.Database) ([]incognitokey.CommitteePublicKey, error)
+	CommitteeEngineVersion() uint
 	GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey
 	GetBlock() types.BlockInterface
+	GetBeaconHeight() uint64
 }
 
 type MultiView struct {

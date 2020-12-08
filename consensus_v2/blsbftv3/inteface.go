@@ -69,6 +69,7 @@ type ChainInterface interface {
 	GetBestViewHash() string
 	GetFinalViewHash() string
 	GetViewByHash(hash common.Hash) multiview.View
+	CommitteeEngineVersion() uint
 }
 
 //CommitteeChainHandler :

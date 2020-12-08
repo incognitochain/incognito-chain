@@ -137,6 +137,9 @@ func (bc *BlockChain) GetChain(cid int) ChainInterface {
 		return bc.ShardChain[cid]
 	}
 }
+func (beaconBestState *BeaconBestState) GetBeaconHeight() uint64 {
+	return beaconBestState.BeaconHeight
+}
 
 func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error {
 	db := bc.GetBeaconChainDatabase()

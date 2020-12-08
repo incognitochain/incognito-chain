@@ -380,3 +380,7 @@ func (chain *BeaconChain) BestViewCommitteeFromBlock() common.Hash {
 func (chain *BeaconChain) GetChainDatabase() incdb.Database {
 	return chain.Blockchain.GetBeaconChainDatabase()
 }
+
+func (chain *BeaconChain) CommitteeEngineVersion() uint {
+	return chain.multiView.GetBestView().CommitteeEngineVersion()
+}

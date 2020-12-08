@@ -441,16 +441,17 @@ func (shardBestState *ShardBestState) CommitteeEngineVersion() uint {
 }
 
 // @NOTICE: DO NOT UPDATE IN BLOCK WITH SWAP INSTRUCTION
-func (shardBestState *ShardBestState) upgradeCommitteeEngineV2() {
+func (shardBestState *ShardBestState) upgradeCommitteeEngineV2(bc *BlockChain) error {
 	if shardBestState.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
-		return
+		return nil
 	}
 
-	shardCommitteeState := make([]incognitokey.CommitteePublicKey, len(shardBestState.GetShardCommittee()))
-	copy(shardCommitteeState, shardBestState.GetShardCommittee())
-
+	shardCommittees, err := bc.GetShardCommitteeFromBeaconHash(shardBestState.BestBeaconHash, shardBestState.ShardID)
+	if err != nil {
+		return err
+	}
 	newShardCommitteeStateV2 := committeestate.NewShardCommitteeStateV2WithValue(
-		shardCommitteeState,
+		shardCommittees,
 		shardBestState.BestBeaconHash,
 	)
 
@@ -460,4 +461,5 @@ func (shardBestState *ShardBestState) upgradeCommitteeEngineV2() {
 		shardBestState.ShardID,
 		newShardCommitteeStateV2,
 	)
+	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"reflect"
 	"sort"
 	"time"
@@ -106,7 +107,9 @@ func (e *BLSBFT_V3) Start() error {
 	e.Logger.Info("start bls-bftV3 consensus for chain", e.ChainKey)
 	go func() {
 		for { //actor loop
-
+			if e.Chain.CommitteeEngineVersion() != committeestate.SLASHING_VERSION {
+				continue
+			}
 			//e.Logger.Debug("Current time ", currentTime, "time slot ", currentTimeSlot)
 			select {
 			case <-e.StopCh:

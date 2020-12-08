@@ -190,9 +190,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	if beaconBlock.Header.Height%50 == 0 {
 		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
 	}
-	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
-		newBestState.upgradeCommitteeEngineV2(blockchain)
-	}
+
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
 	// For masternode: broadcast new committee to highways
@@ -856,6 +854,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if err := rawdbv2.StoreBeaconBlockByHash(batch, blockHash, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+
+	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
+		newBestState.upgradeCommitteeEngineV2(blockchain)
 	}
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()

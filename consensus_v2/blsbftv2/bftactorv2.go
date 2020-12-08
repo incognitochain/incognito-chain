@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sort"
 	"time"
@@ -107,7 +108,10 @@ func (e *BLSBFT_V2) Start() error {
 	e.Logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
 	go func() {
 		for { //actor loop
-
+			if e.Chain.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
+				e.Logger.Criticalf("Require BFTACTOR V2 FOR Committee Engine V1, current Committee Engine %+v ", e.Chain.CommitteeEngineVersion())
+				continue
+			}
 			//e.Logger.Debug("Current time ", currentTime, "time slot ", currentTimeSlot)
 			select {
 			case <-e.StopCh:
@@ -339,7 +343,6 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 			if err != nil {
 				e.Logger.Error(dsaKey)
 				e.Logger.Error(err)
-				panic(1)
 				v.votes[id].isValid = -1
 				errVote++
 			} else {

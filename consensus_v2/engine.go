@@ -202,7 +202,7 @@ func (engine *Engine) updateVersion(chainID int) {
 		chainHeight = engine.config.Blockchain.BeaconChain.GetBestViewHeight()
 	} else {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
-		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestViewHeight()
+		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
 	}
 
 	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
