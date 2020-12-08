@@ -64,17 +64,17 @@ type Params struct {
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
 	BTCDataFolderName                string
-	BNBFullNodeProtocol       string
-	BNBFullNodeHost           string
-	BNBFullNodePort           string
-	PortalParams              map[uint64]PortalParams
-	PortalFeederAddress       string
-	EpochBreakPointSwapNewKey []uint64
-	IsBackup                  bool
-	PreloadAddress            string
-	ReplaceStakingTxHeight    uint64
-	ETHRemoveBridgeSigEpoch   uint64
-	BCHeightBreakPointNewZKP  uint64
+	BNBFullNodeProtocol              string
+	BNBFullNodeHost                  string
+	BNBFullNodePort                  string
+	PortalParams                     map[uint64]PortalParams
+	PortalFeederAddress              string
+	EpochBreakPointSwapNewKey        []uint64
+	IsBackup                         bool
+	PreloadAddress                   string
+	ReplaceStakingTxHeight           uint64
+	ETHRemoveBridgeSigEpoch          uint64
+	BCHeightBreakPointNewZKP         uint64
 }
 
 type GenesisParams struct {
@@ -264,7 +264,7 @@ func init() {
 		ReplaceStakingTxHeight:    1,
 		IsBackup:                  false,
 		PreloadAddress:            "",
-		BCHeightBreakPointNewZKP:  260000, //TODO: change this value when deployed testnet2
+		BCHeightBreakPointNewZKP:  784000, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:   2085,
 	}
 	// END TESTNET-2
