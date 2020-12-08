@@ -109,8 +109,9 @@ func (e *BLSBFT_V2) Start() error {
 	go func() {
 		for { //actor loop
 			if e.Chain.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
-				e.Logger.Criticalf("Require BFTACTOR V2 FOR Committee Engine V1, current Committee Engine %+v ", e.Chain.CommitteeEngineVersion())
-				continue
+				e.Logger.Infof("CHAIN ID %+v |Require BFTACTOR V2 FOR Committee Engine V1, current Committee Engine %+v ", e.Chain.GetShardID(), e.Chain.CommitteeEngineVersion())
+				e.Logger.Info("stop bls-bft2 consensus for chain", e.ChainKey)
+				return
 			}
 			//e.Logger.Debug("Current time ", currentTime, "time slot ", currentTimeSlot)
 			select {

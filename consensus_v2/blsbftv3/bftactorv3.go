@@ -72,7 +72,7 @@ func (e *BLSBFT_V3) GetConsensusName() string {
 
 func (e *BLSBFT_V3) Stop() error {
 	if e.isStarted {
-		e.Logger.Info("stop bls-bft2 consensus for chain", e.ChainKey)
+		e.Logger.Info("stop bls-bft3 consensus for chain", e.ChainKey)
 		select {
 		case <-e.StopCh:
 			return nil

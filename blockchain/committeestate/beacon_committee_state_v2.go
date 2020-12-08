@@ -612,9 +612,9 @@ func (b *BeaconCommitteeStateV2) assign(
 
 	assignedCandidates := assignShardCandidateV2(candidates, numberOfValidator, rand)
 	for shardID, tempCandidates := range assignedCandidates {
-		candidates, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
-		b.shardSubstitute[shardID] = append(b.shardSubstitute[shardID], candidates...)
-		committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], candidates...)
+		tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
+		committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
+		b.shardSubstitute[shardID] = append(b.shardSubstitute[shardID], tempCandidateStructs...)
 	}
 	return committeeChange
 }
@@ -668,7 +668,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 
 	committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID],
 		incognitokey.DeepCopy(swapShardInstruction.OutPublicKeyStructs)...)
-
 	committeeChange.ShardSubstituteRemoved[shardID] = append(committeeChange.ShardSubstituteRemoved[shardID],
 		incognitokey.DeepCopy(swapShardInstruction.InPublicKeyStructs)...)
 	committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID],
