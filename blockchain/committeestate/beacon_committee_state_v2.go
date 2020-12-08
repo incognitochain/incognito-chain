@@ -495,17 +495,12 @@ func SnapshotShardCommonPoolV2(
 	minCommitteeSize int,
 ) (numberOfAssignedCandidates int) {
 	for k, v := range shardCommittee {
-		assignPerShard := getSwapOutOffset(
+		assignPerShard := getAssignOffset(
 			len(shardSubstitute[k]),
 			len(v),
 			numberOfFixedValidator,
 			minCommitteeSize,
 		)
-
-		if assignPerShard == 0 {
-			assignPerShard = len(v) / MAX_SWAP_OR_ASSIGN_PERCENT
-		}
-
 		numberOfAssignedCandidates += assignPerShard
 		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, numberOfAssignedCandidates %+v", k, numberOfAssignedCandidates)
 	}
