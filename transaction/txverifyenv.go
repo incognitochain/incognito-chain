@@ -1,10 +1,12 @@
 package transaction
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 type ValidationEnv struct {
+	builderSView common.Hash
 	isPrivacy    bool
 	isConfimed   bool
 	txType       string
@@ -29,6 +31,7 @@ func NewValEnv(
 
 func DefaultValEnv() *ValidationEnv {
 	return &ValidationEnv{
+		builderSView: common.EmptyRoot,
 		isConfimed:   false,
 		shardHeight:  0,
 		beaconHeight: 0,
@@ -36,8 +39,23 @@ func DefaultValEnv() *ValidationEnv {
 	}
 }
 
+func WithBuilderSView(vE metadata.ValidationEnviroment, view common.Hash) *ValidationEnv {
+	return &ValidationEnv{
+		builderSView: view,
+		isConfimed:   vE.IsConfimed(),
+		shardHeight:  vE.ShardHeight(),
+		beaconHeight: vE.BeaconHeight(),
+		confimedTime: vE.ConfimedTime(),
+		shardID:      vE.ShardID(),
+		version:      vE.Version(),
+		isPrivacy:    true,
+		txType:       vE.TxType(),
+	}
+}
+
 func WithPrivacy(vE metadata.ValidationEnviroment) *ValidationEnv {
 	return &ValidationEnv{
+		builderSView: vE.BuilderSView(),
 		isConfimed:   vE.IsConfimed(),
 		shardHeight:  vE.ShardHeight(),
 		beaconHeight: vE.BeaconHeight(),
@@ -51,6 +69,7 @@ func WithPrivacy(vE metadata.ValidationEnviroment) *ValidationEnv {
 
 func WithNoPrivacy(vE metadata.ValidationEnviroment) *ValidationEnv {
 	return &ValidationEnv{
+		builderSView: vE.BuilderSView(),
 		isConfimed:   vE.IsConfimed(),
 		shardHeight:  vE.ShardHeight(),
 		beaconHeight: vE.BeaconHeight(),
@@ -64,6 +83,7 @@ func WithNoPrivacy(vE metadata.ValidationEnviroment) *ValidationEnv {
 
 func WithShardID(vE metadata.ValidationEnviroment, sID int) *ValidationEnv {
 	return &ValidationEnv{
+		builderSView: vE.BuilderSView(),
 		isConfimed:   vE.IsConfimed(),
 		shardHeight:  vE.ShardHeight(),
 		beaconHeight: vE.BeaconHeight(),
@@ -77,6 +97,7 @@ func WithShardID(vE metadata.ValidationEnviroment, sID int) *ValidationEnv {
 
 func WithShardHeight(vE metadata.ValidationEnviroment, sHeight uint64) *ValidationEnv {
 	return &ValidationEnv{
+		builderSView: vE.BuilderSView(),
 		isConfimed:   vE.IsConfimed(),
 		shardHeight:  sHeight,
 		beaconHeight: vE.BeaconHeight(),
@@ -90,6 +111,7 @@ func WithShardHeight(vE metadata.ValidationEnviroment, sHeight uint64) *Validati
 
 func WithBeaconHeight(vE metadata.ValidationEnviroment, bcHeight uint64) *ValidationEnv {
 	return &ValidationEnv{
+		builderSView: vE.BuilderSView(),
 		isConfimed:   vE.IsConfimed(),
 		shardHeight:  vE.ShardHeight(),
 		beaconHeight: bcHeight,
@@ -103,6 +125,7 @@ func WithBeaconHeight(vE metadata.ValidationEnviroment, bcHeight uint64) *Valida
 
 func WithConfirmedTime(vE metadata.ValidationEnviroment, confimedTime int64) *ValidationEnv {
 	return &ValidationEnv{
+		builderSView: vE.BuilderSView(),
 		isConfimed:   true,
 		shardHeight:  vE.ShardHeight(),
 		beaconHeight: vE.BeaconHeight(),
@@ -116,6 +139,7 @@ func WithConfirmedTime(vE metadata.ValidationEnviroment, confimedTime int64) *Va
 
 func WithType(vE metadata.ValidationEnviroment, t string) *ValidationEnv {
 	return &ValidationEnv{
+		builderSView: vE.BuilderSView(),
 		isConfimed:   vE.IsConfimed(),
 		shardHeight:  vE.ShardHeight(),
 		beaconHeight: vE.BeaconHeight(),
@@ -150,4 +174,7 @@ func (vE *ValidationEnv) ConfimedTime() int64 {
 }
 func (vE *ValidationEnv) Version() int {
 	return vE.version
+}
+func (vE *ValidationEnv) BuilderSView() common.Hash {
+	return vE.builderSView
 }

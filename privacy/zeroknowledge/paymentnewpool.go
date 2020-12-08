@@ -74,28 +74,27 @@ func (proof PaymentProof) VerifySanityData(
 
 	return false, nil
 }
+
 func (proof PaymentProof) VerifyV2(
 	vEnv privacy.ValidationEnviroment,
 	pubKey privacy.PublicKey,
 	fee uint64,
-	shardID byte,
+	// shardID byte,
 	tokenID *common.Hash,
 ) (
 	bool,
 	error,
 ) {
-	// has no privacy
 	if !vEnv.IsPrivacy() {
-		return proof.verifyNoPrivacyV2(pubKey, fee, shardID, tokenID, vEnv)
+		return proof.verifyNoPrivacyV2(pubKey, fee, tokenID, vEnv)
 	}
-
-	return proof.verifyHasPrivacyV2(pubKey, fee, shardID, tokenID, vEnv)
+	return proof.verifyHasPrivacyV2(pubKey, fee, tokenID, vEnv)
 }
 
 func (proof PaymentProof) verifyNoPrivacyV2(
 	pubKey privacy.PublicKey,
 	fee uint64,
-	shardID byte,
+	// shardID byte,
 	tokenID *common.Hash,
 	vEnv privacy.ValidationEnviroment,
 ) (
@@ -203,7 +202,7 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 	pubKey privacy.PublicKey,
 	fee uint64,
 	// stateDB *statedb.StateDB,
-	shardID byte,
+	// shardID byte,
 	tokenID *common.Hash,
 	vEnv privacy.ValidationEnviroment,
 ) (
@@ -212,7 +211,7 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 ) {
 
 	isNewZKP := IsNewZKP(vEnv.BeaconHeight())
-
+	shardID := byte(vEnv.ShardID())
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
 		privacy.Logger.Log.Debugf("[TEST] input coins %v\n ShardID %v fee %v", i, shardID, fee)
 		privacy.Logger.Log.Debugf("[TEST] commitments indices %v\n", proof.commitmentIndices[i*privacy.CommitmentRingSize:i*privacy.CommitmentRingSize+8])

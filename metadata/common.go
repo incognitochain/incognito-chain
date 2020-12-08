@@ -170,3 +170,19 @@ func HasBridgeInstructions(instructions [][]string) bool {
 	}
 	return false
 }
+
+func NoInputNoOutput(metaType int) bool {
+	return false
+}
+
+func HasInputNoOutput(metaType int) bool {
+	return false
+}
+
+func NoInputHasOutput(metaType int) bool {
+	return false
+}
+
+func IsAvailableMetaInTxType(metaType int, txType string) bool {
+	return true
+}

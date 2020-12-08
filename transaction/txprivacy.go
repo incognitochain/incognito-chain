@@ -470,6 +470,16 @@ func (tx *Tx) VerifySigTx() (bool, error) {
 	return res, nil
 }
 
+func (tx *Tx) LoadCommitment(
+	db *statedb.StateDB,
+	tokenID *common.Hash,
+) error {
+	if tx.valEnv.IsPrivacy() {
+		return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
+	}
+	return nil
+}
+
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
