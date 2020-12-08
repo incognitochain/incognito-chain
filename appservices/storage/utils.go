@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/appservices/data"
 	"github.com/incognitochain/incognito-chain/appservices/storage/model"
 	"github.com/incognitochain/incognito-chain/common"
@@ -382,15 +384,19 @@ func StoreLatestShardFinalState(ctx context.Context, shard *data.Shard) error {
 		}
 	}
 
-	if len(shard.TokenState) > 0 {
-		tokenState := GetTokenStateFromShardState(shard)
-		if err := GetDBDriver(MONGODB).GetTokenStateStorer().StoreTokenState(ctx, tokenState); err != nil {
-			panic(err)
-			return err
-		}
-
+	tokenState := GetTokenStateFromShardState(shard)
+	if err := GetDBDriver(MONGODB).GetTokenStateStorer().StoreTokenState(ctx, tokenState); err != nil {
+		panic(err)
+		return err
 	}
-	//fmt.Scanln()
+
+	rewardState := GetRewardStateFromShardState(shard)
+	if err := GetDBDriver(MONGODB).GetCommitteeRewardStateStorer().StoreCommitteeRewardState(ctx, rewardState); err != nil {
+		panic(err)
+		return err
+	}
+
+	fmt.Scanln()
 	return nil
 }
 
@@ -448,7 +454,6 @@ func getTransactionFromShardState(shard *data.Shard) []model.Transaction {
 			Info:                 string(transaction.Info),
 			SigPubKey:            base58.Base58Check{}.Encode(transaction.SigPubKey, 0x0),
 			Sig:                  base58.Base58Check{}.Encode(transaction.Sig, 0x0),
-			Metadata:             transaction.Metadata,
 			PubKeyLastByteSender: transaction.PubKeyLastByteSender,
 			InputCoinPubKey: transaction.InputCoinPubKey,
 			IsInBlock: true,
@@ -456,6 +461,10 @@ func getTransactionFromShardState(shard *data.Shard) []model.Transaction {
 		}
 		newTransaction.ProofDetail, newTransaction.Proof = 	getProofDetail(transaction)
 		newTransaction.CustomTokenData =  ""
+		if transaction.Metadata != nil {
+			metaData, _ := json.MarshalIndent(transaction.Metadata, "", "\t")
+			newTransaction.Metadata = string(metaData)
+		}
 		if transaction.TxPrivacy != nil {
 			newTransaction.PrivacyCustomTokenID = transaction.TxPrivacy.PropertyID
 			newTransaction.PrivacyCustomTokenName = transaction.TxPrivacy.PropertyName
@@ -556,23 +565,23 @@ func getInputCoinFromShardState(shard *data.Shard) []model.InputCoin {
 				ShardHeight:     shard.BeaconHeight,
 				TransactionHash: transaction.Hash,
 				Value:           input.Value,
-				Info:            input.Info,
+				Info:            string(input.Info),
 				TokenID:         input.TokenID,
 			}
 			if input.PublicKey != nil {
-				inputCoin.PublicKey = input.PublicKey.ToBytesS()
+				inputCoin.PublicKey =   base58.Base58Check{}.Encode(input.PublicKey.ToBytesS(), common.ZeroByte)
 			}
 			if input.CoinCommitment != nil {
-				inputCoin.CoinCommitment = input.CoinCommitment.ToBytesS()
+				inputCoin.CoinCommitment = base58.Base58Check{}.Encode(input.CoinCommitment.ToBytesS(), common.ZeroByte)
 			}
 			if input.SNDerivator != nil {
-				inputCoin.SNDerivator = input.SNDerivator.ToBytesS()
+				inputCoin.SNDerivator = base58.Base58Check{}.Encode(input.SNDerivator.ToBytesS(), common.ZeroByte)
 			}
 			if input.SerialNumber != nil {
-				inputCoin.SerialNumber = input.SerialNumber.ToBytesS()
+				inputCoin.SerialNumber = base58.Base58Check{}.Encode(input.SerialNumber.ToBytesS(), common.ZeroByte)
 			}
 			if input.Randomness != nil {
-				inputCoin.Randomness = input.Randomness.ToBytesS()
+				inputCoin.Randomness = base58.Base58Check{}.Encode(input.Randomness.ToBytesS(), common.ZeroByte)
 			}
 			inputCoins = append(inputCoins, inputCoin)
 		}
@@ -592,7 +601,7 @@ func getCrossShardOutputCoinFromShardState(shard *data.Shard) []model.OutputCoin
 			ShardHeight:      shard.BeaconHeight,
 			TransactionHash:  output.TransactionHash,
 			Value:            output.Value,
-			Info:             output.Info,
+			Info:             string(output.Info),
 			TokenID:          output.TokenID,
 			FromShardID:      output.FromShardID,
 			ToShardID:        output.ToShardID,
@@ -606,19 +615,19 @@ func getCrossShardOutputCoinFromShardState(shard *data.Shard) []model.OutputCoin
 			Amount:           output.Amount,
 		}
 		if output.PublicKey != nil {
-			outputCoin.PublicKey = output.PublicKey.ToBytesS()
+			outputCoin.PublicKey = base58.Base58Check{}.Encode(output.PublicKey.ToBytesS(), common.ZeroByte)
 		}
 		if output.CoinCommitment != nil {
-			outputCoin.CoinCommitment = output.CoinCommitment.ToBytesS()
+			outputCoin.CoinCommitment = base58.Base58Check{}.Encode(output.CoinCommitment.ToBytesS(), common.ZeroByte)
 		}
 		if output.SNDerivator != nil {
-			outputCoin.SNDerivator = output.SNDerivator.ToBytesS()
+			outputCoin.SNDerivator = base58.Base58Check{}.Encode(output.SNDerivator.ToBytesS(), common.ZeroByte)
 		}
 		if output.SerialNumber != nil {
-			outputCoin.SerialNumber = output.SerialNumber.ToBytesS()
+			outputCoin.SerialNumber = base58.Base58Check{}.Encode(output.SerialNumber.ToBytesS(), common.ZeroByte)
 		}
 		if output.Randomness != nil {
-			outputCoin.Randomness = output.Randomness.ToBytesS()
+			outputCoin.Randomness = base58.Base58Check{}.Encode(output.Randomness.ToBytesS(), common.ZeroByte)
 		}
 		outputCoins = append(outputCoins, outputCoin)
 	}
@@ -636,7 +645,7 @@ func getOutputCoinForThisShardFromShardState(shard *data.Shard) []model.OutputCo
 			ShardHeight:      shard.BeaconHeight,
 			TransactionHash:  output.TransactionHash,
 			Value:            output.Value,
-			Info:             output.Info,
+			Info:             string(output.Info),
 			TokenID:          output.TokenID,
 			FromShardID:      output.FromShardID,
 			ToShardID:        output.ToShardID,
@@ -650,19 +659,19 @@ func getOutputCoinForThisShardFromShardState(shard *data.Shard) []model.OutputCo
 			Amount:           output.Amount,
 		}
 		if output.PublicKey != nil {
-			outputCoin.PublicKey = output.PublicKey.ToBytesS()
+			outputCoin.PublicKey = base58.Base58Check{}.Encode(output.PublicKey.ToBytesS(), common.ZeroByte)
 		}
 		if output.CoinCommitment != nil {
-			outputCoin.CoinCommitment = output.CoinCommitment.ToBytesS()
+			outputCoin.CoinCommitment = base58.Base58Check{}.Encode(output.CoinCommitment.ToBytesS(), common.ZeroByte)
 		}
 		if output.SNDerivator != nil {
-			outputCoin.SNDerivator = output.SNDerivator.ToBytesS()
+			outputCoin.SNDerivator = base58.Base58Check{}.Encode(output.SNDerivator.ToBytesS(), common.ZeroByte)
 		}
 		if output.SerialNumber != nil {
-			outputCoin.SerialNumber = output.SerialNumber.ToBytesS()
+			outputCoin.SerialNumber = base58.Base58Check{}.Encode(output.SerialNumber.ToBytesS(), common.ZeroByte)
 		}
 		if output.Randomness != nil {
-			outputCoin.Randomness = output.Randomness.ToBytesS()
+			outputCoin.Randomness = base58.Base58Check{}.Encode(output.Randomness.ToBytesS(), common.ZeroByte)
 		}
 		outputCoins = append(outputCoins, outputCoin)
 	}
@@ -679,7 +688,7 @@ func getCommitmentFromShardState(shard *data.Shard) []model.Commitment {
 			TransactionHash: commitment.TransactionHash,
 			TokenID:         commitment.TokenID,
 			ShardId:         commitment.ShardID,
-			Commitment:      commitment.Commitment,
+			Commitment:      base58.Base58Check{}.Encode(commitment.Commitment,common.ZeroByte),
 			Index:           commitment.Index,
 		})
 	}
@@ -707,6 +716,25 @@ func GetTokenStateFromShardState(shard *data.Shard) model.TokenState {
 			Txs:            token.Txs,
 		})
 	}
-	tokenState.TokenInformations = tokenInformations
+	tokenState.Token = tokenInformations
 	return tokenState
+}
+
+func GetRewardStateFromShardState(shard *data.Shard) model.CommitteeRewardState {
+	rewardsState := model.CommitteeRewardState{
+		ShardID:     shard.ShardID,
+		ShardHash:   shard.BlockHash,
+		ShardHeight: shard.Height,
+	}
+	rewards := make(map[string]map[string]uint64)
+
+	for address, token := range shard.CommitteeRewardState {
+		tokenAmount := make(map[string]uint64)
+		for token, amount := range token {
+			tokenAmount[token] = amount
+		}
+		rewards[address] = tokenAmount
+	}
+	rewardsState.CommitteeRewardState = rewards
+	return rewardsState
 }
