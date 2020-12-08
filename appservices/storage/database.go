@@ -39,6 +39,8 @@ type DatabaseDriver interface {
 
 	GetTokenStateStorer() repository.TokenStateStorer
 
+	GetCommitteeRewardStateStorer () repository.CommitteeRewardStateStorer
+
 
 }
 

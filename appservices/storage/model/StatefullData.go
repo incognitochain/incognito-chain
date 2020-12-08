@@ -118,10 +118,10 @@ type LockedCollateral struct {
 
 
 type TokenState struct {
-	ShardID		   byte
+	ShardID		   byte         `json:"ShardID"`
 	ShardHash 			string `json:"ShardHash"`
 	ShardHeight 		uint64 `json:"ShardHeight"`
-	TokenInformations   []TokenInformation `json:"TokenInformation"`
+	Token   []TokenInformation `json:"Token"`
 }
 
 type TokenInformation struct {
@@ -134,4 +134,11 @@ type TokenInformation struct {
 	Info           []byte
 	InitTx         string
 	Txs            []string
+}
+
+type CommitteeRewardState struct {
+	ShardID		   byte         `json:"ShardID"`
+	ShardHash 			string `json:"ShardHash"`
+	ShardHeight 		uint64 `json:"ShardHeight"`
+	CommitteeRewardState map[string]map[string]uint64 `json:"CommitteeRewardState"` //address->tokenId->amount
 }

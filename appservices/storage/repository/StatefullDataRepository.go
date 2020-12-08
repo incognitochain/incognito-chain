@@ -173,3 +173,8 @@ type LockedCollateralRepository interface {
 type TokenStateStorer interface {
 	StoreTokenState (ctx context.Context, tokenState model.TokenState) error
 }
+
+
+type CommitteeRewardStateStorer interface {
+	StoreCommitteeRewardState (ctx context.Context, tokenState model.CommitteeRewardState) error
+}

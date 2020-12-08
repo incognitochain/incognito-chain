@@ -38,6 +38,9 @@ const (
 	//TokenState
 	TokenState = "TokenState"
 
+	//RewardState
+	RewardState = "RewardState"
+
 	//PDE Collections
 	PDEShare               = "PDEShare"
 	PDEPoolForPair         = "PDEPoolForPair"
@@ -98,6 +101,9 @@ type mongoDBDriver struct {
 
 	//TokenState
 	tokenStateStorer *mongoTokenStateStorer
+
+	//RewardState
+	rewardStateStorer *mongoRewardStateStorer
 
 	//PDE
 	pdeShareStorer               *mongoPDEShareStorer
@@ -169,6 +175,12 @@ type mongoTokenStateStorer struct {
 	collection [256]*mongo.Collection
 }
 
+//Reward State
+type mongoRewardStateStorer struct {
+	mongo 		*mongoDBDriver
+	prefix     string
+	collection [256]*mongo.Collection
+}
 
 //PDE
 type mongoPDEShareStorer struct {
@@ -277,6 +289,14 @@ func (mongo *mongoDBDriver) GetTokenStateStorer() repository.TokenStateStorer {
 		mongo.tokenStateStorer = &mongoTokenStateStorer{prefix: TokenState, mongo: mongo}
 	}
 	return mongo.tokenStateStorer
+}
+
+//Get RewardState Storer
+func (mongo *mongoDBDriver) GetCommitteeRewardStateStorer() repository.CommitteeRewardStateStorer {
+	if mongo.rewardStateStorer == nil {
+		mongo.rewardStateStorer = &mongoRewardStateStorer{prefix: RewardState, mongo: mongo}
+	}
+	return mongo.rewardStateStorer
 }
 
 //PDE Get Storer
@@ -495,5 +515,16 @@ func (tokenStateStorer *mongoTokenStateStorer)StoreTokenState (ctx context.Conte
 			tokenStateStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
 	}
 	_, err := tokenStateStorer.collection[tokenState.ShardID].InsertOne(ctx, tokenState)
+	return err
+}
+
+//Store Reward State data
+func (rewardStateStorer *mongoRewardStateStorer) StoreCommitteeRewardState (ctx context.Context, tokenState model.CommitteeRewardState) error {
+	if rewardStateStorer.collection[tokenState.ShardID] == nil {
+		collectionName := fmt.Sprintf("%s-%d", rewardStateStorer.prefix, tokenState.ShardID)
+		rewardStateStorer.collection[tokenState.ShardID] =
+			rewardStateStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
+	}
+	_, err := rewardStateStorer.collection[tokenState.ShardID].InsertOne(ctx, tokenState)
 	return err
 }

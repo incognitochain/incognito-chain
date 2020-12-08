@@ -1,7 +1,6 @@
 package model
 
 import (
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
@@ -24,7 +23,7 @@ type Transaction struct {
 	SigPubKey            string `json:"SigPubKey,omitempty"` // 33 bytes
 	Sig                  string `json:"Sig,omitempty"`       //
 	PubKeyLastByteSender byte
-	Metadata                      metadata.Metadata      `json:"Metadata"`
+	Metadata                      string     `json:"Metadata"`
 	CustomTokenData               string      `json:"CustomTokenData"`
 	PrivacyCustomTokenID          string      `json:"PrivacyCustomTokenID"`
 	PrivacyCustomTokenName        string      `json:"PrivacyCustomTokenName"`
@@ -58,13 +57,13 @@ type InputCoin struct {
 	ShardHash 			string `json:"ShardHash"`
 	ShardHeight 		uint64 `json:"ShardHeight"`
 	TransactionHash                string `json:"TransactionHash"`
-	PublicKey      []byte `json:"PublicKey"`
-	CoinCommitment []byte `json:"CoinCommitment"`
-	SNDerivator    []byte `json:"SNDerivator"`
-	SerialNumber   []byte `json:"SerialNumber"`
-	Randomness     []byte `json:"Randomness"`
+	PublicKey      string `json:"PublicKey"`
+	CoinCommitment string `json:"CoinCommitment"`
+	SNDerivator    string `json:"SNDerivator"`
+	SerialNumber   string `json:"SerialNumber"`
+	Randomness     string `json:"Randomness"`
 	Value          uint64 `json:"Value"`
-	Info           []byte `json:"Info"` //256 bytes
+	Info           string `json:"Info"` //256 bytes
 	TokenID		   string `json:"TokenID"`
 
 }
@@ -74,13 +73,13 @@ type OutputCoin struct {
 	ShardHash 			string `json:"ShardHash"`
 	ShardHeight 		uint64 `json:"ShardHeight"`
 	TransactionHash     string `json:"TransactionHash"`
-	PublicKey      		[]byte `json:"PublicKey"`
-	CoinCommitment 		[]byte `json:"CoinCommitment"`
-	SNDerivator    		[]byte `json:"SNDerivator"`
-	SerialNumber   		[]byte `json:"SerialNumber"`
-	Randomness     		[]byte `json:"Randomness"`
+	PublicKey      		string `json:"PublicKey"`
+	CoinCommitment 		string `json:"CoinCommitment"`
+	SNDerivator    		string `json:"SNDerivator"`
+	SerialNumber   		string `json:"SerialNumber"`
+	Randomness     		string `json:"Randomness"`
 	Value          		uint64 `json:"Value"`
-	Info           		[]byte `json:"Info"` //256 bytes
+	Info           		string `json:"Info"` //256 bytes
 	TokenID		   		string  `json:"TokenID"`
 	FromShardID      	byte `json:"FromShardID"`
 	ToShardID        	byte `json:"ToShardID"`
@@ -101,6 +100,6 @@ type Commitment struct {
 	ShardHeight 		uint64 `json:"ShardHeight"`
 	TransactionHash string `json:"TransactionHash"`
 	TokenID    string `json:"TokenID"`
-	Commitment []byte `json:"Commitment"`
+	Commitment string `json:"Commitment"`
 	Index      uint64 `json:"Index"`
 }
