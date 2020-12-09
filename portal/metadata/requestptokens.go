@@ -109,7 +109,7 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(chainRetriever basemeta
 	}
 
 	// validate tokenID and porting proof
-	if !!chainRetriever.IsPortalToken(beaconHeight, reqPToken.TokenID) {
+	if !chainRetriever.IsPortalToken(beaconHeight, reqPToken.TokenID) {
 		return false, false, basemeta.NewMetadataTxError(basemeta.PortalRequestPTokenParamError, errors.New("TokenID is not supported currently on Portal"))
 	}
 

@@ -91,7 +91,7 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
-		if len(inst) < 4 { // this is not PortalRedeemRequest response instruction
+		if len(inst) < 4 { // this is not PortalRedeemRequestV3 response instruction
 			continue
 		}
 		instMetaType := inst[0]
@@ -154,7 +154,7 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf(fmt.Sprintf("no PortalRedeemRequest instruction found for PortalRedeemRequestResponse tx %s", tx.Hash().String()))
+		return false, fmt.Errorf(fmt.Sprintf("no PortalRedeemRequestV3 instruction found for PortalRedeemRequestResponse tx %s", tx.Hash().String()))
 	}
 	instUsed[idx] = 1
 	return true, nil

@@ -37,7 +37,7 @@ func ParseMetadata(meta interface{}) (basemeta.Metadata, error) {
 	case basemeta.PortalUserRequestPTokenResponseMeta:
 		md = &PortalRequestPTokensResponse{}
 	case basemeta.PortalRedeemRequestMeta, basemeta.PortalRedeemRequestMetaV3:
-		md = &PortalRedeemRequest{}
+		md = &PortalRedeemRequestV3{}
 	case basemeta.PortalRedeemRequestResponseMeta:
 		md = &PortalRedeemRequestResponse{}
 	case basemeta.PortalRequestUnlockCollateralMeta, basemeta.PortalRequestUnlockCollateralMetaV3:

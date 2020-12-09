@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-// PortalRedeemRequest - portal user redeem requests to get public token by burning ptoken
+// PortalRedeemRequestV3 - portal user redeem requests to get public token by burning ptoken
 // metadata - redeem request - create normal tx with this metadata
 type PortalExpiredWaitingPortingReq struct {
 	basemeta.MetadataBase

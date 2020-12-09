@@ -660,7 +660,7 @@ func buildPortalRequestRedeemActionV3(
 	shardID byte,
 	shardHeight uint64,
 ) []string {
-	data := portalMeta.PortalRedeemRequest{
+	data := portalMeta.PortalRedeemRequestV3{
 		MetadataBase: basemeta.MetadataBase{
 			Type: basemeta.PortalRedeemRequestMetaV3,
 		},

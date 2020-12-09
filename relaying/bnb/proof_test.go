@@ -12,13 +12,14 @@ import (
 )
 
 func TestGetProofByTxHash(t *testing.T) {
-	txProof, err := getProofByTxHash("421B68266AC570DEC49A12B1DDA0518D59205F4A874A24DB0F9448D4E03720A3", MainnetURLRemote)
+	txProof, height, err := getProofByTxHash("A71E509490912AA82E138361D63253601C4CD20F9508F6880738FEF495CE42C6", MainnetURLRemote)
 	assert.Nil(t, err)
 	fmt.Printf("txProof %v\n", txProof.Data)
 
 	tx, err := ParseTxFromData(txProof.Data)
 	assert.Nil(t, err)
 	fmt.Printf("tx %+v\n", tx)
+	fmt.Printf("Height: %v\n", height)
 }
 
 func TestParseBNBTxFromData(t *testing.T) {
@@ -112,4 +113,10 @@ func TestBuildAndPushBNBProof(t *testing.T) {
 	//	fmt.Printf("err BuildProof: %+v\n", err)
 	//}
 	//fmt.Printf("BNB redeemProof: %+v\n", redeemProof)
+}
+
+func TestBuildProofFromTxID(t *testing.T) {
+	txID := "62F51D5087BF091236DC54C295ADFFA1BC248D14DB8BE7BB5D17B1649C90BA3A"
+	proof, _ := BuildProofFromTxID(txID, TestnetURLRemote)
+	fmt.Printf("Proof: %v", proof)
 }
