@@ -145,6 +145,7 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 		shardID,
 		common.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
 	)
+	Logger.log.Info("Producer: Unlock over rate collaterals inst: %v", inst)
 
 	return [][]string{inst}, nil
 }
