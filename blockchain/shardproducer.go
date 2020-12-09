@@ -19,7 +19,6 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 // NewBlockShard Create New block Shard:
@@ -65,7 +64,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	var (
 		newShardBlockBeginTime            = time.Now()
 		transactionsForNewBlock           = make([]metadata.Transaction, 0)
-		totalTxsFee                       = make(map[common.Hash]uint64)
 		newShardBlock                     = types.NewShardBlock()
 		shardInstructions                 = [][]string{}
 		isOldBeaconHeight                 = false
@@ -233,14 +231,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	producerKey := proposer
 	producerPubKeyStr := proposer
 
-	for _, tx := range newShardBlock.Body.Transactions {
-		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
-		txType := tx.GetType()
-		if txType == common.TxCustomTokenPrivacyType {
-			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
-			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
-		}
-	}
+	totalTxsFee := shardBestState.shardCommitteeEngine.BuildTotalTxsFeeFromTxs(newShardBlock.Body.Transactions)
 
 	newShardBlock.Header = types.ShardHeader{
 		Producer:           producerKey, //committeeMiningKeys[producerPosition],

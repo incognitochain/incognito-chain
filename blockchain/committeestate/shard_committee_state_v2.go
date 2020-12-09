@@ -9,6 +9,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 //ShardCommitteeStateHash
@@ -307,4 +309,23 @@ func (engine ShardCommitteeEngineV2) generateUncommittedCommitteeHashes() (*Shar
 		ShardSubstituteHash: substituteHash,
 		CommitteeFromBlock:  newCommitteeState.committeeFromBlock,
 	}, nil
+}
+
+func (ShardCommitteeEngineV2 ShardCommitteeEngineV2) BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64 {
+	totalTxsFee := make(map[common.Hash]uint64)
+	for _, tx := range txs {
+		switch tx.GetType() {
+		case common.TxNormalType:
+			totalTxsFee[common.PRVCoinID] += tx.GetTxFee()
+		case common.TxCustomTokenPrivacyType:
+			totalTxsFee[common.PRVCoinID] += tx.GetTxFee()
+			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+			totalTxsFee[*txCustomPrivacy.GetTokenID()] += txCustomPrivacy.GetTxFeeToken()
+			Logger.log.Info("[slashing] totalTxsFee[*txCustomPrivacy.GetTokenID()] :", totalTxsFee[*txCustomPrivacy.GetTokenID()])
+		default:
+			Logger.log.Infof("[reward] Skip building reward for transaction %s \n", tx.Hash().String())
+		}
+		Logger.log.Info("[slashing] totalTxsFee[common.PRVCoinID]:", totalTxsFee[common.PRVCoinID])
+	}
+	return totalTxsFee
 }

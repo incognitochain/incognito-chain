@@ -20,7 +20,6 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 // VerifyPreSignShardBlock Verify Shard Block Before Signing
@@ -380,15 +379,9 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 			return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v at block %+v hash %+v", shardBlock.Header.InstructionsRoot, hash, shardBlock.Header.Height, shardBlock.Hash().String()))
 		}
 	}
-	totalTxsFee := make(map[common.Hash]uint64)
-	for _, tx := range shardBlock.Body.Transactions {
-		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
-		txType := tx.GetType()
-		if txType == common.TxCustomTokenPrivacyType {
-			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
-			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
-		}
-	}
+
+	totalTxsFee := curView.shardCommitteeEngine.BuildTotalTxsFeeFromTxs(shardBlock.Body.Transactions)
+
 	tokenIDsfromTxs := make([]common.Hash, 0)
 	for tokenID := range totalTxsFee {
 		tokenIDsfromTxs = append(tokenIDsfromTxs, tokenID)

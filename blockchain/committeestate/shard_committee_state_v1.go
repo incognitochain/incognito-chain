@@ -9,6 +9,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 //ShardCommitteeStateHash
@@ -511,4 +513,16 @@ func (engine *ShardCommitteeEngineV1) ProcessInstructionFromBeacon(
 	}
 
 	return committeeChange, nil
+}
+
+func (ShardCommitteeEngineV1 ShardCommitteeEngineV1) BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64 {
+	totalTxsFee := make(map[common.Hash]uint64)
+	for _, tx := range txs {
+		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
+		if tx.GetType() == common.TxCustomTokenPrivacyType {
+			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
+		}
+	}
+	return totalTxsFee
 }

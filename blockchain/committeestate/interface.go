@@ -4,6 +4,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -55,4 +56,5 @@ type ShardCommitteeEngine interface {
 	CommitteeFromBlock() common.Hash
 	ProcessInstructionFromBeacon(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
 	GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
+	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
 }
