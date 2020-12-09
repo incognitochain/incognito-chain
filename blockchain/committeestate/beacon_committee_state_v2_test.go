@@ -3228,6 +3228,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	paymentAddress0, err := wallet.Base58CheckDeserialize(paymentAddreessKey0)
 	assert.Nil(t, err)
 	rewardReceiverkey0 := incKey0.GetIncKeyBase58()
+	rewardReceiverkey7 := incKey7.GetIncKeyBase58()
 	rewardReceiverKey := incKey.GetIncKeyBase58()
 	paymentAddress, err := wallet.Base58CheckDeserialize(paymentAddreessKey0)
 	assert.Nil(t, err)
@@ -3328,31 +3329,49 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	committeeChangeStopAutoStakeAndRandomTime := NewCommitteeChange()
 	committeeChangeStopAutoStakeAndRandomTime.StopAutoStake = []string{key0}
 
-	statedb.StoreStakerInfo(
-		sDB,
-		[]incognitokey.CommitteePublicKey{*incKey0},
-		map[string]privacy.PaymentAddress{
-			rewardReceiverkey0: paymentAddress0.KeySet.PaymentAddress,
-		},
-		map[string]bool{
-			key0: true,
-		},
-		map[string]common.Hash{
-			key0: *hash,
-		},
-	)
+	committeeChangeTwoSwapOut := NewCommitteeChange()
+	committeeChangeTwoSwapOut.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
+		*incKey,
+	}
+	committeeChangeTwoSwapOut.ShardCommitteeRemoved[1] = []incognitokey.CommitteePublicKey{
+		*incKey7,
+	}
+	committeeChangeTwoSwapOut.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
+		*incKey5,
+	}
+	committeeChangeTwoSwapOut.ShardCommitteeAdded[1] = []incognitokey.CommitteePublicKey{
+		*incKey11,
+	}
+	committeeChangeTwoSwapOut.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
+		*incKey7,
+	}
+	committeeChangeTwoSwapOut.ShardSubstituteAdded[1] = []incognitokey.CommitteePublicKey{
+		*incKey,
+	}
+	committeeChangeTwoSwapOut.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
+		*incKey5,
+	}
+	committeeChangeTwoSwapOut.ShardSubstituteRemoved[1] = []incognitokey.CommitteePublicKey{
+		*incKey11,
+	}
 
 	statedb.StoreStakerInfo(
 		sDB,
-		[]incognitokey.CommitteePublicKey{*incKey},
+		[]incognitokey.CommitteePublicKey{*incKey, *incKey0, *incKey7},
 		map[string]privacy.PaymentAddress{
-			rewardReceiverKey: paymentAddress.KeySet.PaymentAddress,
+			rewardReceiverKey:  paymentAddress.KeySet.PaymentAddress,
+			rewardReceiverkey0: paymentAddress0.KeySet.PaymentAddress,
+			rewardReceiverkey7: paymentAddress0.KeySet.PaymentAddress,
 		},
 		map[string]bool{
-			key: true,
+			key:  true,
+			key0: true,
+			key7: true,
 		},
 		map[string]common.Hash{
-			key: *tempHash,
+			key:  *tempHash,
+			key0: *hash,
+			key7: *hash,
 		},
 	)
 
@@ -4698,6 +4717,118 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 			},
 			want:    &BeaconCommitteeStateHash{},
 			want1:   committeeChangeUnstakeSwapOut,
+			want2:   [][]string{},
+			wantErr: false,
+		},
+		{
+			name: "Double Swap Instruction for 2 shard, Back to substitutes",
+			fields: fields{
+				beaconHash:   *hash,
+				version:      SLASHING_VERSION,
+				beaconHeight: 10,
+				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					beaconCommittee: []incognitokey.CommitteePublicKey{},
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey2, *incKey3, *incKey4,
+						},
+						1: []incognitokey.CommitteePublicKey{
+							*incKey7, *incKey8, *incKey9, *incKey10,
+						},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey5, *incKey13,
+						},
+						1: []incognitokey.CommitteePublicKey{
+							*incKey11, *incKey12,
+						},
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{},
+					mu:              finalMu,
+					autoStake: map[string]bool{
+						key0: true,
+						key7: true,
+						key:  true,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+						incKey7.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+						incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key0: *hash,
+						key7: *hash,
+						key:  *tempHash,
+					},
+				},
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					mu: unCommitteedMu,
+				},
+			},
+			fieldsAfterProcess: fields{
+				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+					beaconCommittee: []incognitokey.CommitteePublicKey{},
+					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey2, *incKey3, *incKey4, *incKey5,
+						},
+						1: []incognitokey.CommitteePublicKey{
+							*incKey8, *incKey9, *incKey10, *incKey11,
+						},
+					},
+					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey13, *incKey7,
+						},
+						1: []incognitokey.CommitteePublicKey{
+							*incKey12, *incKey,
+						},
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{},
+					mu:              unCommitteedMu,
+					autoStake: map[string]bool{
+						key0: true,
+						key7: true,
+						key:  true,
+					},
+					rewardReceiver: map[string]privacy.PaymentAddress{
+						incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+						incKey7.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+						incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
+					},
+					stakingTx: map[string]common.Hash{
+						key0: *hash,
+						key7: *hash,
+						key:  *tempHash,
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.SWAP_SHARD_ACTION,
+							key5,
+							key,
+							"0",
+							"0",
+						},
+						[]string{
+							instruction.SWAP_SHARD_ACTION,
+							key11,
+							key7,
+							"1",
+							"0",
+						},
+					},
+					ConsensusStateDB:      sDB,
+					ActiveShards:          2,
+					MaxShardCommitteeSize: 4,
+				},
+			},
+			want:    &BeaconCommitteeStateHash{},
+			want1:   committeeChangeTwoSwapOut,
 			want2:   [][]string{},
 			wantErr: false,
 		},
