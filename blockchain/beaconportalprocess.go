@@ -11,9 +11,9 @@ import (
 
 func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
 	// Note: should comment this code if you need to create local chain.
-	if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {
-		return nil
-	}
+	//if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {
+	//	return nil
+	//}
 	beaconHeight := block.Header.Height - 1
 	currentPortalState, err := InitCurrentPortalStateFromDB(portalStateDB)
 	if err != nil {

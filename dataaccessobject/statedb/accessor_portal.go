@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"log"
 )
 
 //======================  Redeem  ======================
@@ -769,7 +768,6 @@ func StorePortalExchangeRateStatus(stateDB *StateDB, txID string, statusContent 
 
 func StorePortalUnlockOverRateCollaterals(stateDB *StateDB, txID string, statusContent []byte) error {
 	statusType := PortalUnlockOverRateCollateralsRequestStatusPrefix()
-	log.Printf("thachtb %v\n", txID)
 	statusSuffix := []byte(txID)
 	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
 	if err != nil {
