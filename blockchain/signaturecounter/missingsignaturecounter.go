@@ -1,6 +1,7 @@
 package signaturecounter
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 
@@ -96,6 +97,9 @@ func (s *MissingSignatureCounter) AddMissingSignature(data string, toBeSignedCom
 	tempToBeSignedCommittees, _ := incognitokey.CommitteeKeyListToString(toBeSignedCommittees)
 	signedCommittees := make(map[string]struct{})
 	for _, idx := range validationData.ValidatiorsIdx {
+		if idx >= len(tempToBeSignedCommittees) {
+			return fmt.Errorf("Idx = %+v, greater than len(toBeSignedCommittees) = %+v", idx, len(tempToBeSignedCommittees))
+		}
 		signedCommittees[tempToBeSignedCommittees[idx]] = struct{}{}
 	}
 	for _, toBeSignedCommittee := range tempToBeSignedCommittees {
