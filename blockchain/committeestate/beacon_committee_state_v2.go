@@ -516,13 +516,6 @@ func SnapshotShardCommonPoolV2(
 			minCommitteeSize,
 		)
 
-		if assignPerShard == 0 {
-			assignPerShard = len(v) / MAX_SWAP_OR_ASSIGN_PERCENT
-			if len(v) < MAX_SWAP_OR_ASSIGN_PERCENT {
-				assignPerShard = 1
-			}
-		}
-
 		numberOfAssignedCandidates += assignPerShard
 		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, numberOfAssignedCandidates %+v", k, numberOfAssignedCandidates)
 	}
@@ -636,7 +629,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 	tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-	comparedShardSwapInstruction, newCommittees, newSubstitutes,
+	comparedShardSwapInstruction, newCommittees, _,
 		slashingCommittees, normalSwapOutCommittees := createSwapShardInstructionV3(
 		shardID,
 		tempSubstitutes,
@@ -664,7 +657,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	}
 
 	b.shardCommittee[shardID], _ = incognitokey.CommitteeBase58KeyListToStruct(newCommittees)
-	b.shardSubstitute[shardID], _ = incognitokey.CommitteeBase58KeyListToStruct(newSubstitutes)
+	b.shardSubstitute[shardID] = b.shardSubstitute[shardID][len(swapShardInstruction.InPublicKeys):]
 
 	committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID],
 		incognitokey.DeepCopy(swapShardInstruction.OutPublicKeyStructs)...)
