@@ -91,11 +91,23 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 	custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.Meta.CustodianAddressStr).String()
 	custodianState := currentPortalState.CustodianPoolState[custodianStateKey]
 	tokenAmountListInWaitingPoring := GetTotalLockedCollateralAmountInWaitingPortingsV3(currentPortalState, custodianState, actionData.Meta.TokenID)
-	lockedCollaters := cloneMap(custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID])
-	if lockedCollaters == nil {
+	if (custodianState.GetLockedTokenCollaterals() == nil || custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID] == nil) && custodianState.GetLockedAmountCollateral() == nil {
+		Logger.log.Error("ERROR: custodian has no collaterals to unlock")
+		return [][]string{rejectInst}, nil
+	}
+	if custodianState.GetHoldingPublicTokens() == nil || custodianState.GetHoldingPublicTokens()[actionData.Meta.TokenID] == 0 {
+		Logger.log.Error("ERROR: custodian has no holding token to unlock")
+		return [][]string{rejectInst}, nil
+	}
+	var lockedCollaters map[string]uint64
+	if custodianState.GetLockedTokenCollaterals() != nil && custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID] != nil {
+		lockedCollaters = cloneMap(custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID])
+	} else {
 		lockedCollaters = make(map[string]uint64, 0)
 	}
-	lockedCollaters[common.PRVIDStr] = custodianState.GetLockedAmountCollateral()[actionData.Meta.TokenID]
+	if custodianState.GetLockedAmountCollateral() != nil {
+		lockedCollaters[common.PRVIDStr] = custodianState.GetLockedAmountCollateral()[actionData.Meta.TokenID]
+	}
 	lockedCollatersExceptPorting := make(map[string]uint64, 0)
 	totalAmountInUSD := uint64(0)
 	for collateralID, tokenValue := range lockedCollaters {
@@ -145,7 +157,6 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 		shardID,
 		common.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
 	)
-	Logger.log.Info("Producer: Unlock over rate collaterals inst: %v", inst)
 
 	return [][]string{inst}, nil
 }
