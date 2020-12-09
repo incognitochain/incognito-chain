@@ -22,11 +22,11 @@ type portalRedeemRequestProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalRedeemRequestProcessor) getActions() map[byte][][]string {
+func (p *portalRedeemRequestProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalRedeemRequestProcessor) putAction(action []string, shardID byte) {
+func (p *portalRedeemRequestProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -35,7 +35,7 @@ func (p *portalRedeemRequestProcessor) putAction(action []string, shardID byte) 
 	}
 }
 
-func (p *portalRedeemRequestProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalRedeemRequestProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -453,11 +453,11 @@ type portalRequestMatchingRedeemProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalRequestMatchingRedeemProcessor) getActions() map[byte][][]string {
+func (p *portalRequestMatchingRedeemProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalRequestMatchingRedeemProcessor) putAction(action []string, shardID byte) {
+func (p *portalRequestMatchingRedeemProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -466,7 +466,7 @@ func (p *portalRequestMatchingRedeemProcessor) putAction(action []string, shardI
 	}
 }
 
-func (p *portalRequestMatchingRedeemProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalRequestMatchingRedeemProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -816,11 +816,11 @@ type portalPickMoreCustodianForRedeemProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalPickMoreCustodianForRedeemProcessor) getActions() map[byte][][]string {
+func (p *portalPickMoreCustodianForRedeemProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalPickMoreCustodianForRedeemProcessor) putAction(action []string, shardID byte) {
+func (p *portalPickMoreCustodianForRedeemProcessor) PutAction(action []string, shardID byte) {
 	// @NOTE: do nothing, because beacon auto check and pick custodians, have no action from shard blocks
 	//_, found := p.actions[shardID]
 	//if !found {
@@ -830,7 +830,7 @@ func (p *portalPickMoreCustodianForRedeemProcessor) putAction(action []string, s
 	//}
 }
 
-func (p *portalPickMoreCustodianForRedeemProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalPickMoreCustodianForRedeemProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -1044,11 +1044,11 @@ type portalRequestUnlockCollateralProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalRequestUnlockCollateralProcessor) getActions() map[byte][][]string {
+func (p *portalRequestUnlockCollateralProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalRequestUnlockCollateralProcessor) putAction(action []string, shardID byte) {
+func (p *portalRequestUnlockCollateralProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -1057,7 +1057,7 @@ func (p *portalRequestUnlockCollateralProcessor) putAction(action []string, shar
 	}
 }
 
-func (p *portalRequestUnlockCollateralProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalRequestUnlockCollateralProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -1174,7 +1174,11 @@ func (p *portalRequestUnlockCollateralProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	isValid, err := portalTokenProcessor.ParseAndVerifyProofForRedeem(meta.RedeemProof, matchedRedeemRequest, bc, matchedCustodian)
+	expectedMemo := portalTokenProcessor.GetExpectedMemoForRedeem(meta.UniqueRedeemID, meta.CustodianAddressStr)
+	expectedPaymentInfos := map[string]uint64{
+		matchedRedeemRequest.GetRedeemerRemoteAddress(): matchedCustodian.GetAmount(),
+	}
+	isValid, err := portalTokenProcessor.ParseAndVerifyProof(meta.RedeemProof, bc, expectedMemo, expectedPaymentInfos)
 	if !isValid || err != nil {
 		Logger.log.Error("Parse and verify redeem proof failed: %v", err)
 		return [][]string{rejectInst}, nil

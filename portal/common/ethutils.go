@@ -23,23 +23,23 @@ import (
 func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs []string) (*types.Receipt, error) {
 	ethHeader, err := metadata.GetETHHeader(blockHash)
 	if err != nil {
-		return nil, metadata.NewMetadataTxError(metadata.VerifyProofAndParseReceiptError, err)
+		return nil, NewPortalCommonError(VerifyProofAndParseReceiptError, err)
 	}
 	if ethHeader == nil {
 		Logger.log.Info("WARNING: Could not find out the ETH block header with the hash: ", blockHash)
-		return nil, metadata.NewMetadataTxError(metadata.VerifyProofAndParseReceiptError, errors.Errorf("WARNING: Could not find out the ETH block header with the hash: %s", blockHash.String()))
+		return nil, NewPortalCommonError(VerifyProofAndParseReceiptError, errors.Errorf("WARNING: Could not find out the ETH block header with the hash: %s", blockHash.String()))
 	}
 
 	mostRecentBlkNum, err := metadata.GetMostRecentETHBlockHeight()
 	if err != nil {
 		Logger.log.Info("WARNING: Could not find the most recent block height on Ethereum")
-		return nil, metadata.NewMetadataTxError(metadata.VerifyProofAndParseReceiptError, err)
+		return nil, NewPortalCommonError(VerifyProofAndParseReceiptError, err)
 	}
 
 	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(ethHeader.Number, big.NewInt(basemeta.ETHConfirmationBlocks))) == -1 {
 		errMsg := fmt.Sprintf("WARNING: It needs 15 confirmation blocks for the process, the requested block (%s) but the latest block (%s)", ethHeader.Number.String(), mostRecentBlkNum.String())
 		Logger.log.Info(errMsg)
-		return nil, metadata.NewMetadataTxError(metadata.VerifyProofAndParseReceiptError, errors.New(errMsg))
+		return nil, NewPortalCommonError(VerifyProofAndParseReceiptError, errors.New(errMsg))
 	}
 
 	keybuf := new(bytes.Buffer)
@@ -58,17 +58,17 @@ func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs 
 	val, _, err := trie.VerifyProof(ethHeader.ReceiptHash, keybuf.Bytes(), proof)
 	if err != nil {
 		fmt.Printf("WARNING: ETH proof verification failed: %v", err)
-		return nil, metadata.NewMetadataTxError(metadata.VerifyProofAndParseReceiptError, err)
+		return nil, NewPortalCommonError(VerifyProofAndParseReceiptError, err)
 	}
 	// Decode value from VerifyProof into Receipt
 	constructedReceipt := new(types.Receipt)
 	err = rlp.DecodeBytes(val, constructedReceipt)
 	if err != nil {
-		return nil, metadata.NewMetadataTxError(metadata.IssuingEthRequestVerifyProofAndParseReceipt, err)
+		return nil, NewPortalCommonError(VerifyProofAndParseReceiptError, err)
 	}
 
 	if constructedReceipt.Status != types.ReceiptStatusSuccessful {
-		return nil, metadata.NewMetadataTxError(metadata.VerifyProofAndParseReceiptError, errors.New("The constructedReceipt's status is not success"))
+		return nil, NewPortalCommonError(VerifyProofAndParseReceiptError, errors.New("The constructedReceipt's status is not success"))
 	}
 
 	return constructedReceipt, nil
@@ -104,7 +104,7 @@ func ParseETHLogDataByEventName(data []byte, name string) (map[string]interface{
 	}
 	dataMap := map[string]interface{}{}
 	if err = abiIns.UnpackIntoMap(dataMap, name, data); err != nil {
-		return nil, metadata.NewMetadataTxError(metadata.UnexpectedError, err)
+		return nil, NewPortalCommonError(UnexpectedError, err)
 	}
 	return dataMap, nil
 }

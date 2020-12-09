@@ -2,15 +2,17 @@ package portaltokens
 
 import (
 	bMeta "github.com/incognitochain/incognito-chain/basemeta"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
 //TODO: add more functions
 type PortalTokenProcessor interface {
-	ParseAndVerifyProofForPorting(proof string, portingReq *statedb.WaitingPortingRequest, bc bMeta.ChainRetriever) (bool, error)
-	ParseAndVerifyProofForRedeem(proof string, redeemReq *statedb.RedeemRequest, bc bMeta.ChainRetriever, matchedCustodian *statedb.MatchingRedeemCustodianDetail) (bool, error)
 	IsValidRemoteAddress(address string) (bool, error)
-	GetChainID() (string)
+	GetChainID() string
+
+	GetExpectedMemoForPorting(portingID string) string
+	GetExpectedMemoForRedeem(redeemID string, custodianIncAddress string) string
+	ParseAndVerifyProof(
+		proof string, bc bMeta.ChainRetriever, expectedMemo string, expectedPaymentInfos map[string]uint64) (bool, error)
 }
 
 type PortalToken struct {

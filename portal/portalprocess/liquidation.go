@@ -26,11 +26,11 @@ type portalRedeemFromLiquidationPoolProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalRedeemFromLiquidationPoolProcessor) getActions() map[byte][][]string {
+func (p *portalRedeemFromLiquidationPoolProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalRedeemFromLiquidationPoolProcessor) putAction(action []string, shardID byte) {
+func (p *portalRedeemFromLiquidationPoolProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -39,7 +39,7 @@ func (p *portalRedeemFromLiquidationPoolProcessor) putAction(action []string, sh
 	}
 }
 
-func (p *portalRedeemFromLiquidationPoolProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalRedeemFromLiquidationPoolProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -287,11 +287,11 @@ type portalRedeemFromLiquidationPoolProcessorV3 struct {
 	*portalInstProcessor
 }
 
-func (p *portalRedeemFromLiquidationPoolProcessorV3) getActions() map[byte][][]string {
+func (p *portalRedeemFromLiquidationPoolProcessorV3) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalRedeemFromLiquidationPoolProcessorV3) putAction(action []string, shardID byte) {
+func (p *portalRedeemFromLiquidationPoolProcessorV3) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -300,7 +300,7 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) putAction(action []string, 
 	}
 }
 
-func (p *portalRedeemFromLiquidationPoolProcessorV3) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalRedeemFromLiquidationPoolProcessorV3) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -549,11 +549,11 @@ type portalCustodianTopupProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalCustodianTopupProcessor) getActions() map[byte][][]string {
+func (p *portalCustodianTopupProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalCustodianTopupProcessor) putAction(action []string, shardID byte) {
+func (p *portalCustodianTopupProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -562,7 +562,7 @@ func (p *portalCustodianTopupProcessor) putAction(action []string, shardID byte)
 	}
 }
 
-func (p *portalCustodianTopupProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalCustodianTopupProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -767,11 +767,11 @@ type portalTopupWaitingPortingReqProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalTopupWaitingPortingReqProcessor) getActions() map[byte][][]string {
+func (p *portalTopupWaitingPortingReqProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalTopupWaitingPortingReqProcessor) putAction(action []string, shardID byte) {
+func (p *portalTopupWaitingPortingReqProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -780,7 +780,7 @@ func (p *portalTopupWaitingPortingReqProcessor) putAction(action []string, shard
 	}
 }
 
-func (p *portalTopupWaitingPortingReqProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalTopupWaitingPortingReqProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -1024,11 +1024,11 @@ type portalCustodianTopupProcessorV3 struct {
 	*portalInstProcessor
 }
 
-func (p *portalCustodianTopupProcessorV3) getActions() map[byte][][]string {
+func (p *portalCustodianTopupProcessorV3) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalCustodianTopupProcessorV3) putAction(action []string, shardID byte) {
+func (p *portalCustodianTopupProcessorV3) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -1037,7 +1037,7 @@ func (p *portalCustodianTopupProcessorV3) putAction(action []string, shardID byt
 	}
 }
 
-func (p *portalCustodianTopupProcessorV3) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalCustodianTopupProcessorV3) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -1378,11 +1378,11 @@ type portalTopupWaitingPortingReqProcessorV3 struct {
 	*portalInstProcessor
 }
 
-func (p *portalTopupWaitingPortingReqProcessorV3) getActions() map[byte][][]string {
+func (p *portalTopupWaitingPortingReqProcessorV3) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalTopupWaitingPortingReqProcessorV3) putAction(action []string, shardID byte) {
+func (p *portalTopupWaitingPortingReqProcessorV3) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -1391,7 +1391,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) putAction(action []string, sha
 	}
 }
 
-func (p *portalTopupWaitingPortingReqProcessorV3) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalTopupWaitingPortingReqProcessorV3) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -1775,11 +1775,11 @@ type portalLiquidationCustodianRunAwayProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalLiquidationCustodianRunAwayProcessor) getActions() map[byte][][]string {
+func (p *portalLiquidationCustodianRunAwayProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalLiquidationCustodianRunAwayProcessor) putAction(action []string, shardID byte) {
+func (p *portalLiquidationCustodianRunAwayProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -1788,7 +1788,7 @@ func (p *portalLiquidationCustodianRunAwayProcessor) putAction(action []string, 
 	}
 }
 
-func (p *portalLiquidationCustodianRunAwayProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalLiquidationCustodianRunAwayProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -2154,11 +2154,11 @@ type portalExpiredWaitingPortingProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalExpiredWaitingPortingProcessor) getActions() map[byte][][]string {
+func (p *portalExpiredWaitingPortingProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalExpiredWaitingPortingProcessor) putAction(action []string, shardID byte) {
+func (p *portalExpiredWaitingPortingProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -2167,7 +2167,7 @@ func (p *portalExpiredWaitingPortingProcessor) putAction(action []string, shardI
 	}
 }
 
-func (p *portalExpiredWaitingPortingProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalExpiredWaitingPortingProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -2410,11 +2410,11 @@ type portalLiquidationByRatesV3Processor struct {
 	*portalInstProcessor
 }
 
-func (p *portalLiquidationByRatesV3Processor) getActions() map[byte][][]string {
+func (p *portalLiquidationByRatesV3Processor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalLiquidationByRatesV3Processor) putAction(action []string, shardID byte) {
+func (p *portalLiquidationByRatesV3Processor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -2423,7 +2423,7 @@ func (p *portalLiquidationByRatesV3Processor) putAction(action []string, shardID
 	}
 }
 
-func (p *portalLiquidationByRatesV3Processor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalLiquidationByRatesV3Processor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -2621,11 +2621,11 @@ type portalLiquidationByRatesProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalLiquidationByRatesProcessor) getActions() map[byte][][]string {
+func (p *portalLiquidationByRatesProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalLiquidationByRatesProcessor) putAction(action []string, shardID byte) {
+func (p *portalLiquidationByRatesProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -2634,7 +2634,7 @@ func (p *portalLiquidationByRatesProcessor) putAction(action []string, shardID b
 	}
 }
 
-func (p *portalLiquidationByRatesProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalLiquidationByRatesProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 

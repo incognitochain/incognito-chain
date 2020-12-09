@@ -253,11 +253,11 @@ type portalReqWithdrawRewardProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalReqWithdrawRewardProcessor) getActions() map[byte][][]string {
+func (p *portalReqWithdrawRewardProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalReqWithdrawRewardProcessor) putAction(action []string, shardID byte) {
+func (p *portalReqWithdrawRewardProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -266,7 +266,7 @@ func (p *portalReqWithdrawRewardProcessor) putAction(action []string, shardID by
 	}
 }
 
-func (p *portalReqWithdrawRewardProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalReqWithdrawRewardProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 

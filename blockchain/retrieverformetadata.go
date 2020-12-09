@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/incognitochain/incognito-chain/portal/portalprocess"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
 	"time"
@@ -115,9 +116,9 @@ func (blockchain *BlockChain) IsPortalExchangeRateToken(beaconHeight uint64, tok
 	return blockchain.GetPortalParams(beaconHeight).IsPortalExchangeRateToken(tokenID)
 }
 
-// IsPortalExchangeRateToken check tokenIDStr is the valid portal token on portal v3 or not
+// IsPortalToken check tokenIDStr is the valid portal token on portal v3 or not
 func (blockchain *BlockChain) IsPortalToken(beaconHeight uint64, tokenIDStr string) bool {
-	return blockchain.GetPortalParams(beaconHeight).IsPortalExchangeRateToken(tokenIDStr)
+	return blockchain.GetPortalParams(beaconHeight).IsPortalToken(tokenIDStr)
 }
 
 // GetBNBHeader calls RPC to fullnode bnb to get bnb header by block height
@@ -168,4 +169,20 @@ func (blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
 		return 0, fmt.Errorf("error occured during calling status method: %s", err)
 	}
 	return result.SyncInfo.LatestBlockHeight, nil
+}
+
+func (blockchain *BlockChain) GetBNBChainID(beaconHeight uint64) string {
+	return blockchain.GetPortalParams(beaconHeight).RelayingParams.BNBRelayingHeaderChainID
+}
+
+func (blockchain *BlockChain) GetBTCChainID(beaconHeight uint64) string {
+	return blockchain.GetPortalParams(beaconHeight).RelayingParams.BTCRelayingHeaderChainID
+}
+
+func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
+	return blockchain.GetConfig().BTCChain
+}
+
+func (blockchain *BlockChain) GetPortalFeederAddress(beaconHeight uint64) string {
+	return blockchain.GetPortalParams(beaconHeight).PortalFeederAddress
 }

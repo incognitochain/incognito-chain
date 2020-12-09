@@ -6,7 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/portal"
-	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
+	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"github.com/pkg/errors"
 	"math"
 	"math/big"
@@ -23,7 +23,7 @@ type CurrentPortalState struct {
 	// it used for calculate reward for custodian at the end epoch
 	LockedCollateralForRewards *statedb.LockedCollateralState
 	//Store temporary exchange rates requests
-	ExchangeRatesRequests map[string]*metadata2.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
+	ExchangeRatesRequests map[string]*portalMeta.ExchangeRatesRequestStatus // key : hash(beaconHeight | TxID)
 }
 
 type CustodianStateSlice struct {
@@ -69,7 +69,7 @@ func InitCurrentPortalStateFromDB(
 		WaitingRedeemRequests:      waitingRedeemReqs,
 		MatchedRedeemRequests:      matchedRedeemReqs,
 		FinalExchangeRatesState:    finalExchangeRates,
-		ExchangeRatesRequests:      make(map[string]*metadata2.ExchangeRatesRequestStatus),
+		ExchangeRatesRequests:      make(map[string]*portalMeta.ExchangeRatesRequestStatus),
 		LiquidationPool:            liquidateExchangeRatesPool,
 		LockedCollateralForRewards: lockedCollateralState,
 	}, nil
@@ -316,6 +316,7 @@ func UpdateCustodianStateAfterMatchingPortingRequest(
 
 	return nil
 }
+
 func UpdateCustodianStateAfterUserRequestPToken(currentPortalState *CurrentPortalState, custodianKey string, PTokenId string, amountPToken uint64) error {
 	custodian, ok := currentPortalState.CustodianPoolState[custodianKey]
 	if !ok {
@@ -879,7 +880,7 @@ func updateRedeemRequestStatusByRedeemId(redeemID string, newStatus int, db *sta
 		return fmt.Errorf("Not found redeem request from db with redeemId %v\n", redeemID)
 	}
 
-	var redeemRequest metadata2.PortalRedeemRequestStatus
+	var redeemRequest portalMeta.PortalRedeemRequestStatus
 	err = json.Unmarshal(redeemRequestBytes, &redeemRequest)
 	if err != nil {
 		return err
@@ -1033,7 +1034,7 @@ func updateCurrentPortalStateOfLiquidationExchangeRates(
 	currentPortalState *CurrentPortalState,
 	custodianKey string,
 	custodianState *statedb.CustodianState,
-	tpRatios map[string]metadata2.LiquidateTopPercentileExchangeRatesDetail,
+	tpRatios map[string]portalMeta.LiquidateTopPercentileExchangeRatesDetail,
 	remainUnlockAmounts map[string]uint64,
 ) {
 	//update custodian state
@@ -1094,8 +1095,8 @@ func updateCurrentPortalStateOfLiquidationExchangeRates(
 func updateCurrentPortalStateAfterLiquidationByRatesV3(
 	currentPortalState *CurrentPortalState,
 	custodianKey string,
-	liquidationInfo map[string]metadata2.LiquidationByRatesDetailV3,
-	remainUnlockAmounts map[string]metadata2.RemainUnlockCollateral,
+	liquidationInfo map[string]portalMeta.LiquidationByRatesDetailV3,
+	remainUnlockAmounts map[string]portalMeta.RemainUnlockCollateral,
 ) {
 	custodianState := currentPortalState.CustodianPoolState[custodianKey]
 
@@ -1182,14 +1183,12 @@ func GetTotalLockedCollateralInEpoch(featureStateDB *statedb.StateDB) (uint64, e
 	return currentPortalState.LockedCollateralForRewards.GetTotalLockedCollateralForRewards(), nil
 }
 
-
-
 func calAndCheckTPRatio(
 	portalState *CurrentPortalState,
 	custodianState *statedb.CustodianState,
 	finalExchange *statedb.FinalExchangeRatesState,
-	portalParams portal.PortalParams) (map[string]metadata2.LiquidateTopPercentileExchangeRatesDetail, error) {
-	result := make(map[string]metadata2.LiquidateTopPercentileExchangeRatesDetail)
+	portalParams portal.PortalParams) (map[string]portalMeta.LiquidateTopPercentileExchangeRatesDetail, error) {
+	result := make(map[string]portalMeta.LiquidateTopPercentileExchangeRatesDetail)
 	exchangeTool := NewPortalExchangeRateTool(finalExchange, portalParams)
 
 	lockedAmount := make(map[string]uint64)
@@ -1240,14 +1239,14 @@ func calAndCheckTPRatio(
 
 		if tp20, ok := checkTPRatio(percent, portalParams); ok {
 			if tp20 {
-				result[tokenID] = metadata2.LiquidateTopPercentileExchangeRatesDetail{
+				result[tokenID] = portalMeta.LiquidateTopPercentileExchangeRatesDetail{
 					TPKey:                    int(portalParams.TP120),
 					TPValue:                  percent,
 					HoldAmountFreeCollateral: lockedAmount[tokenID],
 					HoldAmountPubToken:       holdingPubToken[tokenID],
 				}
 			} else {
-				result[tokenID] = metadata2.LiquidateTopPercentileExchangeRatesDetail{
+				result[tokenID] = portalMeta.LiquidateTopPercentileExchangeRatesDetail{
 					TPKey:                    int(portalParams.TP130),
 					TPValue:                  percent,
 					HoldAmountFreeCollateral: 0,
@@ -4024,8 +4023,15 @@ func addCustodianToPool(
 			newCustodian.SetFreeCollateral(existCustodian.GetFreeCollateral())
 
 			tmpTotalTokenCollaterals := existCustodian.GetTotalTokenCollaterals()
+			if tmpTotalTokenCollaterals == nil {
+				tmpTotalTokenCollaterals = map[string]uint64{}
+			}
 			tmpTotalTokenCollaterals[collateralTokenID] += depositAmount
+
 			tmpFreeTokenCollaterals := existCustodian.GetFreeTokenCollaterals()
+			if tmpFreeTokenCollaterals == nil {
+				tmpFreeTokenCollaterals = map[string]uint64{}
+			}
 			tmpFreeTokenCollaterals[collateralTokenID] += depositAmount
 			newCustodian.SetTotalTokenCollaterals(tmpTotalTokenCollaterals)
 			newCustodian.SetFreeTokenCollaterals(tmpFreeTokenCollaterals)
@@ -4226,9 +4232,9 @@ func calAndCheckLiquidationRatioV3(
 	portalState *CurrentPortalState,
 	custodianState *statedb.CustodianState,
 	finalExchange *statedb.FinalExchangeRatesState,
-	portalParams portal.PortalParams) (map[string]metadata2.LiquidationByRatesDetailV3, map[string]metadata2.RemainUnlockCollateral, []string, error) {
-	result := make(map[string]metadata2.LiquidationByRatesDetailV3)
-	remainUnlockCollaterals := make(map[string]metadata2.RemainUnlockCollateral)
+	portalParams portal.PortalParams) (map[string]portalMeta.LiquidationByRatesDetailV3, map[string]portalMeta.RemainUnlockCollateral, []string, error) {
+	result := make(map[string]portalMeta.LiquidationByRatesDetailV3)
+	remainUnlockCollaterals := make(map[string]portalMeta.RemainUnlockCollateral)
 	exchangeTool := NewPortalExchangeRateTool(finalExchange, portalParams)
 
 	// locked collaterals in usdt exclude waiting porting requests
@@ -4291,14 +4297,14 @@ func calAndCheckLiquidationRatioV3(
 			return nil, nil, nil, fmt.Errorf("Error when calculating and checking liquidation ratio v3: %v", err)
 		}
 
-		result[tokenID] = metadata2.LiquidationByRatesDetailV3{
+		result[tokenID] = portalMeta.LiquidationByRatesDetailV3{
 			Ratio:                            ratio,
 			LiquidatedPubTokenAmount:         liquidatedHoldPubTokenAmount,
 			LiquidatedCollateralAmount:       liquidatedPRVCollateral,
 			LiquidatedTokenCollateralsAmount: liquidatedExtTokens,
 		}
 
-		remainUnlockCollaterals[tokenID] = metadata2.RemainUnlockCollateral{
+		remainUnlockCollaterals[tokenID] = portalMeta.RemainUnlockCollateral{
 			PrvAmount:    remainUnlockPRVCollateral,
 			TokenAmounts: remainUnlockTokenCollaterals,
 		}

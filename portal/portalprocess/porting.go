@@ -19,11 +19,11 @@ type portalPortingRequestProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalPortingRequestProcessor) getActions() map[byte][][]string {
+func (p *portalPortingRequestProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalPortingRequestProcessor) putAction(action []string, shardID byte) {
+func (p *portalPortingRequestProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -32,7 +32,7 @@ func (p *portalPortingRequestProcessor) putAction(action []string, shardID byte)
 	}
 }
 
-func (p *portalPortingRequestProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalPortingRequestProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		Logger.log.Errorf("Porting request: an error occurred while decoding content string of portal porting request action: %+v", err)
@@ -417,11 +417,11 @@ type portalRequestPTokenProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalRequestPTokenProcessor) getActions() map[byte][][]string {
+func (p *portalRequestPTokenProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalRequestPTokenProcessor) putAction(action []string, shardID byte) {
+func (p *portalRequestPTokenProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -430,7 +430,7 @@ func (p *portalRequestPTokenProcessor) putAction(action []string, shardID byte) 
 	}
 }
 
-func (p *portalRequestPTokenProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalRequestPTokenProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -532,9 +532,14 @@ func (p *portalRequestPTokenProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	isValid, err := portalTokenProcessor.ParseAndVerifyProofForPorting(meta.PortingProof, waitingPortingRequest, bc)
+	expectedMemo := portalTokenProcessor.GetExpectedMemoForPorting(meta.UniquePortingID)
+	expectedPaymentInfos := map[string]uint64{}
+	for _, matchCus := range waitingPortingRequest.Custodians() {
+		expectedPaymentInfos[matchCus.RemoteAddress] = matchCus.Amount
+	}
+	isValid, err := portalTokenProcessor.ParseAndVerifyProof(meta.PortingProof, bc, expectedMemo, expectedPaymentInfos)
 	if !isValid || err != nil {
-		Logger.log.Error("Parse proof and verify proof failed: %v", err)
+		Logger.log.Error("Parse proof and verify porting proof failed: %v", err)
 		return [][]string{rejectInst}, nil
 	}
 

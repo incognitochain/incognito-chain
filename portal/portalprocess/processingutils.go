@@ -12,48 +12,48 @@ import (
 func CollectPortalInsts (pm *PortalManager, metaType int, action []string, shardID byte) {
 	switch metaType {
 	case basemeta.PortalCustodianDepositMeta:
-		pm.PortalInstructions[basemeta.PortalCustodianDepositMeta].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalCustodianDepositMeta].PutAction(action, shardID)
 
 	// off this metatype in portal v3
 	//case basemeta.PortalRequestPortingMeta:
-	//	pm.PortalInstructions[basemeta.PortalRequestPortingMeta].putAction(action, shardID)
+	//	pm.PortalInstructions[basemeta.PortalRequestPortingMeta].PutAction(action, shardID)
 	case basemeta.PortalRequestPortingMetaV3:
-		pm.PortalInstructions[basemeta.PortalRequestPortingMetaV3].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalRequestPortingMetaV3].PutAction(action, shardID)
 	case basemeta.PortalUserRequestPTokenMeta:
-		pm.PortalInstructions[basemeta.PortalUserRequestPTokenMeta].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalUserRequestPTokenMeta].PutAction(action, shardID)
 	case basemeta.PortalExchangeRatesMeta:
-		pm.PortalInstructions[basemeta.PortalExchangeRatesMeta].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalExchangeRatesMeta].PutAction(action, shardID)
 	case basemeta.PortalCustodianWithdrawRequestMeta:
-		pm.PortalInstructions[basemeta.PortalCustodianWithdrawRequestMeta].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalCustodianWithdrawRequestMeta].PutAction(action, shardID)
 	// off this metatype in portal v3
 	//case basemeta.PortalRedeemRequestMeta:
-	//	pm.PortalInstructions[basemeta.PortalRedeemRequestMeta].putAction(action, shardID)
+	//	pm.PortalInstructions[basemeta.PortalRedeemRequestMeta].PutAction(action, shardID)
 	case basemeta.PortalRedeemRequestMetaV3:
-		pm.PortalInstructions[basemeta.PortalRedeemRequestMetaV3].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalRedeemRequestMetaV3].PutAction(action, shardID)
 	// off this metatype in portal v3
 	//case basemeta.PortalRequestUnlockCollateralMeta:
-	//	pm.PortalInstructions[basemeta.PortalRequestUnlockCollateralMeta].putAction(action, shardID)
+	//	pm.PortalInstructions[basemeta.PortalRequestUnlockCollateralMeta].PutAction(action, shardID)
 	case basemeta.PortalRequestUnlockCollateralMetaV3:
-		pm.PortalInstructions[basemeta.PortalRequestUnlockCollateralMetaV3].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalRequestUnlockCollateralMetaV3].PutAction(action, shardID)
 	case basemeta.PortalRequestWithdrawRewardMeta:
-		pm.PortalInstructions[basemeta.PortalRequestWithdrawRewardMeta].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalRequestWithdrawRewardMeta].PutAction(action, shardID)
 	case basemeta.PortalRedeemFromLiquidationPoolMetaV3:
-		pm.PortalInstructions[basemeta.PortalRedeemFromLiquidationPoolMetaV3].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalRedeemFromLiquidationPoolMetaV3].PutAction(action, shardID)
 	case basemeta.PortalCustodianTopupMetaV2:
-		pm.PortalInstructions[basemeta.PortalCustodianTopupMetaV2].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalCustodianTopupMetaV2].PutAction(action, shardID)
 	case basemeta.PortalReqMatchingRedeemMeta:
-		pm.PortalInstructions[basemeta.PortalReqMatchingRedeemMeta].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalReqMatchingRedeemMeta].PutAction(action, shardID)
 	case basemeta.PortalTopUpWaitingPortingRequestMeta:
-		pm.PortalInstructions[basemeta.PortalTopUpWaitingPortingRequestMeta].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalTopUpWaitingPortingRequestMeta].PutAction(action, shardID)
 	case basemeta.PortalCustodianTopupMetaV3:
-		pm.PortalInstructions[basemeta.PortalCustodianTopupMetaV3].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalCustodianTopupMetaV3].PutAction(action, shardID)
 	case basemeta.PortalTopUpWaitingPortingRequestMetaV3:
-		pm.PortalInstructions[basemeta.PortalTopUpWaitingPortingRequestMetaV3].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalTopUpWaitingPortingRequestMetaV3].PutAction(action, shardID)
 
 	case basemeta.PortalCustodianDepositMetaV3:
-		pm.PortalInstructions[basemeta.PortalCustodianDepositMetaV3].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalCustodianDepositMetaV3].PutAction(action, shardID)
 	case basemeta.PortalCustodianWithdrawRequestMetaV3:
-		pm.PortalInstructions[basemeta.PortalCustodianWithdrawRequestMetaV3].putAction(action, shardID)
+		pm.PortalInstructions[basemeta.PortalCustodianWithdrawRequestMetaV3].PutAction(action, shardID)
 
 	case basemeta.RelayingBNBHeaderMeta:
 		pm.RelayingChains[basemeta.RelayingBNBHeaderMeta].putAction(action)
@@ -64,8 +64,7 @@ func CollectPortalInsts (pm *PortalManager, metaType int, action []string, shard
 	}
 }
 
-//TODO:
-// check liquidation
+// auto check and liquidate
 func autoCheckAndCreatePortalLiquidationInsts(
 	bc basemeta.ChainRetriever,
 	beaconHeight uint64,
@@ -123,7 +122,7 @@ func buildNewPortalInstsFromActions(
 	portalParams portal.PortalParams) ([][]string, error) {
 
 	instructions := [][]string{}
-	actions := p.getActions()
+	actions := p.GetActions()
 	var shardIDKeys []int
 	for k := range actions {
 		shardIDKeys = append(shardIDKeys, int(k))
@@ -135,7 +134,7 @@ func buildNewPortalInstsFromActions(
 		actions := actions[shardID]
 		for _, action := range actions {
 			contentStr := action[1]
-			optionalData, err := p.prepareDataForBlockProducer(stateDB, contentStr)
+			optionalData, err := p.PrepareDataForBlockProducer(stateDB, contentStr)
 			if err != nil {
 				Logger.log.Errorf("Error when preparing data before processing instruction %+v", err)
 				continue

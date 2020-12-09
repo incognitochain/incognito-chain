@@ -3,10 +3,9 @@
 package mocks
 
 import (
+	basemeta "github.com/incognitochain/incognito-chain/basemeta"
 	common "github.com/incognitochain/incognito-chain/common"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-
-	metadata "github.com/incognitochain/incognito-chain/metadata"
 
 	mock "github.com/stretchr/testify/mock"
 
@@ -149,7 +148,7 @@ func (_m *ChainRetriever) GetStakingAmountShard() uint64 {
 }
 
 // GetTransactionByHash provides a mock function with given fields: _a0
-func (_m *ChainRetriever) GetTransactionByHash(_a0 common.Hash) (byte, common.Hash, uint64, int, metadata.Transaction, error) {
+func (_m *ChainRetriever) GetTransactionByHash(_a0 common.Hash) (byte, common.Hash, uint64, int, basemeta.Transaction, error) {
 	ret := _m.Called(_a0)
 
 	var r0 byte
@@ -182,12 +181,12 @@ func (_m *ChainRetriever) GetTransactionByHash(_a0 common.Hash) (byte, common.Ha
 		r3 = ret.Get(3).(int)
 	}
 
-	var r4 metadata.Transaction
-	if rf, ok := ret.Get(4).(func(common.Hash) metadata.Transaction); ok {
+	var r4 basemeta.Transaction
+	if rf, ok := ret.Get(4).(func(common.Hash) basemeta.Transaction); ok {
 		r4 = rf(_a0)
 	} else {
 		if ret.Get(4) != nil {
-			r4 = ret.Get(4).(metadata.Transaction)
+			r4 = ret.Get(4).(basemeta.Transaction)
 		}
 	}
 

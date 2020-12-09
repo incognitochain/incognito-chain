@@ -25,11 +25,11 @@ type portalCustodianDepositProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalCustodianDepositProcessor) getActions() map[byte][][]string {
+func (p *portalCustodianDepositProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalCustodianDepositProcessor) putAction(action []string, shardID byte) {
+func (p *portalCustodianDepositProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -38,7 +38,7 @@ func (p *portalCustodianDepositProcessor) putAction(action []string, shardID byt
 	}
 }
 
-func (p *portalCustodianDepositProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalCustodianDepositProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -214,11 +214,11 @@ type portalRequestWithdrawCollateralProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalRequestWithdrawCollateralProcessor) getActions() map[byte][][]string {
+func (p *portalRequestWithdrawCollateralProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalRequestWithdrawCollateralProcessor) putAction(action []string, shardID byte) {
+func (p *portalRequestWithdrawCollateralProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -227,7 +227,7 @@ func (p *portalRequestWithdrawCollateralProcessor) putAction(action []string, sh
 	}
 }
 
-func (p *portalRequestWithdrawCollateralProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalRequestWithdrawCollateralProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
@@ -423,11 +423,11 @@ type portalCustodianDepositProcessorV3 struct {
 	*portalInstProcessor
 }
 
-func (p *portalCustodianDepositProcessorV3) getActions() map[byte][][]string {
+func (p *portalCustodianDepositProcessorV3) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalCustodianDepositProcessorV3) putAction(action []string, shardID byte) {
+func (p *portalCustodianDepositProcessorV3) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -436,7 +436,7 @@ func (p *portalCustodianDepositProcessorV3) putAction(action []string, shardID b
 	}
 }
 
-func (p *portalCustodianDepositProcessorV3) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalCustodianDepositProcessorV3) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -725,11 +725,11 @@ type portalRequestWithdrawCollateralProcessorV3 struct {
 	*portalInstProcessor
 }
 
-func (p *portalRequestWithdrawCollateralProcessorV3) getActions() map[byte][][]string {
+func (p *portalRequestWithdrawCollateralProcessorV3) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalRequestWithdrawCollateralProcessorV3) putAction(action []string, shardID byte) {
+func (p *portalRequestWithdrawCollateralProcessorV3) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -738,7 +738,7 @@ func (p *portalRequestWithdrawCollateralProcessorV3) putAction(action []string, 
 	}
 }
 
-func (p *portalRequestWithdrawCollateralProcessorV3) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalRequestWithdrawCollateralProcessorV3) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 

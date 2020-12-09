@@ -2,9 +2,9 @@
 
 package mocks
 
+import basemeta "github.com/incognitochain/incognito-chain/basemeta"
 import common "github.com/incognitochain/incognito-chain/common"
 import incognitokey "github.com/incognitochain/incognito-chain/incognitokey"
-import metadata "github.com/incognitochain/incognito-chain/metadata"
 import mock "github.com/stretchr/testify/mock"
 import statedb "github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
@@ -354,7 +354,7 @@ func (_m *BlockchainRetriever) GetStakingTx(_a0 byte) map[string]string {
 }
 
 // GetTransactionByHash provides a mock function with given fields: _a0
-func (_m *BlockchainRetriever) GetTransactionByHash(_a0 common.Hash) (byte, common.Hash, int, metadata.Transaction, error) {
+func (_m *BlockchainRetriever) GetTransactionByHash(_a0 common.Hash) (byte, common.Hash, int, basemeta.Transaction, error) {
 	ret := _m.Called(_a0)
 
 	var r0 byte
@@ -380,12 +380,12 @@ func (_m *BlockchainRetriever) GetTransactionByHash(_a0 common.Hash) (byte, comm
 		r2 = ret.Get(2).(int)
 	}
 
-	var r3 metadata.Transaction
-	if rf, ok := ret.Get(3).(func(common.Hash) metadata.Transaction); ok {
+	var r3 basemeta.Transaction
+	if rf, ok := ret.Get(3).(func(common.Hash) basemeta.Transaction); ok {
 		r3 = rf(_a0)
 	} else {
 		if ret.Get(3) != nil {
-			r3 = ret.Get(3).(metadata.Transaction)
+			r3 = ret.Get(3).(basemeta.Transaction)
 		}
 	}
 
@@ -400,18 +400,18 @@ func (_m *BlockchainRetriever) GetTransactionByHash(_a0 common.Hash) (byte, comm
 }
 
 // GetTxChainHeight provides a mock function with given fields: tx
-func (_m *BlockchainRetriever) GetTxChainHeight(tx metadata.Transaction) (uint64, error) {
+func (_m *BlockchainRetriever) GetTxChainHeight(tx basemeta.Transaction) (uint64, error) {
 	ret := _m.Called(tx)
 
 	var r0 uint64
-	if rf, ok := ret.Get(0).(func(metadata.Transaction) uint64); ok {
+	if rf, ok := ret.Get(0).(func(basemeta.Transaction) uint64); ok {
 		r0 = rf(tx)
 	} else {
 		r0 = ret.Get(0).(uint64)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(metadata.Transaction) error); ok {
+	if rf, ok := ret.Get(1).(func(basemeta.Transaction) error); ok {
 		r1 = rf(tx)
 	} else {
 		r1 = ret.Error(1)

@@ -16,11 +16,11 @@ type portalExchangeRateProcessor struct {
 	*portalInstProcessor
 }
 
-func (p *portalExchangeRateProcessor) getActions() map[byte][][]string {
+func (p *portalExchangeRateProcessor) GetActions() map[byte][][]string {
 	return p.actions
 }
 
-func (p *portalExchangeRateProcessor) putAction(action []string, shardID byte) {
+func (p *portalExchangeRateProcessor) PutAction(action []string, shardID byte) {
 	_, found := p.actions[shardID]
 	if !found {
 		p.actions[shardID] = [][]string{action}
@@ -29,7 +29,7 @@ func (p *portalExchangeRateProcessor) putAction(action []string, shardID byte) {
 	}
 }
 
-func (p *portalExchangeRateProcessor) prepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *portalExchangeRateProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 

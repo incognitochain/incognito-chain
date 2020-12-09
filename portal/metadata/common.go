@@ -104,8 +104,6 @@ func ParseMetadata(meta interface{}) (basemeta.Metadata, error) {
 	return md, nil
 }
 
-
-//todo: should move to portal common
 func IsValidPortalRemoteAddress(
 	bcr basemeta.ChainRetriever,
 	remoteAddress string,
