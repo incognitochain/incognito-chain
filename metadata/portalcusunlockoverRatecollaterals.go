@@ -85,14 +85,9 @@ func (portalUnlockCs PortalUnlockOverRateCollaterals) ValidateSanityData(chainRe
 		return false, false, errors.New("Tx unlock over rate collaterals must be TxNormalType")
 	}
 
-	// validate tokenID
-	if portalUnlockCs.TokenID != txr.GetTokenID().String() {
-		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
-	}
-
 	// check tokenId is portal token or not
 	if !IsPortalToken(portalUnlockCs.TokenID) {
-		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("TokenID is not in portal tokens list"))
+		return false, false, NewMetadataTxError(PortalUnlockOverRateCollateralsError, errors.New("TokenID is not in portal tokens list"))
 	}
 
 	return true, true, nil
