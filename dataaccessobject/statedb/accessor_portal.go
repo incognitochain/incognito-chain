@@ -768,6 +768,8 @@ func StorePortalExchangeRateStatus(stateDB *StateDB, txID string, statusContent 
 
 func StorePortalUnlockOverRateCollaterals(stateDB *StateDB, txID string, statusContent []byte) error {
 	statusType := PortalUnlockOverRateCollateralsRequestStatusPrefix()
+	fmt.Println("thachtb")
+	fmt.Println(txID)
 	statusSuffix := []byte(txID)
 	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
 	if err != nil {
