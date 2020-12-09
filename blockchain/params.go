@@ -53,6 +53,7 @@ type Params struct {
 	GenesisShardBlock                *types.ShardBlock  // GenesisBlock defines the first block of the chain.
 	BasicReward                      uint64
 	Epoch                            uint64
+	EpochV2                          uint64
 	RandomTime                       uint64
 	SlashLevels                      []SlashLevel
 	EthContractAddressStr            string // smart contract of ETH for bridge

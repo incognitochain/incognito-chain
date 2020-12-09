@@ -130,6 +130,9 @@ func (e *BLSBFT_V3) Start() error {
 					continue
 				}
 
+				res, _ := incognitokey.CommitteeKeyListToString(committees)
+				e.Logger.Infof("######### Shard %+v, BlockHeight %+v, Committee %+v", e.Chain.GetShardID(), block.GetHeight(), res)
+
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
 					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, make(map[string]*BFTVote), false, false)
 					e.receiveBlockByHash[blkHash] = proposeBlockInfo
@@ -372,11 +375,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 		if e.ChainID == BEACON_CHAIN_ID {
 			e.processWithEnoughVotesBeaconChain(v)
 		} else {
-			previousCommittees, err := view.GetPreviousBlockCommittee(e.Chain.GetChainDatabase())
-			if err != nil {
-				e.Logger.Errorf("Can not find previous shard committee, shardID %+v, blockHash %+v", e.Chain.GetShardID(), view.GetPreviousHash())
-			}
-			e.processWithEnoughVotesShardChain(v, previousCommittees)
+			e.processWithEnoughVotesShardChain(v)
 		}
 	}
 }
@@ -398,7 +397,6 @@ func (e *BLSBFT_V3) processWithEnoughVotesBeaconChain(
 
 func (e *BLSBFT_V3) processWithEnoughVotesShardChain(
 	v *ProposeBlockInfo,
-	previousCommittees []incognitokey.CommitteePublicKey,
 ) {
 	// validationData at present block
 	validationData, err := createBLSAggregatedSignatures(v.committees, v.block.GetValidationField(), v.votes)
@@ -411,6 +409,11 @@ func (e *BLSBFT_V3) processWithEnoughVotesShardChain(
 	// validate and previous block
 	if previousProposeBlockInfo, ok := e.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
+		previousCommittees, err := e.getCommitteeForBlock(previousProposeBlockInfo.block)
+		if err != nil {
+			e.Logger.Error(err)
+			return
+		}
 		previousValidationData, err := createBLSAggregatedSignatures(previousCommittees, previousProposeBlockInfo.block.GetValidationField(), previousProposeBlockInfo.votes)
 		if err != nil {
 			e.Logger.Error(err)

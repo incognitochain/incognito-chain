@@ -98,7 +98,7 @@ func (shardBestState *ShardBestState) GetPreviousHash() *common.Hash {
 }
 
 func (shardBestState *ShardBestState) GetPreviousBlockCommittee(db incdb.Database) ([]incognitokey.CommitteePublicKey, error) {
-	return getOneShardCommitteeFromShardDB(db, shardBestState.ShardID, *shardBestState.GetPreviousHash())
+	return getOneShardCommitteeFromBeaconDB(db, shardBestState.ShardID, *shardBestState.GetPreviousHash())
 }
 
 func (shardBestState *ShardBestState) GetHeight() uint64 {

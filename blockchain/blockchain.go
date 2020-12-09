@@ -738,3 +738,16 @@ func (s *BlockChain) RemoveRelayShard(sid int) {
 	s.config.relayShardLck.Unlock()
 	return
 }
+
+// GetEpochLength return the current length of epoch
+// it depends on current final view height
+func (bc *BlockChain) GetEpochLength(beaconHeight uint64) uint64 {
+	if beaconHeight == 0 {
+		beaconHeight = bc.BeaconChain.GetFinalViewHeight()
+	}
+	if beaconHeight < bc.config.ChainParams.ConsensusV3Height {
+		return bc.config.ChainParams.Epoch
+	} else {
+		return bc.config.ChainParams.EpochV2
+	}
+}

@@ -216,11 +216,6 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 		return nil, NewCommitteeChange(), NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
-	res, _ := incognitokey.CommitteeKeyListToString(env.CommitteesFromBeaconView())
-	Logger.log.Infof(">>>>>>>> \n "+
-		"Height %+v, Committee From Block %+v \n"+
-		"Committees %+v", env.ShardHeight(), env.CommitteesFromBlock(), res)
-
 	return hashes, committeeChange, nil
 }
 
@@ -260,12 +255,35 @@ func (s *ShardCommitteeStateV2) processSwapShardInstruction(
 func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 	env ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
+	for _, newShardCommittee := range env.CommitteesFromBeaconView() {
+		flag := false
+		for _, oldShardCommittee := range s.shardCommittee {
+			if reflect.DeepEqual(newShardCommittee, oldShardCommittee) {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			committeeChange.ShardCommitteeAdded[env.ShardID()] = append(committeeChange.ShardCommitteeAdded[env.ShardID()], newShardCommittee)
+		}
+	}
 
-	newCommitteeChange := committeeChange
+	for _, oldShardCommittee := range s.shardCommittee {
+		flag := false
+		for _, newShardCommittee := range env.CommitteesFromBeaconView() {
+			if reflect.DeepEqual(oldShardCommittee, newShardCommittee) {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			committeeChange.ShardCommitteeRemoved[env.ShardID()] = append(committeeChange.ShardCommitteeRemoved[env.ShardID()], oldShardCommittee)
+		}
+	}
 
 	s.shardCommittee = incognitokey.DeepCopy(env.CommitteesFromBeaconView())
 	s.committeeFromBlock = env.CommitteesFromBlock()
-	return newCommitteeChange, nil
+	return committeeChange, nil
 }
 
 //ProcessInstructionFromBeacon : process instrucction from beacon
