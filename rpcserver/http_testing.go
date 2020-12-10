@@ -137,12 +137,10 @@ func (httpServer *HttpServer) handleGetSlashingCommittee(params interface{}, clo
 	}
 	beaconBestState := httpServer.blockService.BlockChain.GetBeaconBestState()
 	if epoch >= beaconBestState.Epoch {
-		if len(arrayParams) != 1 {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Epoch Value"+
-				"expect epoch from %+v to %+v", 1, beaconBestState.Epoch-1))
-		}
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Epoch Value"+
+			"expect epoch from %+v to %+v", 1, beaconBestState.Epoch-1))
 	}
-	slashingCommittee := statedb.GetSlashingCommittee(beaconBestState.GetBeaconRewardStateDB(), epoch)
+	slashingCommittee := statedb.GetSlashingCommittee(beaconBestState.GetBeaconSlashStateDB(), epoch)
 	return slashingCommittee, nil
 }
 
