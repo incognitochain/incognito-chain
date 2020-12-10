@@ -291,11 +291,13 @@ func (txToken *TxToken) initToken(txNormal *Tx, params *tx_generic.TxTokenParams
 			dbFacingTokenID := common.ConfidentialAssetID
 			utils.Logger.Log.Debugf("Token %+v wil be transfered with", propertyID)
 
+			// fee in pToken is not supported
+			feeToken := uint64(0)
 			txParams := tx_generic.NewTxPrivacyInitParams(
 				params.SenderKey,
 				params.TokenParams.Receiver,
 				params.TokenParams.TokenInput,
-				params.TokenParams.Fee,
+				feeToken,
 				params.HasPrivacyToken,
 				params.TransactionStateDB,
 				propertyID,
