@@ -798,7 +798,10 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		}
 
 		var swapRule committeestate.SwapRule
-		swapRule = committeestate.NewSwapRuleV3()
+		//TODO: @tin add multi versions running here
+		if beaconBestState.Epoch >= params.SwapRuleV3Epoch {
+			swapRule = committeestate.NewSwapRuleV3()
+		}
 		numberOfAssignedCandidate = committeestate.SnapshotShardCommonPoolV2(
 			snapshotShardCommonPool,
 			snapshotShardCommittee,

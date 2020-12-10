@@ -1,8 +1,9 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -67,6 +68,7 @@ type Params struct {
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
 	ConsensusV3Height                uint64
+	SwapRuleV3Epoch                  uint64
 	BeaconHeightBreakPointBurnAddr   uint64
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
@@ -164,6 +166,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               1e9,
 		ConsensusV3Height:              1,
+		SwapRuleV3Epoch:                1,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
@@ -249,6 +252,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
 		ConsensusV3Height:              1,
+		SwapRuleV3Epoch:                1,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
 		BTCRelayingHeaderChainID:       Testnet2BTCChainID,
@@ -332,6 +336,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
 		ConsensusV3Height:              1,
+		SwapRuleV3Epoch:                1,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
 		BTCRelayingHeaderChainID:       MainnetBTCChainID,
