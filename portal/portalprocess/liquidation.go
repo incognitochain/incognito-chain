@@ -102,7 +102,7 @@ func (p *portalRedeemFromLiquidationPoolProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
-		common.PortalRedeemFromLiquidationPoolRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 	)
 
 	if currentPortalState == nil {
@@ -161,7 +161,7 @@ func (p *portalRedeemFromLiquidationPoolProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
-		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
+		pCommon.PortalProducerInstSuccessChainStatus,
 	)
 	return [][]string{inst}, nil
 }
@@ -192,7 +192,7 @@ func (p *portalRedeemFromLiquidationPoolProcessor) ProcessInsts(
 	}
 
 	reqStatus := instructions[2]
-	if reqStatus == common.PortalRedeemFromLiquidationPoolSuccessChainStatus {
+	if reqStatus == pCommon.PortalProducerInstSuccessChainStatus {
 		liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey()
 		liquidateExchangeRates, ok := currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()]
 
@@ -223,7 +223,7 @@ func (p *portalRedeemFromLiquidationPoolProcessor) ProcessInsts(
 			actionData.TokenID,
 			actionData.RedeemerIncAddressStr,
 			actionData.RedeemAmount,
-			common.PortalRedeemFromLiquidationPoolSuccessStatus,
+			pCommon.PortalRequestAcceptedStatus,
 			totalPrv,
 		)
 
@@ -258,13 +258,13 @@ func (p *portalRedeemFromLiquidationPoolProcessor) ProcessInsts(
 			}
 		}
 		updatingInfoByTokenID[*incTokenID] = updatingInfo
-	} else if reqStatus == common.PortalRedeemFromLiquidationPoolRejectedChainStatus {
+	} else if reqStatus == pCommon.PortalRequestRejectedChainStatus {
 		redeem := pMeta.NewRedeemLiquidateExchangeRatesStatus(
 			actionData.TxReqID,
 			actionData.TokenID,
 			actionData.RedeemerIncAddressStr,
 			actionData.RedeemAmount,
-			common.PortalRedeemFromLiquidationPoolRejectedStatus,
+			pCommon.PortalRequestRejectedStatus,
 			0,
 		)
 
@@ -370,7 +370,7 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
-		common.PortalRedeemFromLiquidationPoolRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 	)
 
 	if currentPortalState == nil {
@@ -423,7 +423,7 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
-		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
+		pCommon.PortalProducerInstSuccessChainStatus,
 	)
 	insts := [][]string{inst}
 
@@ -483,15 +483,15 @@ func (p *portalRedeemFromLiquidationPoolProcessorV3) ProcessInsts(
 
 	reqStatus := instructions[2]
 
-	status := byte(common.PortalRedeemFromLiquidationPoolRejectedStatus)
-	if reqStatus == common.PortalRedeemFromLiquidationPoolSuccessChainStatus {
+	status := byte(pCommon.PortalRequestRejectedStatus)
+	if reqStatus == pCommon.PortalProducerInstSuccessChainStatus {
 		liquidateExchangeRatesKey := statedb.GeneratePortalLiquidationPoolObjectKey()
 		liquidateExchangeRates := currentPortalState.LiquidationPool[liquidateExchangeRatesKey.String()]
 
 		UpdateLiquidationPoolAfterRedeemFrom(
 			currentPortalState, liquidateExchangeRates, actionData.TokenID, actionData.RedeemAmount,
 			actionData.MintedPRVCollateral, actionData.UnlockedTokenCollaterals)
-		status = byte(common.PortalRedeemFromLiquidationPoolSuccessStatus)
+		status = byte(pCommon.PortalRequestAcceptedStatus)
 
 		// update bridge/portal token info
 		incTokenID, err := common.Hash{}.NewHashFromStr(actionData.TokenID)
@@ -621,7 +621,7 @@ func (p *portalCustodianTopupProcessor) BuildNewInsts(
 		meta.IncogAddressStr,
 		meta.DepositedAmount,
 		meta.FreeCollateralAmount,
-		common.PortalCustodianTopupRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
@@ -666,7 +666,7 @@ func (p *portalCustodianTopupProcessor) BuildNewInsts(
 		meta.IncogAddressStr,
 		meta.DepositedAmount,
 		meta.FreeCollateralAmount,
-		common.PortalCustodianTopupSuccessChainStatus,
+		pCommon.PortalProducerInstSuccessChainStatus,
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
@@ -700,7 +700,7 @@ func (p *portalCustodianTopupProcessor) ProcessInsts(
 
 	depositStatus := instructions[2]
 
-	if depositStatus == common.PortalCustodianTopupSuccessChainStatus {
+	if depositStatus == pCommon.PortalProducerInstSuccessChainStatus {
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
 		custodian, ok := currentPortalState.CustodianPoolState[custodianStateKeyStr]
@@ -721,7 +721,7 @@ func (p *portalCustodianTopupProcessor) ProcessInsts(
 			actionData.PTokenId,
 			actionData.DepositedAmount,
 			actionData.FreeCollateralAmount,
-			common.PortalCustodianTopupSuccessStatus,
+			pCommon.PortalRequestAcceptedStatus,
 		)
 
 		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
@@ -734,14 +734,14 @@ func (p *portalCustodianTopupProcessor) ProcessInsts(
 			Logger.log.Errorf("ERROR: an error occurred while store liquidation custodian deposit error %v", err)
 			return nil
 		}
-	} else if depositStatus == common.PortalCustodianTopupRejectedChainStatus {
+	} else if depositStatus == pCommon.PortalRequestRejectedChainStatus {
 		newLiquidationCustodianDeposit := pMeta.NewLiquidationCustodianDepositStatusV2(
 			actionData.TxReqID,
 			actionData.IncogAddressStr,
 			actionData.PTokenId,
 			actionData.DepositedAmount,
 			actionData.FreeCollateralAmount,
-			common.PortalCustodianTopupRejectedStatus,
+			pCommon.PortalRequestRejectedStatus,
 		)
 
 		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
@@ -843,7 +843,7 @@ func (p *portalTopupWaitingPortingReqProcessor) BuildNewInsts(
 		meta.IncogAddressStr,
 		meta.DepositedAmount,
 		meta.FreeCollateralAmount,
-		common.PortalTopUpWaitingPortingRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
@@ -896,7 +896,7 @@ func (p *portalTopupWaitingPortingReqProcessor) BuildNewInsts(
 		meta.IncogAddressStr,
 		meta.DepositedAmount,
 		meta.FreeCollateralAmount,
-		common.PortalTopUpWaitingPortingSuccessChainStatus,
+		pCommon.PortalProducerInstSuccessChainStatus,
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
@@ -928,7 +928,7 @@ func (p *portalTopupWaitingPortingReqProcessor) ProcessInsts(
 	}
 
 	depositStatus := instructions[2]
-	if depositStatus == common.PortalTopUpWaitingPortingRejectedChainStatus {
+	if depositStatus == pCommon.PortalRequestRejectedChainStatus {
 		topUpWaitingPortingReq := pMeta.NewPortalTopUpWaitingPortingRequestStatus(
 			actionData.TxReqID,
 			actionData.PortingID,
@@ -936,7 +936,7 @@ func (p *portalTopupWaitingPortingReqProcessor) ProcessInsts(
 			actionData.PTokenID,
 			actionData.DepositedAmount,
 			actionData.FreeCollateralAmount,
-			common.PortalTopUpWaitingPortingRejectedStatus,
+			pCommon.PortalRequestRejectedStatus,
 		)
 		statusContentBytes, _ := json.Marshal(topUpWaitingPortingReq)
 		err = statedb.StoreCustodianTopupWaitingPortingStatus(
@@ -947,7 +947,7 @@ func (p *portalTopupWaitingPortingReqProcessor) ProcessInsts(
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while storing waiting porting top up error %v", err)
 		}
-	} else if depositStatus == common.PortalTopUpWaitingPortingSuccessChainStatus {
+	} else if depositStatus == pCommon.PortalProducerInstSuccessChainStatus {
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr)
 		custodian, ok := currentPortalState.CustodianPoolState[custodianStateKey.String()]
 		if !ok {
@@ -975,7 +975,7 @@ func (p *portalTopupWaitingPortingReqProcessor) ProcessInsts(
 			actionData.PTokenID,
 			actionData.DepositedAmount,
 			actionData.FreeCollateralAmount,
-			common.PortalTopUpWaitingPortingSuccessStatus,
+			pCommon.PortalRequestAcceptedStatus,
 		)
 		statusContentBytes, _ := json.Marshal(topUpWaitingPortingReq)
 		err = statedb.StoreCustodianTopupWaitingPortingStatus(
@@ -997,7 +997,7 @@ func (p *portalTopupWaitingPortingReqProcessor) ProcessInsts(
 			waitingPortingReq.Amount(),
 			waitingPortingReq.Custodians(),
 			waitingPortingReq.PortingFee(),
-			common.PortalPortingReqWaitingStatus,
+			pCommon.PortalPortingReqWaitingStatus,
 			beaconHeight+1,
 			waitingPortingReq.ShardHeight(),
 			waitingPortingReq.ShardID(),
@@ -1054,7 +1054,7 @@ func (p *portalCustodianTopupProcessorV3) PrepareDataForBlockProducer(stateDB *s
 	if meta.DepositAmount > 0 {
 		// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 		// so must build unique external tx as combination of chain name and block hash and tx index.
-		uniqExternalTxID := pCommon.GetUniqExternalTxID(common.ETHChainName, meta.BlockHash, meta.TxIndex)
+		uniqExternalTxID := pCommon.GetUniqExternalTxID(pCommon.ETHChainName, meta.BlockHash, meta.TxIndex)
 		isSubmitted, err := statedb.IsPortalExternalTxHashSubmitted(stateDB, uniqExternalTxID)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while checking eth tx submitted: %+v", err)
@@ -1130,7 +1130,7 @@ func (p *portalCustodianTopupProcessorV3) BuildNewInsts(
 		meta.DepositAmount,
 		meta.FreeTokenCollateralAmount,
 		nil,
-		common.PortalCustodianTopupRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
@@ -1189,7 +1189,7 @@ func (p *portalCustodianTopupProcessorV3) BuildNewInsts(
 			meta.DepositAmount,
 			meta.FreeTokenCollateralAmount,
 			uniqExternalTxID,
-			common.PortalCustodianTopupRejectedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
 			meta.Type,
 			shardID,
 			actionData.TxReqID,
@@ -1266,7 +1266,7 @@ func (p *portalCustodianTopupProcessorV3) BuildNewInsts(
 		meta.DepositAmount,
 		meta.FreeTokenCollateralAmount,
 		uniqExternalTxID,
-		common.PortalCustodianTopupSuccessChainStatus,
+		pCommon.PortalProducerInstSuccessChainStatus,
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
@@ -1300,7 +1300,7 @@ func (p *portalCustodianTopupProcessorV3) ProcessInsts(
 
 	depositStatus := instructions[2]
 
-	if depositStatus == common.PortalCustodianTopupSuccessChainStatus {
+	if depositStatus == pCommon.PortalProducerInstSuccessChainStatus {
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
 		custodian, ok := currentPortalState.CustodianPoolState[custodianStateKeyStr]
@@ -1323,7 +1323,7 @@ func (p *portalCustodianTopupProcessorV3) ProcessInsts(
 			actionData.FreeTokenCollateralAmount,
 			actionData.UniqExternalTxID,
 			actionData.TxReqID,
-			common.PortalCustodianTopupSuccessStatus,
+			pCommon.PortalRequestAcceptedStatus,
 		)
 
 		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
@@ -1343,7 +1343,7 @@ func (p *portalCustodianTopupProcessorV3) ProcessInsts(
 			Logger.log.Errorf("ERROR: an error occured while tracking uniq external tx id: %+v", err)
 			return nil
 		}
-	} else if depositStatus == common.PortalCustodianTopupRejectedChainStatus {
+	} else if depositStatus == pCommon.PortalRequestRejectedChainStatus {
 		newLiquidationCustodianDeposit := pMeta.NewLiquidationCustodianDepositStatus3(
 			actionData.IncogAddressStr,
 			actionData.PortalTokenID,
@@ -1352,7 +1352,7 @@ func (p *portalCustodianTopupProcessorV3) ProcessInsts(
 			actionData.FreeTokenCollateralAmount,
 			actionData.UniqExternalTxID,
 			actionData.TxReqID,
-			common.PortalCustodianTopupRejectedStatus,
+			pCommon.PortalRequestRejectedStatus,
 		)
 
 		contentStatusBytes, _ := json.Marshal(newLiquidationCustodianDeposit)
@@ -1408,7 +1408,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) PrepareDataForBlockProducer(st
 	if meta.DepositAmount > 0 {
 		// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 		// so must build unique external tx as combination of chain name and block hash and tx index.
-		uniqExternalTxID := pCommon.GetUniqExternalTxID(common.ETHChainName, meta.BlockHash, meta.TxIndex)
+		uniqExternalTxID := pCommon.GetUniqExternalTxID(pCommon.ETHChainName, meta.BlockHash, meta.TxIndex)
 		isSubmitted, err := statedb.IsPortalExternalTxHashSubmitted(stateDB, uniqExternalTxID)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while checking eth tx submitted: %+v", err)
@@ -1487,7 +1487,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) BuildNewInsts(
 		meta.FreeTokenCollateralAmount,
 		nil,
 		meta.PortingID,
-		common.PortalTopUpWaitingPortingRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
@@ -1559,7 +1559,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) BuildNewInsts(
 			meta.FreeTokenCollateralAmount,
 			uniqExternalTxID,
 			meta.PortingID,
-			common.PortalTopUpWaitingPortingRejectedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
 			meta.Type,
 			shardID,
 			actionData.TxReqID,
@@ -1637,7 +1637,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) BuildNewInsts(
 		meta.FreeTokenCollateralAmount,
 		uniqExternalTxID,
 		meta.PortingID,
-		common.PortalTopUpWaitingPortingSuccessChainStatus,
+		pCommon.PortalProducerInstSuccessChainStatus,
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
@@ -1669,7 +1669,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) ProcessInsts(
 	}
 
 	depositStatus := instructions[2]
-	if depositStatus == common.PortalTopUpWaitingPortingRejectedChainStatus {
+	if depositStatus == pCommon.PortalRequestRejectedChainStatus {
 		topUpWaitingPortingReq := pMeta.NewPortalTopUpWaitingPortingRequestStatusV3(
 			actionData.IncogAddressStr,
 			actionData.PortalTokenID,
@@ -1679,7 +1679,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) ProcessInsts(
 			actionData.PortingID,
 			actionData.UniqExternalTxID,
 			actionData.TxReqID,
-			common.PortalTopUpWaitingPortingRejectedStatus,
+			pCommon.PortalRequestRejectedStatus,
 		)
 		statusContentBytes, _ := json.Marshal(topUpWaitingPortingReq)
 		err = statedb.StoreCustodianTopupWaitingPortingStatusV3(
@@ -1690,7 +1690,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) ProcessInsts(
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occurred while storing waiting porting top up error %v", err)
 		}
-	} else if depositStatus == common.PortalTopUpWaitingPortingSuccessChainStatus {
+	} else if depositStatus == pCommon.PortalProducerInstSuccessChainStatus {
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.IncogAddressStr)
 		custodian, ok := currentPortalState.CustodianPoolState[custodianStateKey.String()]
 		if !ok {
@@ -1720,7 +1720,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) ProcessInsts(
 			actionData.PortingID,
 			actionData.UniqExternalTxID,
 			actionData.TxReqID,
-			common.PortalTopUpWaitingPortingSuccessStatus,
+			pCommon.PortalRequestAcceptedStatus,
 		)
 		statusContentBytes, _ := json.Marshal(topUpWaitingPortingReq)
 		err = statedb.StoreCustodianTopupWaitingPortingStatusV3(
@@ -1741,7 +1741,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) ProcessInsts(
 			waitingPortingReq.Amount(),
 			waitingPortingReq.Custodians(),
 			waitingPortingReq.PortingFee(),
-			common.PortalPortingReqWaitingStatus,
+			pCommon.PortalPortingReqWaitingStatus,
 			beaconHeight+1,
 			waitingPortingReq.ShardHeight(),
 			waitingPortingReq.ShardID(),
@@ -1927,7 +1927,7 @@ func (p *portalLiquidationCustodianRunAwayProcessor) BuildNewInsts(
 						liquidatedByExchangeRate,
 						metaType,
 						shardID,
-						common.PortalLiquidateCustodianFailedChainStatus,
+						pCommon.PortalProducerInstFailedChainStatus,
 					)
 					insts = append(insts, inst)
 					continue
@@ -1955,7 +1955,7 @@ func (p *portalLiquidationCustodianRunAwayProcessor) BuildNewInsts(
 						liquidatedByExchangeRate,
 						metaType,
 						shardID,
-						common.PortalLiquidateCustodianFailedChainStatus,
+						pCommon.PortalProducerInstFailedChainStatus,
 					)
 					insts = append(insts, inst)
 					continue
@@ -1978,7 +1978,7 @@ func (p *portalLiquidationCustodianRunAwayProcessor) BuildNewInsts(
 					liquidatedByExchangeRate,
 					metaType,
 					shardID,
-					common.PortalLiquidateCustodianSuccessChainStatus,
+					pCommon.PortalProducerInstSuccessChainStatus,
 				)
 				insts = append(insts, inst)
 			}
@@ -2039,7 +2039,7 @@ func (p *portalLiquidationCustodianRunAwayProcessor) ProcessInsts(
 	}
 
 	reqStatus := instructions[2]
-	if reqStatus == common.PortalLiquidateCustodianSuccessChainStatus {
+	if reqStatus == pCommon.PortalProducerInstSuccessChainStatus {
 		// update custodian state
 		Logger.log.Infof("[processPortalLiquidateCustodian] actionData.CustodianIncAddressStr = %s in beaconHeight=%d", actionData.CustodianIncAddressStr, beaconHeight)
 		cusStateKey := statedb.GenerateCustodianStateObjectKey(actionData.CustodianIncAddressStr)
@@ -2079,7 +2079,7 @@ func (p *portalLiquidationCustodianRunAwayProcessor) ProcessInsts(
 			statedb.DeleteMatchedRedeemRequest(stateDB, actionData.UniqueRedeemID)
 
 			// update status of redeem request with redeemID to liquidated status
-			err = updateRedeemRequestStatusByRedeemId(actionData.UniqueRedeemID, common.PortalRedeemReqLiquidatedStatus, stateDB)
+			err = updateRedeemRequestStatusByRedeemId(actionData.UniqueRedeemID, pCommon.PortalRedeemReqLiquidatedStatus, stateDB)
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occurred while updating redeem request status by redeemID: %+v", err)
 				return nil
@@ -2088,7 +2088,7 @@ func (p *portalLiquidationCustodianRunAwayProcessor) ProcessInsts(
 
 		// track liquidation custodian status by redeemID and custodian address into DB
 		custodianLiquidationTrackData := pMeta.PortalLiquidateCustodianStatus{
-			Status:                          common.PortalLiquidateCustodianSuccessStatus,
+			Status:                          pCommon.PortalRequestAcceptedStatus,
 			UniqueRedeemID:                  actionData.UniqueRedeemID,
 			TokenID:                         actionData.TokenID,
 			RedeemPubTokenAmount:            actionData.RedeemPubTokenAmount,
@@ -2114,10 +2114,10 @@ func (p *portalLiquidationCustodianRunAwayProcessor) ProcessInsts(
 			return nil
 		}
 
-	} else if reqStatus == common.PortalLiquidateCustodianFailedChainStatus {
+	} else if reqStatus == pCommon.PortalProducerInstFailedChainStatus {
 		// track liquidation custodian status by redeemID and custodian address into DB
 		custodianLiquidationTrackData := pMeta.PortalLiquidateCustodianStatus{
-			Status:                          common.PortalLiquidateCustodianFailedStatus,
+			Status:                          pCommon.PortalRequestRejectedStatus,
 			UniqueRedeemID:                  actionData.UniqueRedeemID,
 			TokenID:                         actionData.TokenID,
 			RedeemPubTokenAmount:            actionData.RedeemPubTokenAmount,
@@ -2231,7 +2231,7 @@ func buildInstForExpiredPortingReqByPortingID(
 		expiredByLiquidation,
 		basemeta.PortalExpiredWaitingPortingReqMeta,
 		shardID,
-		common.PortalExpiredWaitingPortingReqSuccessChainStatus,
+		pCommon.PortalProducerInstSuccessChainStatus,
 	)
 	insts = append(insts, inst)
 
@@ -2297,7 +2297,7 @@ func (p *portalExpiredWaitingPortingProcessor) ProcessInsts(
 	status := instructions[2]
 	waitingPortingID := actionData.UniquePortingID
 
-	if status == common.PortalExpiredWaitingPortingReqSuccessChainStatus {
+	if status == pCommon.PortalProducerInstSuccessChainStatus {
 		waitingPortingKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(waitingPortingID)
 		waitingPortingKeyStr := waitingPortingKey.String()
 		waitingPortingReq := currentPortalState.WaitingPortingRequests[waitingPortingKeyStr]
@@ -2330,9 +2330,9 @@ func (p *portalExpiredWaitingPortingProcessor) ProcessInsts(
 		statedb.DeleteWaitingPortingRequest(stateDB, waitingPortingReq.UniquePortingID())
 
 		// update status of porting ID  => expired/liquidated
-		portingReqStatus := common.PortalPortingReqExpiredStatus
+		portingReqStatus := pCommon.PortalPortingReqExpiredStatus
 		if actionData.ExpiredByLiquidation {
-			portingReqStatus = common.PortalPortingReqLiquidatedStatus
+			portingReqStatus = pCommon.PortalPortingReqLiquidatedStatus
 		}
 
 		newPortingRequestStatus := pMeta.NewPortingRequestStatus(
@@ -2361,7 +2361,6 @@ func (p *portalExpiredWaitingPortingProcessor) ProcessInsts(
 
 		// track expired waiting porting request status by portingID into DB
 		expiredPortingTrackData := pMeta.PortalExpiredWaitingPortingReqStatus{
-			Status:               common.PortalExpiredPortingReqSuccessStatus,
 			UniquePortingID:      waitingPortingID,
 			ShardID:              actionData.ShardID,
 			ExpiredByLiquidation: actionData.ExpiredByLiquidation,
@@ -2378,27 +2377,7 @@ func (p *portalExpiredWaitingPortingProcessor) ProcessInsts(
 			return nil
 		}
 
-	} else if status == common.PortalCustodianTopupRejectedChainStatus {
-		// track expired waiting porting request status by portingID into DB
-		expiredPortingTrackData := pMeta.PortalExpiredWaitingPortingReqStatus{
-			Status:               common.PortalExpiredPortingReqFailedStatus,
-			UniquePortingID:      waitingPortingID,
-			ShardID:              actionData.ShardID,
-			ExpiredByLiquidation: actionData.ExpiredByLiquidation,
-			ExpiredBeaconHeight:  beaconHeight + 1,
-		}
-		expiredPortingTrackDataBytes, _ := json.Marshal(expiredPortingTrackData)
-		err = statedb.StorePortalExpiredPortingRequestStatus(
-			stateDB,
-			waitingPortingID,
-			expiredPortingTrackDataBytes,
-		)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while tracking expired porting request: %+v", err)
-			return nil
-		}
 	}
-
 	return nil
 }
 
@@ -2468,7 +2447,7 @@ func buildInstRejectRedeemRequestByLiquidationExchangeRate(
 		basemeta.PortalRedeemRequestMetaV3,
 		shardID,
 		common.Hash{},
-		common.PortalRedeemReqCancelledByLiquidationChainStatus,
+		pCommon.PortalRedeemReqCancelledByLiquidationChainStatus,
 		redeemReq.ShardHeight(),
 		redeemReq.GetRedeemerExternalAddress(),
 	)
@@ -2555,7 +2534,7 @@ func (p *portalLiquidationByRatesV3Processor) BuildNewInsts(
 		inst := buildLiquidationByExchangeRateInstV3(
 			custodianState.GetIncognitoAddress(),
 			basemeta.PortalLiquidateByRatesMetaV3,
-			common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
+			pCommon.PortalProducerInstSuccessChainStatus,
 			tpRatios,
 			remainUnlockColalterals)
 		insts = append(insts, inst)
@@ -2588,7 +2567,7 @@ func (p *portalLiquidationByRatesV3Processor) ProcessInsts(
 	}
 
 	reqStatus := instructions[2]
-	if reqStatus == common.PortalLiquidateTPExchangeRatesSuccessChainStatus {
+	if reqStatus == pCommon.PortalProducerInstSuccessChainStatus {
 		liquidationInfo := actionData.Details
 
 		//update current portal state
@@ -2718,7 +2697,7 @@ func checkAndBuildInstRejectRedeemRequestByLiquidationExchangeRate(
 				basemeta.PortalRedeemRequestMetaV3,
 				shardID,
 				common.Hash{},
-				common.PortalRedeemReqCancelledByLiquidationChainStatus,
+				pCommon.PortalRedeemReqCancelledByLiquidationChainStatus,
 				redeemReq.ShardHeight(),
 				redeemReq.GetRedeemerExternalAddress(),
 			)
@@ -2838,7 +2817,7 @@ func (p *portalLiquidationByRatesProcessor) BuildNewInsts(
 				inst := buildTopPercentileExchangeRatesLiquidationInst(
 					custodianState.GetIncognitoAddress(),
 					basemeta.PortalLiquidateTPExchangeRatesMeta,
-					common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
+					pCommon.PortalProducerInstSuccessChainStatus,
 					liquidationRatios,
 					remainUnlockAmounts,
 				)
@@ -2877,7 +2856,7 @@ func (p *portalLiquidationByRatesProcessor) ProcessInsts(
 	}
 
 	reqStatus := instructions[2]
-	if reqStatus == common.PortalLiquidateTPExchangeRatesSuccessChainStatus {
+	if reqStatus == pCommon.PortalProducerInstSuccessChainStatus {
 		//validation
 		Logger.log.Infof("custodian address %v, hold ptoken %+v, lock amount %+v", custodianState.GetIncognitoAddress(), custodianState.GetHoldingPublicTokens(), custodianState.GetLockedAmountCollateral())
 
@@ -2891,7 +2870,7 @@ func (p *portalLiquidationByRatesProcessor) ProcessInsts(
 			//save db
 			newTPExchangeRates := pMeta.NewLiquidateTopPercentileExchangeRatesStatus(
 				custodianState.GetIncognitoAddress(),
-				common.PortalLiquidationTPExchangeRatesSuccessStatus,
+				pCommon.PortalRequestAcceptedStatus,
 				detectTp,
 			)
 			contentStatusBytes, _ := json.Marshal(newTPExchangeRates)
@@ -2904,23 +2883,6 @@ func (p *portalLiquidationByRatesProcessor) ProcessInsts(
 				Logger.log.Errorf("ERROR: an error occurred while store liquidation TP exchange rates %v", err)
 				return nil
 			}
-		}
-	} else if reqStatus == common.PortalLiquidateTPExchangeRatesFailedChainStatus {
-		newTPExchangeRates := pMeta.NewLiquidateTopPercentileExchangeRatesStatus(
-			custodianState.GetIncognitoAddress(),
-			common.PortalLiquidationTPExchangeRatesFailedStatus,
-			nil,
-		)
-		contentStatusBytes, _ := json.Marshal(newTPExchangeRates)
-		err = statedb.StoreLiquidationByExchangeRateStatus(
-			stateDB,
-			beaconHeight,
-			custodianState.GetIncognitoAddress(),
-			contentStatusBytes)
-
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occurred while store liquidation TP exchange rates %v", err)
-			return nil
 		}
 	}
 

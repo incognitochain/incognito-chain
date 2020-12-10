@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
@@ -97,7 +98,7 @@ func (iRes PortalWithdrawRewardResponse) VerifyMinerCreatedTxBeforeGettingInBloc
 			continue
 		}
 		instDepositStatus := inst[2]
-		if instDepositStatus != common.PortalReqWithdrawRewardAcceptedChainStatus {
+		if instDepositStatus != pCommon.PortalRequestAcceptedChainStatus {
 			continue
 		}
 

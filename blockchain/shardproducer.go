@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+
 	"math/rand"
 	"strconv"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 )
 
 // NewBlockShard Create New block Shard:
@@ -357,63 +359,63 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				}
 			// portal
 			case basemeta.PortalRequestPortingMeta, basemeta.PortalRequestPortingMetaV3:
-				if len(l) >= 4 && l[2] == common.PortalPortingRequestRejectedChainStatus {
+				if len(l) >= 4 && l[2] == pCommon.PortalRequestRejectedChainStatus {
 					newTx, err = curView.buildPortalRefundPortingFeeTx(l[3], producerPrivateKey, shardID)
 				}
 			case basemeta.PortalCustodianDepositMeta:
-				if len(l) >= 4 && l[2] == common.PortalCustodianDepositRefundChainStatus {
+				if len(l) >= 4 && l[2] == pCommon.PortalRequestRefundChainStatus {
 					newTx, err = curView.buildPortalRefundCustodianDepositTx(l[3], producerPrivateKey, shardID)
 				}
 			case basemeta.PortalUserRequestPTokenMeta:
-				if len(l) >= 4 && l[2] == common.PortalReqPTokensAcceptedChainStatus {
+				if len(l) >= 4 && l[2] == pCommon.PortalRequestAcceptedChainStatus {
 					newTx, err = curView.buildPortalAcceptedRequestPTokensTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 				//custodian withdraw
 			case basemeta.PortalCustodianWithdrawRequestMeta:
-				if len(l) >= 4 && l[2] == common.PortalCustodianWithdrawRequestAcceptedChainStatus {
+				if len(l) >= 4 && l[2] == pCommon.PortalRequestAcceptedChainStatus {
 					newTx, err = curView.buildPortalCustodianWithdrawRequest(l[3], producerPrivateKey, shardID)
 				}
 			case basemeta.PortalRedeemRequestMeta, basemeta.PortalRedeemRequestMetaV3:
-				if len(l) >= 4 && (l[2] == common.PortalRedeemRequestRejectedChainStatus || l[2] == common.PortalRedeemReqCancelledByLiquidationChainStatus) {
+				if len(l) >= 4 && (l[2] == pCommon.PortalRequestRejectedChainStatus || l[2] == pCommon.PortalRedeemReqCancelledByLiquidationChainStatus) {
 					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: redeem ptoken
 			case basemeta.PortalRedeemFromLiquidationPoolMeta:
 				if len(l) >= 4 {
-					if l[2] == common.PortalRedeemFromLiquidationPoolSuccessChainStatus {
+					if l[2] == pCommon.PortalProducerInstSuccessChainStatus {
 						newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTx(l[3], producerPrivateKey, shardID)
-					} else if l[2] == common.PortalRedeemFromLiquidationPoolRejectedChainStatus {
+					} else if l[2] == pCommon.PortalRequestRejectedChainStatus {
 						newTx, err = curView.buildPortalRefundRedeemLiquidateExchangeRatesTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 					}
 				}
 			case basemeta.PortalLiquidateCustodianMeta, basemeta.PortalLiquidateCustodianMetaV3:
-				if len(l) >= 4 && l[2] == common.PortalLiquidateCustodianSuccessChainStatus {
+				if len(l) >= 4 && l[2] == pCommon.PortalProducerInstSuccessChainStatus {
 					newTx, err = curView.buildPortalLiquidateCustodianResponseTx(l[3], producerPrivateKey, shardID)
 				}
 			case basemeta.PortalRequestWithdrawRewardMeta:
-				if len(l) >= 4 && l[2] == common.PortalReqWithdrawRewardAcceptedChainStatus {
+				if len(l) >= 4 && l[2] == pCommon.PortalRequestAcceptedChainStatus {
 					newTx, err = curView.buildPortalAcceptedWithdrawRewardTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 				//liquidation: custodian deposit
 			case basemeta.PortalCustodianTopupMeta:
-				if len(l) >= 4 && l[2] == common.PortalCustodianTopupRejectedChainStatus {
+				if len(l) >= 4 && l[2] == pCommon.PortalRequestRejectedChainStatus {
 					newTx, err = curView.buildPortalLiquidationCustodianDepositReject(l[3], producerPrivateKey, shardID)
 				}
 			case basemeta.PortalCustodianTopupMetaV2:
-				if len(l) >= 4 && l[2] == common.PortalCustodianTopupRejectedChainStatus {
+				if len(l) >= 4 && l[2] == pCommon.PortalRequestRejectedChainStatus {
 					newTx, err = curView.buildPortalLiquidationCustodianDepositRejectV2(l[3], producerPrivateKey, shardID)
 				}
 			//
 			case basemeta.PortalTopUpWaitingPortingRequestMeta:
-				if len(l) >= 4 && l[2] == common.PortalTopUpWaitingPortingRejectedChainStatus {
+				if len(l) >= 4 && l[2] == pCommon.PortalRequestRejectedChainStatus {
 					newTx, err = curView.buildPortalRejectedTopUpWaitingPortingTx(l[3], producerPrivateKey, shardID)
 				}
 			//redeem from liquidation pool
 			case basemeta.PortalRedeemFromLiquidationPoolMetaV3:
 				if len(l) >= 4 {
-					if l[2] == common.PortalRedeemFromLiquidationPoolSuccessChainStatus {
+					if l[2] == pCommon.PortalProducerInstSuccessChainStatus {
 						newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTxV3(l[3], producerPrivateKey, shardID)
-					} else if l[2] == common.PortalRedeemFromLiquidationPoolRejectedChainStatus {
+					} else if l[2] == pCommon.PortalRequestRejectedChainStatus {
 						newTx, err = curView.buildPortalRefundRedeemLiquidateExchangeRatesTxV3(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 					}
 				}

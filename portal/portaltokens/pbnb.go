@@ -14,15 +14,19 @@ type PortalBNBTokenProcessor struct {
 	*PortalToken
 }
 
-func (p *PortalBNBTokenProcessor) IsValidRemoteAddress(address string) (bool, error) {
+func (p PortalBNBTokenProcessor) IsValidRemoteAddress(address string) (bool, error) {
 	return bnb.IsValidBNBAddress(address, p.ChainID), nil
 }
 
-func (p *PortalBNBTokenProcessor) GetChainID() string {
+func (p PortalBNBTokenProcessor) GetChainID() string {
 	return p.ChainID
 }
 
-func (p *PortalBNBTokenProcessor) ParseAndVerifyProof(
+func (p PortalBNBTokenProcessor) GetMinTokenAmount() uint64 {
+	return p.MinTokenAmount
+}
+
+func (p PortalBNBTokenProcessor) ParseAndVerifyProof(
 	proof string,
 	bc bMeta.ChainRetriever,
 	expectedMemo string,
@@ -123,7 +127,7 @@ func (p *PortalBNBTokenProcessor) ParseAndVerifyProof(
 	return true, nil
 }
 
-func (p *PortalBNBTokenProcessor) GetExpectedMemoForPorting(portingID string) string {
+func (p PortalBNBTokenProcessor) GetExpectedMemoForPorting(portingID string) string {
 	type portingMemoBNB struct {
 		PortingID string `json:"PortingID"`
 	}
@@ -133,7 +137,7 @@ func (p *PortalBNBTokenProcessor) GetExpectedMemoForPorting(portingID string) st
 	return memoPortingStr
 }
 
-func (p *PortalBNBTokenProcessor) GetExpectedMemoForRedeem(redeemID string, custodianAddress string) string {
+func (p PortalBNBTokenProcessor) GetExpectedMemoForRedeem(redeemID string, custodianAddress string) string {
 	type redeemMemoBNB struct {
 		RedeemID                  string `json:"RedeemID"`
 		CustodianIncognitoAddress string `json:"CustodianIncognitoAddress"`

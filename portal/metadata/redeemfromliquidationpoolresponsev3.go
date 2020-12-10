@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
@@ -108,8 +109,8 @@ func (iRes PortalRedeemFromLiquidationPoolResponseV3) VerifyMinerCreatedTxBefore
 			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus %v is different from iRes.RequestStatus %v", instReqStatus, iRes.RequestStatus)
 			continue
 		}
-		if (instReqStatus != common.PortalRedeemFromLiquidationPoolSuccessChainStatus) &&
-			(instReqStatus != common.PortalRedeemFromLiquidationPoolRejectedChainStatus) {
+		if (instReqStatus != pCommon.PortalProducerInstSuccessChainStatus) &&
+			(instReqStatus != pCommon.PortalRequestRejectedChainStatus) {
 			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus is not correct %v", instReqStatus)
 			continue
 		}
@@ -164,7 +165,7 @@ func (iRes PortalRedeemFromLiquidationPoolResponseV3) VerifyMinerCreatedTxBefore
 
 		mintedTokenID := common.PRVCoinID.String()
 		mintedAmount := mintedPRVCollateral
-		if instReqStatus == common.PortalRedeemFromLiquidationPoolRejectedChainStatus {
+		if instReqStatus == pCommon.PortalRequestRejectedChainStatus {
 			mintedTokenID = redeemReqContent.TokenID
 			mintedAmount = redeemAmountFromInst
 		}

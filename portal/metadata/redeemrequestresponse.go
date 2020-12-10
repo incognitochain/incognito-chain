@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -100,8 +101,8 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 		}
 		instReqStatus := inst[2]
 		if iRes.RequestStatus != "rejected" ||
-			(instReqStatus != common.PortalRedeemRequestRejectedChainStatus &&
-				instReqStatus != common.PortalRedeemReqCancelledByLiquidationChainStatus) {
+			(instReqStatus != pCommon.PortalRequestRejectedChainStatus &&
+				instReqStatus != pCommon.PortalRedeemReqCancelledByLiquidationChainStatus) {
 			continue
 		}
 

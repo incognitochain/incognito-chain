@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"github.com/incognitochain/incognito-chain/portal"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"github.com/incognitochain/incognito-chain/portal/portaltokens"
 	"time"
 
@@ -12,8 +13,6 @@ type SlashLevel struct {
 	MinRange        uint8
 	PunishedEpoches uint8
 }
-
-
 
 /*
 Params defines a network by its component. These component may be used by Applications
@@ -89,14 +88,16 @@ var GenesisParam *GenesisParams
 
 func initPortalTokensForTestNet() map[string]portaltokens.PortalTokenProcessor {
 	return map[string]portaltokens.PortalTokenProcessor{
-		common.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
+		pCommon.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
 			&portaltokens.PortalToken{
-				ChainID: TestnetBTCChainID,
+				ChainID:        TestnetBTCChainID,
+				MinTokenAmount: 10,
 			},
 		},
-		common.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
+		pCommon.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
 			&portaltokens.PortalToken{
-				ChainID: TestnetBNBChainID,
+				ChainID:        TestnetBNBChainID,
+				MinTokenAmount: 10,
 			},
 		},
 	}
@@ -104,14 +105,16 @@ func initPortalTokensForTestNet() map[string]portaltokens.PortalTokenProcessor {
 
 func initPortalTokensForMainNet() map[string]portaltokens.PortalTokenProcessor {
 	return map[string]portaltokens.PortalTokenProcessor{
-		common.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
+		pCommon.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
 			&portaltokens.PortalToken{
-				ChainID: MainnetBTCChainID,
+				ChainID:        MainnetBTCChainID,
+				MinTokenAmount: 10,
 			},
 		},
-		common.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
+		pCommon.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
 			&portaltokens.PortalToken{
-				ChainID: MainnetBNBChainID,
+				ChainID:        MainnetBNBChainID,
+				MinTokenAmount: 10,
 			},
 		},
 	}
@@ -223,12 +226,12 @@ func SetupParam() {
 				PortalETHContractAddressStr: "0x21Ab34649777e94e30d60319cDBa472759B00AaA", // todo: update sc address
 
 				RelayingParams: portal.RelayingParams{
-					BNBRelayingHeaderChainID:    TestnetBNBChainID,
-					BTCRelayingHeaderChainID:    TestnetBTCChainID,
-					BTCDataFolderName:           TestnetBTCDataFolderName,
-					BNBFullNodeProtocol:         TestnetBNBFullNodeProtocol,
-					BNBFullNodeHost:             TestnetBNBFullNodeHost,
-					BNBFullNodePort:             TestnetBNBFullNodePort,
+					BNBRelayingHeaderChainID: TestnetBNBChainID,
+					BTCRelayingHeaderChainID: TestnetBTCChainID,
+					BTCDataFolderName:        TestnetBTCDataFolderName,
+					BNBFullNodeProtocol:      TestnetBNBFullNodeProtocol,
+					BNBFullNodeHost:          TestnetBNBFullNodeHost,
+					BNBFullNodePort:          TestnetBNBFullNodePort,
 				},
 			},
 		},
@@ -317,12 +320,12 @@ func SetupParam() {
 				PortalETHContractAddressStr:          "", // todo: update sc address
 
 				RelayingParams: portal.RelayingParams{
-					BNBRelayingHeaderChainID:             Testnet2BNBChainID,
-					BTCRelayingHeaderChainID:             Testnet2BTCChainID,
-					BTCDataFolderName:                    Testnet2BTCDataFolderName,
-					BNBFullNodeProtocol:                  Testnet2BNBFullNodeProtocol,
-					BNBFullNodeHost:                      Testnet2BNBFullNodeHost,
-					BNBFullNodePort:                      Testnet2BNBFullNodePort,
+					BNBRelayingHeaderChainID: Testnet2BNBChainID,
+					BTCRelayingHeaderChainID: Testnet2BTCChainID,
+					BTCDataFolderName:        Testnet2BTCDataFolderName,
+					BNBFullNodeProtocol:      Testnet2BNBFullNodeProtocol,
+					BNBFullNodeHost:          Testnet2BNBFullNodeHost,
+					BNBFullNodePort:          Testnet2BNBFullNodePort,
 				},
 			},
 		},
@@ -409,12 +412,12 @@ func SetupParam() {
 				PortalETHContractAddressStr:          "", // todo: update sc address
 
 				RelayingParams: portal.RelayingParams{
-					BNBRelayingHeaderChainID:             MainnetBNBChainID,
-					BTCRelayingHeaderChainID:             MainnetBTCChainID,
-					BTCDataFolderName:                    MainnetBTCDataFolderName,
-					BNBFullNodeProtocol:                  MainnetBNBFullNodeProtocol,
-					BNBFullNodeHost:                      MainnetBNBFullNodeHost,
-					BNBFullNodePort:                      MainnetBNBFullNodePort,
+					BNBRelayingHeaderChainID: MainnetBNBChainID,
+					BTCRelayingHeaderChainID: MainnetBTCChainID,
+					BTCDataFolderName:        MainnetBTCDataFolderName,
+					BNBFullNodeProtocol:      MainnetBNBFullNodeProtocol,
+					BNBFullNodeHost:          MainnetBNBFullNodeHost,
+					BNBFullNodePort:          MainnetBNBFullNodePort,
 				},
 			},
 		},

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"reflect"
 	"strconv"
 
@@ -160,7 +161,10 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever basemet
 	}
 
 	// validate redeem amount
-	minAmount := common.MinAmountPortalPToken[redeemReq.TokenID]
+	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight)
+	if err != nil {
+		return false, false, fmt.Errorf("Error get min portal token amount: %v", err)
+	}
 	if redeemReq.RedeemAmount < minAmount {
 		return false, false, fmt.Errorf("redeem amount should be larger or equal to %v", minAmount)
 	}
@@ -202,7 +206,7 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever basemet
 		if len(redeemReq.RedeemerExternalAddress) == 0 {
 			return false, false, basemeta.NewMetadataTxError(basemeta.PortalRedeemRequestParamError, errors.New("Redeemer address for liquidating is invalid"))
 		}
-		if isValid, err := ValidatePortalExternalAddress(common.ETHChainName, "", redeemReq.RedeemerExternalAddress); !isValid || err != nil {
+		if isValid, err := ValidatePortalExternalAddress(pCommon.ETHChainName, "", redeemReq.RedeemerExternalAddress); !isValid || err != nil {
 			return false, false, fmt.Errorf("RedeemerExternalAddress %v is not a valid address of ethereum network", redeemReq.RedeemerExternalAddress)
 		}
 	}

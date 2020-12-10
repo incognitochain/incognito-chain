@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	ec "github.com/ethereum/go-ethereum/common"
-	"github.com/incognitochain/incognito-chain/common"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/pkg/errors"
@@ -110,9 +110,9 @@ func IsValidPortalRemoteAddress(
 	tokenID string,
 	beaconHeight uint64,
 ) bool {
-	if tokenID == common.PortalBNBIDStr {
+	if tokenID == pCommon.PortalBNBIDStr {
 		return bnb.IsValidBNBAddress(remoteAddress, bcr.GetBNBChainID(beaconHeight))
-	} else if tokenID == common.PortalBTCIDStr {
+	} else if tokenID == pCommon.PortalBTCIDStr {
 		btcHeaderChain := bcr.GetBTCHeaderChain()
 		if btcHeaderChain == nil {
 			return false
@@ -145,7 +145,7 @@ func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetri
 // Validate portal external addresses for collateral tokens (ETH/ERC20)
 func ValidatePortalExternalAddress(chainName string, tokenID string, address string) (bool, error) {
 	switch chainName {
-	case common.ETHChainName:
+	case pCommon.ETHChainName:
 		return ec.IsHexAddress(address), nil
 	}
 	return true, nil

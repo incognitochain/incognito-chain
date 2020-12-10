@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/portal"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"github.com/pkg/errors"
 	"math"
@@ -3831,7 +3832,7 @@ func UpdateLockedCollateralForRewardsV3(currentPortalState *CurrentPortalState, 
 	if lockedCollateralDetails == nil {
 		lockedCollateralDetails = map[string]uint64{}
 	}
-	portalTokenIDs := common.PortalSupportedIncTokenIDs
+	portalTokenIDs := pCommon.PortalSupportedIncTokenIDs
 	for _, custodianState := range currentPortalState.CustodianPoolState {
 		for _, tokenID := range portalTokenIDs {
 			holdPubTokenAmount := GetTotalHoldPubTokenAmount(currentPortalState, custodianState, tokenID)

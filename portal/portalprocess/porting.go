@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/portal"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"strconv"
 )
@@ -119,7 +120,7 @@ func (p *portalPortingRequestProcessor) BuildNewInsts(
 	rejectInst := buildRequestPortingInst(
 		actionData.Meta.Type,
 		shardID,
-		common.PortalPortingRequestRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		actionData.Meta.UniqueRegisterId,
 		actionData.Meta.IncogAddressStr,
 		actionData.Meta.PTokenId,
@@ -200,7 +201,7 @@ func (p *portalPortingRequestProcessor) BuildNewInsts(
 	acceptInst := buildRequestPortingInst(
 		actionData.Meta.Type,
 		shardID,
-		common.PortalPortingRequestAcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 		actionData.Meta.UniqueRegisterId,
 		actionData.Meta.IncogAddressStr,
 		actionData.Meta.PTokenId,
@@ -269,7 +270,7 @@ func (p *portalPortingRequestProcessor) ProcessInsts(
 	shardId := portingRequestContent.ShardID
 
 	switch reqStatus {
-	case common.PortalPortingRequestAcceptedChainStatus:
+	case pCommon.PortalRequestAcceptedChainStatus:
 		//verify custodian
 		isCustodianAccepted := true
 		for _, itemCustodian := range custodiansDetail {
@@ -318,7 +319,7 @@ func (p *portalPortingRequestProcessor) ProcessInsts(
 			amount,
 			custodiansDetail,
 			portingFee,
-			common.PortalPortingReqWaitingStatus,
+			pCommon.PortalPortingReqWaitingStatus,
 			beaconHeight+1,
 			shardHeight,
 			shardId,
@@ -332,7 +333,7 @@ func (p *portalPortingRequestProcessor) ProcessInsts(
 			amount,
 			custodiansDetail,
 			portingFee,
-			common.PortalPortingTxRequestAcceptedStatus,
+			pCommon.PortalRequestAcceptedStatus,
 			beaconHeight+1,
 			shardHeight,
 			shardId,
@@ -374,7 +375,7 @@ func (p *portalPortingRequestProcessor) ProcessInsts(
 		currentPortalState.WaitingPortingRequests[keyWaitingPortingRequest.String()] = newWaitingPortingRequestState
 
 		break
-	case common.PortalPortingRequestRejectedChainStatus:
+	case pCommon.PortalRequestRejectedChainStatus:
 		txReqID := portingRequestContent.TxReqID
 
 		newPortingRequest := portalMeta.NewPortingRequestStatus(
@@ -385,7 +386,7 @@ func (p *portalPortingRequestProcessor) ProcessInsts(
 			amount,
 			custodiansDetail,
 			portingFee,
-			common.PortalPortingTxRequestRejectedStatus,
+			pCommon.PortalRequestRejectedStatus,
 			beaconHeight+1,
 			shardHeight,
 			shardId,
@@ -497,7 +498,7 @@ func (p *portalRequestPTokenProcessor) BuildNewInsts(
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
-		common.PortalReqPTokensRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 	)
 
 	if currentPortalState == nil {
@@ -558,7 +559,7 @@ func (p *portalRequestPTokenProcessor) BuildNewInsts(
 		actionData.Meta.Type,
 		shardID,
 		actionData.TxReqID,
-		common.PortalReqPTokensAcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 	)
 
 	// remove waiting porting request from currentPortalState
@@ -592,7 +593,7 @@ func (p *portalRequestPTokenProcessor) ProcessInsts(
 	}
 
 	reqStatus := instructions[2]
-	if reqStatus == common.PortalReqPTokensAcceptedChainStatus {
+	if reqStatus == pCommon.PortalRequestAcceptedChainStatus {
 		waitingPortingReqKey := statedb.GeneratePortalWaitingPortingRequestObjectKey(actionData.UniquePortingID)
 		waitingPortingReqKeyStr := waitingPortingReqKey.String()
 		waitingPortingReq := currentPortalState.WaitingPortingRequests[waitingPortingReqKeyStr]
@@ -623,7 +624,7 @@ func (p *portalRequestPTokenProcessor) ProcessInsts(
 			return nil
 		}
 
-		portingRequestStatus.Status = common.PortalPortingReqSuccessStatus
+		portingRequestStatus.Status = pCommon.PortalPortingReqSuccessStatus
 		newPortingRequestStatusBytes, _ := json.Marshal(portingRequestStatus)
 		err = statedb.StorePortalPortingRequestStatus(
 			stateDB,
@@ -638,7 +639,7 @@ func (p *portalRequestPTokenProcessor) ProcessInsts(
 
 		// track reqPToken status by txID into DB
 		reqPTokenTrackData := portalMeta.PortalRequestPTokensStatus{
-			Status:          common.PortalReqPTokenAcceptedStatus,
+			Status:          pCommon.PortalRequestAcceptedStatus,
 			UniquePortingID: actionData.UniquePortingID,
 			TokenID:         actionData.TokenID,
 			IncogAddressStr: actionData.IncogAddressStr,
@@ -677,9 +678,9 @@ func (p *portalRequestPTokenProcessor) ProcessInsts(
 		}
 		updatingInfoByTokenID[*incTokenID] = updatingInfo
 
-	} else if reqStatus == common.PortalReqPTokensRejectedChainStatus {
+	} else if reqStatus == pCommon.PortalRequestRejectedChainStatus {
 		reqPTokenTrackData := portalMeta.PortalRequestPTokensStatus{
-			Status:          common.PortalReqPTokenRejectedStatus,
+			Status:          pCommon.PortalRequestRejectedStatus,
 			UniquePortingID: actionData.UniquePortingID,
 			TokenID:         actionData.TokenID,
 			IncogAddressStr: actionData.IncogAddressStr,

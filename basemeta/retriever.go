@@ -53,6 +53,7 @@ type ChainRetriever interface {
 	IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool
 	IsPortalExchangeRateToken(beaconHeight uint64, tokenID string) bool
 	IsPortalToken(beaconHeight uint64, tokenIDStr string) bool
+	GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error)
 }
 
 type BeaconViewRetriever interface {

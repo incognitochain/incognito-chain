@@ -1230,7 +1230,7 @@ func (blockService BlockService) CheckPortalExternalTxSubmitted(data map[string]
 	txIdx := uint(txIdxParam)
 
 	// default is eth chain
-	chainName := common.ETHChainName
+	chainName := portalCommon.ETHChainName
 	chainNameTmp, ok := data["ChainName"].(string)
 	if ok {
 		chainName = chainNameTmp

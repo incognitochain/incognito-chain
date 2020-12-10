@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
@@ -105,7 +106,10 @@ func (redeemReq PortalRedeemFromLiquidationPoolV3) ValidateSanityData(chainRetri
 	}
 
 	// validate redeem amount
-	minAmount := common.MinAmountPortalPToken[redeemReq.TokenID]
+	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight)
+	if err != nil {
+		return false, false, fmt.Errorf("Error get min portal token amount: %v", err)
+	}
 	if redeemReq.RedeemAmount < minAmount {
 		return false, false, fmt.Errorf("redeem amount should be larger or equal to %v", minAmount)
 	}
@@ -128,7 +132,7 @@ func (redeemReq PortalRedeemFromLiquidationPoolV3) ValidateSanityData(chainRetri
 	if common.Has0xPrefix(redeemReq.RedeemerExtAddressStr) {
 		return false, false, errors.New("Redeem from liquidation v3: RedeemerExtAddressStr shouldn't have 0x prefix")
 	}
-	if isValid, err := ValidatePortalExternalAddress(common.ETHChainName, common.Remove0xPrefix(common.EthAddrStr), redeemReq.RedeemerExtAddressStr); !isValid || err != nil {
+	if isValid, err := ValidatePortalExternalAddress(pCommon.ETHChainName, common.Remove0xPrefix(common.EthAddrStr), redeemReq.RedeemerExtAddressStr); !isValid || err != nil {
 		return false, false, errors.New("Redeem from liquidation v3: RedeemerExtAddressStr is invalid")
 	}
 	return true, true, nil

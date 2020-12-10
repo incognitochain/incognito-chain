@@ -127,9 +127,9 @@ package metadata
 ////	remoteAddress string,
 ////	tokenID string,
 ////) bool {
-////	if tokenID == common.PortalBNBIDStr {
+////	if tokenID == pCommon.PortalBNBIDStr {
 ////		return bnb.IsValidBNBAddress(remoteAddress, bcr.GetBNBChainID())
-////	} else if tokenID == common.PortalBTCIDStr {
+////	} else if tokenID == pCommon.PortalBTCIDStr {
 ////		btcHeaderChain := bcr.GetBTCHeaderChain()
 ////		if btcHeaderChain == nil {
 ////			return false

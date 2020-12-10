@@ -186,3 +186,8 @@ func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
 func (blockchain *BlockChain) GetPortalFeederAddress(beaconHeight uint64) string {
 	return blockchain.GetPortalParams(beaconHeight).PortalFeederAddress
 }
+
+
+func (blockchain *BlockChain) GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error) {
+	return blockchain.GetPortalParams(beaconHeight).GetMinAmountPortalToken(tokenIDStr)
+}

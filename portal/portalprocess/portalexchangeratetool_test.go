@@ -12,8 +12,8 @@ func TestPortalExchangeRateTool(t *testing.T) {
 	finalExchangeRates := statedb.NewFinalExchangeRatesStateWithValue(
 		map[string]statedb.FinalExchangeRatesDetail{
 			common.PRVIDStr:       {Amount: 1000000},
-			common.PortalBNBIDStr: {Amount: 40000000},
-			common.PortalBTCIDStr: {Amount: 10000000000},
+			pCommon.PortalBNBIDStr: {Amount: 40000000},
+			pCommon.PortalBTCIDStr: {Amount: 10000000000},
 			"USDT":                {Amount: 1000000},
 			common.EthAddrStr:     {Amount: 400000000},
 			"Rose":     {Amount: 500000},

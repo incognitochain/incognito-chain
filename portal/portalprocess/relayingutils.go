@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/incognitochain/incognito-chain/common"
-	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
+	pMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/tendermint/tendermint/types"
@@ -39,7 +40,7 @@ func (rChain *relayingChain) buildHeaderRelayingInst(
 	txReqID common.Hash,
 	status string,
 ) []string {
-	headerRelayingContent := metadata2.RelayingHeaderContent{
+	headerRelayingContent := pMeta.RelayingHeaderContent{
 		IncogAddressStr: senderAddressStr,
 		Header:          header,
 		TxReqID:         txReqID,
@@ -56,7 +57,7 @@ func (rChain *relayingChain) buildHeaderRelayingInst(
 
 func (rbnbChain *relayingBNBChain) buildRelayingInst(
 	bc basemeta.ChainRetriever,
-	relayingHeaderAction metadata2.RelayingHeaderAction,
+	relayingHeaderAction pMeta.RelayingHeaderAction,
 	relayingHeaderChain *RelayingHeaderChainState,
 ) [][]string {
 	meta := relayingHeaderAction.Meta
@@ -71,7 +72,7 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 			relayingHeaderAction.Meta.Type,
 			relayingHeaderAction.ShardID,
 			relayingHeaderAction.TxReqID,
-			common.RelayingHeaderRejectedChainStatus,
+			pCommon.RelayingHeaderRejectedChainStatus,
 		)
 		return [][]string{inst}
 	}
@@ -87,7 +88,7 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 			relayingHeaderAction.Meta.Type,
 			relayingHeaderAction.ShardID,
 			relayingHeaderAction.TxReqID,
-			common.RelayingHeaderRejectedChainStatus,
+			pCommon.RelayingHeaderRejectedChainStatus,
 		)
 		return [][]string{inst}
 	}
@@ -101,7 +102,7 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 			relayingHeaderAction.Meta.Type,
 			relayingHeaderAction.ShardID,
 			relayingHeaderAction.TxReqID,
-			common.RelayingHeaderRejectedChainStatus,
+			pCommon.RelayingHeaderRejectedChainStatus,
 		)
 		return [][]string{inst}
 	}
@@ -113,14 +114,14 @@ func (rbnbChain *relayingBNBChain) buildRelayingInst(
 		relayingHeaderAction.Meta.Type,
 		relayingHeaderAction.ShardID,
 		relayingHeaderAction.TxReqID,
-		common.RelayingHeaderConsideringChainStatus,
+		pCommon.RelayingHeaderConsideringChainStatus,
 	)
 	return [][]string{inst}
 }
 
 func (rbtcChain *relayingBTCChain) buildRelayingInst(
 	bc basemeta.ChainRetriever,
-	relayingHeaderAction metadata2.RelayingHeaderAction,
+	relayingHeaderAction pMeta.RelayingHeaderAction,
 	relayingState *RelayingHeaderChainState,
 ) [][]string {
 	Logger.log.Info("[BTC Relaying] - Processing buildRelayingInst...")
@@ -131,7 +132,7 @@ func (rbtcChain *relayingBTCChain) buildRelayingInst(
 		relayingHeaderAction.Meta.Type,
 		relayingHeaderAction.ShardID,
 		relayingHeaderAction.TxReqID,
-		common.RelayingHeaderConsideringChainStatus,
+		pCommon.RelayingHeaderConsideringChainStatus,
 	)
 	return [][]string{inst}
 }

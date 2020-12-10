@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/portal"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
@@ -135,7 +136,7 @@ func (p *portalRedeemRequestProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
-		common.PortalRedeemRequestRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		actionData.ShardHeight,
 		meta.RedeemerExternalAddress,
 	)
@@ -226,7 +227,7 @@ func (p *portalRedeemRequestProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
-		common.PortalRedeemRequestAcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 		actionData.ShardHeight,
 		meta.RedeemerExternalAddress,
 	)
@@ -259,7 +260,7 @@ func (p *portalRedeemRequestProcessor) ProcessInsts(
 	}
 
 	reqStatus := instructions[2]
-	if reqStatus == common.PortalRedeemRequestAcceptedChainStatus {
+	if reqStatus == pCommon.PortalRequestAcceptedChainStatus {
 		// add waiting redeem request into waiting redeems list
 		keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(actionData.UniqueRedeemID)
 		keyWaitingRedeemRequestStr := keyWaitingRedeemRequest.String()
@@ -281,7 +282,7 @@ func (p *portalRedeemRequestProcessor) ProcessInsts(
 
 		// track status of redeem request by redeemID
 		redeemRequestStatus := portalMeta.PortalRedeemRequestStatus{
-			Status:                  common.PortalRedeemReqWaitingStatus,
+			Status:                  pCommon.PortalRedeemReqWaitingStatus,
 			UniqueRedeemID:          actionData.UniqueRedeemID,
 			TokenID:                 actionData.TokenID,
 			RedeemAmount:            actionData.RedeemAmount,
@@ -307,7 +308,7 @@ func (p *portalRedeemRequestProcessor) ProcessInsts(
 
 		// track status of redeem request by txReqID
 		redeemRequestByTxIDStatus := portalMeta.PortalRedeemRequestStatus{
-			Status:                  common.PortalRedeemRequestTxAcceptedStatus,
+			Status:                  pCommon.PortalRequestAcceptedStatus,
 			UniqueRedeemID:          actionData.UniqueRedeemID,
 			TokenID:                 actionData.TokenID,
 			RedeemAmount:            actionData.RedeemAmount,
@@ -349,10 +350,10 @@ func (p *portalRedeemRequestProcessor) ProcessInsts(
 		}
 		updatingInfoByTokenID[*incTokenID] = updatingInfo
 
-	} else if reqStatus == common.PortalRedeemRequestRejectedChainStatus {
+	} else if reqStatus == pCommon.PortalRequestRejectedChainStatus {
 		// track status of redeem request by txReqID
 		redeemRequestByTxIDStatus := portalMeta.PortalRedeemRequestStatus{
-			Status:                  common.PortalRedeemRequestTxRejectedStatus,
+			Status:                  pCommon.PortalRequestRejectedStatus,
 			UniqueRedeemID:          actionData.UniqueRedeemID,
 			TokenID:                 actionData.TokenID,
 			RedeemAmount:            actionData.RedeemAmount,
@@ -373,7 +374,7 @@ func (p *portalRedeemRequestProcessor) ProcessInsts(
 			Logger.log.Errorf("[processPortalRedeemRequest] Error when tracking status of redeem request by txReqID: %v\n", err)
 			return nil
 		}
-	} else if reqStatus == common.PortalRedeemReqCancelledByLiquidationChainStatus {
+	} else if reqStatus == pCommon.PortalRedeemReqCancelledByLiquidationChainStatus {
 		keyWaitingRedeemRequest := statedb.GenerateWaitingRedeemRequestObjectKey(actionData.UniqueRedeemID)
 		keyWaitingRedeemRequestStr := keyWaitingRedeemRequest.String()
 		redeemReq := currentPortalState.WaitingRedeemRequests[keyWaitingRedeemRequestStr]
@@ -397,7 +398,7 @@ func (p *portalRedeemRequestProcessor) ProcessInsts(
 
 		// update status of redeem request by redeemID to rejected by liquidation
 		redeemRequestStatus := portalMeta.PortalRedeemRequestStatus{
-			Status:                  common.PortalRedeemReqCancelledByLiquidationStatus,
+			Status:                  pCommon.PortalRedeemReqCancelledByLiquidationStatus,
 			UniqueRedeemID:          actionData.UniqueRedeemID,
 			TokenID:                 actionData.TokenID,
 			RedeemAmount:            actionData.RedeemAmount,
@@ -529,7 +530,7 @@ func (p *portalRequestMatchingRedeemProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
-		common.PortalReqMatchingRedeemRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 	)
 
 	if currentPortalState == nil {
@@ -560,7 +561,7 @@ func (p *portalRequestMatchingRedeemProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
-		common.PortalReqMatchingRedeemAcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 	)
 	return [][]string{inst}, nil
 }
@@ -591,7 +592,7 @@ func (p *portalRequestMatchingRedeemProcessor) ProcessInsts(
 	}
 
 	reqStatus := instructions[2]
-	if reqStatus == common.PortalReqMatchingRedeemAcceptedChainStatus {
+	if reqStatus == pCommon.PortalRequestAcceptedChainStatus {
 		updatedRedeemRequest, err := UpdatePortalStateAfterCustodianReqMatchingRedeem(
 			actionData.CustodianAddressStr,
 			actionData.RedeemID,
@@ -603,10 +604,10 @@ func (p *portalRequestMatchingRedeemProcessor) ProcessInsts(
 			return nil
 		}
 
-		newStatus := common.PortalRedeemReqWaitingStatus
+		newStatus := pCommon.PortalRedeemReqWaitingStatus
 		if actionData.IsFullCustodian {
 			statedb.DeleteWaitingRedeemRequest(stateDB, actionData.RedeemID)
-			newStatus = common.PortalRedeemReqMatchedStatus
+			newStatus = pCommon.PortalRedeemReqMatchedStatus
 		}
 
 		// update status of redeem ID by redeemID and matching custodians
@@ -641,7 +642,7 @@ func (p *portalRequestMatchingRedeemProcessor) ProcessInsts(
 			CustodianAddressStr: actionData.CustodianAddressStr,
 			RedeemID:            actionData.RedeemID,
 			MatchingAmount:      actionData.MatchingAmount,
-			Status:              common.PortalReqMatchingRedeemAcceptedStatus,
+			Status:              pCommon.PortalRequestAcceptedStatus,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
 		err = statedb.StorePortalReqMatchingRedeemByTxIDStatus(
@@ -651,13 +652,13 @@ func (p *portalRequestMatchingRedeemProcessor) ProcessInsts(
 			return nil
 		}
 
-	} else if reqStatus == common.PortalRedeemRequestRejectedChainStatus {
+	} else if reqStatus == pCommon.PortalRequestRejectedChainStatus {
 		// track status of req matching redeem request by txReqID
 		redeemRequestByTxIDStatus := portalMeta.PortalReqMatchingRedeemStatus{
 			CustodianAddressStr: actionData.CustodianAddressStr,
 			RedeemID:            actionData.RedeemID,
 			MatchingAmount:      actionData.MatchingAmount,
-			Status:              common.PortalReqMatchingRedeemRejectedStatus,
+			Status:              pCommon.PortalRequestRejectedStatus,
 		}
 		redeemRequestByTxIDStatusBytes, _ := json.Marshal(redeemRequestByTxIDStatus)
 		err = statedb.StorePortalReqMatchingRedeemByTxIDStatus(
@@ -737,7 +738,7 @@ func CheckAndPickMoreCustodianForWaitingRedeemRequest(
 				waitingRedeem.GetUniqueRedeemID(),
 				moreCustodians,
 				basemeta.PortalPickMoreCustodianForRedeemMeta,
-				common.PortalPickMoreCustodianRedeemFailedChainStatus,
+				pCommon.PortalProducerInstFailedChainStatus,
 			)
 			insts = append(insts, inst)
 
@@ -773,7 +774,7 @@ func CheckAndPickMoreCustodianForWaitingRedeemRequest(
 				basemeta.PortalRedeemRequestMetaV3,
 				shardID,
 				common.Hash{},
-				common.PortalRedeemReqCancelledByLiquidationChainStatus,
+				pCommon.PortalRedeemReqCancelledByLiquidationChainStatus,
 				waitingRedeem.ShardHeight(),
 				waitingRedeem.GetRedeemerExternalAddress(),
 			)
@@ -790,7 +791,7 @@ func CheckAndPickMoreCustodianForWaitingRedeemRequest(
 				waitingRedeem.GetUniqueRedeemID(),
 				moreCustodians,
 				basemeta.PortalPickMoreCustodianForRedeemMeta,
-				common.PortalPickMoreCustodianRedeemFailedChainStatus,
+				pCommon.PortalProducerInstFailedChainStatus,
 			)
 			insts = append(insts, inst)
 			continue
@@ -800,7 +801,7 @@ func CheckAndPickMoreCustodianForWaitingRedeemRequest(
 			waitingRedeem.GetUniqueRedeemID(),
 			moreCustodians,
 			basemeta.PortalPickMoreCustodianForRedeemMeta,
-			common.PortalPickMoreCustodianRedeemSuccessChainStatus,
+			pCommon.PortalProducerInstSuccessChainStatus,
 		)
 		insts = append(insts, inst)
 	}
@@ -894,7 +895,7 @@ func (p *portalPickMoreCustodianForRedeemProcessor) BuildNewInsts(
 				waitingRedeem.GetUniqueRedeemID(),
 				moreCustodians,
 				basemeta.PortalPickMoreCustodianForRedeemMeta,
-				common.PortalPickMoreCustodianRedeemFailedChainStatus,
+				pCommon.PortalProducerInstFailedChainStatus,
 			)
 			insts = append(insts, inst)
 
@@ -930,7 +931,7 @@ func (p *portalPickMoreCustodianForRedeemProcessor) BuildNewInsts(
 				basemeta.PortalRedeemRequestMetaV3,
 				shardID,
 				common.Hash{},
-				common.PortalRedeemReqCancelledByLiquidationChainStatus,
+				pCommon.PortalRedeemReqCancelledByLiquidationChainStatus,
 				waitingRedeem.ShardHeight(),
 				waitingRedeem.GetRedeemerExternalAddress(),
 			)
@@ -947,7 +948,7 @@ func (p *portalPickMoreCustodianForRedeemProcessor) BuildNewInsts(
 				waitingRedeem.GetUniqueRedeemID(),
 				moreCustodians,
 				basemeta.PortalPickMoreCustodianForRedeemMeta,
-				common.PortalPickMoreCustodianRedeemFailedChainStatus,
+				pCommon.PortalProducerInstFailedChainStatus,
 			)
 			insts = append(insts, inst)
 			continue
@@ -957,7 +958,7 @@ func (p *portalPickMoreCustodianForRedeemProcessor) BuildNewInsts(
 			waitingRedeem.GetUniqueRedeemID(),
 			moreCustodians,
 			basemeta.PortalPickMoreCustodianForRedeemMeta,
-			common.PortalPickMoreCustodianRedeemSuccessChainStatus,
+			pCommon.PortalProducerInstSuccessChainStatus,
 		)
 		insts = append(insts, inst)
 	}
@@ -991,7 +992,7 @@ func (p *portalPickMoreCustodianForRedeemProcessor) ProcessInsts(
 	}
 
 	reqStatus := instructions[2]
-	if reqStatus == common.PortalPickMoreCustodianRedeemSuccessChainStatus {
+	if reqStatus == pCommon.PortalProducerInstSuccessChainStatus {
 		waitingRedeemKey := statedb.GenerateWaitingRedeemRequestObjectKey(actionData.RedeemID).String()
 		waitingRedeem := currentPortalState.WaitingRedeemRequests[waitingRedeemKey]
 		updatedRedeemRequest, err := UpdatePortalStateAfterPickMoreCustodiansForWaitingRedeemReq(
@@ -1006,7 +1007,7 @@ func (p *portalPickMoreCustodianForRedeemProcessor) ProcessInsts(
 		statedb.DeleteWaitingRedeemRequest(stateDB, actionData.RedeemID)
 
 		// update status of redeem ID by redeemID and matching custodians
-		newStatus := common.PortalRedeemReqMatchedStatus
+		newStatus := pCommon.PortalRedeemReqMatchedStatus
 		redeemRequest := portalMeta.PortalRedeemRequestStatus{
 			Status:                  byte(newStatus),
 			UniqueRedeemID:          updatedRedeemRequest.GetUniqueRedeemID(),
@@ -1127,7 +1128,7 @@ func (p *portalRequestUnlockCollateralProcessor) BuildNewInsts(
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
-		common.PortalReqUnlockCollateralRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 	)
 
 	if currentPortalState == nil {
@@ -1247,7 +1248,7 @@ func (p *portalRequestUnlockCollateralProcessor) BuildNewInsts(
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
-		common.PortalReqUnlockCollateralAcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 	)
 
 	return [][]string{inst}, nil
@@ -1274,7 +1275,7 @@ func (p *portalRequestUnlockCollateralProcessor) ProcessInsts(
 	// get tokenID from redeemTokenID
 	tokenID := actionData.TokenID
 	reqStatus := instructions[2]
-	if reqStatus == common.PortalReqUnlockCollateralAcceptedChainStatus {
+	if reqStatus == pCommon.PortalRequestAcceptedChainStatus {
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
@@ -1313,7 +1314,7 @@ func (p *portalRequestUnlockCollateralProcessor) ProcessInsts(
 			statedb.DeleteMatchedRedeemRequest(stateDB, actionData.UniqueRedeemID)
 
 			// update status of redeem request with redeemID
-			err = updateRedeemRequestStatusByRedeemId(redeemID, common.PortalRedeemReqSuccessStatus, stateDB)
+			err = updateRedeemRequestStatusByRedeemId(redeemID, pCommon.PortalRedeemReqSuccessStatus, stateDB)
 			if err != nil {
 				Logger.log.Errorf("ERROR: an error occurred while updating redeem request status by redeemID: %+v", err)
 				return nil
@@ -1322,7 +1323,7 @@ func (p *portalRequestUnlockCollateralProcessor) ProcessInsts(
 
 		// track reqUnlockCollateral status by txID into DB
 		reqUnlockCollateralTrackData := portalMeta.PortalRequestUnlockCollateralStatus{
-			Status:              common.PortalReqUnlockCollateralAcceptedStatus,
+			Status:              pCommon.PortalRequestAcceptedStatus,
 			UniqueRedeemID:      actionData.UniqueRedeemID,
 			TokenID:             actionData.TokenID,
 			CustodianAddressStr: actionData.CustodianAddressStr,
@@ -1342,10 +1343,10 @@ func (p *portalRequestUnlockCollateralProcessor) ProcessInsts(
 			return nil
 		}
 
-	} else if reqStatus == common.PortalReqUnlockCollateralRejectedChainStatus {
+	} else if reqStatus == pCommon.PortalRequestRejectedChainStatus {
 		// track reqUnlockCollateral status by txID into DB
 		reqUnlockCollateralTrackData := portalMeta.PortalRequestUnlockCollateralStatus{
-			Status:              common.PortalReqUnlockCollateralRejectedStatus,
+			Status:              pCommon.PortalRequestRejectedStatus,
 			UniqueRedeemID:      actionData.UniqueRedeemID,
 			TokenID:             actionData.TokenID,
 			CustodianAddressStr: actionData.CustodianAddressStr,

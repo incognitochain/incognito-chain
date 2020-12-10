@@ -8,7 +8,8 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal"
-	metadata2 "github.com/incognitochain/incognito-chain/portal/metadata"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
+	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"math/big"
 	"sort"
 	"strconv"
@@ -280,7 +281,7 @@ func buildWithdrawPortalRewardInst(
 	txReqID common.Hash,
 	status string,
 ) []string {
-	withdrawRewardContent := metadata2.PortalRequestWithdrawRewardContent{
+	withdrawRewardContent := portalMeta.PortalRequestWithdrawRewardContent{
 		CustodianAddressStr: custodianAddressStr,
 		TokenID:             tokenID,
 		RewardAmount:        rewardAmount,
@@ -312,7 +313,7 @@ func (p *portalReqWithdrawRewardProcessor) BuildNewInsts(
 		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal custodian deposit action: %+v", err)
 		return [][]string{}, nil
 	}
-	var actionData metadata2.PortalRequestWithdrawRewardAction
+	var actionData portalMeta.PortalRequestWithdrawRewardAction
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshal portal custodian deposit action: %+v", err)
@@ -326,7 +327,7 @@ func (p *portalReqWithdrawRewardProcessor) BuildNewInsts(
 		actionData.Meta.Type,
 		shardID,
 		actionData.TxReqID,
-		common.PortalReqWithdrawRewardRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 	)
 
 	if currentPortalState == nil {
@@ -357,7 +358,7 @@ func (p *portalReqWithdrawRewardProcessor) BuildNewInsts(
 			actionData.Meta.Type,
 			shardID,
 			actionData.TxReqID,
-			common.PortalReqWithdrawRewardAcceptedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
 		)
 
 		// update reward amount of custodian
@@ -377,7 +378,7 @@ func (p *portalReqWithdrawRewardProcessor) ProcessInsts(
 	updatingInfoByTokenID map[common.Hash]basemeta.UpdatingInfo,
 ) error {
 	// unmarshal instructions content
-	var actionData metadata2.PortalRequestWithdrawRewardContent
+	var actionData portalMeta.PortalRequestWithdrawRewardContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
 		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
@@ -385,7 +386,7 @@ func (p *portalReqWithdrawRewardProcessor) ProcessInsts(
 	}
 
 	reqStatus := instructions[2]
-	if reqStatus == common.PortalReqWithdrawRewardAcceptedChainStatus {
+	if reqStatus == pCommon.PortalRequestAcceptedChainStatus {
 		// update reward amount of custodian
 		cusStateKey := statedb.GenerateCustodianStateObjectKey(actionData.CustodianAddressStr)
 		cusStateKeyStr := cusStateKey.String()
@@ -399,8 +400,8 @@ func (p *portalReqWithdrawRewardProcessor) ProcessInsts(
 		currentPortalState.CustodianPoolState[cusStateKeyStr].SetRewardAmount(updatedRewardAmount)
 
 		// track request withdraw portal reward
-		portalReqRewardStatus := metadata2.PortalRequestWithdrawRewardStatus{
-			Status:              common.PortalReqWithdrawRewardAcceptedStatus,
+		portalReqRewardStatus := portalMeta.PortalRequestWithdrawRewardStatus{
+			Status:              pCommon.PortalRequestAcceptedStatus,
 			CustodianAddressStr: actionData.CustodianAddressStr,
 			TokenID:             actionData.TokenID,
 			RewardAmount:        actionData.RewardAmount,
@@ -417,10 +418,10 @@ func (p *portalReqWithdrawRewardProcessor) ProcessInsts(
 			return nil
 		}
 
-	} else if reqStatus == common.PortalReqUnlockCollateralRejectedChainStatus {
+	} else if reqStatus == pCommon.PortalRequestRejectedChainStatus {
 		// track request withdraw portal reward
-		portalReqRewardStatus := metadata2.PortalRequestWithdrawRewardStatus{
-			Status:              common.PortalReqWithdrawRewardRejectedStatus,
+		portalReqRewardStatus := portalMeta.PortalRequestWithdrawRewardStatus{
+			Status:              pCommon.PortalRequestRejectedStatus,
 			CustodianAddressStr: actionData.CustodianAddressStr,
 			TokenID:             actionData.TokenID,
 			RewardAmount:        actionData.RewardAmount,

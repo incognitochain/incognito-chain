@@ -105,7 +105,10 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetr
 	}
 
 	// validate redeem amount
-	minAmount := common.MinAmountPortalPToken[redeemReq.TokenID]
+	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight)
+	if err != nil {
+		return false, false, fmt.Errorf("Error get min portal token amount: %v", err)
+	}
 	if redeemReq.RedeemAmount < minAmount {
 		return false, false, fmt.Errorf("redeem amount should be larger or equal to %v", minAmount)
 	}

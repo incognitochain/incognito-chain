@@ -10,7 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/portal"
-	portalCommon "github.com/incognitochain/incognito-chain/portal/common"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"github.com/incognitochain/incognito-chain/portal/portalprocess"
 	"github.com/incognitochain/incognito-chain/portal/portaltokens"
@@ -30,7 +30,7 @@ var _ = func() (_ struct{}) {
 	portalprocess.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	portaltokens.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	portalMeta.Logger.Init(common.NewBackend(nil).Logger("test", true))
-	portalCommon.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	pCommon.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	Logger.log.Info("This runs before init()!")
 	return
 }()
@@ -101,8 +101,8 @@ func (s *PortalTestSuiteV3) SetupTest() {
 	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
 		map[string]statedb.FinalExchangeRatesDetail{
 			common.PRVIDStr:       {Amount: 1000000000},
-			common.PortalBNBIDStr: {Amount: 20000000000},
-			common.PortalBTCIDStr: {Amount: 10000000000000},
+			pCommon.PortalBNBIDStr: {Amount: 20000000000},
+			pCommon.PortalBTCIDStr: {Amount: 10000000000000},
 			ETH_ID:                {Amount: 400000000000},
 			USDT_ID:               {Amount: 1000000000},
 			DAI_ID:                {Amount: 1000000000},
@@ -143,14 +143,16 @@ func (s *PortalTestSuiteV3) SetupTest() {
 		SupportedCollateralTokens:            supportedCollaterals,
 		MinPortalFee:                         100,
 		PortalTokens: map[string]portaltokens.PortalTokenProcessor{
-			common.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
+			pCommon.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
 				&portaltokens.PortalToken{
-					ChainID: "Bitcoin-Testnet",
+					ChainID:        "Bitcoin-Testnet",
+					MinTokenAmount: 10,
 				},
 			},
-			common.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
+			pCommon.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
 				&portaltokens.PortalToken{
-					ChainID: "Binance-Chain-Ganges",
+					ChainID:        "Binance-Chain-Ganges",
+					MinTokenAmount: 10,
 				},
 			},
 		},
@@ -169,7 +171,7 @@ func (s *PortalTestSuiteV3) SetupTest() {
 				MinBeaconBlockInterval: 40 * time.Second,
 				MinShardBlockInterval:  40 * time.Second,
 				Epoch:                  100,
-				PortalParams: map[uint64]portal.PortalParams {
+				PortalParams: map[uint64]portal.PortalParams{
 					0: portal.PortalParams{
 						TimeOutCustodianReturnPubToken:       24 * time.Hour,
 						TimeOutWaitingPortingRequest:         24 * time.Hour,
@@ -186,14 +188,16 @@ func (s *PortalTestSuiteV3) SetupTest() {
 						SupportedCollateralTokens:            supportedCollaterals,
 						MinPortalFee:                         100,
 						PortalTokens: map[string]portaltokens.PortalTokenProcessor{
-							common.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
+							pCommon.PortalBTCIDStr: &portaltokens.PortalBTCTokenProcessor{
 								&portaltokens.PortalToken{
-									ChainID: "Bitcoin-Testnet",
+									ChainID:        "Bitcoin-Testnet",
+									MinTokenAmount: 10,
 								},
 							},
-							common.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
+							pCommon.PortalBNBIDStr: &portaltokens.PortalBNBTokenProcessor{
 								&portaltokens.PortalToken{
-									ChainID: "Binance-Chain-Ganges",
+									ChainID:        "Binance-Chain-Ganges",
+									MinTokenAmount: 10,
 								},
 							},
 						},
@@ -207,7 +211,7 @@ func (s *PortalTestSuiteV3) SetupTest() {
 						},
 					},
 				},
-			} ,
+			},
 		},
 	}
 }
@@ -252,7 +256,7 @@ func getUnlockAmount(totalLockedAmount uint64, totalPTokenAmount uint64, pTokenA
 
 func (s *PortalTestSuiteV3) TestGetLockedCollateralAmount() {
 	portingAmount := uint64(30 * 1e9)
-	tokenID := common.PortalBNBIDStr
+	tokenID := pCommon.PortalBNBIDStr
 	collateralTokenID := USDT_ID
 
 	percent := s.portalParams.MinPercentLockedCollateral
@@ -262,7 +266,7 @@ func (s *PortalTestSuiteV3) TestGetLockedCollateralAmount() {
 
 func (s *PortalTestSuiteV3) TestGetMinFee() {
 	amount := uint64(140 * 1e9)
-	tokenID := common.PortalBNBIDStr
+	tokenID := pCommon.PortalBNBIDStr
 	percent := s.portalParams.MinPercentPortingFee
 
 	fee := getMinFee(amount, tokenID, s.currentPortalStateForProducer.FinalExchangeRatesState, percent, s.portalParams)
@@ -283,8 +287,8 @@ func (s *PortalTestSuiteV3) TestExchangeRate() {
 	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
 		map[string]statedb.FinalExchangeRatesDetail{
 			common.PRVIDStr:       {Amount: 1000000000},
-			common.PortalBNBIDStr: {Amount: 35000000000}, // x1.75
-			common.PortalBTCIDStr: {Amount: 10000000000000},
+			pCommon.PortalBNBIDStr: {Amount: 35000000000}, // x1.75
+			pCommon.PortalBTCIDStr: {Amount: 10000000000000},
 			ETH_ID:                {Amount: 400000000000},
 			USDT_ID:               {Amount: 1000000000},
 			DAI_ID:                {Amount: 1000000000},
@@ -292,7 +296,7 @@ func (s *PortalTestSuiteV3) TestExchangeRate() {
 	s.currentPortalStateForProducer.FinalExchangeRatesState = finalExchangeRate
 
 	amount := uint64(13500000000)
-	tokenIDFrom := common.PortalBNBIDStr
+	tokenIDFrom := pCommon.PortalBNBIDStr
 	tokenIDTo := USDT_ID
 	convertAmount := exchangeRates(amount, tokenIDFrom, tokenIDTo, s.currentPortalStateForProducer.FinalExchangeRatesState, s.portalParams)
 	fmt.Println("Result from TestExchangeRate: ", convertAmount)
@@ -774,11 +778,11 @@ func buildPortalExchangeRateActionsFromTcs(tcs []TestCaseRelayExchangeRate, shar
 //					Rate:     1000000,
 //				},
 //				{
-//					PTokenID: common.PortalBNBIDStr,
+//					PTokenID: pCommon.PortalBNBIDStr,
 //					Rate:     20000000,
 //				},
 //				{
-//					PTokenID: common.PortalBTCIDStr,
+//					PTokenID: pCommon.PortalBTCIDStr,
 //					Rate:     10000000000,
 //				},
 //			},
@@ -805,8 +809,8 @@ func buildPortalExchangeRateActionsFromTcs(tcs []TestCaseRelayExchangeRate, shar
 //	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
 //		map[string]statedb.FinalExchangeRatesDetail{
 //			common.PRVIDStr:       {Amount: 1000000},
-//			common.PortalBNBIDStr: {Amount: 20000000},
-//			common.PortalBTCIDStr: {Amount: 10000000000},
+//			pCommon.PortalBNBIDStr: {Amount: 20000000},
+//			pCommon.PortalBTCIDStr: {Amount: 10000000000},
 //		})
 //
 //	s.Equal(finalExchangeRate, s.currentPortalStateForProcess.FinalExchangeRatesState)
@@ -833,8 +837,8 @@ func buildTestCaseAndExpectedResultCustodianDeposit() ([]TestCaseCustodianDeposi
 		{
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			remoteAddress: map[string]string{
-				common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-				common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+				pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+				pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 			},
 			depositAmount: 5000 * 1e9,
 		},
@@ -844,8 +848,8 @@ func buildTestCaseAndExpectedResultCustodianDeposit() ([]TestCaseCustodianDeposi
 		{
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			remoteAddress: map[string]string{
-				common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
-				common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+				pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+				pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 			},
 			depositAmount: 2000 * 1e9,
 		},
@@ -853,7 +857,7 @@ func buildTestCaseAndExpectedResultCustodianDeposit() ([]TestCaseCustodianDeposi
 		{
 			custodianIncAddress: CUS_INC_ADDRESS_2,
 			remoteAddress: map[string]string{
-				common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+				pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 			},
 			depositAmount: 1000 * 1e9,
 		},
@@ -861,7 +865,7 @@ func buildTestCaseAndExpectedResultCustodianDeposit() ([]TestCaseCustodianDeposi
 		{
 			custodianIncAddress: CUS_INC_ADDRESS_3,
 			remoteAddress: map[string]string{
-				common.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
+				pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
 			},
 			depositAmount: 10000 * 1e9,
 		},
@@ -876,8 +880,8 @@ func buildTestCaseAndExpectedResultCustodianDeposit() ([]TestCaseCustodianDeposi
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(7000 * 1e9)
 	custodian1.SetFreeCollateral(7000 * 1e9)
@@ -886,7 +890,7 @@ func buildTestCaseAndExpectedResultCustodianDeposit() ([]TestCaseCustodianDeposi
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalCollateral(1000 * 1e9)
 	custodian2.SetFreeCollateral(1000 * 1e9)
@@ -895,7 +899,7 @@ func buildTestCaseAndExpectedResultCustodianDeposit() ([]TestCaseCustodianDeposi
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
 		})
 	custodian3.SetTotalCollateral(10000 * 1e9)
 	custodian3.SetFreeCollateral(10000 * 1e9)
@@ -990,8 +994,8 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 		{
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			remoteAddress: map[string]string{
-				common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-				common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+				pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+				pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 			},
 			depositAmount:     1 * 1e8, // 0.1 ETH
 			collateralTokenID: ETH_ID,
@@ -1007,8 +1011,8 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 		{
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			remoteAddress: map[string]string{
-				common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
-				common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+				pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+				pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 			},
 			depositAmount:     10 * 1e9, // 10 DAI
 			collateralTokenID: DAI_ID,
@@ -1022,8 +1026,8 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 		{
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			remoteAddress: map[string]string{
-				common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-				common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+				pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+				pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 			},
 			depositAmount:     1 * 1e8, // 0.1 ETH
 			collateralTokenID: ETH_ID,
@@ -1037,7 +1041,7 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 		{
 			custodianIncAddress: CUS_INC_ADDRESS_2,
 			remoteAddress: map[string]string{
-				common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+				pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 			},
 			depositAmount:     10 * 1e9, // 10 DAI
 			collateralTokenID: DAI_ID,
@@ -1051,7 +1055,7 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 		{
 			custodianIncAddress: CUS_INC_ADDRESS_3,
 			remoteAddress: map[string]string{
-				common.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
+				pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
 			},
 			depositAmount:     10 * 1e9, // 10 KNC
 			collateralTokenID: "ad67cb4d63c9da94aca37fdf2761aadf780ff4a2",
@@ -1071,8 +1075,8 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -1089,7 +1093,7 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -1107,11 +1111,11 @@ func buildTestCaseAndExpectedResultCustodianDepositV3() ([]TestCaseCustodianDepo
 		},
 		numBeaconInsts: 5,
 		statusInsts: []string{
-			common.PortalCustodianDepositV3AcceptedChainStatus,
-			common.PortalCustodianDepositV3AcceptedChainStatus,
-			common.PortalCustodianDepositV3RejectedChainStatus,
-			common.PortalCustodianDepositV3AcceptedChainStatus,
-			common.PortalCustodianDepositV3RejectedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
 		},
 	}
 
@@ -1123,7 +1127,7 @@ func buildCustodianDepositActionsV3FromTcs(tcs []TestCaseCustodianDepositV3, sha
 
 	for _, tc := range tcs {
 		inst := buildPortalCustodianDepositActionV3(tc.remoteAddress, tc.blockHash, tc.txIndex, tc.proofStrs, shardID)
-		uniqExternalTxID := portalCommon.GetUniqExternalTxID(common.ETHChainName, tc.blockHash, tc.txIndex)
+		uniqExternalTxID := pCommon.GetUniqExternalTxID(pCommon.ETHChainName, tc.blockHash, tc.txIndex)
 		insts = append(insts, instructionForProducer{
 			inst: inst,
 			optionalData: map[string]interface{}{
@@ -1196,8 +1200,8 @@ func (s *PortalTestSuiteV3) SetupTestCustodianWithdrawV3() {
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(1000 * 1e9)
@@ -1216,7 +1220,7 @@ func (s *PortalTestSuiteV3) SetupTestCustodianWithdrawV3() {
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -1231,7 +1235,7 @@ func (s *PortalTestSuiteV3) SetupTestCustodianWithdrawV3() {
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -1289,8 +1293,8 @@ func buildTestCaseAndExpectedResultCustodianWithdrawV3() ([]TestCaseCustodianWit
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(1000 * 1e9)
@@ -1309,7 +1313,7 @@ func buildTestCaseAndExpectedResultCustodianWithdrawV3() ([]TestCaseCustodianWit
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -1324,7 +1328,7 @@ func buildTestCaseAndExpectedResultCustodianWithdrawV3() ([]TestCaseCustodianWit
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -1417,8 +1421,8 @@ func (s *PortalTestSuiteV3) SetupTestPortingRequest() {
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(1000 * 1e9)
@@ -1437,7 +1441,7 @@ func (s *PortalTestSuiteV3) SetupTestPortingRequest() {
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -1452,7 +1456,7 @@ func (s *PortalTestSuiteV3) SetupTestPortingRequest() {
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -1477,7 +1481,7 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 		{
 			portingID:     "porting-bnb-1",
 			incAddressStr: USER_INC_ADDRESS_1,
-			pTokenID:      common.PortalBNBIDStr,
+			pTokenID:      pCommon.PortalBNBIDStr,
 			portingAmount: 1 * 1e9,
 			portingFee:    2000000,
 			isExisted:     false,
@@ -1486,7 +1490,7 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 		{
 			portingID:     "porting-bnb-2",
 			incAddressStr: USER_INC_ADDRESS_2,
-			pTokenID:      common.PortalBNBIDStr,
+			pTokenID:      pCommon.PortalBNBIDStr,
 			portingAmount: 150 * 1e9,
 			portingFee:    300000000,
 			isExisted:     false,
@@ -1495,7 +1499,7 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 		{
 			portingID:     "porting-bnb-1",
 			incAddressStr: USER_INC_ADDRESS_1,
-			pTokenID:      common.PortalBNBIDStr,
+			pTokenID:      pCommon.PortalBNBIDStr,
 			portingAmount: 1 * 1e9,
 			portingFee:    2000000,
 			isExisted:     true,
@@ -1504,7 +1508,7 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 		{
 			portingID:     "porting-bnb-3",
 			incAddressStr: USER_INC_ADDRESS_3,
-			pTokenID:      common.PortalBNBIDStr,
+			pTokenID:      pCommon.PortalBNBIDStr,
 			portingAmount: 1 * 1e9,
 			portingFee:    99900,
 			isExisted:     false,
@@ -1513,7 +1517,7 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 		{
 			portingID:     "porting-btc-4",
 			incAddressStr: USER_INC_ADDRESS_3,
-			pTokenID:      common.PortalBTCIDStr,
+			pTokenID:      pCommon.PortalBTCIDStr,
 			portingAmount: 10 * 1e9,
 			portingFee:    1000000000,
 			isExisted:     false,
@@ -1530,8 +1534,8 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -1547,11 +1551,11 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
@@ -1561,7 +1565,7 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -1572,7 +1576,7 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 			USDT_ID: 1460 * 1e6,
 		})
 	custodian2.SetLockedTokenCollaterals(map[string]map[string]uint64{
-		common.PortalBNBIDStr: {
+		pCommon.PortalBNBIDStr: {
 			USDT_ID: 540 * 1e6,
 		},
 	})
@@ -1581,7 +1585,7 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -1589,12 +1593,12 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 	// waiting porting requests
 	wPortingReqKey1 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-1").String()
 	wPortingRequest1 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-1", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-1", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 1*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 1 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -1605,12 +1609,12 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 
 	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-2").String()
 	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-2", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-2", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_2, 150*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian1.GetIncognitoAddress(),
-				RemoteAddress:          custodian1.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian1.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 137500000000,
 				LockedAmountCollateral: 1000000000000,
 				LockedTokenCollaterals: map[string]uint64{
@@ -1620,7 +1624,7 @@ func buildTestCaseAndExpectedResultPortingRequest() ([]TestCaseRequestPorting, *
 			},
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 12500000000,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -1730,8 +1734,8 @@ func (s *PortalTestSuiteV3) SetupTestRequestPtokens() {
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -1747,11 +1751,11 @@ func (s *PortalTestSuiteV3) SetupTestRequestPtokens() {
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
@@ -1761,7 +1765,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestPtokens() {
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -1772,7 +1776,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestPtokens() {
 			USDT_ID: 1460 * 1e6,
 		})
 	custodian2.SetLockedTokenCollaterals(map[string]map[string]uint64{
-		common.PortalBNBIDStr: {
+		pCommon.PortalBNBIDStr: {
 			USDT_ID: 540 * 1e6,
 		},
 	})
@@ -1781,7 +1785,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestPtokens() {
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -1789,12 +1793,12 @@ func (s *PortalTestSuiteV3) SetupTestRequestPtokens() {
 	// waiting porting requests
 	wPortingReqKey1 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-1").String()
 	wPortingRequest1 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-1", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-1", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 1*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 1 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -1805,12 +1809,12 @@ func (s *PortalTestSuiteV3) SetupTestRequestPtokens() {
 
 	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-2").String()
 	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-2", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-2", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_2, 150*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian1.GetIncognitoAddress(),
-				RemoteAddress:          custodian1.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian1.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 137500000000,
 				LockedAmountCollateral: 1000000000000,
 				LockedTokenCollaterals: map[string]uint64{
@@ -1820,7 +1824,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestPtokens() {
 			},
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 12500000000,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -1854,7 +1858,7 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 		{
 			portingID:     "porting-bnb-1",
 			incAddressStr: USER_INC_ADDRESS_1,
-			pTokenID:      common.PortalBNBIDStr,
+			pTokenID:      pCommon.PortalBNBIDStr,
 			portingAmount: 1 * 1e9,
 			txID:          "A71E509490912AA82E138361D63253601C4CD20F9508F6880738FEF495CE42C6",
 			portingProof:  "",
@@ -1863,7 +1867,7 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 		{
 			portingID:     "porting-bnb-2",
 			incAddressStr: USER_INC_ADDRESS_2,
-			pTokenID:      common.PortalBNBIDStr,
+			pTokenID:      pCommon.PortalBNBIDStr,
 			portingAmount: 150 * 1e9,
 			txID:          "37B26ADEFB57534C9F38C07D948B8241099E02A0D3CAFA60B4400BD200197B52",
 			portingProof:  "",
@@ -1872,7 +1876,7 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 		{
 			portingID:     "porting-bnb-1",
 			incAddressStr: USER_INC_ADDRESS_1,
-			pTokenID:      common.PortalBNBIDStr,
+			pTokenID:      pCommon.PortalBNBIDStr,
 			portingAmount: 1 * 1e9,
 			txID:          "A71E509490912AA82E138361D63253601C4CD20F9508F6880738FEF495CE42C6",
 			portingProof:  "",
@@ -1881,7 +1885,7 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 		{
 			portingID:     "porting-bnb-1",
 			incAddressStr: USER_INC_ADDRESS_1,
-			pTokenID:      common.PortalBNBIDStr,
+			pTokenID:      pCommon.PortalBNBIDStr,
 			portingAmount: 1 * 1e9,
 			txID:          "B186FDFBB781D118E25FB37E85BEB83865C3C575485DC43C28220DD7F91BD70A",
 			portingProof:  "",
@@ -1907,8 +1911,8 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -1924,25 +1928,25 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
 		})
 	custodian1.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 137500000000,
+			pCommon.PortalBNBIDStr: 137500000000,
 		})
 
 	custodian2 := statedb.NewCustodianState()
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -1954,19 +1958,19 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 		})
 	custodian2.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				USDT_ID: 540 * 1e6,
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 13500000000,
+			pCommon.PortalBNBIDStr: 13500000000,
 		})
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -1980,10 +1984,10 @@ func buildTestCaseAndExpectedResultRequestPTokens() ([]TestCaseRequestPtokens, *
 		waitingPortingRes: map[string]*statedb.WaitingPortingRequest{},
 		numBeaconInsts:    4,
 		statusInsts: []string{
-			common.PortalReqPTokensAcceptedChainStatus,
-			common.PortalReqPTokensAcceptedChainStatus,
-			common.PortalReqPTokensRejectedChainStatus,
-			common.PortalReqPTokensRejectedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
 		},
 	}
 
@@ -2082,8 +2086,8 @@ func (s *PortalTestSuiteV3) SetupTestRequestRedeemV3() {
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -2099,25 +2103,25 @@ func (s *PortalTestSuiteV3) SetupTestRequestRedeemV3() {
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
 		})
 	custodian1.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 137500000000,
+			pCommon.PortalBNBIDStr: 137500000000,
 		})
 
 	custodian2 := statedb.NewCustodianState()
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -2129,19 +2133,19 @@ func (s *PortalTestSuiteV3) SetupTestRequestRedeemV3() {
 		})
 	custodian2.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				USDT_ID: 1740 * 1e6,
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 13500000000,
+			pCommon.PortalBNBIDStr: 13500000000,
 		})
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -2149,12 +2153,12 @@ func (s *PortalTestSuiteV3) SetupTestRequestRedeemV3() {
 	// waiting porting requests
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 30*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 30 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -2189,7 +2193,7 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 		// valid request redeem: matching one custodian
 		{
 			uniqueRedeemID:          "redeem-bnb-1",
-			tokenID:                 common.PortalBNBIDStr,
+			tokenID:                 pCommon.PortalBNBIDStr,
 			redeemAmount:            1 * 1e9,
 			redeemerIncAddressStr:   USER_INC_ADDRESS_1,
 			remoteAddress:           USER_BNB_ADDRESS_1,
@@ -2200,7 +2204,7 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 		// valid request redeem: matching many custodians
 		{
 			uniqueRedeemID:          "redeem-bnb-2",
-			tokenID:                 common.PortalBNBIDStr,
+			tokenID:                 pCommon.PortalBNBIDStr,
 			redeemAmount:            140 * 1e9,
 			redeemerIncAddressStr:   USER_INC_ADDRESS_1,
 			remoteAddress:           USER_BNB_ADDRESS_1,
@@ -2211,7 +2215,7 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 		// valid request redeem: redeem amount exceeds total available public token amount
 		{
 			uniqueRedeemID:          "redeem-bnb-3",
-			tokenID:                 common.PortalBNBIDStr,
+			tokenID:                 pCommon.PortalBNBIDStr,
 			redeemAmount:            130 * 1e9,
 			redeemerIncAddressStr:   USER_INC_ADDRESS_1,
 			remoteAddress:           USER_BNB_ADDRESS_1,
@@ -2222,7 +2226,7 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 		// invalid request redeem: duplicate redeem ID
 		{
 			uniqueRedeemID:          "redeem-bnb-1",
-			tokenID:                 common.PortalBNBIDStr,
+			tokenID:                 pCommon.PortalBNBIDStr,
 			redeemAmount:            1 * 1e9,
 			redeemerIncAddressStr:   USER_INC_ADDRESS_1,
 			remoteAddress:           USER_BNB_ADDRESS_1,
@@ -2233,7 +2237,7 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 		// invalid request redeem: redeem fee is less than min redeem fee
 		{
 			uniqueRedeemID:          "redeem-bnb-4",
-			tokenID:                 common.PortalBNBIDStr,
+			tokenID:                 pCommon.PortalBNBIDStr,
 			redeemAmount:            1 * 1e9,
 			redeemerIncAddressStr:   USER_INC_ADDRESS_1,
 			remoteAddress:           USER_BNB_ADDRESS_1,
@@ -2253,8 +2257,8 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -2270,25 +2274,25 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
 		})
 	custodian1.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 137500000000,
+			pCommon.PortalBNBIDStr: 137500000000,
 		})
 
 	custodian2 := statedb.NewCustodianState()
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -2300,19 +2304,19 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 		})
 	custodian2.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				USDT_ID: 1740 * 1e6,
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 13500000000,
+			pCommon.PortalBNBIDStr: 13500000000,
 		})
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -2320,12 +2324,12 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 	// waiting porting requests
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 30*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 30 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -2337,7 +2341,7 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 	// waiting redeem requests
 	wRedeemReqKey1 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
 	wRedeemReq1 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-1", common.PortalBNBIDStr,
+		"redeem-bnb-1", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		1*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{},
@@ -2348,7 +2352,7 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 
 	wRedeemReqKey2 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
 	wRedeemReq2 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-2", common.PortalBNBIDStr,
+		"redeem-bnb-2", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		140*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{},
@@ -2359,7 +2363,7 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 
 	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
 	wRedeemReq3 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-1", common.PortalBNBIDStr,
+		"redeem-bnb-1", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		130*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{},
@@ -2384,11 +2388,11 @@ func buildTestCaseAndExpectedResultRequestRedeemV3() ([]TestCaseRequestRedeemV3,
 		},
 		numBeaconInsts: 5,
 		statusInsts: []string{
-			common.PortalRedeemRequestAcceptedChainStatus,
-			common.PortalRedeemRequestAcceptedChainStatus,
-			common.PortalRedeemRequestAcceptedChainStatus,
-			common.PortalRedeemRequestRejectedChainStatus,
-			common.PortalRedeemRequestRejectedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
 		},
 	}
 
@@ -2481,8 +2485,8 @@ func (s *PortalTestSuiteV3) SetupTestRequestMatchingWRedeemV3() {
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -2498,25 +2502,25 @@ func (s *PortalTestSuiteV3) SetupTestRequestMatchingWRedeemV3() {
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
 		})
 	custodian1.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 137500000000, // 137.5 BNB
+			pCommon.PortalBNBIDStr: 137500000000, // 137.5 BNB
 		})
 
 	custodian2 := statedb.NewCustodianState()
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -2528,19 +2532,19 @@ func (s *PortalTestSuiteV3) SetupTestRequestMatchingWRedeemV3() {
 		})
 	custodian2.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				USDT_ID: 1740 * 1e6,
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 13500000000, // 13.5 BNB
+			pCommon.PortalBNBIDStr: 13500000000, // 13.5 BNB
 		})
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -2548,12 +2552,12 @@ func (s *PortalTestSuiteV3) SetupTestRequestMatchingWRedeemV3() {
 	// waiting porting requests
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 30*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 30 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -2565,7 +2569,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestMatchingWRedeemV3() {
 	// waiting redeem requests
 	wRedeemReqKey1 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
 	wRedeemReq1 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-1", common.PortalBNBIDStr,
+		"redeem-bnb-1", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		1*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{},
@@ -2576,7 +2580,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestMatchingWRedeemV3() {
 
 	wRedeemReqKey2 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-2").String()
 	wRedeemReq2 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-2", common.PortalBNBIDStr,
+		"redeem-bnb-2", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		140*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{},
@@ -2587,7 +2591,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestMatchingWRedeemV3() {
 
 	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-3").String()
 	wRedeemReq3 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-3", common.PortalBNBIDStr,
+		"redeem-bnb-3", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		130*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{},
@@ -2657,8 +2661,8 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -2674,25 +2678,25 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
 		})
 	custodian1.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 0,
+			pCommon.PortalBNBIDStr: 0,
 		})
 
 	custodian2 := statedb.NewCustodianState()
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -2704,19 +2708,19 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 		})
 	custodian2.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				USDT_ID: 1740 * 1e6,
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 12500000000,
+			pCommon.PortalBNBIDStr: 12500000000,
 		})
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -2724,12 +2728,12 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 	// waiting porting requests
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 30*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 30 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -2741,7 +2745,7 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 	// waiting redeem requests
 	wRedeemReqKey1 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-1").String()
 	wRedeemReq1 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-1", common.PortalBNBIDStr,
+		"redeem-bnb-1", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		1*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -2754,7 +2758,7 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 
 	wRedeemReqKey2 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-2").String()
 	wRedeemReq2 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-2", common.PortalBNBIDStr,
+		"redeem-bnb-2", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		140*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -2767,7 +2771,7 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 
 	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-3").String()
 	wRedeemReq3 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-3", common.PortalBNBIDStr,
+		"redeem-bnb-3", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		130*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{},
@@ -2792,10 +2796,10 @@ func buildTestCaseAndExpectedResultRequestMatchingWRedeemV3() ([]TestCaseRequest
 		},
 		numBeaconInsts: 4,
 		statusInsts: []string{
-			common.PortalReqMatchingRedeemAcceptedChainStatus,
-			common.PortalReqMatchingRedeemAcceptedChainStatus,
-			common.PortalReqMatchingRedeemRejectedChainStatus,
-			common.PortalReqMatchingRedeemRejectedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
 		},
 	}
 
@@ -2885,8 +2889,8 @@ func buildExpectedResultPickMoreCustodianForWRequestRedeem() *ExpectedResultPick
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -2902,25 +2906,25 @@ func buildExpectedResultPickMoreCustodianForWRequestRedeem() *ExpectedResultPick
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
 		})
 	custodian1.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 7500000000, // 7.5 BNB
+			pCommon.PortalBNBIDStr: 7500000000, // 7.5 BNB
 		})
 
 	custodian2 := statedb.NewCustodianState()
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -2932,19 +2936,19 @@ func buildExpectedResultPickMoreCustodianForWRequestRedeem() *ExpectedResultPick
 		})
 	custodian2.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				USDT_ID: 1740 * 1e6,
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 12500000000, // 12.5 BNB
+			pCommon.PortalBNBIDStr: 12500000000, // 12.5 BNB
 		})
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -2952,12 +2956,12 @@ func buildExpectedResultPickMoreCustodianForWRequestRedeem() *ExpectedResultPick
 	// waiting porting requests
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 30*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 30 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -2969,7 +2973,7 @@ func buildExpectedResultPickMoreCustodianForWRequestRedeem() *ExpectedResultPick
 	// matched redeem requests: 3 => 1 => 2
 	matchedRedeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 	matchedRedeemReq1 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-1", common.PortalBNBIDStr,
+		"redeem-bnb-1", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		1*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -2982,7 +2986,7 @@ func buildExpectedResultPickMoreCustodianForWRequestRedeem() *ExpectedResultPick
 
 	matchedRedeemReqKey3 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-3").String()
 	matchedRedeemReq3 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-3", common.PortalBNBIDStr,
+		"redeem-bnb-3", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		130*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -3009,10 +3013,10 @@ func buildExpectedResultPickMoreCustodianForWRequestRedeem() *ExpectedResultPick
 		},
 		numBeaconInsts: 4,
 		statusInsts: []string{
-			common.PortalPickMoreCustodianRedeemSuccessChainStatus,
-			common.PortalPickMoreCustodianRedeemSuccessChainStatus,
-			common.PortalPickMoreCustodianRedeemFailedChainStatus,
-			common.PortalRedeemReqCancelledByLiquidationChainStatus,
+			pCommon.PortalProducerInstSuccessChainStatus,
+			pCommon.PortalProducerInstSuccessChainStatus,
+			pCommon.PortalProducerInstFailedChainStatus,
+			pCommon.PortalRedeemReqCancelledByLiquidationChainStatus,
 		},
 	}
 
@@ -3096,8 +3100,8 @@ func (s *PortalTestSuiteV3) SetupTestRequestUnlockCollateralsV3() {
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -3113,25 +3117,25 @@ func (s *PortalTestSuiteV3) SetupTestRequestUnlockCollateralsV3() {
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
 		})
 	custodian1.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 0, // 137.5 BNB
+			pCommon.PortalBNBIDStr: 0, // 137.5 BNB
 		})
 
 	custodian2 := statedb.NewCustodianState()
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -3143,19 +3147,19 @@ func (s *PortalTestSuiteV3) SetupTestRequestUnlockCollateralsV3() {
 		})
 	custodian2.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				USDT_ID: 1740 * 1e6,
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 10000000000, // 13.5 BNB
+			pCommon.PortalBNBIDStr: 10000000000, // 13.5 BNB
 		})
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -3163,12 +3167,12 @@ func (s *PortalTestSuiteV3) SetupTestRequestUnlockCollateralsV3() {
 	// waiting porting requests
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 30*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 30 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -3180,7 +3184,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestUnlockCollateralsV3() {
 	// matched redeem requests
 	matchedRedeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 	matchedRedeemReq1 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-1", common.PortalBNBIDStr,
+		"redeem-bnb-1", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		1*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -3193,7 +3197,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestUnlockCollateralsV3() {
 
 	matchedRedeemReqKey2 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-2").String()
 	matchedRedeemReq2 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-2", common.PortalBNBIDStr,
+		"redeem-bnb-2", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		140*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -3236,7 +3240,7 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 		// valid request unlock collaterals: from redeem request match to one custodian
 		{
 			uniqueRedeemID:      "redeem-bnb-1",
-			portalTokenID:       common.PortalBNBIDStr,
+			portalTokenID:       pCommon.PortalBNBIDStr,
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			redeemAmount:        1 * 1e9,
 			redeemProof:         "",
@@ -3245,7 +3249,7 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 		// valid request unlock collaterals: from redeem request match to many custodians
 		{
 			uniqueRedeemID:      "redeem-bnb-2",
-			portalTokenID:       common.PortalBNBIDStr,
+			portalTokenID:       pCommon.PortalBNBIDStr,
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			redeemAmount:        136500000000,
 			redeemProof:         "",
@@ -3254,7 +3258,7 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 		// invalid request unlock collaterals: resubmit the proof for the same redeem request
 		{
 			uniqueRedeemID:      "redeem-bnb-1",
-			portalTokenID:       common.PortalBNBIDStr,
+			portalTokenID:       pCommon.PortalBNBIDStr,
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			redeemAmount:        1 * 1e9,
 			redeemProof:         "",
@@ -3263,7 +3267,7 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 		// invalid request unlock collaterals: resubmit the proof for the other redeem request
 		{
 			uniqueRedeemID:      "redeem-bnb-2",
-			portalTokenID:       common.PortalBNBIDStr,
+			portalTokenID:       pCommon.PortalBNBIDStr,
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			redeemAmount:        1 * 1e9,
 			redeemProof:         "",
@@ -3272,7 +3276,7 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 		// invalid request unlock collaterals: invalid redeem memo
 		{
 			uniqueRedeemID:      "redeem-bnb-2",
-			portalTokenID:       common.PortalBNBIDStr,
+			portalTokenID:       pCommon.PortalBNBIDStr,
 			custodianIncAddress: CUS_INC_ADDRESS_2,
 			redeemAmount:        3500000000,
 			redeemProof:         "",
@@ -3290,8 +3294,8 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(1000 * 1e9)
@@ -3307,25 +3311,25 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 0,
+			pCommon.PortalBNBIDStr: 0,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  0,
 				USDT_ID: 0,
 			},
 		})
 	custodian1.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 0,
+			pCommon.PortalBNBIDStr: 0,
 		})
 
 	custodian2 := statedb.NewCustodianState()
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -3337,19 +3341,19 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 		})
 	custodian2.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				USDT_ID: 1740 * 1e6,
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 10000000000,
+			pCommon.PortalBNBIDStr: 10000000000,
 		})
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -3357,12 +3361,12 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 	// waiting porting requests
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 30*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 30 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -3374,7 +3378,7 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 	// matched redeem requests
 	matchedRedeemReqKey2 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-2").String()
 	matchedRedeemReq2 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-2", common.PortalBNBIDStr,
+		"redeem-bnb-2", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		140*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -3399,11 +3403,11 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 		},
 		numBeaconInsts: 5,
 		statusInsts: []string{
-			common.PortalReqUnlockCollateralAcceptedChainStatus,
-			common.PortalReqUnlockCollateralAcceptedChainStatus,
-			common.PortalReqUnlockCollateralRejectedChainStatus,
-			common.PortalReqUnlockCollateralRejectedChainStatus,
-			common.PortalReqUnlockCollateralRejectedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
 		},
 	}
 
@@ -3493,8 +3497,8 @@ func (s *PortalTestSuiteV3) SetupTestExpiredPortingRequest() {
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -3510,11 +3514,11 @@ func (s *PortalTestSuiteV3) SetupTestExpiredPortingRequest() {
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
@@ -3524,7 +3528,7 @@ func (s *PortalTestSuiteV3) SetupTestExpiredPortingRequest() {
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -3535,7 +3539,7 @@ func (s *PortalTestSuiteV3) SetupTestExpiredPortingRequest() {
 			USDT_ID: 1460 * 1e6,
 		})
 	custodian2.SetLockedTokenCollaterals(map[string]map[string]uint64{
-		common.PortalBNBIDStr: {
+		pCommon.PortalBNBIDStr: {
 			USDT_ID: 540 * 1e6,
 		},
 	})
@@ -3544,7 +3548,7 @@ func (s *PortalTestSuiteV3) SetupTestExpiredPortingRequest() {
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -3552,12 +3556,12 @@ func (s *PortalTestSuiteV3) SetupTestExpiredPortingRequest() {
 	// waiting porting requests
 	wPortingReqKey1 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-1").String()
 	wPortingRequest1 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-1", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-1", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 1*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 1 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -3568,12 +3572,12 @@ func (s *PortalTestSuiteV3) SetupTestExpiredPortingRequest() {
 
 	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-2").String()
 	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-2", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-2", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_2, 150*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian1.GetIncognitoAddress(),
-				RemoteAddress:          custodian1.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian1.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 137500000000,
 				LockedAmountCollateral: 1000000000000,
 				LockedTokenCollaterals: map[string]uint64{
@@ -3583,7 +3587,7 @@ func (s *PortalTestSuiteV3) SetupTestExpiredPortingRequest() {
 			},
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 12500000000,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -3619,8 +3623,8 @@ func buildExpectedResultExpiredPortingRequest() *ExpectedResultExpiredPortingReq
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(1000 * 1e9)
@@ -3636,11 +3640,11 @@ func buildExpectedResultExpiredPortingRequest() *ExpectedResultExpiredPortingReq
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 0,
+			pCommon.PortalBNBIDStr: 0,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  0,
 				USDT_ID: 0,
 			},
@@ -3650,7 +3654,7 @@ func buildExpectedResultExpiredPortingRequest() *ExpectedResultExpiredPortingReq
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -3661,7 +3665,7 @@ func buildExpectedResultExpiredPortingRequest() *ExpectedResultExpiredPortingReq
 			USDT_ID: 2000 * 1e6,
 		})
 	custodian2.SetLockedTokenCollaterals(map[string]map[string]uint64{
-		common.PortalBNBIDStr: {
+		pCommon.PortalBNBIDStr: {
 			USDT_ID: 0,
 		},
 	})
@@ -3670,7 +3674,7 @@ func buildExpectedResultExpiredPortingRequest() *ExpectedResultExpiredPortingReq
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -3736,47 +3740,47 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	custodian1 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_1, 7000*1e9, 6680*1e9,
 		map[string]uint64{
-			common.PortalBNBIDStr: 8 * 1e9,
+			pCommon.PortalBNBIDStr: 8 * 1e9,
 		},
 		map[string]uint64{
-			common.PortalBNBIDStr: 320 * 1e9,
+			pCommon.PortalBNBIDStr: 320 * 1e9,
 		},
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		},
 		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
 
 	custodian2 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_2, 1000*1e9, 976000000000,
 		map[string]uint64{
-			common.PortalBNBIDStr: 0.6 * 1e9,
+			pCommon.PortalBNBIDStr: 0.6 * 1e9,
 		},
 		map[string]uint64{
-			common.PortalBNBIDStr: 24 * 1e9,
+			pCommon.PortalBNBIDStr: 24 * 1e9,
 		},
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		},
 		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
 
 	custodian3 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_3, 200*1e9, 0,
 		map[string]uint64{
-			common.PortalBTCIDStr: 0.1 * 1e9,
+			pCommon.PortalBTCIDStr: 0.1 * 1e9,
 		},
 		map[string]uint64{
-			common.PortalBTCIDStr: 200 * 1e9,
+			pCommon.PortalBTCIDStr: 200 * 1e9,
 		},
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
 		},
 		map[string]uint64{}, map[string]uint64{
 			ETH_ID: 5 * 1e9,
 		}, map[string]uint64{
 			ETH_ID: 3 * 1e9,
 		}, map[string]map[string]uint64{
-			common.PortalBTCIDStr: {
+			pCommon.PortalBTCIDStr: {
 				ETH_ID: 2 * 1e9,
 			},
 		})
@@ -3784,18 +3788,18 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	custodian4 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_4, 0, 0,
 		map[string]uint64{
-			common.PortalBNBIDStr: 20 * 1e9,
+			pCommon.PortalBNBIDStr: 20 * 1e9,
 		},
 		map[string]uint64{},
 		map[string]string{
-			common.PortalBNBIDStr: "bnbAddress4",
+			pCommon.PortalBNBIDStr: "bnbAddress4",
 		},
 		map[string]uint64{}, map[string]uint64{
 			ETH_ID: 5 * 1e9,
 		}, map[string]uint64{
 			ETH_ID: 4 * 1e9,
 		}, map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID: 1e9,
 			},
 		})
@@ -3805,7 +3809,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		map[string]uint64{},
 		map[string]uint64{},
 		map[string]string{
-			common.PortalBNBIDStr: "bnbAddress5",
+			pCommon.PortalBNBIDStr: "bnbAddress5",
 		},
 		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
 
@@ -3814,7 +3818,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		map[string]uint64{},
 		map[string]uint64{},
 		map[string]string{
-			common.PortalBNBIDStr: "bnbAddress6",
+			pCommon.PortalBNBIDStr: "bnbAddress6",
 		},
 		map[string]uint64{}, map[string]uint64{
 			ETH_ID: 1 * 1e9,
@@ -3827,7 +3831,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		map[string]uint64{},
 		map[string]uint64{},
 		map[string]string{
-			common.PortalBNBIDStr: "bnbAddress7",
+			pCommon.PortalBNBIDStr: "bnbAddress7",
 		},
 		map[string]uint64{}, map[string]uint64{
 			ETH_ID: 2 * 1e9,
@@ -3848,7 +3852,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	// redeem match prv only
 	redeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 	redeemRequest1 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-1", common.PortalBNBIDStr,
+		"redeem-bnb-1", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, "userCUS_BNB_ADDRESS_1", 8.3*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_1, CUS_BNB_ADDRESS_1, 8*1e9),
@@ -3858,7 +3862,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	// redeem match prv and eth
 	redeemReqKey2 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-btc-2").String()
 	redeemRequest2 := statedb.NewRedeemRequestWithValue(
-		"redeem-btc-2", common.PortalBTCIDStr,
+		"redeem-btc-2", pCommon.PortalBTCIDStr,
 		USER_INC_ADDRESS_2, "userCUS_BTC_ADDRESS_2", 0.05*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_3, CUS_BTC_ADDRESS_3, 0.05*1e9),
@@ -3867,7 +3871,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	// redeem match eth only
 	redeemReqKey3 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-2").String()
 	redeemRequest3 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-2", common.PortalBNBIDStr,
+		"redeem-bnb-2", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_4, "userCUS_BNB_ADDRESS_2", 10*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_4, CUS_BNB_ADDRESS_3, 10*1e9),
@@ -3881,7 +3885,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 
 	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-3").String()
 	wRedeemRequest3 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-3", common.PortalBNBIDStr,
+		"redeem-bnb-3", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, "userCUS_BNB_ADDRESS_1", 0.1*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_2, CUS_BNB_ADDRESS_2, 0.1*1e9),
@@ -3893,7 +3897,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 
 	wPortingReqKey1 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-1").String()
 	wPortingRequest1 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-1", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-1", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_5, 0.5*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
@@ -3906,7 +3910,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 
 	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-2").String()
 	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-2", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-2", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_6, 10*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
@@ -3922,7 +3926,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 25*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
@@ -4011,8 +4015,8 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -4028,25 +4032,25 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
 		})
 	custodian1.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 0,
+			pCommon.PortalBNBIDStr: 0,
 		})
 
 	custodian2 := statedb.NewCustodianState()
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -4058,19 +4062,19 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
 		})
 	custodian2.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				USDT_ID: 1740 * 1e6,
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 0, // 10 BNB
+			pCommon.PortalBNBIDStr: 0, // 10 BNB
 		})
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -4078,12 +4082,12 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
 	// waiting porting requests
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 30*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 30 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -4095,7 +4099,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
 	// waiting redeem requests
 	wRedeemReqKey4 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-4").String()
 	wRedeemReq4 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-4", common.PortalBNBIDStr,
+		"redeem-bnb-4", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		12*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -4109,7 +4113,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
 	// matched redeem requests
 	matchedRedeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 	matchedRedeemReq1 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-1", common.PortalBNBIDStr,
+		"redeem-bnb-1", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		1*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -4122,7 +4126,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
 
 	matchedRedeemReqKey2 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-2").String()
 	matchedRedeemReq2 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-2", common.PortalBNBIDStr,
+		"redeem-bnb-2", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		140*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -4163,8 +4167,8 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidationByRates() {
 	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
 		map[string]statedb.FinalExchangeRatesDetail{
 			common.PRVIDStr:       {Amount: 1000000000},
-			common.PortalBNBIDStr: {Amount: 40000000000}, // x2
-			common.PortalBTCIDStr: {Amount: 10000000000000},
+			pCommon.PortalBNBIDStr: {Amount: 40000000000}, // x2
+			pCommon.PortalBTCIDStr: {Amount: 10000000000000},
 			ETH_ID:                {Amount: 400000000000},
 			USDT_ID:               {Amount: 1000000000},
 			DAI_ID:                {Amount: 1000000000},
@@ -4188,8 +4192,8 @@ func buildExpectedResultAutoLiquidationByRates() *ExpectedResultAutoLiquidationB
 	custodian1.SetIncognitoAddress(CUS_INC_ADDRESS_1)
 	custodian1.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 		})
 	custodian1.SetTotalCollateral(1000 * 1e9)
 	custodian1.SetFreeCollateral(0)
@@ -4205,25 +4209,25 @@ func buildExpectedResultAutoLiquidationByRates() *ExpectedResultAutoLiquidationB
 		})
 	custodian1.SetLockedAmountCollateral(
 		map[string]uint64{
-			common.PortalBNBIDStr: 1000 * 1e9,
+			pCommon.PortalBNBIDStr: 1000 * 1e9,
 		})
 	custodian1.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				ETH_ID:  10 * 1e9,
 				USDT_ID: 500 * 1e6,
 			},
 		})
 	custodian1.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 0,
+			pCommon.PortalBNBIDStr: 0,
 		})
 
 	custodian2 := statedb.NewCustodianState()
 	custodian2.SetIncognitoAddress(CUS_INC_ADDRESS_2)
 	custodian2.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		})
 	custodian2.SetTotalTokenCollaterals(
 		map[string]uint64{
@@ -4235,19 +4239,19 @@ func buildExpectedResultAutoLiquidationByRates() *ExpectedResultAutoLiquidationB
 		})
 	custodian2.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				USDT_ID: 1340 * 1e6,
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
-			common.PortalBNBIDStr: 0, // 10 BNB
+			pCommon.PortalBNBIDStr: 0, // 10 BNB
 		})
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
 	custodian3.SetRemoteAddresses(
 		map[string]string{
-			common.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
+			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_2,
 		})
 	custodian3.SetTotalCollateral(1000 * 1e9)
 	custodian3.SetFreeCollateral(1000 * 1e9)
@@ -4255,12 +4259,12 @@ func buildExpectedResultAutoLiquidationByRates() *ExpectedResultAutoLiquidationB
 	// waiting porting requests
 	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, 30*1e9,
 		[]*statedb.MatchingPortingCustodianDetail{
 			{
 				IncAddress:             custodian2.GetIncognitoAddress(),
-				RemoteAddress:          custodian2.GetRemoteAddresses()[common.PortalBNBIDStr],
+				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 30 * 1e9,
 				LockedAmountCollateral: 0,
 				LockedTokenCollaterals: map[string]uint64{
@@ -4272,7 +4276,7 @@ func buildExpectedResultAutoLiquidationByRates() *ExpectedResultAutoLiquidationB
 	// waiting redeem requests
 	//wRedeemReqKey4 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-4").String()
 	//wRedeemReq4 := statedb.NewRedeemRequestWithValue(
-	//	"redeem-bnb-4", common.PortalBNBIDStr,
+	//	"redeem-bnb-4", pCommon.PortalBNBIDStr,
 	//	USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 	//	12*1e9,
 	//	[]*statedb.MatchingRedeemCustodianDetail{
@@ -4286,7 +4290,7 @@ func buildExpectedResultAutoLiquidationByRates() *ExpectedResultAutoLiquidationB
 	// matched redeem requests
 	matchedRedeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 	matchedRedeemReq1 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-1", common.PortalBNBIDStr,
+		"redeem-bnb-1", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		1*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -4299,7 +4303,7 @@ func buildExpectedResultAutoLiquidationByRates() *ExpectedResultAutoLiquidationB
 
 	matchedRedeemReqKey2 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-2").String()
 	matchedRedeemReq2 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-2", common.PortalBNBIDStr,
+		"redeem-bnb-2", pCommon.PortalBNBIDStr,
 		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
 		140*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
@@ -4315,7 +4319,7 @@ func buildExpectedResultAutoLiquidationByRates() *ExpectedResultAutoLiquidationB
 	liquidationPool := map[string]*statedb.LiquidationPool{}
 	liquidationPool[liquidationPoolKey] = statedb.NewLiquidationPoolWithValue(
 		map[string]statedb.LiquidationPoolDetail{
-			common.PortalBNBIDStr: {
+			pCommon.PortalBNBIDStr: {
 				PubTokenAmount:   10 * 1e9,
 				CollateralAmount: 0,
 				TokensCollateralAmount: map[string]uint64{
@@ -4341,8 +4345,8 @@ func buildExpectedResultAutoLiquidationByRates() *ExpectedResultAutoLiquidationB
 		liquidationPool: liquidationPool,
 		numBeaconInsts:  2,
 		statusInsts: []string{
-			common.PortalRedeemReqCancelledByLiquidationChainStatus,
-			common.PortalLiquidateTPExchangeRatesSuccessChainStatus,
+			pCommon.PortalRedeemReqCancelledByLiquidationChainStatus,
+			pCommon.PortalProducerInstSuccessChainStatus,
 		},
 	}
 
@@ -4451,14 +4455,14 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //		// topup by burning more collaterals
 //		{
 //			incAddressStr:        CUS_INC_ADDRESS_2,
-//			ptokenID:             common.PortalBNBIDStr,
+//			ptokenID:             pCommon.PortalBNBIDStr,
 //			depositAmount:        500 * 1e9,
 //			freeCollateralAmount: 0,
 //		},
 //		// topup by using free collaterals
 //		{
 //			incAddressStr:        CUS_INC_ADDRESS_2,
-//			ptokenID:             common.PortalBNBIDStr,
+//			ptokenID:             pCommon.PortalBNBIDStr,
 //			depositAmount:        0,
 //			freeCollateralAmount: 500 * 1e9,
 //		},
@@ -4473,7 +4477,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //		{
 //			incAddressStr:        "custodianIncAddress4",
 //			portingID:            "porting-bnb-1",
-//			ptokenID:             common.PortalBNBIDStr,
+//			ptokenID:             pCommon.PortalBNBIDStr,
 //			depositAmount:        20 * 1e9,
 //			freeCollateralAmount: 0,
 //		},
@@ -4481,7 +4485,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //		{
 //			incAddressStr:        "custodianIncAddress4",
 //			portingID:            "porting-bnb-1",
-//			ptokenID:             common.PortalBNBIDStr,
+//			ptokenID:             pCommon.PortalBNBIDStr,
 //			depositAmount:        0,
 //			freeCollateralAmount: 50 * 1e9,
 //		},
@@ -4524,40 +4528,40 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //	custodian1 := statedb.NewCustodianStateWithValue(
 //		CUS_INC_ADDRESS_1, 7000*1e9, 6920000000000,
 //		map[string]uint64{
-//			common.PortalBNBIDStr: 0,
+//			pCommon.PortalBNBIDStr: 0,
 //		},
 //		map[string]uint64{
-//			common.PortalBNBIDStr: 80000000000,
+//			pCommon.PortalBNBIDStr: 80000000000,
 //		},
 //		map[string]string{
-//			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-//			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+//			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+//			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 //		},
 //		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
 //
 //	custodian2 := statedb.NewCustodianStateWithValue(
 //		CUS_INC_ADDRESS_2, 1500*1e9, 460000000000,
 //		map[string]uint64{
-//			common.PortalBNBIDStr: 0.6 * 1e9,
+//			pCommon.PortalBNBIDStr: 0.6 * 1e9,
 //		},
 //		map[string]uint64{
-//			common.PortalBNBIDStr: 1040000000000,
+//			pCommon.PortalBNBIDStr: 1040000000000,
 //		},
 //		map[string]string{
-//			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+//			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 //		},
 //		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
 //
 //	custodian3 := statedb.NewCustodianStateWithValue(
 //		CUS_INC_ADDRESS_3, 10000*1e9, 8000000000000,
 //		map[string]uint64{
-//			common.PortalBTCIDStr: 0.1 * 1e9,
+//			pCommon.PortalBTCIDStr: 0.1 * 1e9,
 //		},
 //		map[string]uint64{
-//			common.PortalBTCIDStr: 2000000000000,
+//			pCommon.PortalBTCIDStr: 2000000000000,
 //		},
 //		map[string]string{
-//			common.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
+//			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
 //		},
 //		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
 //
@@ -4566,16 +4570,16 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //		map[string]uint64{
 //		},
 //		map[string]uint64{
-//			common.PortalBNBIDStr: 110000000000,
+//			pCommon.PortalBNBIDStr: 110000000000,
 //		},
 //		map[string]string{
-//			common.PortalBNBIDStr: "bnbAddress4",
+//			pCommon.PortalBNBIDStr: "bnbAddress4",
 //		},
 //		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
 //
 //	wPortingReqKey1 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-1").String()
 //	wPortingRequest1 := statedb.NewWaitingPortingRequestWithValue(
-//		"porting-bnb-1", common.Hash{}, common.PortalBNBIDStr,
+//		"porting-bnb-1", common.Hash{}, pCommon.PortalBNBIDStr,
 //		USER_INC_ADDRESS_1, 1*1e9,
 //		[]*statedb.MatchingPortingCustodianDetail{
 //			{
@@ -4611,36 +4615,36 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //	custodian1 := statedb.NewCustodianStateWithValue(
 //		CUS_INC_ADDRESS_1, 7000000000000, 6708000000000,
 //		map[string]uint64{
-//			common.PortalBNBIDStr: 0,
+//			pCommon.PortalBNBIDStr: 0,
 //		},
 //		map[string]uint64{
-//			common.PortalBNBIDStr: 292000000000,
+//			pCommon.PortalBNBIDStr: 292000000000,
 //		},
 //		map[string]string{
-//			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
-//			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+//			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+//			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
 //		},  map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
 //
 //	custodian2 := statedb.NewCustodianStateWithValue(
 //		CUS_INC_ADDRESS_2, 1000000000000, 972000000000,
 //		map[string]uint64{
-//			common.PortalBNBIDStr: 0,
+//			pCommon.PortalBNBIDStr: 0,
 //		},
 //		map[string]uint64{
-//			common.PortalBNBIDStr: 28000000000,
+//			pCommon.PortalBNBIDStr: 28000000000,
 //		},
 //		map[string]string{
-//			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+//			pCommon.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 //		},  map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
 //
 //	custodian3 := statedb.NewCustodianStateWithValue(
 //		CUS_INC_ADDRESS_3, 10000000000000, 7988000000000,
 //		nil,
 //		map[string]uint64{
-//			common.PortalBTCIDStr: 2012000000000,
+//			pCommon.PortalBTCIDStr: 2012000000000,
 //		},
 //		map[string]string{
-//			common.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
+//			pCommon.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
 //		},  map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
 //
 //	custodians := map[string]*statedb.CustodianState{
@@ -4652,7 +4656,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //	// waiting porting requests
 //	wPortingReqKey1 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-1").String()
 //	wPortingRequest1 := statedb.NewWaitingPortingRequestWithValue(
-//		"porting-bnb-1", common.Hash{}, common.PortalBNBIDStr,
+//		"porting-bnb-1", common.Hash{}, pCommon.PortalBNBIDStr,
 //		USER_INC_ADDRESS_1, 1*1e9,
 //		[]*statedb.MatchingPortingCustodianDetail{
 //			{
@@ -4671,7 +4675,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //
 //	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-btc-2").String()
 //	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
-//		"porting-btc-2", common.Hash{}, common.PortalBTCIDStr,
+//		"porting-btc-2", common.Hash{}, pCommon.PortalBTCIDStr,
 //		USER_INC_ADDRESS_2, 0.1*1e9,
 //		[]*statedb.MatchingPortingCustodianDetail{
 //			{
@@ -4684,7 +4688,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //
 //	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
 //	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-//		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
+//		"porting-bnb-3", common.Hash{}, pCommon.PortalBNBIDStr,
 //		USER_INC_ADDRESS_2, 5*1e9,
 //		[]*statedb.MatchingPortingCustodianDetail{
 //			{
@@ -4704,7 +4708,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationByExchangeRate() {
 //	// matched redeem requests
 //	redeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 //	redeemRequest1 := statedb.NewRedeemRequestWithValue(
-//		"redeem-bnb-1", common.PortalBNBIDStr,
+//		"redeem-bnb-1", pCommon.PortalBNBIDStr,
 //		USER_INC_ADDRESS_1, "userCUS_BNB_ADDRESS_1", 2.3*1e9,
 //		[]*statedb.MatchingRedeemCustodianDetail{
 //			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_1, CUS_BNB_ADDRESS_1, 2*1e9),

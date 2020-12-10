@@ -101,7 +101,7 @@ func (p *portalCustodianDepositProcessor) BuildNewInsts(
 			actionData.Meta.Type,
 			shardID,
 			actionData.TxReqID,
-			common.PortalCustodianDepositRefundChainStatus,
+			pCommon.PortalRequestRefundChainStatus,
 		)
 		return [][]string{inst}, nil
 	}
@@ -125,7 +125,7 @@ func (p *portalCustodianDepositProcessor) BuildNewInsts(
 		actionData.Meta.Type,
 		shardID,
 		actionData.TxReqID,
-		common.PortalCustodianDepositAcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 	)
 	return [][]string{inst}, nil
 }
@@ -154,7 +154,7 @@ func (p *portalCustodianDepositProcessor) ProcessInsts(
 	}
 
 	depositStatus := instructions[2]
-	if depositStatus == common.PortalCustodianDepositAcceptedChainStatus {
+	if depositStatus == pCommon.PortalRequestAcceptedChainStatus {
 		// add custodian to custodian pool
 		newCustodian := addCustodianToPool(
 			currentPortalState.CustodianPoolState,
@@ -167,7 +167,7 @@ func (p *portalCustodianDepositProcessor) ProcessInsts(
 
 		// store custodian deposit status into DB
 		custodianDepositTrackData := portalMeta.PortalCustodianDepositStatus{
-			Status:          common.PortalCustodianDepositAcceptedStatus,
+			Status:          pCommon.PortalRequestAcceptedStatus,
 			IncogAddressStr: actionData.IncogAddressStr,
 			DepositedAmount: actionData.DepositedAmount,
 			RemoteAddresses: actionData.RemoteAddresses,
@@ -182,10 +182,10 @@ func (p *portalCustodianDepositProcessor) ProcessInsts(
 			Logger.log.Errorf("ERROR: an error occured while tracking custodian deposit collateral: %+v", err)
 			return nil
 		}
-	} else if depositStatus == common.PortalCustodianDepositRefundChainStatus {
+	} else if depositStatus == pCommon.PortalRequestRefundChainStatus {
 		// store custodian deposit status into DB
 		custodianDepositTrackData := portalMeta.PortalCustodianDepositStatus{
-			Status:          common.PortalCustodianDepositRefundStatus,
+			Status:          pCommon.PortalRequestRejectedStatus,
 			IncogAddressStr: actionData.IncogAddressStr,
 			DepositedAmount: actionData.DepositedAmount,
 			RemoteAddresses: actionData.RemoteAddresses,
@@ -283,7 +283,7 @@ func (p *portalRequestWithdrawCollateralProcessor) BuildNewInsts(
 	rejectInst := buildCustodianWithdrawInst(
 		actionData.Meta.Type,
 		shardID,
-		common.PortalCustodianWithdrawRequestRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		actionData.Meta.PaymentAddress,
 		actionData.Meta.Amount,
 		0,
@@ -319,7 +319,7 @@ func (p *portalRequestWithdrawCollateralProcessor) BuildNewInsts(
 	inst := buildCustodianWithdrawInst(
 		actionData.Meta.Type,
 		shardID,
-		common.PortalCustodianWithdrawRequestAcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 		actionData.Meta.PaymentAddress,
 		actionData.Meta.Amount,
 		updatedCustodian.GetFreeCollateral(),
@@ -360,7 +360,7 @@ func (p *portalRequestWithdrawCollateralProcessor) ProcessInsts(
 	txHash := reqContent.TxReqID.String()
 
 	switch reqStatus {
-	case common.PortalCustodianWithdrawRequestAcceptedChainStatus:
+	case pCommon.PortalRequestAcceptedChainStatus:
 		// update custodian state
 		custodianKeyStr := statedb.GenerateCustodianStateObjectKey(paymentAddress).String()
 		custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]
@@ -381,7 +381,7 @@ func (p *portalRequestWithdrawCollateralProcessor) ProcessInsts(
 		newCustodianWithdrawRequest := portalMeta.NewCustodianWithdrawRequestStatus(
 			paymentAddress,
 			amount,
-			common.PortalCustodianWithdrawReqAcceptedStatus,
+			pCommon.PortalRequestAcceptedStatus,
 			freeCollateral,
 		)
 		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
@@ -394,11 +394,11 @@ func (p *portalRequestWithdrawCollateralProcessor) ProcessInsts(
 			Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw item: %+v", err)
 			return nil
 		}
-	case common.PortalCustodianWithdrawRequestRejectedChainStatus:
+	case pCommon.PortalRequestRejectedChainStatus:
 		newCustodianWithdrawRequest := portalMeta.NewCustodianWithdrawRequestStatus(
 			paymentAddress,
 			amount,
-			common.PortalCustodianWithdrawReqRejectStatus,
+			pCommon.PortalRequestRejectedStatus,
 			freeCollateral,
 		)
 		contentStatusBytes, _ := json.Marshal(newCustodianWithdrawRequest)
@@ -452,7 +452,7 @@ func (p *portalCustodianDepositProcessorV3) PrepareDataForBlockProducer(stateDB 
 	meta := actionData.Meta
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 	// so must build unique external tx as combination of chain name and block hash and tx index.
-	uniqExternalTxID := pCommon.GetUniqExternalTxID(common.ETHChainName, meta.BlockHash, meta.TxIndex)
+	uniqExternalTxID := pCommon.GetUniqExternalTxID(pCommon.ETHChainName, meta.BlockHash, meta.TxIndex)
 	isSubmitted, err := statedb.IsPortalExternalTxHashSubmitted(stateDB, uniqExternalTxID)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while checking eth tx submitted: %+v", err)
@@ -529,7 +529,7 @@ func (p *portalCustodianDepositProcessorV3) BuildNewInsts(
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
-		common.PortalCustodianDepositV3RejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 	)
 
 	// check uniqExternalTxID from optionalData which get from statedb
@@ -590,7 +590,7 @@ func (p *portalCustodianDepositProcessorV3) BuildNewInsts(
 		meta.Type,
 		shardID,
 		actionData.TxReqID,
-		common.PortalCustodianDepositV3RejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 	)
 
 	// check externalTokenID should be one of supported collateral tokenIDs
@@ -630,7 +630,7 @@ func (p *portalCustodianDepositProcessorV3) BuildNewInsts(
 		actionData.Meta.Type,
 		shardID,
 		actionData.TxReqID,
-		common.PortalCustodianDepositV3AcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 	)
 	return [][]string{inst}, nil
 }
@@ -659,7 +659,7 @@ func (p *portalCustodianDepositProcessorV3) ProcessInsts(
 	}
 
 	depositStatus := instructions[2]
-	if depositStatus == common.PortalCustodianDepositV3AcceptedChainStatus {
+	if depositStatus == pCommon.PortalRequestAcceptedChainStatus {
 		// add custodian to custodian pool
 		newCustodian := addCustodianToPool(
 			currentPortalState.CustodianPoolState,
@@ -672,7 +672,7 @@ func (p *portalCustodianDepositProcessorV3) ProcessInsts(
 
 		// store custodian deposit status into DB
 		custodianDepositTrackData := portalMeta.PortalCustodianDepositStatusV3{
-			Status:           common.PortalCustodianDepositV3AcceptedStatus,
+			Status:           pCommon.PortalRequestAcceptedStatus,
 			IncAddressStr:    actionData.IncAddressStr,
 			RemoteAddresses:  actionData.RemoteAddresses,
 			DepositAmount:    actionData.DepositAmount,
@@ -696,10 +696,10 @@ func (p *portalCustodianDepositProcessorV3) ProcessInsts(
 			Logger.log.Errorf("ERROR: an error occured while tracking uniq external tx id: %+v", err)
 			return nil
 		}
-	} else if depositStatus == common.PortalCustodianDepositV3RejectedChainStatus {
+	} else if depositStatus == pCommon.PortalRequestRejectedChainStatus {
 		// store custodian deposit status into DB
 		custodianDepositTrackData := portalMeta.PortalCustodianDepositStatusV3{
-			Status:           common.PortalCustodianDepositV3RejectedStatus,
+			Status:           pCommon.PortalRequestRejectedStatus,
 			IncAddressStr:    actionData.IncAddressStr,
 			RemoteAddresses:  actionData.RemoteAddresses,
 			DepositAmount:    actionData.DepositAmount,
@@ -841,7 +841,7 @@ func (p *portalRequestWithdrawCollateralProcessorV3) BuildNewInsts(
 	rejectInst := buildCustodianWithdrawCollateralInstV3(
 		actionData.Meta.Type,
 		shardID,
-		common.PortalCustodianWithdrawRequestV3RejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		actionData.Meta.CustodianIncAddress,
 		actionData.Meta.CustodianExternalAddress,
 		actionData.Meta.ExternalTokenID,
@@ -882,7 +882,7 @@ func (p *portalRequestWithdrawCollateralProcessorV3) BuildNewInsts(
 	acceptedInst := buildCustodianWithdrawCollateralInstV3(
 		actionData.Meta.Type,
 		shardID,
-		common.PortalCustodianWithdrawRequestV3AcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 		actionData.Meta.CustodianIncAddress,
 		actionData.Meta.CustodianExternalAddress,
 		actionData.Meta.ExternalTokenID,
@@ -938,9 +938,9 @@ func (p *portalRequestWithdrawCollateralProcessorV3) ProcessInsts(
 	amountBN := instContent.Amount
 
 	status := instructions[2]
-	statusInt := common.PortalCustodianWithdrawReqV3RejectStatus
-	if status == common.PortalCustodianWithdrawRequestV3AcceptedChainStatus {
-		statusInt = common.PortalCustodianWithdrawReqV3AcceptedStatus
+	statusInt := pCommon.PortalRequestRejectedStatus
+	if status == pCommon.PortalRequestAcceptedChainStatus {
+		statusInt = pCommon.PortalRequestAcceptedStatus
 
 		custodianKeyStr := statedb.GenerateCustodianStateObjectKey(custodianIncAddress).String()
 		custodian, ok := currentPortalState.CustodianPoolState[custodianKeyStr]

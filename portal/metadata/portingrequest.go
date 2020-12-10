@@ -139,8 +139,16 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever b
 		return false, false, errors.New("UniqueRegisterId should be not empty")
 	}
 
+	// validate portal token
+	if !chainRetriever.IsPortalToken(beaconHeight, portalUserRegister.PTokenId) {
+		return false, false, errors.New("PTokenId is not a portal token")
+	}
+
 	// validate amount register
-	minAmount := common.MinAmountPortalPToken[portalUserRegister.PTokenId]
+	minAmount, err := chainRetriever.GetMinAmountPortalToken(portalUserRegister.PTokenId, beaconHeight)
+	if err != nil {
+		return false, false, fmt.Errorf("Error get min portal token amount: %v", err)
+	}
 	if portalUserRegister.RegisterAmount < minAmount {
 		return false, false, fmt.Errorf("register amount should be larger or equal to %v", minAmount)
 	}

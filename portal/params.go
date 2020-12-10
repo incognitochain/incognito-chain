@@ -1,7 +1,9 @@
 package portal
 
 import (
+	"errors"
 	"github.com/incognitochain/incognito-chain/common"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"github.com/incognitochain/incognito-chain/portal/portaltokens"
 	"sort"
 	"time"
@@ -26,7 +28,7 @@ type PortalParams struct {
 	MinPercentPortingFee                 float64
 	MinPercentRedeemFee                  float64
 	SupportedCollateralTokens            []PortalCollateral
-	MinPortalFee                         uint64 // nano PRV
+	MinPortalFee                         uint64            // nano PRV
 
 	PortalTokens                map[string]portaltokens.PortalTokenProcessor
 	PortalFeederAddress         string
@@ -43,7 +45,6 @@ type RelayingParams struct {
 	BNBFullNodeHost          string
 	BNBFullNodePort          string
 }
-
 
 func GetLatestPortalParams(params map[uint64]PortalParams) PortalParams {
 	if len(params) == 1 {
@@ -76,7 +77,7 @@ func (p PortalParams) IsSupportedTokenCollateralV3(externalTokenID string) bool 
 }
 
 func (p PortalParams) IsPortalToken(tokenIDStr string) bool {
-	isExisted, _ := common.SliceExists(common.PortalSupportedIncTokenIDs, tokenIDStr)
+	isExisted, _ := common.SliceExists(pCommon.PortalSupportedIncTokenIDs, tokenIDStr)
 	return isExisted
 }
 
@@ -84,3 +85,10 @@ func (p PortalParams) IsPortalExchangeRateToken(tokenIDStr string) bool {
 	return p.IsPortalToken(tokenIDStr) || tokenIDStr == common.PRVIDStr || p.IsSupportedTokenCollateralV3(tokenIDStr)
 }
 
+func (p PortalParams) GetMinAmountPortalToken(tokenIDStr string) (uint64, error) {
+	portalToken, ok := p.PortalTokens[tokenIDStr]
+	if !ok {
+		return 0, errors.New("TokenID is invalid")
+	}
+	return portalToken.GetMinTokenAmount(), nil
+}

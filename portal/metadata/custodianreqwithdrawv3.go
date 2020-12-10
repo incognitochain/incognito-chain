@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
 	"strconv"
@@ -132,7 +133,7 @@ func (req PortalCustodianWithdrawRequestV3) ValidateSanityData(chainRetriever ba
 	if common.Has0xPrefix(req.CustodianExternalAddress) {
 			return false, false, errors.New("custodian request withdraw v3: external tokenID shouldn't have 0x prefix")
 	}
-	if isValid, err := ValidatePortalExternalAddress(common.ETHChainName, req.ExternalTokenID, req.CustodianExternalAddress); !isValid || err != nil {
+	if isValid, err := ValidatePortalExternalAddress(pCommon.ETHChainName, req.ExternalTokenID, req.CustodianExternalAddress); !isValid || err != nil {
 		return false, false, errors.New("custodian request withdraw v3: custodian external address is invalid")
 	}
 

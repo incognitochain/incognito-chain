@@ -11,17 +11,17 @@ type PortalBTCTokenProcessor struct {
 	*PortalToken
 }
 
-func (p *PortalBTCTokenProcessor) GetExpectedMemoForPorting(portingID string) string {
+func (p PortalBTCTokenProcessor) GetExpectedMemoForPorting(portingID string) string {
 	return btcrelaying.HashAndEncodeBase58(portingID)
 }
 
-func (p *PortalBTCTokenProcessor) GetExpectedMemoForRedeem(redeemID string, custodianIncAddress string) string {
+func (p PortalBTCTokenProcessor) GetExpectedMemoForRedeem(redeemID string, custodianIncAddress string) string {
 	rawMsg := fmt.Sprintf("%s%s", redeemID, custodianIncAddress)
 	encodedMsg := btcrelaying.HashAndEncodeBase58(rawMsg)
 	return encodedMsg
 }
 
-func (p *PortalBTCTokenProcessor) ParseAndVerifyProof(
+func (p PortalBTCTokenProcessor) ParseAndVerifyProof(
 	proof string, bc bMeta.ChainRetriever, expectedMemo string, expectedPaymentInfos map[string]uint64) (bool, error) {
 	btcChain := bc.GetBTCHeaderChain()
 	if btcChain == nil {
@@ -86,10 +86,14 @@ func (p *PortalBTCTokenProcessor) ParseAndVerifyProof(
 }
 
 //todo:
-func (p *PortalBTCTokenProcessor) IsValidRemoteAddress(address string) (bool, error) {
+func (p PortalBTCTokenProcessor) IsValidRemoteAddress(address string) (bool, error) {
 	return true, nil
 }
 
-func (p *PortalBTCTokenProcessor) GetChainID() string {
+func (p PortalBTCTokenProcessor) GetChainID() string {
 	return p.ChainID
+}
+
+func (p PortalBTCTokenProcessor) GetMinTokenAmount() uint64 {
+	return p.MinTokenAmount
 }

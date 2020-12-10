@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
@@ -100,7 +101,7 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		Logger.log.Infof("[VerifyMinerCreatedTxBeforeGettingInBlock] Verifying tx response for custodian liquidation instructions")
 
 		status := inst[2]
-		if status != common.PortalLiquidateCustodianSuccessChainStatus {
+		if status != pCommon.PortalProducerInstSuccessChainStatus {
 			continue
 		}
 
@@ -108,6 +109,7 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		var custodianAddrStrFromInst string
 		var redeemerIncAddressStrFromInst string
 		var mintedCollateralAmountFromInst uint64
+		var uniqueRedeemIDFromInst string
 
 		contentBytes := []byte(inst[3])
 		var liqCustodianContent PortalLiquidateCustodianContent
@@ -121,9 +123,15 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		redeemerIncAddressStrFromInst = liqCustodianContent.RedeemerIncAddressStr
 		mintedCollateralAmountFromInst = liqCustodianContent.LiquidatedCollateralAmount
 		shardIDFromInst = liqCustodianContent.ShardID
+		uniqueRedeemIDFromInst = liqCustodianContent.UniqueRedeemID
 
 		if shardIDFromInst != shardID {
 			Logger.log.Error("WARNING - VALIDATION: shardID is incorrect: shardIDFromInst %v - shardID %v ", shardIDFromInst, shardID)
+			continue
+		}
+
+		if uniqueRedeemIDFromInst != iRes.UniqueRedeemID {
+			Logger.log.Error("WARNING - VALIDATION: UniqueRedeemID is incorrect: uniqueRedeemIDFromInst %v - UniqueRedeemID in response %v ", uniqueRedeemIDFromInst, iRes.UniqueRedeemID)
 			continue
 		}
 

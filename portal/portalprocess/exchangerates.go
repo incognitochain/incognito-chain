@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/portal"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
 	"sort"
 	"strconv"
@@ -55,35 +56,9 @@ func (p *portalExchangeRateProcessor) BuildNewInsts(
 		Logger.log.Errorf("ERROR: an error occurred while unmarshal portal exchange rates action: %+v", err)
 		return [][]string{}, nil
 	}
+
+	// create new instruction for request pushing the exchange rates
 	metaType := actionData.Meta.Type
-
-	//check key from db
-	if currentPortalState.ExchangeRatesRequests != nil {
-		_, ok := currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()]
-		if ok {
-			Logger.log.Errorf("ERROR: exchange rates key is duplicated")
-
-			portalExchangeRatesContent := portalMeta.PortalExchangeRatesContent{
-				SenderAddress: actionData.Meta.SenderAddress,
-				Rates:         actionData.Meta.Rates,
-				TxReqID:       actionData.TxReqID,
-				LockTime:      actionData.LockTime,
-			}
-
-			portalExchangeRatesContentBytes, _ := json.Marshal(portalExchangeRatesContent)
-
-			inst := []string{
-				strconv.Itoa(metaType),
-				strconv.Itoa(int(shardID)),
-				common.PortalExchangeRatesRejectedChainStatus,
-				string(portalExchangeRatesContentBytes),
-			}
-
-			return [][]string{inst}, nil
-		}
-	}
-
-	//success
 	portalExchangeRatesContent := portalMeta.PortalExchangeRatesContent{
 		SenderAddress: actionData.Meta.SenderAddress,
 		Rates:         actionData.Meta.Rates,
@@ -96,28 +71,19 @@ func (p *portalExchangeRateProcessor) BuildNewInsts(
 	inst := []string{
 		strconv.Itoa(metaType),
 		strconv.Itoa(int(shardID)),
-		common.PortalExchangeRatesAcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 		string(portalExchangeRatesContentBytes),
 	}
 
-	//update E-R request
-	if currentPortalState.ExchangeRatesRequests != nil {
-		currentPortalState.ExchangeRatesRequests[actionData.TxReqID.String()] = portalMeta.NewExchangeRatesRequestStatus(
-			common.PortalExchangeRatesAcceptedStatus,
-			actionData.Meta.SenderAddress,
-			actionData.Meta.Rates,
-		)
-	} else {
-		//new object
-		newExchangeRatesRequest := make(map[string]*portalMeta.ExchangeRatesRequestStatus)
-		newExchangeRatesRequest[actionData.TxReqID.String()] = portalMeta.NewExchangeRatesRequestStatus(
-			common.PortalExchangeRatesAcceptedStatus,
-			actionData.Meta.SenderAddress,
-			actionData.Meta.Rates,
-		)
-
-		currentPortalState.ExchangeRatesRequests = newExchangeRatesRequest
+	exchangeRateRequests := currentPortalState.ExchangeRatesRequests
+	if exchangeRateRequests == nil {
+		exchangeRateRequests = map[string]*portalMeta.ExchangeRatesRequestStatus{}
 	}
+	exchangeRateRequests[actionData.TxReqID.String()] = portalMeta.NewExchangeRatesRequestStatus(
+		actionData.Meta.SenderAddress,
+		actionData.Meta.Rates,
+	)
+	currentPortalState.ExchangeRatesRequests = exchangeRateRequests
 
 	return [][]string{inst}, nil
 }
@@ -136,59 +102,36 @@ func (p *portalExchangeRateProcessor) ProcessInsts(
 	}
 
 	// parse instruction
-	var portingExchangeRatesContent portalMeta.PortalExchangeRatesContent
-	err := json.Unmarshal([]byte(instructions[3]), &portingExchangeRatesContent)
+	var exchangeRatesContent portalMeta.PortalExchangeRatesContent
+	err := json.Unmarshal([]byte(instructions[3]), &exchangeRatesContent)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while unmarshaling content string of portal exchange rates instruction: %+v", err)
 		return nil
 	}
 
 	reqStatus := instructions[2]
-	Logger.log.Infof("Portal exchange rates, data input: %+v, status: %+v", portingExchangeRatesContent, reqStatus)
-
-	switch reqStatus {
-	case common.PortalExchangeRatesAcceptedChainStatus:
-		//save db
+	if reqStatus == pCommon.PortalRequestAcceptedChainStatus {
+		// save db
 		newExchangeRates := portalMeta.NewExchangeRatesRequestStatus(
-			common.PortalExchangeRatesAcceptedStatus,
-			portingExchangeRatesContent.SenderAddress,
-			portingExchangeRatesContent.Rates,
+			exchangeRatesContent.SenderAddress,
+			exchangeRatesContent.Rates,
 		)
 
 		newExchangeRatesStatusBytes, _ := json.Marshal(newExchangeRates)
 		err = statedb.StorePortalExchangeRateStatus(
 			stateDB,
-			portingExchangeRatesContent.TxReqID.String(),
-			newExchangeRatesStatusBytes,
-		)
-
-		if err != nil {
-			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
-			return nil
-		}
-
-		currentPortalState.ExchangeRatesRequests[portingExchangeRatesContent.TxReqID.String()] = newExchangeRates
-
-		Logger.log.Infof("Portal exchange rates, exchange rates request: total exchange rate request %v", len(currentPortalState.ExchangeRatesRequests))
-
-	case common.PortalExchangeRatesRejectedChainStatus:
-		//save db
-		newExchangeRates := portalMeta.NewExchangeRatesRequestStatus(
-			common.PortalExchangeRatesRejectedStatus,
-			portingExchangeRatesContent.SenderAddress,
-			nil,
-		)
-
-		newExchangeRatesStatusBytes, _ := json.Marshal(newExchangeRates)
-		err = statedb.StorePortalExchangeRateStatus(
-			stateDB,
-			portingExchangeRatesContent.TxReqID.String(),
+			exchangeRatesContent.TxReqID.String(),
 			newExchangeRatesStatusBytes,
 		)
 		if err != nil {
 			Logger.log.Errorf("ERROR: Save exchange rates error: %+v", err)
 			return nil
 		}
+
+		if currentPortalState.ExchangeRatesRequests == nil {
+			currentPortalState.ExchangeRatesRequests = map[string]*portalMeta.ExchangeRatesRequestStatus{}
+		}
+		currentPortalState.ExchangeRatesRequests[exchangeRatesContent.TxReqID.String()] = newExchangeRates
 	}
 
 	return nil

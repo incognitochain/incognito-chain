@@ -32,13 +32,13 @@ type ExchangeRateInfo struct {
 }
 
 type ExchangeRatesRequestStatus struct {
-	Status        byte
+	//Status        byte 		// dont need this field
 	SenderAddress string
 	Rates         []*ExchangeRateInfo
 }
 
-func NewExchangeRatesRequestStatus(status byte, senderAddress string, rates []*ExchangeRateInfo) *ExchangeRatesRequestStatus {
-	return &ExchangeRatesRequestStatus{Status: status, SenderAddress: senderAddress, Rates: rates}
+func NewExchangeRatesRequestStatus(senderAddress string, rates []*ExchangeRateInfo) *ExchangeRatesRequestStatus {
+	return &ExchangeRatesRequestStatus{SenderAddress: senderAddress, Rates: rates}
 }
 
 func NewPortalExchangeRates(metaType int, senderAddress string, currency []*ExchangeRateInfo) (*PortalExchangeRates, error) {
