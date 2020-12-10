@@ -11,6 +11,7 @@ const (
 	ErrInvalidHashType                        = "invalid hash type"
 	ErrInvalidBigIntType                      = "invalid big int type"
 	ErrInvalidCommitteeStateType              = "invalid committee state type"
+	ErrInvalidSlasingCommitteeStateType       = "invalid slashing committee state type"
 	ErrInvalidStakerInfoType                  = "invalid staker info type"
 	ErrInvalidPaymentAddressType              = "invalid payment address type"
 	ErrInvalidIncognitoPublicKeyType          = "invalid incognito public key type"

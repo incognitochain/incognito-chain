@@ -18,6 +18,7 @@ var (
 	nextBeaconCandidatePrefix          = []byte("next-bea-cand-")
 	currentBeaconCandidatePrefix       = []byte("cur-bea-cand-")
 	committeeRewardPrefix              = []byte("committee-reward-")
+	slashingCommitteePrefix            = []byte("slashing-committee-")
 	rewardRequestPrefix                = []byte("reward-request-")
 	blackListProducerPrefix            = []byte("black-list-")
 	serialNumberPrefix                 = []byte("serial-number-")
@@ -127,6 +128,13 @@ func GetStakerInfoKey(stakerPublicKey []byte) common.Hash {
 		panic("Create key fail1")
 	}
 	return *finalHash
+}
+
+func GetSlashingCommitteePrefix(epoch uint64) []byte {
+	buf := common.Uint64ToBytes(epoch)
+	temp := append(slashingCommitteePrefix, buf...)
+	h := common.HashH(temp)
+	return h[:][:prefixHashKeyLength]
 }
 
 func GetCommitteeRewardPrefix() []byte {
