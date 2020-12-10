@@ -29,6 +29,8 @@ type BeaconCommitteeStateV2 struct {
 	rewardReceiver map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
 	stakingTx      map[string]common.Hash            // committee public key => reward receiver payment address
 
+	swapRule SwapRule
+
 	mu *sync.RWMutex
 }
 
@@ -392,6 +394,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			oldState.shardSubstitute,
 			env.NumberOfFixedShardBlockValidator,
 			env.MinShardCommitteeSize,
+			oldState.swapRule,
 		)
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newState.numberOfAssignedCandidates)
 	}
@@ -478,16 +481,17 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-		swapShardInstruction, _, _, _, _ := createSwapShardInstructionV3(
+		swapShardInstruction, _, _, _, _ := engine.finalBeaconCommitteeStateV2.swapRule.GenInstructions(
 			shardID,
-			tempSubstitutes,
 			tempCommittees,
+			tempSubstitutes,
 			env.MinShardCommitteeSize,
 			env.MaxShardCommitteeSize,
 			instruction.SWAP_BY_END_EPOCH,
 			env.NumberOfFixedShardBlockValidator,
 			env.MissingSignaturePenalty,
 		)
+
 		if !swapShardInstruction.IsEmpty() {
 			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
 		} else {
@@ -499,32 +503,6 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 
 func (engine *BeaconCommitteeEngineV2) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string) {
 	return []*instruction.AssignInstruction{}, []string{}, make(map[byte][]string)
-}
-
-func SnapshotShardCommonPoolV2(
-	shardCommonPool []incognitokey.CommitteePublicKey,
-	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
-	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
-	numberOfFixedValidator int,
-	minCommitteeSize int,
-) (numberOfAssignedCandidates int) {
-	for k, v := range shardCommittee {
-		assignPerShard := getAssignOffset(
-			len(shardSubstitute[k]),
-			len(v),
-			numberOfFixedValidator,
-			minCommitteeSize,
-		)
-
-		numberOfAssignedCandidates += assignPerShard
-		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, numberOfAssignedCandidates %+v", k, numberOfAssignedCandidates)
-	}
-	Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard Common Pool Size %+v", len(shardCommonPool))
-
-	if numberOfAssignedCandidates > len(shardCommonPool) {
-		numberOfAssignedCandidates = len(shardCommonPool)
-	}
-	return numberOfAssignedCandidates
 }
 
 func (b *BeaconCommitteeStateV2) processStakeInstruction(
@@ -621,7 +599,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	oldState *BeaconCommitteeStateV2,
 ) (
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
-
 	var err error
 	shardID := byte(swapShardInstruction.ChainID)
 	committees := oldState.shardCommittee[shardID]
@@ -630,7 +607,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
 	comparedShardSwapInstruction, newCommittees, _,
-		slashingCommittees, normalSwapOutCommittees := createSwapShardInstructionV3(
+		slashingCommittees, normalSwapOutCommittees := b.swapRule.GenInstructions(
 		shardID,
 		tempSubstitutes,
 		tempCommittees,

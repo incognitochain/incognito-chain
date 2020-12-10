@@ -418,7 +418,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 				if !swapShardInstruction.IsEmpty() {
 					instructions = append(instructions, swapShardInstruction.ToString())
 				}
-
 			}
 		}
 	}

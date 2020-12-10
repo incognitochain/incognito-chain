@@ -3,10 +3,11 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -796,12 +797,15 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 			snapshotShardSubstitute[byte(k)] = v
 		}
 
+		var swapRule committeestate.SwapRule
+		swapRule = committeestate.NewSwapRuleV3()
 		numberOfAssignedCandidate = committeestate.SnapshotShardCommonPoolV2(
 			snapshotShardCommonPool,
 			snapshotShardCommittee,
 			snapshotShardSubstitute,
 			NumberOfFixedShardBlockValidators,
 			params.MinShardCommitteeSize,
+			swapRule,
 		)
 	}
 
