@@ -657,6 +657,18 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		*incKey,
 	}
 
+	committeeChangeSlashingForceSwapOut := NewCommitteeChange()
+	committeeChangeSlashingForceSwapOut.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
+		*incKey5,
+	}
+	committeeChangeSlashingForceSwapOut.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
+		*incKey5,
+	}
+	committeeChangeSlashingForceSwapOut.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
+		*incKey,
+	}
+	committeeChangeSlashingForceSwapOut.RemovedStaker = []string{key}
+	committeeChangeSlashingForceSwapOut.SlashingCommittee[0] = []string{key}
 	type fields struct {
 		beaconCommittee            []incognitokey.CommitteePublicKey
 		shardCommittee             map[byte][]incognitokey.CommitteePublicKey
@@ -1222,12 +1234,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					MaxShardCommitteeSize:            4,
 					MinShardCommitteeSize:            0,
 				},
-				committeeChange: &CommitteeChange{
-					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
-					ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{},
-					ShardCommitteeAdded:    map[byte][]incognitokey.CommitteePublicKey{},
-					ShardCommitteeRemoved:  map[byte][]incognitokey.CommitteePublicKey{},
-				},
+				committeeChange:           NewCommitteeChange(),
 				returnStakingInstructions: &instruction.ReturnStakeInstruction{},
 				oldState: &BeaconCommitteeStateV2{
 					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
@@ -1245,25 +1252,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					stakingTx:      map[string]common.Hash{},
 				},
 			},
-			want1: &CommitteeChange{
-				ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{},
-				ShardSubstituteRemoved: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey5,
-					},
-				},
-				ShardCommitteeAdded: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey5,
-					},
-				},
-				ShardCommitteeRemoved: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey,
-					},
-				},
-				RemovedStaker: []string{key},
-			},
+			want1: committeeChangeSlashingForceSwapOut,
 			want2: instruction.NewReturnStakeInsWithValue(
 				[]string{key},
 				[]string{hash.String()},
@@ -3378,6 +3367,8 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 		*incKey11,
 	}
 	committeeChangeTwoSlashing.RemovedStaker = []string{key4, key10}
+	committeeChangeTwoSlashing.SlashingCommittee[0] = []string{key4}
+	committeeChangeTwoSlashing.SlashingCommittee[1] = []string{key10}
 	statedb.StoreStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey0, *incKey4, *incKey10, *incKey7},

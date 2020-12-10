@@ -88,6 +88,7 @@ var HttpHandler = map[string]httpHandler{
 	unlockMempool:           (*HttpServer).handleUnlockMempool,
 	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
 	getCommitteeState:       (*HttpServer).handleGetCommitteeState,
+	getSlashingCommittee:    (*HttpServer).handleGetSlashingCommittee,
 	getRewardAmountByEpoch:  (*HttpServer).handleGetRewardAmountByEpoch,
 
 	//=================================

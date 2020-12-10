@@ -104,6 +104,7 @@ const (
 	unlockMempool           = "unlockmempool"
 	getAutoStakingByHeight  = "getautostakingbyheight"
 	getCommitteeState       = "getcommitteestate"
+	getSlashingCommittee    = "getslashingcommittee"
 	getRewardAmountByEpoch  = "getrewardamountbyepoch"
 	//==================================================
 
