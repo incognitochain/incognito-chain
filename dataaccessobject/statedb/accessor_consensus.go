@@ -375,7 +375,9 @@ func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 	map[string]bool,
 	map[string]common.Hash,
 ) {
-	tempCurrentValidator, tempSubstituteValidator, tempNextEpochShardCandidate, tempCurrentEpochShardCandidate, tempNextEpochBeaconCandidate, tempCurrentEpochBeaconCandidate, rewardReceivers, autoStaking, stakingTx := stateDB.getAllCommitteeState(shardIDs)
+	tempCurrentValidator, tempSubstituteValidator, tempNextEpochShardCandidate,
+		tempCurrentEpochShardCandidate, tempNextEpochBeaconCandidate, tempCurrentEpochBeaconCandidate,
+		rewardReceivers, autoStaking, stakingTx := stateDB.getAllCommitteeState(shardIDs)
 	currentValidator := make(map[int][]incognitokey.CommitteePublicKey)
 	substituteValidator := make(map[int][]incognitokey.CommitteePublicKey)
 	nextEpochShardCandidate := []incognitokey.CommitteePublicKey{}
@@ -636,4 +638,20 @@ func deleteStakerInfo(stateDB *StateDB, stakers []incognitokey.CommitteePublicKe
 		stateDB.MarkDeleteStateObject(StakerObjectType, key)
 	}
 	return nil
+}
+
+func StoreSlashingCommittee(stateDB *StateDB, epoch uint64, slashingCommittees map[byte][]string) error {
+	for shardID, committees := range slashingCommittees {
+		key := GenerateSlashingCommitteeObjectKey(shardID, epoch)
+		value := NewSlashingCommitteeStateWithValue(shardID, epoch, committees)
+		err := stateDB.SetStateObject(SlashingCommitteeObjectType, key, value)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func GetSlashingCommittee(stateDB *StateDB, epoch uint64) map[byte][]string {
+	return stateDB.getAllSlashingCommittee(epoch)
 }

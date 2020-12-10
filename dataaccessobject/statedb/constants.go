@@ -50,6 +50,8 @@ const (
 
 	BlockHashObjectType
 	StakerObjectType
+
+	SlashingCommitteeObjectType
 )
 
 // Prefix length

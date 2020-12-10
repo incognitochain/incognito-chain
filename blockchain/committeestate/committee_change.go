@@ -26,6 +26,7 @@ type CommitteeChange struct {
 	ShardCommitteeReplaced             map[byte][2][]incognitokey.CommitteePublicKey
 	StopAutoStake                      []string
 	RemovedStaker                      []string
+	SlashingCommittee                  map[byte][]string
 }
 
 //GetStakerKeys ...
@@ -53,6 +54,7 @@ func NewCommitteeChange() *CommitteeChange {
 		ShardCommitteeRemoved:   make(map[byte][]incognitokey.CommitteePublicKey),
 		ShardCommitteeReplaced:  make(map[byte][2][]incognitokey.CommitteePublicKey),
 		BeaconCommitteeReplaced: [2][]incognitokey.CommitteePublicKey{},
+		SlashingCommittee:       make(map[byte][]string),
 	}
 	for i := 0; i < common.MaxShardNumber; i++ {
 		shardID := byte(i)
@@ -60,61 +62,7 @@ func NewCommitteeChange() *CommitteeChange {
 		committeeChange.ShardSubstituteRemoved[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.ShardCommitteeAdded[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.ShardCommitteeRemoved[shardID] = []incognitokey.CommitteePublicKey{}
+		committeeChange.SlashingCommittee[shardID] = []string{}
 	}
 	return committeeChange
-}
-
-func (committeeChange *CommitteeChange) clone(root *CommitteeChange) {
-	for i, v := range root.BeaconCommitteeReplaced {
-		committeeChange.BeaconCommitteeReplaced[i] = append(committeeChange.BeaconCommitteeReplaced[i], v...)
-	}
-
-	for i, v := range root.ShardCommitteeReplaced {
-		// for index, value := range v {
-		// 	committeeChange.ShardCommitteeReplaced[i][index] = append(committeeChange.ShardCommitteeReplaced[i][index], value...)
-		// }
-		committeeChange.ShardCommitteeReplaced[i] = v
-	}
-
-	for i, v := range root.ShardSubstituteAdded {
-		committeeChange.ShardSubstituteAdded[i] = append(committeeChange.ShardSubstituteAdded[i], v...)
-	}
-
-	for i, v := range root.ShardSubstituteRemoved {
-		committeeChange.ShardSubstituteRemoved[i] = append(committeeChange.ShardSubstituteRemoved[i], v...)
-	}
-
-	for i, v := range root.ShardCommitteeAdded {
-		committeeChange.ShardCommitteeAdded[i] = append(committeeChange.ShardCommitteeAdded[i], v...)
-	}
-
-	for i, v := range root.ShardCommitteeRemoved {
-		committeeChange.ShardCommitteeRemoved[i] = append(committeeChange.ShardCommitteeRemoved[i], v...)
-	}
-
-	committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, root.StopAutoStake...)
-	committeeChange.RemovedStaker = append(committeeChange.RemovedStaker, root.RemovedStaker...)
-	committeeChange.NextEpochBeaconCandidateAdded =
-		append(committeeChange.NextEpochBeaconCandidateAdded, root.NextEpochBeaconCandidateAdded...)
-	committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, root.StopAutoStake...)
-	committeeChange.NextEpochBeaconCandidateRemoved =
-		append(committeeChange.NextEpochBeaconCandidateRemoved, root.NextEpochBeaconCandidateRemoved...)
-	committeeChange.CurrentEpochBeaconCandidateAdded =
-		append(committeeChange.CurrentEpochBeaconCandidateAdded, root.CurrentEpochBeaconCandidateAdded...)
-	committeeChange.CurrentEpochBeaconCandidateRemoved =
-		append(committeeChange.CurrentEpochBeaconCandidateRemoved, root.CurrentEpochBeaconCandidateRemoved...)
-	committeeChange.NextEpochShardCandidateAdded =
-		append(committeeChange.NextEpochShardCandidateAdded, root.NextEpochShardCandidateAdded...)
-	committeeChange.NextEpochShardCandidateRemoved =
-		append(committeeChange.NextEpochShardCandidateRemoved, root.NextEpochShardCandidateRemoved...)
-	committeeChange.CurrentEpochShardCandidateAdded =
-		append(committeeChange.CurrentEpochShardCandidateAdded, root.CurrentEpochShardCandidateAdded...)
-	committeeChange.BeaconSubstituteAdded =
-		append(committeeChange.BeaconSubstituteAdded, root.BeaconSubstituteAdded...)
-	committeeChange.BeaconSubstituteRemoved =
-		append(committeeChange.BeaconSubstituteRemoved, root.BeaconSubstituteRemoved...)
-	committeeChange.BeaconCommitteeRemoved =
-		append(committeeChange.BeaconCommitteeRemoved, root.BeaconCommitteeRemoved...)
-	committeeChange.BeaconCommitteeAdded =
-		append(committeeChange.BeaconCommitteeAdded, root.BeaconCommitteeAdded...)
 }

@@ -44,38 +44,6 @@ type StateDB struct {
 	StateObjectCommits time.Duration
 }
 
-//
-//// New return a new statedb attach with a state root
-//func New(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
-//	tr, err := db.OpenTrie(root)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return &StateDB{
-//		db:                  db,
-//		trie:                tr,
-//		stateObjects:        make(map[common.Hash]StateObject),
-//		stateObjectsPending: make(map[common.Hash]struct{}),
-//		stateObjectsDirty:   make(map[common.Hash]struct{}),
-//	}, nil
-//}
-//
-//// New return a new statedb attach with a state root
-//func NewWithRawDB(root common.Hash, db DatabaseAccessWarper, rawdb incdb.Database) (*StateDB, error) {
-//	tr, err := db.OpenTrie(root)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return &StateDB{
-//		db:                  db,
-//		trie:                tr,
-//		rawdb:               rawdb,
-//		stateObjects:        make(map[common.Hash]StateObject),
-//		stateObjectsPending: make(map[common.Hash]struct{}),
-//		stateObjectsDirty:   make(map[common.Hash]struct{}),
-//	}, nil
-//}
-
 // New return a new statedb attach with a state root
 func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
 	tr, err := db.OpenPrefixTrie(root)
@@ -805,6 +773,25 @@ func (stateDB *StateDB) getAllCommitteeReward() map[string]map[common.Hash]uint6
 			panic("wrong value type")
 		}
 		m[committeeRewardState.incognitoPublicKey] = committeeRewardState.reward
+	}
+	return m
+}
+
+func (stateDB *StateDB) getAllSlashingCommittee(epoch uint64) map[byte][]string {
+	m := make(map[byte][]string)
+	prefix := GetSlashingCommitteePrefix(epoch)
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		slashingCommitteeState := NewSlashingCommitteeState()
+		err := json.Unmarshal(newValue, slashingCommitteeState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		m[slashingCommitteeState.shardID] = slashingCommitteeState.committees
 	}
 	return m
 }
