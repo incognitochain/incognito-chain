@@ -17,12 +17,14 @@ func buildReqUnlockOverRateCollateralsInst(
 	unlockedAmounts map[string]uint64,
 	metaType int,
 	shardID byte,
+	txReqID common.Hash,
 	status string,
 ) []string {
 	unlockOverRateCollateralsContent := metadata.PortalUnlockOverRateCollateralsContent{
 		CustodianAddressStr: custodianAddresStr,
 		TokenID:             tokenID,
 		UnlockedAmounts:     unlockedAmounts,
+		TxReqID:             txReqID,
 	}
 	unlockOverRateCollateralsContentBytes, _ := json.Marshal(unlockOverRateCollateralsContent)
 	return []string{
@@ -84,6 +86,7 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 		map[string]uint64{},
 		metaType,
 		shardID,
+		actionData.TxReqID,
 		common.PortalCusUnlockOverRateCollateralsRejectedChainStatus,
 	)
 	//check key from db
@@ -159,6 +162,7 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 		listUnlockTokens,
 		metaType,
 		shardID,
+		actionData.TxReqID,
 		common.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
 	)
 
