@@ -123,8 +123,8 @@ func SetupParam() {
 		SelectShardNodeSerializedPubkeyV2:           SelectShardNodeTestnetSerializedPubkeyV2,
 		SelectShardNodeSerializedPaymentAddressV2:   SelectShardNodeTestnetSerializedPaymentAddressV2,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
-		InitialIncognito: IntegrationTestInitPRV,
-		//InitialIncognito:   TestnetInitPRV,
+		//InitialIncognito: IntegrationTestInitPRV,
+		InitialIncognito:   TestnetInitPRV,
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTestParam = Params{
@@ -162,8 +162,8 @@ func SetupParam() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		ConsensusV2Epoch:               1,
-		ConsensusV3Height:              TestnetEpoch*5 + 8,
+		ConsensusV2Epoch:               1e9,
+		ConsensusV3Height:              1,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
