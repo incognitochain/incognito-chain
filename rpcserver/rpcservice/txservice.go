@@ -1221,7 +1221,7 @@ func (txService TxService) getTxsByHashs(txHashs []common.Hash, ch chan []TxInfo
 				if !ok || txPToken == nil {
 					continue
 				}
-				nativeProof := txPToken.GetProof()
+				nativeProof := txPToken.GetTxBase().GetProof()
 				if nativeProof == nil {
 					continue
 				}
@@ -2057,13 +2057,17 @@ func (txService TxService) GetInputSerialNumberByTransaction(txHashStr string) (
 		}
 	case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 		{
-			inputSerialNumbers, err := GetInputSerialnumber(tx.GetProof().GetInputCoins())
+			txToken, ok := tx.(transaction.TransactionToken)
+			if !ok{
+				return nil, NewRPCError(UnexpectedError, errors.New("tx type is invalid - cast failed"))
+			}
+			inputSerialNumbers, err := GetInputSerialnumber(txToken.GetTxBase().GetProof().GetInputCoins())
 			if err != nil {
 				return nil, NewRPCError(UnexpectedError, errors.New("cannot get input coins"))
 			}
 			results[common.PRVCoinID.String()] = inputSerialNumbers
 
-			tempTx := tx.(transaction.TransactionToken).GetTxNormal()
+			tempTx := txToken.GetTxNormal()
 			tokenData := tx.(transaction.TransactionToken).GetTxTokenData()
 			inputTokenSerialNumbers, err := GetInputSerialnumber(tempTx.GetProof().GetInputCoins())
 			if err != nil {
@@ -2116,7 +2120,8 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 		}
 	case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 		{
-			outputOfPrv := tx.GetProof().GetOutputCoins()
+			tempTx := tx.(transaction.TransactionToken)
+			outputOfPrv := tempTx.GetTxBase().GetProof().GetOutputCoins()
 			if len(outputOfPrv) > 0 {
 				prvOutputs, _ := txService.DecryptOutputCoinByKey(outputOfPrv, keyParam)
 				if len(prvOutputs) > 0 {
@@ -2128,10 +2133,9 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 				}
 			}
 
-			tempTx := tx.(transaction.TransactionToken)
 			tokenData := tempTx.GetTxTokenData()
 			results[tokenData.PropertyID.String()] = 0
-			outputOfTokens := tx.GetProof().GetOutputCoins()
+			outputOfTokens := tokenData.TxNormal.GetProof().GetOutputCoins()
 			if len(outputOfTokens) > 0 {
 				tokenOutput, _ := txService.DecryptOutputCoinByKey(outputOfTokens, keyParam)
 				if len(tokenOutput) > 0 {
