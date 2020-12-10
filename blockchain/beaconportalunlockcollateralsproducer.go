@@ -89,7 +89,11 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 	//check key from db
 	exchangeTool := NewPortalExchangeRateTool(currentPortalState.FinalExchangeRatesState, portalParams.SupportedCollateralTokens)
 	custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.Meta.CustodianAddressStr).String()
-	custodianState := currentPortalState.CustodianPoolState[custodianStateKey]
+	custodianState, ok := currentPortalState.CustodianPoolState[custodianStateKey]
+	if !ok || custodianState == nil {
+		Logger.log.Error("ERROR: custodian not found")
+		return [][]string{rejectInst}, nil
+	}
 	tokenAmountListInWaitingPoring := GetTotalLockedCollateralAmountInWaitingPortingsV3(currentPortalState, custodianState, actionData.Meta.TokenID)
 	if (custodianState.GetLockedTokenCollaterals() == nil || custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID] == nil) && custodianState.GetLockedAmountCollateral() == nil {
 		Logger.log.Error("ERROR: custodian has no collaterals to unlock")
