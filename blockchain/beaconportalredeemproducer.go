@@ -167,11 +167,11 @@ func (p *portalRedeemRequestProcessor) buildNewInsts(
 	}
 	isExist, ok := optionalData["isExistRedeemID"].(bool)
 	if !ok {
-		Logger.log.Errorf("Redeem request: optionalData isExistPortingID is invalid")
+		Logger.log.Errorf("Redeem request: optionalData isExistRedeemID is invalid")
 		return [][]string{rejectInst}, nil
 	}
 	if isExist {
-		Logger.log.Errorf("Redeem request: Porting request id exist in db %v", redeemID)
+		Logger.log.Errorf("Redeem request: Redeem request id exist in db %v", redeemID)
 		return [][]string{rejectInst}, nil
 	}
 
