@@ -17,12 +17,14 @@ func buildReqUnlockOverRateCollateralsInst(
 	unlockedAmounts map[string]uint64,
 	metaType int,
 	shardID byte,
+	txReqID common.Hash,
 	status string,
 ) []string {
 	unlockOverRateCollateralsContent := metadata.PortalUnlockOverRateCollateralsContent{
 		CustodianAddressStr: custodianAddresStr,
 		TokenID:             tokenID,
 		UnlockedAmounts:     unlockedAmounts,
+		TxReqID:             txReqID,
 	}
 	unlockOverRateCollateralsContentBytes, _ := json.Marshal(unlockOverRateCollateralsContent)
 	return []string{
@@ -84,18 +86,35 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 		map[string]uint64{},
 		metaType,
 		shardID,
+		actionData.TxReqID,
 		common.PortalCusUnlockOverRateCollateralsRejectedChainStatus,
 	)
 	//check key from db
 	exchangeTool := NewPortalExchangeRateTool(currentPortalState.FinalExchangeRatesState, portalParams.SupportedCollateralTokens)
 	custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.Meta.CustodianAddressStr).String()
-	custodianState := currentPortalState.CustodianPoolState[custodianStateKey]
+	custodianState, ok := currentPortalState.CustodianPoolState[custodianStateKey]
+	if !ok || custodianState == nil {
+		Logger.log.Error("ERROR: custodian not found")
+		return [][]string{rejectInst}, nil
+	}
 	tokenAmountListInWaitingPoring := GetTotalLockedCollateralAmountInWaitingPortingsV3(currentPortalState, custodianState, actionData.Meta.TokenID)
-	lockedCollaters := cloneMap(custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID])
-	if lockedCollaters == nil {
+	if (custodianState.GetLockedTokenCollaterals() == nil || custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID] == nil) && custodianState.GetLockedAmountCollateral() == nil {
+		Logger.log.Error("ERROR: custodian has no collaterals to unlock")
+		return [][]string{rejectInst}, nil
+	}
+	if custodianState.GetHoldingPublicTokens() == nil || custodianState.GetHoldingPublicTokens()[actionData.Meta.TokenID] == 0 {
+		Logger.log.Error("ERROR: custodian has no holding token to unlock")
+		return [][]string{rejectInst}, nil
+	}
+	var lockedCollaters map[string]uint64
+	if custodianState.GetLockedTokenCollaterals() != nil && custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID] != nil {
+		lockedCollaters = cloneMap(custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID])
+	} else {
 		lockedCollaters = make(map[string]uint64, 0)
 	}
-	lockedCollaters[common.PRVIDStr] = custodianState.GetLockedAmountCollateral()[actionData.Meta.TokenID]
+	if custodianState.GetLockedAmountCollateral() != nil {
+		lockedCollaters[common.PRVIDStr] = custodianState.GetLockedAmountCollateral()[actionData.Meta.TokenID]
+	}
 	lockedCollatersExceptPorting := make(map[string]uint64, 0)
 	totalAmountInUSD := uint64(0)
 	for collateralID, tokenValue := range lockedCollaters {
@@ -143,6 +162,7 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 		listUnlockTokens,
 		metaType,
 		shardID,
+		actionData.TxReqID,
 		common.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
 	)
 
