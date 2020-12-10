@@ -376,9 +376,11 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 		return errors.New("Cannot init TxCustomTokenPrivacy because params is not correct")
 	}
 
-	// Check validate params first, before creating tx token
-	// Because there are some validation must be made first
-	// Please dont change their order when you dont really understand
+	if params.TokenParams.Fee > 0 || params.FeeNativeCoin == 0 {
+		utils.Logger.Log.Errorf("only accept tx fee in PRV")
+		return utils.NewTransactionErr(utils.PrivacyTokenInitFeeParamsError, nil, strconv.Itoa(int(params.TokenParams.Fee)))
+	}
+
 	txPrivacyParams := tx_generic.NewTxPrivacyInitParams(
 		params.SenderKey,
 		params.PaymentInfo,
@@ -423,6 +425,7 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 		utils.Logger.Log.Errorf("Cannot init token ver2: err %v", err)
 		return err
 	}
+
 	txn := makeTxToken(tx, nil, nil, nil)
 	// Init, prove and sign(CA) Token
 	if err := txToken.initToken(txn, params); err != nil {
