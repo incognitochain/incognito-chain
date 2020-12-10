@@ -109,6 +109,10 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 		}
 	case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 		{
+			txToken, ok := tx.(transaction.TransactionToken)
+			if !ok {
+				return nil, errors.New("cannot detect transaction type")
+			}
 			txTokenData := transaction.GetTxTokenDataFromTransaction(tx)
 			result = &TransactionDetail{
 				BlockHash:                blockHashStr,
@@ -121,7 +125,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				Type:                     tx.GetType(),
 				LockTime:                 time.Unix(tx.GetLockTime(), 0).Format(common.DateOutputFormat),
 				Fee:                      tx.GetTxFee(),
-				Proof:                    tx.GetProof(),
+				Proof:                    txToken.GetTxBase().GetProof(),
 				SigPubKey:                base58.Base58Check{}.Encode(tx.GetSigPubKey(), 0x0),
 				Sig:                      base58.Base58Check{}.Encode(tx.GetSig(), 0x0),
 				Info:                     string(tx.GetInfo()),
@@ -131,15 +135,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				PrivacyCustomTokenID:     txTokenData.PropertyID.String(),
 				PrivacyCustomTokenFee:    txTokenData.TxNormal.GetTxFee(),
 			}
-			if tx.GetProof() == nil{
-				txToken, ok := tx.(*transaction.TxTokenVersion2)
-				if !ok {
-					return nil, errors.New("cannot detect transaction type")
-				}else{
-					result.Proof = txToken.GetTxBase().GetProof()
-				}
-
-			}
+			
 			if result.Proof != nil {
 				inputCoins := result.Proof.GetInputCoins()
 				if len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {
