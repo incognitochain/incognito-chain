@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sort"
 	"time"
@@ -107,7 +108,11 @@ func (e *BLSBFT_V2) Start() error {
 	e.Logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
 	go func() {
 		for { //actor loop
-
+			if e.Chain.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
+				e.Logger.Infof("CHAIN ID %+v |Require BFTACTOR V2 FOR Committee Engine V1, current Committee Engine %+v ", e.Chain.GetShardID(), e.Chain.CommitteeEngineVersion())
+				e.Logger.Info("stop bls-bft2 consensus for chain", e.ChainKey)
+				return
+			}
 			//e.Logger.Debug("Current time ", currentTime, "time slot ", currentTimeSlot)
 			select {
 			case <-e.StopCh:
@@ -339,7 +344,6 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 			if err != nil {
 				e.Logger.Error(dsaKey)
 				e.Logger.Error(err)
-				panic(1)
 				v.votes[id].isValid = -1
 				errVote++
 			} else {
@@ -377,10 +381,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		valData.ValidatiorsIdx = validatorIdx
 		validationDataString, _ := EncodeValidationData(*valData)
 		e.Logger.Infof("%v Validation Data", e.ChainKey, aggSig, brigSigs, validatorIdx, validationDataString)
-		if err := v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
-			e.Logger.Error(err)
-			return
-		}
+		v.block.(blockValidation).AddValidationField(validationDataString)
 
 		go e.Chain.InsertAndBroadcastBlock(v.block)
 

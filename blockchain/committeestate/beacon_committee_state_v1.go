@@ -42,6 +42,7 @@ func NewBeaconCommitteeEngineV1(
 	beaconHeight uint64,
 	beaconHash common.Hash,
 	beaconCommitteeStateV1 *BeaconCommitteeStateV1) *BeaconCommitteeEngineV1 {
+	Logger.log.Infof("Init Beacon Committee Engine V1, %+v", beaconHeight)
 	return &BeaconCommitteeEngineV1{
 		beaconHeight:                      beaconHeight,
 		beaconHash:                        beaconHash,
@@ -204,6 +205,17 @@ func (engine BeaconCommitteeEngineV1) GetShardCommittee() map[byte][]incognitoke
 	defer engine.beaconCommitteeStateV1.mu.RUnlock()
 	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 	for k, v := range engine.beaconCommitteeStateV1.shardCommittee {
+		shardCommittee[k] = v
+	}
+	return shardCommittee
+}
+
+//GetShardCommittee :
+func (engine BeaconCommitteeEngineV1) GetUncommittedCommittee() map[byte][]incognitokey.CommitteePublicKey {
+	engine.uncommittedBeaconCommitteeStateV1.mu.RLock()
+	defer engine.uncommittedBeaconCommitteeStateV1.mu.RUnlock()
+	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+	for k, v := range engine.uncommittedBeaconCommitteeStateV1.shardCommittee {
 		shardCommittee[k] = v
 	}
 	return shardCommittee

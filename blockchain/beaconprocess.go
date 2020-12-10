@@ -102,8 +102,7 @@ CONTINUE_VERIFY:
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
 	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
-	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-
+	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash.String())
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
 	startTimeStoreBeaconBlock := time.Now()
@@ -154,15 +153,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		return NewBlockChainError(CleanBackUpError, err)
 	}
 
-	// process for slashing, make sure this one is called before update best state
-	// since we'd like to process with old committee, not updated committee
-	slashErr := blockchain.processForSlashing(curView.slashStateDB, beaconBlock)
-	if slashErr != nil {
-		Logger.log.Errorf("Failed to process slashing with error: %+v", NewBlockChainError(ProcessSlashingError, slashErr))
-	}
-	Logger.log.Debugf("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
-
 	newBestState, hashes, committeeChange, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		curView.beaconCommitteeEngine.AbortUncommittedBeaconState()
@@ -176,8 +167,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		}
 	}()
 
-	// updateNumOfBlocksByProducers updates number of blocks produced by producers
-	newBestState.updateNumOfBlocksByProducers(beaconBlock, blockchain.config.ChainParams.Epoch)
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		if err2 = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, hashes); err2 != nil {
@@ -207,23 +196,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	// For masternode: broadcast new committee to highways
 	beaconInsertBlockTimer.UpdateSince(startTimeStoreBeaconBlock)
 	return nil
-}
-
-// updateNumOfBlocksByProducers updates number of blocks produced by producers
-func (beaconBestState *BeaconBestState) updateNumOfBlocksByProducers(beaconBlock *types.BeaconBlock, chainParamEpoch uint64) {
-	producer := beaconBlock.GetProducerPubKeyStr()
-	if beaconBlock.GetHeight()%chainParamEpoch == 1 {
-		beaconBestState.NumOfBlocksByProducers = map[string]uint64{
-			producer: 1,
-		}
-	}
-	// Update number of blocks produced by producers in epoch
-	numOfBlks, found := beaconBestState.NumOfBlocksByProducers[producer]
-	if !found {
-		beaconBestState.NumOfBlocksByProducers[producer] = 1
-	} else {
-		beaconBestState.NumOfBlocksByProducers[producer] = numOfBlks + 1
-	}
 }
 
 /*
@@ -496,11 +468,11 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 /*
 	Update Beststate with new Block
 */
-func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconBlock, blockchain *BlockChain) (
+func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconBlock, blockchain *BlockChain) (
 	*BeaconBestState, *committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, [][]string, error) {
 	startTimeUpdateBeaconBestState := time.Now()
 	beaconBestState := NewBeaconBestState()
-	if err := beaconBestState.cloneBeaconBestStateFrom(oldBestState); err != nil {
+	if err := beaconBestState.cloneBeaconBestStateFrom(curView); err != nil {
 		return nil, nil, nil, nil, err
 	}
 	var chainParamEpoch = blockchain.config.ChainParams.Epoch
@@ -518,7 +490,7 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 	if beaconBlock.Header.Height == 1 {
 		beaconBestState.BeaconProposerIndex = 0
 	} else {
-		for i, v := range oldBestState.GetBeaconCommittee() {
+		for i, v := range beaconBestState.GetBeaconCommittee() {
 			b58Str, _ := v.ToBase58()
 			if b58Str == beaconBlock.Header.Producer {
 				beaconBestState.BeaconProposerIndex = i
@@ -532,11 +504,13 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 	if beaconBestState.BestShardHeight == nil {
 		beaconBestState.BestShardHeight = make(map[byte]uint64)
 	}
+
 	// Update new best new block hash
 	for shardID, shardStates := range beaconBlock.Body.ShardState {
 		beaconBestState.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
 		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
 	}
+
 	// processing instruction
 	for _, inst := range beaconBlock.Body.Instructions {
 		if inst[0] == instruction.RANDOM_ACTION {
@@ -550,6 +524,7 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 			Logger.log.Infof("Random number found %d", beaconBestState.CurrentRandomNumber)
 		}
 	}
+
 	if beaconBestState.BeaconHeight%chainParamEpoch == 1 && beaconBestState.BeaconHeight != 1 {
 		// Begin of each epoch
 		beaconBestState.IsGetRandomNumber = false
@@ -567,8 +542,21 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
-	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)
+
+	if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+		if beaconBestState.BeaconHeight%chainParamEpoch == 1 {
+			// Reset missing signature counter after finish process the last beacon block in an epoch
+			beaconBestState.missingSignatureCounter.Reset(beaconBestState.getUncommittedShardCommitteeFlattenList())
+		}
+
+		err = beaconBestState.countMissingSignature(blockchain.GetBeaconChainDatabase(), beaconBlock.Body.ShardState)
+		if err != nil {
+			return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+		}
+	}
+
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
+
 	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
 }
 
@@ -626,8 +614,42 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 			genesisBeaconBlock.Body.Instructions, false, false))
 
 	beaconBestState.Epoch = 1
-	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
+	return nil
+}
 
+func (curView *BeaconBestState) countMissingSignature(db incdb.Database, allShardStates map[byte][]types.ShardState) error {
+	for shardID, shardStates := range allShardStates {
+		cacheCommittees := make(map[common.Hash][]incognitokey.CommitteePublicKey)
+		for _, shardState := range shardStates {
+			// skip genesis block
+			if shardState.Height == 1 {
+				continue
+			}
+			beaconHashForCommittee := shardState.CommitteeFromBlock
+			Logger.log.Infof("Add Missing Signature | ShardState %+v", shardState)
+			Logger.log.Infof("Add Missing Signature | committee from block %+v", beaconHashForCommittee)
+			if beaconHashForCommittee.IsZeroValue() {
+				continue
+			}
+			committees, ok := cacheCommittees[beaconHashForCommittee]
+			if !ok {
+				var err error
+				committees, err = getOneShardCommitteeFromBeaconDB(db, shardID, beaconHashForCommittee)
+				if err != nil {
+					return err
+				}
+				cacheCommittees[beaconHashForCommittee] = committees
+			}
+
+			logCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
+			Logger.log.Infof("Add Missing Signature | Validation Data: %+v, \n Committees: %+v", shardState.ValidationData, logCommittees)
+
+			err := curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -726,8 +748,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-
-	blockchain.processForSlashing(newBestState.slashStateDB, beaconBlock)
 
 	// Remove shard reward request of old epoch
 	// this value is no longer needed because, old epoch reward has been split and send to shard
@@ -834,6 +854,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if err := rawdbv2.StoreBeaconBlockByHash(batch, blockHash, beaconBlock); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+
+	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
+		newBestState.upgradeCommitteeEngineV2(blockchain)
 	}
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()

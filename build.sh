@@ -15,6 +15,8 @@ echo "package blockchain"
 GO111MODULE=on go test -cover ./blockchain/*.go
 echo "package metadata"
 GO111MODULE=on go test -cover ./metadata/*.go
+echo "package signaturecounter"
+GO111MODULE=on go test -cover ./blockchain/signaturecounter/*.go
 
 
 echo "Start build Incognito"

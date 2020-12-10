@@ -33,7 +33,7 @@ type ConsensusEngine interface {
 }
 
 type Server interface {
-	PushBlockToAll(block types.BlockInterface, isBeacon bool) error
+	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error
 }
 
 type Highway interface {

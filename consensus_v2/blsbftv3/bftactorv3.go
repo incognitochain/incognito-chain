@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"reflect"
 	"sort"
 	"time"
@@ -18,6 +19,10 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
+)
+
+const (
+	BEACON_CHAIN_ID = -1
 )
 
 type BLSBFT_V3 struct {
@@ -67,7 +72,7 @@ func (e *BLSBFT_V3) GetConsensusName() string {
 
 func (e *BLSBFT_V3) Stop() error {
 	if e.isStarted {
-		e.Logger.Info("stop bls-bft2 consensus for chain", e.ChainKey)
+		e.Logger.Info("stop bls-bft3 consensus for chain", e.ChainKey)
 		select {
 		case <-e.StopCh:
 			return nil
@@ -102,7 +107,9 @@ func (e *BLSBFT_V3) Start() error {
 	e.Logger.Info("start bls-bftV3 consensus for chain", e.ChainKey)
 	go func() {
 		for { //actor loop
-
+			if e.Chain.CommitteeEngineVersion() != committeestate.SLASHING_VERSION {
+				continue
+			}
 			//e.Logger.Debug("Current time ", currentTime, "time slot ", currentTimeSlot)
 			select {
 			case <-e.StopCh:
@@ -122,6 +129,9 @@ func (e *BLSBFT_V3) Start() error {
 					e.Logger.Debug(err)
 					continue
 				}
+
+				res, _ := incognitokey.CommitteeKeyListToString(committees)
+				e.Logger.Infof("######### Shard %+v, BlockHeight %+v, Committee %+v", e.Chain.GetShardID(), block.GetHeight(), res)
 
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
 					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, make(map[string]*BFTVote), false, false)
@@ -178,7 +188,7 @@ func (e *BLSBFT_V3) Start() error {
 				shouldPropose := false
 				shouldListen := true
 
-				if e.ChainID == -1 {
+				if e.ChainID == BEACON_CHAIN_ID {
 					proposerPk = bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
 					committees = e.Chain.GetBestView().GetCommittee()
 				} else {
@@ -362,38 +372,83 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	}
 	if validVote > 2*len(v.committees)/3 {
 		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
-		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(v.committees, common.BlsConsensus)
-		//fmt.Println(committeeBLSString)
-		if err != nil {
-			e.Logger.Error(err)
-			return
+		if e.ChainID == BEACON_CHAIN_ID {
+			e.processWithEnoughVotesBeaconChain(v)
+		} else {
+			e.processWithEnoughVotesShardChain(v)
 		}
-		aggSig, brigSigs, validatorIdx, err := CombineVotes(v.votes, committeeBLSString)
-		if err != nil {
-			e.Logger.Error(err)
-			return
-		}
-
-		valData, err := consensustypes.DecodeValidationData(v.block.GetValidationField())
-		if err != nil {
-			e.Logger.Error(err)
-			return
-		}
-
-		valData.AggSig = aggSig
-		valData.BridgeSig = brigSigs
-		valData.ValidatiorsIdx = validatorIdx
-		validationDataString, _ := consensustypes.EncodeValidationData(*valData)
-		fmt.Println("Validation Data", aggSig, brigSigs, validatorIdx, validationDataString)
-		if v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
-			e.Logger.Error(err)
-			return
-		}
-
-		go e.Chain.InsertAndBroadcastBlock(v.block)
-
-		delete(e.receiveBlockByHash, blockHash)
 	}
+}
+
+func (e *BLSBFT_V3) processWithEnoughVotesBeaconChain(
+	v *ProposeBlockInfo,
+) {
+	validationData, err := createBLSAggregatedSignatures(v.committees, v.block.GetValidationField(), v.votes)
+	if err != nil {
+		e.Logger.Error(err)
+		return
+	}
+	v.block.(blockValidation).AddValidationField(validationData)
+
+	go e.Chain.InsertAndBroadcastBlock(v.block)
+
+	delete(e.receiveBlockByHash, v.block.GetPrevHash().String())
+}
+
+func (e *BLSBFT_V3) processWithEnoughVotesShardChain(
+	v *ProposeBlockInfo,
+) {
+	// validationData at present block
+	validationData, err := createBLSAggregatedSignatures(v.committees, v.block.GetValidationField(), v.votes)
+	if err != nil {
+		e.Logger.Error(err)
+		return
+	}
+	v.block.(blockValidation).AddValidationField(validationData)
+
+	// validate and previous block
+	if previousProposeBlockInfo, ok := e.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
+		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
+		previousCommittees, err := e.getCommitteeForBlock(previousProposeBlockInfo.block)
+		if err != nil {
+			e.Logger.Error(err)
+			return
+		}
+		previousValidationData, err := createBLSAggregatedSignatures(previousCommittees, previousProposeBlockInfo.block.GetValidationField(), previousProposeBlockInfo.votes)
+		if err != nil {
+			e.Logger.Error(err)
+			return
+		}
+		previousProposeBlockInfo.block.(blockValidation).AddValidationField(previousValidationData) // Is this necessary?
+
+		go e.Chain.InsertAndBroadcastBlockWithPrevValidationData(v.block, previousValidationData)
+
+		delete(e.receiveBlockByHash, previousProposeBlockInfo.block.GetPrevHash().String())
+	} else {
+		go e.Chain.InsertAndBroadcastBlock(v.block)
+	}
+}
+
+func createBLSAggregatedSignatures(committees []incognitokey.CommitteePublicKey, tempValidationData string, votes map[string]*BFTVote) (string, error) {
+	committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(committees, common.BlsConsensus)
+	if err != nil {
+		return "", err
+	}
+	aggSig, brigSigs, validatorIdx, err := CombineVotes(votes, committeeBLSString)
+	if err != nil {
+		return "", err
+	}
+
+	valData, err := consensustypes.DecodeValidationData(tempValidationData)
+	if err != nil {
+		return "", err
+	}
+
+	valData.AggSig = aggSig
+	valData.BridgeSig = brigSigs
+	valData.ValidatiorsIdx = validatorIdx
+	validationData, _ := consensustypes.EncodeValidationData(*valData)
+	return validationData, err
 }
 
 func (e *BLSBFT_V3) validateAndVote(

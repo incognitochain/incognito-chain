@@ -158,8 +158,6 @@ var HttpHandler = map[string]httpHandler{
 	getRoleByValidatorKey:       (*HttpServer).handleGetValidatorKeyRole,
 	getIncognitoPublicKeyRole:   (*HttpServer).handleGetIncognitoPublicKeyRole,
 	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
-	getProducersBlackList:       (*HttpServer).handleGetProducersBlackList,
-	getProducersBlackListDetail: (*HttpServer).handleGetProducersBlackListDetail,
 
 	// pde
 	getPDEState:                                (*HttpServer).handleGetPDEState,
@@ -290,6 +288,7 @@ var WsHandler = map[string]wsHandler{
 	subcribeCrossCustomTokenPrivacyByPrivateKey: (*WsServer).handleSubcribeCrossCustomTokenPrivacyByPrivateKey,
 	subcribeShardBestState:                      (*WsServer).handleSubscribeShardBestState,
 	subcribeBeaconBestState:                     (*WsServer).handleSubscribeBeaconBestState,
+	subcribeBeaconBestStateFromMem:              (*WsServer).handleSubscribeBeaconBestStateFromMem,
 	subcribeBeaconPoolBeststate:                 (*WsServer).handleSubscribeBeaconPoolBestState,
 	subcribeShardPoolBeststate:                  (*WsServer).handleSubscribeShardPoolBeststate,
 }

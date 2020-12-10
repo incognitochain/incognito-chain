@@ -193,7 +193,8 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(
 	return newBlock, nil
 }
 
-func (chain *BeaconChain) InsertBlk(block types.BlockInterface, shouldValidate bool) error {
+// TODO: change name
+func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), shouldValidate); err != nil {
 		Logger.log.Info(err)
 		return err
@@ -208,13 +209,21 @@ func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 }
 
 func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
-	go chain.Blockchain.config.Server.PushBlockToAll(block, true)
+	go chain.Blockchain.config.Server.PushBlockToAll(block, "", true)
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), true); err != nil {
 		Logger.log.Info(err)
 		return err
 	}
 	return nil
 
+}
+
+func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
+	panic("this function is not supported on beacon chain")
+}
+
+func (chain *BeaconChain) InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error {
+	panic("this function is not supported on beacon chain")
 }
 
 func (chain *BeaconChain) GetActiveShardNumber() int {
@@ -366,4 +375,12 @@ func (chain *BeaconChain) FinalView() multiview.View {
 //BestViewCommitteeFromBlock ...
 func (chain *BeaconChain) BestViewCommitteeFromBlock() common.Hash {
 	return common.Hash{}
+}
+
+func (chain *BeaconChain) GetChainDatabase() incdb.Database {
+	return chain.Blockchain.GetBeaconChainDatabase()
+}
+
+func (chain *BeaconChain) CommitteeEngineVersion() uint {
+	return chain.multiView.GetBestView().CommitteeEngineVersion()
 }

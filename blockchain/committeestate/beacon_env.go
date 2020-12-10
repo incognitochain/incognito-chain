@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -26,8 +27,6 @@ type BeaconCommitteeStateEnvironment struct {
 	MaxShardCommitteeSize              int
 	ConsensusStateDB                   *statedb.StateDB
 	IsReplace                          bool
-	NumberOfFixedBeaconBlockValidators uint64
-	NumberOfFixedShardBlockValidators  int
 	newAllCandidateSubstituteCommittee []string
 	newUnassignedCommonPool            []string
 	newAllSubstituteCommittees         []string
@@ -38,6 +37,9 @@ type BeaconCommitteeStateEnvironment struct {
 	IsSplitRewardForCustodian          bool
 	PercentCustodianReward             uint64
 	DAOPercent                         int
+	NumberOfFixedBeaconBlockValidator  uint64
+	NumberOfFixedShardBlockValidator   int
+	MissingSignaturePenalty            map[string]signaturecounter.Penalty
 }
 
 type BeaconCommitteeStateHash struct {

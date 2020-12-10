@@ -184,6 +184,8 @@ const (
 	UpdateShardCommitteeStateError
 	BuildIncurredInstructionError
 	ReturnStakingInstructionHandlerError
+	CountMissingSignatureError
+	ReplacePreviousValidationDataError
 	CommitteeFromBlockNotFoundError
 )
 
@@ -354,7 +356,9 @@ var ErrCodeMessage = map[int]struct {
 	ShardStakingTxRootHashError:                       {-1158, "Build Shard StakingTX error"},
 	BuildIncurredInstructionError:                     {-1159, "Build Incurred Instructions error"},
 	ReturnStakingInstructionHandlerError:              {-1160, "Return Staking Instruction Handler error"},
-	CommitteeFromBlockNotFoundError:                   {-1161, "Committee From Beacon Block Not Found Error"},
+	CountMissingSignatureError:                        {-1161, "Count Missing Signature Error"},
+	ReplacePreviousValidationDataError:                {-1162, "Replace Previous Validation Data Error"},
+	CommitteeFromBlockNotFoundError:                   {-1163, "Committee From Beacon Block Not Found Error"},
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 	ResponsedTransactionFromBeaconInstructionsError:   {-3100, "Build Transaction Response From Beacon Instructions Error"},

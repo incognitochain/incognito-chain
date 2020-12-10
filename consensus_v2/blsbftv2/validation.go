@@ -15,7 +15,7 @@ import (
 
 type blockValidation interface {
 	types.BlockInterface
-	AddValidationField(validationData string) error
+	AddValidationField(validationData string)
 }
 
 type ValidationData struct {

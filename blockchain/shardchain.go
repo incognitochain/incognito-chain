@@ -5,19 +5,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/incdb"
-
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/multiview"
-
-	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
 )
 
 type ShardChain struct {
@@ -225,28 +221,57 @@ func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, com
 	return nil
 }
 
-func (chain *ShardChain) InsertBlk(block types.BlockInterface, shouldValidate bool) error {
+func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
+
 	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), shouldValidate)
 	if err != nil {
 		Logger.log.Error(err)
+		return err
 	}
-	return err
+
+	return nil
+}
+
+func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
+
+	go chain.Blockchain.config.Server.PushBlockToAll(block, "", false)
+
+	if err := chain.InsertBlock(block, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
+
+	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, newValidationData); err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+
+	return nil
+}
+
+func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
+
+	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
+
+	if err := chain.InsertBlock(block, false); err != nil {
+		return err
+	}
+
+	if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), newValidationData); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
 	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
 	return err == nil
-}
-
-func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
-	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), false)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-	return nil
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {
@@ -312,4 +337,12 @@ func (chain *ShardChain) CommitteeStateVersion() uint {
 //BestViewCommitteeFromBlock ...
 func (chain *ShardChain) BestViewCommitteeFromBlock() common.Hash {
 	return chain.GetBestState().CommitteeFromBlock()
+}
+
+func (chain *ShardChain) GetChainDatabase() incdb.Database {
+	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
+}
+
+func (chain *ShardChain) CommitteeEngineVersion() uint {
+	return chain.multiView.GetBestView().CommitteeEngineVersion()
 }

@@ -11,21 +11,21 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                       = 1
-	RANDOM_NUMBER                 = 3
-	SHARD_BLOCK_VERSION           = 1
-	DefaultMaxBlkReqPerPeer       = 900
-	MinCommitteeSize              = 3 // min size to run bft
-	WorkerNumber                  = 5
-	MAX_S2B_BLOCK                 = 30
-	MAX_BEACON_BLOCK              = 5
-	LowerBoundPercentForIncDAO    = 3
-	UpperBoundPercentForIncDAO    = 10
-	TestRandom                    = true
-	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
-	TransactionBatchSize          = 30
-	SpareTime                     = 1000             // in mili-second
-	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
+	VERSION                            = 1
+	RANDOM_NUMBER                      = 3
+	SHARD_BLOCK_VERSION                = 1
+	DefaultMaxBlkReqPerPeer            = 900
+	MinCommitteeSize                   = 3 // min size to run bft
+	WorkerNumber                       = 5
+	MAX_S2B_BLOCK                      = 30
+	MAX_BEACON_BLOCK                   = 5
+	LowerBoundPercentForIncDAO         = 3
+	UpperBoundPercentForIncDAO         = 10
+	TestRandom                         = true
+	ValidateTimeForSpamRequestTxs      = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
+	TransactionBatchSize               = 30
+	SpareTime                          = 1000             // in mili-second
+	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
 	NumberOfFixedBeaconBlockValidators = 4
 	NumberOfFixedShardBlockValidators  = 4
 )
@@ -44,6 +44,7 @@ const (
 	MainnetDefaultPort      = "9333"
 	MainnetGenesisBlockTime = "2019-10-29T00:00:00.000Z"
 	MainnetEpoch            = 350
+	MainnetEpochV2          = 2160
 	MainnetRandomTime       = 175
 	MainnetOffset           = 4
 	MainnetSwapOffset       = 4
@@ -105,8 +106,9 @@ const (
 	TestnetName             = "testnet"
 	TestnetDefaultPort      = "9444"
 	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch            = 100
-	TestnetRandomTime       = 50
+	TestnetEpoch            = 20
+	TestnetEpochV2          = 20
+	TestnetRandomTime       = 10
 	TestnetOffset           = 1
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
@@ -148,6 +150,7 @@ const (
 	Testnet2DefaultPort      = "9444"
 	Testnet2GenesisBlockTime = "2020-08-11T00:00:00.000Z"
 	Testnet2Epoch            = 100
+	Testnet2EpochV2          = 100
 	Testnet2RandomTime       = 50
 	Testnet2Offset           = 1
 	Testnet2SwapOffset       = 1

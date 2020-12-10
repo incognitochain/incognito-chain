@@ -16,17 +16,21 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	beaconBestState.BestBlock = *block
 	beaconBestState.BeaconHeight = block.GetHeight()
 	var beaconCommitteeEngine committeestate.BeaconCommitteeEngine
-	if beaconBestState.BeaconHeight >= blockchain.config.ChainParams.ConsensusV3Epoch {
-		beaconCommitteeEngine = InitBeaconCommitteeEngineV2(
+	if beaconBestState.BeaconHeight >= blockchain.config.ChainParams.ConsensusV3Height {
+		beaconCommitteeEngine = initBeaconCommitteeEngineV2(
 			beaconBestState,
 			blockchain.config.ChainParams,
 			blockchain,
 		)
 	} else {
-		beaconCommitteeEngine = InitBeaconCommitteeEngineV1(
+		beaconCommitteeEngine = initBeaconCommitteeEngineV1(
 			beaconBestState,
 		)
 	}
 	beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine
+	err = initMissingSignatureCounter(blockchain, beaconBestState, block)
+	if err != nil {
+		return err
+	}
 	return nil
 }

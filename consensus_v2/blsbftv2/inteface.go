@@ -39,4 +39,5 @@ type ChainInterface interface {
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	GetShardID() int
 	GetViewByHash(hash common.Hash) multiview.View
+	CommitteeEngineVersion() uint
 }

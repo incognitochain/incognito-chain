@@ -173,10 +173,6 @@ const (
 	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
 
-	// slash
-	getProducersBlackList       = "getproducersblacklist"
-	getProducersBlackListDetail = "getproducersblacklistdetail"
-
 	// pde
 	getPDEState                                = "getpdestate"
 	createAndSendTxWithWithdrawalReq           = "createandsendtxwithwithdrawalreq"
@@ -287,6 +283,7 @@ const (
 	subcribeMempoolInfo                         = "subcribemempoolinfo"
 	subcribeShardBestState                      = "subcribeshardbeststate"
 	subcribeBeaconBestState                     = "subcribebeaconbeststate"
+	subcribeBeaconBestStateFromMem              = "subcribebeaconbeststatefrommem"
 	subcribeBeaconPoolBeststate                 = "subcribebeaconpoolbeststate"
 	subcribeShardPoolBeststate                  = "subcribeshardpoolbeststate"
 )

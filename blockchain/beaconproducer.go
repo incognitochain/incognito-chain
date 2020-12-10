@@ -6,11 +6,10 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -278,13 +277,13 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		acceptedRewardInstructions = []string{}
 	}
 	//Get Shard State from Block
-	shardState := types.ShardState{}
-	shardState.CrossShard = make([]byte, len(shardBlock.Header.CrossShardBitMap))
-	copy(shardState.CrossShard, shardBlock.Header.CrossShardBitMap)
-	shardState.Hash = shardBlock.Header.Hash()
-	shardState.Height = shardBlock.Header.Height
-	shardStates[shardID] = shardState
-
+	shardStates[shardID] = types.NewShardState(
+		shardBlock.ValidationData,
+		shardBlock.Header.CommitteeFromBlock,
+		shardBlock.Header.Height,
+		shardBlock.Header.Hash(),
+		shardBlock.Header.CrossShardBitMap,
+	)
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(
 		shardBlock.Body.Transactions, blockchain, shardID)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
