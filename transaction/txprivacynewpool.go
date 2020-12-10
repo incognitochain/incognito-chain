@@ -15,7 +15,7 @@ import (
 
 func (tx Tx) ValidateDoubleSpendWithBlockChain(
 	stateDB *statedb.StateDB,
-	tokenID *common.Hash,
+	// tokenID *common.Hash,
 ) (bool, error) {
 
 	shardID := byte(tx.valEnv.ShardID())
@@ -157,10 +157,18 @@ func (tx *Tx) ValidateSanityDataWithBlockchain(
 
 // func (tx *Tx) ValidateSanityDataWithBlockchain(
 
+func (tx *Tx) LoadCommitment(
+	db *statedb.StateDB,
+) error {
+	var tokenID *common.Hash
+	if tx.valEnv.IsPrivacy() {
+		return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
+	}
+	return nil
+}
+
 func (tx *Tx) ValidateTxCorrectness(
-	// shardID byte,
-	tokenID *common.Hash,
-	transactionStateDB *statedb.StateDB,
+// transactionStateDB *statedb.StateDB,
 ) (
 	bool,
 	error,
@@ -171,9 +179,9 @@ func (tx *Tx) ValidateTxCorrectness(
 
 	// Todo Moving out
 	Logger.log.Debugf("VALIDATING TX........\n")
-	if tx.IsSalaryTx() {
-		return tx.ValidateTxSalary(transactionStateDB)
-	}
+	// if tx.IsSalaryTx() {
+	// 	return tx.ValidateTxSalary(transactionStateDB)
+	// }
 	// hasPrivacy := tx.IsPrivacy()
 	var valid bool
 	var err error
@@ -182,19 +190,16 @@ func (tx *Tx) ValidateTxCorrectness(
 	if tx.GetType() == common.TxReturnStakingType {
 		return true, nil //
 	}
-	if err := tx.LoadCommitment(transactionStateDB, tokenID); err != nil {
-		return false, err
-	}
 
 	if tx.Proof != nil {
-		if tokenID == nil {
-			tokenID = &common.Hash{}
-			err := tokenID.SetBytes(common.PRVCoinID[:])
-			if err != nil {
-				Logger.log.Error(err)
-				return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
-			}
-		}
+		// if tokenID == nil {
+		// 	tokenID = &common.Hash{}
+		// 	err := tokenID.SetBytes(common.PRVCoinID[:])
+		// 	if err != nil {
+		// 		Logger.log.Error(err)
+		// 		return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
+		// 	}
+		// }
 
 		/*----------- TODO Moving out --------------
 
@@ -213,7 +218,7 @@ func (tx *Tx) ValidateTxCorrectness(
 		------------------------------------------ */
 		// Verify the payment proof
 
-		valid, err = tx.Proof.VerifyV2(tx.valEnv, tx.SigPubKey, tx.Fee, tokenID)
+		valid, err = tx.Proof.VerifyV2(tx.valEnv, tx.SigPubKey, tx.Fee)
 		if !valid {
 			if err != nil {
 				Logger.log.Error(err)

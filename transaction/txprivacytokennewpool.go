@@ -13,7 +13,7 @@ import (
 
 func (tx TxCustomTokenPrivacy) ValidateDoubleSpendWithBlockChain(
 	stateDB *statedb.StateDB,
-	tokenID *common.Hash,
+	// tokenID *common.Hash,
 ) (bool, error) {
 
 	shardID := byte(tx.valEnv.ShardID())
@@ -101,11 +101,18 @@ func (tx *TxCustomTokenPrivacy) ValidateSanityDataWithBlockchain(
 }
 
 // func (tx *Tx) ValidateSanityDataWithBlockchain(
+func (tx *TxCustomTokenPrivacy) LoadCommitment(
+	db *statedb.StateDB,
+) error {
+	var tokenID *common.Hash
+	if tx.valEnv.IsPrivacy() {
+		return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
+	}
+	return nil
+}
 
 func (tx *TxCustomTokenPrivacy) ValidateTxCorrectness(
-	// shardID byte,
-	tokenID *common.Hash,
-	transactionStateDB *statedb.StateDB,
+// transactionStateDB *statedb.StateDB,
 ) (
 	bool,
 	error,
@@ -114,78 +121,78 @@ func (tx *TxCustomTokenPrivacy) ValidateTxCorrectness(
 		return ok, err
 	}
 
-	// Todo Moving out
-	Logger.log.Debugf("VALIDATING TX........\n")
-	if tx.IsSalaryTx() {
-		return tx.ValidateTxSalary(transactionStateDB)
-	}
-	// hasPrivacy := tx.IsPrivacy()
-	var valid bool
-	var err error
+	// // Todo Moving out
+	// Logger.log.Debugf("VALIDATING TX........\n")
+	// if tx.IsSalaryTx() {
+	// 	return tx.ValidateTxSalary(transactionStateDB)
+	// }
+	// // hasPrivacy := tx.IsPrivacy()
+	// var valid bool
+	// var err error
 
-	//Todo find out how to validate safer
-	if tx.GetType() == common.TxReturnStakingType {
-		return true, nil //
-	}
-	if err := tx.LoadCommitment(transactionStateDB, tokenID); err != nil {
-		return false, err
-	}
+	// //Todo find out how to validate safer
+	// if tx.GetType() == common.TxReturnStakingType {
+	// 	return true, nil //
+	// }
+	// if err := tx.LoadCommitment(transactionStateDB, tokenID); err != nil {
+	// 	return false, err
+	// }
 
-	if tx.Proof != nil {
-		if tokenID == nil {
-			tokenID = &common.Hash{}
-			err := tokenID.SetBytes(common.PRVCoinID[:])
-			if err != nil {
-				Logger.log.Error(err)
-				return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
-			}
-		}
+	// if tx.Proof != nil {
+	// 	if tokenID == nil {
+	// 		tokenID = &common.Hash{}
+	// 		err := tokenID.SetBytes(common.PRVCoinID[:])
+	// 		if err != nil {
+	// 			Logger.log.Error(err)
+	// 			return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
+	// 		}
+	// 	}
 
-		/*----------- TODO Moving out --------------
+	// 	/*----------- TODO Moving out --------------
 
-		// if !tx.valEnv.IsPrivacy() {
-		// 	// Check input coins' commitment is exists in cm list (Database)
-		// 	for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
-		// 		ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, 	tokenID)
-		// 		if !ok || err != nil {
-		// 			if err != nil {
-		// 				Logger.log.Error(err)
-		// 			}
-		// 			return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
-		// 		}
-		// 	}
-		// }
-		------------------------------------------ */
-		// Verify the payment proof
+	// 	// if !tx.valEnv.IsPrivacy() {
+	// 	// 	// Check input coins' commitment is exists in cm list (Database)
+	// 	// 	for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
+	// 	// 		ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, 	tokenID)
+	// 	// 		if !ok || err != nil {
+	// 	// 			if err != nil {
+	// 	// 				Logger.log.Error(err)
+	// 	// 			}
+	// 	// 			return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
+	// 	// 		}
+	// 	// 	}
+	// 	// }
+	// 	------------------------------------------ */
+	// 	// Verify the payment proof
 
-		valid, err = tx.Proof.VerifyV2(tx.valEnv, tx.SigPubKey, tx.Fee, tokenID)
-		if !valid {
-			if err != nil {
-				Logger.log.Error(err)
-			}
-			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			err1, ok := err.(*privacy.PrivacyError)
-			if ok {
-				// parse error detail
-				if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
-					// if isNewTransaction {
-					// 	return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-					// } else {
-					// for old txs which be get from sync block or validate new block
-					if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
-						// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
-						return true, nil
-					} else {
-						return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-					}
-					// }
-				}
-			}
-			return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
-		} else {
-			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
-		}
-	}
+	// 	valid, err = tx.Proof.VerifyV2(tx.valEnv, tx.SigPubKey, tx.Fee, tokenID)
+	// 	if !valid {
+	// 		if err != nil {
+	// 			Logger.log.Error(err)
+	// 		}
+	// 		Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
+	// 		err1, ok := err.(*privacy.PrivacyError)
+	// 		if ok {
+	// 			// parse error detail
+	// 			if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
+	// 				// if isNewTransaction {
+	// 				// 	return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+	// 				// } else {
+	// 				// for old txs which be get from sync block or validate new block
+	// 				if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
+	// 					// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
+	// 					return true, nil
+	// 				} else {
+	// 					return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+	// 				}
+	// 				// }
+	// 			}
+	// 		}
+	// 		return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
+	// 	} else {
+	// 		Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
+	// 	}
+	// }
 	//@UNCOMMENT: metrics time
 	//elapsed := time.Since(start)
 	//Logger.log.Debugf("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)

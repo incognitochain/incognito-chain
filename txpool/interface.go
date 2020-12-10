@@ -64,6 +64,14 @@ type BlockTxsVerifier interface {
 
 type TxVerifier interface {
 	ValidateAuthentications(metadata.Transaction) (bool, error)
+	ValidateWithoutChainstate(metadata.Transaction) (bool, error)
+	ValidateWithChainState(
+		tx metadata.Transaction,
+		chainRetriever metadata.ChainRetriever,
+		shardViewRetriever metadata.ShardViewRetriever,
+		beaconViewRetriever metadata.BeaconViewRetriever,
+		beaconHeight uint64,
+	) (bool, error)
 	ValidateDataCorrectness(metadata.Transaction) (bool, error)
 	ValidateTxZKProof(metadata.Transaction) (bool, error)
 

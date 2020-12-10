@@ -1,6 +1,7 @@
 package txpool
 
 import (
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -48,55 +49,53 @@ import (
 // }
 
 type TxsVerifier struct {
+	txDB statedb.StateDB
 }
 
-func (v *TxsVerifier) ValidateAuthentications(tx metadata.Transaction) (bool, error) {
-	panic("Implement me")
-	// return false, nil
+func (v *TxsVerifier) ValidateWithoutChainState(tx metadata.Transaction) (bool, error) {
+	if err := tx.LoadCommitment(&v.txDB); err != nil {
+		return false, err
+	}
+	ok, err := tx.ValidateSanityDataByItSelf()
+	if !ok || err != nil {
+		return ok, err
+	}
+	return tx.ValidateTxCorrectness()
 }
 
-func (v *TxsVerifier) ValidateDataCorrectness(metadata.Transaction) (bool, error) {
-	panic("Implement me")
-	// return false, nil
-}
-
-func (v *TxsVerifier) ValidateTxZKProof(metadata.Transaction) (bool, error) {
-	panic("Implement me")
-	// return false, nil
-}
-
-func (v *TxsVerifier) ValidateBlockTransactions(
-	sView interface{},
-	bcView interface{},
-	txs []metadata.Transaction,
-) bool {
-	panic("Implement me")
-	// return false
-}
-
-func (v *TxsVerifier) ValidateWithBlockChain(
+func (v *TxsVerifier) ValidateWithChainState(
 	tx metadata.Transaction,
-	sView interface{},
-	bcView interface{},
-) (
-	bool,
-	error,
-) {
-	panic("Implement me")
-	// return false, nil
+	chainRetriever metadata.ChainRetriever,
+	shardViewRetriever metadata.ShardViewRetriever,
+	beaconViewRetriever metadata.BeaconViewRetriever,
+	beaconHeight uint64,
+) (bool, error) {
+	//Get state db from beaconview
+	if err := tx.LoadCommitment(&v.txDB); err != nil {
+		return false, err
+	}
+
+	ok, err := tx.ValidateSanityDataWithBlockchain(
+		chainRetriever,
+		shardViewRetriever,
+		beaconViewRetriever,
+		beaconHeight,
+	)
+	if !ok || err != nil {
+		return ok, err
+	}
+	return tx.ValidateDoubleSpendWithBlockChain(&v.txDB)
 }
 
-func (v *TxsVerifier) ValidateDoubleSpend(
-	txs []metadata.Transaction,
-	sView interface{},
-	bcView interface{},
-) (
-	bool,
-	error,
-) {
-	panic("Implement me")
-	// return false, nil
-}
+// func (v *TxsVerifier) ValidateBlockTransactions(
+// 	sView interface{},
+// 	bcView interface{},
+// 	txs []metadata.Transaction,
+// ) bool {
+// 	v.
+// 	panic("Implement me")
+// 	// return false
+// }
 
 func (v *TxsVerifier) ValidateTxAndAddToListTxs(
 	txNew metadata.Transaction,
