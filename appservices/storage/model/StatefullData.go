@@ -10,6 +10,10 @@ type PDEShare struct {
 	BeaconEpoch									uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight									uint64					 					`json:"BeaconHeight"`
 	BeaconTime			int64 `json:"BeaconTime"`
+	PDEShareInfo []PDEShareInfo `json:"PDEShareInfo"`
+}
+
+type PDEShareInfo struct {
 	Token1ID           string
 	Token2ID           string
 	ContributorAddress string
@@ -21,6 +25,9 @@ type PDEPoolForPair struct {
 	BeaconEpoch									uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight									uint64					 					`json:"BeaconHeight"`
 	BeaconTime			int64 `json:"BeaconTime"`
+	PDEPoolForPairInfo  []PDEPoolForPairInfo `json:"PDEPoolForPairInfo"`
+}
+type PDEPoolForPairInfo struct {
 	Token1ID        string
 	Token1PoolValue uint64
 	Token2ID        string
@@ -32,6 +39,10 @@ type PDETradingFee struct {
 	BeaconEpoch									uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight									uint64					 					`json:"BeaconHeight"`
 	BeaconTime			int64 `json:"BeaconTime"`
+	PDETradingFeeInfo  []PDETradingFeeInfo `json:"PDETradingFeeInfo"`
+}
+
+type PDETradingFeeInfo struct {
 	Token1ID           string
 	Token2ID           string
 	ContributorAddress string
@@ -43,19 +54,27 @@ type WaitingPDEContribution struct {
 	BeaconEpoch									uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight									uint64					 					`json:"BeaconHeight"`
 	BeaconTime			int64 `json:"BeaconTime"`
+	WaitingPDEContributionInfo []WaitingPDEContributionInfo `json:"WaitingPDEContributionInfo"`
+}
+
+type WaitingPDEContributionInfo struct {
 	PairID             string
 	ContributorAddress string
 	TokenID            string
 	Amount             uint64
 	TXReqID            string
+
 }
 
-
 type Custodian struct {
-	BeaconBlockHash    string					 	`json:"BeaconBlockHash"`
-	BeaconEpoch									uint64					 					`json:"BeaconEpoch"`
-	BeaconHeight									uint64					 					`json:"BeaconHeight"`
+	BeaconBlockHash     string					 	`json:"BeaconBlockHash"`
+	BeaconEpoch			uint64					 					`json:"BeaconEpoch"`
+	BeaconHeight		uint64					 					`json:"BeaconHeight"`
 	BeaconTime			int64 `json:"BeaconTime"`
+	CustodianInfo       []CustodianInfo  `json:"CustodianInfo"`
+}
+
+type CustodianInfo struct {
 	IncognitoAddress       string
 	TotalCollateral        uint64            // prv
 	FreeCollateral         uint64            // prv
@@ -70,6 +89,10 @@ type WaitingPortingRequest struct {
 	BeaconEpoch				uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight			uint64					 					`json:"BeaconHeight"`
 	BeaconTime				int64 `json:"BeaconTime"`
+	WaitingPortingRequestInfo []WaitingPortingRequestInfo   `json:"WaitingPortingRequestInfo"`
+}
+
+type WaitingPortingRequestInfo struct {
 	UniquePortingID 		string
 	TokenID         		string
 	PorterAddress   		string
@@ -84,7 +107,11 @@ type FinalExchangeRate struct {
 	BeaconBlockHash    		string					 	`json:"BeaconBlockHash"`
 	BeaconEpoch				uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight			uint64					 					`json:"BeaconHeight"`
-	BeaconTime				int64 `json:"BeaconTime"`
+	BeaconTime				int64 			`json:"BeaconTime"`
+	FinalExchangeRateInfo    []FinalExchangeRateInfo `json:"FinalExchangeRateInfo"`
+}
+
+type FinalExchangeRateInfo struct {
 	Amount					uint64
 	TokenID					string
 }
@@ -94,6 +121,10 @@ type RedeemRequest struct {
 	BeaconEpoch				uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight			uint64					 					`json:"BeaconHeight"`
 	BeaconTime				int64 `json:"BeaconTime"`
+	RedeemRequestInfo []RedeemRequestInfo   `json:"RedeemRequestInfo"`
+}
+
+type RedeemRequestInfo struct {
 	UniqueRedeemID        string
 	TokenID               string
 	RedeemerAddress       string
@@ -110,10 +141,14 @@ type LockedCollateral struct {
 	BeaconEpoch				uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight			uint64					 					`json:"BeaconHeight"`
 	BeaconTime				int64 `json:"BeaconTime"`
+	LockedCollateralInfo     []LockedCollateralInfo  `json:"LockedCollateralInfo"`
+
+}
+
+type LockedCollateralInfo struct {
 	TotalLockedCollateralForRewards uint64
 	CustodianAddress		string
 	Amount                  uint64
-	//LockedCollateralDetail          map[string]uint64 // custodianAddress : amount
 }
 
 
@@ -140,5 +175,11 @@ type CommitteeRewardState struct {
 	ShardID		   byte         `json:"ShardID"`
 	ShardHash 			string `json:"ShardHash"`
 	ShardHeight 		uint64 `json:"ShardHeight"`
-	CommitteeRewardState map[string]map[string]uint64 `json:"CommitteeRewardState"` //address->tokenId->amount
+	CommitteeReward     []CommitteeReward `json:"CommitteeReward"`
+}
+
+type CommitteeReward struct {
+	Address      string `json:"Address"`
+	TokenId      string `json:"TokenId"`
+	Amount       uint64  `json:"Amount"`
 }

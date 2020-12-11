@@ -91,7 +91,9 @@ type OutputCoin struct {
 	Type             	int `json:"Type"`   // action type
 	Mintable         	bool `json:"Mintable"`  // default false
 	Amount           	uint64 `json:"Amount"` // init amount
-
+	LockTime 			 int64  `json:"LockTime"`
+	CoinDetailsEncrypted string `json:"CoinDetailsEncrypted"`
+	TransactionMemo       string `json:"TransactionMemo"`
 }
 
 type Commitment struct {

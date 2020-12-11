@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/appservices/data"
 	"github.com/incognitochain/incognito-chain/appservices/storage/model"
 	"github.com/incognitochain/incognito-chain/common"
@@ -22,103 +21,68 @@ func StoreLatestBeaconFinalState(ctx context.Context, beacon *data.Beacon) error
 	}
 	//PDE
 	Logger.log.Infof("This beacon contain %d PDE Share ", len(beacon.PDEShare))
-	if len(beacon.PDEShare) > 0 {
-		pdeShares := getPDEShareFromBeaconState(beacon)
-		for _, pdeShare := range pdeShares {
-			if err := GetDBDriver(MONGODB).GetPDEShareStorer().StorePDEShare(ctx, pdeShare); err != nil {
-				panic(err)
-				return err
-			}
-		}
+	pdeShares := getPDEShareFromBeaconState(beacon)
+	if err := GetDBDriver(MONGODB).GetPDEShareStorer().StorePDEShare(ctx, pdeShares); err != nil {
+		panic(err)
+		return err
 	}
 
-	if len(beacon.PDEPoolPair) > 0 {
-		pdePoolPairs := getPDEPoolForPairStateFromBeaconState(beacon)
-		for _, pdePoolPair := range pdePoolPairs {
-			if err := GetDBDriver(MONGODB).GetPDEPoolForPairStateStorer().StorePDEPoolForPairState(ctx, pdePoolPair); err != nil {
-				panic(err)
-				return err
-			}
-		}
+	pdePoolPairs := getPDEPoolForPairStateFromBeaconState(beacon)
+	if err := GetDBDriver(MONGODB).GetPDEPoolForPairStateStorer().StorePDEPoolForPairState(ctx, pdePoolPairs); err != nil {
+		panic(err)
+		return err
 	}
 
-	if len(beacon.PDETradingFee) > 0 {
-		pdeTradingFees := getPDETradingFeeFromBeaconState(beacon)
-		for _, pdeTradingFee := range pdeTradingFees {
-			if err := GetDBDriver(MONGODB).GetPDETradingFeeStorer().StorePDETradingFee(ctx, pdeTradingFee); err != nil {
-				panic(err)
-				return err
-			}
-		}
+
+	pdeTradingFees := getPDETradingFeeFromBeaconState(beacon)
+	if err := GetDBDriver(MONGODB).GetPDETradingFeeStorer().StorePDETradingFee(ctx, pdeTradingFees); err != nil {
+		panic(err)
+		return err
 	}
 
-	if len(beacon.WaitingPDEContributionState) > 0 {
-		waitingPDEContributionStates := getWaitingPDEContributionStateFromBeaconState(beacon)
-		for _, waiting := range waitingPDEContributionStates {
-			if err := GetDBDriver(MONGODB).GetWaitingPDEContributionStorer().StoreWaitingPDEContribution(ctx, waiting); err != nil {
-				panic(err)
-				return err
-			}
-		}
+	waitingPDEContributionStates := getWaitingPDEContributionStateFromBeaconState(beacon)
+	if err := GetDBDriver(MONGODB).GetWaitingPDEContributionStorer().StoreWaitingPDEContribution(ctx, waitingPDEContributionStates); err != nil {
+		panic(err)
+		return err
 	}
+
 
 	//Portal
-	if len(beacon.Custodian) > 0 {
-		custodians := getCustodianFromBeaconState(beacon)
-		for _, custodian := range custodians {
-			if err := GetDBDriver(MONGODB).GetCustodianStorer().StoreCustodian(ctx, custodian); err != nil {
-				panic(err)
-				return err
-			}
-		}
+	custodians := getCustodianFromBeaconState(beacon)
+	if err := GetDBDriver(MONGODB).GetCustodianStorer().StoreCustodian(ctx, custodians); err != nil {
+		panic(err)
+		return err
 	}
 
-	if len(beacon.WaitingPortingRequest) > 0 {
-		waitingPortingRequests := getWaitingPortingRequestFromBeaconState(beacon)
-		for _, waiting := range waitingPortingRequests {
-			if err := GetDBDriver(MONGODB).GetWaitingPortingRequestStorer().StoreWaitingPortingRequest(ctx, waiting); err != nil {
-				panic(err)
-				return err
-			}
-		}
+	waitingPortingRequests := getWaitingPortingRequestFromBeaconState(beacon)
+	if err := GetDBDriver(MONGODB).GetWaitingPortingRequestStorer().StoreWaitingPortingRequest(ctx, waitingPortingRequests); err != nil {
+		panic(err)
+		return err
 	}
 
-	if len(beacon.MatchedRedeemRequest) > 0 {
-		matchedRedeemRequests := getMatchedRedeemRequestFromBeaconState(beacon)
-		for _, matched := range matchedRedeemRequests {
-			if err := GetDBDriver(MONGODB).GetMatchedRedeemRequestStorer().StoreMatchedRedeemRequest(ctx, matched); err != nil {
-				panic(err)
-				return err
-			}
-		}
+	matchedRedeemRequests := getMatchedRedeemRequestFromBeaconState(beacon)
+	if err := GetDBDriver(MONGODB).GetMatchedRedeemRequestStorer().StoreMatchedRedeemRequest(ctx, matchedRedeemRequests); err != nil {
+		panic(err)
+		return err
 	}
 
-	if len(beacon.WaitingRedeemRequest) > 0 {
-		waitingRedeemRequests := getWaitingRedeemRequestFromBeaconState(beacon)
-		for _, waiting := range waitingRedeemRequests {
-			if err := GetDBDriver(MONGODB).GetWaitingRedeemRequestStorer().StoreWaitingRedeemRequest(ctx, waiting); err != nil {
-				panic(err)
-				return err
-			}
-		}
+	waitingRedeemRequests := getWaitingRedeemRequestFromBeaconState(beacon)
+	if err := GetDBDriver(MONGODB).GetWaitingRedeemRequestStorer().StoreWaitingRedeemRequest(ctx, waitingRedeemRequests); err != nil {
+		panic(err)
+		return err
 	}
 
 	finalExchangeRates := getFinalExchangeRatesFromBeaconState(beacon)
-	for _, final := range finalExchangeRates {
-		if err := GetDBDriver(MONGODB).GetFinalExchangeRatesStorer().StoreFinalExchangeRates(ctx, final); err != nil {
-			panic(err)
-			return err
-		}
+	if err := GetDBDriver(MONGODB).GetFinalExchangeRatesStorer().StoreFinalExchangeRates(ctx, finalExchangeRates); err != nil {
+		panic(err)
+		return err
 	}
 
 	lockedCollaterals := getLockedCollateralFromBeaconState(beacon)
-	for _, locked := range lockedCollaterals {
-		if err := GetDBDriver(MONGODB).GetLockedCollateralStorer().StoreLockedCollateral(ctx, locked); err != nil {
-			panic(err)
-			return err
-		}
+	if err := GetDBDriver(MONGODB).GetLockedCollateralStorer().StoreLockedCollateral(ctx, lockedCollaterals); err != nil {
+		panic(err)
+		return err
 	}
-
 	return nil
 }
 
@@ -156,30 +120,28 @@ func getBeaconFromBeaconState(beacon *data.Beacon) model.BeaconState {
 	}
 }
 
-func getPDEShareFromBeaconState(beacon *data.Beacon) []model.PDEShare {
-	pdeShares := make([]model.PDEShare, 0, len(beacon.PDEShare))
+func getPDEShareFromBeaconState(beacon *data.Beacon) model.PDEShare {
+	pdeShareInfos := make([]model.PDEShareInfo, 0, len(beacon.PDEShare))
 	for _, share := range beacon.PDEShare {
-		pdeShares = append(pdeShares, model.PDEShare{
-			BeaconBlockHash:    beacon.BlockHash,
-			BeaconEpoch:        beacon.Epoch,
-			BeaconHeight:       beacon.Height,
-			BeaconTime:         beacon.Time,
+		pdeShareInfos = append(pdeShareInfos, model.PDEShareInfo{
 			Token1ID:           share.Token1ID,
 			Token2ID:           share.Token2ID,
 			ContributorAddress: share.ContributorAddress,
 			Amount:             share.Amount,
 		})
 	}
-	return pdeShares
+	return model.PDEShare{
+		BeaconBlockHash:    beacon.BlockHash,
+		BeaconEpoch:        beacon.Epoch,
+		BeaconHeight:       beacon.Height,
+		BeaconTime:         beacon.Time,
+		PDEShareInfo:       pdeShareInfos,
+	}
 }
-func getWaitingPDEContributionStateFromBeaconState(beacon *data.Beacon) []model.WaitingPDEContribution {
-	waitingPDEContributions := make([]model.WaitingPDEContribution, 0, len(beacon.WaitingPDEContributionState))
+func getWaitingPDEContributionStateFromBeaconState(beacon *data.Beacon) model.WaitingPDEContribution {
+	waitingPDEContributionInfos := make([]model.WaitingPDEContributionInfo, 0, len(beacon.WaitingPDEContributionState))
 	for _, waiting := range beacon.WaitingPDEContributionState {
-		waitingPDEContributions = append(waitingPDEContributions, model.WaitingPDEContribution{
-			BeaconBlockHash:    beacon.BlockHash,
-			BeaconEpoch:        beacon.Epoch,
-			BeaconHeight:       beacon.Height,
-			BeaconTime:         beacon.Time,
+		waitingPDEContributionInfos = append(waitingPDEContributionInfos, model.WaitingPDEContributionInfo{
 			PairID:             waiting.PairID,
 			ContributorAddress: waiting.ContributorAddress,
 			TokenID:            waiting.TokenID,
@@ -187,51 +149,57 @@ func getWaitingPDEContributionStateFromBeaconState(beacon *data.Beacon) []model.
 			TXReqID:            waiting.TXReqID,
 		})
 	}
-	return waitingPDEContributions
+	return model.WaitingPDEContribution{
+		BeaconBlockHash:    beacon.BlockHash,
+		BeaconEpoch:        beacon.Epoch,
+		BeaconHeight:       beacon.Height,
+		BeaconTime:         beacon.Time,
+		WaitingPDEContributionInfo: waitingPDEContributionInfos,
+	} 
 }
 
-func getPDETradingFeeFromBeaconState(beacon *data.Beacon) []model.PDETradingFee {
-	pdeTradingFees := make([]model.PDETradingFee, 0, len(beacon.PDETradingFee))
+func getPDETradingFeeFromBeaconState(beacon *data.Beacon) model.PDETradingFee {
+	pdeTradingFeeInfos := make([]model.PDETradingFeeInfo, 0, len(beacon.PDETradingFee))
 	for _, pdeTradingFee := range beacon.PDETradingFee {
-		pdeTradingFees = append(pdeTradingFees, model.PDETradingFee{
-			BeaconBlockHash:    beacon.BlockHash,
-			BeaconEpoch:        beacon.Epoch,
-			BeaconHeight:       beacon.Height,
-			BeaconTime:         beacon.Time,
+		pdeTradingFeeInfos = append(pdeTradingFeeInfos, model.PDETradingFeeInfo{
 			Token1ID:           pdeTradingFee.Token1ID,
 			Token2ID:           pdeTradingFee.Token2ID,
 			ContributorAddress: pdeTradingFee.ContributorAddress,
 			Amount:             pdeTradingFee.Amount,
 		})
 	}
-	return pdeTradingFees
+	return model.PDETradingFee{
+		BeaconBlockHash:    beacon.BlockHash,
+		BeaconEpoch:        beacon.Epoch,
+		BeaconHeight:       beacon.Height,
+		BeaconTime:         beacon.Time,
+		PDETradingFeeInfo:  pdeTradingFeeInfos,
+	}
 }
 
-func getPDEPoolForPairStateFromBeaconState(beacon *data.Beacon) []model.PDEPoolForPair {
-	pdeFoolForPairs := make([]model.PDEPoolForPair, 0, len(beacon.PDEPoolPair))
+func getPDEPoolForPairStateFromBeaconState(beacon *data.Beacon) model.PDEPoolForPair {
+	pdeFoolForPairInfos := make([]model.PDEPoolForPairInfo, 0, len(beacon.PDEPoolPair))
 	for _, pdeFoolForPair := range beacon.PDEPoolPair {
-		pdeFoolForPairs = append(pdeFoolForPairs, model.PDEPoolForPair{
-			BeaconBlockHash: beacon.BlockHash,
-			BeaconEpoch:     beacon.Epoch,
-			BeaconHeight:    beacon.Height,
-			BeaconTime:      beacon.Time,
+		pdeFoolForPairInfos = append(pdeFoolForPairInfos, model.PDEPoolForPairInfo{
 			Token1ID:        pdeFoolForPair.Token1ID,
 			Token1PoolValue: pdeFoolForPair.Token1PoolValue,
 			Token2ID:        pdeFoolForPair.Token2ID,
 			Token2PoolValue: pdeFoolForPair.Token2PoolValue,
 		})
 	}
-	return pdeFoolForPairs
+	return model.PDEPoolForPair{
+		BeaconBlockHash: beacon.BlockHash,
+		BeaconEpoch:     beacon.Epoch,
+		BeaconHeight:    beacon.Height,
+		BeaconTime:      beacon.Time,
+		PDEPoolForPairInfo: nil,
+	}
 }
 
-func getCustodianFromBeaconState(beacon *data.Beacon) []model.Custodian {
-	custodians := make([]model.Custodian, 0, len(beacon.Custodian))
+func getCustodianFromBeaconState(beacon *data.Beacon) model.Custodian {
+	custodianInfos := make([]model.CustodianInfo, 0, len(beacon.Custodian))
 	for _, custodian := range beacon.Custodian {
-		custodians = append(custodians, model.Custodian{
-			BeaconBlockHash:        beacon.BlockHash,
-			BeaconEpoch:            beacon.Epoch,
-			BeaconHeight:           beacon.Height,
-			BeaconTime:             beacon.Time,
+		custodianInfos = append(custodianInfos, model.CustodianInfo{
 			IncognitoAddress:       custodian.IncognitoAddress,
 			TotalCollateral:        custodian.TotalCollateral,
 			FreeCollateral:         custodian.FreeCollateral,
@@ -241,17 +209,19 @@ func getCustodianFromBeaconState(beacon *data.Beacon) []model.Custodian {
 			RewardAmount:           custodian.RewardAmount,
 		})
 	}
-	return custodians
+	return model.Custodian{
+		BeaconBlockHash:        beacon.BlockHash,
+		BeaconEpoch:            beacon.Epoch,
+		BeaconHeight:           beacon.Height,
+		BeaconTime:             beacon.Time,
+		CustodianInfo:          custodianInfos,
+	}
 }
 
-func getWaitingPortingRequestFromBeaconState(beacon *data.Beacon) []model.WaitingPortingRequest {
-	waitingPortingRequests := make([]model.WaitingPortingRequest, 0, len(beacon.WaitingPortingRequest))
+func getWaitingPortingRequestFromBeaconState(beacon *data.Beacon) model.WaitingPortingRequest {
+	waitingPortingRequestInfos := make([]model.WaitingPortingRequestInfo, 0, len(beacon.WaitingPortingRequest))
 	for _, w := range beacon.WaitingPortingRequest {
-		waitingPortingRequests = append(waitingPortingRequests, model.WaitingPortingRequest{
-			BeaconBlockHash:     beacon.BlockHash,
-			BeaconEpoch:         beacon.Epoch,
-			BeaconHeight:        beacon.Height,
-			BeaconTime:          beacon.Time,
+		waitingPortingRequestInfos = append(waitingPortingRequestInfos, model.WaitingPortingRequestInfo{
 			UniquePortingID:     w.UniquePortingID,
 			TokenID:             w.TokenID,
 			PorterAddress:       w.PorterAddress,
@@ -262,32 +232,36 @@ func getWaitingPortingRequestFromBeaconState(beacon *data.Beacon) []model.Waitin
 			TXReqID:             w.TXReqID,
 		})
 	}
-	return waitingPortingRequests
+	return model.WaitingPortingRequest{
+		BeaconBlockHash:     beacon.BlockHash,
+		BeaconEpoch:         beacon.Epoch,
+		BeaconHeight:        beacon.Height,
+		BeaconTime:          beacon.Time,
+		WaitingPortingRequestInfo: waitingPortingRequestInfos,
+	}
 }
 
-func getFinalExchangeRatesFromBeaconState(beacon *data.Beacon) []model.FinalExchangeRate {
-	finalExchangeRates := make([]model.FinalExchangeRate, 0, len(beacon.FinalExchangeRates.Rates))
+func getFinalExchangeRatesFromBeaconState(beacon *data.Beacon) model.FinalExchangeRate {
+	finalExchangeRateInfos := make([]model.FinalExchangeRateInfo, 0, len(beacon.FinalExchangeRates.Rates))
 	for key, amount := range beacon.FinalExchangeRates.Rates {
-		finalExchangeRates = append(finalExchangeRates, model.FinalExchangeRate{
-			BeaconBlockHash: beacon.BlockHash,
-			BeaconEpoch:     beacon.Epoch,
-			BeaconHeight:    beacon.Height,
-			BeaconTime:      beacon.Time,
+		finalExchangeRateInfos = append(finalExchangeRateInfos, model.FinalExchangeRateInfo{
 			Amount:          amount.Amount,
 			TokenID:         key,
 		})
 	}
-	return finalExchangeRates
+	return model.FinalExchangeRate{
+		BeaconBlockHash: beacon.BlockHash,
+		BeaconEpoch:     beacon.Epoch,
+		BeaconHeight:    beacon.Height,
+		BeaconTime:      beacon.Time,
+		FinalExchangeRateInfo: finalExchangeRateInfos,
+	}
 }
 
-func getMatchedRedeemRequestFromBeaconState(beacon *data.Beacon) []model.RedeemRequest {
-	redeemRequests := make([]model.RedeemRequest, 0, len(beacon.MatchedRedeemRequest))
+func getMatchedRedeemRequestFromBeaconState(beacon *data.Beacon) model.RedeemRequest {
+	redeemRequestInfos := make([]model.RedeemRequestInfo, 0, len(beacon.MatchedRedeemRequest))
 	for _, matchedRedeem := range beacon.MatchedRedeemRequest {
-		redeemRequests = append(redeemRequests, model.RedeemRequest{
-			BeaconBlockHash:       beacon.BlockHash,
-			BeaconEpoch:           beacon.Epoch,
-			BeaconHeight:          beacon.Height,
-			BeaconTime:            beacon.Time,
+		redeemRequestInfos = append(redeemRequestInfos, model.RedeemRequestInfo{
 			UniqueRedeemID:        matchedRedeem.UniqueRedeemID,
 			TokenID:               matchedRedeem.TokenID,
 			RedeemerAddress:       matchedRedeem.RedeemerAddress,
@@ -299,17 +273,19 @@ func getMatchedRedeemRequestFromBeaconState(beacon *data.Beacon) []model.RedeemR
 			TXReqID:               matchedRedeem.TXReqID,
 		})
 	}
-	return redeemRequests
+	return model.RedeemRequest{
+		BeaconBlockHash:       beacon.BlockHash,
+		BeaconEpoch:           beacon.Epoch,
+		BeaconHeight:          beacon.Height,
+		BeaconTime:            beacon.Time,
+		RedeemRequestInfo: redeemRequestInfos,
+	}
 }
 
-func getWaitingRedeemRequestFromBeaconState(beacon *data.Beacon) []model.RedeemRequest {
-	redeemRequests := make([]model.RedeemRequest, 0, len(beacon.WaitingRedeemRequest))
+func getWaitingRedeemRequestFromBeaconState(beacon *data.Beacon) model.RedeemRequest {
+	redeemRequestInfos := make([]model.RedeemRequestInfo, 0, len(beacon.WaitingRedeemRequest))
 	for _, waitingRedeem := range beacon.WaitingRedeemRequest {
-		redeemRequests = append(redeemRequests, model.RedeemRequest{
-			BeaconBlockHash:       beacon.BlockHash,
-			BeaconEpoch:           beacon.Epoch,
-			BeaconHeight:          beacon.Height,
-			BeaconTime:            beacon.Time,
+		redeemRequestInfos = append(redeemRequestInfos, model.RedeemRequestInfo{
 			UniqueRedeemID:        waitingRedeem.UniqueRedeemID,
 			TokenID:               waitingRedeem.TokenID,
 			RedeemerAddress:       waitingRedeem.RedeemerAddress,
@@ -321,23 +297,31 @@ func getWaitingRedeemRequestFromBeaconState(beacon *data.Beacon) []model.RedeemR
 			TXReqID:               waitingRedeem.TXReqID,
 		})
 	}
-	return redeemRequests
+	return model.RedeemRequest{
+		BeaconBlockHash:       beacon.BlockHash,
+		BeaconEpoch:           beacon.Epoch,
+		BeaconHeight:          beacon.Height,
+		BeaconTime:            beacon.Time,
+		RedeemRequestInfo: redeemRequestInfos,
+	}
 }
 
-func getLockedCollateralFromBeaconState(beacon *data.Beacon) []model.LockedCollateral {
-	lockedCollaterals := make([]model.LockedCollateral, 0, len(beacon.LockedCollateralState.LockedCollateralDetail))
+func getLockedCollateralFromBeaconState(beacon *data.Beacon) model.LockedCollateral {
+	lockedCollateralInfos := make([]model.LockedCollateralInfo, 0, len(beacon.LockedCollateralState.LockedCollateralDetail))
 	for key, lockedDetail := range beacon.LockedCollateralState.LockedCollateralDetail {
-		lockedCollaterals = append(lockedCollaterals, model.LockedCollateral{
-			BeaconBlockHash:                 beacon.BlockHash,
-			BeaconEpoch:                     beacon.Epoch,
-			BeaconHeight:                    beacon.Height,
-			BeaconTime:                      beacon.Time,
+		lockedCollateralInfos = append(lockedCollateralInfos, model.LockedCollateralInfo{
 			TotalLockedCollateralForRewards: beacon.LockedCollateralState.TotalLockedCollateralForRewards,
 			CustodianAddress:                key,
 			Amount:                          lockedDetail,
 		})
 	}
-	return lockedCollaterals
+	return model.LockedCollateral{
+		BeaconBlockHash:                 beacon.BlockHash,
+		BeaconEpoch:                     beacon.Epoch,
+		BeaconHeight:                    beacon.Height,
+		BeaconTime:                      beacon.Time,
+		LockedCollateralInfo: lockedCollateralInfos,
+	}
 }
 
 func StoreLatestShardFinalState(ctx context.Context, shard *data.Shard) error {
@@ -396,7 +380,7 @@ func StoreLatestShardFinalState(ctx context.Context, shard *data.Shard) error {
 		return err
 	}
 
-	fmt.Scanln()
+	//fmt.Scanln()
 	return nil
 }
 
@@ -408,10 +392,21 @@ func getShardFromShardState(shard *data.Shard) model.ShardState {
 		Height:                 shard.Height,
 		Version:                shard.Version,
 		TxRoot:                 shard.TxRoot,
+		ShardTxRoot:	        shard.ShardTxRoot,
+		CrossTransactionRoot:   shard.CrossTransactionRoot,
+		InstructionsRoot:       shard.InstructionsRoot,
+		CommitteeRoot:          shard.CommitteeRoot,
+		PendingValidatorRoot:   shard.PendingValidatorRoot,
+		StakingTxRoot:          shard.StakingTxRoot,
+		InstructionMerkleRoot:  shard.InstructionMerkleRoot,
+		TotalTxsFee:            shard.TotalTxsFee,
 		Time:                   shard.Time,
 		TxHashes:               shard.TxHashes,
 		Txs:                    shard.Txs,
 		BlockProducer:          shard.BlockProducer,
+		BlockProducerPubKeyStr: shard.BlockProducerPubKeyStr,
+		Proposer: 				shard.Proposer,
+		ProposeTime: 			shard.ProposeTime,
 		ValidationData:         shard.ValidationData,
 		ConsensusType:          shard.ConsensusType,
 		Data:                   shard.Data,
@@ -613,6 +608,9 @@ func getCrossShardOutputCoinFromShardState(shard *data.Shard) []model.OutputCoin
 			Type:             output.Type,
 			Mintable:         output.Mintable,
 			Amount:           output.Amount,
+			LockTime:		  output.LockTime,
+			TransactionMemo: string(output.TransactionMemo),
+
 		}
 		if output.PublicKey != nil {
 			outputCoin.PublicKey = base58.Base58Check{}.Encode(output.PublicKey.ToBytesS(), common.ZeroByte)
@@ -628,6 +626,9 @@ func getCrossShardOutputCoinFromShardState(shard *data.Shard) []model.OutputCoin
 		}
 		if output.Randomness != nil {
 			outputCoin.Randomness = base58.Base58Check{}.Encode(output.Randomness.ToBytesS(), common.ZeroByte)
+		}
+		if output.CoinDetailsEncrypted != nil {
+			outputCoin.CoinDetailsEncrypted = base58.Base58Check{}.Encode(output.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
 		}
 		outputCoins = append(outputCoins, outputCoin)
 	}
@@ -657,6 +658,9 @@ func getOutputCoinForThisShardFromShardState(shard *data.Shard) []model.OutputCo
 			Type:             output.Type,
 			Mintable:         output.Mintable,
 			Amount:           output.Amount,
+			LockTime:		  output.LockTime,
+			TransactionMemo: string(output.TransactionMemo),
+
 		}
 		if output.PublicKey != nil {
 			outputCoin.PublicKey = base58.Base58Check{}.Encode(output.PublicKey.ToBytesS(), common.ZeroByte)
@@ -673,6 +677,10 @@ func getOutputCoinForThisShardFromShardState(shard *data.Shard) []model.OutputCo
 		if output.Randomness != nil {
 			outputCoin.Randomness = base58.Base58Check{}.Encode(output.Randomness.ToBytesS(), common.ZeroByte)
 		}
+		if output.CoinDetailsEncrypted != nil {
+			outputCoin.CoinDetailsEncrypted = base58.Base58Check{}.Encode(output.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
+		}
+
 		outputCoins = append(outputCoins, outputCoin)
 	}
 	return outputCoins
@@ -726,15 +734,18 @@ func GetRewardStateFromShardState(shard *data.Shard) model.CommitteeRewardState 
 		ShardHash:   shard.BlockHash,
 		ShardHeight: shard.Height,
 	}
-	rewards := make(map[string]map[string]uint64)
+	rewards := make([]model.CommitteeReward, 0, 2000)
 
 	for address, token := range shard.CommitteeRewardState {
-		tokenAmount := make(map[string]uint64)
 		for token, amount := range token {
-			tokenAmount[token] = amount
+			rewards = append(rewards, model.CommitteeReward{
+				Address: address,
+				TokenId: token,
+				Amount:  amount,
+			})
 		}
-		rewards[address] = tokenAmount
+
 	}
-	rewardsState.CommitteeRewardState = rewards
+	rewardsState.CommitteeReward = rewards
 	return rewardsState
 }

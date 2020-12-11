@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DataBaseName = "Incognito"
+	DataBaseName = "Incognito-Testnet"
 	//Beacon
 	BeaconStateCollection = "BeaconState"
 
