@@ -3,7 +3,6 @@ package debugtool
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"time"
 )
@@ -15,46 +14,23 @@ type Account struct {
 
 var TestAccounts []*Account
 
-//func GenTestAccount(seed string, numberAccounts int) error {
-//	if len(seed) == 0 {
-//		seed = "hello world!"
-//	}
-//	TestAccounts = make([]*Account, numberAccounts)
-//	for i := 0; i < numberAccounts; i++ {
-//		keyWallet, err := wallet.NewMasterKey([]byte(fmt.Sprintf("%s-%v", seed, i)))
-//		if err != nil {
-//			fmt.Errorf("cannot create master key. Error %v\n", err)
-//			return err
-//		}
-//		TestAccounts[i] = &Account{
-//			PrivateKey: keyWallet.Base58CheckSerialize(wallet.PriKeyType),
-//			Address: keyWallet.Base58CheckSerialize(wallet.PaymentAddressType),
-//		}
-//		fmt.Println(keyWallet.Base58CheckSerialize(wallet.PaymentAddressType))
-//	}
-//	return nil
-//}
-
-func GenTestAccount(seed string, numberAccounts int) {
+func GenTestAccount(seed string, numberAccounts int) error {
 	if len(seed) == 0 {
 		seed = "hello world!"
 	}
+	TestAccounts = make([]*Account, numberAccounts)
 	for i := 0; i < numberAccounts; i++ {
 		keyWallet, err := wallet.NewMasterKey([]byte(fmt.Sprintf("%s-%v", seed, i)))
 		if err != nil {
 			fmt.Errorf("cannot create master key. Error %v\n", err)
-			return
+			return err
 		}
-		pk := keyWallet.KeySet.PaymentAddress.Pk
-		shardID := common.GetShardIDFromLastByte(pk[len(pk)-1])
-		fmt.Println("--- New Account")
-		fmt.Println("Incognito Private Key: ", keyWallet.Base58CheckSerialize(wallet.PriKeyType))
-		fmt.Println("Incognito Payment Address: ", keyWallet.Base58CheckSerialize(wallet.PaymentAddressType))
-		fmt.Println("Incognito Readonly Key: ", keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType))
-		fmt.Println("Incognito OTA Key: ", keyWallet.Base58CheckSerialize(wallet.OTAKeyType))
-		fmt.Println("ShardID of Incognito account: ", shardID)
-		fmt.Println()
+		TestAccounts[i] = &Account{
+			PrivateKey: keyWallet.Base58CheckSerialize(wallet.PriKeyType),
+			Address: keyWallet.Base58CheckSerialize(wallet.PaymentAddressType),
+		}
 	}
+	return nil
 }
 
 func InitPrv(tool *DebugTool) error {
@@ -82,8 +58,9 @@ func SendPrv2TestAccounts(tool *DebugTool, value uint64)  {
 			],
 			"id": 1
 		}`, string(paymentInfo))
-		res, _ := tool.SendPostRequestWithQuery(query)
-		fmt.Println(string(res))
+		fmt.Println(query)
+		res, err := tool.SendPostRequestWithQuery(query)
+		fmt.Println(string(res), err)
 		time.Sleep(10*time.Second)
 	}
 }
