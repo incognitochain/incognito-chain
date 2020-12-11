@@ -316,7 +316,6 @@ func ProcessPortalInstructions(
 			err = ProcessPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, epoch)
 
 		// ============ Portal smart contract ============
-		// todo: add more metadata need to unlock token from sc
 		case strconv.Itoa(basemeta.PortalCustodianWithdrawConfirmMetaV3),
 			strconv.Itoa(basemeta.PortalRedeemFromLiquidationPoolConfirmMetaV3),
 			strconv.Itoa(basemeta.PortalLiquidateRunAwayCustodianConfirmMetaV3):
