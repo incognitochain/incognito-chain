@@ -80,22 +80,22 @@ func (proof PaymentProof) VerifyV2(
 	pubKey privacy.PublicKey,
 	fee uint64,
 	// shardID byte,
-	tokenID *common.Hash,
+	// tokenID *common.Hash,
 ) (
 	bool,
 	error,
 ) {
 	if !vEnv.IsPrivacy() {
-		return proof.verifyNoPrivacyV2(pubKey, fee, tokenID, vEnv)
+		return proof.verifyNoPrivacyV2(pubKey, fee, vEnv)
 	}
-	return proof.verifyHasPrivacyV2(pubKey, fee, tokenID, vEnv)
+	return proof.verifyHasPrivacyV2(pubKey, fee, vEnv)
 }
 
 func (proof PaymentProof) verifyNoPrivacyV2(
 	pubKey privacy.PublicKey,
 	fee uint64,
 	// shardID byte,
-	tokenID *common.Hash,
+	// tokenID *common.Hash,
 	vEnv privacy.ValidationEnviroment,
 ) (
 	bool,
@@ -203,7 +203,7 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 	fee uint64,
 	// stateDB *statedb.StateDB,
 	// shardID byte,
-	tokenID *common.Hash,
+	// tokenID *common.Hash,
 	vEnv privacy.ValidationEnviroment,
 ) (
 	bool,

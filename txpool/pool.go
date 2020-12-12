@@ -145,7 +145,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		if ok {
 			curSize = curSize - removedInfo.Fee + txDetails.Fee
 			curTime = curTime - removedInfo.VTime + txDetails.VTime
-
+			insertTxIntoList(mapForChkDbSpend, *txDetails, res)
 		}
 	}
 	return res
