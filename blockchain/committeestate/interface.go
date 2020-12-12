@@ -65,9 +65,9 @@ type SwapRule interface {
 	GenInstructions(
 		shardID byte,
 		committees, substitutes []string,
-		minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators int,
+		minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize int,
 		penalty map[string]signaturecounter.Penalty,
 	) (
 		*instruction.SwapShardInstruction, []string, []string, []string, []string) // instruction, newCommitteees, newSubstitutes, slashingCommittees, normalSwapCommittees
-	getSwapOutOffset(lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int
+	getAssignOffset(lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int
 }

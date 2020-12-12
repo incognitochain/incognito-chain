@@ -43,6 +43,8 @@ type Params struct {
 	MinShardCommitteeSize            int
 	MaxBeaconCommitteeSize           int
 	MinBeaconCommitteeSize           int
+	DcsMinShardCommitteeSize         int
+	DcsMaxShardCommitteeSize         int
 	MinShardBlockInterval            time.Duration
 	MaxShardBlockCreation            time.Duration
 	MinBeaconBlockInterval           time.Duration
@@ -130,16 +132,18 @@ func SetupParam() {
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTestParam = Params{
-		Name:                   TestnetName,
-		Net:                    Testnet,
-		DefaultPort:            TestnetDefaultPort,
-		GenesisParams:          genesisParamsTestnetNew,
-		MaxShardCommitteeSize:  TestNetShardCommitteeSize,     //TestNetShardCommitteeSize,
-		MinShardCommitteeSize:  TestNetMinShardCommitteeSize,  //TestNetShardCommitteeSize,
-		MaxBeaconCommitteeSize: TestNetBeaconCommitteeSize,    //TestNetBeaconCommitteeSize,
-		MinBeaconCommitteeSize: TestNetMinBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
-		StakingAmountShard:     TestNetStakingAmountShard,
-		ActiveShards:           TestNetActiveShards,
+		Name:                     TestnetName,
+		Net:                      Testnet,
+		DefaultPort:              TestnetDefaultPort,
+		GenesisParams:            genesisParamsTestnetNew,
+		MaxShardCommitteeSize:    TestNetShardCommitteeSize,     //TestNetShardCommitteeSize,
+		MinShardCommitteeSize:    TestNetMinShardCommitteeSize,  //TestNetShardCommitteeSize,
+		MaxBeaconCommitteeSize:   TestNetBeaconCommitteeSize,    //TestNetBeaconCommitteeSize,
+		MinBeaconCommitteeSize:   TestNetMinBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
+		DcsMaxShardCommitteeSize: TestnetDcsMaxShardCommitteeSize,
+		DcsMinShardCommitteeSize: TestnetDcsMinShardCommitteeSize,
+		StakingAmountShard:       TestNetStakingAmountShard,
+		ActiveShards:             TestNetActiveShards,
 		// blockChain parameters
 		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
 		// GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
@@ -216,16 +220,18 @@ func SetupParam() {
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTest2Param = Params{
-		Name:                   Testnet2Name,
-		Net:                    Testnet2,
-		DefaultPort:            Testnet2DefaultPort,
-		GenesisParams:          genesisParamsTestnet2New,
-		MaxShardCommitteeSize:  TestNet2ShardCommitteeSize,     //TestNetShardCommitteeSize,
-		MinShardCommitteeSize:  TestNet2MinShardCommitteeSize,  //TestNetShardCommitteeSize,
-		MaxBeaconCommitteeSize: TestNet2BeaconCommitteeSize,    //TestNetBeaconCommitteeSize,
-		MinBeaconCommitteeSize: TestNet2MinBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
-		StakingAmountShard:     TestNet2StakingAmountShard,
-		ActiveShards:           TestNet2ActiveShards,
+		Name:                     Testnet2Name,
+		Net:                      Testnet2,
+		DefaultPort:              Testnet2DefaultPort,
+		GenesisParams:            genesisParamsTestnet2New,
+		MaxShardCommitteeSize:    TestNet2ShardCommitteeSize,     //TestNetShardCommitteeSize,
+		MinShardCommitteeSize:    TestNet2MinShardCommitteeSize,  //TestNetShardCommitteeSize,
+		MaxBeaconCommitteeSize:   TestNet2BeaconCommitteeSize,    //TestNetBeaconCommitteeSize,
+		MinBeaconCommitteeSize:   TestNet2MinBeaconCommitteeSize, //TestNetBeaconCommitteeSize,
+		DcsMaxShardCommitteeSize: Testnet2DcsMaxShardCommitteeSize,
+		DcsMinShardCommitteeSize: Testnet2DcsMinShardCommitteeSize,
+		StakingAmountShard:       TestNet2StakingAmountShard,
+		ActiveShards:             TestNet2ActiveShards,
 		// blockChain parameters
 		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
 		// GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
@@ -300,16 +306,18 @@ func SetupParam() {
 		ConsensusAlgorithm:                          common.BlsConsensus,
 	}
 	ChainMainParam = Params{
-		Name:                   MainetName,
-		Net:                    Mainnet,
-		DefaultPort:            MainnetDefaultPort,
-		GenesisParams:          genesisParamsMainnetNew,
-		MaxShardCommitteeSize:  MainNetShardCommitteeSize, //MainNetShardCommitteeSize,
-		MinShardCommitteeSize:  MainNetMinShardCommitteeSize,
-		MaxBeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
-		MinBeaconCommitteeSize: MainNetMinBeaconCommitteeSize,
-		StakingAmountShard:     MainNetStakingAmountShard,
-		ActiveShards:           MainNetActiveShards,
+		Name:                     MainetName,
+		Net:                      Mainnet,
+		DefaultPort:              MainnetDefaultPort,
+		GenesisParams:            genesisParamsMainnetNew,
+		MaxShardCommitteeSize:    MainNetShardCommitteeSize, //MainNetShardCommitteeSize,
+		MinShardCommitteeSize:    MainNetMinShardCommitteeSize,
+		MaxBeaconCommitteeSize:   MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
+		MinBeaconCommitteeSize:   MainNetMinBeaconCommitteeSize,
+		DcsMaxShardCommitteeSize: MainnetDcsMaxShardCommitteeSize,
+		DcsMinShardCommitteeSize: MainNetDcsMinShardCommitteeSize,
+		StakingAmountShard:       MainNetStakingAmountShard,
+		ActiveShards:             MainNetActiveShards,
 		// blockChain parameters
 		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
 		// GenesisShardBlock:                CreateGenesisShardBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),

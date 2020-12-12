@@ -489,6 +489,8 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 			env.MaxShardCommitteeSize,
 			instruction.SWAP_BY_END_EPOCH,
 			env.NumberOfFixedShardBlockValidator,
+			env.DcsMaxShardCommitteeSize,
+			env.DcsMinShardCommitteeSize,
 			env.MissingSignaturePenalty,
 		)
 
@@ -615,6 +617,8 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		env.MaxShardCommitteeSize,
 		instruction.SWAP_BY_END_EPOCH,
 		env.NumberOfFixedShardBlockValidator,
+		env.DcsMaxShardCommitteeSize,
+		env.DcsMinShardCommitteeSize,
 		env.MissingSignaturePenalty,
 	)
 

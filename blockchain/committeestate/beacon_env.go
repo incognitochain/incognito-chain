@@ -40,6 +40,8 @@ type BeaconCommitteeStateEnvironment struct {
 	NumberOfFixedBeaconBlockValidator  uint64
 	NumberOfFixedShardBlockValidator   int
 	MissingSignaturePenalty            map[string]signaturecounter.Penalty
+	DcsMinShardCommitteeSize           int
+	DcsMaxShardCommitteeSize           int
 }
 
 type BeaconCommitteeStateHash struct {

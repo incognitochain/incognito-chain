@@ -662,6 +662,8 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		NumberOfFixedShardBlockValidator:  NumberOfFixedShardBlockValidators,
 		MaxShardCommitteeSize:             params.MaxShardCommitteeSize,
 		MissingSignaturePenalty:           slashingPenalty,
+		DcsMaxShardCommitteeSize:          params.DcsMaxShardCommitteeSize,
+		DcsMinShardCommitteeSize:          params.DcsMinShardCommitteeSize,
 	}
 }
 
@@ -680,6 +682,8 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		NumberOfFixedBeaconBlockValidator: NumberOfFixedBeaconBlockValidators,
 		NumberOfFixedShardBlockValidator:  NumberOfFixedShardBlockValidators,
 		MissingSignaturePenalty:           beaconBestState.missingSignatureCounter.GetAllSlashingPenalty(),
+		DcsMaxShardCommitteeSize:          params.DcsMaxShardCommitteeSize,
+		DcsMinShardCommitteeSize:          params.DcsMinShardCommitteeSize,
 	}
 }
 
