@@ -69,5 +69,5 @@ type SwapRule interface {
 		penalty map[string]signaturecounter.Penalty,
 	) (
 		*instruction.SwapShardInstruction, []string, []string, []string, []string) // instruction, newCommitteees, newSubstitutes, slashingCommittees, normalSwapCommittees
-	getAssignOffset(lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int
+	AssignOffset(lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int
 }

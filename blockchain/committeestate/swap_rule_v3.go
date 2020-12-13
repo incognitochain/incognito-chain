@@ -50,7 +50,7 @@ func (s *swapRuleV3) GenInstructions(
 	return swapShardInstruction, newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees
 }
 
-func (s *swapRuleV3) getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
+func (s *swapRuleV3) AssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
 	assignOffset := lenCommittees / MAX_ASSIGN_PERCENT
 	if assignOffset == 0 && lenCommittees < MAX_ASSIGN_PERCENT {
 		assignOffset = 1

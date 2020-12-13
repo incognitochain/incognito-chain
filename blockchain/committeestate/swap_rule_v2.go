@@ -20,7 +20,7 @@ func NewSwapRuleV2() *swapRuleV2 {
 }
 
 //genInstructions
-func (s *swapRuleV2) genInstructions(
+func (s *swapRuleV2) GenInstructions(
 	shardID byte,
 	committees, substitutes []string,
 	minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize int,
@@ -223,7 +223,7 @@ func getShardIDPositionFromArray(arr []byte) map[byte]byte {
 	return m
 }
 
-func (s *swapRuleV2) getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
+func (s *swapRuleV2) AssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
 	assignPerShard := s.getSwapOutOffset(
 		lenShardSubstitute,
 		lenCommittees,
@@ -246,7 +246,7 @@ func SnapshotShardCommonPoolV2(
 	swapRule SwapRule,
 ) (numberOfAssignedCandidates int) {
 	for k, v := range shardCommittee {
-		assignPerShard := swapRule.getAssignOffset(
+		assignPerShard := swapRule.AssignOffset(
 			len(shardSubstitute[k]),
 			len(v),
 			numberOfFixedValidator,

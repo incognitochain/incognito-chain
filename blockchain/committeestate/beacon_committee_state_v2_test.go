@@ -2,11 +2,13 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"reflect"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate/mocks"
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -15,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func SampleCandidateList(len int) []string {
@@ -329,12 +332,18 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 	initTestParams()
 	initLog()
 
+	swapRule1 := &mocks.SwapRule{}
+	swapRule1.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
+	swapRule2 := &mocks.SwapRule{}
+	swapRule2.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(10)
+
 	type args struct {
 		shardCommonPool        []incognitokey.CommitteePublicKey
 		shardCommittee         map[byte][]incognitokey.CommitteePublicKey
 		shardSubstitute        map[byte][]incognitokey.CommitteePublicKey
 		numberOfFixedValidator int
 		minCommitteeSize       int
+		swapRule               SwapRule
 	}
 	tests := []struct {
 		name                           string
@@ -358,6 +367,7 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 				shardSubstitute:        map[byte][]incognitokey.CommitteePublicKey{},
 				numberOfFixedValidator: 1,
 				minCommitteeSize:       3,
+				swapRule:               &swapRuleV2{},
 			},
 			wantNumberOfAssignedCandidates: 2,
 		},
@@ -385,6 +395,7 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 				},
 				numberOfFixedValidator: 4,
 				minCommitteeSize:       6,
+				swapRule:               swapRule2,
 			},
 			wantNumberOfAssignedCandidates: 3,
 		},
@@ -408,6 +419,7 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 				},
 				numberOfFixedValidator: 0,
 				minCommitteeSize:       4,
+				swapRule:               swapRule1,
 			},
 			wantNumberOfAssignedCandidates: 1,
 		},
@@ -429,13 +441,14 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 				},
 				numberOfFixedValidator: 0,
 				minCommitteeSize:       4,
+				swapRule:               &swapRuleV2{},
 			},
 			wantNumberOfAssignedCandidates: 0,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotNumberOfAssignedCandidates := SnapshotShardCommonPoolV2(tt.args.shardCommonPool, tt.args.shardCommittee, tt.args.shardSubstitute, tt.args.numberOfFixedValidator, tt.args.minCommitteeSize); gotNumberOfAssignedCandidates != tt.wantNumberOfAssignedCandidates {
+			if gotNumberOfAssignedCandidates := SnapshotShardCommonPoolV2(tt.args.shardCommonPool, tt.args.shardCommittee, tt.args.shardSubstitute, tt.args.numberOfFixedValidator, tt.args.minCommitteeSize, tt.args.swapRule); gotNumberOfAssignedCandidates != tt.wantNumberOfAssignedCandidates {
 				t.Errorf("SnapshotShardCommonPoolV2() = %v, want %v", gotNumberOfAssignedCandidates, tt.wantNumberOfAssignedCandidates)
 			}
 		})
@@ -446,6 +459,48 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 
 	initTestParams()
 	initLog()
+
+	emptySwapShardInstruction := &mocks.SwapRule{}
+	emptySwapShardInstruction.On("GenInstructions", mock.AnythingOfType("uint8"), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(&instruction.SwapShardInstruction{}, []string{}, []string{}, []string{}, []string{})
+
+	validInputSwapShardInstruction := &mocks.SwapRule{}
+	validInputSwapShardInstruction.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+		&instruction.SwapShardInstruction{
+			InPublicKeys: []string{
+				key5,
+			},
+			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey5,
+			},
+			OutPublicKeys: []string{
+				key,
+			},
+			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey,
+			},
+			ChainID: 0,
+			Type:    instruction.SWAP_BY_END_EPOCH,
+		},
+		[]string{}, []string{}, []string{}, []string{})
+
+	validInputSwapShardInstruction.On("GenInstructions", uint8(1), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+		&instruction.SwapShardInstruction{
+			InPublicKeys: []string{
+				key10,
+			},
+			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey10,
+			},
+			OutPublicKeys: []string{
+				key6,
+			},
+			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey6,
+			},
+			ChainID: 1,
+			Type:    instruction.SWAP_BY_END_EPOCH,
+		},
+		[]string{}, []string{}, []string{}, []string{})
 
 	type fields struct {
 		beaconHeight                      uint64
@@ -473,6 +528,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
 						0: []incognitokey.CommitteePublicKey{},
 					},
+					swapRule: emptySwapShardInstruction,
 				},
 			},
 			args: args{
@@ -504,6 +560,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 							*incKey10,
 						},
 					},
+					swapRule: validInputSwapShardInstruction,
 				},
 			},
 			args: args{
