@@ -217,7 +217,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 
 	shardInstructions, _, _, err = blockchain.generateInstruction(shardBestState, shardID,
-		beaconProcessHeight, isOldBeaconHeight, beaconBlocks, beaconInstructions,
+		beaconProcessHeight, isOldBeaconHeight, beaconBlocks,
 		shardPendingValidatorStr, currentCommitteePublicKeys)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
@@ -519,7 +519,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 //	#4: error
 func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 	shardID byte, beaconHeight uint64,
-	isOldBeaconHeight bool, beaconBlocks []*types.BeaconBlock, beaconInstructions [][]string,
+	isOldBeaconHeight bool, beaconBlocks []*types.BeaconBlock,
 	shardPendingValidators []string, shardCommittees []string) ([][]string, []string, []string, error) {
 	var (
 		instructions                      = [][]string{}
@@ -528,7 +528,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		err                               error
 	)
 	// if this beacon height has been seen already then DO NOT generate any more instruction
-	if beaconHeight%blockchain.config.ChainParams.Epoch == 0 && isOldBeaconHeight == false {
+	if blockchain.IsLastBeaconHeightInEpoch(beaconHeight) && isOldBeaconHeight == false {
 		Logger.log.Info("ShardPendingValidator", shardPendingValidators)
 		Logger.log.Info("ShardCommittee", shardCommittees)
 		Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
@@ -541,8 +541,8 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		} else {
 			minShardCommitteeSize = view.MinShardCommitteeSize - NumberOfFixedShardBlockValidators
 		}
-		if common.IndexOfUint64(beaconHeight/blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
-			epoch := beaconHeight / blockchain.config.ChainParams.Epoch
+		epoch := blockchain.GetEpochByHeight(beaconHeight)
+		if common.IndexOfUint64(epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 			swapOrConfirmShardSwapInstruction, shardCommittees = createShardSwapActionForKeyListV2(
 				blockchain.config.GenesisParams,
 				shardCommittees,

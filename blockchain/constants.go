@@ -39,17 +39,19 @@ const (
 // CONSTANT for network MAINNET
 const (
 	// ------------- Mainnet ---------------------------------------------
-	Mainnet                 = 0x01
-	MainetName              = "mainnet"
-	MainnetDefaultPort      = "9333"
-	MainnetGenesisBlockTime = "2019-10-29T00:00:00.000Z"
-	MainnetEpoch            = 350
-	MainnetEpochV2          = 2160
-	MainnetRandomTime       = 175
-	MainnetOffset           = 4
-	MainnetSwapOffset       = 4
-	MainnetAssignOffset     = 8
-	MainnetMaxSwapOrAssign  = 10
+	Mainnet                  = 0x01
+	MainetName               = "mainnet"
+	MainnetDefaultPort       = "9333"
+	MainnetGenesisBlockTime  = "2019-10-29T00:00:00.000Z"
+	MainnetEpoch             = 350
+	MainnetRandomTime        = 175
+	MainnetEpochV2BreakPoint = 0
+	MainnetEpochV2           = 2160
+	MainnetRandomTimeV2      = 0
+	MainnetOffset            = 4
+	MainnetSwapOffset        = 4
+	MainnetAssignOffset      = 8
+	MainnetMaxSwapOrAssign   = 10
 
 	MainNetShardCommitteeSize     = 32
 	MainNetMinShardCommitteeSize  = 22
@@ -102,16 +104,18 @@ var MainnetReplaceCommitteeEpoch = []uint64{}
 
 // CONSTANT for network TESTNET
 const (
-	Testnet                 = 0x16
-	TestnetName             = "testnet"
-	TestnetDefaultPort      = "9444"
-	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch            = 20
-	TestnetEpochV2          = 20
-	TestnetRandomTime       = 10
-	TestnetOffset           = 1
-	TestnetSwapOffset       = 1
-	TestnetAssignOffset     = 2
+	Testnet                  = 0x16
+	TestnetName              = "testnet"
+	TestnetDefaultPort       = "9444"
+	TestnetGenesisBlockTime  = "2019-11-29T00:00:00.000Z"
+	TestnetEpoch             = 20
+	TestnetRandomTime        = 10
+	TestnetEpochV2BreakPoint = 100
+	TestnetEpochV2           = 20
+	TestnetRandomTimeV2      = 10
+	TestnetOffset            = 1
+	TestnetSwapOffset        = 1
+	TestnetAssignOffset      = 2
 
 	TestNetShardCommitteeSize     = 6
 	TestNetMinShardCommitteeSize  = 4
@@ -145,16 +149,18 @@ const (
 
 // CONSTANT for network TESTNET-2
 const (
-	Testnet2                 = 0x32
-	Testnet2Name             = "testnet-2"
-	Testnet2DefaultPort      = "9444"
-	Testnet2GenesisBlockTime = "2020-08-11T00:00:00.000Z"
-	Testnet2Epoch            = 100
-	Testnet2EpochV2          = 100
-	Testnet2RandomTime       = 50
-	Testnet2Offset           = 1
-	Testnet2SwapOffset       = 1
-	Testnet2AssignOffset     = 2
+	Testnet2                  = 0x32
+	Testnet2Name              = "testnet-2"
+	Testnet2DefaultPort       = "9444"
+	Testnet2GenesisBlockTime  = "2020-08-11T00:00:00.000Z"
+	Testnet2Epoch             = 100
+	Testnet2RandomTimeV2      = 50
+	Testnet2EpochV2BreakPoint = 0
+	Testnet2EpochV2           = 100
+	Testnet2RandomTime        = 50
+	Testnet2Offset            = 1
+	Testnet2SwapOffset        = 1
+	Testnet2AssignOffset      = 2
 
 	TestNet2ShardCommitteeSize     = 32
 	TestNet2MinShardCommitteeSize  = 4

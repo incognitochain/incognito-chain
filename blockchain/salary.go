@@ -120,8 +120,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				}
 				if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 					isInit = true
-					epoch = shardRewardInfo.Epoch
-					height := shardRewardInfo.Epoch * blockchain.config.ChainParams.Epoch
+					height := blockchain.GetLastBeaconHeightInEpoch(shardRewardInfo.Epoch)
 					var beaconConsensusRootHash common.Hash
 					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), height)
 					if err != nil {
