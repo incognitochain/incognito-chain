@@ -47,7 +47,7 @@ const (
 	MainnetRandomTime        = 175
 	MainnetEpochV2BreakPoint = 0
 	MainnetEpochV2           = 2160
-	MainnetRandomTimeV2      = 0
+	MainnetRandomTimeV2      = 1080
 	MainnetOffset            = 4
 	MainnetSwapOffset        = 4
 	MainnetAssignOffset      = 8
