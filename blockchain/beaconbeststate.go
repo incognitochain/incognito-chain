@@ -761,11 +761,11 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	for k, v := range substituteValidator {
 		shardSubstitute[byte(k)] = v
 	}
-	if beaconBestState.BeaconHeight%params.Epoch >= params.RandomTime && !beaconBestState.IsGetRandomNumber {
+	if bc.IsGreaterThanRandomTime(beaconBestState.BeaconHeight) && !beaconBestState.IsGetRandomNumber {
 		var err error
 		var tempBeaconBlock = types.NewBeaconBlock()
 		var randomTimeBeaconHash = beaconBestState.BestBlockHash
-		randomTimeBeaconHeight := (beaconBestState.Epoch-1)*params.Epoch + params.RandomTime - 1
+		randomTimeBeaconHeight := bc.GetRandomTimeInEpoch(beaconBestState.Epoch)
 		tempBeaconHeight := beaconBestState.BeaconHeight
 		previousBeaconHash := beaconBestState.PreviousBestBlockHash
 		for tempBeaconHeight > randomTimeBeaconHeight {
@@ -830,12 +830,12 @@ func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter(committees)
 	curView.SetMissingSignatureCounter(missingSignatureCounter)
 
-	lastEpochBeaconHeight := (curView.Epoch-1)*bc.config.ChainParams.Epoch + 1
+	firstBeaconHeightOfEpoch := bc.GetFirstBeaconHeightInEpoch(curView.Epoch)
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height
 	allShardStates := make(map[byte][]types.ShardState)
 
-	for tempBeaconHeight >= lastEpochBeaconHeight {
+	for tempBeaconHeight >= firstBeaconHeightOfEpoch {
 		for shardID, shardStates := range tempBeaconBlock.Body.ShardState {
 			allShardStates[shardID] = append(allShardStates[shardID], shardStates...)
 		}
@@ -920,7 +920,5 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		newBeaconCommitteeStateV2,
 	)
 	beaconBestState.beaconCommitteeEngine = newCommitteeEngineV2
-
-	bc.config.ChainParams.Epoch = EpochLengthV2
-	bc.config.ChainParams.RandomTime = EpochLengthV2 / 2
+	beaconBestState.Epoch = bc.config.ChainParams.EpochV2
 }

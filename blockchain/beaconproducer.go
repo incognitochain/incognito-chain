@@ -49,6 +49,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	Logger.log.Infof("⛏ Creating Beacon Block %+v", curView.BeaconHeight+1)
 	var err error
 	var epoch uint64
+	//var isNextEpoch bool = false
 	newBeaconBlock := types.NewBeaconBlock()
 	copiedCurView := NewBeaconBestState()
 
@@ -57,11 +58,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 		return nil, err
 	}
 
-	if (copiedCurView.BeaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
-		epoch = copiedCurView.Epoch + 1
-	} else {
-		epoch = copiedCurView.Epoch
-	}
+	epoch, _ = blockchain.GetEpochNextHeight(copiedCurView.BeaconHeight)
 
 	newBeaconBlock.Header = types.NewBeaconHeader(
 		version,
@@ -156,7 +153,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 	rewardByEpochInstruction := [][]string{}
 
-	if curView.BeaconHeight%blockchain.config.ChainParams.Epoch == 0 {
+	if blockchain.IsLastBeaconHeightInEpoch(curView.BeaconHeight) {
 		featureStateDB := curView.GetBeaconFeatureStateDB()
 		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {

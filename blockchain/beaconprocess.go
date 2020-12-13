@@ -235,7 +235,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect receive beacon block height %+v but get %+v", previousBeaconBlock.Header.Height+1, beaconBlock.Header.Height))
 	}
 	// Verify epoch with parent block
-	if (beaconBlock.Header.Height != 1) && (beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1) && (previousBeaconBlock.Header.Epoch != beaconBlock.Header.Epoch-1) {
+	isNextEpoch := blockchain.IsFirstBeaconHeightInEpoch(previousBeaconBlock.Header.Epoch)
+	if (beaconBlock.Header.Height != 1) && isNextEpoch && (previousBeaconBlock.Header.Epoch != beaconBlock.Header.Epoch-1) {
 		return NewBlockChainError(WrongEpochError, fmt.Errorf("Expect receive beacon block epoch %+v greater than previous block epoch %+v, 1 value", beaconBlock.Header.Epoch, previousBeaconBlock.Header.Epoch))
 	}
 	// Verify timestamp with parent block
@@ -385,10 +386,11 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 	if beaconBestState.BeaconHeight+1 != beaconBlock.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(beaconBlock.Header.Height+1))))
 	}
-	if beaconBlock.Header.Height%chainParamEpoch == 1 && beaconBestState.Epoch+1 != beaconBlock.Header.Epoch {
+
+	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) && beaconBestState.Epoch+1 != beaconBlock.Header.Epoch {
 		return NewBlockChainError(WrongEpochError, fmt.Errorf("Expect beacon block height %+v has epoch %+v but get %+v", beaconBlock.Header.Height, beaconBestState.Epoch+1, beaconBlock.Header.Epoch))
 	}
-	if beaconBlock.Header.Height%chainParamEpoch != 1 && beaconBestState.Epoch != beaconBlock.Header.Epoch {
+	if !blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) && beaconBestState.Epoch != beaconBlock.Header.Epoch {
 		return NewBlockChainError(WrongEpochError, fmt.Errorf("Expect beacon block height %+v has epoch %+v but get %+v", beaconBlock.Header.Height, beaconBestState.Epoch, beaconBlock.Header.Epoch))
 	}
 	// check shard states of new beacon block and beacon best state
@@ -750,7 +752,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	// Remove shard reward request of old epoch
 	// this value is no longer needed because, old epoch reward has been split and send to shard
-	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
+	if blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.Header.Height) {
 		err = statedb.StoreSlashingCommittee(newBestState.slashStateDB, beaconBlock.Header.Epoch-1, committeeChange.SlashingCommittee)
 		if err != nil {
 			return err
@@ -913,7 +915,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if !blockchain.config.ChainParams.IsBackup {
 		return nil
 	}
-	if (newBestState.GetHeight()+1)%blockchain.config.ChainParams.Epoch == 0 {
+	if blockchain.IsLastBeaconHeightInEpoch(newBestState.GetHeight() + 1) {
 
 		err := blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
 		if err != nil {

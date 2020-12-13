@@ -741,13 +741,134 @@ func (s *BlockChain) RemoveRelayShard(sid int) {
 
 // GetEpochLength return the current length of epoch
 // it depends on current final view height
-func (bc *BlockChain) GetEpochLength(beaconHeight uint64) uint64 {
-	if beaconHeight == 0 {
-		beaconHeight = bc.BeaconChain.GetFinalViewHeight()
+func (bc *BlockChain) GetCurrentEpochLength(beaconHeight uint64) uint64 {
+	params := bc.config.ChainParams
+	if params.EpochV2BreakPoint == 0 {
+		return params.Epoch
 	}
-	if beaconHeight < bc.config.ChainParams.ConsensusV3Height {
-		return bc.config.ChainParams.Epoch
+	changeEpochBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	if beaconHeight > changeEpochBreakPoint {
+		return params.EpochV2
 	} else {
-		return bc.config.ChainParams.EpochV2
+		return params.Epoch
+	}
+}
+
+func (bc *BlockChain) GetEpochByHeight(beaconHeight uint64) uint64 {
+	params := bc.config.ChainParams
+	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	newEpochBlockHeight := totalBlockBeforeBreakPoint + 1
+	if beaconHeight < newEpochBlockHeight {
+		if beaconHeight%params.Epoch == 0 {
+			return beaconHeight / params.Epoch
+		} else {
+			return beaconHeight/params.Epoch + 1
+		}
+	} else {
+		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
+		numberOfNewEpochs := newEpochBlocks / params.EpochV2
+		if newEpochBlocks%params.EpochV2 != 0 {
+			numberOfNewEpochs++
+		}
+		return (totalBlockBeforeBreakPoint / params.Epoch) +
+			numberOfNewEpochs
+	}
+}
+
+func (bc *BlockChain) GetEpochNextHeight(beaconHeight uint64) (uint64, bool) {
+	params := bc.config.ChainParams
+	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	newEpochBlockHeight := totalBlockBeforeBreakPoint + 1
+	if beaconHeight < newEpochBlockHeight {
+		if beaconHeight%params.Epoch == 1 {
+			return beaconHeight / params.Epoch, true
+		} else {
+			if beaconHeight%params.Epoch == 0 {
+				return beaconHeight / params.Epoch, false
+			} else {
+				return beaconHeight/params.Epoch + 1, false
+			}
+		}
+	} else {
+		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
+		numberOfNewEpochs := newEpochBlocks / params.EpochV2
+		numberOfOldEpochs := params.EpochV2BreakPoint - 1
+		if newEpochBlocks%params.EpochV2 != 0 {
+			numberOfNewEpochs++
+		}
+		if newEpochBlocks%params.EpochV2 == 1 {
+			return numberOfOldEpochs + numberOfNewEpochs, true
+		} else {
+			return numberOfOldEpochs + numberOfNewEpochs, false
+		}
+	}
+}
+
+func (bc *BlockChain) IsFirstBeaconHeightInEpoch(beaconHeight uint64) bool {
+	_, ok := bc.GetEpochNextHeight(beaconHeight)
+	return ok
+}
+
+func (bc *BlockChain) IsLastBeaconHeightInEpoch(beaconHeight uint64) bool {
+	_, ok := bc.GetEpochNextHeight(beaconHeight + 1)
+	return ok
+}
+
+func (bc *BlockChain) GetRandomTimeInEpoch(epoch uint64) uint64 {
+	params := bc.config.ChainParams
+	if epoch < params.EpochV2BreakPoint {
+		return (epoch-1)*params.Epoch + params.RandomTime
+	} else {
+		totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+		numberOfNewEpoch := epoch - params.EpochV2BreakPoint
+		beaconHeightRandomTimeAfterBreakPoint := numberOfNewEpoch*params.EpochV2 + params.RandomTimeV2
+		res := totalBlockBeforeBreakPoint + beaconHeightRandomTimeAfterBreakPoint
+		return res
+	}
+}
+
+func (bc *BlockChain) GetFirstBeaconHeightInEpoch(epoch uint64) uint64 {
+	params := bc.config.ChainParams
+	if epoch < params.EpochV2BreakPoint {
+		return (epoch-1)*params.Epoch + 1
+	} else {
+		totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+		numberOfNewEpoch := epoch - params.EpochV2BreakPoint
+		lastBeaconHeightAfterBreakPoint := numberOfNewEpoch*params.EpochV2 + 1
+		return totalBlockBeforeBreakPoint + lastBeaconHeightAfterBreakPoint
+	}
+}
+
+func (bc *BlockChain) GetLastBeaconHeightInEpoch(epoch uint64) uint64 {
+	params := bc.config.ChainParams
+	if epoch < params.EpochV2BreakPoint {
+		return epoch * params.Epoch
+	} else {
+		totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+		numberOfNewEpoch := epoch - params.EpochV2BreakPoint + 1
+		lastBeaconHeightAfterBreakPoint := numberOfNewEpoch * params.EpochV2
+		return totalBlockBeforeBreakPoint + lastBeaconHeightAfterBreakPoint
+	}
+}
+
+func (bc *BlockChain) GetBeaconBlockOrderInEpoch(beaconHeight uint64) (uint64, uint64) {
+	params := bc.config.ChainParams
+	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	if beaconHeight < totalBlockBeforeBreakPoint {
+		return beaconHeight % params.Epoch, params.Epoch - beaconHeight%params.Epoch
+	} else {
+		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
+		return newEpochBlocks % params.EpochV2, params.EpochV2 - newEpochBlocks%params.EpochV2
+	}
+}
+
+func (bc *BlockChain) IsGreaterThanRandomTime(beaconHeight uint64) bool {
+	params := bc.config.ChainParams
+	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	if beaconHeight < totalBlockBeforeBreakPoint {
+		return beaconHeight%params.Epoch >= params.RandomTime
+	} else {
+		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
+		return newEpochBlocks%params.EpochV2 >= params.RandomTimeV2
 	}
 }
