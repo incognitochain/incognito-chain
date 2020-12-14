@@ -343,7 +343,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 
 		if hasAssetTags{
 			assetTag := coinDB.GetAssetTag()
-			if assetTag==nil{
+			if assetTag!=nil{
 				assetTags = append(assetTags, assetTag.ToBytesS())
 			}else{
 				hasAssetTags = false
