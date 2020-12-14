@@ -803,7 +803,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			isExisted := statedb.PrivacyTokenIDExisted(txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB(), *tokenID)
 			if !isExisted {
 				var isBridgeToken bool
-				_, allBridgeTokens, err := txService.BlockChain.GetAllBridgeTokens()
+				bridgeTokenIDs, allBridgeTokens, err := txService.BlockChain.GetAllBridgeTokens()
 				if err != nil {
 					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 				}
@@ -815,6 +815,15 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 				}
 				if !isBridgeToken {
 					// totally invalid token
+					Logger.log.Errorf("BUGLOG invalid TokenID: %v\n", tokenID.String())
+					if len(bridgeTokenIDs) != len(allBridgeTokens){
+						Logger.log.Errorf("BUGLOG something must be wrong here\n")
+					}
+
+					for i:=0;i<len(bridgeTokenIDs);i++{
+						Logger.log.Errorf("BUGLOG tokenID: %v, %v\n", bridgeTokenIDs[i].String(), allBridgeTokens[i].TokenID.String())
+					}
+
 					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 				}
 				//return nil, nil, nil, NewRPCError(BuildPrivacyTokenParamError, err)
