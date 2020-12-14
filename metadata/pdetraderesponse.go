@@ -69,11 +69,12 @@ func (iRes *PDETradeResponse) CalculateSize() uint64 {
 
 func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-
+	Logger.log.Infof("BUGLOG there are currently %v insts\n", len(mintData.Insts))
 	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PDETradeRequest instruction
 			continue
 		}
+		Logger.log.Infof("BUGLOG currently processing inst: %v\n", inst)
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(PDETradeRequestMeta) {
@@ -172,7 +173,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-
+		Logger.log.Errorf("BUGLOG Instruction not found: %v, %v, %v, %v\n", iRes.RequestedTxID.String(), iRes.Type, iRes.Sig, iRes.TradeStatus)
 		return false, fmt.Errorf(fmt.Sprintf("no PDETradeRequest or PDECrossPoolTradeRequestMeta tx found for PDETradeResponse tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1
