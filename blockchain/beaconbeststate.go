@@ -849,7 +849,7 @@ func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 		tempBeaconHeight--
 	}
 
-	return curView.countMissingSignature(bc.GetBeaconChainDatabase(), allShardStates)
+	return curView.countMissingSignature(bc, allShardStates)
 }
 
 func (beaconBestState *BeaconBestState) CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey {

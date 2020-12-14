@@ -476,6 +476,16 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			panic("Restart beacon views fail")
 		}
 	}
+	for _, view := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
+		beaconState := view.(*BeaconBestState)
+		if beaconState.missingSignatureCounter != nil {
+			block := beaconState.BestBlock
+			err = initMissingSignatureCounter(blockchain, beaconState, &block)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -876,10 +886,10 @@ func (bc *BlockChain) IsGreaterThanRandomTime(beaconHeight uint64) bool {
 	params := bc.config.ChainParams
 	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
 	if beaconHeight < totalBlockBeforeBreakPoint {
-		return beaconHeight%params.Epoch >= params.RandomTime
+		return beaconHeight%params.Epoch > params.RandomTime
 	} else {
 		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
-		return newEpochBlocks%params.EpochV2 >= params.RandomTimeV2
+		return newEpochBlocks%params.EpochV2 > params.RandomTimeV2
 	}
 }
 
