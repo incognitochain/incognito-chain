@@ -1220,7 +1220,7 @@ func TestBlockChain_IsGreaterThanRandomTime(t *testing.T) {
 			args: args{
 				beaconHeight: 476,
 			},
-			want: true,
+			want: false,
 		},
 		{
 			name: "= break point 4",
@@ -1274,7 +1274,7 @@ func TestBlockChain_IsGreaterThanRandomTime(t *testing.T) {
 			args: args{
 				beaconHeight: 888,
 			},
-			want: true,
+			want: false,
 		},
 	}
 	for _, tt := range tests {
