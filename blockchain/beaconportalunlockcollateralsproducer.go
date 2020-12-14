@@ -145,14 +145,9 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 	amountToUnlock := big.NewInt(0).Sub(new(big.Int).SetUint64(totalAmountInUSD), minHoldUnlockedAmountInBigInt).Uint64()
-	// amountToUnlock need greater than 1 USD to unlock
-	if amountToUnlock < 1e9 {
-		Logger.log.Errorf("Error locked collaterals amount not greater than 1 USD")
-		return [][]string{rejectInst}, nil
-	}
 	listUnlockTokens, err := updateCustodianStateAfterReqUnlockCollateralV3(custodianState, amountToUnlock, actionData.Meta.TokenID, portalParams, currentPortalState)
-	if err != nil {
-		Logger.log.Errorf("Error when converting holding public token to prv: %v", err)
+	if err != nil || len(listUnlockTokens) == 0 {
+		Logger.log.Errorf("Error when updateCustodianStateAfterReqUnlockCollateralV3: %v, %v", err, len(listUnlockTokens))
 		return [][]string{rejectInst}, nil
 	}
 

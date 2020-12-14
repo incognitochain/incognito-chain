@@ -577,8 +577,8 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 		if lockedPrvAmount[tokenID] < tokenAmountListInWaitingPoring[common.PRVIDStr] {
 			return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Locked amount must greater then amount in waiting porting")
 		}
-		lockedPrvAmount[tokenID] -= tokenAmountListInWaitingPoring[common.PRVIDStr]
-		tokenAmtInUSD, err := convertRateTool.ConvertToUSD(common.PRVIDStr, lockedPrvAmount[tokenID])
+		lockedPrvAmountToProcess := lockedPrvAmount[tokenID] - tokenAmountListInWaitingPoring[common.PRVIDStr]
+		tokenAmtInUSD, err := convertRateTool.ConvertToUSD(common.PRVIDStr, lockedPrvAmountToProcess)
 		if err != nil {
 			return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Can not convert prv to usd")
 		}
@@ -590,16 +590,17 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 			prvCollateralAmountToUpdate, err = convertRateTool.ConvertFromUSD(common.PRVIDStr, unlockedAmount)
 			unlockedAmount = 0
 		}
-		if err != nil || prvCollateralAmountToUpdate > lockedPrvAmount[tokenID] {
+		if err != nil || prvCollateralAmountToUpdate > lockedPrvAmountToProcess {
 			return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Can not convert usd to collateral prv")
 		}
-
-		// update collateral prv token
-		lockedPrvAmount[tokenID] -= prvCollateralAmountToUpdate
-		tokenAmountsUnlocked[common.PRVIDStr] = prvCollateralAmountToUpdate
-		custodianState.SetLockedAmountCollateral(lockedPrvAmount)
-		// update free prv token
-		custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + prvCollateralAmountToUpdate)
+		if prvCollateralAmountToUpdate > 0 {
+			// update collateral prv token
+			lockedPrvAmount[tokenID] -= prvCollateralAmountToUpdate
+			tokenAmountsUnlocked[common.PRVIDStr] = prvCollateralAmountToUpdate
+			custodianState.SetLockedAmountCollateral(lockedPrvAmount)
+			// update free prv token
+			custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + prvCollateralAmountToUpdate)
+		}
 	}
 
 	freeTokenCollaterals := custodianState.GetFreeTokenCollaterals()
@@ -622,8 +623,8 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 			if lockedTokenAmounts[tokenID][tokenCollateralID] == 0 {
 				continue
 			}
-			lockedTokenAmounts[tokenID][tokenCollateralID] -= tokenAmountListInWaitingPoring[tokenCollateralID]
-			tokenValueLocked, err := convertRateTool.ConvertToUSD(tokenCollateralID, lockedTokenAmounts[tokenID][tokenCollateralID])
+			lockedTokenAmountToProcess := lockedTokenAmounts[tokenID][tokenCollateralID] - tokenAmountListInWaitingPoring[tokenCollateralID]
+			tokenValueLocked, err := convertRateTool.ConvertToUSD(tokenCollateralID, lockedTokenAmountToProcess)
 			if err != nil {
 				Logger.log.Errorf("[portal-updateCustodianStateAfterReqUnlockCollateral] got error %v", err.Error())
 				return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] got error while get convert from collateral to USDT ")
@@ -636,13 +637,14 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 				tokenCollateralAmountToUpdate, err = convertRateTool.ConvertFromUSD(tokenCollateralID, unlockedAmount)
 				unlockedAmount = 0
 			}
-			if err != nil || tokenCollateralAmountToUpdate > lockedTokenAmounts[tokenID][tokenCollateralID] {
-				return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] Can not convert usd to collateral token")
+			if err != nil || tokenCollateralAmountToUpdate > lockedTokenAmountToProcess {
+				return nil, errors.New("[portal-updateCustodianStateAfterReqUnlockCollateral] total locked token less than amount to unlock")
 			}
-			lockedTokenAmounts[tokenID][tokenCollateralID] -= tokenCollateralAmountToUpdate
-			tokenAmountsUnlocked[tokenCollateralID] = tokenCollateralAmountToUpdate
-			freeTokenCollaterals[tokenCollateralID] += tokenCollateralAmountToUpdate
-
+			if tokenCollateralAmountToUpdate > 0 {
+				lockedTokenAmounts[tokenID][tokenCollateralID] -= tokenCollateralAmountToUpdate
+				tokenAmountsUnlocked[tokenCollateralID] = tokenCollateralAmountToUpdate
+				freeTokenCollaterals[tokenCollateralID] += tokenCollateralAmountToUpdate
+			}
 			if unlockedAmount == 0 {
 				break
 			}

@@ -33,7 +33,7 @@ func (blockchain *BlockChain) processPortalUnlockOverRateCollaterals(
 	case common.PortalCusUnlockOverRateCollateralsAcceptedChainStatus:
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(unlockOverRateCollateralsContent.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
-		listTokensWithValue := unlockOverRateCollateralsContent.UnlockedAmounts
+		listTokensWithValue := cloneMap(unlockOverRateCollateralsContent.UnlockedAmounts)
 		unlockPrvAmount := listTokensWithValue[common.PRVIDStr]
 		delete(listTokensWithValue, common.PRVIDStr)
 		err = updateCustodianStateUnlockOverRateCollaterals(currentPortalState.CustodianPoolState[custodianStateKeyStr], unlockPrvAmount, listTokensWithValue, unlockOverRateCollateralsContent.TokenID)
