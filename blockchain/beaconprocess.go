@@ -544,16 +544,14 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	}
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
 
-	if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
-		if beaconBestState.BeaconHeight%chainParamEpoch == 1 {
-			// Reset missing signature counter after finish process the last beacon block in an epoch
-			beaconBestState.missingSignatureCounter.Reset(beaconBestState.getUncommittedShardCommitteeFlattenList())
-		}
+	if beaconBestState.BeaconHeight%chainParamEpoch == 1 {
+		// Reset missing signature counter after finish process the last beacon block in an epoch
+		beaconBestState.missingSignatureCounter.Reset(beaconBestState.getUncommittedShardCommitteeFlattenList())
+	}
 
-		err = beaconBestState.countMissingSignature(blockchain.GetBeaconChainDatabase(), beaconBlock.Body.ShardState)
-		if err != nil {
-			return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
-		}
+	err = beaconBestState.countMissingSignature(blockchain.GetBeaconChainDatabase(), beaconBlock.Body.ShardState)
+	if err != nil {
+		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
 
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
