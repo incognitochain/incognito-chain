@@ -370,7 +370,7 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 		return nil, nil, 0, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
 	bss := blockchain.GetBestStateShard(shardID)
-	transactionStateDB := bss.transactionStateDB
+	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
 	if versionsIncluded[1]{
 		results, err := queryDbCoinVer1(keyset.PaymentAddress.Pk, shardID, tokenID, transactionStateDB)
@@ -444,14 +444,14 @@ func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, shardID byte) 
 		return errors.New("OTA key submission not supported by this node configuration")
 	}
 	bss := blockchain.GetBestStateShard(shardID)
-	transactionStateDB := bss.transactionStateDB
+	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
+
 	go outcoinReindexer.ReindexOutcoin(bss.ShardHeight, theKey, transactionStateDB, shardID)
 	return nil
 }
 
 func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin,  error) {
-	bss := blockchain.GetBestStateShard(shardID)
-	transactionStateDB := bss.transactionStateDB
+	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
 	if !EnableIndexingCoinByOTAKey{
 		return nil, errors.New("Getting all coins not supported by this node configuration")
