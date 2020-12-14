@@ -70,4 +70,5 @@ type SwapRule interface {
 	) (
 		*instruction.SwapShardInstruction, []string, []string, []string, []string) // instruction, newCommitteees, newSubstitutes, slashingCommittees, normalSwapCommittees
 	AssignOffset(lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int
+	Clone() SwapRule
 }

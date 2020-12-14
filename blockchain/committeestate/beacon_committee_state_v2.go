@@ -117,6 +117,8 @@ func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 	for k, v := range b.stakingTx {
 		newB.stakingTx[k] = v
 	}
+
+	newB.swapRule = b.swapRule.Clone()
 }
 
 func (b *BeaconCommitteeStateV2) reset() {
@@ -608,6 +610,8 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 	tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
+	Logger.log.Info("[DCS] b.swapRule:", b.swapRule)
+
 	comparedShardSwapInstruction, newCommittees, _,
 		slashingCommittees, normalSwapOutCommittees := b.swapRule.GenInstructions(
 		shardID,
@@ -627,11 +631,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	} else {
 		Logger.log.Infof("SHARD %+v, Epoch %+v, NO Slashing Committees", shardID, env.Epoch)
 	}
-
-	Logger.log.Info("[DCS] comparedShardSwapInstruction.InPublicKeys:", comparedShardSwapInstruction.InPublicKeys)
-	Logger.log.Info("[DCS] comparedShardSwapInstruction.OutPublicKeys:", comparedShardSwapInstruction.OutPublicKeys)
-	Logger.log.Info("[DCS] swapShardInstruction.InPublicKeys:", swapShardInstruction.InPublicKeys)
-	Logger.log.Info("[DCS] swapShardInstruction.InPublicKeys:", swapShardInstruction.OutPublicKeys)
 
 	if !reflect.DeepEqual(comparedShardSwapInstruction.InPublicKeys, swapShardInstruction.InPublicKeys) {
 		return nil, returnStakingInstruction, fmt.Errorf("expect swap in keys %+v, got %+v",
@@ -690,6 +689,7 @@ func (b *BeaconCommitteeStateV2) processAfterNormalSwap(
 	oldState *BeaconCommitteeStateV2,
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	candidates := []string{}
+
 	outPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(outPublicKeys)
 	for index, outPublicKey := range outPublicKeys {
 		stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)

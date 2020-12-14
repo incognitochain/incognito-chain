@@ -186,3 +186,7 @@ func (s *swapRuleV3) getSlashingOffset(
 	}
 	return lenCommittees / maxSlashOutPercent
 }
+
+func (s *swapRuleV3) Clone() SwapRule {
+	return &swapRuleV3{}
+}

@@ -3,7 +3,9 @@
 package mocks
 
 import (
+	committeestate "github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	instruction "github.com/incognitochain/incognito-chain/instruction"
+
 	mock "github.com/stretchr/testify/mock"
 
 	signaturecounter "github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
@@ -23,6 +25,22 @@ func (_m *SwapRule) AssignOffset(lenSubstitute int, lenCommittees int, numberOfF
 		r0 = rf(lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize)
 	} else {
 		r0 = ret.Get(0).(int)
+	}
+
+	return r0
+}
+
+// Clone provides a mock function with given fields:
+func (_m *SwapRule) Clone() committeestate.SwapRule {
+	ret := _m.Called()
+
+	var r0 committeestate.SwapRule
+	if rf, ok := ret.Get(0).(func() committeestate.SwapRule); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(committeestate.SwapRule)
+		}
 	}
 
 	return r0

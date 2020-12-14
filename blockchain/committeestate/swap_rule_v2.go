@@ -263,3 +263,7 @@ func SnapshotShardCommonPoolV2(
 	}
 	return numberOfAssignedCandidates
 }
+
+func (s *swapRuleV2) Clone() SwapRule {
+	return &swapRuleV2{}
+}
