@@ -1950,8 +1950,6 @@ func convertAllLockCollateralsToUSDT(convertRateTool *PortalExchangeRateTool, cu
 			return nil, err
 		}
 		res[portalTokenID] += tokenCollateralsInUSDT
-		break
-
 	}
 	return res, nil
 }
