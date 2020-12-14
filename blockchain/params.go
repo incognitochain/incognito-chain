@@ -57,7 +57,9 @@ type Params struct {
 	BasicReward                      uint64
 	Epoch                            uint64
 	EpochV2                          uint64
+	EpochV2BreakPoint                uint64
 	RandomTime                       uint64
+	RandomTimeV2                     uint64
 	SlashLevels                      []SlashLevel
 	EthContractAddressStr            string // smart contract of ETH for bridge
 	Offset                           int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
@@ -113,7 +115,6 @@ var genesisParamsTestnetNew *GenesisParams
 var genesisParamsTestnet2New *GenesisParams
 var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
-var EpochLengthV2 uint64
 
 func SetupParam() {
 	// FOR TESTNET
@@ -201,6 +202,9 @@ func SetupParam() {
 		PreloadAddress:            "",
 		BCHeightBreakPointNewZKP:  2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:   21920,
+		EpochV2:                   TestnetEpochV2,
+		EpochV2BreakPoint:         TestnetEpochV2BreakPoint,
+		RandomTimeV2:              TestnetRandomTimeV2,
 	}
 	// END TESTNET
 
@@ -289,6 +293,9 @@ func SetupParam() {
 		PreloadAddress:            "",
 		BCHeightBreakPointNewZKP:  260000, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:   2085,
+		EpochV2:                   Testnet2EpochV2,
+		EpochV2BreakPoint:         Testnet2EpochV2BreakPoint,
+		RandomTimeV2:              Testnet2RandomTimeV2,
 	}
 	// END TESTNET-2
 
@@ -376,18 +383,18 @@ func SetupParam() {
 		PreloadAddress:            "",
 		BCHeightBreakPointNewZKP:  737450,
 		ETHRemoveBridgeSigEpoch:   1973,
+		EpochV2:                   MainnetEpochV2,
+		EpochV2BreakPoint:         MainnetEpochV2BreakPoint,
+		RandomTimeV2:              MainnetRandomTimeV2,
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
 			GenesisParam = genesisParamsTestnetNew
-			EpochLengthV2 = TestnetEpochV2
 		} else {
 			GenesisParam = genesisParamsTestnet2New
-			EpochLengthV2 = Testnet2EpochV2
 		}
 	} else {
 		GenesisParam = genesisParamsMainnetNew
-		EpochLengthV2 = MainnetEpochV2
 	}
 }
 

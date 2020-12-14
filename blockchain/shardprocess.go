@@ -546,7 +546,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	}
 
 	instructions, _, shardCommittee, err = blockchain.generateInstruction(curView, shardID,
-		shardBlock.Header.BeaconHeight, isOldBeaconHeight, beaconBlocks, beaconInstructions,
+		shardBlock.Header.BeaconHeight, isOldBeaconHeight, beaconBlocks,
 		shardPendingValidatorStr, shardCommittee)
 	if err != nil {
 		return NewBlockChainError(GenerateInstructionError, err)
@@ -1150,8 +1150,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	backupPoint := false
-	for _, bblk := range beaconBlocks {
-		if (bblk.GetHeight()+1)%blockchain.config.ChainParams.Epoch == 0 {
+	for _, beaconBlock := range beaconBlocks {
+		if blockchain.IsLastBeaconHeightInEpoch(beaconBlock.GetHeight() + 1) {
 			backupPoint = true
 		}
 	}

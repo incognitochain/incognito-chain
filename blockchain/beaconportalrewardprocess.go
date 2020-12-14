@@ -27,7 +27,7 @@ func (blockchain *BlockChain) processPortalReward(
 		UpdateCustodianRewards(currentPortalState, actionData.Rewards)
 
 		// at the end of epoch
-		if (beaconHeight+1)%blockchain.config.ChainParams.Epoch == 1 {
+		if blockchain.IsFirstBeaconHeightInEpoch(beaconHeight + 1) {
 			currentPortalState.LockedCollateralForRewards.Reset()
 		}
 
@@ -139,7 +139,7 @@ func (blockchain *BlockChain) processPortalTotalCustodianReward(
 
 	reqStatus := instructions[2]
 	if reqStatus == "portalTotalRewardInst" {
-		epoch := beaconHeight / blockchain.config.ChainParams.Epoch
+		epoch := blockchain.GetEpochByHeight(beaconHeight)
 		// store total custodian reward into db
 		err = statedb.StoreRewardFeatureState(
 			stateDB,
