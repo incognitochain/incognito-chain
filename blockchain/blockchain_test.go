@@ -246,7 +246,7 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 		want1  bool
 	}{
 		{
-			name: "< break point",
+			name: "< break point 1",
 			fields: fields{
 				config: Config{
 					ChainParams: &Params{
@@ -261,8 +261,94 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 			},
 			want:  3,
 			want1: false,
-		}, {
-			name: "= break point",
+		},
+		{
+			name: "< break point 2",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 2,
+			},
+			want:  1,
+			want1: false,
+		},
+		{
+			name: "< break point 3",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 1,
+			},
+			want:  1,
+			want1: false,
+		},
+		{
+			name: "< break point 4",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 100,
+			},
+			want:  2,
+			want1: true,
+		},
+		{
+			name: "< break point 5",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             20,
+						EpochV2:           50,
+						EpochV2BreakPoint: 10,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 20,
+			},
+			want:  2,
+			want1: true,
+		},
+		{
+			name: "= break point 1",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 299,
+			},
+			want:  3,
+			want1: false,
+		},
+		{
+			name: "= break point 2",
 			fields: fields{
 				config: Config{
 					ChainParams: &Params{
@@ -275,7 +361,24 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 			args: args{
 				beaconHeight: 300,
 			},
-			want:  3,
+			want:  4,
+			want1: true,
+		},
+		{
+			name: "= break point 3",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 301,
+			},
+			want:  4,
 			want1: false,
 		},
 		{
@@ -293,7 +396,7 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 				beaconHeight: 301,
 			},
 			want:  4,
-			want1: true,
+			want1: false,
 		},
 		{
 			name: "> break point 2",
@@ -309,8 +412,8 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 			args: args{
 				beaconHeight: 650,
 			},
-			want:  4,
-			want1: false,
+			want:  5,
+			want1: true,
 		},
 		{
 			name: "> break point 3",
@@ -324,10 +427,10 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 				},
 			},
 			args: args{
-				beaconHeight: 651,
+				beaconHeight: 649,
 			},
-			want:  5,
-			want1: true,
+			want:  4,
+			want1: false,
 		},
 		{
 			name: "> break point 4",
@@ -341,7 +444,7 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 				},
 			},
 			args: args{
-				beaconHeight: 1000,
+				beaconHeight: 651,
 			},
 			want:  5,
 			want1: false,
@@ -358,13 +461,13 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 				},
 			},
 			args: args{
-				beaconHeight: 1001,
+				beaconHeight: 1000,
 			},
 			want:  6,
 			want1: true,
 		},
 		{
-			name: "> break point 5",
+			name: "> break point 6",
 			fields: fields{
 				config: Config{
 					ChainParams: &Params{
@@ -375,9 +478,26 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 				},
 			},
 			args: args{
-				beaconHeight: 1002,
+				beaconHeight: 1001,
 			},
 			want:  6,
+			want1: false,
+		},
+		{
+			name: "> break point 7",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 999,
+			},
+			want:  5,
 			want1: false,
 		},
 	}
@@ -1164,6 +1284,240 @@ func TestBlockChain_IsGreaterThanRandomTime(t *testing.T) {
 			}
 			if got := bc.IsGreaterThanRandomTime(tt.args.beaconHeight); got != tt.want {
 				t.Errorf("IsGreaterThanRandomTime() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBlockChain_IsFirstBeaconHeightInEpoch(t *testing.T) {
+	type fields struct {
+		config Config
+	}
+	type args struct {
+		beaconHeight uint64
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name: "< break point 1",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 100,
+			},
+			want: false,
+		},
+		{
+			name: "< break point 2",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 101,
+			},
+			want: true,
+		},
+		{
+			name: "< break point 3",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 102,
+			},
+			want: false,
+		},
+		{
+			name: "< break point 4",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 200,
+			},
+			want: false,
+		},
+		{
+			name: "< break point 5",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 201,
+			},
+			want: true,
+		},
+		{
+			name: "= break point 1",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 300,
+			},
+			want: false,
+		},
+		{
+			name: "= break point 2",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 301,
+			},
+			want: true,
+		},
+		{
+			name: "= break point 3",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 302,
+			},
+			want: false,
+		},
+		{
+			name: "> break point",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 650,
+			},
+			want: false,
+		},
+		{
+			name: "> break point 2",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 651,
+			},
+			want: true,
+		},
+		{
+			name: "> break point 3",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 1000,
+			},
+			want: false,
+		},
+		{
+			name: "> break point 4",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 1001,
+			},
+			want: true,
+		},
+		{
+			name: "> break point 5",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 1002,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bc := &BlockChain{
+				config: tt.fields.config,
+			}
+			if got := bc.IsFirstBeaconHeightInEpoch(tt.args.beaconHeight); got != tt.want {
+				t.Errorf("IsFirstBeaconHeightInEpoch() = %v, want %v", got, tt.want)
 			}
 		})
 	}

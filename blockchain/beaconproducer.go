@@ -59,7 +59,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	}
 
 	epoch, _ = blockchain.GetEpochNextHeight(copiedCurView.BeaconHeight)
-
+	Logger.log.Infof("New Beacon Block, height %+v, epoch %+v", copiedCurView.BeaconHeight+1, epoch)
 	newBeaconBlock.Header = types.NewBeaconHeader(
 		version,
 		copiedCurView.BeaconHeight+1,
