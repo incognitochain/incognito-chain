@@ -34,13 +34,16 @@ type TxPoolManager interface {
 }
 
 type TxPool interface {
-	// RemoveTx remove tx from tx resource
+	UpdateTxVerifier(tv TxVerifier)
 	Start()
 	Stop()
+	GetInbox() chan metadata.Transaction
+	IsRunning() bool
 	RemoveTxs(txHashes []string)
 	GetTxsTranferForNewBlock(
-		sView interface{},
-		bcView interface{},
+		cView metadata.ChainRetriever,
+		sView metadata.ShardViewRetriever,
+		bcView metadata.BeaconViewRetriever,
 		maxSize uint64,
 		maxTime time.Duration,
 	) []metadata.Transaction
@@ -63,7 +66,6 @@ type BlockTxsVerifier interface {
 }
 
 type TxVerifier interface {
-	ValidateAuthentications(metadata.Transaction) (bool, error)
 	ValidateWithoutChainstate(metadata.Transaction) (bool, error)
 	ValidateWithChainState(
 		tx metadata.Transaction,
@@ -72,33 +74,21 @@ type TxVerifier interface {
 		beaconViewRetriever metadata.BeaconViewRetriever,
 		beaconHeight uint64,
 	) (bool, error)
-	ValidateDataCorrectness(metadata.Transaction) (bool, error)
-	ValidateTxZKProof(metadata.Transaction) (bool, error)
-
-	ValidateWithBlockChain(
+	ValidateBlockTransactions(
+		chainRetriever metadata.ChainRetriever,
+		shardViewRetriever metadata.ShardViewRetriever,
+		beaconViewRetriever metadata.BeaconViewRetriever,
+		txs []metadata.Transaction,
+	) bool
+	LoadCommitment(
 		tx metadata.Transaction,
-		sView interface{},
-		bcView interface{},
-	) (bool, error)
-
-	ValidateDoubleSpend(
+		shardViewRetriever metadata.ShardViewRetriever,
+	) bool
+	LoadCommitmentForTxs(
 		txs []metadata.Transaction,
-		sView interface{},
-		bcView interface{},
-	) (bool, error)
-
-	ValidateTxAndAddToListTxs(
-		txNew metadata.Transaction,
-		txs []metadata.Transaction,
-		sView interface{},
-		bcView interface{},
-		better func(txA, txB metadata.Transaction) bool, // return true if we want txA when txA and txB is double spending
-	) (bool, error)
-
-	FilterDoubleSpend(
-		txs []metadata.Transaction,
-		sView interface{},
-		bcView interface{},
-		better func(txA, txB metadata.Transaction) bool, // return true if we want txA when txA and txB is double spending
-	) ([]metadata.Transaction, error)
+		shardViewRetriever metadata.ShardViewRetriever,
+	) bool
+	UpdateTransactionStateDB(
+		newSDB *statedb.StateDB,
+	)
 }

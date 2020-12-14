@@ -23,6 +23,7 @@ import (
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/pkg/errors"
 )
 
@@ -60,6 +61,7 @@ type Config struct {
 	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
+	PoolManager       *txpool.PoolManager
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
@@ -128,7 +130,16 @@ func (blockchain *BlockChain) InitChainState() error {
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
 	for shard := 1; shard <= blockchain.GetBeaconBestState().ActiveShards; shard++ {
 		shardID := byte(shard - 1)
-		blockchain.ShardChain[shardID] = NewShardChain(shard-1, multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID))
+		tp, err := blockchain.config.PoolManager.GetShardTxsPool(shardID)
+		if err != nil {
+			return err
+		}
+		tv := NewTxsVerifier(
+			nil,
+			tp,
+		)
+		tp.UpdateTxVerifier(tv)
+		blockchain.ShardChain[shardID] = NewShardChain(shard-1, multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID), tp, tv)
 		blockchain.ShardChain[shardID].hashHistory, err = lru.New(1000)
 		if err != nil {
 			return err
@@ -141,6 +152,8 @@ func (blockchain *BlockChain) InitChainState() error {
 				return err
 			}
 		}
+		txDB := blockchain.ShardChain[shardID].GetBestState().GetCopiedTransactionStateDB()
+		blockchain.ShardChain[shardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
 	}
 

@@ -113,6 +113,31 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v \nPrev hash: %+v", shardID, blockHeight, blockHash, preHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
+	for _, tx := range shardBlock.Body.Transactions {
+		valEnv := transaction.DefaultValEnv()
+		if tx.IsPrivacy() {
+			valEnv = transaction.WithPrivacy(valEnv)
+		} else {
+			valEnv = transaction.WithNoPrivacy(valEnv)
+		}
+		valEnv = transaction.WithType(valEnv, tx.GetType())
+		valEnv = transaction.
+			WithConfirmedTime(
+				transaction.WithBeaconHeight(
+					transaction.WithShardHeight(
+						transaction.WithShardID(
+							valEnv,
+							shardBlock.GetShardID(),
+						),
+						shardBlock.GetHeight(),
+					),
+					shardBlock.Header.BeaconHeight,
+				),
+				shardBlock.GetProduceTime(),
+			)
+		tx.SetValidationEnv(valEnv)
+		fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
+	}
 	//startTimeInsertShardBlock := time.Now()
 	committeeChange := newCommitteeChange()
 
@@ -430,6 +455,15 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	shardVerifyPreprocesingTimer.UpdateSince(startTimeVerifyPreProcessingShardBlock)
 	// Get cross shard shardBlock from pool
+	ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
+		blockchain,
+		curView,
+		blockchain.GetBeaconBestState(),
+		shardBlock.Body.Transactions,
+	)
+	if !ok {
+		return NewBlockChainError(TransactionFromNewBlockError, err)
+	}
 	if isPreSign {
 		err := blockchain.verifyPreProcessingShardBlockForSigning(curView, shardBlock, beaconBlocks, txInstructions, shardID)
 		if err != nil {
@@ -452,8 +486,17 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	startTimeVerifyPreProcessingShardBlockForSigning := time.Now()
 	// Verify Transaction
 	//get beacon height from shard block
-	beaconHeight := shardBlock.Header.BeaconHeight
-	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(beaconHeight), curView); err != nil {
+	// beaconHeight := shardBlock.Header.BeaconHeight
+	// if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(beaconHeight), curView); err != nil {
+	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
+	// }
+	ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
+		blockchain,
+		curView,
+		blockchain.GetBeaconBestState(),
+		shardBlock.Body.Transactions,
+	)
+	if !ok {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 	// Verify Instruction
@@ -1177,6 +1220,8 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	}
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState)
+	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
+	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 
 	storeBlock := newFinalView.GetBlock()

@@ -24,6 +24,7 @@ import (
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/syncker"
+	"github.com/incognitochain/incognito-chain/txpool"
 
 	"github.com/incognitochain/incognito-chain/peerv2"
 
@@ -313,7 +314,7 @@ func (serverObj *Server) NewServer(
 		cfg.NodeMode,
 		relayShards,
 	)
-
+	poolManager, _ := txpool.NewPoolManager(common.MaxShardNumber)
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		BTCChain:      btcChain,
 		BNBChainState: bnbChainState,
@@ -334,6 +335,7 @@ func (serverObj *Server) NewServer(
 		ConsensusEngine: serverObj.consensusEngine,
 		Highway:         serverObj.highway,
 		GenesisParams:   blockchain.GenesisParam,
+		PoolManager:     poolManager,
 	})
 	if err != nil {
 		return err

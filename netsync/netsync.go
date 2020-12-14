@@ -1,13 +1,11 @@
 package netsync
 
 import (
-	"encoding/json"
 	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/syncker"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -266,17 +264,18 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64)
 	if !netSync.handleTxWithRole(msg.Transaction) {
 		return
 	}
-	txEnv := msg.Transaction.GetValidationEnv()
-	rawdb := netSync.config.BlockChain.GetShardChainDatabase(byte(txEnv.ShardID()))
-	data, _ := rawdbv2.GetShardRootsHash(rawdb, byte(txEnv.ShardID()), txEnv.BuilderSView())
-	sRH := &blockchain.ShardRootHash{}
-	_ = json.Unmarshal(data, sRH)
 	// GetShardRootsHash(txEnv.BuilderSView())
 	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, beaconHeight)
+		tx := msg.Transaction
+		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		tp, err := netSync.config.BlockChain.GetConfig().PoolManager.GetShardTxsPool(sID)
 		if err != nil {
 			Logger.log.Error(err)
 		} else {
+			if !tp.IsRunning() {
+				return
+			}
+			tp.GetInbox() <- tx
 			// Broadcast to network
 			/*go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 				metrics.Measurement:      metrics.TxEnterNetSyncSuccess,
@@ -284,7 +283,7 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64)
 				metrics.Tag:              metrics.TxHashTag,
 				metrics.TagValue:         msg.Transaction.Hash().String(),
 			})*/
-			Logger.log.Debugf("there is hash of transaction %s", hash.String())
+			Logger.log.Debugf("there is hash of transaction %s", tx.Hash().String())
 			err := netSync.config.Server.PushMessageToAll(msg)
 			if err != nil {
 				Logger.log.Error(err)

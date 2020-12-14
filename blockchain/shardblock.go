@@ -294,6 +294,7 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 				shardBlock.GetProduceTime(),
 			)
 		tx.SetValidationEnv(valEnv)
+		fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
 	}
 	if shardBlock.Body.Instructions == nil {
 		shardBlock.Body.Instructions = [][]string{}

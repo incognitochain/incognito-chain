@@ -63,6 +63,14 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 			txCustomTokenPrivacy.TxPrivacyTokenData.Amount = 37772966455153487
 		}
 	}
+	valEnv := DefaultValEnv()
+	if tx.IsPrivacy() {
+		valEnv = WithPrivacy(valEnv)
+	} else {
+		valEnv = WithNoPrivacy(valEnv)
+	}
+	valEnv = WithType(valEnv, tx.GetType())
+	tx.SetValidationEnv(valEnv)
 
 	return nil
 }

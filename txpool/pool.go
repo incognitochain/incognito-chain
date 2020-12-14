@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/patrickmn/go-cache"
+	"github.com/pkg/errors"
 )
 
 type TxInfo struct {
@@ -35,7 +36,6 @@ type txInfoTemp struct {
 }
 
 type TxsPool struct {
-	// SID       byte
 	action    chan func(*TxsPool)
 	Verifier  TxVerifier
 	Data      TxsData
@@ -58,7 +58,22 @@ func NewTxsPool(
 		Inbox:     inbox,
 		isRunning: false,
 		cQuit:     make(chan bool),
+		better: func(txA, txB metadata.Transaction) bool {
+			return txA.GetTxFee() > txB.GetTxFee()
+		},
 	}
+}
+
+func (tp *TxsPool) UpdateTxVerifier(tv TxVerifier) {
+	tp.Verifier = tv
+}
+
+func (tp *TxsPool) GetInbox() chan metadata.Transaction {
+	return tp.Inbox
+}
+
+func (tp *TxsPool) IsRunning() bool {
+	return tp.isRunning
 }
 
 func (tp *TxsPool) Start() {
@@ -106,6 +121,10 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 	if _, exist := tp.Cacher.Get(tx.Hash().String()); exist {
 		return false, nil, 0
 	}
+	ok := tp.Verifier.LoadCommitment(tx, nil)
+	if !ok {
+		return false, errors.Errorf("Can not load commitment for this tx %v", tx.Hash().String()), 0
+	}
 	ok, err := tp.Verifier.ValidateWithoutChainstate(tx)
 	return ok, err, time.Since(start)
 }
@@ -127,9 +146,14 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		Index  uint
 		Detail TxInfoDetail
 	}{}
+	sDB := sView.GetCopiedTransactionStateDB()
 	for txDetails := range txDetailCh {
 		if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
 			continue
+		}
+		err := txDetails.Tx.LoadCommitment(sDB)
+		if err != nil {
+			fmt.Printf("Validate tx %v return error %v\n", txDetails.Hash, err)
 		}
 		ok, err := tp.Verifier.ValidateWithChainState(
 			txDetails.Tx,
@@ -163,7 +187,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 	TxInfo,
 ) {
 	iCoins := tx.GetProof().GetInputCoins()
-	oCoins := tx.GetProof().GetInputCoins()
+	oCoins := tx.GetProof().GetOutputCoins()
 	removedInfos := TxInfo{
 		Fee:   0,
 		VTime: 0,
@@ -245,6 +269,9 @@ func (tp *TxsPool) CheckValidatedTxs(
 	valid []metadata.Transaction,
 	needValidate []metadata.Transaction,
 ) {
+	if !tp.isRunning {
+		return []metadata.Transaction{}, txs
+	}
 	poolData := tp.snapshotPool()
 	for _, tx := range txs {
 		if _, ok := poolData.TxInfos[tx.Hash().String()]; ok {

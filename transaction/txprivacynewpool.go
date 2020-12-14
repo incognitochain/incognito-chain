@@ -15,17 +15,14 @@ import (
 
 func (tx Tx) ValidateDoubleSpendWithBlockChain(
 	stateDB *statedb.StateDB,
-	// tokenID *common.Hash,
 ) (bool, error) {
-
-	shardID := byte(tx.valEnv.ShardID())
-	if tokenID == nil {
-		tokenID = &common.Hash{}
-		err := tokenID.SetBytes(common.PRVCoinID[:])
-		if err != nil {
-			return false, err
-		}
+	tokenID := &common.Hash{}
+	err := tokenID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return false, err
 	}
+	shardID := byte(tx.valEnv.ShardID())
+
 	if tx.Proof != nil {
 		for _, txInput := range tx.Proof.GetInputCoins() {
 			serialNumber := txInput.CoinDetails.GetSerialNumber().ToBytesS()
@@ -59,10 +56,11 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 	if len(tx.Info) > 512 {
 		return false, NewTransactionErr(RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(tx.Info), 512))
 	}
-
-	if ((tx.Metadata.GetType() == metadata.ReturnStakingMeta) != (tx.valEnv.TxType() == common.TxReturnStakingType)) ||
-		((tx.Metadata.GetType() == metadata.WithDrawRewardResponseMeta) != (tx.valEnv.TxType() == common.TxRewardType)) {
-		return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", tx.valEnv.TxType(), tx.Metadata.GetType())
+	if tx.Metadata != nil {
+		if ((tx.Metadata.GetType() == metadata.ReturnStakingMeta) != (tx.valEnv.TxType() == common.TxReturnStakingType)) ||
+			((tx.Metadata.GetType() == metadata.WithDrawRewardResponseMeta) != (tx.valEnv.TxType() == common.TxRewardType)) {
+			return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", tx.valEnv.TxType(), tx.Metadata.GetType())
+		}
 	}
 
 	// check tx size
@@ -160,9 +158,24 @@ func (tx *Tx) ValidateSanityDataWithBlockchain(
 func (tx *Tx) LoadCommitment(
 	db *statedb.StateDB,
 ) error {
-	var tokenID *common.Hash
+	tokenID := tx.GetTokenID()
 	if tx.valEnv.IsPrivacy() {
 		return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
+	} else {
+		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
+			ok, err := tx.CheckCMExistence(
+				tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(),
+				db,
+				byte(tx.valEnv.ShardID()),
+				tokenID,
+			)
+			if !ok || err != nil {
+				if err != nil {
+					Logger.log.Error(err)
+				}
+				return NewTransactionErr(InputCommitmentIsNotExistedError, err)
+			}
+		}
 	}
 	return nil
 }
@@ -204,16 +217,8 @@ func (tx *Tx) ValidateTxCorrectness(
 		/*----------- TODO Moving out --------------
 
 		// if !tx.valEnv.IsPrivacy() {
-		// 	// Check input coins' commitment is exists in cm list (Database)
-		// 	for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
-		// 		ok, err := tx.CheckCMExistence(tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(), transactionStateDB, shardID, 	tokenID)
-		// 		if !ok || err != nil {
-		// 			if err != nil {
-		// 				Logger.log.Error(err)
-		// 			}
-		// 			return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
-		// 		}
-		// 	}
+			// Check input coins' commitment is exists in cm list (Database)
+
 		// }
 		------------------------------------------ */
 		// Verify the payment proof

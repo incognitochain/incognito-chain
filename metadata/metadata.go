@@ -87,6 +87,7 @@ type ShardViewRetriever interface {
 	ListShardPrivacyTokenAndPRV() []common.Hash
 	GetShardRewardStateDB() *statedb.StateDB
 	GetCopiedFeatureStateDB() *statedb.StateDB
+	GetCopiedTransactionStateDB() *statedb.StateDB
 }
 
 type ValidationEnviroment interface {

@@ -4,20 +4,72 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/pkg/errors"
 )
 
 type TxsVerifier struct {
-	txDB   statedb.StateDB
-	txPool TxsCrawler
+	txDB   *statedb.StateDB
+	txPool txpool.TxPool
 }
 
-func (v *TxsVerifier) ValidateWithoutChainState(tx metadata.Transaction) (bool, error) {
-	if err := tx.LoadCommitment(&v.txDB); err != nil {
-		return false, err
+func (v *TxsVerifier) UpdateTransactionStateDB(
+	newSDB *statedb.StateDB,
+) {
+	v.txDB = newSDB
+}
+
+func NewTxsVerifier(
+	txDB *statedb.StateDB,
+	tp txpool.TxPool,
+) txpool.TxVerifier {
+	x := &TxsVerifier{
+		txDB:   txDB,
+		txPool: tp,
 	}
+	return x
+}
+
+func (v *TxsVerifier) LoadCommitment(
+	tx metadata.Transaction,
+	shardViewRetriever metadata.ShardViewRetriever,
+) bool {
+	sDB := v.txDB
+	if shardViewRetriever != nil {
+		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
+	}
+	err := tx.LoadCommitment(sDB)
+	if err != nil {
+		fmt.Println("Can not load commitment of this tx %v, error: %v", tx.Hash().String(), err)
+		return false
+	}
+	return true
+}
+
+func (v *TxsVerifier) LoadCommitmentForTxs(
+	txs []metadata.Transaction,
+	shardViewRetriever metadata.ShardViewRetriever,
+) bool {
+	sDB := v.txDB
+	if shardViewRetriever != nil {
+		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
+	}
+	for _, tx := range txs {
+		err := tx.LoadCommitment(sDB)
+		if err != nil {
+			fmt.Printf("[testNewPool] Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
+			return false
+		}
+	}
+	return true
+}
+
+func (v *TxsVerifier) ValidateWithoutChainstate(tx metadata.Transaction) (bool, error) {
 	ok, err := tx.ValidateSanityDataByItSelf()
 	if !ok || err != nil {
 		return ok, err
@@ -32,11 +84,6 @@ func (v *TxsVerifier) ValidateWithChainState(
 	beaconViewRetriever metadata.BeaconViewRetriever,
 	beaconHeight uint64,
 ) (bool, error) {
-	//Get state db from beaconview
-	if err := tx.LoadCommitment(&v.txDB); err != nil {
-		return false, err
-	}
-
 	ok, err := tx.ValidateSanityDataWithBlockchain(
 		chainRetriever,
 		shardViewRetriever,
@@ -46,7 +93,7 @@ func (v *TxsVerifier) ValidateWithChainState(
 	if !ok || err != nil {
 		return ok, err
 	}
-	return tx.ValidateDoubleSpendWithBlockChain(&v.txDB)
+	return tx.ValidateDoubleSpendWithBlockChain(shardViewRetriever.GetCopiedTransactionStateDB())
 }
 
 func (v *TxsVerifier) ValidateBlockTransactions(
@@ -55,62 +102,84 @@ func (v *TxsVerifier) ValidateBlockTransactions(
 	beaconViewRetriever metadata.BeaconViewRetriever,
 	txs []metadata.Transaction,
 ) bool {
-	_, newTxs := v.txPool.CheckValidatedTxs(txs)
-	ok := v.validateTxsWithoutChainstate(newTxs)
-	if !ok {
-		return ok
+	fmt.Printf("[testNewPool] Total txs %v\n", len(txs))
+	st := time.Now()
+	defer func() {
+		if len(txs) > 0 {
+			fmt.Printf("[testNewPooltime] Validate %v txs cost %v\n", len(txs), time.Since(st))
+		}
+	}()
+	if len(txs) == 0 {
+		return true
 	}
-	ok = v.validateTxsWithChainstate(
+	_, newTxs := v.txPool.CheckValidatedTxs(txs)
+	fmt.Println("Is Validated")
+	errCh := make(chan error)
+	doneCh := make(chan interface{}, len(txs)+len(newTxs))
+	numOfValidTxs := 0
+	timeout := time.After(10 * time.Second)
+	v.LoadCommitmentForTxs(
+		txs,
+		shardViewRetriever,
+	)
+	v.validateTxsWithoutChainstate(
+		newTxs,
+		errCh,
+		doneCh,
+	)
+	v.validateTxsWithChainstate(
 		txs,
 		chainRetriever,
 		shardViewRetriever,
 		beaconViewRetriever,
+		errCh,
+		doneCh,
 	)
-	return ok
-}
-
-func (v *TxsVerifier) validateTxsWithoutChainstate(txs []metadata.Transaction) bool {
-	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	// defer cancel()
-	// txErrs, ctxNew := errgroup.WithContext(ctx)
-	// for _, tx := range txs {
-	// 	txErrs.Go(
-	// 		func() error {
-	// 			ok, err := v.ValidateWithoutChainState(tx)
-	// 			if !ok || err != nil {
-	// 				return errors.Errorf("This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, err)
-	// 			}
-	// 			return nil
-	// 		})
-	// }
-	// // Wait for the first error from any goroutine.
-	// if err := txErrs.Wait(); err != nil {
-	// 	fmt.Println(err)
-	// }
-	errCh := make(chan error)
-	// MAX := runtime.NumCPU() - 1
-	// nWorkers := make(chan int, MAX)
-	for _, tx := range txs {
+	fmt.Println("[testNewPool] wait!")
+	for {
 		select {
 		case err := <-errCh:
 			fmt.Println(err)
 			return false
-		default:
-			// nWorkers <- 1
-			go func() {
-				ok, err := v.ValidateWithoutChainState(tx)
-				if !ok || err != nil {
-					errCh <- errors.Errorf("This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, err)
+		case <-doneCh:
+			numOfValidTxs++
+			fmt.Printf("[testNewPool] %v %v\n", numOfValidTxs, len(txs))
+			if numOfValidTxs == len(txs) {
+				fmt.Println("[testNewPool] wait!")
+				ok, err := v.checkDoubleSpendInListTxs(txs)
+				if (!ok) || (err != nil) {
+					fmt.Println(err)
+					return false
 				}
-				// <-nWorkers
-				if err != nil {
-					fmt.Printf("Validate tx %v return error %v:\n", tx.Hash().String(), err)
-				}
-			}()
+				return true
+			}
+		case <-timeout:
+			fmt.Println("Timeout!!!")
+			return false
 		}
 	}
-	return true
+}
 
+func (v *TxsVerifier) validateTxsWithoutChainstate(
+	txs []metadata.Transaction,
+	errCh chan error,
+	doneCh chan interface{},
+) {
+	for _, tx := range txs {
+		go func() {
+			ok, err := v.ValidateWithoutChainstate(tx)
+			if !ok || err != nil {
+				errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, err)
+			}
+			if err != nil {
+				fmt.Printf("[testNewPool] Validate tx %v return error %v:\n", tx.Hash().String(), err)
+			} else {
+				fmt.Printf("[testNewPool] Validate tx %v\n", tx.Hash().String())
+				doneCh <- nil
+
+			}
+		}()
+	}
 }
 
 func (v *TxsVerifier) validateTxsWithChainstate(
@@ -118,11 +187,9 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 	cView metadata.ChainRetriever,
 	sView metadata.ShardViewRetriever,
 	bcView metadata.BeaconViewRetriever,
-) bool {
-	errCh := make(chan error)
-	doneCh := make(chan interface{}, len(txs))
-	numOfValidTxs := 0
-	timeout := time.After(5 * time.Second)
+	errCh chan error,
+	doneCh chan interface{},
+) {
 	// MAX := runtime.NumCPU() - 1
 	// nWorkers := make(chan int, MAX)
 	for _, tx := range txs {
@@ -136,31 +203,62 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 				sView.GetBeaconHeight(),
 			)
 			if !ok || err != nil {
-				errCh <- errors.Errorf("This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, err)
+				errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, err)
 				if err != nil {
-					fmt.Printf("Validate tx %v return error %v:\n", tx.Hash().String(), err)
+					fmt.Printf("[testNewPool] Validate tx %v return error %v:\n", tx.Hash().String(), err)
 				}
 			} else {
+				fmt.Printf("[testNewPool] Validate tx %v\n", tx.Hash().String())
 				doneCh <- nil
 			}
 			// <-nWorkers
-
 		}()
 	}
+}
 
-	for {
-		select {
-		case err := <-errCh:
-			fmt.Println(err)
-			return false
-		case <-doneCh:
-			numOfValidTxs++
-			if numOfValidTxs == len(txs) {
-				return true
+func (v *TxsVerifier) checkDoubleSpendInListTxs(
+	txs []metadata.Transaction,
+) (
+	bool,
+	error,
+) {
+	mapForChkDbSpend := map[[privacy.Ed25519KeySize]byte]interface{}{}
+	for _, tx := range txs {
+		iCoins := tx.GetProof().GetInputCoins()
+		oCoins := tx.GetProof().GetOutputCoins()
+		for _, iCoin := range iCoins {
+			if _, ok := mapForChkDbSpend[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
+				return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
+			} else {
+				mapForChkDbSpend[iCoin.CoinDetails.GetSerialNumber().ToBytes()] = nil
 			}
-		case <-timeout:
-			fmt.Println("Timeout!!!")
-			return false
+		}
+		for _, oCoin := range oCoins {
+			if _, ok := mapForChkDbSpend[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
+				return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
+			} else {
+				mapForChkDbSpend[oCoin.CoinDetails.GetSNDerivator().ToBytes()] = nil
+			}
+		}
+		if tx.GetType() == common.TxCustomTokenPrivacyType {
+			txNormal := tx.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
+			iCoins := txNormal.GetProof().GetInputCoins()
+			oCoins := txNormal.GetProof().GetOutputCoins()
+			for _, iCoin := range iCoins {
+				if _, ok := mapForChkDbSpend[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
+					return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
+				} else {
+					mapForChkDbSpend[iCoin.CoinDetails.GetSerialNumber().ToBytes()] = nil
+				}
+			}
+			for _, oCoin := range oCoins {
+				if _, ok := mapForChkDbSpend[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
+					return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
+				} else {
+					mapForChkDbSpend[oCoin.CoinDetails.GetSNDerivator().ToBytes()] = nil
+				}
+			}
 		}
 	}
+	return true, nil
 }

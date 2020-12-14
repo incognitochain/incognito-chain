@@ -84,10 +84,10 @@ type TxsCrawler interface {
 	CheckValidatedTxs(txs []metadata.Transaction) (valid []metadata.Transaction, needValidate []metadata.Transaction)
 }
 
-type TxsVerifier interface {
-	ValidateBlockTransactions(txP TxPool, sView interface{}, bcView interface{}, txs []metadata.Transaction) bool
-	ValidateBatchRangeProof([]metadata.Transaction) (bool, error)
-	ValidateAuthentications(metadata.Transaction) (bool, error)
-	ValidateDataCorrectness(metadata.Transaction) (bool, error)
-	ValidateTxZKProof(metadata.Transaction) (bool, error)
-}
+// type TxsVerifier interface {
+// 	ValidateBlockTransactions(txP TxPool, sView interface{}, bcView interface{}, txs []metadata.Transaction) bool
+// 	ValidateBatchRangeProof([]metadata.Transaction) (bool, error)
+// 	ValidateAuthentications(metadata.Transaction) (bool, error)
+// 	ValidateDataCorrectness(metadata.Transaction) (bool, error)
+// 	ValidateTxZKProof(metadata.Transaction) (bool, error)
+// }

@@ -21,8 +21,7 @@ func NewPoolManager(
 ) {
 	res := &PoolManager{}
 	for i := 0; i < activeShards; i++ {
-		txV := &TxsVerifier{}
-		res.ShardTxsPool = append(res.ShardTxsPool, NewTxsPool(txV, make(chan metadata.Transaction)))
+		res.ShardTxsPool = append(res.ShardTxsPool, NewTxsPool(nil, make(chan metadata.Transaction)))
 	}
 
 	return res, nil
