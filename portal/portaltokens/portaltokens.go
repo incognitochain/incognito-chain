@@ -4,9 +4,8 @@ import (
 	bMeta "github.com/incognitochain/incognito-chain/basemeta"
 )
 
-//TODO: add more functions
 type PortalTokenProcessor interface {
-	IsValidRemoteAddress(address string) (bool, error)
+	IsValidRemoteAddress(address string, bcr bMeta.ChainRetriever) (bool, error)
 	GetChainID() string
 	GetMinTokenAmount() uint64
 
@@ -16,10 +15,9 @@ type PortalTokenProcessor interface {
 		proof string, bc bMeta.ChainRetriever, expectedMemo string, expectedPaymentInfos map[string]uint64) (bool, error)
 }
 
-
 // set MinTokenAmount to avoid attacking with amount is less than smallest unit of cryptocurrency
 // such as satoshi in BTC
 type PortalToken struct {
-	ChainID string
-	MinTokenAmount uint64 			// minimum amount for porting/redeem
+	ChainID        string
+	MinTokenAmount uint64 // minimum amount for porting/redeem
 }

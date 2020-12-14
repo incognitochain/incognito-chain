@@ -24,7 +24,6 @@ type Metadata interface {
 	IsMinerCreatedMetaType() bool
 }
 
-
 // Interface for mempool which is used in metadata
 type MempoolRetriever interface {
 	GetSerialNumbersHashH() map[common.Hash][]common.Hash
@@ -54,6 +53,7 @@ type ChainRetriever interface {
 	IsPortalExchangeRateToken(beaconHeight uint64, tokenID string) bool
 	IsPortalToken(beaconHeight uint64, tokenIDStr string) bool
 	GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error)
+	IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error)
 }
 
 type BeaconViewRetriever interface {
@@ -76,7 +76,6 @@ type ShardViewRetriever interface {
 	GetHeight() uint64
 }
 
-
 // This is tx struct which is really saved in tx mempool
 type TxDesc struct {
 	// Tx is the transaction associated with the entry.
@@ -95,7 +94,6 @@ type TxDesc struct {
 	// FeePerKB is the fee the transaction pays in coin per 1000 bytes.
 	FeePerKB int32
 }
-
 
 // Interface for all type of transaction
 type Transaction interface {

@@ -192,8 +192,9 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever basemet
 	if len(redeemReq.RemoteAddress) == 0 {
 		return false, false, basemeta.NewMetadataTxError(basemeta.PortalRedeemRequestParamError, errors.New("Remote address is invalid"))
 	}
-	if !IsValidPortalRemoteAddress(chainRetriever, redeemReq.RemoteAddress, redeemReq.TokenID, beaconHeight) {
-		return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", redeemReq.RemoteAddress, redeemReq.TokenID)
+	isValidRemoteAddress, err := chainRetriever.IsValidPortalRemoteAddress(redeemReq.TokenID, redeemReq.RemoteAddress, beaconHeight)
+	if err != nil || !isValidRemoteAddress {
+		return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v - Error %v", redeemReq.RemoteAddress, redeemReq.TokenID, err)
 	}
 
 	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() {

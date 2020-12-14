@@ -14,7 +14,7 @@ type PortalBNBTokenProcessor struct {
 	*PortalToken
 }
 
-func (p PortalBNBTokenProcessor) IsValidRemoteAddress(address string) (bool, error) {
+func (p PortalBNBTokenProcessor) IsValidRemoteAddress(address string, bcr bMeta.ChainRetriever) (bool, error) {
 	return bnb.IsValidBNBAddress(address, p.ChainID), nil
 }
 
@@ -157,6 +157,3 @@ func (p PortalBNBTokenProcessor) GetExpectedMemoForRedeem(redeemID string, custo
 func ConvertIncPBNBAmountToExternalBNBAmount(incPBNBAmount int64) int64 {
 	return incPBNBAmount / 10 // incPBNBAmount / 1^9 * 1^8
 }
-
-
-

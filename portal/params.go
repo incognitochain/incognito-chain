@@ -14,6 +14,15 @@ type PortalCollateral struct {
 	Decimal         uint8
 }
 
+type RelayingParams struct {
+	BNBRelayingHeaderChainID string
+	BTCRelayingHeaderChainID string
+	BTCDataFolderName        string
+	BNBFullNodeProtocol      string
+	BNBFullNodeHost          string
+	BNBFullNodePort          string
+}
+
 type PortalParams struct {
 	TimeOutCustodianReturnPubToken       time.Duration
 	TimeOutWaitingPortingRequest         time.Duration
@@ -36,15 +45,6 @@ type PortalParams struct {
 	MinUnlockOverRateCollaterals uint64
 
 	RelayingParams RelayingParams
-}
-
-type RelayingParams struct {
-	BNBRelayingHeaderChainID string
-	BTCRelayingHeaderChainID string
-	BTCDataFolderName        string
-	BNBFullNodeProtocol      string
-	BNBFullNodeHost          string
-	BNBFullNodePort          string
 }
 
 func GetLatestPortalParams(params map[uint64]PortalParams) PortalParams {

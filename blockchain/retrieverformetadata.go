@@ -105,7 +105,6 @@ func (bc *BlockChain) GetBNBBlockByHeight(blockHeight int64) (*types.Block, erro
 	return bnbChainState.GetBNBBlockByHeight(blockHeight)
 }
 
-
 // IsSupportedTokenCollateralV3 check externalTokenID is the supported token collateral on portal v3 or not
 func (blockchain *BlockChain) IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool {
 	return blockchain.GetPortalParams(beaconHeight).IsSupportedTokenCollateralV3(externalTokenID)
@@ -187,7 +186,14 @@ func (blockchain *BlockChain) GetPortalFeederAddress(beaconHeight uint64) string
 	return blockchain.GetPortalParams(beaconHeight).PortalFeederAddress
 }
 
-
 func (blockchain *BlockChain) GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error) {
 	return blockchain.GetPortalParams(beaconHeight).GetMinAmountPortalToken(tokenIDStr)
+}
+
+func (blockchain *BlockChain) IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error) {
+	portalToken, ok := blockchain.GetPortalParams(beaconHeight).PortalTokens[tokenIDStr]
+	if !ok || portalToken == nil {
+		return false, errors.New("Portal token ID is invalid")
+	}
+	return portalToken.IsValidRemoteAddress(remoteAddr, blockchain)
 }
