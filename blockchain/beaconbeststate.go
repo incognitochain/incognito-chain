@@ -646,7 +646,6 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	return &committeestate.BeaconCommitteeStateEnvironment{
 		BeaconHeight:                      beaconBestState.BeaconHeight,
 		BeaconHash:                        beaconBestState.BestBlockHash,
-		ParamEpoch:                        params.Epoch,
 		Epoch:                             beaconBestState.Epoch,
 		BeaconInstructions:                beaconInstructions,
 		EpochBreakPointSwapNewKey:         params.EpochBreakPointSwapNewKey,
@@ -920,5 +919,4 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		newBeaconCommitteeStateV2,
 	)
 	beaconBestState.beaconCommitteeEngine = newCommitteeEngineV2
-	beaconBestState.Epoch = bc.config.ChainParams.EpochV2
 }
