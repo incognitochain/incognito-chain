@@ -14,7 +14,7 @@ type PortalBNBTokenProcessor struct {
 	*PortalToken
 }
 
-func (p PortalBNBTokenProcessor) IsValidRemoteAddress(address string) (bool, error) {
+func (p PortalBNBTokenProcessor) IsValidRemoteAddress(address string, bcr bMeta.ChainRetriever) (bool, error) {
 	return bnb.IsValidBNBAddress(address, p.ChainID), nil
 }
 

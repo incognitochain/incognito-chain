@@ -4,9 +4,8 @@ import (
 	bMeta "github.com/incognitochain/incognito-chain/basemeta"
 )
 
-//TODO: add more functions
 type PortalTokenProcessor interface {
-	IsValidRemoteAddress(address string) (bool, error)
+	IsValidRemoteAddress(address string, bcr bMeta.ChainRetriever) (bool, error)
 	GetChainID() string
 	GetMinTokenAmount() uint64
 

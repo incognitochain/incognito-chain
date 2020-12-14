@@ -54,6 +54,7 @@ type ChainRetriever interface {
 	IsPortalExchangeRateToken(beaconHeight uint64, tokenID string) bool
 	IsPortalToken(beaconHeight uint64, tokenIDStr string) bool
 	GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error)
+	IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error)
 }
 
 type BeaconViewRetriever interface {

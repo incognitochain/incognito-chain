@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	ec "github.com/ethereum/go-ethereum/common"
-	pCommon "github.com/incognitochain/incognito-chain/portal/common"
-	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"github.com/pkg/errors"
 )
 
@@ -104,24 +103,6 @@ func ParseMetadata(meta interface{}) (basemeta.Metadata, error) {
 	return md, nil
 }
 
-func IsValidPortalRemoteAddress(
-	bcr basemeta.ChainRetriever,
-	remoteAddress string,
-	tokenID string,
-	beaconHeight uint64,
-) bool {
-	if tokenID == pCommon.PortalBNBIDStr {
-		return bnb.IsValidBNBAddress(remoteAddress, bcr.GetBNBChainID(beaconHeight))
-	} else if tokenID == pCommon.PortalBTCIDStr {
-		btcHeaderChain := bcr.GetBTCHeaderChain()
-		if btcHeaderChain == nil {
-			return false
-		}
-		return btcHeaderChain.IsBTCAddressValid(remoteAddress)
-	}
-	return false
-}
-
 // Validate portal remote addresses for portal tokens (BTC, BNB)
 func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetriever basemeta.ChainRetriever, beaconHeight uint64) (bool, error){
 	if len(remoteAddresses) == 0 {
@@ -134,8 +115,9 @@ func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetri
 		if len(remoteAddr) == 0 {
 			return false, errors.New("Remote address is invalid")
 		}
-		if !IsValidPortalRemoteAddress(chainRetriever, remoteAddr, tokenID, beaconHeight) {
-			return false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", remoteAddr, tokenID)
+		isValid, err := chainRetriever.IsValidPortalRemoteAddress(tokenID, remoteAddr, beaconHeight)
+		if !isValid || err != nil {
+			return false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v - Error %v", remoteAddr, tokenID, err)
 		}
 	}
 

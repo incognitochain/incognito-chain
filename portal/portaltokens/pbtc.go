@@ -85,9 +85,12 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyProof(
 	return true, nil
 }
 
-//todo:
-func (p PortalBTCTokenProcessor) IsValidRemoteAddress(address string) (bool, error) {
-	return true, nil
+func (p PortalBTCTokenProcessor) IsValidRemoteAddress(address string, bcr bMeta.ChainRetriever) (bool, error) {
+	btcHeaderChain := bcr.GetBTCHeaderChain()
+	if btcHeaderChain == nil {
+		return false, nil
+	}
+	return btcHeaderChain.IsBTCAddressValid(address), nil
 }
 
 func (p PortalBTCTokenProcessor) GetChainID() string {

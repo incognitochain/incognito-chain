@@ -191,3 +191,11 @@ func (blockchain *BlockChain) GetPortalFeederAddress(beaconHeight uint64) string
 func (blockchain *BlockChain) GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error) {
 	return blockchain.GetPortalParams(beaconHeight).GetMinAmountPortalToken(tokenIDStr)
 }
+
+func (blockchain *BlockChain) IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error)  {
+	portalToken, ok := blockchain.GetPortalParams(beaconHeight).PortalTokens[tokenIDStr]
+	if !ok || portalToken == nil {
+		return false, errors.New("Portal token ID is invalid")
+	}
+	return portalToken.IsValidRemoteAddress(remoteAddr, blockchain)
+}
