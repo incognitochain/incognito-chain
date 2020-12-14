@@ -628,10 +628,16 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		Logger.log.Infof("SHARD %+v, Epoch %+v, NO Slashing Committees", shardID, env.Epoch)
 	}
 
+	Logger.log.Info("[DCS] comparedShardSwapInstruction.InPublicKeys:", comparedShardSwapInstruction.InPublicKeys)
+	Logger.log.Info("[DCS] comparedShardSwapInstruction.OutPublicKeys:", comparedShardSwapInstruction.OutPublicKeys)
+	Logger.log.Info("[DCS] swapShardInstruction.InPublicKeys:", swapShardInstruction.InPublicKeys)
+	Logger.log.Info("[DCS] swapShardInstruction.InPublicKeys:", swapShardInstruction.OutPublicKeys)
+
 	if !reflect.DeepEqual(comparedShardSwapInstruction.InPublicKeys, swapShardInstruction.InPublicKeys) {
 		return nil, returnStakingInstruction, fmt.Errorf("expect swap in keys %+v, got %+v",
 			comparedShardSwapInstruction.InPublicKeys, swapShardInstruction.InPublicKeys)
 	}
+
 	if !reflect.DeepEqual(comparedShardSwapInstruction.OutPublicKeys, swapShardInstruction.OutPublicKeys) {
 		return nil, returnStakingInstruction, fmt.Errorf("expect swap out keys %+v, got %+v",
 			comparedShardSwapInstruction.OutPublicKeys, swapShardInstruction.OutPublicKeys)
@@ -654,7 +660,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		returnStakingInstruction,
 		oldState,
 	)
-
 	if err != nil {
 		return nil, returnStakingInstruction, err
 	}
@@ -665,7 +670,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		returnStakingInstruction,
 		committeeChange,
 	)
-
 	if err != nil {
 		return nil, returnStakingInstruction, err
 	}
