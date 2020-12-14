@@ -87,6 +87,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPortalExternalTxObjectWithValue(db, hash, value)
 	case PortalConfirmProofObjectType:
 		return newPortalConfirmProofStateObjectWithValue(db, hash, value)
+	case PortalUnlockOverRateCollateralsType:
+		return newUnlockOverRateCollateralsStateObjectWithValue(db, hash, value)
 	case StakerObjectType:
 		return newStakerObjectWithValue(db, hash, value)
 	default:
@@ -156,6 +158,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPortalExternalTxObject(db, hash)
 	case PortalConfirmProofObjectType:
 		return newPortalConfirmProofStateObject(db, hash)
+	case PortalUnlockOverRateCollateralsType:
+		return newUnlockOverRateCollateralsStateObject(db, hash)
 	case StakerObjectType:
 		return newStakerObject(db, hash)
 	default:

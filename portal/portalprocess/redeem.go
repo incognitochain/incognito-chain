@@ -573,7 +573,7 @@ func (p *portalRequestMatchingRedeemProcessor) ProcessInsts(
 	currentPortalState *CurrentPortalState,
 	portalParams portal.PortalParams,
 	updatingInfoByTokenID map[common.Hash]basemeta.UpdatingInfo,
-) error  {
+) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil
@@ -1214,7 +1214,7 @@ func (p *portalRequestUnlockCollateralProcessor) BuildNewInsts(
 
 		// update custodian state (FreeCollateral, LockedAmountCollateral)
 		// unlock amount in usdt
-		err = updateCustodianStateAfterReqUnlockCollateralV3(
+		_, err = updateCustodianStateAfterReqUnlockCollateralV3(
 			currentPortalState.CustodianPoolState[custodianStateKeyStr],
 			unlockAmount, meta.TokenID, portalParams, currentPortalState)
 		if err != nil {
@@ -1285,7 +1285,7 @@ func (p *portalRequestUnlockCollateralProcessor) ProcessInsts(
 				currentPortalState.CustodianPoolState[custodianStateKeyStr],
 				actionData.UnlockAmount, tokenID)
 		} else {
-			err = updateCustodianStateAfterReqUnlockCollateralV3(
+			_, err = updateCustodianStateAfterReqUnlockCollateralV3(
 				currentPortalState.CustodianPoolState[custodianStateKeyStr],
 				actionData.UnlockAmount, tokenID, portalParams, currentPortalState)
 		}
@@ -1369,5 +1369,3 @@ func (p *portalRequestUnlockCollateralProcessor) ProcessInsts(
 
 	return nil
 }
-
-

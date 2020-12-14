@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	ec "github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/basemeta"
 	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
-	"github.com/incognitochain/incognito-chain/basemeta"
 	"github.com/pkg/errors"
 )
 
@@ -92,6 +92,8 @@ func ParseMetadata(meta interface{}) (basemeta.Metadata, error) {
 		md = &PortalLiquidationCustodianDepositV3{}
 	case basemeta.PortalTopUpWaitingPortingRequestMetaV3:
 		md = &PortalTopUpWaitingPortingRequestV3{}
+	case basemeta.PortalUnlockOverRateCollateralsMeta:
+		md = &PortalUnlockOverRateCollaterals{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
@@ -123,7 +125,7 @@ func IsValidPortalRemoteAddress(
 }
 
 // Validate portal remote addresses for portal tokens (BTC, BNB)
-func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetriever basemeta.ChainRetriever, beaconHeight uint64) (bool, error){
+func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetriever basemeta.ChainRetriever, beaconHeight uint64) (bool, error) {
 	if len(remoteAddresses) == 0 {
 		return false, errors.New("remote addresses should be at least one address")
 	}

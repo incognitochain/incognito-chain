@@ -193,7 +193,11 @@ func NewPortalManager() *PortalManager {
 				actions: map[byte][][]string{},
 			},
 		},
-
+		bMeta.PortalUnlockOverRateCollateralsMeta: &portalCusUnlockOverRateCollateralsProcessor{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
 	}
 
 	return &PortalManager{

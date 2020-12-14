@@ -28,11 +28,12 @@ type PortalParams struct {
 	MinPercentPortingFee                 float64
 	MinPercentRedeemFee                  float64
 	SupportedCollateralTokens            []PortalCollateral
-	MinPortalFee                         uint64            // nano PRV
+	MinPortalFee                         uint64 // nano PRV
 
-	PortalTokens                map[string]portaltokens.PortalTokenProcessor
-	PortalFeederAddress         string
-	PortalETHContractAddressStr string // smart contract of ETH for portal
+	PortalTokens                 map[string]portaltokens.PortalTokenProcessor
+	PortalFeederAddress          string
+	PortalETHContractAddressStr  string // smart contract of ETH for portal
+	MinUnlockOverRateCollaterals uint64
 
 	RelayingParams RelayingParams
 }

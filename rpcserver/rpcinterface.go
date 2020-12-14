@@ -230,6 +230,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithCustodianWithdrawRequestV3: (*HttpServer).handleCreateAndSendTxWithCustodianWithdrawRequestV3,
 	getCustodianWithdrawRequestStatusV3ByTxId:     (*HttpServer).handleGetCustodianWithdrawRequestStatusV3ByTxId,
 	getPortalWithdrawCollateralProof:              (*HttpServer).handleGetPortalWithdrawCollateralProof,
+	createAndSendUnlockOverRateCollaterals:        (*HttpServer).handleCreateAndSendTxWithPortalCusUnlockOverRateCollaterals,
+	getPortalUnlockOverRateCollateralsStatus:      (*HttpServer).handleGetPortalReqUnlockOverRateCollateralStatus,
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader: (*HttpServer).handleCreateAndSendTxWithRelayingBNBHeader,

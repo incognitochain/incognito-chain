@@ -205,7 +205,6 @@ func (p *portalCustodianDepositProcessor) ProcessInsts(
 	return nil
 }
 
-
 /* =======
 Portal Custodian Request Withdraw Free Collaterals Processor
 ======= */
@@ -981,6 +980,245 @@ func (p *portalRequestWithdrawCollateralProcessorV3) ProcessInsts(
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occurred while store custodian withdraw v3 item: %+v", err)
 		return nil
+	}
+
+	return nil
+}
+
+/* =======
+Portal Custodian unlock over rate collaterals Processor
+======= */
+
+func buildReqUnlockOverRateCollateralsInst(
+	custodianAddresStr string,
+	tokenID string,
+	unlockedAmounts map[string]uint64,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	status string,
+) []string {
+	unlockOverRateCollateralsContent := portalMeta.PortalUnlockOverRateCollateralsContent{
+		CustodianAddressStr: custodianAddresStr,
+		TokenID:             tokenID,
+		UnlockedAmounts:     unlockedAmounts,
+		TxReqID:             txReqID,
+	}
+	unlockOverRateCollateralsContentBytes, _ := json.Marshal(unlockOverRateCollateralsContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(unlockOverRateCollateralsContentBytes),
+	}
+}
+
+type portalCusUnlockOverRateCollateralsProcessor struct {
+	*portalInstProcessor
+}
+
+func (p *portalCusUnlockOverRateCollateralsProcessor) GetActions() map[byte][][]string {
+	return p.actions
+}
+
+func (p *portalCusUnlockOverRateCollateralsProcessor) PutAction(action []string, shardID byte) {
+	_, found := p.actions[shardID]
+	if !found {
+		p.actions[shardID] = [][]string{action}
+	} else {
+		p.actions[shardID] = append(p.actions[shardID], action)
+	}
+}
+
+func (p *portalCusUnlockOverRateCollateralsProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (p *portalCusUnlockOverRateCollateralsProcessor) BuildNewInsts(
+	bc basemeta.ChainRetriever,
+	contentStr string,
+	shardID byte,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+	shardHeights map[byte]uint64,
+	portalParams portal.PortalParams,
+	optionalData map[string]interface{},
+) ([][]string, error) {
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while decoding content string of portal exchange rates action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	var actionData portalMeta.PortalUnlockOverRateCollateralsAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshal portal exchange rates action: %+v", err)
+		return [][]string{}, nil
+	}
+
+	metaType := actionData.Meta.Type
+
+	rejectInst := buildReqUnlockOverRateCollateralsInst(
+		actionData.Meta.CustodianAddressStr,
+		actionData.Meta.TokenID,
+		map[string]uint64{},
+		metaType,
+		shardID,
+		actionData.TxReqID,
+		pCommon.PortalCusUnlockOverRateCollateralsRejectedChainStatus,
+	)
+	//check key from db
+	exchangeTool := NewPortalExchangeRateTool(currentPortalState.FinalExchangeRatesState, portalParams)
+	custodianStateKey := statedb.GenerateCustodianStateObjectKey(actionData.Meta.CustodianAddressStr).String()
+	custodianState, ok := currentPortalState.CustodianPoolState[custodianStateKey]
+	if !ok || custodianState == nil {
+		Logger.log.Error("ERROR: custodian not found")
+		return [][]string{rejectInst}, nil
+	}
+	tokenAmountListInWaitingPoring := GetTotalLockedCollateralAmountInWaitingPortingsV3(currentPortalState, custodianState, actionData.Meta.TokenID)
+	if (custodianState.GetLockedTokenCollaterals() == nil || custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID] == nil) && custodianState.GetLockedAmountCollateral() == nil {
+		Logger.log.Error("ERROR: custodian has no collaterals to unlock")
+		return [][]string{rejectInst}, nil
+	}
+	if custodianState.GetHoldingPublicTokens() == nil || custodianState.GetHoldingPublicTokens()[actionData.Meta.TokenID] == 0 {
+		Logger.log.Error("ERROR: custodian has no holding token to unlock")
+		return [][]string{rejectInst}, nil
+	}
+	var lockedCollaters map[string]uint64
+	if custodianState.GetLockedTokenCollaterals() != nil && custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID] != nil {
+		lockedCollaters = cloneMap(custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID])
+	} else {
+		lockedCollaters = make(map[string]uint64, 0)
+	}
+	if custodianState.GetLockedAmountCollateral() != nil {
+		lockedCollaters[common.PRVIDStr] = custodianState.GetLockedAmountCollateral()[actionData.Meta.TokenID]
+	}
+
+	totalAmountInUSD := uint64(0)
+	for collateralID, tokenValue := range lockedCollaters {
+		if tokenValue < tokenAmountListInWaitingPoring[collateralID] {
+			Logger.log.Errorf("ERROR: total %v locked less than amount lock in porting", collateralID)
+			return [][]string{rejectInst}, nil
+		}
+		lockedCollaterExceptPorting := tokenValue - tokenAmountListInWaitingPoring[collateralID]
+		// convert to usd
+		pubTokenAmountInUSDT, err := exchangeTool.ConvertToUSD(collateralID, lockedCollaterExceptPorting)
+		if err != nil {
+			Logger.log.Errorf("Error when converting locked public token to prv: %v", err)
+			return [][]string{rejectInst}, nil
+		}
+		totalAmountInUSD = totalAmountInUSD + pubTokenAmountInUSDT
+	}
+
+	// convert holding token to usd
+	hodTokenAmountInUSDT, err := exchangeTool.ConvertToUSD(actionData.Meta.TokenID, custodianState.GetHoldingPublicTokens()[actionData.Meta.TokenID])
+	if err != nil {
+		Logger.log.Errorf("Error when converting holding public token to prv: %v", err)
+		return [][]string{rejectInst}, nil
+	}
+	totalHoldAmountInUSDBigInt := new(big.Int).Mul(new(big.Int).SetUint64(hodTokenAmountInUSDT), new(big.Int).SetUint64(portalParams.MinUnlockOverRateCollaterals))
+	minHoldUnlockedAmountInBigInt := new(big.Int).Div(totalHoldAmountInUSDBigInt, big.NewInt(10))
+	if minHoldUnlockedAmountInBigInt.Cmp(new(big.Int).SetUint64(totalAmountInUSD)) >= 0 {
+		Logger.log.Errorf("Error locked collaterals amount not enough to unlock")
+		return [][]string{rejectInst}, nil
+	}
+	amountToUnlock := big.NewInt(0).Sub(new(big.Int).SetUint64(totalAmountInUSD), minHoldUnlockedAmountInBigInt).Uint64()
+	listUnlockTokens, err := updateCustodianStateAfterReqUnlockCollateralV3(custodianState, amountToUnlock, actionData.Meta.TokenID, portalParams, currentPortalState)
+	if err != nil || len(listUnlockTokens) == 0 {
+		Logger.log.Errorf("Error when updateCustodianStateAfterReqUnlockCollateralV3: %v, %v", err, len(listUnlockTokens))
+		return [][]string{rejectInst}, nil
+	}
+
+	inst := buildReqUnlockOverRateCollateralsInst(
+		actionData.Meta.CustodianAddressStr,
+		actionData.Meta.TokenID,
+		listUnlockTokens,
+		metaType,
+		shardID,
+		actionData.TxReqID,
+		pCommon.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
+	)
+
+	return [][]string{inst}, nil
+}
+
+func (p *portalCusUnlockOverRateCollateralsProcessor) ProcessInsts(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams portal.PortalParams,
+	updatingInfoByTokenID map[common.Hash]basemeta.UpdatingInfo,
+) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+
+	// parse instruction
+	var unlockOverRateCollateralsContent portalMeta.PortalUnlockOverRateCollateralsContent
+	err := json.Unmarshal([]byte(instructions[3]), &unlockOverRateCollateralsContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshaling content string of portal unlock over rate collaterals instruction: %+v", err)
+		return nil
+	}
+
+	reqStatus := instructions[2]
+	Logger.log.Infof("Portal unlock over rate collaterals, data input: %+v, status: %+v", unlockOverRateCollateralsContent, reqStatus)
+
+	switch reqStatus {
+	case pCommon.PortalCusUnlockOverRateCollateralsAcceptedChainStatus:
+		custodianStateKey := statedb.GenerateCustodianStateObjectKey(unlockOverRateCollateralsContent.CustodianAddressStr)
+		custodianStateKeyStr := custodianStateKey.String()
+		listTokensWithValue := cloneMap(unlockOverRateCollateralsContent.UnlockedAmounts)
+		unlockPrvAmount := listTokensWithValue[common.PRVIDStr]
+		delete(listTokensWithValue, common.PRVIDStr)
+		err = updateCustodianStateUnlockOverRateCollaterals(currentPortalState.CustodianPoolState[custodianStateKeyStr], unlockPrvAmount, listTokensWithValue, unlockOverRateCollateralsContent.TokenID)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occurred while updateCustodianStateUnlockOverRateCollaterals: %+v", err)
+			return nil
+		}
+
+		//save db
+		newUnlockOverRateCollaterals := portalMeta.NewUnlockOverRateCollateralsRequestStatus(
+			pCommon.PortalUnlockOverRateCollateralsAcceptedStatus,
+			unlockOverRateCollateralsContent.CustodianAddressStr,
+			unlockOverRateCollateralsContent.TokenID,
+			unlockOverRateCollateralsContent.UnlockedAmounts,
+		)
+
+		newUnlockOverRateCollateralsStatusBytes, _ := json.Marshal(newUnlockOverRateCollaterals)
+		err = statedb.StorePortalUnlockOverRateCollaterals(
+			stateDB,
+			unlockOverRateCollateralsContent.TxReqID.String(),
+			newUnlockOverRateCollateralsStatusBytes,
+		)
+
+		if err != nil {
+			Logger.log.Errorf("ERROR: Save UnlockOverRateCollaterals error: %+v", err)
+			return nil
+		}
+
+	case pCommon.PortalCusUnlockOverRateCollateralsRejectedChainStatus:
+		//save db
+		newUnlockOverRateCollaterals := portalMeta.NewUnlockOverRateCollateralsRequestStatus(
+			pCommon.PortalUnlockOverRateCollateralsRejectedStatus,
+			unlockOverRateCollateralsContent.CustodianAddressStr,
+			unlockOverRateCollateralsContent.TokenID,
+			map[string]uint64{},
+		)
+
+		newUnlockOverRateCollateralsStatusBytes, _ := json.Marshal(newUnlockOverRateCollaterals)
+		err = statedb.StorePortalUnlockOverRateCollaterals(
+			stateDB,
+			unlockOverRateCollateralsContent.TxReqID.String(),
+			newUnlockOverRateCollateralsStatusBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: Save UnlockOverRateCollaterals error: %+v", err)
+			return nil
+		}
 	}
 
 	return nil

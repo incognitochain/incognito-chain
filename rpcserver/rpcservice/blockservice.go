@@ -1241,3 +1241,19 @@ func (blockService BlockService) CheckPortalExternalTxSubmitted(data map[string]
 	submitted, err := statedb.IsPortalExternalTxHashSubmitted(featureStateDB, uniqExternalTx)
 	return submitted, err
 }
+
+func (blockService BlockService) GetPortalReqUnlockOverRateCollateralStatus(reqTxID string) (*portalMeta.UnlockOverRateCollateralsRequestStatus, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPortalUnlockOverRateCollateralsStatus(stateDB, reqTxID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status portalMeta.UnlockOverRateCollateralsRequestStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}

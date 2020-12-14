@@ -14,7 +14,6 @@ const (
 	PortalRedeemReqLiquidatedStatus             = 4
 	PortalRedeemReqCancelledByLiquidationStatus = 5
 
-
 	// status of portal request - used to store db
 	PortalRequestRejectedStatus = 0
 	PortalRequestAcceptedStatus = 1
@@ -33,6 +32,13 @@ const (
 	// Relaying header
 	RelayingHeaderRejectedChainStatus    = "rejected"
 	RelayingHeaderConsideringChainStatus = "considering"
+
+	// Unlock over rate collaterals
+	PortalCusUnlockOverRateCollateralsRejectedChainStatus = "rejected"
+	PortalCusUnlockOverRateCollateralsAcceptedChainStatus = "accepted"
+
+	PortalUnlockOverRateCollateralsAcceptedStatus = 1
+	PortalUnlockOverRateCollateralsRejectedStatus = 1
 )
 
 const PortalBTCIDStr = "ef5947f70ead81a76a53c7c8b7317dd5245510c665d3a13921dc9a581188728b"

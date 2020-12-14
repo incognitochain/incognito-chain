@@ -944,3 +944,26 @@ func GetWithdrawCollateralConfirmProof(stateDB *StateDB, txID common.Hash) (uint
 	}
 	return confirmProofState.Height(), nil
 }
+
+//======================  Portal unlock over rate collaterals  ======================
+func StorePortalUnlockOverRateCollaterals(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalUnlockOverRateCollateralsRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalUnlockOverRateCollateralsError, err)
+	}
+
+	return nil
+}
+
+func GetPortalUnlockOverRateCollateralsStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalUnlockOverRateCollateralsRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalUnlockOverRateCollateralsStatusError, err)
+	}
+
+	return data, nil
+}

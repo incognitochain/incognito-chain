@@ -249,6 +249,8 @@ const (
 	createAndSendTxWithCustodianWithdrawRequestV3 = "createandsendtxwithcustodianwithdrawrequestv3"
 	getCustodianWithdrawRequestStatusV3ByTxId     = "getcustodianwithdrawrequeststatusv3"
 	getPortalWithdrawCollateralProof              = "getportalwithdrawcollateralproof"
+	createAndSendUnlockOverRateCollaterals        = "createandsendtxwithunlockoverratecollaterals"
+	getPortalUnlockOverRateCollateralsStatus      = "getportalunlockoverratecollateralsbytxidstatus"
 
 	// relaying
 	createAndSendTxWithRelayingBNBHeader = "createandsendtxwithrelayingbnbheader"
