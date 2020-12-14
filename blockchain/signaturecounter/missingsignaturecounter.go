@@ -50,6 +50,7 @@ type IMissingSignatureCounter interface {
 	GetAllSlashingPenalty() map[string]Penalty
 	GetSlashingPenalty(key *incognitokey.CommitteePublicKey) (bool, Penalty, error)
 	Reset(committees []string)
+	CommitteeChange(committees []string)
 	Copy() IMissingSignatureCounter
 }
 
@@ -171,6 +172,23 @@ func (s *MissingSignatureCounter) Reset(committees []string) {
 	missingSignature := make(map[string]MissingSignature)
 	for _, v := range committees {
 		missingSignature[v] = NewMissingSignature()
+	}
+
+	s.missingSignature = missingSignature
+}
+
+func (s *MissingSignatureCounter) CommitteeChange(newCommittees []string) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	missingSignature := make(map[string]MissingSignature)
+	for _, v := range newCommittees {
+		res, ok := s.missingSignature[v]
+		if !ok {
+			missingSignature[v] = NewMissingSignature()
+		} else {
+			missingSignature[v] = res
+		}
 	}
 
 	s.missingSignature = missingSignature
