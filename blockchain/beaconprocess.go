@@ -102,6 +102,7 @@ CONTINUE_VERIFY:
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
 	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
+	shouldValidate = true
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash.String())
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
@@ -235,8 +236,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect receive beacon block height %+v but get %+v", previousBeaconBlock.Header.Height+1, beaconBlock.Header.Height))
 	}
 	// Verify epoch with parent block
-	isNextEpoch := blockchain.IsFirstBeaconHeightInEpoch(previousBeaconBlock.Header.Epoch)
-	if (previousBeaconBlock.Header.Height != 1) && isNextEpoch && (previousBeaconBlock.Header.Epoch != beaconBlock.Header.Epoch-1) {
+	isNextEpoch := blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.Header.Height)
+	if (beaconBlock.Header.Height != 1) && isNextEpoch && (previousBeaconBlock.Header.Epoch != beaconBlock.Header.Epoch-1) {
 		return NewBlockChainError(WrongEpochError, fmt.Errorf("Expect receive beacon block epoch %+v greater than previous block epoch %+v, 1 value", beaconBlock.Header.Epoch, previousBeaconBlock.Header.Epoch))
 	}
 	// Verify timestamp with parent block
