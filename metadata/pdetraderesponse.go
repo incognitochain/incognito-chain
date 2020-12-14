@@ -69,11 +69,12 @@ func (iRes *PDETradeResponse) CalculateSize() uint64 {
 
 func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-
+	Logger.log.Infof("BUGLOG there are currently %v insts\n", len(mintData.Insts))
 	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PDETradeRequest instruction
 			continue
 		}
+		Logger.log.Infof("BUGLOG currently processing inst: %v\n", inst)
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(PDETradeRequestMeta) {
@@ -81,7 +82,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *
 		}
 		instTradeStatus := inst[2]
 		if instTradeStatus != iRes.TradeStatus || (instTradeStatus != common.PDETradeRefundChainStatus && instTradeStatus != common.PDETradeAcceptedChainStatus) {
-			Logger.log.Errorf("Instruction error 1: %v", inst)
+			//Logger.log.Errorf("Instruction error 1: %v", inst)
 			continue
 		}
 
@@ -95,14 +96,12 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *
 			contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 			if err != nil {
 				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
-				Logger.log.Errorf("Instruction error 2: %v", inst)
 				continue
 			}
 			var pdeTradeRequestAction PDETradeRequestAction
 			err = json.Unmarshal(contentBytes, &pdeTradeRequestAction)
 			if err != nil {
 				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
-				Logger.log.Errorf("Instruction error 3: %v", inst)
 				continue
 			}
 			shardIDFromInst = pdeTradeRequestAction.ShardID
@@ -117,7 +116,6 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *
 			err := json.Unmarshal(contentBytes, &pdeTradeAcceptedContent)
 			if err != nil {
 				Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
-				Logger.log.Errorf("Instruction error 4: %v", inst)
 				continue
 			}
 			shardIDFromInst = pdeTradeAcceptedContent.ShardID
@@ -130,7 +128,6 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *
 
 		if !bytes.Equal(iRes.RequestedTxID[:], txReqIDFromInst[:]) ||
 			shardID != shardIDFromInst {
-			Logger.log.Errorf("Instruction error 5: %v. ShardId error", inst)
 			continue
 		}
 
@@ -158,7 +155,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *
 				receivingAmtFromInst != paidAmount ||
 				!bytes.Equal(txR[:], txRandom[:]) ||
 				receivingTokenIDStr != assetID.String() {
-				Logger.log.Errorf("Instruction error 6: %v. TxRandom is wrong", inst)
+				//Logger.log.Errorf("Instruction error 6: %v. TxRandom is wrong", inst)
 				continue
 			}
 		} else {
@@ -178,6 +175,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
+		Logger.log.Errorf("BUGLOG Instruction not found: %v, %v, %v, %v\n", iRes.RequestedTxID.String(), iRes.Type, iRes.Sig, iRes.TradeStatus)
 		return false, fmt.Errorf(fmt.Sprintf("no PDETradeRequest or PDECrossPoolTradeRequestMeta tx found for PDETradeResponse tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1
