@@ -882,3 +882,14 @@ func (bc *BlockChain) IsGreaterThanRandomTime(beaconHeight uint64) bool {
 		return newEpochBlocks%params.EpochV2 >= params.RandomTimeV2
 	}
 }
+
+func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
+	params := bc.config.ChainParams
+	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	if beaconHeight < totalBlockBeforeBreakPoint {
+		return beaconHeight%params.Epoch == params.RandomTime
+	} else {
+		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
+		return newEpochBlocks%params.EpochV2 == params.RandomTimeV2
+	}
+}

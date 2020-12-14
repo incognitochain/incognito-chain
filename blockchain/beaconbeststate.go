@@ -646,7 +646,6 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	return &committeestate.BeaconCommitteeStateEnvironment{
 		BeaconHeight:                      beaconBestState.BeaconHeight,
 		BeaconHash:                        beaconBestState.BestBlockHash,
-		ParamEpoch:                        params.Epoch,
 		Epoch:                             beaconBestState.Epoch,
 		BeaconInstructions:                beaconInstructions,
 		EpochBreakPointSwapNewKey:         params.EpochBreakPointSwapNewKey,

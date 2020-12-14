@@ -771,7 +771,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	env := committeestate.
 		NewShardEnvBuilder().
 		BuildBeaconHeight(shardBestState.BeaconHeight).
-		BuildChainParamEpoch(blockchain.config.ChainParams.Epoch).
+		BuildEpoch(blockchain.GetEpochByHeight(shardBestState.BeaconHeight)).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(beaconInstructions).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
@@ -825,7 +825,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 	env := committeestate.
 		NewShardEnvBuilder().
 		BuildBeaconHeight(shardBestState.BeaconHeight).
-		BuildChainParamEpoch(shardBestState.Epoch).
+		BuildEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(instructions).
 		BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).

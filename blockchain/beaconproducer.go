@@ -227,9 +227,8 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 
 	instructions, err := curView.GenerateInstruction(
 		newBeaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstructions,
-		bridgeInstructions, acceptedRewardInstructions, blockchain.config.ChainParams.Epoch,
-		blockchain.config.ChainParams.RandomTime, blockchain,
-		shardStates,
+		bridgeInstructions, acceptedRewardInstructions,
+		blockchain, shardStates,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -333,8 +332,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 	duplicateKeyStakeInstruction *duplicateKeyStakeInstruction,
 	bridgeInstructions [][]string,
 	acceptedRewardInstructions [][]string,
-	chainParamEpoch uint64,
-	randomTime uint64,
 	blockchain *BlockChain,
 	shardsState map[byte][]types.ShardState,
 ) ([][]string, error) {
@@ -371,7 +368,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 	}
 
 	// Random number for Assign Instruction
-	if newBeaconHeight%chainParamEpoch > randomTime && !curView.IsGetRandomNumber {
+	if blockchain.IsGreaterThanRandomTime(newBeaconHeight) && !curView.IsGetRandomNumber {
 		randomInstruction, randomNumber := curView.generateRandomInstruction()
 		instructions = append(instructions, randomInstruction)
 		Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v, %+v", randomInstruction, newBeaconHeight)
@@ -388,14 +385,14 @@ func (curView *BeaconBestState) GenerateInstruction(
 
 	// Generate swap shard instruction at block height %chainParamEpoch == 0
 	if curView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
-		if newBeaconHeight%chainParamEpoch == 0 {
+		if blockchain.IsLastBeaconHeightInEpoch(newBeaconHeight) {
 			BeaconCommittee := curView.GetBeaconCommittee()
 			beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
 			if err != nil {
 				Logger.log.Error(err)
 			}
-			if common.IndexOfUint64(newBeaconHeight/chainParamEpoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
-				epoch := newBeaconHeight / chainParamEpoch
+			epoch := blockchain.GetEpochByHeight(newBeaconHeight)
+			if common.IndexOfUint64(epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 				swapBeaconInstructions, beaconCommittee := CreateBeaconSwapActionForKeyListV2(blockchain.config.GenesisParams, beaconCommitteeStr, curView.MinBeaconCommitteeSize, epoch)
 				instructions = append(instructions, swapBeaconInstructions)
 				beaconRootInst, _ := buildBeaconSwapConfirmInstruction(beaconCommittee, newBeaconHeight)
@@ -403,7 +400,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 			}
 		}
 	} else if curView.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
-		if newBeaconHeight%chainParamEpoch == 1 {
+		if blockchain.IsFirstBeaconHeightInEpoch(newBeaconHeight) {
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
 			env := curView.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
 			env.LatestShardsState = shardsState

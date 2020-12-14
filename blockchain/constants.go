@@ -110,7 +110,7 @@ const (
 	TestnetGenesisBlockTime  = "2019-11-29T00:00:00.000Z"
 	TestnetEpoch             = 20
 	TestnetRandomTime        = 10
-	TestnetEpochV2BreakPoint = 10
+	TestnetEpochV2BreakPoint = 11
 	TestnetEpochV2           = 50
 	TestnetRandomTimeV2      = 25
 	TestnetOffset            = 1
