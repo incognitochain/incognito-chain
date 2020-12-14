@@ -2,7 +2,6 @@ package blockchain
 
 import (
 	"bytes"
-	"errors"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -27,20 +26,6 @@ func buildInstruction(metaType int, shardID byte, instStatus string, contentStr 
 		instStatus,
 		contentStr,
 	}
-}
-
-func getShardIDFromPaymentAddress(addressStr string) (byte, error) {
-	keyWallet, err := wallet.Base58CheckDeserialize(addressStr)
-	if err != nil {
-		return byte(0), err
-	}
-	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
-		return byte(0), errors.New("Payment address' public key must not be empty")
-	}
-	// calculate shard ID
-	lastByte := keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]
-	shardID := common.GetShardIDFromLastByte(lastByte)
-	return shardID, nil
 }
 
 func (blockchain *BlockChain) buildInstructionsForContractingReq(
@@ -83,19 +68,12 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 		return append(instructions, rejectedInst), nil
 	}
 	if !ok {
-		Logger.log.Infof("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
+		fmt.Printf("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
-
-	if len(issuingReq.ReceiverAddress.Pk) == 0 {
-		Logger.log.Info("WARNING: invalid receiver address")
-		return append(instructions, rejectedInst), nil
-	}
-	lastByte := issuingReq.ReceiverAddress.Pk[len(issuingReq.ReceiverAddress.Pk)-1]
-	receivingShardID := common.GetShardIDFromLastByte(lastByte)
 
 	issuingAcceptedInst := metadata.IssuingAcceptedInst{
-		ShardID:         receivingShardID,
+		ShardID:         shardID,
 		DepositedAmount: issuingReq.DepositedAmount,
 		ReceiverAddr:    issuingReq.ReceiverAddress,
 		IncTokenID:      issuingTokenID,
@@ -206,14 +184,8 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(stateDB *statedb
 		amount = amt.Uint64()
 	}
 
-	receivingShardID, err := getShardIDFromPaymentAddress(addressStr)
-	if err != nil {
-		Logger.log.Info("WARNING: an error occured while getting shard id from payment address: ", err)
-		return append(instructions, rejectedInst), nil
-	}
-
 	issuingETHAcceptedInst := metadata.IssuingETHAcceptedInst{
-		ShardID:         receivingShardID,
+		ShardID:         shardID,
 		IssuingAmount:   amount,
 		ReceiverAddrStr: addressStr,
 		IncTokenID:      md.IncTokenID,

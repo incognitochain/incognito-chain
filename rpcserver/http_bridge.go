@@ -31,6 +31,21 @@ func (httpServer *HttpServer) handleCreateAndSendIssuingRequest(params interface
 	)
 }
 
+func (httpServer *HttpServer) handleCreateIssuingRequestV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	constructor := metaConstructorsV2[createAndSendIssuingRequest]
+	return httpServer.createRawTxWithMetadataV2(params, closeChan, constructor)
+}
+
+// handleCreateAndSendIssuingRequest for user to buy Constant (using USD) or BANK token (using USD/ETH) from DCB
+func (httpServer *HttpServer) handleCreateAndSendIssuingRequestV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.createAndSendTxWithMetadata(
+		params,
+		closeChan,
+		(*HttpServer).handleCreateIssuingRequestV2,
+		(*HttpServer).handleSendIssuingRequest,
+	)
+}
+
 func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 5 {
@@ -111,6 +126,86 @@ func (httpServer *HttpServer) handleCreateAndSendContractingRequest(params inter
 	return sendResult, nil
 }
 
+func (httpServer *HttpServer) handleCreateRawTxWithContractingReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
+
+	// check privacy mode param
+	if len(arrayParams) > 6 {
+		privacyTemp, ok := arrayParams[6].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be valid"))
+		}
+		hasPrivacyToken := int(privacyTemp) > 0
+		if hasPrivacyToken {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be disabled"))
+		}
+	}
+
+	senderPrivateKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
+
+	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
+	}
+
+	tokenReceivers, ok := tokenParamsRaw["TokenReceivers"].(interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token receivers is invalid"))
+	}
+
+	tokenID, ok := tokenParamsRaw["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token ID is invalid"))
+	}
+
+	meta, err := rpcservice.NewContractingRequestMetadataV2(senderPrivateKeyParam, tokenReceivers, tokenID)
+	if err != nil {
+		return nil, err
+	}
+
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
+	if rpcErr != nil {
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+
+	byteArrays, err2 := json.Marshal(customTokenTx)
+	if err2 != nil {
+		Logger.log.Error(err2)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            customTokenTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendContractingRequestV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithContractingReqV2(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	// sendResult, err1 := httpServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
 func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return processBurningReq(
 		metadata.BurningRequestMetaV2,
@@ -122,6 +217,34 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningReq(params interface{}
 
 func (httpServer *HttpServer) handleCreateAndSendBurningRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithBurningReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	// sendResult, err1 := httpServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithBurningReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReqV2(
+		metadata.BurningRequestMetaV2,
+		params,
+		closeChan,
+		httpServer,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningRequestV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningReqV2(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -183,6 +306,65 @@ func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interfac
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithIssuingETHReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+	meta, err := metadata.NewIssuingETHRequestFromMap(data)
+	if err != nil {
+		rpcErr := rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithIssuingETHReqV2(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -323,6 +505,81 @@ func processBurningReq(
 	return result, nil
 }
 
+func processBurningReqV2(
+	burningMetaType int,
+	params interface{},
+	closeChan <-chan struct{},
+	httpServer *HttpServer,
+) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
+
+	if len(arrayParams) > 6 {
+		privacyTemp, ok := arrayParams[6].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("The privacy mode must be valid "))
+		}
+		hasPrivacyToken := int(privacyTemp) > 0
+		if hasPrivacyToken {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be disabled"))
+		}
+	}
+
+	senderPrivateKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("private key is invalid"))
+	}
+
+	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
+	}
+
+	tokenReceivers, ok := tokenParamsRaw["TokenReceivers"].(interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token receivers is invalid"))
+	}
+
+	tokenID, ok := tokenParamsRaw["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token ID is invalid"))
+	}
+
+	tokenName, ok := tokenParamsRaw["TokenName"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token name is invalid"))
+	}
+
+	remoteAddress, ok := tokenParamsRaw["RemoteAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("remote address is invalid"))
+	}
+
+	meta, err := rpcservice.NewBurningRequestMetadataV2(senderPrivateKeyParam, tokenReceivers, tokenID, tokenName, remoteAddress, burningMetaType, httpServer.GetBlockchain(), httpServer.GetBlockchain().BeaconChain.CurrentHeight())
+	if err != nil {
+		return nil, err
+	}
+
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
+	if rpcErr != nil {
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+
+	byteArrays, err2 := json.Marshal(customTokenTx)
+	if err2 != nil {
+		Logger.log.Error(err2)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            customTokenTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
 func (httpServer *HttpServer) handleCreateRawTxWithBurningForDepositToSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return processBurningReq(
 		metadata.BurningForDepositToSCRequestMetaV2,
@@ -332,8 +589,34 @@ func (httpServer *HttpServer) handleCreateRawTxWithBurningForDepositToSCReq(para
 	)
 }
 
+func (httpServer *HttpServer) handleCreateRawTxWithBurningForDepositToSCReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReqV2(
+		metadata.BurningForDepositToSCRequestMetaV2,
+		params,
+		closeChan,
+		httpServer,
+	)
+}
+
 func (httpServer *HttpServer) handleCreateAndSendBurningForDepositToSCRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithBurningForDepositToSCReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+	return sendResult, nil
+}
+
+
+func (httpServer *HttpServer) handleCreateAndSendBurningForDepositToSCRequestV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningForDepositToSCReqV2(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
