@@ -80,6 +80,7 @@ func (tp *TxsPool) Start() {
 	if tp.isRunning {
 		return
 	}
+	fmt.Println("[testperformance] Start pool!!")
 	tp.isRunning = true
 	cValidTxs := make(chan txInfoTemp, 128)
 	stopGetTxs := make(chan interface{})
