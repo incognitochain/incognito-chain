@@ -500,7 +500,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		bView,
 		shardBlock.Body.Transactions,
 	)
-	Logger.log.Infof("[testperformance] SHARD %+v | Validate %v txs of block %v shard %v cost %v", len(shardBlock.Body.Transactions), shardBlock.GetHeight(), shardID, time.Since(st))
+	Logger.log.Infof("[testperformance] SHARD %+v | Validate %v txs of block %v cost %v", shardID, len(shardBlock.Body.Transactions), shardBlock.GetHeight(), time.Since(st))
 	if !ok {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}

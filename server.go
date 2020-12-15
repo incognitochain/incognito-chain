@@ -344,6 +344,7 @@ func (serverObj *Server) NewServer(
 	if err != nil {
 		return err
 	}
+	go poolManager.Start()
 
 	//set bc obj for monitor
 	monitor.SetBlockChainObj(serverObj.blockChain)
