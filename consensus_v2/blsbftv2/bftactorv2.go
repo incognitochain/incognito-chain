@@ -406,24 +406,28 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	}
 
 	//if valid then vote
+	committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(view.GetCommittee(), common.BlsConsensus)
 	for _, userKey := range e.UserKeySet {
-		Vote, err := CreateVote(&userKey, v.block, e.Chain.GetBestView().GetCommittee())
-		if err != nil {
-			e.Logger.Error(err)
-			return NewConsensusError(UnExpectedError, err)
-		}
+		pubKey := userKey.GetPublicKey()
+		if common.IndexOfStr(pubKey.GetMiningKeyBase58(e.GetConsensusName()), committeeBLSString) != -1 {
+			Vote, err := CreateVote(&userKey, v.block, e.Chain.GetBestView().GetCommittee())
+			if err != nil {
+				e.Logger.Error(err)
+				return NewConsensusError(UnExpectedError, err)
+			}
 
-		msg, err := MakeBFTVoteMsg(Vote, e.ChainKey, e.currentTimeSlot, v.block.GetHeight())
-		if err != nil {
-			e.Logger.Error(err)
-			return NewConsensusError(UnExpectedError, err)
-		}
+			msg, err := MakeBFTVoteMsg(Vote, e.ChainKey, e.currentTimeSlot, v.block.GetHeight())
+			if err != nil {
+				e.Logger.Error(err)
+				return NewConsensusError(UnExpectedError, err)
+			}
 
-		v.isValid = true
-		e.voteHistory[v.block.GetHeight()] = v.block
-		e.Logger.Info(e.ChainKey, "sending vote...")
-		go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
-		go e.Node.PushMessageToChain(msg, e.Chain)
+			v.isValid = true
+			e.voteHistory[v.block.GetHeight()] = v.block
+			e.Logger.Info(e.ChainKey, "sending vote...")
+			go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
+			go e.Node.PushMessageToChain(msg, e.Chain)
+		}
 	}
 
 	return nil
