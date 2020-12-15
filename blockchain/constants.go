@@ -45,7 +45,7 @@ const (
 	MainnetGenesisBlockTime  = "2019-10-29T00:00:00.000Z"
 	MainnetEpoch             = 350
 	MainnetRandomTime        = 175
-	MainnetEpochV2BreakPoint = 0
+	MainnetEpochV2BreakPoint = 10e9
 	MainnetEpochV2           = 2160
 	MainnetRandomTimeV2      = 1080
 	MainnetOffset            = 4
@@ -108,11 +108,11 @@ const (
 	TestnetName              = "testnet"
 	TestnetDefaultPort       = "9444"
 	TestnetGenesisBlockTime  = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch             = 100
-	TestnetRandomTime        = 50
+	TestnetEpoch             = 10
+	TestnetRandomTime        = 5
 	TestnetEpochV2BreakPoint = 1e9
-	TestnetEpochV2           = 100
-	TestnetRandomTimeV2      = 50
+	TestnetEpochV2           = 10
+	TestnetRandomTimeV2      = 5
 	TestnetOffset            = 1
 	TestnetSwapOffset        = 1
 	TestnetAssignOffset      = 2
@@ -155,7 +155,7 @@ const (
 	Testnet2GenesisBlockTime  = "2020-08-11T00:00:00.000Z"
 	Testnet2Epoch             = 100
 	Testnet2RandomTimeV2      = 50
-	Testnet2EpochV2BreakPoint = 0
+	Testnet2EpochV2BreakPoint = 10e9
 	Testnet2EpochV2           = 100
 	Testnet2RandomTime        = 50
 	Testnet2Offset            = 1
