@@ -555,11 +555,11 @@ func AssertAndConvertStrToNumber(numStr interface{}) (uint64, error) {
 
 // AssertAndConvertStrToNumber asserts and convert a passed input to uint64 number
 func AssertAndConvertNumber(numInt interface{}) (uint64, error) {
-	switch numInt.(type) {
+	switch val := numInt.(type) {
 	case float64:
-		return uint64(numInt.(float64)), nil
+		return uint64(val), nil
 	case string:
-		return strconv.ParseUint(numInt.(string), 10, 64)
+		return strconv.ParseUint(val, 10, 64)
 	default:
 		return 0, errors.Errorf("cannot assert number interface to uint64")
 	}
