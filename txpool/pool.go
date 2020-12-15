@@ -154,7 +154,8 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	for {
 		select {
 		case txDetails := <-txDetailCh:
-			fmt.Printf("[testperformance] %v %v %v %v %v\n", txDetails, curSize, maxTime, maxSize, curTime)
+			fmt.Printf("[testperformance] %v %v %v %v\n", curSize, maxTime, maxSize, curTime)
+			fmt.Printf("[testperformance] %v \n", txDetails)
 			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
 				continue
 			}
@@ -345,7 +346,10 @@ func (tp *TxsPool) getTxsFromPool(
 	stopC <-chan interface{},
 ) {
 	tp.action <- func(tpTemp *TxsPool) {
-		defer close(txCh)
+		defer func() {
+			close(txCh)
+			fmt.Println("[testperformance] tx channel is closed")
+		}()
 		txDetails := &TxInfoDetail{}
 		for k, v := range tpTemp.Data.TxByHash {
 			select {
