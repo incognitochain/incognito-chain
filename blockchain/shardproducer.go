@@ -295,7 +295,12 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	if err != nil {
 		return nil, err
 	}
-	bView, err := blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(*beaconBlocks[len(beaconBlocks)-1].Hash())
+	bView := &BeaconBestState{}
+	if len(beaconBlocks) == 0 {
+		bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash)
+	} else {
+		bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(*beaconBlocks[len(beaconBlocks)-1].Hash())
+	}
 	if err != nil {
 		return nil, NewBlockChainError(CloneBeaconBestStateError, err)
 	}
