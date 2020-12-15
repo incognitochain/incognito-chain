@@ -46,6 +46,7 @@ type TxPool interface {
 		bcView metadata.BeaconViewRetriever,
 		maxSize uint64,
 		maxTime time.Duration,
+		getTxsDuration time.Duration,
 	) []metadata.Transaction
 	CheckValidatedTxs(
 		txs []metadata.Transaction,

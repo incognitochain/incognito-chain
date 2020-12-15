@@ -111,7 +111,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 	preHash := shardBlock.Header.PreviousBlockHash
 
 	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v \nPrev hash: %+v", shardID, blockHeight, blockHash, preHash)
-	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
 	for _, tx := range shardBlock.Body.Transactions {
 		valEnv := transaction.DefaultValEnv()
@@ -455,15 +454,15 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	shardVerifyPreprocesingTimer.UpdateSince(startTimeVerifyPreProcessingShardBlock)
 	// Get cross shard shardBlock from pool
-	ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
-		blockchain,
-		curView,
-		blockchain.GetBeaconBestState(),
-		shardBlock.Body.Transactions,
-	)
-	if !ok {
-		return NewBlockChainError(TransactionFromNewBlockError, err)
-	}
+	// ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
+	// 	blockchain,
+	// 	curView,
+	// 	blockchain.GetBeaconBestState(),
+	// 	shardBlock.Body.Transactions,
+	// )
+	// if !ok {
+	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
+	// }
 	if isPreSign {
 		err := blockchain.verifyPreProcessingShardBlockForSigning(curView, shardBlock, beaconBlocks, txInstructions, shardID)
 		if err != nil {
@@ -490,12 +489,18 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	// if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(beaconHeight), curView); err != nil {
 	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
 	// }
+	st := time.Now()
+	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.BeaconHash)
+	if err != nil {
+		return NewBlockChainError(CloneBeaconBestStateError, err)
+	}
 	ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
 		blockchain,
 		curView,
-		blockchain.GetBeaconBestState(),
+		bView,
 		shardBlock.Body.Transactions,
 	)
+	Logger.log.Infof("[testperformance] SHARD %+v | Validate %v txs of block %v shard %v cost %v", len(shardBlock.Body.Transactions), shardBlock.GetHeight(), shardID, time.Since(st))
 	if !ok {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
@@ -1060,8 +1065,9 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(shardBlock, newShardState.transactionStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreTransactionError, err)
 	}
-
+	listTxHashes := []string{}
 	for index, tx := range shardBlock.Body.Transactions {
+		listTxHashes = append(listTxHashes, tx.Hash().String())
 		if err := rawdbv2.StoreTransactionIndex(blockchain.GetShardChainDatabase(shardID), *tx.Hash(), shardBlock.Header.Hash(), index); err != nil {
 			return NewBlockChainError(FetchAndStoreTransactionError, err)
 		}
@@ -1076,6 +1082,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		}
 		Logger.log.Debugf("Transaction in block with hash", blockHash, "and index", index)
 	}
+	blockchain.ShardChain[shardID].TxPool.RemoveTxs(listTxHashes)
 	// Store Incomming Cross Shard
 	if err := blockchain.CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock, newShardState.transactionStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreCrossTransactionError, err)
@@ -1095,12 +1102,12 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		return NewBlockChainError(UpdateBridgeIssuanceStatusError, err)
 	}
 	// call FeeEstimator for processing
-	if feeEstimator, ok := blockchain.config.FeeEstimator[shardBlock.Header.ShardID]; ok {
-		err := feeEstimator.RegisterBlock(shardBlock)
-		if err != nil {
-			Logger.log.Debug(NewBlockChainError(RegisterEstimatorFeeError, err))
-		}
-	}
+	// if feeEstimator, ok := blockchain.config.FeeEstimator[shardBlock.Header.ShardID]; ok {
+	// 	err := feeEstimator.RegisterBlock(shardBlock)
+	// 	if err != nil {
+	// 		Logger.log.Debug(NewBlockChainError(RegisterEstimatorFeeError, err))
+	// 	}
+	// }
 
 	//addedCommittees, removedCommittees, err := getChangeCommittees(newShardState.ShardCommittee, newShardState.ShardCommittee)
 	//addedSubstitutesValidator, removedSubstitutesValidator, err := getChangeCommittees(newShardState.ShardPendingValidator, newShardState.ShardPendingValidator)

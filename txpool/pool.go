@@ -135,7 +135,10 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	bcView metadata.BeaconViewRetriever,
 	maxSize uint64,
 	maxTime time.Duration,
+	getTxsDuration time.Duration,
 ) []metadata.Transaction {
+	//TODO Timeout
+	timeOut := time.After(getTxsDuration)
 	res := []metadata.Transaction{}
 	txDetailCh := make(chan *TxInfoDetail)
 	stopCh := make(chan interface{})
@@ -147,29 +150,36 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		Detail TxInfoDetail
 	}{}
 	sDB := sView.GetCopiedTransactionStateDB()
-	for txDetails := range txDetailCh {
-		if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
-			continue
-		}
-		err := txDetails.Tx.LoadCommitment(sDB)
-		if err != nil {
-			fmt.Printf("Validate tx %v return error %v\n", txDetails.Hash, err)
-		}
-		ok, err := tp.Verifier.ValidateWithChainState(
-			txDetails.Tx,
-			cView,
-			sView,
-			bcView,
-			sView.GetBeaconHeight(),
-		)
-		if !ok || err != nil {
-			fmt.Printf("Validate tx %v return error %v\n", txDetails.Hash, err)
-		}
-		ok, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, res)
-		if ok {
-			curSize = curSize - removedInfo.Fee + txDetails.Fee
-			curTime = curTime - removedInfo.VTime + txDetails.VTime
-			insertTxIntoList(mapForChkDbSpend, *txDetails, res)
+	for {
+		select {
+		case txDetails := <-txDetailCh:
+			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
+				continue
+			}
+			err := txDetails.Tx.LoadCommitment(sDB)
+			if err != nil {
+				fmt.Printf("Validate tx %v return error %v\n", txDetails.Hash, err)
+				continue
+			}
+			ok, err := tp.Verifier.ValidateWithChainState(
+				txDetails.Tx,
+				cView,
+				sView,
+				bcView,
+				sView.GetBeaconHeight(),
+			)
+			if !ok || err != nil {
+				fmt.Printf("Validate tx %v return error %v\n", txDetails.Hash, err)
+				continue
+			}
+			ok, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, res)
+			if ok {
+				curSize = curSize - removedInfo.Fee + txDetails.Fee
+				curTime = curTime - removedInfo.VTime + txDetails.VTime
+				insertTxIntoList(mapForChkDbSpend, *txDetails, res)
+			}
+		case <-timeOut:
+			return res
 		}
 	}
 	return res

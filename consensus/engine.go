@@ -74,6 +74,7 @@ func (s *Engine) WatchCommitteeChange() {
 	role, chainID := s.config.Node.GetUserMiningState()
 	if s.curringMiningState.role != role || s.curringMiningState.chainID != chainID {
 		Logger.Log.Infof("Node state role: %v chainID: %v", role, chainID)
+		s.NotifyRoleDetail(s.curringMiningState.chainID, chainID, s.curringMiningState.role, role)
 	}
 
 	s.curringMiningState.chainID = chainID

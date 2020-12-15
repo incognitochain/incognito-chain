@@ -69,6 +69,23 @@ func (v *TxsVerifier) LoadCommitmentForTxs(
 	return true
 }
 
+func (v *TxsVerifier) ValidateTxsSig(
+	txs []metadata.Transaction,
+	errCh chan error,
+	doneCh chan interface{},
+) {
+	for _, tx := range txs {
+		go func() {
+			ok, err := tx.VerifySigTx()
+			if !ok || err != nil {
+				errCh <- errors.Errorf("Signature of tx %v is not valid, result %v, error %v", tx.Hash().String(), ok, err)
+			} else {
+				doneCh <- nil
+			}
+		}()
+	}
+}
+
 func (v *TxsVerifier) ValidateWithoutChainstate(tx metadata.Transaction) (bool, error) {
 	ok, err := tx.ValidateSanityDataByItSelf()
 	if !ok || err != nil {
@@ -103,24 +120,23 @@ func (v *TxsVerifier) ValidateBlockTransactions(
 	txs []metadata.Transaction,
 ) bool {
 	fmt.Printf("[testNewPool] Total txs %v\n", len(txs))
-	st := time.Now()
-	defer func() {
-		if len(txs) > 0 {
-			fmt.Printf("[testNewPooltime] Validate %v txs cost %v\n", len(txs), time.Since(st))
-		}
-	}()
 	if len(txs) == 0 {
 		return true
 	}
 	_, newTxs := v.txPool.CheckValidatedTxs(txs)
-	fmt.Println("Is Validated")
+	// fmt.Println("Is Validated")
 	errCh := make(chan error)
-	doneCh := make(chan interface{}, len(txs)+len(newTxs))
+	doneCh := make(chan interface{}, len(txs)+2*len(newTxs))
 	numOfValidTxs := 0
 	timeout := time.After(10 * time.Second)
 	v.LoadCommitmentForTxs(
 		txs,
 		shardViewRetriever,
+	)
+	v.ValidateTxsSig(
+		newTxs,
+		errCh,
+		doneCh,
 	)
 	v.validateTxsWithoutChainstate(
 		newTxs,
