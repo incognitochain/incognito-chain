@@ -553,6 +553,18 @@ func AssertAndConvertStrToNumber(numStr interface{}) (uint64, error) {
 	return strconv.ParseUint(assertedNumStr, 10, 64)
 }
 
+// AssertAndConvertStrToNumber asserts and convert a passed input to uint64 number
+func AssertAndConvertNumber(numInt interface{}) (uint64, error) {
+	switch numInt.(type) {
+	case float64:
+		return uint64(numInt.(float64)), nil
+	case string:
+		return strconv.ParseUint(numInt.(string), 10, 64)
+	default:
+		return 0, errors.Errorf("cannot assert number interface to uint64")
+	}
+}
+
 func IndexOfUint64(target uint64, arr []uint64) int {
 	for i, v := range arr {
 		if v == target {

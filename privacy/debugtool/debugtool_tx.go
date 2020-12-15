@@ -419,7 +419,7 @@ func (this *DebugTool) PDEContributePRV(privKeyStr string, amount string) ([]byt
 					{
 						"PDEContributionPairID": "newpair",
 						"ContributorAddressStr": "%s",
-						"ContributedAmount": %s,
+						"ContributedAmount": "%s",
 						"TokenIDStr": "0000000000000000000000000000000000000000000000000000000000000004"
 					}
 				]
@@ -434,7 +434,7 @@ func (this *DebugTool) PDEContributeToken(privKeyStr, tokenID, amount string) ([
 	query := fmt.Sprintf(`{
 				"id": 1,
 				"jsonrpc": "1.0",
-				"method": "createandsendtxwithptokencontribution",
+				"method": "createandsendtxwithptokencontributionv2",
 				"params": [
 					"%s",
 					{},
@@ -453,7 +453,7 @@ func (this *DebugTool) PDEContributeToken(privKeyStr, tokenID, amount string) ([
 						"TokenFee": 0,
 						"PDEContributionPairID": "newpair",
 						"ContributorAddressStr": "%s",
-						"ContributedAmount": %s,
+						"ContributedAmount": "%s",
 						"TokenIDStr": "%s"
 					},
 					"",
