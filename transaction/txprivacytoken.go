@@ -432,7 +432,6 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(chainR
 			return NewTransactionErr(RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", txCustomTokenPrivacy.Hash().String(), err))
 		}
 		if !isContinued {
-			fmt.Println("haha 3 not continue")
 			return nil
 		}
 	}
