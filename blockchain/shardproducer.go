@@ -300,6 +300,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 		return nil, NewBlockChainError(CloneBeaconBestStateError, err)
 	}
 	blockCreationLeftOver = time.Now().Sub(st)
+	st = time.Now()
 	txsToAdd := chain.TxPool.GetTxsTranferForNewBlock(
 		blockGenerator.chain,
 		curView,
@@ -308,6 +309,9 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 		6*time.Second,
 		blockCreationLeftOver,
 	)
+	if len(txsToAdd) > 0 {
+		Logger.log.Infof("[testperformance] SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(txsToAdd), curView.ShardHeight, time.Since(st))
+	}
 	txsToAdd = append(txsToAdd, responseTxsBeacon...)
 	if len(errInstructions) > 0 {
 		Logger.log.Error("List error instructions, which can not create tx", errInstructions)

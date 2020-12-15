@@ -154,8 +154,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	for {
 		select {
 		case txDetails := <-txDetailCh:
-			fmt.Printf("[testperformance] %v %v %v %v\n", curSize, maxTime, maxSize, curTime)
-			fmt.Printf("[testperformance] %v \n", txDetails)
+			if txDetails == nil {
+				return res
+			}
 			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
 				continue
 			}
@@ -185,7 +186,6 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			return res
 		}
 	}
-	return res
 }
 
 func (tp *TxsPool) CheckDoubleSpend(
