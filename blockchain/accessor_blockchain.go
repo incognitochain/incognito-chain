@@ -251,9 +251,6 @@ func (blockchain *BlockChain) GetShardBlockByHashWithShardID(hash common.Hash, s
 }
 
 func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.ShardBlock, uint64, error) {
-	if blockchain.IsTest {
-		return &types.ShardBlock{}, 2, nil
-	}
 	for _, i := range blockchain.GetShardIDs() {
 		shardID := byte(i)
 		shardBlockBytes, err := rawdbv2.GetShardBlockByHash(blockchain.GetShardChainDatabase(shardID), hash)

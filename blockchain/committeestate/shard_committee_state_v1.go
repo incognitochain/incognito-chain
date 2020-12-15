@@ -231,7 +231,7 @@ func (engine *ShardCommitteeEngineV1) UpdateCommitteeState(
 		return nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
 
-	if common.IndexOfUint64(env.BeaconHeight()/env.ChainParamEpoch(), env.EpochBreakPointSwapNewKey()) > -1 {
+	if common.IndexOfUint64(env.Epoch(), env.EpochBreakPointSwapNewKey()) > -1 {
 		committeeChange, err = newCommitteeState.processShardBlockInstructionForKeyListV2(env, committeeChange)
 	} else {
 		committeeChange, err = newCommitteeState.processShardBlockInstruction(env, committeeChange)

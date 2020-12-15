@@ -476,6 +476,16 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			panic("Restart beacon views fail")
 		}
 	}
+	for _, view := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
+		beaconState := view.(*BeaconBestState)
+		if beaconState.missingSignatureCounter != nil {
+			block := beaconState.BestBlock
+			err = initMissingSignatureCounter(blockchain, beaconState, &block)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -776,17 +786,27 @@ func (bc *BlockChain) GetEpochByHeight(beaconHeight uint64) uint64 {
 }
 
 func (bc *BlockChain) GetEpochNextHeight(beaconHeight uint64) (uint64, bool) {
+	beaconHeight++
+	return bc.getEpochAndIsFistHeightInEpoch(beaconHeight)
+}
+
+func (bc *BlockChain) getEpochAndIsFistHeightInEpoch(beaconHeight uint64) (uint64, bool) {
 	params := bc.config.ChainParams
 	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
 	newEpochBlockHeight := totalBlockBeforeBreakPoint + 1
 	if beaconHeight < newEpochBlockHeight {
+		newEpoch := beaconHeight/params.Epoch + 1
 		if beaconHeight%params.Epoch == 1 {
-			return beaconHeight / params.Epoch, true
+			if beaconHeight == 1 {
+				return newEpoch, false
+			} else {
+				return newEpoch, true
+			}
 		} else {
 			if beaconHeight%params.Epoch == 0 {
-				return beaconHeight / params.Epoch, false
+				return newEpoch - 1, false
 			} else {
-				return beaconHeight/params.Epoch + 1, false
+				return newEpoch, false
 			}
 		}
 	} else {
@@ -805,12 +825,12 @@ func (bc *BlockChain) GetEpochNextHeight(beaconHeight uint64) (uint64, bool) {
 }
 
 func (bc *BlockChain) IsFirstBeaconHeightInEpoch(beaconHeight uint64) bool {
-	_, ok := bc.GetEpochNextHeight(beaconHeight)
+	_, ok := bc.getEpochAndIsFistHeightInEpoch(beaconHeight)
 	return ok
 }
 
 func (bc *BlockChain) IsLastBeaconHeightInEpoch(beaconHeight uint64) bool {
-	_, ok := bc.GetEpochNextHeight(beaconHeight + 1)
+	_, ok := bc.getEpochAndIsFistHeightInEpoch(beaconHeight + 1)
 	return ok
 }
 
@@ -866,9 +886,20 @@ func (bc *BlockChain) IsGreaterThanRandomTime(beaconHeight uint64) bool {
 	params := bc.config.ChainParams
 	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
 	if beaconHeight < totalBlockBeforeBreakPoint {
-		return beaconHeight%params.Epoch >= params.RandomTime
+		return beaconHeight%params.Epoch > params.RandomTime
 	} else {
 		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
-		return newEpochBlocks%params.EpochV2 >= params.RandomTimeV2
+		return newEpochBlocks%params.EpochV2 > params.RandomTimeV2
+	}
+}
+
+func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
+	params := bc.config.ChainParams
+	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	if beaconHeight < totalBlockBeforeBreakPoint {
+		return beaconHeight%params.Epoch == params.RandomTime
+	} else {
+		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
+		return newEpochBlocks%params.EpochV2 == params.RandomTimeV2
 	}
 }

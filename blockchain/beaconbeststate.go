@@ -647,7 +647,6 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	return &committeestate.BeaconCommitteeStateEnvironment{
 		BeaconHeight:                      beaconBestState.BeaconHeight,
 		BeaconHash:                        beaconBestState.BestBlockHash,
-		ParamEpoch:                        params.Epoch,
 		Epoch:                             beaconBestState.Epoch,
 		BeaconInstructions:                beaconInstructions,
 		EpochBreakPointSwapNewKey:         params.EpochBreakPointSwapNewKey,
@@ -861,7 +860,7 @@ func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 		tempBeaconHeight--
 	}
 
-	return curView.countMissingSignature(bc.GetBeaconChainDatabase(), allShardStates)
+	return curView.countMissingSignature(bc, allShardStates)
 }
 
 func (beaconBestState *BeaconBestState) CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey {
@@ -931,5 +930,4 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		newBeaconCommitteeStateV2,
 	)
 	beaconBestState.beaconCommitteeEngine = newCommitteeEngineV2
-	beaconBestState.Epoch = bc.config.ChainParams.EpochV2
 }

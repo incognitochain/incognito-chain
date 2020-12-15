@@ -46,6 +46,20 @@ func (committeeChange *CommitteeChange) StopAutoStakeKeys() []incognitokey.Commi
 	return res
 }
 
+func (committeeChange *CommitteeChange) IsShardCommitteeChange() bool {
+	for _, res := range committeeChange.ShardSubstituteAdded {
+		if len(res) > 0 {
+			return true
+		}
+	}
+	for _, res := range committeeChange.ShardSubstituteRemoved {
+		if len(res) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 func NewCommitteeChange() *CommitteeChange {
 	committeeChange := &CommitteeChange{
 		ShardSubstituteAdded:    make(map[byte][]incognitokey.CommitteePublicKey),
