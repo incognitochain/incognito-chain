@@ -252,7 +252,7 @@ func (engine *Engine) NotifyRoleDetail(curCID, newCID int, curRole, newRole stri
 			)
 		}
 		if newRole == common.CommitteeRole {
-			Logger.Log.Infof("[testperformance] FUCKKKKKKKKKK")
+			Logger.Log.Infof("[testperformance] aaaaaaaaaaaaaaaaaaaaaaaaaaa")
 			engine.config.PubSubManager.PublishMessage(
 				pubsub.NewMessage(pubsub.NodeRoleDetailTopic, pubsub.NodeRole{
 					CID:  newCID,
@@ -264,7 +264,7 @@ func (engine *Engine) NotifyRoleDetail(curCID, newCID int, curRole, newRole stri
 		if curRole == newRole {
 			return
 		}
-		Logger.Log.Infof("[testperformance] FUCKKKKKKKKKK")
+		Logger.Log.Infof("[testperformance] aaaaaaaaaaaaaaaaaaaaaaaaaaa")
 		engine.config.PubSubManager.PublishMessage(
 			pubsub.NewMessage(pubsub.NodeRoleDetailTopic, pubsub.NodeRole{
 				CID:  newCID,

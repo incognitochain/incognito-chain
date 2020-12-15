@@ -316,7 +316,7 @@ func (serverObj *Server) NewServer(
 	)
 	poolManager, _ := txpool.NewPoolManager(
 		common.MaxShardNumber,
-		pubsubManager,
+		serverObj.pusubManager,
 	)
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		BTCChain:      btcChain,

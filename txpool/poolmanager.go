@@ -54,6 +54,9 @@ func (pm *PoolManager) Start() error {
 					pm.ShardTxsPool[newRole.CID].Stop()
 				}
 			}
+		} else {
+			fmt.Printf("[testperformance] Fcking new role %v\n", *newRole)
+			fmt.Println("[testperformance] bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
 		}
 	}
 	return nil
