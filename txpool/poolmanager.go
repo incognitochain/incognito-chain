@@ -17,11 +17,14 @@ type PoolManager struct {
 
 func NewPoolManager(
 	activeShards int,
+	ps *pubsub.PubSubManager,
 ) (
 	*PoolManager,
 	error,
 ) {
-	res := &PoolManager{}
+	res := &PoolManager{
+		ps: ps,
+	}
 	for i := 0; i < activeShards; i++ {
 		res.ShardTxsPool = append(res.ShardTxsPool, NewTxsPool(nil, make(chan metadata.Transaction)))
 	}

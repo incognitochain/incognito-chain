@@ -314,7 +314,10 @@ func (serverObj *Server) NewServer(
 		cfg.NodeMode,
 		relayShards,
 	)
-	poolManager, _ := txpool.NewPoolManager(common.MaxShardNumber)
+	poolManager, _ := txpool.NewPoolManager(
+		common.MaxShardNumber,
+		pubsubManager,
+	)
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		BTCChain:      btcChain,
 		BNBChainState: bnbChainState,
