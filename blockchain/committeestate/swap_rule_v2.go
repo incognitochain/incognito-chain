@@ -264,6 +264,10 @@ func SnapshotShardCommonPoolV2(
 	return numberOfAssignedCandidates
 }
 
-func (s *swapRuleV2) Clone() SwapRule {
+func (s *swapRuleV2) clone() SwapRule {
 	return &swapRuleV2{}
+}
+
+func (s *swapRuleV2) Version() int {
+	return swapRuleSlashingVersion
 }

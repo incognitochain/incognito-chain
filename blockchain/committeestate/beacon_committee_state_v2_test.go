@@ -1513,7 +1513,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 			Type:         instruction.SWAP_BY_END_EPOCH,
 		},
 		[]string{key, key2, key3, key4}, []string{}, []string{}, []string{key0})
-	swapRuleSingleInstructionOut.On("Clone").Return(swapRuleSingleInstructionOut)
+	swapRuleSingleInstructionOut.On("Version").Return(swapRuleTestVersion)
 
 	swapRuleIn2Keys := &mocks.SwapRule{}
 	swapRuleIn2Keys.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
@@ -1521,12 +1521,14 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey0, *incKey,
 			},
-			InPublicKeys: []string{key0, key},
-			ChainID:      0,
-			Type:         instruction.SWAP_BY_END_EPOCH,
+			InPublicKeys:        []string{key0, key},
+			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{},
+			OutPublicKeys:       []string{},
+			ChainID:             0,
+			Type:                instruction.SWAP_BY_END_EPOCH,
 		},
-		[]string{key2, key3, key4, key5, key6, key7, key8, key}, []string{}, []string{}, []string{})
-	swapRuleIn2Keys.On("Clone").Return(swapRuleIn2Keys)
+		[]string{key2, key3, key4, key5, key6, key7, key0, key}, []string{}, []string{}, []string{})
+	swapRuleIn2Keys.On("Version").Return(swapRuleTestVersion)
 
 	swapRuleOut2Keys := &mocks.SwapRule{}
 	swapRuleOut2Keys.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
@@ -1534,29 +1536,31 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey, *incKey4,
 			},
-			OutPublicKeys: []string{key, key4},
-			ChainID:       0,
-			Type:          instruction.SWAP_BY_END_EPOCH,
+			OutPublicKeys:      []string{key, key4},
+			InPublicKeyStructs: []incognitokey.CommitteePublicKey{},
+			InPublicKeys:       []string{},
+			ChainID:            0,
+			Type:               instruction.SWAP_BY_END_EPOCH,
 		},
 		[]string{key0, key5, key2, key3, key6}, []string{}, []string{}, []string{key, key4})
-	swapRuleOut2Keys.On("Clone").Return(swapRuleOut2Keys)
+	swapRuleOut2Keys.On("Version").Return(swapRuleTestVersion)
 
 	swapRuleInAndOut2Keys := &mocks.SwapRule{}
 	swapRuleInAndOut2Keys.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
-				*incKey2, *incKey3,
-			},
-			OutPublicKeys: []string{key2, key3},
-			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey0, *incKey,
 			},
-			InPublicKeys: []string{key0, key},
+			OutPublicKeys: []string{key0, key},
+			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey2, *incKey3,
+			},
+			InPublicKeys: []string{key2, key3},
 			ChainID:      0,
 			Type:         instruction.SWAP_BY_END_EPOCH,
 		},
 		[]string{key4, key5, key6, key7, key2, key3}, []string{}, []string{}, []string{key0, key})
-	swapRuleInAndOut2Keys.On("Clone").Return(swapRuleInAndOut2Keys)
+	swapRuleInAndOut2Keys.On("Version").Return(swapRuleTestVersion)
 
 	type fields struct {
 		beaconHeight                      uint64
@@ -2267,9 +2271,9 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 			}
 			if !reflect.DeepEqual(tt.fields.uncommittedBeaconCommitteeStateV2,
 				tt.fieldsAfterProcess.uncommittedBeaconCommitteeStateV2) {
-				t.Fatalf(`BeaconCommitteeEngineV2.UpdateCommitteeState() tt.fields.uncommittedBeaconCommitteeStateV2 = %v, 
-					tt.fieldsAfterProcess.uncommittedBeaconCommitteeStateV2 = %v`,
-					tt.fields.uncommittedBeaconCommitteeStateV2, tt.fieldsAfterProcess.uncommittedBeaconCommitteeStateV2)
+				t.Fatalf(`BeaconCommitteeEngineV2.UpdateCommitteeState() tt.fields.uncommittedBeaconCommitteeStateV2.shardCommittee = %v, 
+					tt.fieldsAfterProcess.uncommittedBeaconCommitteeStateV2.shardCommittee = %v`,
+					tt.fields.uncommittedBeaconCommitteeStateV2.shardCommittee, tt.fieldsAfterProcess.uncommittedBeaconCommitteeStateV2.shardCommittee)
 			}
 		})
 	}
@@ -3562,6 +3566,111 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	finalMu := &sync.RWMutex{}
 	unCommitteedMu := &sync.RWMutex{}
 
+	//Declare swaprule
+	swapRule1 := &mocks.SwapRule{}
+	swapRule1.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+		&instruction.SwapShardInstruction{
+			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey,
+			},
+			OutPublicKeys: []string{key},
+			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey0,
+			},
+			InPublicKeys: []string{key0},
+			ChainID:      0,
+			Type:         instruction.SWAP_BY_END_EPOCH,
+		},
+		[]string{key2, key3, key4, key0}, []string{}, []string{}, []string{key})
+	swapRule1.On("Version").Return(swapRuleTestVersion)
+	swapRule1.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
+
+	swapRule2 := &mocks.SwapRule{}
+	swapRule2.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+		&instruction.SwapShardInstruction{
+			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey0,
+			},
+			OutPublicKeys: []string{key0},
+			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey,
+			},
+			InPublicKeys: []string{key},
+			ChainID:      0,
+			Type:         instruction.SWAP_BY_END_EPOCH,
+		},
+		[]string{key2, key3, key4, key}, []string{}, []string{}, []string{key0})
+	swapRule2.On("Version").Return(swapRuleTestVersion)
+	swapRule2.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
+
+	swapRule3 := &mocks.SwapRule{}
+	swapRule3.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+		&instruction.SwapShardInstruction{
+			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey,
+			},
+			OutPublicKeys: []string{key},
+			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey5,
+			},
+			InPublicKeys: []string{key5},
+			ChainID:      0,
+			Type:         instruction.SWAP_BY_END_EPOCH,
+		},
+		[]string{key2, key3, key4, key5}, []string{}, []string{}, []string{key})
+
+	swapRule3.On("GenInstructions", uint8(1), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+		&instruction.SwapShardInstruction{
+			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey7,
+			},
+			OutPublicKeys: []string{key7},
+			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey11,
+			},
+			InPublicKeys: []string{key11},
+			ChainID:      1,
+			Type:         instruction.SWAP_BY_END_EPOCH,
+		},
+		[]string{key8, key9, key10, key11}, []string{}, []string{}, []string{key7})
+
+	swapRule3.On("Version").Return(swapRuleTestVersion)
+	swapRule3.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
+
+	swapRule4 := &mocks.SwapRule{}
+	swapRule4.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+		&instruction.SwapShardInstruction{
+			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey4,
+			},
+			OutPublicKeys: []string{key4},
+			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey5,
+			},
+			InPublicKeys: []string{key5},
+			ChainID:      0,
+			Type:         instruction.SWAP_BY_END_EPOCH,
+		},
+		[]string{key, key2, key3, key5}, []string{}, []string{key4}, []string{})
+
+	swapRule4.On("GenInstructions", uint8(1), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+		&instruction.SwapShardInstruction{
+			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey10,
+			},
+			OutPublicKeys: []string{key10},
+			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+				*incKey11,
+			},
+			InPublicKeys: []string{key11},
+			ChainID:      1,
+			Type:         instruction.SWAP_BY_END_EPOCH,
+		},
+		[]string{key7, key8, key9, key11}, []string{}, []string{key10}, []string{})
+
+	swapRule4.On("Version").Return(swapRuleTestVersion)
+	swapRule4.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
+
 	type fields struct {
 		beaconHeight                      uint64
 		beaconHash                        common.Hash
@@ -4154,6 +4263,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule1,
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					mu: unCommitteedMu,
@@ -4186,6 +4296,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule1,
 				},
 			},
 			args: args{
@@ -4245,6 +4356,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule1,
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					mu: unCommitteedMu,
@@ -4277,6 +4389,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule1,
 				},
 			},
 			args: args{
@@ -4410,6 +4523,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 					stakingTx: map[string]common.Hash{
 						key0: *hash,
 					},
+					swapRule:                   swapRule1,
 					numberOfAssignedCandidates: 0,
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
@@ -4440,6 +4554,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 					stakingTx: map[string]common.Hash{
 						key0: *hash,
 					},
+					swapRule:                   swapRule1,
 					numberOfAssignedCandidates: 1,
 				},
 			},
@@ -4572,6 +4687,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule2,
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					mu: unCommitteedMu,
@@ -4604,6 +4720,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule2,
 				},
 			},
 			args: args{
@@ -4663,6 +4780,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule2,
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					mu: unCommitteedMu,
@@ -4695,6 +4813,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule2,
 				},
 			},
 			args: args{
@@ -4754,6 +4873,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule2,
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					mu: unCommitteedMu,
@@ -4786,6 +4906,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule2,
 				},
 			},
 			args: args{
@@ -4845,6 +4966,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule2,
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					mu: unCommitteedMu,
@@ -4877,6 +4999,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key0: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule2,
 				},
 			},
 			args: args{
@@ -4945,6 +5068,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key7: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule3,
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					mu: unCommitteedMu,
@@ -4986,6 +5110,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key7: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule3,
 				},
 			},
 			args: args{
@@ -5063,6 +5188,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key10: *hash,
 						key:   *tempHash,
 					},
+					swapRule: swapRule4,
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					mu: unCommitteedMu,
@@ -5104,6 +5230,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						key7: *hash,
 						key:  *tempHash,
 					},
+					swapRule: swapRule4,
 				},
 			},
 			args: args{

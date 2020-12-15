@@ -118,7 +118,7 @@ func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 		newB.stakingTx[k] = v
 	}
 
-	newB.swapRule = b.swapRule.Clone()
+	newB.swapRule = cloneSwapRuleByVersion(b.swapRule)
 }
 
 func (b *BeaconCommitteeStateV2) reset() {
@@ -610,8 +610,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 	tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-	Logger.log.Info("[DCS] b.swapRule:", b.swapRule)
-
 	comparedShardSwapInstruction, newCommittees, _,
 		slashingCommittees, normalSwapOutCommittees := b.swapRule.GenInstructions(
 		shardID,
@@ -660,6 +658,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		oldState,
 	)
 	if err != nil {
+		Logger.log.Info("[DCS] err:", err)
 		return nil, returnStakingInstruction, err
 	}
 
@@ -670,6 +669,7 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		committeeChange,
 	)
 	if err != nil {
+		Logger.log.Info("[DCS] err:", err)
 		return nil, returnStakingInstruction, err
 	}
 
@@ -988,4 +988,21 @@ func (b *BeaconCommitteeStateV2) deleteStakerInfo(
 	delete(b.autoStake, committeePublicKey)
 	delete(b.stakingTx, committeePublicKey)
 	return committeeChange, nil
+}
+
+func cloneSwapRuleByVersion(swapRule SwapRule) SwapRule {
+	var res SwapRule
+	if swapRule != nil {
+		switch swapRule.Version() {
+		case swapRuleSlashingVersion:
+			res = swapRule.(*swapRuleV2).clone()
+		case swapRuleDCSVersion:
+			res = swapRule.(*swapRuleV3).clone()
+		case swapRuleTestVersion:
+			res = swapRule
+		default:
+			panic("Not implement this version yet")
+		}
+	}
+	return res
 }

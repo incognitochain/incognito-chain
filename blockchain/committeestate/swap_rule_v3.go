@@ -7,6 +7,7 @@ import (
 
 //swapRuleV3 ...
 type swapRuleV3 struct {
+	versionName string
 }
 
 func NewSwapRuleV3() *swapRuleV3 {
@@ -187,6 +188,10 @@ func (s *swapRuleV3) getSlashingOffset(
 	return lenCommittees / maxSlashOutPercent
 }
 
-func (s *swapRuleV3) Clone() SwapRule {
+func (s *swapRuleV3) clone() SwapRule {
 	return &swapRuleV3{}
+}
+
+func (s *swapRuleV3) Version() int {
+	return swapRuleDCSVersion
 }

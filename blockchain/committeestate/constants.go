@@ -12,3 +12,9 @@ const (
 	SELF_SWAP_SHARD_VERSION = 1
 	SLASHING_VERSION        = 2
 )
+
+const (
+	swapRuleTestVersion     = 0
+	swapRuleSlashingVersion = 2
+	swapRuleDCSVersion      = 3
+)
