@@ -83,7 +83,7 @@ func NewCreateRawTxParam(params interface{}) (*CreateRawTxParam, error) {
 		}
 
 		paymentInfo := &privacy.PaymentInfo{
-			Amount:         uint64(amountParam),
+			Amount:         amountParam,
 			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)

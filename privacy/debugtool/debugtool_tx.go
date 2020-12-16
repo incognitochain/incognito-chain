@@ -523,10 +523,10 @@ func (this *DebugTool) PDETradeToken(privKeyStr, sellToken, amount string) ([]by
 	query := fmt.Sprintf(`{
 			"id": 1,
 			"jsonrpc": "1.0",
-			"method": "createandsendtxwithptokentradereq",
+			"method": "createandsendtxwithptokencrosspooltradereq",
 			"params": [
 				"%s",
-				{},
+				{"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": 20},
 				-1,
 				0,
 				{
@@ -535,22 +535,22 @@ func (this *DebugTool) PDETradeToken(privKeyStr, sellToken, amount string) ([]by
 					"TokenTxType": 1,
 					"TokenName": "",
 					"TokenSymbol": "",
-					"TokenAmount": %s,
+					"TokenAmount": 15,
 					"TokenReceivers": {
-						"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": %s
+						"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": 10
 					},
 					"TokenFee": 0,
 					"TokenIDToBuyStr": "0000000000000000000000000000000000000000000000000000000000000004",
 					"TokenIDToSellStr": "%s",
-					"SellAmount": %s,
+					"SellAmount": 10,
 					"MinAcceptableAmount":0,
-					"TradingFee":0,
+					"TradingFee":20,
 					"TraderAddressStr": "%s"
 				},
 				"",
 				0
 			]
-		}`, privKeyStr, sellToken, amount, amount, sellToken, amount, paymentAddStr)
+		}`, privKeyStr, sellToken, sellToken, paymentAddStr)
 	return this.SendPostRequestWithQuery(query)
 }
 

@@ -1066,7 +1066,7 @@ func (txToken *TxToken) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *
 		return false, nil, nil, nil, fmt.Errorf("%v and %v", errPrv, errToken)
 	}
 
-	return isBurnPrv || isBurnToken, burnToken, burnPrv, burnedTokenID, nil
+	return isBurnPrv || isBurnToken, burnPrv, burnToken, burnedTokenID, nil
 }
 
 func (tx *TxToken) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *statedb.StateDB, tokenID *common.Hash) error {
