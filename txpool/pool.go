@@ -54,7 +54,7 @@ func NewTxsPool(
 		action:    make(chan func(*TxsPool)),
 		Verifier:  txVerifier,
 		Data:      TxsData{},
-		Cacher:    new(cache.Cache),
+		Cacher:    cache.New(10*time.Second, 10*time.Second),
 		Inbox:     inbox,
 		isRunning: false,
 		cQuit:     make(chan bool),
