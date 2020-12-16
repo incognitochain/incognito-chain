@@ -998,28 +998,3 @@ func Test_swapRuleV2_swapInAfterSwapOut(t *testing.T) {
 		})
 	}
 }
-
-func Test_swapRuleV2_AssignOffset(t *testing.T) {
-	type args struct {
-		lenShardSubstitute      int
-		lenCommittees           int
-		numberOfFixedValidators int
-		minCommitteeSize        int
-	}
-	tests := []struct {
-		name string
-		s    *swapRuleV2
-		args args
-		want int
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &swapRuleV2{}
-			if got := s.AssignOffset(tt.args.lenShardSubstitute, tt.args.lenCommittees, tt.args.numberOfFixedValidators, tt.args.minCommitteeSize); got != tt.want {
-				t.Errorf("swapRuleV2.AssignOffset() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
