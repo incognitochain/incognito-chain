@@ -211,30 +211,34 @@ func (tp *TxsPool) CheckDoubleSpend(
 	removeIdx := map[uint]interface{}{}
 	for _, iCoin := range iCoins {
 		if info, ok := dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
+			fmt.Println("1", info)
 			if _, ok := removeIdx[info.Index]; ok {
 				continue
 			}
 			if tp.better(info.Detail.Tx, tx) {
 				return false, removedInfos
 			} else {
+				fmt.Println("Assign map remove 1")
 				removeIdx[info.Index] = nil
 			}
 		}
 	}
 	for _, oCoin := range oCoins {
 		if info, ok := dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
+			fmt.Println("2", info)
 			if _, ok := removeIdx[info.Index]; ok {
 				continue
 			}
 			if tp.better(info.Detail.Tx, tx) {
 				return false, removedInfos
 			} else {
+				fmt.Println("Assign map remove 2")
 				removeIdx[info.Index] = nil
 			}
 		}
 	}
 	if len(removeIdx) > 0 {
-		fmt.Printf("[testperformance] Doublespend %v ", tx.Hash().String())
+		fmt.Printf("[testperformance] %v Doublespend %v ", len(removeIdx), tx.Hash().String())
 		for k, v := range dataHelper {
 			if _, ok := removeIdx[v.Index]; ok {
 				delete(dataHelper, k)
