@@ -184,12 +184,12 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				continue
 			}
 			fmt.Printf("[testperformance] Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
-			ok, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, res)
+			ok, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
 			fmt.Printf("[testperformance] Added %v, needed to remove %v\n", ok, removedInfo)
 			if ok {
 				curSize = curSize - removedInfo.Fee + txDetails.Fee
 				curTime = curTime - removedInfo.VTime + txDetails.VTime
-				insertTxIntoList(mapForChkDbSpend, *txDetails, res)
+				res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
 			}
 		case <-timeOut:
 			return res
@@ -203,7 +203,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 		Detail TxInfoDetail
 	},
 	tx metadata.Transaction,
-	txs []metadata.Transaction,
+	txs *[]metadata.Transaction,
 ) (
 	bool,
 	TxInfo,
@@ -244,7 +244,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 		}
 	}
 	if len(removeIdx) > 0 {
-		fmt.Printf("[testperformance] %v %v Doublespend %v ", len(removeIdx), len(txs), tx.Hash().String())
+		fmt.Printf("[testperformance] %v %v Doublespend %v ", len(removeIdx), len((*txs)), tx.Hash().String())
 		for k, v := range dataHelper {
 			if _, ok := removeIdx[v.Index]; ok {
 				delete(dataHelper, k)
@@ -252,13 +252,13 @@ func (tp *TxsPool) CheckDoubleSpend(
 		}
 		for k := range removeIdx {
 			fmt.Printf("%v:", k)
-			if int(k) == len(txs)-1 {
-				fmt.Printf("%v; ", txs[k].Hash().String())
-				txs = txs[:k]
+			if int(k) == len(*txs)-1 {
+				fmt.Printf("%v; ", (*txs)[k].Hash().String())
+				(*txs) = (*txs)[:k]
 			} else {
-				fmt.Printf("%v; ", txs[k].Hash().String())
-				if int(k) < len(txs)-1 {
-					txs = append(txs[:k], txs[k+1:]...)
+				fmt.Printf("%v; ", (*txs)[k].Hash().String())
+				if int(k) < len((*txs))-1 {
+					(*txs) = append((*txs)[:k], (*txs)[k+1:]...)
 				}
 			}
 
@@ -276,7 +276,7 @@ func insertTxIntoList(
 	},
 	txDetail TxInfoDetail,
 	txs []metadata.Transaction,
-) {
+) []metadata.Transaction {
 	tx := txDetail.Tx
 	iCoins := tx.GetProof().GetInputCoins()
 	oCoins := tx.GetProof().GetOutputCoins()
@@ -298,7 +298,7 @@ func insertTxIntoList(
 			Detail: txDetail,
 		}
 	}
-	txs = append(txs, tx)
+	return append(txs, tx)
 }
 
 func (tp *TxsPool) CheckValidatedTxs(
