@@ -55,6 +55,15 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		Logger.log.Error("UnmarshalJSON tx", string(data))
 		return NewTransactionErr(UnexpectedError, err)
 	}
+	valEnv := DefaultValEnv()
+	if tx.IsPrivacy() {
+		valEnv = WithPrivacy(valEnv)
+	} else {
+		valEnv = WithNoPrivacy(valEnv)
+	}
+	valEnv = WithType(valEnv, tx.GetType())
+	fmt.Println("[testperformance] Set env when unmarshal tx")
+	tx.SetValidationEnv(valEnv)
 	if temp.Metadata == nil {
 		tx.SetMetadata(nil)
 		return nil
@@ -66,15 +75,6 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		return parseErr
 	}
 	tx.SetMetadata(meta)
-	valEnv := DefaultValEnv()
-	if tx.IsPrivacy() {
-		valEnv = WithPrivacy(valEnv)
-	} else {
-		valEnv = WithNoPrivacy(valEnv)
-	}
-	valEnv = WithType(valEnv, tx.GetType())
-	fmt.Println("[testperformance] Set env when unmarshal tx")
-	tx.SetValidationEnv(valEnv)
 	return nil
 }
 
