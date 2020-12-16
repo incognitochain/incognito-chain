@@ -234,14 +234,24 @@ func (tp *TxsPool) CheckDoubleSpend(
 		}
 	}
 	if len(removeIdx) > 0 {
+		fmt.Printf("[testperformance] Doublespend %v ", tx.Hash().String())
 		for k, v := range dataHelper {
 			if _, ok := removeIdx[v.Index]; ok {
 				delete(dataHelper, k)
 			}
 		}
 		for k := range removeIdx {
-			txs = append(txs[:k], txs[k+1:]...)
+			fmt.Printf("%v", txs[k].Hash().String())
+			if int(k) == len(txs)-1 {
+				txs = txs[:k]
+			} else {
+				if int(k) < len(txs)-1 {
+					txs = append(txs[:k], txs[k+1:]...)
+				}
+			}
+
 		}
+		fmt.Println()
 	}
 
 	return true, removedInfos
