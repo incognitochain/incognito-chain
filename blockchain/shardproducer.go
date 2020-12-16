@@ -315,7 +315,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 		blockCreationLeftOver,
 	)
 	if len(txsToAdd) > 0 {
-		Logger.log.Infof("[testperformance] SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(txsToAdd), curView.ShardHeight, time.Since(st))
+		Logger.log.Infof("[testperformance] SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(txsToAdd), curView.ShardHeight+1, time.Since(st))
 	}
 	txsToAdd = append(txsToAdd, responseTxsBeacon...)
 	if len(errInstructions) > 0 {
