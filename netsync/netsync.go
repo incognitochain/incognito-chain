@@ -260,7 +260,7 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64) {
-	Logger.log.Debug("Handling new message tx")
+	Logger.log.Infof("[testperformance] Handling new message tx")
 	if !netSync.handleTxWithRole(msg.Transaction) {
 		return
 	}
