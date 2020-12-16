@@ -154,12 +154,16 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		Detail TxInfoDetail
 	}{}
 	sDB := sView.GetCopiedTransactionStateDB()
+	defer func() {
+		fmt.Printf("[testperformance] Return list txs #res %v\n", len(res))
+	}()
 	for {
 		select {
 		case txDetails := <-txDetailCh:
 			if txDetails == nil {
 				return res
 			}
+			fmt.Printf("[testperformance] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
 			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
 				continue
 			}
@@ -179,7 +183,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				fmt.Printf("Validate tx %v return error %v\n", txDetails.Hash, err)
 				continue
 			}
+			fmt.Printf("[testperformance] Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
 			ok, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, res)
+			fmt.Printf("[testperformance] Added %v, needed to remove %v\n", ok, removedInfo)
 			if ok {
 				curSize = curSize - removedInfo.Fee + txDetails.Fee
 				curTime = curTime - removedInfo.VTime + txDetails.VTime
@@ -284,9 +290,6 @@ func insertTxIntoList(
 		}
 	}
 	for _, oCoin := range oCoins {
-		fmt.Printf("Coin detail %v\n", oCoin.CoinDetails)
-		fmt.Printf("Coin detail SND %v\n", oCoin.CoinDetails.GetSNDerivator())
-		fmt.Printf("Map %v\n", dataHelper)
 		dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()] = struct {
 			Index  uint
 			Detail TxInfoDetail
