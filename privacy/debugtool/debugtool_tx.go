@@ -434,7 +434,7 @@ func (this *DebugTool) PDEContributeToken(privKeyStr, tokenID, amount string) ([
 	query := fmt.Sprintf(`{
 				"id": 1,
 				"jsonrpc": "1.0",
-				"method": "createandsendtxwithptokencontributionv2",
+				"method": "createandsendtxwithptokencontribution",
 				"params": [
 					"%s",
 					{},

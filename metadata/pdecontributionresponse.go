@@ -85,13 +85,14 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PDEContributionMeta) {
+			(instMetaType != strconv.Itoa(PDEContributionMeta) && instMetaType != strconv.Itoa(PDEPRVRequiredContributionRequestMeta)) {
 			continue
 		}
 		instContributionStatus := inst[2]
 		if instContributionStatus != iRes.ContributionStatus || (instContributionStatus != common.PDEContributionRefundChainStatus && instContributionStatus != common.PDEContributionMatchedNReturnedChainStatus) {
 			continue
 		}
+
 
 		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash
