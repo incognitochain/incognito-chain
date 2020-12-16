@@ -490,11 +490,11 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	// if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(beaconHeight), curView); err != nil {
 	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
 	// }
-	st := time.Now()
 	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.BeaconHash)
 	if err != nil {
 		return NewBlockChainError(CloneBeaconBestStateError, err)
 	}
+	st := time.Now()
 	ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
 		blockchain,
 		curView,
