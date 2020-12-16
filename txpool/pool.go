@@ -51,9 +51,12 @@ func NewTxsPool(
 	inbox chan metadata.Transaction,
 ) *TxsPool {
 	return &TxsPool{
-		action:    make(chan func(*TxsPool)),
-		Verifier:  txVerifier,
-		Data:      TxsData{},
+		action:   make(chan func(*TxsPool)),
+		Verifier: txVerifier,
+		Data: TxsData{
+			TxByHash: map[string]metadata.Transaction{},
+			TxInfos:  map[string]TxInfo{},
+		},
 		Cacher:    cache.New(10*time.Second, 10*time.Second),
 		Inbox:     inbox,
 		isRunning: false,
