@@ -166,6 +166,7 @@ type Transaction interface {
 	VerifySigTx() (bool, error)
 	GetValidationEnv() ValidationEnviroment
 	SetValidationEnv(ValidationEnviroment)
+	UnmarshalJSON(data []byte) error
 }
 
 func getPDEPoolPair(
