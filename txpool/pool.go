@@ -167,7 +167,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
 				continue
 			}
-			err := txDetails.Tx.LoadCommitment(sDB)
+			err := txDetails.Tx.LoadCommitment(sDB.Copy())
 			if err != nil {
 				fmt.Printf("Validate tx %v return error %v\n", txDetails.Hash, err)
 				continue

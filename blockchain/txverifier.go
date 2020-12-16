@@ -43,7 +43,7 @@ func (v *TxsVerifier) LoadCommitment(
 	if shardViewRetriever != nil {
 		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
 	}
-	err := tx.LoadCommitment(sDB)
+	err := tx.LoadCommitment(sDB.Copy())
 	if err != nil {
 		fmt.Println("Can not load commitment of this tx %v, error: %v", tx.Hash().String(), err)
 		return false
@@ -60,7 +60,7 @@ func (v *TxsVerifier) LoadCommitmentForTxs(
 		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
 	}
 	for _, tx := range txs {
-		err := tx.LoadCommitment(sDB)
+		err := tx.LoadCommitment(sDB.Copy())
 		if err != nil {
 			fmt.Printf("[testNewPool] Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
 			return false
