@@ -268,6 +268,9 @@ func insertTxIntoList(
 		}
 	}
 	for _, oCoin := range oCoins {
+		fmt.Printf("Coin detail %v\n", oCoin.CoinDetails)
+		fmt.Printf("Coin detail SND %v\n", oCoin.CoinDetails.GetSNDerivator())
+		fmt.Printf("Map %v\n", dataHelper)
 		dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()] = struct {
 			Index  uint
 			Detail TxInfoDetail
