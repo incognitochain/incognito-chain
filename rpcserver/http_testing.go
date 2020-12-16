@@ -126,6 +126,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		"stakingTx":        tempStakingTx,
 	}, nil
 }
+
 func (httpServer *HttpServer) handleGetSlashingCommittee(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {
@@ -142,6 +143,32 @@ func (httpServer *HttpServer) handleGetSlashingCommittee(params interface{}, clo
 	}
 	slashingCommittee := statedb.GetSlashingCommittee(beaconBestState.GetBeaconSlashStateDB(), epoch)
 	return slashingCommittee, nil
+}
+
+func (httpServer *HttpServer) handleGetSlashingCommitteeDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Number Of Params"))
+	}
+	epoch := uint64(arrayParams[0].(float64))
+	if epoch < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Epoch Value"))
+	}
+	beaconBestState := httpServer.blockService.BlockChain.GetBeaconBestState()
+	if epoch >= beaconBestState.Epoch {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Epoch Value"+
+			"expect epoch from %+v to %+v", 1, beaconBestState.Epoch-1))
+	}
+	slashingCommittees := statedb.GetSlashingCommittee(beaconBestState.GetBeaconSlashStateDB(), epoch)
+	slashingCommitteeDetail := make(map[byte][]incognitokey.CommitteeKeyString)
+	for shardID, slashingCommittee := range slashingCommittees {
+		res, err := incognitokey.CommitteeBase58KeyListToStruct(slashingCommittee)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		slashingCommitteeDetail[shardID] = incognitokey.CommitteeKeyListToStringList(res)
+	}
+	return slashingCommitteeDetail, nil
 }
 
 func (httpServer *HttpServer) handleGetRewardAmountByEpoch(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

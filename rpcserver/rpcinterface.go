@@ -83,13 +83,14 @@ var HttpHandler = map[string]httpHandler{
 	decryptoutputcoinbykeyoftransaction:     (*HttpServer).handleDecryptOutputCoinByKeyOfTransaction,
 
 	//======Testing and Benchmark======
-	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
-	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
-	unlockMempool:           (*HttpServer).handleUnlockMempool,
-	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
-	getCommitteeState:       (*HttpServer).handleGetCommitteeState,
-	getSlashingCommittee:    (*HttpServer).handleGetSlashingCommittee,
-	getRewardAmountByEpoch:  (*HttpServer).handleGetRewardAmountByEpoch,
+	getAndSendTxsFromFile:      (*HttpServer).handleGetAndSendTxsFromFile,
+	getAndSendTxsFromFileV2:    (*HttpServer).handleGetAndSendTxsFromFileV2,
+	unlockMempool:              (*HttpServer).handleUnlockMempool,
+	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
+	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
+	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
+	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,
+	getRewardAmountByEpoch:     (*HttpServer).handleGetRewardAmountByEpoch,
 
 	//=================================
 
