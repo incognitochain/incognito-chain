@@ -56,7 +56,6 @@ func (pm *PoolManager) Start() error {
 			}
 		} else {
 			fmt.Printf("[testperformance] Fcking new role %v\n", *newRole)
-			fmt.Println("[testperformance] bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
 		}
 	}
 	return nil

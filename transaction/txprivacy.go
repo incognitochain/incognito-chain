@@ -62,7 +62,6 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		valEnv = WithNoPrivacy(valEnv)
 	}
 	valEnv = WithType(valEnv, tx.GetType())
-	fmt.Println("[testperformance] Set env when unmarshal tx")
 	tx.SetValidationEnv(valEnv)
 	if temp.Metadata == nil {
 		tx.SetMetadata(nil)

@@ -1035,11 +1035,11 @@ func (serverObj *Server) OnGetCrossShard(_ *peer.PeerConn, msg *wire.MessageGetC
 func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Infof("Receive a new transaction START")
 	var txProcessed chan struct{}
-	txBytes, _ := json.Marshal(msg.Transaction)
-	err := json.Unmarshal(txBytes, msg.Transaction)
-	if err != nil {
-		panic("dd")
-	}
+	// txBytes, _ := json.Marshal(msg.Transaction)
+	// err := json.Unmarshal(txBytes, msg.Transaction)
+	// if err != nil {
+	// 	panic("dd")
+	// }
 	serverObj.netSync.QueueTx(nil, msg, txProcessed)
 	//<-txProcessed
 
