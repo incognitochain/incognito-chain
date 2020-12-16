@@ -70,6 +70,9 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 		valEnv = WithNoPrivacy(valEnv)
 	}
 	valEnv = WithType(valEnv, tx.GetType())
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	valEnv = WithShardID(valEnv, int(sID))
+
 	tx.SetValidationEnv(valEnv)
 
 	return nil

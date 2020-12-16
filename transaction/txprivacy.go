@@ -62,6 +62,8 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		valEnv = WithNoPrivacy(valEnv)
 	}
 	valEnv = WithType(valEnv, tx.GetType())
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	valEnv = WithShardID(valEnv, int(sID))
 	tx.SetValidationEnv(valEnv)
 	if temp.Metadata == nil {
 		tx.SetMetadata(nil)
