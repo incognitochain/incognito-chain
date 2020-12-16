@@ -257,7 +257,7 @@ func insertTxIntoList(
 ) {
 	tx := txDetail.Tx
 	iCoins := tx.GetProof().GetInputCoins()
-	oCoins := tx.GetProof().GetInputCoins()
+	oCoins := tx.GetProof().GetOutputCoins()
 	for _, iCoin := range iCoins {
 		dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()] = struct {
 			Index  uint
