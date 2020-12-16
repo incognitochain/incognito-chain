@@ -238,17 +238,19 @@ func (tp *TxsPool) CheckDoubleSpend(
 		}
 	}
 	if len(removeIdx) > 0 {
-		fmt.Printf("[testperformance] %v Doublespend %v ", len(removeIdx), tx.Hash().String())
+		fmt.Printf("[testperformance] %v %v Doublespend %v ", len(removeIdx), len(txs), tx.Hash().String())
 		for k, v := range dataHelper {
 			if _, ok := removeIdx[v.Index]; ok {
 				delete(dataHelper, k)
 			}
 		}
 		for k := range removeIdx {
-			fmt.Printf("%v", txs[k].Hash().String())
+			fmt.Printf("%v:", k)
 			if int(k) == len(txs)-1 {
+				fmt.Printf("%v; ", txs[k].Hash().String())
 				txs = txs[:k]
 			} else {
+				fmt.Printf("%v; ", txs[k].Hash().String())
 				if int(k) < len(txs)-1 {
 					txs = append(txs[:k], txs[k+1:]...)
 				}
@@ -370,12 +372,12 @@ func (tp *TxsPool) getTxsFromPool(
 			close(txCh)
 			fmt.Println("[testperformance] tx channel is closed")
 		}()
-		txDetails := &TxInfoDetail{}
 		for k, v := range tpTemp.Data.TxByHash {
 			select {
 			case <-stopC:
 				return
 			default:
+				txDetails := &TxInfoDetail{}
 				if info, ok := tpTemp.Data.TxInfos[k]; ok {
 					txDetails.Hash = k
 					txDetails.Fee = info.Fee
