@@ -333,3 +333,59 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 	Logger.log.Info("[Decentralized bridge token issuance] Create tx ok.")
 	return resTx, nil
 }
+
+func (blockchain *BlockChain) buildInstructionsForInitPTokenReq(
+	stateDB *statedb.StateDB,
+	contentStr string,
+	shardID byte,
+	metaType int,
+	ac *metadata.AccumulatedValues,
+) ([][]string, error) {
+	Logger.log.Info("[Init privacy custom token] Starting...")
+	instructions := [][]string{}
+	initPTokenReqAction, err := metadata.ParseInitPTokenInstContent(contentStr)
+	if err != nil {
+		Logger.log.Info("WARNING: an issue occured while parsing init privacy custom token action content: ", err)
+		return nil, nil
+	}
+
+	initPTokenReq := initPTokenReqAction.Meta
+	tokenID := initPTokenReq.TokenID
+	tokenName := initPTokenReq.TokenName
+	tokenSymbol := initPTokenReq.TokenSymbol
+	rejectedInst := buildInstruction(metaType, shardID, "rejected", initPTokenReqAction.TxReqID.String())
+
+	if !ac.CanProcessCIncToken(tokenID) {
+		fmt.Printf("WARNING: The issuing token (%s) was already used in the current block.", tokenID.String())
+		return append(instructions, rejectedInst), nil
+	}
+
+	ok, err := statedb.CanProcessCIncToken(stateDB, tokenID)
+	if err != nil {
+		Logger.log.Info("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
+		return append(instructions, rejectedInst), nil
+	}
+	if !ok {
+		fmt.Printf("WARNING: The issuing token (%s) was already used in the previous blocks.", tokenID.String())
+		return append(instructions, rejectedInst), nil
+	}
+
+	initPTokenAcceptedInst := metadata.InitPTokenAcceptedInst{
+		ShardID:         shardID, // TODO: update to receiving address' shardid
+		DepositedAmount: initPTokenReq.Amount,
+		ReceiverAddr:    initPTokenReq.ReceiverAddress,
+		IncTokenID:      tokenID,
+		IncTokenName:    tokenName,
+		IncTokenSymbol:  tokenSymbol,
+		TxReqID:         initPTokenReqAction.TxReqID,
+	}
+	initPTokenAcceptedInstBytes, err := json.Marshal(initPTokenAcceptedInst)
+	if err != nil {
+		Logger.log.Info("WARNING: an error occured while marshaling initPTokenAccepted instruction: ", err)
+		return append(instructions, rejectedInst), nil
+	}
+
+	ac.CBridgeTokens = append(ac.CBridgeTokens, &tokenID)
+	returnedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(initPTokenAcceptedInstBytes))
+	return append(instructions, returnedInst), nil
+}

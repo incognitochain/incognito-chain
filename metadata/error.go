@@ -47,6 +47,14 @@ const (
 	PortalRequestPTokenParamError
 	PortalRedeemRequestParamError
 	PortalRedeemLiquidateExchangeRatesParamError
+
+	// init privacy custom token
+	InitPTokenRequestDecodeInstructionError
+	InitPTokenRequestUnmarshalJsonError
+	InitPTokenRequestNewInitPTokenRequestFromMapError
+	InitPTokenRequestValidateTxWithBlockChainError
+	InitPTokenRequestValidateSanityDataError
+	InitPTokenRequestBuildReqActionsError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -97,6 +105,16 @@ var ErrCodeMessage = map[int]struct {
 	PortalRequestPTokenParamError:                {-7001, "Portal request ptoken param error"},
 	PortalRedeemRequestParamError:                {-7002, "Portal redeem request param error"},
 	PortalRedeemLiquidateExchangeRatesParamError: {-7003, "Portal redeem liquidate exchange rates param error"},
+
+	// init privacy custom token
+	// -8xxx issuing eth request
+	InitPTokenRequestDecodeInstructionError:        {-8001, "Cannot decode instruction"},
+	InitPTokenRequestUnmarshalJsonError:            {-8002, "Cannot unmarshall json"},
+	InitPTokenRequestNewInitPTokenRequestFromMapEror:  {-8003, "Cannot new InitPToken eth request from map"},
+	InitPTokenRequestValidateTxWithBlockChainError: {-8004, "Validate tx with block chain error"},
+	InitPTokenRequestValidateSanityDataError:       {-8005, "Validate sanity data error"},
+	InitPTokenRequestBuildReqActionsError:          {-8006, "Build request action error"},
+	InitPTokenRequestVerifyProofAndParseReceipt:    {-8007, "Verify proof and parse receipt"},
 }
 
 type MetadataTxError struct {
