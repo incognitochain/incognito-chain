@@ -72,6 +72,7 @@ type Params struct {
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
 	ConsensusV3Height                uint64
+	SwapRuleV2Epoch                  uint64
 	SwapRuleV3Epoch                  uint64
 	BeaconHeightBreakPointBurnAddr   uint64
 	BNBRelayingHeaderChainID         string
@@ -171,6 +172,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               1e9,
 		ConsensusV3Height:              1,
+		SwapRuleV2Epoch:                1e9,
 		SwapRuleV3Epoch:                1,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
@@ -262,6 +264,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
 		ConsensusV3Height:              1,
+		SwapRuleV2Epoch:                1e9,
 		SwapRuleV3Epoch:                1,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
@@ -351,6 +354,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
 		ConsensusV3Height:              1,
+		SwapRuleV2Epoch:                1e9,
 		SwapRuleV3Epoch:                1,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
