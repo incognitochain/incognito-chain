@@ -304,7 +304,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	if err != nil {
 		return nil, NewBlockChainError(CloneBeaconBestStateError, err)
 	}
-	blockCreationLeftOver = time.Now().Sub(st)
+	blockCreationLeftOver = blockCreationLeftOver - time.Now().Sub(st)
 	st = time.Now()
 	txsToAdd := chain.TxPool.GetTxsTranferForNewBlock(
 		blockGenerator.chain,
