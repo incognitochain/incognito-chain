@@ -145,7 +145,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	timeOut := time.After(getTxsDuration)
 	res := []metadata.Transaction{}
 	txDetailCh := make(chan *TxInfoDetail, 1024)
-	stopCh := make(chan interface{})
+	stopCh := make(chan interface{}, 2)
 	go tp.getTxsFromPool(txDetailCh, stopCh)
 	curSize := uint64(0)
 	curTime := 0 * time.Millisecond
