@@ -143,6 +143,8 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 ) []metadata.Transaction {
 	//TODO Timeout
 	timeOut := time.After(getTxsDuration)
+	fmt.Printf("[testperformance] Has %v time for crawling txs\n", getTxsDuration)
+	st := time.Now()
 	res := []metadata.Transaction{}
 	txDetailCh := make(chan *TxInfoDetail, 1024)
 	stopCh := make(chan interface{}, 2)
@@ -193,7 +195,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			}
 		case <-timeOut:
 			stopCh <- nil
-			fmt.Println("[testperformance] Timeout!!!")
+			fmt.Printf("[testperformance] Timeout!!! %v\n", time.Since(st))
 			return res
 		}
 	}
