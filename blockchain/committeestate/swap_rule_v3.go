@@ -32,9 +32,6 @@ func (s *swapRuleV3) GenInstructions(
 	//get committees list after swap out
 	newCommittees = newCommittees[:len(newCommittees)-len(normalSwapOutCommittees)]
 
-	/* Logger.log.Info("[DCS] newCommittees:", newCommittees)*/
-	//Logger.log.Info("[DCS] normalSwapOutCommittees:", normalSwapOutCommittees)
-
 	newCommittees, newSubstitutes, swapInCommittees :=
 		s.swapInAfterSwapOut(newCommittees, substitutes, numberOfFixedValidators,
 			MAX_SWAP_IN_PERCENT, dcsMaxCommitteeSize, dcsMinCommitteeSize)

@@ -499,7 +499,7 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		if !swapShardInstruction.IsEmpty() {
 			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
 		} else {
-			Logger.log.Infof("[swap-instructions] Generate empty instructions beacon hash: %s & height: %v \n", engine.beaconHash, engine.beaconHash)
+			Logger.log.Infof("[staking-v2] Generate empty instructions beacon hash: %s & height: %v \n", engine.beaconHash, engine.beaconHash)
 		}
 	}
 	return swapShardInstructions, nil
