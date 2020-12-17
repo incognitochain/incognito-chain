@@ -136,7 +136,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 				shardBlock.GetProduceTime(),
 			)
 		tx.SetValidationEnv(valEnv)
-		fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
+		// fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
 	}
 	//startTimeInsertShardBlock := time.Now()
 	committeeChange := newCommitteeChange()
