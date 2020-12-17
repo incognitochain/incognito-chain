@@ -157,7 +157,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	}{}
 	sDB := sView.GetCopiedTransactionStateDB()
 	defer func() {
-		fmt.Printf("[testperformance] Return list txs #res %v\n", len(res))
+		fmt.Printf("[testperformance] Return list txs #res %v cursize %v curtime %v maxsize %v maxtime %v \n", len(res), curSize, curTime, maxSize, maxTime)
 	}()
 	for {
 		select {
@@ -395,7 +395,7 @@ func (tp *TxsPool) getTxsFromPool(
 				}
 				if v != nil {
 					txDetails.Tx = v
-					fmt.Printf("[testperformance] Got %v, send to channel\n", txDetails)
+					fmt.Printf("[testperformance] Got %v, send to channel\n", txDetails.Hash)
 					txCh <- txDetails
 				}
 			}
