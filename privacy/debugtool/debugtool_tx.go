@@ -543,7 +543,7 @@ func (this *DebugTool) PDETradeToken(privKeyStr, sellToken, amount string) ([]by
 					"TokenIDToBuyStr": "0000000000000000000000000000000000000000000000000000000000000004",
 					"TokenIDToSellStr": "%s",
 					"SellAmount": 10,
-					"MinAcceptableAmount":0,
+					"MinAcceptableAmount":99999999,
 					"TradingFee":20,
 					"TraderAddressStr": "%s"
 				},
