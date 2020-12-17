@@ -26,15 +26,15 @@ func (s *swapRuleV3) GenInstructions(
 	lenSlashedCommittees := len(slashingCommittees)
 	//get normal swap out nodes
 	normalSwapOutCommittees := s.normalSwapOut(
-		newCommittees, substitutes, len(committees), lenSlashedCommittees, numberOfFixedValidators,
-		MAX_SWAP_OUT_PERCENT, dcsMaxCommitteeSize, dcsMinCommitteeSize, MAX_COMMITTEES_SUBSTITUTES_RANGE_TIMES)
+		newCommittees, substitutes, len(committees), lenSlashedCommittees, MAX_SWAP_OUT_PERCENT,
+		numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize, MAX_COMMITTEES_SUBSTITUTES_RANGE_TIMES)
 	swappedOutCommittees := append(slashingCommittees, normalSwapOutCommittees...)
 	//get committees list after swap out
 	newCommittees = newCommittees[:len(newCommittees)-len(normalSwapOutCommittees)]
 
 	newCommittees, newSubstitutes, swapInCommittees :=
-		s.swapInAfterSwapOut(newCommittees, substitutes, numberOfFixedValidators,
-			MAX_SWAP_IN_PERCENT, dcsMaxCommitteeSize, dcsMinCommitteeSize)
+		s.swapInAfterSwapOut(newCommittees, substitutes, MAX_SWAP_IN_PERCENT,
+			numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize)
 
 	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
 		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees
@@ -113,6 +113,10 @@ func (s *swapRuleV3) normalSwapOut(committees, substitutes []string,
 		lenBeforeSlashedCommittees, len(substitutes),
 		lenSlashedCommittees, maxSwapOutPercent, numberOfFixedValidators,
 		dcsMaxCommitteeSize, dcsMinCommitteeSize, maxCommitteeeSubstituteRangeTimes)
+
+	Logger.log.Info("[dcs] normalSwapOutOffset:", normalSwapOutOffset)
+	Logger.log.Info("[dcs] numberOfFixedValidators:", numberOfFixedValidators)
+	Logger.log.Info("[dcs] numberOfFixedValidators + normalSwapOutOffset:", numberOfFixedValidators+normalSwapOutOffset)
 
 	resNormalSwapOut = committees[numberOfFixedValidators : numberOfFixedValidators+normalSwapOutOffset]
 	return resNormalSwapOut

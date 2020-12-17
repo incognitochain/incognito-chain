@@ -41,6 +41,8 @@ type BeaconCommitteeStateEnvironment struct {
 	MissingSignaturePenalty            map[string]signaturecounter.Penalty
 	DcsMinShardCommitteeSize           int
 	DcsMaxShardCommitteeSize           int
+	SwapRuleV3Epoch                    uint64
+	SwapRuleV2Epoch                    uint64
 }
 
 type BeaconCommitteeStateHash struct {
@@ -56,5 +58,13 @@ func NewBeaconCommitteeStateEnvironmentForUpdateDB(
 ) *BeaconCommitteeStateEnvironment {
 	return &BeaconCommitteeStateEnvironment{
 		ConsensusStateDB: statedb,
+	}
+}
+
+func NewBeaconCommitteeStateEnvironmentForSwapRule(currentEpoch, swapRuleV3Epoch, swapRuleV2Epoch uint64) *BeaconCommitteeStateEnvironment {
+	return &BeaconCommitteeStateEnvironment{
+		Epoch:           currentEpoch,
+		SwapRuleV2Epoch: swapRuleV2Epoch,
+		SwapRuleV3Epoch: swapRuleV3Epoch,
 	}
 }

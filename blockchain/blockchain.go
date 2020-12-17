@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"io"
 	"sort"
 	"strconv"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"

@@ -6,7 +6,7 @@ var (
 	MAX_SWAP_OUT_PERCENT                   = 6
 	MAX_SWAP_IN_PERCENT                    = 6
 	MAX_ASSIGN_PERCENT                     = 6
-	MAX_COMMITTEES_SUBSTITUTES_RANGE_TIMES = 4
+	MAX_COMMITTEES_SUBSTITUTES_RANGE_TIMES = 2
 )
 
 const (

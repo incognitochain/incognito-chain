@@ -663,6 +663,8 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		MissingSignaturePenalty:           slashingPenalty,
 		DcsMaxShardCommitteeSize:          params.DcsMaxShardCommitteeSize,
 		DcsMinShardCommitteeSize:          params.DcsMinShardCommitteeSize,
+		SwapRuleV3Epoch:                   params.SwapRuleV3Epoch,
+		SwapRuleV2Epoch:                   params.SwapRuleV2Epoch,
 	}
 }
 
@@ -765,6 +767,14 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	for k, v := range substituteValidator {
 		shardSubstitute[byte(k)] = v
 	}
+
+	//Declare swapRule
+	//TODO: maybe we can add swap rule after init beacon committee state for more clean code
+	swapRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForSwapRule(
+		beaconBestState.Epoch, bc.config.ChainParams.SwapRuleV3Epoch, bc.config.ChainParams.SwapRuleV2Epoch,
+	)
+	swapRule := committeestate.SwapRuleByEnv(swapRuleEnv)
+
 	if bc.IsGreaterThanRandomTime(beaconBestState.BeaconHeight) && !beaconBestState.IsGetRandomNumber {
 		var err error
 		var tempBeaconBlock = types.NewBeaconBlock()
@@ -800,11 +810,6 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 			snapshotShardSubstitute[byte(k)] = v
 		}
 
-		var swapRule committeestate.SwapRule
-		//TODO: @tin add multi versions running here
-		if beaconBestState.Epoch >= params.SwapRuleV3Epoch {
-			swapRule = committeestate.NewSwapRuleV3()
-		}
 		numberOfAssignedCandidate = committeestate.SnapshotShardCommonPoolV2(
 			snapshotShardCommonPool,
 			snapshotShardCommittee,
@@ -824,6 +829,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		autoStaking,
 		rewardReceivers,
 		stakingTx,
+		swapRule,
 	)
 
 	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngineV2(
@@ -914,6 +920,11 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		stakingTx[k] = v
 	}
 
+	swapRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForSwapRule(
+		beaconBestState.Epoch, bc.config.ChainParams.SwapRuleV3Epoch, bc.config.ChainParams.SwapRuleV2Epoch,
+	)
+	swapRule := committeestate.SwapRuleByEnv(swapRuleEnv)
+
 	newBeaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
 		beaconCommittee,
 		shardCommittee,
@@ -923,6 +934,7 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		autoStake,
 		rewardReceiver,
 		stakingTx,
+		swapRule,
 	)
 	newCommitteeEngineV2 := committeestate.NewBeaconCommitteeEngineV2(
 		beaconBestState.BeaconHeight,

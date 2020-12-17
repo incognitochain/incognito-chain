@@ -74,6 +74,7 @@ func NewBeaconCommitteeStateV2WithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	swapRule SwapRule,
 ) *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
 		beaconCommittee:            beaconCommittee,
@@ -84,6 +85,7 @@ func NewBeaconCommitteeStateV2WithValue(
 		autoStake:                  autoStake,
 		rewardReceiver:             rewardReceiver,
 		stakingTx:                  stakingTx,
+		swapRule:                   swapRule,
 		mu:                         new(sync.RWMutex),
 	}
 }
@@ -366,6 +368,9 @@ func (engine *BeaconCommitteeEngineV2) InitCommitteeState(env *BeaconCommitteeSt
 	for shardID := 0; shardID < env.ActiveShards; shardID++ {
 		b.shardCommittee[byte(shardID)] = append(b.shardCommittee[byte(shardID)], newShardCandidates[shardID*env.MinShardCommitteeSize:(shardID+1)*env.MinShardCommitteeSize]...)
 	}
+
+	//Declare swaprule interface
+	engine.finalBeaconCommitteeStateV2.swapRule = SwapRuleByEnv(env)
 }
 
 // UpdateCommitteeState New flow
@@ -482,6 +487,8 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		substitutes := engine.finalBeaconCommitteeStateV2.shardSubstitute[shardID]
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
+
+		Logger.log.Info("[dcs] env.NumberOfFixedShardBlockValidator:", env.NumberOfFixedShardBlockValidator)
 
 		swapShardInstruction, _, _, _, _ := engine.finalBeaconCommitteeStateV2.swapRule.GenInstructions(
 			shardID,
@@ -1005,4 +1012,16 @@ func cloneSwapRuleByVersion(swapRule SwapRule) SwapRule {
 		}
 	}
 	return res
+}
+
+func SwapRuleByEnv(env *BeaconCommitteeStateEnvironment) SwapRule {
+	var swapRule SwapRule
+	if env.Epoch >= env.SwapRuleV3Epoch {
+		swapRule = NewSwapRuleV3()
+	} else {
+		if env.Epoch >= env.SwapRuleV2Epoch {
+			swapRule = NewSwapRuleV2()
+		}
+	}
+	return swapRule
 }
