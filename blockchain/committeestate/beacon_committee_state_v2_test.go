@@ -2673,7 +2673,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 				tt.fieldsAfterProcess.uncommittedBeaconCommitteeStateV2) {
 				t.Fatalf(`BeaconCommitteeEngineV2.UpdateCommitteeState() tt.fields.uncommittedBeaconCommitteeStateV2 = %v, 
 					tt.fieldsAfterProcess.uncommittedBeaconCommitteeStateV2 = %v`,
-					tt.fields.uncommittedBeaconCommitteeStateV2, tt.fieldsAfterProcess.uncommittedBeaconCommitteeStateV2.autoStake)
+					tt.fields.uncommittedBeaconCommitteeStateV2, tt.fieldsAfterProcess.uncommittedBeaconCommitteeStateV2)
 			}
 		})
 	}
