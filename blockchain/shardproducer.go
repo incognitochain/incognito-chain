@@ -288,7 +288,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	var err error
 	st := time.Now()
 	chain := blockGenerator.chain.ShardChain[shardID]
-	maxSize := uint64(3584) //kB
+	maxSize := uint64(4096) //kB
 	var responseTxsBeacon []metadata.Transaction
 	var errInstructions [][]string
 	responseTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(curView, beaconBlocks, privatekey, shardID)
@@ -311,7 +311,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 		curView,
 		bView,
 		maxSize,
-		6*time.Second,
+		24*time.Second,
 		blockCreationLeftOver,
 	)
 	if len(txsToAdd) > 0 {

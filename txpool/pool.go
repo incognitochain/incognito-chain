@@ -88,14 +88,18 @@ func (tp *TxsPool) Start() {
 	cValidTxs := make(chan txInfoTemp, 1024)
 	stopGetTxs := make(chan interface{})
 	go tp.getTxs(stopGetTxs, cValidTxs)
+	total := 0
 	for {
 		select {
 		case <-tp.cQuit:
 			stopGetTxs <- nil
 			return
 		case f := <-tp.action:
+			fmt.Printf("[testperformance] Total txs received %v, total txs in pool %v\n", total, len(tp.Data.TxInfos))
 			f(tp)
+			fmt.Printf("[testperformance] Total txs in pool %v after func\n", len(tp.Data.TxInfos))
 		case validTx := <-cValidTxs:
+			total++
 			txH := validTx.tx.Hash().String()
 			tp.Data.TxByHash[txH] = validTx.tx
 			tp.Data.TxInfos[txH] = TxInfo{
