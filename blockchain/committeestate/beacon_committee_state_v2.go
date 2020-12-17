@@ -488,8 +488,6 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
-		Logger.log.Info("[dcs] env.NumberOfFixedShardBlockValidator:", env.NumberOfFixedShardBlockValidator)
-
 		swapShardInstruction, _, _, _, _ := engine.finalBeaconCommitteeStateV2.swapRule.GenInstructions(
 			shardID,
 			tempCommittees,

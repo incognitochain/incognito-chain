@@ -486,10 +486,10 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 	swapRuleV3SingleShard.On("GenInstructions", mock.AnythingOfType("uint8"), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			InPublicKeys: []string{
-				key13,
+				key13, key14,
 			},
 			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-				*incKey13,
+				*incKey13, *incKey14,
 			},
 			OutPublicKeys: []string{
 				key11,
@@ -661,10 +661,10 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 			want: []*instruction.SwapShardInstruction{
 				&instruction.SwapShardInstruction{
 					InPublicKeys: []string{
-						key13,
+						key13, key14,
 					},
 					InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-						*incKey13,
+						*incKey13, *incKey14,
 					},
 					OutPublicKeys: []string{
 						key11,
@@ -722,10 +722,10 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 			want: []*instruction.SwapShardInstruction{
 				&instruction.SwapShardInstruction{
 					InPublicKeys: []string{
-						key13,
+						key13, key14,
 					},
 					InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-						*incKey13,
+						*incKey13, *incKey14,
 					},
 					OutPublicKeys: []string{
 						key11,
@@ -738,10 +738,10 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 				},
 				&instruction.SwapShardInstruction{
 					InPublicKeys: []string{
-						key13,
+						key13, key14,
 					},
 					InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-						*incKey13,
+						*incKey13, *incKey14,
 					},
 					OutPublicKeys: []string{
 						key11,
@@ -881,10 +881,10 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 
 	committeeChangeSwapRuleV3 := NewCommitteeChange()
 	committeeChangeSwapRuleV3.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
-		*incKey13,
+		*incKey13, *incKey14,
 	}
 	committeeChangeSwapRuleV3.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
-		*incKey13,
+		*incKey13, *incKey14,
 	}
 	committeeChangeSwapRuleV3.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
 		*incKey11,
@@ -979,14 +979,14 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 	swapRuleV3 := &mocks.SwapRule{}
 	swapRuleV3.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		instruction.NewSwapShardInstructionWithValue(
-			[]string{key13},
+			[]string{key13, key14},
 			[]string{key11},
 			0,
 			instruction.SWAP_BY_END_EPOCH,
 		),
 		[]string{
 			key0, key, key2, key3, key4, key5, key6, key7,
-			key8, key9, key10, key12, key13,
+			key8, key9, key10, key12, key13, key14,
 		}, []string{}, []string{key11}, []string{})
 
 	type fields struct {
@@ -1555,18 +1555,18 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 					0: []incognitokey.CommitteePublicKey{
 						*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-						*incKey6, *incKey7, *incKey8, *incKey9, *incKey10, *incKey12, *incKey13,
+						*incKey6, *incKey7, *incKey8, *incKey9, *incKey10, *incKey12, *incKey13, *incKey14,
 					},
 				},
 				shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
 					0: []incognitokey.CommitteePublicKey{
-						*incKey14, *incKey15, *incKey16, *incKey17, *incKey18, *incKey19,
+						*incKey15, *incKey16, *incKey17, *incKey18, *incKey19,
 					},
 				},
 			},
 			args: args{
 				swapShardInstruction: instruction.NewSwapShardInstructionWithValue(
-					[]string{key13},
+					[]string{key13, key14},
 					[]string{key11},
 					0,
 					instruction.SWAP_BY_END_EPOCH,
@@ -1737,10 +1737,10 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 
 	committeeChangeSwapRuleV3 := NewCommitteeChange()
 	committeeChangeSwapRuleV3.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
-		*incKey13,
+		*incKey13, *incKey14,
 	}
 	committeeChangeSwapRuleV3.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
-		*incKey13,
+		*incKey13, *incKey14,
 	}
 	committeeChangeSwapRuleV3.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
 		*incKey11,
@@ -1847,14 +1847,14 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 			},
 			OutPublicKeys: []string{key11},
 			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-				*incKey13,
+				*incKey13, *incKey14,
 			},
-			InPublicKeys: []string{key13},
+			InPublicKeys: []string{key13, key14},
 			ChainID:      0,
 			Type:         instruction.SWAP_BY_END_EPOCH,
 		},
 		[]string{
-			key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key12, key13,
+			key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key12, key13, key14,
 		}, []string{}, []string{key11}, []string{})
 	swapRuleV3.On("Version").Return(swapRuleTestVersion)
 
@@ -2596,13 +2596,13 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 						0: []incognitokey.CommitteePublicKey{
 							*incKey0, *incKey, *incKey2, *incKey3,
-							*incKey4, *incKey5, *incKey6, *incKey7,
-							*incKey8, *incKey9, *incKey10, *incKey12, *incKey13,
+							*incKey4, *incKey5, *incKey6, *incKey7, *incKey8,
+							*incKey9, *incKey10, *incKey12, *incKey13, *incKey14,
 						},
 					},
 					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
 						0: []incognitokey.CommitteePublicKey{
-							*incKey14, *incKey15, *incKey16, *incKey17, *incKey18, *incKey19,
+							*incKey15, *incKey16, *incKey17, *incKey18, *incKey19,
 						},
 					},
 					autoStake: map[string]bool{
@@ -2626,7 +2626,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 					BeaconInstructions: [][]string{
 						[]string{
 							instruction.SWAP_SHARD_ACTION,
-							strings.Join([]string{key13}, ","),
+							strings.Join([]string{key13, key14}, ","),
 							strings.Join([]string{key11}, ","),
 							"0",
 							"0",

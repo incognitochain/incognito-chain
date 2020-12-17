@@ -29,6 +29,7 @@ func (s *swapRuleV3) GenInstructions(
 		newCommittees, substitutes, len(committees), lenSlashedCommittees, MAX_SWAP_OUT_PERCENT,
 		numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize, MAX_COMMITTEES_SUBSTITUTES_RANGE_TIMES)
 	swappedOutCommittees := append(slashingCommittees, normalSwapOutCommittees...)
+
 	//get committees list after swap out
 	newCommittees = newCommittees[:len(newCommittees)-len(normalSwapOutCommittees)]
 
@@ -113,10 +114,6 @@ func (s *swapRuleV3) normalSwapOut(committees, substitutes []string,
 		lenBeforeSlashedCommittees, len(substitutes),
 		lenSlashedCommittees, maxSwapOutPercent, numberOfFixedValidators,
 		dcsMaxCommitteeSize, dcsMinCommitteeSize, maxCommitteeeSubstituteRangeTimes)
-
-	Logger.log.Info("[dcs] normalSwapOutOffset:", normalSwapOutOffset)
-	Logger.log.Info("[dcs] numberOfFixedValidators:", numberOfFixedValidators)
-	Logger.log.Info("[dcs] numberOfFixedValidators + normalSwapOutOffset:", numberOfFixedValidators+normalSwapOutOffset)
 
 	resNormalSwapOut = committees[numberOfFixedValidators : numberOfFixedValidators+normalSwapOutOffset]
 	return resNormalSwapOut

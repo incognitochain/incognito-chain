@@ -60,10 +60,10 @@ func Test_swapRuleV3_GenInstructions(t *testing.T) {
 			},
 			want: &instruction.SwapShardInstruction{
 				InPublicKeys: []string{
-					key13,
+					key13, key14,
 				},
 				InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-					*incKey13,
+					*incKey13, *incKey14,
 				},
 				OutPublicKeys: []string{
 					key11,
@@ -76,10 +76,10 @@ func Test_swapRuleV3_GenInstructions(t *testing.T) {
 			},
 			want1: []string{
 				key0, key, key2, key3, key4, key5, key6, key7,
-				key8, key9, key10, key12, key13,
+				key8, key9, key10, key12, key13, key14,
 			},
 			want2: []string{
-				key14, key15, key16, key17, key18, key19,
+				key15, key16, key17, key18, key19,
 			},
 			want3: []string{
 				key11,
