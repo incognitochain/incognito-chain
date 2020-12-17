@@ -1058,7 +1058,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
-
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 1")
 	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, blockHeight, *shardBlock.Hash())
 	if len(shardBlock.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("processStoreShardBlock/CrossTransactions	", shardBlock.Body.CrossTransactions)
@@ -1066,6 +1066,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(shardBlock, newShardState.transactionStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreTransactionError, err)
 	}
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 2")
 	listTxHashes := []string{}
 	for index, tx := range shardBlock.Body.Transactions {
 		listTxHashes = append(listTxHashes, tx.Hash().String())
@@ -1083,11 +1084,15 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		}
 		Logger.log.Debugf("Transaction in block with hash", blockHash, "and index", index)
 	}
-	blockchain.ShardChain[shardID].TxPool.RemoveTxs(listTxHashes)
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 3")
+	if len(listTxHashes) > 0 {
+		blockchain.ShardChain[shardID].TxPool.RemoveTxs(listTxHashes)
+	}
 	// Store Incomming Cross Shard
 	if err := blockchain.CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock, newShardState.transactionStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreCrossTransactionError, err)
 	}
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 4")
 	// Save result of BurningConfirm instruction to get proof later
 	metas := []string{ // Burning v1: sig on both beacon and bridge
 		strconv.Itoa(metadata.BurningConfirmMeta),
@@ -1102,6 +1107,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if err != nil {
 		return NewBlockChainError(UpdateBridgeIssuanceStatusError, err)
 	}
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 5")
 	// call FeeEstimator for processing
 	// if feeEstimator, ok := blockchain.config.FeeEstimator[shardBlock.Header.ShardID]; ok {
 	// 	err := feeEstimator.RegisterBlock(shardBlock)
@@ -1138,6 +1144,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 			return NewBlockChainError(StoreShardBlockError, fmt.Errorf("can't get ConsensusStateRootHash of height %+v ,error %+v", newShardState.GetHeight(), err))
 		}
 	}
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 6")
 	err = statedb.ReplaceOneShardCommittee(newShardState.consensusStateDB, shardID, committeeChange.shardCommitteeReplaced[shardID])
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
@@ -1153,6 +1160,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 7")
 	// consensus root hash
 	consensusRootHash, err := newShardState.consensusStateDB.Commit(true) // Store data to memory
 	if err != nil {
@@ -1203,6 +1211,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 8")
 	newShardState.consensusStateDB.ClearObjects()
 	newShardState.transactionStateDB.ClearObjects()
 	newShardState.featureStateDB.ClearObjects()
@@ -1226,11 +1235,15 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	if err := rawdbv2.StoreShardBlock(batchData, blockHash, shardBlock); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 9")
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState)
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 10")
 	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
+
 	Logger.log.Infof("[testperformance] SHARD %v | Update txDB from block %v, txdb roothash %v\n", shardID, shardBlock.Header.Height, txDB)
 	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 11")
 	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
 
 	storeBlock := newFinalView.GetBlock()
@@ -1254,7 +1267,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 			storeBlock = newFinalView.GetBlock()
 		}
 	}
-
+	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 12")
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)
 	if err != nil {
 		panic("Backup shard view error")

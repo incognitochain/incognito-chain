@@ -85,7 +85,7 @@ func (tp *TxsPool) Start() {
 	}
 	fmt.Println("[testperformance] Start pool!!")
 	tp.isRunning = true
-	cValidTxs := make(chan txInfoTemp, 128)
+	cValidTxs := make(chan txInfoTemp, 1024)
 	stopGetTxs := make(chan interface{})
 	go tp.getTxs(stopGetTxs, cValidTxs)
 	for {
@@ -93,6 +93,8 @@ func (tp *TxsPool) Start() {
 		case <-tp.cQuit:
 			stopGetTxs <- nil
 			return
+		case f := <-tp.action:
+			f(tp)
 		case validTx := <-cValidTxs:
 			txH := validTx.tx.Hash().String()
 			tp.Data.TxByHash[txH] = validTx.tx
@@ -101,8 +103,6 @@ func (tp *TxsPool) Start() {
 				Size:  validTx.tx.GetTxActualSize(),
 				VTime: validTx.vt,
 			}
-		case f := <-tp.action:
-			f(tp)
 		}
 	}
 }
