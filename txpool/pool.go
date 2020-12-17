@@ -144,7 +144,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	//TODO Timeout
 	timeOut := time.After(getTxsDuration)
 	res := []metadata.Transaction{}
-	txDetailCh := make(chan *TxInfoDetail)
+	txDetailCh := make(chan *TxInfoDetail, 1024)
 	stopCh := make(chan interface{})
 	go tp.getTxsFromPool(txDetailCh, stopCh)
 	curSize := uint64(0)
@@ -192,6 +192,8 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
 			}
 		case <-timeOut:
+			stopCh <- nil
+			fmt.Println("[testperformance] Timeout!!!")
 			return res
 		}
 	}
