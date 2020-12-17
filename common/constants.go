@@ -302,3 +302,5 @@ const (
 var (
 	EmptyRoot = HexToHash(HexEmptyRoot)
 )
+
+var TIMESLOT = uint64(10)

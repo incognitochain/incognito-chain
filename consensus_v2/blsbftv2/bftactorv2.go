@@ -477,7 +477,7 @@ func (e *BLSBFT_V2) proposeBlock(userMiningKey signatureschemes2.MiningKey, prop
 	var err error
 	if block == nil {
 		ctx := context.Background()
-		ctx, cancel := context.WithTimeout(ctx, common.TIMESLOT/2)
+		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
 		//block, _ = e.Chain.CreateNewBlock(ctx, e.currentTimeSlot, e.UserKeySet.GetPublicKeyBase58())
 		//e.Logger.Info("debug CreateNewBlock")
