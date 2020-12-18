@@ -18,7 +18,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	beaconBestState.Epoch = block.GetCurrentEpoch()
 	beaconBestState.BestBlockHash = *block.Hash()
 	beaconBestState.PreviousBestBlockHash = block.PreviousBestBlockHash()
-	Logger.log.Info("[dcs] beaconBestState.BestBlockHash.String():", beaconBestState.BestBlockHash.String())
 	var beaconCommitteeEngine committeestate.BeaconCommitteeEngine
 	if beaconBestState.BeaconHeight >= blockchain.config.ChainParams.ConsensusV3Height {
 		beaconCommitteeEngine = initBeaconCommitteeEngineV2(

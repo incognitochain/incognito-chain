@@ -538,6 +538,21 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 			},
 			want: 0,
 		},
+		{
+			name: "lenCommitteesBeforeSlash - lenSlashedCommittees - numberOfFixedValidators < assignOffset",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesBeforeSlash:          4,
+				lenSubstitutes:                    2,
+				numberOfFixedValidators:           4,
+				lenSlashedCommittees:              0,
+				maxSwapOutPercent:                 6,
+				dcsMaxCommitteeSize:               51,
+				dcsMinCommitteeSize:               15,
+				maxCommitteeeSubstituteRangeTimes: 4,
+			},
+			want: 0,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -619,8 +619,8 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 	comparedShardSwapInstruction, newCommittees, _,
 		slashingCommittees, normalSwapOutCommittees := b.swapRule.GenInstructions(
 		shardID,
-		tempSubstitutes,
 		tempCommittees,
+		tempSubstitutes,
 		env.MinShardCommitteeSize,
 		env.MaxShardCommitteeSize,
 		instruction.SWAP_BY_END_EPOCH,
