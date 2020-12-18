@@ -464,6 +464,23 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	// if !ok {
 	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
 	// }
+	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.BeaconHash)
+	if err != nil {
+		return NewBlockChainError(CloneBeaconBestStateError, err)
+	}
+	st := time.Now()
+	ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
+		blockchain,
+		curView,
+		bView,
+		shardBlock.Body.Transactions,
+	)
+	if len(shardBlock.Body.Transactions) > 0{
+		Logger.log.Infof("[testperformance] SHARD %+v | Validate %v txs of block %v cost %v", shardID, len(shardBlock.Body.Transactions), shardBlock.GetHeight(), time.Since(st))
+	}
+	if !ok {
+		return NewBlockChainError(TransactionFromNewBlockError, err)
+	}
 	if isPreSign {
 		err := blockchain.verifyPreProcessingShardBlockForSigning(curView, shardBlock, beaconBlocks, txInstructions, shardID)
 		if err != nil {
@@ -490,21 +507,21 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	// if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(beaconHeight), curView); err != nil {
 	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
 	// }
-	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.BeaconHash)
-	if err != nil {
-		return NewBlockChainError(CloneBeaconBestStateError, err)
-	}
-	st := time.Now()
-	ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
-		blockchain,
-		curView,
-		bView,
-		shardBlock.Body.Transactions,
-	)
-	Logger.log.Infof("[testperformance] SHARD %+v | Validate %v txs of block %v cost %v", shardID, len(shardBlock.Body.Transactions), shardBlock.GetHeight(), time.Since(st))
-	if !ok {
-		return NewBlockChainError(TransactionFromNewBlockError, err)
-	}
+	// bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.BeaconHash)
+	// if err != nil {
+	// 	return NewBlockChainError(CloneBeaconBestStateError, err)
+	// }
+	// st := time.Now()
+	// ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
+	// 	blockchain,
+	// 	curView,
+	// 	bView,
+	// 	shardBlock.Body.Transactions,
+	// )
+	// Logger.log.Infof("[testperformance] SHARD %+v | Validate %v txs of block %v cost %v", shardID, len(shardBlock.Body.Transactions), shardBlock.GetHeight(), time.Since(st))
+	// if !ok {
+	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
+	// }
 	// Verify Instruction
 	instructions := [][]string{}
 	shardCommittee, err := incognitokey.CommitteeKeyListToString(curView.ShardCommittee)
@@ -1086,7 +1103,9 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	}
 	Logger.log.Infof("[debuglock] ProcessStoreShardBlock 3")
 	if len(listTxHashes) > 0 {
-		blockchain.ShardChain[shardID].TxPool.RemoveTxs(listTxHashes)
+		if blockchain.ShardChain[shardID].TxPool.IsRunning() {
+			blockchain.ShardChain[shardID].TxPool.RemoveTxs(listTxHashes)
+		}
 	}
 	// Store Incomming Cross Shard
 	if err := blockchain.CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock, newShardState.transactionStateDB); err != nil {

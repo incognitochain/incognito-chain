@@ -240,8 +240,13 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 ) {
 	mapForChkDbSpend := map[[privacy.Ed25519KeySize]byte]interface{}{}
 	for _, tx := range txs {
-		iCoins := tx.GetProof().GetInputCoins()
-		oCoins := tx.GetProof().GetOutputCoins()
+
+		prf := tx.GetProof()
+		if prf == nil {
+			continue
+		}
+		iCoins := prf.GetInputCoins()
+		oCoins := prf.GetOutputCoins()
 		for _, iCoin := range iCoins {
 			if _, ok := mapForChkDbSpend[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
 				return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())

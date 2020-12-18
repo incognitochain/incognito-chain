@@ -49,8 +49,10 @@ func (tx TxCustomTokenPrivacy) ValidateSanityDataByItSelf() (bool, error) {
 		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.TxNormal should have type n"))
 	}
 	meta := tx.Tx.Metadata
-	if !metadata.IsAvailableMetaInTxType(meta.GetType(), tx.GetType()) {
-		return false, nil
+	if meta != nil {
+		if !metadata.IsAvailableMetaInTxType(meta.GetType(), tx.GetType()) {
+			return false, nil
+		}
 	}
 
 	if tx.TxPrivacyTokenData.TxNormal.GetMetadata() != nil {
