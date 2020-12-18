@@ -132,7 +132,7 @@ func Test_swapRuleV3_AssignOffset(t *testing.T) {
 				numberOfFixedValidators: 4,
 				minCommitteeSize:        4,
 			},
-			want: 0,
+			want: 1,
 		},
 		{
 			name: "lenCommittees - numberOfFixedValidators < lenCommittees / 3",
@@ -155,6 +155,17 @@ func Test_swapRuleV3_AssignOffset(t *testing.T) {
 				minCommitteeSize:        4,
 			},
 			want: 2,
+		},
+		{
+			name: "lenCommittees = numberOfFixedValidators >= max asign per shard",
+			s:    &swapRuleV3{},
+			args: args{
+				lenShardSubstitute:      12,
+				lenCommittees:           8,
+				numberOfFixedValidators: 8,
+				minCommitteeSize:        4,
+			},
+			want: 0,
 		},
 	}
 	for _, tt := range tests {
@@ -306,6 +317,19 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 				dcsMinCommitteeSize:       15,
 			},
 			want: 4,
+		},
+		{
+			name: "committees >= substitutes && committees < maxSwapInPercent",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: 4,
+				lenSubstitutes:            2,
+				maxSwapInPercent:          6,
+				numberOfFixedValidators:   4,
+				dcsMaxCommitteeSize:       51,
+				dcsMinCommitteeSize:       15,
+			},
+			want: 1,
 		},
 	}
 	for _, tt := range tests {

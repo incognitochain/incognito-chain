@@ -790,6 +790,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 			tempBeaconHeight--
 			randomTimeBeaconHash = tempBeaconBlock.Header.Hash()
 		}
+
 		tempRootHash, err := GetBeaconRootsHashByBlockHash(bc.GetBeaconChainDatabase(), randomTimeBeaconHash)
 		if err != nil {
 			panic(err)

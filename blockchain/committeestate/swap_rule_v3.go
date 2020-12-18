@@ -37,6 +37,8 @@ func (s *swapRuleV3) GenInstructions(
 		s.swapInAfterSwapOut(newCommittees, substitutes, MAX_SWAP_IN_PERCENT,
 			numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize)
 
+	Logger.log.Info("[dcs] swapInCommittees:", swapInCommittees)
+
 	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
 		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees
 	}
@@ -54,7 +56,7 @@ func (s *swapRuleV3) GenInstructions(
 func (s *swapRuleV3) AssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
 	assignOffset := lenCommittees / MAX_ASSIGN_PERCENT
 	if assignOffset == 0 && lenCommittees < MAX_ASSIGN_PERCENT {
-		assignOffset = 1
+		return 1
 	}
 	if lenCommittees-numberOfFixedValidators < assignOffset {
 		assignOffset = lenCommittees - numberOfFixedValidators
@@ -81,7 +83,6 @@ func (s *swapRuleV3) swapInAfterSwapOut(
 	return resCommittees, resSubstitutes, resSwapInCommittees
 }
 
-//@tin
 func (s *swapRuleV3) getSwapInOffset(
 	lenCommitteesAfterSwapOut, lenSubstitutes int,
 	maxSwapInPercent, numberOfFixedValidators,
@@ -102,6 +103,11 @@ func (s *swapRuleV3) getSwapInOffset(
 	if swapInOffset+lenCommitteesAfterSwapOut > dcsMaxCommitteeSize {
 		swapInOffset = dcsMaxCommitteeSize - lenCommitteesAfterSwapOut
 	}
+
+	if swapInOffset == 0 && lenSubstitutes > 0 && lenCommitteesAfterSwapOut < maxSwapInPercent {
+		swapInOffset = 1
+	}
+
 	return swapInOffset
 }
 
@@ -160,12 +166,18 @@ func (s *swapRuleV3) slashingSwapOut(
 	[]string,
 ) {
 
+	Logger.log.Info("[dcs] committees:", committees)
+	Logger.log.Info("[dcs] numberOfFixedValidators:", numberOfFixedValidators)
+
 	fixedCommittees := make([]string, len(committees[:numberOfFixedValidators]))
 	copy(fixedCommittees, committees[:numberOfFixedValidators])
 	flexCommittees := make([]string, len(committees[numberOfFixedValidators:]))
 	copy(flexCommittees, committees[numberOfFixedValidators:])
 	flexAfterSlashingCommittees := []string{}
 	slashingCommittees := []string{}
+
+	Logger.log.Info("[dcs] fixedCommittees:", fixedCommittees)
+	Logger.log.Info("[dcs] flexCommittees:", flexCommittees)
 
 	slashingOffset := s.getSlashingOffset(len(committees), minCommitteeSize, numberOfFixedValidators, maxSlashOutPercent)
 	for _, flexCommittee := range flexCommittees {

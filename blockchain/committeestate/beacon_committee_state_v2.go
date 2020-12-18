@@ -403,6 +403,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			env.MinShardCommitteeSize,
 			oldState.swapRule,
 		)
+
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newState.numberOfAssignedCandidates)
 	}
 
@@ -504,7 +505,7 @@ func (engine *BeaconCommitteeEngineV2) GenerateAllSwapShardInstructions(
 		if !swapShardInstruction.IsEmpty() {
 			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
 		} else {
-			Logger.log.Infof("[staking-v2] Generate empty instructions beacon hash: %s & height: %v \n", engine.beaconHash, engine.beaconHash)
+			Logger.log.Infof("Generate empty instructions beacon hash: %s & height: %v \n", engine.beaconHash, engine.beaconHash)
 		}
 	}
 	return swapShardInstructions, nil
@@ -663,7 +664,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		oldState,
 	)
 	if err != nil {
-		Logger.log.Info("[DCS] err:", err)
 		return nil, returnStakingInstruction, err
 	}
 
@@ -674,7 +674,6 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 		committeeChange,
 	)
 	if err != nil {
-		Logger.log.Info("[DCS] err:", err)
 		return nil, returnStakingInstruction, err
 	}
 

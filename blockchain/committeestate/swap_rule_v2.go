@@ -252,11 +252,8 @@ func SnapshotShardCommonPoolV2(
 			numberOfFixedValidator,
 			minCommitteeSize,
 		)
-
 		numberOfAssignedCandidates += assignPerShard
-		Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard %+v, numberOfAssignedCandidates %+v", k, numberOfAssignedCandidates)
 	}
-	Logger.log.Infof("SnapshotShardCommonPoolV2 | Shard Common Pool Size %+v", len(shardCommonPool))
 
 	if numberOfAssignedCandidates > len(shardCommonPool) {
 		numberOfAssignedCandidates = len(shardCommonPool)
