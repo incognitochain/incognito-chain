@@ -21,6 +21,7 @@ var metaConstructors = map[string]metaConstructorType{
 
 var metaConstructorsV2 = map[string]metaConstructorType{
 	createAndSendIssuingRequest: metadata.NewIssuingRequestFromMapV2,
+	createAndSendPTokenInitRequest: metadata.NewInitPTokenRequestFromMap,
 }
 
 func (httpServer *HttpServer) createRawTxWithMetadata(params interface{}, closeChan <-chan struct{}, metaConstructorType metaConstructorType) (interface{}, *rpcservice.RPCError) {

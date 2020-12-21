@@ -44,6 +44,8 @@ const (
 	ErrInvalidRewardFeatureStateType          = "invalid feature reward state type"
 	ErrInvalidPDETradingFeeStateType          = "invalid pde trading fee state type"
 	ErrInvalidBlockHashType                   = "invalid block hash type"
+
+	ErrInvalidPTokenInitStateType = "invalid ptoken init state type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -208,7 +210,7 @@ const (
 
 	// PDEX v2
 	StorePDETradingFeeError
-	
+
 	InvalidStakerInfoTypeError
 )
 

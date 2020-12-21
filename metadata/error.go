@@ -108,13 +108,12 @@ var ErrCodeMessage = map[int]struct {
 
 	// init privacy custom token
 	// -8xxx issuing eth request
-	InitPTokenRequestDecodeInstructionError:        {-8001, "Cannot decode instruction"},
-	InitPTokenRequestUnmarshalJsonError:            {-8002, "Cannot unmarshall json"},
-	InitPTokenRequestNewInitPTokenRequestFromMapEror:  {-8003, "Cannot new InitPToken eth request from map"},
-	InitPTokenRequestValidateTxWithBlockChainError: {-8004, "Validate tx with block chain error"},
-	InitPTokenRequestValidateSanityDataError:       {-8005, "Validate sanity data error"},
-	InitPTokenRequestBuildReqActionsError:          {-8006, "Build request action error"},
-	InitPTokenRequestVerifyProofAndParseReceipt:    {-8007, "Verify proof and parse receipt"},
+	InitPTokenRequestDecodeInstructionError:           {-8001, "Cannot decode instruction"},
+	InitPTokenRequestUnmarshalJsonError:               {-8002, "Cannot unmarshall json"},
+	InitPTokenRequestNewInitPTokenRequestFromMapError: {-8003, "Cannot new InitPToken eth request from map"},
+	InitPTokenRequestValidateTxWithBlockChainError:    {-8004, "Validate tx with block chain error"},
+	InitPTokenRequestValidateSanityDataError:          {-8005, "Validate sanity data error"},
+	InitPTokenRequestBuildReqActionsError:             {-8006, "Build request action error"},
 }
 
 type MetadataTxError struct {

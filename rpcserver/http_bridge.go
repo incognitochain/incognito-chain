@@ -630,3 +630,17 @@ func (httpServer *HttpServer) handleCreateAndSendBurningForDepositToSCRequestV2(
 	}
 	return sendResult, nil
 }
+
+func (httpServer *HttpServer) handleCreateAndSendPTokenInitRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.createAndSendTxWithMetadata(
+		params,
+		closeChan,
+		(*HttpServer).handleCreatePTokenInitRequest,
+		(*HttpServer).handleSendRawTransaction,
+	)
+}
+
+func (httpServer *HttpServer) handleCreatePTokenInitRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	constructor := metaConstructorsV2[createAndSendPTokenInitRequest]
+	return httpServer.createRawTxWithMetadataV2(params, closeChan, constructor)
+}

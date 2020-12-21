@@ -352,7 +352,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 }
 
 func (blockchain *BlockChain) buildInstructionsForInitPTokenReq(
-	stateDB *statedb.StateDB,
+	beaconBestState *BeaconBestState,
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -362,7 +362,7 @@ func (blockchain *BlockChain) buildInstructionsForInitPTokenReq(
 	instructions := [][]string{}
 	initPTokenReqAction, err := metadata.ParseInitPTokenInstContent(contentStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an issue occured while parsing init privacy custom token action content: ", err)
+		Logger.log.Warn("WARNING: an issue occured while parsing init privacy custom token action content: ", err)
 		return nil, nil
 	}
 
@@ -372,24 +372,26 @@ func (blockchain *BlockChain) buildInstructionsForInitPTokenReq(
 	tokenSymbol := initPTokenReq.TokenSymbol
 	rejectedInst := buildInstruction(metaType, shardID, "rejected", initPTokenReqAction.TxReqID.String())
 
-	if !ac.CanProcessCIncToken(tokenID) {
-		fmt.Printf("WARNING: The issuing token (%s) was already used in the current block.", tokenID.String())
+	// check existence in the current block (on mem)
+	if !ac.CanProcessPTokenInitialization(tokenID) {
+		Logger.log.Warnf("WARNING: The privacy custom token (%s) was already used in the current block.", tokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
 
-	ok, err := statedb.CanProcessCIncToken(stateDB, tokenID)
+	// check existence in previous blocks (on blockchain's db)
+	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, tokenID)
 	if err != nil {
-		Logger.log.Info("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
+		Logger.log.Warn("WARNING: an issue occured while checking the initializing token's existence: ", err)
 		return append(instructions, rejectedInst), nil
 	}
-	if !ok {
-		fmt.Printf("WARNING: The issuing token (%s) was already used in the previous blocks.", tokenID.String())
+	if privacyTokenExisted {
+		Logger.log.Warnf("WARNING: The initializing token (%s) was already existed in the previous blocks.", tokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
 
 	initPTokenAcceptedInst := metadata.InitPTokenAcceptedInst{
 		ShardID:         shardID, // TODO: update to receiving address' shardid
-		DepositedAmount: initPTokenReq.Amount,
+		Amount: 				 initPTokenReq.Amount,
 		ReceiverAddr:    initPTokenReq.ReceiverAddress,
 		IncTokenID:      tokenID,
 		IncTokenName:    tokenName,
@@ -398,11 +400,78 @@ func (blockchain *BlockChain) buildInstructionsForInitPTokenReq(
 	}
 	initPTokenAcceptedInstBytes, err := json.Marshal(initPTokenAcceptedInst)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while marshaling initPTokenAccepted instruction: ", err)
+		Logger.log.Warn("WARNING: an error occured while marshaling initPTokenAccepted instruction: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 
-	ac.CBridgeTokens = append(ac.CBridgeTokens, &tokenID)
+	ac.InitializedPTokenIDs = append(ac.InitializedPTokenIDs, tokenID.String())
 	returnedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(initPTokenAcceptedInstBytes))
 	return append(instructions, returnedInst), nil
+}
+
+func (blockGenerator *BlockGenerator) buildPTokenInitializationTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	beaconView *BeaconBestState,
+) (metadata.Transaction, error) {
+	Logger.log.Info("[Init privacy custom token] Starting...")
+	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occured while decoding content string of accepted privacy token init instruction: ", err)
+		return nil, nil
+	}
+	var initPTokenAcceptedInst metadata.InitPTokenAcceptedInst
+	err = json.Unmarshal(contentBytes, &initPTokenAcceptedInst)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted privacy token init instruction: ", err)
+		return nil, nil
+	}
+
+	if shardID != initPTokenAcceptedInst.ShardID {
+		return nil, nil
+	}
+	initPTokenRes := metadata.NewInitPTokenResponse(
+		initPTokenAcceptedInst.TxReqID,
+		metadata.InitPTokenResponseMeta,
+	)
+	receiver := &privacy.PaymentInfo{
+		Amount:         initPTokenAcceptedInst.Amount,
+		PaymentAddress: initPTokenAcceptedInst.ReceiverAddr,
+	}
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], initPTokenAcceptedInst.IncTokenID[:])
+	propID := common.Hash(propertyID)
+	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+		PropertyID:     propID.String(),
+		PropertyName:   initPTokenAcceptedInst.IncTokenName,
+		PropertySymbol: initPTokenAcceptedInst.IncTokenSymbol,
+		Amount:         initPTokenAcceptedInst.Amount,
+		TokenTxType:    transaction.CustomTokenInit,
+		Receiver:       []*privacy.PaymentInfo{receiver},
+		TokenInput:     []*privacy.InputCoin{},
+		Mintable:       true,
+	}
+	resTx := &transaction.TxCustomTokenPrivacy{}
+	initErr := resTx.Init(
+		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			shardView.GetCopiedTransactionStateDB(),
+			initPTokenRes,
+			false,
+			false,
+			shardID,
+			nil,
+			beaconView.GetBeaconFeatureStateDB()))
+
+	if initErr != nil {
+		Logger.log.Warn("WARNING: an error occured while initializing response tx: ", initErr)
+		return nil, nil
+	}
+	Logger.log.Warn("[Init privacy custom token] Create tx ok.")
+	return resTx, nil
 }

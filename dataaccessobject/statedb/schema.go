@@ -81,6 +81,9 @@ var (
 	rewardFeatureStatePrefix = []byte("rewardfeaturestate-")
 	// feature names
 	PortalRewardName = "portal"
+
+	// privacy custom token initialization
+	pTokenInitPrefix = []byte("ptoken-init-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -408,6 +411,11 @@ func PortalExpiredPortingReqPrefix() []byte {
 
 func PortalReqMatchingRedeemStatusByTxReqIDPrefix() []byte {
 	return portalReqMatchingRedeemStatusByTxReqIDPrefix
+}
+
+func GetPTokenInitPrefix() []byte {
+	h := common.HashH(pTokenInitPrefix)
+	return h[:][:prefixHashKeyLength]
 }
 
 var _ = func() (_ struct{}) {

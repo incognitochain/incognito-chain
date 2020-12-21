@@ -261,6 +261,9 @@ var HttpHandler = map[string]httpHandler{
 
 	//validators state
 	getValKeyState: (*HttpServer).handleGetValKeyState,
+
+	// init privacy custom token
+	createAndSendPTokenInitRequest: (*HttpServer).handleCreateAndSendPTokenInitRequest,
 }
 
 // Commands that are available to a limited user

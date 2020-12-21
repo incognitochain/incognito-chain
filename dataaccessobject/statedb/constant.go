@@ -49,6 +49,9 @@ const (
 	PDETradingFeeObjectType
 
 	StakerObjectType
+
+	// privacy custom token initialization
+	PTokenInitObjectType
 )
 
 // Prefix length

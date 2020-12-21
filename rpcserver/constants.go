@@ -277,6 +277,9 @@ const (
 
 	//validator state
 	getValKeyState = "getvalkeystate"
+
+	// init privacy custom token
+	createAndSendPTokenInitRequest = "createandsendPTokenInitrequest"
 )
 
 const (

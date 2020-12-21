@@ -1,7 +1,7 @@
 package metadata
 
 import (
-	"bytes"
+	"fmt"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -29,7 +29,7 @@ type InitPTokenReqAction struct {
 
 type InitPTokenAcceptedInst struct {
 	ShardID         byte                   `json:"shardId"`
-	DepositedAmount uint64                 `json:"issuingAmount"`
+	Amount 					uint64                 `json:"amount"`
 	ReceiverAddr    privacy.PaymentAddress `json:"receiverAddrStr"`
 	IncTokenID      common.Hash            `json:"incTokenId"`
 	IncTokenName    string                 `json:"incTokenName"`
@@ -55,6 +55,7 @@ func NewInitPTokenRequest(
 	amount uint64,
 	tokenID common.Hash,
 	tokenName string,
+	tokenSymbol string,
 	metaType int,
 ) (*InitPTokenRequest, error) {
 	metadataBase := MetadataBase{
@@ -62,15 +63,16 @@ func NewInitPTokenRequest(
 	}
 	initPTokenReq := &InitPTokenRequest{
 		ReceiverAddress: receiverAddress,
-		Amount: amount,
+		Amount: 				 amount,
 		TokenID:         tokenID,
 		TokenName:       tokenName,
+		TokenSymbol: 		 tokenSymbol,
 	}
 	initPTokenReq.MetadataBase = metadataBase
 	return initPTokenReq, nil
 }
 
-func NewInitPTokenRequestFromMapV2(data map[string]interface{}) (Metadata, error) {
+func NewInitPTokenRequestFromMap(data map[string]interface{}) (Metadata, error) {
 	tokenID, err := common.Hash{}.NewHashFromStr(data["TokenID"].(string))
 	if err != nil {
 		return nil, NewMetadataTxError(InitPTokenRequestNewInitPTokenRequestFromMapError, errors.New("TokenID incorrect"))
@@ -79,6 +81,11 @@ func NewInitPTokenRequestFromMapV2(data map[string]interface{}) (Metadata, error
 	tokenName, ok := data["TokenName"].(string)
 	if !ok {
 		return nil, NewMetadataTxError(InitPTokenRequestNewInitPTokenRequestFromMapError, errors.New("TokenName incorrect"))
+	}
+
+	tokenSymbol, ok := data["TokenSymbol"].(string)
+	if !ok {
+		return nil, NewMetadataTxError(InitPTokenRequestNewInitPTokenRequestFromMapError, errors.New("TokenSymbol incorrect"))
 	}
 
 	amt, err := common.AssertAndConvertStrToNumber(data["Amount"])
@@ -96,6 +103,7 @@ func NewInitPTokenRequestFromMapV2(data map[string]interface{}) (Metadata, error
 		amt,
 		*tokenID,
 		tokenName,
+		tokenSymbol,
 		InitPTokenRequestMeta,
 	)
 }
@@ -109,7 +117,7 @@ func (iReq InitPTokenRequest) ValidateTxWithBlockChain(
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
 	if statedb.PrivacyTokenIDExisted(transactionStateDB, iReq.TokenID) {
-		return false, NewMetadataTxError(InitPTokenRequestValidateTxWithBlockChainError, err)
+		return false, NewMetadataTxError(InitPTokenRequestValidateTxWithBlockChainError, errors.New(fmt.Sprintf("The token id (%s) was already existed", iReq.TokenID.String())))
 	}
 	return true, nil
 }
@@ -127,7 +135,7 @@ func (iReq InitPTokenRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 	if iReq.TokenSymbol == "" {
 		return false, false, NewMetadataTxError(InitPTokenRequestValidateSanityDataError, errors.New("Wrong request info's token symbol"))
 	}
-	if iReq.TokenID == "" {
+	if iReq.TokenID.String() == "" {
 		return false, false, NewMetadataTxError(InitPTokenRequestValidateSanityDataError, errors.New("Wrong request info's token ID"))
 	}
 	return true, true, nil
@@ -143,6 +151,7 @@ func (iReq InitPTokenRequest) Hash() *common.Hash {
 	// TODO: @hung change to record += fmt.Sprint(iReq.DepositedAmount)
 	record += fmt.Sprint(iReq.Amount)
 	record += iReq.TokenName
+	record += iReq.TokenSymbol
 	record += iReq.MetadataBase.Hash().String()
 
 	// final hash
