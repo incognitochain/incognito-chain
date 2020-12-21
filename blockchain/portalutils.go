@@ -966,7 +966,7 @@ func updateCustodianStateAfterLiquidateCustodianV3(custodianState *statedb.Custo
 
 	custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + remainUnlockAmountForCustodian)
 
-	if len(liquidatedAmounts) > 0 {
+	if len(liquidatedAmounts) > 0 || len(remainUnlockAmounts) > 0 {
 		lockedCollaterals := custodianState.GetLockedTokenCollaterals()
 		freeCollaterals := custodianState.GetFreeTokenCollaterals()
 		totalTokenCollaterals := custodianState.GetTotalTokenCollaterals()

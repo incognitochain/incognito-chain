@@ -3712,15 +3712,10 @@ func (s *PortalTestSuiteV3) TestExpiredPortingRequest() {
 	Feature 11:
 	+ auto-liquidation: the custodians don't send back public token to the users
 */
-/*
 func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	custodianKey1 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_1).String()
 	custodianKey2 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_2).String()
 	custodianKey3 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_3).String()
-	custodianKey4 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_4).String()
-	custodianKey5 := statedb.GenerateCustodianStateObjectKey("custodianIncAddress5").String()
-	custodianKey6 := statedb.GenerateCustodianStateObjectKey("custodianIncAddress6").String()
-	custodianKey7 := statedb.GenerateCustodianStateObjectKey("custodianIncAddress7").String()
 
 	custodian1 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_1, 7000*1e9, 6680*1e9,
@@ -3737,17 +3732,25 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
 
 	custodian2 := statedb.NewCustodianStateWithValue(
-		CUS_INC_ADDRESS_2, 1000*1e9, 976000000000,
+		CUS_INC_ADDRESS_2, 0, 0,
 		map[string]uint64{
-			common.PortalBNBIDStr: 0.6 * 1e9,
+			common.PortalBNBIDStr: 20 * 1e9,
 		},
 		map[string]uint64{
-			common.PortalBNBIDStr: 24 * 1e9,
+			common.PortalBNBIDStr: 0,
 		},
 		map[string]string{
 			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		},
-		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
+		map[string]uint64{}, map[string]uint64{
+			ETH_ID: 5 * 1e9,
+		}, map[string]uint64{
+			ETH_ID: 4 * 1e9,
+		}, map[string]map[string]uint64{
+			common.PortalBNBIDStr: {
+				ETH_ID: 1e9,
+			},
+		})
 
 	custodian3 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_3, 200*1e9, 0,
@@ -3770,78 +3773,19 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 			},
 		})
 
-	custodian4 := statedb.NewCustodianStateWithValue(
-		CUS_INC_ADDRESS_4, 0, 0,
-		map[string]uint64{
-			common.PortalBNBIDStr: 20 * 1e9,
-		},
-		map[string]uint64{},
-		map[string]string{
-			common.PortalBNBIDStr: "bnbAddress4",
-		},
-		map[string]uint64{}, map[string]uint64{
-			ETH_ID: 5 * 1e9,
-		}, map[string]uint64{
-			ETH_ID: 4 * 1e9,
-		}, map[string]map[string]uint64{
-			common.PortalBNBIDStr: {
-				ETH_ID: 1e9,
-			},
-		})
-
-	custodian5 := statedb.NewCustodianStateWithValue(
-		"custodianIncAddress5", 20*1e9, 20*1e9,
-		map[string]uint64{},
-		map[string]uint64{},
-		map[string]string{
-			common.PortalBNBIDStr: "bnbAddress5",
-		},
-		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
-
-	custodian6 := statedb.NewCustodianStateWithValue(
-		"custodianIncAddress6", 10*1e9, 10*1e9,
-		map[string]uint64{},
-		map[string]uint64{},
-		map[string]string{
-			common.PortalBNBIDStr: "bnbAddress6",
-		},
-		map[string]uint64{}, map[string]uint64{
-			ETH_ID: 1 * 1e9,
-		}, map[string]uint64{
-			ETH_ID: 1 * 1e9,
-		}, map[string]map[string]uint64{})
-
-	custodian7 := statedb.NewCustodianStateWithValue(
-		"custodianIncAddress7", 0, 0,
-		map[string]uint64{},
-		map[string]uint64{},
-		map[string]string{
-			common.PortalBNBIDStr: "bnbAddress7",
-		},
-		map[string]uint64{}, map[string]uint64{
-			ETH_ID: 2 * 1e9,
-		}, map[string]uint64{
-			ETH_ID: 2 * 1e9,
-		}, map[string]map[string]uint64{})
-
 	custodians := map[string]*statedb.CustodianState{
 		custodianKey1: custodian1,
 		custodianKey2: custodian2,
 		custodianKey3: custodian3,
-		custodianKey4: custodian4,
-		custodianKey5: custodian5,
-		custodianKey6: custodian6,
-		custodianKey7: custodian7,
 	}
 
 	// redeem match prv only
 	redeemReqKey1 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-1").String()
 	redeemRequest1 := statedb.NewRedeemRequestWithValue(
 		"redeem-bnb-1", common.PortalBNBIDStr,
-		USER_INC_ADDRESS_1, "userCUS_BNB_ADDRESS_1", 8.3*1e9,
+		USER_INC_ADDRESS_1, "userCUS_BNB_ADDRESS_1", 8*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_1, CUS_BNB_ADDRESS_1, 8*1e9),
-			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_2, CUS_BNB_ADDRESS_2, 0.3*1e9),
 		}, 4600000, 1000, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
 
 	// redeem match prv and eth
@@ -3851,16 +3795,16 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		USER_INC_ADDRESS_2, "userCUS_BTC_ADDRESS_2", 0.05*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_3, CUS_BTC_ADDRESS_3, 0.05*1e9),
-		}, 30000000, 1500, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
+		}, 30000000, 1000, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
 
 	// redeem match eth only
 	redeemReqKey3 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-2").String()
 	redeemRequest3 := statedb.NewRedeemRequestWithValue(
 		"redeem-bnb-2", common.PortalBNBIDStr,
-		USER_INC_ADDRESS_4, "userCUS_BNB_ADDRESS_2", 10*1e9,
+		USER_INC_ADDRESS_2, "userCUS_BNB_ADDRESS_2", 10*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
-			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_4, CUS_BNB_ADDRESS_3, 10*1e9),
-		}, 30000000, 1500, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
+			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_2, CUS_BNB_ADDRESS_2, 10*1e9),
+		}, 30000000, 1000, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
 
 	matchedRedeemRequest := map[string]*statedb.RedeemRequest{
 		redeemReqKey1: redeemRequest1,
@@ -3868,67 +3812,9 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 		redeemReqKey3: redeemRequest3,
 	}
 
-	wRedeemReqKey3 := statedb.GenerateWaitingRedeemRequestObjectKey("redeem-bnb-3").String()
-	wRedeemRequest3 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-3", common.PortalBNBIDStr,
-		USER_INC_ADDRESS_1, "userCUS_BNB_ADDRESS_1", 0.1*1e9,
-		[]*statedb.MatchingRedeemCustodianDetail{
-			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_2, CUS_BNB_ADDRESS_2, 0.1*1e9),
-		}, 4600000, 1500, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
+	wRedeemRequests := map[string]*statedb.RedeemRequest{}
 
-	wRedeemRequests := map[string]*statedb.RedeemRequest{
-		wRedeemReqKey3: wRedeemRequest3,
-	}
-
-	wPortingReqKey1 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-1").String()
-	wPortingRequest1 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-1", common.Hash{}, common.PortalBNBIDStr,
-		USER_INC_ADDRESS_5, 0.5*1e9,
-		[]*statedb.MatchingPortingCustodianDetail{
-			{
-				IncAddress:             "custodianIncAddress5",
-				RemoteAddress:          "bnbAddress5",
-				Amount:                 0.5 * 1e9,
-				LockedAmountCollateral: 20 * 1e9,
-			},
-		}, 2000000, 1500, 1500, 0)
-
-	wPortingReqKey2 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-2").String()
-	wPortingRequest2 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-2", common.Hash{}, common.PortalBNBIDStr,
-		USER_INC_ADDRESS_6, 10*1e9,
-		[]*statedb.MatchingPortingCustodianDetail{
-			{
-				IncAddress:             "custodianIncAddress6",
-				RemoteAddress:          "bnbAddress6",
-				Amount:                 10 * 1e9,
-				LockedAmountCollateral: 10 * 1e9,
-				LockedTokenCollaterals: map[string]uint64{
-					ETH_ID: 0.975 * 1e9,
-				},
-			},
-		}, 2000000, 1500, 1500, 0)
-
-	wPortingReqKey3 := statedb.GeneratePortalWaitingPortingRequestObjectKey("porting-bnb-3").String()
-	wPortingRequest3 := statedb.NewWaitingPortingRequestWithValue(
-		"porting-bnb-3", common.Hash{}, common.PortalBNBIDStr,
-		USER_INC_ADDRESS_1, 25*1e9,
-		[]*statedb.MatchingPortingCustodianDetail{
-			{
-				IncAddress:    "custodianIncAddress7",
-				RemoteAddress: "bnbAddress7",
-				Amount:        25 * 1e9,
-				LockedTokenCollaterals: map[string]uint64{
-					ETH_ID: 1.25 * 1e9,
-				},
-			},
-		}, 2000000, 1500, 1500, 0)
-
-	wPortingRequests := map[string]*statedb.WaitingPortingRequest{
-		wPortingReqKey1: wPortingRequest1,
-		wPortingReqKey2: wPortingRequest2,
-		wPortingReqKey3: wPortingRequest3,
-	}
+	wPortingRequests := map[string]*statedb.WaitingPortingRequest{}
 
 	s.currentPortalStateForProducer.CustodianPoolState = custodians
 	s.currentPortalStateForProducer.MatchedRedeemRequests = matchedRedeemRequest
@@ -3939,6 +3825,90 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	s.currentPortalStateForProcess.MatchedRedeemRequests = cloneRedeemRequests(matchedRedeemRequest)
 	s.currentPortalStateForProcess.WaitingRedeemRequests = cloneRedeemRequests(wRedeemRequests)
 	s.currentPortalStateForProcess.WaitingPortingRequests = cloneWPortingRequests(wPortingRequests)
+}
+
+func buildExpectedTestCaseForCusRunAway() *ExpectedResultUnlockOverRateCollaterals {
+
+	// build expected results
+	// custodian state after liquidated
+	custodianKey1 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_1).String()
+	custodianKey2 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_2).String()
+	custodianKey3 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_3).String()
+
+	custodian1 := statedb.NewCustodianStateWithValue(
+		CUS_INC_ADDRESS_1, 6840*1e9, 6680*1e9,
+		map[string]uint64{
+			common.PortalBNBIDStr: 8 * 1e9,
+		},
+		map[string]uint64{
+			common.PortalBNBIDStr: 160 * 1e9,
+		},
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_1,
+		},
+		map[string]uint64{}, map[string]uint64{}, map[string]uint64{}, map[string]map[string]uint64{})
+
+	custodian2 := statedb.NewCustodianStateWithValue(
+		CUS_INC_ADDRESS_2, 0, 0,
+		map[string]uint64{
+			common.PortalBNBIDStr: 20 * 1e9,
+		},
+		map[string]uint64{
+			common.PortalBNBIDStr: 0,
+		},
+		map[string]string{
+			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
+		},
+		map[string]uint64{}, map[string]uint64{
+			ETH_ID: 4666666667,
+		}, map[string]uint64{
+			ETH_ID: 4 * 1e9,
+		}, map[string]map[string]uint64{
+			common.PortalBNBIDStr: {
+				ETH_ID: 666666667,
+			},
+		})
+	custodian3 := statedb.NewCustodianStateWithValue(
+		CUS_INC_ADDRESS_3, 0, 0,
+		map[string]uint64{
+			common.PortalBTCIDStr: 0.1 * 1e9,
+		},
+		map[string]uint64{
+			common.PortalBTCIDStr: 0,
+		},
+		map[string]string{
+			common.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
+		},
+		map[string]uint64{}, map[string]uint64{
+			ETH_ID: 4666666667,
+		}, map[string]uint64{
+			ETH_ID: 3 * 1e9,
+		}, map[string]map[string]uint64{
+			common.PortalBTCIDStr: {
+				ETH_ID: 1666666667,
+			},
+		})
+
+	expectedRes := &ExpectedResultUnlockOverRateCollaterals{
+		custodianPool: map[string]*statedb.CustodianState{
+			custodianKey1: custodian1,
+			custodianKey2: custodian2,
+			custodianKey3: custodian3,
+		},
+		waitingPortingRes:     map[string]*statedb.WaitingPortingRequest{},
+		waitingRedeemRequests: map[string]*statedb.RedeemRequest{},
+		matchedRedeemRequest:  map[string]*statedb.RedeemRequest{},
+		numBeaconInsts:        5,
+		liquidationPool:       map[string]*statedb.LiquidationPool{},
+		statusInsts: []string{
+			common.PortalLiquidateCustodianSuccessChainStatus,
+			common.PortalLiquidateCustodianSuccessChainStatus,
+			common.PortalLiquidateCustodianSuccessChainStatus,
+		},
+	}
+
+	return expectedRes
 }
 
 func (s *PortalTestSuiteV3) TestAutoLiquidationCustodian() {
@@ -3954,6 +3924,7 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationCustodian() {
 	//newMatchedRedeemReqIDs := []string{}
 	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
 
+	expectedResult := buildExpectedTestCaseForCusRunAway()
 	s.SetupTestAutoLiquidation()
 
 	newInsts, err := s.blockChain.checkAndBuildInstForCustodianLiquidation(beaconHeight, shardHeights, &s.currentPortalStateForProducer, s.blockChain.GetPortalParams(0))
@@ -3970,8 +3941,6 @@ func (s *PortalTestSuiteV3) TestAutoLiquidationCustodian() {
 
 	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
 }
-
-*/
 
 /*
 	Feature 12: auto-liquidation: the proportion between the collateral and public token is drop down below 120%
