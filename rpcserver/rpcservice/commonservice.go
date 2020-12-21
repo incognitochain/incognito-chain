@@ -96,21 +96,22 @@ func CreateCustomTokenPrivacyBurningReceiverArray(dataReceiver interface{}, bcr 
 	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
 
 	for key, value := range receivers {
-
 		keyWallet, err := wallet.Base58CheckDeserialize(key)
 		if err != nil {
 			Logger.log.Errorf("Invalid key in CreateCustomTokenPrivacyReceiverArray %+v", key)
 			return nil, 0, err
 		}
-
 		if !bytes.Equal(keyWallet.KeySet.PaymentAddress.Pk[:], paymentAddressBurningAccount.Pk[:]) {
 			continue
 		}
 
-		keySet := keyWallet.KeySet
+		amount, err := common.AssertAndConvertNumber(value)
+		if err != nil {
+			return nil, 0, errors.Errorf("amount payment address is invalid. Error %v\n", err)
+		}
 		temp := &privacy.PaymentInfo{
-			PaymentAddress: keySet.PaymentAddress,
-			Amount:         uint64(value.(float64)),
+			PaymentAddress: keyWallet.KeySet.PaymentAddress,
+			Amount:         amount,
 		}
 		result = append(result, temp)
 		voutsAmount += int64(temp.Amount)
