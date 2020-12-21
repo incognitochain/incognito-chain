@@ -34,6 +34,9 @@ type CrossShardOutputCoinStorer interface {
 	StoreCrossShardOutputCoin (ctx context.Context, outputCoin model.OutputCoin) error
 }
 
+type PublicKeyToTransactionHashStorer interface {
+	StorePublicKeyToTransactionHash (ctx context.Context, outputCoin model.PublicKeyToTransactionHash) error
+}
 
 type TransactionRepository interface {
 	TransactionStorer

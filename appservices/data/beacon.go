@@ -92,6 +92,12 @@ type LockedCollateralState struct {
 	LockedCollateralDetail          map[string]uint64 // custodianAddress : amount
 }
 
+type CrossShardState struct {
+	Height     uint64
+	Hash       string
+	CrossShard []byte //In this state, shard i send cross shard tx to which shard
+}
+
 type Beacon struct {
 	ShardID									int							`json:"ShardID"`
 	BlockHash 								string					 	`json:"BlockHash"`
@@ -133,51 +139,71 @@ type Beacon struct {
 	WaitingRedeemRequest					[]RedeemRequest					`json:"WaitingRedeemRequest"`
 	MatchedRedeemRequest					[]RedeemRequest					`json:"MatchedRedeemRequest"`
 	LockedCollateralState					LockedCollateralState			`json:"LockedCollateralState"`
+	BlockProducer							string							`json:"BlockProducer"`
+	BlockProducerPublicKey                           string                           `json:"BlockProducerPublicKey"`
+	BlockProposer							string							`json:"BlockProposer"`
+	ValidationData    string      `json:"ValidationData"`
+	Version           int         `json:"Version"`
+	Round             int         `json:"Round"`
+	Size              uint64      `json:"Size"`
+	ShardState   map[byte][]CrossShardState
 
 }
 
 func NewBeaconFromBeaconState(data *blockchain.BeaconBestState) *Beacon {
 	result := &Beacon{
-		ShardID:				256, //fake ShardID for beacon for load balancing
-		BlockHash:          	data.BestBlockHash.String(),
-		PreviousBlockHash:  	data.PreviousBestBlockHash.String(),
-		BestShardHash: 			newBestShardHashFromBeaconState(data.BestShardHash),
-		BestShardHeight: 		newBestShardHeightFromBeaconState(data.BestShardHeight),
-		Epoch:                  data.Epoch,
-		Height:         		data.BeaconHeight,
-		ProposerIndex:	    	data.BeaconProposerIndex,
-		BeaconCommittee:		incognitokey.CommitteeKeyListToStringList(data.BeaconCommittee),
-		BeaconPendingValidator: incognitokey.CommitteeKeyListToStringList(data.BeaconPendingValidator),
+		ShardID:                                256, //fake ShardID for beacon for load balancing
+		BlockHash:                              data.BestBlockHash.String(),
+		PreviousBlockHash:                      data.PreviousBestBlockHash.String(),
+		BestShardHash:                          newBestShardHashFromBeaconState(data.BestShardHash),
+		BestShardHeight:                        newBestShardHeightFromBeaconState(data.BestShardHeight),
+		Epoch:                                  data.Epoch,
+		Height:                                 data.BeaconHeight,
+		ProposerIndex:                          data.BeaconProposerIndex,
+		BeaconCommittee:                        incognitokey.CommitteeKeyListToStringList(data.BeaconCommittee),
+		BeaconPendingValidator:                 incognitokey.CommitteeKeyListToStringList(data.BeaconPendingValidator),
 		CandidateBeaconWaitingForCurrentRandom: incognitokey.CommitteeKeyListToStringList(data.CandidateBeaconWaitingForCurrentRandom),
-		CandidateShardWaitingForCurrentRandom: incognitokey.CommitteeKeyListToStringList(data.CandidateShardWaitingForCurrentRandom),
-		CandidateBeaconWaitingForNextRandom: incognitokey.CommitteeKeyListToStringList(data.CandidateBeaconWaitingForNextRandom),
-		CandidateShardWaitingForNextRandom: incognitokey.CommitteeKeyListToStringList(data.CandidateShardWaitingForNextRandom),
-		ShardCommittee: 		newShardCommitteeFromBeaconState(data.ShardCommittee),
-		ShardPendingValidator: 	newShardPendingValidatorFromBeaconState(data.ShardPendingValidator),
-		AutoStaking: 			newAutoStackingFromBeaconState(data.AutoStaking),
-		CurrentRandomNumber:    data.CurrentRandomNumber,
-		CurrentRandomTimeStamp: data.CurrentRandomTimeStamp,
-		MaxShardCommitteeSize:   data.MaxShardCommitteeSize,
-		MinShardCommitteeSize:   data.MinShardCommitteeSize,
-		MaxBeaconCommitteeSize:  data.MaxBeaconCommitteeSize,
-		MinBeaconCommitteeSize:  data.MinBeaconCommitteeSize,
-		ActiveShards:            data.ActiveShards,
-		LastCrossShardState:     newLastCrossShardFromBeaconState(data.LastCrossShardState),
-		Time:                    data.GetBlockTime(),
-		ConsensusAlgorithm:      data.ConsensusAlgorithm,
-		ShardConsensusAlgorithm: newShardConsensusAlgorithmFromBeaconState(data.ShardConsensusAlgorithm),
-		Instruction:             newInstructionFromBeaconState(data.BestBlock.GetInstructions()),
-		BridgeToken:             getBridgeTokenInfoFromBeaconState(data.GetBeaconFeatureStateDB()),
-		WaitingPDEContributionState: getWaitingPDEContributionStateFromBeaconState(data.GetBeaconFeatureStateDB()),
-		PDEPoolPair: getPDEPoolPairFromBeaconState(data.GetBeaconFeatureStateDB()),
-		PDEShare: getPDEShareFromBeaconState(data.GetBeaconFeatureStateDB()),
-		PDETradingFee: getDETradingFeeFromBeaconState(data.GetBeaconFeatureStateDB()),
-		Custodian: getCustodianStateFromBeaconState(data.GetBeaconFeatureStateDB()),
-		WaitingPortingRequest: getWaitingPortingRequestFromBeaconState(data.GetBeaconFeatureStateDB()),
-		WaitingRedeemRequest: getAllWaitingRedeemRequestFromBeaconState(data.GetBeaconFeatureStateDB()),
-		FinalExchangeRates: getFinalExchangeRatesFromBeaconState(data.GetBeaconFeatureStateDB()),
-		MatchedRedeemRequest: getAllMatchedRedeemRequestFromBeaconState(data.GetBeaconFeatureStateDB()),
-		LockedCollateralState: getLockedCollateralStateFromBeaconState(data.GetBeaconFeatureStateDB()),
+		CandidateShardWaitingForCurrentRandom:  incognitokey.CommitteeKeyListToStringList(data.CandidateShardWaitingForCurrentRandom),
+		CandidateBeaconWaitingForNextRandom:    incognitokey.CommitteeKeyListToStringList(data.CandidateBeaconWaitingForNextRandom),
+		CandidateShardWaitingForNextRandom:     incognitokey.CommitteeKeyListToStringList(data.CandidateShardWaitingForNextRandom),
+		ShardCommittee:                         newShardCommitteeFromBeaconState(data.ShardCommittee),
+		ShardPendingValidator:                  newShardPendingValidatorFromBeaconState(data.ShardPendingValidator),
+		AutoStaking:                            newAutoStackingFromBeaconState(data.AutoStaking),
+		CurrentRandomNumber:                    data.CurrentRandomNumber,
+		CurrentRandomTimeStamp:                 data.CurrentRandomTimeStamp,
+		MaxBeaconCommitteeSize:                 data.MaxBeaconCommitteeSize,
+		MinBeaconCommitteeSize:                 data.MinBeaconCommitteeSize,
+		MaxShardCommitteeSize:                  data.MaxShardCommitteeSize,
+		MinShardCommitteeSize:                  data.MinShardCommitteeSize,
+		ActiveShards:                           data.ActiveShards,
+		LastCrossShardState:                    newLastCrossShardFromBeaconState(data.LastCrossShardState),
+		Time:                                   data.GetBlockTime(),
+		ConsensusAlgorithm:                     data.ConsensusAlgorithm,
+		ShardConsensusAlgorithm:                newShardConsensusAlgorithmFromBeaconState(data.ShardConsensusAlgorithm),
+		Instruction:                            newInstructionFromBeaconState(data.BestBlock.GetInstructions()),
+		BridgeToken:                            getBridgeTokenInfoFromBeaconState(data.GetBeaconFeatureStateDB()),
+		WaitingPDEContributionState:            getWaitingPDEContributionStateFromBeaconState(data.GetBeaconFeatureStateDB()),
+		PDEPoolPair:                            getPDEPoolPairFromBeaconState(data.GetBeaconFeatureStateDB()),
+		PDEShare:                               getPDEShareFromBeaconState(data.GetBeaconFeatureStateDB()),
+		PDETradingFee:                          getDETradingFeeFromBeaconState(data.GetBeaconFeatureStateDB()),
+		Custodian:                              getCustodianStateFromBeaconState(data.GetBeaconFeatureStateDB()),
+		WaitingPortingRequest:                  getWaitingPortingRequestFromBeaconState(data.GetBeaconFeatureStateDB()),
+		FinalExchangeRates:                     getFinalExchangeRatesFromBeaconState(data.GetBeaconFeatureStateDB()),
+		WaitingRedeemRequest:                   getAllWaitingRedeemRequestFromBeaconState(data.GetBeaconFeatureStateDB()),
+		MatchedRedeemRequest:                   getAllMatchedRedeemRequestFromBeaconState(data.GetBeaconFeatureStateDB()),
+		LockedCollateralState:                  getLockedCollateralStateFromBeaconState(data.GetBeaconFeatureStateDB()),
+		BlockProducer:                          data.BestBlock.Header.Producer,
+		BlockProposer:                          data.BestBlock.Header.Proposer,
+		BlockProducerPublicKey:                 data.BestBlock.Header.ProducerPubKeyStr,
+		ValidationData:                         data.BestBlock.ValidationData,
+		Version:                                data.BestBlock.GetVersion(),
+		Round:                                  data.BestBlock.GetRound(),
+		Size:                                   0,
+		ShardState:                             getCrossShardState(data.BestBlock.Body),
+	}
+	blockBytes, errS := json.Marshal(data.BestBlock)
+	if errS == nil {
+		result.Size = uint64(len(blockBytes))
 	}
 	return result
 }
@@ -493,4 +519,19 @@ func getLockedCollateralStateFromBeaconState(PortalStateDB *statedb.StateDB) Loc
 		TotalLockedCollateralForRewards: lockedCollateralState.GetTotalLockedCollateralForRewards(),
 		LockedCollateralDetail:          details,
 	}
+}
+func getCrossShardState(body blockchain.BeaconBody)  map[byte][]CrossShardState {
+	result := make(map[byte][]CrossShardState)
+	for shardId, values := range body.ShardState {
+		shardStates := make([]CrossShardState, 0)
+		for _, val := range values {
+			shardStates = append(shardStates,  CrossShardState{
+				Height:     val.Height,
+				Hash:       val.Hash.String(),
+				CrossShard: val.CrossShard,
+			})
+		}
+		result[shardId] = shardStates
+	}
+	return result
 }

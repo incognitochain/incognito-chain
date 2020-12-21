@@ -159,3 +159,7 @@ fi
 if [ "$1" == "fullnode-mainnet-console" ]; then
 GO111MODULE=on GETH_NAME=mainnet.infura.io/v3/1f15d22470684b4a8c92c130925fc679 GETH_PROTOCOL=https GETH_PORT="" ./incognito --testnet false --nodemode "relay" --relayshards "[0]" --externaladdress "127.0.0.1:5433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "data/mainnet/fullnode" --discoverpeersaddress "51.91.72.45:9330" --norpcauth --rpclisten "0.0.0.0:5334" --rpcwslisten "127.0.0.1:15338"
 fi
+
+if [ "$1" == "fullnode-testnet2-console" ]; then
+GO111MODULE=on GETH_NAME=kovan.infura.io/v3/1f15d22470684b4a8c92c130925fc679 GETH_PROTOCOL=https GETH_PORT="" ./incognito --testnet 1 --testnetversion "2" --nodemode "relay" --relayshards "all" --externaladdress "127.0.0.1:9431" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "data/testnet2/fullnode" --discoverpeersaddress "74.207.247.250:9330" --norpcauth --rpclisten "0.0.0.0:7334" --rpcwslisten "127.0.0.1:17338"
+fi

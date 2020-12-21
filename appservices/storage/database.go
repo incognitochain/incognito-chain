@@ -32,6 +32,7 @@ type DatabaseDriver interface {
 
 
 	GetTransactionStorer() repository.TransactionStorer
+	GetPublicKeyToTransactionHashStorer() repository.PublicKeyToTransactionHashStorer
 	GetInputCoinStorer() repository.InputCoinStorer
 	GetOutputCoinStorer() repository.ShardOutputCoinStorer
 	GetCrossShardOutputCoinStorer() repository.CrossShardOutputCoinStorer

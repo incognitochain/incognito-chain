@@ -497,7 +497,7 @@ func getTransactionAndOutputCoin(shardID byte, transactions []metadata.Transacti
 				newTx.TxPrivacy = txPrivacy
 
 				if tx.Proof != nil {
-					newTx.InputCoins = convertSlicePrivacyInputCoinToSliceInputCoin("", tx.Proof.GetInputCoins())
+					newTx.InputCoins = convertSlicePrivacyInputCoinToSliceInputCoin(common.PRVIDStr, tx.Proof.GetInputCoins())
 					coins = convertSlicePrivacyOutputCoinToSliceOutputCoin(shardID, newTx.Hash, common.PRVIDStr, tx.Proof.GetOutputCoins(), tx.LockTime, tx.Info)
 					outputCoins = append(outputCoins, coins...)
 				}

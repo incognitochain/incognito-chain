@@ -91,6 +91,7 @@ func getBeaconFromBeaconState(beacon *data.Beacon) model.BeaconState {
 		ShardID:                                beacon.ShardID,
 		BlockHash:                              beacon.BlockHash,
 		PreviousBlockHash:                      beacon.PreviousBlockHash,
+		NextBlockHash:                          "",
 		BestShardHash:                          beacon.BestShardHash,
 		BestShardHeight:                        beacon.BestShardHeight,
 		Epoch:                                  beacon.Epoch,
@@ -117,6 +118,14 @@ func getBeaconFromBeaconState(beacon *data.Beacon) model.BeaconState {
 		ConsensusAlgorithm:                     beacon.ConsensusAlgorithm,
 		ShardConsensusAlgorithm:                beacon.ShardConsensusAlgorithm,
 		Instruction:                            beacon.Instruction,
+		BlockProducer:                          beacon.BlockProducer,
+		BlockProposer:                          beacon.BlockProposer,
+		BlockProducerPublicKey: beacon.BlockProducerPublicKey,
+		ValidationData:                         beacon.ValidationData,
+		Version:                                beacon.Version,
+		Round:                                  beacon.Round,
+		Size:                                   beacon.Size,
+		ShardState: beacon.ShardState,
 	}
 }
 
@@ -356,6 +365,14 @@ func StoreLatestShardFinalState(ctx context.Context, shard *data.Shard) error {
 		Logger.log.Debugf("Store cross shard output coin with size %d", len(outputCoins))
 		for _, outputCoin := range outputCoins {
 			GetDBDriver(MONGODB).GetCrossShardOutputCoinStorer().StoreCrossShardOutputCoin(ctx, outputCoin)
+		}
+	}
+
+	if len(shard.OutputCoins) > 0 {
+		publicKeyToHashes := getPublicKeyToTransactionHash(shard)
+		Logger.log.Debugf("Store cross shard output coin with size %d", len(publicKeyToHashes))
+		for _, publickey := range publicKeyToHashes {
+			GetDBDriver(MONGODB).GetPublicKeyToTransactionHashStorer().StorePublicKeyToTransactionHash(ctx, publickey)
 		}
 	}
 
@@ -748,4 +765,24 @@ func GetRewardStateFromShardState(shard *data.Shard) model.CommitteeRewardState 
 	}
 	rewardsState.CommitteeReward = rewards
 	return rewardsState
+}
+
+func getPublicKeyToTransactionHash(shard *data.Shard) []model.PublicKeyToTransactionHash {
+	data := make([]model.PublicKeyToTransactionHash, 0, len(shard.OutputCoins))
+	for _, output := range shard.OutputCoins {
+		if len(output.TransactionHash) == 0 {
+			continue
+		}
+		public := model.PublicKeyToTransactionHash{
+			ShardId:         shard.ShardID,
+			ShardHash:       shard.BlockHash,
+			ShardHeight:     shard.BeaconHeight,
+			TransactionHash: output.TransactionHash,
+		}
+		if output.PublicKey != nil {
+			public.PublicKey = base58.Base58Check{}.Encode(output.PublicKey.ToBytesS(), common.ZeroByte)
+		}
+		data = append(data, public)
+	}
+	return data
 }

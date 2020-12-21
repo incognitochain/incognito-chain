@@ -105,3 +105,11 @@ type Commitment struct {
 	Commitment string `json:"Commitment"`
 	Index      uint64 `json:"Index"`
 }
+
+type PublicKeyToTransactionHash struct {
+	ShardId  			byte `json:"ShardId"`
+	ShardHash 			string `json:"ShardHash"`
+	ShardHeight 		uint64 `json:"ShardHeight"`
+	TransactionHash     string `json:"TransactionHash"`
+	PublicKey			string `json:"PublicKey"`
+}

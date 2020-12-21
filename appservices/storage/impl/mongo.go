@@ -22,6 +22,8 @@ const (
 	//Transaction
 	Transaction = "Transaction"
 
+	PublicKeyToTransactionHash = "PublicKeyToTransactionHash"
+
 	//InputCoin
 	InputCoin = "InputCoin"
 
@@ -87,6 +89,8 @@ type mongoDBDriver struct {
 	//Transaction
 	transactionStorer *mongoTransactionStorer
 
+	publicKeyToTransactionHashStorer *mongoPublicKeyToTransactionHashStorer
+
 	//InputCoin
 	inputCoinStorer *mongoInputCoinStorer
 
@@ -122,6 +126,11 @@ type mongoDBDriver struct {
 
 //Beacon
 type mongoBeaconStateStorer struct {
+	collection *mongo.Collection
+}
+
+//Beacon
+type mongoPublicKeyToTransactionHashStorer struct {
 	collection *mongo.Collection
 }
 
@@ -243,6 +252,15 @@ func (mongo *mongoDBDriver)  GetTransactionStorer() repository.TransactionStorer
 		mongo.transactionStorer = &mongoTransactionStorer{prefix: Transaction, mongo: mongo}
 	}
 	return mongo.transactionStorer
+
+}
+
+func (mongo *mongoDBDriver)  GetPublicKeyToTransactionHashStorer() repository.PublicKeyToTransactionHashStorer {
+	collection := mongo.client.Database(DataBaseName).Collection(PublicKeyToTransactionHash)
+	if mongo.publicKeyToTransactionHashStorer == nil {
+		mongo.publicKeyToTransactionHashStorer = &mongoPublicKeyToTransactionHashStorer{collection: collection}
+	}
+	return mongo.publicKeyToTransactionHashStorer
 
 }
 
@@ -407,6 +425,11 @@ func (transactionStorer *mongoTransactionStorer) StoreTransaction (ctx context.C
 			transactionStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
 	}
 	_, err := transactionStorer.collection[transaction.ShardId].InsertOne(ctx, transaction)
+	return err
+}
+
+func (publicKeyToTransactionHashStorer *mongoPublicKeyToTransactionHashStorer) StorePublicKeyToTransactionHash(ctx context.Context, data model.PublicKeyToTransactionHash) error {
+	_, err := publicKeyToTransactionHashStorer.collection.InsertOne(ctx, data)
 	return err
 }
 
