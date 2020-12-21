@@ -106,25 +106,24 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) buildNewInsts(
 		Logger.log.Error("ERROR: custodian has no holding token to unlock")
 		return [][]string{rejectInst}, nil
 	}
-	var lockedCollaters map[string]uint64
+	var lockedCollaterals map[string]uint64
 	if custodianState.GetLockedTokenCollaterals() != nil && custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID] != nil {
-		lockedCollaters = cloneMap(custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID])
+		lockedCollaterals = cloneMap(custodianState.GetLockedTokenCollaterals()[actionData.Meta.TokenID])
 	} else {
-		lockedCollaters = make(map[string]uint64, 0)
+		lockedCollaterals = make(map[string]uint64, 0)
 	}
 	if custodianState.GetLockedAmountCollateral() != nil {
-		lockedCollaters[common.PRVIDStr] = custodianState.GetLockedAmountCollateral()[actionData.Meta.TokenID]
+		lockedCollaterals[common.PRVIDStr] = custodianState.GetLockedAmountCollateral()[actionData.Meta.TokenID]
 	}
-	lockedCollatersExceptPorting := make(map[string]uint64, 0)
 	totalAmountInUSD := uint64(0)
-	for collateralID, tokenValue := range lockedCollaters {
+	for collateralID, tokenValue := range lockedCollaterals {
 		if tokenValue < tokenAmountListInWaitingPoring[collateralID] {
 			Logger.log.Errorf("ERROR: total %v locked less than amount lock in porting", collateralID)
 			return [][]string{rejectInst}, nil
 		}
-		lockedCollatersExceptPorting[collateralID] = tokenValue - tokenAmountListInWaitingPoring[collateralID]
+		lockedCollateralExceptPorting := tokenValue - tokenAmountListInWaitingPoring[collateralID]
 		// convert to usd
-		pubTokenAmountInUSDT, err := exchangeTool.ConvertToUSD(collateralID, lockedCollatersExceptPorting[collateralID])
+		pubTokenAmountInUSDT, err := exchangeTool.ConvertToUSD(collateralID, lockedCollateralExceptPorting)
 		if err != nil {
 			Logger.log.Errorf("Error when converting locked public token to prv: %v", err)
 			return [][]string{rejectInst}, nil

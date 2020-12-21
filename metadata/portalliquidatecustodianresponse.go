@@ -127,6 +127,7 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 			continue
 		}
 
+		uniqueRedeemIDFromInst = liqCustodianContent.UniqueRedeemID
 		if uniqueRedeemIDFromInst != iRes.UniqueRedeemID {
 			Logger.log.Error("WARNING - VALIDATION: UniqueRedeemID is incorrect: uniqueRedeemIDFromInst %v - UniqueRedeemID in response %v ", uniqueRedeemIDFromInst, iRes.UniqueRedeemID)
 			continue

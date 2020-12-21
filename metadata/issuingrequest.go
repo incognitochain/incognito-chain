@@ -80,6 +80,40 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenName incorrect"))
 	}
 
+	depositedAmount, ok := data["DepositedAmount"]
+	if !ok {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("DepositedAmount incorrect"))
+	}
+	depositedAmountFloat, ok := depositedAmount.(float64)
+	if !ok {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("DepositedAmount incorrect"))
+	}
+	depositedAmt := uint64(depositedAmountFloat)
+	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ReceiveAddress incorrect"))
+	}
+
+	return NewIssuingRequest(
+		keyWallet.KeySet.PaymentAddress,
+		depositedAmt,
+		*tokenID,
+		tokenName,
+		IssuingRequestMeta,
+	)
+}
+
+func NewIssuingRequestFromMapV2(data map[string]interface{}) (Metadata, error) {
+	tokenID, err := common.Hash{}.NewHashFromStr(data["TokenID"].(string))
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenID incorrect"))
+	}
+
+	tokenName, ok := data["TokenName"].(string)
+	if !ok {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenName incorrect"))
+	}
+
 	depositedAmt, err := common.AssertAndConvertStrToNumber(data["DepositedAmount"])
 	if err != nil {
 		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("DepositedAmount incorrect"))
