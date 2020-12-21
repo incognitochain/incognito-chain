@@ -646,6 +646,8 @@ func (b *BeaconCommitteeStateV2) processSwapShardInstruction(
 			comparedShardSwapInstruction.OutPublicKeys, swapShardInstruction.OutPublicKeys)
 	}
 
+	Logger.log.Info("[dcs] newCommittees:", newCommittees)
+
 	b.shardCommittee[shardID], _ = incognitokey.CommitteeBase58KeyListToStruct(newCommittees)
 	b.shardSubstitute[shardID] = b.shardSubstitute[shardID][len(swapShardInstruction.InPublicKeys):]
 

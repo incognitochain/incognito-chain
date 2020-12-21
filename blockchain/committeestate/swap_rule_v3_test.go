@@ -355,10 +355,11 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 		maxCommitteeeSubstituteRangeTimes int
 	}
 	tests := []struct {
-		name string
-		s    *swapRuleV3
-		args args
-		want []string
+		name  string
+		s     *swapRuleV3
+		args  args
+		want  []string
+		want1 []string
 	}{
 		{
 			name: "Valid input",
@@ -384,18 +385,52 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				numberOfFixedValidators:           8,
 				lenSlashedCommittees:              2,
 				maxSwapOutPercent:                 6,
+				lenBeforeSlashedCommittees:        22,
 				dcsMaxCommitteeSize:               51,
 				dcsMinCommitteeSize:               15,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
-			want: []string{},
+			want: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
+				key12, key13, key14, key15, key16, key17, key18, key19,
+			},
+			want1: []string{},
+		},
+		{
+			name: "Reach dcsMinCommitteeSize",
+			s:    &swapRuleV3{},
+			args: args{
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6,
+				},
+				substitutes: []string{
+					key7,
+				},
+				numberOfFixedValidators:           4,
+				lenSlashedCommittees:              0,
+				maxSwapOutPercent:                 6,
+				dcsMaxCommitteeSize:               10,
+				lenBeforeSlashedCommittees:        7,
+				dcsMinCommitteeSize:               6,
+				maxCommitteeeSubstituteRangeTimes: 4,
+			},
+			want: []string{
+				key0, key, key2, key3, key5, key6,
+			},
+			want1: []string{
+				key4,
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			if got := s.normalSwapOut(tt.args.committees, tt.args.substitutes, tt.args.lenBeforeSlashedCommittees, tt.args.lenSlashedCommittees, tt.args.maxSwapOutPercent, tt.args.numberOfFixedValidators, tt.args.dcsMaxCommitteeSize, tt.args.dcsMinCommitteeSize, tt.args.maxCommitteeeSubstituteRangeTimes); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("swapRuleV3.normalSwapOut() = %v, want %v", got, tt.want)
+			got, got1 := s.normalSwapOut(tt.args.committees, tt.args.substitutes, tt.args.lenBeforeSlashedCommittees, tt.args.lenSlashedCommittees, tt.args.maxSwapOutPercent, tt.args.numberOfFixedValidators, tt.args.dcsMaxCommitteeSize, tt.args.dcsMinCommitteeSize, tt.args.maxCommitteeeSubstituteRangeTimes)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("swapRuleV3.normalSwapOut() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("swapRuleV3.normalSwapOut() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
@@ -552,6 +587,21 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: 0,
+		},
+		{
+			name: "Reach dcs min size",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesBeforeSlash:          7,
+				lenSubstitutes:                    1,
+				numberOfFixedValidators:           4,
+				lenSlashedCommittees:              0,
+				maxSwapOutPercent:                 6,
+				dcsMaxCommitteeSize:               10,
+				dcsMinCommitteeSize:               6,
+				maxCommitteeeSubstituteRangeTimes: 4,
+			},
+			want: 1,
 		},
 	}
 	for _, tt := range tests {

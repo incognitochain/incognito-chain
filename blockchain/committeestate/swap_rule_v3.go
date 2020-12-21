@@ -1,6 +1,8 @@
 package committeestate
 
 import (
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
@@ -25,13 +27,10 @@ func (s *swapRuleV3) GenInstructions(
 	newCommittees, slashingCommittees := s.slashingSwapOut(committees, penalty, minCommitteeSize, numberOfFixedValidators, MAX_SLASH_PERCENT)
 	lenSlashedCommittees := len(slashingCommittees)
 	//get normal swap out nodes
-	normalSwapOutCommittees := s.normalSwapOut(
+	newCommittees, normalSwapOutCommittees := s.normalSwapOut(
 		newCommittees, substitutes, len(committees), lenSlashedCommittees, MAX_SWAP_OUT_PERCENT,
 		numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize, MAX_COMMITTEES_SUBSTITUTES_RANGE_TIMES)
 	swappedOutCommittees := append(slashingCommittees, normalSwapOutCommittees...)
-
-	//get committees list after swap out
-	newCommittees = newCommittees[:len(newCommittees)-len(normalSwapOutCommittees)]
 
 	newCommittees, newSubstitutes, swapInCommittees :=
 		s.swapInAfterSwapOut(newCommittees, substitutes, MAX_SWAP_IN_PERCENT,
@@ -40,6 +39,11 @@ func (s *swapRuleV3) GenInstructions(
 	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
 		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees
 	}
+
+	Logger.log.Info("[dcs] swapInCommittees:", swapInCommittees)
+	Logger.log.Info("[dcs] normalSwapOutCommittees:", normalSwapOutCommittees)
+	Logger.log.Info("[dcs] newCommittees:", newCommittees)
+	Logger.log.Info("[dcs] newSubstitutes:", newSubstitutes)
 
 	swapShardInstruction := instruction.NewSwapShardInstructionWithValue(
 		swapInCommittees,
@@ -112,15 +116,20 @@ func (s *swapRuleV3) getSwapInOffset(
 func (s *swapRuleV3) normalSwapOut(committees, substitutes []string,
 	lenBeforeSlashedCommittees, lenSlashedCommittees, maxSwapOutPercent, numberOfFixedValidators,
 	dcsMaxCommitteeSize, dcsMinCommitteeSize, maxCommitteeeSubstituteRangeTimes int,
-) []string {
+) ([]string, []string) {
 	resNormalSwapOut := []string{}
+	resCommittees := []string{}
 	normalSwapOutOffset := s.getNormalSwapOutOffset(
 		lenBeforeSlashedCommittees, len(substitutes),
 		lenSlashedCommittees, maxSwapOutPercent, numberOfFixedValidators,
 		dcsMaxCommitteeSize, dcsMinCommitteeSize, maxCommitteeeSubstituteRangeTimes)
 
+	fmt.Println("[dcs] normalSwapOutOffset:", normalSwapOutOffset)
+
+	resCommittees = append(committees[:numberOfFixedValidators], committees[(numberOfFixedValidators+normalSwapOutOffset):]...)
 	resNormalSwapOut = committees[numberOfFixedValidators : numberOfFixedValidators+normalSwapOutOffset]
-	return resNormalSwapOut
+
+	return resCommittees, resNormalSwapOut
 }
 
 func (s *swapRuleV3) getNormalSwapOutOffset(
@@ -129,7 +138,6 @@ func (s *swapRuleV3) getNormalSwapOutOffset(
 	dcsMaxCommitteeSize, dcsMinCommitteeSize, maxCommitteeeSubstituteRangeTimes int,
 ) int {
 	normalSwapOutOffset := 0
-
 	if lenSlashedCommittees < lenCommitteesBeforeSlash/maxSwapOutPercent {
 		if lenSubstitutes >= maxCommitteeeSubstituteRangeTimes*lenCommitteesBeforeSlash {
 			if lenCommitteesBeforeSlash >= dcsMaxCommitteeSize {
