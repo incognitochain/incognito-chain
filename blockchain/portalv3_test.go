@@ -3720,7 +3720,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	custodian1 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_1, 7000*1e9, 6680*1e9,
 		map[string]uint64{
-			common.PortalBNBIDStr: 8 * 1e9,
+			common.PortalBNBIDStr: 0,
 		},
 		map[string]uint64{
 			common.PortalBNBIDStr: 320 * 1e9,
@@ -3734,7 +3734,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	custodian2 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_2, 0, 0,
 		map[string]uint64{
-			common.PortalBNBIDStr: 20 * 1e9,
+			common.PortalBNBIDStr: 10 * 1e9,
 		},
 		map[string]uint64{
 			common.PortalBNBIDStr: 0,
@@ -3755,7 +3755,7 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 	custodian3 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_3, 200*1e9, 0,
 		map[string]uint64{
-			common.PortalBTCIDStr: 0.1 * 1e9,
+			common.PortalBTCIDStr: 0,
 		},
 		map[string]uint64{
 			common.PortalBTCIDStr: 200 * 1e9,
@@ -3788,22 +3788,22 @@ func (s *PortalTestSuiteV3) SetupTestAutoLiquidation() {
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_1, CUS_BNB_ADDRESS_1, 8*1e9),
 		}, 4600000, 1000, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
 
-	// redeem match prv and eth
-	redeemReqKey2 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-btc-2").String()
-	redeemRequest2 := statedb.NewRedeemRequestWithValue(
-		"redeem-btc-2", common.PortalBTCIDStr,
-		USER_INC_ADDRESS_2, "userCUS_BTC_ADDRESS_2", 0.05*1e9,
-		[]*statedb.MatchingRedeemCustodianDetail{
-			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_3, CUS_BTC_ADDRESS_3, 0.05*1e9),
-		}, 30000000, 1000, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
-
 	// redeem match eth only
-	redeemReqKey3 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-2").String()
-	redeemRequest3 := statedb.NewRedeemRequestWithValue(
+	redeemReqKey2 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-2").String()
+	redeemRequest2 := statedb.NewRedeemRequestWithValue(
 		"redeem-bnb-2", common.PortalBNBIDStr,
 		USER_INC_ADDRESS_2, "userCUS_BNB_ADDRESS_2", 10*1e9,
 		[]*statedb.MatchingRedeemCustodianDetail{
 			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_2, CUS_BNB_ADDRESS_2, 10*1e9),
+		}, 30000000, 1000, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
+
+	// redeem match prv and eth
+	redeemReqKey3 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-btc-3").String()
+	redeemRequest3 := statedb.NewRedeemRequestWithValue(
+		"redeem-btc-3", common.PortalBTCIDStr,
+		USER_INC_ADDRESS_3, "userCUS_BTC_ADDRESS_3", 0.05*1e9,
+		[]*statedb.MatchingRedeemCustodianDetail{
+			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_3, CUS_BTC_ADDRESS_3, 0.05*1e9),
 		}, 30000000, 1000, common.Hash{}, 0, 1000, "f7E20F75782279547ad1eD99d37f020dF1028d07")
 
 	matchedRedeemRequest := map[string]*statedb.RedeemRequest{
@@ -3836,12 +3836,12 @@ func buildExpectedTestCaseForCusRunAway() *ExpectedResultUnlockOverRateCollatera
 	custodianKey3 := statedb.GenerateCustodianStateObjectKey(CUS_INC_ADDRESS_3).String()
 
 	custodian1 := statedb.NewCustodianStateWithValue(
-		CUS_INC_ADDRESS_1, 6840*1e9, 6680*1e9,
+		CUS_INC_ADDRESS_1, 6808000000000, 6808000000000,
 		map[string]uint64{
-			common.PortalBNBIDStr: 8 * 1e9,
+			common.PortalBNBIDStr: 0,
 		},
 		map[string]uint64{
-			common.PortalBNBIDStr: 160 * 1e9,
+			common.PortalBNBIDStr: 0,
 		},
 		map[string]string{
 			common.PortalBNBIDStr: CUS_BNB_ADDRESS_1,
@@ -3852,7 +3852,7 @@ func buildExpectedTestCaseForCusRunAway() *ExpectedResultUnlockOverRateCollatera
 	custodian2 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_2, 0, 0,
 		map[string]uint64{
-			common.PortalBNBIDStr: 20 * 1e9,
+			common.PortalBNBIDStr: 10 * 1e9,
 		},
 		map[string]uint64{
 			common.PortalBNBIDStr: 0,
@@ -3861,18 +3861,18 @@ func buildExpectedTestCaseForCusRunAway() *ExpectedResultUnlockOverRateCollatera
 			common.PortalBNBIDStr: CUS_BNB_ADDRESS_2,
 		},
 		map[string]uint64{}, map[string]uint64{
-			ETH_ID: 4666666667,
+			ETH_ID: 4500000000,
 		}, map[string]uint64{
 			ETH_ID: 4 * 1e9,
 		}, map[string]map[string]uint64{
 			common.PortalBNBIDStr: {
-				ETH_ID: 666666667,
+				ETH_ID: 500000000,
 			},
 		})
 	custodian3 := statedb.NewCustodianStateWithValue(
 		CUS_INC_ADDRESS_3, 0, 0,
 		map[string]uint64{
-			common.PortalBTCIDStr: 0.1 * 1e9,
+			common.PortalBTCIDStr: 0,
 		},
 		map[string]uint64{
 			common.PortalBTCIDStr: 0,
@@ -3881,12 +3881,12 @@ func buildExpectedTestCaseForCusRunAway() *ExpectedResultUnlockOverRateCollatera
 			common.PortalBTCIDStr: CUS_BTC_ADDRESS_3,
 		},
 		map[string]uint64{}, map[string]uint64{
-			ETH_ID: 4666666667,
+			ETH_ID: 4000000000,
 		}, map[string]uint64{
-			ETH_ID: 3 * 1e9,
+			ETH_ID: 4000000000,
 		}, map[string]map[string]uint64{
 			common.PortalBTCIDStr: {
-				ETH_ID: 1666666667,
+				ETH_ID: 0,
 			},
 		})
 
