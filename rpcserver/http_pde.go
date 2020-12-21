@@ -101,7 +101,7 @@ type ConvertedPrice struct {
 	Price          uint64
 }
 
-func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interface{}, closeChan <-chan struct{}, version int) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	// get meta data from params
@@ -125,6 +125,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interf
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
+
 	meta, _ := metadata.NewPDEContribution(
 		pdeContributionPairID,
 		contributorAddressStr,
@@ -132,6 +133,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interf
 		tokenIDStr,
 		metadata.PDEContributionMeta,
 	)
+
+	if version == 2 {
+		meta.Type = metadata.PDEPRVRequiredContributionRequestMeta
+	}
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -158,7 +163,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interf
 }
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithPRVContribution(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithPRVContribution(params, closeChan)
+	data, err := httpServer.handleCreateRawTxWithPRVContribution(params, closeChan, 1)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -175,10 +180,23 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPRVContribution(params in
 }
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithPRVContributionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	return httpServer.handleCreateAndSendTxWithPRVContribution(params, closeChan)
+	data, err := httpServer.handleCreateRawTxWithPRVContribution(params, closeChan, 2)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params interface{}, closeChan <-chan struct{}, version int) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	if len(arrayParams) >= 7 {
@@ -212,6 +230,9 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params int
 		tokenIDStr,
 		metadata.PDEContributionMeta,
 	)
+	if version == 2 {
+		meta.Type = metadata.PDEPRVRequiredContributionRequestMeta
+	}
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
@@ -232,7 +253,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params int
 }
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithPTokenContribution(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithPTokenContribution(params, closeChan)
+	data, err := httpServer.handleCreateRawTxWithPTokenContribution(params, closeChan, 1)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -251,7 +272,22 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPTokenContribution(params
 }
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithPTokenContributionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	return httpServer.handleCreateAndSendTxWithPTokenContribution(params, closeChan)
+	data, err := httpServer.handleCreateRawTxWithPTokenContribution(params, closeChan, 2)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	// sendResult, err1 := httpServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
 }
 
 func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -1169,6 +1205,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVCrossPoolTradeReq(params i
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+	traderSubOTAPublicKeyStr, traderSubOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
 
 	meta, _ := metadata.NewPDECrossPoolTradeRequest(
 		tokenIDToBuyStr,
@@ -1178,6 +1218,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVCrossPoolTradeReq(params i
 		tradingFee,
 		traderOTAPublicKeyStr,
 		traderOTAtxRandomStr,
+		traderSubOTAPublicKeyStr,
+		traderSubOTAtxRandomStr,
 		metadata.PDECrossPoolTradeRequestMeta,
 	)
 
@@ -1267,6 +1309,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenCrossPoolTradeReq(param
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+	traderSubOTAPublicKeyStr, traderSubOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
 
 	meta, _ := metadata.NewPDECrossPoolTradeRequest(
 		tokenIDToBuyStr,
@@ -1276,6 +1322,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenCrossPoolTradeReq(param
 		tradingFee,
 		traderOTAPublicKeyStr,
 		traderOTAtxRandomStr,
+		traderSubOTAPublicKeyStr,
+		traderSubOTAtxRandomStr,
 		metadata.PDECrossPoolTradeRequestMeta,
 	)
 
