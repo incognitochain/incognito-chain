@@ -179,6 +179,42 @@ func CommitteeKeyListToStringList(keyList []CommitteePublicKey) []CommitteeKeySt
 	}
 	return result
 }
+func ComitteeKeyStringToKey(keyString CommitteeKeyString) (*CommitteePublicKey, error) {
+	var keyMap *CommitteePublicKey
+	var err error
+	keyMap.IncPubKey, _, err = base58.Base58Check{}.Decode(keyString.IncPubKey)
+	if err != nil {
+		return nil, err
+	}
+	keyMap.MiningPubKey = make(map[string][]byte)
+	for keyType, keyVal := range keyString.MiningPubKey {
+		keyMap.MiningPubKey[keyType], _, err = base58.Base58Check{}.Decode(keyVal)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return keyMap, nil
+}
+func CommitteeStringListToKeyList(keyList []CommitteeKeyString) ([]CommitteePublicKey, error) {
+	result := []CommitteePublicKey{}
+	for _, key := range keyList {
+		var keyMap CommitteePublicKey
+		var err error
+		keyMap.IncPubKey, _, err = base58.Base58Check{}.Decode(key.IncPubKey)
+		if err != nil {
+			return nil, err
+		}
+		keyMap.MiningPubKey = make(map[string][]byte)
+		for keyType, keyVal := range key.MiningPubKey {
+			keyMap.MiningPubKey[keyType], _, err = base58.Base58Check{}.Decode(keyVal)
+			if err != nil {
+				return nil, err
+			}
+		}
+		result = append(result, keyMap)
+	}
+	return result, nil
+}
 
 func IndexOfCommitteeKey(item CommitteePublicKey, list []CommitteePublicKey) int {
 	for k, v := range list {

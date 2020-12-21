@@ -42,4 +42,6 @@ type BeaconState struct {
 	Round             int         `json:"Round"`
 	Size              uint64      `json:"Size"`
 	ShardState   		map[byte][]data.CrossShardState `json:"ShardState"`
+	RewardReceiver 				map[string]string  `json:"RewardReceiver"`
+	IsGetRandomNumber  bool  `json:"IsGetRandomNumber"`
 }

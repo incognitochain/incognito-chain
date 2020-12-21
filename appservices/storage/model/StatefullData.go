@@ -171,6 +171,23 @@ type TokenInformation struct {
 	Txs            []string
 }
 
+type BridgeTokenState struct {
+	BeaconBlockHash    		string					 	`json:"BeaconBlockHash"`
+	BeaconEpoch				uint64					 					`json:"BeaconEpoch"`
+	BeaconHeight			uint64					 					`json:"BeaconHeight"`
+	BeaconTime				int64 `json:"BeaconTime"`
+	BridgeTokenInfo []BridgeTokenInfo  `json:"BridgeTokenInfo"`
+}
+
+type BridgeTokenInfo struct {
+	TokenID         string `json:"tokenId"`
+	Amount          uint64       `json:"amount"`
+	ExternalTokenID []byte       `json:"externalTokenId"`
+	Network         string       `json:"network"`
+	IsCentralized   bool         `json:"isCentralized"`
+
+}
+
 type CommitteeRewardState struct {
 	ShardID		   byte         `json:"ShardID"`
 	ShardHash 			string `json:"ShardHash"`

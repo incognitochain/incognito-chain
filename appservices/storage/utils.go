@@ -83,7 +83,33 @@ func StoreLatestBeaconFinalState(ctx context.Context, beacon *data.Beacon) error
 		panic(err)
 		return err
 	}
+
+	bridgeTokenState := getBrideTokenFromBeaconState(beacon)
+	if err := GetDBDriver(MONGODB).GetBridgeTokenStateStorer().StoreBridgeTokenState(ctx, bridgeTokenState); err != nil {
+		panic(err)
+		return err
+	}
 	return nil
+}
+
+func getBrideTokenFromBeaconState(beacon *data.Beacon) model.BridgeTokenState {
+	brideTokenInfos := make([]model.BridgeTokenInfo, 0, len(beacon.BridgeToken))
+	for _, token := range beacon.BridgeToken {
+		brideTokenInfos = append(brideTokenInfos, model.BridgeTokenInfo{
+			TokenID:         token.TokenID.String(),
+			Amount:          token.Amount,
+			ExternalTokenID: token.ExternalTokenID,
+			Network:         token.Network,
+			IsCentralized:   token.IsCentralized,
+		})
+	}
+	return model.BridgeTokenState{
+		BeaconBlockHash:    beacon.BlockHash,
+		BeaconEpoch:        beacon.Epoch,
+		BeaconHeight:       beacon.Height,
+		BeaconTime:         beacon.Time,
+		BridgeTokenInfo: brideTokenInfos,
+	}
 }
 
 func getBeaconFromBeaconState(beacon *data.Beacon) model.BeaconState {
@@ -119,13 +145,15 @@ func getBeaconFromBeaconState(beacon *data.Beacon) model.BeaconState {
 		ShardConsensusAlgorithm:                beacon.ShardConsensusAlgorithm,
 		Instruction:                            beacon.Instruction,
 		BlockProducer:                          beacon.BlockProducer,
+		BlockProducerPublicKey:                 beacon.BlockProducerPublicKey,
 		BlockProposer:                          beacon.BlockProposer,
-		BlockProducerPublicKey: beacon.BlockProducerPublicKey,
 		ValidationData:                         beacon.ValidationData,
 		Version:                                beacon.Version,
 		Round:                                  beacon.Round,
 		Size:                                   beacon.Size,
-		ShardState: beacon.ShardState,
+		ShardState:                             beacon.ShardState,
+		RewardReceiver:                         beacon.RewardReceiver,
+		IsGetRandomNumber:                      beacon.IsGetRandomNumber,
 	}
 }
 
@@ -201,7 +229,7 @@ func getPDEPoolForPairStateFromBeaconState(beacon *data.Beacon) model.PDEPoolFor
 		BeaconEpoch:     beacon.Epoch,
 		BeaconHeight:    beacon.Height,
 		BeaconTime:      beacon.Time,
-		PDEPoolForPairInfo: nil,
+		PDEPoolForPairInfo: pdeFoolForPairInfos,
 	}
 }
 
@@ -406,10 +434,11 @@ func getShardFromShardState(shard *data.Shard) model.ShardState {
 		ShardID:                shard.ShardID,
 		BlockHash:              shard.BlockHash,
 		PreviousBlockHash:      shard.PreviousBlockHash,
+		NextBlockHash:          "",
 		Height:                 shard.Height,
 		Version:                shard.Version,
 		TxRoot:                 shard.TxRoot,
-		ShardTxRoot:	        shard.ShardTxRoot,
+		ShardTxRoot:            shard.ShardTxRoot,
 		CrossTransactionRoot:   shard.CrossTransactionRoot,
 		InstructionsRoot:       shard.InstructionsRoot,
 		CommitteeRoot:          shard.CommitteeRoot,
@@ -422,8 +451,8 @@ func getShardFromShardState(shard *data.Shard) model.ShardState {
 		Txs:                    shard.Txs,
 		BlockProducer:          shard.BlockProducer,
 		BlockProducerPubKeyStr: shard.BlockProducerPubKeyStr,
-		Proposer: 				shard.Proposer,
-		ProposeTime: 			shard.ProposeTime,
+		Proposer:               shard.Proposer,
+		ProposeTime:            shard.ProposeTime,
 		ValidationData:         shard.ValidationData,
 		ConsensusType:          shard.ConsensusType,
 		Data:                   shard.Data,
@@ -444,6 +473,14 @@ func getShardFromShardState(shard *data.Shard) model.ShardState {
 		ActiveShards:           shard.ActiveShards,
 		ConsensusAlgorithm:     shard.ConsensusType,
 		NumOfBlocksByProducers: shard.NumOfBlocksByProducers,
+		MaxShardCommitteeSize:  shard.MaxShardCommitteeSize,
+		MinShardCommitteeSize:  shard.MinShardCommitteeSize,
+		ShardProposerIdx:       shard.ShardProposerIdx,
+		MetricBlockHeight:      shard.MetricBlockHeight,
+		BestCrossShard:         shard.BestCrossShard,
+		ShardCommittee:         shard.ShardCommittee,
+		ShardPendingValidator:  shard.ShardPendingValidator,
+		StakingTx: shard.StakingTx,
 	}
 }
 
@@ -768,7 +805,7 @@ func GetRewardStateFromShardState(shard *data.Shard) model.CommitteeRewardState 
 }
 
 func getPublicKeyToTransactionHash(shard *data.Shard) []model.PublicKeyToTransactionHash {
-	data := make([]model.PublicKeyToTransactionHash, 0, len(shard.OutputCoins))
+	result := make([]model.PublicKeyToTransactionHash, 0, len(shard.OutputCoins))
 	for _, output := range shard.OutputCoins {
 		if len(output.TransactionHash) == 0 {
 			continue
@@ -782,7 +819,7 @@ func getPublicKeyToTransactionHash(shard *data.Shard) []model.PublicKeyToTransac
 		if output.PublicKey != nil {
 			public.PublicKey = base58.Base58Check{}.Encode(output.PublicKey.ToBytesS(), common.ZeroByte)
 		}
-		data = append(data, public)
+		result = append(result, public)
 	}
-	return data
+	return result
 }

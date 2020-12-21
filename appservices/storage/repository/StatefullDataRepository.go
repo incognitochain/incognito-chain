@@ -175,6 +175,11 @@ type TokenStateStorer interface {
 }
 
 
+type BridgeTokenStateStorer interface {
+	StoreBridgeTokenState (ctx context.Context, bridgeToken model.BridgeTokenState) error
+}
+
+
 type CommitteeRewardStateStorer interface {
 	StoreCommitteeRewardState (ctx context.Context, tokenState model.CommitteeRewardState) error
 }

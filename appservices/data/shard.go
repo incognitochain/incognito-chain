@@ -167,6 +167,13 @@ type Shard struct {
 	Commitments          []*CommitmentState           `json:"Commitments"`
 	OutputCoins          []*OutputCoin                 `json:"OutputCoins"`
 
+	MaxShardCommitteeSize  int                               `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize  int                               `json:"MinShardCommitteeSize"`
+	ShardProposerIdx       int                               `json:"ShardProposerIdx"`
+	MetricBlockHeight      uint64   `json:"MetricBlockHeight"`
+	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
+
+	StakingTx              map[string]string                  `json:"StakingTx"`
 
 }
 
@@ -178,7 +185,7 @@ func NewShardFromShardState(shardState *blockchain.ShardBestState) *Shard {
 		Height:                 shardState.GetHeight(),
 		Version:                shardState.BestBlock.GetVersion(),
 		TxRoot:                 shardState.BestBlock.Header.TxRoot.String(),
-		ShardTxRoot:			shardState.BestBlock.Header.ShardTxRoot.String(),
+		ShardTxRoot:            shardState.BestBlock.Header.ShardTxRoot.String(),
 		CrossTransactionRoot:   shardState.BestBlock.Header.CrossTransactionRoot.String(),
 		InstructionsRoot:       shardState.BestBlock.Header.InstructionsRoot.String(),
 		CommitteeRoot:          shardState.BestBlock.Header.CommitteeRoot.String(),
@@ -189,7 +196,7 @@ func NewShardFromShardState(shardState *blockchain.ShardBestState) *Shard {
 		TxHashes:               []string{},
 		Txs:                    getBlockTx(shardState.BestBlock.Body.Transactions),
 		BlockProducer:          shardState.BestBlock.GetProducer(),
-		BlockProducerPubKeyStr:  shardState.BestBlock.GetProducerPubKeyStr(),
+		BlockProducerPubKeyStr: shardState.BestBlock.GetProducerPubKeyStr(),
 		ValidationData:         shardState.BestBlock.GetValidationField(),
 		ConsensusType:          shardState.BestBlock.GetConsensusType(),
 		Data:                   "",
@@ -204,19 +211,25 @@ func NewShardFromShardState(shardState *blockchain.ShardBestState) *Shard {
 		Instruction:            getInstruction(shardState.BestBlock.GetInstructions()),
 		CrossShardBitMap:       getCrossShardBitMap(shardState.BestBlock.Header.CrossShardBitMap),
 		NumTxns:                shardState.NumTxns,
-		Proposer:               shardState.BestBlock.GetProposer(),
-		ProposeTime:            shardState.BestBlock.GetProposeTime(),
-		TotalTxsFee:            getTotalTransactionFee(shardState.BestBlock.Header.TotalTxsFee),
 		TotalTxns:              shardState.TotalTxns,
 		NumTxnsExcludeSalary:   shardState.NumTxnsExcludeSalary,
 		TotalTxnsExcludeSalary: shardState.TotalTxnsExcludeSalary,
 		ActiveShards:           shardState.ActiveShards,
 		ConsensusAlgorithm:     shardState.ConsensusAlgorithm,
 		NumOfBlocksByProducers: getNumOfBlocksByProducers(shardState.NumOfBlocksByProducers),
+		TotalTxsFee:            getTotalTransactionFee(shardState.BestBlock.Header.TotalTxsFee),
+		Proposer:               shardState.BestBlock.GetProposer(),
+		ProposeTime:            shardState.BestBlock.GetProposeTime(),
 		ShardCommittee:         incognitokey.CommitteeKeyListToStringList(shardState.ShardCommittee),
 		ShardPendingValidator:  incognitokey.CommitteeKeyListToStringList(shardState.ShardPendingValidator),
 		CommitteeRewardState:   getRewardCommittee(shardState.GetShardRewardStateDB()),
 		TokenState:             getPrivacyToken(shardState.GetCopiedTransactionStateDB()),
+		MaxShardCommitteeSize:  shardState.MaxShardCommitteeSize,
+		MinShardCommitteeSize:  shardState.MinShardCommitteeSize,
+		ShardProposerIdx:       shardState.ShardProposerIdx,
+		MetricBlockHeight:      shardState.MetricBlockHeight,
+		BestCrossShard:         getBestCrossShard(shardState.BestCrossShard),
+		StakingTx:              getStackingTx(shardState),
 	}
 	if len(shardState.BestBlock.Body.Transactions) > 0 {
 		for _, tx := range shardState.BestBlock.Body.Transactions {
@@ -233,6 +246,22 @@ func NewShardFromShardState(shardState *blockchain.ShardBestState) *Shard {
 	}
 	shard.Transactions, shard.OutputCoins, shard.Commitments = getTransactionsAndOutputCoinAndCommitmentBestShardState(shardState)
 	return shard
+}
+
+func getStackingTx(shardState *blockchain.ShardBestState) map[string]string {
+	result := make(map[string]string)
+	for k, v := range shardState.StakingTx.GetMap() {
+		result[k] = v
+	}
+	return result
+}
+
+func getBestCrossShard(bestCrossShard  map[byte]uint64)  map[byte]uint64 {
+	result := make (map[byte]uint64)
+	for key, val := range bestCrossShard {
+		result[key] = val
+	}
+	return result
 }
 
 func getTotalTransactionFee (TotalTxsFee   map[common.Hash]uint64) map[string]uint64{

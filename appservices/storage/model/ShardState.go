@@ -1,6 +1,9 @@
 package model
 
-import "github.com/incognitochain/incognito-chain/appservices/data"
+import (
+	"github.com/incognitochain/incognito-chain/appservices/data"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+)
 
 type ShardState struct {
 	ShardID           byte               `json:"ShardID"`
@@ -45,4 +48,16 @@ type ShardState struct {
 	ActiveShards           int                               `json:"ActiveShards"`
 	ConsensusAlgorithm     string                            `json:"ConsensusAlgorithm"`
 	NumOfBlocksByProducers map[string]uint64 			`json:"NumOfBlocksByProducers"`
+
+	MaxShardCommitteeSize  int                               `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize  int                               `json:"MinShardCommitteeSize"`
+	ShardProposerIdx       int                               `json:"ShardProposerIdx"`
+	MetricBlockHeight      uint64   `json:"MetricBlockHeight"`
+	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
+
+	ShardCommittee         []incognitokey.CommitteeKeyString `json:"ShardCommittee"`
+	ShardPendingValidator  []incognitokey.CommitteeKeyString `json:"ShardPendingValidator"`
+	StakingTx              map[string]string                  `json:"StakingTx"`
+
+
 }

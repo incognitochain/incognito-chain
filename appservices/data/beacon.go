@@ -146,7 +146,9 @@ type Beacon struct {
 	Version           int         `json:"Version"`
 	Round             int         `json:"Round"`
 	Size              uint64      `json:"Size"`
-	ShardState   map[byte][]CrossShardState
+	ShardState   			map[byte][]CrossShardState
+	RewardReceiver 				map[string]string  `json:"RewardReceiver"`
+	IsGetRandomNumber  bool  `json:"IsGetRandomNumber"`
 
 }
 
@@ -200,10 +202,20 @@ func NewBeaconFromBeaconState(data *blockchain.BeaconBestState) *Beacon {
 		Round:                                  data.BestBlock.GetRound(),
 		Size:                                   0,
 		ShardState:                             getCrossShardState(data.BestBlock.Body),
+		RewardReceiver: getRewardReceiver(data),
+		IsGetRandomNumber: data.IsGetRandomNumber,
 	}
 	blockBytes, errS := json.Marshal(data.BestBlock)
 	if errS == nil {
 		result.Size = uint64(len(blockBytes))
+	}
+	return result
+}
+
+func getRewardReceiver(state *blockchain.BeaconBestState) map[string]string{
+	result := make(map[string]string)
+	for k, v := range state.RewardReceiver {
+		result[k] = v.String()
 	}
 	return result
 }

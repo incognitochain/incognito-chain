@@ -40,6 +40,9 @@ const (
 	//TokenState
 	TokenState = "TokenState"
 
+	//BridgeTokenState
+	BridgeTokenState = "BridgeTokenState"
+
 	//RewardState
 	RewardState = "RewardState"
 
@@ -105,6 +108,9 @@ type mongoDBDriver struct {
 
 	//TokenState
 	tokenStateStorer *mongoTokenStateStorer
+
+	//BridgeTokenState
+	bridgeTokenStateStorer *mongoBridgeTokenStateStorer
 
 	//RewardState
 	rewardStateStorer *mongoRewardStateStorer
@@ -182,6 +188,11 @@ type mongoTokenStateStorer struct {
 	mongo 		*mongoDBDriver
 	prefix     string
 	collection [256]*mongo.Collection
+}
+
+//Bridge Token State
+type mongoBridgeTokenStateStorer struct {
+	collection *mongo.Collection
 }
 
 //Reward State
@@ -315,6 +326,15 @@ func (mongo *mongoDBDriver) GetCommitteeRewardStateStorer() repository.Committee
 		mongo.rewardStateStorer = &mongoRewardStateStorer{prefix: RewardState, mongo: mongo}
 	}
 	return mongo.rewardStateStorer
+}
+
+//Get Bridge Token State Storer
+func (mongo *mongoDBDriver) GetBridgeTokenStateStorer() repository.BridgeTokenStateStorer {
+	if mongo.bridgeTokenStateStorer == nil {
+		collection := mongo.client.Database(DataBaseName).Collection(BridgeTokenState)
+		mongo.bridgeTokenStateStorer = &mongoBridgeTokenStateStorer{collection: collection}
+	}
+	return mongo.bridgeTokenStateStorer
 }
 
 //PDE Get Storer
@@ -549,5 +569,12 @@ func (rewardStateStorer *mongoRewardStateStorer) StoreCommitteeRewardState (ctx 
 			rewardStateStorer.mongo.client.Database(DataBaseName).Collection(collectionName)
 	}
 	_, err := rewardStateStorer.collection[tokenState.ShardID].InsertOne(ctx, tokenState)
+	return err
+}
+
+//Store BridgeTokenState data
+
+func (bridgeTokenStateStorer *mongoBridgeTokenStateStorer) StoreBridgeTokenState (ctx context.Context, bridgeToken model.BridgeTokenState) error {
+	_, err := bridgeTokenStateStorer.collection.InsertOne(ctx, bridgeToken)
 	return err
 }
