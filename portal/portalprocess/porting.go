@@ -527,6 +527,12 @@ func (p *portalRequestPTokenProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
+	// check requester address
+	if meta.IncogAddressStr != waitingPortingRequest.PorterAddress() {
+		Logger.log.Errorf("IncogAddressStr is not correct in waiting portingID req")
+		return [][]string{rejectInst}, nil
+	}
+
 	portalTokenProcessor := portalParams.PortalTokens[meta.TokenID]
 	if portalTokenProcessor == nil {
 		Logger.log.Errorf("TokenID is not supported currently on Portal")

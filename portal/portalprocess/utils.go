@@ -952,7 +952,7 @@ func updateCustodianStateAfterLiquidateCustodianV3(custodianState *statedb.Custo
 
 	custodianState.SetFreeCollateral(custodianState.GetFreeCollateral() + remainUnlockAmountForCustodian)
 
-	if len(liquidatedAmounts) > 0 {
+	if len(liquidatedAmounts) > 0 || len(remainUnlockAmounts) > 0 {
 		lockedCollaterals := custodianState.GetLockedTokenCollaterals()
 		freeCollaterals := custodianState.GetFreeTokenCollaterals()
 		totalTokenCollaterals := custodianState.GetTotalTokenCollaterals()
@@ -1124,7 +1124,7 @@ func updateCurrentPortalStateAfterLiquidationByRatesV3(
 
 		remainUnlockByPortalTokenID := remainUnlockAmounts[portalTokenID]
 		// update locked prv collateral and total prv collateral
-		if lInfo.LiquidatedCollateralAmount > 0 {
+		if lInfo.LiquidatedCollateralAmount > 0 || remainUnlockByPortalTokenID.PrvAmount > 0 {
 			lockedAmountTmp := custodianState.GetLockedAmountCollateral()
 			lockedAmountTmp[portalTokenID] = lockedAmountTmp[portalTokenID] - lInfo.LiquidatedCollateralAmount - remainUnlockByPortalTokenID.PrvAmount
 			custodianState.SetLockedAmountCollateral(lockedAmountTmp)
@@ -1132,7 +1132,7 @@ func updateCurrentPortalStateAfterLiquidationByRatesV3(
 		}
 
 		// update locked token collaterals and total token collaterals
-		if len(lInfo.LiquidatedTokenCollateralsAmount) > 0 {
+		if len(lInfo.LiquidatedTokenCollateralsAmount) > 0 || len(remainUnlockByPortalTokenID.TokenAmounts) > 0 {
 			lockedTokenAmountTmp := custodianState.GetLockedTokenCollaterals()
 			lockedTokenByPortalTokenID := lockedTokenAmountTmp[portalTokenID]
 			totalTokenCollaterals := custodianState.GetTotalTokenCollaterals()
@@ -1890,8 +1890,6 @@ func convertAllLockCollateralsToUSDT(convertRateTool *PortalExchangeRateTool, cu
 			return nil, err
 		}
 		res[portalTokenID] += tokenCollateralsInUSDT
-		break
-
 	}
 	return res, nil
 }
