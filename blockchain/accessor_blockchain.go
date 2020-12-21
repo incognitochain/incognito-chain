@@ -353,3 +353,21 @@ func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
 func (blockchain *BlockChain) GetPortalFeederAddress() string {
 	return blockchain.GetConfig().ChainParams.PortalFeederAddress
 }
+
+func (blockchain *BlockChain) GetBeaconRootsHashFromBlockHeight(height uint64) (*BeaconRootHash, error) {
+	h, e := blockchain.GetBeaconBlockHashByHeight(blockchain.BeaconChain.GetFinalView(), blockchain.BeaconChain.GetBestView(), height)
+	if e != nil {
+		return nil, e
+	}
+	return GetBeaconRootsHashByBlockHash(blockchain.GetBeaconChainDatabase(), *h)
+}
+
+func GetBeaconRootsHashByBlockHash(db incdb.Database, hash common.Hash) (*BeaconRootHash, error) {
+	data, e := rawdbv2.GetBeaconRootsHash(db, hash)
+	if e != nil {
+		return nil, e
+	}
+	bRH := &BeaconRootHash{}
+	err := json.Unmarshal(data, bRH)
+	return bRH, err
+}

@@ -517,11 +517,6 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(chainRetriev
 
 // ValidateTxByItself - validate tx by itself, check signature, proof,... and metadata
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
-	// no need to check for tx init token
-
-	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
-		return txCustomTokenPrivacy.Tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, nil)
-	}
 	// check for proof, signature ...
 	if ok, err := txCustomTokenPrivacy.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, nil); !ok {
 		return false, err
@@ -544,14 +539,9 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(boolParams
 	if ok {
 		// validate for pToken
 		tokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
-		if txCustomTokenPrivacy.Type == common.TxRewardType && txCustomTokenPrivacy.TxPrivacyTokenData.Mintable {
+		if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
 			if txCustomTokenPrivacy.TxPrivacyTokenData.Mintable {
-				isBridgeCentralizedToken, _ := statedb.IsBridgeTokenExistedByType(bridgeStateDB, tokenID, true)
-				isBridgeDecentralizedToken, _ := statedb.IsBridgeTokenExistedByType(bridgeStateDB, tokenID, false)
-				if isBridgeCentralizedToken || isBridgeDecentralizedToken {
-					return true, nil
-				}
-				return false, nil
+				return true, nil
 			} else {
 				// check exist token
 				if statedb.PrivacyTokenIDExisted(transactionStateDB, tokenID) {

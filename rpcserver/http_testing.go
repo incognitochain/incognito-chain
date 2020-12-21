@@ -3,6 +3,8 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"io/ioutil"
 	"time"
 
@@ -50,6 +52,64 @@ func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, c
 	// _, newAutoStaking := statedb.GetRewardReceiverAndAutoStaking(beaconConsensusStateDB, httpServer.blockService.BlockChain.GetShardIDs())
 	newAutoStaking := map[string]bool{}
 	return []interface{}{beaconConsensusStateRootHash, newAutoStaking}, nil
+}
+
+func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	height := uint64(arrayParams[0].(float64))
+	tempHash := arrayParams[1].(string)
+
+	var beaconConsensusStateRootHash = &blockchain.BeaconRootHash{}
+	var err1 error = nil
+
+	if height == 0 || tempHash != "" {
+		hash, err := common.Hash{}.NewHashFromStr(tempHash)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		beaconConsensusStateRootHash, err1 = blockchain.GetBeaconRootsHashByBlockHash(
+			httpServer.config.BlockChain.GetBeaconChainDatabase(),
+			*hash,
+		)
+		if err1 != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+		}
+	} else {
+		beaconConsensusStateRootHash, err1 = httpServer.config.BlockChain.GetBeaconRootsHashFromBlockHeight(
+			height,
+		)
+		if err1 != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+		}
+	}
+	shardIDs := []int{-1}
+	shardIDs = append(shardIDs, httpServer.config.BlockChain.GetShardIDs()...)
+	stateDB, err2 := statedb.NewWithPrefixTrie(beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+	if err2 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+
+	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _ := statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
+	currentValidatorStr := make(map[int][]string)
+	for shardID, v := range currentValidator {
+		tempV, _ := incognitokey.CommitteeKeyListToString(v)
+		currentValidatorStr[shardID] = tempV
+	}
+	substituteValidatorStr := make(map[int][]string)
+	for shardID, v := range substituteValidator {
+		tempV, _ := incognitokey.CommitteeKeyListToString(v)
+		substituteValidatorStr[shardID] = tempV
+	}
+	nextEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
+	currentEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
+	return map[string]interface{}{
+		"root":             beaconConsensusStateRootHash.ConsensusStateDBRootHash,
+		"committee":        currentValidatorStr,
+		"substitute":       substituteValidatorStr,
+		"nextCandidate":    nextEpochShardCandidateStr,
+		"currentCandidate": currentEpochShardCandidateStr,
+	}, nil
 }
 
 func (httpServer *HttpServer) handleGetRewardAmountByEpoch(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
