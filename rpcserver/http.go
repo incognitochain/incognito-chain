@@ -1,7 +1,6 @@
 package rpcserver
 
 import (
-	"bufio"
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
@@ -196,8 +195,6 @@ handles reading and responding to RPC messages.
 */
 
 func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isLimitedUser bool) {
-	var buf *bufio.ReadWriter
-	var _conn net.Conn
 	defer func() {
 		if r.Method != getShardBestState {
 			return
@@ -205,26 +202,7 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		err := recover()
 		if err != nil {
 			errMsg := fmt.Sprintf("%v", err)
-			if buf != nil {
-				err = httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusInternalServerError, buf)
-				if err != nil {
-					Logger.log.Error(err)
-					return
-				}
-
-				if _, err := buf.Write([]byte(errMsg)); err != nil {
-					Logger.log.Errorf("Failed to write error message: %s", err.Error())
-					Logger.log.Error(err)
-				}
-
-				// Terminate with newline to maintain compatibility with coin Core.
-				if err := buf.WriteByte('\n'); err != nil {
-					Logger.log.Errorf("Failed to append terminating newline to reply: %s", err.Error())
-					Logger.log.Error(err)
-				}
-				buf.Flush()
-				_conn.Close()
-			}
+			Logger.log.Error(errMsg)
 		}
 	}()
 
@@ -266,7 +244,6 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		return
 	}
 	conn, buf, err := hj.Hijack()
-	_conn = conn
 	if err != nil {
 		Logger.log.Errorf("Failed to hijack HTTP connection: %s", err.Error())
 		Logger.log.Error(err)
@@ -274,7 +251,8 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 		http.Error(w, strconv.Itoa(errCode)+" "+err.Error(), errCode)
 		return
 	}
-
+	defer conn.Close()
+	defer buf.Flush()
 	conn.SetReadDeadline(timeZeroVal)
 
 	var jsonErr error
