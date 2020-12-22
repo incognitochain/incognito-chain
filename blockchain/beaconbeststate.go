@@ -141,6 +141,14 @@ func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
 	return bc.BeaconChain.multiView.GetBestView().(*BeaconBestState)
 }
 
+func (bc *BlockChain) GetChain(cid int) ChainInterface {
+	if cid == -1 {
+		return bc.BeaconChain
+	} else {
+		return bc.ShardChain[cid]
+	}
+}
+
 func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error {
 	db := bc.GetBeaconChainDatabase()
 	var err error
