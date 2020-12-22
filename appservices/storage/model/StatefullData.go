@@ -165,7 +165,7 @@ type TokenInformation struct {
 	PropertySymbol string
 	TokenType      int    // action type
 	Mintable       bool   // default false
-	Amount         uint64 // init amount
+	Amount         string // init amount store as string because mongodb don't support uint64
 	Info           []byte
 	InitTx         string
 	Txs            []string
@@ -181,7 +181,7 @@ type BridgeTokenState struct {
 
 type BridgeTokenInfo struct {
 	TokenID         string `json:"tokenId"`
-	Amount          uint64       `json:"amount"`
+	Amount          string // init amount store as string because mongodb don't support uint64
 	ExternalTokenID []byte       `json:"externalTokenId"`
 	Network         string       `json:"network"`
 	IsCentralized   bool         `json:"isCentralized"`

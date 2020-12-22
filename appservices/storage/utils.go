@@ -9,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"strconv"
 	"time"
 )
 
@@ -97,7 +98,7 @@ func getBrideTokenFromBeaconState(beacon *data.Beacon) model.BridgeTokenState {
 	for _, token := range beacon.BridgeToken {
 		brideTokenInfos = append(brideTokenInfos, model.BridgeTokenInfo{
 			TokenID:         token.TokenID.String(),
-			Amount:          token.Amount,
+			Amount:          strconv.FormatUint(token.Amount, 10) ,
 			ExternalTokenID: token.ExternalTokenID,
 			Network:         token.Network,
 			IsCentralized:   token.IsCentralized,
@@ -772,7 +773,7 @@ func GetTokenStateFromShardState(shard *data.Shard) model.TokenState {
 			PropertySymbol: token.PropertySymbol,
 			TokenType:      token.TokenType,
 			Mintable:       token.Mintable,
-			Amount:         token.Amount,
+			Amount:         strconv.FormatUint(token.Amount, 10),
 			Info:           token.Info,
 			InitTx:         token.InitTx,
 			Txs:            token.Txs,
