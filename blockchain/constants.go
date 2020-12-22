@@ -114,7 +114,7 @@ const (
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 1
+	TestNetActiveShards           = 8
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
@@ -156,7 +156,7 @@ const (
 	TestNet2MinShardCommitteeSize  = 4
 	TestNet2BeaconCommitteeSize    = 4
 	TestNet2MinBeaconCommitteeSize = 4
-	TestNet2ActiveShards           = 1
+	TestNet2ActiveShards           = 8
 	TestNet2StakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNet2MinBeaconBlkInterval = 10 * time.Second //second
