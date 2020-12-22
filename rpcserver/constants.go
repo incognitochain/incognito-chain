@@ -279,7 +279,8 @@ const (
 	getValKeyState = "getvalkeystate"
 
 	// init privacy custom token
-	createAndSendPTokenInitRequest = "createandsendPTokenInitrequest"
+	createAndSendPTokenInitRequest = "createandsendptokeninitrequest"
+	getPTokenInitByTokenID         = "getptokeninitbytokenid"
 )
 
 const (
