@@ -165,7 +165,7 @@ func getPDEShareFromBeaconState(beacon *data.Beacon) model.PDEShare {
 			Token1ID:           share.Token1ID,
 			Token2ID:           share.Token2ID,
 			ContributorAddress: share.ContributorAddress,
-			Amount:             share.Amount,
+			Amount:             strconv.FormatUint(share.Amount, 10),
 		})
 	}
 	return model.PDEShare{
@@ -183,7 +183,7 @@ func getWaitingPDEContributionStateFromBeaconState(beacon *data.Beacon) model.Wa
 			PairID:             waiting.PairID,
 			ContributorAddress: waiting.ContributorAddress,
 			TokenID:            waiting.TokenID,
-			Amount:             waiting.Amount,
+			Amount:             strconv.FormatUint(waiting.Amount, 10),
 			TXReqID:            waiting.TXReqID,
 		})
 	}
@@ -203,7 +203,7 @@ func getPDETradingFeeFromBeaconState(beacon *data.Beacon) model.PDETradingFee {
 			Token1ID:           pdeTradingFee.Token1ID,
 			Token2ID:           pdeTradingFee.Token2ID,
 			ContributorAddress: pdeTradingFee.ContributorAddress,
-			Amount:             pdeTradingFee.Amount,
+			Amount:             strconv.FormatUint(pdeTradingFee.Amount, 10),
 		})
 	}
 	return model.PDETradingFee{
@@ -220,9 +220,9 @@ func getPDEPoolForPairStateFromBeaconState(beacon *data.Beacon) model.PDEPoolFor
 	for _, pdeFoolForPair := range beacon.PDEPoolPair {
 		pdeFoolForPairInfos = append(pdeFoolForPairInfos, model.PDEPoolForPairInfo{
 			Token1ID:        pdeFoolForPair.Token1ID,
-			Token1PoolValue: pdeFoolForPair.Token1PoolValue,
+			Token1PoolValue: strconv.FormatUint(pdeFoolForPair.Token1PoolValue, 10),
 			Token2ID:        pdeFoolForPair.Token2ID,
-			Token2PoolValue: pdeFoolForPair.Token2PoolValue,
+			Token2PoolValue: strconv.FormatUint(pdeFoolForPair.Token2PoolValue, 10),
 		})
 	}
 	return model.PDEPoolForPair{
@@ -237,15 +237,28 @@ func getPDEPoolForPairStateFromBeaconState(beacon *data.Beacon) model.PDEPoolFor
 func getCustodianFromBeaconState(beacon *data.Beacon) model.Custodian {
 	custodianInfos := make([]model.CustodianInfo, 0, len(beacon.Custodian))
 	for _, custodian := range beacon.Custodian {
-		custodianInfos = append(custodianInfos, model.CustodianInfo{
+		 info := model.CustodianInfo{
 			IncognitoAddress:       custodian.IncognitoAddress,
 			TotalCollateral:        custodian.TotalCollateral,
 			FreeCollateral:         custodian.FreeCollateral,
-			HoldingPubTokens:       custodian.HoldingPubTokens,
-			LockedAmountCollateral: custodian.LockedAmountCollateral,
+			HoldingPubTokens:       make(map[string]string),
+			LockedAmountCollateral: make(map[string]string),
 			RemoteAddresses:        custodian.RemoteAddresses,
-			RewardAmount:           custodian.RewardAmount,
-		})
+			RewardAmount:           make(map[string]string),
+		}
+		for key, val := range custodian.HoldingPubTokens {
+			info.HoldingPubTokens[key] = strconv.FormatUint(val, 10)
+		}
+
+		for key, val := range custodian.LockedAmountCollateral {
+			info.LockedAmountCollateral[key] = strconv.FormatUint(val, 10)
+		}
+
+		for key, val := range custodian.RewardAmount {
+			info.RewardAmount[key] = strconv.FormatUint(val, 10)
+		}
+
+		custodianInfos = append(custodianInfos,info)
 	}
 	return model.Custodian{
 		BeaconBlockHash:        beacon.BlockHash,
@@ -263,8 +276,8 @@ func getWaitingPortingRequestFromBeaconState(beacon *data.Beacon) model.WaitingP
 			UniquePortingID:     w.UniquePortingID,
 			TokenID:             w.TokenID,
 			PorterAddress:       w.PorterAddress,
-			Amount:              w.Amount,
-			Custodians:          w.Custodians,
+			Amount:              strconv.FormatUint(w.Amount, 10),
+			Custodians:          getMatchingPortingCustodianDetailFromWaitingPortingRequest(w),
 			PortingFee:          w.PortingFee,
 			WaitingBeaconHeight: w.BeaconHeight,
 			TXReqID:             w.TXReqID,
@@ -278,12 +291,25 @@ func getWaitingPortingRequestFromBeaconState(beacon *data.Beacon) model.WaitingP
 		WaitingPortingRequestInfo: waitingPortingRequestInfos,
 	}
 }
+func getMatchingPortingCustodianDetailFromWaitingPortingRequest(request data.WaitingPortingRequest) []model.MatchingPortingCustodianDetail{
+	result := make([]model.MatchingPortingCustodianDetail, 0)
+	for _, custodian := range request.Custodians {
+		result = append(result, model.MatchingPortingCustodianDetail{
+			IncAddress:             custodian.IncAddress,
+			RemoteAddress:          custodian.RemoteAddress,
+			Amount:                 strconv.FormatUint(custodian.Amount, 10),
+			LockedAmountCollateral: strconv.FormatUint(custodian.LockedAmountCollateral, 10),
+		})
+	}
+	return result
+
+}
 
 func getFinalExchangeRatesFromBeaconState(beacon *data.Beacon) model.FinalExchangeRate {
 	finalExchangeRateInfos := make([]model.FinalExchangeRateInfo, 0, len(beacon.FinalExchangeRates.Rates))
 	for key, amount := range beacon.FinalExchangeRates.Rates {
 		finalExchangeRateInfos = append(finalExchangeRateInfos, model.FinalExchangeRateInfo{
-			Amount:          amount.Amount,
+			Amount:          strconv.FormatUint(amount.Amount, 10),
 			TokenID:         key,
 		})
 	}
@@ -304,8 +330,8 @@ func getMatchedRedeemRequestFromBeaconState(beacon *data.Beacon) model.RedeemReq
 			TokenID:               matchedRedeem.TokenID,
 			RedeemerAddress:       matchedRedeem.RedeemerAddress,
 			RedeemerRemoteAddress: matchedRedeem.RedeemerRemoteAddress,
-			RedeemAmount:          matchedRedeem.RedeemAmount,
-			Custodians:            matchedRedeem.Custodians,
+			RedeemAmount:          strconv.FormatUint(matchedRedeem.RedeemAmount, 10),
+			Custodians:            getMatchingRedeemCustodianDetail(matchedRedeem),
 			RedeemFee:             matchedRedeem.RedeemFee,
 			RedeemBeaconHeight:    matchedRedeem.BeaconHeight,
 			TXReqID:               matchedRedeem.TXReqID,
@@ -320,6 +346,19 @@ func getMatchedRedeemRequestFromBeaconState(beacon *data.Beacon) model.RedeemReq
 	}
 }
 
+func getMatchingRedeemCustodianDetail(request data.RedeemRequest) []model.MatchingRedeemCustodianDetail {
+	result:=make( []model.MatchingRedeemCustodianDetail, 0)
+	for _, custodian := range request.Custodians {
+		result = append(result, model.MatchingRedeemCustodianDetail{
+			IncAddress:    custodian.IncAddress,
+			RemoteAddress: custodian.RemoteAddress,
+			Amount:        strconv.FormatUint(custodian.Amount, 10),
+		})
+	}
+
+	return result
+}
+
 func getWaitingRedeemRequestFromBeaconState(beacon *data.Beacon) model.RedeemRequest {
 	redeemRequestInfos := make([]model.RedeemRequestInfo, 0, len(beacon.WaitingRedeemRequest))
 	for _, waitingRedeem := range beacon.WaitingRedeemRequest {
@@ -328,8 +367,8 @@ func getWaitingRedeemRequestFromBeaconState(beacon *data.Beacon) model.RedeemReq
 			TokenID:               waitingRedeem.TokenID,
 			RedeemerAddress:       waitingRedeem.RedeemerAddress,
 			RedeemerRemoteAddress: waitingRedeem.RedeemerRemoteAddress,
-			RedeemAmount:          waitingRedeem.RedeemAmount,
-			Custodians:            waitingRedeem.Custodians,
+			RedeemAmount:          strconv.FormatUint(waitingRedeem.RedeemAmount, 10),
+			Custodians:            getMatchingRedeemCustodianDetail(waitingRedeem),
 			RedeemFee:             waitingRedeem.RedeemFee,
 			RedeemBeaconHeight:    waitingRedeem.BeaconHeight,
 			TXReqID:               waitingRedeem.TXReqID,
@@ -350,7 +389,7 @@ func getLockedCollateralFromBeaconState(beacon *data.Beacon) model.LockedCollate
 		lockedCollateralInfos = append(lockedCollateralInfos, model.LockedCollateralInfo{
 			TotalLockedCollateralForRewards: beacon.LockedCollateralState.TotalLockedCollateralForRewards,
 			CustodianAddress:                key,
-			Amount:                          lockedDetail,
+			Amount:                          strconv.FormatUint(lockedDetail, 10),
 		})
 	}
 	return model.LockedCollateral{
@@ -614,7 +653,7 @@ func getInputCoinFromShardState(shard *data.Shard) []model.InputCoin {
 				ShardHash:       shard.BlockHash,
 				ShardHeight:     shard.BeaconHeight,
 				TransactionHash: transaction.Hash,
-				Value:           input.Value,
+				Value:           strconv.FormatUint(input.Value, 10),
 				Info:            string(input.Info),
 				TokenID:         input.TokenID,
 			}
@@ -650,7 +689,7 @@ func getCrossShardOutputCoinFromShardState(shard *data.Shard) []model.OutputCoin
 			ShardHash:        shard.BlockHash,
 			ShardHeight:      shard.BeaconHeight,
 			TransactionHash:  output.TransactionHash,
-			Value:            output.Value,
+			Value:            strconv.FormatUint(output.Value, 10),
 			Info:             string(output.Info),
 			TokenID:          output.TokenID,
 			FromShardID:      output.FromShardID,
@@ -662,7 +701,7 @@ func getCrossShardOutputCoinFromShardState(shard *data.Shard) []model.OutputCoin
 			PropertySymbol:   output.PropertySymbol,
 			Type:             output.Type,
 			Mintable:         output.Mintable,
-			Amount:           output.Amount,
+			Amount:           strconv.FormatUint(output.Amount, 10),
 			LockTime:		  output.LockTime,
 			TransactionMemo: string(output.TransactionMemo),
 
@@ -700,7 +739,7 @@ func getOutputCoinForThisShardFromShardState(shard *data.Shard) []model.OutputCo
 			ShardHash:        shard.BlockHash,
 			ShardHeight:      shard.BeaconHeight,
 			TransactionHash:  output.TransactionHash,
-			Value:            output.Value,
+			Value:            strconv.FormatUint(output.Value, 10),
 			Info:             string(output.Info),
 			TokenID:          output.TokenID,
 			FromShardID:      output.FromShardID,
@@ -712,7 +751,7 @@ func getOutputCoinForThisShardFromShardState(shard *data.Shard) []model.OutputCo
 			PropertySymbol:   output.PropertySymbol,
 			Type:             output.Type,
 			Mintable:         output.Mintable,
-			Amount:           output.Amount,
+			Amount:           strconv.FormatUint(output.Amount, 10),
 			LockTime:		  output.LockTime,
 			TransactionMemo: string(output.TransactionMemo),
 
@@ -796,7 +835,7 @@ func GetRewardStateFromShardState(shard *data.Shard) model.CommitteeRewardState 
 			rewards = append(rewards, model.CommitteeReward{
 				Address: address,
 				TokenId: token,
-				Amount:  amount,
+				Amount:  strconv.FormatUint(amount, 10),
 			})
 		}
 

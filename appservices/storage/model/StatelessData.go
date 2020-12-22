@@ -45,7 +45,7 @@ type TransactionCustomToken struct {
 	PropertySymbol string
 	Type     int    // action type
 	Mintable bool   // default false
-	Amount   uint64 // init amount
+	Amount   string // init amount
 }
 
 type Instruction struct {
@@ -62,7 +62,7 @@ type InputCoin struct {
 	SNDerivator    string `json:"SNDerivator"`
 	SerialNumber   string `json:"SerialNumber"`
 	Randomness     string `json:"Randomness"`
-	Value          uint64 `json:"Value"`
+	Value          string `json:"Value"`
 	Info           string `json:"Info"` //256 bytes
 	TokenID		   string `json:"TokenID"`
 
@@ -78,7 +78,7 @@ type OutputCoin struct {
 	SNDerivator    		string `json:"SNDerivator"`
 	SerialNumber   		string `json:"SerialNumber"`
 	Randomness     		string `json:"Randomness"`
-	Value          		uint64 `json:"Value"`
+	Value          		string `json:"Value"`
 	Info           		string `json:"Info"` //256 bytes
 	TokenID		   		string  `json:"TokenID"`
 	FromShardID      	byte `json:"FromShardID"`
@@ -90,7 +90,7 @@ type OutputCoin struct {
 	PropertySymbol   	string `json:"PropertySymbol"`
 	Type             	int `json:"Type"`   // action type
 	Mintable         	bool `json:"Mintable"`  // default false
-	Amount           	uint64 `json:"Amount"` // init amount
+	Amount           	string `json:"Amount"` // init amount
 	LockTime 			 int64  `json:"LockTime"`
 	CoinDetailsEncrypted string `json:"CoinDetailsEncrypted"`
 	TransactionMemo       string `json:"TransactionMemo"`

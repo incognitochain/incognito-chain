@@ -1,10 +1,5 @@
 package model
 
-import (
-	"github.com/incognitochain/incognito-chain/appservices/data"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-)
-
 type PDEShare struct {
 	BeaconBlockHash    string					 	`json:"BeaconBlockHash"`
 	BeaconEpoch									uint64					 					`json:"BeaconEpoch"`
@@ -17,7 +12,7 @@ type PDEShareInfo struct {
 	Token1ID           string
 	Token2ID           string
 	ContributorAddress string
-	Amount             uint64
+	Amount         string // init amount store as string because mongodb don't support uint64
 }
 
 type PDEPoolForPair struct {
@@ -29,9 +24,9 @@ type PDEPoolForPair struct {
 }
 type PDEPoolForPairInfo struct {
 	Token1ID        string
-	Token1PoolValue uint64
+	Token1PoolValue string
 	Token2ID        string
-	Token2PoolValue uint64
+	Token2PoolValue string
 }
 
 type PDETradingFee struct {
@@ -46,7 +41,7 @@ type PDETradingFeeInfo struct {
 	Token1ID           string
 	Token2ID           string
 	ContributorAddress string
-	Amount             uint64
+	Amount         string // init amount store as string because mongodb don't support uint64
 }
 
 type WaitingPDEContribution struct {
@@ -61,7 +56,7 @@ type WaitingPDEContributionInfo struct {
 	PairID             string
 	ContributorAddress string
 	TokenID            string
-	Amount             uint64
+	Amount         string // init amount store as string because mongodb don't support uint64
 	TXReqID            string
 
 }
@@ -78,10 +73,10 @@ type CustodianInfo struct {
 	IncognitoAddress       string
 	TotalCollateral        uint64            // prv
 	FreeCollateral         uint64            // prv
-	HoldingPubTokens       map[string]uint64 // tokenID : amount
-	LockedAmountCollateral map[string]uint64 // tokenID : amount
+	HoldingPubTokens       map[string]string // tokenID : amount
+	LockedAmountCollateral map[string]string // tokenID : amount
 	RemoteAddresses        map[string]string // tokenID : remote address
-	RewardAmount           map[string]uint64 // tokenID : amount
+	RewardAmount           map[string]string // tokenID : amount
 }
 
 type WaitingPortingRequest struct {
@@ -92,12 +87,19 @@ type WaitingPortingRequest struct {
 	WaitingPortingRequestInfo []WaitingPortingRequestInfo   `json:"WaitingPortingRequestInfo"`
 }
 
+type MatchingPortingCustodianDetail struct {
+	IncAddress             string
+	RemoteAddress          string
+	Amount                 string
+	LockedAmountCollateral string
+}
+
 type WaitingPortingRequestInfo struct {
 	UniquePortingID 		string
 	TokenID         		string
 	PorterAddress   		string
-	Amount          		uint64
-	Custodians      		[]statedb.MatchingPortingCustodianDetail
+	Amount          		string
+	Custodians      		[]MatchingPortingCustodianDetail
 	PortingFee      		uint64
 	WaitingBeaconHeight    	uint64
 	TXReqID         		string
@@ -112,7 +114,7 @@ type FinalExchangeRate struct {
 }
 
 type FinalExchangeRateInfo struct {
-	Amount					uint64
+	Amount					string
 	TokenID					string
 }
 
@@ -124,13 +126,20 @@ type RedeemRequest struct {
 	RedeemRequestInfo []RedeemRequestInfo   `json:"RedeemRequestInfo"`
 }
 
+type MatchingRedeemCustodianDetail struct {
+	IncAddress    string
+	RemoteAddress string
+	Amount        string
+}
+
+
 type RedeemRequestInfo struct {
 	UniqueRedeemID        string
 	TokenID               string
 	RedeemerAddress       string
 	RedeemerRemoteAddress string
-	RedeemAmount          uint64
-	Custodians            []data.MatchingRedeemCustodianDetail
+	RedeemAmount          string
+	Custodians            []MatchingRedeemCustodianDetail
 	RedeemFee             uint64
 	RedeemBeaconHeight    uint64
 	TXReqID               string
@@ -148,7 +157,7 @@ type LockedCollateral struct {
 type LockedCollateralInfo struct {
 	TotalLockedCollateralForRewards uint64
 	CustodianAddress		string
-	Amount                  uint64
+	Amount                  string
 }
 
 
@@ -198,5 +207,5 @@ type CommitteeRewardState struct {
 type CommitteeReward struct {
 	Address      string `json:"Address"`
 	TokenId      string `json:"TokenId"`
-	Amount       uint64  `json:"Amount"`
+	Amount         string // init amount store as string because mongodb don't support uint64
 }
