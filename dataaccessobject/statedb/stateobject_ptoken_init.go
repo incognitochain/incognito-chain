@@ -9,8 +9,10 @@ import (
 )
 
 type PTokenInitState struct {
-	tokenID string
-	amount  uint64
+	tokenID     string
+	tokenName   string
+	tokenSymbol string
+	amount      uint64
 }
 
 func (s PTokenInitState) TokenID() string {
@@ -19,6 +21,22 @@ func (s PTokenInitState) TokenID() string {
 
 func (s *PTokenInitState) SetTokenID(tokenID string) {
 	s.tokenID = tokenID
+}
+
+func (s PTokenInitState) TokenName() string {
+	return s.tokenName
+}
+
+func (s *PTokenInitState) SetTokenName(tokenName string) {
+	s.tokenName = tokenName
+}
+
+func (s PTokenInitState) TokenSymbol() string {
+	return s.tokenSymbol
+}
+
+func (s *PTokenInitState) SetTokenSymbol(tokenSymbol string) {
+	s.tokenSymbol = tokenSymbol
 }
 
 func (s PTokenInitState) Amount() uint64 {
@@ -61,10 +79,17 @@ func NewPTokenInitState() *PTokenInitState {
 	return &PTokenInitState{}
 }
 
-func NewPTokenInitStateWithValue(tokenID string, amount uint64) *PTokenInitState {
+func NewPTokenInitStateWithValue(
+	tokenID string,
+	tokenName string,
+	tokenSymbol string,
+	amount uint64,
+) *PTokenInitState {
 	return &PTokenInitState{
-		tokenID: tokenID,
-		amount:  amount,
+		tokenID:     tokenID,
+		tokenName:   tokenName,
+		tokenSymbol: tokenSymbol,
+		amount:      amount,
 	}
 }
 
@@ -99,11 +124,11 @@ func newPTokenInitObject(db *StateDB, hash common.Hash) *PTokenInitObject {
 }
 
 func newPTokenInitObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*PTokenInitObject, error) {
-	var pTokenInitState = NewPTokenInitState()
+	var newPTokenInitState = NewPTokenInitState()
 	var ok bool
 	var dataBytes []byte
 	if dataBytes, ok = data.([]byte); ok {
-		err := json.Unmarshal(dataBytes, pTokenInitState)
+		err := json.Unmarshal(dataBytes, newPTokenInitState)
 		if err != nil {
 			return nil, err
 		}

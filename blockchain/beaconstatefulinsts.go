@@ -151,7 +151,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			newInst := [][]string{}
 			switch metaType {
 			case metadata.InitPTokenRequestMeta:
-				newInst, err = blockchain.buildInstructionsForInitPTokenReq(beaconBestState, contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForInitPTokenReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.IssuingRequestMeta:
 				newInst, err = blockchain.buildInstructionsForIssuingReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)

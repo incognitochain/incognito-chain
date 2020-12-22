@@ -264,6 +264,9 @@ var HttpHandler = map[string]httpHandler{
 
 	// init privacy custom token
 	createAndSendPTokenInitRequest: (*HttpServer).handleCreateAndSendPTokenInitRequest,
+
+	// ptoken init
+	getPTokenInitByTokenID: (*HttpServer).handleGetPTokenInitByTokenID,
 }
 
 // Commands that are available to a limited user

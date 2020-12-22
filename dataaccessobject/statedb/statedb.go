@@ -1666,3 +1666,14 @@ func (stateDB *StateDB) getAllStaker(ids []int) int {
 	allStaker = append(allStaker, resCurrentEpochBeaconCandidate...)
 	return len(allStaker)
 }
+
+func (stateDB *StateDB) getPTokenInitState(key common.Hash) (*PTokenInitState, bool, error) {
+	ptiState, err := stateDB.getStateObject(PTokenInitObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if ptiState != nil {
+		return ptiState.GetValue().(*PTokenInitState), true, nil
+	}
+	return NewPTokenInitState(), false, nil
+}

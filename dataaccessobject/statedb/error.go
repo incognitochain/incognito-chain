@@ -212,6 +212,10 @@ const (
 	StorePDETradingFeeError
 
 	InvalidStakerInfoTypeError
+
+	// ptoken init
+	StorePTokenInitError
+	GetPTokenInitError
 )
 
 var ErrCodeMessage = map[int]struct {

@@ -21,6 +21,27 @@ var (
 	PDEFeeWithdrawalStatusPrefix = []byte("pdefeewithdrawalstatus-")
 )
 
+type PTokenInitInfo struct {
+	TokenID     string `json:"tokenId"`
+	TokenName   string `json:"tokenName"`
+	TokenSymbol string `json:"tokenSymbol"`
+	Amount      uint64 `json:"tokenAmount"`
+}
+
+func NewPTokenInitInfo(
+	tokenID string,
+	tokenName string,
+	tokenSymbol string,
+	amount uint64,
+) *PTokenInitInfo {
+	return &PTokenInitInfo{
+		TokenID: tokenID,
+		TokenName: tokenName,
+		TokenSymbol: tokenSymbol,
+		Amount: amount,
+	}
+}
+
 // TODO - change json to CamelCase
 type BridgeTokenInfo struct {
 	TokenID         *common.Hash `json:"tokenId"`

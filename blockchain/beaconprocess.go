@@ -1462,6 +1462,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessPortalRelayingError, err)
 	}
 
+	// execute, store ptoken init Instruction
+	blockchain.processPTokenInitInstructions(newBestState.featureStateDB, beaconBlock)
+
 	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
 	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
 	//	return err

@@ -1151,3 +1151,9 @@ func (blockService BlockService) GetRewardFeatureByFeatureName(featureName strin
 
 	return data.GetTotalRewards(), nil
 }
+
+//=============================== ptoken init ======================
+func (blockService BlockService) GetPTokenInit(tokenID string) ([]byte, error) {
+	pTokenInitStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	return statedb.GetPTokenInit(pTokenInitStateDB, tokenID)
+}

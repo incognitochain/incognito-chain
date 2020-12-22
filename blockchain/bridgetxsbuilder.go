@@ -353,6 +353,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 
 func (blockchain *BlockChain) buildInstructionsForInitPTokenReq(
 	beaconBestState *BeaconBestState,
+	stateDB *statedb.StateDB,
 	contentStr string,
 	shardID byte,
 	metaType int,
@@ -381,11 +382,21 @@ func (blockchain *BlockChain) buildInstructionsForInitPTokenReq(
 	// check existence in previous blocks (on blockchain's db)
 	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, tokenID)
 	if err != nil {
-		Logger.log.Warn("WARNING: an issue occured while checking the initializing token's existence: ", err)
+		Logger.log.Warn("WARNING: an issue occured while checking the initializing token's existence on all shards: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	if privacyTokenExisted {
-		Logger.log.Warnf("WARNING: The initializing token (%s) was already existed in the previous blocks.", tokenID.String())
+		Logger.log.Warnf("WARNING: The initializing token (%s) was already existed in the previous blocks on all shards.", tokenID.String())
+		return append(instructions, rejectedInst), nil
+	}
+
+	pTokenInitInfoBytes, err := statedb.GetPTokenInit(stateDB, tokenID.String())
+	if err != nil {
+		Logger.log.Warn("WARNING: an issue occured while checking the initializing token's existence on beacon: ", err)
+		return append(instructions, rejectedInst), nil
+	}
+	if len(pTokenInitInfoBytes) > 0 { // existed
+		Logger.log.Warnf("WARNING: The initializing token (%s) was already existed in the previous blocks on beacon.", tokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
 
