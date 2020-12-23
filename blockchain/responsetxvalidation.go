@@ -28,8 +28,6 @@ func (blockchain *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 	mintData.ReturnStaking = make(map[string]bool)
 	mintData.WithdrawReward = make(map[string]bool)
 
-	Logger.log.Infof("BUGLOG processing the following insts\n %v", mintData.Insts)
-
 	for _, tx := range txs {
 		if tx.GetMetadata() != nil{
 			Logger.log.Infof("BUGLOG currently processing metadata: %v\n", tx.GetMetadata())

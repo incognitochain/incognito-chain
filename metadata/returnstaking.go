@@ -71,7 +71,7 @@ func (sbsRes ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(min
 	tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever,
 	beaconViewRetriever BeaconViewRetriever) (bool, error) {
 
-	Logger.log.Infof("BUGLOG verifyReturnStakingMeta: %v\n", sbsRes)
+	Logger.log.Infof("BUGLOG verifyReturnStakingMeta: %v\n", sbsRes, sbsRes.StakerAddress.Pk)
 
 	stakingTx := shardViewRetriever.GetStakingTx()
 	for key, value := range stakingTx {
@@ -120,7 +120,7 @@ func (sbsRes ReturnStakingMetadata) VerifyMinerCreatedTxBeforeGettingInBlock(min
 
 			return true, nil
 		}else{
-			Logger.log.Infof("BUGLOG PK not equal: %v, %v\n", committeePublicKey.IncPubKey, value)
+			Logger.log.Infof("BUGLOG PK not equal: %v, %v\n", key, committeePublicKey.IncPubKey, value)
 		}
 
 	}
