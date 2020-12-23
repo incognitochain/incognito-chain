@@ -312,28 +312,29 @@ func NewInstance(chain ChainInterface, committeeChain CommitteeChainHandler, cha
 func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	blockHash string, v *ProposeBlockInfo,
 ) {
-	e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//no vote
 	if v.hasNewVote == false {
+		e.Logger.Info("No New Vote")
 		return
 	}
 
 	//no block
 	if v.block == nil {
+		e.Logger.Info("No New Block")
 		return
 	}
-
+	e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//already in chain
 	view := e.Chain.GetViewByHash(*v.block.Hash())
 	if view != nil {
-		e.Logger.Errorf("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
+		e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 		return
 	}
 
 	//not connected previous block
 	view = e.Chain.GetViewByHash(v.block.GetPrevHash())
 	if view == nil {
-		e.Logger.Errorf("Get Previous View By Hash Fail, %+v, %+v", v.block.GetPrevHash(), v.block.GetHeight()-1)
+		e.Logger.Infof("Get Previous View By Hash Fail, %+v, %+v", v.block.GetPrevHash(), v.block.GetHeight()-1)
 		return
 	}
 
