@@ -326,12 +326,14 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	//already in chain
 	view := e.Chain.GetViewByHash(*v.block.Hash())
 	if view != nil {
+		e.Logger.Errorf("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 		return
 	}
 
 	//not connected previous block
 	view = e.Chain.GetViewByHash(v.block.GetPrevHash())
 	if view == nil {
+		e.Logger.Errorf("Get Previous View By Hash Fail, %+v, %+v", v.block.GetPrevHash(), v.block.GetHeight()-1)
 		return
 	}
 
