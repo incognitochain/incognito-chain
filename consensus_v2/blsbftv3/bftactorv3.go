@@ -314,13 +314,11 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 ) {
 	//no vote
 	if v.hasNewVote == false {
-		e.Logger.Info("No New Vote")
 		return
 	}
 
 	//no block
 	if v.block == nil {
-		e.Logger.Info("No New Block")
 		return
 	}
 	e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
@@ -344,7 +342,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 		dsaKey := []byte{}
 		if vote.IsValid == 0 {
 			for _, c := range v.committees {
-				e.Logger.Error(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
+				e.Logger.Info(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
 				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
 					dsaKey = c.MiningPubKey[common.BridgeConsensus]
 				}
@@ -367,7 +365,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 			validVote++
 		}
 	}
-	//e.Logger.Debug(validVote, committees), errVote)
+	e.Logger.Info(validVote, errVote)
 	v.hasNewVote = false
 	for key, value := range v.votes {
 		if value.IsValid == -1 {
