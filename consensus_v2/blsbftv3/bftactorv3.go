@@ -312,6 +312,7 @@ func NewInstance(chain ChainInterface, committeeChain CommitteeChainHandler, cha
 func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	blockHash string, v *ProposeBlockInfo,
 ) {
+	e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//no vote
 	if v.hasNewVote == false {
 		return
@@ -340,7 +341,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 		dsaKey := []byte{}
 		if vote.IsValid == 0 {
 			for _, c := range v.committees {
-				//e.Logger.Error(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
+				e.Logger.Error(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
 				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
 					dsaKey = c.MiningPubKey[common.BridgeConsensus]
 				}
