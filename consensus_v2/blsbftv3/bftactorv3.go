@@ -365,7 +365,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 			validVote++
 		}
 	}
-	e.Logger.Info(validVote, errVote)
+	e.Logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
 	v.hasNewVote = false
 	for key, value := range v.votes {
 		if value.IsValid == -1 {
