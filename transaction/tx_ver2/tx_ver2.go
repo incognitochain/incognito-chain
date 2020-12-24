@@ -146,7 +146,7 @@ func (tx *Tx) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 
 // ========== NORMAL INIT FUNCTIONS ==========
 
-func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.CoinV2, senderSK *privacy.PrivateKey) ([]*privacy.Scalar, error) {
+func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.CoinV2, senderSK *privacy.PrivateKey, commitmentToZero *privacy.Point) ([]*privacy.Scalar, error) {
 	sumRand := new(privacy.Scalar).FromUint64(0)
 	for _, in := range inputCoins {
 		sumRand.Add(sumRand, in.GetRandomness())
@@ -163,6 +163,11 @@ func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.C
 			utils.Logger.Log.Errorf("Cannot parse private key of coin %v", err)
 			return nil, err
 		}
+	}
+	commitmentToZeroRecomputed := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], sumRand)
+	match := privacy.IsPointEqual(commitmentToZeroRecomputed, commitmentToZero)
+	if !match{
+		return nil, utils.NewTransactionErr(utils.SignTxError, errors.New("Error : asset tag sum or commitment sum mismatch"))
 	}
 	privKeyMlsag[len(inputCoins)] = sumRand
 	return privKeyMlsag, nil
@@ -218,7 +223,7 @@ func (tx *Tx) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, para
 	}
 	var pi int = int(piBig.Int64())
 	shardID := common.GetShardIDFromLastByte(tx.PubKeyLastByteSender)
-	ring, indexes, err := generateMlsagRingWithIndexes(inp, out, params, pi, shardID, ringSize)
+	ring, indexes, commitmentToZero, err := generateMlsagRingWithIndexes(inp, out, params, pi, shardID, ringSize)
 	if err != nil {
 		utils.Logger.Log.Errorf("generateMlsagRingWithIndexes got error %v ", err)
 		return err
@@ -234,7 +239,7 @@ func (tx *Tx) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, para
 	}
 
 	// Set sigPrivKey
-	privKeysMlsag, err := createPrivKeyMlsag(inp, out, params.SenderSK)
+	privKeysMlsag, err := createPrivKeyMlsag(inp, out, params.SenderSK, commitmentToZero)
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot create private key of mlsag: %v", err)
 		return err
@@ -358,11 +363,11 @@ func getRingFromSigPubKeyAndLastColumnCommitment(sigPubKey []byte, sumOutputsWit
 
 // ========== NORMAL VERIFY FUNCTIONS ==========
 
-func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []*privacy.CoinV2, params *tx_generic.TxPrivacyInitParams, pi int, shardID byte, ringSize int) (*mlsag.Ring, [][]*big.Int, error) {
+func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []*privacy.CoinV2, params *tx_generic.TxPrivacyInitParams, pi int, shardID byte, ringSize int) (*mlsag.Ring, [][]*big.Int, *privacy.Point, error) {
 	lenOTA, err := statedb.GetOTACoinLength(params.StateDB, *params.TokenID, shardID)
 	if err != nil || lenOTA == nil {
 		utils.Logger.Log.Errorf("Getting length of commitment error, either database length ota is empty or has error, error = %v", err)
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	outputCoinsAsGeneric := make([]privacy.Coin, len(outputCoins))
 	for i:=0;i<len(outputCoins);i++{
@@ -371,6 +376,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 	sumOutputsWithFee := tx_generic.CalculateSumOutputsWithFee(outputCoinsAsGeneric, params.Fee)
 	indexes := make([][]*big.Int, ringSize)
 	ring := make([][]*privacy.Point, ringSize)
+	var commitmentToZero *privacy.Point
 	for i := 0; i < ringSize; i += 1 {
 		sumInputs := new(privacy.Point).Identity()
 		sumInputs.Sub(sumInputs, sumOutputsWithFee)
@@ -383,7 +389,7 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 				publicKeyBytes := inputCoins[j].GetPublicKey().ToBytesS()
 				if rowIndexes[j], err = statedb.GetOTACoinIndex(params.StateDB, *params.TokenID, publicKeyBytes); err != nil {
 					utils.Logger.Log.Errorf("Getting commitment index error %v ", err)
-					return nil, nil, err
+					return nil, nil, nil, err
 				}
 				sumInputs.Add(sumInputs, inputCoins[j].GetCommitment())
 			}
@@ -393,22 +399,25 @@ func generateMlsagRingWithIndexes(inputCoins []privacy.PlainCoin, outputCoins []
 				coinBytes, err := statedb.GetOTACoinByIndex(params.StateDB, *params.TokenID, rowIndexes[j].Uint64(), shardID)
 				if err != nil {
 					utils.Logger.Log.Errorf("Get coinv2 by index error %v ", err)
-					return nil, nil, err
+					return nil, nil, nil, err
 				}
 				coinDB := new(privacy.CoinV2)
 				if err := coinDB.SetBytes(coinBytes); err != nil {
 					utils.Logger.Log.Errorf("Cannot parse coinv2 byte error %v ", err)
-					return nil, nil, err
+					return nil, nil, nil, err
 				}
 				row[j] = coinDB.GetPublicKey()
 				sumInputs.Add(sumInputs, coinDB.GetCommitment())
 			}
 		}
 		row = append(row, sumInputs)
+		if i==pi{
+			commitmentToZero = sumInputs
+		}
 		ring[i] = row
 		indexes[i] = rowIndexes
 	}
-	return mlsag.NewRing(ring), indexes, nil
+	return mlsag.NewRing(ring), indexes, commitmentToZero, nil
 }
 
 func getMLSAGSigFromTxSigAndKeyImages(txSig []byte, keyImages []*privacy.Point) (*mlsag.MlsagSig, error) {
