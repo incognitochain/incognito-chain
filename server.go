@@ -1632,9 +1632,6 @@ func (serverObj *Server) PublishNodeState() error {
 	}
 
 	for chainID, validator := range chainValidator {
-		monitor.SetGlobalParam("Role", validator.State.Role)
-		monitor.SetGlobalParam("Layer", validator.State.Layer)
-		monitor.SetGlobalParam("ShardID", validator.State.ChainID)
 		currentMiningKey := validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 		msg.(*wire.MessagePeerState).SenderMiningPublicKey = currentMiningKey
 		msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
