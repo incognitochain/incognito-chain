@@ -128,11 +128,14 @@ func TestBTCMainnetAddress(t *testing.T) {
 		isValid bool
 	}
 	testcases := []BTCMainnetAddressTestCases{
-		//{"bc1qq7ndvtvyzcea44ps6d4nt3plk02ghpsha0t55y", true},		// AddressWitnessPubKeyHash
-		//{"1KN7N34ZUd1HyXgqcJpeGrooQcLf2L4xFC", true},				// AddressPubKeyHash
+		{"bc1qq7ndvtvyzcea44ps6d4nt3plk02ghpsha0t55y", true},                     // AddressWitnessPubKeyHash
+		{"1KN7N34ZUd1HyXgqcJpeGrooQcLf2L4xFC", true},                             // AddressPubKeyHash
+		{"3EktnHQD7RiAE6uzMj2ZifT9YgRrkSgzQX", true},                             // AddressScriptHash
+		{"bc1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3qccfmv3", true}, // AddressWitnessScriptHash
+		{"37ExSZhkPhSwmzdjbeznK529vvrgS3qsJW", true},                             // legacy - AddressScriptHash
+		{"3EtBoGNHBd1zCH2A5WTExJrizB7TiBw4ci", true},                             // p2sh-segwit -- AddressScriptHash
+		{"bc1qpx5p30dcfxqpz5sxemv30ky34lf20jwe7nl95exqcphjvxxehalql9mmrd", true}, // bech32 -- AddressWitnessScriptHash
 	}
-
-	//addressPubKey := btcutil.NewAddressPubKey()
 
 	btcChain := initBTCHeaderMainNetChain(t)
 	if btcChain == nil {
@@ -142,7 +145,7 @@ func TestBTCMainnetAddress(t *testing.T) {
 	params := btcChain.GetChainParams()
 
 	var pkScript []byte
-	var addrs  []btcutil.Address
+	var addrs []btcutil.Address
 	for _, tc := range testcases {
 		actualResult := true
 		// decode address from string to bytes array
@@ -163,7 +166,7 @@ func TestBTCMainnetAddress(t *testing.T) {
 
 		// extract pkscript to address
 		_, addrs, _, err = txscript.ExtractPkScriptAddrs(pkScript, params)
-		if err != nil ||  len(addrs) == 0 {
+		if err != nil || len(addrs) == 0 {
 			actualResult = false
 			t.Errorf("Can not extract btc address %v - Error %v", tc.address, err)
 			goto checkResult
@@ -175,6 +178,68 @@ func TestBTCMainnetAddress(t *testing.T) {
 			}
 		}
 
-		checkResult: assert.Equal(t, tc.isValid, actualResult)
+	checkResult:
+		assert.Equal(t, tc.isValid, actualResult)
+	}
+}
+
+func TestBTCTestnetAddress(t *testing.T) {
+	type BTCTestnetAddressTestCases struct {
+		address string
+		isValid bool
+	}
+	testcases := []BTCTestnetAddressTestCases{
+		{"tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx", true},                     // AddressWitnessPubKeyHash
+		{"mipcBbFg9gMiCh81Kj8tqqdgoZub1ZJRfn", true},                             // AddressPubKeyHash
+		{"2MzQwSSnBHWHqSAqtTVQ6v47XtaisrJa1Vc", true},                            // AddressScriptHash
+		{"tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sl5k7", true}, // AddressWitnessScriptHash
+		{"2Mx7sVozbZZXPiqsTRWLnZ7bC7vGUEEwX6g", true},                            // legacy - AddressScriptHash
+		{"2MuiiTCHGtQ3MMFhAQ3kFGsJ6N9K89itPcw", true},                            // p2sh-segwit -- AddressScriptHash
+		{"tb1qwtlr3cmn0kg3h6passf7wktmy7596p7swpmxdz6nsp6pmvhzg3eq93qvfz", true}, // bech32 -- AddressWitnessScriptHash
+	}
+
+	btcChain := initBTCHeaderTestNetChain(t)
+	if btcChain == nil {
+		t.Error("BTC chain instance should not be null")
+		return
+	}
+	params := btcChain.GetChainParams()
+
+	var pkScript []byte
+	var addrs []btcutil.Address
+	for _, tc := range testcases {
+		actualResult := true
+		// decode address from string to bytes array
+		btcAddress, err := btcutil.DecodeAddress(tc.address, params)
+		//fmt.Printf("btcAddress %+v\n", btcAddress.)
+		if err != nil {
+			actualResult = false
+			t.Errorf("Can not decode btc address %v - Error %v", tc.address, err)
+			goto checkResult
+		}
+		// convert btcAddress to pkScript
+		pkScript, err = txscript.PayToAddrScript(btcAddress)
+		if err != nil {
+			actualResult = false
+			t.Errorf("Can not convert btc address %v to pkScript - Error %v", tc.address, err)
+			goto checkResult
+		}
+
+		// extract pkscript to address
+		_, addrs, _, err = txscript.ExtractPkScriptAddrs(pkScript, params)
+		if err != nil || len(addrs) == 0 {
+			actualResult = false
+			t.Errorf("Can not extract btc address %v - Error %v", tc.address, err)
+			goto checkResult
+		} else {
+			if tc.address != addrs[0].EncodeAddress() {
+				actualResult = false
+				t.Errorf("Different btc address before %v - after %v", tc.address, addrs[0].EncodeAddress())
+				goto checkResult
+			}
+		}
+
+	checkResult:
+		assert.Equal(t, tc.isValid, actualResult)
 	}
 }
