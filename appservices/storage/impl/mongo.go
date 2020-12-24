@@ -64,7 +64,7 @@ const (
 
 func init() {
 	log.Printf("Init mongodb")
-	clientOptions := options.Client().ApplyURI("mongodb://127.0.0.1:27017/")
+	clientOptions := options.Client().ApplyURI("mongodb://root:912easkjdAA@127.0.0.1:27017/")
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 		log.Fatal(err)
