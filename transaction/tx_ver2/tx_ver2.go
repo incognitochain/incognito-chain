@@ -196,7 +196,7 @@ func (tx *Tx) Init(paramsInterface interface{}) error {
 		return err
 	}
 	jsb, _ = json.Marshal(tx)
-	utils.Logger.Log.Infof("TX Creation complete ! The resulting transaction is : %s", string(jsb))
+	utils.Logger.Log.Infof("TX Creation complete ! The resulting transaction is: %v, %s", tx.Hash().String(), string(jsb))
 	txSize := tx.GetTxActualSize()
 	if txSize > common.MaxTxSize {
 		return utils.NewTransactionErr(utils.ExceedSizeTx, nil, strconv.Itoa(int(txSize)))
@@ -479,12 +479,14 @@ func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.Sta
 		return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
 	}
 	if isConfAsset{
+		utils.Logger.Log.Infof("Verifying transaction with assetTag\n")
 		valid, err = tx.verifySigCA(transactionStateDB, shardID, tokenID, isNewTransaction)
 	}else{
+		utils.Logger.Log.Infof("Verifying transaction without assetTag\n")
 		valid, err = tx.verifySig(transactionStateDB, shardID, tokenID, isNewTransaction)
 	}
 	if !valid {
-		// fmt.Printf("Fail with CA = %v and tokenID = %s\n", isConfAsset, tokenID.String())
+		utils.Logger.Log.Infof("Fail with CA = %v and tokenID = %s\n", isConfAsset, tokenID.String())
 		if err != nil {
 			utils.Logger.Log.Errorf("Error verifying signature ver2 with tx hash %s: %+v \n", tx.Hash().String(), err)
 			return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, err)
@@ -701,6 +703,8 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 }
 
 func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, []privacy.Proof, error) {
+	jsb, _ := json.Marshal(tx)
+	utils.Logger.Log.Infof("Begin verifying TX %s", string(jsb))
 	switch tx.GetType() {
 	case common.TxRewardType:
 		valid, err := tx.ValidateTxSalary(transactionStateDB)
