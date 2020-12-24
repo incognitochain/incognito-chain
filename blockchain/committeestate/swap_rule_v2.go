@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -235,30 +234,6 @@ func (s *swapRuleV2) AssignOffset(lenShardSubstitute, lenCommittees, numberOfFix
 		assignPerShard = 1
 	}
 	return assignPerShard
-}
-
-func SnapshotShardCommonPoolV2(
-	shardCommonPool []incognitokey.CommitteePublicKey,
-	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
-	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
-	numberOfFixedValidator int,
-	minCommitteeSize int,
-	swapRule SwapRule,
-) (numberOfAssignedCandidates int) {
-	for k, v := range shardCommittee {
-		assignPerShard := swapRule.AssignOffset(
-			len(shardSubstitute[k]),
-			len(v),
-			numberOfFixedValidator,
-			minCommitteeSize,
-		)
-		numberOfAssignedCandidates += assignPerShard
-	}
-
-	if numberOfAssignedCandidates > len(shardCommonPool) {
-		numberOfAssignedCandidates = len(shardCommonPool)
-	}
-	return numberOfAssignedCandidates
 }
 
 func (s *swapRuleV2) clone() SwapRule {

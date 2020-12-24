@@ -3,18 +3,18 @@ package committeestate
 import (
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/privacy"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
-type BeaconCommitteeStateV2 struct {
+type BeaconCommitteeStateV3 struct {
 	beaconCommitteeStateBase
+	syncPool map[byte][]incognitokey.CommitteePublicKey
 }
 
-func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
-	return &BeaconCommitteeStateV2{
+func NewBeaconCommitteeStateV3() *BeaconCommitteeStateV3 {
+	return &BeaconCommitteeStateV3{
 		beaconCommitteeStateBase: beaconCommitteeStateBase{
 			shardCommittee:  make(map[byte][]incognitokey.CommitteePublicKey),
 			shardSubstitute: make(map[byte][]incognitokey.CommitteePublicKey),
@@ -23,10 +23,11 @@ func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
 			stakingTx:       make(map[string]common.Hash),
 			mu:              new(sync.RWMutex),
 		},
+		syncPool: make(map[byte][]incognitokey.CommitteePublicKey),
 	}
 }
 
-func NewBeaconCommitteeStateV2WithValue(
+func NewBeaconCommitteeStateV3WithValue(
 	beaconCommittee []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
 	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
@@ -35,9 +36,10 @@ func NewBeaconCommitteeStateV2WithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	syncPool map[byte][]incognitokey.CommitteePublicKey,
 	swapRule SwapRule,
-) *BeaconCommitteeStateV2 {
-	return &BeaconCommitteeStateV2{
+) *BeaconCommitteeStateV3 {
+	return &BeaconCommitteeStateV3{
 		beaconCommitteeStateBase: beaconCommitteeStateBase{
 			beaconCommittee:            beaconCommittee,
 			shardCommittee:             shardCommittee,
@@ -50,9 +52,25 @@ func NewBeaconCommitteeStateV2WithValue(
 			swapRule:                   swapRule,
 			mu:                         new(sync.RWMutex),
 		},
+		syncPool: syncPool,
 	}
 }
 
-func (b *BeaconCommitteeStateV2) Version() int {
-	return SLASHING_VERSION
+func (b *BeaconCommitteeStateV3) Version() int {
+	return DCS_VERSION
+}
+
+func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePublicKey {
+	return b.syncPool
+}
+
+//ProcessAssignWithRandomInstruction process assign with random instruction
+//@TODO: Override from parent function and handle to add validators to syncPool
+func (b *BeaconCommitteeStateV3) ProcessAssignWithRandomInstruction(
+	rand int64,
+	activeShards int,
+	committeeChange *CommitteeChange,
+	oldState BeaconCommitteeState,
+) *CommitteeChange {
+	return nil
 }

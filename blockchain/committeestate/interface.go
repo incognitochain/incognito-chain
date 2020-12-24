@@ -1,7 +1,6 @@
 package committeestate
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -61,14 +60,11 @@ type ShardCommitteeEngine interface {
 	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
 }
 
-type SwapRule interface {
-	GenInstructions(
-		shardID byte,
-		committees, substitutes []string,
-		minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize int,
-		penalty map[string]signaturecounter.Penalty,
-	) (
-		*instruction.SwapShardInstruction, []string, []string, []string, []string) // instruction, newCommitteees, newSubstitutes, slashingCommittees, normalSwapCommittees
-	AssignOffset(lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int
-	Version() int
+type RandomRule interface {
+}
+
+type StakeRule interface {
+}
+
+type AssignRule interface {
 }

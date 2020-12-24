@@ -51,6 +51,7 @@ type BeaconCommitteeStateHash struct {
 	ShardCandidateHash              common.Hash
 	ShardCommitteeAndValidatorHash  common.Hash
 	AutoStakeHash                   common.Hash
+	ShardSyncValidatorsHash         common.Hash
 }
 
 func NewBeaconCommitteeStateEnvironmentForUpdateDB(

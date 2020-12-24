@@ -10,8 +10,10 @@ var (
 )
 
 const (
+	STATE_TEST_VERSION      = 0
 	SELF_SWAP_SHARD_VERSION = 1
 	SLASHING_VERSION        = 2
+	DCS_VERSION             = 3
 )
 
 const (
