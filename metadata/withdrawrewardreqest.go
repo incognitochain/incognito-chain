@@ -42,7 +42,7 @@ func (withdrawRequestMetadata *WithDrawRewardRequest) UnmarshalJSON(data []byte)
 	}
 
 
-	withdrawRequestMetadata.Type = tmp.Type
+	withdrawRequestMetadata.MetadataBase = tmp.MetadataBase
 	withdrawRequestMetadata.PaymentAddress = tmp.PaymentAddress
 	withdrawRequestMetadata.TokenID = tmp.TokenID
 	withdrawRequestMetadata.Version = tmp.Version
