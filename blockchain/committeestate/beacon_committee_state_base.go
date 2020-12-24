@@ -26,11 +26,11 @@ type beaconCommitteeStateBase struct {
 	rewardReceiver map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
 	stakingTx      map[string]common.Hash            // committee public key => reward receiver payment address
 
-	swapRule          SwapRule
-	unstakeRule       UnstakeRule
-	assignRule        AssignRule
+	swapRule    SwapRule
+	unstakeRule UnstakeRule
+	//assignRule        AssignRule
 	stopAutoStakeRule StopAutoStakeRule
-	randomRule        RandomRule
+	//randomRule        RandomRule
 
 	mu *sync.RWMutex // beware of this, any class extend this class need to use this mutex carefully
 }
@@ -735,4 +735,22 @@ func SnapshotShardCommonPoolV2(
 
 func (b *beaconCommitteeStateBase) SetSwapRule(swapRule SwapRule) {
 	b.swapRule = swapRule
+}
+
+func (b *beaconCommitteeStateBase) ProcessAssignInstruction(
+	assignInstruction *instruction.AssignInstruction,
+	env *BeaconCommitteeStateEnvironment,
+	committeeChange *CommitteeChange,
+) (
+	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
+	return b.processAssignInstruction(assignInstruction, env, committeeChange)
+}
+
+func (b *beaconCommitteeStateBase) processAssignInstruction(
+	assignInstruction *instruction.AssignInstruction,
+	env *BeaconCommitteeStateEnvironment,
+	committeeChange *CommitteeChange,
+) (
+	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
+	return committeeChange, &instruction.ReturnStakeInstruction{}, nil
 }

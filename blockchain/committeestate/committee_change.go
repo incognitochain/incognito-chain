@@ -16,6 +16,8 @@ type CommitteeChange struct {
 	CurrentEpochShardCandidateRemoved  []incognitokey.CommitteePublicKey
 	ShardSubstituteAdded               map[byte][]incognitokey.CommitteePublicKey
 	ShardSubstituteRemoved             map[byte][]incognitokey.CommitteePublicKey
+	ShardSyncingAdded                  map[byte][]incognitokey.CommitteePublicKey
+	ShardSyncingRemoved                map[byte][]incognitokey.CommitteePublicKey
 	ShardCommitteeAdded                map[byte][]incognitokey.CommitteePublicKey
 	ShardCommitteeRemoved              map[byte][]incognitokey.CommitteePublicKey
 	BeaconSubstituteAdded              []incognitokey.CommitteePublicKey
@@ -76,6 +78,8 @@ func NewCommitteeChange() *CommitteeChange {
 		committeeChange.ShardSubstituteRemoved[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.ShardCommitteeAdded[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.ShardCommitteeRemoved[shardID] = []incognitokey.CommitteePublicKey{}
+		committeeChange.ShardSyncingAdded[shardID] = []incognitokey.CommitteePublicKey{}
+		committeeChange.ShardSyncingRemoved[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.SlashingCommittee[shardID] = []string{}
 	}
 	return committeeChange

@@ -124,3 +124,9 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 
 	return hashes, committeeChange, incurredInstructions, nil
 }
+
+//GenerateAssignInstruction generate assign instructions for assign from syncing pool to shard pending pool
+// TODO: @tin Overridew from parent function and add validators from syncpool to shard pending pool
+func (engine *BeaconCommitteeEngineV3) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string) {
+	return []*instruction.AssignInstruction{}, []string{}, make(map[byte][]string)
+}

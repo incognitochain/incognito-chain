@@ -60,9 +60,6 @@ type ShardCommitteeEngine interface {
 	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
 }
 
-type RandomRule interface {
-}
-
 type StakeRule interface {
 }
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -65,7 +66,7 @@ func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePub
 }
 
 //ProcessAssignWithRandomInstruction process assign with random instruction
-//@TODO: Override from parent function and handle to add validators to syncPool
+//TODO: @tin Override from parent function and handle to add validators to syncPool
 func (b *BeaconCommitteeStateV3) ProcessAssignWithRandomInstruction(
 	rand int64,
 	activeShards int,
@@ -73,4 +74,34 @@ func (b *BeaconCommitteeStateV3) ProcessAssignWithRandomInstruction(
 	oldState BeaconCommitteeState,
 ) *CommitteeChange {
 	return nil
+}
+
+//TODO: @tin override this function by adding to syncing pool not shard pending pool
+func (b *BeaconCommitteeStateV3) assign(
+	candidates []string, rand int64, activeShards int, committeeChange *CommitteeChange,
+	oldState BeaconCommitteeState,
+) *CommitteeChange {
+	numberOfValidator := make([]int, activeShards)
+	for i := 0; i < activeShards; i++ {
+		numberOfValidator[byte(i)] += len(oldState.ShardSubstitute()[byte(i)])
+		numberOfValidator[byte(i)] += len(oldState.ShardCommittee()[byte(i)])
+	}
+
+	assignedCandidates := assignShardCandidateV2(candidates, numberOfValidator, rand)
+	for shardID, tempCandidates := range assignedCandidates {
+		tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
+		committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
+		b.shardSubstitute[shardID] = append(b.shardSubstitute[shardID], tempCandidateStructs...)
+	}
+	return committeeChange
+}
+
+//TODO: @tin override this function by adding from syncing pool to shard pending pool
+func (b *BeaconCommitteeStateV3) processAssignInstruction(
+	assignInstruction *instruction.AssignInstruction,
+	env *BeaconCommitteeStateEnvironment,
+	committeeChange *CommitteeChange,
+) (
+	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
+	return committeeChange, &instruction.ReturnStakeInstruction{}, nil
 }

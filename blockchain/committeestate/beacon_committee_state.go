@@ -38,6 +38,7 @@ type BeaconCommitteeState interface {
 	ProcessUnstakeInstruction(*instruction.UnstakeInstruction, *BeaconCommitteeStateEnvironment, *CommitteeChange, *instruction.ReturnStakeInstruction, BeaconCommitteeState) (*CommitteeChange, *instruction.ReturnStakeInstruction, error)
 	SyncPool() map[byte][]incognitokey.CommitteePublicKey
 	SetSwapRule(SwapRule)
+	ProcessAssignInstruction(*instruction.AssignInstruction, *BeaconCommitteeStateEnvironment, *CommitteeChange) (*CommitteeChange, *instruction.ReturnStakeInstruction, error)
 }
 
 func cloneBeaconCommitteeStateFrom(state BeaconCommitteeState) BeaconCommitteeState {

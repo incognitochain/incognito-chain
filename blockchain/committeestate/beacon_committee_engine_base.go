@@ -319,6 +319,7 @@ func (engine *beaconCommitteeEngineBase) UpdateCommitteeState(env *BeaconCommitt
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+
 		case instruction.RANDOM_ACTION:
 			randomInstruction, err := instruction.ValidateAndImportRandomInstructionFromString(inst)
 			if err != nil {
@@ -326,12 +327,14 @@ func (engine *beaconCommitteeEngineBase) UpdateCommitteeState(env *BeaconCommitt
 			}
 			committeeChange = newState.ProcessAssignWithRandomInstruction(
 				randomInstruction.BtcNonce, env.ActiveShards, committeeChange, oldState)
+
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange = newState.ProcessStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange, oldState)
+
 		case instruction.UNSTAKE_ACTION:
 			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
 			if err != nil {
@@ -342,6 +345,7 @@ func (engine *beaconCommitteeEngineBase) UpdateCommitteeState(env *BeaconCommitt
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
@@ -352,6 +356,7 @@ func (engine *beaconCommitteeEngineBase) UpdateCommitteeState(env *BeaconCommitt
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+
 		}
 	}
 
