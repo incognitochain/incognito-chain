@@ -18,6 +18,12 @@ func (ac AccumulatedValues) CanProcessTokenPair(
 	incTokenID common.Hash,
 ) (bool, error) {
 	incTokenIDStr := incTokenID.String()
+	for _, initializedPTokenID := range ac.InitializedPTokenIDs {
+		if initializedPTokenID == incTokenIDStr {
+			return false, nil
+		}
+	}
+
 	for _, tokenID := range ac.CBridgeTokens {
 		if bytes.Equal(tokenID[:], incTokenID[:]) {
 			return false, nil
@@ -42,6 +48,12 @@ func (ac AccumulatedValues) CanProcessTokenPair(
 func (ac AccumulatedValues) CanProcessCIncToken(
 	incTokenID common.Hash,
 ) bool {
+	for _, initializedPTokenID := range ac.InitializedPTokenIDs {
+		if initializedPTokenID == incTokenID.String() {
+			return false
+		}
+	}
+
 	incTokenIDStr := incTokenID.String()
 	_, found := ac.DBridgeTokenPair[incTokenIDStr]
 	return !found

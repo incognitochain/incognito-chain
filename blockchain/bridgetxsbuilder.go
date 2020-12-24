@@ -77,6 +77,15 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 		fmt.Printf("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
+	pTokenInitInfoBytes, err := statedb.GetPTokenInit(stateDB, issuingTokenID.String())
+	if err != nil {
+		Logger.log.Warn("WARNING: an issue occured while checking the centralized token's existence against initialized privacy custom token on beacon: ", err)
+		return append(instructions, rejectedInst), nil
+	}
+	if len(pTokenInitInfoBytes) > 0 { // existed
+		Logger.log.Warnf("WARNING: The centralized token (%s) was already existed in privacy custom token list in the previous blocks on beacon.", issuingTokenID.String())
+		return append(instructions, rejectedInst), nil
+	}
 
 	issuingAcceptedInst := metadata.IssuingAcceptedInst{
 		ShardID:         shardID,
@@ -180,6 +189,16 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 	}
 	if !isValid {
 		Logger.log.Info("WARNING: pair of incognito token id & ethereum's id is invalid with previous blocks")
+		return append(instructions, rejectedInst), nil
+	}
+
+	pTokenInitInfoBytes, err := statedb.GetPTokenInit(stateDB, md.IncTokenID.String())
+	if err != nil {
+		Logger.log.Warn("WARNING: an issue occured while checking the decentralized token's existence against initialized privacy custom token on beacon: ", err)
+		return append(instructions, rejectedInst), nil
+	}
+	if len(pTokenInitInfoBytes) > 0 { // existed
+		Logger.log.Warnf("WARNING: The decentralized token (%s) was already existed in privacy custom token list in the previous blocks on beacon.", md.IncTokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
 
@@ -368,7 +387,7 @@ func (blockchain *BlockChain) buildInstructionsForInitPTokenReq(
 	}
 
 	initPTokenReq := initPTokenReqAction.Meta
-	tokenID := initPTokenReq.TokenID
+	tokenID := initPTokenReqAction.TokenID
 	tokenName := initPTokenReq.TokenName
 	tokenSymbol := initPTokenReq.TokenSymbol
 	rejectedInst := buildInstruction(metaType, shardID, "rejected", initPTokenReqAction.TxReqID.String())

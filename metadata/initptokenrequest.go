@@ -16,7 +16,6 @@ import (
 type InitPTokenRequest struct {
 	ReceiverAddress privacy.PaymentAddress
 	Amount 					uint64
-	TokenID         common.Hash
 	TokenName       string
 	TokenSymbol 		string
 	MetadataBase
@@ -25,6 +24,7 @@ type InitPTokenRequest struct {
 type InitPTokenReqAction struct {
 	Meta    InitPTokenRequest `json:"meta"`
 	TxReqID common.Hash       `json:"txReqId"`
+	TokenID common.Hash 			`json:"tokenId"`
 }
 
 type InitPTokenAcceptedInst struct {
@@ -53,7 +53,6 @@ func ParseInitPTokenInstContent(instContentStr string) (*InitPTokenReqAction, er
 func NewInitPTokenRequest(
 	receiverAddress privacy.PaymentAddress,
 	amount uint64,
-	tokenID common.Hash,
 	tokenName string,
 	tokenSymbol string,
 	metaType int,
@@ -64,7 +63,6 @@ func NewInitPTokenRequest(
 	initPTokenReq := &InitPTokenRequest{
 		ReceiverAddress: receiverAddress,
 		Amount: 				 amount,
-		TokenID:         tokenID,
 		TokenName:       tokenName,
 		TokenSymbol: 		 tokenSymbol,
 	}
@@ -73,11 +71,6 @@ func NewInitPTokenRequest(
 }
 
 func NewInitPTokenRequestFromMap(data map[string]interface{}) (Metadata, error) {
-	tokenID, err := common.Hash{}.NewHashFromStr(data["TokenID"].(string))
-	if err != nil {
-		return nil, NewMetadataTxError(InitPTokenRequestNewInitPTokenRequestFromMapError, errors.New("TokenID incorrect"))
-	}
-
 	tokenName, ok := data["TokenName"].(string)
 	if !ok {
 		return nil, NewMetadataTxError(InitPTokenRequestNewInitPTokenRequestFromMapError, errors.New("TokenName incorrect"))
@@ -101,7 +94,6 @@ func NewInitPTokenRequestFromMap(data map[string]interface{}) (Metadata, error) 
 	return NewInitPTokenRequest(
 		keyWallet.KeySet.PaymentAddress,
 		amt,
-		*tokenID,
 		tokenName,
 		tokenSymbol,
 		InitPTokenRequestMeta,
@@ -116,9 +108,6 @@ func (iReq InitPTokenRequest) ValidateTxWithBlockChain(
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-	if statedb.PrivacyTokenIDExisted(transactionStateDB, iReq.TokenID) {
-		return false, NewMetadataTxError(InitPTokenRequestValidateTxWithBlockChainError, errors.New(fmt.Sprintf("The token id (%s) was already existed", iReq.TokenID.String())))
-	}
 	return true, nil
 }
 
@@ -135,9 +124,6 @@ func (iReq InitPTokenRequest) ValidateSanityData(chainRetriever ChainRetriever, 
 	if iReq.TokenSymbol == "" {
 		return false, false, NewMetadataTxError(InitPTokenRequestValidateSanityDataError, errors.New("Wrong request info's token symbol"))
 	}
-	if iReq.TokenID.String() == "" {
-		return false, false, NewMetadataTxError(InitPTokenRequestValidateSanityDataError, errors.New("Wrong request info's token ID"))
-	}
 	return true, true, nil
 }
 
@@ -147,8 +133,6 @@ func (iReq InitPTokenRequest) ValidateMetadataByItself() bool {
 
 func (iReq InitPTokenRequest) Hash() *common.Hash {
 	record := iReq.ReceiverAddress.String()
-	record += iReq.TokenID.String()
-	// TODO: @hung change to record += fmt.Sprint(iReq.DepositedAmount)
 	record += fmt.Sprint(iReq.Amount)
 	record += iReq.TokenName
 	record += iReq.TokenSymbol
@@ -159,11 +143,48 @@ func (iReq InitPTokenRequest) Hash() *common.Hash {
 	return &hash
 }
 
+func (iReq *InitPTokenRequest) genTokenID(tx Transaction, shardID byte) (*common.Hash, error) {
+	record := iReq.TokenName
+	record += iReq.TokenSymbol
+	record += fmt.Sprintf("%d", iReq.Amount)
+	proof := tx.GetProof()
+
+	if proof != nil {
+		for _, out := range proof.GetOutputCoins() {
+			record += string(out.CoinDetails.GetPublicKey().ToBytesS())
+			record += strconv.FormatUint(out.CoinDetails.GetValue(), 10)
+		}
+		for _, in := range proof.GetInputCoins() {
+			if in.CoinDetails.GetPublicKey() != nil {
+				record += string(in.CoinDetails.GetPublicKey().ToBytesS())
+			}
+			if in.CoinDetails.GetValue() > 0 {
+				record += strconv.FormatUint(in.CoinDetails.GetValue(), 10)
+			}
+		}
+	}
+
+	point := privacy.HashToPoint([]byte(record))
+	hash := new(common.Hash)
+	err := hash.SetBytes(point.ToBytesS())
+	if err != nil {
+		return nil, err
+	}
+	tokenID := common.HashH(append(hash.GetBytes(), shardID))
+	return &tokenID, nil
+}
+
 func (iReq *InitPTokenRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+	tokenID, err := iReq.genTokenID(tx, shardID)
+	if err != nil {
+		return [][]string{}, NewMetadataTxError(InitPTokenRequestBuildReqActionsError, err)
+	}
+
 	txReqID := *(tx.Hash())
 	actionContent := map[string]interface{}{
 		"meta":    *iReq,
 		"txReqId": txReqID,
+		"tokenId": tokenID,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
