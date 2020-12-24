@@ -1,9 +1,11 @@
 package btcrelaying
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 )
 
@@ -117,5 +119,62 @@ func TestDecodeValidBTCMainNetAddress(t *testing.T) {
 	_, err := btcutil.DecodeAddress(testAddrStr, params)
 	if err != nil {
 		t.Errorf("Expected returned error is null, but got %v\n", err)
+	}
+}
+
+func TestBTCMainnetAddress(t *testing.T) {
+	type BTCMainnetAddressTestCases struct {
+		address string
+		isValid bool
+	}
+	testcases := []BTCMainnetAddressTestCases{
+		//{"bc1qq7ndvtvyzcea44ps6d4nt3plk02ghpsha0t55y", true},		// AddressWitnessPubKeyHash
+		//{"1KN7N34ZUd1HyXgqcJpeGrooQcLf2L4xFC", true},				// AddressPubKeyHash
+	}
+
+	//addressPubKey := btcutil.NewAddressPubKey()
+
+	btcChain := initBTCHeaderMainNetChain(t)
+	if btcChain == nil {
+		t.Error("BTC chain instance should not be null")
+		return
+	}
+	params := btcChain.GetChainParams()
+
+	var pkScript []byte
+	var addrs  []btcutil.Address
+	for _, tc := range testcases {
+		actualResult := true
+		// decode address from string to bytes array
+		btcAddress, err := btcutil.DecodeAddress(tc.address, params)
+		//fmt.Printf("btcAddress %+v\n", btcAddress.)
+		if err != nil {
+			actualResult = false
+			t.Errorf("Can not decode btc address %v - Error %v", tc.address, err)
+			goto checkResult
+		}
+		// convert btcAddress to pkScript
+		pkScript, err = txscript.PayToAddrScript(btcAddress)
+		if err != nil {
+			actualResult = false
+			t.Errorf("Can not convert btc address %v to pkScript - Error %v", tc.address, err)
+			goto checkResult
+		}
+
+		// extract pkscript to address
+		_, addrs, _, err = txscript.ExtractPkScriptAddrs(pkScript, params)
+		if err != nil ||  len(addrs) == 0 {
+			actualResult = false
+			t.Errorf("Can not extract btc address %v - Error %v", tc.address, err)
+			goto checkResult
+		} else {
+			if tc.address != addrs[0].EncodeAddress() {
+				actualResult = false
+				t.Errorf("Different btc address before %v - after %v", tc.address, addrs[0].EncodeAddress())
+				goto checkResult
+			}
+		}
+
+		checkResult: assert.Equal(t, tc.isValid, actualResult)
 	}
 }
