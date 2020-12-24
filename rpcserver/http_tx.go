@@ -960,7 +960,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 
-	Logger.log.Infof("BUGLOG creating staking transaction:\n txHash = %v,\n shardID = %v,\n stakingMeta = %v\n", txID.String(), txShardID, *stakingMetadata)
+	Logger.log.Infof("BUGLOG creating staking transaction: txHash = %v, shardID = %v, stakingMeta = %v", txID.String(), txShardID, *stakingMetadata)
 	result := jsonresult.CreateTransactionResult{
 		TxID:            txID.String(),
 		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
