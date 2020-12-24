@@ -303,4 +303,4 @@ var (
 	EmptyRoot = HexToHash(HexEmptyRoot)
 )
 
-var TIMESLOT = uint64(10)
+var TIMESLOT = uint64(0) //need to be set when init chain
