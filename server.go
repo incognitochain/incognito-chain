@@ -721,13 +721,9 @@ func (serverObj Server) Start() {
 		serverObj.rpcServer.Start()
 	}
 
-	if cfg.MiningKeys != "" && cfg.PrivateKey != "" {
+	if cfg.MiningKeys != "" || cfg.PrivateKey != "" {
 		serverObj.memPool.IsBlockGenStarted = true
 		serverObj.blockChain.SetIsBlockGenStarted(true)
-		// for _, shardPool := range serverObj.shardPool {
-		// 	go shardPool.Start(serverObj.cQuit)
-		// }
-		// go serverObj.beaconPool.Start(serverObj.cQuit)
 	}
 
 	//go serverObj.blockChain.Synker.Start()
@@ -1673,6 +1669,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 		pending   = "pending"
 		waiting   = "waiting"
 	)
+
 	if chain >= common.MaxShardNumber || chain < -1 {
 		return notmining
 	}
