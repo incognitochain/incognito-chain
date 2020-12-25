@@ -127,6 +127,7 @@ func (e *BLSBFT_V2) Start() error {
 					}
 					e.Logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
+					e.Logger.Infof("Current ticker: %v\n", ticker)
 				} else {
 					e.receiveBlockByHash[blkHash].block = block
 				}
