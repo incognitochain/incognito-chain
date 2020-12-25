@@ -40,16 +40,14 @@ func IsValidBNBAddress(bnbAddr string, chainID string) bool {
 	if err != nil || len(keyBytes) != types.AddrLen {
 		return false
 	}
-
-	if chainID == TestnetBNBChainID && prefix != types.TestNetwork.Bech32Prefixes() {
-		return false
-	} else if chainID == MainnetBNBChainID && prefix != types.ProdNetwork.Bech32Prefixes() {
-		return false
-	} else if chainID != TestnetBNBChainID && chainID != MainnetBNBChainID {
+	switch chainID {
+	case TestnetBNBChainID:
+		return prefix == types.TestNetwork.Bech32Prefixes()
+	case MainnetBNBChainID:
+		return prefix == types.ProdNetwork.Bech32Prefixes()
+	default:
 		return false
 	}
-
-	return true
 }
 
 func generateBNBAddress(network types.ChainNetwork) string {
