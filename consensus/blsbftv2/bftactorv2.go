@@ -164,6 +164,7 @@ func (e *BLSBFT_V2) Start() error {
 
 			case <-ticker:
 				if !e.Chain.IsReady() {
+					e.Logger.Infof("Chain not ready\n")
 					continue
 				}
 				e.currentTime = time.Now().Unix()
@@ -194,6 +195,8 @@ func (e *BLSBFT_V2) Start() error {
 					}
 				}
 
+				e.Logger.Infof("Passing newTimeSlot\n")
+
 				if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk && common.CalculateTimeSlot(bestView.GetBlock().GetProduceTime()) != e.currentTimeSlot { // current timeslot is not add to view, and this user is proposer of this timeslot
 					//using block hash as key of best view -> check if this best view we propose or not
 					if _, ok := e.proposeHistory.Get(fmt.Sprintf("%s%d", e.currentTimeSlot)); !ok {
@@ -221,6 +224,8 @@ func (e *BLSBFT_V2) Start() error {
 					}
 				}
 
+				e.Logger.Infof("Passing Get mining key\n")
+
 				/*
 					Check for valid block to vote
 				*/
@@ -228,6 +233,7 @@ func (e *BLSBFT_V2) Start() error {
 				//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
 				for h, proposeBlockInfo := range e.receiveBlockByHash {
 					if proposeBlockInfo.block == nil {
+						e.Logger.Infof("ProposeBlock empty")
 						continue
 					}
 					bestViewHeight := bestView.GetHeight()
@@ -262,6 +268,7 @@ func (e *BLSBFT_V2) Start() error {
 				/*
 					Check for 2/3 vote to commit
 				*/
+				e.Logger.Infof("Processing get enough vote: %v\n", e.receiveBlockByHash)
 				for k, v := range e.receiveBlockByHash {
 					e.processIfBlockGetEnoughVote(k, v)
 				}
