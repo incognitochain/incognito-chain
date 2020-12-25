@@ -298,7 +298,7 @@ func (c CoinV2) GetShardID() (uint8, error) {
 	return shardID, nil
 }
 func (c CoinV2) GetCoinDetailEncrypted() []byte {
-	return nil
+	return c.GetAmount().ToBytesS()
 }
 
 
