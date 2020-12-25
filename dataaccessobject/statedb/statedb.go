@@ -1667,6 +1667,9 @@ func (stateDB *StateDB) getAllStaker(ids []int) int {
 	return len(allStaker)
 }
 
+
+// =========== privacy custom token initialization ==============
+
 func (stateDB *StateDB) getPTokenInitState(key common.Hash) (*PTokenInitState, bool, error) {
 	ptiState, err := stateDB.getStateObject(PTokenInitObjectType, key)
 	if err != nil {
@@ -1676,4 +1679,23 @@ func (stateDB *StateDB) getPTokenInitState(key common.Hash) (*PTokenInitState, b
 		return ptiState.GetValue().(*PTokenInitState), true, nil
 	}
 	return NewPTokenInitState(), false, nil
+}
+
+func (stateDB *StateDB) getAllPTokenInits() ([]*PTokenInitState, error) {
+	pTokenInitStates := []*PTokenInitState{}
+	temp := stateDB.trie.NodeIterator(GetPTokenInitPrefix())
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		s := NewPTokenInitState()
+		err := json.Unmarshal(newValue, s)
+		if err != nil {
+			Logger.log.warn("wrong expect type")
+			return pTokenInitStates, err
+		}
+		pTokenInitStates = append(pTokenInitStates, s)
+	}
+	return pTokenInitStates, nil
 }

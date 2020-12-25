@@ -1,9 +1,6 @@
 package statedb
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
@@ -23,26 +20,42 @@ func StorePTokenInit(
 	return nil
 }
 
-func GetPTokenInit(stateDB *StateDB, tokenID string) ([]byte, error) {
+func GetPTokenInit(stateDB *StateDB, tokenID string) (*rawdbv2.PTokenInitInfo, error) {
 	key := GeneratePTokenInitObjecKey(tokenID)
 	ptiState, has, err := stateDB.getPTokenInitState(key)
 
 	if err != nil {
-		return []byte{}, NewStatedbError(GetPTokenInitError, err)
+		return nil, NewStatedbError(GetPTokenInitError, err)
 	}
-	if !has {
-		return []byte{}, NewStatedbError(GetPTokenInitError, fmt.Errorf("key with ptoken id %+v not found", tokenID))
+	if !has || ptiState == nil {
+		return nil, nil
 	}
-	res, err := json.Marshal(
-		rawdbv2.NewPTokenInitInfo(
+
+	return rawdbv2.NewPTokenInitInfo(
+		ptiState.TokenID(),
+		ptiState.TokenName(),
+		ptiState.TokenSymbol(),
+		ptiState.Amount(),
+	), nil
+}
+
+func GetAllPTokenInits(stateDB *StateDB) ([]*rawdbv2.PTokenInitInfo, error) {
+	pTokenInits := []*rawdbv2.PTokenInitInfo{}
+	pTokenInitStates, err := stateDB.getAllPTokenInits()
+	if err != nil {
+		return pTokenInits, err
+	}
+	for _, ptiState := range pTokenInitStates {
+		if ptiState == nil {
+			continue
+		}
+		pTokenInitInfo := rawdbv2.NewPTokenInitInfo(
 			ptiState.TokenID(),
 			ptiState.TokenName(),
 			ptiState.TokenSymbol(),
 			ptiState.Amount(),
-		),
-	)
-	if err != nil {
-		return []byte{}, NewStatedbError(GetPTokenInitError, err)
+		)
+		pTokenInits = append(pTokenInits, pTokenInitInfo)
 	}
-	return res, nil
+	return pTokenInits, nil
 }

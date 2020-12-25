@@ -77,12 +77,12 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 		fmt.Printf("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
-	pTokenInitInfoBytes, err := statedb.GetPTokenInit(stateDB, issuingTokenID.String())
+	pTokenInitInfo, err := statedb.GetPTokenInit(stateDB, issuingTokenID.String())
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occured while checking the centralized token's existence against initialized privacy custom token on beacon: ", err)
 		return append(instructions, rejectedInst), nil
 	}
-	if len(pTokenInitInfoBytes) > 0 { // existed
+	if pTokenInitInfo != nil { // existed
 		Logger.log.Warnf("WARNING: The centralized token (%s) was already existed in privacy custom token list in the previous blocks on beacon.", issuingTokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
@@ -192,12 +192,12 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	pTokenInitInfoBytes, err := statedb.GetPTokenInit(stateDB, md.IncTokenID.String())
+	pTokenInitInfo, err := statedb.GetPTokenInit(stateDB, md.IncTokenID.String())
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occured while checking the decentralized token's existence against initialized privacy custom token on beacon: ", err)
 		return append(instructions, rejectedInst), nil
 	}
-	if len(pTokenInitInfoBytes) > 0 { // existed
+	if pTokenInitInfo != nil { // existed
 		Logger.log.Warnf("WARNING: The decentralized token (%s) was already existed in privacy custom token list in the previous blocks on beacon.", md.IncTokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
@@ -409,12 +409,12 @@ func (blockchain *BlockChain) buildInstructionsForInitPTokenReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	pTokenInitInfoBytes, err := statedb.GetPTokenInit(stateDB, tokenID.String())
+	pTokenInitInfo, err := statedb.GetPTokenInit(stateDB, tokenID.String())
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occured while checking the initializing token's existence on beacon: ", err)
 		return append(instructions, rejectedInst), nil
 	}
-	if len(pTokenInitInfoBytes) > 0 { // existed
+	if pTokenInitInfo != nil { // existed
 		Logger.log.Warnf("WARNING: The initializing token (%s) was already existed in the previous blocks on beacon.", tokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
@@ -502,6 +502,6 @@ func (blockGenerator *BlockGenerator) buildPTokenInitializationTx(
 		Logger.log.Warn("WARNING: an error occured while initializing response tx: ", initErr)
 		return nil, nil
 	}
-	Logger.log.Warn("[Init privacy custom token] Create tx ok.")
+	Logger.log.Info("[Init privacy custom token] Create tx ok.")
 	return resTx, nil
 }

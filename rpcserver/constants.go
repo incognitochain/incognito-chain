@@ -281,6 +281,7 @@ const (
 	// init privacy custom token
 	createAndSendPTokenInitRequest = "createandsendptokeninitrequest"
 	getPTokenInitByTokenID         = "getptokeninitbytokenid"
+	getAllPTokenInits              = "getallptokeninits"
 )
 
 const (

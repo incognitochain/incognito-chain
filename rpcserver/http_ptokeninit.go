@@ -20,3 +20,11 @@ func (httpServer *HttpServer) handleGetPTokenInitByTokenID(params interface{}, c
 	}
 	return pTokenInitByTokenID, nil
 }
+
+func (httpServer *HttpServer) handleGetAllPTokenInits(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	pTokenInits, err := httpServer.blockService.GetAllPTokenInits()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
+	}
+	return pTokenInits, nil
+}

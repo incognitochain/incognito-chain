@@ -267,6 +267,7 @@ var HttpHandler = map[string]httpHandler{
 
 	// ptoken init
 	getPTokenInitByTokenID: (*HttpServer).handleGetPTokenInitByTokenID,
+	getAllPTokenInits:      (*HttpServer).handleGetAllPTokenInits,
 }
 
 // Commands that are available to a limited user

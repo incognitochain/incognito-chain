@@ -1153,7 +1153,12 @@ func (blockService BlockService) GetRewardFeatureByFeatureName(featureName strin
 }
 
 //=============================== ptoken init ======================
-func (blockService BlockService) GetPTokenInit(tokenID string) ([]byte, error) {
+func (blockService BlockService) GetPTokenInit(tokenID string) (*rawdbv2.PTokenInitInfo, error) {
 	pTokenInitStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	return statedb.GetPTokenInit(pTokenInitStateDB, tokenID)
+}
+
+func (blockService BlockService) GetAllPTokenInits() ([]*rawdbv2.PTokenInitInfo, error) {
+	pTokenInitStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	return statedb.GetAllPTokenInits(pTokenInitStateDB)
 }
