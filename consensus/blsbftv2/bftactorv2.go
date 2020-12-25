@@ -150,6 +150,7 @@ func (e *BLSBFT_V2) Start() error {
 						b.votes[voteMsg.Validator] = voteMsg // store it
 						e.Logger.Infof("Receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
 						b.hasNewVote = true
+						e.Logger.Infof("New vote Current ticker: %v\n", ticker)
 					}
 				} else {
 					e.receiveBlockByHash[voteMsg.BlockHash] = &ProposeBlockInfo{
