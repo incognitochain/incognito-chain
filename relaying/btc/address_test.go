@@ -135,6 +135,7 @@ func TestBTCMainnetAddress(t *testing.T) {
 		{"37ExSZhkPhSwmzdjbeznK529vvrgS3qsJW", true},                             // legacy - AddressScriptHash
 		{"3EtBoGNHBd1zCH2A5WTExJrizB7TiBw4ci", true},                             // p2sh-segwit -- AddressScriptHash
 		{"bc1qpx5p30dcfxqpz5sxemv30ky34lf20jwe7nl95exqcphjvxxehalql9mmrd", true}, // bech32 -- AddressWitnessScriptHash
+		{"tb1qwtlr3cmn0kg3h6passf7wktmy7596p7swpmxdz6nsp6pmvhzg3eq93qvfz", false}, // bech32 -- AddressWitnessScriptHash - testnet
 	}
 
 	btcChain := initBTCHeaderMainNetChain(t)
@@ -146,21 +147,28 @@ func TestBTCMainnetAddress(t *testing.T) {
 
 	var pkScript []byte
 	var addrs []btcutil.Address
+	var isRightNet bool
 	for _, tc := range testcases {
 		actualResult := true
 		// decode address from string to bytes array
 		btcAddress, err := btcutil.DecodeAddress(tc.address, params)
-		//fmt.Printf("btcAddress %+v\n", btcAddress.)
 		if err != nil {
 			actualResult = false
-			t.Errorf("Can not decode btc address %v - Error %v", tc.address, err)
+			t.Logf("Can not decode btc address %v - Error %v", tc.address, err)
+			goto checkResult
+		}
+		// check right network
+		isRightNet = btcAddress.IsForNet(params)
+		if !isRightNet {
+			actualResult = false
+			t.Logf("Invalid network btc address %v", tc.address)
 			goto checkResult
 		}
 		// convert btcAddress to pkScript
 		pkScript, err = txscript.PayToAddrScript(btcAddress)
 		if err != nil {
 			actualResult = false
-			t.Errorf("Can not convert btc address %v to pkScript - Error %v", tc.address, err)
+			t.Logf("Can not convert btc address %v to pkScript - Error %v", tc.address, err)
 			goto checkResult
 		}
 
@@ -168,12 +176,12 @@ func TestBTCMainnetAddress(t *testing.T) {
 		_, addrs, _, err = txscript.ExtractPkScriptAddrs(pkScript, params)
 		if err != nil || len(addrs) == 0 {
 			actualResult = false
-			t.Errorf("Can not extract btc address %v - Error %v", tc.address, err)
+			t.Logf("Can not extract btc address %v - Error %v", tc.address, err)
 			goto checkResult
 		} else {
 			if tc.address != addrs[0].EncodeAddress() {
 				actualResult = false
-				t.Errorf("Different btc address before %v - after %v", tc.address, addrs[0].EncodeAddress())
+				t.Logf("Different btc address before %v - after %v", tc.address, addrs[0].EncodeAddress())
 				goto checkResult
 			}
 		}
@@ -196,6 +204,7 @@ func TestBTCTestnetAddress(t *testing.T) {
 		{"2Mx7sVozbZZXPiqsTRWLnZ7bC7vGUEEwX6g", true},                            // legacy - AddressScriptHash
 		{"2MuiiTCHGtQ3MMFhAQ3kFGsJ6N9K89itPcw", true},                            // p2sh-segwit -- AddressScriptHash
 		{"tb1qwtlr3cmn0kg3h6passf7wktmy7596p7swpmxdz6nsp6pmvhzg3eq93qvfz", true}, // bech32 -- AddressWitnessScriptHash
+		{"bc1qpx5p30dcfxqpz5sxemv30ky34lf20jwe7nl95exqcphjvxxehalql9mmrd", false}, // bech32 -- AddressWitnessScriptHash - mainnet
 	}
 
 	btcChain := initBTCHeaderTestNetChain(t)
@@ -207,21 +216,28 @@ func TestBTCTestnetAddress(t *testing.T) {
 
 	var pkScript []byte
 	var addrs []btcutil.Address
+	var isRightNet bool
 	for _, tc := range testcases {
 		actualResult := true
 		// decode address from string to bytes array
 		btcAddress, err := btcutil.DecodeAddress(tc.address, params)
-		//fmt.Printf("btcAddress %+v\n", btcAddress.)
 		if err != nil {
 			actualResult = false
-			t.Errorf("Can not decode btc address %v - Error %v", tc.address, err)
+			t.Logf("Can not decode btc address %v - Error %v", tc.address, err)
+			goto checkResult
+		}
+		// check right network
+		isRightNet = btcAddress.IsForNet(params)
+		if !isRightNet {
+			actualResult = false
+			t.Logf("Invalid network btc address %v", tc.address)
 			goto checkResult
 		}
 		// convert btcAddress to pkScript
 		pkScript, err = txscript.PayToAddrScript(btcAddress)
 		if err != nil {
 			actualResult = false
-			t.Errorf("Can not convert btc address %v to pkScript - Error %v", tc.address, err)
+			t.Logf("Can not convert btc address %v to pkScript - Error %v", tc.address, err)
 			goto checkResult
 		}
 
@@ -229,12 +245,12 @@ func TestBTCTestnetAddress(t *testing.T) {
 		_, addrs, _, err = txscript.ExtractPkScriptAddrs(pkScript, params)
 		if err != nil || len(addrs) == 0 {
 			actualResult = false
-			t.Errorf("Can not extract btc address %v - Error %v", tc.address, err)
+			t.Logf("Can not extract btc address %v - Error %v", tc.address, err)
 			goto checkResult
 		} else {
 			if tc.address != addrs[0].EncodeAddress() {
 				actualResult = false
-				t.Errorf("Different btc address before %v - after %v", tc.address, addrs[0].EncodeAddress())
+				t.Logf("Different btc address before %v - after %v", tc.address, addrs[0].EncodeAddress())
 				goto checkResult
 			}
 		}
