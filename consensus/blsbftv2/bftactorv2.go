@@ -163,6 +163,7 @@ func (e *BLSBFT_V2) Start() error {
 				// e.Logger.Infof("receive vote for block %s (%d)", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes))
 
 			case <-ticker:
+				e.Logger.Info("Entering ticker")
 				if !e.Chain.IsReady() {
 					e.Logger.Infof("Chain not ready\n")
 					continue
@@ -172,7 +173,6 @@ func (e *BLSBFT_V2) Start() error {
 				newTimeSlot := false
 				if e.currentTimeSlot != common.CalculateTimeSlot(e.currentTime) {
 					newTimeSlot = true
-
 				}
 
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
