@@ -372,10 +372,11 @@ func (curView *BeaconBestState) GenerateInstruction(
 		randomInstruction, randomNumber := curView.generateRandomInstruction()
 		instructions = append(instructions, randomInstruction)
 		Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v, %+v", randomInstruction, newBeaconHeight)
-		assignInstructions, _, _ := curView.beaconCommitteeEngine.GenerateAssignInstruction(
+		assignInstructions := curView.beaconCommitteeEngine.GenerateAssignInstruction(
 			randomNumber,
 			blockchain.config.ChainParams.AssignOffset,
 			curView.ActiveShards,
+			newBeaconHeight,
 		)
 		for _, assignInstruction := range assignInstructions {
 			instructions = append(instructions, assignInstruction.ToString())

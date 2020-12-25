@@ -21,3 +21,8 @@ const (
 	swapRuleSlashingVersion = 2
 	swapRuleDCSVersion      = 3
 )
+
+const (
+	syncTerm      = 17280  //2 days with block time = 10s
+	committeeTerm = 259200 //30 days with block time = 10s
+)

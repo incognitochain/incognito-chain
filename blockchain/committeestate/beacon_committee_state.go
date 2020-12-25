@@ -6,7 +6,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -16,6 +15,8 @@ type BeaconCommitteeState interface {
 	ShardCommittee() map[byte][]incognitokey.CommitteePublicKey
 	ShardSubstitute() map[byte][]incognitokey.CommitteePublicKey
 	ShardCommonPool() []incognitokey.CommitteePublicKey
+	CandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
+	CandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	PropationPool() map[string]signaturecounter.Penalty
 	NumberOfAssignedCandidates() int
 	AutoStake() map[string]bool
@@ -31,14 +32,9 @@ type BeaconCommitteeState interface {
 	SwapRule() SwapRule
 	UnassignedCommonPool() []string
 	AllSubstituteCommittees() []string
-	ProcessStakeInstruction(*instruction.StakeInstruction, *CommitteeChange) (*CommitteeChange, error)
-	ProcessStopAutoStakeInstruction(*instruction.StopAutoStakeInstruction, *BeaconCommitteeStateEnvironment, *CommitteeChange, BeaconCommitteeState) *CommitteeChange
-	ProcessAssignWithRandomInstruction(int64, int, *CommitteeChange, BeaconCommitteeState) *CommitteeChange
-	ProcessSwapShardInstruction(*instruction.SwapShardInstruction, *BeaconCommitteeStateEnvironment, *CommitteeChange, *instruction.ReturnStakeInstruction, BeaconCommitteeState) (*CommitteeChange, *instruction.ReturnStakeInstruction, error)
-	ProcessUnstakeInstruction(*instruction.UnstakeInstruction, *BeaconCommitteeStateEnvironment, *CommitteeChange, *instruction.ReturnStakeInstruction, BeaconCommitteeState) (*CommitteeChange, *instruction.ReturnStakeInstruction, error)
-	SyncPool() map[byte][]incognitokey.CommitteePublicKey
 	SetSwapRule(SwapRule)
-	ProcessAssignInstruction(*instruction.AssignInstruction, *BeaconCommitteeStateEnvironment, *CommitteeChange) (*CommitteeChange, *instruction.ReturnStakeInstruction, error)
+	SyncPool() map[byte][]incognitokey.CommitteePublicKey
+	Terms() map[string]uint64
 }
 
 func cloneBeaconCommitteeStateFrom(state BeaconCommitteeState) BeaconCommitteeState {

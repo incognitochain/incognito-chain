@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
@@ -35,13 +36,13 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 	incurredInstructions := [][]string{}
 	returnStakingInstruction := instruction.NewReturnStakeIns()
 	committeeChange := NewCommitteeChange()
-	oldState := engine.finalState
+	oldState := engine.finalState.(*BeaconCommitteeStateV3)
 
 	oldState.Mu().RLock()
 	defer oldState.Mu().RUnlock()
 
 	engine.uncommittedState = cloneBeaconCommitteeStateFrom(oldState)
-	newState := engine.uncommittedState
+	newState := engine.uncommittedState.(*BeaconCommitteeStateV3)
 
 	newState.Mu().Lock()
 	defer newState.Mu().Unlock()
@@ -74,40 +75,54 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, err = newState.ProcessStakeInstruction(stakeInstruction, committeeChange)
+			committeeChange, err = newState.processStakeInstruction(stakeInstruction, committeeChange)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+
 		case instruction.RANDOM_ACTION:
 			randomInstruction, err := instruction.ValidateAndImportRandomInstructionFromString(inst)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange = newState.ProcessAssignWithRandomInstruction(
+			committeeChange = newState.processAssignWithRandomInstruction(
 				randomInstruction.BtcNonce, env.ActiveShards, committeeChange, oldState)
+
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange = newState.ProcessStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange, oldState)
+			committeeChange = newState.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange, oldState)
+
 		case instruction.UNSTAKE_ACTION:
 			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, returnStakingInstruction, err = newState.ProcessUnstakeInstruction(
+			committeeChange, returnStakingInstruction, err = newState.processUnstakeInstruction(
 				unstakeInstruction, env, committeeChange, returnStakingInstruction, oldState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, returnStakingInstruction, err = newState.ProcessSwapShardInstruction(
+			committeeChange, returnStakingInstruction, err = newState.processSwapShardInstruction(
 				swapShardInstruction, env, committeeChange, returnStakingInstruction, oldState)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+		case instruction.ASSIGN_ACTION:
+			assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(inst)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			committeeChange, returnStakingInstruction, err = newState.processAssignInstruction(
+				assignInstruction, env, committeeChange, returnStakingInstruction, oldState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -126,7 +141,34 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 }
 
 //GenerateAssignInstruction generate assign instructions for assign from syncing pool to shard pending pool
-// TODO: @tin Overridew from parent function and add validators from syncpool to shard pending pool
-func (engine *BeaconCommitteeEngineV3) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string) {
-	return []*instruction.AssignInstruction{}, []string{}, make(map[byte][]string)
+func (engine *BeaconCommitteeEngineV3) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int, beaconHeight uint64) ([]*instruction.AssignInstruction, []string, map[byte][]string) {
+	assignInstructions := []*instruction.AssignInstruction{}
+
+	for i := 0; i < activeShards; i++ {
+		shardID := byte(i)
+		syncingValidators, _ := incognitokey.CommitteeKeyListToString(engine.finalState.SyncPool()[shardID])
+
+		validKeys := []string{}
+		for _, v := range syncingValidators {
+			if beaconHeight-syncTerm-engine.finalState.Terms()[v] < 0 {
+				break
+			}
+			validKeys = append(validKeys, v)
+		}
+
+		validKeysStruct, _ := incognitokey.CommitteeBase58KeyListToStruct(validKeys)
+		assignInstruction := &instruction.AssignInstruction{
+			ChainID:               int(shardID),
+			ShardCandidates:       validKeys,
+			ShardCandidatesStruct: validKeysStruct,
+		}
+
+		if !assignInstruction.IsEmpty() {
+			assignInstructions = append(assignInstructions, assignInstruction)
+		} else {
+			Logger.log.Infof("Generate empty assign instruction beacon hash: %s & height: %v \n", engine.beaconHash, engine.beaconHeight)
+		}
+	}
+
+	return assignInstructions, []string{}, make(map[byte][]string)
 }
