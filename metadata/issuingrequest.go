@@ -105,6 +105,36 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (basemeta.Metadata, e
 	)
 }
 
+func NewIssuingRequestFromMapV2(data map[string]interface{}) (basemeta.Metadata, error) {
+	tokenID, err := common.Hash{}.NewHashFromStr(data["TokenID"].(string))
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenID incorrect"))
+	}
+
+	tokenName, ok := data["TokenName"].(string)
+	if !ok {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenName incorrect"))
+	}
+
+	depositedAmt, err := common.AssertAndConvertStrToNumber(data["DepositedAmount"])
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("DepositedAmount incorrect"))
+	}
+
+	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ReceiveAddress incorrect"))
+	}
+
+	return NewIssuingRequest(
+		keyWallet.KeySet.PaymentAddress,
+		depositedAmt,
+		*tokenID,
+		tokenName,
+		basemeta.IssuingRequestMeta,
+	)
+}
+
 func (iReq IssuingRequest) ValidateTxWithBlockChain(tx basemeta.Transaction, chainRetriever basemeta.ChainRetriever, shardViewRetriever basemeta.ShardViewRetriever, beaconViewRetriever basemeta.BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	shardBlockBeaconHeight := shardViewRetriever.GetBeaconHeight()
 	keySet, err := wallet.Base58CheckDeserialize(chainRetriever.GetCentralizedWebsitePaymentAddress(shardBlockBeaconHeight))

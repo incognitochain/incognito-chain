@@ -93,17 +93,17 @@ func groupPDEActionsByShardID(
 }
 
 func (blockchain *BlockChain) buildStatefulInstructions(
-	stateDB *statedb.StateDB,
+	beaconBestState *BeaconBestState,
+	featureStateDB *statedb.StateDB,
 	statefulActionsByShardID map[byte][][]string,
 	beaconHeight uint64,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams portal.PortalParams) [][]string {
-	currentPDEState, err := InitCurrentPDEStateFromDB(stateDB, beaconHeight-1)
+	currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
 	}
-
-	currentPortalState, err := portalprocess.InitCurrentPortalStateFromDB(stateDB)
+	currentPortalState, err := portalprocess.InitCurrentPortalStateFromDB(featureStateDB)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -153,10 +153,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			newInst := [][]string{}
 			switch metaType {
 			case basemeta.IssuingRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingReq(stateDB, contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case basemeta.IssuingETHRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingETHReq(stateDB, contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingETHReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case basemeta.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(
@@ -227,7 +227,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	// handle portal instructions
 	portalInsts, err := blockchain.handlePortalInsts(
-		stateDB,
+		featureStateDB,
 		beaconHeight-1,
 		currentPortalState,
 		rewardForCustodianByEpoch,

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -30,20 +29,6 @@ func buildInstruction(metaType int, shardID byte, instStatus string, contentStr 
 	}
 }
 
-func getShardIDFromPaymentAddress(addressStr string) (byte, error) {
-	keyWallet, err := wallet.Base58CheckDeserialize(addressStr)
-	if err != nil {
-		return byte(0), err
-	}
-	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
-		return byte(0), errors.New("Payment address' public key must not be empty")
-	}
-	// calculate shard ID
-	lastByte := keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]
-	shardID := common.GetShardIDFromLastByte(lastByte)
-	return shardID, nil
-}
-
 func (blockchain *BlockChain) buildInstructionsForContractingReq(
 	contentStr string,
 	shardID byte,
@@ -54,6 +39,7 @@ func (blockchain *BlockChain) buildInstructionsForContractingReq(
 }
 
 func (blockchain *BlockChain) buildInstructionsForIssuingReq(
+	beaconBestState *BeaconBestState,
 	stateDB *statedb.StateDB,
 	contentStr string,
 	shardID byte,
@@ -78,25 +64,23 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	ok, err := statedb.CanProcessCIncToken(stateDB, issuingTokenID)
+	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, issuingTokenID)
+	if err != nil {
+		Logger.log.Info("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
+		return append(instructions, rejectedInst), nil
+	}
+	ok, err := statedb.CanProcessCIncToken(stateDB, issuingTokenID, privacyTokenExisted)
 	if err != nil {
 		Logger.log.Info("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	if !ok {
-		Logger.log.Infof("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
+		fmt.Printf("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
-
-	if len(issuingReq.ReceiverAddress.Pk) == 0 {
-		Logger.log.Info("WARNING: invalid receiver address")
-		return append(instructions, rejectedInst), nil
-	}
-	lastByte := issuingReq.ReceiverAddress.Pk[len(issuingReq.ReceiverAddress.Pk)-1]
-	receivingShardID := common.GetShardIDFromLastByte(lastByte)
 
 	issuingAcceptedInst := metadata.IssuingAcceptedInst{
-		ShardID:         receivingShardID,
+		ShardID:         shardID,
 		DepositedAmount: issuingReq.DepositedAmount,
 		ReceiverAddr:    issuingReq.ReceiverAddress,
 		IncTokenID:      issuingTokenID,
@@ -114,7 +98,14 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 	return append(instructions, returnedInst), nil
 }
 
-func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(stateDB *statedb.StateDB, contentStr string, shardID byte, metaType int, ac *basemeta.AccumulatedValues) ([][]string, error) {
+func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
+	beaconBestState *BeaconBestState,
+	stateDB *statedb.StateDB,
+	contentStr string,
+	shardID byte,
+	metaType int,
+	ac *basemeta.AccumulatedValues,
+) ([][]string, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	instructions := [][]string{}
 	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
@@ -178,8 +169,12 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(stateDB *statedb
 		Logger.log.Info("WARNING: pair of incognito token id & ethereum's id is invalid in current block")
 		return append(instructions, rejectedInst), nil
 	}
-
-	isValid, err := statedb.CanProcessTokenPair(stateDB, ethereumToken, md.IncTokenID)
+	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, md.IncTokenID)
+	if err != nil {
+		Logger.log.Info("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
+		return append(instructions, rejectedInst), nil
+	}
+	isValid, err := statedb.CanProcessTokenPair(stateDB, ethereumToken, md.IncTokenID, privacyTokenExisted)
 	if err != nil {
 		Logger.log.Info("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
 		return append(instructions, rejectedInst), nil
@@ -207,14 +202,8 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(stateDB *statedb
 		amount = amt.Uint64()
 	}
 
-	receivingShardID, err := getShardIDFromPaymentAddress(addressStr)
-	if err != nil {
-		Logger.log.Info("WARNING: an error occured while getting shard id from payment address: ", err)
-		return append(instructions, rejectedInst), nil
-	}
-
 	issuingETHAcceptedInst := metadata.IssuingETHAcceptedInst{
-		ShardID:         receivingShardID,
+		ShardID:         shardID,
 		IssuingAmount:   amount,
 		ReceiverAddrStr: addressStr,
 		IncTokenID:      md.IncTokenID,
