@@ -226,7 +226,6 @@ func (beaconBestState *BeaconBestState) GetAShardCommittee(shardID byte) []incog
 }
 
 func (beaconBestState *BeaconBestState) GetShardCommittee() (res map[byte][]incognitokey.CommitteePublicKey) {
-
 	res = make(map[byte][]incognitokey.CommitteePublicKey)
 	for index, element := range beaconBestState.beaconCommitteeEngine.GetShardCommittee() {
 		res[index] = element
@@ -235,7 +234,6 @@ func (beaconBestState *BeaconBestState) GetShardCommittee() (res map[byte][]inco
 }
 
 func (beaconBestState *BeaconBestState) GetShardCommitteeFlattenList() []string {
-
 	committees := []string{}
 	for _, committeeStructs := range beaconBestState.GetShardCommittee() {
 		for _, committee := range committeeStructs {

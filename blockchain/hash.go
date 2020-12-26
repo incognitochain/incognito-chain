@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 // BuildKeccak256MerkleTree creates a merkle tree using Keccak256 hash func.
@@ -392,6 +392,10 @@ func verifyHashFromStringArray(strs []string, hash common.Hash) (common.Hash, bo
 
 func verifyHashFromShardState(allShardState map[byte][]types.ShardState, hash common.Hash) bool {
 	res, err := generateHashFromShardState(allShardState)
+
+	Logger.log.Info("[dcs] want:", res.String())
+	Logger.log.Info("[dcs] have:", hash.String())
+
 	if err != nil {
 		return false
 	}

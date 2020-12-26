@@ -21,7 +21,7 @@ func NewBeaconCommitteeEngineBaseWithValue(
 	beaconHeight uint64,
 	beaconHash common.Hash,
 	finalState BeaconCommitteeState) *beaconCommitteeEngineBase {
-	Logger.log.Infof("Init Beacon Committee Engine Base With Height , %+v", beaconHeight)
+	Logger.log.Debugf("Init Beacon Committee Engine Base With Height %+v And Beacon Committee State Version %+v", beaconHeight, finalState.Version())
 	return &beaconCommitteeEngineBase{
 		beaconHeight: beaconHeight,
 		beaconHash:   beaconHash,
@@ -195,8 +195,7 @@ func (engine beaconCommitteeEngineBase) compareHashes(hash1, hash2 *BeaconCommit
 }
 
 func (engine *beaconCommitteeEngineBase) Commit(hashes *BeaconCommitteeStateHash) error {
-
-	if !engine.uncommittedState.IsEmpty() {
+	if engine.uncommittedState.IsEmpty() {
 		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("%+v", engine.uncommittedState))
 	}
 
@@ -294,8 +293,6 @@ func (engine *beaconCommitteeEngineBase) GenerateAllSwapShardInstructions(
 			env.MaxShardCommitteeSize,
 			instruction.SWAP_BY_END_EPOCH,
 			env.NumberOfFixedShardBlockValidator,
-			env.DcsMaxShardCommitteeSize,
-			env.DcsMinShardCommitteeSize,
 			env.MissingSignaturePenalty,
 		)
 

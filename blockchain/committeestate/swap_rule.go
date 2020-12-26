@@ -9,7 +9,7 @@ type SwapRule interface {
 	GenInstructions(
 		shardID byte,
 		committees, substitutes []string,
-		minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize int,
+		minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators int,
 		penalty map[string]signaturecounter.Penalty,
 	) (
 		*instruction.SwapShardInstruction, []string, []string, []string, []string) // instruction, newCommitteees, newSubstitutes, slashingCommittees, normalSwapCommittees

@@ -53,14 +53,14 @@ func (engine BeaconCommitteeEngineV1) GetCandidateShardWaitingForNextRandom() []
 //UpdateCommitteeState :
 func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 	*BeaconCommitteeStateHash, *CommitteeChange, [][]string, error) {
-	engine.finalState.Mu().Lock()
-	defer engine.uncommittedState.Mu().Unlock()
 	engine.finalState.Mu().RLock()
 	engine.uncommittedState = cloneBeaconCommitteeStateFrom(engine.finalState)
-
+	engine.finalState.Mu().RUnlock()
 	var err error
 	incurredInstructions := [][]string{}
-	engine.finalState.Mu().RUnlock()
+	engine.finalState.Mu().Lock()
+	defer engine.finalState.Mu().Unlock()
+
 	newB := engine.uncommittedState.(*BeaconCommitteeStateV1)
 	committeeChange := NewCommitteeChange()
 	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
@@ -107,6 +107,7 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 			newShardCandidates = append(newShardCandidates, tempNewShardCandidates...)
 		}
 	}
+
 	committeeChange.NextEpochBeaconCandidateAdded = append(committeeChange.NextEpochBeaconCandidateAdded, newBeaconCandidates...)
 	newB.nextEpochShardCandidate = append(newB.nextEpochShardCandidate, newShardCandidates...)
 	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, newShardCandidates...)

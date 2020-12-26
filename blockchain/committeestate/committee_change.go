@@ -71,6 +71,8 @@ func NewCommitteeChange() *CommitteeChange {
 		ShardCommitteeReplaced:  make(map[byte][2][]incognitokey.CommitteePublicKey),
 		BeaconCommitteeReplaced: [2][]incognitokey.CommitteePublicKey{},
 		SlashingCommittee:       make(map[byte][]string),
+		ShardSyncingAdded:       make(map[byte][]incognitokey.CommitteePublicKey),
+		ShardSyncingRemoved:     make(map[byte][]incognitokey.CommitteePublicKey),
 	}
 	for i := 0; i < common.MaxShardNumber; i++ {
 		shardID := byte(i)

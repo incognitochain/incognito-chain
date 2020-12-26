@@ -488,8 +488,6 @@ func (b *beaconCommitteeStateBase) processSwapShardInstruction(
 		env.MaxShardCommitteeSize,
 		instruction.SWAP_BY_END_EPOCH,
 		env.NumberOfFixedShardBlockValidator,
-		env.DcsMaxShardCommitteeSize,
-		env.DcsMinShardCommitteeSize,
 		env.MissingSignaturePenalty,
 	)
 

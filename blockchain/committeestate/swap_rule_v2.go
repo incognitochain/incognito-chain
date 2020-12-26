@@ -22,7 +22,7 @@ func NewSwapRuleV2() *swapRuleV2 {
 func (s *swapRuleV2) GenInstructions(
 	shardID byte,
 	committees, substitutes []string,
-	minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize int,
+	minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators int,
 	penalty map[string]signaturecounter.Penalty,
 ) (*instruction.SwapShardInstruction, []string, []string, []string, []string) {
 

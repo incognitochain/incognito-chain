@@ -1,8 +1,6 @@
 package committeestate
 
 import (
-	"sync"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -23,14 +21,7 @@ func NewBeaconCommitteeStateEnvironment() *BeaconCommitteeStateEnvironment {
 
 func NewBeaconCommitteeStateV1() *BeaconCommitteeStateV1 {
 	return &BeaconCommitteeStateV1{
-		beaconCommitteeStateBase: beaconCommitteeStateBase{
-			shardCommittee:  make(map[byte][]incognitokey.CommitteePublicKey),
-			shardSubstitute: make(map[byte][]incognitokey.CommitteePublicKey),
-			autoStake:       make(map[string]bool),
-			rewardReceiver:  make(map[string]privacy.PaymentAddress),
-			stakingTx:       make(map[string]common.Hash),
-			mu:              new(sync.RWMutex),
-		},
+		beaconCommitteeStateBase: *NewBeaconCommitteeStateBase(),
 	}
 }
 
@@ -48,14 +39,11 @@ func NewBeaconCommitteeStateV1WithValue(
 	stakingTx map[string]common.Hash,
 ) *BeaconCommitteeStateV1 {
 	return &BeaconCommitteeStateV1{
-		beaconCommitteeStateBase: beaconCommitteeStateBase{
-			beaconCommittee: beaconCurrentValidator,
-			shardCommittee:  shardCurrentValidator,
-			shardSubstitute: shardSubstituteValidator,
-			autoStake:       autoStaking,
-			rewardReceiver:  rewardReceivers,
-			stakingTx:       stakingTx,
-		},
+		beaconCommitteeStateBase: *NewBeaconCommitteeStateBaseWithValue(
+			beaconCurrentValidator, shardCurrentValidator, shardSubstituteValidator,
+			[]incognitokey.CommitteePublicKey{}, 0,
+			autoStaking, rewardReceivers, stakingTx, nil,
+		),
 		nextEpochShardCandidate:    nextEpochShardCandidate,
 		currentEpochShardCandidate: currentEpochShardCandidate,
 	}

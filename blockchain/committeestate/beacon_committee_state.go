@@ -41,12 +41,12 @@ func cloneBeaconCommitteeStateFrom(state BeaconCommitteeState) BeaconCommitteeSt
 	var res BeaconCommitteeState
 	if state != nil {
 		switch state.Version() {
+		case SELF_SWAP_SHARD_VERSION:
+			res = state.(*BeaconCommitteeStateV1).clone()
 		case SLASHING_VERSION:
 			res = state.(*BeaconCommitteeStateV2).clone()
-
 		case DCS_VERSION:
 			res = state.(*BeaconCommitteeStateV3).clone()
-
 		case STATE_TEST_VERSION:
 			res = state
 		}
