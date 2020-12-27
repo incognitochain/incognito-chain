@@ -128,7 +128,10 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 		if err != nil {
 			return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 		}
+		Logger.log.Info("[dcs] shardCandidatesStr:", shardCandidatesStr)
 		remainShardCandidatesStr, assignedCandidates := assignShardCandidate(shardCandidatesStr, numberOfShardSubstitutes, env.RandomNumber, env.AssignOffset, env.ActiveShards)
+		Logger.log.Info("[dcs] remainShardCandidatesStr:", remainShardCandidatesStr)
+		Logger.log.Info("[dcs] assignedCandidates:", assignedCandidates)
 		remainShardCandidates, err := incognitokey.CommitteeBase58KeyListToStruct(remainShardCandidatesStr)
 		if err != nil {
 			return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -195,6 +198,9 @@ func (engine *BeaconCommitteeEngineV1) GenerateAssignInstruction(rand int64, ass
 		Logger.log.Infof("Assign Candidate at Shard %+v: %+v", shardID, candidates)
 		shardAssignInstruction := instruction.NewAssignInstructionWithValue(int(shardID), candidates)
 		instructions = append(instructions, shardAssignInstruction)
+	}
+	for _, v := range instructions {
+		Logger.log.Info("[dcs] v.String():", v.ToString())
 	}
 	return instructions
 }
