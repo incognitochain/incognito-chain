@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"sort"
 	"time"
 
@@ -149,7 +150,14 @@ func (e *BLSBFT_V2) Start() error {
 				if b, ok := e.receiveBlockByHash[voteMsg.BlockHash]; ok { //if receiveblock is already initiated
 					if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
 						b.votes[voteMsg.Validator] = &voteMsg // store it
-						e.Logger.Infof("%v Receive vote for block %s (%d) from %v", e.ChainKey, voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
+						vid, v := GetValidatorIndex(e.Chain.GetBestView(), voteMsg.Validator)
+						if v != nil {
+							vbase58, _ := v.ToBase58()
+							e.Logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, vbase58)
+						} else {
+							e.Logger.Infof("%v Receive vote (%d) for block from unknown validator", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
+						}
+
 						b.hasNewVote = true
 					}
 				} else {
@@ -158,7 +166,13 @@ func (e *BLSBFT_V2) Start() error {
 						hasNewVote: true,
 					}
 					e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
-					e.Logger.Infof("%v Receive vote for block %s (%d) from %v", e.ChainKey, voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
+					vid, v := GetValidatorIndex(e.Chain.GetBestView(), voteMsg.Validator)
+					if v != nil {
+						vbase58, _ := v.ToBase58()
+						e.Logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, vbase58)
+					} else {
+						e.Logger.Infof("%v Receive vote (%d) for block from unknown validator", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
+					}
 				}
 
 			case <-ticker:
@@ -297,6 +311,15 @@ func NewInstance(chain ChainInterface, chainKey string, chainID int, node NodeIn
 	return newInstance
 }
 
+func GetValidatorIndex(view multiview.View, validator string) (int, *incognitokey.CommitteePublicKey) {
+	for id, c := range view.GetCommittee() {
+		if validator == c.GetMiningKeyBase58(common.BlsConsensus) {
+			return id, &c
+		}
+	}
+	return -1, nil
+}
+
 func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBlockInfo) {
 	//no vote
 	if v.hasNewVote == false {
@@ -325,15 +348,19 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 	for id, vote := range v.votes {
 		dsaKey := []byte{}
 		if vote.IsValid == 0 {
-			for _, c := range view.GetCommittee() {
-				//e.Logger.Error(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
-				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
-					dsaKey = c.MiningPubKey[common.BridgeConsensus]
-				}
+			cid, committeePk := GetValidatorIndex(view, vote.Validator)
+			if committeePk != nil {
+				dsaKey = committeePk.MiningPubKey[common.BridgeConsensus]
+			} else {
+				e.Logger.Error("Receive vote from nonCommittee member")
+				continue
 			}
+
 			if len(dsaKey) == 0 {
-				e.Logger.Error("canot find dsa key")
+				e.Logger.Error(fmt.Sprintf("Cannot find dsa key from vote of %d", cid))
+				continue
 			}
+
 			err := vote.validateVoteOwner(dsaKey)
 			if err != nil {
 				e.Logger.Error(dsaKey)
