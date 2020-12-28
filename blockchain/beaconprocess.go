@@ -686,6 +686,9 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 	shardID byte,
 	shardState types.ShardState,
 ) error {
+	if shardState.ValidationData == common.EmptyString {
+		return nil
+	}
 
 	shardBlock, _, err := bc.GetShardBlockByHash(shardState.Hash)
 	if err != nil {
