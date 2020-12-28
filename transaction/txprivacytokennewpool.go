@@ -97,13 +97,34 @@ func (tx *TxCustomTokenPrivacy) ValidateSanityDataWithBlockchain(
 	return true, nil
 }
 
-// func (tx *Tx) ValidateSanityDataWithBlockchain(
+// LoadCommitment do something
 func (tx *TxCustomTokenPrivacy) LoadCommitment(
 	db *statedb.StateDB,
 ) error {
-	tokenID := tx.GetTokenID()
-	if tx.valEnv.IsPrivacy() {
-		return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
+	embededTx := tx.Tx
+	normalTx := tx.TxPrivacyTokenData.TxNormal
+	if embededTx.valEnv.IsPrivacy() {
+		tokenID := embededTx.GetTokenID()
+		prf := embededTx.Proof
+		if prf != nil {
+			err := prf.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
+			if err != nil {
+				return err
+			}
+		}
+		// return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
+	}
+	if normalTx.valEnv.IsPrivacy() {
+		tokenID := tx.GetTokenID()
+		prf := embededTx.Proof
+		if prf != nil {
+			err := prf.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
+			if err != nil {
+				return err
+			}
+		} else {
+			return errors.Errorf("Normal tx of Tx CustomeTokenPrivacy can not has no input no outputs")
+		}
 	}
 	return nil
 }

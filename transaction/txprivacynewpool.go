@@ -158,6 +158,20 @@ func (tx *Tx) ValidateSanityDataWithBlockchain(
 func (tx *Tx) LoadCommitment(
 	db *statedb.StateDB,
 ) error {
+	prf := tx.Proof
+	if prf == nil {
+		meta := tx.GetMetadata()
+		if meta == nil {
+			return errors.Errorf("This tx has no proof and not a tx for pay fee or tx with metadata")
+		}
+		if meta != nil {
+			if metadata.NoInputNoOutput(meta.GetType()) || metadata.NoInputHasOutput(meta.GetType()) {
+				return nil
+			} else {
+				return errors.Errorf("Invalid tx")
+			}
+		}
+	}
 	tokenID := tx.GetTokenID()
 	if tx.valEnv.IsPrivacy() {
 		return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
