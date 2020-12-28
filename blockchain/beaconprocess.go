@@ -956,7 +956,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	err = blockchain.BackupBeaconViews(batch)
 	if err != nil {
-		// panic("Backup shard view error")
+		panic("Backup shard view error")
 		return err
 	}
 

@@ -1,6 +1,8 @@
 package committeestate
 
 import (
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -282,4 +284,23 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 		b.stakingTx,
 	)
 	return nil
+}
+
+func (b *BeaconCommitteeStateV1) Hash() (*BeaconCommitteeStateHash, error) {
+	res, err := b.beaconCommitteeStateBase.Hash()
+	if err != nil {
+		return res, err
+	}
+	// Shard candidate root: shard current candidate + shard next candidate
+	shardCandidateArr := append(b.currentEpochShardCandidate, b.nextEpochShardCandidate...)
+	shardCandidateArrStr, err := incognitokey.CommitteeKeyListToString(shardCandidateArr)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+	tempShardCandidateHash, err := common.GenerateHashFromStringArray(shardCandidateArrStr)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+	res.ShardCandidateHash = tempShardCandidateHash
+	return res, nil
 }

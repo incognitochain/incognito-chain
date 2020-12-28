@@ -128,9 +128,6 @@ func (curView *BeaconBestState) SetMissingSignatureCounter(missingSignatureCount
 }
 
 func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
-	Logger.log.Info("[dcs] bc.BeaconChain:", bc.BeaconChain)
-	Logger.log.Info("[dcs] bc.BeaconChain.multiView:", bc.BeaconChain.multiView)
-	Logger.log.Info("[dcs] bc.BeaconChain.multiView.GetBestView():", bc.BeaconChain.multiView.GetBestView())
 	return bc.BeaconChain.multiView.GetBestView().(*BeaconBestState)
 }
 

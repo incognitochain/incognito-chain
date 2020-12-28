@@ -474,6 +474,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		}
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
+			Logger.log.Info("[dcs] error")
 			panic("Restart beacon views fail")
 		}
 	}
@@ -677,6 +678,8 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	if err != nil {
 		return nil, err
 	}
+
+	Logger.log.Info("[dcs] v:", v.(*BeaconBestState))
 
 	beaconView := &BeaconBestState{
 		BestBlockHash:            blockHash,
