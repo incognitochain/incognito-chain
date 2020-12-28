@@ -3,13 +3,14 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"math"
 	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 // BuildKeccak256MerkleTree creates a merkle tree using Keccak256 hash func.
@@ -359,7 +360,7 @@ func generateHashFromMapStringString(maps1 map[string]string) (common.Hash, erro
 	return generateHashFromStringArray(res)
 }
 
-func generateHashFromShardState(allShardState map[byte][]types.ShardState) (common.Hash, error) {
+func generateHashFromShardState(allShardState map[byte][]types.ShardState, version uint) (common.Hash, error) {
 	allShardStateStr := []string{}
 	var keys []int
 	for k := range allShardState {
@@ -373,9 +374,10 @@ func generateHashFromShardState(allShardState map[byte][]types.ShardState) (comm
 			res += shardState.Hash.String()
 			crossShard, _ := json.Marshal(shardState.CrossShard)
 			res += string(crossShard)
-			// TODO: @hung sync mainnet/testnet to see if the block hash is changed or not
-			res += shardState.ValidationData
-			res += shardState.CommitteeFromBlock.String()
+			if version == committeestate.SLASHING_VERSION {
+				res += shardState.ValidationData
+				res += shardState.CommitteeFromBlock.String()
+			}
 		}
 		allShardStateStr = append(allShardStateStr, res)
 	}
@@ -390,8 +392,8 @@ func verifyHashFromStringArray(strs []string, hash common.Hash) (common.Hash, bo
 	return res, bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
-func verifyHashFromShardState(allShardState map[byte][]types.ShardState, hash common.Hash) bool {
-	res, err := generateHashFromShardState(allShardState)
+func verifyHashFromShardState(allShardState map[byte][]types.ShardState, hash common.Hash, version uint) bool {
+	res, err := generateHashFromShardState(allShardState, version)
 	if err != nil {
 		return false
 	}
