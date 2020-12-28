@@ -5,17 +5,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/multiview"
-
-	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
 )
 
 type ShardChain struct {
@@ -33,6 +31,10 @@ type ShardChain struct {
 
 func NewShardChain(shardID int, multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *ShardChain {
 	return &ShardChain{shardID: shardID, multiView: multiView, BlockGen: blockGen, Blockchain: blockchain, ChainName: chainName}
+}
+
+func (chain *ShardChain) GetDatabase() incdb.Database {
+	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }
 
 func (chain *ShardChain) GetFinalView() multiview.View {
@@ -160,7 +162,7 @@ func (chain *ShardChain) CreateNewBlock(
 	newBlock, err := chain.Blockchain.NewBlockShard(
 		chain.GetBestState(),
 		version, proposer, round,
-		time.Unix(startTime, 0), committees, committeeViewHash)
+		startTime, committees, committeeViewHash)
 	Logger.log.Infof("Finish New Block Shard %+v", time.Now())
 	if err != nil {
 		Logger.log.Error(err)
@@ -214,38 +216,62 @@ func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, com
 	}
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
-		Logger.log.Info("[staking-v2] chain.GetBestState().GetHeight():", chain.GetBestState().GetHeight())
-		bestViewCommittees, _ := incognitokey.CommitteeKeyListToString(chain.GetBestState().GetCommittee())
-		Logger.log.Info("[staking-v2] bestViewCommitteess:", bestViewCommittees)
-		Logger.log.Info("[staking-v2] err:", err)
-		Logger.log.Info("[staking-v2] block.CommitteeFromBlock():", block.CommitteeFromBlock())
 		return err
 	}
 	return nil
 }
 
-func (chain *ShardChain) InsertBlk(block types.BlockInterface, shouldValidate bool) error {
+func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
+
 	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), shouldValidate)
 	if err != nil {
 		Logger.log.Error(err)
+		return err
 	}
-	return err
+
+	return nil
+}
+
+func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
+
+	go chain.Blockchain.config.Server.PushBlockToAll(block, "", false)
+
+	if err := chain.InsertBlock(block, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
+
+	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, newValidationData); err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+
+	return nil
+}
+
+func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
+
+	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
+
+	if err := chain.InsertBlock(block, false); err != nil {
+		return err
+	}
+
+	if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), newValidationData); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
 	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
 	return err == nil
-}
-
-func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
-	go chain.Blockchain.config.Server.PushBlockToAll(block, false)
-	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), false)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-	return nil
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {
@@ -294,7 +320,7 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognito
 
 	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		result = append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
-	} else {
+	} else if shardView.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
 		result, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID))
 		if err != nil {
 			return result, err
@@ -311,4 +337,12 @@ func (chain *ShardChain) CommitteeStateVersion() uint {
 //BestViewCommitteeFromBlock ...
 func (chain *ShardChain) BestViewCommitteeFromBlock() common.Hash {
 	return chain.GetBestState().CommitteeFromBlock()
+}
+
+func (chain *ShardChain) GetChainDatabase() incdb.Database {
+	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
+}
+
+func (chain *ShardChain) CommitteeEngineVersion() uint {
+	return chain.multiView.GetBestView().CommitteeEngineVersion()
 }

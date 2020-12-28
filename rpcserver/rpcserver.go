@@ -9,12 +9,14 @@ import (
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/syncker"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -69,10 +71,10 @@ type RpcServerConfig struct {
 	Wallet          *wallet.Wallet
 	ConnMgr         *connmanager.ConnManager
 	AddrMgr         *addrmanager.AddrManager
-	NodeMode        string
-	NetSync         *netsync.NetSync
-	Syncker         *syncker.SynckerManager
-	Server          interface {
+	// NodeMode        string
+	NetSync *netsync.NetSync
+	Syncker *syncker.SynckerManager
+	Server  interface {
 		// Push TxNormal Message
 		PushMessageToAll(message wire.Message) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
@@ -86,13 +88,13 @@ type RpcServerConfig struct {
 		GetMinerIncognitoPublickey(publicKey string, keyType string) []byte
 	}
 	ConsensusEngine interface {
-		GetUserLayer() (string, int)
 		GetUserRole() (string, string, int)
 		GetCurrentMiningPublicKey() (publickey string, keyType string)
 		GetAllMiningPublicKeys() []string
 		ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
+		GetAllValidatorKeyState() map[string]consensus.MiningState
 	}
-	TxMemPool                   *mempool.TxPool
+	TxMemPool                   rpcservice.MempoolInterface
 	RPCMaxClients               int
 	RPCMaxWSClients             int
 	RPCLimitRequestPerDay       int

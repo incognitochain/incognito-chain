@@ -4,6 +4,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -21,6 +22,7 @@ type BeaconCommitteeEngine interface {
 	GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey
 	GetOneShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
 	GetShardCommittee() map[byte][]incognitokey.CommitteePublicKey
+	GetUncommittedCommittee() map[byte][]incognitokey.CommitteePublicKey
 	GetOneShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey
 	GetShardSubstitute() map[byte][]incognitokey.CommitteePublicKey
 	GetAutoStaking() map[string]bool
@@ -37,8 +39,6 @@ type BeaconCommitteeEngine interface {
 	InitCommitteeState(env *BeaconCommitteeStateEnvironment)
 	GenerateAssignInstruction(rand int64, assignOffset int, activeShards int) ([]*instruction.AssignInstruction, []string, map[byte][]string)
 	GenerateAllSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
-	BuildIncurredInstructions(env *BeaconCommitteeStateEnvironment) ([][]string, error)
-	HasSwappedCommittees(*BeaconCommitteeStateEnvironment) (bool, error)
 	SplitReward(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
 	ActiveShards() int
 }
@@ -57,4 +57,5 @@ type ShardCommitteeEngine interface {
 	CommitteeFromBlock() common.Hash
 	ProcessInstructionFromBeacon(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
 	GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
+	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
 }

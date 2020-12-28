@@ -15,7 +15,7 @@ func TestBeaconCommitteeEngineV2_SplitReward(t *testing.T) {
 	hash, _ := common.Hash{}.NewHashFromStr("123")
 
 	initLog()
-	initPublicKey()
+	initTestParams()
 
 	type fields struct {
 		beaconHeight                      uint64

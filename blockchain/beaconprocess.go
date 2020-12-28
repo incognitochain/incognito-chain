@@ -4,26 +4,24 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"github.com/pkg/errors"
 )
 
 // VerifyPreSignBeaconBlock should receives block in consensus round
@@ -61,33 +59,35 @@ func (blockchain *BlockChain) VerifyPreSignBeaconBlock(beaconBlock *types.Beacon
 CONTINUE_VERIFY:
 
 	curView := view.(*BeaconBestState)
-	beaconBestState := NewBeaconBestState()
+	copiedCurView := NewBeaconBestState()
 	// produce new block with current beststate
-	err := beaconBestState.cloneBeaconBestStateFrom(curView)
+	err := copiedCurView.cloneBeaconBestStateFrom(curView)
 	if err != nil {
 		return err
 	}
 
 	// Verify block only
 	Logger.log.Infof("BEACON | Verify block for signing process %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
-	if err = blockchain.verifyPreProcessingBeaconBlock(beaconBestState, beaconBlock, isPreSign); err != nil {
+	if err = blockchain.verifyPreProcessingBeaconBlock(beaconBlock, curView); err != nil {
 		return err
 	}
 
 	// Verify block with previous best state
 	// not verify agg signature in this function
-	if err := beaconBestState.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, false, blockchain.config.ChainParams.Epoch); err != nil {
+	if err := copiedCurView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, false); err != nil {
 		return err
 	}
 
 	// Update best state with new block
-	newBestState, hashes, _, _, err := beaconBestState.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, _, incurredInstructions, err := copiedCurView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		return err
 	}
-
+	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(curView, beaconBlock, incurredInstructions); err != nil {
+		return err
+	}
 	// Post verififcation: verify new beaconstate with corresponding block
-	if err := newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err != nil {
+	if err := newBestState.verifyPostProcessingBeaconBlock(beaconBlock, hashes); err != nil {
 		return err
 	}
 
@@ -102,8 +102,8 @@ CONTINUE_VERIFY:
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
 	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
-	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	shouldValidate = true
+	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash.String())
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
 	startTimeStoreBeaconBlock := time.Now()
@@ -130,7 +130,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	Logger.log.Infof("BEACON | Begin Insert new Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-		if err := blockchain.verifyPreProcessingBeaconBlock(curView, beaconBlock, false); err != nil {
+		if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock, curView); err != nil {
 			return err
 		}
 	} else {
@@ -141,11 +141,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	if shouldValidate {
 		Logger.log.Infof("BEACON | Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		// Verify beaconBlock with previous best state
-		if err := curView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, true, blockchain.config.ChainParams.Epoch); err != nil {
-			return err
-		}
-		beaconCommittee := curView.GetBeaconCommittee()
-		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, beaconCommittee); err != nil {
+		if err := curView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, true); err != nil {
 			return err
 		}
 	} else {
@@ -158,26 +154,11 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		return NewBlockChainError(CleanBackUpError, err)
 	}
 
-	// process for slashing, make sure this one is called before update best state
-	// since we'd like to process with old committee, not updated committee
-	slashErr := blockchain.processForSlashing(curView.slashStateDB, beaconBlock)
-	if slashErr != nil {
-		Logger.log.Errorf("Failed to process slashing with error: %+v", NewBlockChainError(ProcessSlashingError, slashErr))
-	}
-	Logger.log.Infof("BEACON | Update BestState With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	// Update best state with new beaconBlock
-
-	newBestState, hashes, committeeChange, incurredInstructions, err := curView.updateBeaconBestState(beaconBlock, blockchain)
+	newBestState, hashes, committeeChange, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
 		curView.beaconCommitteeEngine.AbortUncommittedBeaconState()
 		return err
-	}
-
-	if len(incurredInstructions) != 0 {
-		err := curView.postProcessIncurredInstructions(incurredInstructions)
-		if err != nil {
-			return err
-		}
 	}
 
 	var err2 error
@@ -187,20 +168,13 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		}
 	}()
 
-	// updateNumOfBlocksByProducers updates number of blocks produced by producers
-	newBestState.updateNumOfBlocksByProducers(beaconBlock, blockchain.config.ChainParams.Epoch)
 	if shouldValidate {
-		Logger.log.Infof("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-		if err2 = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, blockchain.config.RandomClient, hashes); err2 != nil {
+		Logger.log.Debugf("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+		if err2 = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, hashes); err2 != nil {
 			return err2
 		}
 	} else {
 		Logger.log.Infof("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	}
-
-	err2 = newBestState.storeCommitteeStateWithPreviousState(committeeChange)
-	if err2 != nil {
-		return err2
 	}
 
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
@@ -225,23 +199,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	return nil
 }
 
-// updateNumOfBlocksByProducers updates number of blocks produced by producers
-func (beaconBestState *BeaconBestState) updateNumOfBlocksByProducers(beaconBlock *types.BeaconBlock, chainParamEpoch uint64) {
-	producer := beaconBlock.GetProducerPubKeyStr()
-	if beaconBlock.GetHeight()%chainParamEpoch == 1 {
-		beaconBestState.NumOfBlocksByProducers = map[string]uint64{
-			producer: 1,
-		}
-	}
-	// Update number of blocks produced by producers in epoch
-	numOfBlks, found := beaconBestState.NumOfBlocksByProducers[producer]
-	if !found {
-		beaconBestState.NumOfBlocksByProducers[producer] = 1
-	} else {
-		beaconBestState.NumOfBlocksByProducers[producer] = numOfBlks + 1
-	}
-}
-
 /*
 	VerifyPreProcessingBeaconBlock
 	This function DOES NOT verify new block with best state
@@ -257,7 +214,7 @@ func (beaconBestState *BeaconBestState) updateNumOfBlocksByProducers(beaconBlock
 	- InstructionMerkleRoot: rebuild instruction merkle root from instruction body and compare with instruction merkle root in block header
 	- If verify block for signing then verifyPreProcessingBeaconBlockForSigning
 */
-func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBestState, beaconBlock *types.BeaconBlock, isPreSign bool) error {
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.BeaconBlock, curView *BeaconBestState) error {
 	// if len(beaconBlock.Header.Producer) == 0 {
 	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.Producer)))
 	// }
@@ -279,13 +236,18 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect receive beacon block height %+v but get %+v", previousBeaconBlock.Header.Height+1, beaconBlock.Header.Height))
 	}
 	// Verify epoch with parent block
-	if (beaconBlock.Header.Height != 1) && (beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1) && (previousBeaconBlock.Header.Epoch != beaconBlock.Header.Epoch-1) {
+	isNextEpoch := blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.Header.Height)
+	if (beaconBlock.Header.Height != 1) && isNextEpoch && (previousBeaconBlock.Header.Epoch != beaconBlock.Header.Epoch-1) {
 		return NewBlockChainError(WrongEpochError, fmt.Errorf("Expect receive beacon block epoch %+v greater than previous block epoch %+v, 1 value", beaconBlock.Header.Epoch, previousBeaconBlock.Header.Epoch))
 	}
 	// Verify timestamp with parent block
 	if beaconBlock.Header.Timestamp <= previousBeaconBlock.Header.Timestamp {
 		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive beacon block with timestamp %+v greater than previous block timestamp %+v", beaconBlock.Header.Timestamp, previousBeaconBlock.Header.Timestamp))
 	}
+	if beaconBlock.GetVersion() >= 2 && curView.BestBlock.GetProposeTime() > 0 && common.CalculateTimeSlot(beaconBlock.Header.ProposeTime) <= common.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) {
+		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(beaconBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
+	}
+
 	if !verifyHashFromShardState(beaconBlock.Body.ShardState, beaconBlock.Header.ShardStateHash) {
 		return NewBlockChainError(ShardStateHashError, fmt.Errorf("Expect shard state hash to be %+v", beaconBlock.Header.ShardStateHash))
 	}
@@ -318,11 +280,6 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 	}
 	// if pool does not have one of needed block, fail to verify
 	beaconVerifyPreprocesingTimer.UpdateSince(startTimeVerifyPreProcessingBeaconBlock)
-	if isPreSign {
-		if err := blockchain.verifyPreProcessingBeaconBlockForSigning(curView, beaconBlock); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -344,42 +301,11 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(curView *BeaconBest
 //		* Block Reward Instruction
 //	+ Generate Instruction Hash from all recently got instructions
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
-func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
-	var err error
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
-	rewardByEpochInstruction := [][]string{}
-	tempShardStates := make(map[byte][]types.ShardState)
-	shardInstruction := &shardInstruction{
-		swapInstructions: make(map[byte][]*instruction.SwapInstruction),
-	}
-	duplicateKeyStakeInstructions := &duplicateKeyStakeInstruction{}
-	validStakePublicKeys := []string{}
-	validUnstakePublicKeys := make(map[string]bool)
-	bridgeInstructions := [][]string{}
-	acceptedBlockRewardInstructions := [][]string{}
-	statefulActionsByShardID := map[byte][][]string{}
-	rewardForCustodianByEpoch := map[common.Hash]uint64{}
+
+	var err error
 	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
-
-	// Get Reward Instruction By Epoch
-	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
-		featureStateDB := curView.GetBeaconFeatureStateDB()
-		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
-		if err != nil {
-			return NewBlockChainError(GetTotalLockedCollateralError, err)
-		}
-		isSplitRewardForCustodian := totalLockedCollateral > 0
-		percentCustodianRewards := portalParams.MaxPercentCustodianRewards
-		if totalLockedCollateral < portalParams.MinLockCollateralAmountInEpoch {
-			percentCustodianRewards = portalParams.MinPercentCustodianRewards
-		}
-
-		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
-		if err != nil {
-			return NewBlockChainError(BuildRewardInstructionError, err)
-		}
-	}
-	// get shard to beacon blocks from pool
 	allRequiredShardBlockHeight := make(map[byte][]uint64)
 	for shardID, shardstates := range beaconBlock.Body.ShardState {
 		heights := []uint64{}
@@ -391,98 +317,25 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		})
 		allRequiredShardBlockHeight[shardID] = heights
 	}
+
 	allShardBlocks, err := blockchain.GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
 	}
-
-	keys := []int{}
-	for shardID, _ := range allShardBlocks {
-		keys = append(keys, int(shardID))
-	}
-
-	sort.Ints(keys)
-	for _, v := range keys {
-		shardID := byte(v)
-		shardBlocks := allShardBlocks[shardID]
-		shardStates := beaconBlock.Body.ShardState[shardID]
-		// repeatly compare each shard to beacon block and shard state in new beacon block body
-		if len(shardBlocks) >= len(shardStates) {
-			shardBlocks = shardBlocks[:len(beaconBlock.Body.ShardState[shardID])]
-			for i, shardBlock := range shardBlocks {
-				if shardStates[i].Height != shardBlock.GetHeight() {
-					return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Shard %v Block Height not correct: %v (expect %v)", shardID, shardStates[i].Height, shardBlock.GetHeight()))
-				}
-				//check hash in shardstate
-				if shardStates[i].Hash.String() != shardBlock.Hash().String() {
-					return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Shard %v Block %v Hash not correct: %v (expect %v)", shardID, shardBlock.GetHeight(), shardStates[i].Hash.String(), shardBlock.Hash().String()))
-				}
-				tempShardState, newShardInstruction, newDuplicateKeyStakeInstructions,
-					bridgeInstruction, acceptedBlockRewardInstruction, statefulActions := blockchain.GetShardStateFromBlock(
-					curView, beaconBlock.Header.Height, shardBlock, shardID, false, validUnstakePublicKeys, validStakePublicKeys)
-				tempShardStates[shardID] = append(tempShardStates[shardID], tempShardState[shardID])
-				duplicateKeyStakeInstructions.add(newDuplicateKeyStakeInstructions)
-				shardInstruction.add(newShardInstruction)
-				bridgeInstructions = append(bridgeInstructions, bridgeInstruction...)
-				acceptedBlockRewardInstructions = append(acceptedBlockRewardInstructions, acceptedBlockRewardInstruction)
-
-				tempValidStakePublicKeys := []string{}
-				for _, v := range newShardInstruction.stakeInstructions {
-					tempValidStakePublicKeys = append(tempValidStakePublicKeys, v.PublicKeys...)
-				}
-				validStakePublicKeys = append(validStakePublicKeys, tempValidStakePublicKeys...)
-
-				// group stateful actions by shardID
-				_, found := statefulActionsByShardID[shardID]
-				if !found {
-					statefulActionsByShardID[shardID] = statefulActions
-				} else {
-					statefulActionsByShardID[shardID] = append(statefulActionsByShardID[shardID], statefulActions...)
-				}
-			}
-		} else {
-			return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Expect to get more than %+v Shard Block but only get %+v (shard %v)", len(beaconBlock.Body.ShardState[shardID]), len(shardBlocks), shardID))
-		}
-
-	}
-	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch, portalParams)
-	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
-
-	shardInstruction.compose()
-	tempInstruction, err := curView.GenerateInstruction(
-		beaconBlock.Header.Height, shardInstruction, duplicateKeyStakeInstructions,
-		bridgeInstructions, acceptedBlockRewardInstructions,
-		blockchain.config.ChainParams.Epoch, blockchain.config.ChainParams.RandomTime, blockchain,
-		tempShardStates)
-	if err != nil {
-		return err
-	}
-
-	if len(rewardByEpochInstruction) != 0 {
-		tempInstruction = append(tempInstruction, rewardByEpochInstruction...)
-	}
-
-	isFoundRandomInstruction := false
-	isBeaconRandomTime := false
-
-	beaconCommitteeStateEnv := curView.NewBeaconCommitteeStateEnvironmentWithValue(
-		blockchain.config.ChainParams,
-		tempInstruction,
-		isFoundRandomInstruction, isBeaconRandomTime,
+	instructions, _, err := blockchain.GenerateBeaconBlockBody(
+		beaconBlock,
+		curView,
+		portalParams,
+		allShardBlocks,
 	)
 
-	incurredInstructions, err := curView.beaconCommitteeEngine.BuildIncurredInstructions(beaconCommitteeStateEnv)
-	if err != nil {
-		return NewBlockChainError(BuildIncurredInstructionError, err)
-	}
 	if len(incurredInstructions) != 0 {
-		tempInstruction = append(tempInstruction, incurredInstructions...)
+		instructions = append(instructions, incurredInstructions...)
 	}
 
 	tempInstructionArr := []string{}
-	for _, strs := range tempInstruction {
+	for _, strs := range instructions {
 		tempInstructionArr = append(tempInstructionArr, strs...)
 	}
 	tempInstructionHash, err := generateHashFromStringArray(tempInstructionArr)
@@ -490,9 +343,13 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		return NewBlockChainError(GenerateInstructionHashError, fmt.Errorf("Fail to generate hash for instruction %+v", tempInstructionArr))
 	}
 	if !tempInstructionHash.IsEqual(&beaconBlock.Header.InstructionHash) {
-		return NewBlockChainError(InstructionHashError, fmt.Errorf("Expect Instruction Hash in Beacon Header to be %+v, but get %+v, validator instructions: %+v", beaconBlock.Header.InstructionHash, tempInstructionHash, tempInstruction))
+		return NewBlockChainError(InstructionHashError, fmt.Errorf(
+			"Expect Instruction Hash in Beacon Header to be %+v, but get %+v, validator instructions: %+v",
+			beaconBlock.Header.InstructionHash, tempInstructionHash, instructions))
 	}
+
 	beaconVerifyPreprocesingForPreSignTimer.UpdateSince(startTimeVerifyPreProcessingBeaconBlockForSigning)
+
 	return nil
 }
 
@@ -508,12 +365,21 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 //  - Beacon Best State has epoch compatible with new beacon block
 //  - Beacon Best State has best shard height compatible with shard state of new beacon block
 //  - New Stake public key must not found in beacon best state (candidate, pending validator, committee)
-func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchain *BlockChain, beaconBlock *types.BeaconBlock, isVerifySig bool, chainParamEpoch uint64) error {
+func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchain *BlockChain, beaconBlock *types.BeaconBlock, isVerifySig bool) error {
 	//verify producer via index
 	startTimeVerifyWithBestState := time.Now()
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(beaconBlock, beaconBestState.BeaconProposerIndex, beaconBestState.GetBeaconCommittee(), beaconBestState.MinBeaconCommitteeSize); err != nil {
 		return err
 	}
+	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(beaconBlock, common.BlsConsensus); err != nil {
+		return err
+	}
+	if isVerifySig {
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, beaconBestState.GetBeaconCommittee()); err != nil {
+			return err
+		}
+	}
+
 	//=============End Verify Aggegrate signature
 	if !beaconBestState.BestBlockHash.IsEqual(&beaconBlock.Header.PreviousBlockHash) {
 		return NewBlockChainError(BeaconBestStateBestBlockNotCompatibleError, errors.New("previous us block should be :"+beaconBestState.BestBlockHash.String()))
@@ -521,10 +387,10 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 	if beaconBestState.BeaconHeight+1 != beaconBlock.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, errors.New("block height of new block should be :"+strconv.Itoa(int(beaconBlock.Header.Height+1))))
 	}
-	if beaconBlock.Header.Height%chainParamEpoch == 1 && beaconBestState.Epoch+1 != beaconBlock.Header.Epoch {
+	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight+1) && beaconBestState.Epoch+1 != beaconBlock.Header.Epoch {
 		return NewBlockChainError(WrongEpochError, fmt.Errorf("Expect beacon block height %+v has epoch %+v but get %+v", beaconBlock.Header.Height, beaconBestState.Epoch+1, beaconBlock.Header.Epoch))
 	}
-	if beaconBlock.Header.Height%chainParamEpoch != 1 && beaconBestState.Epoch != beaconBlock.Header.Epoch {
+	if !blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight+1) && beaconBestState.Epoch != beaconBlock.Header.Epoch {
 		return NewBlockChainError(WrongEpochError, fmt.Errorf("Expect beacon block height %+v has epoch %+v but get %+v", beaconBlock.Header.Height, beaconBestState.Epoch, beaconBlock.Header.Epoch))
 	}
 	// check shard states of new beacon block and beacon best state
@@ -573,7 +439,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 //  - Shard Validator root: ShardCommittee + ShardPendingValidator
 //  - Random number if have in instruction
 func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBlock *types.BeaconBlock,
-	randomClient btc.RandomClient, hashes *committeestate.BeaconCommitteeStateHash) error {
+	hashes *committeestate.BeaconCommitteeStateHash) error {
 	startTimeVerifyPostProcessingBeaconBlock := time.Now()
 	if !hashes.BeaconCommitteeAndValidatorHash.IsEqual(&beaconBlock.Header.BeaconCommitteeAndValidatorRoot) {
 		return NewBlockChainError(BeaconCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.BeaconCommitteeAndValidatorRoot, hashes.BeaconCommitteeAndValidatorHash))
@@ -600,30 +466,6 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	if !hashes.AutoStakeHash.IsEqual(&beaconBlock.Header.AutoStakingRoot) {
 		return NewBlockChainError(AutoStakingRootHashError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))
 	}
-	if !TestRandom {
-		//COMMENT FOR TESTING
-		instructions := beaconBlock.Body.Instructions
-		for _, l := range instructions {
-			if l[0] == "random" {
-				startTime := time.Now()
-				// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-				nonce, err := strconv.Atoi(l[1])
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				ok, err := randomClient.VerifyNonceWithTimestamp(startTime, beaconBestState.BlockMaxCreateTime, beaconBestState.CurrentRandomTimeStamp, int64(nonce))
-				Logger.log.Infof("Verify Random number %+v", ok)
-				if err != nil {
-					Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				if !ok {
-					return NewBlockChainError(RandomError, errors.New("Error verify random number"))
-				}
-			}
-		}
-	}
 	beaconVerifyPostProcessingTimer.UpdateSince(startTimeVerifyPostProcessingBeaconBlock)
 	return nil
 }
@@ -631,15 +473,13 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 /*
 	Update Beststate with new Block
 */
-func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconBlock, blockchain *BlockChain) (
+func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconBlock, blockchain *BlockChain) (
 	*BeaconBestState, *committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, [][]string, error) {
 	startTimeUpdateBeaconBestState := time.Now()
 	beaconBestState := NewBeaconBestState()
-	if err := beaconBestState.cloneBeaconBestStateFrom(oldBestState); err != nil {
+	if err := beaconBestState.cloneBeaconBestStateFrom(curView); err != nil {
 		return nil, nil, nil, nil, err
 	}
-	var chainParamEpoch = blockchain.config.ChainParams.Epoch
-	var randomTime = blockchain.config.ChainParams.RandomTime
 	var isBeginRandom = false
 	var isFoundRandomInstruction = false
 	Logger.log.Debugf("Start processing new block at height %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
@@ -653,7 +493,7 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 	if beaconBlock.Header.Height == 1 {
 		beaconBestState.BeaconProposerIndex = 0
 	} else {
-		for i, v := range oldBestState.GetBeaconCommittee() {
+		for i, v := range beaconBestState.GetBeaconCommittee() {
 			b58Str, _ := v.ToBase58()
 			if b58Str == beaconBlock.Header.Producer {
 				beaconBestState.BeaconProposerIndex = i
@@ -667,11 +507,13 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 	if beaconBestState.BestShardHeight == nil {
 		beaconBestState.BestShardHeight = make(map[byte]uint64)
 	}
+
 	// Update new best new block hash
 	for shardID, shardStates := range beaconBlock.Body.ShardState {
 		beaconBestState.BestShardHash[shardID] = shardStates[len(shardStates)-1].Hash
 		beaconBestState.BestShardHeight[shardID] = shardStates[len(shardStates)-1].Height
 	}
+
 	// processing instruction
 	for _, inst := range beaconBlock.Body.Instructions {
 		if inst[0] == instruction.RANDOM_ACTION {
@@ -685,11 +527,12 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 			Logger.log.Infof("Random number found %d", beaconBestState.CurrentRandomNumber)
 		}
 	}
-	if beaconBestState.BeaconHeight%chainParamEpoch == 1 && beaconBestState.BeaconHeight != 1 {
+
+	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) && beaconBestState.BeaconHeight != 1 {
 		// Begin of each epoch
 		beaconBestState.IsGetRandomNumber = false
 		// Before get random from bitcoin
-	} else if beaconBestState.BeaconHeight%chainParamEpoch == randomTime {
+	} else if blockchain.IsEqualToRandomTime(beaconBestState.BeaconHeight) {
 		beaconBestState.CurrentRandomTimeStamp = beaconBlock.Header.Timestamp
 		isBeginRandom = true
 	}
@@ -701,10 +544,22 @@ func (oldBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.Be
 	if err != nil {
 		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
-
 	Logger.log.Infof("UpdateCommitteeState | hashes %+v", hashes)
-	beaconBestState.updateNumOfBlocksByProducers(beaconBlock, chainParamEpoch)
+
+	if blockchain.IsFirstBeaconHeightInEpoch(beaconBestState.BeaconHeight) {
+		// Reset missing signature counter after finish process the last beacon block in an epoch
+		beaconBestState.missingSignatureCounter.Reset(beaconBestState.getUncommittedShardCommitteeFlattenList())
+	}
+	if committeeChange.IsShardCommitteeChange() && beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+		beaconBestState.missingSignatureCounter.CommitteeChange(beaconBestState.getUncommittedShardCommitteeFlattenList())
+	}
+	err = beaconBestState.countMissingSignature(blockchain, beaconBlock.Body.ShardState)
+	if err != nil {
+		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+	}
+
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
+
 	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
 }
 
@@ -762,7 +617,96 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 			genesisBeaconBlock.Body.Instructions, false, false))
 
 	beaconBestState.Epoch = 1
-	beaconBestState.NumOfBlocksByProducers = make(map[string]uint64)
+	return nil
+}
+
+func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardStates map[byte][]types.ShardState) error {
+	for shardID, shardStates := range allShardStates {
+		cacheCommittees := make(map[common.Hash][]incognitokey.CommitteePublicKey)
+		for _, shardState := range shardStates {
+			// skip genesis block
+			if shardState.Height == 1 {
+				continue
+			}
+			if curView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+				err := curView.countMissingSignatureV1(bc, shardID, shardState)
+				if err != nil {
+					return err
+				}
+			}
+			if curView.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+				err := curView.countMissingSignatureV2(cacheCommittees, bc, shardID, shardState)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (curView *BeaconBestState) countMissingSignatureV2(
+	cacheCommittees map[common.Hash][]incognitokey.CommitteePublicKey,
+	bc *BlockChain,
+	shardID byte,
+	shardState types.ShardState,
+) error {
+	beaconHashForCommittee := shardState.CommitteeFromBlock
+
+	Logger.log.Infof("Add Missing Signature | ShardState %+v", shardState)
+	Logger.log.Infof("Add Missing Signature | committee from block %+v", beaconHashForCommittee)
+
+	if beaconHashForCommittee.IsZeroValue() {
+		return nil
+	}
+
+	committees, ok := cacheCommittees[beaconHashForCommittee]
+	if !ok {
+		var err error
+		committees, err = getOneShardCommitteeFromBeaconDB(bc.GetBeaconChainDatabase(), shardID, beaconHashForCommittee)
+		if err != nil {
+			return err
+		}
+		cacheCommittees[beaconHashForCommittee] = committees
+	}
+
+	logCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
+	Logger.log.Infof("Add Missing Signature | Shard %+v, Validation Data: %+v, \n Committees: %+v", shardID, shardState.ValidationData, logCommittees)
+
+	err := curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (curView *BeaconBestState) countMissingSignatureV1(
+	bc *BlockChain,
+	shardID byte,
+	shardState types.ShardState,
+) error {
+
+	shardBlock, _, err := bc.GetShardBlockByHash(shardState.Hash)
+	if err != nil {
+		return nil
+	}
+
+	Logger.log.Infof("Add Missing Signature | ShardState %+v", shardState)
+	Logger.log.Infof("Add Missing Signature | Shard ID %+v , committee from height %+v", shardID, shardState.Height)
+
+	committees, err := getOneShardCommitteeFromShardDB(bc.GetShardChainDatabase(shardID), shardID, shardBlock.Header.PreviousBlockHash)
+	if err != nil {
+		return nil
+	}
+
+	logCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
+	Logger.log.Infof("Add Missing Signature | Shard %+v, Validation Data: %+v, \n Committees: %+v", shardID, shardState.ValidationData, logCommittees)
+
+	err = curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -780,6 +724,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	//statedb===========================START
 	// Added
 	err = newBestState.storeCommitteeStateWithCurrentState(committeeChange)
+	if err != nil {
+		return err
+	}
+
+	err = statedb.DeleteStakerInfo(newBestState.consensusStateDB, committeeChange.RemovedStakers())
 	if err != nil {
 		return err
 	}
@@ -857,13 +806,13 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-
-	blockchain.processForSlashing(newBestState.slashStateDB, beaconBlock)
-
 	// Remove shard reward request of old epoch
 	// this value is no longer needed because, old epoch reward has been split and send to shard
-	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 2 {
-		statedb.RemoveRewardOfShardByEpoch(newBestState.rewardStateDB, beaconBlock.Header.Epoch-1)
+	if blockchain.IsFirstBeaconHeightInEpoch(beaconBlock.Header.Height) {
+		err = statedb.StoreSlashingCommittee(newBestState.slashStateDB, beaconBlock.Header.Epoch-1, committeeChange.SlashingCommittee)
+		if err != nil {
+			return err
+		}
 	}
 	err = blockchain.addShardRewardRequestToBeacon(beaconBlock, newBestState.rewardStateDB)
 	if err != nil {
@@ -967,6 +916,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
+	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
+		newBestState.upgradeCommitteeEngineV2(blockchain)
+	}
+
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 
 	blockchain.BeaconChain.multiView.AddView(newBestState)
@@ -974,6 +927,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
 
 	storeBlock := newFinalView.GetBlock()
+
+	finalizedBlocks := []*types.BeaconBlock{}
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
@@ -982,6 +937,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		if storeBlock.GetHeight() == 1 {
 			break
 		}
+
+		finalizedBlocks = append(finalizedBlocks, storeBlock.(*types.BeaconBlock))
 		prevHash := storeBlock.GetPrevHash()
 		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
 		if newFinalView == nil {
@@ -993,6 +950,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		} else {
 			storeBlock = newFinalView.GetBlock()
 		}
+	}
+
+	for i := len(finalizedBlocks) - 1; i >= 0; i-- {
+		Logger.log.Debug("process beacon block", finalizedBlocks[i].Header.Height)
+		processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
 	}
 
 	err = blockchain.BackupBeaconViews(batch)
@@ -1009,7 +971,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if !blockchain.config.ChainParams.IsBackup {
 		return nil
 	}
-	if (newBestState.GetHeight()+1)%blockchain.config.ChainParams.Epoch == 0 {
+	if blockchain.IsLastBeaconHeightInEpoch(newBestState.GetHeight() + 1) {
 
 		err := blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
 		if err != nil {
@@ -1026,6 +988,60 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	}
 
+	return nil
+}
+
+type NextCrossShardInfo struct {
+	NextCrossShardHeight uint64
+	NextCrossShardHash   string
+	ConfirmBeaconHeight  uint64
+	ConfirmBeaconHash    string
+}
+
+func processBeaconForConfirmmingCrossShard(blockchain *BlockChain, beaconBlock *types.BeaconBlock, lastCrossShardState map[byte]map[byte]uint64) error {
+	database := blockchain.GetBeaconChainDatabase()
+	if beaconBlock != nil && beaconBlock.Body.ShardState != nil {
+		for fromShard, shardBlocks := range beaconBlock.Body.ShardState {
+			for _, shardBlock := range shardBlocks {
+				for _, toShard := range shardBlock.CrossShard {
+					if fromShard == toShard {
+						continue
+					}
+					if lastCrossShardState[fromShard] == nil {
+						lastCrossShardState[fromShard] = make(map[byte]uint64)
+					}
+					lastHeight := lastCrossShardState[fromShard][toShard] // get last cross shard height from shardID  to crossShardShardID
+					waitHeight := shardBlock.Height
+
+					info := NextCrossShardInfo{
+						waitHeight,
+						shardBlock.Hash.String(),
+						beaconBlock.GetHeight(),
+						beaconBlock.Hash().String(),
+					}
+					Logger.log.Info("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, lastHeight, info)
+					b, _ := json.Marshal(info)
+
+					//not update if already exit
+					existedInfo, _ := rawdbv2.GetCrossShardNextHeight(database, fromShard, toShard, lastHeight)
+					if existedInfo == nil || len(existedInfo) == 0 {
+						Logger.log.Info("debug StoreCrossShardNextHeight", fromShard, toShard, lastHeight, string(b))
+						err := rawdbv2.StoreCrossShardNextHeight(database, fromShard, toShard, lastHeight, b)
+						if err != nil {
+							return err
+						}
+					} else {
+						Logger.log.Info("debug StoreCrossShardNextHeight: already exit", fromShard, toShard, lastHeight, string(existedInfo))
+					}
+
+					if lastCrossShardState[fromShard] == nil {
+						lastCrossShardState[fromShard] = make(map[byte]uint64)
+					}
+					lastCrossShardState[fromShard][toShard] = waitHeight //update lastHeight to waitHeight
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -1050,43 +1066,20 @@ func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
 
 func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 	committeeChange *committeestate.CommitteeChange) error {
+	if beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+		return nil
+	}
 	stakerKeys := committeeChange.StakerKeys()
-	if len(stakerKeys) != 0 {
-		err := statedb.StoreStakerInfoV1(
-			beaconBestState.consensusStateDB,
-			stakerKeys,
-			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
-			beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
-			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
-		)
-		if err != nil {
-			return err
-		}
-	}
-
 	stopAutoStakerKeys := committeeChange.StopAutoStakeKeys()
-	if len(stopAutoStakerKeys) != 0 {
-		err := statedb.StoreStakerInfoV1(
+	committees := append(stakerKeys, stopAutoStakerKeys...)
+	if len(committees) != 0 {
+		err := statedb.StoreStakerInfo(
 			beaconBestState.consensusStateDB,
-			stopAutoStakerKeys,
+			committees,
 			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
 			beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
 			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
 		)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (beaconBestState *BeaconBestState) storeCommitteeStateWithPreviousState(
-	committeeChange *committeestate.CommitteeChange) error {
-
-	removedStakerKeys := committeeChange.UnstakeKeys()
-	if len(removedStakerKeys) != 0 {
-		err := statedb.DeleteStakerInfo(beaconBestState.consensusStateDB, removedStakerKeys)
 		if err != nil {
 			return err
 		}

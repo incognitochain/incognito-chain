@@ -138,10 +138,15 @@ func CreateCustomTokenPrivacyBurningReceiverArray(dataReceiver interface{}, bcr 
 			continue
 		}
 
+		amount, err := common.AssertAndConvertStrToNumber(value)
+		if err != nil {
+			return nil, 0, fmt.Errorf("Invalid burning amount %v", err)
+		}
+
 		keySet := keyWallet.KeySet
 		temp := &privacy.PaymentInfo{
 			PaymentAddress: keySet.PaymentAddress,
-			Amount:         uint64(value.(float64)),
+			Amount:         amount,
 		}
 		result = append(result, temp)
 		voutsAmount += int64(temp.Amount)

@@ -44,38 +44,6 @@ type StateDB struct {
 	StateObjectCommits time.Duration
 }
 
-//
-//// New return a new statedb attach with a state root
-//func New(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
-//	tr, err := db.OpenTrie(root)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return &StateDB{
-//		db:                  db,
-//		trie:                tr,
-//		stateObjects:        make(map[common.Hash]StateObject),
-//		stateObjectsPending: make(map[common.Hash]struct{}),
-//		stateObjectsDirty:   make(map[common.Hash]struct{}),
-//	}, nil
-//}
-//
-//// New return a new statedb attach with a state root
-//func NewWithRawDB(root common.Hash, db DatabaseAccessWarper, rawdb incdb.Database) (*StateDB, error) {
-//	tr, err := db.OpenTrie(root)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return &StateDB{
-//		db:                  db,
-//		trie:                tr,
-//		rawdb:               rawdb,
-//		stateObjects:        make(map[common.Hash]StateObject),
-//		stateObjectsPending: make(map[common.Hash]struct{}),
-//		stateObjectsDirty:   make(map[common.Hash]struct{}),
-//	}, nil
-//}
-
 // New return a new statedb attach with a state root
 func NewWithPrefixTrie(root common.Hash, db DatabaseAccessWarper) (*StateDB, error) {
 	tr, err := db.OpenPrefixTrie(root)
@@ -597,7 +565,8 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 				panic(err)
 			}
 			if !has || s == nil {
-				panic(errors.Errorf("Can not found staker info for this committee %v", v.committeePublicKey))
+				res, err2 := v.committeePublicKey.ToBase58()
+				panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
 			}
 			committeePublicKeyStr, err := v.committeePublicKey.ToBase58()
 			if err != nil {
@@ -632,6 +601,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			stakingTx[committeePublicKeyStr] = s.txStakingID
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 		}
+
 		substituteValidator[shardID] = tempSubstituteValidator
 	}
 	// next epoch candidate
@@ -807,6 +777,25 @@ func (stateDB *StateDB) getAllCommitteeReward() map[string]map[common.Hash]uint6
 	return m
 }
 
+func (stateDB *StateDB) getAllSlashingCommittee(epoch uint64) map[byte][]string {
+	m := make(map[byte][]string)
+	prefix := GetSlashingCommitteePrefix(epoch)
+	temp := stateDB.trie.NodeIterator(prefix)
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		slashingCommitteeState := NewSlashingCommitteeState()
+		err := json.Unmarshal(newValue, slashingCommitteeState)
+		if err != nil {
+			panic("wrong value type")
+		}
+		m[slashingCommitteeState.shardID] = slashingCommitteeState.committees
+	}
+	return m
+}
+
 func (stateDB *StateDB) getShardsCommitteeState(sIDs []int) (currentValidator map[int][]*CommitteeState) {
 	currentValidator = make(map[int][]*CommitteeState)
 	for _, shardID := range sIDs {
@@ -842,8 +831,8 @@ func (stateDB *StateDB) getShardsCommitteeInfo(sIDs []int) (curValidatorInfo map
 				panic(err)
 			}
 			if !has || s == nil {
-				res, _ := c.committeePublicKey.ToBase58()
-				panic(errors.Errorf("Can not found staker info for this committee %v", res))
+				res, err2 := c.committeePublicKey.ToBase58()
+				panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
 			}
 			tempStakerInfos = append(tempStakerInfos, s)
 		}

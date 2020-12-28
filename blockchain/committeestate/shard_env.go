@@ -15,7 +15,7 @@ type ShardEnvBuilder interface {
 	BuildTxs(txs []metadata.Transaction) ShardEnvBuilder
 	BuildBeaconInstructions(instructions [][]string) ShardEnvBuilder
 	BuildBeaconHeight(height uint64) ShardEnvBuilder
-	BuildChainParamEpoch(chainParamEpoch uint64) ShardEnvBuilder
+	BuildEpoch(epoch uint64) ShardEnvBuilder
 	BuildEpochBreakPointSwapNewKey(epochBreakPointSwapNewKey []uint64) ShardEnvBuilder
 	BuildShardID(id byte) ShardEnvBuilder
 	BuildMaxShardCommitteeSize(maxShardCommitteeSize int) ShardEnvBuilder
@@ -43,7 +43,7 @@ type ShardCommitteeStateEnvironment interface {
 	BeaconInstructions() [][]string
 	ShardInstructions() [][]string
 	BeaconHeight() uint64
-	ChainParamEpoch() uint64
+	Epoch() uint64
 	EpochBreakPointSwapNewKey() []uint64
 	ShardID() byte
 	MaxShardCommitteeSize() int
@@ -65,7 +65,7 @@ type shardCommitteeStateEnvironment struct {
 	beaconInstructions           [][]string
 	txs                          []metadata.Transaction
 	beaconHeight                 uint64
-	chainParamEpoch              uint64
+	epoch                        uint64
 	epochBreakPointSwapNewKey    []uint64
 	shardID                      byte
 	maxShardCommitteeSize        int
@@ -132,9 +132,9 @@ func (env *shardCommitteeStateEnvironment) BuildBeaconHeight(height uint64) Shar
 	return env
 }
 
-//BuildChainParamEpoch :
-func (env *shardCommitteeStateEnvironment) BuildChainParamEpoch(chainParamEpoch uint64) ShardEnvBuilder {
-	env.chainParamEpoch = chainParamEpoch
+//Buildepoch :
+func (env *shardCommitteeStateEnvironment) BuildEpoch(epoch uint64) ShardEnvBuilder {
+	env.epoch = epoch
 	return env
 }
 
@@ -224,9 +224,9 @@ func (env *shardCommitteeStateEnvironment) BeaconHeight() uint64 {
 	return env.beaconHeight
 }
 
-//ChainParamEpoch :
-func (env *shardCommitteeStateEnvironment) ChainParamEpoch() uint64 {
-	return env.chainParamEpoch
+//epoch :
+func (env *shardCommitteeStateEnvironment) Epoch() uint64 {
+	return env.epoch
 }
 
 //EpochBreakPointSwapNewKey :

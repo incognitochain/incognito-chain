@@ -1,6 +1,7 @@
 package statedb
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -205,7 +206,7 @@ func TestStoreAndGetStakerInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = StoreStakerInfoV1(sDB, shardCommitteesStruct, rewardReceiver, autoStaking, stakingTx)
+	err = StoreStakerInfo(sDB, shardCommitteesStruct, rewardReceiver, autoStaking, stakingTx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -233,5 +234,104 @@ func TestStoreAndGetStakerInfo(t *testing.T) {
 		if s == nil {
 			t.Fatal("wtf")
 		}
+	}
+}
+
+func TestStoreSlashingCommittee(t *testing.T) {
+	sDB, _ := NewWithPrefixTrie(emptyRoot, wrarperDB)
+	m1 := map[byte][]string{
+		0: []string{committeePublicKeys[0], committeePublicKeys[1], committeePublicKeys[2]},
+	}
+	m2 := map[byte][]string{
+		0: []string{committeePublicKeys[0], committeePublicKeys[1], committeePublicKeys[2]},
+		1: []string{committeePublicKeys[3], committeePublicKeys[4], committeePublicKeys[5]},
+	}
+	m3 := map[byte][]string{
+		0: []string{committeePublicKeys[6], committeePublicKeys[8], committeePublicKeys[10]},
+		1: []string{committeePublicKeys[7], committeePublicKeys[9], committeePublicKeys[11]},
+	}
+	m4 := map[byte][]string{
+		0: []string{},
+		1: []string{},
+		2: []string{},
+	}
+	type args struct {
+		stateDB            *StateDB
+		epoch              uint64
+		slashingCommittees map[byte][]string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "store 1 shard",
+			args: args{
+				stateDB:            sDB,
+				epoch:              2,
+				slashingCommittees: m1,
+			},
+			wantErr: false,
+		},
+		{
+			name: "store 2 shard",
+			args: args{
+				stateDB:            sDB,
+				epoch:              3,
+				slashingCommittees: m2,
+			},
+			wantErr: false,
+		},
+		{
+			name: "store 2 shard",
+			args: args{
+				stateDB:            sDB,
+				epoch:              4,
+				slashingCommittees: m3,
+			},
+			wantErr: false,
+		},
+		{
+			name: "store 2 shard, no slashing committee",
+			args: args{
+				stateDB:            sDB,
+				epoch:              5,
+				slashingCommittees: m4,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := StoreSlashingCommittee(tt.args.stateDB, tt.args.epoch, tt.args.slashingCommittees); (err != nil) != tt.wantErr {
+				t.Errorf("StoreSlashingCommittee() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			rootHash, err := tt.args.stateDB.Commit(true)
+			if err != nil {
+				t.Errorf("tt.args.stateDB.Commit() error = %v, wantErr %v", err, nil)
+			}
+			err1 := tt.args.stateDB.Database().TrieDB().Commit(rootHash, false)
+			if err1 != nil {
+				t.Errorf("tt.args.stateDB.Commit() error = %v, wantErr %v", err1, nil)
+			}
+		})
+	}
+
+	got1 := GetSlashingCommittee(sDB, 2)
+	got2 := GetSlashingCommittee(sDB, 3)
+	got3 := GetSlashingCommittee(sDB, 4)
+	got4 := GetSlashingCommittee(sDB, 5)
+	if !reflect.DeepEqual(got1, m1) {
+		t.Fatalf("epoch %+v, want %+v, got %+v", 2, m1, got1)
+	}
+	if !reflect.DeepEqual(got2, m2) {
+		t.Fatalf("epoch %+v, want %+v, got %+v", 3, m2, got2)
+	}
+	if !reflect.DeepEqual(got3, m3) {
+		t.Fatalf("epoch %+v, want %+v, got %+v", 4, m3, got3)
+	}
+	if !reflect.DeepEqual(got4, m4) {
+		t.Fatalf("epoch %+v, want %+v, got %+v", 4, m4, got4)
 	}
 }

@@ -74,7 +74,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -158,7 +158,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReq(params interfac
 	}
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -305,7 +305,7 @@ func processBurningReq(
 		return nil, err
 	}
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr

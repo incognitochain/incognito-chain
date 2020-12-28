@@ -4,33 +4,36 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
-// createSwapShardInstructionV2 create swap instruction and new substitutes list
-// swap procedure is only completed after both swap out and swap in is performed
-// Output
+// createSwapShardInstructionV3 create swap instruction and new substitutes list with slashing
+// return params
 // #1: swap instruction
-// #2: new committee list
-// #3: new substitute list
-// #3: swapped out committee list
-func createSwapShardInstructionV2(
+// #2: new substitute list
+// #3: error
+func createSwapShardInstructionV3(
 	shardID byte,
 	substitutes, committees []string,
 	minCommitteeSize int,
 	maxCommitteeSize int,
 	typeIns int,
 	numberOfFixedValidator int,
-) (*instruction.SwapShardInstruction, []string, []string, []string) {
-	committees, swappedOutCommittees :=
-		normalSwapOut(committees, substitutes, minCommitteeSize, numberOfFixedValidator)
+	penalty map[string]signaturecounter.Penalty,
+) (*instruction.SwapShardInstruction, []string, []string, []string, []string) {
+	committees, slashingCommittees, normalSwapCommittees :=
+		slashingSwapOut(committees, substitutes, penalty, minCommitteeSize, numberOfFixedValidator)
+
+	swappedOutCommittees := append(slashingCommittees, normalSwapCommittees...)
 
 	newCommittees, newSubstitutes, swapInCommittees :=
 		swapInAfterSwapOut(committees, substitutes, maxCommitteeSize)
 
 	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
-		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, swappedOutCommittees
+		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, slashingCommittees, normalSwapCommittees
 	}
 
 	swapShardInstruction := instruction.NewSwapShardInstructionWithValue(
@@ -40,7 +43,7 @@ func createSwapShardInstructionV2(
 		typeIns,
 	)
 
-	return swapShardInstruction, newCommittees, newSubstitutes, swappedOutCommittees
+	return swapShardInstruction, newCommittees, newSubstitutes, slashingCommittees, normalSwapCommittees
 }
 
 // removeValidatorV2 remove validator and return removed list
@@ -71,7 +74,7 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 
 // getSwapOutOffset assumes that numberOfFixedValidator <= minCommitteeSize and won't replace fixed nodes
 // CONDITION:
-// #1 swapOutOffset <= floor(numberOfCommittees/3)
+// #1 swapOutOffset <= floor(numberOfCommittees/6)
 // #2 swapOutOffset <=  numberOfCommittees - numberOfFixedValidator
 // #3 committees length after both swap out and swap in must remain >= minCommitteeSize
 // #4 swap operation must begin from start position (which is fixed node validator position) as a queue
@@ -102,38 +105,48 @@ func getSwapOutOffset(numberOfSubstitutes, numberOfCommittees, numberOfFixedVali
 	return noReplaceOffset + replaceSwapOffset
 }
 
-// normalSwapOut swap node out of committee
-// after normal swap out, committees list could have invalid length
-// Output:
-// #1: new committees list
-// #2: swapped out committees list
-func normalSwapOut(
-	committees []string,
-	substitutes []string,
+// slashingSwapOut swap node out of committee
+// because of penalty or end of epoch
+func slashingSwapOut(
+	committees, substitutes []string,
+	penalty map[string]signaturecounter.Penalty,
 	minCommitteeSize int,
 	numberOfFixedValidator int,
 ) (
 	[]string,
 	[]string,
+	[]string,
 ) {
 	if len(committees) == numberOfFixedValidator {
-		return committees, []string{}
+		return committees, []string{}, []string{}
 	}
 
 	fixedCommittees := make([]string, len(committees[:numberOfFixedValidator]))
 	copy(fixedCommittees, committees[:numberOfFixedValidator])
 	flexCommittees := make([]string, len(committees[numberOfFixedValidator:]))
 	copy(flexCommittees, committees[numberOfFixedValidator:])
-	normalSwapOutCommittees := []string{}
+	flexAfterSlashingCommittees := []string{}
+	slashingCommittees := []string{}
 
 	swapOutOffset := getSwapOutOffset(len(substitutes), len(committees), numberOfFixedValidator, minCommitteeSize)
-	if swapOutOffset > 0 {
-		normalSwapOutCommittees = flexCommittees[:swapOutOffset]
-		flexCommittees = flexCommittees[swapOutOffset:]
+
+	for _, flexCommittee := range flexCommittees {
+		if _, ok := penalty[flexCommittee]; ok && swapOutOffset > 0 {
+			slashingCommittees = append(slashingCommittees, flexCommittee)
+			swapOutOffset--
+		} else {
+			flexAfterSlashingCommittees = append(flexAfterSlashingCommittees, flexCommittee)
+		}
 	}
 
-	committees = append(fixedCommittees, flexCommittees...)
-	return committees, normalSwapOutCommittees
+	normalSwapOutCommittees := make([]string, len(flexAfterSlashingCommittees[:swapOutOffset]))
+	copy(normalSwapOutCommittees, flexAfterSlashingCommittees[:swapOutOffset])
+
+	flexAfterSlashingCommittees = flexAfterSlashingCommittees[swapOutOffset:]
+
+	committees = append(fixedCommittees, flexAfterSlashingCommittees...)
+
+	return committees, slashingCommittees, normalSwapOutCommittees
 }
 
 // swapInAfterSwapOut must be perform after normalSwapOut function is executed
@@ -231,4 +244,21 @@ func getShardIDPositionFromArray(arr []byte) map[byte]byte {
 		m[v] = byte(i)
 	}
 	return m
+}
+
+func getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
+	assignPerShard := getSwapOutOffset(
+		lenShardSubstitute,
+		lenCommittees,
+		numberOfFixedValidators,
+		minCommitteeSize,
+	)
+
+	if assignPerShard == 0 {
+		assignPerShard = lenCommittees / MAX_SWAP_OR_ASSIGN_PERCENT
+		if lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT {
+			assignPerShard = 1
+		}
+	}
+	return assignPerShard
 }

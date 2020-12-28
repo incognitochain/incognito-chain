@@ -3,7 +3,6 @@ package instruction
 import (
 	"log"
 	"reflect"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -87,7 +86,6 @@ func TestReturnStakeIns_SetPublicKeys(t *testing.T) {
 			rsI := &ReturnStakeInstruction{
 				PublicKeys:       tt.fields.PublicKeys,
 				PublicKeysStruct: tt.fields.PublicKeysStruct,
-				ShardID:          tt.fields.ShardID,
 				StakingTXIDs:     tt.fields.StakingTXIDs,
 				StakingTxHashes:  tt.fields.StakingTxHashes,
 				PercentReturns:   tt.fields.PercentReturns,
@@ -140,7 +138,7 @@ func TestValidateAndImportReturnStakingInstructionFromString(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{"xyz", "xyz1", "xyz3", "xyz4"}, SPLITTER),
 					strings.Join([]string{"100", "100", "100", "100"}, SPLITTER),
 				},
@@ -153,7 +151,7 @@ func TestValidateAndImportReturnStakingInstructionFromString(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -171,7 +169,7 @@ func TestValidateAndImportReturnStakingInstructionFromString(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -189,7 +187,7 @@ func TestValidateAndImportReturnStakingInstructionFromString(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -207,7 +205,7 @@ func TestValidateAndImportReturnStakingInstructionFromString(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -225,7 +223,7 @@ func TestValidateAndImportReturnStakingInstructionFromString(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -242,7 +240,6 @@ func TestValidateAndImportReturnStakingInstructionFromString(t *testing.T) {
 				PublicKeysStruct: []incognitokey.CommitteePublicKey{
 					*incKey1, *incKey2, *incKey3, *incKey4,
 				},
-				ShardID: 0,
 				StakingTXIDs: []string{
 					txHash1, txHash2, txHash3, txHash4,
 				},
@@ -288,7 +285,7 @@ func TestImportReturnStakingInstructionFromString(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{"123", "123", "123", "123"}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -324,7 +321,7 @@ func TestImportReturnStakingInstructionFromString(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						"xyz",
 						"xyz1",
@@ -342,7 +339,7 @@ func TestImportReturnStakingInstructionFromString(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -360,7 +357,7 @@ func TestImportReturnStakingInstructionFromString(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -377,7 +374,6 @@ func TestImportReturnStakingInstructionFromString(t *testing.T) {
 				PublicKeysStruct: []incognitokey.CommitteePublicKey{
 					*incKey1, *incKey2, *incKey3, *incKey4,
 				},
-				ShardID: 0,
 				StakingTXIDs: []string{
 					txHash1, txHash2, txHash3, txHash4,
 				},
@@ -437,7 +433,7 @@ func TestValidateReturnStakingInstructionSanity(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{"xyz", "xyz1", "xyz3", "xyz4"}, SPLITTER),
 					strings.Join([]string{"100", "100", "100", "100"}, SPLITTER),
 				},
@@ -450,7 +446,7 @@ func TestValidateReturnStakingInstructionSanity(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -468,7 +464,7 @@ func TestValidateReturnStakingInstructionSanity(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -486,7 +482,7 @@ func TestValidateReturnStakingInstructionSanity(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3}, SPLITTER),
-					strconv.Itoa(0),
+
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -504,7 +500,6 @@ func TestValidateReturnStakingInstructionSanity(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3}, SPLITTER),
-					strconv.Itoa(0),
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -522,7 +517,6 @@ func TestValidateReturnStakingInstructionSanity(t *testing.T) {
 				instruction: []string{
 					RETURN_ACTION,
 					strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-					strconv.Itoa(0),
 					strings.Join([]string{
 						txHash1,
 						txHash2,
@@ -575,7 +569,6 @@ func TestReturnStakeIns_ToString(t *testing.T) {
 			want: []string{
 				RETURN_ACTION,
 				strings.Join([]string{key1, key2, key3, key4}, SPLITTER),
-				strconv.Itoa(0),
 				strings.Join([]string{"1", "2", "3", "4"}, SPLITTER),
 				strings.Join([]string{"100", "100", "100", "100"}, SPLITTER),
 			},
@@ -586,7 +579,6 @@ func TestReturnStakeIns_ToString(t *testing.T) {
 			rsI := &ReturnStakeInstruction{
 				PublicKeys:       tt.fields.PublicKeys,
 				PublicKeysStruct: tt.fields.PublicKeysStruct,
-				ShardID:          tt.fields.ShardID,
 				StakingTXIDs:     tt.fields.StakingTXIDs,
 				StakingTxHashes:  tt.fields.StakingTxHashes,
 				PercentReturns:   tt.fields.PercentReturns,
@@ -675,7 +667,6 @@ func TestReturnStakeIns_SetStakingTXIDs(t *testing.T) {
 			rsI := &ReturnStakeInstruction{
 				PublicKeys:       tt.fields.PublicKeys,
 				PublicKeysStruct: tt.fields.PublicKeysStruct,
-				ShardID:          tt.fields.ShardID,
 				StakingTXIDs:     tt.fields.StakingTXIDs,
 				StakingTxHashes:  tt.fields.StakingTxHashes,
 				PercentReturns:   tt.fields.PercentReturns,

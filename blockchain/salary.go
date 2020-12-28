@@ -120,8 +120,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				}
 				if (!isInit) || (epoch != shardRewardInfo.Epoch) {
 					isInit = true
-					epoch = shardRewardInfo.Epoch
-					height := shardRewardInfo.Epoch * blockchain.config.ChainParams.Epoch
+					height := blockchain.GetLastBeaconHeightInEpoch(shardRewardInfo.Epoch)
 					var beaconConsensusRootHash common.Hash
 					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), height)
 					if err != nil {
@@ -234,9 +233,9 @@ func (beaconBestState *BeaconBestState) calculateReward(
 func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	curView *BeaconBestState,
 	blkHeight, epoch uint64,
-	rewardStateDB *statedb.StateDB,
 	isSplitRewardForCustodian bool,
-	percentCustodianRewards uint64) ([][]string, map[common.Hash]uint64, error) {
+	percentCustodianRewards uint64,
+) ([][]string, map[common.Hash]uint64, error) {
 
 	//Decalre variables
 	var resInst [][]string
@@ -249,7 +248,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 		totalRewardForShard,
 		totalRewardForIncDAO,
 		totalRewardForCustodian,
-		err := curView.calculateReward(blockchain, blkHeight, epoch, rewardStateDB, isSplitRewardForCustodian, percentCustodianRewards)
+		err := curView.calculateReward(blockchain, blkHeight, epoch, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
 	if err != nil {
 		return nil, nil, err
 	}

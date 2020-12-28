@@ -21,6 +21,14 @@ type BeaconBody struct {
 	Instructions [][]string
 }
 
+func NewBeaconBody(shardState map[byte][]ShardState, instructions [][]string) BeaconBody {
+	return BeaconBody{ShardState: shardState, Instructions: instructions}
+}
+
+func (b *BeaconBody) SetInstructions(inst [][]string) {
+	b.Instructions = inst
+}
+
 type BeaconHeader struct {
 	Version           int         `json:"Version"`
 	Height            uint64      `json:"Height"`
@@ -47,10 +55,39 @@ type BeaconHeader struct {
 	ProposeTime int64  `json:"ProposeTime"`
 }
 
+func NewBeaconHeader(version int, height uint64, epoch uint64, round int, timestamp int64, previousBlockHash common.Hash, consensusType string, producer string, producerPubKeyStr string) BeaconHeader {
+	return BeaconHeader{Version: version, Height: height, Epoch: epoch, Round: round, Timestamp: timestamp, PreviousBlockHash: previousBlockHash, ConsensusType: consensusType, Producer: producer, ProducerPubKeyStr: producerPubKeyStr}
+}
+
+func (beaconHeader *BeaconHeader) AddBeaconHeaderHash(instructionHash common.Hash, shardStateHash common.Hash, instructionMerkleRoot []byte, beaconCommitteeAndValidatorRoot common.Hash, beaconCandidateRoot common.Hash, shardCandidateRoot common.Hash, shardCommitteeAndValidatorRoot common.Hash, autoStakingRoot common.Hash) {
+	beaconHeader.InstructionHash = instructionHash
+	beaconHeader.ShardStateHash = shardStateHash
+	copy(beaconHeader.InstructionMerkleRoot[:], instructionMerkleRoot)
+	beaconHeader.BeaconCommitteeAndValidatorRoot = beaconCommitteeAndValidatorRoot
+	beaconHeader.BeaconCandidateRoot = beaconCandidateRoot
+	beaconHeader.ShardCandidateRoot = shardCandidateRoot
+	beaconHeader.ShardCommitteeAndValidatorRoot = shardCommitteeAndValidatorRoot
+	beaconHeader.AutoStakingRoot = autoStakingRoot
+
+}
+
 type ShardState struct {
-	Height     uint64
-	Hash       common.Hash
-	CrossShard []byte //In this state, shard i send cross shard tx to which shard
+	ValidationData     string
+	CommitteeFromBlock common.Hash
+	Height             uint64
+	Hash               common.Hash
+	CrossShard         []byte //In this state, shard i send cross shard tx to which shard
+}
+
+func NewShardState(validationData string,
+	committeeFromBlock common.Hash,
+	height uint64,
+	hash common.Hash,
+	crossShard []byte,
+) ShardState {
+	newCrossShard := make([]byte, len(crossShard))
+	copy(newCrossShard, crossShard)
+	return ShardState{ValidationData: validationData, CommitteeFromBlock: committeeFromBlock, Height: height, Hash: hash, CrossShard: newCrossShard}
 }
 
 func (beaconBlock *BeaconBlock) GetVersion() int {
@@ -168,38 +205,38 @@ func (beaconBody BeaconBody) Hash() common.Hash {
 	return common.HashH([]byte(beaconBody.toString()))
 }
 
-func (beaconHeader *BeaconHeader) toString() string {
+func (header *BeaconHeader) toString() string {
 	res := ""
 	// res += beaconHeader.ProducerAddress.String()
-	res += fmt.Sprintf("%v", beaconHeader.Version)
-	res += fmt.Sprintf("%v", beaconHeader.Height)
-	res += fmt.Sprintf("%v", beaconHeader.Epoch)
-	res += fmt.Sprintf("%v", beaconHeader.Round)
-	res += fmt.Sprintf("%v", beaconHeader.Timestamp)
-	res += beaconHeader.PreviousBlockHash.String()
-	res += beaconHeader.BeaconCommitteeAndValidatorRoot.String()
-	res += beaconHeader.BeaconCandidateRoot.String()
-	res += beaconHeader.ShardCandidateRoot.String()
-	res += beaconHeader.ShardCommitteeAndValidatorRoot.String()
-	res += beaconHeader.AutoStakingRoot.String()
-	res += beaconHeader.ShardStateHash.String()
-	res += beaconHeader.InstructionHash.String()
+	res += fmt.Sprintf("%v", header.Version)
+	res += fmt.Sprintf("%v", header.Height)
+	res += fmt.Sprintf("%v", header.Epoch)
+	res += fmt.Sprintf("%v", header.Round)
+	res += fmt.Sprintf("%v", header.Timestamp)
+	res += header.PreviousBlockHash.String()
+	res += header.BeaconCommitteeAndValidatorRoot.String()
+	res += header.BeaconCandidateRoot.String()
+	res += header.ShardCandidateRoot.String()
+	res += header.ShardCommitteeAndValidatorRoot.String()
+	res += header.AutoStakingRoot.String()
+	res += header.ShardStateHash.String()
+	res += header.InstructionHash.String()
 
-	if beaconHeader.Version == 2 {
-		res += beaconHeader.Proposer
-		res += fmt.Sprintf("%v", beaconHeader.ProposeTime)
+	if header.Version == 2 {
+		res += header.Proposer
+		res += fmt.Sprintf("%v", header.ProposeTime)
 	}
 	return res
 }
 
-func (beaconBlock *BeaconHeader) MetaHash() common.Hash {
-	return common.Keccak256([]byte(beaconBlock.toString()))
+func (header *BeaconHeader) MetaHash() common.Hash {
+	return common.Keccak256([]byte(header.toString()))
 }
 
-func (beaconBlock *BeaconHeader) Hash() common.Hash {
+func (header *BeaconHeader) Hash() common.Hash {
 	// Block header of beacon uses Keccak256 as a hash func to check on Ethereum when relaying blocks
-	blkMetaHash := beaconBlock.MetaHash()
-	blkInstHash := beaconBlock.InstructionMerkleRoot
+	blkMetaHash := header.MetaHash()
+	blkInstHash := header.InstructionMerkleRoot
 	combined := append(blkMetaHash[:], blkInstHash[:]...)
 	return common.Keccak256(combined)
 }

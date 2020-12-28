@@ -9,6 +9,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 //ShardCommitteeStateHash
@@ -49,7 +51,7 @@ func NewShardCommitteeStateV2WithValue(
 	committeeFromBlockHash common.Hash,
 ) *ShardCommitteeStateV2 {
 	return &ShardCommitteeStateV2{
-		shardCommittee:     shardCommittee,
+		shardCommittee:     incognitokey.DeepCopy(shardCommittee),
 		committeeFromBlock: committeeFromBlockHash,
 		mu:                 new(sync.RWMutex),
 	}
@@ -59,6 +61,7 @@ func NewShardCommitteeStateV2WithValue(
 //Output: pointer of ShardCommitteeEngineV2
 func NewShardCommitteeEngineV2(shardHeight uint64,
 	shardHash common.Hash, shardID byte, shardCommitteeStateV2 *ShardCommitteeStateV2) *ShardCommitteeEngineV2 {
+	Logger.log.Infof("SHARDID %+v | Shard Height %+v, Init Shard Committee Engine V2", shardID, shardHeight)
 	return &ShardCommitteeEngineV2{
 		shardHeight:                      shardHeight,
 		shardHash:                        shardHash,
@@ -185,8 +188,7 @@ func (engine *ShardCommitteeEngineV2) InitCommitteeState(env ShardCommitteeState
 	addedCommittees = append(addedCommittees, newShardCandidateStructs[int(env.ShardID())*
 		env.MinShardCommitteeSize():(int(env.ShardID())*env.MinShardCommitteeSize())+env.MinShardCommitteeSize()]...)
 
-	engine.shardCommitteeStateV2.shardCommittee = append(engine.shardCommitteeStateV2.shardCommittee,
-		addedCommittees...)
+	engine.shardCommitteeStateV2.shardCommittee = incognitokey.DeepCopy(addedCommittees)
 	committeeChange.ShardCommitteeAdded[env.ShardID()] = addedCommittees
 
 }
@@ -215,11 +217,6 @@ func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
 	if err != nil {
 		return nil, NewCommitteeChange(), NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-
-	res, _ := incognitokey.CommitteeKeyListToString(env.CommitteesFromBeaconView())
-	Logger.log.Infof(">>>>>>>> \n "+
-		"Height %+v, Committee From Block %+v \n"+
-		"Committees %+v", env.ShardHeight(), env.CommitteesFromBlock(), res)
 
 	return hashes, committeeChange, nil
 }
@@ -260,12 +257,35 @@ func (s *ShardCommitteeStateV2) processSwapShardInstruction(
 func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 	env ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
+	for _, newShardCommittee := range env.CommitteesFromBeaconView() {
+		flag := false
+		for _, oldShardCommittee := range s.shardCommittee {
+			if reflect.DeepEqual(newShardCommittee, oldShardCommittee) {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			committeeChange.ShardCommitteeAdded[env.ShardID()] = append(committeeChange.ShardCommitteeAdded[env.ShardID()], newShardCommittee)
+		}
+	}
 
-	newCommitteeChange := committeeChange
+	for _, oldShardCommittee := range s.shardCommittee {
+		flag := false
+		for _, newShardCommittee := range env.CommitteesFromBeaconView() {
+			if reflect.DeepEqual(oldShardCommittee, newShardCommittee) {
+				flag = true
+				break
+			}
+		}
+		if !flag {
+			committeeChange.ShardCommitteeRemoved[env.ShardID()] = append(committeeChange.ShardCommitteeRemoved[env.ShardID()], oldShardCommittee)
+		}
+	}
 
 	s.shardCommittee = incognitokey.DeepCopy(env.CommitteesFromBeaconView())
 	s.committeeFromBlock = env.CommitteesFromBlock()
-	return newCommitteeChange, nil
+	return committeeChange, nil
 }
 
 //ProcessInstructionFromBeacon : process instrucction from beacon
@@ -308,4 +328,23 @@ func (engine ShardCommitteeEngineV2) generateUncommittedCommitteeHashes() (*Shar
 		ShardSubstituteHash: substituteHash,
 		CommitteeFromBlock:  newCommitteeState.committeeFromBlock,
 	}, nil
+}
+
+func (ShardCommitteeEngineV2 ShardCommitteeEngineV2) BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64 {
+	totalTxsFee := make(map[common.Hash]uint64)
+	for _, tx := range txs {
+		switch tx.GetType() {
+		case common.TxNormalType:
+			totalTxsFee[common.PRVCoinID] += tx.GetTxFee()
+		case common.TxCustomTokenPrivacyType:
+			totalTxsFee[common.PRVCoinID] += tx.GetTxFee()
+			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
+			totalTxsFee[*txCustomPrivacy.GetTokenID()] += txCustomPrivacy.GetTxFeeToken()
+			Logger.log.Info("[slashing] totalTxsFee[*txCustomPrivacy.GetTokenID()] :", totalTxsFee[*txCustomPrivacy.GetTokenID()])
+		default:
+			Logger.log.Infof("[reward] Skip building reward for transaction %s \n", tx.Hash().String())
+		}
+		Logger.log.Info("[slashing] totalTxsFee[common.PRVCoinID]:", totalTxsFee[common.PRVCoinID])
+	}
+	return totalTxsFee
 }

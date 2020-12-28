@@ -3,6 +3,7 @@ package instruction
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -40,6 +41,11 @@ func NewSwapInstruction() *SwapInstruction {
 
 func (s *SwapInstruction) GetType() string {
 	return SWAP_ACTION
+}
+
+func (s *SwapInstruction) IsEmpty() bool {
+	return reflect.DeepEqual(s, NewSwapInstruction()) ||
+		(len(s.InPublicKeys) == 0 && len(s.OutPublicKeys) == 0)
 }
 
 func (s *SwapInstruction) ToString() []string {

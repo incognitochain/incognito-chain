@@ -13,11 +13,10 @@ import (
 )
 
 //ReturnStakeInstruction :
-// format: "return", "key1,key2,key3", "2", "1231231,312312321,12312321", "100,100,100,100"
+// format: "return", "key1,key2,key3", "1231231,312312321,12312321", "100,100,100,100"
 type ReturnStakeInstruction struct {
 	PublicKeys       []string
 	PublicKeysStruct []incognitokey.CommitteePublicKey
-	ShardID          byte
 	StakingTXIDs     []string
 	StakingTxHashes  []common.Hash
 	PercentReturns   []uint
@@ -25,12 +24,9 @@ type ReturnStakeInstruction struct {
 
 func NewReturnStakeInsWithValue(
 	publicKeys []string,
-	sID byte,
 	txStake []string,
 ) *ReturnStakeInstruction {
-	rsI := &ReturnStakeInstruction{
-		ShardID: sID,
-	}
+	rsI := &ReturnStakeInstruction{}
 	rsI, _ = rsI.SetPublicKeys(publicKeys)
 	rsI, _ = rsI.SetStakingTXIDs(txStake)
 	for _, _ = range publicKeys {
@@ -46,11 +42,6 @@ func NewReturnStakeIns() *ReturnStakeInstruction {
 func (rsI *ReturnStakeInstruction) IsEmpty() bool {
 	return reflect.DeepEqual(rsI, NewReturnStakeIns()) ||
 		len(rsI.PublicKeysStruct) == 0 && len(rsI.PublicKeys) == 0
-}
-
-func (rsI *ReturnStakeInstruction) SetShardID(sID byte) error {
-	rsI.ShardID = sID
-	return nil
 }
 
 func (rsI *ReturnStakeInstruction) SetPublicKeys(publicKeys []string) (*ReturnStakeInstruction, error) {
@@ -91,10 +82,6 @@ func (rsI *ReturnStakeInstruction) GetType() string {
 	return RETURN_ACTION
 }
 
-func (rsI *ReturnStakeInstruction) GetShardID() byte {
-	return rsI.ShardID
-}
-
 func (rsI *ReturnStakeInstruction) GetPercentReturns() []uint {
 	return rsI.PercentReturns
 }
@@ -110,7 +97,6 @@ func (rsI *ReturnStakeInstruction) GetPublicKey() []string {
 func (rsI *ReturnStakeInstruction) ToString() []string {
 	returnStakeInsStr := []string{RETURN_ACTION}
 	returnStakeInsStr = append(returnStakeInsStr, strings.Join(rsI.PublicKeys, SPLITTER))
-	returnStakeInsStr = append(returnStakeInsStr, strconv.Itoa(int(rsI.ShardID)))
 	returnStakeInsStr = append(returnStakeInsStr, strings.Join(rsI.StakingTXIDs, SPLITTER))
 	percentReturnsStr := make([]string, len(rsI.PercentReturns))
 	for i, v := range rsI.PercentReturns {
@@ -120,7 +106,7 @@ func (rsI *ReturnStakeInstruction) ToString() []string {
 	return returnStakeInsStr
 }
 
-func (rsI *ReturnStakeInstruction) AddInTheSameShard(publicKey string, stakingTx string) *ReturnStakeInstruction {
+func (rsI *ReturnStakeInstruction) AddNewRequest(publicKey string, stakingTx string) {
 	rsI.PublicKeys = append(rsI.PublicKeys, publicKey)
 	publicKeyStruct, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{publicKey})
 	rsI.PublicKeysStruct = append(rsI.PublicKeysStruct, publicKeyStruct[0])
@@ -128,7 +114,6 @@ func (rsI *ReturnStakeInstruction) AddInTheSameShard(publicKey string, stakingTx
 	stakingTxHash, _ := common.Hash{}.NewHashFromStr(stakingTx)
 	rsI.StakingTxHashes = append(rsI.StakingTxHashes, *stakingTxHash)
 	rsI.PercentReturns = append(rsI.PercentReturns, 100)
-	return rsI
 }
 
 func ValidateAndImportReturnStakingInstructionFromString(instruction []string) (*ReturnStakeInstruction, error) {
@@ -146,18 +131,12 @@ func ImportReturnStakingInstructionFromString(instruction []string) (*ReturnStak
 		return nil, err
 	}
 
-	shardID, err := strconv.Atoi(instruction[2])
+	returnStakingIns, err = returnStakingIns.SetStakingTXIDs(strings.Split(instruction[2], SPLITTER))
 	if err != nil {
 		return nil, err
 	}
 
-	returnStakingIns.SetShardID(byte(shardID))
-	returnStakingIns, err = returnStakingIns.SetStakingTXIDs(strings.Split(instruction[3], SPLITTER))
-	if err != nil {
-		return nil, err
-	}
-
-	percentRetunrsStr := strings.Split(instruction[4], SPLITTER)
+	percentRetunrsStr := strings.Split(instruction[3], SPLITTER)
 	percentReturns := make([]uint, len(percentRetunrsStr))
 	for i, v := range percentRetunrsStr {
 		tempPercent, err := strconv.Atoi(v)
@@ -171,7 +150,7 @@ func ImportReturnStakingInstructionFromString(instruction []string) (*ReturnStak
 }
 
 func ValidateReturnStakingInstructionSanity(instruction []string) error {
-	if len(instruction) != 5 {
+	if len(instruction) != 4 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
 	if instruction[0] != RETURN_ACTION {
@@ -182,7 +161,7 @@ func ValidateReturnStakingInstructionSanity(instruction []string) error {
 	if err != nil {
 		return err
 	}
-	txStakings := strings.Split(instruction[3], SPLITTER)
+	txStakings := strings.Split(instruction[2], SPLITTER)
 	for _, txStaking := range txStakings {
 		_, err := common.Hash{}.NewHashFromStr(txStaking)
 		if err != nil {
@@ -190,7 +169,7 @@ func ValidateReturnStakingInstructionSanity(instruction []string) error {
 			return fmt.Errorf("invalid tx return staking %+v", err)
 		}
 	}
-	percentRetunrsStr := strings.Split(instruction[4], SPLITTER)
+	percentRetunrsStr := strings.Split(instruction[3], SPLITTER)
 	percentReturns := make([]uint, len(percentRetunrsStr))
 	for i, v := range percentRetunrsStr {
 		tempPercent, err := strconv.Atoi(v)

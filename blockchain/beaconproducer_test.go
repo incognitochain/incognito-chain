@@ -562,7 +562,6 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
 				LastCrossShardState:      tt.fields.LastCrossShardState,
 				ShardHandle:              tt.fields.ShardHandle,
-				NumOfBlocksByProducers:   tt.fields.NumOfBlocksByProducers,
 				BlockInterval:            tt.fields.BlockInterval,
 				BlockMaxCreateTime:       tt.fields.BlockMaxCreateTime,
 				consensusStateDB:         tt.fields.consensusStateDB,
@@ -677,7 +676,6 @@ func TestBeaconBestState_processStakeInstructionFromShardBlock(t *testing.T) {
 				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
 				LastCrossShardState:      tt.fields.LastCrossShardState,
 				ShardHandle:              tt.fields.ShardHandle,
-				NumOfBlocksByProducers:   tt.fields.NumOfBlocksByProducers,
 				BlockInterval:            tt.fields.BlockInterval,
 				BlockMaxCreateTime:       tt.fields.BlockMaxCreateTime,
 				consensusStateDB:         tt.fields.consensusStateDB,
@@ -797,7 +795,6 @@ func TestBeaconBestState_processStopAutoStakeInstructionFromShardBlock(t *testin
 				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
 				LastCrossShardState:      tt.fields.LastCrossShardState,
 				ShardHandle:              tt.fields.ShardHandle,
-				NumOfBlocksByProducers:   tt.fields.NumOfBlocksByProducers,
 				BlockInterval:            tt.fields.BlockInterval,
 				BlockMaxCreateTime:       tt.fields.BlockMaxCreateTime,
 				consensusStateDB:         tt.fields.consensusStateDB,
@@ -919,7 +916,6 @@ func TestBeaconBestState_processUnstakeInstructionFromShardBlock(t *testing.T) {
 				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
 				LastCrossShardState:      tt.fields.LastCrossShardState,
 				ShardHandle:              tt.fields.ShardHandle,
-				NumOfBlocksByProducers:   tt.fields.NumOfBlocksByProducers,
 				BlockInterval:            tt.fields.BlockInterval,
 				BlockMaxCreateTime:       tt.fields.BlockMaxCreateTime,
 				consensusStateDB:         tt.fields.consensusStateDB,
@@ -942,6 +938,7 @@ func TestBeaconBestState_processUnstakeInstructionFromShardBlock(t *testing.T) {
 }
 
 func Test_shardInstruction_compose(t *testing.T) {
+	initLog()
 	type fields struct {
 		stakeInstructions         []*instruction.StakeInstruction
 		unstakeInstructions       []*instruction.UnstakeInstruction
@@ -1015,6 +1012,28 @@ func Test_shardInstruction_compose(t *testing.T) {
 						CommitteePublicKeys: []string{
 							"key1", "key2", "key3", "key4",
 						},
+					},
+				},
+			},
+		},
+		{
+			name: "Compose stop auto stake and unstake",
+			fields: fields{
+				stopAutoStakeInstructions: []*instruction.StopAutoStakeInstruction{
+					&instruction.StopAutoStakeInstruction{
+						CommitteePublicKeys: []string{"key1"},
+					},
+				},
+				unstakeInstructions: []*instruction.UnstakeInstruction{
+					&instruction.UnstakeInstruction{
+						CommitteePublicKeys: []string{"key1"},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				unstakeInstructions: []*instruction.UnstakeInstruction{
+					&instruction.UnstakeInstruction{
+						CommitteePublicKeys: []string{"key1"},
 					},
 				},
 			},

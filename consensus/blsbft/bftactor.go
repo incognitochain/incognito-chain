@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"time"
@@ -34,7 +35,7 @@ type BLSBFT struct {
 		TimeStart         time.Time
 		Block             types.BlockInterface
 		BlockHash         common.Hash
-		BlockValidateData ValidationData
+		BlockValidateData consensustypes.ValidationData
 		lockVotes         sync.Mutex
 		Votes             map[string]vote
 		Round             int
@@ -242,7 +243,7 @@ func (e *BLSBFT) Start() error {
 
 							e.RoundData.Block = e.Blocks[roundKey]
 							e.RoundData.BlockHash = *e.RoundData.Block.Hash()
-							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
+							valData, err := consensustypes.DecodeValidationData(e.RoundData.Block.GetValidationField())
 							if err != nil {
 								e.logger.Error(err)
 								continue
@@ -273,7 +274,7 @@ func (e *BLSBFT) Start() error {
 						e.RoundData.BlockValidateData.BridgeSig = brigSigs
 						e.RoundData.BlockValidateData.ValidatiorsIdx = validatorIdx
 
-						validationDataString, _ := EncodeValidationData(e.RoundData.BlockValidateData)
+						validationDataString, _ := consensustypes.EncodeValidationData(e.RoundData.BlockValidateData)
 						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
 
 						//TODO: check issue invalid sig when swap
@@ -328,7 +329,7 @@ func (e *BLSBFT) enterProposePhase() {
 		return
 	}
 	validationData := e.CreateValidationData(block)
-	validationDataString, err := EncodeValidationData(validationData)
+	validationDataString, err := consensustypes.EncodeValidationData(validationData)
 	if err != nil {
 		e.logger.Errorf("Encode validation data failed %+v", err)
 	}

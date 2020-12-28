@@ -3,14 +3,15 @@ package syncker
 import (
 	"context"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
+	"github.com/incognitochain/incognito-chain/common"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-
 	lru "github.com/hashicorp/golang-lru"
-
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -29,7 +30,8 @@ type ShardSyncProcess struct {
 	shardPeerState        map[string]ShardPeerState //peerid -> state
 	shardPeerStateCh      chan *wire.MessagePeerState
 	crossShardSyncProcess *CrossShardSyncProcess
-	Server                Server
+	blockchain            *blockchain.BlockChain
+	Network               Network
 	Chain                 ShardChainInterface
 	beaconChain           Chain
 	shardPool             *BlkPool
@@ -37,7 +39,7 @@ type ShardSyncProcess struct {
 	lock                  *sync.RWMutex
 }
 
-func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInterface, chain ShardChainInterface) *ShardSyncProcess {
+func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain, beaconChain BeaconChainInterface, chain ShardChainInterface) *ShardSyncProcess {
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
 			return true
@@ -48,7 +50,8 @@ func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInte
 	s := &ShardSyncProcess{
 		shardID:          shardID,
 		status:           STOP_SYNC,
-		Server:           server,
+		blockchain:       bc,
+		Network:          network,
 		Chain:            chain,
 		beaconChain:      beaconChain,
 		shardPool:        NewBlkPool("ShardPool-"+string(shardID), isOutdatedBlock),
@@ -57,7 +60,7 @@ func NewShardSyncProcess(shardID int, server Server, beaconChain BeaconChainInte
 
 		actionCh: make(chan func()),
 	}
-	s.crossShardSyncProcess = NewCrossShardSyncProcess(server, s, beaconChain)
+	s.crossShardSyncProcess = NewCrossShardSyncProcess(network, bc, s, beaconChain)
 
 	go s.syncShardProcess()
 	go s.insertShardBlockFromPool()
@@ -139,9 +142,9 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 
 	//loop all current views, if there is any block connect to the view
 	for _, viewHash := range s.Chain.GetAllViewHash() {
-		blks := s.shardPool.GetBlockByPrevHash(viewHash)
-		for _, blk := range blks {
-			if blk == nil {
+		blocks := s.shardPool.GetBlockByPrevHash(viewHash)
+		for _, block := range blocks {
+			if block == nil {
 				continue
 			}
 			//if already insert and error, last time insert is < 10s then we skip
@@ -152,7 +155,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 
 			//fullnode delay 1 block (make sure insert final block)
 			if os.Getenv("FULLNODE") != "" {
-				preBlk := s.shardPool.GetBlockByPrevHash(*blk.Hash())
+				preBlk := s.shardPool.GetBlockByPrevHash(*block.Hash())
 				if len(preBlk) == 0 {
 					continue
 				}
@@ -161,11 +164,24 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			insertShardTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++
 			//must validate this block when insert
-			if err := s.Chain.InsertBlk(blk.(types.BlockInterface), true); err != nil {
-				Logger.Error("Insert shard block from pool fail", blk.GetHeight(), blk.Hash(), err)
+			if err := s.Chain.InsertBlock(block.(types.BlockInterface), true); err != nil {
+				Logger.Error("Insert shard block from pool fail", block.GetHeight(), block.Hash(), err)
 				continue
+			} else {
+				previousValidationData := s.shardPool.GetPreviousValidationData(block.GetPrevHash())
+				if previousValidationData == common.EmptyString {
+					continue
+				}
+				_, err := consensustypes.DecodeValidationData(previousValidationData)
+				if err != nil {
+					continue
+				}
+				err1 := s.Chain.ReplacePreviousValidationData(block.GetPrevHash(), previousValidationData)
+				if err1 != nil {
+					Logger.Error("Replace Previous Validation Data Fail", block.GetPrevHash(), previousValidationData, err)
+				}
 			}
-			s.shardPool.RemoveBlock(blk.Hash())
+			s.shardPool.RemoveBlock(block)
 		}
 	}
 }
@@ -225,7 +241,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 	}
 
 	//fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
-	ch, err := s.Server.RequestShardBlocksViaStream(ctx, peerID, s.shardID, s.Chain.GetFinalViewHeight()+1, toHeight)
+	ch, err := s.Network.RequestShardBlocksViaStream(ctx, peerID, s.shardID, s.Chain.GetFinalViewHeight()+1, toHeight)
 	// ch, err := s.Server.RequestShardBlocksViaStream(ctx, "", s.shardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
 	if err != nil {
 		fmt.Println("Syncker: create channel fail")

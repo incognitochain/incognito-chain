@@ -69,9 +69,9 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTransaction:                (*HttpServer).handleCreateAndSendTx,
 	getTransactionByHash:                    (*HttpServer).handleGetTransactionByHash,
 	gettransactionhashbyreceiver:            (*HttpServer).handleGetTransactionHashByReceiver,
-	gettransactionhashbyreceiverv2:            (*HttpServer).handleGetTransactionHashByReceiverV2,
+	gettransactionhashbyreceiverv2:          (*HttpServer).handleGetTransactionHashByReceiverV2,
 	gettransactionbyreceiver:                (*HttpServer).handleGetTransactionByReceiver,
-	gettransactionbyreceiverv2:                (*HttpServer).handleGetTransactionByReceiverV2,
+	gettransactionbyreceiverv2:              (*HttpServer).handleGetTransactionByReceiverV2,
 	createAndSendStakingTransaction:         (*HttpServer).handleCreateAndSendStakingTx,
 	createAndSendStopAutoStakingTransaction: (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
 	randomCommitments:                       (*HttpServer).handleRandomCommitments,
@@ -83,12 +83,15 @@ var HttpHandler = map[string]httpHandler{
 	decryptoutputcoinbykeyoftransaction:     (*HttpServer).handleDecryptOutputCoinByKeyOfTransaction,
 
 	//======Testing and Benchmark======
-	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
-	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
-	unlockMempool:           (*HttpServer).handleUnlockMempool,
-	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
-	getCommitteeState:       (*HttpServer).handleGetCommitteeState,
-	getRewardAmountByEpoch:  (*HttpServer).handleGetRewardAmountByEpoch,
+	getAndSendTxsFromFile:      (*HttpServer).handleGetAndSendTxsFromFile,
+	getAndSendTxsFromFileV2:    (*HttpServer).handleGetAndSendTxsFromFileV2,
+	unlockMempool:              (*HttpServer).handleUnlockMempool,
+	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
+	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
+	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
+	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,
+	getRewardAmountByEpoch:     (*HttpServer).handleGetRewardAmountByEpoch,
+
 	//=================================
 
 	// Beststate
@@ -157,8 +160,6 @@ var HttpHandler = map[string]httpHandler{
 	getRoleByValidatorKey:       (*HttpServer).handleGetValidatorKeyRole,
 	getIncognitoPublicKeyRole:   (*HttpServer).handleGetIncognitoPublicKeyRole,
 	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
-	getProducersBlackList:       (*HttpServer).handleGetProducersBlackList,
-	getProducersBlackListDetail: (*HttpServer).handleGetProducersBlackListDetail,
 
 	// pde
 	getPDEState:                                (*HttpServer).handleGetPDEState,
@@ -244,10 +245,13 @@ var HttpHandler = map[string]httpHandler{
 
 	// get committeeByHeight
 
+	getTotalStaker: (*HttpServer).handleGetTotalStaker,
+
+	//validators state
+	getValKeyState: (*HttpServer).handleGetValKeyState,
+
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,
-
-	getTotalStaker: (*HttpServer).handleGetTotalStaker,
 }
 
 // Commands that are available to a limited user
@@ -286,6 +290,7 @@ var WsHandler = map[string]wsHandler{
 	subcribeCrossCustomTokenPrivacyByPrivateKey: (*WsServer).handleSubcribeCrossCustomTokenPrivacyByPrivateKey,
 	subcribeShardBestState:                      (*WsServer).handleSubscribeShardBestState,
 	subcribeBeaconBestState:                     (*WsServer).handleSubscribeBeaconBestState,
+	subcribeBeaconBestStateFromMem:              (*WsServer).handleSubscribeBeaconBestStateFromMem,
 	subcribeBeaconPoolBeststate:                 (*WsServer).handleSubscribeBeaconPoolBestState,
 	subcribeShardPoolBeststate:                  (*WsServer).handleSubscribeShardPoolBeststate,
 }
