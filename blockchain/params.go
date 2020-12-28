@@ -281,7 +281,7 @@ func SetupParam() {
 		ReplaceStakingTxHeight:    1,
 		IsBackup:                  false,
 		PreloadAddress:            "",
-		BCHeightBreakPointNewZKP:  260000, //TODO: change this value when deployed testnet2
+		BCHeightBreakPointNewZKP:  730000, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:   2085,
 		EpochV2:                   Testnet2EpochV2,
 		EpochV2BreakPoint:         Testnet2EpochV2BreakPoint,
