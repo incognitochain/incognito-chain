@@ -8,7 +8,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 
@@ -379,18 +378,4 @@ func (shardBestState *ShardBestState) ListShardPrivacyTokenAndPRV() []common.Has
 		tokenIDs = append(tokenIDs, k)
 	}
 	return tokenIDs
-}
-
-func (blockchain *BlockChain) GetShardRootsHash(shardBestState *ShardBestState, shardID byte, height uint64) (*ShardRootHash, error) {
-	h, err := blockchain.GetShardBlockHashByHeight(blockchain.ShardChain[shardID].GetFinalView(), blockchain.ShardChain[shardID].GetBestView(), height)
-	if err != nil {
-		return nil, err
-	}
-	data, err := rawdbv2.GetShardRootsHash(blockchain.GetShardChainDatabase(shardID), shardID, *h)
-	if err != nil {
-		return nil, err
-	}
-	sRH := &ShardRootHash{}
-	err = json.Unmarshal(data, sRH)
-	return sRH, err
 }

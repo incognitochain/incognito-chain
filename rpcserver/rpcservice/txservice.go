@@ -30,12 +30,28 @@ type TxService struct {
 	BlockChain   *blockchain.BlockChain
 	Wallet       *wallet.Wallet
 	FeeEstimator map[byte]*mempool.FeeEstimator
-	TxMemPool    *mempool.TxPool
+	TxMemPool    MempoolInterface
+}
+
+type MempoolInterface interface {
+	ValidateSerialNumberHashH(serialNumber []byte) error
+	MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight int64) (*common.Hash, *mempool.TxDesc, error)
+	GetTx(txHash *common.Hash) (metadata.Transaction, error)
+	GetClonedPoolCandidate() map[common.Hash]string
+	ListTxs() []string
+	RemoveTx(txs []metadata.Transaction, isInBlock bool)
+	TriggerCRemoveTxs(tx metadata.Transaction)
+	MarkForwardedTransaction(txHash common.Hash)
+	MaxFee() uint64
+	ListTxsDetail() []metadata.Transaction
+	Count() int
+	Size() uint64
+	SendTransactionToBlockGen()
 }
 
 type TxInfo struct {
 	BlockHash common.Hash
-	Tx metadata.Transaction
+	Tx        metadata.Transaction
 }
 
 func (txService TxService) ListSerialNumbers(tokenID common.Hash, shardID byte) (map[string]struct{}, error) {
@@ -242,7 +258,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	}
 	needToPayFee := int64((totalAmount + realFee) - candidateOutputCoinAmount)
 	// if not enough to pay fee
-	if totalAmount + realFee > candidateOutputCoinAmount {
+	if totalAmount+realFee > candidateOutputCoinAmount {
 		if len(remainOutCoins) > 0 {
 			candidateOutputCoinsForFee, _, _, err1 := txService.chooseBestOutCoinsToSpent(remainOutCoins, uint64(needToPayFee))
 			if err != nil {
@@ -371,7 +387,8 @@ func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID by
 		return unitFee, nil
 	} else {
 		// convert limit fee native token to limit fee ptoken
-		limitFeePTokenTmp, err := metadata.ConvertNativeTokenToPrivacyToken(limitFee, tokenId, beaconHeight, txService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB())
+		beaconStateDB, err := txService.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), txService.BlockChain.GetBeaconChainDatabase())
+		limitFeePTokenTmp, err := metadata.ConvertNativeTokenToPrivacyToken(limitFee, tokenId, beaconHeight, beaconStateDB)
 		limitFeePToken := uint64(math.Ceil(limitFeePTokenTmp))
 		if err != nil {
 			return uint64(0), err
@@ -1411,6 +1428,112 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	return &tx, nil
 }
 
+func (txService TxService) BuildRawDefragmentAccountTransactionV2(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 4 {
+		return nil, NewRPCError(RPCInvalidParamsError, nil)
+	}
+
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("senderKeyParam is invalid"))
+	}
+
+	maxVal, err := common.AssertAndConvertStrToNumber(arrayParams[1])
+	if err != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("maxVal is invalid %v", err))
+	}
+
+	estimateFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("estimateFeeCoinPerKb is invalid"))
+	}
+	estimateFeeCoinPerKb := int64(estimateFeeCoinPerKbtemp)
+
+	// param #4: hasPrivacyCoin flag: 1 or -1
+	hasPrivacyCoinParam := arrayParams[3].(float64)
+	hasPrivacyCoin := int(hasPrivacyCoinParam) > 0
+
+	maxDefragmentQuantity := 32
+	if len(arrayParams) >= 5 {
+		maxDefragmentQuantityTemp, ok := arrayParams[4].(float64)
+		if !ok {
+			maxDefragmentQuantityTemp = 32
+		}
+		if maxDefragmentQuantityTemp > 32 || maxDefragmentQuantityTemp <= 0 {
+			maxDefragmentQuantityTemp = 32
+		}
+		maxDefragmentQuantity = int(maxDefragmentQuantityTemp)
+	}
+	/********* END Fetch all component to *******/
+
+	// param #1: private key of sender
+	senderKeySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(senderKeyParam)
+	if err != nil {
+		return nil, NewRPCError(InvalidSenderPrivateKeyError, err)
+	}
+
+	prvCoinID := &common.Hash{}
+	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err1 != nil {
+		return nil, NewRPCError(TokenIsInvalidError, err1)
+	}
+	outCoins, err := txService.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
+	if err != nil {
+		return nil, NewRPCError(GetOutputCoinError, err)
+	}
+	// remove out coin in mem pool
+	outCoins, err = txService.filterMemPoolOutcoinsToSpent(outCoins)
+	if err != nil {
+		return nil, NewRPCError(GetOutputCoinError, err)
+	}
+	outCoins, amount := txService.calculateOutputCoinsByMinValue(outCoins, maxVal, maxDefragmentQuantity)
+	if len(outCoins) == 0 {
+		return nil, NewRPCError(GetOutputCoinError, nil)
+	}
+	paymentInfo := &privacy.PaymentInfo{
+		Amount:         uint64(amount),
+		PaymentAddress: senderKeySet.PaymentAddress,
+		Message:        []byte{},
+	}
+	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
+	// check real fee(nano PRV) per tx
+	isGetPTokenFee := false
+	beaconState := txService.BlockChain.GetBeaconBestState()
+	beaconHeight := beaconState.BeaconHeight
+	realFee, _, _, _ := txService.EstimateFee(
+		estimateFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, int64(beaconHeight))
+	if len(outCoins) == 0 {
+		realFee = 0
+	}
+	if uint64(amount) < realFee {
+		return nil, NewRPCError(GetOutputCoinError, err)
+	}
+	paymentInfo.Amount = uint64(amount) - realFee
+	inputCoins := transaction.ConvertOutputCoinToInputCoin(outCoins)
+	/******* END GET output native coins(PRV), which is used to create tx *****/
+	// START create tx
+	// missing flag for privacy
+	// false by default
+	tx := transaction.Tx{}
+	err = tx.Init(
+		transaction.NewTxPrivacyInitParams(&senderKeySet.PrivateKey,
+			paymentInfos,
+			inputCoins,
+			realFee,
+			hasPrivacyCoin,
+			txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB(),
+			nil, // use for prv coin -> nil is valid
+			meta, nil))
+	// END create tx
+
+	if err != nil {
+		return nil, NewRPCError(CreateTxDataError, err)
+	}
+
+	return &tx, nil
+}
+
 //calculateOutputCoinsByMinValue
 func (txService TxService) calculateOutputCoinsByMinValue(outCoins []*privacy.OutputCoin, maxVal uint64, maxDefragmentQuantityTemp int) ([]*privacy.OutputCoin, uint64) {
 	outCoinsTmp := make([]*privacy.OutputCoin, 0)
@@ -1503,7 +1626,6 @@ func (txService TxService) calculateOutputCoinsByMinValue(outCoins []*privacy.Ou
 
 	return txMsg, hash, tx.PubKeyLastByteSender, nil
 }*/
-
 
 func (txService TxService) buildTxInfosFromTxHashs(
 	listTxsHash map[byte][]common.Hash,
@@ -1672,7 +1794,6 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 	return result, nil
 }
 
-
 func (txService TxService) buildTxDetails(
 	txInfos []TxInfo,
 	keySet incognitokey.KeySet,
@@ -1680,7 +1801,7 @@ func (txService TxService) buildTxDetails(
 	txDetails := []jsonresult.ReceivedTransactionV2{}
 	for _, txInfo := range txInfos {
 		item := jsonresult.ReceivedTransactionV2{
-			ReceivedAmounts: map[common.Hash][]jsonresult.ReceivedInfo{},
+			ReceivedAmounts:    map[common.Hash][]jsonresult.ReceivedInfo{},
 			InputSerialNumbers: map[common.Hash][]string{},
 		}
 		if len(keySet.ReadonlyKey.Rk) != 0 {
@@ -1917,7 +2038,7 @@ func (txService TxService) getTxsByHashs(txHashs []common.Hash, ch chan []TxInfo
 
 		txInfo := TxInfo{
 			BlockHash: blockHash,
-			Tx: txDetail,
+			Tx:        txDetail,
 		}
 		txInfos = append(txInfos, txInfo)
 	}
@@ -1963,13 +2084,13 @@ func (txService TxService) GetTransactionByReceiverV2(
 	for i := 0; i < actualChunksNum; i++ {
 		start := chunkSize * i
 		end := start + chunkSize
-		chunk := allTxHashs[start : end]
+		chunk := allTxHashs[start:end]
 		go txService.getTxsByHashs(chunk, ch, tokenIDHash, keySet.PaymentAddress.Pk)
 	}
 
 	txInfos := []TxInfo{}
 	for i := 0; i < actualChunksNum; i++ {
-		chunkedTxInfos := <- ch
+		chunkedTxInfos := <-ch
 		txInfos = append(txInfos, chunkedTxInfos...)
 	}
 
@@ -2127,6 +2248,77 @@ func (txService TxService) BuildRawDefragmentPrivacyCustomTokenTransaction(param
 	return tx, nil
 }
 
+func (txService TxService) BuildRawDefragmentPrivacyCustomTokenTransactionV2(params interface{}, metaData metadata.Metadata) (*transaction.TxCustomTokenPrivacy, *RPCError) {
+	txParam, errParam := bean.NewCreateRawPrivacyTokenTxParamV2(params)
+	if errParam != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, errParam)
+	}
+	tokenParamsRaw := txParam.TokenParamsRaw
+	var err error
+	tokenParams, err := txService.BuildDefragmentTokenParamV2(tokenParamsRaw, txParam.SenderKeySet, txParam.ShardIDSender)
+
+	if err.(*RPCError) != nil {
+		return nil, err.(*RPCError)
+	}
+
+	if tokenParams == nil {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("can not build token params for request"))
+	}
+	/******* START choose output native coins(PRV), which is used to create tx *****/
+	var inputCoins []*privacy.InputCoin
+	realFeePRV := uint64(0)
+	inputCoins, realFeePRV, err = txService.chooseOutsCoinByKeyset(txParam.PaymentInfos,
+		txParam.EstimateFeeCoinPerKb, 0, txParam.SenderKeySet,
+		txParam.ShardIDSender, txParam.HasPrivacyCoin, nil, tokenParams, txParam.IsGetPTokenFee, txParam.UnitPTokenFee)
+	if err.(*RPCError) != nil {
+		return nil, err.(*RPCError)
+	}
+
+	if len(txParam.PaymentInfos) == 0 && realFeePRV == 0 {
+		txParam.HasPrivacyCoin = false
+	}
+	/******* END GET output coins native coins(PRV), which is used to create tx *****/
+
+	shardBestState, _ := txService.BlockChain.GetClonedAShardBestState(txParam.ShardIDSender)
+	tx := &transaction.TxCustomTokenPrivacy{}
+	err = tx.Init(
+		transaction.NewTxPrivacyTokenInitParams(&txParam.SenderKeySet.PrivateKey,
+			txParam.PaymentInfos,
+			inputCoins,
+			realFeePRV,
+			tokenParams,
+			shardBestState.GetCopiedTransactionStateDB(),
+			metaData,
+			txParam.HasPrivacyCoin,
+			txParam.HasPrivacyToken,
+			txParam.ShardIDSender, txParam.Info,
+			txService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()))
+	if err != nil {
+		return nil, NewRPCError(CreateTxDataError, err)
+	}
+
+	return tx, nil
+}
+
+func (txService TxService) BuildDefragmentTokenParamV2(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, *RPCError) {
+	var privacyTokenParam *transaction.CustomTokenPrivacyParamTx
+	var err *RPCError
+	isPrivacy, ok := tokenParamsRaw["Privacy"].(bool)
+	if !ok {
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Params %+v", tokenParamsRaw))
+	}
+	if !isPrivacy {
+		// Check normal custom token param
+	} else {
+		// Check privacy custom token param
+		privacyTokenParam, _, _, err = txService.BuildDefragmentPrivacyCustomTokenParamV2(tokenParamsRaw, senderKeySet, shardIDSender)
+		if err != nil {
+			return nil, NewRPCError(BuildTokenParamError, err)
+		}
+	}
+	return privacyTokenParam, nil
+}
+
 func (txService TxService) BuildDefragmentTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, *RPCError) {
 	var privacyTokenParam *transaction.CustomTokenPrivacyParamTx
 	var err *RPCError
@@ -2182,6 +2374,102 @@ func (txService TxService) BuildDefragmentPrivacyCustomTokenParam(tokenParamsRaw
 		Amount:         uint64(tokenAmount),
 		TokenInput:     nil,
 		Fee:            uint64(tokenFee),
+	}
+
+	maxDefragmentQuantity := 32
+
+	// get list custom token
+	switch tokenParams.TokenTxType {
+	case transaction.CustomTokenTransfer:
+		{
+			tokenID, err := common.Hash{}.NewHashFromStr(tokenParams.PropertyID)
+			if err != nil {
+				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+			}
+			shardBestState, _ := txService.BlockChain.GetClonedAShardBestState(shardIDSender)
+			isExisted := statedb.PrivacyTokenIDExisted(shardBestState.GetCopiedTransactionStateDB(), *tokenID)
+			if !isExisted {
+				var isBridgeToken bool
+				_, allBridgeTokens, err := txService.BlockChain.GetAllBridgeTokens()
+				if err != nil {
+					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+				}
+				for _, bridgeToken := range allBridgeTokens {
+					if bridgeToken.TokenID.IsEqual(tokenID) {
+						isBridgeToken = true
+						break
+					}
+				}
+				if !isBridgeToken {
+					// totally invalid token
+					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
+				}
+				//return nil, nil, nil, NewRPCError(BuildPrivacyTokenParamError, err)
+			}
+			outputTokens, err := txService.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, tokenID)
+			if err != nil {
+				return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
+			}
+			outputTokens, err = txService.filterMemPoolOutcoinsToSpent(outputTokens)
+			if err != nil {
+				return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
+			}
+
+			candidateOutputTokens, amount := txService.calculateOutputCoinsByMinValue(outputTokens, 10000*1e9, maxDefragmentQuantity)
+			if len(candidateOutputTokens) == 0 {
+				return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
+			}
+			intputToken := transaction.ConvertOutputCoinToInputCoin(candidateOutputTokens)
+			tokenParams.TokenInput = intputToken
+			tokenParams.Receiver = []*privacy.PaymentInfo{{
+				PaymentAddress: senderKeySet.PaymentAddress,
+				Amount:         amount,
+			}}
+		}
+	default:
+		{
+			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, nil)
+		}
+	}
+	return tokenParams, nil, nil, nil
+}
+
+func (txService TxService) BuildDefragmentPrivacyCustomTokenParamV2(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
+	property, ok := tokenParamsRaw["TokenID"].(string)
+	if !ok {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token ID, Params %+v ", tokenParamsRaw))
+	}
+	tokenName, ok := tokenParamsRaw["TokenName"].(string)
+	if !ok {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token Name, Params %+v ", tokenParamsRaw))
+	}
+	tokenSymbol, ok := tokenParamsRaw["TokenSymbol"].(string)
+	if !ok {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token Symbol, Params %+v ", tokenParamsRaw))
+	}
+	tokenTxType, ok := tokenParamsRaw["TokenTxType"].(float64)
+	if !ok {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token Tx Type, Params %+v ", tokenParamsRaw))
+	}
+	tokenAmount, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["TokenAmount"])
+	if err != nil {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token Amount %+v ", err))
+	}
+	tokenFee, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["TokenFee"])
+	if err != nil {
+		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token Fee %+v ", err))
+	}
+	if tokenTxType == transaction.CustomTokenInit {
+		tokenFee = 0
+	}
+	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+		PropertyID:     property,
+		PropertyName:   tokenName,
+		PropertySymbol: tokenSymbol,
+		TokenTxType:    int(tokenTxType),
+		Amount:         tokenAmount,
+		TokenInput:     nil,
+		Fee:            tokenFee,
 	}
 
 	maxDefragmentQuantity := 32
