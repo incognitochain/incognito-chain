@@ -307,7 +307,7 @@ func (serverObj *Server) NewServer(
 		pubkey,
 		serverObj.consensusEngine,
 		dispatcher,
-		// cfg.NodeMode,
+		"",
 		relayShards,
 	)
 
