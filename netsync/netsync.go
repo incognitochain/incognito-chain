@@ -269,7 +269,7 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64)
 		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		tp, err := netSync.config.BlockChain.GetConfig().PoolManager.GetShardTxsPool(sID)
 		if err != nil {
-			Logger.log.Error(err)
+			Logger.log.Errorf("[testperformance] Cannot get tx pool of shard %v, got err %v", sID, err)
 		} else {
 			if !tp.IsRunning() {
 				return
@@ -282,13 +282,13 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64)
 				metrics.Tag:              metrics.TxHashTag,
 				metrics.TagValue:         msg.Transaction.Hash().String(),
 			})*/
-			Logger.log.Debugf("there is hash of transaction %s", tx.Hash().String())
-			err := netSync.config.Server.PushMessageToAll(msg)
-			if err != nil {
-				Logger.log.Error(err)
-			} else {
-				netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
-			}
+			// Logger.log.Debugf("there is hash of transaction %s", tx.Hash().String())
+			// err := netSync.config.Server.PushMessageToAll(msg)
+			// if err != nil {
+			// 	Logger.log.Error(err)
+			// } else {
+			// 	netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
+			// }
 		}
 	}
 	Logger.log.Debug("Transaction %+v found in cache", *msg.Transaction.Hash())
