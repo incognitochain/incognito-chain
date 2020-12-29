@@ -111,7 +111,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionHashError, err)
 	}
-	shardStatesHash, err := generateHashFromShardState(shardStates)
+	shardStatesHash, err := generateHashFromShardState(shardStates, curView.CommitteeEngineVersion())
 	if err != nil {
 		return nil, NewBlockChainError(GenerateShardStateError, err)
 	}

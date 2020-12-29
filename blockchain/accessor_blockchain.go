@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -267,6 +268,7 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*types.Shar
 }
 
 func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights map[byte]uint64) map[byte][]*types.ShardBlock {
+	Logger.log.Info("[slashing] bestShardHeights:", bestShardHeights)
 	allShardBlocks := make(map[byte][]*types.ShardBlock)
 	for shardID, bestShardHeight := range bestShardHeights {
 		finalizedShardHeight := blockchain.ShardChain[shardID].multiView.GetFinalView().GetHeight()
@@ -294,6 +296,8 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 
 			shardBlocks = append(shardBlocks, tempShardBlock)
 		}
+		Logger.log.Info("[slashing] shardID:", shardID)
+		Logger.log.Info("[slashing] shardBlocks:", shardBlocks)
 		allShardBlocks[shardID] = shardBlocks
 	}
 	return allShardBlocks

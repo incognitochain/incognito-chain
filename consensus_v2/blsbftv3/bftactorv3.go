@@ -321,16 +321,18 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	if v.block == nil {
 		return
 	}
-
+	e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//already in chain
 	view := e.Chain.GetViewByHash(*v.block.Hash())
 	if view != nil {
+		e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 		return
 	}
 
 	//not connected previous block
 	view = e.Chain.GetViewByHash(v.block.GetPrevHash())
 	if view == nil {
+		e.Logger.Infof("Get Previous View By Hash Fail, %+v, %+v", v.block.GetPrevHash(), v.block.GetHeight()-1)
 		return
 	}
 
@@ -340,7 +342,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 		dsaKey := []byte{}
 		if vote.IsValid == 0 {
 			for _, c := range v.committees {
-				//e.Logger.Error(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
+				e.Logger.Info(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
 				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
 					dsaKey = c.MiningPubKey[common.BridgeConsensus]
 				}
@@ -363,7 +365,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 			validVote++
 		}
 	}
-	//e.Logger.Debug(validVote, committees), errVote)
+	e.Logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
 	v.hasNewVote = false
 	for key, value := range v.votes {
 		if value.IsValid == -1 {

@@ -248,9 +248,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(beaconBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
 	}
 
-	/*if !verifyHashFromShardState(beaconBlock.Body.ShardState, beaconBlock.Header.ShardStateHash) {*/
-	//return NewBlockChainError(ShardStateHashError, fmt.Errorf("Expect shard state hash to be %+v", beaconBlock.Header.ShardStateHash))
-	/*}*/
+	if !verifyHashFromShardState(beaconBlock.Body.ShardState, beaconBlock.Header.ShardStateHash, curView.CommitteeEngineVersion()) {
+		return NewBlockChainError(ShardStateHashError, fmt.Errorf("Expect shard state hash to be %+v", beaconBlock.Header.ShardStateHash))
+	}
 	tempInstructionArr := []string{}
 	for _, strs := range beaconBlock.Body.Instructions {
 		tempInstructionArr = append(tempInstructionArr, strs...)
@@ -683,6 +683,9 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 	shardID byte,
 	shardState types.ShardState,
 ) error {
+	if shardState.ValidationData == common.EmptyString {
+		return nil
+	}
 
 	shardBlock, _, err := bc.GetShardBlockByHash(shardState.Hash)
 	if err != nil {
