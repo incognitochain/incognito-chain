@@ -43,8 +43,7 @@ func NewBeaconCommitteeStateV1WithValue(
 	return &BeaconCommitteeStateV1{
 		beaconCommitteeStateBase: *NewBeaconCommitteeStateBaseWithValue(
 			beaconCurrentValidator, shardCurrentValidator, shardSubstituteValidator,
-			[]incognitokey.CommitteePublicKey{}, 0,
-			autoStaking, rewardReceivers, stakingTx, nil,
+			autoStaking, rewardReceivers, stakingTx,
 		),
 		nextEpochShardCandidate:    nextEpochShardCandidate,
 		currentEpochShardCandidate: currentEpochShardCandidate,
@@ -303,4 +302,12 @@ func (b *BeaconCommitteeStateV1) Hash() (*BeaconCommitteeStateHash, error) {
 	}
 	res.ShardCandidateHash = tempShardCandidateHash
 	return res, nil
+}
+
+func (b BeaconCommitteeStateV1) CandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey {
+	return b.nextEpochShardCandidate
+}
+
+func (b BeaconCommitteeStateV1) CandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
+	return b.currentEpochShardCandidate
 }

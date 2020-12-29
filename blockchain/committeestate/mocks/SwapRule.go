@@ -28,13 +28,13 @@ func (_m *SwapRule) AssignOffset(lenSubstitute int, lenCommittees int, numberOfF
 	return r0
 }
 
-// GenInstructions provides a mock function with given fields: shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize, penalty
-func (_m *SwapRule) GenInstructions(shardID byte, committees []string, substitutes []string, minCommitteeSize int, maxCommitteeSize int, typeIns int, numberOfFixedValidators int, dcsMaxCommitteeSize int, dcsMinCommitteeSize int, penalty map[string]signaturecounter.Penalty) (*instruction.SwapShardInstruction, []string, []string, []string, []string) {
-	ret := _m.Called(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize, penalty)
+// GenInstructions provides a mock function with given fields: shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, penalty
+func (_m *SwapRule) GenInstructions(shardID byte, committees []string, substitutes []string, minCommitteeSize int, maxCommitteeSize int, typeIns int, numberOfFixedValidators int, penalty map[string]signaturecounter.Penalty) (*instruction.SwapShardInstruction, []string, []string, []string, []string) {
+	ret := _m.Called(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, penalty)
 
 	var r0 *instruction.SwapShardInstruction
-	if rf, ok := ret.Get(0).(func(byte, []string, []string, int, int, int, int, int, int, map[string]signaturecounter.Penalty) *instruction.SwapShardInstruction); ok {
-		r0 = rf(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize, penalty)
+	if rf, ok := ret.Get(0).(func(byte, []string, []string, int, int, int, int, map[string]signaturecounter.Penalty) *instruction.SwapShardInstruction); ok {
+		r0 = rf(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, penalty)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*instruction.SwapShardInstruction)
@@ -42,8 +42,8 @@ func (_m *SwapRule) GenInstructions(shardID byte, committees []string, substitut
 	}
 
 	var r1 []string
-	if rf, ok := ret.Get(1).(func(byte, []string, []string, int, int, int, int, int, int, map[string]signaturecounter.Penalty) []string); ok {
-		r1 = rf(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize, penalty)
+	if rf, ok := ret.Get(1).(func(byte, []string, []string, int, int, int, int, map[string]signaturecounter.Penalty) []string); ok {
+		r1 = rf(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, penalty)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).([]string)
@@ -51,8 +51,8 @@ func (_m *SwapRule) GenInstructions(shardID byte, committees []string, substitut
 	}
 
 	var r2 []string
-	if rf, ok := ret.Get(2).(func(byte, []string, []string, int, int, int, int, int, int, map[string]signaturecounter.Penalty) []string); ok {
-		r2 = rf(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize, penalty)
+	if rf, ok := ret.Get(2).(func(byte, []string, []string, int, int, int, int, map[string]signaturecounter.Penalty) []string); ok {
+		r2 = rf(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, penalty)
 	} else {
 		if ret.Get(2) != nil {
 			r2 = ret.Get(2).([]string)
@@ -60,8 +60,8 @@ func (_m *SwapRule) GenInstructions(shardID byte, committees []string, substitut
 	}
 
 	var r3 []string
-	if rf, ok := ret.Get(3).(func(byte, []string, []string, int, int, int, int, int, int, map[string]signaturecounter.Penalty) []string); ok {
-		r3 = rf(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize, penalty)
+	if rf, ok := ret.Get(3).(func(byte, []string, []string, int, int, int, int, map[string]signaturecounter.Penalty) []string); ok {
+		r3 = rf(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, penalty)
 	} else {
 		if ret.Get(3) != nil {
 			r3 = ret.Get(3).([]string)
@@ -69,8 +69,8 @@ func (_m *SwapRule) GenInstructions(shardID byte, committees []string, substitut
 	}
 
 	var r4 []string
-	if rf, ok := ret.Get(4).(func(byte, []string, []string, int, int, int, int, int, int, map[string]signaturecounter.Penalty) []string); ok {
-		r4 = rf(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, dcsMaxCommitteeSize, dcsMinCommitteeSize, penalty)
+	if rf, ok := ret.Get(4).(func(byte, []string, []string, int, int, int, int, map[string]signaturecounter.Penalty) []string); ok {
+		r4 = rf(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, penalty)
 	} else {
 		if ret.Get(4) != nil {
 			r4 = ret.Get(4).([]string)

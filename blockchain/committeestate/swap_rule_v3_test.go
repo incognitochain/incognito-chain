@@ -21,8 +21,6 @@ func Test_swapRuleV3_GenInstructions(t *testing.T) {
 		maxCommitteeSize        int
 		typeIns                 int
 		numberOfFixedValidators int
-		dcsMaxCommitteeSize     int
-		dcsMinCommitteeSize     int
 		penalty                 map[string]signaturecounter.Penalty
 	}
 	tests := []struct {
@@ -51,8 +49,6 @@ func Test_swapRuleV3_GenInstructions(t *testing.T) {
 				maxCommitteeSize:        8,
 				typeIns:                 instruction.SWAP_BY_END_EPOCH,
 				numberOfFixedValidators: 8,
-				dcsMaxCommitteeSize:     51,
-				dcsMinCommitteeSize:     15,
 				penalty: map[string]signaturecounter.Penalty{
 					key0:  signaturecounter.Penalty{},
 					key11: signaturecounter.Penalty{},
@@ -90,7 +86,7 @@ func Test_swapRuleV3_GenInstructions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			got, got1, got2, got3, got4 := s.GenInstructions(tt.args.shardID, tt.args.committees, tt.args.substitutes, tt.args.minCommitteeSize, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidators, tt.args.dcsMaxCommitteeSize, tt.args.dcsMinCommitteeSize, tt.args.penalty)
+			got, got1, got2, got3, got4 := s.GenInstructions(tt.args.shardID, tt.args.committees, tt.args.substitutes, tt.args.minCommitteeSize, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidators, tt.args.penalty)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("swapRuleV3.GenInstructions() got = %v, want %v", got, tt.want)
 			}
@@ -184,8 +180,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 		substitutes             []string
 		maxSwapInPercent        int
 		numberOfFixedValidators int
-		dcsMaxCommitteeSize     int
-		dcsMinCommitteeSize     int
+		maxCommitteeSize        int
 	}
 	tests := []struct {
 		name  string
@@ -207,8 +202,6 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 				},
 				maxSwapInPercent:        6,
 				numberOfFixedValidators: 8,
-				dcsMaxCommitteeSize:     51,
-				dcsMinCommitteeSize:     15,
 			},
 			want: []string{
 				key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key0, key,
@@ -224,7 +217,7 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			got, got1, got2 := s.swapInAfterSwapOut(tt.args.committees, tt.args.substitutes, tt.args.maxSwapInPercent, tt.args.numberOfFixedValidators, tt.args.dcsMaxCommitteeSize, tt.args.dcsMinCommitteeSize)
+			got, got1, got2 := s.swapInAfterSwapOut(tt.args.committees, tt.args.substitutes, tt.args.maxSwapInPercent, tt.args.numberOfFixedValidators, tt.args.maxCommitteeSize)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("swapRuleV3.swapInAfterSwapOut() got = %v, want %v", got, tt.want)
 			}
@@ -244,8 +237,7 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 		lenSubstitutes            int
 		maxSwapInPercent          int
 		numberOfFixedValidators   int
-		dcsMaxCommitteeSize       int
-		dcsMinCommitteeSize       int
+		maxCommitteeSize          int
 	}
 	tests := []struct {
 		name string
@@ -261,8 +253,6 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 				lenSubstitutes:            20,
 				maxSwapInPercent:          6,
 				numberOfFixedValidators:   8,
-				dcsMaxCommitteeSize:       51,
-				dcsMinCommitteeSize:       15,
 			},
 			want: 0,
 		},
@@ -274,8 +264,6 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 				lenSubstitutes:            5,
 				maxSwapInPercent:          6,
 				numberOfFixedValidators:   8,
-				dcsMaxCommitteeSize:       51,
-				dcsMinCommitteeSize:       15,
 			},
 			want: 2,
 		},
@@ -287,8 +275,6 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 				lenSubstitutes:            5,
 				maxSwapInPercent:          6,
 				numberOfFixedValidators:   8,
-				dcsMaxCommitteeSize:       51,
-				dcsMinCommitteeSize:       15,
 			},
 			want: 2,
 		},
@@ -300,8 +286,6 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 				lenSubstitutes:            60,
 				maxSwapInPercent:          6,
 				numberOfFixedValidators:   8,
-				dcsMaxCommitteeSize:       51,
-				dcsMinCommitteeSize:       15,
 			},
 			want: 3,
 		},
@@ -313,8 +297,6 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 				lenSubstitutes:            40,
 				maxSwapInPercent:          6,
 				numberOfFixedValidators:   8,
-				dcsMaxCommitteeSize:       51,
-				dcsMinCommitteeSize:       15,
 			},
 			want: 4,
 		},
@@ -326,8 +308,6 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 				lenSubstitutes:            2,
 				maxSwapInPercent:          6,
 				numberOfFixedValidators:   4,
-				dcsMaxCommitteeSize:       51,
-				dcsMinCommitteeSize:       15,
 			},
 			want: 1,
 		},
@@ -335,7 +315,7 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			if got := s.getSwapInOffset(tt.args.lenCommitteesAfterSwapOut, tt.args.lenSubstitutes, tt.args.maxSwapInPercent, tt.args.numberOfFixedValidators, tt.args.dcsMaxCommitteeSize, tt.args.dcsMinCommitteeSize); got != tt.want {
+			if got := s.getSwapInOffset(tt.args.lenCommitteesAfterSwapOut, tt.args.lenSubstitutes, tt.args.maxSwapInPercent, tt.args.maxCommitteeSize); got != tt.want {
 				t.Errorf("swapRuleV3.getSwapInOffset() = %v, want %v", got, tt.want)
 			}
 		})
@@ -350,9 +330,8 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 		lenSlashedCommittees              int
 		maxSwapOutPercent                 int
 		numberOfFixedValidators           int
-		dcsMaxCommitteeSize               int
-		dcsMinCommitteeSize               int
 		maxCommitteeeSubstituteRangeTimes int
+		minCommitteeSize                  int
 	}
 	tests := []struct {
 		name  string
@@ -386,8 +365,6 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				lenSlashedCommittees:              2,
 				maxSwapOutPercent:                 6,
 				lenBeforeSlashedCommittees:        22,
-				dcsMaxCommitteeSize:               51,
-				dcsMinCommitteeSize:               15,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: []string{
@@ -409,9 +386,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 				numberOfFixedValidators:           4,
 				lenSlashedCommittees:              0,
 				maxSwapOutPercent:                 6,
-				dcsMaxCommitteeSize:               10,
 				lenBeforeSlashedCommittees:        7,
-				dcsMinCommitteeSize:               6,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: []string{
@@ -425,7 +400,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			got, got1 := s.normalSwapOut(tt.args.committees, tt.args.substitutes, tt.args.lenBeforeSlashedCommittees, tt.args.lenSlashedCommittees, tt.args.maxSwapOutPercent, tt.args.numberOfFixedValidators, tt.args.dcsMaxCommitteeSize, tt.args.dcsMinCommitteeSize, tt.args.maxCommitteeeSubstituteRangeTimes)
+			got, got1 := s.normalSwapOut(tt.args.committees, tt.args.substitutes, tt.args.lenBeforeSlashedCommittees, tt.args.lenSlashedCommittees, tt.args.maxSwapOutPercent, tt.args.numberOfFixedValidators, tt.args.minCommitteeSize)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("swapRuleV3.normalSwapOut() got = %v, want %v", got, tt.want)
 			}
@@ -443,9 +418,8 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 		lenSlashedCommittees              int
 		maxSwapOutPercent                 int
 		numberOfFixedValidators           int
-		dcsMaxCommitteeSize               int
-		dcsMinCommitteeSize               int
 		maxCommitteeeSubstituteRangeTimes int
+		minCommitteeSize                  int
 	}
 	tests := []struct {
 		name string
@@ -462,8 +436,6 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 				lenSlashedCommittees:              5,
 				maxSwapOutPercent:                 6,
 				numberOfFixedValidators:           8,
-				dcsMaxCommitteeSize:               51,
-				dcsMinCommitteeSize:               15,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: 0,
@@ -477,8 +449,6 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 				numberOfFixedValidators:           8,
 				lenSlashedCommittees:              5,
 				maxSwapOutPercent:                 6,
-				dcsMaxCommitteeSize:               51,
-				dcsMinCommitteeSize:               15,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: 3,
@@ -492,8 +462,6 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 				numberOfFixedValidators:           8,
 				lenSlashedCommittees:              4,
 				maxSwapOutPercent:                 6,
-				dcsMaxCommitteeSize:               51,
-				dcsMinCommitteeSize:               15,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: 0,
@@ -507,8 +475,6 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 				numberOfFixedValidators:           8,
 				lenSlashedCommittees:              1,
 				maxSwapOutPercent:                 6,
-				dcsMaxCommitteeSize:               51,
-				dcsMinCommitteeSize:               15,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: 0,
@@ -522,8 +488,6 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 				numberOfFixedValidators:           8,
 				lenSlashedCommittees:              2,
 				maxSwapOutPercent:                 6,
-				dcsMaxCommitteeSize:               51,
-				dcsMinCommitteeSize:               15,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: 1,
@@ -537,8 +501,6 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 				numberOfFixedValidators:           8,
 				lenSlashedCommittees:              2,
 				maxSwapOutPercent:                 6,
-				dcsMaxCommitteeSize:               51,
-				dcsMinCommitteeSize:               15,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: 1,
@@ -552,8 +514,6 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 				numberOfFixedValidators:           8,
 				lenSlashedCommittees:              1,
 				maxSwapOutPercent:                 6,
-				dcsMaxCommitteeSize:               51,
-				dcsMinCommitteeSize:               15,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: 0,
@@ -567,8 +527,6 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 				numberOfFixedValidators:           8,
 				lenSlashedCommittees:              1,
 				maxSwapOutPercent:                 6,
-				dcsMaxCommitteeSize:               51,
-				dcsMinCommitteeSize:               15,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: 0,
@@ -582,8 +540,6 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 				numberOfFixedValidators:           4,
 				lenSlashedCommittees:              0,
 				maxSwapOutPercent:                 6,
-				dcsMaxCommitteeSize:               51,
-				dcsMinCommitteeSize:               15,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: 0,
@@ -597,8 +553,6 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 				numberOfFixedValidators:           4,
 				lenSlashedCommittees:              0,
 				maxSwapOutPercent:                 6,
-				dcsMaxCommitteeSize:               10,
-				dcsMinCommitteeSize:               6,
 				maxCommitteeeSubstituteRangeTimes: 4,
 			},
 			want: 1,
@@ -607,7 +561,7 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			if got := s.getNormalSwapOutOffset(tt.args.lenCommitteesBeforeSlash, tt.args.lenSubstitutes, tt.args.lenSlashedCommittees, tt.args.maxSwapOutPercent, tt.args.numberOfFixedValidators, tt.args.dcsMaxCommitteeSize, tt.args.dcsMinCommitteeSize, tt.args.maxCommitteeeSubstituteRangeTimes); got != tt.want {
+			if got := s.getNormalSwapOutOffset(tt.args.lenCommitteesBeforeSlash, tt.args.lenSubstitutes, tt.args.lenSlashedCommittees, tt.args.maxSwapOutPercent, tt.args.numberOfFixedValidators, tt.args.minCommitteeSize); got != tt.want {
 				t.Errorf("swapRuleV3.getNormalSwapOutOffset() = %v, want %v", got, tt.want)
 			}
 		})

@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -8,12 +9,12 @@ import (
 )
 
 type BeaconCommitteeStateV2 struct {
-	beaconCommitteeStateBase
+	beaconCommitteeStateSlashingBase
 }
 
 func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
-		beaconCommitteeStateBase: *NewBeaconCommitteeStateBase(),
+		beaconCommitteeStateSlashingBase: *NewBeaconCommitteeStateSlashingBase(),
 	}
 }
 
@@ -26,12 +27,15 @@ func NewBeaconCommitteeStateV2WithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	probationPool map[string]signaturecounter.Penalty,
 	swapRule SwapRule,
 ) *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
-		beaconCommitteeStateBase: *NewBeaconCommitteeStateBaseWithValue(
-			beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool,
-			numberOfAssignedCandidates, autoStake, rewardReceiver, stakingTx, swapRule,
+		beaconCommitteeStateSlashingBase: *NewBeaconCommitteeStateSlashingBaseWithValue(
+			beaconCommittee, shardCommittee, shardSubstitute,
+			autoStake, rewardReceiver, stakingTx,
+			shardCommonPool, probationPool,
+			numberOfAssignedCandidates, swapRule,
 		),
 	}
 }

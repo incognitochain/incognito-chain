@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -8,15 +9,16 @@ import (
 )
 
 type BeaconCommitteeStateV3 struct {
-	beaconCommitteeStateBase
+	beaconCommitteeStateSlashingBase
 	syncPool map[byte][]incognitokey.CommitteePublicKey
 	terms    map[string]uint64
 }
 
 func NewBeaconCommitteeStateV3() *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
-		beaconCommitteeStateBase: *NewBeaconCommitteeStateBase(),
-		syncPool:                 make(map[byte][]incognitokey.CommitteePublicKey),
+		beaconCommitteeStateSlashingBase: *NewBeaconCommitteeStateSlashingBase(),
+		syncPool:                         make(map[byte][]incognitokey.CommitteePublicKey),
+		terms:                            make(map[string]uint64),
 	}
 }
 
@@ -29,26 +31,38 @@ func NewBeaconCommitteeStateV3WithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
+	probationPool map[string]signaturecounter.Penalty,
 	syncPool map[byte][]incognitokey.CommitteePublicKey,
+	terms map[string]uint64,
 	swapRule SwapRule,
 ) *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
-		beaconCommitteeStateBase: *NewBeaconCommitteeStateBaseWithValue(
-			beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool,
-			numberOfAssignedCandidates, autoStake, rewardReceiver, stakingTx, swapRule,
+		beaconCommitteeStateSlashingBase: *NewBeaconCommitteeStateSlashingBaseWithValue(
+			beaconCommittee, shardCommittee, shardSubstitute, autoStake, rewardReceiver, stakingTx,
+			shardCommonPool, probationPool, numberOfAssignedCandidates, swapRule,
 		),
 		syncPool: syncPool,
+		terms:    terms,
 	}
+}
+
+func (b *BeaconCommitteeStateV3) reset() {
+	b.beaconCommitteeStateSlashingBase.reset()
+	b.syncPool = map[byte][]incognitokey.CommitteePublicKey{}
+	b.terms = map[string]uint64{}
 }
 
 func (b *BeaconCommitteeStateV3) clone() *BeaconCommitteeStateV3 {
 	newB := NewBeaconCommitteeStateV3()
-
-	newB.beaconCommitteeStateBase = *b.beaconCommitteeStateBase.clone()
+	newB.beaconCommitteeStateSlashingBase = *b.beaconCommitteeStateSlashingBase.clone()
 
 	for i, v := range b.syncPool {
 		newB.syncPool[i] = make([]incognitokey.CommitteePublicKey, len(v))
 		copy(newB.syncPool[i], v)
+	}
+
+	for i, v := range b.terms {
+		newB.terms[i] = v
 	}
 
 	return newB
@@ -95,8 +109,19 @@ func (b *BeaconCommitteeStateV3) assignAfterNormalSwapOut(
 	return newCommitteeChange
 }
 
-func (b *BeaconCommitteeStateV3) assignShardWithRandomNumber(candidates []string, rand int64, lenSubstitute, lenCommittees int, committeeChange *CommitteeChange) *CommitteeChange {
+//TODO: @tin reimplement here
+func (b *BeaconCommitteeStateV3) assignToShard(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
 	newCommitteeChange := committeeChange
+
+	for _, candidate := range candidates {
+		key := incognitokey.CommitteePublicKey{}
+		key.FromString(candidate)
+		newCommitteeChange.ShardSubstituteAdded[shardID] = append(newCommitteeChange.ShardSubstituteAdded[shardID], key)
+		randomPosition := 0
+		for randomPosition >= len(b.shardCommittee[shardID]) {
+			randomPosition = calculateCandidatePosition(candidate, rand, len(b.shardCommittee[shardID])+len(b.shardSubstitute[shardID]))
+		}
+	}
 
 	return newCommitteeChange
 }
@@ -110,22 +135,21 @@ func (b *BeaconCommitteeStateV3) processAssignInstruction(
 ) (
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	newCommitteeChange := committeeChange
-	newReturnStakingInstruction := returnStakingInstruction
 
 	newCommitteeChange.ShardSyncingRemoved[byte(assignInstruction.ChainID)] =
 		append(newCommitteeChange.ShardSyncingRemoved[byte(assignInstruction.ChainID)], assignInstruction.ShardCandidatesStruct...)
-	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, assignInstruction.ShardCandidates, newCommitteeChange, newReturnStakingInstruction)
+	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, assignInstruction.ShardCandidates, newCommitteeChange, returnStakingInstruction)
 	if err != nil {
 		return committeeChange, returnStakingInstruction, err
 	}
-	newCommitteeChange.RemovedStaker = append(newCommitteeChange.RemovedStaker, newReturnStakingInstruction.PublicKeys...)
-	committeeChange = b.assignShardWithRandomNumber(
+	newReturnStakingInstruction := returnStakingInstruction
+	committeeChange = b.assignToShard(
 		candidates,
 		env.RandomNumber,
-		len(b.shardSubstitute[byte(assignInstruction.ChainID)]),
-		len(b.shardCommittee[byte(assignInstruction.ChainID)]),
+		byte(assignInstruction.ChainID),
 		newCommitteeChange)
 
+	b.syncPool[byte(assignInstruction.ChainID)] = b.syncPool[byte(assignInstruction.ChainID)][len(assignInstruction.ShardCandidates):]
 	return newCommitteeChange, newReturnStakingInstruction, nil
 }
 
@@ -137,13 +161,12 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 	oldState BeaconCommitteeState,
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	newCommitteeChange := committeeChange
-	newReturnStakingInstruction := returnStakingInstruction
 
 	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, outPublicKeys, newCommitteeChange, returnStakingInstruction)
 	if err != nil {
 		return newCommitteeChange, returnStakingInstruction, err
 	}
-	newCommitteeChange.RemovedStaker = append(newCommitteeChange.RemovedStaker, newReturnStakingInstruction.PublicKeys...)
+	newReturnStakingInstruction := returnStakingInstruction
 
 	for i := 0; i < len(candidates); i++ {
 		candidate := candidates[i]
@@ -160,5 +183,5 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 	}
 	newCommitteeChange = b.assignAfterNormalSwapOut(candidates, env.RandomNumber, env.ActiveShards, newCommitteeChange, oldState, env.ShardID)
 
-	return newCommitteeChange, returnStakingInstruction, nil
+	return newCommitteeChange, newReturnStakingInstruction, nil
 }

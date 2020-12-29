@@ -828,6 +828,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 		autoStaking,
 		rewardReceivers,
 		stakingTx,
+		nil, // TODO: @tin add probationPool here
 		swapRule,
 	)
 
@@ -933,6 +934,7 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		autoStake,
 		rewardReceiver,
 		stakingTx,
+		nil, // TODO: @tin add probationPool here
 		swapRule,
 	)
 	newCommitteeEngineV2 := committeestate.NewBeaconCommitteeEngineV2(

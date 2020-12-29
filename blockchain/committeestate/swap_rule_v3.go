@@ -27,7 +27,7 @@ func (s *swapRuleV3) GenInstructions(
 	//get normal swap out nodes
 	newCommittees, normalSwapOutCommittees := s.normalSwapOut(
 		newCommittees, substitutes, len(committees), lenSlashedCommittees, MAX_SWAP_OUT_PERCENT,
-		numberOfFixedValidators, minCommitteeSize, MAX_COMMITTEES_SUBSTITUTES_RANGE_TIMES)
+		numberOfFixedValidators, minCommitteeSize)
 	swappedOutCommittees := append(slashingCommittees, normalSwapOutCommittees...)
 
 	newCommittees, newSubstitutes, swapInCommittees :=
@@ -54,7 +54,7 @@ func (s *swapRuleV3) AssignOffset(lenShardSubstitute, lenCommittees, numberOfFix
 		return 1
 	}
 	if lenCommittees-numberOfFixedValidators < assignOffset {
-		assignOffset = lenCommittees - numberOfFixedValidators
+		assignOffset = 1
 	}
 	return assignOffset
 }
@@ -69,7 +69,7 @@ func (s *swapRuleV3) swapInAfterSwapOut(
 	resCommittees := committees
 	resSubstitutes := substitutes
 	resSwapInCommittees := []string{}
-	swapInOffset := s.getSwapInOffset(len(committees), len(substitutes), maxSwapInPercent, numberOfFixedValidators, maxCommitteeSize)
+	swapInOffset := s.getSwapInOffset(len(committees), len(substitutes), maxSwapInPercent, maxCommitteeSize)
 
 	resSwapInCommittees = append(resSwapInCommittees, substitutes[:swapInOffset]...)
 	resSubstitutes = resSubstitutes[swapInOffset:]
@@ -80,42 +80,27 @@ func (s *swapRuleV3) swapInAfterSwapOut(
 
 func (s *swapRuleV3) getSwapInOffset(
 	lenCommitteesAfterSwapOut, lenSubstitutes int,
-	maxSwapInPercent, numberOfFixedValidators,
-	maxCommitteeSize int,
+	maxSwapInPercent, maxCommitteeSize int,
 ) int {
-	swapInOffset := 0
-
-	/*if lenSubstitutes < lenCommitteesAfterSwapOut {*/
-	//if lenCommitteesAfterSwapOut > dcsMinCommitteeSize {
-	//return 0
-	//} else {
-	//swapInOffset = lenCommitteesAfterSwapOut / maxSwapInPercent
-	//}
-	//} else {
-	//swapInOffset = lenCommitteesAfterSwapOut / maxSwapInPercent
-	//}
-
-	//if swapInOffset+lenCommitteesAfterSwapOut > dcsMaxCommitteeSize {
-	//swapInOffset = dcsMaxCommitteeSize - lenCommitteesAfterSwapOut
-	//}
-
-	//if swapInOffset == 0 && lenSubstitutes > 0 && lenCommitteesAfterSwapOut < maxSwapInPercent {
-	//swapInOffset = 1
-	//}
-
-	return swapInOffset
+	offset := lenCommitteesAfterSwapOut / maxSwapInPercent
+	if lenSubstitutes < offset {
+		return lenSubstitutes
+	}
+	if lenCommitteesAfterSwapOut+offset > maxCommitteeSize {
+		offset = maxCommitteeSize - lenCommitteesAfterSwapOut
+	}
+	return offset
 }
 
 func (s *swapRuleV3) normalSwapOut(committees, substitutes []string,
-	lenBeforeSlashedCommittees, lenSlashedCommittees, maxSwapOutPercent, numberOfFixedValidators,
-	minCommitteeSize, maxCommitteeeSubstituteRangeTimes int,
+	lenBeforeSlashedCommittees, lenSlashedCommittees, maxSwapOutPercent, numberOfFixedValidators, minCommitteeSize int,
 ) ([]string, []string) {
 	resNormalSwapOut := []string{}
 	resCommittees := []string{}
 	normalSwapOutOffset := s.getNormalSwapOutOffset(
 		lenBeforeSlashedCommittees, len(substitutes),
 		lenSlashedCommittees, maxSwapOutPercent, numberOfFixedValidators,
-		minCommitteeSize, maxCommitteeeSubstituteRangeTimes)
+		minCommitteeSize)
 
 	resCommittees = append(committees[:numberOfFixedValidators], committees[(numberOfFixedValidators+normalSwapOutOffset):]...)
 	resNormalSwapOut = committees[numberOfFixedValidators : numberOfFixedValidators+normalSwapOutOffset]
@@ -126,42 +111,23 @@ func (s *swapRuleV3) normalSwapOut(committees, substitutes []string,
 func (s *swapRuleV3) getNormalSwapOutOffset(
 	lenCommitteesBeforeSlash, lenSubstitutes,
 	lenSlashedCommittees, maxSwapOutPercent, numberOfFixedValidators,
-	minCommitteeSize, maxCommitteeeSubstituteRangeTimes int,
+	minCommitteeSize int,
 ) int {
-	/*normalSwapOutOffset := 0*/
-	//if lenSlashedCommittees < lenCommitteesBeforeSlash/maxSwapOutPercent {
-	//if lenSubstitutes >= maxCommitteeeSubstituteRangeTimes*lenCommitteesBeforeSlash {
-	//if lenCommitteesBeforeSlash >= minCommitteeSize {
-	//normalSwapOutOffset = lenCommitteesBeforeSlash/maxSwapOutPercent - lenSlashedCommittees
-	//} else {
-	//normalSwapOutOffset = 0
-	//}
-	//} else {
-	//if lenCommitteesBeforeSlash < dcsMinCommitteeSize {
-	//normalSwapOutOffset = 0
-	//} else {
-	//normalSwapOutOffset = lenCommitteesBeforeSlash/maxSwapOutPercent - lenSlashedCommittees
-	//if lenCommitteesBeforeSlash-lenSlashedCommittees-normalSwapOutOffset < dcsMinCommitteeSize {
-	//normalSwapOutOffset = lenCommitteesBeforeSlash - lenSlashedCommittees - dcsMinCommitteeSize
-	//}
-	//}
-	//}
-	//}
-
-	//if normalSwapOutOffset < 0 {
-	//normalSwapOutOffset = 0
-	//}
-
-	//if lenCommitteesBeforeSlash-lenSlashedCommittees-numberOfFixedValidators < normalSwapOutOffset {
-	//if lenCommitteesBeforeSlash-lenSlashedCommittees-numberOfFixedValidators < 0 {
-	//normalSwapOutOffset = 0
-	//} else {
-	//normalSwapOutOffset = lenCommitteesBeforeSlash - lenSlashedCommittees - numberOfFixedValidators
-	//}
-	//}
-
-	//return normalSwapOutOffset
-	return 0
+	offset := lenCommitteesBeforeSlash / maxSwapOutPercent
+	if lenSlashedCommittees >= offset {
+		return 0
+	}
+	if lenCommitteesBeforeSlash < minCommitteeSize {
+		return 0
+	}
+	if lenSubstitutes == 0 {
+		return 0
+	}
+	offset = offset - lenSlashedCommittees
+	if offset > lenSubstitutes {
+		offset = lenSubstitutes
+	}
+	return offset
 }
 
 func (s *swapRuleV3) slashingSwapOut(
