@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -130,10 +129,6 @@ func (b beaconCommitteeStateBase) CandidateShardWaitingForCurrentRandom() []inco
 }
 
 func (b beaconCommitteeStateBase) ShardCommonPool() []incognitokey.CommitteePublicKey {
-	panic("Implement this function")
-}
-
-func (b beaconCommitteeStateBase) PropationPool() map[string]signaturecounter.Penalty {
 	panic("Implement this function")
 }
 

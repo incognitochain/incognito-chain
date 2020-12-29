@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -17,7 +16,6 @@ type beaconCommitteeStateSlashingBase struct {
 	beaconCommitteeStateBase
 
 	shardCommonPool            []incognitokey.CommitteePublicKey
-	probationPool              map[string]signaturecounter.Penalty
 	numberOfAssignedCandidates int
 
 	swapRule SwapRule
@@ -26,7 +24,6 @@ type beaconCommitteeStateSlashingBase struct {
 func NewBeaconCommitteeStateSlashingBase() *beaconCommitteeStateSlashingBase {
 	return &beaconCommitteeStateSlashingBase{
 		beaconCommitteeStateBase: *NewBeaconCommitteeStateBase(),
-		probationPool:            map[string]signaturecounter.Penalty{},
 	}
 }
 
@@ -38,7 +35,6 @@ func NewBeaconCommitteeStateSlashingBaseWithValue(
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
 	shardCommonPool []incognitokey.CommitteePublicKey,
-	probationPool map[string]signaturecounter.Penalty,
 	numberOfAssignedCandidates int,
 	swapRule SwapRule,
 ) *beaconCommitteeStateSlashingBase {
@@ -48,7 +44,6 @@ func NewBeaconCommitteeStateSlashingBaseWithValue(
 			autoStake, rewardReceiver, stakingTx,
 		),
 		shardCommonPool:            shardCommonPool,
-		probationPool:              probationPool,
 		numberOfAssignedCandidates: numberOfAssignedCandidates,
 		swapRule:                   swapRule,
 	}
@@ -56,10 +51,6 @@ func NewBeaconCommitteeStateSlashingBaseWithValue(
 
 func (b beaconCommitteeStateSlashingBase) ShardCommonPool() []incognitokey.CommitteePublicKey {
 	return b.shardCommonPool
-}
-
-func (b beaconCommitteeStateSlashingBase) ProbationPool() map[string]signaturecounter.Penalty {
-	return b.probationPool
 }
 
 func (b beaconCommitteeStateSlashingBase) NumberOfAssignedCandidates() int {
@@ -77,9 +68,6 @@ func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingB
 	res.numberOfAssignedCandidates = b.numberOfAssignedCandidates
 	res.shardCommonPool = make([]incognitokey.CommitteePublicKey, len(b.shardCommonPool))
 	copy(res.shardCommonPool, b.shardCommonPool)
-	for i, v := range b.probationPool {
-		res.probationPool[i] = v
-	}
 	res.swapRule = cloneSwapRuleByVersion(b.swapRule)
 
 	return res
@@ -88,7 +76,6 @@ func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingB
 func (b *beaconCommitteeStateSlashingBase) reset() {
 	b.beaconCommitteeStateBase.reset()
 	b.numberOfAssignedCandidates = 0
-	b.probationPool = map[string]signaturecounter.Penalty{}
 	b.shardCommonPool = []incognitokey.CommitteePublicKey{}
 	b.swapRule = nil // be careful here
 }

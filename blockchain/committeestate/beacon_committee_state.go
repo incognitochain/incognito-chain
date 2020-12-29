@@ -3,7 +3,6 @@ package committeestate
 import (
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -17,7 +16,6 @@ type BeaconCommitteeState interface {
 	ShardCommonPool() []incognitokey.CommitteePublicKey
 	CandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 	CandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey
-	PropationPool() map[string]signaturecounter.Penalty
 	NumberOfAssignedCandidates() int
 	AutoStake() map[string]bool
 	RewardReceiver() map[string]privacy.PaymentAddress
