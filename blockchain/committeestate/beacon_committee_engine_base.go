@@ -261,9 +261,6 @@ func (engine *beaconCommitteeEngineBase) InitCommitteeState(env *BeaconCommittee
 		b.ShardCommittee()[byte(shardID)] = append(b.ShardCommittee()[byte(shardID)], newShardCandidates[shardID*env.MinShardCommitteeSize:(shardID+1)*env.MinShardCommitteeSize]...)
 	}
 
-	//Declare business rules here
-	//Declare swaprule interface
-	engine.finalState.SetSwapRule(SwapRuleByEnv(env))
 }
 
 func (engine *beaconCommitteeEngineBase) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (

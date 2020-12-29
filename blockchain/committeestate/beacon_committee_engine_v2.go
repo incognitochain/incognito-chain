@@ -29,6 +29,13 @@ func (engine BeaconCommitteeEngineV2) Version() uint {
 	return SLASHING_VERSION
 }
 
+func (engine *BeaconCommitteeEngineV2) InitCommitteeState(env *BeaconCommitteeStateEnvironment) {
+	engine.beaconCommitteeEngineBase.InitCommitteeState(env)
+	//Declare business rules here
+	//Declare swaprule interface
+	engine.finalState.SetSwapRule(SwapRuleByEnv(env))
+}
+
 // UpdateCommitteeState New flow
 // Store information from instructions into temp stateDB in env
 // When all thing done and no problems, in commit function, we read data in statedb and update

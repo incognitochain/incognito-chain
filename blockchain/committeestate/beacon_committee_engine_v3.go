@@ -30,6 +30,13 @@ func (engine BeaconCommitteeEngineV3) Version() uint {
 	return DCS_VERSION
 }
 
+func (engine *BeaconCommitteeEngineV3) InitCommitteeState(env *BeaconCommitteeStateEnvironment) {
+	engine.beaconCommitteeEngineBase.InitCommitteeState(env)
+	//Declare business rules here
+	//Declare swaprule interface
+	engine.finalState.SetSwapRule(SwapRuleByEnv(env))
+}
+
 func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 	*BeaconCommitteeStateHash, *CommitteeChange, [][]string, error) {
 	var err error
