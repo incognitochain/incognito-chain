@@ -44,14 +44,20 @@ func (pm *PoolManager) Start() error {
 			fmt.Printf("[testperformance] Received new role %v %v\n", newRole.CID, newRole.Role)
 			if (newRole.CID == -1) && (newRole.Role == common.CommitteeRole) {
 				for _, txPool := range pm.ShardTxsPool {
-					txPool.Start()
+					if !txPool.IsRunning() {
+						txPool.Start()
+					}
 				}
 			}
 			if (newRole.CID > -1) && (newRole.CID < len(pm.ShardTxsPool)) {
 				if (newRole.Role == common.SyncingRole) || (newRole.Role == common.CommitteeRole) /*|| (newRole.Role == common.NodeModeRelay) */ {
-					pm.ShardTxsPool[newRole.CID].Start()
+					if !pm.ShardTxsPool[newRole.CID].IsRunning() {
+						pm.ShardTxsPool[newRole.CID].Start()
+					}
 				} else {
-					pm.ShardTxsPool[newRole.CID].Stop()
+					if pm.ShardTxsPool[newRole.CID].IsRunning() {
+						pm.ShardTxsPool[newRole.CID].Stop()
+					}
 				}
 			}
 		} else {
