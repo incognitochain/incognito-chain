@@ -10,17 +10,18 @@ import (
 	"strconv"
 )
 
-type PortalRedeemLiquidateExchangeRatesResponse struct {
+type PortalRedeemFromLiquidationPoolResponseV3 struct {
 	MetadataBase
-	RequestStatus    string
-	ReqTxID          common.Hash
-	RequesterAddrStr string
-	RedeemAmount     uint64
-	Amount           uint64
-	TokenID          string
+	RequestStatus       string
+	ReqTxID             common.Hash
+	RequesterAddrStr    string
+	ExternalAddress     string
+	RedeemAmount        uint64
+	MintedPRVCollateral uint64
+	TokenID             string
 }
 
-func NewPortalRedeemLiquidateExchangeRatesResponse(
+func NewPortalRedeemFromLiquidationPoolResponseV3(
 	requestStatus string,
 	reqTxID common.Hash,
 	requesterAddressStr string,
@@ -28,58 +29,58 @@ func NewPortalRedeemLiquidateExchangeRatesResponse(
 	amount uint64,
 	tokenID string,
 	metaType int,
-) *PortalRedeemLiquidateExchangeRatesResponse {
+) *PortalRedeemFromLiquidationPoolResponseV3 {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
-	return &PortalRedeemLiquidateExchangeRatesResponse{
-		RequestStatus:    requestStatus,
-		ReqTxID:          reqTxID,
-		MetadataBase:     metadataBase,
-		RequesterAddrStr: requesterAddressStr,
-		RedeemAmount:     redeemAmount,
-		Amount:           amount,
-		TokenID:          tokenID,
+	return &PortalRedeemFromLiquidationPoolResponseV3{
+		RequestStatus:       requestStatus,
+		ReqTxID:             reqTxID,
+		MetadataBase:        metadataBase,
+		RequesterAddrStr:    requesterAddressStr,
+		RedeemAmount:        redeemAmount,
+		MintedPRVCollateral: amount,
+		TokenID:             tokenID,
 	}
 }
 
-func (iRes PortalRedeemLiquidateExchangeRatesResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PortalRedeemFromLiquidationPoolResponseV3) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes PortalRedeemLiquidateExchangeRatesResponse) ValidateTxWithBlockChain(txr Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
+func (iRes PortalRedeemFromLiquidationPoolResponseV3) ValidateTxWithBlockChain(txr Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PortalRedeemLiquidateExchangeRatesResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
+func (iRes PortalRedeemFromLiquidationPoolResponseV3) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
-func (iRes PortalRedeemLiquidateExchangeRatesResponse) ValidateMetadataByItself() bool {
+func (iRes PortalRedeemFromLiquidationPoolResponseV3) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PortalRedeemLiquidateExchangeRatesResponseMeta
+	return iRes.Type == PortalRedeemFromLiquidationPoolResponseMetaV3
 }
 
-func (iRes PortalRedeemLiquidateExchangeRatesResponse) Hash() *common.Hash {
+func (iRes PortalRedeemFromLiquidationPoolResponseV3) Hash() *common.Hash {
 	record := iRes.MetadataBase.Hash().String()
 	record += iRes.RequestStatus
 	record += iRes.ReqTxID.String()
 	record += iRes.RequesterAddrStr
 	record += strconv.FormatUint(iRes.RedeemAmount, 10)
-	record += strconv.FormatUint(iRes.Amount, 10)
+	record += strconv.FormatUint(iRes.MintedPRVCollateral, 10)
 	record += iRes.TokenID
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
 }
 
-func (iRes *PortalRedeemLiquidateExchangeRatesResponse) CalculateSize() uint64 {
+func (iRes *PortalRedeemFromLiquidationPoolResponseV3) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (iRes PortalRedeemFromLiquidationPoolResponseV3) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
 	insts [][]string,
@@ -93,12 +94,12 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
-		if len(inst) < 4 { // this is not PortalRedeemLiquidateExchangeRatesMeta response instruction
+		if len(inst) < 4 { // this is not PortalRedeemFromLiquidationPoolMeta response instruction
 			continue
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PortalRedeemLiquidateExchangeRatesMeta) {
+			instMetaType != strconv.Itoa(PortalRedeemFromLiquidationPoolMetaV3) {
 			continue
 		}
 		instReqStatus := inst[2]
@@ -106,8 +107,8 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus %v is different from iRes.RequestStatus %v", instReqStatus, iRes.RequestStatus)
 			continue
 		}
-		if (instReqStatus != common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus) &&
-			(instReqStatus != common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus) {
+		if (instReqStatus != common.PortalRedeemFromLiquidationPoolSuccessChainStatus) &&
+			(instReqStatus != common.PortalRedeemFromLiquidationPoolRejectedChainStatus) {
 			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus is not correct %v", instReqStatus)
 			continue
 		}
@@ -116,11 +117,11 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 		var txReqIDFromInst common.Hash
 		var requesterAddrStrFromInst string
 		var redeemAmountFromInst uint64
-		var totalPTokenReceived uint64
+		var mintedPRVCollateral uint64
 		//var tokenIDStrFromInst string
 
 		contentBytes := []byte(inst[3])
-		var redeemReqContent PortalRedeemLiquidateExchangeRatesContent
+		var redeemReqContent PortalRedeemFromLiquidationPoolContentV3
 		err := json.Unmarshal(contentBytes, &redeemReqContent)
 		if err != nil {
 			Logger.log.Error("WARNING - VALIDATION: an error occurred while parsing portal redeem liquidate exchange rates content: ", err)
@@ -131,7 +132,7 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 		txReqIDFromInst = redeemReqContent.TxReqID
 		requesterAddrStrFromInst = redeemReqContent.RedeemerIncAddressStr
 		redeemAmountFromInst = redeemReqContent.RedeemAmount
-		totalPTokenReceived = redeemReqContent.TotalPTokenReceived
+		mintedPRVCollateral = redeemReqContent.MintedPRVCollateral
 		//tokenIDStrFromInst = redeemReqContent.TokenID
 
 		if !bytes.Equal(iRes.ReqTxID[:], txReqIDFromInst[:]) ||
@@ -144,8 +145,8 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 			continue
 		}
 
-		if totalPTokenReceived != iRes.Amount {
-			Logger.log.Errorf("Error - VALIDATION:  totalPTokenReceived %v is not matching to  TotalPTokenReceived in instruction %v", iRes.Amount, redeemAmountFromInst)
+		if mintedPRVCollateral != iRes.MintedPRVCollateral {
+			Logger.log.Errorf("Error - VALIDATION:  mintedPRVCollateral %v is not matching to  TotalPTokenReceived in instruction %v", iRes.MintedPRVCollateral, redeemAmountFromInst)
 			continue
 		}
 
@@ -161,8 +162,8 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 		}
 
 		mintedTokenID := common.PRVCoinID.String()
-		mintedAmount := totalPTokenReceived
-		if instReqStatus == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
+		mintedAmount := mintedPRVCollateral
+		if instReqStatus == common.PortalRedeemFromLiquidationPoolRejectedChainStatus {
 			mintedTokenID = redeemReqContent.TokenID
 			mintedAmount = redeemAmountFromInst
 		}
@@ -178,7 +179,7 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 	}
 
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf(fmt.Sprintf("no PortalRedeemLiquidateExchangeRates instruction found for PortalRedeemLiquidateExchangeRatesResponse tx %s", tx.Hash().String()))
+		return false, fmt.Errorf(fmt.Sprintf("no PortalRedeemFromLiquidationPoolMetaV3 instruction found for PortalRedeemFromLiquidationPoolResponseV3 tx %s", tx.Hash().String()))
 	}
 
 	instUsed[idx] = 1
