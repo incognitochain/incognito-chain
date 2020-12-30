@@ -446,12 +446,8 @@ func (blockchain *BlockChain) buildInstructionsForInitPTokenReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	receivingShardID, err := getShardIDFromPaymentAddress(initPTokenReq.ReceiverAddress)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while getting shard id from payment address: ", err)
-		return append(instructions, rejectedInst), nil
-	}
-
+	lastByte := initPTokenReq.ReceiverAddress.Pk[len(initPTokenReq.ReceiverAddress.Pk)-1]
+	receivingShardID := common.GetShardIDFromLastByte(lastByte)
 	initPTokenAcceptedInst := metadata.InitPTokenAcceptedInst{
 		ShardID:         receivingShardID,
 		Amount: 				 initPTokenReq.Amount,

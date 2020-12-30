@@ -174,7 +174,7 @@ func (iReq *InitPTokenRequest) genTokenID(tx Transaction, shardID byte) (*common
 	return &tokenID, nil
 }
 
-func (iReq *InitPTokenRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (iReq *InitPTokenRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	tokenID, err := iReq.genTokenID(tx, shardID)
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(InitPTokenRequestBuildReqActionsError, err)

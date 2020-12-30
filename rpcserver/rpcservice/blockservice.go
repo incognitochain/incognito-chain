@@ -1224,11 +1224,9 @@ func (blockService BlockService) GetRewardFeatureByFeatureName(featureName strin
 	if err != nil {
 		return nil, err
 	}
-
 	return data.GetTotalRewards(), nil
 }
 
-<<<<<<< HEAD
 //=============================== ptoken init ======================
 func (blockService BlockService) GetPTokenInit(tokenID string) (*rawdbv2.PTokenInitInfo, error) {
 	pTokenInitStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
@@ -1238,7 +1236,8 @@ func (blockService BlockService) GetPTokenInit(tokenID string) (*rawdbv2.PTokenI
 func (blockService BlockService) GetAllPTokenInits() ([]*rawdbv2.PTokenInitInfo, error) {
 	pTokenInitStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	return statedb.GetAllPTokenInits(pTokenInitStateDB)
-=======
+}
+
 // ============================= Portal v3 ===============================
 func (blockService BlockService) CheckPortalExternalTxSubmitted(data map[string]interface{}) (bool, error) {
 	blockHashParam, ok := data["BlockHash"].(string)
@@ -1264,5 +1263,4 @@ func (blockService BlockService) CheckPortalExternalTxSubmitted(data map[string]
 	featureStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	submitted, err := statedb.IsPortalExternalTxHashSubmitted(featureStateDB, uniqExternalTx)
 	return submitted, err
->>>>>>> development
 }
