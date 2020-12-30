@@ -571,7 +571,7 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 		prvCollateralAmountToUpdate := uint64(0)
 		if unlockedAmount >= tokenAmtInUSD {
 			unlockedAmount -= tokenAmtInUSD
-			prvCollateralAmountToUpdate = lockedPrvAmount[tokenID]
+			prvCollateralAmountToUpdate = lockedPrvAmountToProcess
 		} else {
 			prvCollateralAmountToUpdate, err = convertRateTool.ConvertFromUSD(common.PRVIDStr, unlockedAmount)
 			unlockedAmount = 0

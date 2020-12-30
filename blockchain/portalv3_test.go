@@ -3155,6 +3155,12 @@ func (s *PortalTestSuiteV3) SetupTestRequestUnlockCollateralsV3() {
 		map[string]uint64{
 			pCommon.PortalBNBIDStr: 10000000000, // 13.5 BNB
 		})
+	custodian2.SetTotalCollateral(100 * 1e9)
+	custodian2.SetFreeCollateral(0 * 1e9)
+	custodian2.SetLockedAmountCollateral(map[string]uint64{
+		pCommon.PortalBNBIDStr: 100 * 1e9,
+	})
+
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
@@ -3175,7 +3181,7 @@ func (s *PortalTestSuiteV3) SetupTestRequestUnlockCollateralsV3() {
 				IncAddress:             custodian2.GetIncognitoAddress(),
 				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 30 * 1e9,
-				LockedAmountCollateral: 0,
+				LockedAmountCollateral: 50 * 1e9,
 				LockedTokenCollaterals: map[string]uint64{
 					USDT_ID: 1200 * 1e6,
 				},
@@ -3283,6 +3289,15 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 			redeemProof:         "",
 			externalTxID:        "8DE6AC94DDE88658E60F6AEBF2FD2AC79E61185EA58772B8BAE00B4102CA0EDE",
 		},
+		// valid request unlock collaterals: custodian that matching to one waiting porting
+		{
+			uniqueRedeemID:      "redeem-bnb-2",
+			portalTokenID:       pCommon.PortalBNBIDStr,
+			custodianIncAddress: CUS_INC_ADDRESS_2,
+			redeemAmount:        3500000000,
+			redeemProof:         "",
+			externalTxID:        "82D3A930C73266F134A42A0EECD496777D876473837983C975C2963FE5147C47",
+		},
 	}
 
 	// build expected results
@@ -3338,17 +3353,22 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 		})
 	custodian2.SetFreeTokenCollaterals(
 		map[string]uint64{
-			USDT_ID: 260 * 1e6,
+			USDT_ID: 362962962,
 		})
 	custodian2.SetLockedTokenCollaterals(
 		map[string]map[string]uint64{
 			pCommon.PortalBNBIDStr: {
-				USDT_ID: 1740 * 1e6,
+				USDT_ID: 1637037038,
 			}})
 	custodian2.SetHoldingPublicTokens(
 		map[string]uint64{
 			pCommon.PortalBNBIDStr: 10000000000,
 		})
+	custodian2.SetTotalCollateral(100 * 1e9)
+	custodian2.SetFreeCollateral(50 * 1e9)
+	custodian2.SetLockedAmountCollateral(map[string]uint64{
+		pCommon.PortalBNBIDStr: 50 * 1e9,
+	})
 
 	custodian3 := statedb.NewCustodianState()
 	custodian3.SetIncognitoAddress(CUS_INC_ADDRESS_3)
@@ -3369,26 +3389,12 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 				IncAddress:             custodian2.GetIncognitoAddress(),
 				RemoteAddress:          custodian2.GetRemoteAddresses()[pCommon.PortalBNBIDStr],
 				Amount:                 30 * 1e9,
-				LockedAmountCollateral: 0,
+				LockedAmountCollateral: 50 * 1e9,
 				LockedTokenCollaterals: map[string]uint64{
 					USDT_ID: 1200 * 1e6,
 				},
 			},
 		}, 60000000, beaconHeight, shardHeight, shardID)
-
-	// matched redeem requests
-	matchedRedeemReqKey2 := statedb.GenerateMatchedRedeemRequestObjectKey("redeem-bnb-2").String()
-	matchedRedeemReq2 := statedb.NewRedeemRequestWithValue(
-		"redeem-bnb-2", pCommon.PortalBNBIDStr,
-		USER_INC_ADDRESS_1, USER_BNB_ADDRESS_1,
-		140*1e9,
-		[]*statedb.MatchingRedeemCustodianDetail{
-			statedb.NewMatchingRedeemCustodianDetailWithValue(CUS_INC_ADDRESS_2, CUS_BNB_ADDRESS_2, 3500000000),
-		},
-		280000000,
-		beaconHeight, common.Hash{},
-		shardID, shardHeight,
-		USER_ETH_ADDRESS_1)
 
 	expectedRes := &ExpectedResultRequestUnlockCollateralsV3{
 		custodianPool: map[string]*statedb.CustodianState{
@@ -3400,15 +3406,16 @@ func buildTestCaseAndExpectedResultRequestUnlockCollateralsV3() ([]TestCaseReque
 			wPortingReqKey3: wPortingRequest3,
 		},
 		matchedRedeemRequest: map[string]*statedb.RedeemRequest{
-			matchedRedeemReqKey2: matchedRedeemReq2,
+			//matchedRedeemReqKey2: matchedRedeemReq2,
 		},
-		numBeaconInsts: 5,
+		numBeaconInsts: 6,
 		statusInsts: []string{
 			pCommon.PortalRequestAcceptedChainStatus,
 			pCommon.PortalRequestAcceptedChainStatus,
 			pCommon.PortalRequestRejectedChainStatus,
 			pCommon.PortalRequestRejectedChainStatus,
 			pCommon.PortalRequestRejectedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
 		},
 	}
 
@@ -3458,6 +3465,7 @@ func (s *PortalTestSuiteV3) TestRequestUnlockCollateralsV3() {
 	// process new instructions
 	err = processPortalInstructions(
 		bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm)
+	s.Equal(nil, err)
 
 	// check results
 	s.Equal(expectedResult.numBeaconInsts, uint(len(newInsts)))
@@ -3473,6 +3481,7 @@ func (s *PortalTestSuiteV3) TestRequestUnlockCollateralsV3() {
 
 	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
 }
+
 
 /*
 	Feature 10:
