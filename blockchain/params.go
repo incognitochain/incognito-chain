@@ -438,7 +438,7 @@ func SetupParam() {
 		ReplaceStakingTxHeight:      559380,
 		IsBackup:                    false,
 		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    737450,
+		BCHeightBreakPointNewZKP:    927996,
 		ETHRemoveBridgeSigEpoch:     1973,
 		PortalETHContractAddressStr: "", // todo: update sc address
 		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
