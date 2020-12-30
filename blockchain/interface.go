@@ -65,8 +65,8 @@ type Server interface {
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	PushBlockToAll(block common.BlockInterface, isBeacon bool) error
 
-	PublishBeaconState(beaconState *BeaconBestState)
-	PublishShardState(shardBestState *ShardBestState)
+	PublishBeaconState(beaconState *BeaconBestState) error
+	PublishShardState(shardBestState *ShardBestState) error
 }
 
 type Highway interface {

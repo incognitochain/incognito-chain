@@ -12,39 +12,8 @@ const (
 )
 
 type DatabaseDriver interface {
-	//StoreFullBeaconState(beacon data.Beacon) error //TODO: will use this function for atomic/bulk insert.
-	GetBeaconStorer () repository.BeaconStateStorer
-	GetShardStorer () repository.ShardStateStorer
-
-	GetPDEShareStorer () repository.PDEShareStorer
-	GetPDEPoolForPairStateStorer() repository.PDEPoolForPairStateStorer
-	GetPDETradingFeeStorer() repository.PDETradingFeeStorer
-	GetWaitingPDEContributionStorer() repository.WaitingPDEContributionStorer
-
-	GetCustodianStorer() repository.CustodianStorer
-	GetWaitingPortingRequestStorer() repository.WaitingPortingRequestStorer
-	GetFinalExchangeRatesStorer() repository.FinalExchangeRatesStorer
-	GetWaitingRedeemRequestStorer() repository.WaitingRedeemRequestStorer
-	GetMatchedRedeemRequestStorer() repository.MatchedRedeemRequestStorer
-	GetLockedCollateralStorer() repository.LockedCollateralStorer
-
-
-
-
-	GetTransactionStorer() repository.TransactionStorer
-	GetPublicKeyToTransactionHashStorer() repository.PublicKeyToTransactionHashStorer
-	GetInputCoinStorer() repository.InputCoinStorer
-	GetOutputCoinStorer() repository.ShardOutputCoinStorer
-	GetCrossShardOutputCoinStorer() repository.CrossShardOutputCoinStorer
-	GetCommitmentStorer() repository.ShardCommitmentIndexStorer
-
-	GetTokenStateStorer() repository.TokenStateStorer
-
-	GetCommitteeRewardStateStorer () repository.CommitteeRewardStateStorer
-
-	GetBridgeTokenStateStorer() repository.BridgeTokenStateStorer
-
-
+	GetBeaconStateRepository () repository.BeaconStateRepository
+	GetShardStateRepository () repository.ShardStateRepository
 }
 
 var dbDriver = make(map[KindDB]DatabaseDriver)

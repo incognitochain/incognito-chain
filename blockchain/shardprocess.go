@@ -1198,7 +1198,11 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
-		blockchain.config.Server.PublishShardState(newFinalView.(*ShardBestState))
+		err = blockchain.config.Server.PublishShardState(newFinalView.(*ShardBestState))
+		if err != nil {
+			panic(err)
+			return err
+		}
 		if storeBlock.GetHeight() == 1 {
 			break
 		}

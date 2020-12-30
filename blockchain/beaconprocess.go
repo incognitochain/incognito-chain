@@ -1550,9 +1550,13 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	storeBlock := newFinalView.GetBlock()
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
-		blockchain.config.Server.PublishBeaconState(newFinalView.(*BeaconBestState))
 		if err != nil {
 			return NewBlockChainError(StoreBeaconBlockError, err)
+		}
+		blockchain.config.Server.PublishBeaconState(newFinalView.(*BeaconBestState))
+		if err != nil {
+			panic(err)
+			return err
 		}
 		if storeBlock.GetHeight() == 1 {
 			break
