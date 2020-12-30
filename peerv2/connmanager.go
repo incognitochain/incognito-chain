@@ -3,11 +3,12 @@ package peerv2
 import (
 	"context"
 	"encoding/hex"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"io"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -85,7 +86,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 }
 
 func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
-	publishable := []string{wire.CmdPeerState, wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT}
+	publishable := []string{wire.CmdPeerState, wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT, wire.CmdTx, wire.CmdPrivacyCustomToken}
 	msgType := msg.MessageType()
 	subs := cm.subscriber.GetMsgToTopics()
 	for _, p := range publishable {
@@ -102,7 +103,7 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 	}
 
 	Logger.Warn("Cannot publish message", msgType)
-	return nil
+	return errors.Errorf("Can not publish message, this msg type %v is not allow", msgType)
 }
 
 func (cm *ConnManager) Start(ns NetSync) {
