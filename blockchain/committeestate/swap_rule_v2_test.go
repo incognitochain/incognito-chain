@@ -671,7 +671,7 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV2{}
-			got, got1, got2, got3, got4 := s.GenInstructions(tt.args.shardID, tt.args.committees, tt.args.substitutes, tt.args.minCommitteeSize, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidators, tt.args.dcsMaxCommitteeSize, tt.args.dcsMinCommitteeSize, tt.args.penalty)
+			got, got1, got2, got3, got4 := s.GenInstructions(tt.args.shardID, tt.args.committees, tt.args.substitutes, tt.args.minCommitteeSize, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidators, tt.args.penalty)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("swapRuleV2.GenInstructions() got = %v, want %v", got, tt.want)
 			}
@@ -686,31 +686,6 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got4, tt.want4) {
 				t.Errorf("swapRuleV2.GenInstructions() got4 = %v, want %v", got4, tt.want4)
-			}
-		})
-	}
-}
-
-func Test_swapRuleV2_getSwapOutOffset(t *testing.T) {
-	type args struct {
-		numberOfSubstitutes    int
-		numberOfCommittees     int
-		numberOfFixedValidator int
-		minCommitteeSize       int
-	}
-	tests := []struct {
-		name string
-		s    *swapRuleV2
-		args args
-		want int
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := &swapRuleV2{}
-			if got := s.getSwapOutOffset(tt.args.numberOfSubstitutes, tt.args.numberOfCommittees, tt.args.numberOfFixedValidator, tt.args.minCommitteeSize); got != tt.want {
-				t.Errorf("swapRuleV2.getSwapOutOffset() = %v, want %v", got, tt.want)
 			}
 		})
 	}

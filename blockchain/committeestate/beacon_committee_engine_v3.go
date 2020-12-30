@@ -7,7 +7,7 @@ import (
 )
 
 type BeaconCommitteeEngineV3 struct {
-	beaconCommitteeEngineBase
+	beaconCommitteeEngineSlashingBase
 }
 
 func NewBeaconCommitteeEngineV3(
@@ -16,25 +16,15 @@ func NewBeaconCommitteeEngineV3(
 	finalBeaconCommitteeStateV3 *BeaconCommitteeStateV3) *BeaconCommitteeEngineV3 {
 	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconHeight)
 	return &BeaconCommitteeEngineV3{
-		beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-			beaconHeight:     beaconHeight,
-			beaconHash:       beaconHash,
-			finalState:       finalBeaconCommitteeStateV3,
-			uncommittedState: NewBeaconCommitteeStateV3(),
-		},
+		beaconCommitteeEngineSlashingBase: *NewBeaconCommitteeEngineSlashingBaseWithValue(
+			beaconHeight, beaconHash, &finalBeaconCommitteeStateV3.beaconCommitteeStateBase,
+		),
 	}
 }
 
 //Version :
 func (engine BeaconCommitteeEngineV3) Version() uint {
 	return DCS_VERSION
-}
-
-func (engine *BeaconCommitteeEngineV3) InitCommitteeState(env *BeaconCommitteeStateEnvironment) {
-	engine.beaconCommitteeEngineBase.InitCommitteeState(env)
-	//Declare business rules here
-	//Declare swaprule interface
-	engine.finalState.SetSwapRule(SwapRuleByEnv(env))
 }
 
 func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (

@@ -121,7 +121,6 @@ func (s *swapRuleV2) slashingSwapOut(
 	flexAfterSlashingCommittees = flexAfterSlashingCommittees[swapOutOffset:]
 
 	committees = append(fixedCommittees, flexAfterSlashingCommittees...)
-
 	return committees, slashingCommittees, normalSwapOutCommittees
 }
 
