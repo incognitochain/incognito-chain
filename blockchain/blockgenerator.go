@@ -1,7 +1,7 @@
 package blockchain
 
 import (
-	"strconv"
+	// "strconv"
 	"sync"
 	"time"
 
@@ -78,14 +78,6 @@ func (blockGenerator *BlockGenerator) GetPendingTxsV2(shardID byte) []metadata.T
 		if shardID != 255 && txShardID != shardID {
 			continue
 		}
-		// TODO: remove after test
-		if string(tx.GetInfo()) != "" {
-			i, e := strconv.Atoi(string(tx.GetInfo()))
-			if e != nil || time.Now().Unix() < int64(i) {
-				continue
-			}
-		}
-		// End Remove
 		pendingTxs = append(pendingTxs, tx)
 	}
 	return pendingTxs

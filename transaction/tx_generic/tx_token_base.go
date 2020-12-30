@@ -403,7 +403,11 @@ func (txToken TxTokenBase) validateDoubleSpendTxWithCurrentMempool(poolSerialNum
 }
 
 func (txToken TxTokenBase) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
-	err := txToken.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
+	err := MdValidateWithBlockChain(&txToken, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
+	if err!=nil{
+		return err
+	}
+	err = txToken.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 	if err != nil {
 		return utils.NewTransactionErr(utils.InvalidDoubleSpendPRVError, err)
 	}

@@ -1096,7 +1096,11 @@ func (tx *TxToken) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stat
 }
 
 func (txToken *TxToken) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
-	err := txToken.ValidateDoubleSpendWithBlockchain(shardID, stateDB, txToken.GetTokenID())
+	err := tx_generic.MdValidateWithBlockChain(txToken, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
+	if err!=nil{
+		return err
+	}
+	err = txToken.ValidateDoubleSpendWithBlockchain(shardID, stateDB, txToken.GetTokenID())
 	return err
 }
 
