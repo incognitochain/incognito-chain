@@ -1692,10 +1692,34 @@ func (stateDB *StateDB) getAllPTokenInits() ([]*PTokenInitState, error) {
 		s := NewPTokenInitState()
 		err := json.Unmarshal(newValue, s)
 		if err != nil {
-			Logger.log.warn("wrong expect type")
 			return pTokenInitStates, err
 		}
 		pTokenInitStates = append(pTokenInitStates, s)
 	}
 	return pTokenInitStates, nil
+}
+
+// ================================= Portal ETH tx OBJECT =======================================
+
+func (stateDB *StateDB) getPortalExternalTxState(key common.Hash) (*PortalExternalTxState, bool, error) {
+	ethTxState, err := stateDB.getStateObject(PortalExternalTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if ethTxState != nil {
+		return ethTxState.GetValue().(*PortalExternalTxState), true, nil
+	}
+	return NewPortalExternalTxState(), false, nil
+}
+
+// ================================= Portal confirm proof OBJECT =======================================
+func (stateDB *StateDB) getPortalConfirmProofState(key common.Hash) (*PortalConfirmProofState, bool, error) {
+	portalConfirmProofState, err := stateDB.getStateObject(PortalConfirmProofObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if portalConfirmProofState != nil {
+		return portalConfirmProofState.GetValue().(*PortalConfirmProofState), true, nil
+	}
+	return NewPortalConfirmProofState(), false, nil
 }

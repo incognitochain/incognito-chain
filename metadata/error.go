@@ -48,6 +48,15 @@ const (
 	PortalRedeemRequestParamError
 	PortalRedeemLiquidateExchangeRatesParamError
 
+	// eth utils
+	VerifyProofAndParseReceiptError
+
+	// portal v3
+	PortalCustodianDepositV3ValidateWithBCError
+	PortalCustodianDepositV3ValidateSanityDataError
+	NewPortalCustodianDepositV3MetaFromMapError
+	PortalUnlockOverRateCollateralsError
+
 	// init privacy custom token
 	InitPTokenRequestDecodeInstructionError
 	InitPTokenRequestUnmarshalJsonError
@@ -114,6 +123,15 @@ var ErrCodeMessage = map[int]struct {
 	InitPTokenRequestValidateTxWithBlockChainError:    {-8004, "Validate tx with block chain error"},
 	InitPTokenRequestValidateSanityDataError:          {-8005, "Validate sanity data error"},
 	InitPTokenRequestBuildReqActionsError:             {-8006, "Build request action error"},
+
+	// eth utils
+	VerifyProofAndParseReceiptError: {-8001, "Verify proof and parse receipt eth error"},
+
+	// portal v3
+	PortalCustodianDepositV3ValidateWithBCError:     {-9001, "Validate with blockchain tx portal custodian deposit v3 error"},
+	PortalCustodianDepositV3ValidateSanityDataError: {-9002, "Validate sanity data tx portal custodian deposit v3 error"},
+	NewPortalCustodianDepositV3MetaFromMapError:     {-9003, "New portal custodian deposit v3 metadata from map error"},
+	PortalUnlockOverRateCollateralsError:            {-9004, "Validate with blockchain tx portal custodian unlock over rate v3 error"},
 }
 
 type MetadataTxError struct {

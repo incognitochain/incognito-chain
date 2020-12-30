@@ -2,9 +2,9 @@ package blockchain
 
 import (
 	"bytes"
+	"errors"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"strconv"
@@ -28,6 +28,20 @@ func buildInstruction(metaType int, shardID byte, instStatus string, contentStr 
 	}
 }
 
+func getShardIDFromPaymentAddress(addressStr string) (byte, error) {
+	keyWallet, err := wallet.Base58CheckDeserialize(addressStr)
+	if err != nil {
+		return byte(0), err
+	}
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+		return byte(0), errors.New("Payment address' public key must not be empty")
+	}
+	// calculate shard ID
+	lastByte := keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]
+	shardID := common.GetShardIDFromLastByte(lastByte)
+	return shardID, nil
+}
+
 func (blockchain *BlockChain) buildInstructionsForContractingReq(
 	contentStr string,
 	shardID byte,
@@ -49,7 +63,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 	instructions := [][]string{}
 	issuingReqAction, err := metadata.ParseIssuingInstContent(contentStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an issue occured while parsing issuing action content: ", err)
+		Logger.log.Warn("WARNING: an issue occured while parsing issuing action content: ", err)
 		return nil, nil
 	}
 
@@ -59,22 +73,22 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 	rejectedInst := buildInstruction(metaType, shardID, "rejected", issuingReqAction.TxReqID.String())
 
 	if !ac.CanProcessCIncToken(issuingTokenID) {
-		fmt.Printf("WARNING: The issuing token (%s) was already used in the current block.", issuingTokenID.String())
+		Logger.log.Warnf("WARNING: The issuing token (%s) was already used in the current block.", issuingTokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
 
 	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, issuingTokenID)
 	if err != nil {
-		Logger.log.Info("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
+		Logger.log.Warn("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	ok, err := statedb.CanProcessCIncToken(stateDB, issuingTokenID, privacyTokenExisted)
 	if err != nil {
-		Logger.log.Info("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
+		Logger.log.Warn("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	if !ok {
-		fmt.Printf("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
+		Logger.log.Warnf("WARNING: The issuing token (%s) was already used in the previous blocks.", issuingTokenID.String())
 		return append(instructions, rejectedInst), nil
 	}
 	pTokenInitInfo, err := statedb.GetPTokenInit(stateDB, issuingTokenID.String())
@@ -87,8 +101,15 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 		return append(instructions, rejectedInst), nil
 	}
 
+	if len(issuingReq.ReceiverAddress.Pk) == 0 {
+		Logger.log.Warn("WARNING: invalid receiver address")
+		return append(instructions, rejectedInst), nil
+	}
+	lastByte := issuingReq.ReceiverAddress.Pk[len(issuingReq.ReceiverAddress.Pk)-1]
+	receivingShardID := common.GetShardIDFromLastByte(lastByte)
+
 	issuingAcceptedInst := metadata.IssuingAcceptedInst{
-		ShardID:         shardID,
+		ShardID:         receivingShardID,
 		DepositedAmount: issuingReq.DepositedAmount,
 		ReceiverAddr:    issuingReq.ReceiverAddress,
 		IncTokenID:      issuingTokenID,
@@ -97,7 +118,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 	}
 	issuingAcceptedInstBytes, err := json.Marshal(issuingAcceptedInst)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while marshaling issuingAccepted instruction: ", err)
+		Logger.log.Warn("WARNING: an error occured while marshaling issuingAccepted instruction: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 
@@ -118,7 +139,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 	instructions := [][]string{}
 	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an issue occured while parsing issuing action content: ", err)
+		Logger.log.Warn("WARNING: an issue occured while parsing issuing action content: ", err)
 		return nil, nil
 	}
 	md := issuingETHReqAction.Meta
@@ -126,7 +147,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 
 	ethReceipt := issuingETHReqAction.ETHReceipt
 	if ethReceipt == nil {
-		Logger.log.Info("WARNING: eth receipt is null.")
+		Logger.log.Warn("WARNING: eth receipt is null.")
 		return append(instructions, rejectedInst), nil
 	}
 
@@ -135,60 +156,60 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 	uniqETHTx := append(md.BlockHash[:], []byte(strconv.Itoa(int(md.TxIndex)))...)
 	isUsedInBlock := metadata.IsETHTxHashUsedInBlock(uniqETHTx, ac.UniqETHTxsUsed)
 	if isUsedInBlock {
-		Logger.log.Info("WARNING: already issued for the hash in current block: ", uniqETHTx)
+		Logger.log.Warn("WARNING: already issued for the hash in current block: ", uniqETHTx)
 		return append(instructions, rejectedInst), nil
 	}
 	isIssued, err := statedb.IsETHTxHashIssued(stateDB, uniqETHTx)
 	if err != nil {
-		Logger.log.Info("WARNING: an issue occured while checking the eth tx hash is issued or not: ", err)
+		Logger.log.Warn("WARNING: an issue occured while checking the eth tx hash is issued or not: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	if isIssued {
-		Logger.log.Info("WARNING: already issued for the hash in previous blocks: ", uniqETHTx)
+		Logger.log.Warn("WARNING: already issued for the hash in previous blocks: ", uniqETHTx)
 		return append(instructions, rejectedInst), nil
 	}
 
 	logMap, err := metadata.PickAndParseLogMapFromReceipt(ethReceipt, blockchain.config.ChainParams.EthContractAddressStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while parsing log map from receipt: ", err)
+		Logger.log.Warn("WARNING: an error occured while parsing log map from receipt: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	if logMap == nil {
-		Logger.log.Info("WARNING: could not find log map out from receipt")
+		Logger.log.Warn("WARNING: could not find log map out from receipt")
 		return append(instructions, rejectedInst), nil
 	}
 
 	logMapBytes, _ := json.Marshal(logMap)
-	Logger.log.Info("INFO: eth logMap json - ", string(logMapBytes))
+	Logger.log.Warn("INFO: eth logMap json - ", string(logMapBytes))
 
 	// the token might be ETH/ERC20
 	ethereumAddr, ok := logMap["token"].(rCommon.Address)
 	if !ok {
-		Logger.log.Info("WARNING: could not parse eth token id from log map.")
+		Logger.log.Warn("WARNING: could not parse eth token id from log map.")
 		return append(instructions, rejectedInst), nil
 	}
 	ethereumToken := ethereumAddr.Bytes()
 	canProcess, err := ac.CanProcessTokenPair(ethereumToken, md.IncTokenID)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while checking it can process for token pair on the current block or not: ", err)
+		Logger.log.Warn("WARNING: an error occured while checking it can process for token pair on the current block or not: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	if !canProcess {
-		Logger.log.Info("WARNING: pair of incognito token id & ethereum's id is invalid in current block")
+		Logger.log.Warn("WARNING: pair of incognito token id & ethereum's id is invalid in current block")
 		return append(instructions, rejectedInst), nil
 	}
 	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, md.IncTokenID)
 	if err != nil {
-		Logger.log.Info("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
+		Logger.log.Warn("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	isValid, err := statedb.CanProcessTokenPair(stateDB, ethereumToken, md.IncTokenID, privacyTokenExisted)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
+		Logger.log.Warn("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	if !isValid {
-		Logger.log.Info("WARNING: pair of incognito token id & ethereum's id is invalid with previous blocks")
+		Logger.log.Warn("WARNING: pair of incognito token id & ethereum's id is invalid with previous blocks")
 		return append(instructions, rejectedInst), nil
 	}
 
@@ -204,12 +225,12 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 
 	addressStr, ok := logMap["incognitoAddress"].(string)
 	if !ok {
-		Logger.log.Info("WARNING: could not parse incognito address from eth log map.")
+		Logger.log.Warn("WARNING: could not parse incognito address from eth log map.")
 		return append(instructions, rejectedInst), nil
 	}
 	amt, ok := logMap["amount"].(*big.Int)
 	if !ok {
-		Logger.log.Info("WARNING: could not parse amount from eth log map.")
+		Logger.log.Warn("WARNING: could not parse amount from eth log map.")
 		return append(instructions, rejectedInst), nil
 	}
 	amount := uint64(0)
@@ -220,8 +241,14 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 		amount = amt.Uint64()
 	}
 
+	receivingShardID, err := getShardIDFromPaymentAddress(addressStr)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occured while getting shard id from payment address: ", err)
+		return append(instructions, rejectedInst), nil
+	}
+
 	issuingETHAcceptedInst := metadata.IssuingETHAcceptedInst{
-		ShardID:         shardID,
+		ShardID:         receivingShardID,
 		IssuingAmount:   amount,
 		ReceiverAddrStr: addressStr,
 		IncTokenID:      md.IncTokenID,
@@ -231,7 +258,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 	}
 	issuingETHAcceptedInstBytes, err := json.Marshal(issuingETHAcceptedInst)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while marshaling issuingETHAccepted instruction: ", err)
+		Logger.log.Warn("WARNING: an error occured while marshaling issuingETHAccepted instruction: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqETHTx)
@@ -245,13 +272,13 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 	Logger.log.Info("[Centralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
+		Logger.log.Warn("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
 		return nil, nil
 	}
 	var issuingAcceptedInst metadata.IssuingAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
 		return nil, nil
 	}
 
@@ -295,7 +322,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 			beaconView.GetBeaconFeatureStateDB()))
 
 	if initErr != nil {
-		Logger.log.Info("WARNING: an error occured while initializing response tx: ", initErr)
+		Logger.log.Warn("WARNING: an error occured while initializing response tx: ", initErr)
 		return nil, nil
 	}
 	Logger.log.Info("[Centralized token issuance] Create tx ok.")
@@ -306,13 +333,13 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while decoding content string of ETH accepted issuance instruction: ", err)
+		Logger.log.Warn("WARNING: an error occured while decoding content string of ETH accepted issuance instruction: ", err)
 		return nil, nil
 	}
 	var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while unmarshaling ETH accepted issuance instruction: ", err)
+		Logger.log.Warn("WARNING: an error occured while unmarshaling ETH accepted issuance instruction: ", err)
 		return nil, nil
 	}
 
@@ -321,7 +348,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 	}
 	key, err := wallet.Base58CheckDeserialize(issuingETHAcceptedInst.ReceiverAddrStr)
 	if err != nil {
-		Logger.log.Info("WARNING: an error occured while deserializing receiver address string: ", err)
+		Logger.log.Warn("WARNING: an error occured while deserializing receiver address string: ", err)
 		return nil, nil
 	}
 	receiver := &privacy.PaymentInfo{
@@ -363,7 +390,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 			beaconView.GetBeaconFeatureStateDB()))
 
 	if initErr != nil {
-		Logger.log.Info("WARNING: an error occured while initializing response tx: ", initErr)
+		Logger.log.Warn("WARNING: an error occured while initializing response tx: ", initErr)
 		return nil, nil
 	}
 	Logger.log.Info("[Decentralized bridge token issuance] Create tx ok.")
@@ -419,8 +446,14 @@ func (blockchain *BlockChain) buildInstructionsForInitPTokenReq(
 		return append(instructions, rejectedInst), nil
 	}
 
+	receivingShardID, err := getShardIDFromPaymentAddress(initPTokenReq.ReceiverAddress)
+	if err != nil {
+		Logger.log.Warn("WARNING: an error occured while getting shard id from payment address: ", err)
+		return append(instructions, rejectedInst), nil
+	}
+
 	initPTokenAcceptedInst := metadata.InitPTokenAcceptedInst{
-		ShardID:         shardID, // TODO: update to receiving address' shardid
+		ShardID:         receivingShardID,
 		Amount: 				 initPTokenReq.Amount,
 		ReceiverAddr:    initPTokenReq.ReceiverAddress,
 		IncTokenID:      tokenID,

@@ -13,61 +13,61 @@ import (
 	"strconv"
 )
 
-type PortalRedeemLiquidateExchangeRates struct {
+type PortalRedeemFromLiquidationPoolV3 struct {
 	MetadataBase
-	TokenID               string // pTokenID in incognito chain
+	TokenID               string // portalTokenID in incognito chain
 	RedeemAmount          uint64
 	RedeemerIncAddressStr string
+	RedeemerExtAddressStr string
 }
 
-type PortalRedeemLiquidateExchangeRatesAction struct {
-	Meta    PortalRedeemLiquidateExchangeRates
+type PortalRedeemFromLiquidationPoolActionV3 struct {
+	Meta    PortalRedeemFromLiquidationPoolV3
 	TxReqID common.Hash
 	ShardID byte
 }
 
-type PortalRedeemLiquidateExchangeRatesContent struct {
-	TokenID               string // pTokenID in incognito chain
+type PortalRedeemFromLiquidationPoolContentV3 struct {
+	TokenID               string // portalTokenID in incognito chain
 	RedeemAmount          uint64
 	RedeemerIncAddressStr string
+	RedeemerExtAddressStr string
 	TxReqID               common.Hash
 	ShardID               byte
-	TotalPTokenReceived   uint64
+	MintedPRVCollateral   uint64
+	UnlockedTokenCollaterals map[string]uint64
 }
 
-type RedeemLiquidateExchangeRatesStatus struct {
-	TxReqID             common.Hash
-	TokenID             string
-	RedeemerAddress     string
-	RedeemAmount        uint64
-	Status              byte
-	TotalPTokenReceived uint64
+type PortalRedeemFromLiquidationPoolStatusV3 struct {
+	TokenID               string // portalTokenID in incognito chain
+	RedeemAmount          uint64
+	RedeemerIncAddressStr string
+	RedeemerExtAddressStr string
+	TxReqID               common.Hash
+	MintedPRVCollateral   uint64
+	UnlockedTokenCollaterals map[string]uint64
+	Status byte
 }
 
-func NewRedeemLiquidateExchangeRatesStatus(txReqID common.Hash, tokenID string, redeemerAddress string, redeemAmount uint64, status byte, totalPTokenReceived uint64) *RedeemLiquidateExchangeRatesStatus {
-	return &RedeemLiquidateExchangeRatesStatus{TxReqID: txReqID, TokenID: tokenID, RedeemerAddress: redeemerAddress, RedeemAmount: redeemAmount, Status: status, TotalPTokenReceived: totalPTokenReceived}
-}
-
-func NewPortalRedeemLiquidateExchangeRates(
+func NewPortalRedeemFromLiquidationPoolV3(
 	metaType int,
 	tokenID string,
 	redeemAmount uint64,
 	incAddressStr string,
-) (*PortalRedeemLiquidateExchangeRates, error) {
-	metadataBase := MetadataBase{Type: metaType}
-
-	portalRedeemLiquidateExchangeRates := &PortalRedeemLiquidateExchangeRates{
+	extAddressStr string,
+) (*PortalRedeemFromLiquidationPoolV3, error) {
+	portalRedeemLiquidateExchangeRates := &PortalRedeemFromLiquidationPoolV3{
+		MetadataBase:          MetadataBase{Type: metaType},
 		TokenID:               tokenID,
 		RedeemAmount:          redeemAmount,
 		RedeemerIncAddressStr: incAddressStr,
+		RedeemerExtAddressStr: extAddressStr,
 	}
-
-	portalRedeemLiquidateExchangeRates.MetadataBase = metadataBase
 
 	return portalRedeemLiquidateExchangeRates, nil
 }
 
-func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateTxWithBlockChain(
+func (redeemReq PortalRedeemFromLiquidationPoolV3) ValidateTxWithBlockChain(
 	txr Transaction,
 	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
@@ -76,7 +76,7 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
+func (redeemReq PortalRedeemFromLiquidationPoolV3) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
 		return true, true, nil
 	}
@@ -119,28 +119,37 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetr
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
 	}
 	// check tokenId is portal token or not
-	if !common.IsPortalToken(redeemReq.TokenID) {
+	if !IsPortalToken(redeemReq.TokenID) {
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID is not in portal tokens list"))
+	}
+
+	// checkout ext address
+	if common.Has0xPrefix(redeemReq.RedeemerExtAddressStr) {
+		return false, false, errors.New("Redeem from liquidation v3: RedeemerExtAddressStr shouldn't have 0x prefix")
+	}
+	if isValid, err := ValidatePortalExternalAddress(common.ETHChainName, common.Remove0xPrefix(common.EthAddrStr), redeemReq.RedeemerExtAddressStr); !isValid || err != nil {
+		return false, false, errors.New("Redeem from liquidation v3: RedeemerExtAddressStr is invalid")
 	}
 	return true, true, nil
 }
 
-func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateMetadataByItself() bool {
-	return redeemReq.Type == PortalRedeemLiquidateExchangeRatesMeta
+func (redeemReq PortalRedeemFromLiquidationPoolV3) ValidateMetadataByItself() bool {
+	return redeemReq.Type == PortalRedeemFromLiquidationPoolMetaV3
 }
 
-func (redeemReq PortalRedeemLiquidateExchangeRates) Hash() *common.Hash {
+func (redeemReq PortalRedeemFromLiquidationPoolV3) Hash() *common.Hash {
 	record := redeemReq.MetadataBase.Hash().String()
 	record += redeemReq.TokenID
 	record += strconv.FormatUint(redeemReq.RedeemAmount, 10)
 	record += redeemReq.RedeemerIncAddressStr
+	record += redeemReq.RedeemerExtAddressStr
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
 }
 
-func (redeemReq *PortalRedeemLiquidateExchangeRates) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
-	actionContent := PortalRedeemLiquidateExchangeRatesAction{
+func (redeemReq *PortalRedeemFromLiquidationPoolV3) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+	actionContent := PortalRedeemFromLiquidationPoolActionV3{
 		Meta:    *redeemReq,
 		TxReqID: *tx.Hash(),
 		ShardID: shardID,
@@ -150,10 +159,10 @@ func (redeemReq *PortalRedeemLiquidateExchangeRates) BuildReqActions(tx Transact
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalRedeemLiquidateExchangeRatesMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(PortalRedeemFromLiquidationPoolMetaV3), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
-func (redeemReq *PortalRedeemLiquidateExchangeRates) CalculateSize() uint64 {
+func (redeemReq *PortalRedeemFromLiquidationPoolV3) CalculateSize() uint64 {
 	return calculateSize(redeemReq)
 }
