@@ -350,7 +350,7 @@ func SetupParam() {
 		ReplaceStakingTxHeight:    559380,
 		IsBackup:                  false,
 		PreloadAddress:            "",
-		BCHeightBreakPointNewZKP:  737450,
+		BCHeightBreakPointNewZKP:  927996, // beacon block height that applies new bullet proof
 		ETHRemoveBridgeSigEpoch:   1973,
 	}
 	if IsTestNet {
