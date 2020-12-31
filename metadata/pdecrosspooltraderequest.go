@@ -181,7 +181,7 @@ func (pc PDECrossPoolTradeRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (pc *PDECrossPoolTradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (pc *PDECrossPoolTradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PDECrossPoolTradeRequestAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),

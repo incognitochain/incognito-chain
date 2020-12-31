@@ -10,6 +10,8 @@ import (
 type LiquidationPoolDetail struct {
 	CollateralAmount uint64
 	PubTokenAmount   uint64
+
+	TokensCollateralAmount map[string]uint64
 }
 
 type LiquidationPool struct {

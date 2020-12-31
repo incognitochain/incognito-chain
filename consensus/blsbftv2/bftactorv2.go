@@ -406,7 +406,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	bridgeSig := []byte{}
-	if metadata.HasBridgeInstructions(v.block.GetInstructions()) {
+	if metadata.HasBridgeInstructions(v.block.GetInstructions()) || metadata.HasPortalInstructions(v.block.GetInstructions()) {
 		bridgeSig, err = e.UserKeySet.BriSignData(v.block.Hash().GetBytes())
 		if err != nil {
 			e.Logger.Error(err)
