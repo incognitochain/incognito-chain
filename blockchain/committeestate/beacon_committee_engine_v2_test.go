@@ -2,6 +2,7 @@ package committeestate
 
 import (
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
@@ -1383,702 +1384,738 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 			want2:   [][]string{},
 			wantErr: false,
 		},
-		/*{*/
-		//name: "Process Random Instruction",
-		//fields: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//beaconHash:   *hash,
-		//beaconHeight: 10,
-		//finalState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey, *incKey2, *incKey3, *incKey4,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{},
-		//},
-		//mu:             finalMu,
-		//autoStake:      map[string]bool{},
-		//rewardReceiver: map[string]privacy.PaymentAddress{},
-		//stakingTx:      map[string]common.Hash{},
-		//},
-		//shardCommonPool: []incognitokey.CommitteePublicKey{
-		//*incKey6,
-		//},
-		//numberOfAssignedCandidates: 1,
-		//},
-		//},
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//mu: unCommitteedMu,
-		//},
-		//},
-		//},
-		//},
-		//},
-		//},
-		//fieldsAfterProcess: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//beaconHeight: 10,
-		//beaconHash:   *hash,
-		//finalState:   &BeaconCommitteeStateV2{},
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey, *incKey2, *incKey3, *incKey4,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey6,
-		//},
-		//},
-		//mu:             unCommitteedMu,
-		//autoStake:      map[string]bool{},
-		//rewardReceiver: map[string]privacy.PaymentAddress{},
-		//stakingTx:      map[string]common.Hash{},
-		//},
-		//shardCommonPool:            []incognitokey.CommitteePublicKey{},
-		//numberOfAssignedCandidates: 0,
-		//},
-		//},
-		//},
-		//},
-		//},
-		//args: args{
-		//env: &BeaconCommitteeStateEnvironment{
-		//BeaconInstructions: [][]string{
-		//[]string{
-		//instruction.RANDOM_ACTION,
-		//"800000",
-		//"120000",
-		//"350000",
-		//"190000",
-		//},
-		//},
-		//ActiveShards:          1,
-		//BeaconHeight:          100,
-		//MaxShardCommitteeSize: 5,
-		//},
-		//},
-		//want:    &BeaconCommitteeStateHash{},
-		//want1:   committeeChangeProcessRandomInstruction,
-		//want2:   [][]string{},
-		//wantErr: false,
-		//},
-		//{
-		//name: "Process Stop Auto Stake Instruction",
-		//fields: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//beaconHash:   *hash,
-		//beaconHeight: 10,
-		//finalState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey, *incKey2, *incKey3, *incKey4,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey5,
-		//},
-		//},
-		//mu: finalMu,
-		//autoStake: map[string]bool{
-		//key5: true,
-		//},
-		//rewardReceiver: map[string]privacy.PaymentAddress{
-		//key5: paymentAddress0.KeySet.PaymentAddress,
-		//},
-		//stakingTx: map[string]common.Hash{
-		//key5: *hash,
-		//},
-		//},
-		//shardCommonPool: []incognitokey.CommitteePublicKey{},
-		//},
-		//},
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//mu: unCommitteedMu,
-		//},
-		//},
-		//},
-		//},
-		//},
-		//},
-		//fieldsAfterProcess: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey, *incKey2, *incKey3, *incKey4,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey5,
-		//},
-		//},
-		//mu: unCommitteedMu,
-		//autoStake: map[string]bool{
-		//key5: false,
-		//},
-		//rewardReceiver: map[string]privacy.PaymentAddress{
-		//key5: paymentAddress0.KeySet.PaymentAddress,
-		//},
-		//stakingTx: map[string]common.Hash{
-		//key5: *hash,
-		//},
-		//},
-		//shardCommonPool: []incognitokey.CommitteePublicKey{},
-		//},
-		//},
-		//},
-		//},
-		//},
-		//args: args{
-		//env: &BeaconCommitteeStateEnvironment{
-		//BeaconInstructions: [][]string{
-		//[]string{
-		//instruction.STOP_AUTO_STAKE_ACTION,
-		//key5,
-		//},
-		//},
-		//MaxShardCommitteeSize: 4,
-		//ActiveShards:          1,
-		//ConsensusStateDB:      sDB,
-		//},
-		//},
-		//want:    &BeaconCommitteeStateHash{},
-		//want1:   committeeChangeProcessStopAutoStakeInstruction,
-		//want2:   [][]string{},
-		//wantErr: false,
-		//},
-		//{
-		//name: "Process Swap Shard Instructions",
-		//fields: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//beaconHeight: 5,
-		//beaconHash:   *hash,
-		//finalState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey0, *incKey, *incKey2, *incKey3,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey4,
-		//},
-		//},
-		//mu: finalMu,
-		//autoStake: map[string]bool{
-		//key0: true,
-		//},
-		//rewardReceiver: map[string]privacy.PaymentAddress{
-		//key0: paymentAddress0.KeySet.PaymentAddress,
-		//},
-		//stakingTx: map[string]common.Hash{
-		//key0: *hash,
-		//},
-		//},
-		//swapRule:        swapRuleSingleInstructionOut,
-		//shardCommonPool: []incognitokey.CommitteePublicKey{},
-		//},
-		//},
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//mu: unCommitteedMu,
-		//},
-		//},
-		//},
-		//},
-		//},
-		//},
-		//fieldsAfterProcess: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey, *incKey2, *incKey3, *incKey4,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey0,
-		//},
-		//},
-		//autoStake: map[string]bool{
-		//key0: true,
-		//},
-		//rewardReceiver: map[string]privacy.PaymentAddress{
-		//key0: paymentAddress0.KeySet.PaymentAddress,
-		//},
-		//stakingTx: map[string]common.Hash{
-		//key0: *hash,
-		//},
-		//mu: unCommitteedMu,
-		//},
-		//shardCommonPool: []incognitokey.CommitteePublicKey{},
-		//swapRule:        swapRuleSingleInstructionOut,
-		//},
-		//},
-		//},
-		//},
-		//},
-		//args: args{
-		//env: &BeaconCommitteeStateEnvironment{
-		//BeaconInstructions: [][]string{
-		//[]string{
-		//instruction.SWAP_SHARD_ACTION,
-		//key4,
-		//key0,
-		//"0",
-		//"1",
-		//},
-		//},
-		//MaxShardCommitteeSize: 4,
-		//ActiveShards:          1,
-		//ConsensusStateDB:      sDB,
-		//RandomNumber:          5000,
-		//},
-		//},
-		//want:    &BeaconCommitteeStateHash{},
-		//want1:   committeeChangeProcessSwapShardInstruction,
-		//want2:   [][]string{},
-		//wantErr: false,
-		//},
-		//{
-		//name: "Process Unstake Instruction",
-		//fields: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//beaconHash:   *hash,
-		//beaconHeight: 10,
-		//finalState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{},
-		//},
-		//},
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//mu: unCommitteedMu,
-		//},
-		//},
-		//},
-		//},
-		//},
-		//},
-		//fieldsAfterProcess: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey, *incKey2, *incKey3, *incKey4,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey5,
-		//},
-		//},
-		//autoStake:      map[string]bool{},
-		//rewardReceiver: map[string]privacy.PaymentAddress{},
-		//stakingTx:      map[string]common.Hash{},
-		//mu:             unCommitteedMu,
-		//},
-		//shardCommonPool: make([]incognitokey.CommitteePublicKey, 0, 1),
-		//},
-		//},
-		//},
-		//},
-		//},
-		//args: args{
-		//env: &BeaconCommitteeStateEnvironment{
-		//BeaconInstructions: [][]string{
-		//[]string{
-		//instruction.UNSTAKE_ACTION,
-		//key0,
-		//},
-		//},
-		//newUnassignedCommonPool: []string{key0},
-		//ConsensusStateDB:        sDB,
-		//MaxShardCommitteeSize:   4,
-		//ActiveShards:            1,
-		//},
-		//},
-		//want:  &BeaconCommitteeStateHash{},
-		//want1: committeeChangeProcessUnstakeInstruction,
-		//want2: [][]string{
-		//[]string{
-		//instruction.RETURN_ACTION,
-		//key0,
-		//hash.String(),
-		//"100",
-		//},
-		//},
-		//wantErr: false,
-		//},
-		//{
-		//name: "Swap in 2 keys",
-		//fields: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//beaconHeight: 5,
-		//beaconHash:   *hash,
-		//finalState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey2, *incKey3, *incKey4, *incKey5, *incKey6, *incKey7,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey0, *incKey,
-		//},
-		//},
-		//mu: finalMu,
-		//autoStake: map[string]bool{
-		//key0: true,
-		//key:  true,
-		//},
-		//rewardReceiver: map[string]privacy.PaymentAddress{
-		//incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-		//incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
-		//},
-		//stakingTx: map[string]common.Hash{
-		//key0: *hash,
-		//key:  *tempHash,
-		//},
-		//},
-		//swapRule:        swapRuleIn2Keys,
-		//shardCommonPool: []incognitokey.CommitteePublicKey{},
-		//},
-		//},
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//mu: unCommitteedMu,
-		//},
-		//},
-		//},
-		//},
-		//},
-		//},
-		//fieldsAfterProcess: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey2, *incKey3, *incKey4, *incKey5, *incKey6, *incKey7, *incKey0, *incKey,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{},
-		//},
-		//autoStake: map[string]bool{
-		//key0: true,
-		//key:  true,
-		//},
-		//rewardReceiver: map[string]privacy.PaymentAddress{
-		//incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-		//incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
-		//},
-		//stakingTx: map[string]common.Hash{
-		//key0: *hash,
-		//key:  *tempHash,
-		//},
-		//mu: unCommitteedMu,
-		//},
-		//swapRule:        swapRuleIn2Keys,
-		//shardCommonPool: []incognitokey.CommitteePublicKey{},
-		//},
-		//},
-		//},
-		//},
-		//},
-		//args: args{
-		//env: &BeaconCommitteeStateEnvironment{
-		//BeaconInstructions: [][]string{
-		//[]string{
-		//instruction.SWAP_SHARD_ACTION,
-		//strings.Join([]string{key0, key}, ","),
-		//"",
-		//"0",
-		//"0",
-		//},
-		//},
-		//MaxShardCommitteeSize:            8,
-		//ActiveShards:                     1,
-		//ConsensusStateDB:                 sDB,
-		//NumberOfFixedShardBlockValidator: 6,
-		//MinShardCommitteeSize:            6,
-		//RandomNumber:                     5000,
-		//},
-		//},
-		//want:    &BeaconCommitteeStateHash{},
-		//want1:   committeeChangeProcessSwapShardInstruction2KeysIn,
-		//want2:   [][]string{},
-		//wantErr: false,
-		//},
-		//{
-		//name: "Swap out 2 keys",
-		//fields: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//beaconHeight: 5,
-		//beaconHash:   *hash,
-		//finalState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey0, *incKey, *incKey4, *incKey5, *incKey2, *incKey3, *incKey6,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{},
-		//},
-		//mu: finalMu,
-		//autoStake: map[string]bool{
-		//key:  true,
-		//key4: true,
-		//},
-		//rewardReceiver: map[string]privacy.PaymentAddress{
-		//incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
-		//incKey4.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-		//},
-		//stakingTx: map[string]common.Hash{
-		//key:  *tempHash,
-		//key4: *tempHash,
-		//},
-		//},
-		//shardCommonPool: []incognitokey.CommitteePublicKey{},
-		//swapRule:        swapRuleOut2Keys,
-		//},
-		//},
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//mu: unCommitteedMu,
-		//},
-		//},
-		//},
-		//},
-		//},
-		//},
-		//fieldsAfterProcess: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey0, *incKey5, *incKey2, *incKey3, *incKey6,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey, *incKey4,
-		//},
-		//},
-		//autoStake: map[string]bool{
-		//key:  true,
-		//key4: true,
-		//},
-		//rewardReceiver: map[string]privacy.PaymentAddress{
-		//incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
-		//incKey4.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-		//},
-		//stakingTx: map[string]common.Hash{
-		//key:  *tempHash,
-		//key4: *tempHash,
-		//},
-		//mu: unCommitteedMu,
-		//},
-		//swapRule:        swapRuleOut2Keys,
-		//shardCommonPool: []incognitokey.CommitteePublicKey{},
-		//},
-		//},
-		//},
-		//},
-		//},
-		//args: args{
-		//env: &BeaconCommitteeStateEnvironment{
-		//BeaconInstructions: [][]string{
-		//[]string{
-		//instruction.SWAP_SHARD_ACTION,
-		//"",
-		//strings.Join([]string{key, key4}, ","),
-		//"0",
-		//"0",
-		//},
-		//},
-		//MaxShardCommitteeSize:            7,
-		//ActiveShards:                     1,
-		//ConsensusStateDB:                 sDB,
-		//RandomNumber:                     5000,
-		//NumberOfFixedShardBlockValidator: 1,
-		//MinShardCommitteeSize:            1,
-		//},
-		//},
-		//want:    &BeaconCommitteeStateHash{},
-		//want1:   committeeChangeProcessSwapShardInstruction2KeysOut,
-		//want2:   [][]string{},
-		//wantErr: false,
-		//},
-		//{
-		//name: "Swap in and out 2 keys",
-		//fields: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//beaconHeight: 5,
-		//beaconHash:   *hash,
-		//finalState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey0, *incKey, *incKey4, *incKey5, *incKey6, *incKey7,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey2, *incKey3,
-		//},
-		//},
-		//mu: finalMu,
-		//autoStake: map[string]bool{
-		//key0: true,
-		//key:  true,
-		//},
-		//rewardReceiver: map[string]privacy.PaymentAddress{
-		//incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-		//incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
-		//},
-		//stakingTx: map[string]common.Hash{
-		//key0: *hash,
-		//key:  *tempHash,
-		//},
-		//},
-		//swapRule:        swapRuleInAndOut2Keys,
-		//shardCommonPool: []incognitokey.CommitteePublicKey{},
-		//},
-		//},
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//mu: unCommitteedMu,
-		//},
-		//},
-		//},
-		//},
-		//},
-		//},
-		//fieldsAfterProcess: fields{
-		//beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-		//beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-		//uncommittedState: &BeaconCommitteeStateV2{
-		//beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-		//beaconCommitteeStateBase: beaconCommitteeStateBase{
-		//beaconCommittee: []incognitokey.CommitteePublicKey{},
-		//shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey4, *incKey5, *incKey6, *incKey7, *incKey2, *incKey3,
-		//},
-		//},
-		//shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-		//0: []incognitokey.CommitteePublicKey{
-		//*incKey0, *incKey,
-		//},
-		//},
-		//autoStake: map[string]bool{
-		//key0: true,
-		//key:  true,
-		//},
-		//rewardReceiver: map[string]privacy.PaymentAddress{
-		//incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-		//incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
-		//},
-		//stakingTx: map[string]common.Hash{
-		//key0: *hash,
-		//key:  *tempHash,
-		//},
-		//mu: unCommitteedMu,
-		//},
-		//swapRule:        swapRuleInAndOut2Keys,
-		//shardCommonPool: []incognitokey.CommitteePublicKey{},
-		//},
-		//},
-		//},
-		//},
-		//},
-		//args: args{
-		//env: &BeaconCommitteeStateEnvironment{
-		//BeaconInstructions: [][]string{
-		//[]string{
-		//instruction.SWAP_SHARD_ACTION,
-		//strings.Join([]string{key2, key3}, ","),
-		//strings.Join([]string{key0, key}, ","),
-		//"0",
-		//"0",
-		//},
-		//},
-		//MaxShardCommitteeSize: 6,
-		//ActiveShards:          1,
-		//ConsensusStateDB:      sDB,
-		//RandomNumber:          5000,
-		//},
-		//},
-		//want:    &BeaconCommitteeStateHash{},
-		//want1:   committeeChangeProcessSwapShardInstruction2Keys,
-		//want2:   [][]string{},
-		//wantErr: false,
-		/*},*/
+		{
+			name: "Process Random Instruction",
+			fields: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						beaconHash:   *hash,
+						beaconHeight: 10,
+						finalState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey, *incKey2, *incKey3, *incKey4,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{},
+									},
+									mu:             finalMu,
+									autoStake:      map[string]bool{},
+									rewardReceiver: map[string]privacy.PaymentAddress{},
+									stakingTx:      map[string]common.Hash{},
+								},
+								shardCommonPool: []incognitokey.CommitteePublicKey{
+									*incKey6,
+								},
+								numberOfAssignedCandidates: 1,
+							},
+						},
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									mu: unCommitteedMu,
+								},
+							},
+						},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						beaconHeight: 10,
+						beaconHash:   *hash,
+						finalState:   &BeaconCommitteeStateV2{},
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey, *incKey2, *incKey3, *incKey4,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey6,
+										},
+									},
+									mu:             unCommitteedMu,
+									autoStake:      map[string]bool{},
+									rewardReceiver: map[string]privacy.PaymentAddress{},
+									stakingTx:      map[string]common.Hash{},
+								},
+								shardCommonPool:            []incognitokey.CommitteePublicKey{},
+								numberOfAssignedCandidates: 0,
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.RANDOM_ACTION,
+							"800000",
+							"120000",
+							"350000",
+							"190000",
+						},
+					},
+					ActiveShards:          1,
+					BeaconHeight:          100,
+					MaxShardCommitteeSize: 5,
+				},
+			},
+			want:    &BeaconCommitteeStateHash{},
+			want1:   committeeChangeProcessRandomInstruction,
+			want2:   [][]string{},
+			wantErr: false,
+		},
+		{
+			name: "Process Stop Auto Stake Instruction",
+			fields: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						beaconHash:   *hash,
+						beaconHeight: 10,
+						finalState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey, *incKey2, *incKey3, *incKey4,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey5,
+										},
+									},
+									mu: finalMu,
+									autoStake: map[string]bool{
+										key5: true,
+									},
+									rewardReceiver: map[string]privacy.PaymentAddress{
+										key5: paymentAddress0.KeySet.PaymentAddress,
+									},
+									stakingTx: map[string]common.Hash{
+										key5: *hash,
+									},
+								},
+								shardCommonPool: []incognitokey.CommitteePublicKey{},
+							},
+						},
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									mu: unCommitteedMu,
+								},
+							},
+						},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey, *incKey2, *incKey3, *incKey4,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey5,
+										},
+									},
+									mu: unCommitteedMu,
+									autoStake: map[string]bool{
+										key5: false,
+									},
+									rewardReceiver: map[string]privacy.PaymentAddress{
+										key5: paymentAddress0.KeySet.PaymentAddress,
+									},
+									stakingTx: map[string]common.Hash{
+										key5: *hash,
+									},
+								},
+								shardCommonPool: []incognitokey.CommitteePublicKey{},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.STOP_AUTO_STAKE_ACTION,
+							key5,
+						},
+					},
+					MaxShardCommitteeSize: 4,
+					ActiveShards:          1,
+					ConsensusStateDB:      sDB,
+				},
+			},
+			want:    &BeaconCommitteeStateHash{},
+			want1:   committeeChangeProcessStopAutoStakeInstruction,
+			want2:   [][]string{},
+			wantErr: false,
+		},
+		{
+			name: "Process Swap Shard Instructions",
+			fields: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						beaconHeight: 5,
+						beaconHash:   *hash,
+						finalState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey0, *incKey, *incKey2, *incKey3,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey4,
+										},
+									},
+									mu: finalMu,
+									autoStake: map[string]bool{
+										key0: true,
+									},
+									rewardReceiver: map[string]privacy.PaymentAddress{
+										key0: paymentAddress0.KeySet.PaymentAddress,
+									},
+									stakingTx: map[string]common.Hash{
+										key0: *hash,
+									},
+								},
+								swapRule:        swapRuleSingleInstructionOut,
+								shardCommonPool: []incognitokey.CommitteePublicKey{},
+							},
+						},
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									mu: unCommitteedMu,
+								},
+							},
+						},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey, *incKey2, *incKey3, *incKey4,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey0,
+										},
+									},
+									autoStake: map[string]bool{
+										key0: true,
+									},
+									rewardReceiver: map[string]privacy.PaymentAddress{
+										key0: paymentAddress0.KeySet.PaymentAddress,
+									},
+									stakingTx: map[string]common.Hash{
+										key0: *hash,
+									},
+									mu: unCommitteedMu,
+								},
+								shardCommonPool: []incognitokey.CommitteePublicKey{},
+								swapRule:        swapRuleSingleInstructionOut,
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.SWAP_SHARD_ACTION,
+							key4,
+							key0,
+							"0",
+							"1",
+						},
+					},
+					MaxShardCommitteeSize: 4,
+					ActiveShards:          1,
+					ConsensusStateDB:      sDB,
+					RandomNumber:          5000,
+				},
+			},
+			want:    &BeaconCommitteeStateHash{},
+			want1:   committeeChangeProcessSwapShardInstruction,
+			want2:   [][]string{},
+			wantErr: false,
+		},
+		{
+			name: "Process Unstake Instruction",
+			fields: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						beaconHash:   *hash,
+						beaconHeight: 10,
+						finalState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey, *incKey2, *incKey3, *incKey4,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey5,
+										},
+									},
+									autoStake:      map[string]bool{},
+									rewardReceiver: map[string]privacy.PaymentAddress{},
+									stakingTx:      map[string]common.Hash{},
+									mu:             finalMu,
+								},
+								shardCommonPool: []incognitokey.CommitteePublicKey{
+									*incKey0,
+								},
+							},
+						},
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey, *incKey2, *incKey3, *incKey4,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey5,
+										},
+									},
+									autoStake:      map[string]bool{},
+									rewardReceiver: map[string]privacy.PaymentAddress{},
+									stakingTx:      map[string]common.Hash{},
+									mu:             unCommitteedMu,
+								},
+								shardCommonPool: []incognitokey.CommitteePublicKey{
+									*incKey0,
+								},
+							},
+						},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey, *incKey2, *incKey3, *incKey4,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey5,
+										},
+									},
+									autoStake:      map[string]bool{},
+									rewardReceiver: map[string]privacy.PaymentAddress{},
+									stakingTx:      map[string]common.Hash{},
+									mu:             unCommitteedMu,
+								},
+								shardCommonPool: []incognitokey.CommitteePublicKey{},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.UNSTAKE_ACTION,
+							key0,
+						},
+					},
+					newUnassignedCommonPool: []string{key0},
+					ConsensusStateDB:        sDB,
+					MaxShardCommitteeSize:   4,
+					ActiveShards:            1,
+				},
+			},
+			want:  &BeaconCommitteeStateHash{},
+			want1: committeeChangeProcessUnstakeInstruction,
+			want2: [][]string{
+				[]string{
+					instruction.RETURN_ACTION,
+					key0,
+					hash.String(),
+					"100",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Swap in 2 keys",
+			fields: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						beaconHeight: 5,
+						beaconHash:   *hash,
+						finalState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey2, *incKey3, *incKey4, *incKey5, *incKey6, *incKey7,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey0, *incKey,
+										},
+									},
+									mu: finalMu,
+									autoStake: map[string]bool{
+										key0: true,
+										key:  true,
+									},
+									rewardReceiver: map[string]privacy.PaymentAddress{
+										incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+										incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
+									},
+									stakingTx: map[string]common.Hash{
+										key0: *hash,
+										key:  *tempHash,
+									},
+								},
+								swapRule:        swapRuleIn2Keys,
+								shardCommonPool: []incognitokey.CommitteePublicKey{},
+							},
+						},
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									mu: unCommitteedMu,
+								},
+							},
+						},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey2, *incKey3, *incKey4, *incKey5, *incKey6, *incKey7, *incKey0, *incKey,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{},
+									},
+									autoStake: map[string]bool{
+										key0: true,
+										key:  true,
+									},
+									rewardReceiver: map[string]privacy.PaymentAddress{
+										incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+										incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
+									},
+									stakingTx: map[string]common.Hash{
+										key0: *hash,
+										key:  *tempHash,
+									},
+									mu: unCommitteedMu,
+								},
+								swapRule:        swapRuleIn2Keys,
+								shardCommonPool: []incognitokey.CommitteePublicKey{},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.SWAP_SHARD_ACTION,
+							strings.Join([]string{key0, key}, ","),
+							"",
+							"0",
+							"0",
+						},
+					},
+					MaxShardCommitteeSize:            8,
+					ActiveShards:                     1,
+					ConsensusStateDB:                 sDB,
+					NumberOfFixedShardBlockValidator: 6,
+					MinShardCommitteeSize:            6,
+					RandomNumber:                     5000,
+				},
+			},
+			want:    &BeaconCommitteeStateHash{},
+			want1:   committeeChangeProcessSwapShardInstruction2KeysIn,
+			want2:   [][]string{},
+			wantErr: false,
+		},
+		{
+			name: "Swap out 2 keys",
+			fields: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						beaconHeight: 5,
+						beaconHash:   *hash,
+						finalState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey0, *incKey, *incKey4, *incKey5, *incKey2, *incKey3, *incKey6,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{},
+									},
+									mu: finalMu,
+									autoStake: map[string]bool{
+										key:  true,
+										key4: true,
+									},
+									rewardReceiver: map[string]privacy.PaymentAddress{
+										incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
+										incKey4.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+									},
+									stakingTx: map[string]common.Hash{
+										key:  *tempHash,
+										key4: *tempHash,
+									},
+								},
+								shardCommonPool: []incognitokey.CommitteePublicKey{},
+								swapRule:        swapRuleOut2Keys,
+							},
+						},
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									mu: unCommitteedMu,
+								},
+							},
+						},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey0, *incKey5, *incKey2, *incKey3, *incKey6,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey, *incKey4,
+										},
+									},
+									autoStake: map[string]bool{
+										key:  true,
+										key4: true,
+									},
+									rewardReceiver: map[string]privacy.PaymentAddress{
+										incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
+										incKey4.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+									},
+									stakingTx: map[string]common.Hash{
+										key:  *tempHash,
+										key4: *tempHash,
+									},
+									mu: unCommitteedMu,
+								},
+								swapRule:        swapRuleOut2Keys,
+								shardCommonPool: []incognitokey.CommitteePublicKey{},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.SWAP_SHARD_ACTION,
+							"",
+							strings.Join([]string{key, key4}, ","),
+							"0",
+							"0",
+						},
+					},
+					MaxShardCommitteeSize:            7,
+					ActiveShards:                     1,
+					ConsensusStateDB:                 sDB,
+					RandomNumber:                     5000,
+					NumberOfFixedShardBlockValidator: 1,
+					MinShardCommitteeSize:            1,
+				},
+			},
+			want:    &BeaconCommitteeStateHash{},
+			want1:   committeeChangeProcessSwapShardInstruction2KeysOut,
+			want2:   [][]string{},
+			wantErr: false,
+		},
+		{
+			name: "Swap in and out 2 keys",
+			fields: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						beaconHeight: 5,
+						beaconHash:   *hash,
+						finalState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey0, *incKey, *incKey4, *incKey5, *incKey6, *incKey7,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey2, *incKey3,
+										},
+									},
+									mu: finalMu,
+									autoStake: map[string]bool{
+										key0: true,
+										key:  true,
+									},
+									rewardReceiver: map[string]privacy.PaymentAddress{
+										incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+										incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
+									},
+									stakingTx: map[string]common.Hash{
+										key0: *hash,
+										key:  *tempHash,
+									},
+								},
+								swapRule:        swapRuleInAndOut2Keys,
+								shardCommonPool: []incognitokey.CommitteePublicKey{},
+							},
+						},
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									mu: unCommitteedMu,
+								},
+							},
+						},
+					},
+				},
+			},
+			fieldsAfterProcess: fields{
+				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
+					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
+						uncommittedState: &BeaconCommitteeStateV2{
+							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+								beaconCommitteeStateBase: beaconCommitteeStateBase{
+									beaconCommittee: []incognitokey.CommitteePublicKey{},
+									shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey4, *incKey5, *incKey6, *incKey7, *incKey2, *incKey3,
+										},
+									},
+									shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+										0: []incognitokey.CommitteePublicKey{
+											*incKey0, *incKey,
+										},
+									},
+									autoStake: map[string]bool{
+										key0: true,
+										key:  true,
+									},
+									rewardReceiver: map[string]privacy.PaymentAddress{
+										incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
+										incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
+									},
+									stakingTx: map[string]common.Hash{
+										key0: *hash,
+										key:  *tempHash,
+									},
+									mu: unCommitteedMu,
+								},
+								swapRule:        swapRuleInAndOut2Keys,
+								shardCommonPool: []incognitokey.CommitteePublicKey{},
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					BeaconInstructions: [][]string{
+						[]string{
+							instruction.SWAP_SHARD_ACTION,
+							strings.Join([]string{key2, key3}, ","),
+							strings.Join([]string{key0, key}, ","),
+							"0",
+							"0",
+						},
+					},
+					MaxShardCommitteeSize: 6,
+					ActiveShards:          1,
+					ConsensusStateDB:      sDB,
+					RandomNumber:          5000,
+				},
+			},
+			want:    &BeaconCommitteeStateHash{},
+			want1:   committeeChangeProcessSwapShardInstruction2Keys,
+			want2:   [][]string{},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -4230,6 +4267,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 			if !reflect.DeepEqual(got2, tt.want2) {
 				t.Errorf("BeaconCommitteeEngineV2.UpdateCommitteeState() got2 = %v, want2 = %v", got2, tt.want2)
 			}
+
 			if !reflect.DeepEqual(tt.fields.uncommittedBeaconCommitteeStateV2,
 				tt.fieldsAfterProcess.uncommittedBeaconCommitteeStateV2) {
 				t.Errorf(`BeaconCommitteeEngineV2.UpdateCommitteeState() tt.fields.uncommittedBeaconCommitteeStateV2 = %v,

@@ -35,19 +35,37 @@ type BeaconCommitteeState interface {
 	Terms() map[string]uint64
 }
 
+//fromB and toB need to be different from null
+func cloneBeaconCommitteeStateFromTo(fromB, toB BeaconCommitteeState) {
+	if fromB == nil {
+		return
+	}
+	switch fromB.Version() {
+	case SELF_SWAP_SHARD_VERSION:
+		toB.(*BeaconCommitteeStateV1).cloneFrom(*fromB.(*BeaconCommitteeStateV1))
+	case SLASHING_VERSION:
+		toB.(*BeaconCommitteeStateV2).cloneFrom(*fromB.(*BeaconCommitteeStateV2))
+	case DCS_VERSION:
+		toB.(*BeaconCommitteeStateV3).cloneFrom(*fromB.(*BeaconCommitteeStateV3))
+	case STATE_TEST_VERSION:
+		toB = fromB
+	}
+}
+
 func cloneBeaconCommitteeStateFrom(state BeaconCommitteeState) BeaconCommitteeState {
+	if state == nil {
+		return nil
+	}
 	var res BeaconCommitteeState
-	if state != nil {
-		switch state.Version() {
-		case SELF_SWAP_SHARD_VERSION:
-			res = state.(*BeaconCommitteeStateV1).clone()
-		case SLASHING_VERSION:
-			res = state.(*BeaconCommitteeStateV2).clone()
-		case DCS_VERSION:
-			res = state.(*BeaconCommitteeStateV3).clone()
-		case STATE_TEST_VERSION:
-			res = state
-		}
+	switch state.Version() {
+	case SELF_SWAP_SHARD_VERSION:
+		res = state.(*BeaconCommitteeStateV1).clone()
+	case SLASHING_VERSION:
+		res = state.(*BeaconCommitteeStateV2).clone()
+	case DCS_VERSION:
+		res = state.(*BeaconCommitteeStateV3).clone()
+	case STATE_TEST_VERSION:
+		res = state
 	}
 	return res
 }

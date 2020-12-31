@@ -26,6 +26,14 @@ func (engine BeaconCommitteeEngineV2) Version() uint {
 	return SLASHING_VERSION
 }
 
+//Clone :
+func (engine *BeaconCommitteeEngineV2) Clone() BeaconCommitteeEngine {
+	res := &BeaconCommitteeEngineV2{
+		beaconCommitteeEngineSlashingBase: *engine.beaconCommitteeEngineSlashingBase.Clone().(*beaconCommitteeEngineSlashingBase),
+	}
+	return res
+}
+
 // UpdateCommitteeState New flow
 // Store information from instructions into temp stateDB in env
 // When all thing done and no problems, in commit function, we read data in statedb and update
@@ -40,7 +48,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	oldState.Mu().RLock()
 	defer oldState.Mu().RUnlock()
 
-	engine.uncommittedState = cloneBeaconCommitteeStateFrom(oldState)
+	cloneBeaconCommitteeStateFromTo(oldState, engine.uncommittedState)
 	newState := engine.uncommittedState.(*BeaconCommitteeStateV2)
 
 	newState.Mu().Lock()
@@ -115,7 +123,6 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-
 		}
 	}
 

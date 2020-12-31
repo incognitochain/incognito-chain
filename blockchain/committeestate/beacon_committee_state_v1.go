@@ -54,6 +54,23 @@ func (b *BeaconCommitteeStateV1) Version() int {
 	return SELF_SWAP_SHARD_VERSION
 }
 
+func (b *BeaconCommitteeStateV1) Reset() {
+	b.reset()
+}
+
+func (b *BeaconCommitteeStateV1) reset() {
+	b.beaconCommitteeStateBase.reset()
+	b.currentEpochShardCandidate = []incognitokey.CommitteePublicKey{}
+	b.nextEpochShardCandidate = []incognitokey.CommitteePublicKey{}
+}
+
+func (b *BeaconCommitteeStateV1) cloneFrom(fromB BeaconCommitteeStateV1) {
+	b.reset()
+	b.beaconCommitteeStateBase.cloneFrom(fromB.beaconCommitteeStateBase)
+	copy(b.currentEpochShardCandidate, fromB.currentEpochShardCandidate)
+	copy(b.nextEpochShardCandidate, fromB.nextEpochShardCandidate)
+}
+
 func (b *BeaconCommitteeStateV1) clone() *BeaconCommitteeStateV1 {
 	newB := NewBeaconCommitteeStateV1()
 	newB.beaconCommitteeStateBase = *b.beaconCommitteeStateBase.clone()
@@ -231,6 +248,10 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		b.stakingTx,
 	)
 	return err
+}
+
+func (b BeaconCommitteeStateV1) AllCandidateSubstituteCommittees() []string {
+	return b.getAllCandidateSubstituteCommittee()
 }
 
 func (b *BeaconCommitteeStateV1) getAllCandidateSubstituteCommittee() []string {

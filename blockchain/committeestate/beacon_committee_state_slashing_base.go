@@ -61,6 +61,15 @@ func (b beaconCommitteeStateSlashingBase) SwapRule() SwapRule {
 	return b.swapRule
 }
 
+func (b *beaconCommitteeStateSlashingBase) cloneFrom(fromB beaconCommitteeStateSlashingBase) {
+	b.reset()
+	b.beaconCommitteeStateBase.cloneFrom(fromB.beaconCommitteeStateBase)
+	b.numberOfAssignedCandidates = fromB.numberOfAssignedCandidates
+	b.shardCommonPool = make([]incognitokey.CommitteePublicKey, len(fromB.shardCommonPool))
+	copy(b.shardCommonPool, fromB.shardCommonPool)
+	b.swapRule = cloneSwapRuleByVersion(fromB.swapRule)
+}
+
 func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingBase {
 	res := NewBeaconCommitteeStateSlashingBase()
 	res.beaconCommitteeStateBase = *b.beaconCommitteeStateBase.clone()
@@ -82,6 +91,10 @@ func (b *beaconCommitteeStateSlashingBase) reset() {
 
 func (b beaconCommitteeStateSlashingBase) Version() int {
 	panic("Implement version for committee state slashing")
+}
+
+func (b beaconCommitteeStateSlashingBase) AllCandidateSubstituteCommittees() []string {
+	return b.getAllCandidateSubstituteCommittee()
 }
 
 func (b beaconCommitteeStateSlashingBase) getAllCandidateSubstituteCommittee() []string {
@@ -129,6 +142,11 @@ func (b beaconCommitteeStateSlashingBase) UnassignedCommonPool() []string {
 	return commonPoolValidators
 }
 
+func (b beaconCommitteeStateSlashingBase) AllSubstituteCommittees() []string {
+	committees, _ := b.getAllSubstituteCommittees()
+	return committees
+}
+
 func (b beaconCommitteeStateSlashingBase) getAllSubstituteCommittees() ([]string, error) {
 	validators, err := b.beaconCommitteeStateBase.getAllSubstituteCommittees()
 	if err != nil {
@@ -164,6 +182,10 @@ func (b *beaconCommitteeStateSlashingBase) buildReturnStakingInstructionAndDelet
 		return returnStakingInstruction, committeeChange, err
 	}
 	return returnStakingInstruction, committeeChange, nil
+}
+
+func (b *beaconCommitteeStateSlashingBase) SetNumberOfAssignedCandidates(numberOfAssignedCandidates int) {
+	b.numberOfAssignedCandidates = numberOfAssignedCandidates
 }
 
 func buildReturnStakingInstruction(
@@ -439,7 +461,6 @@ func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 			if !has {
 				return committeeChange, returnStakingInstruction, errors.New("Can't find staker info")
 			}
-
 			committeeChange.NextEpochShardCandidateRemoved =
 				append(committeeChange.NextEpochShardCandidateRemoved, unstakeInstruction.CommitteePublicKeysStruct[index])
 

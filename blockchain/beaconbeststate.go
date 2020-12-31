@@ -444,7 +444,7 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.featureStateDB = target.featureStateDB.Copy()
 	beaconBestState.rewardStateDB = target.rewardStateDB.Copy()
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
-	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine.Clone()
+	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine.Clone() //TODO: @tin add here in version 2 and 3
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
 	return nil
 }

@@ -32,6 +32,14 @@ func (engine *beaconCommitteeEngineSlashingBase) InitCommitteeState(env *BeaconC
 	engine.finalState.SetSwapRule(SwapRuleByEnv(env))
 }
 
+//Clone :
+func (engine *beaconCommitteeEngineSlashingBase) Clone() BeaconCommitteeEngine {
+	res := &beaconCommitteeEngineSlashingBase{
+		beaconCommitteeEngineBase: *engine.beaconCommitteeEngineBase.Clone().(*beaconCommitteeEngineBase),
+	}
+	return res
+}
+
 //SplitReward ...
 func (engine *beaconCommitteeEngineSlashingBase) SplitReward(
 	env *BeaconCommitteeStateEnvironment) (

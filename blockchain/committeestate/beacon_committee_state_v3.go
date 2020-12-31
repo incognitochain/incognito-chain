@@ -44,6 +44,20 @@ func NewBeaconCommitteeStateV3WithValue(
 	}
 }
 
+func (b *BeaconCommitteeStateV3) cloneFrom(fromB BeaconCommitteeStateV3) {
+	b.reset()
+	b.beaconCommitteeStateSlashingBase.cloneFrom(fromB.beaconCommitteeStateSlashingBase)
+
+	for i, v := range fromB.syncPool {
+		b.syncPool[i] = make([]incognitokey.CommitteePublicKey, len(v))
+		copy(b.syncPool[i], v)
+	}
+
+	for i, v := range fromB.terms {
+		b.terms[i] = v
+	}
+}
+
 func (b *BeaconCommitteeStateV3) reset() {
 	b.beaconCommitteeStateSlashingBase.reset()
 	b.syncPool = map[byte][]incognitokey.CommitteePublicKey{}

@@ -27,6 +27,14 @@ func (engine BeaconCommitteeEngineV3) Version() uint {
 	return DCS_VERSION
 }
 
+//Clone :
+func (engine *BeaconCommitteeEngineV3) Clone() BeaconCommitteeEngine {
+	res := &BeaconCommitteeEngineV3{
+		beaconCommitteeEngineSlashingBase: *engine.beaconCommitteeEngineSlashingBase.Clone().(*beaconCommitteeEngineSlashingBase),
+	}
+	return res
+}
+
 func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 	*BeaconCommitteeStateHash, *CommitteeChange, [][]string, error) {
 	var err error
@@ -37,8 +45,7 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 
 	oldState.Mu().RLock()
 	defer oldState.Mu().RUnlock()
-
-	engine.uncommittedState = cloneBeaconCommitteeStateFrom(oldState)
+	cloneBeaconCommitteeStateFromTo(oldState, engine.uncommittedState)
 	newState := engine.uncommittedState.(*BeaconCommitteeStateV3)
 
 	newState.Mu().Lock()
@@ -138,7 +145,7 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 }
 
 //GenerateAssignInstruction generate assign instructions for assign from syncing pool to shard pending pool
-func (engine *BeaconCommitteeEngineV3) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int, beaconHeight uint64) ([]*instruction.AssignInstruction, []string, map[byte][]string) {
+func (engine *BeaconCommitteeEngineV3) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int, beaconHeight uint64) []*instruction.AssignInstruction {
 	assignInstructions := []*instruction.AssignInstruction{}
 
 	for i := 0; i < activeShards; i++ {
@@ -167,5 +174,5 @@ func (engine *BeaconCommitteeEngineV3) GenerateAssignInstruction(rand int64, ass
 		}
 	}
 
-	return assignInstructions, []string{}, make(map[byte][]string)
+	return assignInstructions
 }
