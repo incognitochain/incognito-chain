@@ -134,7 +134,7 @@ func (p *portalRedeemFromLiquidationPoolProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	totalPrv, err := calTotalLiquidationByExchangeRates(meta.RedeemAmount, liquidateByTokenID)
+	totalPrv, err := calMintedPRVCollateralForRedeemFromLiquidationPoolV2(meta.RedeemAmount, liquidateByTokenID)
 
 	if err != nil {
 		Logger.log.Errorf("Calculate total liquidation error %v", err)
