@@ -638,7 +638,7 @@ func updateCustodianStateAfterReqUnlockCollateralV3(
 			tokenCollateralAmountToUpdate := uint64(0)
 			if unlockedAmount >= tokenValueLocked {
 				unlockedAmount -= tokenValueLocked
-				tokenCollateralAmountToUpdate = lockedTokenAmounts[tokenID][tokenCollateralID]
+				tokenCollateralAmountToUpdate = lockedTokenAmountToProcess
 			} else {
 				tokenCollateralAmountToUpdate, err = convertRateTool.ConvertFromUSD(tokenCollateralID, unlockedAmount)
 				unlockedAmount = 0
