@@ -51,6 +51,9 @@ func (engine BeaconCommitteeEngineV1) GetCandidateShardWaitingForNextRandom() []
 func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 	*BeaconCommitteeStateHash, *CommitteeChange, [][]string, error) {
 	engine.finalState.Mu().RLock()
+	if engine.uncommittedState == nil {
+		engine.uncommittedState = NewBeaconCommitteeStateV1()
+	}
 	cloneBeaconCommitteeStateFromTo(engine.finalState, engine.uncommittedState)
 	engine.finalState.Mu().RUnlock()
 	var err error

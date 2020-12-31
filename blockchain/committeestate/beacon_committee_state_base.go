@@ -68,7 +68,7 @@ func (b *beaconCommitteeStateBase) reset() {
 
 func (b *beaconCommitteeStateBase) cloneFrom(fromB beaconCommitteeStateBase) {
 	b.reset()
-	b.beaconCommittee = make([]incognitokey.CommitteePublicKey, len(b.beaconCommittee))
+	b.beaconCommittee = make([]incognitokey.CommitteePublicKey, len(fromB.beaconCommittee))
 	copy(b.beaconCommittee, fromB.beaconCommittee)
 
 	for i, v := range fromB.shardCommittee {
@@ -198,7 +198,9 @@ func (b beaconCommitteeStateBase) Hash() (*BeaconCommitteeStateHash, error) {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
 	}
 	validatorArr := append([]string{}, beaconCommitteeStr...)
-
+	// beacon committee
+	/*Logger.log.Info("[dcs] validatorArr:", validatorArr)*/
+	/*Logger.log.Info("[dcs] beaconCommitteeStr:", beaconCommitteeStr)*/
 	tempBeaconCommitteeAndValidatorHash, err := common.GenerateHashFromStringArray(validatorArr)
 	// Shard candidate root: shard current candidate + shard next candidate
 
@@ -227,11 +229,13 @@ func (b beaconCommitteeStateBase) Hash() (*BeaconCommitteeStateHash, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
 	}
+
 	hashes := &BeaconCommitteeStateHash{
 		BeaconCommitteeAndValidatorHash: tempBeaconCommitteeAndValidatorHash,
 		ShardCommitteeAndValidatorHash:  tempShardCommitteeAndValidatorHash,
 		AutoStakeHash:                   tempAutoStakingHash,
 	}
+
 	return hashes, nil
 }
 

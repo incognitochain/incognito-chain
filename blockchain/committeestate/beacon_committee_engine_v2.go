@@ -47,7 +47,9 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 
 	oldState.Mu().RLock()
 	defer oldState.Mu().RUnlock()
-
+	if engine.uncommittedState == nil {
+		engine.uncommittedState = NewBeaconCommitteeStateV2()
+	}
 	cloneBeaconCommitteeStateFromTo(oldState, engine.uncommittedState)
 	newState := engine.uncommittedState.(*BeaconCommitteeStateV2)
 
