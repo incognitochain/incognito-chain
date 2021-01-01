@@ -199,8 +199,6 @@ func (b beaconCommitteeStateBase) Hash() (*BeaconCommitteeStateHash, error) {
 	}
 	validatorArr := append([]string{}, beaconCommitteeStr...)
 	// beacon committee
-	/*Logger.log.Info("[dcs] validatorArr:", validatorArr)*/
-	/*Logger.log.Info("[dcs] beaconCommitteeStr:", beaconCommitteeStr)*/
 	tempBeaconCommitteeAndValidatorHash, err := common.GenerateHashFromStringArray(validatorArr)
 	// Shard candidate root: shard current candidate + shard next candidate
 

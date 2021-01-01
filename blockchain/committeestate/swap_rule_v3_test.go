@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
@@ -32,55 +33,58 @@ func Test_swapRuleV3_GenInstructions(t *testing.T) {
 		want3 []string
 		want4 []string
 	}{
-		/*{*/
-		//name: "Valid input",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//shardID: 0,
-		//committees: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7,
-		//key8, key9, key10, key11, key12,
-		//},
-		//substitutes: []string{
-		//key13, key14, key15, key16, key17, key18, key19,
-		//},
-		//minCommitteeSize:        4,
-		//maxCommitteeSize:        8,
-		//typeIns:                 instruction.SWAP_BY_END_EPOCH,
-		//numberOfFixedValidators: 8,
-		//penalty: map[string]signaturecounter.Penalty{
-		//key0:  signaturecounter.Penalty{},
-		//key11: signaturecounter.Penalty{},
-		//},
-		//},
-		//want: &instruction.SwapShardInstruction{
-		//InPublicKeys: []string{
-		//key13, key14,
-		//},
-		//InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-		//*incKey13, *incKey14,
-		//},
-		//OutPublicKeys: []string{
-		//key11,
-		//},
-		//OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
-		//*incKey11,
-		//},
-		//ChainID: 0,
-		//Type:    instruction.SWAP_BY_END_EPOCH,
-		//},
-		//want1: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7,
-		//key8, key9, key10, key12, key13, key14,
-		//},
-		//want2: []string{
-		//key15, key16, key17, key18, key19,
-		//},
-		//want3: []string{
-		//key11,
-		//},
-		//want4: []string{},
-		/*},*/
+		{
+			name: "[valid input]",
+			s:    &swapRuleV3{},
+			args: args{
+				shardID: 1,
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				},
+				substitutes: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				},
+				minCommitteeSize:        20,
+				maxCommitteeSize:        20,
+				typeIns:                 instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidators: 8,
+				penalty: map[string]signaturecounter.Penalty{
+					key2:  signaturecounter.Penalty{},
+					key12: signaturecounter.Penalty{},
+				},
+			},
+			want: &instruction.SwapShardInstruction{
+				InPublicKeys: []string{
+					key0, key,
+				},
+				InPublicKeyStructs: []incognitokey.CommitteePublicKey{
+					*incKey0, *incKey,
+				},
+				OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
+					*incKey12, *incKey8,
+				},
+				OutPublicKeys: []string{
+					key12, key8,
+				},
+				ChainID: 1,
+				Type:    instruction.SWAP_BY_END_EPOCH,
+			},
+			want1: []string{
+				key0, key, key2, key3, key4, key5, key6, key7,
+				key9, key10, key11, key13, key14, key15, key16, key17, key18, key19,
+				key0, key,
+			},
+			want2: []string{
+				key2, key3, key4, key5, key6, key7, key8, key9,
+			},
+			want3: []string{
+				key12,
+			},
+			want4: []string{
+				key8,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -118,50 +122,24 @@ func Test_swapRuleV3_AssignOffset(t *testing.T) {
 		args args
 		want int
 	}{
-		/*{*/
-		//name: "lenCommittees < max assign percent",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenShardSubstitute:      5,
-		//lenCommittees:           4,
-		//numberOfFixedValidators: 4,
-		//minCommitteeSize:        4,
-		//},
-		//want: 1,
-		//},
-		//{
-		//name: "lenCommittees - numberOfFixedValidators < lenCommittees / 3",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenShardSubstitute:      10,
-		//lenCommittees:           12,
-		//numberOfFixedValidators: 11,
-		//minCommitteeSize:        4,
-		//},
-		//want: 1,
-		//},
-		//{
-		//name: "lenCommittees - numberOfFixedValidators >= lenCommittees / 3",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenShardSubstitute:      12,
-		//lenCommittees:           12,
-		//numberOfFixedValidators: 8,
-		//minCommitteeSize:        4,
-		//},
-		//want: 2,
-		//},
-		//{
-		//name: "lenCommittees = numberOfFixedValidators >= max asign per shard",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenShardSubstitute:      12,
-		//lenCommittees:           8,
-		//numberOfFixedValidators: 8,
-		//minCommitteeSize:        4,
-		//},
-		//want: 0,
-		/*},*/
+		{
+			name: "lenCommittees < max assign percent",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommittees:           4,
+				numberOfFixedValidators: 4,
+			},
+			want: 1,
+		},
+		{
+			name: "lenCommittees >= max assign percent",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommittees:           10,
+				numberOfFixedValidators: 8,
+			},
+			want: 1,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -177,9 +155,9 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 	type args struct {
 		committees              []string
 		substitutes             []string
-		maxSwapInPercent        int
 		numberOfFixedValidators int
 		maxCommitteeSize        int
+		maxSwapInPercent        int
 	}
 	tests := []struct {
 		name  string
@@ -189,34 +167,48 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 		want1 []string
 		want2 []string
 	}{
-		/*{*/
-		//name: "Valid input",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//committees: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
-		//},
-		//substitutes: []string{
-		//key0, key, key2, key3, key4,
-		//},
-		//maxSwapInPercent:        6,
-		//numberOfFixedValidators: 8,
-		//},
-		//want: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key0, key,
-		//},
-		//want1: []string{
-		//key2, key3, key4,
-		//},
-		//want2: []string{
-		//key0, key,
-		//},
-		/*},*/
+		{
+			name: "Valid input",
+			s:    &swapRuleV3{},
+			args: args{
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				},
+				substitutes: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				},
+				maxCommitteeSize:        64,
+				maxSwapInPercent:        8,
+				numberOfFixedValidators: 8,
+			},
+			want: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key0, key, key2, key3,
+			},
+			want1: []string{
+				key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+			},
+			want2: []string{
+				key0, key, key2, key3,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			got, got1, got2 := s.swapInAfterSwapOut(tt.args.committees, tt.args.substitutes, tt.args.maxSwapInPercent, tt.args.numberOfFixedValidators, tt.args.maxCommitteeSize)
+			got, got1, got2 := s.swapInAfterSwapOut(tt.args.committees, tt.args.substitutes, tt.args.numberOfFixedValidators, tt.args.maxCommitteeSize, tt.args.maxSwapInPercent)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("swapRuleV3.swapInAfterSwapOut() got = %v, want %v", got, tt.want)
 			}
@@ -235,7 +227,6 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 		lenCommitteesAfterSwapOut int
 		lenSubstitutes            int
 		maxSwapInPercent          int
-		numberOfFixedValidators   int
 		maxCommitteeSize          int
 	}
 	tests := []struct {
@@ -244,72 +235,50 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 		args args
 		want int
 	}{
-		/*{*/
-		//name: "substitutes < committees && committees > dcsMinCommitteeSize ",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesAfterSwapOut: 24,
-		//lenSubstitutes:            20,
-		//maxSwapInPercent:          6,
-		//numberOfFixedValidators:   8,
-		//},
-		//want: 0,
-		//},
-		//{
-		//name: "substitutes < committees && committees <= dcsMinCommitteeSize && committees / 6 + committees <= dcsMaxCommitteeSize",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesAfterSwapOut: 12,
-		//lenSubstitutes:            5,
-		//maxSwapInPercent:          6,
-		//numberOfFixedValidators:   8,
-		//},
-		//want: 2,
-		//},
-		//{
-		//name: "substitutes >= committees && committees / 6 + committees <= dcsMaxCommitteeSize",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesAfterSwapOut: 12,
-		//lenSubstitutes:            5,
-		//maxSwapInPercent:          6,
-		//numberOfFixedValidators:   8,
-		//},
-		//want: 2,
-		//},
-		//{
-		//name: "substitutes >= committees && committees / 6 + committees > dcsMaxCommitteeSize ",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesAfterSwapOut: 48,
-		//lenSubstitutes:            60,
-		//maxSwapInPercent:          6,
-		//numberOfFixedValidators:   8,
-		//},
-		//want: 3,
-		//},
-		//{
-		//name: "substitutes >= committees && committees / 6 + committees <= dcsMaxCommitteeSize ",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesAfterSwapOut: 24,
-		//lenSubstitutes:            40,
-		//maxSwapInPercent:          6,
-		//numberOfFixedValidators:   8,
-		//},
-		//want: 4,
-		//},
-		//{
-		//name: "committees >= substitutes && committees < maxSwapInPercent",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesAfterSwapOut: 4,
-		//lenSubstitutes:            2,
-		//maxSwapInPercent:          6,
-		//numberOfFixedValidators:   4,
-		//},
-		//want: 1,
-		/*},*/
+		{
+			name: "substitutes < committees / 8 && committees + offset <= maxCommitteeSize",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: 25,
+				lenSubstitutes:            2,
+				maxSwapInPercent:          8,
+				maxCommitteeSize:          64,
+			},
+			want: 2,
+		},
+		{
+			name: "substitutes < committees / 8 && committees + offset > maxCommitteeSize",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: 60,
+				lenSubstitutes:            5,
+				maxSwapInPercent:          8,
+				maxCommitteeSize:          64,
+			},
+			want: 4,
+		},
+		{
+			name: "substitutes >= committees / 8 && committees + offset <= maxCommitteeSize",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: 25,
+				lenSubstitutes:            5,
+				maxSwapInPercent:          8,
+				maxCommitteeSize:          64,
+			},
+			want: 3,
+		},
+		{
+			name: "substitutes >= committees / 8 && committees + offset > maxCommitteeSize",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: 60,
+				lenSubstitutes:            20,
+				maxSwapInPercent:          8,
+				maxCommitteeSize:          64,
+			},
+			want: 4,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -323,14 +292,13 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 
 func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 	type args struct {
-		committees                        []string
-		substitutes                       []string
-		lenBeforeSlashedCommittees        int
-		lenSlashedCommittees              int
-		maxSwapOutPercent                 int
-		numberOfFixedValidators           int
-		maxCommitteeeSubstituteRangeTimes int
-		minCommitteeSize                  int
+		committees                 []string
+		substitutes                []string
+		lenBeforeSlashedCommittees int
+		lenSlashedCommittees       int
+		numberOfFixedValidators    int
+		minCommitteeSize           int
+		maxSwapOutPercent          int
 	}
 	tests := []struct {
 		name  string
@@ -339,67 +307,46 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 		want  []string
 		want1 []string
 	}{
-		/*{*/
-		//name: "Valid input",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//committees: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
-		//key12, key13, key14, key15, key16, key17, key18, key19,
-		//},
-		//substitutes: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
-		//key12, key13, key14, key15, key16, key17, key18, key19,
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
-		//key12, key13, key14, key15, key16, key17, key18, key19,
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
-		//key12, key13, key14, key15, key16, key17, key18, key19,
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
-		//key12, key13, key14, key15, key16, key17, key18, key19,
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
-		//key12, key13, key14, key15, key16, key17, key18, key19,
-		//key12, key13, key14, key15, key16, key17, key18, key19,
-		//},
-		//numberOfFixedValidators:           8,
-		//lenSlashedCommittees:              2,
-		//maxSwapOutPercent:                 6,
-		//lenBeforeSlashedCommittees:        22,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11,
-		//key12, key13, key14, key15, key16, key17, key18, key19,
-		//},
-		//want1: []string{},
-		//},
-		//{
-		//name: "Reach dcsMinCommitteeSize",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//committees: []string{
-		//key0, key, key2, key3, key4, key5, key6,
-		//},
-		//substitutes: []string{
-		//key7,
-		//},
-		//numberOfFixedValidators:           4,
-		//lenSlashedCommittees:              0,
-		//maxSwapOutPercent:                 6,
-		//lenBeforeSlashedCommittees:        7,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: []string{
-		//key0, key, key2, key3, key5, key6,
-		//},
-		//want1: []string{
-		//key4,
-		//},
-		/*},*/
+		{
+			name: "[valid input]",
+			s:    &swapRuleV3{},
+			args: args{
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key0,
+				},
+				substitutes: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				},
+				lenBeforeSlashedCommittees: 64,
+				lenSlashedCommittees:       3,
+				maxSwapOutPercent:          8,
+				numberOfFixedValidators:    8,
+				minCommitteeSize:           64,
+			},
+			want: []string{
+				key0, key, key2, key3, key4, key5, key6, key7,
+				key13, key14, key15, key16, key17, key18, key19,
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key0,
+			},
+			want1: []string{
+				key8, key9, key10, key11, key12,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			got, got1 := s.normalSwapOut(tt.args.committees, tt.args.substitutes, tt.args.lenBeforeSlashedCommittees, tt.args.lenSlashedCommittees, tt.args.maxSwapOutPercent, tt.args.numberOfFixedValidators, tt.args.minCommitteeSize)
+			got, got1 := s.normalSwapOut(tt.args.committees, tt.args.substitutes, tt.args.lenBeforeSlashedCommittees, tt.args.lenSlashedCommittees, tt.args.numberOfFixedValidators, tt.args.minCommitteeSize, tt.args.maxSwapOutPercent)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("swapRuleV3.normalSwapOut() got = %v, want %v", got, tt.want)
 			}
@@ -412,13 +359,12 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 
 func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 	type args struct {
-		lenCommitteesBeforeSlash          int
-		lenSubstitutes                    int
-		lenSlashedCommittees              int
-		maxSwapOutPercent                 int
-		numberOfFixedValidators           int
-		maxCommitteeeSubstituteRangeTimes int
-		minCommitteeSize                  int
+		lenCommitteesBeforeSlash int
+		lenSubstitutes           int
+		lenSlashedCommittees     int
+		maxSwapOutPercent        int
+		numberOfFixedValidators  int
+		minCommitteeSize         int
 	}
 	tests := []struct {
 		name string
@@ -426,136 +372,74 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 		args args
 		want int
 	}{
-		/*{*/
-		//name: "slashed nodes >= lenCommittees / 6",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesBeforeSlash:          15,
-		//lenSubstitutes:                    10,
-		//lenSlashedCommittees:              5,
-		//maxSwapOutPercent:                 6,
-		//numberOfFixedValidators:           8,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: 0,
-		//},
-		//{
-		//name: "slashed nodes < lenCommittees / 6 && lenSubstitutes >= 4 * lenCommittees && lenCommittees >= dcsMaxCommitteeSize",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesBeforeSlash:          51,
-		//lenSubstitutes:                    210,
-		//numberOfFixedValidators:           8,
-		//lenSlashedCommittees:              5,
-		//maxSwapOutPercent:                 6,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: 3,
-		//},
-		//{
-		//name: "slashed nodes < lenCommittees / 6 && lenSubstitutes >= 4 * lenCommittees && lenCommittees < dcsMaxCommitteeSize",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesBeforeSlash:          40,
-		//lenSubstitutes:                    210,
-		//numberOfFixedValidators:           8,
-		//lenSlashedCommittees:              4,
-		//maxSwapOutPercent:                 6,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: 0,
-		//},
-		//{
-		//name: "slashed nodes < lenCommittees / 6 && lenSubstitutes < 4 * lenCommittees && lenCommittees < dcsMinCommitteeSize",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesBeforeSlash:          12,
-		//lenSubstitutes:                    30,
-		//numberOfFixedValidators:           8,
-		//lenSlashedCommittees:              1,
-		//maxSwapOutPercent:                 6,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: 0,
-		//},
-		//{
-		//name: "slashed nodes < lenCommittees / 6 && lenSubstitutes < 4 * lenCommittees && lenCommittees >= dcsMinCommitteeSize && lenCommittees - slashed nodes - normal swap out nodes >= dcsMinCommitteeSize",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesBeforeSlash:          20,
-		//lenSubstitutes:                    60,
-		//numberOfFixedValidators:           8,
-		//lenSlashedCommittees:              2,
-		//maxSwapOutPercent:                 6,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: 1,
-		//},
-		//{
-		//name: "slashed nodes < lenCommittees / 6 && lenSubstitutes < 4 * lenCommittees && lenCommittees >= dcsMinCommitteeSize && lenCommittees - slashed nodes - normal swap out nodes < dcsMinCommitteeSize && normal swap out nodes >= 0",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesBeforeSlash:          20,
-		//lenSubstitutes:                    60,
-		//numberOfFixedValidators:           8,
-		//lenSlashedCommittees:              2,
-		//maxSwapOutPercent:                 6,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: 1,
-		//},
-		//{
-		//name: "slashed nodes < lenCommittees / 6 && lenSubstitutes < 4 * lenCommittees && lenCommittees >= dcsMinCommitteeSize && lenCommittees - slashed nodes - normal swap out nodes < dcsMinCommitteeSize && normal swap out nodes < 0 - 1",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesBeforeSlash:          15,
-		//lenSubstitutes:                    30,
-		//numberOfFixedValidators:           8,
-		//lenSlashedCommittees:              1,
-		//maxSwapOutPercent:                 6,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: 0,
-		//},
-		//{
-		//name: "slashed nodes < lenCommittees / 6 && lenSubstitutes < 4 * lenCommittees && lenCommittees >= dcsMinCommitteeSize && lenCommittees - slashed nodes - normal swap out nodes < dcsMinCommitteeSize && normal swap out nodes < 0 - 2",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesBeforeSlash:          16,
-		//lenSubstitutes:                    30,
-		//numberOfFixedValidators:           8,
-		//lenSlashedCommittees:              1,
-		//maxSwapOutPercent:                 6,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: 0,
-		//},
-		//{
-		//name: "lenCommitteesBeforeSlash - lenSlashedCommittees - numberOfFixedValidators < assignOffset",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesBeforeSlash:          4,
-		//lenSubstitutes:                    2,
-		//numberOfFixedValidators:           4,
-		//lenSlashedCommittees:              0,
-		//maxSwapOutPercent:                 6,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: 0,
-		//},
-		//{
-		//name: "Reach dcs min size",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommitteesBeforeSlash:          7,
-		//lenSubstitutes:                    1,
-		//numberOfFixedValidators:           4,
-		//lenSlashedCommittees:              0,
-		//maxSwapOutPercent:                 6,
-		//maxCommitteeeSubstituteRangeTimes: 4,
-		//},
-		//want: 1,
-		/*},*/
+		{
+			name: "slashed nodes >= committees / 3",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesBeforeSlash: 25,
+				lenSubstitutes:           10,
+				lenSlashedCommittees:     10,
+				maxSwapOutPercent:        8,
+				numberOfFixedValidators:  8,
+				minCommitteeSize:         64,
+			},
+			want: 0,
+		},
+		{
+
+			name: "slashed nodes >= committees / 8",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesBeforeSlash: 25,
+				lenSubstitutes:           10,
+				lenSlashedCommittees:     3,
+				maxSwapOutPercent:        8,
+				numberOfFixedValidators:  8,
+				minCommitteeSize:         64,
+			},
+			want: 0,
+		},
+		{
+
+			name: "slashed nodes < committees / 8 && lenCommitteesBeforeSlash < minCommitteeSize",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesBeforeSlash: 25,
+				lenSubstitutes:           10,
+				lenSlashedCommittees:     2,
+				maxSwapOutPercent:        8,
+				numberOfFixedValidators:  8,
+				minCommitteeSize:         64,
+			},
+			want: 0,
+		},
+		{
+			name: "slashed nodes < committees / 8 && lenCommitteesBeforeSlash >= minCommitteeSize && lenSubstitutes == 0",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesBeforeSlash: 64,
+				lenSubstitutes:           0,
+				lenSlashedCommittees:     5,
+				maxSwapOutPercent:        8,
+				numberOfFixedValidators:  8,
+				minCommitteeSize:         64,
+			},
+			want: 0,
+		},
+		{
+
+			name: "slashed nodes < committees / 8 && lenCommitteesBeforeSlash >= minCommitteeSize && lenSubstitutes > 0 ",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesBeforeSlash: 64,
+				lenSubstitutes:           10,
+				lenSlashedCommittees:     5,
+				maxSwapOutPercent:        8,
+				numberOfFixedValidators:  8,
+				minCommitteeSize:         64,
+			},
+			want: 3,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -571,7 +455,6 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 	type args struct {
 		committees              []string
 		penalty                 map[string]signaturecounter.Penalty
-		minCommitteeSize        int
 		numberOfFixedValidators int
 		maxSlashOutPercent      int
 	}
@@ -582,130 +465,125 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 		want  []string
 		want1 []string
 	}{
-		/*{*/
-		//name: "slashingOffset = 0",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//committees: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7,
-		//},
-		//penalty: map[string]signaturecounter.Penalty{
-		//key0: signaturecounter.Penalty{},
-		//key:  signaturecounter.Penalty{},
-		//},
-		//minCommitteeSize:        4,
-		//numberOfFixedValidators: 8,
-		//maxSlashOutPercent:      3,
-		//},
-		//want: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7,
-		//},
-		//want1: []string{},
-		//},
-		//{
-		//name: "slashingOffset <= len(committees) / 3 && len(committees) - slashingOffset - numberOfFixedValidators < 0",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//committees: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
-		//},
-		//penalty: map[string]signaturecounter.Penalty{
-		//key8:  signaturecounter.Penalty{},
-		//key9:  signaturecounter.Penalty{},
-		//key10: signaturecounter.Penalty{},
-		//key11: signaturecounter.Penalty{},
-		//key12: signaturecounter.Penalty{},
-		//},
-		//minCommitteeSize:        4,
-		//numberOfFixedValidators: 8,
-		//maxSlashOutPercent:      3,
-		//},
-		//want: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key13, key14,
-		//},
-		//want1: []string{
-		//key8, key9, key10, key11, key12,
-		//},
-		//},
-		//{
-		//name: "slashingOffset <= len(committees) / 3 && len(committees) - slashingOffset - numberOfFixedValidators >= 0",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//committees: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
-		//},
-		//penalty: map[string]signaturecounter.Penalty{
-		//key0: signaturecounter.Penalty{},
-		//key:  signaturecounter.Penalty{},
-		//key8: signaturecounter.Penalty{},
-		//key9: signaturecounter.Penalty{},
-		//},
-		//minCommitteeSize:        4,
-		//numberOfFixedValidators: 8,
-		//maxSlashOutPercent:      3,
-		//},
-		//want: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7,
-		//},
-		//want1: []string{
-		//key8, key9,
-		//},
-		//},
-		//{
-		//name: "slashingOffset <= len(penalty)",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//committees: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
-		//},
-		//penalty: map[string]signaturecounter.Penalty{
-		//key8:  signaturecounter.Penalty{},
-		//key9:  signaturecounter.Penalty{},
-		//key10: signaturecounter.Penalty{},
-		//key11: signaturecounter.Penalty{},
-		//},
-		//minCommitteeSize:        4,
-		//numberOfFixedValidators: 8,
-		//maxSlashOutPercent:      3,
-		//},
-		//want: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key12, key13, key14,
-		//},
-		//want1: []string{
-		//key8, key9, key10, key11,
-		//},
-		//},
-		//{
-		//name: "slashingOffset > len(penalty)",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//committees: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
-		//},
-		//penalty: map[string]signaturecounter.Penalty{
-		//key8:  signaturecounter.Penalty{},
-		//key9:  signaturecounter.Penalty{},
-		//key10: signaturecounter.Penalty{},
-		//key11: signaturecounter.Penalty{},
-		//key12: signaturecounter.Penalty{},
-		//key13: signaturecounter.Penalty{},
-		//},
-		//minCommitteeSize:        4,
-		//numberOfFixedValidators: 8,
-		//maxSlashOutPercent:      3,
-		//},
-		//want: []string{
-		//key0, key, key2, key3, key4, key5, key6, key7, key13, key14,
-		//},
-		//want1: []string{
-		//key8, key9, key10, key11, key12,
-		//},
-		/*},*/
+		{
+			name: "slashingOffset = 0",
+			s:    &swapRuleV3{},
+			args: args{
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7,
+				},
+				penalty: map[string]signaturecounter.Penalty{
+					key0: signaturecounter.Penalty{},
+					key:  signaturecounter.Penalty{},
+				},
+				numberOfFixedValidators: 8,
+				maxSlashOutPercent:      3,
+			},
+			want: []string{
+				key0, key, key2, key3, key4, key5, key6, key7,
+			},
+			want1: []string{},
+		},
+		{
+			name: "slashingOffset <= len(committees) / 3 && len(committees) - slashingOffset - numberOfFixedValidators < 0",
+			s:    &swapRuleV3{},
+			args: args{
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
+				},
+				penalty: map[string]signaturecounter.Penalty{
+					key8:  signaturecounter.Penalty{},
+					key9:  signaturecounter.Penalty{},
+					key10: signaturecounter.Penalty{},
+					key11: signaturecounter.Penalty{},
+					key12: signaturecounter.Penalty{},
+				},
+				numberOfFixedValidators: 8,
+				maxSlashOutPercent:      3,
+			},
+			want: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key13, key14,
+			},
+			want1: []string{
+				key8, key9, key10, key11, key12,
+			},
+		},
+		{
+			name: "slashingOffset <= len(committees) / 3 && len(committees) - slashingOffset - numberOfFixedValidators >= 0",
+			s:    &swapRuleV3{},
+			args: args{
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				},
+				penalty: map[string]signaturecounter.Penalty{
+					key0: signaturecounter.Penalty{},
+					key:  signaturecounter.Penalty{},
+					key8: signaturecounter.Penalty{},
+					key9: signaturecounter.Penalty{},
+				},
+				numberOfFixedValidators: 8,
+				maxSlashOutPercent:      3,
+			},
+			want: []string{
+				key0, key, key2, key3, key4, key5, key6, key7,
+			},
+			want1: []string{
+				key8, key9,
+			},
+		},
+		{
+			name: "slashingOffset <= len(penalty)",
+			s:    &swapRuleV3{},
+			args: args{
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
+				},
+				penalty: map[string]signaturecounter.Penalty{
+					key8:  signaturecounter.Penalty{},
+					key9:  signaturecounter.Penalty{},
+					key10: signaturecounter.Penalty{},
+					key11: signaturecounter.Penalty{},
+				},
+				numberOfFixedValidators: 8,
+				maxSlashOutPercent:      3,
+			},
+			want: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key12, key13, key14,
+			},
+			want1: []string{
+				key8, key9, key10, key11,
+			},
+		},
+		{
+			name: "slashingOffset > len(penalty)",
+			s:    &swapRuleV3{},
+			args: args{
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9, key10, key11, key12, key13, key14,
+				},
+				penalty: map[string]signaturecounter.Penalty{
+					key8:  signaturecounter.Penalty{},
+					key9:  signaturecounter.Penalty{},
+					key10: signaturecounter.Penalty{},
+					key11: signaturecounter.Penalty{},
+					key12: signaturecounter.Penalty{},
+					key13: signaturecounter.Penalty{},
+				},
+				numberOfFixedValidators: 8,
+				maxSlashOutPercent:      3,
+			},
+			want: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key13, key14,
+			},
+			want1: []string{
+				key8, key9, key10, key11, key12,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			got, got1 := s.slashingSwapOut(tt.args.committees, tt.args.penalty, tt.args.minCommitteeSize, tt.args.numberOfFixedValidators, tt.args.maxSlashOutPercent)
+			got, got1 := s.slashingSwapOut(tt.args.committees, tt.args.penalty, tt.args.numberOfFixedValidators, tt.args.maxSlashOutPercent)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("swapRuleV3.slashingSwapOut() got = %v, want %v", got, tt.want)
 			}
@@ -719,7 +597,6 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 func Test_swapRuleV3_getSlashingOffset(t *testing.T) {
 	type args struct {
 		lenCommittees           int
-		minCommitteeSize        int
 		numberOfFixedValidators int
 		maxSlashOutPercent      int
 	}
@@ -729,44 +606,41 @@ func Test_swapRuleV3_getSlashingOffset(t *testing.T) {
 		args args
 		want int
 	}{
-		/*{*/
-		//name: "fixed validators = committees",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommittees:           8,
-		//minCommitteeSize:        4,
-		//numberOfFixedValidators: 8,
-		//maxSlashOutPercent:      3,
-		//},
-		//want: 0,
-		//},
-		//{
-		//name: "fixed validators + lenCommittees / 3 > lenCommittees",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommittees:           10,
-		//minCommitteeSize:        4,
-		//numberOfFixedValidators: 8,
-		//maxSlashOutPercent:      3,
-		//},
-		//want: 2,
-		//},
-		//{
-		//name: "fixed validators + lenCommittees / 3 <= lenCommittees",
-		//s:    &swapRuleV3{},
-		//args: args{
-		//lenCommittees:           15,
-		//minCommitteeSize:        4,
-		//numberOfFixedValidators: 8,
-		//maxSlashOutPercent:      3,
-		//},
-		//want: 5,
-		/*},*/
+		{
+			name: "fixed validators = committees",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommittees:           8,
+				numberOfFixedValidators: 8,
+				maxSlashOutPercent:      3,
+			},
+			want: 0,
+		},
+		{
+			name: "fixed validators + lenCommittees / 3 > lenCommittees",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommittees:           10,
+				numberOfFixedValidators: 8,
+				maxSlashOutPercent:      3,
+			},
+			want: 2,
+		},
+		{
+			name: "fixed validators + lenCommittees / 3 <= lenCommittees",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommittees:           15,
+				numberOfFixedValidators: 8,
+				maxSlashOutPercent:      3,
+			},
+			want: 5,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			if got := s.getSlashingOffset(tt.args.lenCommittees, tt.args.minCommitteeSize, tt.args.numberOfFixedValidators, tt.args.maxSlashOutPercent); got != tt.want {
+			if got := s.getSlashingOffset(tt.args.lenCommittees, tt.args.numberOfFixedValidators, tt.args.maxSlashOutPercent); got != tt.want {
 				t.Errorf("swapRuleV3.getSlashingOffset() = %v, want %v", got, tt.want)
 			}
 		})

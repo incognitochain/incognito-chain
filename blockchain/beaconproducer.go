@@ -400,7 +400,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 				instructions = append(instructions, beaconRootInst)
 			}
 		}
-	} else if curView.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+	} else {
 		if blockchain.IsFirstBeaconHeightInEpoch(newBeaconHeight) {
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
 			env := curView.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
@@ -414,9 +414,18 @@ func (curView *BeaconBestState) GenerateInstruction(
 					instructions = append(instructions, swapShardInstruction.ToString())
 				}
 			}
+
+			assignSyncIntructions, err := curView.beaconCommitteeEngine.GenerateAssignSyncInstructions(env)
+			if err != nil {
+				return [][]string{}, err
+			}
+			for _, assignSyncIntruction := range assignSyncIntructions {
+				if !assignSyncIntruction.IsEmpty() {
+					instructions = append(instructions, assignSyncIntruction.ToString())
+				}
+			}
 		}
 	}
-
 	// Stop Auto Stake
 	for _, stopAutoStakeInstruction := range shardInstruction.stopAutoStakeInstructions {
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())

@@ -1,11 +1,12 @@
 package instruction
 
 const (
-	SWAP_SHARD_ACTION      = "swapshard"
+	SWAP_SHARD_ACTION      = "swap_shard"
 	SWAP_ACTION            = "swap"
 	RANDOM_ACTION          = "random"
 	STAKE_ACTION           = "stake"
 	ASSIGN_ACTION          = "assign"
+	ASSIGN_SYNC_ACTION     = "assign_sync"
 	STOP_AUTO_STAKE_ACTION = "stopautostake"
 	SET_ACTION             = "set"
 	RETURN_ACTION          = "return"

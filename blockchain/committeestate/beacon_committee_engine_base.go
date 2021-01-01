@@ -292,3 +292,5 @@ func (engine *beaconCommitteeEngineBase) SplitReward(
 ) {
 	panic("Implement this function")
 }
+
+func (engine *beaconCommitteeEngineBase) GenerateAssignSyncInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.AssignSyncInstruction, error)

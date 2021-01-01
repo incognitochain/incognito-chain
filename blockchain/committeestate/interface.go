@@ -41,6 +41,7 @@ type BeaconCommitteeEngine interface {
 	GenerateAllSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
 	SplitReward(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
 	ActiveShards() int
+	GenerateAssignSyncInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.AssignSyncInstruction, error)
 }
 
 //ShardCommitteeEngine :
