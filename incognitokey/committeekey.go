@@ -223,3 +223,12 @@ func DeepCopy(committeePublicKeys []CommitteePublicKey) []CommitteePublicKey {
 	}
 	return newCommitteePublicKeys
 }
+
+func InsertCommitteePublicKeyToSlice(list []CommitteePublicKey, value CommitteePublicKey, index int) []CommitteePublicKey {
+	if len(list) == index { // nil or empty slice or after last element
+		return append(list, value)
+	}
+	list = append(list[:index+1], list[index:]...) // index < len(a)
+	list[index] = value
+	return list
+}

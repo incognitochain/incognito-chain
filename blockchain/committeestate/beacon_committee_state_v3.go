@@ -88,16 +88,14 @@ func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePub
 	return b.syncPool
 }
 
-func (b *BeaconCommitteeStateV3) assign(
-	candidates []string, rand int64, activeShards int, committeeChange *CommitteeChange,
-	oldState BeaconCommitteeState,
-) *CommitteeChange {
-	assignedCandidates := b.getAssignCandidates(candidates, rand, activeShards, oldState)
-	for shardID, tempCandidates := range assignedCandidates {
-		tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
-		committeeChange.ShardSyncingAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
-		b.syncPool[shardID] = append(b.syncPool[shardID], tempCandidateStructs...)
-	}
+func (b *BeaconCommitteeStateV3) assignToSync(
+	shardID byte,
+	candidates []string,
+	committeeChange *CommitteeChange) *CommitteeChange {
+	tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(candidates)
+	committeeChange.ShardSyncingAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
+	b.syncPool[shardID] = append(b.syncPool[shardID], tempCandidateStructs...)
+
 	return committeeChange
 }
 
@@ -109,30 +107,24 @@ func (b *BeaconCommitteeStateV3) assignAfterNormalSwapOut(
 	assignedCandidates := b.getAssignCandidates(candidates, rand, activeShards, oldState)
 
 	for shardID, tempCandidates := range assignedCandidates {
-		tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
 		if shardID == oldShardID {
-			committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
-			b.shardSubstitute[shardID] = append(b.shardSubstitute[shardID], tempCandidateStructs...)
+			newCommitteeChange = b.assignToPending(tempCandidates, rand, shardID, newCommitteeChange)
 		} else {
-			committeeChange.ShardSyncingAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
-			b.syncPool[shardID] = append(b.syncPool[shardID], tempCandidateStructs...)
+			newCommitteeChange = b.assignToSync(shardID, tempCandidates, newCommitteeChange)
 		}
 	}
 	return newCommitteeChange
 }
 
-//TODO: @tin reimplement here
-func (b *BeaconCommitteeStateV3) assignToShard(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
+func (b *BeaconCommitteeStateV3) assignToPending(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
 	newCommitteeChange := committeeChange
 
 	for _, candidate := range candidates {
 		key := incognitokey.CommitteePublicKey{}
 		key.FromString(candidate)
 		newCommitteeChange.ShardSubstituteAdded[shardID] = append(newCommitteeChange.ShardSubstituteAdded[shardID], key)
-		randomPosition := 0
-		for randomPosition >= len(b.shardCommittee[shardID]) {
-			randomPosition = calculateCandidatePosition(candidate, rand, len(b.shardCommittee[shardID])+len(b.shardSubstitute[shardID]))
-		}
+		randomOffset := calculateCandidatePosition(candidate, rand, len(b.shardSubstitute[shardID]))
+		b.shardSubstitute[shardID] = incognitokey.InsertCommitteePublicKeyToSlice(b.shardSubstitute[shardID], key, randomOffset)
 	}
 
 	return newCommitteeChange
@@ -147,22 +139,22 @@ func (b *BeaconCommitteeStateV3) processAssignInstruction(
 ) (
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	newCommitteeChange := committeeChange
-
 	newCommitteeChange.ShardSyncingRemoved[byte(assignInstruction.ChainID)] =
 		append(newCommitteeChange.ShardSyncingRemoved[byte(assignInstruction.ChainID)], assignInstruction.ShardCandidatesStruct...)
+	b.syncPool[byte(assignInstruction.ChainID)] = b.syncPool[byte(assignInstruction.ChainID)][len(assignInstruction.ShardCandidates):]
+
 	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, assignInstruction.ShardCandidates, newCommitteeChange, returnStakingInstruction)
 	if err != nil {
-		return committeeChange, returnStakingInstruction, err
+		return newCommitteeChange, returnStakingInstruction, err
 	}
-	newReturnStakingInstruction := returnStakingInstruction
-	committeeChange = b.assignToShard(
+
+	committeeChange = b.assignToPending(
 		candidates,
 		env.RandomNumber,
 		byte(assignInstruction.ChainID),
 		newCommitteeChange)
 
-	b.syncPool[byte(assignInstruction.ChainID)] = b.syncPool[byte(assignInstruction.ChainID)][len(assignInstruction.ShardCandidates):]
-	return newCommitteeChange, newReturnStakingInstruction, nil
+	return newCommitteeChange, returnStakingInstruction, nil
 }
 
 func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
@@ -196,4 +188,55 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 	newCommitteeChange = b.assignAfterNormalSwapOut(candidates, env.RandomNumber, env.ActiveShards, newCommitteeChange, oldState, env.ShardID)
 
 	return newCommitteeChange, newReturnStakingInstruction, nil
+}
+
+func (b *BeaconCommitteeStateV3) processAssignWithRandomInstruction(
+	rand int64,
+	activeShards int,
+	committeeChange *CommitteeChange,
+	oldState BeaconCommitteeState,
+) *CommitteeChange {
+	newCommitteeChange, candidates := b.updateCandidatesByRandom(committeeChange, oldState)
+	assignedCandidates := b.getAssignCandidates(candidates, rand, activeShards, oldState)
+	for shardID, candidates := range assignedCandidates {
+		newCommitteeChange = b.assignToSync(shardID, candidates, newCommitteeChange)
+	}
+	return newCommitteeChange
+}
+
+func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
+	swapShardInstruction *instruction.SwapShardInstruction,
+	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
+	returnStakingInstruction *instruction.ReturnStakeInstruction,
+	oldState BeaconCommitteeState,
+) (
+	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
+	shardID := byte(swapShardInstruction.ChainID)
+
+	newCommitteeChange, _, normalSwapOutCommittees, slashingCommittees, err := b.processNormalSwap(swapShardInstruction, env, committeeChange, oldState)
+
+	// process after swap for assign old committees to current shard pool
+	newCommitteeChange, returnStakingInstruction, err = b.processAfterNormalSwap(env,
+		normalSwapOutCommittees,
+		newCommitteeChange,
+		returnStakingInstruction,
+		oldState,
+	)
+	if err != nil {
+		return nil, returnStakingInstruction, err
+	}
+
+	//process slashing after normal swap out
+	returnStakingInstruction, newCommitteeChange, err = b.processSlashing(
+		env,
+		slashingCommittees,
+		returnStakingInstruction,
+		newCommitteeChange,
+	)
+	if err != nil {
+		return nil, returnStakingInstruction, err
+	}
+	newCommitteeChange.SlashingCommittee[shardID] = append(committeeChange.SlashingCommittee[shardID], slashingCommittees...)
+
+	return newCommitteeChange, returnStakingInstruction, nil
 }

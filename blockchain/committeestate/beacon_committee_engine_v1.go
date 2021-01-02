@@ -162,11 +162,11 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 	return hashes, committeeChange, incurredInstructions, nil
 }
 
-func (engine *BeaconCommitteeEngineV1) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int, beaconHeight uint64) []*instruction.AssignInstruction {
+func (engine *BeaconCommitteeEngineV1) AssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction {
 	candidates, _ := incognitokey.CommitteeKeyListToString(engine.finalState.CandidateShardWaitingForCurrentRandom())
 	numberOfPendingValidator := make(map[byte]int)
 	shardPendingValidator := engine.finalState.ShardSubstitute()
-	for i := 0; i < activeShards; i++ {
+	for i := 0; i < len(engine.finalState.ShardCommittee()); i++ {
 		if pendingValidators, ok := shardPendingValidator[byte(i)]; ok {
 			numberOfPendingValidator[byte(i)] = len(pendingValidators)
 		} else {
@@ -174,10 +174,10 @@ func (engine *BeaconCommitteeEngineV1) GenerateAssignInstruction(rand int64, ass
 		}
 	}
 	assignedCandidates := make(map[byte][]string)
-	shuffledCandidate := shuffleShardCandidate(candidates, rand)
+	shuffledCandidate := shuffleShardCandidate(candidates, env.RandomNumber)
 	for _, candidate := range shuffledCandidate {
-		shardID := calculateCandidateShardID(candidate, rand, activeShards)
-		if numberOfPendingValidator[shardID]+1 <= assignOffset {
+		shardID := calculateCandidateShardID(candidate, env.RandomNumber, len(engine.finalState.ShardCommittee()))
+		if numberOfPendingValidator[shardID]+1 <= env.AssignOffset {
 			assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
 			numberOfPendingValidator[shardID] += 1
 

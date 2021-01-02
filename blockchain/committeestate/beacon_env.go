@@ -69,3 +69,11 @@ func NewBeaconCommitteeStateEnvironmentForSwapRule(currentEpoch, swapRuleV3Epoch
 		SwapRuleV3Epoch: swapRuleV3Epoch,
 	}
 }
+
+func NewBeaconCommitteeStateEnvironmentForAssigningToPendingList(randomNumber int64, assignOffset int, beaconHeight uint64) *BeaconCommitteeStateEnvironment {
+	return &BeaconCommitteeStateEnvironment{
+		RandomNumber: randomNumber,
+		AssignOffset: assignOffset,
+		BeaconHeight: beaconHeight,
+	}
+}

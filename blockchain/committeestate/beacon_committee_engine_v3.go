@@ -123,6 +123,7 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
+
 		case instruction.ASSIGN_ACTION:
 			assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(inst)
 			if err != nil {

@@ -372,16 +372,19 @@ func (curView *BeaconBestState) GenerateInstruction(
 		randomInstruction, randomNumber := curView.generateRandomInstruction()
 		instructions = append(instructions, randomInstruction)
 		Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v, %+v", randomInstruction, newBeaconHeight)
-		assignInstructions := curView.beaconCommitteeEngine.GenerateAssignInstruction(
-			randomNumber,
-			blockchain.config.ChainParams.AssignOffset,
-			curView.ActiveShards,
-			newBeaconHeight,
-		)
-		for _, assignInstruction := range assignInstructions {
-			instructions = append(instructions, assignInstruction.ToString())
+
+		if curView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+			env := committeestate.NewBeaconCommitteeStateEnvironmentForAssigningToPendingList(
+				randomNumber,
+				blockchain.config.ChainParams.AssignOffset,
+				newBeaconHeight,
+			)
+			assignInstructions := curView.beaconCommitteeEngine.AssignInstructions(env)
+			for _, assignInstruction := range assignInstructions {
+				instructions = append(instructions, assignInstruction.ToString())
+			}
+			Logger.log.Info("assignInstructions:", assignInstructions)
 		}
-		Logger.log.Info("assignInstructions:", assignInstructions)
 	}
 
 	// Generate swap shard instruction at block height %chainParamEpoch == 0
@@ -415,13 +418,13 @@ func (curView *BeaconBestState) GenerateInstruction(
 				}
 			}
 
-			assignSyncIntructions, err := curView.beaconCommitteeEngine.GenerateAssignSyncInstructions(env)
+			assignInstructions := curView.beaconCommitteeEngine.AssignInstructions(env)
 			if err != nil {
 				return [][]string{}, err
 			}
-			for _, assignSyncIntruction := range assignSyncIntructions {
-				if !assignSyncIntruction.IsEmpty() {
-					instructions = append(instructions, assignSyncIntruction.ToString())
+			for _, assignInstruction := range assignInstructions {
+				if !assignInstruction.IsEmpty() {
+					instructions = append(instructions, assignInstruction.ToString())
 				}
 			}
 		}

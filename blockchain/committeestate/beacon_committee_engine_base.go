@@ -276,7 +276,7 @@ func (engine *beaconCommitteeEngineBase) GenerateAllSwapShardInstructions(
 	return []*instruction.SwapShardInstruction{}, nil
 }
 
-func (engine *beaconCommitteeEngineBase) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int, beaconHeight uint64) []*instruction.AssignInstruction {
+func (engine *beaconCommitteeEngineBase) AssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction {
 	return []*instruction.AssignInstruction{}
 }
 
@@ -292,5 +292,3 @@ func (engine *beaconCommitteeEngineBase) SplitReward(
 ) {
 	panic("Implement this function")
 }
-
-func (engine *beaconCommitteeEngineBase) GenerateAssignSyncInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.AssignSyncInstruction, error)
