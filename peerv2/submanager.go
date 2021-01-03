@@ -117,21 +117,19 @@ func (sub *SubManager) Subscribe(forced bool) error {
 	if len(relayShardIDs) == 0 {
 		relayShardIDs = []byte{255}
 	}
-	if len(relayShardIDs) > 0 {
-		nodePK, _ := new(incognitokey.CommitteePublicKey).ToBase58()
-		validator := sub.consensusData.GetOneValidator()
-		if validator != nil {
-			nodePK = validator.MiningKey.GetPublicKeyBase58()
-		}
-		newTopics, _, err = sub.registerToProxy(
-			nodePK,
-			"",
-			"",
-			relayShardIDs,
-		)
-		if err != nil {
-			return err
-		}
+	nodePK, _ := new(incognitokey.CommitteePublicKey).ToBase58()
+	validator := sub.consensusData.GetOneValidator()
+	if validator != nil {
+		nodePK = validator.MiningKey.GetPublicKeyBase58()
+	}
+	newTopics, _, err = sub.registerToProxy(
+		nodePK,
+		"",
+		"",
+		relayShardIDs,
+	)
+	if err != nil {
+		return err
 	}
 
 	// Registering mining

@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"strconv"
 )
 
 func (blockchain *BlockChain) processPortalReward(
@@ -22,6 +23,7 @@ func (blockchain *BlockChain) processPortalReward(
 	}
 
 	reqStatus := instructions[2]
+	metaType, _ := strconv.Atoi(instructions[0])
 	if reqStatus == "portalRewardInst" {
 		// update reward amount for custodian
 		UpdateCustodianRewards(currentPortalState, actionData.Rewards)
@@ -32,7 +34,11 @@ func (blockchain *BlockChain) processPortalReward(
 		}
 
 		// update locked collateral for rewards base on holding public tokens
-		UpdateLockedCollateralForRewards(currentPortalState)
+		if metaType == metadata.PortalRewardMetaV3 {
+			UpdateLockedCollateralForRewardsV3(currentPortalState, portalParams)
+		} else if metaType == metadata.PortalRewardMeta {
+			UpdateLockedCollateralForRewards(currentPortalState, portalParams)
+		}
 
 		// store reward at beacon height into db
 		err = statedb.StorePortalRewards(

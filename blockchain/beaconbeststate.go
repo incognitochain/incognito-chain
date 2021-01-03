@@ -381,10 +381,9 @@ func (beaconBestState *BeaconBestState) GetCommittee() []incognitokey.CommitteeP
 	return append(result, committee...)
 }
 
-func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey {
+func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int) {
 	id := GetProposerByTimeSlot(ts, beaconBestState.MinBeaconCommitteeSize)
-	committee := beaconBestState.GetBeaconCommittee()
-	return committee[id]
+	return beaconBestState.BeaconCommittee[id], id
 }
 
 func (beaconBestState *BeaconBestState) GetBlock() types.BlockInterface {
@@ -865,7 +864,7 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 	}
 	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
 	if err != nil {
-		return 0, fmt.Errorf("init beacon consensus statedb return error %+v", err)
+		return 0, fmt.Errorf("init beacon consensus statedb return error %v", err)
 	}
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }

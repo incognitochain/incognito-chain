@@ -256,7 +256,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				return NewTransactionErr(CommitOutputCoinError, err)
 			}
 			// get last byte
-			temp.PubKeyLastByteSender = params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			lastByteSender := params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			temp.PubKeyLastByteSender = common.GetShardIDFromLastByte(lastByteSender)
 
 			// sign Tx
 			temp.SigPubKey = params.tokenParams.Receiver[0].PaymentAddress.Pk
@@ -361,6 +362,14 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateType() bool {
 
 // ValidateTxWithCurrentMempool - validate for serrial number use in tx is double with other tx in mempool
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+	// check double snd outputs in mempool
+	poolSNDOutputsHashH := mr.GetSNDOutputsHashH()
+	duplicateSNDs := txCustomTokenPrivacy.validateDoubleSNDOutputsWithCurrentMempool(poolSNDOutputsHashH)
+	if duplicateSNDs != nil {
+		return duplicateSNDs
+	}
+
+	// check double spend
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	err := txCustomTokenPrivacy.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 	if err != nil {
@@ -423,7 +432,53 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) validateDoubleSpendTxWithCurren
 	return nil
 }
 
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) validateDoubleSNDOutputsWithCurrentMempool(poolSndOutputsHashH map[common.Hash][]common.Hash) error {
+	// check proof of PRV and pToken
+	if txCustomTokenPrivacy.Proof == nil && txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof == nil {
+		return errors.New("empty tx")
+	}
+
+	// collect serial number for PRV
+	temp := make(map[common.Hash]interface{})
+	if txCustomTokenPrivacy.Proof != nil {
+		for _, outputCoin := range txCustomTokenPrivacy.Proof.GetOutputCoins() {
+			hash := common.HashH(outputCoin.CoinDetails.GetSNDerivator().ToBytesS())
+			temp[hash] = nil
+		}
+	}
+	// collect serial number for pToken
+	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof != nil {
+		for _, outputCoin := range txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins() {
+			hash := common.HashH(outputCoin.CoinDetails.GetSNDerivator().ToBytesS())
+			temp[hash] = nil
+		}
+	}
+
+	// check with pool serial number in mempool
+	for _, listSndOutputs := range poolSndOutputsHashH {
+		for _, sndHash := range listSndOutputs {
+			if _, ok := temp[sndHash]; ok {
+				return fmt.Errorf("duplicate snd output with current mempool %v",
+					sndHash.String())
+			}
+		}
+	}
+	return nil
+}
+
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
+	if txCustomTokenPrivacy.Metadata != nil {
+		isContinued, err := txCustomTokenPrivacy.Metadata.ValidateTxWithBlockChain(&txCustomTokenPrivacy, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
+		// fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
+		if err != nil {
+			Logger.log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", txCustomTokenPrivacy.GetMetadataType(), txCustomTokenPrivacy.Hash().String(), isContinued, err)
+			return NewTransactionErr(RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", txCustomTokenPrivacy.Hash().String(), err))
+		}
+		if !isContinued {
+			return nil
+		}
+	}
+
 	err := txCustomTokenPrivacy.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 	if err != nil {
 		return NewTransactionErr(InvalidDoubleSpendPRVError, err)
@@ -719,6 +774,30 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ListSerialNumbersHashH() []comm
 	return result
 }
 
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ListSNDOutputsHashH() []common.Hash {
+	// tx normal
+	tx := txCustomTokenPrivacy.Tx
+	result := []common.Hash{}
+	if tx.Proof != nil {
+		for _, outputCoin := range tx.Proof.GetOutputCoins() {
+			hash := common.HashH(outputCoin.CoinDetails.GetSNDerivator().ToBytesS())
+			result = append(result, hash)
+		}
+	}
+	// tx ptoken data
+	customTokenPrivacy := txCustomTokenPrivacy.TxPrivacyTokenData
+	if customTokenPrivacy.TxNormal.Proof != nil {
+		for _, outputCoin := range customTokenPrivacy.TxNormal.Proof.GetOutputCoins() {
+			hash := common.HashH(outputCoin.CoinDetails.GetSNDerivator().ToBytesS())
+			result = append(result, hash)
+		}
+	}
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+	return result
+}
+
 // GetSigPubKey - return sig pubkey for pToken
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetSigPubKey() []byte {
 	return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.SigPubKey
@@ -879,7 +958,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 				return NewTransactionErr(CommitOutputCoinError, err)
 			}
 			// get last byte
-			temp.PubKeyLastByteSender = params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			lastByteSender := params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			temp.PubKeyLastByteSender = common.GetShardIDFromLastByte(lastByteSender)
 
 			// sign Tx
 			temp.SigPubKey = params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk

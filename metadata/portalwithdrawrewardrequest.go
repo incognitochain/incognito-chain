@@ -105,7 +105,7 @@ func (meta PortalRequestWithdrawReward) Hash() *common.Hash {
 	return &hash
 }
 
-func (meta *PortalRequestWithdrawReward) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (meta *PortalRequestWithdrawReward) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalRequestWithdrawRewardAction{
 		Meta:    *meta,
 		TxReqID: *tx.Hash(),
