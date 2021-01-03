@@ -238,10 +238,6 @@ func extractInstsFromShardBlock(
 		bc,
 		shardBlock.Header.ShardID,
 		shardBlock.Header.Height,
-		//	&shardBlock.Header.ProducerAddress,
-		//	shardBlock.Header.Height,
-		//	beaconBlocks,
-		//	shardBlock.Header.BeaconHeight,
 	)
 	if err != nil {
 		return nil, err

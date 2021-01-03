@@ -290,7 +290,7 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 			res.CrossShardBitMap = []int{}
 			res.Instruction = shardBlock.Body.Instructions
 			res.CommitteeFromBlock = shardBlock.Header.CommitteeFromBlock
-			instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockService.BlockChain, shardBlock.Header.ShardID)
+			instructions, err := blockchain.CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockService.BlockChain, shardBlock.Header.ShardID, shardBlock.Header.Height)
 			if err == nil {
 				res.Instruction = append(res.Instruction, instructions...)
 			}

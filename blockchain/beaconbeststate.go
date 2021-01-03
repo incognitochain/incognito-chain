@@ -383,7 +383,7 @@ func (beaconBestState *BeaconBestState) GetCommittee() []incognitokey.CommitteeP
 
 func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int) {
 	id := GetProposerByTimeSlot(ts, beaconBestState.MinBeaconCommitteeSize)
-	return beaconBestState.BeaconCommittee[id], id
+	return beaconBestState.GetBeaconCommittee()[id], id
 }
 
 func (beaconBestState *BeaconBestState) GetBlock() types.BlockInterface {
