@@ -225,7 +225,6 @@ func (b *beaconCommitteeStateSlashingBase) updateCandidatesByRandom(
 	candidateStructs := oldState.ShardCommonPool()[:b.numberOfAssignedCandidates]
 	candidates, _ := incognitokey.CommitteeKeyListToString(candidateStructs)
 	newCommitteeChange.NextEpochShardCandidateRemoved = append(newCommitteeChange.NextEpochShardCandidateRemoved, candidateStructs...)
-	b.numberOfAssignedCandidates = 0
 	return newCommitteeChange, candidates
 }
 
@@ -238,6 +237,7 @@ func (b *beaconCommitteeStateSlashingBase) processAssignWithRandomInstruction(
 	newCommitteeChange, candidates := b.updateCandidatesByRandom(committeeChange, oldState)
 	newCommitteeChange = b.assign(candidates, rand, activeShards, newCommitteeChange, oldState)
 	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
+	b.numberOfAssignedCandidates = 0
 	return newCommitteeChange
 }
 
@@ -268,7 +268,8 @@ func (b *beaconCommitteeStateSlashingBase) processNormalSwap(
 	swapShardInstruction *instruction.SwapShardInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
 	oldState BeaconCommitteeState) (
-	*CommitteeChange, []string, []string, []string, error) {
+	*CommitteeChange, []string, []string, []string, error,
+) {
 	shardID := byte(swapShardInstruction.ChainID)
 	newCommitteeChange := committeeChange
 	committees := oldState.ShardCommittee()[shardID]
@@ -331,9 +332,13 @@ func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 	shardID := byte(swapShardInstruction.ChainID)
 
 	newCommitteeChange, _, normalSwapOutCommittees, slashingCommittees, err := b.processNormalSwap(swapShardInstruction, env, committeeChange, oldState)
+	if err != nil {
+		return nil, returnStakingInstruction, err
+	}
 
 	// process after swap for assign old committees to current shard pool
-	newCommitteeChange, returnStakingInstruction, err = b.processAfterNormalSwap(env,
+	newCommitteeChange, returnStakingInstruction, err = b.processAfterNormalSwap(
+		env,
 		normalSwapOutCommittees,
 		newCommitteeChange,
 		returnStakingInstruction,

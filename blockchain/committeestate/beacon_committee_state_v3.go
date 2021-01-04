@@ -201,6 +201,7 @@ func (b *BeaconCommitteeStateV3) processAssignWithRandomInstruction(
 	for shardID, candidates := range assignedCandidates {
 		newCommitteeChange = b.assignToSync(shardID, candidates, newCommitteeChange)
 	}
+	b.numberOfAssignedCandidates = 0
 	return newCommitteeChange
 }
 

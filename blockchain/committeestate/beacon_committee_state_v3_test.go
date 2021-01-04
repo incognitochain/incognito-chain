@@ -2,10 +2,13 @@ package committeestate
 
 import (
 	"reflect"
+	"sync"
 	"testing"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
@@ -281,6 +284,13 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 }
 
 func TestBeaconCommitteeStateV3_cloneFrom(t *testing.T) {
+	initTestParams()
+	initLog()
+
+	mutex := &sync.RWMutex{}
+	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
+	txHash, _ := common.Hash{}.NewHashFromStr("123")
+
 	type fields struct {
 		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
 		syncPool                         map[byte][]incognitokey.CommitteePublicKey
@@ -294,7 +304,79 @@ func TestBeaconCommitteeStateV3_cloneFrom(t *testing.T) {
 		fields fields
 		args   args
 	}{
-		// TODO: Add test cases.
+		{
+			name: "[valid input]",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{},
+				syncPool:                         map[byte][]incognitokey.CommitteePublicKey{},
+				terms:                            map[string]uint64{},
+			},
+			args: args{
+				fromB: BeaconCommitteeStateV3{
+					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+						beaconCommitteeStateBase: beaconCommitteeStateBase{
+							beaconCommittee: []incognitokey.CommitteePublicKey{
+								*incKey0, *incKey, *incKey2, *incKey3,
+							},
+							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+								0: []incognitokey.CommitteePublicKey{
+									*incKey0, *incKey, *incKey2, *incKey3,
+								},
+								1: []incognitokey.CommitteePublicKey{
+									*incKey0, *incKey, *incKey2, *incKey3,
+								},
+							},
+							shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+								0: []incognitokey.CommitteePublicKey{
+									*incKey0, *incKey, *incKey2, *incKey3,
+								},
+								1: []incognitokey.CommitteePublicKey{
+									*incKey0, *incKey, *incKey2, *incKey3,
+								},
+							},
+							autoStake: map[string]bool{
+								key:  true,
+								key0: false,
+								key2: true,
+								key3: true,
+							},
+							rewardReceiver: map[string]privacy.PaymentAddress{
+								incKey.GetIncKeyBase58():  paymentAddress,
+								incKey0.GetIncKeyBase58(): paymentAddress,
+								incKey2.GetIncKeyBase58(): paymentAddress,
+								incKey3.GetIncKeyBase58(): paymentAddress,
+							},
+							stakingTx: map[string]common.Hash{
+								key:  *txHash,
+								key0: *txHash,
+								key2: *txHash,
+								key3: *txHash,
+							},
+							mu: mutex,
+						},
+						shardCommonPool: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey0, *incKey2, *incKey3,
+						},
+						numberOfAssignedCandidates: 1,
+						swapRule:                   NewSwapRuleV3(),
+					},
+					syncPool: map[byte][]incognitokey.CommitteePublicKey{
+						0: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey0, *incKey2, *incKey3,
+						},
+						1: []incognitokey.CommitteePublicKey{
+							*incKey, *incKey0, *incKey2, *incKey3,
+						},
+					},
+					terms: map[string]uint64{
+						key:  20,
+						key0: 10,
+						key2: 3,
+						key3: 30,
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -309,6 +391,13 @@ func TestBeaconCommitteeStateV3_cloneFrom(t *testing.T) {
 }
 
 func TestBeaconCommitteeStateV3_clone(t *testing.T) {
+	initTestParams()
+	initLog()
+
+	mutex := &sync.RWMutex{}
+	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
+	txHash, _ := common.Hash{}.NewHashFromStr("123")
+
 	type fields struct {
 		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
 		syncPool                         map[byte][]incognitokey.CommitteePublicKey
@@ -319,7 +408,135 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 		fields fields
 		want   *BeaconCommitteeStateV3
 	}{
-		// TODO: Add test cases.
+		{
+			name: "[Valid input]",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						beaconCommittee: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3,
+						},
+						shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+							0: []incognitokey.CommitteePublicKey{
+								*incKey0, *incKey, *incKey2, *incKey3,
+							},
+							1: []incognitokey.CommitteePublicKey{
+								*incKey0, *incKey, *incKey2, *incKey3,
+							},
+						},
+						shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+							0: []incognitokey.CommitteePublicKey{
+								*incKey0, *incKey, *incKey2, *incKey3,
+							},
+							1: []incognitokey.CommitteePublicKey{
+								*incKey0, *incKey, *incKey2, *incKey3,
+							},
+						},
+						autoStake: map[string]bool{
+							key:  true,
+							key0: false,
+							key2: true,
+							key3: true,
+						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey.GetIncKeyBase58():  paymentAddress,
+							incKey0.GetIncKeyBase58(): paymentAddress,
+							incKey2.GetIncKeyBase58(): paymentAddress,
+							incKey3.GetIncKeyBase58(): paymentAddress,
+						},
+						stakingTx: map[string]common.Hash{
+							key:  *txHash,
+							key0: *txHash,
+							key2: *txHash,
+							key3: *txHash,
+						},
+						mu: mutex,
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey0, *incKey2, *incKey3,
+					},
+					numberOfAssignedCandidates: 1,
+					swapRule:                   NewSwapRuleV3(),
+				},
+				syncPool: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey0, *incKey2, *incKey3,
+					},
+					1: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey0, *incKey2, *incKey3,
+					},
+				},
+				terms: map[string]uint64{
+					key:  20,
+					key0: 10,
+					key2: 3,
+					key3: 30,
+				},
+			},
+			want: &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						beaconCommittee: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3,
+						},
+						shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
+							0: []incognitokey.CommitteePublicKey{
+								*incKey0, *incKey, *incKey2, *incKey3,
+							},
+							1: []incognitokey.CommitteePublicKey{
+								*incKey0, *incKey, *incKey2, *incKey3,
+							},
+						},
+						shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
+							0: []incognitokey.CommitteePublicKey{
+								*incKey0, *incKey, *incKey2, *incKey3,
+							},
+							1: []incognitokey.CommitteePublicKey{
+								*incKey0, *incKey, *incKey2, *incKey3,
+							},
+						},
+						autoStake: map[string]bool{
+							key:  true,
+							key0: false,
+							key2: true,
+							key3: true,
+						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey.GetIncKeyBase58():  paymentAddress,
+							incKey0.GetIncKeyBase58(): paymentAddress,
+							incKey2.GetIncKeyBase58(): paymentAddress,
+							incKey3.GetIncKeyBase58(): paymentAddress,
+						},
+						stakingTx: map[string]common.Hash{
+							key:  *txHash,
+							key0: *txHash,
+							key2: *txHash,
+							key3: *txHash,
+						},
+						mu: mutex,
+					},
+					shardCommonPool: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey0, *incKey2, *incKey3,
+					},
+					numberOfAssignedCandidates: 1,
+					swapRule:                   NewSwapRuleV3(),
+				},
+				syncPool: map[byte][]incognitokey.CommitteePublicKey{
+					0: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey0, *incKey2, *incKey3,
+					},
+					1: []incognitokey.CommitteePublicKey{
+						*incKey, *incKey0, *incKey2, *incKey3,
+					},
+				},
+				terms: map[string]uint64{
+					key:  20,
+					key0: 10,
+					key2: 3,
+					key3: 30,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
