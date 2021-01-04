@@ -140,7 +140,7 @@ const (
 	// relaying header chain
 	TestnetBNBChainID        = "Binance-Chain-Ganges"
 	TestnetBTCChainID        = "Bitcoin-Testnet"
-	TestnetBTCDataFolderName = "btcrelayingv13"
+	TestnetBTCDataFolderName = "btcrelayingv14"
 
 	// BNB fullnode
 	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"

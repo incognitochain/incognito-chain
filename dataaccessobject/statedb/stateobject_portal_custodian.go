@@ -11,10 +11,14 @@ type CustodianState struct {
 	incognitoAddress       string
 	totalCollateral        uint64            // prv
 	freeCollateral         uint64            // prv
-	holdingPubTokens       map[string]uint64 // tokenID : amount
-	lockedAmountCollateral map[string]uint64 // tokenID : amount
-	remoteAddresses        map[string]string // tokenID : remote address
-	rewardAmount           map[string]uint64 // tokenID : amount
+	lockedAmountCollateral map[string]uint64 // ptokenID : amount
+	holdingPubTokens       map[string]uint64 // ptokenID : amount
+	remoteAddresses        map[string]string // ptokenID : remote address
+	rewardAmount           map[string]uint64 // ptokenID : amount
+
+	totalTokenCollaterals  map[string]uint64            // publicTokenID : amount
+	freeTokenCollaterals   map[string]uint64            // publicTokenID : amount
+	lockedTokenCollaterals map[string]map[string]uint64 // ptokenID: publicTokenID : amount
 }
 
 func (cs CustodianState) GetIncognitoAddress() string {
@@ -73,6 +77,46 @@ func (cs *CustodianState) SetRewardAmount(amount map[string]uint64) {
 	cs.rewardAmount = amount
 }
 
+func (cs CustodianState) GetTotalTokenCollaterals() map[string]uint64 {
+	return cs.totalTokenCollaterals
+}
+
+func (cs *CustodianState) SetTotalTokenCollaterals(totalTokenCollaterals map[string]uint64) {
+	cs.totalTokenCollaterals = totalTokenCollaterals
+}
+
+func (cs CustodianState) GetFreeTokenCollaterals() map[string]uint64 {
+	return cs.freeTokenCollaterals
+}
+
+func (cs *CustodianState) SetFreeTokenCollaterals(freeTokenCollaterals map[string]uint64) {
+	cs.freeTokenCollaterals = freeTokenCollaterals
+}
+
+func (cs CustodianState) GetLockedTokenCollaterals() map[string]map[string]uint64 {
+	return cs.lockedTokenCollaterals
+}
+
+func (cs *CustodianState) SetLockedTokenCollaterals(lockedTokenCollaterals map[string]map[string]uint64) {
+	cs.lockedTokenCollaterals = lockedTokenCollaterals
+}
+
+func (cs CustodianState) IsEmptyCollaterals() bool {
+	if cs.totalCollateral > 0 {
+		return false
+	}
+
+	if len(cs.totalTokenCollaterals) > 0 {
+		for _, amount := range cs.totalTokenCollaterals {
+			if amount > 0 {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
 func (cs CustodianState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		IncognitoAddress       string
@@ -82,6 +126,9 @@ func (cs CustodianState) MarshalJSON() ([]byte, error) {
 		LockedAmountCollateral map[string]uint64
 		RemoteAddresses        map[string]string
 		RewardAmount           map[string]uint64
+		TotalTokenCollaterals  map[string]uint64
+		FreeTokenCollaterals   map[string]uint64
+		LockedTokenCollaterals map[string]map[string]uint64
 	}{
 		IncognitoAddress:       cs.incognitoAddress,
 		TotalCollateral:        cs.totalCollateral,
@@ -90,6 +137,9 @@ func (cs CustodianState) MarshalJSON() ([]byte, error) {
 		LockedAmountCollateral: cs.lockedAmountCollateral,
 		RemoteAddresses:        cs.remoteAddresses,
 		RewardAmount:           cs.rewardAmount,
+		TotalTokenCollaterals:  cs.totalTokenCollaterals,
+		FreeTokenCollaterals:   cs.freeTokenCollaterals,
+		LockedTokenCollaterals: cs.lockedTokenCollaterals,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -106,6 +156,9 @@ func (cs *CustodianState) UnmarshalJSON(data []byte) error {
 		LockedAmountCollateral map[string]uint64
 		RemoteAddresses        map[string]string
 		RewardAmount           map[string]uint64
+		TotalTokenCollaterals  map[string]uint64
+		FreeTokenCollaterals   map[string]uint64
+		LockedTokenCollaterals map[string]map[string]uint64
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -118,25 +171,24 @@ func (cs *CustodianState) UnmarshalJSON(data []byte) error {
 	cs.lockedAmountCollateral = temp.LockedAmountCollateral
 	cs.remoteAddresses = temp.RemoteAddresses
 	cs.rewardAmount = temp.RewardAmount
+	cs.totalTokenCollaterals = temp.TotalTokenCollaterals
+	cs.freeTokenCollaterals = temp.FreeTokenCollaterals
+	cs.lockedTokenCollaterals = temp.LockedTokenCollaterals
 	return nil
 }
 
-// GetRemoteAddressByTokenID returns remote address for tokenID
-//func GetRemoteAddressByTokenID(addresses []RemoteAddress, tokenID string) (string, error) {
-//	for _, addr := range addresses {
-//		if addr.GetPTokenID() == tokenID {
-//			return addr.GetAddress(), nil
-//		}
-//	}
-//
-//	return "", errors.New("Can not found address with tokenID")
-//}
-
 func NewCustodianState() *CustodianState {
 	return &CustodianState{
-		rewardAmount:           map[string]uint64{},
-		holdingPubTokens:       map[string]uint64{},
+		incognitoAddress:       "",
+		totalCollateral:        0,
+		freeCollateral:         0,
 		lockedAmountCollateral: map[string]uint64{},
+		holdingPubTokens:       map[string]uint64{},
+		remoteAddresses:        map[string]string{},
+		rewardAmount:           map[string]uint64{},
+		totalTokenCollaterals:  map[string]uint64{},
+		freeTokenCollaterals:   map[string]uint64{},
+		lockedTokenCollaterals: map[string]map[string]uint64{},
 	}
 }
 
@@ -147,16 +199,23 @@ func NewCustodianStateWithValue(
 	holdingPubTokens map[string]uint64,
 	lockedAmountCollateral map[string]uint64,
 	remoteAddresses map[string]string,
-	rewardAmount map[string]uint64) *CustodianState {
+	rewardAmount map[string]uint64,
+	totalTokenCollaterals map[string]uint64,
+	freeTokenCollaterals map[string]uint64,
+	lockedTokenCollaterals map[string]map[string]uint64,
+) *CustodianState {
 
 	return &CustodianState{
 		incognitoAddress:       incognitoAddress,
 		totalCollateral:        totalCollateral,
 		freeCollateral:         freeCollateral,
-		holdingPubTokens:       holdingPubTokens,
 		lockedAmountCollateral: lockedAmountCollateral,
+		holdingPubTokens:       holdingPubTokens,
 		remoteAddresses:        remoteAddresses,
 		rewardAmount:           rewardAmount,
+		totalTokenCollaterals:  totalTokenCollaterals,
+		freeTokenCollaterals:   freeTokenCollaterals,
+		lockedTokenCollaterals: lockedTokenCollaterals,
 	}
 }
 

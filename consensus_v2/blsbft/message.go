@@ -111,7 +111,7 @@ func (e *BLSBFT) sendVote() error {
 				return NewConsensusError(UnExpectedError, err)
 			}
 			bridgeSig := []byte{}
-			if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
+			if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) || metadata.HasPortalInstructions(e.RoundData.Block.GetInstructions()){
 				bridgeSig, err = userKey.BriSignData(e.RoundData.Block.Hash().GetBytes())
 				if err != nil {
 					return NewConsensusError(UnExpectedError, err)

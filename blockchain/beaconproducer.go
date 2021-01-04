@@ -215,6 +215,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 
 	// build stateful instructions
 	statefulInsts := blockchain.buildStatefulInstructions(
+		curView,
 		curView.featureStateDB,
 		statefulActionsByShardID,
 		newBeaconBlock.Header.Height,
@@ -281,7 +282,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		shardBlock.Header.CrossShardBitMap,
 	)
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(
-		shardBlock.Body.Transactions, blockchain, shardID)
+		shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 
 	shardInstruction := curView.preProcessInstructionsFromShardBlock(instructions, shardID)
