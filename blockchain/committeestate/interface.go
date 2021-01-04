@@ -41,6 +41,7 @@ type BeaconCommitteeEngine interface {
 	SplitReward(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
 	ActiveShards() int
 	AssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
+	SyncingValidators() map[byte][]incognitokey.CommitteePublicKey
 }
 
 //ShardCommitteeEngine :

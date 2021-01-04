@@ -165,6 +165,10 @@ func (engine beaconCommitteeEngineBase) GetAllCandidateSubstituteCommittee() []s
 	return engine.finalState.AllCandidateSubstituteCommittees()
 }
 
+func (engine beaconCommitteeEngineBase) SyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
+	return map[byte][]incognitokey.CommitteePublicKey{}
+}
+
 func (engine beaconCommitteeEngineBase) compareHashes(hash1, hash2 *BeaconCommitteeStateHash) error {
 	if !hash1.BeaconCommitteeAndValidatorHash.IsEqual(&hash2.BeaconCommitteeAndValidatorHash) {
 		return NewCommitteeStateError(ErrCommitBeaconCommitteeState,

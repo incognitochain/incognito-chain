@@ -53,14 +53,12 @@ const (
 	MainnetAssignOffset      = 8
 	MainnetMaxSwapOrAssign   = 10
 
-	MainNetShardCommitteeSize       = 32
-	MainNetMinShardCommitteeSize    = 22
-	MainNetBeaconCommitteeSize      = 32
-	MainNetMinBeaconCommitteeSize   = 7
-	MainNetDcsMinShardCommitteeSize = 15
-	MainnetDcsMaxShardCommitteeSize = 51
-	MainNetActiveShards             = 8
-	MainNetStakingAmountShard       = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+	MainNetShardCommitteeSize     = 32
+	MainNetMinShardCommitteeSize  = 22
+	MainNetBeaconCommitteeSize    = 32
+	MainNetMinBeaconCommitteeSize = 7
+	MainNetActiveShards           = 8
+	MainNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	MainnetMinBeaconBlkInterval = 40 * time.Second //second
 	MainnetMaxBeaconBlkCreation = 10 * time.Second //second
@@ -120,12 +118,10 @@ const (
 	TestnetAssignOffset      = 2
 
 	//Committee size
-	TestNetShardCommitteeSize       = 32
-	TestNetMinShardCommitteeSize    = 4
-	TestNetBeaconCommitteeSize      = 4
-	TestNetMinBeaconCommitteeSize   = 4
-	TestnetDcsMinShardCommitteeSize = 15
-	TestnetDcsMaxShardCommitteeSize = 51
+	TestNetShardCommitteeSize     = 32
+	TestNetMinShardCommitteeSize  = 4
+	TestNetBeaconCommitteeSize    = 4
+	TestNetMinBeaconCommitteeSize = 4
 	//
 	TestNetActiveShards       = 8
 	TestNetStakingAmountShard = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
@@ -168,14 +164,12 @@ const (
 	Testnet2SwapOffset        = 1
 	Testnet2AssignOffset      = 2
 
-	TestNet2ShardCommitteeSize       = 32
-	TestNet2MinShardCommitteeSize    = 4
-	TestNet2BeaconCommitteeSize      = 4
-	TestNet2MinBeaconCommitteeSize   = 4
-	Testnet2DcsMinShardCommitteeSize = 15
-	Testnet2DcsMaxShardCommitteeSize = 51
-	TestNet2ActiveShards             = 8
-	TestNet2StakingAmountShard       = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+	TestNet2ShardCommitteeSize     = 32
+	TestNet2MinShardCommitteeSize  = 4
+	TestNet2BeaconCommitteeSize    = 4
+	TestNet2MinBeaconCommitteeSize = 4
+	TestNet2ActiveShards           = 8
+	TestNet2StakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNet2MinBeaconBlkInterval = 10 * time.Second //second
 	TestNet2MaxBeaconBlkCreation = 8 * time.Second  //second

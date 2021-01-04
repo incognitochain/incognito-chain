@@ -213,6 +213,7 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	shardID := byte(swapShardInstruction.ChainID)
 
+	// process normal swap out
 	newCommitteeChange, _, normalSwapOutCommittees, slashingCommittees, err := b.processNormalSwap(swapShardInstruction, env, committeeChange, oldState)
 
 	// process after swap for assign old committees to current shard pool
@@ -226,7 +227,7 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 		return nil, returnStakingInstruction, err
 	}
 
-	//process slashing after normal swap out
+	// process slashing after normal swap out
 	returnStakingInstruction, newCommitteeChange, err = b.processSlashing(
 		env,
 		slashingCommittees,

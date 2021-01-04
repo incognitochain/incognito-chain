@@ -364,6 +364,7 @@ func (beaconBestState *BeaconBestState) GetShardCandidate() []incognitokey.Commi
 	next := beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForNextRandom()
 	return append(current, next...)
 }
+
 func (beaconBestState *BeaconBestState) GetBeaconCandidate() []incognitokey.CommitteePublicKey {
 	current := beaconBestState.beaconCommitteeEngine.GetCandidateBeaconWaitingForCurrentRandom()
 	next := beaconBestState.beaconCommitteeEngine.GetCandidateBeaconWaitingForNextRandom()
@@ -420,6 +421,10 @@ func (beaconBestState *BeaconBestState) GetCandidateShardWaitingForCurrentRandom
 
 func (beaconBestState *BeaconBestState) GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey {
 	return beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForNextRandom()
+}
+
+func (beaconBestState *BeaconBestState) SyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
+	return beaconBestState.beaconCommitteeEngine.SyncingValidators()
 }
 
 //CommitteeEngineVersion ...
@@ -659,10 +664,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		NumberOfFixedShardBlockValidator:  NumberOfFixedShardBlockValidators,
 		MaxShardCommitteeSize:             params.MaxShardCommitteeSize,
 		MissingSignaturePenalty:           slashingPenalty,
-		DcsMaxShardCommitteeSize:          params.DcsMaxShardCommitteeSize,
-		DcsMinShardCommitteeSize:          params.DcsMinShardCommitteeSize,
-		SwapRuleV3Epoch:                   params.SwapRuleV3Epoch,
-		SwapRuleV2Epoch:                   params.SwapRuleV2Epoch,
+		BeaconStateV3Height:               params.BeaconCommitteeStateV3Height,
 	}
 }
 
@@ -681,8 +683,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		NumberOfFixedBeaconBlockValidator: NumberOfFixedBeaconBlockValidators,
 		NumberOfFixedShardBlockValidator:  NumberOfFixedShardBlockValidators,
 		MissingSignaturePenalty:           beaconBestState.missingSignatureCounter.GetAllSlashingPenalty(),
-		DcsMaxShardCommitteeSize:          params.DcsMaxShardCommitteeSize,
-		DcsMinShardCommitteeSize:          params.DcsMinShardCommitteeSize,
+		BeaconStateV3Height:               params.BeaconCommitteeStateV3Height,
 	}
 }
 
@@ -769,7 +770,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	//Declare swapRule
 	//TODO: maybe we can add swap rule after init beacon committee state for more clean code
 	swapRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForSwapRule(
-		beaconBestState.Epoch, bc.config.ChainParams.SwapRuleV3Epoch, bc.config.ChainParams.SwapRuleV2Epoch,
+		beaconBestState.BeaconHeight, bc.config.ChainParams.BeaconCommitteeStateV3Height,
 	)
 	swapRule := committeestate.SwapRuleByEnv(swapRuleEnv)
 
@@ -920,7 +921,7 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 	}
 
 	swapRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForSwapRule(
-		beaconBestState.Epoch, bc.config.ChainParams.SwapRuleV3Epoch, bc.config.ChainParams.SwapRuleV2Epoch,
+		beaconBestState.BeaconHeight, bc.config.ChainParams.BeaconCommitteeStateV3Height,
 	)
 	swapRule := committeestate.SwapRuleByEnv(swapRuleEnv)
 

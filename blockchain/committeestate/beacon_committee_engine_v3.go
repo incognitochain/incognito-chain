@@ -180,3 +180,13 @@ func (engine *BeaconCommitteeEngineV3) GenerateAssignInstruction(rand int64, ass
 
 	return assignInstructions
 }
+
+func (engine BeaconCommitteeEngineV3) SyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
+	engine.finalState.Mu().RLock()
+	defer engine.finalState.Mu().RUnlock()
+	res := make(map[byte][]incognitokey.CommitteePublicKey)
+	for k, v := range engine.finalState.SyncPool() {
+		res[k] = v
+	}
+	return res
+}
