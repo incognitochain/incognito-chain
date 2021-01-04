@@ -235,7 +235,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               16930,
-		ConsensusV3Height:              1,
+		ConsensusV3Height:              1e12,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
@@ -271,9 +271,9 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:     21920,
-		EpochV2:                   TestnetEpochV2,
-		EpochV2BreakPoint:         TestnetEpochV2BreakPoint,
-		RandomTimeV2:              TestnetRandomTimeV2,
+		EpochV2:                     TestnetEpochV2,
+		EpochV2BreakPoint:           TestnetEpochV2BreakPoint,
+		RandomTimeV2:                TestnetRandomTimeV2,
 		PortalETHContractAddressStr: "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address
 		BCHeightBreakPointPortalV3:  30158,
 	}
@@ -330,7 +330,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Height:              1,
+		ConsensusV3Height:              1e12,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
@@ -365,9 +365,9 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    1148608, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:     2085,
-		EpochV2:                   Testnet2EpochV2,
-		EpochV2BreakPoint:         Testnet2EpochV2BreakPoint,
-		RandomTimeV2:              Testnet2RandomTimeV2,
+		EpochV2:                     Testnet2EpochV2,
+		EpochV2BreakPoint:           Testnet2EpochV2BreakPoint,
+		RandomTimeV2:                Testnet2RandomTimeV2,
 		PortalETHContractAddressStr: "",   // todo: update sc address
 		BCHeightBreakPointPortalV3:  8974, // todo: should update before deploying
 	}
@@ -422,7 +422,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Height:              1,
+		ConsensusV3Height:              1e12,
 		Timeslot:                       40,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
@@ -457,9 +457,9 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    737450,
 		ETHRemoveBridgeSigEpoch:     1973,
-		EpochV2:                   MainnetEpochV2,
-		EpochV2BreakPoint:         MainnetEpochV2BreakPoint,
-		RandomTimeV2:              MainnetRandomTimeV2,
+		EpochV2:                     MainnetEpochV2,
+		EpochV2BreakPoint:           MainnetEpochV2BreakPoint,
+		RandomTimeV2:                MainnetRandomTimeV2,
 		PortalETHContractAddressStr: "", // todo: update sc address
 		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
 	}
