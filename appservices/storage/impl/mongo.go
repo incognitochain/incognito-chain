@@ -714,6 +714,26 @@ func (m *mongoDBDriver) storeAllBeaconStateData(ctx context.Context, beaconState
 		return err
 	}
 
+	//Update Next Hash
+	filter := bson.M{"previousblockhash": beaconState.PreviousBlockHash}
+
+	update := bson.M{
+		"$set": bson.M{"nextblockhash": beaconState.BlockHash},
+	}
+
+	upsert := true
+	after := options.After
+	opt := options.FindOneAndUpdateOptions{
+		ReturnDocument: &after,
+		Upsert:         &upsert,
+	}
+
+	result := m.beaconCollection.FindOneAndUpdate(ctx, filter, update, &opt)
+	if result.Err() != nil {
+		return result.Err()
+	}
+
+
 	//PDE
 	_, err = m.pdeShareCollection.InsertOne(ctx, pdeShares)
 	if err != nil {
@@ -828,6 +848,25 @@ func (m *mongoDBDriver) storeAllShardStateData(ctx context.Context, shardId byte
 	_, err := m.shardCollection[shardId].InsertOne(ctx, shardState)
 	if err != nil {
 		return err
+	}
+
+	//Update Next Hash
+	filter := bson.M{"previousblockhash": shardState.PreviousBlockHash}
+
+	update := bson.M{
+		"$set": bson.M{"nextblockhash": shardState.BlockHash},
+	}
+
+	upsert := true
+	after := options.After
+	opt := options.FindOneAndUpdateOptions{
+		ReturnDocument: &after,
+		Upsert:         &upsert,
+	}
+
+	result := m.shardCollection[shardId].FindOneAndUpdate(ctx, filter, update, &opt)
+	if result.Err() != nil {
+		return result.Err()
 	}
 
 	for _, value := range transactions {
