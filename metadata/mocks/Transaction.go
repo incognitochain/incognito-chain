@@ -526,6 +526,22 @@ func (_m *Transaction) IsSalaryTx() bool {
 	return r0
 }
 
+// ListSNDOutputsHashH provides a mock function with given fields:
+func (_m *Transaction) ListSNDOutputsHashH() []common.Hash {
+	ret := _m.Called()
+
+	var r0 []common.Hash
+	if rf, ok := ret.Get(0).(func() []common.Hash); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]common.Hash)
+		}
+	}
+
+	return r0
+}
+
 // ListSerialNumbersHashH provides a mock function with given fields:
 func (_m *Transaction) ListSerialNumbersHashH() []common.Hash {
 	ret := _m.Called()

@@ -18,6 +18,20 @@ type ChainRetriever struct {
 	mock.Mock
 }
 
+// GetBCHeightBreakPointPortalV3 provides a mock function with given fields:
+func (_m *ChainRetriever) GetBCHeightBreakPointPortalV3() uint64 {
+	ret := _m.Called()
+
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func() uint64); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(uint64)
+	}
+
+	return r0
+}
+
 // GetBNBChainID provides a mock function with given fields:
 func (_m *ChainRetriever) GetBNBChainID() string {
 	ret := _m.Called()
@@ -134,6 +148,20 @@ func (_m *ChainRetriever) GetFixedRandomForShardIDCommitment(beaconHeight uint64
 	return r0
 }
 
+// GetPortalETHContractAddrStr provides a mock function with given fields:
+func (_m *ChainRetriever) GetPortalETHContractAddrStr() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // GetPortalFeederAddress provides a mock function with given fields:
 func (_m *ChainRetriever) GetPortalFeederAddress() string {
 	ret := _m.Called()
@@ -180,6 +208,22 @@ func (_m *ChainRetriever) GetStakingAmountShard() uint64 {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(uint64)
+	}
+
+	return r0
+}
+
+// GetSupportedCollateralTokenIDs provides a mock function with given fields: beaconHeight
+func (_m *ChainRetriever) GetSupportedCollateralTokenIDs(beaconHeight uint64) []string {
+	ret := _m.Called(beaconHeight)
+
+	var r0 []string
+	if rf, ok := ret.Get(0).(func(uint64) []string); ok {
+		r0 = rf(beaconHeight)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
 	}
 
 	return r0
