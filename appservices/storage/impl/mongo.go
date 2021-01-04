@@ -715,7 +715,7 @@ func (m *mongoDBDriver) storeAllBeaconStateData(ctx context.Context, beaconState
 	}
 
 	//Update Next Hash
-	filter := bson.M{"previousblockhash": beaconState.PreviousBlockHash}
+	filter := bson.M{"blockhash": beaconState.PreviousBlockHash}
 
 	update := bson.M{
 		"$set": bson.M{"nextblockhash": beaconState.BlockHash},
@@ -851,7 +851,7 @@ func (m *mongoDBDriver) storeAllShardStateData(ctx context.Context, shardId byte
 	}
 
 	//Update Next Hash
-	filter := bson.M{"previousblockhash": shardState.PreviousBlockHash}
+	filter := bson.M{"blockhash": shardState.PreviousBlockHash}
 
 	update := bson.M{
 		"$set": bson.M{"nextblockhash": shardState.BlockHash},
