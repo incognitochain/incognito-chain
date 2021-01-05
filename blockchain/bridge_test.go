@@ -1,5 +1,6 @@
 package blockchain
 
+/*
 import (
 	"bytes"
 	"encoding/hex"
@@ -526,3 +527,4 @@ func checkDecodeB58(t *testing.T, e string) ([]byte, bool) {
 	}
 	return b, true
 }
+*/

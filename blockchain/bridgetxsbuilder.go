@@ -5,7 +5,6 @@ import (
 	"errors"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"strconv"
