@@ -31,6 +31,10 @@ var(
 // in case read only key: return all outputcoin tx with amount value
 // in case payment address: return all outputcoin tx with no amount value
 func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoin privacy.Coin, keySet *incognitokey.KeySet, tokenID *common.Hash, shardID byte) (privacy.PlainCoin, error) {
+	if tokenID==nil{
+		clonedTokenID := common.PRVCoinID
+		tokenID = &clonedTokenID
+	}
 	result, err := outCoin.Decrypt(keySet)
 	if err != nil {
 		Logger.log.Errorf("Cannot decrypt output coin by key %v", err)
