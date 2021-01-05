@@ -39,7 +39,7 @@ var (
 	maxInputs = 10
 	minInputs = 1
 	maxTries = 100
-	numOfLoops = 1
+	numOfLoops = 10
 
 	allowModifiedTXsToPass = false
 	hasPrivacyForPRV   bool = true
@@ -602,16 +602,14 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 	prvOutput.SetSharedRandom(operation.RandomScalar())
 	prvOutput.ConcealOutputCoin(keySets[0].PaymentAddress.GetPublicView())
 	err = resignUnprovenTx(keySets, txv2, params, nil, false)
-	assert.Equal(t,nil,err)
-	isValid,err := txv2.ValidateSanityData(nil,nil,nil,0)
-	assert.Equal(t,nil,err)
-	assert.Equal(t,true,isValid)
-
+	isValid := err==nil
 	boolParams := make(map[string]bool)
 	boolParams["hasPrivacy"] = hasPrivacyForPRV
 	boolParams["isNewTransaction"] = true
-	isValid,err = txv2.ValidateTxByItself(boolParams, db, nil, nil, byte(0), nil, nil)
-	// verify must fail
+	if isValid{
+		isValid, _ = txv2.ValidateTxByItself(boolParams, db, nil, nil, byte(0), nil, nil)
+		// verify must fail
+	}
 	assert.Equal(t,false,isValid)
 	// fmt.Printf("Fake output (wrong amount) -> %v\n",err)
 	dumpTransaction(txv2, negativeTestsFileName)
@@ -625,7 +623,6 @@ func testTxV2OneFakeOutput(txv2 *Tx, db *statedb.StateDB, params *tx_generic.TxP
 
 	isValid,_ = txv2.ValidateTxByItself(boolParams, db, nil, nil, byte(0), nil, nil)
 	assert.Equal(t,true,isValid)
-
 	// now instead of changing amount, we change the OTA public key
 	theProof := txv2.GetProof()
 	outs = theProof.GetOutputCoins()
@@ -703,6 +700,8 @@ func testTxV2OneDoubleSpentInput(db *statedb.StateDB, inputCoins []coin.PlainCoi
 }
 
 func testTxV2JsonMarshaler(tx *Tx, count int, db *statedb.StateDB, t *testing.T){
+	boolParams := make(map[string]bool)
+	boolParams["hasPrivacy"] = hasPrivacyForPRV
 	for i:=0;i<count;i++{
 		someInvalidTxs := getCorruptedJsonDeserializedTxs(tx, count, t)
 		for _,theInvalidTx := range someInvalidTxs{
@@ -716,7 +715,7 @@ func testTxV2JsonMarshaler(tx *Tx, count int, db *statedb.StateDB, t *testing.T)
 			if !isValid{
 				continue
 			}
-			isValid, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+			isValid, _ = txSpecific.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
 			if !isValid{
 				continue
 			}
@@ -732,25 +731,26 @@ func testTxV2JsonMarshaler(tx *Tx, count int, db *statedb.StateDB, t *testing.T)
 				fmt.Printf("Original TX : %s\nChanged TX (still valid) : %s\n", s1, s2)
 				panic("END TEST : a mal-TX was accepted")
 			}
-		}
-		// look for potential panics by calling verify
-		isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
-		// if it doesnt pass sanity then the next validation could panic, it's ok by spec
-		if !isSane{
-			continue
-		}
+		
+			// look for potential panics by calling verify
+			isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
+			// if it doesnt pass sanity then the next validation could panic, it's ok by spec
+			if !isSane{
+				continue
+			}
 
-		boolParams := make(map[string]bool)
-		boolParams["hasPrivacy"] = hasPrivacyForPRV
-		isSane, _ = txSpecific.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
-		if !isSane{
-			continue
+			isSane, _ = txSpecific.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
+			if !isSane{
+				continue
+			}
+			txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
 		}
-		txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
 	}
 }
 
 func testTxTokenV2JsonMarshaler(tx *TxToken, count int, db *statedb.StateDB, t *testing.T){
+	boolParams := make(map[string]bool)
+	boolParams["hasPrivacy"] = hasPrivacyForPRV
 	for i:=0;i<count;i++{
 		someInvalidTxs := getCorruptedJsonDeserializedTokenTxs(tx, count, t)
 		for _,theInvalidTx := range someInvalidTxs{
@@ -764,7 +764,7 @@ func testTxTokenV2JsonMarshaler(tx *TxToken, count int, db *statedb.StateDB, t *
 			if !isValid{
 				continue
 			}
-			isValid, _ = txSpecific.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+			isValid, _ = txSpecific.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
 			if !isValid{
 				continue
 			}
@@ -780,21 +780,21 @@ func testTxTokenV2JsonMarshaler(tx *TxToken, count int, db *statedb.StateDB, t *
 				fmt.Printf("Original TX : %s\nChanged TX (still valid) : %s\n", s1, s2)
 				panic("END TEST : a mal-TXTOKEN was accepted")
 			}
-		}
-		// look for potential panics by calling verify
-		isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
-		// if it doesnt pass sanity then the next validation could panic, it's ok by spec
-		if !isSane{
-			continue
-		}
-		boolParams := make(map[string]bool)
-		boolParams["hasPrivacy"] = hasPrivacyForPRV
+		
+			// look for potential panics by calling verify
+			isSane, _ := txSpecific.ValidateSanityData(nil, nil, nil, 0)
+			// if it doesnt pass sanity then the next validation could panic, it's ok by spec
+			if !isSane{
+				continue
+			}
+			
 
-		isSane, _ = txSpecific.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
-		if !isSane{
-			continue
+			isSane, _ = txSpecific.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
+			if !isSane{
+				continue
+			}
+			txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
 		}
-		txSpecific.ValidateTxWithBlockChain(nil, nil, nil, shardID, db)
 	}
 }
 

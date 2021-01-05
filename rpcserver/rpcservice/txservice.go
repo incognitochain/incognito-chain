@@ -1985,7 +1985,7 @@ func (txService TxService) DecryptOutputCoinByKey(outCoins []coin.Coin, keyset *
 	for _, out := range outCoins {
 		decryptedOut, err := blockchain.DecryptOutputCoinByKey(txService.BlockChain.GetBestStateTransactionStateDB(0), out, keyset, nil, 0)
 		if err != nil {
-			return nil, NewRPCError(UnexpectedError, err)
+			Logger.log.Errorf("Could not decrypt a coin in TX using keyset. Error: %+v", err)
 		}
 		if decryptedOut == nil {
 			continue
