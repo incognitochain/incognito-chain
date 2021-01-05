@@ -152,8 +152,7 @@ func (e *BLSBFT_V2) Start() error {
 						b.votes[voteMsg.Validator] = &voteMsg // store it
 						vid, v := GetValidatorIndex(e.Chain.GetBestView(), voteMsg.Validator)
 						if v != nil {
-							vbase58, _ := v.ToBase58()
-							e.Logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, vbase58)
+							e.Logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, voteMsg.Validator)
 						} else {
 							e.Logger.Infof("%v Receive vote (%d) for block from unknown validator", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
 						}
@@ -168,8 +167,7 @@ func (e *BLSBFT_V2) Start() error {
 					e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
 					vid, v := GetValidatorIndex(e.Chain.GetBestView(), voteMsg.Validator)
 					if v != nil {
-						vbase58, _ := v.ToBase58()
-						e.Logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, vbase58)
+						e.Logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, voteMsg.Validator)
 					} else {
 						e.Logger.Infof("%v Receive vote (%d) for block from unknown validator", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
 					}
@@ -243,7 +241,6 @@ func (e *BLSBFT_V2) Start() error {
 					if createdBlk, err := e.proposeBlock(userProposeKey, proposerPk, proposeBlock); err != nil {
 						e.Logger.Critical(UnExpectedError, errors.New("can't propose block"))
 						e.Logger.Critical(err)
-
 					} else {
 						e.Logger.Infof("%v proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", e.ChainKey, createdBlk.GetHeight(), e.currentTimeSlot-common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()), e.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.Hash().String())
 					}
@@ -313,7 +310,8 @@ func NewInstance(chain ChainInterface, chainKey string, chainID int, node NodeIn
 
 func GetValidatorIndex(view multiview.View, validator string) (int, *incognitokey.CommitteePublicKey) {
 	for id, c := range view.GetCommittee() {
-		if validator == c.GetMiningKeyBase58(common.BlsConsensus) {
+		base58PKKey, _ := c.ToBase58()
+		if validator == base58PKKey {
 			return id, &c
 		}
 	}
@@ -380,7 +378,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 	v.hasNewVote = false
 	if validVote > 2*len(view.GetCommittee())/3 {
 		e.Logger.Infof("%v Commit block %v , height: %v", e.ChainKey, blockHash, v.block.GetHeight())
-		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(view.GetCommittee(), common.BlsConsensus)
+		committeeBLSString, err := incognitokey.CommitteeKeyListToString(view.GetCommittee())
 		//fmt.Println(committeeBLSString)
 		if err != nil {
 			e.Logger.Error(err)
@@ -488,8 +486,8 @@ func CreateVote(userKey *signatureschemes2.MiningKey, block common.BlockInterfac
 	Vote.BRI = bridgeSig
 	Vote.BlockHash = block.Hash().String()
 
-	userPk := userKey.GetPublicKey()
-	Vote.Validator = userPk.GetMiningKeyBase58(common.BlsConsensus)
+	base58PKKey, _ := committees[selfIdx].ToBase58()
+	Vote.Validator = base58PKKey
 	Vote.PrevBlockHash = block.GetPrevHash().String()
 	err = Vote.signVote(userKey)
 	if err != nil {
