@@ -554,7 +554,6 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	if err != nil {
 		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
-
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 
 	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
@@ -727,12 +726,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-
 	err = statedb.DeleteStakerInfo(newBestState.consensusStateDB, committeeChange.RemovedStakers())
 	if err != nil {
 		return err
 	}
-
+	err = statedb.DeleteCommitteeTerms(newBestState.consensusStateDB, committeeChange.TermsRemoved)
+	if err != nil {
+		return err
+	}
 	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateAdded)
 	if err != nil {
 		return err
@@ -773,6 +774,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
+	err = statedb.StoreSyncingValidators(newBestState.consensusStateDB, committeeChange.SyncingPoolAdded)
+	if err != nil {
+		return err
+	}
 	// Deleted
 	err = statedb.DeleteCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateRemoved)
 	if err != nil {
@@ -803,6 +808,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return err
 	}
 	err = statedb.DeleteBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeRemoved)
+	if err != nil {
+		return err
+	}
+	err = statedb.DeleteSyncingValidators(newBestState.consensusStateDB, committeeChange.SyncingPoolRemoved)
 	if err != nil {
 		return err
 	}
@@ -919,13 +928,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
 		newBestState.upgradeCommitteeEngineV2(blockchain)
 	}
-
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
-
 	blockchain.BeaconChain.multiView.AddView(newBestState)
-
 	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
-
 	storeBlock := newFinalView.GetBlock()
 
 	finalizedBlocks := []*types.BeaconBlock{}
@@ -937,7 +942,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		if storeBlock.GetHeight() == 1 {
 			break
 		}
-
 		finalizedBlocks = append(finalizedBlocks, storeBlock.(*types.BeaconBlock))
 		prevHash := storeBlock.GetPrevHash()
 		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
@@ -959,7 +963,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	err = blockchain.BackupBeaconViews(batch)
 	if err != nil {
-		panic("Backup shard view error")
 		return err
 	}
 
@@ -972,13 +975,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return nil
 	}
 	if blockchain.IsLastBeaconHeightInEpoch(newBestState.GetHeight() + 1) {
-
 		err := blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
 		if err != nil {
 			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
 			return nil
 		}
-
 		err = blockchain.config.BTCChain.BackupDB(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
 		if err != nil {
 			blockchain.config.BTCChain.RemoveBackup(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
@@ -987,7 +988,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 
 	}
-
 	return nil
 }
 
@@ -1083,6 +1083,15 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 		if err != nil {
 			return err
 		}
+	}
+
+	termsAddedCommittees, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.TermsAdded)
+	if err != nil {
+		return err
+	}
+	err = statedb.StoreCommitteeTerm(beaconBestState.consensusStateDB, termsAddedCommittees, beaconBestState.beaconCommitteeEngine.Terms())
+	if err != nil {
+		return err
 	}
 
 	return nil

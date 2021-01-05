@@ -42,6 +42,7 @@ type BeaconCommitteeEngine interface {
 	ActiveShards() int
 	AssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
 	SyncingValidators() map[byte][]incognitokey.CommitteePublicKey
+	Terms() map[string]uint64
 }
 
 //ShardCommitteeEngine :
@@ -59,7 +60,4 @@ type ShardCommitteeEngine interface {
 	ProcessInstructionFromBeacon(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
 	GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
 	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
-}
-
-type StakeRule interface {
 }

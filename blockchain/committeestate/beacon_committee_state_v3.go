@@ -93,7 +93,7 @@ func (b *BeaconCommitteeStateV3) assignToSync(
 	candidates []string,
 	committeeChange *CommitteeChange) *CommitteeChange {
 	tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(candidates)
-	committeeChange.ShardSyncingAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
+	committeeChange.SyncingPoolAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
 	b.syncPool[shardID] = append(b.syncPool[shardID], tempCandidateStructs...)
 
 	return committeeChange
@@ -139,8 +139,8 @@ func (b *BeaconCommitteeStateV3) processAssignInstruction(
 ) (
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	newCommitteeChange := committeeChange
-	newCommitteeChange.ShardSyncingRemoved[byte(assignInstruction.ChainID)] =
-		append(newCommitteeChange.ShardSyncingRemoved[byte(assignInstruction.ChainID)], assignInstruction.ShardCandidatesStruct...)
+	newCommitteeChange.SyncingPoolRemoved[byte(assignInstruction.ChainID)] =
+		append(newCommitteeChange.SyncingPoolRemoved[byte(assignInstruction.ChainID)], assignInstruction.ShardCandidatesStruct...)
 	b.syncPool[byte(assignInstruction.ChainID)] = b.syncPool[byte(assignInstruction.ChainID)][len(assignInstruction.ShardCandidates):]
 
 	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, assignInstruction.ShardCandidates, newCommitteeChange, returnStakingInstruction)

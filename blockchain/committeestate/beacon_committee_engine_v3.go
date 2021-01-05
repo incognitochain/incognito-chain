@@ -190,3 +190,9 @@ func (engine BeaconCommitteeEngineV3) SyncingValidators() map[byte][]incognitoke
 	}
 	return res
 }
+
+func (engine *BeaconCommitteeEngineV3) Terms() map[string]uint64 {
+	engine.finalState.Mu().RLock()
+	defer engine.finalState.Mu().RUnlock()
+	return engine.finalState.Terms()
+}

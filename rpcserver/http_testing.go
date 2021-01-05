@@ -3,11 +3,12 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"io/ioutil"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -91,7 +92,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
 	}
 
-	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
+	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, syncingValidators, terms, rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
 	currentValidatorStr := make(map[int][]string)
 	for shardID, v := range currentValidator {
 		tempV, _ := incognitokey.CommitteeKeyListToString(v)
@@ -124,6 +125,8 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		"rewardReceivers":  tempRewardReceiver,
 		"autoStaking":      autoStaking,
 		"stakingTx":        tempStakingTx,
+		"syncing":          syncingValidators,
+		"terms":            terms,
 	}, nil
 }
 

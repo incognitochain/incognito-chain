@@ -296,3 +296,7 @@ func (engine *beaconCommitteeEngineBase) SplitReward(
 ) {
 	panic("Implement this function")
 }
+
+func (engine *beaconCommitteeEngineBase) Terms() map[string]uint64 {
+	return map[string]uint64{}
+}

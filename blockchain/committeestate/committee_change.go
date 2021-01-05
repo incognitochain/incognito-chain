@@ -16,8 +16,8 @@ type CommitteeChange struct {
 	CurrentEpochShardCandidateRemoved  []incognitokey.CommitteePublicKey
 	ShardSubstituteAdded               map[byte][]incognitokey.CommitteePublicKey
 	ShardSubstituteRemoved             map[byte][]incognitokey.CommitteePublicKey
-	ShardSyncingAdded                  map[byte][]incognitokey.CommitteePublicKey
-	ShardSyncingRemoved                map[byte][]incognitokey.CommitteePublicKey
+	SyncingPoolAdded                   map[byte][]incognitokey.CommitteePublicKey
+	SyncingPoolRemoved                 map[byte][]incognitokey.CommitteePublicKey
 	ShardCommitteeAdded                map[byte][]incognitokey.CommitteePublicKey
 	ShardCommitteeRemoved              map[byte][]incognitokey.CommitteePublicKey
 	BeaconSubstituteAdded              []incognitokey.CommitteePublicKey
@@ -29,6 +29,8 @@ type CommitteeChange struct {
 	StopAutoStake                      []string
 	RemovedStaker                      []string
 	SlashingCommittee                  map[byte][]string
+	TermsRemoved                       []string
+	TermsAdded                         []string
 }
 
 //GetStakerKeys ...
@@ -71,8 +73,8 @@ func NewCommitteeChange() *CommitteeChange {
 		ShardCommitteeReplaced:  make(map[byte][2][]incognitokey.CommitteePublicKey),
 		BeaconCommitteeReplaced: [2][]incognitokey.CommitteePublicKey{},
 		SlashingCommittee:       make(map[byte][]string),
-		ShardSyncingAdded:       make(map[byte][]incognitokey.CommitteePublicKey),
-		ShardSyncingRemoved:     make(map[byte][]incognitokey.CommitteePublicKey),
+		SyncingPoolAdded:        make(map[byte][]incognitokey.CommitteePublicKey),
+		SyncingPoolRemoved:      make(map[byte][]incognitokey.CommitteePublicKey),
 	}
 	for i := 0; i < common.MaxShardNumber; i++ {
 		shardID := byte(i)
@@ -80,8 +82,8 @@ func NewCommitteeChange() *CommitteeChange {
 		committeeChange.ShardSubstituteRemoved[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.ShardCommitteeAdded[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.ShardCommitteeRemoved[shardID] = []incognitokey.CommitteePublicKey{}
-		committeeChange.ShardSyncingAdded[shardID] = []incognitokey.CommitteePublicKey{}
-		committeeChange.ShardSyncingRemoved[shardID] = []incognitokey.CommitteePublicKey{}
+		committeeChange.SyncingPoolAdded[shardID] = []incognitokey.CommitteePublicKey{}
+		committeeChange.SyncingPoolRemoved[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.SlashingCommittee[shardID] = []string{}
 	}
 	return committeeChange
