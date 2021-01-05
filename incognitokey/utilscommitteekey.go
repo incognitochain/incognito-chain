@@ -180,7 +180,7 @@ func CommitteeKeyListToStringList(keyList []CommitteePublicKey) []CommitteeKeySt
 	return result
 }
 func ComitteeKeyStringToKey(keyString CommitteeKeyString) (*CommitteePublicKey, error) {
-	var keyMap *CommitteePublicKey
+	keyMap := &CommitteePublicKey{}
 	var err error
 	keyMap.IncPubKey, _, err = base58.Base58Check{}.Decode(keyString.IncPubKey)
 	if err != nil {
