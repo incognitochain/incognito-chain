@@ -95,7 +95,7 @@ func (b *BeaconCommitteeStateV3) assignToSync(
 	tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(candidates)
 	committeeChange.SyncingPoolAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
 	b.syncPool[shardID] = append(b.syncPool[shardID], tempCandidateStructs...)
-
+	committeeChange.TermsAdded = append(committeeChange.TermsAdded, candidates...)
 	return committeeChange
 }
 
