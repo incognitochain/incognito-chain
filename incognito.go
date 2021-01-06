@@ -42,7 +42,7 @@ func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string) (*
 		blockchain.MainnetBTCChainID:  btcrelaying.GetMainNetParams(),
 	}
 	relayingChainGenesisBlkHeight := map[string]int32{
-		blockchain.TestnetBTCChainID:  int32(1861700),
+		blockchain.TestnetBTCChainID:  int32(1896910),
 		blockchain.Testnet2BTCChainID: int32(1863675),
 		blockchain.MainnetBTCChainID:  int32(634140),
 	}

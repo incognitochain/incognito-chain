@@ -478,7 +478,7 @@ func CreateVote(userKey *signatureschemes2.MiningKey, block common.BlockInterfac
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
 	bridgeSig := []byte{}
-	if metadata.HasBridgeInstructions(block.GetInstructions()) {
+	if metadata.HasBridgeInstructions(block.GetInstructions()) || metadata.HasPortalInstructions(block.GetInstructions()) {
 		bridgeSig, err = userKey.BriSignData(block.Hash().GetBytes())
 		if err != nil {
 			return nil, NewConsensusError(UnExpectedError, err)

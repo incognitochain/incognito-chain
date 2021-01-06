@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha512"
+	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -201,6 +202,8 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		key.KeySet.ReadonlyKey.Rk = make([]byte, skencKeyLength)
 		copy(key.KeySet.ReadonlyKey.Pk[:], data[2:2+apkKeyLength])
 		copy(key.KeySet.ReadonlyKey.Rk[:], data[3+apkKeyLength:3+apkKeyLength+skencKeyLength])
+	} else {
+		return nil, NewWalletError(InvalidKeyTypeErr, errors.New("KeyType is invalid"))
 	}
 
 	// validate checksum

@@ -123,7 +123,7 @@ func CreateShardSwapActionForKeyListV2(
 //	["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." "autostaking1,autostaking2,..."]
 // Stop Auto Staking:
 //	["stopautostaking" "pubkey1,pubkey2,..."]
-func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
+func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadata.Transaction, bc *BlockChain, shardID byte, shardHeight uint64) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
 	stakeBeaconPublicKey := []string{}
@@ -137,7 +137,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(transactions []metadat
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
-			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID)
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 			Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
 			if err == nil {
 				instructions = append(instructions, actionPairs...)
