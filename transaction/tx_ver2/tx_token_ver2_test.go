@@ -233,6 +233,9 @@ func testTxTokenV2TransferPRV(db *statedb.StateDB, t *testing.T) {
 func testTxTokenV2DeletedProof(txv2 *TxToken, db *statedb.StateDB, t *testing.T) {
 	// try setting the proof to nil, then verify
 	// it should not go through
+	boolParams := make(map[string]bool)
+	boolParams["hasPrivacy"] = hasPrivacyForPRV
+	boolParams["isBatch"] = false
 	txn, ok := txv2.GetTxNormal().(*Tx)
 	assert.Equal(t, true, ok)
 	savedProof := txn.GetProof()
@@ -240,12 +243,12 @@ func testTxTokenV2DeletedProof(txv2 *TxToken, db *statedb.StateDB, t *testing.T)
 	txv2.SetTxNormal(txn)
 	isValid, _ := txv2.ValidateSanityData(nil, nil, nil, 0)
 	assert.Equal(t, true, isValid)
-	isValidTxItself, err := txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+	isValidTxItself, err := txv2.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
 	assert.Equal(t, false, isValidTxItself)
 	activeLogger.Infof("TEST RESULT : Missing token proof -> %v",err)
 	txn.SetProof(savedProof)
 	txv2.SetTxNormal(txn)
-	isValidTxItself, _ = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+	isValidTxItself, _ = txv2.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
 	assert.Equal(t, true, isValidTxItself)
 
 	savedProof = txv2.GetTxBase().GetProof()
@@ -253,17 +256,14 @@ func testTxTokenV2DeletedProof(txv2 *TxToken, db *statedb.StateDB, t *testing.T)
 	isValid, _ = txv2.ValidateSanityData(nil, nil, nil, 0)
 	assert.Equal(t, true, isValid)
 
-	boolParams := make(map[string]bool)
-	boolParams["hasPrivacy"] = hasPrivacyForPRV
-	boolParams["isBatch"] = false
-
-	isValidTxItself, _ := txv2.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
+	isValidTxItself, _ = txv2.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
 	assert.Equal(t, false, isValidTxItself)
 	activeLogger.Infof("TEST RESULT : Missing PRV proof -> %v",err)
 	// undo the tampering
 	txv2.GetTxBase().SetProof(savedProof)
-	isValidTxItself, _ = txv2.ValidateTxByItself(hasPrivacyForPRV, db, nil, nil, shardID, false, nil, nil)
+	isValidTxItself, _ = txv2.ValidateTxByItself(boolParams, db, nil, nil, shardID, nil, nil)
 	assert.Equal(t, true, isValidTxItself)
+
 }
 
 func testTxTokenV2InvalidFee(txv2 *TxToken, db *statedb.StateDB, t *testing.T) {

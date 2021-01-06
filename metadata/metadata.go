@@ -138,7 +138,6 @@ type Transaction interface {
 	ListOTAHashH() []common.Hash
 	ListSerialNumbersHashH() []common.Hash
 	String() string
-	ListSNDOutputsHashH() []common.Hash
 	Hash() *common.Hash
 	CalculateTxValue() uint64
 
