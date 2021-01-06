@@ -67,6 +67,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 		return nil, nil
 	}
 
+	Logger.log.Infof("[Centralized bridge token issuance] Processing for tx: %s, tokenid: %s", issuingReqAction.TxReqID.String(), issuingReqAction.Meta.TokenID.String())
 	issuingReq := issuingReqAction.Meta
 	issuingTokenID := issuingReq.TokenID
 	issuingTokenName := issuingReq.TokenName
@@ -115,6 +116,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 
 	ac.CBridgeTokens = append(ac.CBridgeTokens, &issuingTokenID)
 	returnedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes))
+	Logger.log.Info("[Centralized bridge token issuance] Process finished without error...")
 	return append(instructions, returnedInst), nil
 }
 
@@ -133,6 +135,9 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 		Logger.log.Warn("WARNING: an issue occured while parsing issuing action content: ", err)
 		return nil, nil
 	}
+
+	Logger.log.Infof("[Decentralized bridge token issuance] Processing for tx: %s, tokenid: %s", issuingETHReqAction.TxReqID.String(), issuingETHReqAction.Meta.IncTokenID.String())
+
 	md := issuingETHReqAction.Meta
 	rejectedInst := buildInstruction(metaType, shardID, "rejected", issuingETHReqAction.TxReqID.String())
 
@@ -246,6 +251,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 	ac.DBridgeTokenPair[md.IncTokenID.String()] = ethereumToken
 
 	acceptedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(issuingETHAcceptedInstBytes))
+	Logger.log.Info("[Decentralized bridge token issuance] Process finished without error...")
 	return append(instructions, acceptedInst), nil
 }
 
@@ -263,7 +269,10 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 		return nil, nil
 	}
 
+	Logger.log.Infof("[Centralized bridge token issuance] Processing for tx: %s", issuingAcceptedInst.TxReqID.String())
+
 	if shardID != issuingAcceptedInst.ShardID {
+		Logger.log.Infof("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, issuingAcceptedInst.ShardID)
 		return nil, nil
 	}
 	issuingRes := metadata.NewIssuingResponse(
@@ -306,7 +315,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 		Logger.log.Warn("WARNING: an error occured while initializing response tx: ", initErr)
 		return nil, nil
 	}
-	Logger.log.Info("[Centralized token issuance] Create tx ok.")
+	Logger.log.Infof("[Centralized token issuance] Create tx ok: %s", resTx.Hash().String())
 	return resTx, nil
 }
 
@@ -325,6 +334,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 	}
 
 	if shardID != issuingETHAcceptedInst.ShardID {
+		Logger.log.Infof("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, issuingETHAcceptedInst.ShardID)
 		return nil, nil
 	}
 	key, err := wallet.Base58CheckDeserialize(issuingETHAcceptedInst.ReceiverAddrStr)
@@ -374,6 +384,6 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 		Logger.log.Warn("WARNING: an error occured while initializing response tx: ", initErr)
 		return nil, nil
 	}
-	Logger.log.Info("[Decentralized bridge token issuance] Create tx ok.")
+	Logger.log.Infof("[Decentralized bridge token issuance] Create tx ok: %s", resTx.Hash().String())
 	return resTx, nil
 }
