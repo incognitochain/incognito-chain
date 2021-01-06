@@ -8,7 +8,7 @@ import (
 )
 
 func (blockchain *BlockChain) ListAllPrivacyCustomTokenAndPRV() (map[common.Hash]*statedb.TokenState, error) {
-	tokenStates := make(map[common.Hash]*statedb.TokenState)
+		tokenStates := make(map[common.Hash]*statedb.TokenState)
 	for i := 0; i < blockchain.GetBeaconBestState().ActiveShards; i++ {
 		shardID := byte(i)
 		m, err := blockchain.ListPrivacyCustomTokenAndPRVByShardID(shardID)

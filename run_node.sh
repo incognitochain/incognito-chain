@@ -161,5 +161,5 @@ GO111MODULE=on GETH_NAME=mainnet.infura.io/v3/1f15d22470684b4a8c92c130925fc679 G
 fi
 
 if [ "$1" == "fullnode-testnet2-console" ]; then
-GO111MODULE=on GETH_NAME=kovan.infura.io/v3/1f15d22470684b4a8c92c130925fc679 GETH_PROTOCOL=https GETH_PORT="" ./incognito --testnet 1 --testnetversion "2" --nodemode "relay" --relayshards "all" --externaladdress "127.0.0.1:9431" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "data/testnet2/fullnode" --discoverpeersaddress "74.207.247.250:9330" --norpcauth --rpclisten "0.0.0.0:7334" --rpcwslisten "127.0.0.1:17338"
+GO111MODULE=on GETH_NAME=kovan.infura.io/v3/1f15d22470684b4a8c92c130925fc679 GETH_PROTOCOL=https GETH_PORT="" ./incognito --testnet 1 --testnetversion "2" --nodemode "relay" --relayshards "all" --externaladdress "127.0.0.1:9431" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "data/testnet2/fullnode" --discoverpeersaddress "74.207.247.250:9330" --norpcauth --rpclisten "0.0.0.0:7334" --rpcwslisten "127.0.0.1:17338" --mongodbconnection "mongodb://127.0.0.1:27018/"
 fi

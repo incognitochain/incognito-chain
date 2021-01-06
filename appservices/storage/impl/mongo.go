@@ -87,27 +87,27 @@ func IsMongoDupKey(err error) bool {
 	return strings.Contains(err.Error(), "E11000 duplicate key error")
 }
 
-func init() {
-	log.Printf("Init mongodb")
+func LoadMongoDBDriver(dbConnectionString string) error {
+	log.Printf("Init mongodb to server %s", dbConnectionString)
 	ctx := context.TODO()
-	clientOptions := options.Client().ApplyURI("mongodb://127.0.0.1:27017/")
+	clientOptions := options.Client().ApplyURI(dbConnectionString)
 	client, err := mongo.Connect( ctx, clientOptions)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	mongoDBDriver := &mongoDBDriver{client: client}
 	err = mongoDBDriver.createIndex(ctx)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	err = storage.AddDBDriver(storage.MONGODB, mongoDBDriver)
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-
+	return nil
 }
 
 type mongoDBDriver struct {
@@ -442,7 +442,7 @@ func (m *mongoDBDriver) createIndexForPublicKeyToTransactionHashCollection(ctx c
 			bson.E{Key: "shardhash", Value: 1},
 			bson.E{Key: "transactionhash", Value: 1},
 		},
-		Options: options.Index().SetUnique(true),
+		//Options: options.Index().SetUnique(true),
 	}
 	if _, err := indexView.CreateMany(ctx, []mongo.IndexModel{publicKeyShardHashTransactionHashIndex}); err != nil {
 		return err
@@ -1612,18 +1612,25 @@ func GetRewardStateFromShardState(shard *data.Shard) model.CommitteeRewardState 
 
 func getPublicKeyToTransactionHash(shard *data.Shard) []model.PublicKeyToTransactionHash {
 	result := make([]model.PublicKeyToTransactionHash, 0, len(shard.OutputCoins))
+	publicKeyMap := make(map[string]bool)
 	for _, output := range shard.OutputCoins {
 		if len(output.TransactionHash) == 0 {
 			continue
 		}
+
 		public := model.PublicKeyToTransactionHash{
 			ShardId:         shard.ShardID,
 			ShardHash:       shard.BlockHash,
-			ShardHeight:     shard.BeaconHeight,
+			ShardHeight:     shard.Height,
 			TransactionHash: output.TransactionHash,
 		}
 		if output.PublicKey != nil {
 			public.PublicKey = base58.Base58Check{}.Encode(output.PublicKey.ToBytesS(), common.ZeroByte)
+		}
+		if _ , ok := publicKeyMap[public.PublicKey]; ok {
+			continue
+		} else {
+			publicKeyMap[public.PublicKey] = true
 		}
 		result = append(result, public)
 	}

@@ -156,6 +156,9 @@ type config struct {
 	//backup
 	PreloadAddress string `long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
 	ForceBackup    bool   `long:"forcebackup" description:"Force node to backup"`
+
+	//appService
+	MongoDBConnection string `long:"mongodbconnection" description:"connection string of mongodb to connection to mongodb"`
 }
 
 func (cfg config) IsTestnet() bool {
@@ -345,6 +348,8 @@ func loadConfig() (*config, []string, error) {
 		BtcClient:                   DefaultBtcClient,
 		BtcClientPort:               DefaultBtcClientPort,
 		EnableMining:                DefaultEnableMining,
+		MongoDBConnection: 			 "mongodb://127.0.0.1:27017/",
+
 	}
 
 	// Service options which are only added on Windows.

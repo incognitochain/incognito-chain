@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/appservices/storage/impl"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -165,6 +166,13 @@ func mainMaster(serverChan chan<- *Server) error {
 	//update preload address
 	if cfg.PreloadAddress != "" {
 		activeNetParams.Params.PreloadAddress = cfg.PreloadAddress
+	}
+
+	//Load MongoDBDriver
+	err = impl.LoadMongoDBDriver(cfg.MongoDBConnection)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
 	}
 
 	// Create server and start it.
