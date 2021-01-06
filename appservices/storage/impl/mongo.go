@@ -442,7 +442,7 @@ func (m *mongoDBDriver) createIndexForPublicKeyToTransactionHashCollection(ctx c
 			bson.E{Key: "shardhash", Value: 1},
 			bson.E{Key: "transactionhash", Value: 1},
 		},
-		//Options: options.Index().SetUnique(true),
+		Options: options.Index().SetUnique(true),
 	}
 	if _, err := indexView.CreateMany(ctx, []mongo.IndexModel{publicKeyShardHashTransactionHashIndex}); err != nil {
 		return err
