@@ -103,7 +103,11 @@ func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateSanityData(c
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 
-	if !common.IsPortalToken(custodianDeposit.PTokenId) {
+	if custodianDeposit.DepositedAmount == 0 && custodianDeposit.FreeCollateralAmount == 0 {
+		return false, false, errors.New("both DepositedAmount and FreeCollateralAmount are zero")
+	}
+
+	if !IsPortalToken(custodianDeposit.PTokenId) {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}
 
@@ -111,7 +115,7 @@ func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateSanityData(c
 }
 
 func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateMetadataByItself() bool {
-	return custodianDeposit.Type == PortalLiquidationCustodianDepositMetaV2
+	return custodianDeposit.Type == PortalCustodianTopupMetaV2
 }
 
 func (custodianDeposit PortalLiquidationCustodianDepositV2) Hash() *common.Hash {
@@ -125,7 +129,7 @@ func (custodianDeposit PortalLiquidationCustodianDepositV2) Hash() *common.Hash 
 	return &hash
 }
 
-func (custodianDeposit *PortalLiquidationCustodianDepositV2) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (custodianDeposit *PortalLiquidationCustodianDepositV2) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalLiquidationCustodianDepositActionV2{
 		Meta:    *custodianDeposit,
 		TxReqID: *tx.Hash(),
@@ -136,7 +140,7 @@ func (custodianDeposit *PortalLiquidationCustodianDepositV2) BuildReqActions(tx 
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalLiquidationCustodianDepositMetaV2), actionContentBase64Str}
+	action := []string{strconv.Itoa(PortalCustodianTopupMetaV2), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

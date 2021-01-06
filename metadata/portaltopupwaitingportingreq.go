@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -106,11 +105,6 @@ func (p PortalTopUpWaitingPortingRequest) ValidateSanityData(
 	beaconHeight uint64,
 	txr Transaction,
 ) (bool, bool, error) {
-	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
-
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(p.IncogAddressStr)
 	if err != nil {
@@ -133,8 +127,11 @@ func (p PortalTopUpWaitingPortingRequest) ValidateSanityData(
 	if p.DepositedAmount == 0 || p.DepositedAmount != burnCoin.GetValue(){
 		return false, false, errors.New("deposit amount should be larger than 0 and equal burn value")
 	}
+	if p.DepositedAmount == 0 && p.FreeCollateralAmount == 0 {
+		return false, false, errors.New("both DepositedAmount and FreeCollateralAmount are zero")
+	}
 
-	if !common.IsPortalToken(p.PTokenID) {
+	if !IsPortalToken(p.PTokenID) {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}
 
@@ -167,6 +164,7 @@ func (p *PortalTopUpWaitingPortingRequest) BuildReqActions(
 	shardViewRetriever ShardViewRetriever,
 	beaconViewRetriever BeaconViewRetriever,
 	shardID byte,
+	shardHeight uint64,
 ) ([][]string, error) {
 	actionContent := PortalTopUpWaitingPortingRequestAction{
 		Meta:    *p,

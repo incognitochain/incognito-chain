@@ -1714,6 +1714,112 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	return tx, nil
 }
 
+func (txService TxService) BuildRawDefragmentAccountTransactionV2(params interface{}, meta metadata.Metadata) (*transaction.Tx, *RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 4 {
+		return nil, NewRPCError(RPCInvalidParamsError, nil)
+	}
+
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("senderKeyParam is invalid"))
+	}
+
+	maxVal, err := common.AssertAndConvertStrToNumber(arrayParams[1])
+	if err != nil {
+		return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("maxVal is invalid %v", err))
+	}
+
+	estimateFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, NewRPCError(RPCInvalidParamsError, errors.New("estimateFeeCoinPerKb is invalid"))
+	}
+	estimateFeeCoinPerKb := int64(estimateFeeCoinPerKbtemp)
+
+	// param #4: hasPrivacyCoin flag: 1 or -1
+	hasPrivacyCoinParam := arrayParams[3].(float64)
+	hasPrivacyCoin := int(hasPrivacyCoinParam) > 0
+
+	maxDefragmentQuantity := 32
+	if len(arrayParams) >= 5 {
+		maxDefragmentQuantityTemp, ok := arrayParams[4].(float64)
+		if !ok {
+			maxDefragmentQuantityTemp = 32
+		}
+		if maxDefragmentQuantityTemp > 32 || maxDefragmentQuantityTemp <= 0 {
+			maxDefragmentQuantityTemp = 32
+		}
+		maxDefragmentQuantity = int(maxDefragmentQuantityTemp)
+	}
+	/********* END Fetch all component to *******/
+
+	// param #1: private key of sender
+	senderKeySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(senderKeyParam)
+	if err != nil {
+		return nil, NewRPCError(InvalidSenderPrivateKeyError, err)
+	}
+
+	prvCoinID := &common.Hash{}
+	err1 := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err1 != nil {
+		return nil, NewRPCError(TokenIsInvalidError, err1)
+	}
+	outCoins, err := txService.BlockChain.GetListOutputCoinsByKeyset(senderKeySet, shardIDSender, prvCoinID)
+	if err != nil {
+		return nil, NewRPCError(GetOutputCoinError, err)
+	}
+	// remove out coin in mem pool
+	outCoins, err = txService.filterMemPoolOutcoinsToSpent(outCoins)
+	if err != nil {
+		return nil, NewRPCError(GetOutputCoinError, err)
+	}
+	outCoins, amount := txService.calculateOutputCoinsByMinValue(outCoins, maxVal, maxDefragmentQuantity)
+	if len(outCoins) == 0 {
+		return nil, NewRPCError(GetOutputCoinError, nil)
+	}
+	paymentInfo := &privacy.PaymentInfo{
+		Amount:         uint64(amount),
+		PaymentAddress: senderKeySet.PaymentAddress,
+		Message:        []byte{},
+	}
+	paymentInfos := []*privacy.PaymentInfo{paymentInfo}
+	// check real fee(nano PRV) per tx
+	isGetPTokenFee := false
+	beaconState := txService.BlockChain.GetBeaconBestState()
+	beaconHeight := beaconState.BeaconHeight
+	realFee, _, _, _ := txService.EstimateFee(
+		estimateFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin, nil, nil, int64(beaconHeight))
+	if len(outCoins) == 0 {
+		realFee = 0
+	}
+	if uint64(amount) < realFee {
+		return nil, NewRPCError(GetOutputCoinError, err)
+	}
+	paymentInfo.Amount = uint64(amount) - realFee
+	inputCoins := transaction.ConvertOutputCoinToInputCoin(outCoins)
+	/******* END GET output native coins(PRV), which is used to create tx *****/
+	// START create tx
+	// missing flag for privacy
+	// false by default
+	tx := transaction.Tx{}
+	err = tx.Init(
+		transaction.NewTxPrivacyInitParams(&senderKeySet.PrivateKey,
+			paymentInfos,
+			inputCoins,
+			realFee,
+			hasPrivacyCoin,
+			txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB(),
+			nil, // use for prv coin -> nil is valid
+			meta, nil))
+	// END create tx
+
+	if err != nil {
+		return nil, NewRPCError(CreateTxDataError, err)
+	}
+
+	return &tx, nil
+}
+
 //calculateOutputCoinsByMinValue
 func (txService TxService) calculateOutputCoinsByMinValue(outCoins []coin.PlainCoin, maxVal uint64, maxDefragmentQuantityTemp int) ([]coin.PlainCoin, uint64) {
 	outCoinsTmp := make([]coin.PlainCoin, 0)

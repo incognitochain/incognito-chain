@@ -112,14 +112,19 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetr
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
 	}
 	// check tokenId is portal token or not
-	if !common.IsPortalToken(redeemReq.TokenID) {
+	if !IsPortalToken(redeemReq.TokenID) {
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID is not in portal tokens list"))
+	}
+
+	// reject Redeem Request from Liquidation pool from BCHeightBreakPointPortalV3
+	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() {
+		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, fmt.Errorf("Should create redeem request from liquidation pool v3 after epoch %v", chainRetriever.GetBCHeightBreakPointPortalV3()))
 	}
 	return true, true, nil
 }
 
 func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateMetadataByItself() bool {
-	return redeemReq.Type == PortalRedeemLiquidateExchangeRatesMeta
+	return redeemReq.Type == PortalRedeemFromLiquidationPoolMeta
 }
 
 func (redeemReq PortalRedeemLiquidateExchangeRates) Hash() *common.Hash {
@@ -132,7 +137,7 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) Hash() *common.Hash {
 	return &hash
 }
 
-func (redeemReq *PortalRedeemLiquidateExchangeRates) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (redeemReq *PortalRedeemLiquidateExchangeRates) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalRedeemLiquidateExchangeRatesAction{
 		Meta:    *redeemReq,
 		TxReqID: *tx.Hash(),
@@ -143,7 +148,7 @@ func (redeemReq *PortalRedeemLiquidateExchangeRates) BuildReqActions(tx Transact
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalRedeemLiquidateExchangeRatesMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(PortalRedeemFromLiquidationPoolMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

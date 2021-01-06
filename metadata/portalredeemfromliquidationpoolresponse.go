@@ -18,7 +18,6 @@ type PortalRedeemLiquidateExchangeRatesResponse struct {
 	RedeemAmount     uint64
 	Amount           uint64
 	TokenID          string
-	SharedRandom       []byte
 }
 
 func NewPortalRedeemLiquidateExchangeRatesResponse(
@@ -60,7 +59,7 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) ValidateSanityData(chainR
 
 func (iRes PortalRedeemLiquidateExchangeRatesResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PortalRedeemLiquidateExchangeRatesResponseMeta
+	return iRes.Type == PortalRedeemFromLiquidationPoolResponseMeta
 }
 
 func (iRes PortalRedeemLiquidateExchangeRatesResponse) Hash() *common.Hash {
@@ -80,16 +79,26 @@ func (iRes *PortalRedeemLiquidateExchangeRatesResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+	txsInBlock []Transaction,
+	txsUsed []int,
+	insts [][]string,
+	instUsed []int,
+	shardID byte,
+	tx Transaction,
+	chainRetriever ChainRetriever,
+	ac *AccumulatedValues,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+) (bool, error) {
 	idx := -1
-
-	for i, inst := range mintData.Insts {
-		if len(inst) < 4 { // this is not PortalRedeemLiquidateExchangeRatesMeta response instruction
+	for i, inst := range insts {
+		if len(inst) < 4 { // this is not PortalRedeemFromLiquidationPoolMeta response instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PortalRedeemLiquidateExchangeRatesMeta) {
+		if instUsed[i] > 0 ||
+			instMetaType != strconv.Itoa(PortalRedeemFromLiquidationPoolMeta) {
 			continue
 		}
 		instReqStatus := inst[2]
@@ -97,8 +106,8 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus %v is different from iRes.RequestStatus %v", instReqStatus, iRes.RequestStatus)
 			continue
 		}
-		if (instReqStatus != common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus) &&
-			(instReqStatus != common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus) {
+		if (instReqStatus != common.PortalRedeemFromLiquidationPoolSuccessChainStatus) &&
+			(instReqStatus != common.PortalRedeemFromLiquidationPoolRejectedChainStatus) {
 			Logger.log.Errorf("WARNING - VALIDATION: instReqStatus is not correct %v", instReqStatus)
 			continue
 		}
@@ -150,26 +159,20 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 			Logger.log.Info("WARNING - VALIDATION: an error occurred while deserializing requester address string: ", err)
 			continue
 		}
-		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
-		if err != nil || !isMinted {
-			Logger.log.Info("WARNING - VALIDATION: Error occured while validate tx mint.  ", err)
-			continue
-		}
+
 		mintedTokenID := common.PRVCoinID.String()
 		mintedAmount := totalPTokenReceived
-		if instReqStatus == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
+		if instReqStatus == common.PortalRedeemFromLiquidationPoolRejectedChainStatus {
 			mintedTokenID = redeemReqContent.TokenID
 			mintedAmount = redeemAmountFromInst
 		}
-		if coinID.String() != mintedTokenID {
-			Logger.log.Info("WARNING - VALIDATION: Receive Token ID in tx mint maybe not correct. Must be PRV")
-			continue
-		}
-		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, mintedAmount); !ok {
-			Logger.log.Info("WARNING - VALIDATION: Error occured while check receiver and amount. CheckCoinValid return false ")
-			continue
-		}
 
+		_, pk, paidAmount, assetID := tx.GetTransferData()
+		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+			mintedAmount != paidAmount ||
+			mintedTokenID != assetID.String() {
+			continue
+		}
 		idx = i
 		break
 	}
@@ -178,10 +181,6 @@ func (iRes PortalRedeemLiquidateExchangeRatesResponse) VerifyMinerCreatedTxBefor
 		return false, fmt.Errorf(fmt.Sprintf("no PortalRedeemLiquidateExchangeRates instruction found for PortalRedeemLiquidateExchangeRatesResponse tx %s", tx.Hash().String()))
 	}
 
-	mintData.InstsUsed[idx] = 1
+	instUsed[idx] = 1
 	return true, nil
-}
-
-func (iRes *PortalRedeemLiquidateExchangeRatesResponse) SetSharedRandom(r []byte) {
-	iRes.SharedRandom = r
 }

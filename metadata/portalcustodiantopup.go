@@ -100,7 +100,7 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateSanityData(cha
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 
-	if !common.IsPortalToken(custodianDeposit.PTokenId) {
+	if !IsPortalToken(custodianDeposit.PTokenId) {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}
 
@@ -108,7 +108,7 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateSanityData(cha
 }
 
 func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateMetadataByItself() bool {
-	return custodianDeposit.Type == PortalLiquidationCustodianDepositMeta
+	return custodianDeposit.Type == PortalCustodianTopupMeta
 }
 
 func (custodianDeposit PortalLiquidationCustodianDeposit) Hash() *common.Hash {
@@ -122,7 +122,7 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) Hash() *common.Hash {
 	return &hash
 }
 
-func (custodianDeposit *PortalLiquidationCustodianDeposit) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (custodianDeposit *PortalLiquidationCustodianDeposit) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalLiquidationCustodianDepositAction{
 		Meta:    *custodianDeposit,
 		TxReqID: *tx.Hash(),
@@ -133,7 +133,7 @@ func (custodianDeposit *PortalLiquidationCustodianDeposit) BuildReqActions(tx Tr
 		return [][]string{}, err
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalLiquidationCustodianDepositMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(PortalCustodianTopupMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 

@@ -245,7 +245,6 @@ func splitAndDecodeInstV2(beaconInst []string) (string, string) {
 
 	// Split of last 32 bytes (block height)
 	beaconHeight := hex.EncodeToString(beaconInstFlat[len(beaconInstFlat)-32:])
-
 	decodedInst := hex.EncodeToString(beaconInstFlat[:len(beaconInstFlat)-32])
 	return decodedInst, beaconHeight
 }

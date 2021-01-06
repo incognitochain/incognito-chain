@@ -124,7 +124,7 @@ func (pc PDEWithdrawalRequest) HashWithoutSig() *common.Hash {
 	return &hash
 }
 
-func (pc *PDEWithdrawalRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (pc *PDEWithdrawalRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PDEWithdrawalRequestAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),

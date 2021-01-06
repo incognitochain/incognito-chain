@@ -104,7 +104,101 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 	return result, nil
 }
 
-/// handleEstimateFeeWithEstimator -- get fee from estimator
+
+/*
+handleEstimateFee - RPC estimates the transaction fee per kilobyte that needs to be paid for a transaction to be included within a certain number of blocks.
+*/
+func (httpServer *HttpServer) handleEstimateFeeV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	/******* START Fetch all component to ******/
+	// all component
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 4 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Not enough params"))
+	}
+	// param #1: private key of sender
+	senderKeyParam, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Sender private key is invalid"))
+	}
+	senderKeySet, shardIDSender, err := rpcservice.GetKeySetFromPrivateKeyParams(senderKeyParam)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.InvalidSenderPrivateKeyError, err)
+	}
+	shardID := common.GetShardIDFromLastByte(senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1])
+
+	// param #2: list receiver
+	receiversPaymentAddressStrParam := make(map[string]interface{})
+	if arrayParams[1] != nil {
+		receiversPaymentAddressStrParam, ok = arrayParams[1].(map[string]interface{})
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("receivers payment address is invalid"))
+		}
+	}
+	paymentInfos, err := rpcservice.NewPaymentInfosFromReceiversParamV2(receiversPaymentAddressStrParam)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.InvalidReceiverPaymentAddressError, err)
+	}
+	totalTransfer := uint64(0)
+	for _, pInfo := range paymentInfos {
+		totalTransfer += pInfo.Amount
+	}
+
+	// param #3: estimation fee coin per kb
+	defaultFeeCoinPerKbtemp, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Default FeeCoinPerKbtemp is invalid"))
+	}
+	defaultFeeCoinPerKb := int64(defaultFeeCoinPerKbtemp)
+
+	// param #4: hasPrivacy flag for PRV
+	hasPrivacyTemp, ok := arrayParams[3].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("hasPrivacy is invalid"))
+	}
+	hasPrivacy := int(hasPrivacyTemp) > 0
+
+	// get output native coins for estimate fee
+	outCoins, _, _, overBalanceAmount, err := httpServer.txService.ChooseOutsCoinByKeysetForEstimateFee(
+		paymentInfos, 0, senderKeySet, shardID)
+
+	// refund out put for sender
+	if overBalanceAmount > 0 {
+		// add more into output for estimate fee
+		paymentInfos = append(paymentInfos, &privacy.PaymentInfo{
+			PaymentAddress: senderKeySet.PaymentAddress,
+			Amount:         overBalanceAmount,
+		})
+	}
+
+	// Check custom token param
+	var customPrivacyTokenParam *transaction.CustomTokenPrivacyParamTx
+	isGetPTokenFee := false
+	if len(arrayParams) > 4 {
+		// param #5: token params
+		tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token param is invalid"))
+		}
+
+		customPrivacyTokenParam, err = httpServer.txService.BuildTokenParamV2(tokenParamsRaw, senderKeySet, shardIDSender)
+		if err.(*rpcservice.RPCError) != nil {
+			return nil, err.(*rpcservice.RPCError)
+		}
+	}
+
+	beaconHeight := httpServer.blockService.BlockChain.GetBeaconBestState().BestBlock.GetHeight()
+	estimateFee, estimateFeeCoinPerKb, estimateTxSizeInKb, err2 := httpServer.txService.EstimateFee(
+		defaultFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacy,
+		nil, customPrivacyTokenParam, int64(beaconHeight))
+	if err2 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RejectInvalidTxFeeError, err2)
+	}
+	result := jsonresult.NewEstimateFeeResult(estimateFee, estimateFeeCoinPerKb, estimateTxSizeInKb)
+	return result, nil
+}
+
+
+// handleEstimateFeeWithEstimator -- get unit fee (fee per kb) from estimator
 func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// all params
 	arrayParams := common.InterfaceSlice(params)

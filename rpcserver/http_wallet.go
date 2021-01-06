@@ -538,6 +538,54 @@ func (httpServer *HttpServer) createRawDefragmentAccountTransaction(params inter
 	return result, nil
 }
 
+/*
+handleDefragmentAccount
+*/
+func (httpServer *HttpServer) handleDefragmentAccountV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	data, err := httpServer.createRawDefragmentAccountTransactionV2(params, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:    sendResult.(jsonresult.CreateTransactionResult).TxID,
+		ShardID: tx.ShardID,
+	}
+	return result, nil
+}
+
+/*
+// createRawDefragmentAccountTransaction.
+*/
+func (httpServer *HttpServer) createRawDefragmentAccountTransactionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	tx, err := httpServer.txService.BuildRawDefragmentAccountTransactionV2(params, nil)
+	if err.(*rpcservice.RPCError) != nil {
+		Logger.log.Critical(err)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		// return hex for a new tx
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	txShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+		ShardID:         txShardID,
+	}
+	return result, nil
+}
+
 // defragment for token
 func (httpServer *HttpServer) handleDefragmentAccountToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
@@ -581,6 +629,53 @@ func (httpServer *HttpServer) createRawDefragmentAccountTokenTransaction(params 
 		TokenID:         tx.GetTxTokenData().PropertyID.String(),
 		TokenName:       tx.GetTxTokenData().PropertyName,
 		TokenAmount:     tx.GetTxTokenData().Amount,
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+// defragment for token
+func (httpServer *HttpServer) handleDefragmentAccountTokenV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	data, err := httpServer.createRawDefragmentAccountTokenTransactionV2(params, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionTokenResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:    sendResult.(jsonresult.CreateTransactionTokenResult).TxID,
+		ShardID: tx.ShardID,
+	}
+	return result, nil
+}
+
+// createRawDefragmentAccountTokenTransaction
+func (httpServer *HttpServer) createRawDefragmentAccountTokenTransactionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	tx, err := httpServer.txService.BuildRawDefragmentPrivacyCustomTokenTransactionV2(params, nil)
+	if err.(*rpcservice.RPCError) != nil {
+		Logger.log.Error(err)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	result := jsonresult.CreateTransactionTokenResult{
+		ShardID:         common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
+		TxID:            tx.Hash().String(),
+		TokenID:         tx.TxPrivacyTokenData.PropertyID.String(),
+		TokenName:       tx.TxPrivacyTokenData.PropertyName,
+		TokenAmount:     tx.TxPrivacyTokenData.Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil

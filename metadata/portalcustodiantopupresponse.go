@@ -16,7 +16,6 @@ type PortalLiquidationCustodianDepositResponse struct {
 	ReqTxID          common.Hash
 	CustodianAddrStr string
 	DepositedAmount  uint64
-	SharedRandom       []byte
 }
 
 func NewPortalLiquidationCustodianDepositResponse(
@@ -55,7 +54,7 @@ func (iRes PortalLiquidationCustodianDepositResponse) ValidateSanityData(chainRe
 
 func (iRes PortalLiquidationCustodianDepositResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == PortalLiquidationCustodianDepositResponseMeta
+	return iRes.Type == PortalCustodianTopupResponseMeta
 }
 
 func (iRes PortalLiquidationCustodianDepositResponse) Hash() *common.Hash {
@@ -73,21 +72,31 @@ func (iRes *PortalLiquidationCustodianDepositResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PortalLiquidationCustodianDepositResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes PortalLiquidationCustodianDepositResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+	txsInBlock []Transaction,
+	txsUsed []int,
+	insts [][]string,
+	instUsed []int,
+	shardID byte,
+	tx Transaction,
+	chainRetriever ChainRetriever,
+	ac *AccumulatedValues,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+) (bool, error) {
 	idx := -1
-
-	for i, inst := range mintData.Insts {
+	for i, inst := range insts {
 		if len(inst) < 4 { // this is not PortalCustodianDeposit response instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if mintData.InstsUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PortalLiquidationCustodianDepositMeta) {
+		if instUsed[i] > 0 ||
+			instMetaType != strconv.Itoa(PortalCustodianTopupMeta) {
 			continue
 		}
 		instDepositStatus := inst[2]
 		if instDepositStatus != iRes.DepositStatus ||
-			(instDepositStatus != common.PortalLiquidationCustodianDepositRejectedChainStatus) {
+			(instDepositStatus != common.PortalCustodianTopupRejectedChainStatus) {
 			continue
 		}
 
@@ -118,20 +127,14 @@ func (iRes PortalLiquidationCustodianDepositResponse) VerifyMinerCreatedTxBefore
 			continue
 		}
 
-		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
-		if err != nil || !isMinted {
-			Logger.log.Info("WARNING - VALIDATION: Error occured while validate tx mint.  ", err)
+		// collateral must be PRV
+		PRVIDStr := common.PRVCoinID.String()
+		_, pk, paidAmount, assetID := tx.GetTransferData()
+		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+			depositedAmountFromInst != paidAmount ||
+			PRVIDStr != assetID.String() {
 			continue
 		}
-		if coinID.String() != common.PRVCoinID.String() {
-			Logger.log.Info("WARNING - VALIDATION: Receive Token ID in tx mint maybe not correct. Must be PRV")
-			continue
-		}
-		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, depositedAmountFromInst); !ok {
-			Logger.log.Info("WARNING - VALIDATION: Error occured while check receiver and amount. CheckCoinValid return false ")
-			continue
-		}
-
 		idx = i
 		break
 	}
@@ -139,10 +142,6 @@ func (iRes PortalLiquidationCustodianDepositResponse) VerifyMinerCreatedTxBefore
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, fmt.Errorf(fmt.Sprintf("no PortalLiquidationCustodianDeposit instruction found for PortalLiquidationCustodianDepositResponse tx %s", tx.Hash().String()))
 	}
-	mintData.InstsUsed[idx] = 1
+	instUsed[idx] = 1
 	return true, nil
-}
-
-func (iRes *PortalLiquidationCustodianDepositResponse) SetSharedRandom(r []byte) {
-	iRes.SharedRandom = r
 }

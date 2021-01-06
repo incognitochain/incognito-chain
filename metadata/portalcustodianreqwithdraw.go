@@ -1,13 +1,13 @@
 package metadata
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
 	"strconv"
 )
 
@@ -44,7 +44,7 @@ func NewCustodianWithdrawRequestStatus(paymentAddress string, amount uint64, sta
 
 func NewPortalCustodianWithdrawRequest(metaType int, paymentAddress string, amount uint64) (*PortalCustodianWithdrawRequest, error) {
 	metadataBase := MetadataBase{
-		Type: metaType, Sig: []byte{},
+		Type: metaType,
 	}
 
 	portalCustodianWithdrawReq := &PortalCustodianWithdrawRequest{
@@ -57,9 +57,7 @@ func NewPortalCustodianWithdrawRequest(metaType int, paymentAddress string, amou
 	return portalCustodianWithdrawReq, nil
 }
 
-func (*PortalCustodianWithdrawRequest) ShouldSignMetaData() bool { return true }
-
-func (Withdraw PortalCustodianWithdrawRequest) ValidateTxWithBlockChain(
+func (withdrawReq PortalCustodianWithdrawRequest) ValidateTxWithBlockChain(
 	txr Transaction,
 	chainRetriever ChainRetriever,
 	shardViewRetriever ShardViewRetriever,
@@ -71,27 +69,21 @@ func (Withdraw PortalCustodianWithdrawRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (Withdraw PortalCustodianWithdrawRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
-
-	if len(Withdraw.PaymentAddress) <= 0 {
-		return false, false, errors.New("Payment address should be not empty")
-	}
-
+func (withdrawReq PortalCustodianWithdrawRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	// validate Payment address
-	keyWallet, err := wallet.Base58CheckDeserialize(Withdraw.PaymentAddress)
-	if err != nil {
-		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ContributorAddressStr incorrect"))
+	if len(withdrawReq.PaymentAddress) <= 0 {
+		return false, false, errors.New("PaymentAddress should be not empty")
 	}
-
+	keyWallet, err := wallet.Base58CheckDeserialize(withdrawReq.PaymentAddress)
+	if err != nil {
+		return false, false, errors.New("PaymentAddress incorrect")
+	}
 	incogAddr := keyWallet.KeySet.PaymentAddress
 	if len(incogAddr.Pk) == 0 {
 		return false, false, errors.New("wrong custodian incognito address")
 	}
-	if ok, err := tx.CheckAuthorizedSender(incogAddr.Pk); err != nil || !ok {
-		return false, false, errors.New("Withdraw request is unauthorized")
+	if !bytes.Equal(tx.GetSigPubKey()[:], incogAddr.Pk[:]) {
+		return false, false, errors.New("custodian incognito address is not signer tx")
 	}
 
 	// check tx type
@@ -99,43 +91,31 @@ func (Withdraw PortalCustodianWithdrawRequest) ValidateSanityData(chainRetriever
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 
-	if Withdraw.Amount <= 0 {
+	// check withdraw amount
+	if withdrawReq.Amount <= 0 {
 		return false, false, errors.New("Amount should be larger than 0")
 	}
 
 	return true, true, nil
 }
 
-func (Withdraw PortalCustodianWithdrawRequest) ValidateMetadataByItself() bool {
-	return Withdraw.Type == PortalCustodianWithdrawRequestMeta
+func (withdrawReq PortalCustodianWithdrawRequest) ValidateMetadataByItself() bool {
+	return withdrawReq.Type == PortalCustodianWithdrawRequestMeta
 }
 
-func (Withdraw PortalCustodianWithdrawRequest) Hash() *common.Hash {
-	record := Withdraw.MetadataBase.Hash().String()
-	record += Withdraw.PaymentAddress
-	record += strconv.FormatUint(Withdraw.Amount, 10)
-	if Withdraw.Sig != nil && len(Withdraw.Sig) != 0 {
-		record += string(Withdraw.Sig)
-	}
-	// final hash
-	hash := common.HashH([]byte(record))
-	return &hash
-}
-
-func (Withdraw PortalCustodianWithdrawRequest) HashWithoutSig() *common.Hash {
-	record := Withdraw.MetadataBase.Hash().String()
-	record += Withdraw.PaymentAddress
-	record += strconv.FormatUint(Withdraw.Amount, 10)
+func (withdrawReq PortalCustodianWithdrawRequest) Hash() *common.Hash {
+	record := withdrawReq.MetadataBase.Hash().String()
+	record += withdrawReq.PaymentAddress
+	record += strconv.FormatUint(withdrawReq.Amount, 10)
 
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
 }
 
-
-func (Withdraw *PortalCustodianWithdrawRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (withdrawReq *PortalCustodianWithdrawRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalCustodianWithdrawRequestAction{
-		Meta:    *Withdraw,
+		Meta:    *withdrawReq,
 		TxReqID: *tx.Hash(),
 		ShardID: shardID,
 	}
@@ -148,6 +128,6 @@ func (Withdraw *PortalCustodianWithdrawRequest) BuildReqActions(tx Transaction, 
 	return [][]string{action}, nil
 }
 
-func (Withdraw *PortalCustodianWithdrawRequest) CalculateSize() uint64 {
-	return calculateSize(Withdraw)
+func (withdrawReq *PortalCustodianWithdrawRequest) CalculateSize() uint64 {
+	return calculateSize(withdrawReq)
 }
