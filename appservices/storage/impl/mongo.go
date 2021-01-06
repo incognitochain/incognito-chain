@@ -1627,10 +1627,10 @@ func getPublicKeyToTransactionHash(shard *data.Shard) []model.PublicKeyToTransac
 		if output.PublicKey != nil {
 			public.PublicKey = base58.Base58Check{}.Encode(output.PublicKey.ToBytesS(), common.ZeroByte)
 		}
-		if _ , ok := publicKeyMap[public.PublicKey]; ok {
+		if _ , ok := publicKeyMap[public.PublicKey+output.TransactionHash+shard.BlockHash]; ok {
 			continue
 		} else {
-			publicKeyMap[public.PublicKey] = true
+			publicKeyMap[public.PublicKey+output.TransactionHash+shard.BlockHash] = true
 		}
 		result = append(result, public)
 	}
