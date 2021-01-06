@@ -67,7 +67,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 		return nil, nil
 	}
 
-	Logger.log.Infof("[Centralized bridge token issuance] Processing for tx: %s, tokenid: %s", issuingReqAction.TxReqID.String(), issuingTokenID.String())
+	Logger.log.Infof("[Centralized bridge token issuance] Processing for tx: %s, tokenid: %s", issuingReqAction.TxReqID.String(), issuingReqAction.Meta.TokenID.String())
 	issuingReq := issuingReqAction.Meta
 	issuingTokenID := issuingReq.TokenID
 	issuingTokenName := issuingReq.TokenName
