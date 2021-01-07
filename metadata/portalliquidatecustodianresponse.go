@@ -80,7 +80,7 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			(instMetaType != strconv.Itoa(PortalLiquidateCustodianMeta) &&
 			instMetaType != strconv.Itoa(PortalLiquidateCustodianMetaV3)) {
 			continue

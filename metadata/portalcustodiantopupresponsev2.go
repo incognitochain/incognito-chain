@@ -16,6 +16,7 @@ type PortalLiquidationCustodianDepositResponseV2 struct {
 	ReqTxID          common.Hash
 	CustodianAddrStr string
 	DepositedAmount  uint64
+	SharedRandom       []byte
 }
 
 func NewPortalLiquidationCustodianDepositResponseV2(
@@ -62,7 +63,9 @@ func (iRes PortalLiquidationCustodianDepositResponseV2) Hash() *common.Hash {
 	record += strconv.FormatUint(iRes.DepositedAmount, 10)
 	record += iRes.ReqTxID.String()
 	record += iRes.MetadataBase.Hash().String()
-
+	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
+		record += string(iRes.SharedRandom)
+	}
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -73,10 +76,7 @@ func (iRes *PortalLiquidationCustodianDepositResponseV2) CalculateSize() uint64 
 }
 
 func (iRes PortalLiquidationCustodianDepositResponseV2) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instUsed []int,
+	mintData *MintData,
 	shardID byte,
 	tx Transaction,
 	chainRetriever ChainRetriever,
@@ -85,12 +85,12 @@ func (iRes PortalLiquidationCustodianDepositResponseV2) VerifyMinerCreatedTxBefo
 	beaconViewRetriever BeaconViewRetriever,
 ) (bool, error) {
 	idx := -1
-	for i, inst := range insts {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PortalCustodianDeposit response instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(PortalCustodianTopupMetaV2) {
 			continue
 		}
@@ -142,6 +142,10 @@ func (iRes PortalLiquidationCustodianDepositResponseV2) VerifyMinerCreatedTxBefo
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, fmt.Errorf(fmt.Sprintf("no PortalLiquidationCustodianDepositV2 instruction found for PortalLiquidationCustodianDepositResponseV2 tx %s", tx.Hash().String()))
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *PortalLiquidationCustodianDepositResponseV2) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }

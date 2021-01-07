@@ -46,6 +46,9 @@ const (
 	ErrInvalidRewardFeatureStateType          = "invalid feature reward state type"
 	ErrInvalidPDETradingFeeStateType          = "invalid pde trading fee state type"
 	ErrInvalidBlockHashType                   = "invalid block hash type"
+	ErrInvalidUnlockOverRateCollateralsStateType = "invalid unlock over rate collaterals state type"
+	ErrInvalidPortalExternalTxStateType          = "invalid portal external tx state type"
+	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
 )
 const (
 	InvalidByteArrayTypeError = iota

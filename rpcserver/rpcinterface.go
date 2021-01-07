@@ -24,7 +24,6 @@ var HttpHandler = map[string]httpHandler{
 	getInOutMessageCount:     (*HttpServer).handleGetInOutMessageCount,
 	getAllPeers:              (*HttpServer).handleGetAllPeers,
 	estimateFee:              (*HttpServer).handleEstimateFee,
-	estimateFeeV2:            (*HttpServer).handleEstimateFeeV2,
 	estimateFeeWithEstimator: (*HttpServer).handleEstimateFeeWithEstimator,
 	getActiveShards:          (*HttpServer).handleGetActiveShards,
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,

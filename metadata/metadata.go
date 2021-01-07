@@ -58,7 +58,6 @@ type MempoolRetriever interface {
 	GetSerialNumbersHashH() map[common.Hash][]common.Hash
 	GetTxsInMem() map[common.Hash]TxDesc
 	GetOTAHashH() map[common.Hash][]common.Hash
-	GetSNDOutputsHashH() map[common.Hash][]common.Hash
 }
 
 type ChainRetriever interface {
@@ -75,7 +74,6 @@ type ChainRetriever interface {
 	GetBTCHeaderChain() *btcrelaying.BlockChain
 	GetPortalFeederAddress() string
 	IsAfterNewZKPCheckPoint(beaconHeight uint64) bool
-	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
 	GetSupportedCollateralTokenIDs(beaconHeight uint64) []string
 	GetPortalETHContractAddrStr() string
 }

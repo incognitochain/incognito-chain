@@ -367,21 +367,18 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTxV
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	receiveAmt := redeemReqContent.MintedPRVCollateral
 
-	// the returned currency is PRV
-	resTx := new(transaction.Tx)
-	err = resTx.InitTxSalary(
-		receiveAmt,
-		&receiverAddr,
-		producerPrivateKey,
-		curView.GetCopiedTransactionStateDB(),
-		meta,
-	)
+	//OTA
+	txParam := transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: &receiverAddr, TokenID: nil}
+	otaCoin, err := txParam.GenerateOutputCoin()
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing custodian withdraw  (normal) tx: %+v", err)
-		return nil, nil
+		Logger.log.Errorf("Cannot get new coin from amount and payment address")
+		return nil, err
 	}
+	// set shareRandom for metadata
+	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
 
-	return resTx, nil
+	// in case the returned currency is privacy custom token
+	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
 }
 
 // buildPortalRejectedRedeemRequestTx builds response tx for user request redeem tx with status "rejected"
@@ -623,48 +620,18 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 	receiveAmt := redeemReqContent.RedeemAmount
 	tokenID, _ := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
 
-	// in case the returned currency is privacy custom token
-	refundedPTokenPaymentInfo := &privacy.PaymentInfo{
-		Amount:         receiveAmt,
-		PaymentAddress: receiverAddr,
+	//OTA
+	txParam := transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: &receiverAddr, TokenID: tokenID}
+	otaCoin, err := txParam.GenerateOutputCoin()
+	if err != nil {
+		Logger.log.Errorf("Cannot get new coin from amount and payment address")
+		return nil, err
 	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], tokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID:  propID.String(),
-		Amount:      receiveAmt,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{refundedPTokenPaymentInfo},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
-	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	txStateDB := curView.GetCopiedTransactionStateDB()
-	featureStateDB := baeconState.GetBeaconFeatureStateDB()
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			txStateDB,
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			featureStateDB,
-		),
-	)
-	if initErr != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing redeem request response tx: %+v", initErr)
-		return nil, nil
-	}
+	// set shareRandom for metadata
+	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
 
-	Logger.log.Info("[Shard buildPortalRefundRedeemFromLiquidationTx] Finished...")
-	return resTx, nil
+	// in case the returned currency is privacy custom token
+	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
 }
 
 // buildPortalRefundRedeemFromLiquidationTx builds response tx for user request redeem from liquidation pool tx with status "rejected"

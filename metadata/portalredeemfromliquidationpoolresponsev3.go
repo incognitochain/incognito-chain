@@ -19,6 +19,7 @@ type PortalRedeemFromLiquidationPoolResponseV3 struct {
 	RedeemAmount        uint64
 	MintedPRVCollateral uint64
 	TokenID             string
+	SharedRandom       []byte
 }
 
 func NewPortalRedeemFromLiquidationPoolResponseV3(
@@ -71,6 +72,9 @@ func (iRes PortalRedeemFromLiquidationPoolResponseV3) Hash() *common.Hash {
 	record += strconv.FormatUint(iRes.RedeemAmount, 10)
 	record += strconv.FormatUint(iRes.MintedPRVCollateral, 10)
 	record += iRes.TokenID
+	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
+		record += string(iRes.SharedRandom)
+	}
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -81,10 +85,7 @@ func (iRes *PortalRedeemFromLiquidationPoolResponseV3) CalculateSize() uint64 {
 }
 
 func (iRes PortalRedeemFromLiquidationPoolResponseV3) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instUsed []int,
+	mintData *MintData,
 	shardID byte,
 	tx Transaction,
 	chainRetriever ChainRetriever,
@@ -93,12 +94,12 @@ func (iRes PortalRedeemFromLiquidationPoolResponseV3) VerifyMinerCreatedTxBefore
 	beaconViewRetriever BeaconViewRetriever,
 ) (bool, error) {
 	idx := -1
-	for i, inst := range insts {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PortalRedeemFromLiquidationPoolMeta response instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(PortalRedeemFromLiquidationPoolMetaV3) {
 			continue
 		}
@@ -182,6 +183,10 @@ func (iRes PortalRedeemFromLiquidationPoolResponseV3) VerifyMinerCreatedTxBefore
 		return false, fmt.Errorf(fmt.Sprintf("no PortalRedeemFromLiquidationPoolMetaV3 instruction found for PortalRedeemFromLiquidationPoolResponseV3 tx %s", tx.Hash().String()))
 	}
 
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *PortalRedeemFromLiquidationPoolResponseV3) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }

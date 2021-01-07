@@ -119,36 +119,6 @@ func CreateCustomTokenPrivacyBurningReceiverArray(dataReceiver interface{}, bcr 
 	return result, voutsAmount, nil
 }
 
-func NewContractingRequestMetadataV2(senderPrivateKeyStr string, tokenReceivers interface{}, tokenID string) (*metadata.ContractingRequest, *RPCError) {
-	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-	paymentAddr := senderKey.KeySet.PaymentAddress
-
-	_, voutsAmount, err := transaction.CreateCustomTokenPrivacyReceiverArrayV2(tokenReceivers)
-	if err != nil {
-		return nil, NewRPCError(RPCInvalidParamsError, err)
-	}
-	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-
-	meta, _ := metadata.NewContractingRequest(
-		paymentAddr,
-		uint64(voutsAmount),
-		*tokenIDHash,
-		metadata.ContractingRequestMeta,
-	)
-
-	return meta, nil
-}
-
 func NewBurningRequestMetadata(
 	senderPrivateKeyStr string,
 	tokenReceivers interface{},
@@ -170,51 +140,6 @@ func NewBurningRequestMetadata(
 	paymentAddr := senderKey.KeySet.PaymentAddress
 
 	_, voutsAmount, err := CreateCustomTokenPrivacyBurningReceiverArray(tokenReceivers, bcr, beaconHeight)
-	if err != nil {
-		return nil, NewRPCError(RPCInvalidParamsError, err)
-	}
-	tokenIDHash, err := common.Hash{}.NewHashFromStr(tokenID)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-
-	meta, err := metadata.NewBurningRequest(
-		paymentAddr,
-		uint64(voutsAmount),
-		*tokenIDHash,
-		tokenName,
-		remoteAddress,
-		burningMetaType,
-	)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-
-	return meta, nil
-}
-
-func NewBurningRequestMetadataV2(
-	senderPrivateKeyStr string,
-	tokenReceivers interface{},
-	tokenID string,
-	tokenName string,
-	remoteAddress string,
-	burningMetaType int,
-	bcr metadata.ChainRetriever,
-	beaconHeight uint64,
-) (*metadata.BurningRequest, *RPCError) {
-	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-	err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
-	if err != nil {
-		return nil, NewRPCError(UnexpectedError, err)
-	}
-	paymentAddr := senderKey.KeySet.PaymentAddress
-
-	//_, voutsAmount, err := transaction.CreateCustomTokenPrivacyReceiverArray(tokenReceivers)
-	_, voutsAmount, err := transaction.CreateCustomTokenPrivacyBurningReceiverArrayV2(tokenReceivers, bcr, beaconHeight)
 	if err != nil {
 		return nil, NewRPCError(RPCInvalidParamsError, err)
 	}
@@ -300,29 +225,6 @@ func NewPaymentInfosFromReceiversParam(receiversParam map[string]interface{}) ([
 		}
 		paymentInfo := &privacy.PaymentInfo{
 			Amount:         uint64(amount.(float64)),
-			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
-		}
-		paymentInfos = append(paymentInfos, paymentInfo)
-	}
-
-	return paymentInfos, nil
-}
-
-func NewPaymentInfosFromReceiversParamV2(receiversParam map[string]interface{}) ([]*privacy.PaymentInfo, error) {
-	paymentInfos := make([]*privacy.PaymentInfo, 0)
-	for paymentAddressStr, amount := range receiversParam {
-		keyWalletReceiver, err := wallet.Base58CheckDeserialize(paymentAddressStr)
-		if err != nil {
-			return nil, err
-		}
-
-		amountInt, err := common.AssertAndConvertStrToNumber(amount)
-		if err != nil {
-			return nil, err
-		}
-
-		paymentInfo := &privacy.PaymentInfo{
-			Amount:         amountInt,
 			PaymentAddress: keyWalletReceiver.KeySet.PaymentAddress,
 		}
 		paymentInfos = append(paymentInfos, paymentInfo)
