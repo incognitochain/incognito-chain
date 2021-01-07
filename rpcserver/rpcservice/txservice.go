@@ -2070,20 +2070,32 @@ func (txService TxService) GetTransactionByReceiverV2(
 		allTxHashs = append(allTxHashs, txHashs...)
 	}
 	totalTxHashs := len(allTxHashs)
-	chunksNum := 32 // number of concurrent gorountines
-	chunkSize := totalTxHashs / (chunksNum + 1)
-	if chunkSize == 0 {
-		chunkSize = 1
+
+	chunksNum := 32 // default number of concurrent goroutines
+
+	// calculate chunk size
+	chunkSize := totalTxHashs / chunksNum
+	rChunkSize := totalTxHashs % chunksNum
+	if rChunkSize > 0 {
+		chunkSize++
 	}
 
-	actualChunksNum := chunksNum
-	if chunkSize == 1 {
-		actualChunksNum = totalTxHashs
+	// calculate actual chunks num
+	actualChunksNum := totalTxHashs / chunkSize
+	rActualChunkNum := totalTxHashs % chunkSize
+	if rActualChunkNum > 0 {
+		actualChunksNum++
 	}
+
 	ch := make(chan []TxInfo)
 	for i := 0; i < actualChunksNum; i++ {
 		start := chunkSize * i
 		end := start + chunkSize
+		if i == actualChunksNum - 1 {
+			if end > totalTxHashs {
+				end = totalTxHashs
+			}
+		}
 		chunk := allTxHashs[start:end]
 		go txService.getTxsByHashs(chunk, ch, tokenIDHash, keySet.PaymentAddress.Pk)
 	}
@@ -2099,7 +2111,7 @@ func (txService TxService) GetTransactionByReceiverV2(
 	})
 	txNum := uint(len(txInfos))
 	if skip >= txNum {
-		return result, 0, nil
+		return result, txNum, nil
 	}
 	limit = skip + limit
 	if limit > txNum {
