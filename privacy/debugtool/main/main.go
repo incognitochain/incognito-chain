@@ -49,10 +49,10 @@ func ListTokens(tool *debugtool.DebugTool) *debugtool.ListCustomToken {
 }
 
 func GetOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string, height uint64) {
-	fmt.Println("========== GET OUTPUT TOKEN ==========")
-	b, _ := tool.GetListOutputCoins(privKey, tokenID, height)
-	fmt.Println(string(b))
-	fmt.Println("========== END OUTPUT TOKEN ==========")
+	//fmt.Println("========== GET OUTPUT TOKEN ==========")
+	//b, _ := tool.GetListOutputCoins(privKey, tokenID, height)
+	//fmt.Println(string(b))
+	//fmt.Println("========== END OUTPUT TOKEN ==========")
 }
 
 func GetUnspentOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string) {
@@ -108,7 +108,23 @@ func ConvertTokenCoinVersion(tool *debugtool.DebugTool, privKey string, tokenID 
 
 func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string, height uint64) {
 	fmt.Println("========== GET PRV OUTPUT COIN ==========")
-	b, _ := tool.GetListOutputCoins(privkey, common.PRVIDStr, height)
+	outCoinKey, err := debugtool.NewOutCoinKeyFromPrivateKey(privkey)
+	if err != nil{
+		fmt.Println(err)
+		return
+	}
+	//outCoinKey.SetReadonlyKey("")
+	////outCoinKey.SetOTAKey("")
+
+	b, err := tool.GetListOutputCoins(outCoinKey, common.PRVIDStr, height)
+	//fmt.Printf("number of coins: %v\n", len(b))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	//for _, outCoin := range b{
+	//	fmt.Println(outCoin.GetValue())
+	//}
 	fmt.Println(string(b))
 	fmt.Println("========== END GET PRV OUTPUT COIN ==========")
 }

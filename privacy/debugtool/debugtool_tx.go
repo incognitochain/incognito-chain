@@ -143,165 +143,6 @@ func (this *DebugTool) CreateAndSendTransactionFromAToB(privKeyA string, payment
 	return this.SendPostRequestWithQuery(query)
 }
 
-func (this *DebugTool) GetListOutputCoins(privKeyStr, tokenID string, h uint64) ([]byte, error) {
-	if len(this.url) == 0 {
-		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
-	}
-
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	otaSecretKey := keyWallet.Base58CheckSerialize(wallet.OTAKeyType)
-	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
-
-	query := fmt.Sprintf(`{
-		"jsonrpc": "1.0",
-		"method": "listoutputcoins",
-		"params": [
-			0,
-			999999,
-			[
-				{
-			  "PaymentAddress": "%s",
-			  "OTASecretKey": "%s",
-			  "ReadonlyKey" : "%s",
-			  "StartHeight": %d
-				}
-			],
-		  "%s"
-		  ],
-		"id": 1
-	}`, paymentAddStr, otaSecretKey, viewingKeyStr, h, tokenID)
-
-	//fmt.Println("==============")
-
-	return this.SendPostRequestWithQuery(query)
-}
-
-func (this *DebugTool) GetListOutputCoinsCached(privKeyStr, tokenID string, h uint64) ([]byte, error) {
-	if len(this.url) == 0 {
-		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
-	}
-
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	otaSecretKey := keyWallet.Base58CheckSerialize(wallet.OTAKeyType)
-	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
-
-	query := fmt.Sprintf(`{
-		"jsonrpc": "1.0",
-		"method": "listoutputcoinsfromcache",
-		"params": [
-			0,
-			999999,
-			[
-				{
-			  "PaymentAddress": "%s",
-			  "OTASecretKey": "%s",
-			  "ReadonlyKey" : "%s",
-			  "StartHeight": %d
-				}
-			],
-		  "%s"
-		  ],
-		"id": 1
-	}`, paymentAddStr, otaSecretKey, viewingKeyStr, h, tokenID)
-
-	//fmt.Println("==============")
-
-	return this.SendPostRequestWithQuery(query)
-}
-
-func (this *DebugTool) GetListOutputTokens(privKeyStr, tokenID string) ([]byte, error) {
-	if len(this.url) == 0 {
-		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
-	}
-
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	otaSecretKey := keyWallet.Base58CheckSerialize(wallet.OTAKeyType)
-	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
-
-	query := fmt.Sprintf(`{
-		"jsonrpc": "1.0",
-		"method": "listoutputcoins",
-		"params": [
-			0,
-			999999,
-			[
-				{
-			  "PaymentAddress": "%s",
-			  "OTASecretKey":   "%s",
-			  "ReadonlyKey": "%s",
-			  "StartHeight": 0
-				}
-			],
-			"%s"
-		  ],
-		"id": 1
-	}`, paymentAddStr, otaSecretKey, viewingKeyStr, tokenID)
-
-	//fmt.Println("==============")
-
-	return this.SendPostRequestWithQuery(query)
-}
-
-func (this *DebugTool) GetListUnspentOutputTokens(privKeyStr, tokenID string) ([]byte, error) {
-	if len(this.url) == 0 {
-		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
-	}
-
-	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-
-	query := fmt.Sprintf(`{
-	   "jsonrpc":"1.0",
-	   "method":"listunspentoutputtokens",
-	   "params":[
-		  0,
-		  999999,
-		  [
-			 {
-				"PrivateKey":"%s",
-				"StartHeight": 0,
-				"tokenID" : "%s"
-			 }
-
-		  ]
-	   ],
-	   "id":1
-	}`, privKeyStr, tokenID)
-
-	return this.SendPostRequestWithQuery(query)
-}
-
-func (this *DebugTool) ListUnspentOutputCoins(privKeyStr string) ([]byte, error) {
-	if len(this.url) == 0 {
-		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
-	}
-
-	query := fmt.Sprintf(`{
-	   "jsonrpc":"1.0",
-	   "method":"listunspentoutputcoins",
-	   "params":[
-		  0,
-		  999999,
-		  [
-			 {
-				"PrivateKey":"%s",
-				"StartHeight": 0
-			 }
-
-		  ]
-	   ],
-	   "id":1
-	}`, privKeyStr)
-
-	return this.SendPostRequestWithQuery(query)
-}
-
 func (this *DebugTool) GetBalanceByPrivatekey(privKeyStr string) ([]byte, error) {
 	if len(this.url) == 0 {
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
@@ -360,16 +201,6 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStr, to
 			}
 			]
 	}`, privKeyStr, tokenName, paymentAddStr)
-	return this.SendPostRequestWithQuery(query)
-}
-
-func (this *DebugTool) ListPrivacyCustomToken() ([]byte, error) {
-	query := `{
-		"id": 1,
-		"jsonrpc": "1.0",
-		"method": "listprivacycustomtoken",
-		"params": []
-	}`
 	return this.SendPostRequestWithQuery(query)
 }
 
@@ -668,6 +499,127 @@ func (this *DebugTool) WithdrawReward(privKey string, tokenID string) ([]byte, e
     "id": 1
 	}`, privKey, paymentAddStr, tokenID)
 	return this.SendPostRequestWithQuery(query)
+}
+
+func (tool *DebugTool) CreateRawTxToken(privateKey, tokenIDString, paymentString string, amount uint64, isPrivacy bool) ([]byte, error) {
+	// fmt.Println("Hi i'm here")
+	query := fmt.Sprintf(`{
+		"id": 1,
+		"jsonrpc": "1.0",
+		"method": "createrawprivacycustomtokentransaction",
+		"params": [
+			"%s",
+			null,
+			10,
+			1,
+			{
+				"Privacy": true,
+				"TokenID": "%s",
+				"TokenName": "",
+				"TokenSymbol": "",
+				"TokenFee": 0,
+				"TokenTxType": 1,
+				"TokenAmount": 0,
+				"TokenReceivers": {
+					"%s": %d
+				}
+			}
+		]
+	}`, privateKey, tokenIDString, paymentString, amount)
+	// fmt.Println("trying to send")
+	// fmt.Println(query)
+
+	respondInBytes, err := tool.SendPostRequestWithQuery(query)
+	if err != nil {
+		return nil, err
+	}
+	// fmt.Println(string(respondInBytes))
+
+
+	respond, err := ParseResponse(respondInBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	if respond.Error != nil {
+		return nil, respond.Error
+	}
+
+	var msg json.RawMessage
+	err = json.Unmarshal(respond.Result, &msg)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(msg, &result)
+
+	base58Check, ok := result["Base58CheckData"]
+	if !ok {
+		fmt.Println(result)
+		return nil, errors.New("cannot find base58CheckData")
+	}
+
+	tmp, _ := base58Check.(string)
+
+	bytearrays, err := DecodeBase58Check(tmp)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytearrays, nil
+}
+
+func (tool *DebugTool) CreateRawTx(privateKey, paymentString string, amount uint64, isPrivacy bool) ([]byte, error) {
+	privIndicator := "-1"
+	if isPrivacy{
+		privIndicator = "1"
+	}
+	query := fmt.Sprintf(`{
+		"jsonrpc": "1.0",
+		"method": "createtransaction",
+		"params": [
+			"%s",
+			{
+				"%s":%d
+			},
+			1,
+			%s
+		],
+		"id": 1
+	}`, privateKey, paymentString, amount, privIndicator)
+
+	respondInBytes, err := tool.SendPostRequestWithQuery(query)
+	if err != nil {
+		return nil, err
+	}
+
+	respond, err := ParseResponse(respondInBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	if respond.Error != nil {
+		return nil, respond.Error
+	}
+
+	var msg json.RawMessage
+	err = json.Unmarshal(respond.Result, &msg)
+
+	var result map[string]interface{}
+	err = json.Unmarshal(msg, &result)
+
+	base58Check, ok := result["Base58CheckData"]
+	if !ok {
+		fmt.Println(result)
+		return nil, errors.New("cannot find base58CheckData")
+	}
+
+	tmp, _ := base58Check.(string)
+
+	bytearrays, err := DecodeBase58Check(tmp)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytearrays, nil
 }
 
 // func (this *DebugTool) CreateDoubleSpend(privKeyA string, privKeyB string, amount string, isPrivacy bool) ([]byte, error) {
