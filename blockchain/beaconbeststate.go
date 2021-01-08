@@ -705,7 +705,7 @@ func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForRew
 	return env
 }
 
-func (beaconBestState *BeaconBestState) initCommitteeEngine(params *Params, bc *BlockChain) {
+func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 	Logger.log.Infof("Init Beacon Committee Engine V1, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
@@ -728,7 +728,10 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(params *Params, bc *
 
 	//init committee engine here
 	var committeeEngine committeestate.BeaconCommitteeEngine
-	version := committeestate.VersionByBeaconHeight(beaconBestState.BeaconHeight, params.ConsensusV3Height, params.BeaconCommitteeStateV3Height)
+	version := committeestate.VersionByBeaconHeight(
+		beaconBestState.BeaconHeight,
+		bc.config.ChainParams.ConsensusV3Height,
+		bc.config.ChainParams.BeaconCommitteeStateV3Height)
 
 	if version == committeestate.SELF_SWAP_SHARD_VERSION {
 		committeeState := committeestate.NewBeaconCommitteeStateV1WithValue(
@@ -750,12 +753,17 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(params *Params, bc *
 	} else {
 		shardCommonPool := nextEpochShardCandidate
 		numberOfAssignedCandidate := 0
-		//Declare swapRule
-		//TODO: maybe we can add swap rule after init beacon committee state for more clean code
+
 		swapRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForSwapRule(
 			beaconBestState.BeaconHeight, bc.config.ChainParams.BeaconCommitteeStateV3Height,
 		)
 		swapRule := committeestate.SwapRuleByEnv(swapRuleEnv)
+
+		unstakeRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForUnstakeRule(
+			beaconBestState.BeaconHeight, bc.config.ChainParams.BeaconCommitteeStateV3Height,
+		)
+		unstakeRule := committeestate.UnstakeRuleByEnv(unstakeRuleEnv)
+
 		if bc.IsGreaterThanRandomTime(beaconBestState.BeaconHeight) && !beaconBestState.IsGetRandomNumber {
 			var err error
 			var tempBeaconBlock = types.NewBeaconBlock()
@@ -797,7 +805,7 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(params *Params, bc *
 				snapshotShardCommittee,
 				snapshotShardSubstitute,
 				NumberOfFixedShardBlockValidators,
-				params.MinShardCommitteeSize,
+				bc.config.ChainParams.MinShardCommitteeSize,
 				swapRule,
 			)
 		}
@@ -813,8 +821,8 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(params *Params, bc *
 				rewardReceivers,
 				stakingTx,
 				swapRule,
+				unstakeRule,
 			)
-
 			committeeEngine = committeestate.NewBeaconCommitteeEngineV2(
 				beaconBestState.BeaconHeight,
 				beaconBestState.BestBlockHash,
@@ -834,8 +842,8 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(params *Params, bc *
 					syncingValidators,
 					terms,
 					swapRule,
+					unstakeRule,
 				)
-
 				committeeEngine = committeestate.NewBeaconCommitteeEngineV3(
 					beaconBestState.BeaconHeight, beaconBestState.BestBlockHash, committeeState,
 				)
@@ -891,15 +899,16 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }
 
-func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain) {
-	if beaconBestState.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
+//TODO: @tin fix here
+func (beaconBestState *BeaconBestState) upgradeCommitteeEngine(bc *BlockChain) {
+	if beaconBestState.CommitteeEngineVersion() == committeestate.DCS_VERSION {
 		return
 	}
 	beaconCommittee := make([]incognitokey.CommitteePublicKey, len(beaconBestState.GetBeaconCommittee()))
 	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
 	shardCommonPool := make([]incognitokey.CommitteePublicKey, len(beaconBestState.GetShardCandidate()))
-	numberOfAssignedCandidates := len(beaconBestState.GetCandidateShardWaitingForCurrentRandom())
+	numberOfAssignedCandidates := 0
 	autoStake := make(map[string]bool)
 	rewardReceiver := make(map[string]privacy.PaymentAddress)
 	stakingTx := make(map[string]common.Hash)
@@ -928,22 +937,71 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		beaconBestState.BeaconHeight, bc.config.ChainParams.BeaconCommitteeStateV3Height,
 	)
 	swapRule := committeestate.SwapRuleByEnv(swapRuleEnv)
+	unstakeRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForUnstakeRule(
+		beaconBestState.BeaconHeight, bc.config.ChainParams.BeaconCommitteeStateV3Height,
+	)
+	unstakeRule := committeestate.UnstakeRuleByEnv(unstakeRuleEnv)
 
-	newBeaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
-		beaconCommittee,
-		shardCommittee,
-		shardSubstitute,
-		shardCommonPool,
-		numberOfAssignedCandidates,
-		autoStake,
-		rewardReceiver,
-		stakingTx,
-		swapRule,
-	)
-	newCommitteeEngineV2 := committeestate.NewBeaconCommitteeEngineV2(
+	version := committeestate.VersionByBeaconHeight(
 		beaconBestState.BeaconHeight,
-		beaconBestState.BestBlockHash,
-		newBeaconCommitteeStateV2,
-	)
-	beaconBestState.beaconCommitteeEngine = newCommitteeEngineV2
+		bc.config.ChainParams.ConsensusV3Height,
+		bc.config.ChainParams.BeaconCommitteeStateV3Height)
+	var committeeEngine committeestate.BeaconCommitteeEngine
+	if version == committeestate.SELF_SWAP_SHARD_VERSION {
+		numberOfAssignedCandidates = len(beaconBestState.GetCandidateShardWaitingForCurrentRandom())
+		newBeaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
+			beaconCommittee,
+			shardCommittee,
+			shardSubstitute,
+			shardCommonPool,
+			numberOfAssignedCandidates,
+			autoStake,
+			rewardReceiver,
+			stakingTx,
+			swapRule,
+			unstakeRule,
+		)
+		committeeEngine = committeestate.NewBeaconCommitteeEngineV2(
+			beaconBestState.BeaconHeight,
+			beaconBestState.BestBlockHash,
+			newBeaconCommitteeStateV2,
+		)
+	} else {
+		if version == committeestate.SLASHING_VERSION {
+			numberOfAssignedCandidates = beaconBestState.beaconCommitteeEngine.NumberOfAssignedCandidates()
+			terms := map[string]uint64{}
+
+			for _, committees := range shardCommittee {
+				for _, committee := range committees {
+					key, _ := committee.ToBase58()
+					terms[key] = beaconBestState.BeaconHeight
+				}
+			}
+			for _, validators := range shardSubstitute {
+				for _, validator := range validators {
+					key, _ := validator.ToBase58()
+					terms[key] = beaconBestState.BeaconHeight
+				}
+			}
+
+			committeeState := committeestate.NewBeaconCommitteeStateV3WithValue(
+				beaconCommittee,
+				shardCommittee,
+				shardSubstitute,
+				shardCommonPool,
+				numberOfAssignedCandidates,
+				autoStake,
+				rewardReceiver,
+				stakingTx,
+				map[byte][]incognitokey.CommitteePublicKey{},
+				terms,
+				swapRule,
+				unstakeRule,
+			)
+			committeeEngine = committeestate.NewBeaconCommitteeEngineV3(
+				beaconBestState.BeaconHeight, beaconBestState.BestBlockHash, committeeState,
+			)
+		}
+	}
+	beaconBestState.beaconCommitteeEngine = committeeEngine
 }

@@ -113,3 +113,7 @@ func (engine *beaconCommitteeEngineSlashingBase) GenerateAllSwapShardInstruction
 	}
 	return swapShardInstructions, nil
 }
+
+func (engine beaconCommitteeEngineSlashingBase) NumberOfAssignedCandidates() int {
+	return engine.finalState.NumberOfAssignedCandidates()
+}

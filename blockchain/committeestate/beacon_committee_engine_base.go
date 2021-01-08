@@ -67,7 +67,7 @@ func (engine beaconCommitteeEngineBase) GetBeaconSubstitute() []incognitokey.Com
 
 //GetCandidateShardWaitingForCurrentRandom :
 func (engine beaconCommitteeEngineBase) GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
-	return engine.finalState.ShardCommonPool()[:engine.finalState.NumberOfAssignedCandidates()]
+	return []incognitokey.CommitteePublicKey{}
 }
 
 //GetCandidateBeaconWaitingForCurrentRandom :
@@ -299,4 +299,8 @@ func (engine *beaconCommitteeEngineBase) SplitReward(
 
 func (engine *beaconCommitteeEngineBase) Terms() map[string]uint64 {
 	return map[string]uint64{}
+}
+
+func (engine beaconCommitteeEngineBase) NumberOfAssignedCandidates() int {
+	panic("Implement this function")
 }

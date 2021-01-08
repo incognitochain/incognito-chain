@@ -926,7 +926,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
-		newBestState.upgradeCommitteeEngineV2(blockchain)
+		newBestState.upgradeCommitteeEngine(blockchain)
 	}
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 	blockchain.BeaconChain.multiView.AddView(newBestState)

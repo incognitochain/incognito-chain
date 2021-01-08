@@ -93,7 +93,7 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange = newState.processAssignWithRandomInstruction(
-				randomInstruction.BtcNonce, env.ActiveShards, committeeChange, oldState)
+				randomInstruction.BtcNonce, env.ActiveShards, committeeChange, oldState, env.BeaconHeight)
 
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)

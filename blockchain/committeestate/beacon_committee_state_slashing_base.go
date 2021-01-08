@@ -18,7 +18,8 @@ type beaconCommitteeStateSlashingBase struct {
 	shardCommonPool            []incognitokey.CommitteePublicKey
 	numberOfAssignedCandidates int
 
-	swapRule SwapRule
+	swapRule    SwapRule
+	unstakeRule UnstakeRule
 }
 
 func NewBeaconCommitteeStateSlashingBase() *beaconCommitteeStateSlashingBase {
@@ -37,6 +38,7 @@ func NewBeaconCommitteeStateSlashingBaseWithValue(
 	shardCommonPool []incognitokey.CommitteePublicKey,
 	numberOfAssignedCandidates int,
 	swapRule SwapRule,
+	unstakeRule UnstakeRule,
 ) *beaconCommitteeStateSlashingBase {
 	return &beaconCommitteeStateSlashingBase{
 		beaconCommitteeStateBase: *NewBeaconCommitteeStateBaseWithValue(
@@ -46,6 +48,7 @@ func NewBeaconCommitteeStateSlashingBaseWithValue(
 		shardCommonPool:            shardCommonPool,
 		numberOfAssignedCandidates: numberOfAssignedCandidates,
 		swapRule:                   swapRule,
+		unstakeRule:                unstakeRule,
 	}
 }
 
@@ -68,6 +71,7 @@ func (b *beaconCommitteeStateSlashingBase) cloneFrom(fromB beaconCommitteeStateS
 	b.shardCommonPool = make([]incognitokey.CommitteePublicKey, len(fromB.shardCommonPool))
 	copy(b.shardCommonPool, fromB.shardCommonPool)
 	b.swapRule = cloneSwapRuleByVersion(fromB.swapRule)
+	b.unstakeRule = cloneUnstakeRuleByVersion(fromB.unstakeRule)
 }
 
 func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingBase {
@@ -78,6 +82,7 @@ func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingB
 	res.shardCommonPool = make([]incognitokey.CommitteePublicKey, len(b.shardCommonPool))
 	copy(res.shardCommonPool, b.shardCommonPool)
 	res.swapRule = cloneSwapRuleByVersion(b.swapRule)
+	res.unstakeRule = cloneUnstakeRuleByVersion(b.unstakeRule)
 
 	return res
 }
@@ -202,10 +207,20 @@ func (b *beaconCommitteeStateSlashingBase) deleteStakerInfo(
 	committeePublicKey string,
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, error) {
-	committeeChange.RemovedStaker = append(committeeChange.RemovedStaker, committeePublicKey)
-	delete(b.rewardReceiver, committeePublicKeyStruct.GetIncKeyBase58())
-	delete(b.autoStake, committeePublicKey)
-	delete(b.stakingTx, committeePublicKey)
+	autoStake, rewardReceivers, stakingTx, removedStakers, removedTerms, err := b.unstakeRule.RemoveFromState(
+		committeePublicKeyStruct, b.autoStake, b.rewardReceiver, b.stakingTx, b.Terms(),
+		committeeChange.RemovedStaker, committeeChange.TermsRemoved,
+	)
+	if err != nil {
+		return committeeChange, err
+	}
+
+	committeeChange.RemovedStaker = removedStakers
+	committeeChange.TermsRemoved = removedTerms
+	b.autoStake = autoStake
+	b.rewardReceiver = rewardReceivers
+	b.stakingTx = stakingTx
+
 	return committeeChange, nil
 }
 
@@ -370,7 +385,6 @@ func (b *beaconCommitteeStateSlashingBase) getValidatorsByAutoStake(
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
 ) ([]string, *CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	candidates := []string{}
-
 	outPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(outPublicKeys)
 	for index, outPublicKey := range outPublicKeys {
 		stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, outPublicKey)
@@ -390,7 +404,6 @@ func (b *beaconCommitteeStateSlashingBase) getValidatorsByAutoStake(
 				stakerInfo,
 				committeeChange,
 			)
-
 			if err != nil {
 				return candidates, committeeChange, returnStakingInstruction, err
 			}

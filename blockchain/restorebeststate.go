@@ -16,7 +16,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	beaconBestState.Epoch = block.GetCurrentEpoch()
 	beaconBestState.BestBlockHash = *block.Hash()
 	beaconBestState.PreviousBestBlockHash = block.PreviousBestBlockHash()
-	beaconBestState.initCommitteeEngine(blockchain.config.ChainParams, blockchain)
+	beaconBestState.initCommitteeEngine(blockchain)
 
 	if blockchain.BeaconChain.GetBestView() != nil || beaconBestState.BeaconHeight == 1 {
 		err = initMissingSignatureCounter(blockchain, beaconBestState, block)

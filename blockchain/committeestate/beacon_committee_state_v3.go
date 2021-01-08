@@ -33,11 +33,12 @@ func NewBeaconCommitteeStateV3WithValue(
 	syncPool map[byte][]incognitokey.CommitteePublicKey,
 	terms map[string]uint64,
 	swapRule SwapRule,
+	unstakeRule UnstakeRule,
 ) *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
 		beaconCommitteeStateSlashingBase: *NewBeaconCommitteeStateSlashingBaseWithValue(
 			beaconCommittee, shardCommittee, shardSubstitute, autoStake, rewardReceiver, stakingTx,
-			shardCommonPool, numberOfAssignedCandidates, swapRule,
+			shardCommonPool, numberOfAssignedCandidates, swapRule, unstakeRule,
 		),
 		syncPool: syncPool,
 		terms:    terms,
@@ -91,17 +92,22 @@ func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePub
 func (b *BeaconCommitteeStateV3) assignToSync(
 	shardID byte,
 	candidates []string,
-	committeeChange *CommitteeChange) *CommitteeChange {
+	committeeChange *CommitteeChange,
+	beaconHeight uint64,
+) *CommitteeChange {
 	tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(candidates)
 	committeeChange.SyncingPoolAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
 	b.syncPool[shardID] = append(b.syncPool[shardID], tempCandidateStructs...)
 	committeeChange.TermsAdded = append(committeeChange.TermsAdded, candidates...)
+	for _, candidate := range candidates {
+		b.terms[candidate] = beaconHeight
+	}
 	return committeeChange
 }
 
 func (b *BeaconCommitteeStateV3) assignAfterNormalSwapOut(
 	candidates []string, rand int64, activeShards int, committeeChange *CommitteeChange,
-	oldState BeaconCommitteeState, oldShardID byte,
+	oldState BeaconCommitteeState, oldShardID byte, beaconHeight uint64,
 ) *CommitteeChange {
 	newCommitteeChange := committeeChange
 	assignedCandidates := b.getAssignCandidates(candidates, rand, activeShards, oldState)
@@ -110,7 +116,7 @@ func (b *BeaconCommitteeStateV3) assignAfterNormalSwapOut(
 		if shardID == oldShardID {
 			newCommitteeChange = b.assignToPending(tempCandidates, rand, shardID, newCommitteeChange)
 		} else {
-			newCommitteeChange = b.assignToSync(shardID, tempCandidates, newCommitteeChange)
+			newCommitteeChange = b.assignToSync(shardID, tempCandidates, newCommitteeChange, beaconHeight)
 		}
 	}
 	return newCommitteeChange
@@ -118,7 +124,6 @@ func (b *BeaconCommitteeStateV3) assignAfterNormalSwapOut(
 
 func (b *BeaconCommitteeStateV3) assignToPending(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
 	newCommitteeChange := committeeChange
-
 	for _, candidate := range candidates {
 		key := incognitokey.CommitteePublicKey{}
 		key.FromString(candidate)
@@ -126,7 +131,6 @@ func (b *BeaconCommitteeStateV3) assignToPending(candidates []string, rand int64
 		randomOffset := calculateCandidatePosition(candidate, rand, len(b.shardSubstitute[shardID]))
 		b.shardSubstitute[shardID] = incognitokey.InsertCommitteePublicKeyToSlice(b.shardSubstitute[shardID], key, randomOffset)
 	}
-
 	return newCommitteeChange
 }
 
@@ -153,6 +157,10 @@ func (b *BeaconCommitteeStateV3) processAssignInstruction(
 		env.RandomNumber,
 		byte(assignInstruction.ChainID),
 		newCommitteeChange)
+	committeeChange.TermsAdded = append(committeeChange.TermsAdded, candidates...)
+	for _, candidate := range candidates {
+		b.terms[candidate] = env.BeaconHeight
+	}
 
 	return newCommitteeChange, returnStakingInstruction, nil
 }
@@ -185,8 +193,7 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 			candidates = append(candidates[:i], candidates[i+1:]...)
 		}
 	}
-	newCommitteeChange = b.assignAfterNormalSwapOut(candidates, env.RandomNumber, env.ActiveShards, newCommitteeChange, oldState, env.ShardID)
-
+	newCommitteeChange = b.assignAfterNormalSwapOut(candidates, env.RandomNumber, env.ActiveShards, newCommitteeChange, oldState, env.ShardID, env.BeaconHeight)
 	return newCommitteeChange, newReturnStakingInstruction, nil
 }
 
@@ -195,11 +202,12 @@ func (b *BeaconCommitteeStateV3) processAssignWithRandomInstruction(
 	activeShards int,
 	committeeChange *CommitteeChange,
 	oldState BeaconCommitteeState,
+	beaconHeight uint64,
 ) *CommitteeChange {
 	newCommitteeChange, candidates := b.updateCandidatesByRandom(committeeChange, oldState)
 	assignedCandidates := b.getAssignCandidates(candidates, rand, activeShards, oldState)
 	for shardID, candidates := range assignedCandidates {
-		newCommitteeChange = b.assignToSync(shardID, candidates, newCommitteeChange)
+		newCommitteeChange = b.assignToSync(shardID, candidates, newCommitteeChange, beaconHeight)
 	}
 	b.numberOfAssignedCandidates = 0
 	return newCommitteeChange
@@ -241,4 +249,8 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	newCommitteeChange.SlashingCommittee[shardID] = append(committeeChange.SlashingCommittee[shardID], slashingCommittees...)
 
 	return newCommitteeChange, returnStakingInstruction, nil
+}
+
+func (b *BeaconCommitteeStateV3) Terms() map[string]uint64 {
+	return b.terms
 }

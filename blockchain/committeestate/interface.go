@@ -43,6 +43,7 @@ type BeaconCommitteeEngine interface {
 	AssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
 	SyncingValidators() map[byte][]incognitokey.CommitteePublicKey
 	Terms() map[string]uint64
+	NumberOfAssignedCandidates() int
 }
 
 //ShardCommitteeEngine :

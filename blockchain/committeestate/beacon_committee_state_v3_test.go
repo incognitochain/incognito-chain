@@ -67,6 +67,7 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 		activeShards    int
 		committeeChange *CommitteeChange
 		oldState        BeaconCommitteeState
+		beaconHeight    uint64
 	}
 	tests := []struct {
 		name   string
@@ -83,7 +84,7 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 				syncPool:                         tt.fields.syncPool,
 				terms:                            tt.fields.terms,
 			}
-			if got := b.processAssignWithRandomInstruction(tt.args.rand, tt.args.activeShards, tt.args.committeeChange, tt.args.oldState); !reflect.DeepEqual(got, tt.want) {
+			if got := b.processAssignWithRandomInstruction(tt.args.rand, tt.args.activeShards, tt.args.committeeChange, tt.args.oldState, tt.args.beaconHeight); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BeaconCommitteeStateV3.processAssignWithRandomInstruction() = %v, want %v", got, tt.want)
 			}
 		})
@@ -227,6 +228,7 @@ func TestBeaconCommitteeStateV3_assignAfterNormalSwapOut(t *testing.T) {
 		committeeChange *CommitteeChange
 		oldState        BeaconCommitteeState
 		oldShardID      byte
+		beaconHeight    uint64
 	}
 	tests := []struct {
 		name   string
@@ -243,7 +245,7 @@ func TestBeaconCommitteeStateV3_assignAfterNormalSwapOut(t *testing.T) {
 				syncPool:                         tt.fields.syncPool,
 				terms:                            tt.fields.terms,
 			}
-			if got := b.assignAfterNormalSwapOut(tt.args.candidates, tt.args.rand, tt.args.activeShards, tt.args.committeeChange, tt.args.oldState, tt.args.oldShardID); !reflect.DeepEqual(got, tt.want) {
+			if got := b.assignAfterNormalSwapOut(tt.args.candidates, tt.args.rand, tt.args.activeShards, tt.args.committeeChange, tt.args.oldState, tt.args.oldShardID, tt.args.beaconHeight); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BeaconCommitteeStateV3.assignAfterNormalSwapOut() = %v, want %v", got, tt.want)
 			}
 		})
@@ -260,6 +262,7 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 		shardID         byte
 		candidates      []string
 		committeeChange *CommitteeChange
+		beaconHeight    uint64
 	}
 	tests := []struct {
 		name   string
@@ -276,7 +279,7 @@ func TestBeaconCommitteeStateV3_assignToSync(t *testing.T) {
 				syncPool:                         tt.fields.syncPool,
 				terms:                            tt.fields.terms,
 			}
-			if got := b.assignToSync(tt.args.shardID, tt.args.candidates, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
+			if got := b.assignToSync(tt.args.shardID, tt.args.candidates, tt.args.committeeChange, tt.args.beaconHeight); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BeaconCommitteeStateV3.assignToSync() = %v, want %v", got, tt.want)
 			}
 		})

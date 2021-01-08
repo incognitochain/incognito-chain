@@ -161,7 +161,7 @@ func (b beaconCommitteeStateBase) ShardCommonPool() []incognitokey.CommitteePubl
 }
 
 func (b beaconCommitteeStateBase) Terms() map[string]uint64 {
-	panic("Implement this function")
+	return map[string]uint64{}
 }
 
 func (b beaconCommitteeStateBase) AutoStake() map[string]bool {
@@ -382,5 +382,9 @@ func SnapshotShardCommonPoolV2(
 }
 
 func (b *beaconCommitteeStateBase) SetSwapRule(swapRule SwapRule) {
+	panic("Implement this function")
+}
+
+func (b *beaconCommitteeStateBase) SetTerms(map[string]uint64) {
 	panic("Implement this function")
 }
