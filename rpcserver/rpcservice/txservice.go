@@ -85,11 +85,7 @@ func (txService TxService) ListCommitmentIndices(tokenID common.Hash, shardID by
 	return statedb.ListCommitmentIndices(transactionStateDB, tokenID, shardID)
 }
 
-func (txService TxService) HasSerialNumbers(paymentAddressStr string, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error) {
-	_, shardIDSender, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
-	if err != nil {
-		return nil, err
-	}
+func (txService TxService) HasSerialNumbers(shardID byte, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error) {
 	result := make([]bool, 0)
 	for _, item := range serialNumbersStr {
 		itemStr, okParam := item.(string)
@@ -100,8 +96,8 @@ func (txService TxService) HasSerialNumbers(paymentAddressStr string, serialNumb
 		if err != nil {
 			return nil, fmt.Errorf("Decode serial number failed, %+v", itemStr)
 		}
-		transactionStateDB := txService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
-		ok, err := statedb.HasSerialNumber(transactionStateDB, tokenID, serialNumber, shardIDSender)
+		transactionStateDB := txService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+		ok, err := statedb.HasSerialNumber(transactionStateDB, tokenID, serialNumber, shardID)
 		if ok && err == nil {
 			// serial number in db
 			result = append(result, true)
