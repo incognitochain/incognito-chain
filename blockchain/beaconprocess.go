@@ -453,7 +453,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 
 	}
 	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch, portalParams)
+	statefulInsts := blockchain.buildStatefulInstructions(curView, curView.featureStateDB, statefulActionsByShardID, beaconBlock.Header.Height, rewardForCustodianByEpoch, portalParams)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 
 	tempInstruction, err := curView.GenerateInstruction(beaconBlock.Header.Height,
@@ -643,30 +643,6 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 		return NewBlockChainError(ShardCommitteeAndPendingValidatorRootError, fmt.Errorf("Expect AutoStakingRoot to be %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hash))
 	}
 
-	if !TestRandom {
-		//COMMENT FOR TESTING
-		instructions := beaconBlock.Body.Instructions
-		for _, l := range instructions {
-			if l[0] == "random" {
-				startTime := time.Now()
-				// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-				nonce, err := strconv.Atoi(l[1])
-				if err != nil {
-					Logger.log.Errorf("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				ok, err = randomClient.VerifyNonceWithTimestamp(startTime, beaconBestState.BlockMaxCreateTime, beaconBestState.CurrentRandomTimeStamp, int64(nonce))
-				Logger.log.Infof("Verify Random number %+v", ok)
-				if err != nil {
-					Logger.log.Error("Blockchain Error %+v", NewBlockChainError(UnExpectedError, err))
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				if !ok {
-					return NewBlockChainError(RandomError, errors.New("Error verify random number"))
-				}
-			}
-		}
-	}
 	beaconVerifyPostProcessingTimer.UpdateSince(startTimeVerifyPostProcessingBeaconBlock)
 	return nil
 }
@@ -922,11 +898,11 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 	// beaconConsensusStateDB := beaconBestState.consensusStateDB.Copy()
 	// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
 	if instruction[0] == RandomAction {
-		temp, err := strconv.Atoi(instruction[1])
+		temp, err := strconv.ParseInt(instruction[1], 10, 64)
 		if err != nil {
 			return NewBlockChainError(ProcessRandomInstructionError, err), false, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 		}
-		beaconBestState.CurrentRandomNumber = int64(temp)
+		beaconBestState.CurrentRandomNumber = temp
 		Logger.log.Infof("Random number found %d", beaconBestState.CurrentRandomNumber)
 		return nil, true, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}
 	}
@@ -1110,8 +1086,6 @@ func (beaconBestState *BeaconBestState) processInstruction(instruction []string,
 				beaconStakingTx = []string{}
 			}
 		}
-		Logger.log.Infof("Len Candidate: %v; Len AutoStaking: %v, Len StakingTx: %v", len(beaconCandidatesStructs), len(beaconAutoReStaking), len(beaconStakingTx))
-		Logger.log.Infof("Candidate: %v; AutoStaking: %v, StakingTx: %v", beaconCandidatesStructs, beaconAutoReStaking, beaconStakingTx)
 		for index, candidate := range beaconCandidatesStructs {
 			wl, err := wallet.Base58CheckDeserialize(beaconRewardReceivers[index])
 			if err != nil {
@@ -1648,7 +1622,7 @@ func processBeaconForConfirmmingCrossShard(blockchain *BlockChain, beaconBlock *
 						beaconBlock.GetHeight(),
 						beaconBlock.Hash().String(),
 					}
-					Logger.log.Info("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, info)
+					Logger.log.Info("DEBUG: processBeaconForConfirmmingCrossShard ", fromShard, toShard, lastHeight, info)
 					b, _ := json.Marshal(info)
 
 					//not update if already exit
