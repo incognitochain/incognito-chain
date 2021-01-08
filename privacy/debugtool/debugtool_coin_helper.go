@@ -2,7 +2,11 @@ package debugtool
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
@@ -77,5 +81,75 @@ func ParseCoinFromJsonResponse(b []byte) ([]jsonresult.ICoinInfo, []*big.Int, er
 	}
 
 	return resultOutCoins, nil, nil
+}
+
+func GetListDecryptedCoins(privateKey string, listOutputCoins []jsonresult.ICoinInfo) ([]coin.PlainCoin, []string, error){
+	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil{
+		return nil, nil, err
+	}
+
+	listDecyptedOutCoins := make([]coin.PlainCoin, 0)
+	listKeyImages := make([]string, 0)
+	for _, outCoin := range listOutputCoins {
+		if outCoin.GetVersion() == 1{
+			if outCoin.IsEncrypted() {
+				tmpCoin, ok := outCoin.(*coin.CoinV1)
+				if !ok {
+					return nil, nil, errors.New("invalid CoinV1")
+				}
+
+				decryptedCoin, err := tmpCoin.Decrypt(&keyWallet.KeySet)
+				if err != nil{
+					return nil, nil, err
+				}
+
+				keyImage, err := decryptedCoin.ParseKeyImageWithPrivateKey(keyWallet.KeySet.PrivateKey)
+				if err != nil{
+					return nil, nil, err
+				}
+				decryptedCoin.SetKeyImage(keyImage)
+
+				keyImageString := base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte)
+
+				listKeyImages = append(listKeyImages, keyImageString)
+				listDecyptedOutCoins = append(listDecyptedOutCoins, decryptedCoin)
+			}else{
+				tmpPlainCoinV1, ok := outCoin.(*coin.PlainCoinV1)
+				if !ok {
+					return nil, nil, errors.New("invalid PlaincoinV1")
+				}
+
+				keyImage, err := tmpPlainCoinV1.ParseKeyImageWithPrivateKey(keyWallet.KeySet.PrivateKey)
+				if err != nil{
+					return nil, nil, err
+				}
+				tmpPlainCoinV1.SetKeyImage(keyImage)
+
+				keyImageString := base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte)
+
+				listKeyImages = append(listKeyImages, keyImageString)
+				listDecyptedOutCoins = append(listDecyptedOutCoins, tmpPlainCoinV1)
+			}
+		}else if outCoin.GetVersion() == 2 {
+			tmpCoinV2, ok := outCoin.(*coin.CoinV2)
+			if !ok {
+				return nil, nil, errors.New("invalid CoinV2")
+			}
+
+			decryptedCoin, err := tmpCoinV2.Decrypt(&keyWallet.KeySet)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			keyImage := decryptedCoin.GetKeyImage()
+			keyImageString := base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte)
+
+			listKeyImages = append(listKeyImages, keyImageString)
+			listDecyptedOutCoins = append(listDecyptedOutCoins, decryptedCoin)
+		}
+	}
+
+	return listDecyptedOutCoins, listKeyImages, nil
 }
 
