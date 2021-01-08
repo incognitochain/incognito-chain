@@ -133,7 +133,7 @@ func IsInShardCandidateForCurrentEpoch(
 	stateDB *StateDB,
 	committee incognitokey.CommitteePublicKey,
 ) (*CommitteeState, bool, error) {
-	key, err := GenerateCommitteeObjectKeyWithRole(CurrentEpochBeaconCandidate, CandidateChainID, committee)
+	key, err := GenerateCommitteeObjectKeyWithRole(CurrentEpochShardCandidate, CandidateChainID, committee)
 	if err != nil {
 		return nil, false, err
 	}

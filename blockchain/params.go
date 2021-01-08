@@ -455,7 +455,7 @@ func SetupParam() {
 		ReplaceStakingTxHeight:      559380,
 		IsBackup:                    false,
 		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    737450,
+		BCHeightBreakPointNewZKP:    934858,
 		ETHRemoveBridgeSigEpoch:     1973,
 		EpochV2:                     MainnetEpochV2,
 		EpochV2BreakPoint:           MainnetEpochV2BreakPoint,
