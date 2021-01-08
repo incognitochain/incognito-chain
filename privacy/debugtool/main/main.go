@@ -33,7 +33,7 @@ func InitToken(tool *debugtool.DebugTool, privKey, tokenName string) {
 
 func ListTokens(tool *debugtool.DebugTool) *debugtool.ListCustomToken {
 	fmt.Println("========== LIST ALL TOKEN ==========")
-	b, _ := tool.ListPrivacyCustomToken()
+	b, _ := tool.ListPrivacyCustomTokenByRPC()
 	res := new(debugtool.ListCustomToken)
 	_ = json.Unmarshal(b, res)
 	fmt.Println("Number of Token: ", len(res.Result.ListCustomToken))
@@ -50,15 +50,33 @@ func ListTokens(tool *debugtool.DebugTool) *debugtool.ListCustomToken {
 
 func GetOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string, height uint64) {
 	//fmt.Println("========== GET OUTPUT TOKEN ==========")
-	//b, _ := tool.GetListOutputCoins(privKey, tokenID, height)
-	//fmt.Println(string(b))
+	outCoinKey, err := debugtool.NewOutCoinKeyFromPrivateKey(privKey)
+	if err != nil{
+		fmt.Println(err)
+		return
+	}
+
+	b, err := tool.GetListOutputCoinsByRPC(outCoinKey, tokenID, height)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(string(b))
 	//fmt.Println("========== END OUTPUT TOKEN ==========")
 }
 
-func GetUnspentOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string) {
+func GetUnspentOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string, height uint64) {
 	fmt.Println("========== GET UNSPENT OUTPUT TOKEN ==========")
-	b, _ := tool.GetListUnspentOutputTokens(privKey, tokenID)
-	fmt.Println(string(b))
+	listUnspentCoins, _, err := tool.GetUnspentOutputCoins(privKey, tokenID, height)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, unspentCoin := range listUnspentCoins{
+		fmt.Printf("version: %v, pubKey: %v, keyImage: %v, value: %v\n", unspentCoin.GetVersion(), unspentCoin.GetPublicKey(), unspentCoin.GetKeyImage(), unspentCoin.GetValue())
+	}
+
 	fmt.Println("========== END UNSPENT OUTPUT TOKEN ==========")
 }
 
@@ -113,18 +131,14 @@ func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string, height uint64) 
 		fmt.Println(err)
 		return
 	}
-	//outCoinKey.SetReadonlyKey("")
-	////outCoinKey.SetOTAKey("")
+	outCoinKey.SetReadonlyKey("") //Call this if you dont want the full node to decrypt your amount.
 
-	b, err := tool.GetListOutputCoins(outCoinKey, common.PRVIDStr, height)
-	//fmt.Printf("number of coins: %v\n", len(b))
+	b, err := tool.GetListOutputCoinsByRPC(outCoinKey, common.PRVIDStr, height)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	//for _, outCoin := range b{
-	//	fmt.Println(outCoin.GetValue())
-	//}
+
 	fmt.Println(string(b))
 	fmt.Println("========== END GET PRV OUTPUT COIN ==========")
 }
@@ -132,13 +146,13 @@ func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string, height uint64) 
 
 func GetPRVOutPutCoinCached(tool *debugtool.DebugTool, privkey string) {
 	fmt.Println("========== GET CACHED PRV OUTPUT COIN ==========")
-	b, _ := tool.GetListOutputCoinsCached(privkey, common.PRVIDStr, uint64(0))
+	b, _ := tool.GetListOutputCoinsCachedByRPC(privkey, common.PRVIDStr, uint64(0))
 	fmt.Println(string(b))
 	fmt.Println("========== END GET CACHED PRV OUTPUT COIN ==========")
 }
 func GetOutputTokenCached(tool *debugtool.DebugTool, privKey string, tokenID string) {
 	fmt.Println("========== GET CACHED OUTPUT TOKEN ==========")
-	b, _ := tool.GetListOutputCoinsCached(privKey, tokenID, uint64(0))
+	b, _ := tool.GetListOutputCoinsCachedByRPC(privKey, tokenID, uint64(0))
 	fmt.Println(string(b))
 	fmt.Println("========== END GET CACHED OUTPUT TOKEN ==========")
 }
@@ -483,7 +497,12 @@ func main() {
 				privateKey = args[1]
 			}
 
-			GetPRVBalance(tool, privateKey)
+			balance, err := tool.GetBalance(privateKey, common.PRVIDStr)
+			if err != nil{
+				fmt.Println(err)
+				continue
+			}
+			fmt.Println("Balance =", balance)
 		}
 		if args[0] == "mempool" {
 			GetRawMempool(tool)
@@ -727,8 +746,15 @@ func main() {
 			} else {
 				privateKey = args[1]
 			}
+			bi := big.NewInt(0)
+			if len(args) >= 4 {
+				_, ok := bi.SetString(args[3], 10)
+				if !ok {
+					continue
+				}
+			}
 
-			GetUnspentOutputToken(tool, privateKey, tokenID)
+			GetUnspentOutputToken(tool, privateKey, tokenID, bi.Uint64())
 		}
 		// PDE
 		if args[0] == "pdecontributeprv" {
