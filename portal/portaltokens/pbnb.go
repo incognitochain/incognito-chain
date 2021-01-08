@@ -1,12 +1,9 @@
 package portaltokens
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"github.com/binance-chain/go-sdk/types/msg"
 	bMeta "github.com/incognitochain/incognito-chain/basemeta"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 )
 
@@ -128,29 +125,11 @@ func (p PortalBNBTokenProcessor) ParseAndVerifyProof(
 }
 
 func (p PortalBNBTokenProcessor) GetExpectedMemoForPorting(portingID string) string {
-	type portingMemoBNB struct {
-		PortingID string `json:"PortingID"`
-	}
-	memoPorting := portingMemoBNB{PortingID: portingID}
-	memoPortingBytes, _ := json.Marshal(memoPorting)
-	memoPortingStr := base64.StdEncoding.EncodeToString(memoPortingBytes)
-	return memoPortingStr
+	return p.PortalToken.GetExpectedMemoForPorting(portingID)
 }
 
 func (p PortalBNBTokenProcessor) GetExpectedMemoForRedeem(redeemID string, custodianAddress string) string {
-	type redeemMemoBNB struct {
-		RedeemID                  string `json:"RedeemID"`
-		CustodianIncognitoAddress string `json:"CustodianIncognitoAddress"`
-	}
-
-	redeemMemo := redeemMemoBNB{
-		RedeemID:                  redeemID,
-		CustodianIncognitoAddress: custodianAddress,
-	}
-	redeemMemoBytes, _ := json.Marshal(redeemMemo)
-	redeemMemoHashBytes := common.HashB(redeemMemoBytes)
-	redeemMemoStr := base64.StdEncoding.EncodeToString(redeemMemoHashBytes)
-	return redeemMemoStr
+	return p.PortalToken.GetExpectedMemoForRedeem(redeemID, custodianAddress)
 }
 
 // ConvertIncPBNBAmountToExternalBNBAmount converts amount in inc chain (decimal 9) to amount in bnb chain (decimal 8)

@@ -12,13 +12,11 @@ type PortalBTCTokenProcessor struct {
 }
 
 func (p PortalBTCTokenProcessor) GetExpectedMemoForPorting(portingID string) string {
-	return btcrelaying.HashAndEncodeBase58(portingID)
+	return p.PortalToken.GetExpectedMemoForPorting(portingID)
 }
 
 func (p PortalBTCTokenProcessor) GetExpectedMemoForRedeem(redeemID string, custodianIncAddress string) string {
-	rawMsg := fmt.Sprintf("%s%s", redeemID, custodianIncAddress)
-	encodedMsg := btcrelaying.HashAndEncodeBase58(rawMsg)
-	return encodedMsg
+	return p.PortalToken.GetExpectedMemoForRedeem(redeemID, custodianIncAddress)
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyProof(

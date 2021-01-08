@@ -1,7 +1,10 @@
 package portaltokens
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	bMeta "github.com/incognitochain/incognito-chain/basemeta"
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type PortalTokenProcessor interface {
@@ -21,3 +24,31 @@ type PortalToken struct {
 	ChainID        string
 	MinTokenAmount uint64 // minimum amount for porting/redeem
 }
+
+func (p PortalToken) GetExpectedMemoForPorting(portingID string) string {
+	type portingMemoStruct struct {
+		PortingID string `json:"PortingID"`
+	}
+	memoPorting := portingMemoStruct{PortingID: portingID}
+	memoPortingBytes, _ := json.Marshal(memoPorting)
+	memoPortingHashBytes := common.HashB(memoPortingBytes)
+	memoPortingStr := base64.StdEncoding.EncodeToString(memoPortingHashBytes)
+	return memoPortingStr
+}
+
+func (p PortalToken) GetExpectedMemoForRedeem(redeemID string, custodianAddress string) string {
+	type redeemMemoStruct struct {
+		RedeemID                  string `json:"RedeemID"`
+		CustodianIncognitoAddress string `json:"CustodianIncognitoAddress"`
+	}
+
+	redeemMemo := redeemMemoStruct{
+		RedeemID:                  redeemID,
+		CustodianIncognitoAddress: custodianAddress,
+	}
+	redeemMemoBytes, _ := json.Marshal(redeemMemo)
+	redeemMemoHashBytes := common.HashB(redeemMemoBytes)
+	redeemMemoStr := base64.StdEncoding.EncodeToString(redeemMemoHashBytes)
+	return redeemMemoStr
+}
+
