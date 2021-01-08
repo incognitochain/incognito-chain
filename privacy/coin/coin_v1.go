@@ -436,9 +436,17 @@ func (pc PlainCoinV1) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.
 }
 
 func (pc PlainCoinV1) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.Point, error) {
-	k, _ := pc.ParsePrivateKeyOfCoin(privKey)
-	Hp := operation.HashToPoint(pc.GetPublicKey().ToBytesS())
-	return new(operation.Point).ScalarMult(Hp, k), nil
+	k, err := pc.ParsePrivateKeyOfCoin(privKey)
+	if err != nil {
+		return nil, err
+	}
+	keyImage := new(operation.Point).Derive(
+		operation.PedCom.G[operation.PedersenPrivateKeyIndex],
+		k,
+		pc.GetSNDerivator())
+	pc.SetKeyImage(keyImage)
+
+	return pc.GetKeyImage(), nil
 }
 
 // Bytes (OutputCoin) converts a output coin's details to a bytes array
