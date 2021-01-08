@@ -21,7 +21,8 @@ func TestBase58CheckChecksumFirst4Bytes(t *testing.T) {
 	}
 
 	for _, item := range data {
-		checkSum := ChecksumFirst4Bytes(item)
+		isNewCheckSum := (common.RandInt() % 2) == 1
+		checkSum := ChecksumFirst4Bytes(item, isNewCheckSum)
 		assert.Equal(t, common.CheckSumLen, len(checkSum))
 	}
 }

@@ -114,18 +114,21 @@ func TestHDWalletSerialize(t *testing.T) {
 		seed := common.RandBytes(common.PrivateKeySize)
 		masterKey, _ := NewMasterKey(seed)
 
-		privKeyBytes, err := masterKey.Serialize(PriKeyType)
-		paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType)
-		readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType)
+		isNewCheckSum := (common.RandInt() % 2) == 1
+		fmt.Println("isNewCheckSum", isNewCheckSum)
+
+		privKeyBytes, err := masterKey.Serialize(PriKeyType, isNewCheckSum)
+		paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType, isNewCheckSum)
+		readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType, isNewCheckSum)
 
 		actualCheckSumPrivKey := privKeyBytes[privKeySerializedBytesLen-4:]
-		expectedCheckSumPrivKey := base58.ChecksumFirst4Bytes(privKeyBytes[:privKeySerializedBytesLen-4])
+		expectedCheckSumPrivKey := base58.ChecksumFirst4Bytes(privKeyBytes[:privKeySerializedBytesLen-4], isNewCheckSum)
 
 		actualCheckSumPaymentAddr := paymentAddrBytes[paymentAddrSerializedBytesLen-4:]
-		expectedCheckSumPaymentAddr := base58.ChecksumFirst4Bytes(paymentAddrBytes[:paymentAddrSerializedBytesLen-4])
+		expectedCheckSumPaymentAddr := base58.ChecksumFirst4Bytes(paymentAddrBytes[:paymentAddrSerializedBytesLen-4], isNewCheckSum)
 
 		actualCheckSumReadOnlyKey := readonlyKeyBytes[readOnlyKeySerializedBytesLen-4:]
-		expectedCheckSumReadOnlyKey := base58.ChecksumFirst4Bytes(readonlyKeyBytes[:readOnlyKeySerializedBytesLen-4])
+		expectedCheckSumReadOnlyKey := base58.ChecksumFirst4Bytes(readonlyKeyBytes[:readOnlyKeySerializedBytesLen-4], isNewCheckSum)
 
 		assert.Equal(t, err, nil)
 		assert.Equal(t, privKeySerializedBytesLen, len(privKeyBytes))
@@ -153,7 +156,10 @@ func TestHDWalletSerializeWithInvalidKeyType(t *testing.T) {
 	}
 
 	for _, item := range data {
-		serializedKey, err := masterKey.Serialize(item.keyType)
+		isNewCheckSum := (common.RandInt() % 2) == 1
+		fmt.Println("isNewCheckSum", isNewCheckSum)
+
+		serializedKey, err := masterKey.Serialize(item.keyType, isNewCheckSum)
 
 		assert.Equal(t, []byte{}, serializedKey)
 		assert.Equal(t, NewWalletError(InvalidKeyTypeErr, nil), err)
@@ -210,9 +216,12 @@ func TestHDWalletDeserialize(t *testing.T) {
 	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
-	privKeyBytes, err := masterKey.Serialize(PriKeyType)
-	paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType)
-	readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType)
+	isNewCheckSum := (common.RandInt() % 2) == 1
+	fmt.Println("isNewCheckSum", isNewCheckSum)
+
+	privKeyBytes, err := masterKey.Serialize(PriKeyType, isNewCheckSum)
+	paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType, isNewCheckSum)
+	readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType, isNewCheckSum)
 
 	fmt.Printf("paymentAddrBytes.len: %v\n", len(paymentAddrBytes))
 
@@ -235,9 +244,12 @@ func TestHDWalletDeserializeWithInvalidChecksum(t *testing.T) {
 	seed := []byte{1, 2, 3}
 	masterKey, _ := NewMasterKey(seed)
 
-	privKeyBytes, err := masterKey.Serialize(PriKeyType)
-	paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType)
-	readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType)
+	isNewCheckSum := (common.RandInt() % 2) == 1
+	fmt.Println("isNewCheckSum", isNewCheckSum)
+
+	privKeyBytes, err := masterKey.Serialize(PriKeyType, isNewCheckSum)
+	paymentAddrBytes, err := masterKey.Serialize(PaymentAddressType, isNewCheckSum)
+	readonlyKeyBytes, err := masterKey.Serialize(ReadonlyKeyType, isNewCheckSum)
 
 	// edit checksum
 	privKeyBytes[len(privKeyBytes)-1] = 0
@@ -339,6 +351,61 @@ func TestNewCommitteeKeyFromIncognitoPrivateKey(t *testing.T) {
 	fmt.Println(x.GetMiningKeyBase58(common.BlsConsensus))
 }
 
+func TestNewOldEncodeDecode(t *testing.T){
+	for i := 0; i < 1; i++ {
+		privateKey := common.RandBytes(common.PrivateKeySize)
+		keySet1 := new(incognitokey.KeySet)
+		err := keySet1.InitFromPrivateKeyByte(privateKey)
+		assert.Equal(t, nil, err, "initKeySet 1 returns an error: %v\n", err)
+
+		keySet2 := new(incognitokey.KeySet)
+		err = keySet2.InitFromPrivateKeyByte(privateKey)
+		assert.Equal(t, nil, err, "initKeySet 2 returns an error: %v\n", err)
+
+		//Short payment address with old checksum
+		shortWalletOld := new(KeyWallet)
+		shortWalletOld.KeySet = *keySet1
+		shortWalletOld.KeySet.PaymentAddress.OTAPublic = nil
+
+		encodedKey, err := shortWalletOld.Serialize(PaymentAddressType, false)
+		assert.Equal(t, nil, err, "Serialize returns an error: %v\n", err)
+
+		shortAddrOld := base58.Base58Check{}.Encode(encodedKey, 0x00)
+		assert.NotEqual(t, "", shortAddrOld, "cannot serialize old key v1")
+
+
+
+		//Short payment address with new checksum
+		shortWalletNew := new(KeyWallet)
+		shortWalletNew.KeySet = *keySet2
+		shortWalletNew.KeySet.PaymentAddress.OTAPublic = nil
+		shortAddrNew := shortWalletNew.Base58CheckSerialize(PaymentAddressType)
+		assert.NotEqual(t, "", shortAddrNew, "cannot serialize new key v1")
+
+
+
+		//Long payment address with new checksum
+		longWalletNew := new(KeyWallet)
+		longWalletNew.KeySet = *keySet2
+		longWalletNew.KeySet.PaymentAddress.OTAPublic = nil
+		longAddrNew := shortWalletOld.Base58CheckSerialize(PaymentAddressType)
+		assert.NotEqual(t, "", longAddrNew, "cannot serialize new key v2")
+
+
+		isEqual, err := ComparePaymentAddresses(shortAddrOld, shortAddrNew)
+		assert.Equal(t, nil, err, "ComparePaymentAddresses 1 returns an error: %v\n", err)
+		assert.Equal(t, true, isEqual, "%v != %v\n", shortAddrOld, shortAddrNew)
+
+		isEqual, err = ComparePaymentAddresses(shortAddrOld, longAddrNew)
+		assert.Equal(t, nil, err, "ComparePaymentAddresses 2 returns an error: %v\n", err)
+		assert.Equal(t, true, isEqual, "%v != %v\n", shortAddrOld, longAddrNew)
+
+		isEqual, err = ComparePaymentAddresses(shortAddrNew, longAddrNew)
+		assert.Equal(t, nil, err, "ComparePaymentAddresses 3 returns an error: %v\n", err)
+		assert.Equal(t, true, isEqual, "%v != %v\n", shortAddrNew, longAddrNew)
+	}
+}
+
 func TestGetPaymentAddressV1(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		privateKey := common.RandBytes(common.PrivateKeySize)
@@ -354,7 +421,7 @@ func TestGetPaymentAddressV1(t *testing.T) {
 
 		paymentAddress := keyWallet.Base58CheckSerialize(PaymentAddressType)
 
-		oldPaymentAddress, err := GetPaymentAddressV1(paymentAddress)
+		oldPaymentAddress, err := GetPaymentAddressV1(paymentAddress, true)
 		assert.Equal(t, err, nil, "GetPaymentAddressV1 returns an error: %v\n", err)
 
 		oldWallet, err := Base58CheckDeserialize(oldPaymentAddress)
@@ -393,8 +460,8 @@ func TestPaymentAddressCompare(t *testing.T) {
 		addrV2 := keyWallet2.Base58CheckSerialize(PaymentAddressType)
 		assert.NotEqual(t, "", addrV2, "cannot serialize key v2")
 
-		isEqual, err := PaymentAddressesEqual(addrV1, addrV2)
-		assert.Equal(t, nil, err, "PaymentAddressesEqual returns an error: %v\n", err)
+		isEqual, err := ComparePaymentAddresses(addrV1, addrV2)
+		assert.Equal(t, nil, err, "ComparePaymentAddresses returns an error: %v\n", err)
 		assert.Equal(t, true, isEqual, "%v != %v\n", addrV1, addrV2)
 	}
 }

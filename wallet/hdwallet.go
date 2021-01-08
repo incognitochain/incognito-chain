@@ -92,7 +92,7 @@ func (key *KeyWallet) getIntermediary(childIdx uint32) ([]byte, error) {
 
 // Serialize receives keyType and serializes key which has keyType to bytes array
 // and append 4-byte checksum into bytes array
-func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
+func (key *KeyWallet) Serialize(keyType byte, isNewCheckSum bool) ([]byte, error) {
 	// Write fields to buffer in order
 	buffer := new(bytes.Buffer)
 	buffer.WriteByte(keyType)
@@ -140,31 +140,24 @@ func (key *KeyWallet) Serialize(keyType byte) ([]byte, error) {
 		return []byte{}, NewWalletError(InvalidKeyTypeErr, nil)
 	}
 
-	// Append the standard doublesha256 checksum
-	serializedKey, err := key.addChecksumToBytes(buffer.Bytes())
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, err
-	}
 
+	checkSum := base58.ChecksumFirst4Bytes(buffer.Bytes(), isNewCheckSum)
+
+
+	serializedKey := append(buffer.Bytes(), checkSum...)
 	return serializedKey, nil
-}
-
-func (key KeyWallet) addChecksumToBytes(data []byte) ([]byte, error) {
-	checksum := base58.ChecksumFirst4Bytes(data)
-	return append(data, checksum...), nil
 }
 
 // Base58CheckSerialize encodes the key corresponding to keyType in KeySet
 // in the standard Incognito base58 encoding
 // It returns the encoding string of the key
 func (key *KeyWallet) Base58CheckSerialize(keyType byte) string {
-	serializedKey, err := key.Serialize(keyType)
+	serializedKey, err := key.Serialize(keyType, true) //Must use the new checksum from now on
 	if err != nil {
 		return ""
 	}
 
-	return base58.Base58Check{}.Encode(serializedKey, common.ZeroByte)
+	return base58.Base58Check{}.NewEncode(serializedKey, common.ZeroByte) //Must use the new encoding algorithm from now on
 }
 
 // Deserialize receives a byte array and deserializes into KeySet
@@ -243,14 +236,17 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		return nil, NewWalletError(InvalidKeyTypeErr, errors.New("cannot detect key type"))
 	}
 
-	// validate checksum
-	cs1 := base58.ChecksumFirst4Bytes(data[0 : len(data)-4])
+	// validate checksum: allowing both new- and old-encoded strings
+	// try to verify in the new way first
+	cs1 := base58.ChecksumFirst4Bytes(data[0 : len(data)-4], true)
 	cs2 := data[len(data)-4:]
-	for i := range cs1 {
-		if cs1[i] != cs2[i] {
+	if !bytes.Equal(cs1, cs2){ // try to compare old checksum
+		oldCS1 := base58.ChecksumFirst4Bytes(data[0: len(data) - 4], false)
+		if !bytes.Equal(oldCS1, cs2){
 			return nil, NewWalletError(InvalidChecksumErr, nil)
 		}
 	}
+
 	return key, nil
 }
 
@@ -272,18 +268,19 @@ func Base58CheckDeserialize(data string) (*KeyWallet, error) {
 //
 //If the input is a payment address ver 2, try to retrieve the corresponding payment address ver 1.
 //Otherwise, return the input.
-func GetPaymentAddressV1(addrV2 string) (string, error) {
-	//not a payment address ver 2, return
-	if len(addrV2) != paymentAddrBase58CheckSerializedBytesLen {
-		return addrV2, nil
-	}
-	newWallet, err := Base58CheckDeserialize(addrV2)
+func GetPaymentAddressV1(addr string, isNewEncoding bool) (string, error) {
+	newWallet, err := Base58CheckDeserialize(addr)
 	if err != nil {
 		return "", err
 	}
 
 	if len(newWallet.KeySet.PaymentAddress.Pk) == 0 || len(newWallet.KeySet.PaymentAddress.Pk) == 0 {
-		return "", errors.New(fmt.Sprintf("something must be wrong with the provided payment address: %v", addrV2))
+		return "", errors.New(fmt.Sprintf("something must be wrong with the provided payment address: %v", addr))
+	}
+
+	//Return if the input is already a payment address V2
+	if newWallet.KeySet.PaymentAddress.OTAPublic == nil{
+		return addr, nil
 	}
 
 	//Remove the publicOTA key and try to deserialize
@@ -291,28 +288,31 @@ func GetPaymentAddressV1(addrV2 string) (string, error) {
 
 	addrV1 := newWallet.Base58CheckSerialize(PaymentAddressType)
 	if len(addrV1) == 0 {
-		return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addrV2))
+		return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addr))
 	}
 
 	return addrV1, nil
 }
 
 //Checks if two payment addresses are generated from the same private key.
-func PaymentAddressesEqual(addr1, addr2 string) (bool, error) {
+func ComparePaymentAddresses(addr1, addr2 string) (bool, error) {
 	//If their lengths are the same, just compare the inputs
 	if len(addr1) == len(addr2) {
 		return addr1 == addr2, nil
 	}
 
 	//we expect the longer address will be in version 2
-	var addrV2 = addr1
-	if len(addr1) < len(addr2) {
-		addrV2 = addr2
+	if len(addr1) > len(addr2){
+		tmpAddr, err := GetPaymentAddressV1(addr1, true)
+		if err != nil {
+			return false, err
+		}
+		return addr2 == tmpAddr, nil
+	}else{
+		tmpAddr, err := GetPaymentAddressV1(addr2, true)
+		if err != nil {
+			return false, err
+		}
+		return addr1 == tmpAddr, nil
 	}
-	tmpAddr, err := GetPaymentAddressV1(addrV2)
-	if err != nil {
-		return false, err
-	}
-
-	return addr1 == tmpAddr, nil
 }
