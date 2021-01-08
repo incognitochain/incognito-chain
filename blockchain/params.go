@@ -234,7 +234,7 @@ func SetupParam() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		ConsensusV2Epoch:               16930,
+		ConsensusV2Epoch:               1,
 		ConsensusV3Height:              1e12,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 250000,
