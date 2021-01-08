@@ -1630,12 +1630,10 @@ func UpdateLockedCollateralForRewardsV3(currentPortalState *CurrentPortalState, 
 	for _, custodianState := range currentPortalState.CustodianPoolState {
 		for _, tokenID := range portalTokenIDs {
 			holdPubTokenAmount := GetTotalHoldPubTokenAmount(currentPortalState, custodianState, tokenID)
-			matchingPubTokenAmount := GetTotalMatchingPubTokenInWaitingPortings(currentPortalState, custodianState, tokenID)
-			totalPubToken := holdPubTokenAmount + matchingPubTokenAmount
-			if totalPubToken == 0 {
+			if holdPubTokenAmount == 0 {
 				continue
 			}
-			pubTokenAmountInUSDT, err := exchangeTool.ConvertToUSD(tokenID, totalPubToken)
+			pubTokenAmountInUSDT, err := exchangeTool.ConvertToUSD(tokenID, holdPubTokenAmount)
 			if err != nil {
 				Logger.log.Errorf("Error when converting public token to prv: %v", err)
 			}
