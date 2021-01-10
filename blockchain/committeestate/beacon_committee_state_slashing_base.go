@@ -240,6 +240,8 @@ func (b *beaconCommitteeStateSlashingBase) updateCandidatesByRandom(
 	candidateStructs := oldState.ShardCommonPool()[:b.numberOfAssignedCandidates]
 	candidates, _ := incognitokey.CommitteeKeyListToString(candidateStructs)
 	newCommitteeChange.NextEpochShardCandidateRemoved = append(newCommitteeChange.NextEpochShardCandidateRemoved, candidateStructs...)
+	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
+	b.numberOfAssignedCandidates = 0
 	return newCommitteeChange, candidates
 }
 
@@ -251,8 +253,6 @@ func (b *beaconCommitteeStateSlashingBase) processAssignWithRandomInstruction(
 ) *CommitteeChange {
 	newCommitteeChange, candidates := b.updateCandidatesByRandom(committeeChange, oldState)
 	newCommitteeChange = b.assign(candidates, rand, activeShards, newCommitteeChange, oldState)
-	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
-	b.numberOfAssignedCandidates = 0
 	return newCommitteeChange
 }
 

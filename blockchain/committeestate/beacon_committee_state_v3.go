@@ -89,6 +89,9 @@ func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePub
 	return b.syncPool
 }
 
+//assignToSync assign validatrors to syncPool
+// update beacon committee state and committeechange
+// UPDATE SYNC POOL ONLY
 func (b *BeaconCommitteeStateV3) assignToSync(
 	shardID byte,
 	candidates []string,
@@ -122,6 +125,9 @@ func (b *BeaconCommitteeStateV3) assignAfterNormalSwapOut(
 	return newCommitteeChange
 }
 
+//assignToPending assign candidates to pending list
+// update beacon state and committeeChange
+// UPDATE PENDING LIST ONLY
 func (b *BeaconCommitteeStateV3) assignToPending(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
 	newCommitteeChange := committeeChange
 	for _, candidate := range candidates {
@@ -197,6 +203,8 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 	return newCommitteeChange, newReturnStakingInstruction, nil
 }
 
+//processAssignWithRandomInstruction assign candidates to syncPool
+// update beacon state and committeechange
 func (b *BeaconCommitteeStateV3) processAssignWithRandomInstruction(
 	rand int64,
 	activeShards int,
@@ -209,7 +217,6 @@ func (b *BeaconCommitteeStateV3) processAssignWithRandomInstruction(
 	for shardID, candidates := range assignedCandidates {
 		newCommitteeChange = b.assignToSync(shardID, candidates, newCommitteeChange, beaconHeight)
 	}
-	b.numberOfAssignedCandidates = 0
 	return newCommitteeChange
 }
 
