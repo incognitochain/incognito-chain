@@ -352,7 +352,7 @@ func TestNewCommitteeKeyFromIncognitoPrivateKey(t *testing.T) {
 }
 
 func TestNewOldEncodeDecode(t *testing.T){
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 10; i++ {
 		privateKey := common.RandBytes(common.PrivateKeySize)
 		keySet1 := new(incognitokey.KeySet)
 		err := keySet1.InitFromPrivateKeyByte(privateKey)
@@ -361,6 +361,8 @@ func TestNewOldEncodeDecode(t *testing.T){
 		keySet2 := new(incognitokey.KeySet)
 		err = keySet2.InitFromPrivateKeyByte(privateKey)
 		assert.Equal(t, nil, err, "initKeySet 2 returns an error: %v\n", err)
+
+
 
 		//Short payment address with old checksum
 		shortWalletOld := new(KeyWallet)
@@ -387,9 +389,10 @@ func TestNewOldEncodeDecode(t *testing.T){
 		//Long payment address with new checksum
 		longWalletNew := new(KeyWallet)
 		longWalletNew.KeySet = *keySet2
-		longWalletNew.KeySet.PaymentAddress.OTAPublic = nil
-		longAddrNew := shortWalletOld.Base58CheckSerialize(PaymentAddressType)
+		longAddrNew := longWalletNew.Base58CheckSerialize(PaymentAddressType)
 		assert.NotEqual(t, "", longAddrNew, "cannot serialize new key v2")
+
+		fmt.Printf("Length of payment addresses: oldV1 = %v, newV1 = %v, newV2 = %v\n", len(shortAddrOld), len(shortAddrNew), len(longAddrNew))
 
 
 		isEqual, err := ComparePaymentAddresses(shortAddrOld, shortAddrNew)
