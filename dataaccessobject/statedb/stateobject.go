@@ -67,6 +67,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newTokenTransactionObjectWithValue(db, hash, value)
 	case PortalFinalExchangeRatesStateObjectType:
 		return newFinalExchangeRatesStateObjectWithValue(db, hash, value)
+	case PortalUnlockOverRateCollaterals:
+		return newUnlockOverRateCollateralsStateObjectWithValue(db, hash, value)
 	case PortalLiquidationPoolObjectType:
 		return newLiquidationPoolObjectWithValue(db, hash, value)
 	case PortalWaitingPortingRequestObjectType:
@@ -83,6 +85,10 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newLockedCollateralStateObjectWithValue(db, hash, value)
 	case RewardFeatureStateObjectType:
 		return newRewardFeatureStateObjectWithValue(db, hash, value)
+	case PortalExternalTxObjectType:
+		return newPortalExternalTxObjectWithValue(db, hash, value)
+	case PortalConfirmProofObjectType:
+		return newPortalConfirmProofStateObjectWithValue(db, hash, value)
 	case StakerObjectType:
 		return newStakerObjectWithValue(db, hash, value)
 	default:
@@ -132,6 +138,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newBurningConfirmObject(db, hash)
 	case PortalFinalExchangeRatesStateObjectType:
 		return newFinalExchangeRatesStateObject(db, hash)
+	case PortalUnlockOverRateCollaterals:
+		return newUnlockOverRateCollateralsStateObject(db, hash)
 	case PortalLiquidationPoolObjectType:
 		return newLiquidationPoolObject(db, hash)
 	case PortalWaitingPortingRequestObjectType:
@@ -148,6 +156,10 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newLockedCollateralStateObject(db, hash)
 	case RewardFeatureStateObjectType:
 		return newRewardFeatureStateObject(db, hash)
+	case PortalExternalTxObjectType:
+		return newPortalExternalTxObject(db, hash)
+	case PortalConfirmProofObjectType:
+		return newPortalConfirmProofStateObject(db, hash)
 	case StakerObjectType:
 		return newStakerObject(db, hash)
 	default:

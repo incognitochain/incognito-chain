@@ -45,23 +45,31 @@ var (
 	stakerInfoPrefix                   = common.HashB([]byte("stk-info-"))[:prefixHashKeyLength]
 
 	// portal
-	portalFinaExchangeRatesStatePrefix            = []byte("portalfinalexchangeratesstate-")
-	portalExchangeRatesRequestStatusPrefix        = []byte("portalexchangeratesrequeststatus-")
-	portalPortingRequestStatusPrefix              = []byte("portalportingrequeststatus-")
-	portalPortingRequestTxStatusPrefix            = []byte("portalportingrequesttxstatus-")
-	portalCustodianWithdrawStatusPrefix           = []byte("portalcustodianwithdrawstatus-")
-	portalLiquidationTpExchangeRatesStatusPrefix  = []byte("portalliquidationtpexchangeratesstatus-")
-	portalLiquidationExchangeRatesPoolPrefix      = []byte("portalliquidationexchangeratespool-")
-	portalLiquidationCustodianDepositStatusPrefix = []byte("portalliquidationcustodiandepositstatus-")
-	portalTopUpWaitingPortingStatusPrefix         = []byte("portaltopupwaitingportingstatus-")
-	portalLiquidationRedeemRequestStatusPrefix    = []byte("portalliquidationredeemrequeststatus-")
-	portalWaitingPortingRequestPrefix             = []byte("portalwaitingportingrequest-")
-	portalCustodianStatePrefix                    = []byte("portalcustodian-")
-	portalWaitingRedeemRequestsPrefix             = []byte("portalwaitingredeemrequest-")
-	portalMatchedRedeemRequestsPrefix             = []byte("portalmatchedredeemrequest-")
+	portalFinaExchangeRatesStatePrefix                   = []byte("portalfinalexchangeratesstate-")
+	portalExchangeRatesRequestStatusPrefix               = []byte("portalexchangeratesrequeststatus-")
+	portalUnlockOverRateCollateralsRequestStatusPrefix   = []byte("portalunlockoverratecollateralsstatus-")
+	portalUnlockOverRateCollateralsRequestTxStatusPrefix = []byte("portalunlockoverratecollateralstxstatus-")
+	portalPortingRequestStatusPrefix                     = []byte("portalportingrequeststatus-")
+	portalPortingRequestTxStatusPrefix                   = []byte("portalportingrequesttxstatus-")
+	portalCustodianWithdrawStatusPrefix                  = []byte("portalcustodianwithdrawstatus-")
+	portalCustodianWithdrawStatusPrefixV3                = []byte("portalcustodianwithdrawstatusv3-")
+	portalLiquidationTpExchangeRatesStatusPrefix         = []byte("portalliquidationtpexchangeratesstatus-")
+	portalLiquidationTpExchangeRatesStatusPrefixV3       = []byte("portalliquidationbyratesstatusv3-")
+	portalLiquidationExchangeRatesPoolPrefix             = []byte("portalliquidationexchangeratespool-")
+	portalLiquidationCustodianDepositStatusPrefix        = []byte("portalliquidationcustodiandepositstatus-")
+	portalLiquidationCustodianDepositStatusPrefixV3      = []byte("portalliquidationcustodiandepositstatusv3-")
+	portalTopUpWaitingPortingStatusPrefix                = []byte("portaltopupwaitingportingstatus-")
+	portalTopUpWaitingPortingStatusPrefixV3              = []byte("portaltopupwaitingportingstatusv3-")
+	portalLiquidationRedeemRequestStatusPrefix           = []byte("portalliquidationredeemrequeststatus-")
+	portalLiquidationRedeemRequestStatusPrefixV3         = []byte("portalliquidationredeemrequeststatusv3-")
+	portalWaitingPortingRequestPrefix                    = []byte("portalwaitingportingrequest-")
+	portalCustodianStatePrefix                           = []byte("portalcustodian-")
+	portalWaitingRedeemRequestsPrefix                    = []byte("portalwaitingredeemrequest-")
+	portalMatchedRedeemRequestsPrefix                    = []byte("portalmatchedredeemrequest-")
 
 	portalStatusPrefix                           = []byte("portalstatus-")
 	portalCustodianDepositStatusPrefix           = []byte("custodiandeposit-")
+	portalCustodianDepositStatusPrefixV3         = []byte("custodiandepositv3-")
 	portalRequestPTokenStatusPrefix              = []byte("requestptoken-")
 	portalRedeemRequestStatusPrefix              = []byte("redeemrequest-")
 	portalRedeemRequestStatusByTxReqIDPrefix     = []byte("redeemrequestbytxid-")
@@ -81,6 +89,10 @@ var (
 	rewardFeatureStatePrefix = []byte("rewardfeaturestate-")
 	// feature names
 	PortalRewardName = "portal"
+
+	portalExternalTxPrefix      = []byte("portalexttx-")
+	portalConfirmProofPrefix    = []byte("portalproof-")
+	withdrawCollateralProofType = []byte("0-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -309,24 +321,51 @@ func PortalExchangeRatesRequestStatusPrefix() []byte {
 	return portalExchangeRatesRequestStatusPrefix
 }
 
+func PortalUnlockOverRateCollateralsRequestStatusPrefix() []byte {
+	return portalUnlockOverRateCollateralsRequestStatusPrefix
+}
+
 func PortalCustodianWithdrawStatusPrefix() []byte {
 	return portalCustodianWithdrawStatusPrefix
+}
+
+func PortalCustodianWithdrawStatusPrefixV3() []byte {
+	return portalCustodianWithdrawStatusPrefixV3
 }
 
 func PortalLiquidationTpExchangeRatesStatusPrefix() []byte {
 	return portalLiquidationTpExchangeRatesStatusPrefix
 }
 
+func PortalLiquidationTpExchangeRatesStatusPrefixV3() []byte {
+	return portalLiquidationTpExchangeRatesStatusPrefixV3
+}
+
 func PortalLiquidationCustodianDepositStatusPrefix() []byte {
 	return portalLiquidationCustodianDepositStatusPrefix
+}
+func PortalLiquidationCustodianDepositStatusPrefixV3() []byte {
+	return portalLiquidationCustodianDepositStatusPrefixV3
 }
 
 func PortalTopUpWaitingPortingStatusPrefix() []byte {
 	return portalTopUpWaitingPortingStatusPrefix
 }
 
+func PortalTopUpWaitingPortingStatusPrefixV3() []byte {
+	return portalTopUpWaitingPortingStatusPrefixV3
+}
+
 func PortalLiquidationRedeemRequestStatusPrefix() []byte {
 	return portalLiquidationRedeemRequestStatusPrefix
+}
+func PortalLiquidationRedeemRequestStatusPrefixV3() []byte {
+	return portalLiquidationRedeemRequestStatusPrefixV3
+}
+
+func GetPortalUnlockOverRateCollateralsPrefix() []byte {
+	h := common.HashH(portalUnlockOverRateCollateralsRequestTxStatusPrefix)
+	return h[:][:prefixHashKeyLength]
 }
 
 func GetPortalWaitingPortingRequestPrefix() []byte {
@@ -374,8 +413,26 @@ func GetRewardFeatureStatePrefix(epoch uint64) []byte {
 	return h[:][:prefixHashKeyLength]
 }
 
+func GetPortalExternalTxPrefix() []byte {
+	h := common.HashH(portalExternalTxPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetPortalConfirmProofPrefixV3(proofType []byte) []byte {
+	h := common.HashH(append(portalConfirmProofPrefix, proofType...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func PortalWithdrawCollateralProofType() []byte {
+	return withdrawCollateralProofType
+}
+
 func PortalCustodianDepositStatusPrefix() []byte {
 	return portalCustodianDepositStatusPrefix
+}
+
+func PortalCustodianDepositStatusPrefixV3() []byte {
+	return portalCustodianDepositStatusPrefixV3
 }
 
 func PortalRequestPTokenStatusPrefix() []byte {

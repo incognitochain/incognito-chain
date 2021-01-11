@@ -18,7 +18,6 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	_ "github.com/incognitochain/incognito-chain/consensus/blsbft"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	_ "github.com/incognitochain/incognito-chain/databasemp/lvdb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -44,7 +43,7 @@ func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string) (*
 		blockchain.MainnetBTCChainID:  btcrelaying.GetMainNetParams(),
 	}
 	relayingChainGenesisBlkHeight := map[string]int32{
-		blockchain.TestnetBTCChainID:  int32(1861700),
+		blockchain.TestnetBTCChainID:  int32(1896910),
 		blockchain.Testnet2BTCChainID: int32(1863675),
 		blockchain.MainnetBTCChainID:  int32(634140),
 	}
@@ -74,6 +73,10 @@ func getBNBRelayingChainState(bnbRelayingChainID string) (*bnbrelaying.BNBChainS
 // notified with the server once it is setup so it can gracefully stop it when
 // requested from the service control manager.
 func mainMaster(serverChan chan<- *Server) error {
+	//init key & param
+	blockchain.ReadKey(nil, nil)
+	blockchain.SetupParam()
+
 	tempConfig, _, err := loadConfig()
 	if err != nil {
 		log.Println("Load config error")
@@ -81,6 +84,9 @@ func mainMaster(serverChan chan<- *Server) error {
 		return err
 	}
 	cfg = tempConfig
+	common.MaxShardNumber = activeNetParams.ActiveShards
+	common.TIMESLOT = activeNetParams.Timeslot
+	activeNetParams.CreateGenesisBlocks()
 	// Get a channel that will be closed when a shutdown signal has been
 	// triggered either from an OS signal such as SIGINT (Ctrl+C) or from
 	// another subsystem such as the RPC server.
@@ -138,7 +144,6 @@ func mainMaster(serverChan chan<- *Server) error {
 			}
 		}
 	}
-
 	// Create btcrelaying chain
 	btcChain, err := getBTCRelayingChain(
 		activeNetParams.Params.BTCRelayingHeaderChainID,
