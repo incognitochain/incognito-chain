@@ -28,6 +28,7 @@ type WaitingPortingRequest struct {
 
 	shardHeight uint64
 	shardID     byte
+	externalKey string
 }
 
 func (w WaitingPortingRequest) BeaconHeight() uint64 {
@@ -110,6 +111,14 @@ func (w *WaitingPortingRequest) SetShardID(shardID byte) {
 	w.shardID = shardID
 }
 
+func (w WaitingPortingRequest) ExternalKey() string {
+	return w.externalKey
+}
+
+func (w *WaitingPortingRequest) SetExternalKey(externalKey string) {
+	w.externalKey = externalKey
+}
+
 func NewWaitingPortingRequest() *WaitingPortingRequest {
 	return &WaitingPortingRequest{}
 }
@@ -124,7 +133,8 @@ func NewWaitingPortingRequestWithValue(
 	portingFee uint64,
 	beaconHeight uint64,
 	shardHeight uint64,
-	shardID byte) *WaitingPortingRequest {
+	shardID byte,
+	externalKey string) *WaitingPortingRequest {
 	return &WaitingPortingRequest{
 		uniquePortingID: uniquePortingID,
 		txReqID:         txReqID,
@@ -136,6 +146,7 @@ func NewWaitingPortingRequestWithValue(
 		beaconHeight:    beaconHeight,
 		shardHeight:     shardHeight,
 		shardID:         shardID,
+		externalKey:     externalKey,
 	}
 }
 
@@ -157,6 +168,7 @@ func (w *WaitingPortingRequest) MarshalJSON() ([]byte, error) {
 		BeaconHeight    uint64
 		ShardID         byte
 		ShardHeight     uint64
+		ExternalKey     string
 	}{
 		UniquePortingID: w.uniquePortingID,
 		TxReqID:         w.txReqID,
@@ -168,6 +180,7 @@ func (w *WaitingPortingRequest) MarshalJSON() ([]byte, error) {
 		BeaconHeight:    w.beaconHeight,
 		ShardID:         w.shardID,
 		ShardHeight:     w.shardHeight,
+		ExternalKey:     w.externalKey,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -187,6 +200,7 @@ func (w *WaitingPortingRequest) UnmarshalJSON(data []byte) error {
 		BeaconHeight    uint64
 		ShardID         byte
 		ShardHeight     uint64
+		ExternalKey     string
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -203,6 +217,7 @@ func (w *WaitingPortingRequest) UnmarshalJSON(data []byte) error {
 	w.beaconHeight = temp.BeaconHeight
 	w.shardID = temp.ShardID
 	w.shardHeight = temp.ShardHeight
+	w.externalKey = temp.ExternalKey
 
 	return nil
 }

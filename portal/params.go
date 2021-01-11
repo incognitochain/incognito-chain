@@ -82,6 +82,11 @@ func (p PortalParams) IsPortalToken(tokenIDStr string) bool {
 	return isExisted
 }
 
+func (p PortalParams) IsTokenSupportMultiSig(tokenIDStr string) bool {
+	isExisted, _ := common.SliceExists(pCommon.PortalTokenIDsSupportedMultiSig, tokenIDStr)
+	return isExisted
+}
+
 func (p PortalParams) IsPortalExchangeRateToken(tokenIDStr string) bool {
 	return p.IsPortalToken(tokenIDStr) || tokenIDStr == common.PRVIDStr || p.IsSupportedTokenCollateralV3(tokenIDStr)
 }

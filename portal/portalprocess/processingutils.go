@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-func CollectPortalInsts (pm *PortalManager, metaType int, action []string, shardID byte) {
+func CollectPortalInsts(pm *PortalManager, metaType int, action []string, shardID byte) {
 	switch metaType {
 	case basemeta.PortalCustodianDepositMeta:
 		pm.PortalInstructions[basemeta.PortalCustodianDepositMeta].PutAction(action, shardID)
@@ -49,6 +49,10 @@ func CollectPortalInsts (pm *PortalManager, metaType int, action []string, shard
 		pm.PortalInstructions[basemeta.PortalCustodianTopupMetaV3].PutAction(action, shardID)
 	case basemeta.PortalTopUpWaitingPortingRequestMetaV3:
 		pm.PortalInstructions[basemeta.PortalTopUpWaitingPortingRequestMetaV3].PutAction(action, shardID)
+	case basemeta.PortalSubmitProofToClaimToken:
+		pm.PortalInstructions[basemeta.PortalSubmitProofToClaimToken].PutAction(action, shardID)
+	case basemeta.PortalRequestBeaconSignature:
+		pm.PortalInstructions[basemeta.PortalRequestBeaconSignature].PutAction(action, shardID)
 
 	case basemeta.PortalCustodianDepositMetaV3:
 		pm.PortalInstructions[basemeta.PortalCustodianDepositMetaV3].PutAction(action, shardID)
@@ -244,7 +248,7 @@ func HandlePortalInsts(
 	var pickCustodiansForRedeemReqInsts [][]string
 
 	pickCustodiansProcessor := pm.PortalInstructions[basemeta.PortalPickMoreCustodianForRedeemMeta]
-	pickCustodiansForRedeemReqInsts, err = pickCustodiansProcessor.BuildNewInsts(bc, "", 0,  currentPortalState,beaconHeight, shardHeights,
+	pickCustodiansForRedeemReqInsts, err = pickCustodiansProcessor.BuildNewInsts(bc, "", 0, currentPortalState, beaconHeight, shardHeights,
 		portalParams, nil)
 	if err != nil {
 		Logger.log.Error(err)

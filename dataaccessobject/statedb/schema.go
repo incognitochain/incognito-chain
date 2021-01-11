@@ -66,6 +66,8 @@ var (
 	portalMatchedRedeemRequestsPrefix                    = []byte("portalmatchedredeemrequest-")
 	portalUnlockOverRateCollateralsRequestStatusPrefix   = []byte("portalunlockoverratecollateralsstatus-")
 	portalUnlockOverRateCollateralsRequestTxStatusPrefix = []byte("portalunlockoverratecollateralstxstatus-")
+	portalSubmitProofRequestStatusPrefix                 = []byte("portalsubmitproofstatus-")
+	portalSignatureRequestStatusPrefix                   = []byte("portalsignaturerequeststatus-")
 
 	portalStatusPrefix                           = []byte("portalstatus-")
 	portalCustodianDepositStatusPrefix           = []byte("custodiandeposit-")
@@ -465,6 +467,14 @@ func PortalReqMatchingRedeemStatusByTxReqIDPrefix() []byte {
 
 func PortalUnlockOverRateCollateralsRequestStatusPrefix() []byte {
 	return portalUnlockOverRateCollateralsRequestStatusPrefix
+}
+
+func PortalSubmitProofRequestStatusPrefix() []byte {
+	return portalSubmitProofRequestStatusPrefix
+}
+
+func PortalSignatureRequestStatusPrefix() []byte {
+	return portalSignatureRequestStatusPrefix
 }
 
 var _ = func() (_ struct{}) {

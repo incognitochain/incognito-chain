@@ -1001,6 +1001,7 @@ func (p *portalTopupWaitingPortingReqProcessor) ProcessInsts(
 			beaconHeight+1,
 			waitingPortingReq.ShardHeight(),
 			waitingPortingReq.ShardID(),
+			waitingPortingReq.ExternalKey(),
 		)
 		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestState)
 		err = statedb.StorePortalPortingRequestStatus(
@@ -1745,6 +1746,7 @@ func (p *portalTopupWaitingPortingReqProcessorV3) ProcessInsts(
 			beaconHeight+1,
 			waitingPortingReq.ShardHeight(),
 			waitingPortingReq.ShardID(),
+			waitingPortingReq.ExternalKey(),
 		)
 		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestState)
 		err = statedb.StorePortalPortingRequestStatus(
@@ -1766,7 +1768,6 @@ func (p *portalTopupWaitingPortingReqProcessorV3) ProcessInsts(
 	}
 	return nil
 }
-
 
 /* =======
 Portal Liquidation Custodian Run Away Processor
@@ -2346,7 +2347,8 @@ func (p *portalExpiredWaitingPortingProcessor) ProcessInsts(
 			portingReqStatus,
 			waitingPortingReq.BeaconHeight(),
 			waitingPortingReq.ShardHeight(),
-			waitingPortingReq.ShardID())
+			waitingPortingReq.ShardID(),
+			waitingPortingReq.ExternalKey())
 
 		newPortingRequestStatusBytes, _ := json.Marshal(newPortingRequestStatus)
 		err = statedb.StorePortalPortingRequestStatus(
@@ -2380,7 +2382,6 @@ func (p *portalExpiredWaitingPortingProcessor) ProcessInsts(
 	}
 	return nil
 }
-
 
 /* =======
 Portal Liquidation Custodian Run Away Processor
@@ -2591,7 +2592,6 @@ func (p *portalLiquidationByRatesV3Processor) ProcessInsts(
 	}
 	return nil
 }
-
 
 /* =======
 Portal Liquidation By Rates Processor

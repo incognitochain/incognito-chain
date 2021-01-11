@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/portal"
 	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	portalMeta "github.com/incognitochain/incognito-chain/portal/metadata"
+	"github.com/incognitochain/incognito-chain/portal/portaltokens"
 	"math/big"
 	"sort"
 	"strconv"
@@ -1220,6 +1221,543 @@ func (p *portalCusUnlockOverRateCollateralsProcessor) ProcessInsts(
 			return nil
 		}
 	}
+
+	return nil
+}
+
+/* =======
+Portal Submit Proof Processor
+======= */
+
+type portalSubmitProofProcessor struct {
+	*portalInstProcessor
+}
+
+func (p *portalSubmitProofProcessor) GetActions() map[byte][][]string {
+	return p.actions
+}
+
+func (p *portalSubmitProofProcessor) PutAction(action []string, shardID byte) {
+	_, found := p.actions[shardID]
+	if !found {
+		p.actions[shardID] = [][]string{action}
+	} else {
+		p.actions[shardID] = append(p.actions[shardID], action)
+	}
+}
+
+func (p *portalSubmitProofProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal submit proof: %+v", err)
+		return nil, fmt.Errorf("ERROR: an error occured while decoding content string of portal submit proof: %+v", err)
+	}
+	var actionData portalMeta.PortalSubmitProofAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshal portal custodian submit proof: %+v", err)
+		return nil, fmt.Errorf("ERROR: an error occured while unmarshal portal custodian submit proof: %+v", err)
+	}
+	meta := actionData.Meta
+	optionalData := make(map[string]interface{})
+	optionalData["isExist"] = false
+	if meta.ActionType == pCommon.PortalSubmitProofPorting {
+		keyPortingRequestStr := statedb.GeneratePortalWaitingPortingRequestObjectKey(meta.UniqueID).String()
+		portingRequest, err := statedb.GetPortalPortingRequestStatus(stateDB, keyPortingRequestStr)
+		if err != nil || len(portingRequest) == 0 {
+			Logger.log.Errorf("ERROR: an error occured query portal porting request in custodian submit proof process: %+v", err)
+			return nil, fmt.Errorf("ERROR: an error occured query portal porting request in custodian submit proof process: %+v", err)
+		}
+		var portingRequestStatus portalMeta.PortingRequestStatus
+		err = json.Unmarshal(portingRequest, &portingRequestStatus)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshal portal porting request: %+v", err)
+			return nil, fmt.Errorf("ERROR: an error occured while unmarshal portal porting request: %+v", err)
+		}
+		if portingRequestStatus.Status == pCommon.PortalPortingReqExpiredStatus {
+			optionalData["isExist"] = true
+			optionalData["request"] = portingRequestStatus
+			optionalData["memo"] = portaltokens.PortalToken{}.GetExpectedMemoForPorting(portingRequestStatus.UniquePortingID)
+		}
+	} else if meta.ActionType == pCommon.PortalSubmitProofRedeem {
+		keyRedeemRequestStr := statedb.GenerateWaitingRedeemRequestObjectKey(meta.UniqueID).String()
+		redeemRequest, err := statedb.GetPortalRedeemRequestStatus(stateDB, keyRedeemRequestStr)
+		if err != nil || len(redeemRequest) == 0 {
+			Logger.log.Errorf("ERROR: an error occured while unmarshal portal custodian submit proof: %+v", err)
+			return nil, fmt.Errorf("ERROR: an error occured while unmarshal portal custodian submit proof: %+v", err)
+		}
+		var redeemRequestStatus portalMeta.PortalRedeemRequestStatus
+		err = json.Unmarshal(redeemRequest, &redeemRequestStatus)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshal portal redeem request: %+v", err)
+			return nil, fmt.Errorf("ERROR: an error occured while unmarshal portal redeem request: %+v", err)
+		}
+		if redeemRequestStatus.Status == pCommon.PortalRedeemReqLiquidatedStatus {
+			optionalData["isExist"] = true
+			optionalData["request"] = redeemRequestStatus
+			optionalData["memo"] = portaltokens.PortalToken{}.GetExpectedMemoForRedeem(redeemRequestStatus.UniqueRedeemID, redeemRequestStatus.RedeemerIncAddressStr)
+		}
+	}
+
+	return optionalData, nil
+}
+
+// beacon build new instruction from instruction received from ShardToBeaconBlock
+func buildSubmitProofInst(
+	uniqueID string,
+	tokenID string,
+	incogAddressStr string,
+	amount uint64,
+	proof string,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	actionType uint,
+	status string,
+) []string {
+	reqPTokenContent := portalMeta.PortalSubmitProofContent{
+		UniqueID:        uniqueID,
+		TokenID:         tokenID,
+		IncogAddressStr: incogAddressStr,
+		Amount:          amount,
+		Proof:           proof,
+		TxReqID:         txReqID,
+		ShardID:         shardID,
+		ActionType:      actionType,
+	}
+	reqPTokenContentBytes, _ := json.Marshal(reqPTokenContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(reqPTokenContentBytes),
+	}
+}
+
+func (p *portalSubmitProofProcessor) BuildNewInsts(
+	bc basemeta.ChainRetriever,
+	contentStr string,
+	shardID byte,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+	shardHeights map[byte]uint64,
+	portalParams portal.PortalParams,
+	optionalData map[string]interface{},
+) ([][]string, error) {
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal submit proof action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData portalMeta.PortalSubmitProofAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshal portal submit proof action: %+v", err)
+		return [][]string{}, nil
+	}
+	meta := actionData.Meta
+	uniqueID := meta.UniqueID
+
+	rejectInst := buildSubmitProofInst(
+		meta.UniqueID,
+		meta.TokenID,
+		meta.IncogAddressStr,
+		meta.Amount,
+		meta.Proof,
+		meta.Type,
+		shardID,
+		actionData.TxReqID,
+		meta.ActionType,
+		pCommon.PortalRequestRejectedChainStatus,
+	)
+
+	if optionalData == nil {
+		Logger.log.Error("ERROR submit proof: optional data must not nil")
+		return [][]string{rejectInst}, nil
+	}
+	isExist, ok := optionalData["isExist"].(bool)
+	if !ok {
+		Logger.log.Errorf("Submit proof request: optionalData isExist is invalid")
+		return [][]string{rejectInst}, nil
+	}
+	if !isExist {
+		Logger.log.Errorf("Submit proof request: porting or redeem request is invalid %v", uniqueID)
+		return [][]string{rejectInst}, nil
+	}
+
+	if currentPortalState == nil {
+		Logger.log.Warn("Submit proof request: Current Portal state is null.")
+		return [][]string{rejectInst}, nil
+	}
+
+	portalTokenProcessor := portalParams.PortalTokens[meta.TokenID]
+	if portalTokenProcessor == nil {
+		Logger.log.Errorf("TokenID is not supported currently on Portal")
+		return [][]string{rejectInst}, nil
+	}
+
+	expectedPaymentInfos := map[string]uint64{}
+	if meta.ActionType == pCommon.PortalSubmitProofPorting {
+		portingRequest := optionalData["request"].(portalMeta.PortingRequestStatus)
+		// check tokenID
+		if meta.TokenID != portingRequest.TokenID {
+			Logger.log.Errorf("TokenID is not correct in portingID req")
+			return [][]string{rejectInst}, nil
+		}
+
+		// check porting amount
+		if meta.Amount != portingRequest.Amount {
+			Logger.log.Errorf("PortingAmount is not correct in portingID req")
+			return [][]string{rejectInst}, nil
+		}
+
+		// check requester address
+		if meta.IncogAddressStr != portingRequest.PorterAddress {
+			Logger.log.Errorf("IncogAddressStr is not correct in waiting portingID req")
+			return [][]string{rejectInst}, nil
+		}
+		for _, matchCus := range portingRequest.Custodians {
+			expectedPaymentInfos[matchCus.RemoteAddress] = matchCus.Amount
+		}
+
+	} else if meta.ActionType == pCommon.PortalSubmitProofRedeem {
+		redeemRequest := optionalData["request"].(portalMeta.PortalRedeemRequestStatus)
+		// check tokenID
+		if meta.TokenID != redeemRequest.TokenID {
+			Logger.log.Errorf("TokenID is not correct in redeemID req")
+			return [][]string{rejectInst}, nil
+		}
+
+		// check porting amount
+		if meta.Amount != redeemRequest.RedeemAmount {
+			Logger.log.Errorf("RedeemAmount is not correct in redeemID req")
+			return [][]string{rejectInst}, nil
+		}
+
+		// check requester address
+		if meta.IncogAddressStr != redeemRequest.RedeemerIncAddressStr {
+			Logger.log.Errorf("IncogAddressStr is not correct in waiting redeemID req")
+			return [][]string{rejectInst}, nil
+		}
+
+		// check redeem amount of matching custodian
+		matchedCustodian := new(statedb.MatchingRedeemCustodianDetail)
+		for _, cus := range redeemRequest.MatchingCustodianDetail {
+			if cus.GetIncognitoAddress() == meta.IncogAddressStr {
+				matchedCustodian = cus
+				break
+			}
+		}
+		if matchedCustodian.GetIncognitoAddress() == "" {
+			Logger.log.Errorf("Custodian address %v is not in redeemID req %v", meta.IncogAddressStr, meta.UniqueID)
+			return [][]string{rejectInst}, nil
+		}
+		expectedPaymentInfos = map[string]uint64{
+			redeemRequest.RemoteAddress: matchedCustodian.GetAmount(),
+		}
+	} else {
+		return [][]string{rejectInst}, nil
+	}
+
+	expectedMemo := optionalData["memo"].(string)
+	isValid, err := portalTokenProcessor.ParseAndVerifyProof(meta.Proof, bc, expectedMemo, expectedPaymentInfos)
+	if !isValid || err != nil {
+		Logger.log.Error("Parse and verify redeem proof failed: %v", err)
+		return [][]string{rejectInst}, nil
+	}
+
+	inst := buildSubmitProofInst(
+		actionData.Meta.UniqueID,
+		actionData.Meta.TokenID,
+		actionData.Meta.IncogAddressStr,
+		actionData.Meta.Amount,
+		actionData.Meta.Proof,
+		actionData.Meta.Type,
+		shardID,
+		actionData.TxReqID,
+		actionData.Meta.ActionType,
+		pCommon.PortalRequestAcceptedChainStatus,
+	)
+
+	return [][]string{inst}, nil
+}
+
+func (p *portalSubmitProofProcessor) ProcessInsts(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams portal.PortalParams,
+	updatingInfoByTokenID map[common.Hash]basemeta.UpdatingInfo,
+) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+
+	if len(instructions) != 4 {
+		return nil // skip the instruction
+	}
+
+	// unmarshal instructions content
+	var actionData portalMeta.PortalSubmitProofContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error: %v\n", instructions[3], err)
+		return nil
+	}
+
+	reqStatus := instructions[2]
+	reqSubmitProofTrackData := portalMeta.PortalSubmitProofStatus{
+		Status:          pCommon.PortalRequestRejectedStatus,
+		UniqueID:        actionData.UniqueID,
+		TokenID:         actionData.TokenID,
+		IncogAddressStr: actionData.IncogAddressStr,
+		Amount:          actionData.Amount,
+		Proof:           actionData.Proof,
+		TxReqID:         actionData.TxReqID,
+	}
+	if reqStatus == pCommon.PortalRequestAcceptedChainStatus {
+		//create new status of submit proof
+		reqSubmitProofTrackData.Status = pCommon.PortalRequestAcceptedStatus
+	}
+	reqSubmitProofTrackDataBytes, _ := json.Marshal(reqSubmitProofTrackData)
+	err = statedb.StorePortalRequestSubmitProofStatus(
+		stateDB,
+		actionData.TxReqID.String(),
+		reqSubmitProofTrackDataBytes,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while tracking submit proof tx: %+v", err)
+		return nil
+	}
+
+	return nil
+}
+
+/* =======
+Portal Request beacon signature
+======= */
+type portalSignatureRequestProcessor struct {
+	*portalInstProcessor
+}
+
+func (p *portalSignatureRequestProcessor) GetActions() map[byte][][]string {
+	return p.actions
+}
+
+func (p *portalSignatureRequestProcessor) PutAction(action []string, shardID byte) {
+	_, found := p.actions[shardID]
+	if !found {
+		p.actions[shardID] = [][]string{action}
+	} else {
+		p.actions[shardID] = append(p.actions[shardID], action)
+	}
+}
+func (p *portalSignatureRequestProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal request beacon signature: %+v", err)
+		return nil, fmt.Errorf("ERROR: an error occured while decoding content string of portal request beacon signature: %+v", err)
+	}
+	var actionData portalMeta.PortalSignatureRequestAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshal portal request beacon signature: %+v", err)
+		return nil, fmt.Errorf("ERROR: an error occured while unmarshal portal request beacon signature: %+v", err)
+	}
+	meta := actionData.Meta
+	optionalData := make(map[string]interface{})
+	optionalData["isExist"] = false
+	submitProofBytes, err := statedb.GetPortalSubmitProofStatus(stateDB, meta.SubmitProofTxID)
+	if err != nil || len(submitProofBytes) == 0 {
+		Logger.log.Errorf("ERROR: an error occured query portal porting request in portal request beacon signature process: %+v", err)
+		return nil, fmt.Errorf("ERROR: an error occured query portal porting request in portal request beacon signature process: %+v", err)
+	}
+	var submitProofStatus portalMeta.PortalSubmitProofStatus
+	err = json.Unmarshal(submitProofBytes, &submitProofStatus)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshal portal porting request: %+v", err)
+		return nil, fmt.Errorf("ERROR: an error occured while unmarshal portal porting request: %+v", err)
+	}
+	if submitProofStatus.Status == pCommon.PortalRequestAcceptedStatus {
+		optionalData["isExist"] = true
+		optionalData["submitProof"] = submitProofStatus
+	}
+
+	return optionalData, nil
+}
+
+// beacon build new instruction from instruction received from ShardToBeaconBlock
+func buildSignatureRequestInst(
+	metaType int,
+	submitProofTxID string,
+	txFee uint,
+	incogAddressStr string,
+	remoteAddressStr string,
+	shardID byte,
+	txReqID common.Hash,
+	signedTx string,
+	status string,
+) []string {
+	reqPTokenContent := portalMeta.PortalSignatureRequestContent{
+		SubmitProofTxID: submitProofTxID,
+		TxFee:           txFee,
+		IncogAddressStr: incogAddressStr,
+		RemoteAddress:   remoteAddressStr,
+		TxReqID:         txReqID,
+		ShardID:         shardID,
+		SignedTx:        signedTx,
+	}
+	reqPTokenContentBytes, _ := json.Marshal(reqPTokenContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(reqPTokenContentBytes),
+	}
+}
+
+func (p *portalSignatureRequestProcessor) BuildNewInsts(
+	bc basemeta.ChainRetriever,
+	contentStr string,
+	shardID byte,
+	currentPortalState *CurrentPortalState,
+	beaconHeight uint64,
+	shardHeights map[byte]uint64,
+	portalParams portal.PortalParams,
+	optionalData map[string]interface{},
+) ([][]string, error) {
+	// parse instruction
+	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal submit proof action: %+v", err)
+		return [][]string{}, nil
+	}
+	var actionData portalMeta.PortalSignatureRequestAction
+	err = json.Unmarshal(actionContentBytes, &actionData)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshal portal submit proof action: %+v", err)
+		return [][]string{}, nil
+	}
+	meta := actionData.Meta
+
+	rejectInst := buildSignatureRequestInst(
+		meta.Type,
+		meta.SubmitProofTxID,
+		meta.TxFee,
+		meta.IncogAddressStr,
+		meta.RemoteAddress,
+		actionData.ShardID,
+		actionData.TxReqID,
+		"",
+		pCommon.PortalRequestRejectedChainStatus,
+	)
+
+	if optionalData == nil {
+		Logger.log.Error("ERROR signature request: optional data must not nil")
+		return [][]string{rejectInst}, nil
+	}
+	isExist, ok := optionalData["isExist"].(bool)
+	if !ok {
+		Logger.log.Errorf("Signature request: optionalData isExist is invalid")
+		return [][]string{rejectInst}, nil
+	}
+	if !isExist {
+		Logger.log.Errorf("Signature request: submit proof not exist %v", meta.SubmitProofTxID)
+		return [][]string{rejectInst}, nil
+	}
+
+	if currentPortalState == nil {
+		Logger.log.Warn("Signature request: Current Portal state is null.")
+		return [][]string{rejectInst}, nil
+	}
+
+	submitProofStatus := optionalData["submitProof"].(portalMeta.PortalSubmitProofStatus)
+	if submitProofStatus.IncogAddressStr != meta.IncogAddressStr {
+		Logger.log.Errorf("Signature request: requester and claimer not match %v, %v", submitProofStatus.IncogAddressStr, meta.IncogAddressStr)
+		return [][]string{rejectInst}, nil
+	}
+
+	if submitProofStatus.TokenID != meta.TokenID {
+		Logger.log.Errorf("Signature request: tokenID in proof and in request not match %v, %v", submitProofStatus.TokenID, meta.IncogAddressStr)
+		return [][]string{rejectInst}, nil
+	}
+
+	signedTx, err := CreateAndSignTransaction(submitProofStatus.Proof, meta.RemoteAddress, meta.TokenID)
+
+	if err != nil {
+		Logger.log.Errorf("Signature request: an error occured while while call CreateAndSignTransaction function: %v", err)
+		return [][]string{rejectInst}, nil
+	}
+
+	inst := buildSignatureRequestInst(
+		meta.Type,
+		meta.SubmitProofTxID,
+		meta.TxFee,
+		meta.IncogAddressStr,
+		meta.RemoteAddress,
+		actionData.ShardID,
+		actionData.TxReqID,
+		signedTx,
+		pCommon.PortalRequestRejectedChainStatus,
+	)
+
+	return [][]string{inst}, nil
+}
+
+func (p *portalSignatureRequestProcessor) ProcessInsts(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams portal.PortalParams,
+	updatingInfoByTokenID map[common.Hash]basemeta.UpdatingInfo,
+) error {
+	if currentPortalState == nil {
+		Logger.log.Errorf("current portal state is nil")
+		return nil
+	}
+
+	//if len(instructions) != 4 {
+	//	return nil // skip the instruction
+	//}
+	//
+	//// unmarshal instructions content
+	//var actionData portalMeta.PortalSubmitProofContent
+	//err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	//if err != nil {
+	//	Logger.log.Errorf("Can not unmarshal instruction content %v - Error: %v\n", instructions[3], err)
+	//	return nil
+	//}
+	//
+	//reqStatus := instructions[2]
+	//reqSubmitProofTrackData := portalMeta.PortalSubmitProofStatus{
+	//	Status:          pCommon.PortalRequestRejectedStatus,
+	//	UniqueID:        actionData.UniqueID,
+	//	TokenID:         actionData.TokenID,
+	//	IncogAddressStr: actionData.IncogAddressStr,
+	//	Amount:          actionData.Amount,
+	//	Proof:           actionData.Proof,
+	//	TxReqID:         actionData.TxReqID,
+	//}
+	//if reqStatus == pCommon.PortalRequestAcceptedChainStatus {
+	//	//create new status of submit proof
+	//	reqSubmitProofTrackData.Status = pCommon.PortalRequestAcceptedStatus
+	//}
+	//reqSubmitProofTrackDataBytes, _ := json.Marshal(reqSubmitProofTrackData)
+	//err = statedb.StoreRequestSubmitProofStatus(
+	//	stateDB,
+	//	actionData.TxReqID.String(),
+	//	reqSubmitProofTrackDataBytes,
+	//)
+	//if err != nil {
+	//	Logger.log.Errorf("ERROR: an error occured while tracking submit proof tx: %+v", err)
+	//	return nil
+	//}
 
 	return nil
 }

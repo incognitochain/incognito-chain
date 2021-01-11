@@ -967,3 +967,49 @@ func GetPortalUnlockOverRateCollateralsStatus(stateDB *StateDB, txID string) ([]
 
 	return data, nil
 }
+
+//====================== Portal submit proof status ======================
+func StorePortalRequestSubmitProofStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalSubmitProofRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalSubmitProofError, err)
+	}
+
+	return nil
+}
+
+func GetPortalSubmitProofStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalSubmitProofRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalSubmitProofStatusError, err)
+	}
+
+	return data, nil
+}
+
+//====================== Portal request beacon signature status ======================
+func StoreRequestSignatureStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalSignatureRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalRequestSignatureError, err)
+	}
+
+	return nil
+}
+
+func GetRequestSignatureStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalSignatureRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalRequestSignatureStatusError, err)
+	}
+
+	return data, nil
+}

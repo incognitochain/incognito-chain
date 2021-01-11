@@ -120,6 +120,11 @@ func (blockchain *BlockChain) IsPortalToken(beaconHeight uint64, tokenIDStr stri
 	return blockchain.GetPortalParams(beaconHeight).IsPortalToken(tokenIDStr)
 }
 
+// IsMultiSigSupported check tokenIDStr whether support multisig or not on portal v3 or not
+func (blockchain *BlockChain) IsMultiSigSupported(beaconHeight uint64, tokenIDStr string) bool {
+	return blockchain.GetPortalParams(beaconHeight).IsTokenSupportMultiSig(tokenIDStr)
+}
+
 // GetBNBHeader calls RPC to fullnode bnb to get bnb header by block height
 func (blockchain *BlockChain) GetBNBHeader(
 	blockHeight int64,

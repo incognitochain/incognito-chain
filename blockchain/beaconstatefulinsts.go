@@ -3,8 +3,8 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/basemeta"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalprocess"
@@ -68,7 +68,9 @@ func (blockchain *BlockChain) collectStatefulActions(
 			basemeta.PortalCustodianTopupMetaV3,
 			basemeta.PortalTopUpWaitingPortingRequestMetaV3,
 			basemeta.PortalRequestPortingMetaV3,
-			basemeta.PortalRedeemRequestMetaV3:
+			basemeta.PortalRedeemRequestMetaV3,
+			basemeta.PortalSubmitProofToClaimToken,
+			basemeta.PortalRequestBeaconSignature:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:

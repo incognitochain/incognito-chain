@@ -84,7 +84,6 @@ const (
 	GetReqPTokenStatusError
 	GetCustodianDepositError
 	GetPortalStateError
-	GetReqUnlockCollateralStatusError
 	GetReqRedeemStatusError
 	GetRequestWithdrawRewardStatusError
 	GetPortalRewardError
@@ -128,6 +127,11 @@ const (
 	RestoreCandidateShardWaitingForNextRandom
 
 	GetTotalStakerError
+
+	// portal v4
+	GetReqUnlockCollateralStatusError
+	GetReqSubmitProofStatusError
+	GetReqBeaconSignatureStatusError
 )
 
 // Standard JSON-RPC 2.0 errors.

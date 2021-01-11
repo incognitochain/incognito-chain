@@ -51,7 +51,7 @@ func (p *portalPortingRequestProcessor) PrepareDataForBlockProducer(stateDB *sta
 
 	// Get porting request with uniqueID from stateDB
 	isExistPortingID, err := statedb.IsPortingRequestIdExist(stateDB, []byte(actionData.Meta.UniqueRegisterId))
-	if err != nil{
+	if err != nil {
 		Logger.log.Errorf("Porting request: an error occurred while get porting request Id from DB: %+v", err)
 		return nil, fmt.Errorf("Porting request: an error occurred while get porting request Id from DB: %+v", err)
 	}
@@ -72,6 +72,7 @@ func buildRequestPortingInst(
 	custodian []*statedb.MatchingPortingCustodianDetail,
 	txReqID common.Hash,
 	shardHeight uint64,
+	externalKey string,
 ) []string {
 	portingRequestContent := portalMeta.PortalPortingRequestContent{
 		UniqueRegisterId: uniqueRegisterId,
@@ -82,7 +83,8 @@ func buildRequestPortingInst(
 		Custodian:        custodian,
 		TxReqID:          txReqID,
 		ShardID:          shardID,
-		ShardHeight: shardHeight,
+		ShardHeight:      shardHeight,
+		ExternalKey:      externalKey,
 	}
 
 	portingRequestContentBytes, _ := json.Marshal(portingRequestContent)
@@ -129,6 +131,7 @@ func (p *portalPortingRequestProcessor) BuildNewInsts(
 		nil,
 		actionData.TxReqID,
 		actionData.ShardHeight,
+		actionData.Meta.ExternalKey,
 	)
 
 	if currentPortalState == nil {
@@ -175,6 +178,14 @@ func (p *portalPortingRequestProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
+	var configParams interface{}
+
+	switch actionData.Meta.PTokenId {
+	case pCommon.PortalBTCIDStr:
+		configParams = bc.GetBTCHeaderChain().GetChainParams()
+	default:
+	}
+
 	// pick-up custodians
 	pickedCustodians, err := pickUpCustodianForPorting(
 		actionData.Meta.RegisterAmount,
@@ -182,6 +193,8 @@ func (p *portalPortingRequestProcessor) BuildNewInsts(
 		currentPortalState.CustodianPoolState,
 		currentPortalState.FinalExchangeRatesState,
 		portalParams,
+		actionData.Meta.ExternalKey,
+		configParams,
 	)
 	if err != nil || len(pickedCustodians) == 0 {
 		Logger.log.Errorf("Porting request: an error occurred while picking up custodians for the porting request: %+v", err)
@@ -210,6 +223,7 @@ func (p *portalPortingRequestProcessor) BuildNewInsts(
 		pickedCustodians,
 		actionData.TxReqID,
 		actionData.ShardHeight,
+		actionData.Meta.ExternalKey,
 	)
 
 	newPortingRequestStateWaiting := statedb.NewWaitingPortingRequestWithValue(
@@ -223,6 +237,7 @@ func (p *portalPortingRequestProcessor) BuildNewInsts(
 		beaconHeight+1,
 		actionData.ShardHeight,
 		actionData.ShardID,
+		actionData.Meta.ExternalKey,
 	)
 
 	keyWaitingPortingRequest := statedb.GeneratePortalWaitingPortingRequestObjectKey(actionData.Meta.UniqueRegisterId)
@@ -268,6 +283,7 @@ func (p *portalPortingRequestProcessor) ProcessInsts(
 	portingFee := portingRequestContent.PortingFee
 	shardHeight := portingRequestContent.ShardHeight
 	shardId := portingRequestContent.ShardID
+	externalKey := portingRequestContent.ExternalKey
 
 	switch reqStatus {
 	case pCommon.PortalRequestAcceptedChainStatus:
@@ -309,6 +325,7 @@ func (p *portalPortingRequestProcessor) ProcessInsts(
 			beaconHeight+1,
 			shardHeight,
 			shardId,
+			externalKey,
 		)
 
 		newPortingRequestState := portalMeta.NewPortingRequestStatus(
@@ -323,6 +340,7 @@ func (p *portalPortingRequestProcessor) ProcessInsts(
 			beaconHeight+1,
 			shardHeight,
 			shardId,
+			externalKey,
 		)
 
 		newPortingTxRequestState := portalMeta.NewPortingRequestStatus(
@@ -337,6 +355,7 @@ func (p *portalPortingRequestProcessor) ProcessInsts(
 			beaconHeight+1,
 			shardHeight,
 			shardId,
+			externalKey,
 		)
 
 		//save transaction
@@ -390,6 +409,7 @@ func (p *portalPortingRequestProcessor) ProcessInsts(
 			beaconHeight+1,
 			shardHeight,
 			shardId,
+			externalKey,
 		)
 
 		//save transaction
@@ -408,7 +428,6 @@ func (p *portalPortingRequestProcessor) ProcessInsts(
 
 	return nil
 }
-
 
 /* =======
 Portal Request Ptoken Processor
@@ -708,4 +727,3 @@ func (p *portalRequestPTokenProcessor) ProcessInsts(
 
 	return nil
 }
-

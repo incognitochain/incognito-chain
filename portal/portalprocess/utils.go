@@ -1,8 +1,13 @@
 package portalprocess
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/portal"
@@ -118,7 +123,7 @@ func calMatchedPubTokenAmountAndLockCollateralsForPorting(
 	portingAmount uint64,
 	totalLockCollateralInUSDT uint64, matchLockCollateralInUSDT uint64,
 	convertRateTool *PortalExchangeRateTool, custodianState *statedb.CustodianState,
-	) (uint64, uint64, map[string]uint64, error) {
+) (uint64, uint64, map[string]uint64, error) {
 	// matched public token amount is calculated by percent matchLockCollateralInUSDT of totalLockCollateralInUSDT
 	tmp := new(big.Int).Mul(new(big.Int).SetUint64(matchLockCollateralInUSDT), new(big.Int).SetUint64(portingAmount))
 	pubTokenAmountCanBeHold := tmp.Div(tmp, new(big.Int).SetUint64(totalLockCollateralInUSDT)).Uint64()
@@ -180,7 +185,9 @@ func pickUpCustodianForPorting(
 	portingAmount uint64, portalTokenID string,
 	custodianPool map[string]*statedb.CustodianState,
 	exchangeRate *statedb.FinalExchangeRatesState,
-	portalParams portal.PortalParams) ([]*statedb.MatchingPortingCustodianDetail, error) {
+	portalParams portal.PortalParams,
+	externalKey string,
+	configParams interface{}) ([]*statedb.MatchingPortingCustodianDetail, error) {
 	if len(custodianPool) == 0 {
 		return nil, errors.New("pickUpCustodianForPorting: Custodian pool is empty")
 	}
@@ -256,10 +263,38 @@ func pickUpCustodianForPorting(
 			return nil, err
 		}
 		actualHoldPubToken += holdPublicToken
+		var remoteAddress string
+		if externalKey != "" {
+			switch portalTokenID {
+			case pCommon.PortalBTCIDStr:
+				params := configParams.(*chaincfg.Params)
+				pubKeysStr := []string{pCommon.BeaconKey1, pCommon.BeaconKey2, custodianState.GetRemoteAddresses()[portalTokenID], externalKey}
+				pubKeys := make([]*btcutil.AddressPubKey, len(pubKeysStr))
+				for _, pubKey := range pubKeysStr {
+					pubKeyBytes, err := hex.DecodeString(pubKey)
+					if err != nil {
+						return nil, errors.New("pickUpCustodianForPorting: Can not decode public key")
+					}
+					scriptPubKey, err := btcutil.NewAddressPubKey(pubKeyBytes, params)
+					pubKeys = append(pubKeys, scriptPubKey)
+				}
+				multiSigScript, err := txscript.MultiSigScript(pubKeys, 3)
+				if err != nil {
+					return nil, errors.New("pickUpCustodianForPorting: Can not create multisig script address")
+				}
+				hashScript := btcutil.Hash160(multiSigScript)
+				// pk2sh address
+				remoteAddress = base58.CheckEncode(hashScript, 5)
+			default:
+				return nil, errors.New("pickUpCustodianForPorting: multisig address of this token not handled yet")
+			}
+		} else {
+			remoteAddress = custodianState.GetRemoteAddresses()[portalTokenID]
+		}
 
 		matchCus := statedb.MatchingPortingCustodianDetail{
 			IncAddress:             custodianState.GetIncognitoAddress(),
-			RemoteAddress:          custodianState.GetRemoteAddresses()[portalTokenID],
+			RemoteAddress:          remoteAddress,
 			Amount:                 holdPublicToken,
 			LockedAmountCollateral: lockPRVCollateral,
 			LockedTokenCollaterals: lockTokenColaterals,
@@ -2319,7 +2354,15 @@ func CloneWPortingRequests(wPortingReqs map[string]*statedb.WaitingPortingReques
 			req.BeaconHeight(),
 			req.ShardHeight(),
 			req.ShardID(),
+			req.ExternalKey(),
 		)
 	}
 	return newReqs
+}
+
+// TODO: complete this function
+func CreateAndSignTransaction(proof string, receiverAddress string, tokenID string) (string, error) {
+	var signedTx string
+
+	return signedTx, nil
 }

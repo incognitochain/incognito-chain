@@ -164,6 +164,8 @@ const (
 	PortalRequestPortingMetaV3                    = 141
 	PortalRedeemRequestMetaV3                     = 142
 	PortalUnlockOverRateCollateralsMeta           = 143
+	PortalSubmitProofToClaimToken                 = 144
+	PortalRequestBeaconSignature                  = 145
 
 	// Incognito => Ethereum's SC for portal
 	PortalCustodianWithdrawConfirmMetaV3         = 170
@@ -230,6 +232,8 @@ var portalMetas = []int{
 	PortalResetPortalDBMeta,
 	RelayingBNBHeaderMeta,
 	RelayingBTCHeaderMeta,
+	PortalSubmitProofToClaimToken,
+	PortalRequestBeaconSignature,
 
 	PortalTopUpWaitingPortingRequestMeta,
 	PortalTopUpWaitingPortingResponseMeta,

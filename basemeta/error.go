@@ -56,6 +56,8 @@ const (
 	PortalCustodianDepositV3ValidateSanityDataError
 	NewPortalCustodianDepositV3MetaFromMapError
 	PortalUnlockOverRateCollateralsError
+	PortalSubmitProofParamError
+	PortalSignatureRequestParamError
 )
 
 var ErrCodeMessage = map[int]struct {

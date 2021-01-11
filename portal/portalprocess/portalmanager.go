@@ -198,6 +198,16 @@ func NewPortalManager() *PortalManager {
 				actions: map[byte][][]string{},
 			},
 		},
+		bMeta.PortalSubmitProofToClaimToken: &portalSubmitProofProcessor{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
+		bMeta.PortalRequestBeaconSignature: &portalSignatureRequestProcessor{
+			portalInstProcessor: &portalInstProcessor{
+				actions: map[byte][][]string{},
+			},
+		},
 	}
 
 	return &PortalManager{

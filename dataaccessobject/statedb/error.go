@@ -191,6 +191,10 @@ const (
 	GetWithdrawCollateralConfirmError
 	StorePortalUnlockOverRateCollateralsError
 	GetPortalUnlockOverRateCollateralsStatusError
+	StorePortalSubmitProofError
+	GetPortalSubmitProofStatusError
+	StorePortalRequestSignatureError
+	GetPortalRequestSignatureStatusError
 )
 
 var ErrCodeMessage = map[int]struct {

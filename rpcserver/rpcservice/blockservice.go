@@ -1257,3 +1257,35 @@ func (blockService BlockService) GetPortalReqUnlockOverRateCollateralStatus(reqT
 
 	return &status, nil
 }
+
+func (blockService BlockService) GetPortalSubmitProofStatus(reqTxID string) (*portalMeta.PortalSubmitProofStatus, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPortalSubmitProofStatus(stateDB, reqTxID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status portalMeta.PortalSubmitProofStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+func (blockService BlockService) GetPortalRequestSignatureStatus(reqTxID string) (*portalMeta.PortalSignatureRequestStatus, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetRequestSignatureStatus(stateDB, reqTxID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status portalMeta.PortalSignatureRequestStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}

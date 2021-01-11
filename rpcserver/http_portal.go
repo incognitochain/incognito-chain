@@ -173,6 +173,14 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortingRequest(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
+	var externalKey string
+	if httpServer.config.BlockChain.IsMultiSigSupported(0, pTokenId) {
+		externalKey, ok = data["ExternalKey"].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata External Key is invalid"))
+		}
+	}
+
 	registerAmount, err := common.AssertAndConvertStrToNumber(data["RegisterAmount"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -191,6 +199,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortingRequest(params interfa
 		registerAmount,
 		portingFee,
 		basemeta.PortalRequestPortingMetaV3,
+		externalKey,
 	)
 
 	// create new param to build raw tx from param interface
@@ -1044,6 +1053,234 @@ func (httpServer *HttpServer) handleGetPortalReqUnlockOverRateCollateralStatus(p
 	status, err := httpServer.blockService.GetPortalReqUnlockOverRateCollateralStatus(reqTxID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetReqUnlockCollateralStatusError, err)
+	}
+	return status, nil
+}
+
+/*
+====== Submit proof to claim token from porting and redeem request
+*/
+func (httpServer *HttpServer) handlePortalSubmitProofToClaimToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+	}
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+	uniqueID, ok := data["UniqueID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata UniquePortingID is invalid"))
+	}
+	tokenID, ok := data["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
+	}
+	incognitoAddress, ok := data["IncogAddressStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncogAddressStr is invalid"))
+	}
+	amount, err := common.AssertAndConvertStrToNumber(data["Amount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	proof, ok := data["Proof"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingProof param is invalid"))
+	}
+
+	// 0 : porting
+	// 1 : redeem
+	actionType, ok := data["ActionType"].(uint)
+	if !ok || actionType > 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortingProof param is invalid"))
+	}
+
+	meta, _ := portalMeta.NewPortalSubmitProof(
+		basemeta.PortalSubmitProofToClaimToken,
+		uniqueID,
+		tokenID,
+		incognitoAddress,
+		amount,
+		proof,
+		actionType,
+	)
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+	// HasPrivacyCoin param is always false
+	createRawTxParam.HasPrivacyCoin = false
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithSubmitProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithReqPToken(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetPortalSubmitProofStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	reqTxID, ok := data["ReqTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
+	}
+	status, err := httpServer.blockService.GetPortalSubmitProofStatus(reqTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqSubmitProofStatusError, err)
+	}
+	return status, nil
+}
+
+/*
+====== User or Custodian request beacon signature to claim native token back
+*/
+func (httpServer *HttpServer) handlePortalRequestBeaconSignature(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least 5"))
+	}
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata param is invalid"))
+	}
+	submitProofTxID, ok := data["SubmitProofTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata SubmitProofTxID is invalid"))
+	}
+	incognitoAddress, ok := data["IncogAddressStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncogAddressStr is invalid"))
+	}
+	remoteAddress, ok := data["RemoteAddressStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata remoteAddress is invalid"))
+	}
+	txFee, err := common.AssertAndConvertStrToNumber(data["TxFee"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	tokenID, ok := data["TokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
+	}
+	_, err = new(common.Hash).NewHashFromStr(tokenID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Can not new TokenIDHash from TokenID"))
+	}
+
+	meta, _ := portalMeta.NewPortalSignatureRequest(
+		basemeta.PortalRequestBeaconSignature,
+		submitProofTxID,
+		uint(txFee),
+		incognitoAddress,
+		remoteAddress,
+		tokenID,
+	)
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+	// HasPrivacyCoin param is always false
+	createRawTxParam.HasPrivacyCoin = false
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithRequestBeaconSignature(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handlePortalRequestBeaconSignature(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleGetPortalRequestSignatureStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	reqTxID, ok := data["ReqTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
+	}
+	status, err := httpServer.blockService.GetPortalRequestSignatureStatus(reqTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetReqBeaconSignatureStatusError, err)
 	}
 	return status, nil
 }

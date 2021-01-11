@@ -18,6 +18,10 @@ const (
 	PortalRequestRejectedStatus = 0
 	PortalRequestAcceptedStatus = 1
 
+	// type of action - used to determine next action
+	PortalSubmitProofPorting = 0
+	PortalSubmitProofRedeem  = 1
+
 	// status of portal request - used to append to beacon instructions
 	PortalRequestAcceptedChainStatus = "accepted"
 	PortalRequestRejectedChainStatus = "rejected"
@@ -49,4 +53,10 @@ var PortalSupportedIncTokenIDs = []string{
 	PortalBNBIDStr, // pBNB
 }
 
+var PortalTokenIDsSupportedMultiSig = []string{
+	PortalBTCIDStr, // pBTC
+}
+
 const ETHChainName = "eth"
+const BeaconKey1 = "023470707c011796b29b352f9a5d3bed5bd601af64aa053ddcd7e50820313fe5d5"
+const BeaconKey2 = "034df839573d5b81dfd1107df5e2a5b85b0d629a8144640177b2d4284521603bf7"

@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/incognitochain/incognito-chain/basemeta"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	pCommon "github.com/incognitochain/incognito-chain/portal/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -22,6 +24,7 @@ type PortalUserRegister struct {
 	PTokenId         string
 	RegisterAmount   uint64
 	PortingFee       uint64
+	ExternalKey      string
 }
 
 type PortalUserRegisterAction struct {
@@ -47,6 +50,7 @@ type PortalPortingRequestContent struct {
 	TxReqID          common.Hash
 	ShardID          byte
 	ShardHeight      uint64
+	ExternalKey      string
 }
 
 type PortingRequestStatus struct {
@@ -61,6 +65,7 @@ type PortingRequestStatus struct {
 	BeaconHeight    uint64
 	ShardHeight     uint64
 	ShardID         byte
+	ExternalKey     string
 }
 
 func NewPortingRequestStatus(
@@ -74,11 +79,12 @@ func NewPortingRequestStatus(
 	status int,
 	beaconHeight uint64,
 	shardHeight uint64,
-	shardID byte) *PortingRequestStatus {
-	return &PortingRequestStatus{UniquePortingID: uniquePortingID, TxReqID: txReqID, TokenID: tokenID, PorterAddress: porterAddress, Amount: amount, Custodians: custodians, PortingFee: portingFee, Status: status, BeaconHeight: beaconHeight, ShardHeight: shardHeight, ShardID: shardID}
+	shardID byte,
+	externalKey string) *PortingRequestStatus {
+	return &PortingRequestStatus{UniquePortingID: uniquePortingID, TxReqID: txReqID, TokenID: tokenID, PorterAddress: porterAddress, Amount: amount, Custodians: custodians, PortingFee: portingFee, Status: status, BeaconHeight: beaconHeight, ShardHeight: shardHeight, ShardID: shardID, ExternalKey: externalKey}
 }
 
-func NewPortalUserRegister(uniqueRegisterId string, incogAddressStr string, pTokenId string, registerAmount uint64, portingFee uint64, metaType int) (*PortalUserRegister, error) {
+func NewPortalUserRegister(uniqueRegisterId string, incogAddressStr string, pTokenId string, registerAmount uint64, portingFee uint64, metaType int, externalKey string) (*PortalUserRegister, error) {
 	metadataBase := basemeta.MetadataBase{
 		Type: metaType,
 	}
@@ -89,6 +95,7 @@ func NewPortalUserRegister(uniqueRegisterId string, incogAddressStr string, pTok
 		PTokenId:         pTokenId,
 		RegisterAmount:   registerAmount,
 		PortingFee:       portingFee,
+		ExternalKey:      externalKey,
 	}
 
 	portalUserRegisterMeta.MetadataBase = metadataBase
@@ -144,6 +151,23 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever b
 		return false, false, errors.New("PTokenId is not a portal token")
 	}
 
+	// validate portal token support multi sig address
+	if chainRetriever.IsMultiSigSupported(beaconHeight, portalUserRegister.PTokenId) {
+		switch portalUserRegister.PTokenId {
+		case pCommon.PortalBTCIDStr:
+			_, err = btcec.ParsePubKey(common.Hex2Bytes(portalUserRegister.ExternalKey), btcec.S256())
+		default:
+			err = errors.New("External key not handled property yet")
+		}
+		if err != nil {
+			return false, false, errors.New("External key is invalid")
+		}
+	} else {
+		if portalUserRegister.ExternalKey != "" {
+			return false, false, errors.New("External key must not be provided")
+		}
+	}
+
 	// validate amount register
 	minAmount, err := chainRetriever.GetMinAmountPortalToken(portalUserRegister.PTokenId, beaconHeight)
 	if err != nil {
@@ -181,6 +205,7 @@ func (portalUserRegister PortalUserRegister) Hash() *common.Hash {
 	record += portalUserRegister.IncogAddressStr
 	record += strconv.FormatUint(portalUserRegister.RegisterAmount, 10)
 	record += strconv.FormatUint(portalUserRegister.PortingFee, 10)
+	record += portalUserRegister.ExternalKey
 
 	// final hash
 	hash := common.HashH([]byte(record))
