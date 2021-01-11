@@ -410,7 +410,8 @@ func TestNewOldEncodeDecode(t *testing.T){
 }
 
 func TestGetPaymentAddressV1(t *testing.T) {
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10000; i++ {
+		isNewEncoding := (common.RandInt() % 2) == 1
 		privateKey := common.RandBytes(common.PrivateKeySize)
 		keySet := new(incognitokey.KeySet)
 		err := keySet.InitFromPrivateKeyByte(privateKey)
@@ -424,11 +425,11 @@ func TestGetPaymentAddressV1(t *testing.T) {
 
 		paymentAddress := keyWallet.Base58CheckSerialize(PaymentAddressType)
 
-		oldPaymentAddress, err := GetPaymentAddressV1(paymentAddress, true)
-		assert.Equal(t, err, nil, "GetPaymentAddressV1 returns an error: %v\n", err)
+		oldPaymentAddress, err := GetPaymentAddressV1(paymentAddress, isNewEncoding)
+		assert.Equal(t, nil, err, "GetPaymentAddressV1 returns an error: %v\n", err)
 
 		oldWallet, err := Base58CheckDeserialize(oldPaymentAddress)
-		assert.Equal(t, err, nil, "deserialize returns an error: %v\n", err)
+		assert.Equal(t, nil, err, "deserialize returns an error: %v\n", err)
 
 		oldPK := oldWallet.KeySet.PaymentAddress.Pk
 		oldTK := oldWallet.KeySet.PaymentAddress.Tk

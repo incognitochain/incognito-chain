@@ -278,20 +278,29 @@ func GetPaymentAddressV1(addr string, isNewEncoding bool) (string, error) {
 		return "", errors.New(fmt.Sprintf("something must be wrong with the provided payment address: %v", addr))
 	}
 
-	//Return if the input is already a payment address V2
-	if newWallet.KeySet.PaymentAddress.OTAPublic == nil{
-		return addr, nil
-	}
-
 	//Remove the publicOTA key and try to deserialize
 	newWallet.KeySet.PaymentAddress.OTAPublic = nil
 
-	addrV1 := newWallet.Base58CheckSerialize(PaymentAddressType)
-	if len(addrV1) == 0 {
-		return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addr))
-	}
+	if isNewEncoding{
+		addrV1 := newWallet.Base58CheckSerialize(PaymentAddressType)
+		if len(addrV1) == 0 {
+			return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addr))
+		}
 
-	return addrV1, nil
+		return addrV1, nil
+	}else{
+		addr1InBytes, err := newWallet.Serialize(PaymentAddressType, false)
+		if err != nil {
+			return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addr))
+		}
+
+		addrV1 := base58.Base58Check{}.NewEncode(addr1InBytes, common.ZeroByte)
+		if len(addrV1) == 0 {
+			return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addr))
+		}
+
+		return addrV1, nil
+	}
 }
 
 //Checks if two payment addresses are generated from the same private key.
