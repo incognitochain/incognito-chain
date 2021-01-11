@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/appservices"
-	"io"
 	"io/ioutil"
 	"log"
 	"net"
