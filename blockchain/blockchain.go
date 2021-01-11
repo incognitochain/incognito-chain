@@ -520,9 +520,6 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	blockchain.ShardChain[shardID].multiView.Reset()
 
 	for _, v := range allViews {
-		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
-			panic("Restart shard views fail")
-		}
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
 			fmt.Println("block ", block)
@@ -545,6 +542,10 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 				v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
 		}
 		v.shardCommitteeEngine = shardCommitteeEngine
+
+		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
+			panic("Restart shard views fail")
+		}
 	}
 	return nil
 }
