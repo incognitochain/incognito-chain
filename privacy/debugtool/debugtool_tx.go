@@ -236,6 +236,9 @@ func (this *DebugTool) PDEContributePRV(privKeyStr string, amount string) ([]byt
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	//Attempt to contribute to pdex using old address
+	paymentAddStr, _ = wallet.GetPaymentAddressV1(paymentAddStr, false)
 	query := fmt.Sprintf(`{
 				"id": 1,
 				"jsonrpc": "1.0",
@@ -243,7 +246,7 @@ func (this *DebugTool) PDEContributePRV(privKeyStr string, amount string) ([]byt
 				"params": [
 					"%s",
 					{
-						"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": %s
+						"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": %s
 					},
 					-1,
 					0,
@@ -262,6 +265,9 @@ func (this *DebugTool) PDEContributeToken(privKeyStr, tokenID, amount string) ([
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	//Attempt to contribute to pdex using old address
+	paymentAddStr, _ = wallet.GetPaymentAddressV1(paymentAddStr, false)
 	query := fmt.Sprintf(`{
 				"id": 1,
 				"jsonrpc": "1.0",
@@ -279,7 +285,7 @@ func (this *DebugTool) PDEContributeToken(privKeyStr, tokenID, amount string) ([
 						"TokenSymbol": "",
 						"TokenAmount": %s,
 						"TokenReceivers": {
-							"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": %s
+							"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": %s
 						},
 						"TokenFee": 0,
 						"PDEContributionPairID": "newpair",
@@ -296,7 +302,7 @@ func (this *DebugTool) PDEContributeToken(privKeyStr, tokenID, amount string) ([
 func (this *DebugTool) PDEWithdrawContribution(privKeyStr, tokenID1, tokenID2, amountShare string) ([]byte, error) {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType) //Attempt to withdraw contribution using new a payment address
 	query := fmt.Sprintf(`{
 			"id": 1,
 			"jsonrpc": "1.0",
@@ -304,7 +310,7 @@ func (this *DebugTool) PDEWithdrawContribution(privKeyStr, tokenID1, tokenID2, a
 		   "params": [
 				"%s",
 				{
-					"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": 0
+					"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": 0
 				},
 				5,
 				-1,
@@ -357,7 +363,7 @@ func (this *DebugTool) PDETradeToken(privKeyStr, sellToken, amount string) ([]by
 			"method": "createandsendtxwithptokencrosspooltradereq",
 			"params": [
 				"%s",
-				{"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": 20},
+				{"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": 20},
 				-1,
 				0,
 				{
@@ -368,7 +374,7 @@ func (this *DebugTool) PDETradeToken(privKeyStr, sellToken, amount string) ([]by
 					"TokenSymbol": "",
 					"TokenAmount": 15,
 					"TokenReceivers": {
-						"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": 10
+						"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": 10
 					},
 					"TokenFee": 0,
 					"TokenIDToBuyStr": "0000000000000000000000000000000000000000000000000000000000000004",
@@ -435,7 +441,7 @@ func (this *DebugTool) Stake(privKey string, seed string) ([]byte, error) {
 	  "params":[
 			"%s",
 			{
-				"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": 1750000000000
+				"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": 1750000000000
 			},
 			5,
 			0,
@@ -465,7 +471,7 @@ func (this *DebugTool) Unstake(privKey string, seed string) ([]byte, error) {
 		"params": [
 			"%s",
 			{
-				"15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs": 0
+				"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": 0
 			},
 			10,
 			0,
