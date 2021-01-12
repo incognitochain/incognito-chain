@@ -302,15 +302,13 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		return pCoinV1, idx, nil
 	}else if jsonOutCoin.Version == "2" {
 		coinV2 := new(coin.CoinV2).Init()
-
 		if len(jsonOutCoin.CoinDetailsEncrypted) != 0 {
 			coinDetailEncryptedInBytes, _, err := base58.Base58Check{}.Decode(jsonOutCoin.CoinDetailsEncrypted)
 			if err != nil {
 				return nil, nil, err
 			}
-
 			amountEncrypted := new(privacy.Scalar).FromBytesS(coinDetailEncryptedInBytes)
-			coinV2.SetValue(amountEncrypted.ToUint64Little())
+			coinV2.SetAmount(amountEncrypted)
 		} else {
 			coinV2.SetValue(value)
 		}
@@ -323,6 +321,7 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		coinV2.SetAssetTag(assetTag)
 		coinV2.SetSharedRandom(sharedRandom)
 		coinV2.SetSharedConcealRandom(sharedConcealRandom)
+		coinV2.SetTxRandom(txRandom)
 		
 		return coinV2, idx, nil
 	}
