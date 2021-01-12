@@ -317,6 +317,12 @@ func PDEWithdrawContribution(tool *debugtool.DebugTool, privKey, tokenID1, token
 	fmt.Println(string(b))
 	fmt.Println("========== END PDE WITHDRAW  ==========")
 }
+func PDEFeeWithdraw(tool *debugtool.DebugTool, privKey, tokenID1, tokenID2, amountShare string) {
+	fmt.Println("========== PDE WITHDRAW   ==========")
+	b, _ := tool.PDEFeeWithdraw(privKey, tokenID1, tokenID2, amountShare)
+	fmt.Println(string(b))
+	fmt.Println("========== END PDE WITHDRAW  ==========")
+}
 
 func PDETradePRV(tool *debugtool.DebugTool, privKey, token, amount string) {
 	fmt.Println("========== PDE TRADE PRV   ==========")
@@ -324,7 +330,6 @@ func PDETradePRV(tool *debugtool.DebugTool, privKey, token, amount string) {
 	fmt.Println(string(b))
 	fmt.Println("========== END TRADE PRV  ==========")
 }
-
 func PDETradeToken(tool *debugtool.DebugTool, privKey, token, amount string) {
 	fmt.Println("========== PDE TRADE TOKEN   ==========")
 	b, _ := tool.PDETradeToken(privKey, token, amount)
@@ -332,6 +337,16 @@ func PDETradeToken(tool *debugtool.DebugTool, privKey, token, amount string) {
 	fmt.Println("========== END PDE TRADE TOKEN  ==========")
 }
 
+func GetPDEState(tool *debugtool.DebugTool, beaconHeight int64) {
+	fmt.Println("========== GET PDE STATE ==========")
+	b, err := tool.GetPDEState(beaconHeight)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(string(b))
+	fmt.Println("========== END GET PDE STATE ==========")
+}
 
 //Blockchain
 func GetBlockchainInfo(tool *debugtool.DebugTool) {
@@ -582,7 +597,7 @@ func main() {
 				privateKey = privateKeys[index]
 			}
 
-			var keyType = int64(0)
+			var keyType = int64(-1)
 			if len(args) > 3 {
 				keyType, err = strconv.ParseInt(args[2], 10, 32)
 				if err != nil {
@@ -789,6 +804,11 @@ func main() {
 			PDEContributeToken(tool, privateKeys[index], args[2], args[3])
 		}
 		if args[0] == "pdewithdraw" {
+			if len(args) < 5 {
+				fmt.Println("need at least 5 arguments")
+				continue
+			}
+
 			privateKey := args[1]
 			if len(privateKey) < 3 {
 				index, err := strconv.ParseInt(args[1], 10, 32)
@@ -815,6 +835,37 @@ func main() {
 			PDEWithdrawContribution(tool, privateKey, tokenID1, tokenID2, args[4])
 		}
 
+		if args[0] == "pdefeewithdraw" {
+			if len(args) < 5 {
+				fmt.Println("need at least 5 arguments")
+				continue
+			}
+
+			privateKey := args[1]
+			if len(privateKey) < 3 {
+				index, err := strconv.ParseInt(args[1], 10, 32)
+				if err != nil {
+					panic(err)
+				}
+				if int(index) >= len(privateKeys) {
+					fmt.Println("cannot find private key")
+					continue
+				}
+				privateKey = privateKeys[index]
+			}
+
+			tokenID1 := args[2]
+			if len(args[2]) < 10 {
+				tokenID1 = tokenIDs[args[2]]
+			}
+
+			tokenID2 := args[3]
+			if len(args[3]) < 10 {
+				tokenID2 = tokenIDs[args[3]]
+			}
+
+			PDEFeeWithdraw(tool, privateKey, tokenID1, tokenID2, args[4])
+		}
 		if args[0] == "pdetradeprv" {
 			if len(args) < 3 {
 				fmt.Println("Not enough param for pdetradeprv")
@@ -837,7 +888,6 @@ func main() {
 
 			PDETradePRV(tool, privateKey, tokenID, args[3])
 		}
-
 		if args[0] == "pdetradetoken" {
 			if len(args) < 3 {
 				fmt.Println("Not enough param for pdetradeprv")
@@ -858,6 +908,20 @@ func main() {
 				tokenID = tokenIDs[args[2]]
 			}
 			PDETradeToken(tool, privateKey, tokenID, args[3])
+		}
+
+		if args[0] == "pdestate" {
+			if len(args) < 2 {
+				fmt.Println("need at least 2 arguments")
+				continue
+			}
+			bHeight, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				fmt.Println("cannot get beacon height")
+				continue
+			}
+
+			GetPDEState(tool, bHeight)
 		}
 
 		if args[0] == "sub" {
