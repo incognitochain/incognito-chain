@@ -307,15 +307,23 @@ func GetPaymentAddressV1(addr string, isNewEncoding bool) (string, error) {
 //
 //Just need to compare PKs and TKs.
 func ComparePaymentAddresses(addr1, addr2 string) (bool, error) {
+	//If these address strings are the same, just try to deserialize one of them
+	if addr1 == addr2 {
+		_, err := Base58CheckDeserialize(addr1)
+		if err != nil{
+			return false, err
+		}
+		return true, nil
+	}
 	//If their lengths are the same, just compare the inputs
 	keyWallet1, err := Base58CheckDeserialize(addr1)
 	if err != nil{
-		return false, nil
+		return false, err
 	}
 
 	keyWallet2, err := Base58CheckDeserialize(addr2)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	pk1 := keyWallet1.KeySet.PaymentAddress.Pk
