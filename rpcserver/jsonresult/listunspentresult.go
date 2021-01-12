@@ -300,7 +300,7 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		}
 
 		return pCoinV1, idx, nil
-	}else{
+	}else if jsonOutCoin.Version == "2" {
 		coinV2 := new(coin.CoinV2).Init()
 
 		if len(jsonOutCoin.CoinDetailsEncrypted) != 0 {
@@ -310,7 +310,9 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 			}
 
 			amountEncrypted := new(privacy.Scalar).FromBytesS(coinDetailEncryptedInBytes)
-			coinV2.SetAmount(amountEncrypted)
+			coinV2.SetValue(amountEncrypted.ToUint64Little())
+		} else {
+			coinV2.SetValue(value)
 		}
 
 		coinV2.SetRandomness(randomness)
@@ -318,7 +320,6 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		coinV2.SetCommitment(cm)
 		coinV2.SetKeyImage(keyImage)
 		coinV2.SetInfo(info)
-		coinV2.SetValue(value)
 		coinV2.SetAssetTag(assetTag)
 		coinV2.SetSharedRandom(sharedRandom)
 		coinV2.SetSharedConcealRandom(sharedConcealRandom)
@@ -326,4 +327,5 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		return coinV2, idx, nil
 	}
 
+	return nil, nil, errors.New("cannot find coin version")
 }
