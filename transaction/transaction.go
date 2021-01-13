@@ -68,7 +68,7 @@ type TxSalaryOutputParams struct{
 	Info 				[]byte
 }
 
-func (pr TxSalaryOutputParams) GenerateOutputCoin() (*privacy.CoinV2, error){
+func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error){
 	var err error
 	var outputCoin *privacy.CoinV2
 	isPRV := (pr.TokenID==nil) || (*pr.TokenID==common.PRVCoinID)
@@ -90,36 +90,80 @@ func (pr TxSalaryOutputParams) GenerateOutputCoin() (*privacy.CoinV2, error){
 	return outputCoin, err
 }
 
-func (pr TxSalaryOutputParams) BuildTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateKey,
-	stateDB *statedb.StateDB,
-	metaData metadata.Metadata) (metadata.Transaction, error) {
-	var err error
-	if otaCoin==nil{
-		otaCoin, err = pr.GenerateOutputCoin()
+func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, mdMaker func(privacy.Coin) metadata.Metadata) (metadata.Transaction, error) {
+	var res metadata.Transaction
+	isPRV := (pr.TokenID==nil) || (*pr.TokenID==common.PRVCoinID)
+	if pr.ReceiverAddress!=nil && pr.ReceiverAddress.OTAPublic==nil{
+		if isPRV{
+			temp := new(TxVersion1)
+			err := temp.InitTxSalary(pr.Amount, pr.ReceiverAddress, privateKey, stateDB, mdMaker(nil))
+			if err != nil {
+				Logger.Log.Errorf("Cannot build Tx Salary v1. Err: %v", err)
+				return nil, err
+			}
+			res = temp
+		}else{
+			shardID := common.GetShardIDFromLastByte(pr.ReceiverAddress.Pk[len(pr.ReceiverAddress.Pk)-1])
+			tokenParams := &tx_generic.TokenParam{
+				PropertyID:     pr.TokenID.String(),
+				PropertyName:   "",
+				PropertySymbol: "",
+				Amount:         pr.Amount,
+				TokenTxType:    CustomTokenInit,
+				Receiver:       []*privacy.PaymentInfo{&privacy.PaymentInfo{PaymentAddress: *pr.ReceiverAddress, Amount: pr.Amount}},
+				TokenInput:     []privacy.PlainCoin{},
+				Mintable:       true,
+			}
+			temp := new(TxTokenVersion1)
+			err := temp.Init(
+				tx_generic.NewTxTokenParams(privateKey,
+					[]*privacy.PaymentInfo{},
+					nil,
+					0,
+					tokenParams,
+					stateDB,
+					mdMaker(nil),
+					false,
+					false,
+					shardID,
+					[]byte{},
+					nil,
+				))
+			if err != nil {
+				Logger.Log.Errorf("Cannot build Tx Token Salary v1. Err: %v", err)
+				return nil, err
+			}
+			res = temp
+		}
+	}else{
+		otaCoin, err := pr.generateOutputCoin()
 		if err != nil {
 			Logger.Log.Errorf("Cannot create coin for TX salary. Err: %v", err)
 			return nil, err
 		}
-	}
-	isPRV := (pr.TokenID==nil) || (*pr.TokenID==common.PRVCoinID)
-
-	if isPRV{
-		res := new(TxVersion2)
-		err = res.InitTxSalary(otaCoin, privateKey, stateDB, metaData)
-		if err != nil {
-			Logger.Log.Errorf("Cannot build Tx Salary. Err: %v", err)
-			return nil, err
+		md := mdMaker(otaCoin)
+		
+		if isPRV{
+			temp := new(TxVersion2)
+			err = temp.InitTxSalary(otaCoin, privateKey, stateDB, md)
+			if err != nil {
+				Logger.Log.Errorf("Cannot build Tx Salary v2. Err: %v", err)
+				return nil, err
+			}
+			res = temp
+		}else{
+			temp := new(TxTokenVersion2)
+			err = temp.InitTxTokenSalary(otaCoin, privateKey, stateDB, md, pr.TokenID, "")
+			if err != nil {
+				Logger.Log.Errorf("Cannot build Tx Token Salary v2. Err: %v", err)
+				return nil, err
+			}
+			res = temp
 		}
-		return res, nil
-	}else{
-		res := new(TxTokenVersion2)
-		err = res.InitTxTokenSalary(otaCoin, privateKey, stateDB, metaData, pr.TokenID, "")
-		if err != nil {
-			Logger.Log.Errorf("Cannot build Tx Token Salary. Err: %v", err)
-			return nil, err
-		}
-		return res, nil
 	}
+	jsb, _ := json.MarshalIndent(res, "", "\t")
+	Logger.Log.Infof("Built new salary transaction %s", string(jsb))
+	return res, nil
 }
 
 // Used to parse json
@@ -230,6 +274,9 @@ type TxChoice struct{
 	TokenVersion2 	*TxTokenVersion2 	`json:"TxTokenVersion2,omitempty"`
 }
 func (ch *TxChoice) ToTx() metadata.Transaction{
+	if ch==nil{
+		return nil
+	}
 	// `choice` struct only ever contains 1 non-nil field
 	if ch.Version1!=nil{
 		return ch.Version1

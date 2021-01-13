@@ -265,13 +265,13 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 		return nil, errors.New("cannot issue prv in bridge")
 	}
 	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and payment address")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			issuingRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return issuingRes
 	}
-	issuingRes.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), issuingRes)
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (metadata.Transaction, error) {
@@ -313,11 +313,11 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 		return nil, errors.New("cannot issue prv in bridge")
 	}
 	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and payment address")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			issuingETHRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return issuingETHRes
 	}
-	issuingETHRes.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), issuingETHRes)
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }

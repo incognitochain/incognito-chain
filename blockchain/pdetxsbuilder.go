@@ -97,7 +97,9 @@ func buildTradeResTx(
 	} else {
 		return nil, errors.New("cannot create trade response without txRandom info")
 	}
-	return txParam.BuildTxSalary(nil, producerPrivateKey, transactionStateDB, meta)
+	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadata.Metadata{
+		return meta
+	})
 }
 
 func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeRefundTx(
@@ -362,13 +364,13 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 
 	txParam := transaction.TxSalaryOutputParams{Amount: wdAcceptedContent.DeductingPoolValue, ReceiverAddress: &receiverAddr, TokenID: tokenID}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and payment address")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
@@ -410,14 +412,14 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	// create ota coin
 	txParam := transaction.TxSalaryOutputParams{Amount: refundContribution.ContributedAmount, ReceiverAddress: &receiverAddr, TokenID: tokenID}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
 	// set shareRandom for metadata
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
@@ -462,14 +464,14 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	// create ota coin
 	txParam := transaction.TxSalaryOutputParams{Amount: matchedNReturnedContribution.ReturnedContributedAmount, ReceiverAddress: &receiverAddr, TokenID: tokenID}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
 	// set shareRandom for metadata
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (blockGenerator *BlockGenerator) buildPDEFeeWithdrawalTx(
@@ -513,11 +515,11 @@ func (blockGenerator *BlockGenerator) buildPDEFeeWithdrawalTx(
 		Amount: pdeFeeWithdrawalRequestAction.Meta.WithdrawalFeeAmt,
 		ReceiverAddress: &receiverAddr,
 		TokenID: &common.PRVCoinID}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and payment address")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, shardView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }

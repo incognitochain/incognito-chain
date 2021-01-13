@@ -156,14 +156,13 @@ func (blockchain *BlockChain) buildReturnStakingAmountTx(
 		ReceiverAddress: &info.FunderAddress,
 		TokenID: &common.PRVCoinID}
 
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and payment address")
-		return nil, 0, errors.Errorf("cannot get new coin from amount and payment address. Error %v", err)
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			returnStakingMeta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return returnStakingMeta
 	}
-	returnStakingMeta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	returnStakingTx, err := txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), returnStakingMeta)
+	returnStakingTx, err := txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 	if err!= nil {
 		return nil, 0, errors.Errorf("cannot init return staking tx. Error %v", err)
 	}
