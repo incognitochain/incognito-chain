@@ -339,7 +339,7 @@ func loadConfig() (*config, []string, error) {
 		DiscoverPeers:               true,
 		TestNet:                     "true",
 		DiscoverPeersAddress:        "127.0.0.1:9330", //"35.230.8.182:9339",
-		NodeMode:                    DefaultNodeMode,
+		//NodeMode:                    DefaultNodeMode,
 		MiningKeys:                  common.EmptyString,
 		PrivateKey:                  common.EmptyString,
 		FastStartup:                 DefaultFastStartup,
@@ -352,18 +352,6 @@ func loadConfig() (*config, []string, error) {
 		BtcClientPort:               DefaultBtcClientPort,
 		EnableMining:                DefaultEnableMining,
 		OutcoinDatabaseDir: 		 DefaultOutcoinDirname,
-		// NodeMode:                    DefaultNodeMode,
-		MiningKeys:     common.EmptyString,
-		PrivateKey:     common.EmptyString,
-		FastStartup:    DefaultFastStartup,
-		TxPoolTTL:      DefaultTxPoolTTL,
-		TxPoolMaxTx:    DefaultTxPoolMaxTx,
-		PersistMempool: DefaultPersistMempool,
-		LimitFee:       DefaultLimitFee,
-		MetricUrl:      DefaultMetricUrl,
-		BtcClient:      DefaultBtcClient,
-		BtcClientPort:  DefaultBtcClientPort,
-		EnableMining:   DefaultEnableMining,
 	}
 
 	// Service options which are only added on Windows.

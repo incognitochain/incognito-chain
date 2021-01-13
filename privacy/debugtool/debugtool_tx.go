@@ -428,6 +428,7 @@ func (this *DebugTool) SwitchCoinVersion(privKey string) ([]byte, error) {
 func (this *DebugTool) Stake(privKey string, seed string) ([]byte, error) {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKey)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 	query := fmt.Sprintf(`{
 	  "jsonrpc":"1.0",
