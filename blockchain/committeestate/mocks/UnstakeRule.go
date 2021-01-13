@@ -17,7 +17,7 @@ type UnstakeRule struct {
 }
 
 // RemoveFromState provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4, _a5, _a6
-func (_m *UnstakeRule) RemoveFromState(_a0 incognitokey.CommitteePublicKey, _a1 map[string]bool, _a2 map[string]privacy.PaymentAddress, _a3 map[string]common.Hash, _a4 map[string]uint64, _a5 []string, _a6 []string) (map[string]bool, map[string]privacy.PaymentAddress, map[string]common.Hash, []string, []string, error) {
+func (_m *UnstakeRule) RemoveFromState(_a0 incognitokey.CommitteePublicKey, _a1 map[string]bool, _a2 map[string]privacy.PaymentAddress, _a3 map[string]common.Hash, _a4 map[string]uint64, _a5 []string, _a6 []string) (map[string]bool, map[string]privacy.PaymentAddress, map[string]common.Hash, map[string]uint64, []string, []string, error) {
 	ret := _m.Called(_a0, _a1, _a2, _a3, _a4, _a5, _a6)
 
 	var r0 map[string]bool
@@ -47,12 +47,12 @@ func (_m *UnstakeRule) RemoveFromState(_a0 incognitokey.CommitteePublicKey, _a1 
 		}
 	}
 
-	var r3 []string
-	if rf, ok := ret.Get(3).(func(incognitokey.CommitteePublicKey, map[string]bool, map[string]privacy.PaymentAddress, map[string]common.Hash, map[string]uint64, []string, []string) []string); ok {
+	var r3 map[string]uint64
+	if rf, ok := ret.Get(3).(func(incognitokey.CommitteePublicKey, map[string]bool, map[string]privacy.PaymentAddress, map[string]common.Hash, map[string]uint64, []string, []string) map[string]uint64); ok {
 		r3 = rf(_a0, _a1, _a2, _a3, _a4, _a5, _a6)
 	} else {
 		if ret.Get(3) != nil {
-			r3 = ret.Get(3).([]string)
+			r3 = ret.Get(3).(map[string]uint64)
 		}
 	}
 
@@ -65,14 +65,23 @@ func (_m *UnstakeRule) RemoveFromState(_a0 incognitokey.CommitteePublicKey, _a1 
 		}
 	}
 
-	var r5 error
-	if rf, ok := ret.Get(5).(func(incognitokey.CommitteePublicKey, map[string]bool, map[string]privacy.PaymentAddress, map[string]common.Hash, map[string]uint64, []string, []string) error); ok {
+	var r5 []string
+	if rf, ok := ret.Get(5).(func(incognitokey.CommitteePublicKey, map[string]bool, map[string]privacy.PaymentAddress, map[string]common.Hash, map[string]uint64, []string, []string) []string); ok {
 		r5 = rf(_a0, _a1, _a2, _a3, _a4, _a5, _a6)
 	} else {
-		r5 = ret.Error(5)
+		if ret.Get(5) != nil {
+			r5 = ret.Get(5).([]string)
+		}
 	}
 
-	return r0, r1, r2, r3, r4, r5
+	var r6 error
+	if rf, ok := ret.Get(6).(func(incognitokey.CommitteePublicKey, map[string]bool, map[string]privacy.PaymentAddress, map[string]common.Hash, map[string]uint64, []string, []string) error); ok {
+		r6 = rf(_a0, _a1, _a2, _a3, _a4, _a5, _a6)
+	} else {
+		r6 = ret.Error(6)
+	}
+
+	return r0, r1, r2, r3, r4, r5, r6
 }
 
 // Version provides a mock function with given fields:

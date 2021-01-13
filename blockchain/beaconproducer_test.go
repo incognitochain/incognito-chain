@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate/mocks"
+	mocks "github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"

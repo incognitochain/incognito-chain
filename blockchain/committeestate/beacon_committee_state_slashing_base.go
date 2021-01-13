@@ -18,8 +18,7 @@ type beaconCommitteeStateSlashingBase struct {
 	shardCommonPool            []incognitokey.CommitteePublicKey
 	numberOfAssignedCandidates int
 
-	swapRule    SwapRule
-	unstakeRule UnstakeRule
+	swapRule SwapRule
 }
 
 func NewBeaconCommitteeStateSlashingBase() *beaconCommitteeStateSlashingBase {
@@ -38,7 +37,6 @@ func NewBeaconCommitteeStateSlashingBaseWithValue(
 	shardCommonPool []incognitokey.CommitteePublicKey,
 	numberOfAssignedCandidates int,
 	swapRule SwapRule,
-	unstakeRule UnstakeRule,
 ) *beaconCommitteeStateSlashingBase {
 	return &beaconCommitteeStateSlashingBase{
 		beaconCommitteeStateBase: *NewBeaconCommitteeStateBaseWithValue(
@@ -48,7 +46,6 @@ func NewBeaconCommitteeStateSlashingBaseWithValue(
 		shardCommonPool:            shardCommonPool,
 		numberOfAssignedCandidates: numberOfAssignedCandidates,
 		swapRule:                   swapRule,
-		unstakeRule:                unstakeRule,
 	}
 }
 
@@ -71,7 +68,6 @@ func (b *beaconCommitteeStateSlashingBase) cloneFrom(fromB beaconCommitteeStateS
 	b.shardCommonPool = make([]incognitokey.CommitteePublicKey, len(fromB.shardCommonPool))
 	copy(b.shardCommonPool, fromB.shardCommonPool)
 	b.swapRule = cloneSwapRuleByVersion(fromB.swapRule)
-	b.unstakeRule = cloneUnstakeRuleByVersion(fromB.unstakeRule)
 }
 
 func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingBase {
@@ -82,7 +78,6 @@ func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingB
 	res.shardCommonPool = make([]incognitokey.CommitteePublicKey, len(b.shardCommonPool))
 	copy(res.shardCommonPool, b.shardCommonPool)
 	res.swapRule = cloneSwapRuleByVersion(b.swapRule)
-	res.unstakeRule = cloneUnstakeRuleByVersion(b.unstakeRule)
 
 	return res
 }
@@ -95,7 +90,7 @@ func (b *beaconCommitteeStateSlashingBase) reset() {
 }
 
 func (b beaconCommitteeStateSlashingBase) Version() int {
-	panic("Implement version for committee state slashing")
+	return SLASHING_VERSION
 }
 
 func (b beaconCommitteeStateSlashingBase) AllCandidateSubstituteCommittees() []string {
@@ -176,13 +171,14 @@ func (b *beaconCommitteeStateSlashingBase) buildReturnStakingInstructionAndDelet
 	publicKey string,
 	stakerInfo *statedb.StakerInfo,
 	committeeChange *CommitteeChange,
+	oldState, newState BeaconCommitteeState,
 ) (*instruction.ReturnStakeInstruction, *CommitteeChange, error) {
 	returnStakingInstruction = buildReturnStakingInstruction(
 		returnStakingInstruction,
 		publicKey,
 		stakerInfo.TxStakingID().String(),
 	)
-	committeeChange, err := b.deleteStakerInfo(committeePublicKeyStruct, publicKey, committeeChange)
+	committeeChange, err := b.removeFromState(committeePublicKeyStruct, publicKey, committeeChange, oldState, newState)
 	if err != nil {
 		return returnStakingInstruction, committeeChange, err
 	}
@@ -202,25 +198,21 @@ func buildReturnStakingInstruction(
 	return returnStakingInstruction
 }
 
-func (b *beaconCommitteeStateSlashingBase) deleteStakerInfo(
+func (b *beaconCommitteeStateSlashingBase) removeFromState(
 	committeePublicKeyStruct incognitokey.CommitteePublicKey,
 	committeePublicKey string,
 	committeeChange *CommitteeChange,
+	oldState, newState BeaconCommitteeState,
 ) (*CommitteeChange, error) {
-	autoStake, rewardReceivers, stakingTx, removedStakers, removedTerms, err := b.unstakeRule.RemoveFromState(
-		committeePublicKeyStruct, b.autoStake, b.rewardReceiver, b.stakingTx, b.Terms(),
-		committeeChange.RemovedStaker, committeeChange.TermsRemoved,
-	)
-	if err != nil {
-		return committeeChange, err
+	delete(b.rewardReceiver, committeePublicKeyStruct.GetIncKeyBase58())
+	delete(b.autoStake, committeePublicKey)
+	delete(b.stakingTx, committeePublicKey)
+	committeeChange.RemovedStaker = append(committeeChange.RemovedStaker, committeePublicKey)
+
+	if _, ok := oldState.Terms()[committeePublicKey]; ok {
+		committeeChange.TermsRemoved = append(committeeChange.TermsRemoved, committeePublicKey)
 	}
-
-	committeeChange.RemovedStaker = removedStakers
-	committeeChange.TermsRemoved = removedTerms
-	b.autoStake = autoStake
-	b.rewardReceiver = rewardReceivers
-	b.stakingTx = stakingTx
-
+	delete(newState.Terms(), committeePublicKey)
 	return committeeChange, nil
 }
 
@@ -341,7 +333,7 @@ func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 	swapShardInstruction *instruction.SwapShardInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	oldState BeaconCommitteeState,
+	oldState, newState BeaconCommitteeState,
 ) (
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	shardID := byte(swapShardInstruction.ChainID)
@@ -358,6 +350,7 @@ func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 		newCommitteeChange,
 		returnStakingInstruction,
 		oldState,
+		newState,
 	)
 	if err != nil {
 		return nil, returnStakingInstruction, err
@@ -369,6 +362,8 @@ func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 		slashingCommittees,
 		returnStakingInstruction,
 		newCommitteeChange,
+		oldState,
+		newState,
 	)
 	if err != nil {
 		return nil, returnStakingInstruction, err
@@ -383,6 +378,7 @@ func (b *beaconCommitteeStateSlashingBase) getValidatorsByAutoStake(
 	outPublicKeys []string,
 	committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
+	oldState, newState BeaconCommitteeState,
 ) ([]string, *CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	candidates := []string{}
 	outPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(outPublicKeys)
@@ -403,6 +399,8 @@ func (b *beaconCommitteeStateSlashingBase) getValidatorsByAutoStake(
 				outPublicKey,
 				stakerInfo,
 				committeeChange,
+				oldState,
+				newState,
 			)
 			if err != nil {
 				return candidates, committeeChange, returnStakingInstruction, err
@@ -421,9 +419,9 @@ func (b *beaconCommitteeStateSlashingBase) processAfterNormalSwap(
 	outPublicKeys []string,
 	committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	oldState BeaconCommitteeState,
+	oldState, newState BeaconCommitteeState,
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
-	candidates, committeeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, outPublicKeys, committeeChange, returnStakingInstruction)
+	candidates, committeeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, outPublicKeys, committeeChange, returnStakingInstruction, oldState, newState)
 	if err != nil {
 		return committeeChange, returnStakingInstruction, err
 	}
@@ -442,6 +440,7 @@ func (b *beaconCommitteeStateSlashingBase) processSlashing(
 	slashingPublicKeys []string,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
 	committeeChange *CommitteeChange,
+	oldState, newState BeaconCommitteeState,
 ) (*instruction.ReturnStakeInstruction, *CommitteeChange, error) {
 	slashingPublicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(slashingPublicKeys)
 	for index, outPublicKey := range slashingPublicKeys {
@@ -458,6 +457,8 @@ func (b *beaconCommitteeStateSlashingBase) processSlashing(
 			outPublicKey,
 			stakerInfo,
 			committeeChange,
+			oldState,
+			newState,
 		)
 		if err != nil {
 			return returnStakingInstruction, committeeChange, err
@@ -473,7 +474,7 @@ func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	oldState BeaconCommitteeState,
+	oldState, newState BeaconCommitteeState,
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 
 	shardCommonPoolStr, _ := incognitokey.CommitteeKeyListToString(b.shardCommonPool)
@@ -508,6 +509,8 @@ func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 				publicKey,
 				stakerInfo,
 				committeeChange,
+				oldState,
+				newState,
 			)
 
 			if err != nil {

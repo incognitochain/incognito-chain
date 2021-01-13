@@ -108,7 +108,7 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange, returnStakingInstruction, err = newState.processUnstakeInstruction(
-				unstakeInstruction, env, committeeChange, returnStakingInstruction, oldState)
+				unstakeInstruction, env, committeeChange, returnStakingInstruction, oldState, newState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -119,7 +119,7 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange, returnStakingInstruction, err = newState.processSwapShardInstruction(
-				swapShardInstruction, env, committeeChange, returnStakingInstruction, oldState)
+				swapShardInstruction, env, committeeChange, returnStakingInstruction, oldState, newState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -130,7 +130,7 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange, returnStakingInstruction, err = newState.processAssignInstruction(
-				assignInstruction, env, committeeChange, returnStakingInstruction, oldState)
+				assignInstruction, env, committeeChange, returnStakingInstruction, oldState, newState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}

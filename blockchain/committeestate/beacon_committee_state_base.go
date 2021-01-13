@@ -384,7 +384,3 @@ func SnapshotShardCommonPoolV2(
 func (b *beaconCommitteeStateBase) SetSwapRule(swapRule SwapRule) {
 	panic("Implement this function")
 }
-
-func (b *beaconCommitteeStateBase) SetTerms(map[string]uint64) {
-	panic("Implement this function")
-}

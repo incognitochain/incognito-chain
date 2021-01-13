@@ -43,13 +43,3 @@ func SwapRuleByEnv(env *BeaconCommitteeStateEnvironment) SwapRule {
 	}
 	return swapRule
 }
-
-func UnstakeRuleByEnv(env *BeaconCommitteeStateEnvironment) UnstakeRule {
-	var unstakeRule UnstakeRule
-	if env.BeaconHeight >= env.BeaconStateV3Height {
-		unstakeRule = NewUnstakeRuleV1()
-	} else {
-		unstakeRule = NewUnstakeRuleV2()
-	}
-	return unstakeRule
-}

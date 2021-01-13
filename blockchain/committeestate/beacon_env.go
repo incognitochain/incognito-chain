@@ -61,13 +61,6 @@ func NewBeaconCommitteeStateEnvironmentForUpdateDB(
 	}
 }
 
-func NewBeaconCommitteeStateEnvironmentForUnstakeRule(currentHeight, beaconStateV3Height uint64) *BeaconCommitteeStateEnvironment {
-	return &BeaconCommitteeStateEnvironment{
-		BeaconHeight:        currentHeight,
-		BeaconStateV3Height: beaconStateV3Height,
-	}
-}
-
 func NewBeaconCommitteeStateEnvironmentForSwapRule(currentHeight, beaconStateV3Height uint64) *BeaconCommitteeStateEnvironment {
 	return &BeaconCommitteeStateEnvironment{
 		BeaconHeight:        currentHeight,

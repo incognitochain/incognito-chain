@@ -1,9 +1,10 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/multiview"
 	"reflect"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"

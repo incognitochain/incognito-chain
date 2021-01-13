@@ -759,11 +759,6 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 		)
 		swapRule := committeestate.SwapRuleByEnv(swapRuleEnv)
 
-		unstakeRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForUnstakeRule(
-			beaconBestState.BeaconHeight, bc.config.ChainParams.BeaconCommitteeStateV3Height,
-		)
-		unstakeRule := committeestate.UnstakeRuleByEnv(unstakeRuleEnv)
-
 		if bc.IsGreaterThanRandomTime(beaconBestState.BeaconHeight) && !beaconBestState.IsGetRandomNumber {
 			var err error
 			var tempBeaconBlock = types.NewBeaconBlock()
@@ -821,7 +816,6 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 				rewardReceivers,
 				stakingTx,
 				swapRule,
-				unstakeRule,
 			)
 			committeeEngine = committeestate.NewBeaconCommitteeEngineV2(
 				beaconBestState.BeaconHeight,
@@ -842,7 +836,6 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 					syncingValidators,
 					terms,
 					swapRule,
-					unstakeRule,
 				)
 				committeeEngine = committeestate.NewBeaconCommitteeEngineV3(
 					beaconBestState.BeaconHeight, beaconBestState.BestBlockHash, committeeState,
@@ -937,10 +930,6 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngine(bc *BlockChain) {
 		beaconBestState.BeaconHeight, bc.config.ChainParams.BeaconCommitteeStateV3Height,
 	)
 	swapRule := committeestate.SwapRuleByEnv(swapRuleEnv)
-	unstakeRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForUnstakeRule(
-		beaconBestState.BeaconHeight, bc.config.ChainParams.BeaconCommitteeStateV3Height,
-	)
-	unstakeRule := committeestate.UnstakeRuleByEnv(unstakeRuleEnv)
 
 	version := committeestate.VersionByBeaconHeight(
 		beaconBestState.BeaconHeight,
@@ -959,7 +948,6 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngine(bc *BlockChain) {
 			rewardReceiver,
 			stakingTx,
 			swapRule,
-			unstakeRule,
 		)
 		committeeEngine = committeestate.NewBeaconCommitteeEngineV2(
 			beaconBestState.BeaconHeight,
@@ -996,7 +984,6 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngine(bc *BlockChain) {
 				map[byte][]incognitokey.CommitteePublicKey{},
 				terms,
 				swapRule,
-				unstakeRule,
 			)
 			committeeEngine = committeestate.NewBeaconCommitteeEngineV3(
 				beaconBestState.BeaconHeight, beaconBestState.BestBlockHash, committeeState,

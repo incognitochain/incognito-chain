@@ -69,3 +69,14 @@ func cloneBeaconCommitteeStateFrom(state BeaconCommitteeState) BeaconCommitteeSt
 	}
 	return res
 }
+
+func getTermsByState(state BeaconCommitteeState) map[string]uint64 {
+	res := map[string]uint64{}
+	switch state.Version() {
+	case SLASHING_VERSION:
+		res = state.(*BeaconCommitteeStateV2).Terms()
+	case DCS_VERSION:
+		res = state.(*BeaconCommitteeStateV3).Terms()
+	}
+	return res
+}

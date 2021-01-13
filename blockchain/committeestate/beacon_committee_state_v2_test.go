@@ -1024,66 +1024,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			key8, key9, key10, key12, key13, key14,
 		}, []string{}, []string{key11}, []string{})
 
-	unstakeRule1 := &mocks.UnstakeRule{}
-	unstakeRule1.On("RemoveFromState",
-		*incKey6,
-		map[string]bool{},
-		map[string]privacy.PaymentAddress{},
-		map[string]common.Hash{},
-		map[string]uint64{},
-		[]string(nil),
-		[]string(nil)).
-		Return(
-			map[string]bool{},
-			map[string]privacy.PaymentAddress{},
-			map[string]common.Hash{},
-			[]string{
-				key6,
-			},
-			[]string{},
-			nil,
-		)
-
-	unstakeRule2 := &mocks.UnstakeRule{}
-	unstakeRule2.On("RemoveFromState",
-		*incKey,
-		map[string]bool{},
-		map[string]privacy.PaymentAddress{},
-		map[string]common.Hash{},
-		map[string]uint64{},
-		[]string(nil),
-		[]string(nil)).
-		Return(
-			map[string]bool{},
-			map[string]privacy.PaymentAddress{},
-			map[string]common.Hash{},
-			[]string{
-				key,
-			},
-			[]string{},
-			nil,
-		)
-
-	unstakeRule3 := &mocks.UnstakeRule{}
-	unstakeRule3.On("RemoveFromState",
-		*incKey11,
-		map[string]bool{},
-		map[string]privacy.PaymentAddress{},
-		map[string]common.Hash{},
-		map[string]uint64{},
-		[]string(nil),
-		[]string(nil)).
-		Return(
-			map[string]bool{},
-			map[string]privacy.PaymentAddress{},
-			map[string]common.Hash{},
-			[]string{
-				key11,
-			},
-			[]string{},
-			nil,
-		)
-
 	type fields struct {
 		beaconCommitteeStateSlashingBase
 	}
@@ -1099,6 +1039,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		env                       *BeaconCommitteeStateEnvironment
 		committeeChange           *CommitteeChange
 		oldState                  *BeaconCommitteeStateV2
+		newState                  *BeaconCommitteeStateV2
 	}
 	tests := []struct {
 		name                  string
@@ -1440,8 +1381,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 						rewardReceiver: map[string]privacy.PaymentAddress{},
 						stakingTx:      map[string]common.Hash{},
 					},
-					unstakeRule: unstakeRule1,
-					swapRule:    swapRule3,
+					swapRule: swapRule3,
 				},
 			},
 			committeeAfterProcess: committeeAfterProcess{
@@ -1487,8 +1427,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 							rewardReceiver: map[string]privacy.PaymentAddress{},
 							stakingTx:      map[string]common.Hash{},
 						},
-						unstakeRule: unstakeRule1,
-						swapRule:    swapRule3,
+						swapRule: swapRule3,
 					},
 				},
 			},
@@ -1524,8 +1463,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 						rewardReceiver: map[string]privacy.PaymentAddress{},
 						stakingTx:      map[string]common.Hash{},
 					},
-					unstakeRule: unstakeRule1,
-					swapRule:    swapRule4,
+					swapRule: swapRule4,
 				},
 			},
 			committeeAfterProcess: committeeAfterProcess{
@@ -1585,8 +1523,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 							rewardReceiver: map[string]privacy.PaymentAddress{},
 							stakingTx:      map[string]common.Hash{},
 						},
-						unstakeRule: unstakeRule1,
-						swapRule:    swapRule4,
+						swapRule: swapRule4,
 					},
 				},
 			},
@@ -1616,8 +1553,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 						rewardReceiver: map[string]privacy.PaymentAddress{},
 						stakingTx:      map[string]common.Hash{},
 					},
-					unstakeRule: unstakeRule2,
-					swapRule:    swapRule5,
+					swapRule: swapRule5,
 				},
 			},
 			committeeAfterProcess: committeeAfterProcess{
@@ -1668,8 +1604,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 							rewardReceiver: map[string]privacy.PaymentAddress{},
 							stakingTx:      map[string]common.Hash{},
 						},
-						unstakeRule: unstakeRule2,
-						swapRule:    swapRule5,
+						swapRule: swapRule5,
 					},
 				},
 			},
@@ -1701,8 +1636,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 						rewardReceiver: map[string]privacy.PaymentAddress{},
 						stakingTx:      map[string]common.Hash{},
 					},
-					unstakeRule: unstakeRule3,
-					swapRule:    swapRuleV3,
+					swapRule: swapRuleV3,
 				},
 			},
 			committeeAfterProcess: committeeAfterProcess{
@@ -1760,8 +1694,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 							rewardReceiver: map[string]privacy.PaymentAddress{},
 							stakingTx:      map[string]common.Hash{},
 						},
-						unstakeRule: unstakeRule3,
-						swapRule:    swapRuleV3,
+						swapRule: swapRuleV3,
 					},
 				},
 			},
@@ -1784,6 +1717,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				tt.args.committeeChange,
 				tt.args.returnStakingInstructions,
 				tt.args.oldState,
+				b,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeStateV2.processSwapShardInstruction() error = %v, wantErr %v", err, tt.wantErr)
@@ -1870,42 +1804,6 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 		},
 	)
 
-	unstakeRule := &mocks.UnstakeRule{}
-	unstakeRule.On("RemoveFromState",
-		*incKey,
-		map[string]bool{
-			key:  true,
-			key5: true,
-			key8: true,
-		},
-		map[string]privacy.PaymentAddress{
-			incKey.GetIncKeyBase58(): paymentAddress,
-		},
-		map[string]common.Hash{
-			key:  *hash,
-			key5: *hash6,
-			key6: *hash6,
-		},
-		map[string]uint64{},
-		[]string(nil),
-		[]string(nil)).
-		Return(
-			map[string]bool{
-				key5: true,
-				key8: true,
-			},
-			map[string]privacy.PaymentAddress{},
-			map[string]common.Hash{
-				key5: *hash6,
-				key6: *hash6,
-			},
-			[]string{
-				key,
-			},
-			[]string{},
-			nil,
-		)
-
 	rootHash, _ := sDB.Commit(true)
 	sDB.Database().TrieDB().Commit(rootHash, false)
 
@@ -1924,6 +1822,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 		committeeChange         *CommitteeChange
 		returnStakeInstructions *instruction.ReturnStakeInstruction
 		oldState                *BeaconCommitteeStateV2
+		newState                *BeaconCommitteeStateV2
 	}
 	tests := []struct {
 		name               string
@@ -2052,7 +1951,6 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 							key6: *hash6,
 						},
 					},
-					unstakeRule: unstakeRule,
 				},
 			},
 			fieldsAfterProcess: fields{
@@ -2076,7 +1974,6 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 							key6: *hash6,
 						},
 					},
-					unstakeRule: unstakeRule,
 				},
 			},
 			args: args{
@@ -2113,7 +2010,6 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 								key6: *hash6,
 							},
 						},
-						unstakeRule: unstakeRule,
 					},
 				},
 			},
@@ -2441,7 +2337,6 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 						mu:              tt.fields.mu,
 					},
 					shardCommonPool:            tt.fields.shardCommonPool,
-					unstakeRule:                tt.fields.unstakeRule,
 					numberOfAssignedCandidates: tt.fields.numberOfAssignedCandidates,
 				},
 			}
@@ -2451,6 +2346,7 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 				tt.args.committeeChange,
 				tt.args.returnStakeInstructions,
 				tt.args.oldState,
+				b,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processAfterNormalSwap() error = %v, wantErr %v", err, tt.wantErr)
@@ -2530,153 +2426,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 	committeePublicKeyWrongFormat := incognitokey.CommitteePublicKey{}
 	committeePublicKeyWrongFormat.MiningPubKey = nil
 
-	unstakeRule1 := &mocks.UnstakeRule{}
-	unstakeRule1.On("RemoveFromState",
-		*incKey,
-		map[string]bool{
-			key: true,
-		},
-		map[string]privacy.PaymentAddress{
-			rewardReceiverkey: paymentAddress,
-		},
-		map[string]common.Hash{
-			key: *hash,
-		},
-		map[string]uint64{},
-		[]string(nil),
-		[]string(nil)).
-		Return(
-			map[string]bool{},
-			map[string]privacy.PaymentAddress{},
-			map[string]common.Hash{},
-			[]string{
-				key,
-			},
-			[]string{},
-			nil,
-		)
-
-	unstakeRule2 := &mocks.UnstakeRule{}
-	unstakeRule2.On("RemoveFromState",
-		*incKey,
-		map[string]bool{
-			key:  false,
-			key2: false,
-			key3: true,
-			key4: true,
-			key5: false,
-			key6: false,
-		},
-		map[string]privacy.PaymentAddress{
-			rewardReceiverkey: paymentAddress,
-		},
-		map[string]common.Hash{
-			key: *hash,
-		},
-		map[string]uint64{},
-		[]string(nil),
-		[]string(nil)).
-		Return(
-			map[string]bool{
-				key2: false,
-				key3: true,
-				key4: true,
-				key5: false,
-				key6: false,
-			},
-			map[string]privacy.PaymentAddress{},
-			map[string]common.Hash{},
-			[]string{
-				key,
-			},
-			[]string{},
-			nil,
-		)
-
-	unstakeRule2.On("RemoveFromState",
-		*incKey2,
-		map[string]bool{
-			key2: false,
-			key3: true,
-			key4: true,
-			key5: false,
-			key6: false,
-		},
-		map[string]privacy.PaymentAddress{},
-		map[string]common.Hash{},
-		map[string]uint64{},
-		[]string{key},
-		[]string{}).
-		Return(
-			map[string]bool{
-				key3: true,
-				key4: true,
-				key5: false,
-				key6: false,
-			},
-			map[string]privacy.PaymentAddress{},
-			map[string]common.Hash{},
-			[]string{
-				key, key2,
-			},
-			[]string{},
-			nil,
-		)
-
-	unstakeRule2.On("RemoveFromState",
-		*incKey5,
-		map[string]bool{
-			key3: true,
-			key4: true,
-			key5: false,
-			key6: false,
-		},
-		map[string]privacy.PaymentAddress{},
-		map[string]common.Hash{},
-		map[string]uint64{},
-		[]string{key, key2},
-		[]string{}).
-		Return(
-			map[string]bool{
-				key3: true,
-				key4: true,
-				key6: false,
-			},
-			map[string]privacy.PaymentAddress{},
-			map[string]common.Hash{},
-			[]string{
-				key, key2, key5,
-			},
-			[]string{},
-			nil,
-		)
-
-	unstakeRule2.On("RemoveFromState",
-		*incKey6,
-		map[string]bool{
-			key3: true,
-			key4: true,
-			key6: false,
-		},
-		map[string]privacy.PaymentAddress{},
-		map[string]common.Hash{},
-		map[string]uint64{},
-		[]string{key, key2, key5},
-		[]string{}).
-		Return(
-			map[string]bool{
-				key3: true,
-				key4: true,
-			},
-			map[string]privacy.PaymentAddress{},
-			map[string]common.Hash{},
-			[]string{
-				key, key2, key5, key6,
-			},
-			[]string{},
-			nil,
-		)
-
 	type fields struct {
 		beaconCommitteeStateSlashingBase
 	}
@@ -2686,6 +2435,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 		env                       *BeaconCommitteeStateEnvironment
 		committeeChange           *CommitteeChange
 		oldState                  *BeaconCommitteeStateV2
+		newState                  *BeaconCommitteeStateV2
 	}
 	tests := []struct {
 		name    string
@@ -2791,7 +2541,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 						},
 					},
 					shardCommonPool: []incognitokey.CommitteePublicKey{*incKey},
-					unstakeRule:     unstakeRule1,
 				},
 			},
 			args: args{
@@ -2819,7 +2568,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 							},
 						},
 						shardCommonPool: []incognitokey.CommitteePublicKey{*incKey},
-						unstakeRule:     unstakeRule1,
 					},
 				},
 			},
@@ -2903,7 +2651,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 					shardCommonPool: []incognitokey.CommitteePublicKey{
 						*incKey, *incKey2, *incKey3, *incKey4, *incKey5, *incKey6,
 					},
-					unstakeRule: unstakeRule2,
 				},
 			},
 			args: args{
@@ -2935,7 +2682,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 								key6: false,
 							},
 						},
-						unstakeRule: unstakeRule2,
 					},
 				},
 			},
@@ -2983,7 +2729,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 					},
 					shardCommonPool:            tt.fields.shardCommonPool,
 					numberOfAssignedCandidates: tt.fields.numberOfAssignedCandidates,
-					unstakeRule:                tt.fields.unstakeRule,
 				},
 			}
 			got, got1, err := b.processUnstakeInstruction(
@@ -2992,6 +2737,7 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				tt.args.committeeChange,
 				tt.args.returnStakingInstructions,
 				tt.args.oldState,
+				b,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processUnstakeInstruction() error = %v, wantErr %v", err, tt.wantErr)

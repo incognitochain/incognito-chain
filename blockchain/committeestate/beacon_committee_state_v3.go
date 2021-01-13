@@ -33,12 +33,11 @@ func NewBeaconCommitteeStateV3WithValue(
 	syncPool map[byte][]incognitokey.CommitteePublicKey,
 	terms map[string]uint64,
 	swapRule SwapRule,
-	unstakeRule UnstakeRule,
 ) *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
 		beaconCommitteeStateSlashingBase: *NewBeaconCommitteeStateSlashingBaseWithValue(
 			beaconCommittee, shardCommittee, shardSubstitute, autoStake, rewardReceiver, stakingTx,
-			shardCommonPool, numberOfAssignedCandidates, swapRule, unstakeRule,
+			shardCommonPool, numberOfAssignedCandidates, swapRule,
 		),
 		syncPool: syncPool,
 		terms:    terms,
@@ -114,13 +113,16 @@ func (b *BeaconCommitteeStateV3) assignAfterNormalSwapOut(
 ) *CommitteeChange {
 	newCommitteeChange := committeeChange
 	assignedCandidates := b.getAssignCandidates(candidates, rand, activeShards, oldState)
-
 	for shardID, tempCandidates := range assignedCandidates {
 		if shardID == oldShardID {
+			committeeChange.TermsAdded = append(committeeChange.TermsAdded, tempCandidates...)
 			newCommitteeChange = b.assignToPending(tempCandidates, rand, shardID, newCommitteeChange)
 		} else {
 			newCommitteeChange = b.assignToSync(shardID, tempCandidates, newCommitteeChange, beaconHeight)
 		}
+	}
+	for _, candidate := range candidates {
+		b.terms[candidate] = beaconHeight
 	}
 	return newCommitteeChange
 }
@@ -145,7 +147,7 @@ func (b *BeaconCommitteeStateV3) processAssignInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	oldState BeaconCommitteeState,
+	oldState, newState BeaconCommitteeState,
 ) (
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	newCommitteeChange := committeeChange
@@ -153,7 +155,7 @@ func (b *BeaconCommitteeStateV3) processAssignInstruction(
 		append(newCommitteeChange.SyncingPoolRemoved[byte(assignInstruction.ChainID)], assignInstruction.ShardCandidatesStruct...)
 	b.syncPool[byte(assignInstruction.ChainID)] = b.syncPool[byte(assignInstruction.ChainID)][len(assignInstruction.ShardCandidates):]
 
-	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, assignInstruction.ShardCandidates, newCommitteeChange, returnStakingInstruction)
+	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, assignInstruction.ShardCandidates, newCommitteeChange, returnStakingInstruction, oldState, newState)
 	if err != nil {
 		return newCommitteeChange, returnStakingInstruction, err
 	}
@@ -176,15 +178,15 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 	outPublicKeys []string,
 	committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	oldState BeaconCommitteeState,
+	oldState, newState BeaconCommitteeState,
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	newCommitteeChange := committeeChange
-
-	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, outPublicKeys, newCommitteeChange, returnStakingInstruction)
+	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, outPublicKeys, newCommitteeChange, returnStakingInstruction, oldState, newState)
 	if err != nil {
 		return newCommitteeChange, returnStakingInstruction, err
 	}
 	newReturnStakingInstruction := returnStakingInstruction
+	backToPendingCandidates := []string{}
 
 	for i := 0; i < len(candidates); i++ {
 		candidate := candidates[i]
@@ -193,12 +195,12 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 		if err != nil {
 			return newCommitteeChange, returnStakingInstruction, err
 		}
-		if env.BeaconHeight-b.Terms()[candidate]-committeeTerm < 0 {
-			newCommitteeChange.ShardSubstituteAdded[env.ShardID] = append(newCommitteeChange.ShardSubstituteAdded[env.ShardID], key)
-			newCommitteeChange.ShardCommitteeRemoved[env.ShardID] = append(newCommitteeChange.ShardCommitteeRemoved[env.ShardID], key)
+		if env.BeaconHeight-b.Terms()[candidate] < committeeTerm {
+			backToPendingCandidates = append(backToPendingCandidates, candidate)
 			candidates = append(candidates[:i], candidates[i+1:]...)
 		}
 	}
+	newCommitteeChange = b.assignToPending(backToPendingCandidates, env.RandomNumber, env.ShardID, newCommitteeChange)
 	newCommitteeChange = b.assignAfterNormalSwapOut(candidates, env.RandomNumber, env.ActiveShards, newCommitteeChange, oldState, env.ShardID, env.BeaconHeight)
 	return newCommitteeChange, newReturnStakingInstruction, nil
 }
@@ -224,7 +226,7 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	swapShardInstruction *instruction.SwapShardInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	oldState BeaconCommitteeState,
+	oldState, newState BeaconCommitteeState,
 ) (
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	shardID := byte(swapShardInstruction.ChainID)
@@ -238,6 +240,7 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 		newCommitteeChange,
 		returnStakingInstruction,
 		oldState,
+		newState,
 	)
 	if err != nil {
 		return nil, returnStakingInstruction, err
@@ -249,6 +252,8 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 		slashingCommittees,
 		returnStakingInstruction,
 		newCommitteeChange,
+		oldState,
+		newState,
 	)
 	if err != nil {
 		return nil, returnStakingInstruction, err
@@ -258,6 +263,7 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	return newCommitteeChange, returnStakingInstruction, nil
 }
 
+//Terms only use this function with read purpose
 func (b *BeaconCommitteeStateV3) Terms() map[string]uint64 {
 	return b.terms
 }

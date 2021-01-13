@@ -1147,27 +1147,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 	committeeChangeProcessUnstakeInstruction.RemovedStaker = []string{key0}
 	committeeChangeProcessUnstakeInstruction.TermsRemoved = []string{}
 
-	unstakeRule1 := &mocks.UnstakeRule{}
-	unstakeRule1.On("RemoveFromState",
-		*incKey0,
-		map[string]bool{},
-		map[string]privacy.PaymentAddress{},
-		map[string]common.Hash{},
-		map[string]uint64{},
-		[]string(nil),
-		[]string(nil)).
-		Return(
-			map[string]bool{},
-			map[string]privacy.PaymentAddress{},
-			map[string]common.Hash{},
-			[]string{
-				key0,
-			},
-			[]string{},
-			nil,
-		)
-	unstakeRule1.On("Version").Return(unstakeRuleTestVersion)
-
 	committeeChangeSwapRuleV3 := NewCommitteeChange()
 	committeeChangeSwapRuleV3.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
 		*incKey13, *incKey14,
@@ -1728,7 +1707,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 								shardCommonPool: []incognitokey.CommitteePublicKey{
 									*incKey0,
 								},
-								unstakeRule: unstakeRule1,
 							},
 						},
 						uncommittedState: &BeaconCommitteeStateV2{
@@ -1753,7 +1731,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 								shardCommonPool: []incognitokey.CommitteePublicKey{
 									*incKey0,
 								},
-								unstakeRule: unstakeRule1,
 							},
 						},
 					},
@@ -1782,7 +1759,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 									mu:             unCommitteedMu,
 								},
 								shardCommonPool: []incognitokey.CommitteePublicKey{},
-								unstakeRule:     unstakeRule1,
 							},
 						},
 					},
@@ -2474,160 +2450,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	swapRule4.On("Version").Return(swapRuleTestVersion)
 	swapRule4.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
 
-	unstakeRule1 := &mocks.UnstakeRule{}
-	unstakeRule1.On("RemoveFromState",
-		*incKey0,
-		map[string]bool{
-			key0: true,
-		},
-		map[string]privacy.PaymentAddress{
-			incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-		},
-		map[string]common.Hash{
-			key0: *hash,
-		},
-		map[string]uint64{},
-		[]string(nil),
-		[]string(nil)).
-		Return(
-			map[string]bool{},
-			map[string]privacy.PaymentAddress{},
-			map[string]common.Hash{},
-			[]string{
-				key0,
-			},
-			[]string{},
-			nil,
-		)
-	unstakeRule1.On("Version").Return(unstakeRuleTestVersion)
-
-	unstakeRule2 := &mocks.UnstakeRule{}
-	unstakeRule2.On("RemoveFromState",
-		*incKey0,
-		map[string]bool{
-			key0: true,
-			key:  false,
-		},
-		map[string]privacy.PaymentAddress{
-			incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-			incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
-		},
-		map[string]common.Hash{
-			key0: *hash,
-			key:  *tempHash,
-		},
-		map[string]uint64{},
-		[]string(nil),
-		[]string(nil)).
-		Return(
-			[]string{
-				key0,
-			},
-			[]string{},
-			nil,
-		)
-	unstakeRule2.On("Version").Return(unstakeRuleTestVersion)
-
-	unstakeRule3 := &mocks.UnstakeRule{}
-	unstakeRule3.On("Version").Return(unstakeRuleTestVersion)
-	unstakeRule3.On("RemoveFromState",
-		*incKey4,
-		map[string]bool{
-			key0:  true,
-			key4:  true,
-			key10: true,
-			key7:  true,
-			key:   true,
-		},
-		map[string]privacy.PaymentAddress{
-			incKey0.GetIncKeyBase58():  paymentAddress0.KeySet.PaymentAddress,
-			incKey7.GetIncKeyBase58():  paymentAddress0.KeySet.PaymentAddress,
-			incKey4.GetIncKeyBase58():  paymentAddress0.KeySet.PaymentAddress,
-			incKey10.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-			incKey.GetIncKeyBase58():   paymentAddress.KeySet.PaymentAddress,
-		},
-		map[string]common.Hash{
-			key0:  *hash,
-			key7:  *hash,
-			key4:  *hash,
-			key10: *hash,
-			key:   *tempHash,
-		},
-		map[string]uint64{},
-		[]string(nil),
-		[]string(nil)).
-		Return(
-			map[string]bool{
-				key0:  true,
-				key10: true,
-				key7:  true,
-				key:   true,
-			},
-			map[string]privacy.PaymentAddress{
-				incKey0.GetIncKeyBase58():  paymentAddress0.KeySet.PaymentAddress,
-				incKey7.GetIncKeyBase58():  paymentAddress0.KeySet.PaymentAddress,
-				incKey10.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-				incKey.GetIncKeyBase58():   paymentAddress.KeySet.PaymentAddress,
-			},
-			map[string]common.Hash{
-				key0:  *hash,
-				key7:  *hash,
-				key10: *hash,
-				key:   *tempHash,
-			},
-			[]string{
-				key4,
-			},
-			[]string{},
-			nil,
-		)
-
-	unstakeRule3.On("RemoveFromState",
-		*incKey10,
-		map[string]bool{
-			key0:  true,
-			key10: true,
-			key7:  true,
-			key:   true,
-		},
-		map[string]privacy.PaymentAddress{
-			incKey0.GetIncKeyBase58():  paymentAddress0.KeySet.PaymentAddress,
-			incKey7.GetIncKeyBase58():  paymentAddress0.KeySet.PaymentAddress,
-			incKey10.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-			incKey.GetIncKeyBase58():   paymentAddress.KeySet.PaymentAddress,
-		},
-		map[string]common.Hash{
-			key0:  *hash,
-			key7:  *hash,
-			key10: *hash,
-			key:   *tempHash,
-		},
-		map[string]uint64{},
-		[]string{key4},
-		[]string{}).
-		Return(
-			map[string]bool{
-				key0: true,
-				key7: true,
-				key:  true,
-			},
-			map[string]privacy.PaymentAddress{
-				incKey0.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-				incKey7.GetIncKeyBase58(): paymentAddress0.KeySet.PaymentAddress,
-				incKey.GetIncKeyBase58():  paymentAddress.KeySet.PaymentAddress,
-			},
-			map[string]common.Hash{
-				key0: *hash,
-				key7: *hash,
-				key:  *tempHash,
-			},
-			[]string{
-				key4, key10,
-			},
-			[]string{},
-			nil,
-		)
-
 	type fields struct {
 		beaconHeight                      uint64
 		beaconHash                        common.Hash
@@ -3094,7 +2916,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 							*incKey0,
 						},
 						numberOfAssignedCandidates: 1,
-						unstakeRule:                unstakeRule1,
 					},
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
@@ -3102,7 +2923,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: unCommitteedMu,
 						},
-						unstakeRule: unstakeRule1,
 					},
 				},
 			},
@@ -3127,7 +2947,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 							stakingTx:      map[string]common.Hash{},
 						},
 						shardCommonPool: []incognitokey.CommitteePublicKey{},
-						unstakeRule:     unstakeRule1,
 					},
 				},
 			},
@@ -3197,7 +3016,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 							*incKey6,
 							*incKey0,
 						},
-						unstakeRule: unstakeRule1,
 					},
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
@@ -3205,7 +3023,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: unCommitteedMu,
 						},
-						unstakeRule: unstakeRule1,
 					},
 				},
 			},
@@ -3230,7 +3047,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 							stakingTx:      map[string]common.Hash{},
 						},
 						shardCommonPool: []incognitokey.CommitteePublicKey{},
-						unstakeRule:     unstakeRule1,
 					},
 				},
 			},
@@ -3302,7 +3118,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						},
 						shardCommonPool: []incognitokey.CommitteePublicKey{},
 						swapRule:        swapRule1,
-						unstakeRule:     unstakeRule2,
 					},
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
@@ -3310,7 +3125,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: unCommitteedMu,
 						},
-						unstakeRule: unstakeRule2,
 					},
 				},
 			},
@@ -3345,7 +3159,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						},
 						shardCommonPool: []incognitokey.CommitteePublicKey{},
 						swapRule:        swapRule1,
-						unstakeRule:     unstakeRule2,
 					},
 				},
 			},
@@ -3511,7 +3324,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						shardCommonPool: []incognitokey.CommitteePublicKey{
 							*incKey0,
 						},
-						unstakeRule: unstakeRule1,
 					},
 				},
 				uncommittedBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
@@ -3519,7 +3331,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: unCommitteedMu,
 						},
-						unstakeRule: unstakeRule1,
 					},
 				},
 			},
@@ -3542,7 +3353,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 							stakingTx:      map[string]common.Hash{},
 						},
 						shardCommonPool: []incognitokey.CommitteePublicKey{},
-						unstakeRule:     unstakeRule1,
 					},
 				},
 			},
@@ -4352,7 +4162,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 							},
 						},
 						swapRule:        swapRule4,
-						unstakeRule:     unstakeRule3,
 						shardCommonPool: []incognitokey.CommitteePublicKey{},
 					},
 				},
@@ -4403,7 +4212,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 							},
 						},
 						swapRule:        swapRule4,
-						unstakeRule:     unstakeRule3,
 						shardCommonPool: []incognitokey.CommitteePublicKey{},
 					},
 				},
