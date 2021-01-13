@@ -3,6 +3,7 @@ package statedb
 import (
 	"bytes"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
 	"strconv"
 
@@ -312,19 +313,43 @@ func GetPDEPoolForPairKey(beaconHeight uint64, token1ID string, token2ID string)
 }
 
 // GetPDEShareKey: PDESharePrefix + beacon height + token1ID + token2ID + contributor address
-func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) []byte {
+func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) ([]byte, error) {
 	prefix := append(pdeSharePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
 	tokenIDs := []string{token1ID, token2ID}
 	sort.Strings(tokenIDs)
-	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+contributorAddress)...)
+
+	var keyAddr string
+	var err error
+	if len(contributorAddress) == 0{
+		keyAddr = contributorAddress
+	}else{
+		//Always parse the contributor address into the oldest version for compatibility
+		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddress, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+keyAddr)...), nil
 }
 
 // GetPDETradingFeeKey: PDETradingFeePrefix + beacon height + token1ID + token2ID
-func GetPDETradingFeeKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) []byte {
+func GetPDETradingFeeKey(beaconHeight uint64, token1ID string, token2ID string, contributorAddress string) ([]byte, error) {
 	prefix := append(pdeTradingFeePrefix, []byte(fmt.Sprintf("%d-", beaconHeight))...)
 	tokenIDs := []string{token1ID, token2ID}
 	sort.Strings(tokenIDs)
-	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+contributorAddress)...)
+
+	var keyAddr string
+	var err error
+	if len(contributorAddress) == 0{
+		keyAddr = contributorAddress
+	}else{
+		//Always parse the contributor address into the oldest version for compatibility
+		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddress, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return append(prefix, []byte(tokenIDs[0]+"-"+tokenIDs[1]+"-"+keyAddr)...), nil
 }
 
 func GetPDEStatusKey(prefix []byte, suffix []byte) []byte {

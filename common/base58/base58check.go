@@ -29,7 +29,7 @@ func ChecksumFirst4Bytes(data []byte, isNewCheckSum bool) (ckSum []byte) {
 		return []byte{}
 	}*/
 	ckSum = make([]byte, common.CheckSumLen)
-	if isNewCheckSum {
+	if !isNewCheckSum {
 		h2 := common.HashB(data)
 		copy(ckSum[:], h2[:4])
 	} else {

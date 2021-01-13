@@ -136,7 +136,6 @@ func GetListDecryptedCoins(privateKey string, listOutputCoins []jsonresult.ICoin
 			if !ok {
 				return nil, nil, errors.New("invalid CoinV2")
 			}
-
 			decryptedCoin, err := tmpCoinV2.Decrypt(&keyWallet.KeySet)
 			if err != nil {
 				return nil, nil, err

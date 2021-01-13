@@ -133,14 +133,26 @@ func addShareAmountUpV2(
 	amt uint64,
 	currentPDEState *CurrentPDEState,
 ) {
-	pdeShareOnTokenPrefix := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, ""))
+	pdeShareOnTokenPrefixBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, "")
+	if err != nil{
+		Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
+		return
+	}
+
+	pdeShareOnTokenPrefix := string(pdeShareOnTokenPrefixBytes)
 	totalSharesOnToken := uint64(0)
 	for key, value := range currentPDEState.PDEShares {
 		if strings.Contains(key, pdeShareOnTokenPrefix) {
 			totalSharesOnToken += value
 		}
 	}
-	pdeShareKey := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, contributorAddrStr))
+	pdeShareKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, contributorAddrStr)
+	if err != nil {
+		Logger.log.Errorf("cannot find pdeShareKey for address: %v. Error: %v\n", contributorAddrStr, err)
+		return
+	}
+
+	pdeShareKey := string(pdeShareKeyBytes)
 	if totalSharesOnToken == 0 {
 		currentPDEState.PDEShares[pdeShareKey] = amt
 		return

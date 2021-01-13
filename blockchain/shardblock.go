@@ -406,6 +406,9 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 		var parseErr error
 		var txChoice *transaction.TxChoice
 		txChoice, parseErr = transaction.DeserializeTransactionJSON(txTemp)
+		if parseErr != nil {
+			return NewBlockChainError(UnmashallJsonShardBlockError, parseErr)
+		}
 		tx = txChoice.ToTx()
 		if tx==nil{
 			return NewBlockChainError(UnmashallJsonShardBlockError, errors.New("corrupted TX"))
@@ -436,9 +439,6 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 		// 		return NewBlockChainError(UnmashallJsonShardBlockError, errors.New("Cannot parse a wrong tx "))
 		// 	}
 		// }
-		if parseErr != nil {
-			return NewBlockChainError(UnmashallJsonShardBlockError, parseErr)
-		}
 		shardBody.Transactions = append(shardBody.Transactions, tx)
 	}
 	return nil

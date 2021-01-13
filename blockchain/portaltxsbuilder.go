@@ -41,16 +41,14 @@ func (curView *ShardBestState) buildPortalRefundCustodianDepositTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	// TODO OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: refundDeposit.DepositedAmount, ReceiverAddress: &receiverAddr, TokenID: nil}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (curView *ShardBestState) buildPortalRejectedTopUpWaitingPortingTx(
@@ -82,16 +80,14 @@ func (curView *ShardBestState) buildPortalRejectedTopUpWaitingPortingTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	// TODO OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: topUpInfo.DepositedAmount, ReceiverAddress: &receiverAddr, TokenID: nil}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
@@ -123,16 +119,14 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	// TODO OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: refundDeposit.DepositedAmount, ReceiverAddress: &receiverAddr, TokenID: nil}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (curView *ShardBestState) buildPortalLiquidationCustodianDepositRejectV2(
@@ -166,16 +160,14 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositRejectV2(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	// OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: refundDeposit.DepositedAmount, ReceiverAddress: &receiverAddr, TokenID: nil}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and payment address")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 // buildPortalAcceptedRequestPTokensTx builds response tx for user request ptoken tx with status "accepted"
@@ -221,16 +213,14 @@ func (curView *ShardBestState) buildPortalAcceptedRequestPTokensTx(
 		return nil, nil
 	}
 
-	// OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: acceptedReqPToken.PortingAmount, ReceiverAddress: &receiverAddr, TokenID: tokenID}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (curView *ShardBestState) buildPortalCustodianWithdrawRequest(
@@ -266,16 +256,14 @@ func (curView *ShardBestState) buildPortalCustodianWithdrawRequest(
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	receiveAmt := custodianWithdrawRequest.Amount
-	// OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: &receiverAddr, TokenID: nil}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTx(
@@ -314,16 +302,14 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTx(
 
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	receiveAmt := redeemReqContent.TotalPTokenReceived
-	// OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: &receiverAddr, TokenID: nil}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTxV3(
@@ -423,16 +409,14 @@ func (curView *ShardBestState) buildPortalRejectedRedeemRequestTx(
 		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
 		return nil, nil
 	}
-	// OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: &receiverAddr, TokenID: tokenID}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 // buildPortalRefundCustodianDepositTx builds refund tx for custodian deposit tx with status "refund"
@@ -476,14 +460,13 @@ func (curView *ShardBestState) buildPortalLiquidateCustodianResponseTx(
 	receiveAmt := liqCustodian.LiquidatedCollateralAmount
 	// OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: &receiverAddr, TokenID: nil}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-	// the returned currency is PRV VER 2
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 // buildPortalAcceptedWithdrawRewardTx builds withdraw portal rewards response tx
@@ -525,15 +508,13 @@ func (curView *ShardBestState) buildPortalAcceptedWithdrawRewardTx(
 	receiverAmt := withdrawRewardContent.RewardAmount
 	// OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: receiverAmt, ReceiverAddress: &receiverAddr, TokenID: &tokenID}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	// the returned currency is PRV
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 // buildPortalRefundPortingFeeTx builds portal refund porting fee tx
@@ -569,15 +550,13 @@ func (curView *ShardBestState) buildPortalRefundPortingFeeTx(
 	receiverAmt := portalPortingRequest.PortingFee
 	// OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: receiverAmt, ReceiverAddress: &receiverAddr, TokenID: nil}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and receiver")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	// the returned currency is PRV
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 // buildPortalRefundRedeemFromLiquidationTx builds response tx for user request redeem from liquidation pool tx with status "rejected"
@@ -674,16 +653,12 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTxV3
 	receiverAmt := redeemReqContent.RedeemAmount
 	tokenID, err := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
 
-	//OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: receiverAmt, ReceiverAddress: &receiverAddr, TokenID: tokenID}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and payment address")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	// set shareRandom for metadata
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	// in case the returned currency is privacy custom token
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }

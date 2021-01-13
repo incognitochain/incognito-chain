@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"math/big"
@@ -94,11 +95,20 @@ func GetBalanceToken(tool *debugtool.DebugTool, privkey, tokenID string) {
 	fmt.Println("========== END GET TOKEN BALANCE ==========")
 }
 
-func privateKeyToPaymentAddress(privkey string) string {
+func privateKeyToPaymentAddress(privkey string, keyType int) string {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privkey)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	return paymentAddStr
+	switch  keyType {
+	case 0: //Old address, old encoding
+		addr, _ := wallet.GetPaymentAddressV1(paymentAddStr, false)
+		return addr
+	case 1:
+		addr, _ := wallet.GetPaymentAddressV1(paymentAddStr, true)
+		return addr
+	default:
+		return paymentAddStr
+	}
 }
 
 func privateKeyToPublicKey(privkey string) []byte {
@@ -237,27 +247,6 @@ func GenKeySet(b []byte) (string, string, string) {
 	return privateKey, paymentAddress, readOnly
 }
 
-func GenKeySetApp() (string, string, string) {
-	for i := 0; i < 10000; i++ {
-		seed := common.RandBytes(32)
-
-		keyWallet, err := wallet.NewMasterKey(seed)
-		if err != nil {
-			return "", "", ""
-		}
-
-		privateKey := keyWallet.Base58CheckSerialize(wallet.PriKeyType)
-		if privateKey[:3] == "112" {
-			paymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-			readOnly := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
-			return privateKey, paymentAddress, readOnly
-		}
-
-	}
-
-	return "", "", ""
-
-}
 
 // func DoubleSpendPRV(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
 // 	fmt.Println("========== TRANSFER PRV (DOUBLE SPEND - TEST) ==========")
@@ -328,6 +317,12 @@ func PDEWithdrawContribution(tool *debugtool.DebugTool, privKey, tokenID1, token
 	fmt.Println(string(b))
 	fmt.Println("========== END PDE WITHDRAW  ==========")
 }
+func PDEFeeWithdraw(tool *debugtool.DebugTool, privKey, tokenID1, tokenID2, amountShare string) {
+	fmt.Println("========== PDE WITHDRAW   ==========")
+	b, _ := tool.PDEFeeWithdraw(privKey, tokenID1, tokenID2, amountShare)
+	fmt.Println(string(b))
+	fmt.Println("========== END PDE WITHDRAW  ==========")
+}
 
 func PDETradePRV(tool *debugtool.DebugTool, privKey, token, amount string) {
 	fmt.Println("========== PDE TRADE PRV   ==========")
@@ -335,7 +330,6 @@ func PDETradePRV(tool *debugtool.DebugTool, privKey, token, amount string) {
 	fmt.Println(string(b))
 	fmt.Println("========== END TRADE PRV  ==========")
 }
-
 func PDETradeToken(tool *debugtool.DebugTool, privKey, token, amount string) {
 	fmt.Println("========== PDE TRADE TOKEN   ==========")
 	b, _ := tool.PDETradeToken(privKey, token, amount)
@@ -343,6 +337,16 @@ func PDETradeToken(tool *debugtool.DebugTool, privKey, token, amount string) {
 	fmt.Println("========== END PDE TRADE TOKEN  ==========")
 }
 
+func GetPDEState(tool *debugtool.DebugTool, beaconHeight int64) {
+	fmt.Println("========== GET PDE STATE ==========")
+	b, err := tool.GetPDEState(beaconHeight)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(string(b))
+	fmt.Println("========== END GET PDE STATE ==========")
+}
 
 //Blockchain
 func GetBlockchainInfo(tool *debugtool.DebugTool) {
@@ -390,6 +394,7 @@ func main() {
 	tokenIDs["USDC"] = "1ff2da446abfebea3ba30385e2ca99b0f0bbeda5c6371f4c23c939672b429a42"
 	tokenIDs["XMR"] = "c01e7dc1d1aba995c19b257412340b057f8ad1482ccb6a9bb0adce61afbf05d4"
 	tokenIDs["BTC"] = "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"
+	tokenIDs["PRV"] = common.PRVIDStr
 
 	//paymentKeys := []string{
 	//	"",
@@ -564,7 +569,7 @@ func main() {
 					fmt.Println("Cannot find the private key")
 					continue
 				}
-				paymentAddress = privateKeyToPaymentAddress(privateKeys[index])
+				paymentAddress = privateKeyToPaymentAddress(privateKeys[index], -1)
 			} else {
 				paymentAddress = args[2]
 			}
@@ -573,7 +578,34 @@ func main() {
 		}
 
 		if args[0] == "payment" {
-			fmt.Println("Payment Address", privateKeyToPaymentAddress(args[1]))
+			var err error
+			if len (args) < 2{
+				fmt.Println("need at least 2 arguments")
+				continue
+			}
+ 			privateKey := args[1]
+			if len(args[1]) < 3 {
+				index, err := strconv.ParseInt(args[1], 10, 32)
+				if err != nil {
+					fmt.Println(err)
+					panic(err)
+				}
+				if index >= int64(len(privateKeys)) {
+					fmt.Println("Cannot find the private key")
+					continue
+				}
+				privateKey = privateKeys[index]
+			}
+
+			var keyType = int64(-1)
+			if len(args) > 3 {
+				keyType, err = strconv.ParseInt(args[2], 10, 32)
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+			}
+			fmt.Println("Payment Address", privateKeyToPaymentAddress(privateKey, int(keyType)))
 		}
 		if args[0] == "public" {
 			fmt.Println("Public Key", privateKeyToPublicKey(args[1]))
@@ -635,7 +667,7 @@ func main() {
 					fmt.Println("Cannot find the private key")
 					continue
 				}
-				paymentAddress = privateKeyToPaymentAddress(privateKeys[index])
+				paymentAddress = privateKeyToPaymentAddress(privateKeys[index], -1)
 			}
 
 			tokenID := args[3]
@@ -772,10 +804,24 @@ func main() {
 			PDEContributeToken(tool, privateKeys[index], args[2], args[3])
 		}
 		if args[0] == "pdewithdraw" {
-			index, err := strconv.ParseInt(args[1], 10, 32)
-			if err != nil {
-				panic(err)
+			if len(args) < 5 {
+				fmt.Println("need at least 5 arguments")
+				continue
 			}
+
+			privateKey := args[1]
+			if len(privateKey) < 3 {
+				index, err := strconv.ParseInt(args[1], 10, 32)
+				if err != nil {
+					panic(err)
+				}
+				if int(index) >= len(privateKeys) {
+					fmt.Println("cannot find private key")
+					continue
+				}
+				privateKey = privateKeys[index]
+			}
+
 			tokenID1 := args[2]
 			if len(args[2]) < 10 {
 				tokenID1 = tokenIDs[args[2]]
@@ -786,9 +832,40 @@ func main() {
 				tokenID2 = tokenIDs[args[3]]
 			}
 
-			PDEWithdrawContribution(tool, privateKeys[index], tokenID1, tokenID2, args[4])
+			PDEWithdrawContribution(tool, privateKey, tokenID1, tokenID2, args[4])
 		}
 
+		if args[0] == "pdefeewithdraw" {
+			if len(args) < 5 {
+				fmt.Println("need at least 5 arguments")
+				continue
+			}
+
+			privateKey := args[1]
+			if len(privateKey) < 3 {
+				index, err := strconv.ParseInt(args[1], 10, 32)
+				if err != nil {
+					panic(err)
+				}
+				if int(index) >= len(privateKeys) {
+					fmt.Println("cannot find private key")
+					continue
+				}
+				privateKey = privateKeys[index]
+			}
+
+			tokenID1 := args[2]
+			if len(args[2]) < 10 {
+				tokenID1 = tokenIDs[args[2]]
+			}
+
+			tokenID2 := args[3]
+			if len(args[3]) < 10 {
+				tokenID2 = tokenIDs[args[3]]
+			}
+
+			PDEFeeWithdraw(tool, privateKey, tokenID1, tokenID2, args[4])
+		}
 		if args[0] == "pdetradeprv" {
 			if len(args) < 3 {
 				fmt.Println("Not enough param for pdetradeprv")
@@ -811,7 +888,6 @@ func main() {
 
 			PDETradePRV(tool, privateKey, tokenID, args[3])
 		}
-
 		if args[0] == "pdetradetoken" {
 			if len(args) < 3 {
 				fmt.Println("Not enough param for pdetradeprv")
@@ -832,6 +908,20 @@ func main() {
 				tokenID = tokenIDs[args[2]]
 			}
 			PDETradeToken(tool, privateKey, tokenID, args[3])
+		}
+
+		if args[0] == "pdestate" {
+			if len(args) < 2 {
+				fmt.Println("need at least 2 arguments")
+				continue
+			}
+			bHeight, err := strconv.ParseInt(args[1], 10, 32)
+			if err != nil {
+				fmt.Println("cannot get beacon height")
+				continue
+			}
+
+			GetPDEState(tool, bHeight)
 		}
 
 		if args[0] == "sub" {
@@ -1097,6 +1187,15 @@ func main() {
 				fmt.Printf("Step %d, output: %d, isModified: %v, isValid: %v, err: %v\n", i, y.ToUint64Little(), isModified, isValid, err)
 			}
 
+		}
+
+		if args[0] == "dec58" {
+			b, _, err := base58.Base58Check{}.Decode(args[1])
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			fmt.Println(b)
 		}
 	}
 }

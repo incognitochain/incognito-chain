@@ -659,7 +659,13 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 			addingFee = tradingFee - uint64(len(sequentialTrades)-1)*proportionalFee
 		}
 		pdeTradeAcceptedContent.AddingFee = addingFee
-		sKey := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr, ""))
+		sKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr, "")
+		if err != nil{
+			Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
+			return nil, err
+		}
+
+		sKey := string(sKeyBytes)
 		tradingFeeByPair[sKey] += addingFee
 		tradeAcceptedContents = append(tradeAcceptedContents, pdeTradeAcceptedContent)
 	}
@@ -855,19 +861,31 @@ func deductPDEAmountsV2(
 	if !found || pdePoolPair == nil {
 		return deductingAmounts
 	}
-	shareForWithdrawerKey := string(rawdbv2.BuildPDESharesKeyV2(
+	shareForWithdrawerKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, wdMeta.WithdrawerAddressStr,
-	))
+	)
+	if err != nil{
+		Logger.log.Errorf("cannot build PDESharesKeyV2 for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
+		return deductingAmounts
+	}
+
+	shareForWithdrawerKey := string(shareForWithdrawerKeyBytes)
 	currentSharesForWithdrawer, found := currentPDEState.PDEShares[shareForWithdrawerKey]
 	if !found || currentSharesForWithdrawer == 0 {
 		return deductingAmounts
 	}
 
-	totalSharesForPairPrefix := string(rawdbv2.BuildPDESharesKeyV2(
+	totalSharesForPairPrefixBytes, err := rawdbv2.BuildPDESharesKeyV2(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, "",
-	))
+	)
+	if err != nil{
+		Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
+		return deductingAmounts
+	}
+
+	totalSharesForPairPrefix := string(totalSharesForPairPrefixBytes)
 	totalSharesForPair := big.NewInt(0)
 	for shareKey, shareAmt := range currentPDEState.PDEShares {
 		if strings.Contains(shareKey, totalSharesForPairPrefix) {
@@ -1098,12 +1116,18 @@ func (blockchain *BlockChain) buildInstructionsForPDEFeeWithdrawal(
 	}
 	wdMeta := pdeFeeWithdrawalRequestAction.Meta
 	pdeTradingFees := currentPDEState.PDETradingFees
-	tradingFeeKey := string(rawdbv2.BuildPDETradingFeeKey(
+	tradingFeeKeyBytes, err := rawdbv2.BuildPDETradingFeeKey(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr,
 		wdMeta.WithdrawalToken2IDStr,
 		wdMeta.WithdrawerAddressStr,
-	))
+	)
+	if err != nil {
+		Logger.log.Errorf("cannot build PDETradingFeeKey for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
+		return nil, err
+	}
+
+	tradingFeeKey := string(tradingFeeKeyBytes)
 	withdrawableFee, found := pdeTradingFees[tradingFeeKey]
 	if !found || withdrawableFee < wdMeta.WithdrawalFeeAmt {
 		rejectedInst := []string{

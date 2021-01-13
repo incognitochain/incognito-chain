@@ -278,41 +278,67 @@ func GetPaymentAddressV1(addr string, isNewEncoding bool) (string, error) {
 		return "", errors.New(fmt.Sprintf("something must be wrong with the provided payment address: %v", addr))
 	}
 
-	//Return if the input is already a payment address V2
-	if newWallet.KeySet.PaymentAddress.OTAPublic == nil{
-		return addr, nil
-	}
-
 	//Remove the publicOTA key and try to deserialize
 	newWallet.KeySet.PaymentAddress.OTAPublic = nil
 
-	addrV1 := newWallet.Base58CheckSerialize(PaymentAddressType)
-	if len(addrV1) == 0 {
-		return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addr))
-	}
+	if isNewEncoding{
+		addrV1 := newWallet.Base58CheckSerialize(PaymentAddressType)
+		if len(addrV1) == 0 {
+			return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addr))
+		}
 
-	return addrV1, nil
+		return addrV1, nil
+	}else{
+		addr1InBytes, err := newWallet.Serialize(PaymentAddressType, false)
+		if err != nil {
+			return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addr))
+		}
+
+		addrV1 := base58.Base58Check{}.NewEncode(addr1InBytes, common.ZeroByte)
+		if len(addrV1) == 0 {
+			return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addr))
+		}
+
+		return addrV1, nil
+	}
 }
 
 //Checks if two payment addresses are generated from the same private key.
+//
+//Just need to compare PKs and TKs.
 func ComparePaymentAddresses(addr1, addr2 string) (bool, error) {
+	//If these address strings are the same, just try to deserialize one of them
+	if addr1 == addr2 {
+		_, err := Base58CheckDeserialize(addr1)
+		if err != nil{
+			return false, err
+		}
+		return true, nil
+	}
 	//If their lengths are the same, just compare the inputs
-	if len(addr1) == len(addr2) {
-		return addr1 == addr2, nil
+	keyWallet1, err := Base58CheckDeserialize(addr1)
+	if err != nil{
+		return false, err
 	}
 
-	//we expect the longer address will be in version 2
-	if len(addr1) > len(addr2){
-		tmpAddr, err := GetPaymentAddressV1(addr1, true)
-		if err != nil {
-			return false, err
-		}
-		return addr2 == tmpAddr, nil
-	}else{
-		tmpAddr, err := GetPaymentAddressV1(addr2, true)
-		if err != nil {
-			return false, err
-		}
-		return addr1 == tmpAddr, nil
+	keyWallet2, err := Base58CheckDeserialize(addr2)
+	if err != nil {
+		return false, err
 	}
+
+	pk1 := keyWallet1.KeySet.PaymentAddress.Pk
+	tk1 := keyWallet1.KeySet.PaymentAddress.Tk
+
+	pk2 := keyWallet2.KeySet.PaymentAddress.Pk
+	tk2 := keyWallet2.KeySet.PaymentAddress.Tk
+
+	if !bytes.Equal(pk1, pk2) {
+		return false, errors.New(fmt.Sprintf("public keys mismatch: %v, %v", pk1, pk2))
+	}
+
+	if !bytes.Equal(tk1, tk2) {
+		return false, errors.New(fmt.Sprintf("transmission keys mismatch: %v, %v", tk1, tk2))
+	}
+
+	return true, nil
 }

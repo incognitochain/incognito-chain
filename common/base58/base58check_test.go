@@ -80,7 +80,7 @@ func TestNewEncodingAndCheckSum(t *testing.T) {
 		data := common.RandBytes(common.RandIntInterval(0, 1000))
 		expectedEncoding := base58.CheckEncode(data, 0)
 
-		actualEncoded := Base58Check{}.Encode(data, common.ZeroByte)
+		actualEncoded := Base58Check{}.NewEncode(data, common.ZeroByte)
 
 		assert.Equal(t, expectedEncoding, actualEncoded, "encodings not equals: %v, %v", expectedEncoding, actualEncoded)
 	}

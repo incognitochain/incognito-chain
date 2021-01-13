@@ -2,6 +2,7 @@ package rawdbv2
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -62,12 +63,25 @@ func BuildPDESharesKey(
 	token2IDStr string,
 	contributedTokenIDStr string,
 	contributorAddressStr string,
-) []byte {
+) ([]byte, error) {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	pdeSharesByBCHeightPrefix := append(PDESharePrefix, beaconHeightBytes...)
 	tokenIDStrs := []string{token1IDStr, token2IDStr}
 	sort.Strings(tokenIDStrs)
-	return append(pdeSharesByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+contributedTokenIDStr+"-"+contributorAddressStr)...)
+
+	var keyAddr string
+	var err error
+	if len(contributorAddressStr) == 0{
+		keyAddr = contributorAddressStr
+	}else{
+		//Always parse the contributor address into the oldest version for compatibility
+		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddressStr, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return append(pdeSharesByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+contributedTokenIDStr+"-"+keyAddr)...), nil
 }
 
 func BuildPDESharesKeyV2(
@@ -75,12 +89,25 @@ func BuildPDESharesKeyV2(
 	token1IDStr string,
 	token2IDStr string,
 	contributorAddressStr string,
-) []byte {
+) ([]byte, error) {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	pdeSharesByBCHeightPrefix := append(PDESharePrefix, beaconHeightBytes...)
 	tokenIDStrs := []string{token1IDStr, token2IDStr}
 	sort.Strings(tokenIDStrs)
-	return append(pdeSharesByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+contributorAddressStr)...)
+
+	var keyAddr string
+	var err error
+	if len(contributorAddressStr) == 0{
+		keyAddr = contributorAddressStr
+	}else{
+		//Always parse the contributor address into the oldest version for compatibility
+		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddressStr, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return append(pdeSharesByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+keyAddr)...), nil
 }
 
 func BuildPDEPoolForPairKey(
@@ -100,12 +127,25 @@ func BuildPDETradingFeeKey(
 	token1IDStr string,
 	token2IDStr string,
 	contributorAddressStr string,
-) []byte {
+) ([]byte, error) {
 	beaconHeightBytes := []byte(fmt.Sprintf("%d-", beaconHeight))
 	pdeTradingFeeByBCHeightPrefix := append(PDETradingFeePrefix, beaconHeightBytes...)
 	tokenIDStrs := []string{token1IDStr, token2IDStr}
 	sort.Strings(tokenIDStrs)
-	return append(pdeTradingFeeByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+contributorAddressStr)...)
+
+	var keyAddr string
+	var err error
+	if len(contributorAddressStr) == 0{
+		keyAddr = contributorAddressStr
+	}else{
+		//Always parse the contributor address into the oldest version for compatibility
+		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddressStr, false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return append(pdeTradingFeeByBCHeightPrefix, []byte(tokenIDStrs[0]+"-"+tokenIDStrs[1]+"-"+keyAddr)...), nil
 }
 
 func BuildPDETradeFeesKey(

@@ -185,6 +185,7 @@ func (tx *Tx) Init(paramsInterface interface{}) error {
 	if err := tx.InitializeTxAndParams(params); err != nil {
 		return err
 	}
+	tx.SetVersion(utils.TxVersion1Number)
 
 	// Check if this tx is nonPrivacyNonInput
 	// Case 1: tx ptoken transfer with ptoken fee
