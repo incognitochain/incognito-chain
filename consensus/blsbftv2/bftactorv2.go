@@ -183,7 +183,7 @@ func (e *BLSBFT_V2) Start() error {
 				/*
 					Check for whether we should propose block
 				*/
-				proposerPk := bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
+				proposerPk, _ := bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
 				userPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 
 				if newTimeSlot { //for logging

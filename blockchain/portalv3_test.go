@@ -156,6 +156,11 @@ func (s *PortalTestSuiteV3) SetupTest() {
 			},
 		},
 	}
+
+	// Kovan testnet
+	metadata.EthereumLightNodeHost     = "kovan.infura.io/v3/93fe721349134964aa71071a713c5cef"
+	metadata.EthereumLightNodeProtocol = "https"
+	metadata.EthereumLightNodePort     = ""
 }
 
 /*
