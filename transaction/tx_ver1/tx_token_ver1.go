@@ -210,7 +210,13 @@ func (txToken TxToken) ValidateTxByItself(boolParams map[string]bool, transactio
 }
 
 func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, []privacy.Proof, error) {
-	// validate for PRV
+	afterUpgrade, ok := boolParams["v2Only"]
+	if !ok {
+		afterUpgrade = false
+	}
+	if afterUpgrade{
+		return false, nil, utils.NewTransactionErr(utils.RejectTxVersion, errors.New("old version is no longer supported"))
+	}
 	ok, batchedProof, err := txToken.Tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, nil)
 	if ok {
 		// validate for pToken
