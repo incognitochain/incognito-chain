@@ -355,16 +355,13 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTxV
 
 	//OTA
 	txParam := transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: &receiverAddr, TokenID: nil}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and payment address")
-		return nil, err
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	// set shareRandom for metadata
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	// in case the returned currency is privacy custom token
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 // buildPortalRejectedRedeemRequestTx builds response tx for user request redeem tx with status "rejected"
@@ -596,21 +593,18 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	receiveAmt := redeemReqContent.RedeemAmount
+	receiverAmt := redeemReqContent.RedeemAmount
 	tokenID, _ := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
 
-	//OTA
-	txParam := transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: &receiverAddr, TokenID: tokenID}
-	otaCoin, err := txParam.GenerateOutputCoin()
-	if err != nil {
-		Logger.log.Errorf("Cannot get new coin from amount and payment address")
-		return nil, err
+	// OTA
+	txParam := transaction.TxSalaryOutputParams{Amount: receiverAmt, ReceiverAddress: &receiverAddr, TokenID: tokenID}
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	// set shareRandom for metadata
-	meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
-	// in case the returned currency is privacy custom token
-	return txParam.BuildTxSalary(otaCoin, producerPrivateKey, curView.GetCopiedTransactionStateDB(), meta)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 // buildPortalRefundRedeemFromLiquidationTx builds response tx for user request redeem from liquidation pool tx with status "rejected"

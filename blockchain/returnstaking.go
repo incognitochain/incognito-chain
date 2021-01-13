@@ -97,6 +97,9 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 			if err != nil || !isMinted {
 				return errors.Errorf("this is not tx mint for return staking. Error %v", err)
 			}
+			if ok := mintCoin.CheckCoinValid(returnMeta.StakerAddress, returnMeta.SharedRandom, MainNetStakingAmountShard); !ok {
+				return errors.Errorf("mint data is invalid: Address %v; Amount %v", returnMeta.StakerAddress, mintCoin.GetValue())
+			}
 			if coinID.String() != common.PRVIDStr {
 				return errors.Errorf("return staking tx only mints prv. Error token %v", coinID.String())
 			}
