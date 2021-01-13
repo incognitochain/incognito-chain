@@ -40,3 +40,13 @@ func ParseResponse(respondInBytes []byte) (*rpcserver.JsonResponse, error) {
 
 	return &respond, nil
 }
+
+func CreateJsonRequest(jsonRPC, method string, params []interface{}, id interface{}) *rpcserver.JsonRequest{
+	request := new(rpcserver.JsonRequest)
+	request.Jsonrpc = jsonRPC
+	request.Method = method
+	request.Id = id
+	request.Params = params
+
+	return request
+}

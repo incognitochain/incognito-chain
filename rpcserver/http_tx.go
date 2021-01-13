@@ -679,10 +679,10 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 elements"))
 	}
 
-	// #1: payment address
-	paymentAddressStr, ok := arrayParams[0].(string)
+	// #1: ShardID
+	shardID, ok := arrayParams[0].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PaymentAddress is invalid"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ShardID is invalid"))
 	}
 
 	//#2: list serialnumbers in base58check encode string
@@ -708,7 +708,7 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 		}
 	}
 
-	result, err := httpServer.txService.HasSerialNumbers(paymentAddressStr, serialNumbersStr, *tokenID)
+	result, err := httpServer.txService.HasSerialNumbers(byte(shardID), serialNumbersStr, *tokenID)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err)
 	}

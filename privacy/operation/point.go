@@ -48,6 +48,10 @@ func (p *Point) Set(q *Point) *Point {
 	return p
 }
 
+func (p Point) String() string {
+	return fmt.Sprintf("%x", p.key[:])
+}
+
 func (p Point) MarshalText() []byte {
 	return []byte(fmt.Sprintf("%x", p.key[:]))
 }
