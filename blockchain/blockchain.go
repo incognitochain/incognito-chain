@@ -476,14 +476,14 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			panic("Restart beacon views fail")
 		}
 	}
-	for _, view := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
-		beaconState := view.(*BeaconBestState)
-		if beaconState.missingSignatureCounter != nil {
+	for _, beaconState := range allViews {
+		if beaconState.missingSignatureCounter == nil {
 			block := beaconState.BestBlock
 			err = initMissingSignatureCounter(blockchain, beaconState, &block)
 			if err != nil {
 				return err
 			}
+			Logger.log.Infof("Init Missing Signature Counter, %+v, height %+v", beaconState.missingSignatureCounter, beaconState.BeaconHeight)
 		}
 	}
 	return nil
