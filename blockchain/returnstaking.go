@@ -154,7 +154,9 @@ func (blockchain *BlockChain) buildReturnStakingAmountTx(
 	txParam := transaction.TxSalaryOutputParams{
 		Amount: info.StakingAmount,
 		ReceiverAddress: &info.FunderAddress,
-		TokenID: &common.PRVCoinID}
+		TokenID: &common.PRVCoinID,
+		Type: common.TxReturnStakingType,
+	}
 
 	makeMD := func (c privacy.Coin) metadata.Metadata{
 		if c!=nil && c.GetSharedRandom()!=nil{
@@ -166,7 +168,7 @@ func (blockchain *BlockChain) buildReturnStakingAmountTx(
 	if err!= nil {
 		return nil, 0, errors.Errorf("cannot init return staking tx. Error %v", err)
 	}
-	returnStakingTx.SetType(common.TxReturnStakingType)
+	// returnStakingTx.SetType()
 	return returnStakingTx, info.StakingAmount, nil
 }
 
