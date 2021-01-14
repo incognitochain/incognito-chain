@@ -34,12 +34,12 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		Amount: params.amount,
 	}
 	otaCoin, err := privacy.NewCoinFromPaymentInfo(paymentInfo)
-	params.meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
+	params.meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
+
 	switch params.txType {
 	case utils.NormalCoinType:
 		tx := new(TxVersion2)
