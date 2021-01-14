@@ -3,6 +3,7 @@ package metadata
 import (
 	"bytes"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -124,19 +125,13 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 
-	rewardReceiverPaymentAddress := stakingMetadata.RewardReceiverPaymentAddress
-	rewardReceiverWallet, err := wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
-	if err != nil || rewardReceiverWallet == nil {
-		return false, false, errors.New("Invalid Candidate Payment Address, Failed to Deserialized Into Key Wallet")
-	}
-	if len(rewardReceiverWallet.KeySet.PaymentAddress.Pk) != common.PublicKeySize {
-		return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
+	rewardReceiverAddr, err := AssertPaymentAddressAndTxVersion(stakingMetadata.RewardReceiverPaymentAddress, tx.GetVersion())
+	if err != nil {
+		return false, false, errors.New(fmt.Sprintf("invalid reward receiver address: %v", err))
 	}
 
-	funderPaymentAddress := stakingMetadata.FunderPaymentAddress
-	funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
-	if err != nil || funderWallet == nil {
-		return false, false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
+	if _, err := AssertPaymentAddressAndTxVersion(stakingMetadata.FunderPaymentAddress, tx.GetVersion()); err != nil {
+		return false, false, errors.New(fmt.Sprintf("invalid reward funder address: %v", err))
 	}
 
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
@@ -148,8 +143,8 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
 	}
 
-	if !bytes.Equal(CommitteePublicKey.IncPubKey, rewardReceiverWallet.KeySet.PaymentAddress.Pk){
-		Logger.log.Infof("BUGLOG IncPubkey != funder.PK: %v != %v\n", CommitteePublicKey.IncPubKey, rewardReceiverWallet.KeySet.PaymentAddress.Pk)
+	if !bytes.Equal(CommitteePublicKey.IncPubKey, rewardReceiverAddr.Pk){
+		Logger.log.Infof("BUGLOG IncPubkey != funder.PK: %v != %v\n", CommitteePublicKey.IncPubKey, rewardReceiverAddr.Pk)
 		return false, false, errors.New("IncPubkey must equal the public key of the funder")
 	}
 

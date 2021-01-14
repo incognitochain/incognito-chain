@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // TODO: Update error type to correct one
@@ -96,14 +95,8 @@ func checkTraderAddress(address, txRandom string) (bool, error){
 			return false, err
 		}
 	} else {
-		keyWallet, err := wallet.Base58CheckDeserialize(address)
-		if err != nil {
-			return false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TraderAddressStr incorrect"))
-		}
-		traderAddr := keyWallet.KeySet.PaymentAddress
-		if len(traderAddr.Pk) == 0 {
-			return false, errors.New("wrong request info's trader address")
-		}
+		_, err := AssertPaymentAddressAndTxVersion(address, 1)
+		return err == nil, err
 	}
 	return true, nil
 }

@@ -34,12 +34,12 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 		Amount: params.amount,
 	}
 	otaCoin, err := privacy.NewCoinFromPaymentInfo(paymentInfo)
-	params.meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
-
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot get new coin from amount and receiver")
 		return nil, err
 	}
+	params.meta.SetSharedRandom(otaCoin.GetSharedRandom().ToBytesS())
+
 	switch params.txType {
 	case utils.NormalCoinType:
 		tx := new(TxVersion2)
@@ -66,6 +66,7 @@ type TxSalaryOutputParams struct{
 	TxRandom 			*privacy.TxRandom
 	TokenID 			*common.Hash
 	Info 				[]byte
+	Type 				string
 }
 
 func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error){
@@ -100,6 +101,10 @@ func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, sta
 			if err != nil {
 				Logger.Log.Errorf("Cannot build Tx Salary v1. Err: %v", err)
 				return nil, err
+			}
+			// handle for "return staking" TX; need to set the transaction type
+			if pr.Type==common.TxReturnStakingType{
+				temp.Type = common.TxReturnStakingType
 			}
 			res = temp
 		}else{
@@ -149,6 +154,17 @@ func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, sta
 			if err != nil {
 				Logger.Log.Errorf("Cannot build Tx Salary v2. Err: %v", err)
 				return nil, err
+			}
+			// handle for "return staking" TX; need to set the transaction type
+			if pr.Type==common.TxReturnStakingType{
+				temp.Type = common.TxReturnStakingType
+				temp.Sig = nil
+				temp.SigPubKey = nil
+				if temp.Sig, temp.SigPubKey, err = tx_generic.SignNoPrivacy(privateKey, temp.Hash()[:]); err != nil {
+					return nil, utils.NewTransactionErr(utils.SignTxError, err)
+				}
+				// valid, err = temp.ValidateTxSalary(stateDB)
+				// Logger.Log.Debugf("Verify Salary TX for return staking : %v, %v", valid, err)
 			}
 			res = temp
 		}else{

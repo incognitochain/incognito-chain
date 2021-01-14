@@ -145,6 +145,9 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx T
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+	if _, err := AssertPaymentAddressAndTxVersion(withDrawRewardRequest.PaymentAddress, tx.GetVersion()); err != nil {
+		return false, false, err
+	}
 	return false, true, nil
 }
 

@@ -711,6 +711,13 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 }
 
 func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, []privacy.Proof, error) {
+	afterUpgrade, ok := boolParams["v2Only"]
+	if !ok {
+		afterUpgrade = false
+	}
+	if afterUpgrade{
+		return false, nil, utils.NewTransactionErr(utils.RejectTxVersion, errors.New("old version is no longer supported"))
+	}
 	switch tx.GetType() {
 	case common.TxRewardType:
 		valid, err := tx.ValidateTxSalary(transactionStateDB)

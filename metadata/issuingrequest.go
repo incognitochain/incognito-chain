@@ -159,8 +159,8 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriev
 }
 
 func (iReq IssuingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if len(iReq.ReceiverAddress.Pk) == 0 {
-		return false, false, NewMetadataTxError(IssuingRequestValidateSanityDataError, errors.New("Wrong request info's receiver address"))
+	if _, err := AssertPaymentAddressAndTxVersion(iReq, tx.GetVersion()); err != nil {
+		return false, false, err
 	}
 	if iReq.DepositedAmount == 0 {
 		return false, false, errors.New("Wrong request info's deposited amount")
