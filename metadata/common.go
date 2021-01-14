@@ -2,6 +2,9 @@ package metadata
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -177,4 +180,36 @@ func HasBridgeInstructions(instructions [][]string) bool {
 		}
 	}
 	return false
+}
+
+//Checks if a string payment address is supported by the underlying transaction.
+func AssertPaymentAddressAndTxVersion(paymentAddress interface{}, version int8) (privacy.PaymentAddress, error) {
+	var addr privacy.PaymentAddress
+	var ok bool
+	//try to parse the payment address
+	if addr, ok = paymentAddress.(privacy.PaymentAddress); !ok {
+		addrStr, ok := paymentAddress.(string)
+		if !ok {
+			return privacy.PaymentAddress{}, errors.New(fmt.Sprintf("cannot parse payment address - %v: Not a payment address or string address (txversion %v)", paymentAddress, version))
+		}
+		keyWallet, err := wallet.Base58CheckDeserialize(addrStr)
+		if err != nil {
+			return privacy.PaymentAddress{}, err
+		}
+		addr = keyWallet.KeySet.PaymentAddress
+	}
+
+	//Always check public spend and public view keys
+	if addr.GetPublicSpend() == nil || addr.GetPublicView() == nil {
+		return privacy.PaymentAddress{}, errors.New("PublicSpend or PublicView not found")
+	}
+
+	//If tx is in version 2, PublicOTAKey must not be nil
+	if version == 2 {
+		if addr.GetOTAPublicKey() == nil {
+			return privacy.PaymentAddress{}, errors.New("PublicOTAKey not found")
+		}
+	}
+
+	return addr, nil
 }
