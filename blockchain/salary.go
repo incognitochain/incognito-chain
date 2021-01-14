@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -316,15 +317,20 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 	if err != nil {
 		return nil, err
 	}
-	return blockchain.InitTxSalaryByCoinID(
-		&requestDetail.PaymentAddress,
-		amount,
-		blkProducerPrivateKey,
-		view.GetCopiedTransactionStateDB(),
-		blockchain.GetBeaconBestState().GetBeaconFeatureStateDB(),
-		responseMeta,
-		requestDetail.TokenID,
-		common.GetShardIDFromLastByte(requestDetail.PaymentAddress.Pk[common.PublicKeySize-1]))
+	txParam := transaction.TxSalaryOutputParams{Amount: amount, ReceiverAddress: &requestDetail.PaymentAddress, TokenID: &requestDetail.TokenID}
+	makeMD := func (c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil{
+			responseMeta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return responseMeta
+	}
+
+	salaryTx, err := txParam.BuildTxSalary(blkProducerPrivateKey, view.GetCopiedTransactionStateDB(), makeMD)
+	if err != nil {
+		return nil, errors.Errorf("cannot init salary tx. Error %v", err)
+	}
+	salaryTx.SetType(common.TxRewardType)
+	return salaryTx, nil
 }
 
 // mapPlusMap(src, dst): dst = dst + src
