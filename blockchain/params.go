@@ -76,6 +76,7 @@ type Params struct {
 	ReplaceStakingTxHeight           uint64
 	ETHRemoveBridgeSigEpoch          uint64
 	BCHeightBreakPointNewZKP         uint64
+	BCHeightBreakPointPrivacyV2      uint64
 }
 
 type GenesisParams struct {
@@ -154,7 +155,7 @@ func SetupParam() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		ConsensusV2Epoch:               16930,
+		ConsensusV2Epoch:               0,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
@@ -184,6 +185,7 @@ func SetupParam() {
 		IsBackup:                  false,
 		PreloadAddress:            "",
 		BCHeightBreakPointNewZKP:  2300000, //TODO: change this value when deployed testnet
+		BCHeightBreakPointPrivacyV2:  30, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:   21920,
 	}
 	// END TESTNET
@@ -238,7 +240,7 @@ func SetupParam() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
-		ConsensusV2Epoch:               1e9,
+		ConsensusV2Epoch:               0,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
 		BTCRelayingHeaderChainID:       Testnet2BTCChainID,
@@ -268,6 +270,7 @@ func SetupParam() {
 		IsBackup:                  false,
 		PreloadAddress:            "",
 		BCHeightBreakPointNewZKP:  403222, //TODO: change this value when deployed testnet2
+		BCHeightBreakPointPrivacyV2:  30, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:   2085,
 	}
 	// END TESTNET-2
@@ -351,6 +354,7 @@ func SetupParam() {
 		IsBackup:                  false,
 		PreloadAddress:            "",
 		BCHeightBreakPointNewZKP:  737450,
+		BCHeightBreakPointPrivacyV2:  1000000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:   1973,
 	}
 	if IsTestNet {
