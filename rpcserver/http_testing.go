@@ -3,11 +3,12 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"io/ioutil"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -124,6 +125,40 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		"rewardReceivers":  tempRewardReceiver,
 		"autoStaking":      autoStaking,
 		"stakingTx":        tempStakingTx,
+	}, nil
+}
+
+func (httpServer *HttpServer) handleGetCommitteeStateByShard(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	shardID := uint64(arrayParams[0].(float64))
+	tempHash := arrayParams[1].(string)
+
+	hash, err := common.Hash{}.NewHashFromStr(tempHash)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	shardRootHash, err := blockchain.GetShardRootsHashByBlockHash(
+		httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID)),
+		byte(shardID),
+		*hash,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID))))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	committees := statedb.GetOneShardCommittee(stateDB, byte(shardID))
+	substitutes := statedb.GetOneShardSubstituteValidator(stateDB, byte(shardID))
+
+	return map[string]interface{}{
+		"root":       shardRootHash.ConsensusStateDBRootHash,
+		"committee":  committees,
+		"substitute": substitutes,
 	}, nil
 }
 
