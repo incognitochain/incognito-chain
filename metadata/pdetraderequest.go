@@ -7,8 +7,6 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
 )
@@ -86,20 +84,8 @@ func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shar
 		return true, true, nil
 	}
 
-	if len(pc.TxRandomStr) > 0 {
-		_, _, err := coin.ParseOTAInfoFromString(pc.TraderAddressStr, pc.TxRandomStr)
-		if err != nil {
-			return false, false, err
-		}
-	} else {
-		keyWallet, err := wallet.Base58CheckDeserialize(pc.TraderAddressStr)
-		if err != nil {
-			return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TraderAddressStr incorrect"))
-		}
-		traderAddr := keyWallet.KeySet.PaymentAddress
-		if len(traderAddr.Pk) == 0 {
-			return false, false, errors.New("Wrong request info's trader address")
-		}
+	if _, err := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr); err != nil {
+		return false, false, err
 	}
 
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()

@@ -9,7 +9,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // PDEWithdrawalRequest - privacy dex withdrawal request
@@ -66,16 +65,12 @@ func (pc PDEWithdrawalRequest) ValidateTxWithBlockChain(tx Transaction, chainRet
 }
 
 func (pc PDEWithdrawalRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	keyWallet, err := wallet.Base58CheckDeserialize(pc.WithdrawerAddressStr)
+	addr, err := AssertPaymentAddressAndTxVersion(pc.WithdrawerAddressStr, tx.GetVersion())
 	if err != nil {
 		return false, false, NewMetadataTxError(PDEWithdrawalRequestFromMapError, errors.New("WithdrawerAddressStr incorrect"))
 	}
-	withdrawerAddr := keyWallet.KeySet.PaymentAddress
-	if len(withdrawerAddr.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's withdrawer address")
-	}
 
-	if ok, err := tx.CheckAuthorizedSender(withdrawerAddr.Pk); err != nil || !ok {
+	if ok, err := tx.CheckAuthorizedSender(addr.Pk); err != nil || !ok {
 		fmt.Println("Check authorized sender fail:", ok, err)
 		return false, false, errors.New("WithdrawerAddr unauthorized")
 	}

@@ -69,8 +69,8 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
 		return false, false, err
 	}
-	if len(bReq.BurnerAddress.Pk) == 0 {
-		return false, false, errors.New("wrong request info's burner address")
+	if _, err := AssertPaymentAddressAndTxVersion(bReq.BurnerAddress, tx.GetVersion()); err != nil {
+		return false, false, err
 	}
 	if bReq.BurningAmount == 0 {
 		return false, false, errors.New("wrong request info's burned amount")

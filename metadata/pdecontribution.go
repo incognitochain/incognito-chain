@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // PDEContribution - privacy dex contribution
@@ -108,14 +107,8 @@ func (pc PDEContribution) ValidateSanityData(chainRetriever ChainRetriever, shar
 		return false, false, errors.New("PDE contribution pair id should not be empty.")
 	}
 
-	keyWallet, err := wallet.Base58CheckDeserialize(pc.ContributorAddressStr)
-	if err != nil {
-		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ContributorAddressStr incorrect"))
-	}
-	contributorAddr := keyWallet.KeySet.PaymentAddress
-
-	if len(contributorAddr.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's contributed address")
+	if _, err := AssertPaymentAddressAndTxVersion(pc.ContributorAddressStr, tx.GetVersion()); err != nil {
+		return false, false, err
 	}
 
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()

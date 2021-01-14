@@ -66,8 +66,8 @@ func (cReq ContractingRequest) ValidateSanityData(chainRetriever ChainRetriever,
 	if cReq.Type != ContractingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
 	}
-	if len(cReq.BurnerAddress.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's burner address")
+	if _, err := AssertPaymentAddressAndTxVersion(cReq.BurnerAddress, tx.GetVersion()); err != nil {
+		return false, false, err
 	}
 
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
