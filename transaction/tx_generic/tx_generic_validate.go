@@ -173,6 +173,7 @@ func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetrie
 		if tx.GetVersion() <= 1{
 			if chainRetriever != nil {
 				additionalData["isNewZKP"] = chainRetriever.IsAfterNewZKPCheckPoint(beaconHeight)
+				additionalData["v2Only"] = chainRetriever.IsAfterPrivacyV2CheckPoint(beaconHeight)
 			}
 			sigPubKey, err :=  new(operation.Point).FromBytesS(tx.GetSigPubKey())
 			if err != nil {

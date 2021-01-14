@@ -334,6 +334,7 @@ func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestSta
 	boolParams["isNewTransaction"] = false
 	boolParams["isBatch"] = true
 	boolParams["isNewZKP"] = tp.config.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
+	boolParams["v2Only"] = tp.config.BlockChain.IsAfterPrivacyV2CheckPoint(uint64(beaconHeight))
 
 	ok, err, _ := batch.Validate(shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), boolParams)
 	if err != nil {
@@ -582,6 +583,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 		boolParams["hasPrivacy"] = tx.IsPrivacy()
 		boolParams["isNewTransaction"] = isNewTransaction
 		boolParams["isNewZKP"] = tp.config.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
+		boolParams["v2Only"] = tp.config.BlockChain.IsAfterPrivacyV2CheckPoint(uint64(beaconHeight))
 		validated, errValidateTxByItself := tx.ValidateTxByItself(boolParams, shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, nil, nil)
 		if !validated {
 			return NewMempoolTxError(RejectInvalidTx, errValidateTxByItself)

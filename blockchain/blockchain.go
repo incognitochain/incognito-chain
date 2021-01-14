@@ -787,6 +787,14 @@ func (blockchain *BlockChain) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool 
 	return beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP
 }
 
+func (blockchain *BlockChain) IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bool {
+	if beaconHeight == 0 {
+		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
+	}
+
+	return beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointPrivacyV2
+}
+
 func (s *BlockChain) GetChainParams() *Params {
 	return s.config.ChainParams
 }

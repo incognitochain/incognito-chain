@@ -76,6 +76,7 @@ type ChainRetriever interface {
 	IsAfterNewZKPCheckPoint(beaconHeight uint64) bool
 	GetSupportedCollateralTokenIDs(beaconHeight uint64) []string
 	GetPortalETHContractAddrStr() string
+	IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bool
 }
 
 type BeaconViewRetriever interface {
