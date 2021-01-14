@@ -568,7 +568,7 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 	tx.Proof = proof
 
 	publicKeyBytes := otaCoin.GetPublicKey().ToBytesS()
-	tx.PubKeyLastByteSender = publicKeyBytes[len(publicKeyBytes)-1]
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
 
 	// signOnMessage Tx using ver1 schnorr
 	tx.SetPrivateKey(*privateKey)

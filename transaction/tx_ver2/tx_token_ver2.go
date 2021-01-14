@@ -53,7 +53,7 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx {
 			Type:                 txPRV.Type,
 			LockTime:             txPRV.LockTime,
 			Fee:                  0,
-			PubKeyLastByteSender: txPRV.PubKeyLastByteSender,
+			PubKeyLastByteSender: common.GetShardIDFromLastByte(txPRV.PubKeyLastByteSender),
 			Metadata:             nil,
 		},
 	}

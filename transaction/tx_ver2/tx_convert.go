@@ -112,7 +112,7 @@ func initializeTxConversion(tx *Tx, params *TxConvertVer1ToVer2InitParams) error
 	tx.Version = utils.TxConversionVersion12Number
 	tx.Type = common.TxConversionType
 	tx.Metadata = params.metaData
-	tx.PubKeyLastByteSender = senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1])
 
 	if tx.LockTime == 0 {
 		tx.LockTime = time.Now().Unix()

@@ -223,7 +223,7 @@ func (tx *Tx) initializePaymentWitnessParam(params *tx_generic.TxPrivacyInitPara
 		PrivateKey:              new(privacy.Scalar).FromBytesS(*params.SenderSK),
 		InputCoins:              params.InputCoins,
 		OutputCoins:             outputCoins,
-		PublicKeyLastByteSender: tx.PubKeyLastByteSender,
+		PublicKeyLastByteSender: common.GetShardIDFromLastByte(tx.PubKeyLastByteSender),
 		Commitments:             commitmentProving,
 		CommitmentIndices:       commitmentIndexs,
 		MyCommitmentIndices:     myCommitmentIndexs,
@@ -626,7 +626,7 @@ func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, 
 		outputCoinsAsGeneric[i] = tempOutputCoin[i]
 	}
 	tx.Proof.SetOutputCoins(outputCoinsAsGeneric)
-	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(receiverAddr.Pk[len(receiverAddr.Pk)-1])
 
 	// sign Tx
 	tx.SigPubKey = receiverAddr.Pk

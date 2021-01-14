@@ -98,7 +98,7 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 			temp.Proof.SetOutputCoins(outputCoinsAsGeneric)
 
 			// get last byte
-			temp.PubKeyLastByteSender = params.TokenParams.Receiver[0].PaymentAddress.Pk[len(params.TokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			temp.PubKeyLastByteSender = common.GetShardIDFromLastByte(params.TokenParams.Receiver[0].PaymentAddress.Pk[len(params.TokenParams.Receiver[0].PaymentAddress.Pk)-1])
 
 			// signOnMessage Tx
 			temp.SigPubKey = params.TokenParams.Receiver[0].PaymentAddress.Pk

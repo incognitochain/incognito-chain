@@ -165,7 +165,7 @@ func (tx *TxBase) InitializeTxAndParams(params *TxPrivacyInitParams) error {
 	tx.Fee = params.Fee
 	tx.Type = common.TxNormalType
 	tx.Metadata = params.MetaData
-	tx.PubKeyLastByteSender = senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1]
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(senderKeySet.PaymentAddress.Pk[len(senderKeySet.PaymentAddress.Pk)-1])
 
 	if tx.Version, err = GetTxVersionFromCoins(params.InputCoins); err != nil {
 		return err
