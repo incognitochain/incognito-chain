@@ -84,7 +84,7 @@ func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shar
 		return true, true, nil
 	}
 
-	if _, err := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr); err != nil {
+	if _, err, _ := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr); err != nil {
 		return false, false, err
 	}
 
