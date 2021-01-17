@@ -125,13 +125,12 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 
-	rewardReceiverAddr, err := AssertPaymentAddressAndTxVersion(stakingMetadata.RewardReceiverPaymentAddress, tx.GetVersion())
-	if err != nil {
-		return false, false, errors.New(fmt.Sprintf("invalid reward receiver address: %v", err))
+	if _, err := AssertPaymentAddressAndTxVersion(stakingMetadata.FunderPaymentAddress, tx.GetVersion()); err != nil {
+		return false, false, errors.New(fmt.Sprintf("invalid funder address: %v", err))
 	}
 
-	if _, err := AssertPaymentAddressAndTxVersion(stakingMetadata.FunderPaymentAddress, tx.GetVersion()); err != nil {
-		return false, false, errors.New(fmt.Sprintf("invalid reward funder address: %v", err))
+	if _, err := AssertPaymentAddressAndTxVersion(stakingMetadata.RewardReceiverPaymentAddress, tx.GetVersion()); err != nil {
+		return false, false, errors.New(fmt.Sprintf("invalid reward receiver address: %v", err))
 	}
 
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
@@ -141,11 +140,6 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 	}
 	if !CommitteePublicKey.CheckSanityData() {
 		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
-	}
-
-	if !bytes.Equal(CommitteePublicKey.IncPubKey, rewardReceiverAddr.Pk){
-		Logger.log.Infof("BUGLOG IncPubkey != funder.PK: %v != %v\n", CommitteePublicKey.IncPubKey, rewardReceiverAddr.Pk)
-		return false, false, errors.New("IncPubkey must equal the public key of the funder")
 	}
 
 	return true, true, nil

@@ -159,7 +159,7 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriev
 }
 
 func (iReq IssuingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if _, err := AssertPaymentAddressAndTxVersion(iReq, tx.GetVersion()); err != nil {
+	if _, err := AssertPaymentAddressAndTxVersion(iReq.ReceiverAddress, tx.GetVersion()); err != nil {
 		return false, false, err
 	}
 	if iReq.DepositedAmount == 0 {
