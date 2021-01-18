@@ -410,14 +410,13 @@ func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 	[]incognitokey.CommitteePublicKey,
 	[]incognitokey.CommitteePublicKey,
 	map[byte][]incognitokey.CommitteePublicKey,
-	map[string]uint64,
 	map[string]privacy.PaymentAddress,
 	map[string]bool,
 	map[string]common.Hash,
 ) {
 	tempCurrentValidator, tempSubstituteValidator, tempNextEpochShardCandidate,
 		tempCurrentEpochShardCandidate, tempNextEpochBeaconCandidate, tempCurrentEpochBeaconCandidate,
-		tempSyncingValidators, terms,
+		tempSyncingValidators,
 		rewardReceivers, autoStaking, stakingTx := stateDB.getAllCommitteeState(shardIDs)
 	currentValidator := make(map[int][]incognitokey.CommitteePublicKey)
 	substituteValidator := make(map[int][]incognitokey.CommitteePublicKey)
@@ -492,7 +491,7 @@ func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 		currentEpochBeaconCandidate = append(currentEpochBeaconCandidate, candidate.CommitteePublicKey())
 	}
 
-	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, terms, rewardReceivers, autoStaking, stakingTx
+	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceivers, autoStaking, stakingTx
 }
 
 func GetAllCommitteeState(stateDB *StateDB, shardIDs []int) map[int][]*CommitteeState {
@@ -615,56 +614,6 @@ func DeleteBeaconSubstituteValidator(stateDB *StateDB, beaconSubstitute []incogn
 		return NewStatedbError(DeleteBeaconSubstituteValidatorError, err)
 	}
 	return nil
-}
-
-//DeleteCommitteeTerms :
-func DeleteCommitteeTerms(stateDB *StateDB, termsRemoved []string) error {
-	keys, err := incognitokey.CommitteeBase58KeyListToStruct(termsRemoved)
-	if err != nil {
-		return err
-	}
-	return deleteCommitteeTerms(stateDB, keys)
-}
-
-func deleteCommitteeTerms(stateDB *StateDB, stakers []incognitokey.CommitteePublicKey) error {
-	for _, staker := range stakers {
-		keyBytes, err := staker.RawBytes()
-		if err != nil {
-			return err
-		}
-		key := GetCommitteeTermKey(keyBytes)
-		stateDB.MarkDeleteStateObject(StakerObjectType, key)
-	}
-	return nil
-}
-
-func storeCommitteeTerm(
-	stateDB *StateDB,
-	committees []incognitokey.CommitteePublicKey,
-	terms map[string]uint64,
-) error {
-	for _, committee := range committees {
-		keyBytes, err := committee.RawBytes()
-		if err != nil {
-			return err
-		}
-		key := GetStakerInfoKey(keyBytes)
-		committeeString, err := committee.ToBase58()
-		value := NewCommitteeTermWithValue(terms[committeeString])
-		err = stateDB.SetStateObject(StakerObjectType, key, value)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func StoreCommitteeTerm(
-	stateDB *StateDB,
-	committees []incognitokey.CommitteePublicKey,
-	terms map[string]uint64,
-) error {
-	return storeCommitteeTerm(stateDB, committees, terms)
 }
 
 func storeStakerInfo(

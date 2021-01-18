@@ -424,21 +424,6 @@ func (stateDB *StateDB) getStakerInfo(key common.Hash) (*StakerInfo, bool, error
 	return NewStakerInfo(), false, nil
 }
 
-func (stateDB *StateDB) getCommitteeTerm(key common.Hash) (*CommitteeTerm, bool, error) {
-	committeeTermObject, err := stateDB.getStateObject(StakerObjectType, key)
-	if err != nil {
-		return nil, false, err
-	}
-	if committeeTermObject != nil {
-		res, ok := committeeTermObject.GetValue().(*CommitteeTerm)
-		if !ok {
-			err = fmt.Errorf("Can not parse staker info")
-		}
-		return res, true, err
-	}
-	return NewCommitteeTerm(), false, nil
-}
-
 func (stateDB *StateDB) getStakerObject(key common.Hash) (*StateObject, bool, error) {
 	stakerObject, err := stateDB.getStateObject(StakerObjectType, key)
 	if err != nil {
@@ -546,10 +531,9 @@ func (stateDB *StateDB) getByShardIDSubstituteValidatorState(shardID int) []*Com
 // return params #3: next epoch candidate
 // return params #4: current epoch candidate
 // return params #5: syncing validators
-// return params #6: terms of validators
-// return params #7: reward receiver map
-// return params #8: auto staking map
-// return params #9: staking tx
+// return params #6: reward receiver map
+// return params #7: auto staking map
+// return params #8: staking tx
 func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	currentValidator map[int][]*CommitteeState,
 	substituteValidator map[int][]*CommitteeState,
@@ -558,7 +542,6 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	nextEpochBeaconCandidate []*CommitteeState,
 	currentEpochBeaconCandidate []*CommitteeState,
 	syncingValidators map[byte][]*CommitteeState,
-	terms map[string]uint64,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	autoStake map[string]bool,
 	stakingTx map[string]common.Hash,
@@ -573,7 +556,6 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	autoStake = make(map[string]bool)
 	stakingTx = map[string]common.Hash{}
 	syncingValidators = make(map[byte][]*CommitteeState)
-	terms = map[string]uint64{}
 	for _, shardID := range ids {
 		// Current Validator
 		prefixCurrentValidator := GetCommitteePrefixWithRole(CurrentValidator, shardID)
@@ -598,15 +580,6 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			autoStake[committeePublicKeyStr] = s.autoStaking
 			stakingTx[committeePublicKeyStr] = s.txStakingID
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
-			term, has, err := stateDB.getCommitteeTerm(GetCommitteeTermKey(cPKBytes))
-			if err != nil {
-				panic(err)
-			}
-			if !has || term == nil {
-				res, err2 := v.committeePublicKey.ToBase58()
-				panic(errors.Errorf("Can not found term for this committee %+v, %+v", res, err2))
-			}
-			terms[committeePublicKeyStr] = term.value
 		}
 		currentValidator[shardID] = tempCurrentValidator
 		// Substitute Validator
@@ -631,15 +604,6 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			autoStake[committeePublicKeyStr] = s.autoStaking
 			stakingTx[committeePublicKeyStr] = s.txStakingID
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
-			term, has, err := stateDB.getCommitteeTerm(GetCommitteeTermKey(cPKBytes))
-			if err != nil {
-				panic(err)
-			}
-			if !has || term == nil {
-				res, err2 := v.committeePublicKey.ToBase58()
-				panic(errors.Errorf("Can not found term for this committee %+v, %+v", res, err2))
-			}
-			terms[committeePublicKeyStr] = term.value
 		}
 		substituteValidator[shardID] = tempSubstituteValidator
 
@@ -665,15 +629,6 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			autoStake[committeePublicKeyStr] = s.autoStaking
 			stakingTx[committeePublicKeyStr] = s.txStakingID
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
-			term, has, err := stateDB.getCommitteeTerm(GetCommitteeTermKey(cPKBytes))
-			if err != nil {
-				panic(err)
-			}
-			if !has || term == nil {
-				res, err2 := v.committeePublicKey.ToBase58()
-				panic(errors.Errorf("Can not found term for this committee %+v, %+v", res, err2))
-			}
-			terms[committeePublicKeyStr] = term.value
 		}
 		syncingValidators[byte(shardID)] = tempSyncingValidators
 	}
@@ -698,15 +653,6 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		autoStake[committeePublicKeyStr] = s.autoStaking
 		stakingTx[committeePublicKeyStr] = s.txStakingID
 		rewardReceiver[incPublicKeyStr] = s.rewardReceiver
-		term, has, err := stateDB.getCommitteeTerm(GetCommitteeTermKey(cPKBytes))
-		if err != nil {
-			panic(err)
-		}
-		if !has || term == nil {
-			res, err2 := v.committeePublicKey.ToBase58()
-			panic(errors.Errorf("Can not found term for this committee %+v, %+v", res, err2))
-		}
-		terms[committeePublicKeyStr] = term.value
 	}
 	// current epoch candidate
 	prefixCurrentEpochCandidate := GetCommitteePrefixWithRole(CurrentEpochShardCandidate, -2)
@@ -729,15 +675,6 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		autoStake[committeePublicKeyStr] = s.autoStaking
 		stakingTx[committeePublicKeyStr] = s.txStakingID
 		rewardReceiver[incPublicKeyStr] = s.rewardReceiver
-		term, has, err := stateDB.getCommitteeTerm(GetCommitteeTermKey(cPKBytes))
-		if err != nil {
-			panic(err)
-		}
-		if !has || term == nil {
-			res, err2 := v.committeePublicKey.ToBase58()
-			panic(errors.Errorf("Can not found term for this committee %+v, %+v", res, err2))
-		}
-		terms[committeePublicKeyStr] = term.value
 	}
 
 	// next epoch candidate
@@ -761,15 +698,6 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		autoStake[committeePublicKeyStr] = s.autoStaking
 		stakingTx[committeePublicKeyStr] = s.txStakingID
 		rewardReceiver[incPublicKeyStr] = s.rewardReceiver
-		term, has, err := stateDB.getCommitteeTerm(GetCommitteeTermKey(cPKBytes))
-		if err != nil {
-			panic(err)
-		}
-		if !has || term == nil {
-			res, err2 := v.committeePublicKey.ToBase58()
-			panic(errors.Errorf("Can not found term for this committee %+v, %+v", res, err2))
-		}
-		terms[committeePublicKeyStr] = term.value
 	}
 	// current epoch candidate
 	prefixCurrentEpochBeaconCandidate := GetCommitteePrefixWithRole(CurrentEpochBeaconCandidate, -2)
@@ -792,18 +720,9 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		autoStake[pKey] = stakerInfo.autoStaking
 		stakingTx[pKey] = stakerInfo.txStakingID
 		rewardReceiver[incKey] = stakerInfo.rewardReceiver
-		term, has, err := stateDB.getCommitteeTerm(GetCommitteeTermKey(cPKBytes))
-		if err != nil {
-			panic(err)
-		}
-		if !has || term == nil {
-			res, err2 := v.committeePublicKey.ToBase58()
-			panic(errors.Errorf("Can not found term for this committee %+v, %+v", res, err2))
-		}
-		terms[pKey] = term.value
 	}
 
-	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, terms, rewardReceiver, autoStake, stakingTx
+	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceiver, autoStake, stakingTx
 }
 
 func (stateDB *StateDB) IterateWithStaker(prefix []byte) []*StakerInfo {

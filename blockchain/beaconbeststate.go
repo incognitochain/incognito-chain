@@ -712,7 +712,7 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 		shardIDs = append(shardIDs, i)
 	}
 	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate,
-		_, _, syncingValidators, terms,
+		_, _, syncingValidators,
 		rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
 	beaconCommittee := currentValidator[statedb.BeaconChainID]
 	delete(currentValidator, statedb.BeaconChainID)
@@ -782,7 +782,7 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 			dbWarper := statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase())
 			consensusSnapshotTimeStateDB, _ := statedb.NewWithPrefixTrie(tempRootHash.ConsensusStateDBRootHash, dbWarper)
 			snapshotCurrentValidator, snapshotSubstituteValidator, snapshotNextEpochShardCandidate,
-				_, _, _, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
+				_, _, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
 			snapshotShardCommonPool := snapshotNextEpochShardCandidate
 			snapshotShardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 			snapshotShardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
@@ -834,7 +834,6 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 					rewardReceivers,
 					stakingTx,
 					syncingValidators,
-					terms,
 					swapRule,
 				)
 				committeeEngine = committeestate.NewBeaconCommitteeEngineV3(
@@ -957,21 +956,6 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngine(bc *BlockChain) {
 	} else {
 		if version == committeestate.SLASHING_VERSION {
 			numberOfAssignedCandidates = beaconBestState.beaconCommitteeEngine.NumberOfAssignedCandidates()
-			terms := map[string]uint64{}
-
-			for _, committees := range shardCommittee {
-				for _, committee := range committees {
-					key, _ := committee.ToBase58()
-					terms[key] = beaconBestState.BeaconHeight
-				}
-			}
-			for _, validators := range shardSubstitute {
-				for _, validator := range validators {
-					key, _ := validator.ToBase58()
-					terms[key] = beaconBestState.BeaconHeight
-				}
-			}
-
 			committeeState := committeestate.NewBeaconCommitteeStateV3WithValue(
 				beaconCommittee,
 				shardCommittee,
@@ -982,7 +966,6 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngine(bc *BlockChain) {
 				rewardReceiver,
 				stakingTx,
 				map[byte][]incognitokey.CommitteePublicKey{},
-				terms,
 				swapRule,
 			)
 			committeeEngine = committeestate.NewBeaconCommitteeEngineV3(

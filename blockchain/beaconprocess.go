@@ -730,10 +730,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteCommitteeTerms(newBestState.consensusStateDB, committeeChange.TermsRemoved)
-	if err != nil {
-		return err
-	}
 	err = statedb.StoreCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateAdded)
 	if err != nil {
 		return err
@@ -1084,15 +1080,5 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			return err
 		}
 	}
-
-	termsAddedCommittees, err := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.TermsAdded)
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreCommitteeTerm(beaconBestState.consensusStateDB, termsAddedCommittees, beaconBestState.beaconCommitteeEngine.Terms())
-	if err != nil {
-		return err
-	}
-
 	return nil
 }

@@ -10,14 +10,12 @@ import (
 type BeaconCommitteeStateV3 struct {
 	beaconCommitteeStateSlashingBase
 	syncPool map[byte][]incognitokey.CommitteePublicKey
-	terms    map[string]uint64
 }
 
 func NewBeaconCommitteeStateV3() *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
 		beaconCommitteeStateSlashingBase: *NewBeaconCommitteeStateSlashingBase(),
 		syncPool:                         make(map[byte][]incognitokey.CommitteePublicKey),
-		terms:                            make(map[string]uint64),
 	}
 }
 
@@ -31,7 +29,6 @@ func NewBeaconCommitteeStateV3WithValue(
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
 	syncPool map[byte][]incognitokey.CommitteePublicKey,
-	terms map[string]uint64,
 	swapRule SwapRule,
 ) *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
@@ -40,7 +37,6 @@ func NewBeaconCommitteeStateV3WithValue(
 			shardCommonPool, numberOfAssignedCandidates, swapRule,
 		),
 		syncPool: syncPool,
-		terms:    terms,
 	}
 }
 
@@ -52,16 +48,11 @@ func (b *BeaconCommitteeStateV3) cloneFrom(fromB BeaconCommitteeStateV3) {
 		b.syncPool[i] = make([]incognitokey.CommitteePublicKey, len(v))
 		copy(b.syncPool[i], v)
 	}
-
-	for i, v := range fromB.terms {
-		b.terms[i] = v
-	}
 }
 
 func (b *BeaconCommitteeStateV3) reset() {
 	b.beaconCommitteeStateSlashingBase.reset()
 	b.syncPool = map[byte][]incognitokey.CommitteePublicKey{}
-	b.terms = map[string]uint64{}
 }
 
 func (b *BeaconCommitteeStateV3) clone() *BeaconCommitteeStateV3 {
@@ -71,10 +62,6 @@ func (b *BeaconCommitteeStateV3) clone() *BeaconCommitteeStateV3 {
 	for i, v := range b.syncPool {
 		newB.syncPool[i] = make([]incognitokey.CommitteePublicKey, len(v))
 		copy(newB.syncPool[i], v)
-	}
-
-	for i, v := range b.terms {
-		newB.terms[i] = v
 	}
 
 	return newB
@@ -100,10 +87,6 @@ func (b *BeaconCommitteeStateV3) assignToSync(
 	tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(candidates)
 	committeeChange.SyncingPoolAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
 	b.syncPool[shardID] = append(b.syncPool[shardID], tempCandidateStructs...)
-	committeeChange.TermsAdded = append(committeeChange.TermsAdded, candidates...)
-	for _, candidate := range candidates {
-		b.terms[candidate] = beaconHeight
-	}
 	return committeeChange
 }
 
@@ -115,14 +98,10 @@ func (b *BeaconCommitteeStateV3) assignAfterNormalSwapOut(
 	assignedCandidates := b.getAssignCandidates(candidates, rand, activeShards, oldState)
 	for shardID, tempCandidates := range assignedCandidates {
 		if shardID == oldShardID {
-			committeeChange.TermsAdded = append(committeeChange.TermsAdded, tempCandidates...)
 			newCommitteeChange = b.assignToPending(tempCandidates, rand, shardID, newCommitteeChange)
 		} else {
 			newCommitteeChange = b.assignToSync(shardID, tempCandidates, newCommitteeChange, beaconHeight)
 		}
-	}
-	for _, candidate := range candidates {
-		b.terms[candidate] = beaconHeight
 	}
 	return newCommitteeChange
 }
@@ -165,10 +144,6 @@ func (b *BeaconCommitteeStateV3) processAssignInstruction(
 		env.RandomNumber,
 		byte(assignInstruction.ChainID),
 		newCommitteeChange)
-	committeeChange.TermsAdded = append(committeeChange.TermsAdded, candidates...)
-	for _, candidate := range candidates {
-		b.terms[candidate] = env.BeaconHeight
-	}
 
 	return newCommitteeChange, returnStakingInstruction, nil
 }
@@ -194,10 +169,6 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 		err := key.FromBase58(candidate)
 		if err != nil {
 			return newCommitteeChange, returnStakingInstruction, err
-		}
-		if env.BeaconHeight-b.Terms()[candidate] < committeeTerm {
-			backToPendingCandidates = append(backToPendingCandidates, candidate)
-			candidates = append(candidates[:i], candidates[i+1:]...)
 		}
 	}
 	newCommitteeChange = b.assignToPending(backToPendingCandidates, env.RandomNumber, env.ShardID, newCommitteeChange)
@@ -261,9 +232,4 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	newCommitteeChange.SlashingCommittee[shardID] = append(committeeChange.SlashingCommittee[shardID], slashingCommittees...)
 
 	return newCommitteeChange, returnStakingInstruction, nil
-}
-
-//Terms only use this function with read purpose
-func (b *BeaconCommitteeStateV3) Terms() map[string]uint64 {
-	return b.terms
 }

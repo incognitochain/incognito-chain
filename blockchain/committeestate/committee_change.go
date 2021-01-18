@@ -29,8 +29,6 @@ type CommitteeChange struct {
 	StopAutoStake                      []string
 	RemovedStaker                      []string
 	SlashingCommittee                  map[byte][]string
-	TermsRemoved                       []string
-	TermsAdded                         []string
 }
 
 //GetStakerKeys ...

@@ -160,10 +160,6 @@ func (b beaconCommitteeStateBase) ShardCommonPool() []incognitokey.CommitteePubl
 	panic("Implement this function")
 }
 
-func (b beaconCommitteeStateBase) Terms() map[string]uint64 {
-	return map[string]uint64{}
-}
-
 func (b beaconCommitteeStateBase) AutoStake() map[string]bool {
 	return b.autoStake
 }

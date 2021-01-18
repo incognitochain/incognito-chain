@@ -209,10 +209,6 @@ func (b *beaconCommitteeStateSlashingBase) removeFromState(
 	delete(b.stakingTx, committeePublicKey)
 	committeeChange.RemovedStaker = append(committeeChange.RemovedStaker, committeePublicKey)
 
-	if _, ok := oldState.Terms()[committeePublicKey]; ok {
-		committeeChange.TermsRemoved = append(committeeChange.TermsRemoved, committeePublicKey)
-	}
-	delete(newState.Terms(), committeePublicKey)
 	return committeeChange, nil
 }
 

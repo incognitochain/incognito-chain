@@ -32,7 +32,6 @@ type BeaconCommitteeState interface {
 	AllSubstituteCommittees() []string
 	SetSwapRule(SwapRule)
 	SyncPool() map[byte][]incognitokey.CommitteePublicKey
-	Terms() map[string]uint64
 }
 
 //fromB and toB need to be different from null
@@ -66,17 +65,6 @@ func cloneBeaconCommitteeStateFrom(state BeaconCommitteeState) BeaconCommitteeSt
 		res = state.(*BeaconCommitteeStateV3).clone()
 	case STATE_TEST_VERSION:
 		res = state
-	}
-	return res
-}
-
-func getTermsByState(state BeaconCommitteeState) map[string]uint64 {
-	res := map[string]uint64{}
-	switch state.Version() {
-	case SLASHING_VERSION:
-		res = state.(*BeaconCommitteeStateV2).Terms()
-	case DCS_VERSION:
-		res = state.(*BeaconCommitteeStateV3).Terms()
 	}
 	return res
 }
