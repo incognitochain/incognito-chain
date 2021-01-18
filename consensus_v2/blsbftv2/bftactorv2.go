@@ -260,8 +260,8 @@ func (e *BLSBFT_V2) Start() error {
 					}
 					bestViewHeight := bestView.GetHeight()
 					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
-					if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
-
+					// check if propose block in current time
+					if e.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) || proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
 						validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 					}
 
