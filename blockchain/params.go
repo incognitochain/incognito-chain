@@ -368,8 +368,8 @@ func SetupParam() {
 		EpochV2:                     Testnet2EpochV2,
 		EpochV2BreakPoint:           Testnet2EpochV2BreakPoint,
 		RandomTimeV2:                Testnet2RandomTimeV2,
-		PortalETHContractAddressStr: "",   // todo: update sc address
-		BCHeightBreakPointPortalV3:  8974, // todo: should update before deploying
+		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46",   // todo: update sc address
+		BCHeightBreakPointPortalV3:  1328816,
 	}
 	// END TESTNET-2
 
