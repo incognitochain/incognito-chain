@@ -153,12 +153,23 @@ func (httpServer *HttpServer) handleGetCommitteeStateByShard(params interface{},
 	}
 
 	committees := statedb.GetOneShardCommittee(stateDB, byte(shardID))
+	resCommittees := make([]string, len(committees))
+	for i := 0; i < len(resCommittees); i++ {
+		key, _ := committees[i].ToBase58()
+		resCommittees[i] = key
+	}
 	substitutes := statedb.GetOneShardSubstituteValidator(stateDB, byte(shardID))
+	resSubstitutes := make([]string, len(substitutes))
+	for i := 0; i < len(resSubstitutes); i++ {
+		key, _ := substitutes[i].ToBase58()
+		resSubstitutes[i] = key
+	}
 
 	return map[string]interface{}{
 		"root":       shardRootHash.ConsensusStateDBRootHash,
-		"committee":  committees,
-		"substitute": substitutes,
+		"shardID":    shardID,
+		"committee":  resCommittees,
+		"substitute": resSubstitutes,
 	}, nil
 }
 
