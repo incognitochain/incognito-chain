@@ -88,17 +88,20 @@ func NewPDECrossPoolTradeRequest(
 	return pdeCrossPoolTradeRequest, nil
 }
 
-func checkTraderAddress(address, txRandom string) (bool, error){
+func checkTraderAddress(address, txRandom string) (bool, error, int){
+	version := 0
 	if len(txRandom) > 0 {
+		version = 2
 		_, _, err := coin.ParseOTAInfoFromString(address, txRandom)
 		if err != nil {
-			return false, err
+			return false, err, version
 		}
 	} else {
+		version = 1
 		_, err := AssertPaymentAddressAndTxVersion(address, 1)
-		return err == nil, err
+		return err == nil, err, version
 	}
-	return true, nil
+	return true, nil, version
 }
 
 func (pc PDECrossPoolTradeRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
@@ -113,14 +116,19 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 	}
 
 	// check ota address string and tx random is valid
-	_, err1 := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr)
-	_, err2 := checkTraderAddress(pc.SubTraderAddressStr, pc.SubTxRandomStr)
-	if err1 != nil || err2 != nil {
+	_, err, ver := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr)
+	if err != nil {
 		return false, false, fmt.Errorf("trader address string or txrandom is not corrrect format")
+	}
+	if ver == 2 {
+		_, errSub, verSub := checkTraderAddress(pc.SubTraderAddressStr, pc.SubTxRandomStr)
+		if errSub != nil || verSub == 1 {
+			return false, false, fmt.Errorf("trader address string or txrandom is not corrrect format")
+		}
 	}
 
 	// check token ids
-	_, err := common.Hash{}.NewHashFromStr(pc.TokenIDToBuyStr)
+	_, err = common.Hash{}.NewHashFromStr(pc.TokenIDToBuyStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenIDToBuyStr incorrect"))
 	}
