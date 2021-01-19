@@ -212,6 +212,13 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 				chainName, chainID,
 				engine.config.Node, Logger.Log)
 		}
+	} else {
+		// Auto init version 1 if no suitable config is provided
+		if chainID == -1 {
+			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
+		} else {
+			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
+		}
 	}
 }
 

@@ -294,6 +294,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 			wantErr:          false,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(tt.args.transactions, tt.args.bc, tt.args.shardID, tt.args.shardHeight)

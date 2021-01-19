@@ -129,6 +129,51 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	}, nil
 }
 
+func (httpServer *HttpServer) handleGetCommitteeStateByShard(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	shardID := uint64(arrayParams[0].(float64))
+	tempHash := arrayParams[1].(string)
+
+	hash, err := common.Hash{}.NewHashFromStr(tempHash)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	shardRootHash, err := blockchain.GetShardRootsHashByBlockHash(
+		httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID)),
+		byte(shardID),
+		*hash,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID))))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	committees := statedb.GetOneShardCommittee(stateDB, byte(shardID))
+	resCommittees := make([]string, len(committees))
+	for i := 0; i < len(resCommittees); i++ {
+		key, _ := committees[i].ToBase58()
+		resCommittees[i] = key
+	}
+	substitutes := statedb.GetOneShardSubstituteValidator(stateDB, byte(shardID))
+	resSubstitutes := make([]string, len(substitutes))
+	for i := 0; i < len(resSubstitutes); i++ {
+		key, _ := substitutes[i].ToBase58()
+		resSubstitutes[i] = key
+	}
+
+	return map[string]interface{}{
+		"root":       shardRootHash.ConsensusStateDBRootHash,
+		"shardID":    shardID,
+		"committee":  resCommittees,
+		"substitute": resSubstitutes,
+	}, nil
+}
+
 func (httpServer *HttpServer) handleGetSlashingCommittee(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if len(arrayParams) != 1 {

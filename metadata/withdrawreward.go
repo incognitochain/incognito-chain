@@ -34,7 +34,7 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 	metadataBase := MetadataBase{
 		Type: WithDrawRewardRequestMeta,
 	}
-	requesterPaymentStr, ok := data["CustodianIncAddress"].(string)
+	requesterPaymentStr, ok := data["PaymentAddress"].(string)
 	if !ok {
 		return nil, errors.New("Invalid payment address receiver")
 	}

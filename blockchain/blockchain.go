@@ -478,14 +478,14 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			panic("Restart beacon views fail")
 		}
 	}
-	for _, view := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
-		beaconState := view.(*BeaconBestState)
-		if beaconState.missingSignatureCounter != nil {
+	for _, beaconState := range allViews {
+		if beaconState.missingSignatureCounter == nil {
 			block := beaconState.BestBlock
 			err = initMissingSignatureCounter(blockchain, beaconState, &block)
 			if err != nil {
 				return err
 			}
+			Logger.log.Infof("Init Missing Signature Counter, %+v, height %+v", beaconState.missingSignatureCounter, beaconState.BeaconHeight)
 		}
 	}
 	return nil
@@ -522,9 +522,6 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	blockchain.ShardChain[shardID].multiView.Reset()
 
 	for _, v := range allViews {
-		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
-			panic("Restart shard views fail")
-		}
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
 			fmt.Println("block ", block)
@@ -547,6 +544,10 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 				v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
 		}
 		v.shardCommitteeEngine = shardCommitteeEngine
+
+		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
+			panic("Restart shard views fail")
+		}
 	}
 	return nil
 }
