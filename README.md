@@ -10,9 +10,21 @@ That's why we work to create solutions that make privacy widely accessible and i
 
 Incognito is live. Give it a try!
 
-* Power Incognito: [Get a Node Device](https://incognito.org/) or [Host a Virtual Node](https://incognito.org/validator)
+* Power Incognito: [Get a Node Device](https://incognito.org/) or [Host a Virtual Node](https://we.incognito.org/t/how-to-host-a-virtual-node/194)
 
 * Use Incognito: Get the Incognito Wallet on [iOS](https://apps.apple.com/us/app/incognito-crypto-wallet/id1475631606?ls=1) or [Android](https://play.google.com/store/apps/details?id=com.incognito.wallet)
+
+## Github branches and running environments
+
+In Incognito’s Git version control, there are three main branches, first for core team development, second for release and third for production:
+
+development (on Testnet 1): this is a branch that developers would branch from for building feature X and create pull requests to merge into. The code on this branch is usually deployed onto Testnet 1.
+
+
+release (on Testnet 2): After finishing testing on Testnet 1, the changes from development branch would be merged into this branch then deployed onto Testnet 2. The code on this branch should be almost the same as production’s.
+
+
+production (on Mainnet): After finishing testing on Testnet 2, the changes from release branch would be merged into this branch then deployed onto Mainnet. In an emergency case, hot fixes would also be branched directly from this branch and merged into it through PR(s). The fixes would be deployed onto Mainnet and then cherry-picked into release & development branches.
 
 ## Build the code
 
@@ -25,7 +37,7 @@ go build -o incognito
 Then, run an Incognito Node
 
 ```shell
-./incognito --enablewallet --wallet "wallet" --walletpassphrase "12345678" --testnet true --discoverpeersaddress "testnet-bootnode.incognito.org:9330" --norpcauth --walletautoinit
+./incognito -n incognito --testnet false --discoverpeers --discoverpeersaddress 51.91.72.45:9330 --miningkeys "your validator key" --nodemode "auto" --datadir "/path/to/data" --listen "0.0.0.0:9334" --externaladdress "0.0.0.0:9334" --norpcauth --enablewallet --wallet "incognito" --walletpassphrase "your wallet passphrase" --walletautoinit --rpclisten "0.0.0.0:9335" --rpcwslisten "0.0.0.0:9336" --loglevel "info"
 ```
 
 ## Read the code
@@ -36,11 +48,11 @@ There is more than 1 million lines of code in the Incognito codebase. Below is a
 
 * **P2P Networking**
 
-  * **Peer Management**. Peer management handles peer-to-peer communications such as finding peers, connecting to them, sending and receiving transactions, blocks, and messages. Its code is in the [connmanager](https://github.com/incognitochain/incognito-chain/tree/master/connmanager) package and the [addrmanager](https://github.com/incognitochain/incognito-chain/tree/master/addrmanager) package.
+  * **Peer Management**. Peer management handles peer-to-peer communications such as finding peers, connecting to them, sending and receiving transactions, blocks, and messages. Its code is in the [connmanager](https://github.com/incognitochain/incognito-chain/tree/master/connmanager) package.
 
   * **NetSync**. NetSync is a mediator that receives incoming messages, parses them, and routes the messages to the right components. Its code is in [netsync](https://github.com/incognitochain/incognito-chain/tree/master/netsync) package.
 
-  * **Highway**. Highway is a new network topology design that speeds up P2P communications. It is under development under the [highway](https://github.com/incognitochain/incognito-chain/tree/highway) branch and will be merged into the master branch in November 2019.
+  * **Highway**. Highway is a new network topology design that speeds up P2P communications. Its code is in [highway](https://github.com/incognitochain/incognito-highway) repo.
 
 * **Blockchain**
 
@@ -78,9 +90,7 @@ There is more than 1 million lines of code in the Incognito codebase. Below is a
 
     * **Ethereum**. Incognito implements a trustless two-way bridge between Incognito and Ethereum to let anyone send and receive ETH & ERC20 privately. Its code is in the [bridge-eth](https://github.com/incognitochain/bridge-eth) repository.
 
-    * **Bitcoin**.  Incognito is working on a trustless two-way bridge between Incognito and Bitcoin to let anyone send and receive BTC privately. Estimated ship date: Dec 2019.
-
-    * **Cosmos**.  Incognito is exploring Cosmos and hops to build on a trustless two-way bridge between Incognito and Cosmos. Estimated ship date: March 2020.
+    * **Bitcoin**.  Incognito is working on a trustless two-way bridge between Incognito and Bitcoin to let anyone send and receive BTC privately. Here is its proposal (TBD). Estimated ship date: April 2021.
 
 * **Developer Tools**
 
