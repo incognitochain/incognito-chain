@@ -89,6 +89,7 @@ const (
 	getCrossShardBlock                         = "getcrossshardblock"
 	randomCommitments                          = "randomcommitments"
 	hasSerialNumbers                           = "hasserialnumbers"
+	hasSerialNumbersInMempool                  = "hasserialnumbersinmempool"
 	hasSnDerivators                            = "hassnderivators"
 	listSnDerivators                           = "listsnderivators"
 	listSerialNumbers                          = "listserialnumbers"

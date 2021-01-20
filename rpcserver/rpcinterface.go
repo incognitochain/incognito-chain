@@ -76,6 +76,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendStopAutoStakingTransaction: (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
 	randomCommitments:                       (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                        (*HttpServer).handleHasSerialNumbers,
+	hasSerialNumbersInMempool:               (*HttpServer).handleHasSerialNumbersInMempool,
 	hasSnDerivators:                         (*HttpServer).handleHasSnDerivators,
 	listSerialNumbers:                       (*HttpServer).handleListSerialNumbers,
 	listCommitments:                         (*HttpServer).handleListCommitments,
