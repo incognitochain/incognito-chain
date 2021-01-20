@@ -469,3 +469,16 @@ func TestPaymentAddressCompare(t *testing.T) {
 		assert.Equal(t, true, isEqual, "%v != %v\n", addrV1, addrV2)
 	}
 }
+
+func TestPaymetnAddressV1(t *testing.T){
+	initAddr := "12RqmK5woGNeBTy16ouYepSw4QEq28gsv2m81ebcPQ82GgS5S8PHEY37NU2aTacLRruFvjTqKCgffTeMDL83snTYz5zDp1MTLwjVhZS"
+
+	addrV1, err := GetPaymentAddressV1(initAddr, false)
+
+	assert.Equal(t, nil, err, "GetPaymentAddressV1 returns an error: %v\n", err)
+
+	fmt.Printf("addrV1: %v, initAddr: %v\n", addrV1, initAddr)
+
+	assert.Equal(t, initAddr, addrV1)
+
+}
