@@ -30,7 +30,7 @@ type BLSBFT_V2 struct {
 	UserKeySet   []signatureschemes2.MiningKey
 	BFTMessageCh chan wire.MessageBFT
 	isStarted    bool
-	StopCh       chan struct{}
+	destroyCh    chan struct{}
 	Logger       common.Logger
 
 	currentTime      int64
@@ -73,49 +73,46 @@ func (e *BLSBFT_V2) GetConsensusName() string {
 
 func (e *BLSBFT_V2) Stop() error {
 	if e.isStarted {
-		e.Logger.Info("stop bls-bft2 consensus for chain", e.ChainKey)
-		select {
-		case <-e.StopCh:
-			return nil
-		default:
-			close(e.StopCh)
-		}
-		e.isStarted = false
+		e.Logger.Info("stop bls-bftv2 consensus for chain", e.ChainKey)
 	}
-	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(e.ChainKey))
+	e.isStarted = false
+	return nil
 }
 
 func (e *BLSBFT_V2) Start() error {
-	if e.isStarted {
-		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(e.ChainKey))
+	if !e.isStarted {
+		e.Logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
 	}
-
 	e.isStarted = true
-	e.StopCh = make(chan struct{})
-	e.ProposeMessageCh = make(chan BFTPropose)
-	e.VoteMessageCh = make(chan BFTVote)
-	e.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
-	e.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
-	e.voteHistory = make(map[uint64]types.BlockInterface)
-	var err error
-	e.proposeHistory, err = lru.New(1000)
-	if err != nil {
-		panic(err)
-	}
+	return nil
+}
 
-	//init view maps
-	ticker := time.Tick(200 * time.Millisecond)
-	e.Logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
+func (e *BLSBFT_V2) Destroy() {
+	close(e.destroyCh)
+}
+
+//only run when init process
+func (e *BLSBFT_V2) run() error {
 	go func() {
+		//init view maps
+		ticker := time.Tick(200 * time.Millisecond)
+		e.Logger.Info("init bls-bftv2 consensus for chain", e.ChainKey)
+
 		for { //actor loop
 			if e.Chain.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
 				e.Logger.Infof("CHAIN ID %+v |Require BFTACTOR V2 FOR Committee Engine V1, current Committee Engine %+v ", e.Chain.GetShardID(), e.Chain.CommitteeEngineVersion())
 				e.Logger.Info("stop bls-bft2 consensus for chain", e.ChainKey)
-				return
+				time.Sleep(time.Second)
+				continue
 			}
 			//e.Logger.Debug("Current time ", currentTime, "time slot ", currentTimeSlot)
+			if !e.isStarted { //sleep if this process is not start
+				time.Sleep(time.Second)
+				continue
+			}
 			select {
-			case <-e.StopCh:
+			case <-e.destroyCh:
+				e.Logger.Info("exit bls-bftv2 consensus for chain", e.ChainKey)
 				return
 			case proposeMsg := <-e.ProposeMessageCh:
 				//fmt.Println("debug receive propose message", string(proposeMsg.Block))
@@ -306,12 +303,24 @@ func (e *BLSBFT_V2) Start() error {
 }
 
 func NewInstance(chain ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT_V2 {
+	var err error
 	var newInstance = new(BLSBFT_V2)
 	newInstance.Chain = chain
 	newInstance.ChainKey = chainKey
 	newInstance.ChainID = chainID
 	newInstance.Node = node
 	newInstance.Logger = logger
+	newInstance.destroyCh = make(chan struct{})
+	newInstance.ProposeMessageCh = make(chan BFTPropose)
+	newInstance.VoteMessageCh = make(chan BFTVote)
+	newInstance.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
+	newInstance.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
+	newInstance.voteHistory = make(map[uint64]types.BlockInterface)
+	newInstance.proposeHistory, err = lru.New(1000)
+	if err != nil {
+		panic(err) //must not error
+	}
+	newInstance.run()
 	return newInstance
 }
 
