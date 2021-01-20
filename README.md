@@ -16,15 +16,17 @@ Incognito is live. Give it a try!
 
 ## Github branches and running environments
 
+<img src="https://i.postimg.cc/d0C5Bxpg/Screen-Shot-2021-01-20-at-12-21-50-PM.png" width="600" height="400">
+
 In Incognito’s Git version control, there are three main branches, first for core team development, second for release and third for production:
 
-development (on Testnet 1): this is a branch that developers would branch from for building feature X and create pull requests to merge into. The code on this branch is usually deployed onto Testnet 1.
+* **development** (on Testnet 1): this is a branch that developers would branch from for building feature X and create pull requests to merge into. The code on this branch is usually deployed onto Testnet 1.
 
 
-release (on Testnet 2): After finishing testing on Testnet 1, the changes from development branch would be merged into this branch then deployed onto Testnet 2. The code on this branch should be almost the same as production’s.
+* **release** (on Testnet 2): After finishing testing on Testnet 1, the changes from development branch would be merged into this branch then deployed onto Testnet 2. The code on this branch should be almost the same as production’s.
 
 
-production (on Mainnet): After finishing testing on Testnet 2, the changes from release branch would be merged into this branch then deployed onto Mainnet. In an emergency case, hot fixes would also be branched directly from this branch and merged into it through PR(s). The fixes would be deployed onto Mainnet and then cherry-picked into release & development branches.
+* **production** (on Mainnet): After finishing testing on Testnet 2, the changes from release branch would be merged into this branch then deployed onto Mainnet. In an emergency case, hot fixes would also be branched directly from this branch and merged into it through PR(s). The fixes would be deployed onto Mainnet and then cherry-picked into release & development branches.
 
 ## Build the code
 
@@ -48,43 +50,43 @@ There is more than 1 million lines of code in the Incognito codebase. Below is a
 
 * **P2P Networking**
 
-  * **Peer Management**. Peer management handles peer-to-peer communications such as finding peers, connecting to them, sending and receiving transactions, blocks, and messages. Its code is in the [connmanager](https://github.com/incognitochain/incognito-chain/tree/master/connmanager) package.
+  * **Peer Management**. Peer management handles peer-to-peer communications such as finding peers, connecting to them, sending and receiving transactions, blocks, and messages. Its code is in the [connmanager](https://github.com/incognitochain/incognito-chain/tree/production/connmanager) package and [addrmanager](https://github.com/incognitochain/incognito-chain/tree/production/addrmanager) package.
 
-  * **NetSync**. NetSync is a mediator that receives incoming messages, parses them, and routes the messages to the right components. Its code is in [netsync](https://github.com/incognitochain/incognito-chain/tree/master/netsync) package.
+  * **NetSync**. NetSync is a mediator that receives incoming messages, parses them, and routes the messages to the right components. Its code is in [netsync](https://github.com/incognitochain/incognito-chain/tree/production/netsync) package.
 
   * **Highway**. Highway is a new network topology design that speeds up P2P communications. Its code is in [highway](https://github.com/incognitochain/incognito-highway) repo.
 
 * **Blockchain**
 
-  * **Shards**. Shards are subchains. A subchain is a Proof-of-Stake blockchain with its own committee of N nodes. A shard's job is to produces new block via a Practical Byzantine Fault Toloerance (pBFT) consenus algorithm. Its code is in the [blockchain](https://github.com/incognitochain/incognito-chain/tree/master/blockchain) package.
+  * **Shards**. Shards are subchains. A subchain is a Proof-of-Stake blockchain with its own committee of N nodes. A shard's job is to produces new block via a Practical Byzantine Fault Toloerance (pBFT) consenus algorithm. Its code is in the [blockchain](https://github.com/incognitochain/incognito-chain/tree/production/blockchain) package.
 
-  * **Beacon**. Beacon is also a subchain. A beacon's job is to coordinates the shards and maintain the global state of the network. Its code is in the [blockchain](https://github.com/incognitochain/incognito-chain/tree/master/blockchain) package.
+  * **Beacon**. Beacon is also a subchain. A beacon's job is to coordinates the shards and maintain the global state of the network. Its code is in the [blockchain](https://github.com/incognitochain/incognito-chain/tree/production/blockchain) package.
 
-  * **Synker**. Synker makes sure the node is up to date among its peers and also broadcasts the node status to its peers. Its code is in the [blockchain](https://github.com/incognitochain/incognito-chain/tree/master/blockchain) package.
+  * **Synker**. Synker makes sure the node is up to date among its peers and also broadcasts the node status to its peers. Its code is in the [blockchain](https://github.com/incognitochain/incognito-chain/tree/production/blockchain) package.
 
-  * **Mempool**. Mempool (memory pool) is a collection of transactions and blocks that have been verified but are not yet confirmed. Its code is in the [mempool](https://github.com/incognitochain/incognito-chain/tree/master/mempool) package.
+  * **Mempool**. Mempool (memory pool) is a collection of transactions and blocks that have been verified but are not yet confirmed. Its code is in the [mempool](https://github.com/incognitochain/incognito-chain/tree/production/mempool) package.
 
-  * **Wallet**. Software that holds all your Incognito keys. Use it to send and receive your Incognito tokens. Its code is in the [wallet](https://github.com/incognitochain/incognito-chain/tree/master/wallet) package.
+  * **Wallet**. Software that holds all your Incognito keys. Use it to send and receive your Incognito tokens. Its code is in the [wallet](https://github.com/incognitochain/incognito-chain/tree/production/wallet) package.
 
-  * **Database**. Incognito uses LevelDB to store block data. Its code is in the [database](https://github.com/incognitochain/incognito-chain/tree/master/database) package.
+  * **Database**. Incognito uses LevelDB to store block data. Its code is in the [drawdbv2](https://github.com/incognitochain/incognito-chain/tree/production/dataaccessobject/rawdbv2) package and [statedb](https://github.com/incognitochain/incognito-chain/tree/production/dataaccessobject/statedb) package.
 
 * **Core**
 
   * **Consensus**
 
-    * **pBFT**. For consensus algorithm, Incognito implements pBFT (Practical Byzantine Fault Tolerance). Its code is in the [blsbft](https://github.com/incognitochain/incognito-chain/tree/master/consensus/blsbft) package.
+    * **pBFT**. For consensus algorithm, Incognito implements pBFT (Practical Byzantine Fault Tolerance). Its code is in the [blsbft](https://github.com/incognitochain/incognito-chain/tree/production/consensus/blsbft) package.
 
-    * **BLS**. For multi-signature agregation, Incognito implements BLS Multi-Signatures. Its code is in the [blsmultisig](https://github.com/incognitochain/incognito-chain/tree/master/consensus/signatureschemes/blsmultisig) package.
+    * **BLS**. For multi-signature agregation, Incognito implements BLS Multi-Signatures. Its code is in the [blsmultisig](https://github.com/incognitochain/incognito-chain/tree/production/consensus/signatureschemes/blsmultisig) package.
 
-    * **RNG**. For random number generator, Incognito currently uses Bitcoin block hash. We'll explore other RNG solutions in the future. Its code is in the [btc](https://github.com/incognitochain/incognito-chain/tree/master/blockchain/btc) package.
+    * **RNG**. For random number generator, Incognito currently uses Bitcoin block hash. We'll explore other RNG solutions in the future. Its code is in the [btc](https://github.com/incognitochain/incognito-chain/tree/production/blockchain/btc) package.
 
   * **Privacy**
 
-    * **RingCT**. For privacy, Incognito implements RingCT (Ring Confidential Transaction) with ring signatures, stealth addresses, and confidential transactions. Its code is in the [privacy](https://github.com/incognitochain/incognito-chain/tree/master/privacy) package.
+    * **RingCT**. For privacy, Incognito implements RingCT (Ring Confidential Transaction) with ring signatures, stealth addresses, and confidential transactions. Its code is in the [privacy](https://github.com/incognitochain/incognito-chain/tree/production/privacy) package.
 
-    * **Confidential Asset**. RingCT hides the amount of the transaction, but it doesn't hide the type of asset being sent. Confidential Asset solves that. It's under development under the [new-privacy-dev](https://github.com/incognitochain/incognito-chain/tree/new-privacy-dev) branch and will be merged into the master branch in December 2019.
+    * **Confidential Asset**. RingCT hides the amount of the transaction, but it doesn't hide the type of asset being sent. Confidential Asset solves that. It's under development under the [new-privacy-dev](https://github.com/incognitochain/incognito-chain/tree/new-privacy-dev) branch and will be merged into the master branch in April 2021.
 
-    * **Mobile ZKP**. Incognito implements Zero-Knowledge Proofs (ZKP) Generation on mobile. Private transactions can be sent on any regular phone under 15 seconds. Its code is in the [wasm](https://github.com/incognitochain/incognito-chain/tree/master/privacy/wasm) package and the [zeroknowledge](https://github.com/incognitochain/incognito-chain/tree/master/privacy/zeroknowledge) package.
+    * **Mobile ZKP**. Incognito implements Zero-Knowledge Proofs (ZKP) Generation on mobile. Private transactions can be sent on any regular phone under 15 seconds. Its code is in the [wasm](https://github.com/incognitochain/incognito-chain/tree/production/privacy/wasm) package and the [zeroknowledge](https://github.com/incognitochain/incognito-chain/tree/production/privacy/zeroknowledge) package.
 
   * **Bridges**
 
@@ -94,11 +96,11 @@ There is more than 1 million lines of code in the Incognito codebase. Below is a
 
 * **Developer Tools**
 
-  * **RPC**. RPC lets developers interact with Incognito via your own programs. Its code is in the [rpcserver](https://github.com/incognitochain/incognito-chain/tree/master/rpcserver) package.
+  * **RPC**. RPC lets developers interact with Incognito via your own programs. Its code is in the [rpcserver](https://github.com/incognitochain/incognito-chain/tree/production/rpcserver) package.
 
-  * **WebSocket**. WebSocket is another way for developers to interact with Incognito via your own programs. Its code is in the [rpcserver](https://github.com/incognitochain/incognito-chain/tree/master/rpcserver) package.
+  * **WebSocket**. WebSocket is another way for developers to interact with Incognito via your own programs. Its code is in the [rpcserver](https://github.com/incognitochain/incognito-chain/tree/production/rpcserver) package.
 
-  * **SDK**. Incognito is working on Developer SDKs to make it even easier to build on top of Incognito. Estimated ship date: Nov 2019.
+  * **SDK**. Incognito is working on Developer SDKs to make it even easier to build on top of Incognito. Estimated ship date (TBD).
 
 * **Apps**
 
