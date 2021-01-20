@@ -1,4 +1,5 @@
-<img src="https://i.postimg.cc/cLFjdyc3/incognito-app-logo.png" width="150">
+<img src="https://i.postimg.cc/CMzvFrhs/Screen-Shot-2021-01-20-at-12-29-04-PM.png" width="150">
+
 
 ## What is Incognito?
 
