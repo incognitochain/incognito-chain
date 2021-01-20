@@ -36,6 +36,7 @@ type ConsensusInterface interface {
 	Start() error
 	// Stop - stop consensus
 	Stop() error
+	Destroy()
 	// IsOngoing - check whether consensus is currently voting on a block
 	IsOngoing() bool
 	IsStarted() bool
