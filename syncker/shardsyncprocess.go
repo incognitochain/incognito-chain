@@ -3,11 +3,12 @@ package syncker
 import (
 	"context"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
-	"github.com/incognitochain/incognito-chain/common"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -205,6 +206,10 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		} else {
 			if len(s.shardPeerState) > 0 {
 				s.isCatchUp = true
+				//TODO: @tin
+				// call blockchain for get shardchain by shard id
+				// then call a method for building a tx send to network for announcing readyForCommitee
+
 			}
 			time.Sleep(time.Second * 5)
 		}
