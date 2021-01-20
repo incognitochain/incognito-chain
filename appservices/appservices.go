@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/appservices/storage/impl"
 	_ "github.com/incognitochain/incognito-chain/appservices/storage/impl"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
 // config is a descriptor containing the memory pool configuration.
@@ -37,6 +38,16 @@ func (app *AppService) PublishShardState(shardBestState *blockchain.ShardBestSta
 	Logger.log.Infof("Publish shardState with hash %v at height %d of Shard ID: %d", shardBestState.BestBlock.Hash().String(), shardBestState.BeaconHeight, shardBestState.ShardID)
 	shard := data.NewShardFromShardState(shardBestState)
 	err := storage.StoreLatestShardFinalState(context.TODO(), shard)
+	if err !=nil && !impl.IsMongoDupKey(err) {
+		return err
+	}
+	return nil
+}
+
+func (app *AppService) PublishPDEState(pdeContributionStore *rawdbv2.PDEContributionStore, pdeTradeStore *rawdbv2.PDETradeStore, pdeCrossTradeStore *rawdbv2.PDECrossTradeStore,
+						pdeWithdrawalStatusStore *rawdbv2.PDEWithdrawalStatusStore, pdeFeeWithdrawalStatusStore *rawdbv2.PDEFeeWithdrawalStatusStore) error {
+	Logger.log.Infof("Publish pdeStateStore")
+	err := storage.StorePDEShareState(context.TODO(), pdeContributionStore, pdeTradeStore, pdeCrossTradeStore, pdeWithdrawalStatusStore, pdeFeeWithdrawalStatusStore)
 	if err !=nil && !impl.IsMongoDupKey(err) {
 		return err
 	}

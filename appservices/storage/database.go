@@ -14,6 +14,7 @@ const (
 type DatabaseDriver interface {
 	GetBeaconStateRepository () repository.BeaconStateRepository
 	GetShardStateRepository () repository.ShardStateRepository
+	GetPDEStateRepository () repository.PDEStateRepository
 }
 
 var dbDriver = make(map[KindDB]DatabaseDriver)

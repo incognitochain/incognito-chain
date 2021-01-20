@@ -12,7 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateDB, beaconBlock *BeaconBlock) error {
+func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateDB, beaconBlock *BeaconBlock, state *BeaconBestState) error {
 	if !hasPDEInstruction(beaconBlock.Body.Instructions) {
 		return nil
 	}
@@ -38,17 +38,17 @@ func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateD
 		var err error
 		switch inst[0] {
 		case strconv.Itoa(metadata.PDEContributionMeta):
-			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState, state)
 		case strconv.Itoa(metadata.PDEPRVRequiredContributionRequestMeta):
-			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState, state)
 		case strconv.Itoa(metadata.PDETradeRequestMeta):
-			err = blockchain.processPDETrade(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDETrade(pdexStateDB, beaconHeight, inst, currentPDEState, state)
 		case strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta):
-			err = blockchain.processPDECrossPoolTrade(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDECrossPoolTrade(pdexStateDB, beaconHeight, inst, currentPDEState, state)
 		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
-			err = blockchain.processPDEWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDEWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState, state)
 		case strconv.Itoa(metadata.PDEFeeWithdrawalRequestMeta):
-			err = blockchain.processPDEFeeWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDEFeeWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState, state)
 		case strconv.Itoa(metadata.PDETradingFeesDistributionMeta):
 			err = blockchain.processPDETradingFeesDistribution(pdexStateDB, beaconHeight, inst, currentPDEState)
 		}
@@ -100,7 +100,7 @@ func hasPDEInstruction(instructions [][]string) bool {
 	}
 	return hasPDEXInstruction
 }
-func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState) error {
+func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState, state *BeaconBestState) error {
 	if currentPDEState == nil {
 		Logger.log.Warn("WARN - [processPDEContribution]: Current PDE state is null.")
 		return nil
@@ -140,6 +140,12 @@ func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.Stat
 			return nil
 		}
 
+		state.pdeContributionStore.PDEContributionStatus = append(state.pdeContributionStore.PDEContributionStatus,
+											rawdbv2.PDEContributionStatusInfo{
+												Status:                contribStatus.Status,
+												PDEContributionPairID: waitingContribution.PDEContributionPairID,
+											})
+
 	} else if contributionStatus == common.PDEContributionRefundChainStatus {
 		var refundContribution metadata.PDERefundContribution
 		err := json.Unmarshal([]byte(instruction[3]), &refundContribution)
@@ -167,6 +173,11 @@ func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.Stat
 			Logger.log.Errorf("ERROR: an error occured while tracking pde refund contribution status: %+v", err)
 			return nil
 		}
+		state.pdeContributionStore.PDEContributionStatus = append(state.pdeContributionStore.PDEContributionStatus,
+			rawdbv2.PDEContributionStatusInfo{
+				Status:                contribStatus.Status,
+				PDEContributionPairID: refundContribution.PDEContributionPairID,
+			})
 
 	} else if contributionStatus == common.PDEContributionMatchedChainStatus {
 		var matchedContribution metadata.PDEMatchedContribution
@@ -209,6 +220,11 @@ func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.Stat
 			Logger.log.Errorf("ERROR: an error occured while tracking pde accepted contribution status: %+v", err)
 			return nil
 		}
+		state.pdeContributionStore.PDEContributionStatus = append(state.pdeContributionStore.PDEContributionStatus,
+			rawdbv2.PDEContributionStatusInfo{
+				Status:                contribStatus.Status,
+				PDEContributionPairID: matchedContribution.PDEContributionPairID,
+			})
 
 	} else if contributionStatus == common.PDEContributionMatchedNReturnedChainStatus {
 		var matchedNReturnedContrib metadata.PDEMatchedNReturnedContribution
@@ -279,6 +295,14 @@ func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.Stat
 				Logger.log.Errorf("ERROR: an error occured while tracking pde contribution status: %+v", err)
 				return nil
 			}
+			state.pdeContributionStore.PDEContributionStatus = append(state.pdeContributionStore.PDEContributionStatus,
+				rawdbv2.PDEContributionStatusInfo{
+					Status:                contribStatus.Status,
+					TokenID1Str:           contribStatus.TokenID1Str,
+					Contributed1Amount:    contribStatus.Contributed1Amount,
+					Returned1Amount:       contribStatus.Returned1Amount,
+					PDEContributionPairID: matchedNReturnedContrib.PDEContributionPairID,
+				})
 		} else {
 			var contribStatus metadata.PDEContributionStatus
 			err := json.Unmarshal(pdeStatusContentBytes, &contribStatus)
@@ -300,12 +324,23 @@ func (blockchain *BlockChain) processPDEContributionV2(pdexStateDB *statedb.Stat
 				Logger.log.Errorf("ERROR: an error occured while tracking pde contribution status: %+v", err)
 				return nil
 			}
+			state.pdeContributionStore.PDEContributionStatus = append(state.pdeContributionStore.PDEContributionStatus,
+				rawdbv2.PDEContributionStatusInfo{
+					Status:             contribStatus.Status,
+					TokenID1Str:        contribStatus.TokenID1Str,
+					Contributed1Amount: contribStatus.Contributed1Amount,
+					Returned1Amount:    contribStatus.Returned1Amount,
+					TokenID2Str:        contribStatus.TokenID2Str,
+					Contributed2Amount: contribStatus.Contributed2Amount,
+					Returned2Amount:    contribStatus.Returned2Amount,
+					PDEContributionPairID: matchedNReturnedContrib.PDEContributionPairID,
+				})
 		}
 	}
 	return nil
 }
 
-func (blockchain *BlockChain) processPDETrade(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState) error {
+func (blockchain *BlockChain) processPDETrade(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState, state *BeaconBestState) error {
 	if len(instruction) != 4 {
 		return nil // skip the instruction
 	}
@@ -327,6 +362,10 @@ func (blockchain *BlockChain) processPDETrade(pdexStateDB *statedb.StateDB, beac
 			pdeTradeReqAction.TxReqID[:],
 			byte(common.PDETradeRefundStatus),
 		)
+		state.pdeTradeStore.PDETradeDetails = append(state.pdeTradeStore.PDETradeDetails, rawdbv2.PDETradeInfo{
+			TxReqId:  pdeTradeReqAction.TxReqID.String(),
+			Status:  common.PDETradeRefundStatus,
+		})
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde refund trade status: %+v", err)
 		}
@@ -362,10 +401,14 @@ func (blockchain *BlockChain) processPDETrade(pdexStateDB *statedb.StateDB, beac
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted trade status: %+v", err)
 	}
+	state.pdeTradeStore.PDETradeDetails = append(state.pdeTradeStore.PDETradeDetails, rawdbv2.PDETradeInfo{
+		TxReqId:  pdeTradeAcceptedContent.RequestedTxID.String(),
+		Status:  common.PDETradeAcceptedStatus,
+	})
 	return nil
 }
 
-func (blockchain *BlockChain) processPDECrossPoolTrade(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState) error {
+func (blockchain *BlockChain) processPDECrossPoolTrade(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState, state *BeaconBestState) error {
 	if len(instruction) != 4 {
 		return nil // skip the instruction
 	}
@@ -387,6 +430,10 @@ func (blockchain *BlockChain) processPDECrossPoolTrade(pdexStateDB *statedb.Stat
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde refund trade status: %+v", err)
 		}
+		state.pdeCrossTradeStore.PDECrossTradeDetails = append(state.pdeCrossTradeStore.PDECrossTradeDetails, rawdbv2.PDECrossTradeInfo{
+			TxReqId:  pdeRefundCrossPoolTrade.TxReqID.String(),
+			Status:  common.PDETradeAcceptedStatus,
+		})
 		return nil
 	}
 	// trade accepted
@@ -427,10 +474,14 @@ func (blockchain *BlockChain) processPDECrossPoolTrade(pdexStateDB *statedb.Stat
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted trade status: %+v", err)
 	}
+	state.pdeCrossTradeStore.PDECrossTradeDetails = append(state.pdeCrossTradeStore.PDECrossTradeDetails, rawdbv2.PDECrossTradeInfo{
+		TxReqId:  pdeTradeAcceptedContents[0].RequestedTxID.String(),
+		Status:  common.PDETradeAcceptedStatus,
+	})
 	return nil
 }
 
-func (blockchain *BlockChain) processPDEWithdrawal(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState) error {
+func (blockchain *BlockChain) processPDEWithdrawal(pdexStateDB *statedb.StateDB, beaconHeight uint64, instruction []string, currentPDEState *CurrentPDEState, state *BeaconBestState) error {
 	if len(instruction) != 4 {
 		return nil // skip the instruction
 	}
@@ -455,7 +506,13 @@ func (blockchain *BlockChain) processPDEWithdrawal(pdexStateDB *statedb.StateDB,
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde rejected withdrawal status: %+v", err)
 		}
+		state.pdeWithdrawalStatusStore.PDEWithdrawalStatusDetails = append(state.pdeWithdrawalStatusStore.PDEWithdrawalStatusDetails,
+			rawdbv2.PDEWithdrawalStatusInfo{
+				TxReqId: pdeWithdrawalRequestAction.TxReqID.String(),
+				Status:  common.PDEWithdrawalRejectedStatus,
+			})
 		return nil
+
 	}
 
 	var wdAcceptedContent metadata.PDEWithdrawalAcceptedContent
@@ -500,6 +557,11 @@ func (blockchain *BlockChain) processPDEWithdrawal(pdexStateDB *statedb.StateDB,
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while tracking pde accepted withdrawal status: %+v", err)
 	}
+	state.pdeWithdrawalStatusStore.PDEWithdrawalStatusDetails = append(state.pdeWithdrawalStatusStore.PDEWithdrawalStatusDetails,
+		rawdbv2.PDEWithdrawalStatusInfo{
+			TxReqId: wdAcceptedContent.TxReqID.String(),
+			Status:  common.PDEWithdrawalAcceptedStatus,
+		})
 	return nil
 }
 
@@ -570,7 +632,7 @@ func (blockchain *BlockChain) processPDEFeeWithdrawal(
 	pdexStateDB *statedb.StateDB,
 	beaconHeight uint64,
 	instruction []string,
-	currentPDEState *CurrentPDEState,
+	currentPDEState *CurrentPDEState, state *BeaconBestState,
 ) error {
 	if len(instruction) != 4 {
 		return nil // skip the instruction
@@ -598,6 +660,11 @@ func (blockchain *BlockChain) processPDEFeeWithdrawal(
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde rejected withdrawal status: %+v", err)
 		}
+		state.pdeFeeWithdrawalStatusStore.PDEFeeWithdrawalStatusDetails = append(state.pdeFeeWithdrawalStatusStore.PDEFeeWithdrawalStatusDetails,
+										 rawdbv2.PDEFeeWithdrawalStatusInfo{
+			TxReqId: pdeFeeWithdrawalRequestAction.TxReqID.String(),
+			Status:  common.PDEFeeWithdrawalRejectedStatus,
+		})
 		return nil
 	}
 	// fee withdrawal accepted
@@ -621,6 +688,11 @@ func (blockchain *BlockChain) processPDEFeeWithdrawal(
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while tracking pde rejected withdrawal status: %+v", err)
 		}
+		state.pdeFeeWithdrawalStatusStore.PDEFeeWithdrawalStatusDetails = append(state.pdeFeeWithdrawalStatusStore.PDEFeeWithdrawalStatusDetails,
+			rawdbv2.PDEFeeWithdrawalStatusInfo{
+				TxReqId: pdeFeeWithdrawalRequestAction.TxReqID.String(),
+				Status:  common.PDEFeeWithdrawalRejectedStatus,
+			})
 		return nil
 	}
 	pdeTradingFees[tradingFeeKey] -= wdMeta.WithdrawalFeeAmt
@@ -633,5 +705,10 @@ func (blockchain *BlockChain) processPDEFeeWithdrawal(
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while tracking pde rejected withdrawal status: %+v", err)
 	}
+	state.pdeFeeWithdrawalStatusStore.PDEFeeWithdrawalStatusDetails = append(state.pdeFeeWithdrawalStatusStore.PDEFeeWithdrawalStatusDetails,
+		rawdbv2.PDEFeeWithdrawalStatusInfo{
+			TxReqId: pdeFeeWithdrawalRequestAction.TxReqID.String(),
+			Status:  common.PDEFeeWithdrawalAcceptedStatus,
+		})
 	return nil
 }

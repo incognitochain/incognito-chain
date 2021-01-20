@@ -2131,3 +2131,8 @@ func (serverObj *Server) PublishBeaconState(beaconState *blockchain.BeaconBestSt
 func (serverObj *Server) PublishShardState(shardBestState *blockchain.ShardBestState) error {
 	return serverObj.appServices.PublishShardState(shardBestState)
 }
+
+func (serverObj *Server)  PublishPDEState(pdeContributionStore *rawdbv2.PDEContributionStore, pdeTradeStore *rawdbv2.PDETradeStore, pdeCrossTradeStore *rawdbv2.PDECrossTradeStore,
+						pdeWithdrawalStatusStore *rawdbv2.PDEWithdrawalStatusStore, pdeFeeWithdrawalStatusStore *rawdbv2.PDEFeeWithdrawalStatusStore) error {
+	return serverObj.appServices.PublishPDEState(pdeContributionStore, pdeTradeStore, pdeCrossTradeStore, pdeWithdrawalStatusStore, pdeFeeWithdrawalStatusStore)
+}

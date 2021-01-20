@@ -1433,7 +1433,38 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
 	// execute, store PDE instruction
-	err = blockchain.processPDEInstructions(newBestState.featureStateDB, beaconBlock)
+	newBestState.pdeContributionStore = &rawdbv2.PDEContributionStore{
+		Height:                beaconBlock.Header.Height,
+		Hash:                  beaconBlock.Header.Hash().String(),
+		PDEContributionStatus: []rawdbv2.PDEContributionStatusInfo{},
+	}
+
+	newBestState.pdeTradeStore = &rawdbv2.PDETradeStore{
+		Height:          beaconBlock.Header.Height,
+		Hash:            beaconBlock.Header.Hash().String(),
+		PDETradeDetails: []rawdbv2.PDETradeInfo{},
+	}
+
+
+	newBestState.pdeCrossTradeStore = &rawdbv2.PDECrossTradeStore{
+		Height:          beaconBlock.Header.Height,
+		Hash:            beaconBlock.Header.Hash().String(),
+		PDECrossTradeDetails: []rawdbv2.PDECrossTradeInfo{},
+	}
+
+	newBestState.pdeWithdrawalStatusStore = &rawdbv2.PDEWithdrawalStatusStore{
+		Height:          beaconBlock.Header.Height,
+		Hash:            beaconBlock.Header.Hash().String(),
+		PDEWithdrawalStatusDetails: []rawdbv2.PDEWithdrawalStatusInfo{},
+	}
+
+	newBestState.pdeFeeWithdrawalStatusStore = &rawdbv2.PDEFeeWithdrawalStatusStore{
+		Height:          beaconBlock.Header.Height,
+		Hash:            beaconBlock.Header.Hash().String(),
+		PDEFeeWithdrawalStatusDetails: []rawdbv2.PDEFeeWithdrawalStatusInfo{},
+	}
+
+	err = blockchain.processPDEInstructions(newBestState.featureStateDB, beaconBlock, newBestState)
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
@@ -1522,6 +1553,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	if err := rawdbv2.StoreBeaconBlockByHash(batch, blockHash, beaconBlock); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+
+	if err := blockchain.config.Server.PublishPDEState(newBestState.pdeContributionStore, newBestState.pdeTradeStore, newBestState.pdeCrossTradeStore,
+									newBestState.pdeWithdrawalStatusStore, newBestState.pdeFeeWithdrawalStatusStore); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 

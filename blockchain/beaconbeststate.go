@@ -83,6 +83,14 @@ type BeaconBestState struct {
 	FeatureStateDBRootHash   common.Hash
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
+
+	//Add Store For PDE
+	pdeContributionStore *rawdbv2.PDEContributionStore
+	pdeTradeStore        *rawdbv2.PDETradeStore
+	pdeCrossTradeStore        *rawdbv2.PDECrossTradeStore
+	pdeWithdrawalStatusStore        *rawdbv2.PDEWithdrawalStatusStore
+	pdeFeeWithdrawalStatusStore        *rawdbv2.PDEFeeWithdrawalStatusStore
+
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {

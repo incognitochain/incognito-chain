@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/appservices/storage/repository"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"go.mongodb.org/mongo-driver/bson"
@@ -73,6 +74,31 @@ const (
 	WaitingRedeemRequest  = "WaitingRedeemRequest"
 	MatchedRedeemRequest  = "MatchedRedeemRequest"
 	LockedCollateral      = "LockedCollateral"
+
+
+	//PDE Trade Status State
+	PDEContributionStatusTrackChange = "PDEContributionStatusTrackChange"
+	PDEContributionStatusBestState = "PDEContributionStatusBestState"
+	PDEContributionStatusFinalState = "PDEContributionStatusFinalState"
+
+	PDETradeTrackChange = "PDETradeTrackChange"
+	PDETradeBestState = "PDETradeBestState"
+	PDETradeFinalState = "PDETradeFinalState"
+
+	PDECrossTradeTrackChange = "PDECrossTradeTrackChange"
+	PDECrossTradeBestState = "PDECrossTradeBestState"
+	PDECrossTradeFinalState = "PDECrossTradeFinalState"
+
+	PDEWithdrawalStatusTrackChange = "PDEWithdrawalStatusTrackChange"
+	PDEWithdrawalStatusBestState = "PDEWithdrawalStatusBestState"
+	PDEWithdrawalStatusFinalState = "PDEWithdrawalStatusFinalState"
+
+	PDEFeeWithdrawalStatusTrackChange = "PDEFeeWithdrawalStatusTrackChange"
+	PDEFeeWithdrawalStatusBestState = "PDEFeeWithdrawalStatusBestState"
+	PDEFeeWithdrawalStatusFinalState = "PDEFeeWithdrawalStatusFinalState"
+
+
+
 )
 
 func IsMongoDupKey(err error) bool {
@@ -160,6 +186,27 @@ type mongoDBDriver struct {
 	matchedRedeemRequestCollection *mongo.Collection
 	lockedCollateralCollection *mongo.Collection
 
+	//PDETradeStatus
+	pdeContributionStatusTrackChange *mongo.Collection
+	pdeContributionStatusBestState *mongo.Collection
+	pdeContributionStatusFinalState *mongo.Collection
+
+	pdeTradeTrackChange *mongo.Collection
+	pdeTradeBestState *mongo.Collection
+	pdeTradeFinalState *mongo.Collection
+
+	pdeCrossTradeTrackChange *mongo.Collection
+	pdeCrossTradeBestState *mongo.Collection
+	pdeCrossTradeFinalState *mongo.Collection
+
+	pdeWithdrawalStatusTrackChange *mongo.Collection
+	pdeWithdrawalStatusBestState *mongo.Collection
+	pdeWithdrawalStatusFinalState *mongo.Collection
+
+	pdeFeeWithdrawalStatusTrackChange *mongo.Collection
+	pdeFeeWithdrawalStatusBestState *mongo.Collection
+	pdeFeeWithdrawalStatusFinalState *mongo.Collection
+
 }
 
 func (m *mongoDBDriver) GetBeaconStateRepository () repository.BeaconStateRepository {
@@ -167,6 +214,10 @@ func (m *mongoDBDriver) GetBeaconStateRepository () repository.BeaconStateReposi
 }
 
 func (m *mongoDBDriver) GetShardStateRepository () repository.ShardStateRepository {
+	return m
+}
+
+func (m *mongoDBDriver) GetPDEStateRepository () repository.PDEStateRepository {
 	return m
 }
 
@@ -283,9 +334,136 @@ func (m *mongoDBDriver)  createIndex(ctx context.Context) error {
 		return err
 	}
 
+	//PDE Track Status
+	if err := m.createIndexForPdeContributionStatusTrackChange(ctx); err != nil {
+		return err
+	}
+	if err := m.createIndexForPdeContributionStatusBestState(ctx); err != nil {
+		return err
+	}
+	if err := m.createIndexForPdeContributionStatusFinalState(ctx); err != nil {
+		return err
+	}
+
+	if err := m.createIndexForPdeTradeTrackChange(ctx); err != nil {
+		return err
+	}
+	if err := m.createIndexForPdeTradeBestState(ctx); err != nil {
+		return err
+	}
+	if err := m.createIndexForPdeTradeFinalState(ctx); err != nil {
+		return err
+	}
+
+	if err := m.createIndexForPdeCrossTradeTrackChange(ctx); err != nil {
+		return err
+	}
+	if err := m.createIndexForPdeCrossTradeBestState(ctx); err != nil {
+		return err
+	}
+	if err := m.createIndexForPdeCrossTradeFinalState(ctx); err != nil {
+		return err
+	}
+
+	if err := m.createIndexForPdeWithdrawalStatusTrackChange(ctx); err != nil {
+		return err
+	}
+	if err := m.createIndexForPdeWithdrawalStatusBestState(ctx); err != nil {
+		return err
+	}
+	if err := m.createIndexForPdeWithdrawalStatusFinalState(ctx); err != nil {
+		return err
+	}
+
+	if err := m.createIndexForPdeFeeWithdrawalStatusTrackChange(ctx); err != nil {
+		return err
+	}
+	if err := m.createIndexForPdeFeeWithdrawalStatusBestState(ctx); err != nil {
+		return err
+	}
+	if err := m.createIndexForPdeFeeWithdrawalStatusFinalState(ctx); err != nil {
+		return err
+	}
+
+
 	log.Printf("Finish Custodian Index")
 	log.Printf("Finish Init Index")
 
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeContributionStatusTrackChange(ctx context.Context) error {
+	m.pdeContributionStatusTrackChange = m.client.Database(DataBaseName).Collection(PDEContributionStatusTrackChange)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeContributionStatusBestState(ctx context.Context) error {
+	m.pdeContributionStatusBestState = m.client.Database(DataBaseName).Collection(PDEContributionStatusBestState)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeContributionStatusFinalState(ctx context.Context) error {
+	m.pdeContributionStatusFinalState = m.client.Database(DataBaseName).Collection(PDECrossTradeFinalState)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeTradeTrackChange(ctx context.Context) error {
+	m.pdeTradeTrackChange = m.client.Database(DataBaseName).Collection(PDETradeTrackChange)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeTradeBestState(ctx context.Context) error {
+	m.pdeTradeBestState = m.client.Database(DataBaseName).Collection(PDETradeBestState)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeTradeFinalState(ctx context.Context) error {
+	m.pdeTradeFinalState = m.client.Database(DataBaseName).Collection(PDETradeFinalState)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeCrossTradeTrackChange(ctx context.Context) error {
+	m.pdeCrossTradeTrackChange = m.client.Database(DataBaseName).Collection(PDECrossTradeTrackChange)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeCrossTradeBestState(ctx context.Context) error {
+	m.pdeCrossTradeBestState = m.client.Database(DataBaseName).Collection(PDECrossTradeBestState)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeCrossTradeFinalState(ctx context.Context) error {
+	m.pdeCrossTradeFinalState = m.client.Database(DataBaseName).Collection(PDECrossTradeFinalState)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeWithdrawalStatusTrackChange(ctx context.Context) error {
+	m.pdeWithdrawalStatusTrackChange = m.client.Database(DataBaseName).Collection(PDEWithdrawalStatusTrackChange)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeWithdrawalStatusBestState(ctx context.Context) error {
+	m.pdeWithdrawalStatusBestState = m.client.Database(DataBaseName).Collection(PDEWithdrawalStatusBestState)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeWithdrawalStatusFinalState(ctx context.Context) error {
+	m.pdeWithdrawalStatusFinalState = m.client.Database(DataBaseName).Collection(PDEWithdrawalStatusFinalState)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeFeeWithdrawalStatusTrackChange(ctx context.Context) error {
+	m.pdeFeeWithdrawalStatusBestState = m.client.Database(DataBaseName).Collection(PDEFeeWithdrawalStatusTrackChange)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeFeeWithdrawalStatusBestState(ctx context.Context) error {
+	m.pdeFeeWithdrawalStatusBestState = m.client.Database(DataBaseName).Collection(PDEFeeWithdrawalStatusBestState)
+	return nil
+}
+
+func (m *mongoDBDriver) createIndexForPdeFeeWithdrawalStatusFinalState(ctx context.Context) error {
+	m.pdeFeeWithdrawalStatusFinalState = m.client.Database(DataBaseName).Collection(PDEFeeWithdrawalStatusFinalState)
 	return nil
 }
 
@@ -667,8 +845,235 @@ func (m *mongoDBDriver) StoreLatestBeaconState(ctx context.Context ,beacon *data
 	//Bridge
 	bridgeTokenState := getBrideTokenFromBeaconState(beacon)
 
+	//Move pde from best to final
+	m.movePDEBestStateToFinalState(ctx, beaconState.BlockHash)
+
 	return m.storeAllBeaconStateDataWithTransaction(ctx, beaconState, pdeShares, pdePoolPairs, pdeTradingFees, waitingPDEContributionStates, custodians, waitingPortingRequests, matchedRedeemRequests, waitingRedeemRequests, finalExchangeRates, lockedCollaterals, bridgeTokenState)
 }
+
+func (m *mongoDBDriver) movePDEBestStateToFinalState(ctx context.Context , hash string) error {
+	if err:= m.movePDEContribution(ctx,hash); err != nil {
+		return err
+	}
+
+	if err:= m.movePDETrade(ctx,hash); err != nil {
+		return err
+	}
+
+	if err:= m.movePDECrossTrade(ctx,hash); err != nil {
+		return err
+	}
+
+	if err:= m.movePDEWithdrawal(ctx,hash); err != nil {
+		return err
+	}
+
+	if err:= m.movePDEFeeWithdrawal(ctx,hash); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *mongoDBDriver) movePDEContribution(ctx context.Context, hash string) error {
+	condition := 	bson.M{"hash": hash}
+	cursor, err := m.pdeContributionStatusBestState.Find(ctx, condition)
+	if err != nil {
+		return err
+	}
+	for cursor.Next(ctx) {
+		value := &model.PDEContributionStatus{}
+		log.Printf("copy contribution %v to final", value)
+		err = cursor.Decode(value)
+		if err != nil {
+			return err
+		}
+		filter := bson.M{"pdecontributionpairid": value.PDEContributionPairID}
+
+		update := bson.M{
+			"$set": bson.M{
+				"hash": value.Hash,
+				"height": value.Height,
+				"status":	value.Status,
+				"tokenid1str": value.TokenID1Str,
+				"contributed1amount": value.Contributed1Amount,
+				"returned1amount":    value.Returned1Amount,
+				"tokenid2str": value.TokenID2Str,
+				"contributed2amount": value.Contributed2Amount,
+				"returned2amount":    value.Returned2Amount,
+				"pdecontributionpairid": value.PDEContributionPairID,
+			},
+		}
+		upsert := true
+		after := options.After
+		opt := options.FindOneAndUpdateOptions{
+			ReturnDocument: &after,
+			Upsert:         &upsert,
+		}
+		result := m.pdeContributionStatusFinalState.FindOneAndUpdate(ctx, filter, update, &opt)
+		if result.Err() != nil {
+			return result.Err()
+		}
+	}
+	return nil
+}
+
+func (m *mongoDBDriver) movePDETrade(ctx context.Context, hash string) error {
+	condition := 	bson.M{"hash": hash}
+	cursor, err := m.pdeTradeBestState.Find(ctx, condition)
+	if err != nil {
+		return err
+	}
+	for cursor.Next(ctx) {
+		value := &model.PDETrade{}
+		log.Printf("copy trade %v to final", value)
+		err = cursor.Decode(value)
+		if err != nil {
+			return err
+		}
+		//Update pde Trade
+		filter := bson.M{"txreqid": value.TxReqId}
+
+		update := bson.M{
+			"$set": bson.M{
+				"hash": value.Hash,
+				"height": value.Height,
+				"txreqid": value.TxReqId,
+				"status":	value.Status,
+			},
+		}
+
+		upsert := true
+		after := options.After
+		opt := options.FindOneAndUpdateOptions{
+			ReturnDocument: &after,
+			Upsert:         &upsert,
+		}
+		result := m.pdeTradeFinalState.FindOneAndUpdate(ctx, filter, update, &opt)
+		if result.Err() != nil {
+			return result.Err()
+		}
+	}
+	return nil
+}
+
+func (m *mongoDBDriver) movePDECrossTrade(ctx context.Context, hash string) error {
+	condition := 	bson.M{"hash": hash}
+	cursor, err := m.pdeCrossTradeBestState.Find(ctx, condition)
+	if err != nil {
+		return err
+	}
+	for cursor.Next(ctx) {
+		value := &model.PDECrossTrade{}
+		log.Printf("copy trade %v to final", value)
+		err = cursor.Decode(value)
+		if err != nil {
+			return err
+		}
+		//Update pde Trade
+		filter := bson.M{"txreqid": value.TxReqId}
+
+		update := bson.M{
+			"$set": bson.M{
+				"hash": value.Hash,
+				"height": value.Height,
+				"txreqid": value.TxReqId,
+				"status":	value.Status,
+			},
+		}
+
+		upsert := true
+		after := options.After
+		opt := options.FindOneAndUpdateOptions{
+			ReturnDocument: &after,
+			Upsert:         &upsert,
+		}
+		result := m.pdeCrossTradeFinalState.FindOneAndUpdate(ctx, filter, update, &opt)
+		if result.Err() != nil {
+			return result.Err()
+		}
+	}
+	return nil
+}
+
+func (m *mongoDBDriver) movePDEWithdrawal(ctx context.Context, hash string) error {
+	condition := 	bson.M{"hash": hash}
+	cursor, err := m.pdeWithdrawalStatusBestState.Find(ctx, condition)
+	if err != nil {
+		return err
+	}
+	for cursor.Next(ctx) {
+		value := &model.PDEWithdrawalStatus{}
+		log.Printf("copy trade %v to final", value)
+		err = cursor.Decode(value)
+		if err != nil {
+			return err
+		}
+		//Update pde Trade
+		filter := bson.M{"txreqid": value.TxReqId}
+
+		update := bson.M{
+			"$set": bson.M{
+				"hash": value.Hash,
+				"height": value.Height,
+				"txreqid": value.TxReqId,
+				"status":	value.Status,
+			},
+		}
+
+		upsert := true
+		after := options.After
+		opt := options.FindOneAndUpdateOptions{
+			ReturnDocument: &after,
+			Upsert:         &upsert,
+		}
+		result := m.pdeWithdrawalStatusFinalState.FindOneAndUpdate(ctx, filter, update, &opt)
+		if result.Err() != nil {
+			return result.Err()
+		}
+	}
+	return nil
+}
+
+func (m *mongoDBDriver) movePDEFeeWithdrawal(ctx context.Context, hash string) error {
+	condition := 	bson.M{"hash": hash}
+	cursor, err := m.pdeFeeWithdrawalStatusBestState.Find(ctx, condition)
+	if err != nil {
+		return err
+	}
+	for cursor.Next(ctx) {
+		value := &model.PDEFeeWithdrawalStatus{}
+		log.Printf("copy trade %v to final", value)
+		err = cursor.Decode(value)
+		if err != nil {
+			return err
+		}
+		//Update pde Trade
+		filter := bson.M{"txreqid": value.TxReqId}
+
+		update := bson.M{
+			"$set": bson.M{
+				"hash": value.Hash,
+				"height": value.Height,
+				"txreqid": value.TxReqId,
+				"status":	value.Status,
+			},
+		}
+
+		upsert := true
+		after := options.After
+		opt := options.FindOneAndUpdateOptions{
+			ReturnDocument: &after,
+			Upsert:         &upsert,
+		}
+		result := m.pdeFeeWithdrawalStatusFinalState.FindOneAndUpdate(ctx, filter, update, &opt)
+		if result.Err() != nil {
+			return result.Err()
+		}
+	}
+	return nil
+}
+
 
 func (m *mongoDBDriver) storeAllBeaconStateDataWithTransaction(ctx context.Context, beaconState model.BeaconState, pdeShares model.PDEShare, pdePoolPairs model.PDEPoolForPair, pdeTradingFees model.PDETradingFee, waitingPDEContributionStates model.WaitingPDEContribution, custodians model.Custodian, waitingPortingRequests model.WaitingPortingRequest, matchedRedeemRequests model.RedeemRequest, waitingRedeemRequests model.RedeemRequest, finalExchangeRates model.FinalExchangeRate, lockedCollaterals model.LockedCollateral, bridgeTokenState model.BridgeTokenState) error  {
 	wc := writeconcern.New(writeconcern.WMajority())
@@ -1635,4 +2040,286 @@ func getPublicKeyToTransactionHash(shard *data.Shard) []model.PublicKeyToTransac
 		result = append(result, public)
 	}
 	return result
+}
+func (m *mongoDBDriver) StoreLatestPDEBestState(ctx context.Context , pdeContributionStore *rawdbv2.PDEContributionStore, pdeTradeStore *rawdbv2.PDETradeStore, pdeCrossTradeStore *rawdbv2.PDECrossTradeStore,
+	pdeWithdrawalStatusStore *rawdbv2.PDEWithdrawalStatusStore, pdeFeeWithdrawalStatusStore *rawdbv2.PDEFeeWithdrawalStatusStore) error {
+
+	pdeContributionStatuses := convertPDEContributionStoreToPDEContributionStatus(pdeContributionStore)
+	pdeTrades := convertPDETradeStoreToPDETrade(pdeTradeStore)
+	pdeCrossTrades := convertPDEtCrossTradeStoreToPDEtCrossTrade(pdeCrossTradeStore)
+	pdeWithdrawalStatuses := convertPDEWithdrawalStatusStoreToPDEWithdrawalStatus(pdeWithdrawalStatusStore)
+	pdeFeeWithdrawalStatuses := convertPDEFeeWithdrawalStatusStoreToPDEFeeWithdrawalStatus(pdeFeeWithdrawalStatusStore)
+	log.Printf("Store contribution: %d trade: %d cross trad: %d withdrawal: %d fee withdrawal: %d", len(pdeContributionStatuses), len(pdeTrades), len(pdeCrossTrades), len(pdeWithdrawalStatuses), len(pdeFeeWithdrawalStatuses))
+	return m.storeAllLatestPDEBestStateDataWithTransaction(ctx, pdeContributionStatuses, pdeTrades, pdeCrossTrades, pdeWithdrawalStatuses, pdeFeeWithdrawalStatuses)
+}
+
+func (m *mongoDBDriver) storeAllLatestPDEBestStateDataWithTransaction (ctx context.Context , pdeContributionStatuses []model.PDEContributionStatus, pdeTrades []model.PDETrade,
+		pdeCrossTrades []model.PDECrossTrade, pdeWithdrawalStatuses []model.PDEWithdrawalStatus, pdeFeeWithdrawalStatuses []model.PDEFeeWithdrawalStatus) error {
+	wc := writeconcern.New(writeconcern.WMajority())
+	rc := readconcern.Snapshot()
+	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
+
+	session, err := m.client.StartSession()
+	if err != nil {
+		return err
+	}
+
+	defer session.EndSession(ctx)
+
+	err = mongo.WithSession(ctx, session, func(sessionContext mongo.SessionContext) error {
+		if err := session.StartTransaction(txnOpts); err != nil {
+			return err
+		}
+
+		if err := m.storeAllLatestPDEBestStateData(sessionContext, pdeContributionStatuses, pdeTrades, pdeCrossTrades, pdeWithdrawalStatuses, pdeFeeWithdrawalStatuses); err != nil {
+			return err
+		}
+
+		if err := session.CommitTransaction(sessionContext); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		if abortErr := session.AbortTransaction(ctx); abortErr != nil {
+			return abortErr
+		}
+	}
+	return err
+}
+
+func (m *mongoDBDriver) storeAllLatestPDEBestStateData(ctx context.Context, pdeContributionStatuses []model.PDEContributionStatus, pdeTrades []model.PDETrade,
+	pdeCrossTrades []model.PDECrossTrade, pdeWithdrawalStatuses []model.PDEWithdrawalStatus, pdeFeeWithdrawalStatuses []model.PDEFeeWithdrawalStatus) error {
+	for _, value := range pdeContributionStatuses {
+		//Update Contribution
+		filter := bson.M{"pdecontributionpairid": value.PDEContributionPairID}
+
+		update := bson.M{
+			"$set": bson.M{
+				"hash": value.Hash,
+				"height": value.Height,
+				"status":	value.Status,
+				"tokenid1str": value.TokenID1Str,
+				"contributed1amount": value.Contributed1Amount,
+				"returned1amount":    value.Returned1Amount,
+				"tokenid2str": value.TokenID2Str,
+				"contributed2amount": value.Contributed2Amount,
+				"returned2amount":    value.Returned2Amount,
+				"pdecontributionpairid": value.PDEContributionPairID,
+			},
+		}
+
+		upsert := true
+		after := options.After
+		opt := options.FindOneAndUpdateOptions{
+			ReturnDocument: &after,
+			Upsert:         &upsert,
+		}
+		result := m.pdeContributionStatusBestState.FindOneAndUpdate(ctx, filter, update, &opt)
+		if result.Err() != nil {
+			return result.Err()
+		}
+
+		_, err := m.pdeContributionStatusTrackChange.InsertOne(ctx, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, value := range pdeTrades {
+		//Update pde Trade
+		filter := bson.M{"txreqid": value.TxReqId}
+
+		update := bson.M{
+			"$set": bson.M{
+				"hash": value.Hash,
+				"height": value.Height,
+				"txreqid": value.TxReqId,
+				"status":	value.Status,
+			},
+		}
+
+		upsert := true
+		after := options.After
+		opt := options.FindOneAndUpdateOptions{
+			ReturnDocument: &after,
+			Upsert:         &upsert,
+		}
+		result := m.pdeTradeBestState.FindOneAndUpdate(ctx, filter, update, &opt)
+		if result.Err() != nil {
+			return result.Err()
+		}
+
+		_, err := m.pdeTradeTrackChange.InsertOne(ctx, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, value := range pdeCrossTrades {
+		//Update Cross PDE Trade
+		filter := bson.M{"txreqid": value.TxReqId}
+
+		update := bson.M{
+			"$set": bson.M{
+				"hash": value.Hash,
+				"height": value.Height,
+				"txreqid": value.TxReqId,
+				"status":	value.Status,
+			},
+		}
+
+		upsert := true
+		after := options.After
+		opt := options.FindOneAndUpdateOptions{
+			ReturnDocument: &after,
+			Upsert:         &upsert,
+		}
+		result := m.pdeCrossTradeBestState.FindOneAndUpdate(ctx, filter, update, &opt)
+		if result.Err() != nil {
+			return result.Err()
+		}
+
+		_, err := m.pdeCrossTradeTrackChange.InsertOne(ctx, value)
+		if err != nil {
+			return err
+		}
+	}
+
+
+	for _, value := range pdeWithdrawalStatuses {
+		//Update pde withdrawal status
+		filter := bson.M{"txreqid": value.TxReqId}
+
+		update := bson.M{
+			"$set": bson.M{
+				"hash": value.Hash,
+				"height": value.Height,
+				"txreqid": value.TxReqId,
+				"status":	value.Status,
+			},
+		}
+
+		upsert := true
+		after := options.After
+		opt := options.FindOneAndUpdateOptions{
+			ReturnDocument: &after,
+			Upsert:         &upsert,
+		}
+		result := m.pdeWithdrawalStatusBestState.FindOneAndUpdate(ctx, filter, update, &opt)
+		if result.Err() != nil {
+			return result.Err()
+		}
+
+		_, err := m.pdeWithdrawalStatusTrackChange.InsertOne(ctx, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, value := range pdeFeeWithdrawalStatuses {
+		//Update fee pde withdrawal status
+		filter := bson.M{"txreqid": value.TxReqId}
+
+		update := bson.M{
+			"$set": bson.M{
+				"hash": value.Hash,
+				"height": value.Height,
+				"txreqid": value.TxReqId,
+				"status":	value.Status,
+			},
+		}
+
+		upsert := true
+		after := options.After
+		opt := options.FindOneAndUpdateOptions{
+			ReturnDocument: &after,
+			Upsert:         &upsert,
+		}
+		result := m.pdeFeeWithdrawalStatusBestState.FindOneAndUpdate(ctx, filter, update, &opt)
+		if result.Err() != nil {
+			return result.Err()
+		}
+
+		_, err := m.pdeFeeWithdrawalStatusTrackChange.InsertOne(ctx, value)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Printf("Commit PDE Status sucessfully")
+	return nil
+}
+
+func convertPDEContributionStoreToPDEContributionStatus(pdeContributionStore *rawdbv2.PDEContributionStore) []model.PDEContributionStatus {
+	pdeContributionStatus := []model.PDEContributionStatus{}
+		for _, contribution := range pdeContributionStore.PDEContributionStatus {
+			pdeContributionStatus = append(pdeContributionStatus, model.PDEContributionStatus{
+				Height:                pdeContributionStore.Height,
+				Hash:                  pdeContributionStore.Hash,
+				Status:                contribution.Status,
+				TokenID1Str:           contribution.TokenID1Str,
+				Contributed1Amount:    contribution.Contributed1Amount,
+				Returned1Amount:       contribution.Returned1Amount,
+				TokenID2Str:           contribution.TokenID2Str,
+				Contributed2Amount:    contribution.Contributed2Amount,
+				Returned2Amount:       contribution.Returned2Amount,
+				PDEContributionPairID: contribution.PDEContributionPairID,
+			})
+		}
+
+	return pdeContributionStatus
+}
+
+func convertPDETradeStoreToPDETrade(pdeTradeStore *rawdbv2.PDETradeStore) []model.PDETrade {
+	pdeTrade := []model.PDETrade{}
+	for _, trade := range pdeTradeStore.PDETradeDetails {
+		pdeTrade = append(pdeTrade, model.PDETrade{
+			Height:                pdeTradeStore.Height,
+			Hash:                  pdeTradeStore.Hash,
+			Status:                trade.Status,
+			TxReqId: 			   trade.TxReqId,
+		})
+	}
+	return pdeTrade
+}
+
+func convertPDEtCrossTradeStoreToPDEtCrossTrade(pdeCrossTradeStore *rawdbv2.PDECrossTradeStore) []model.PDECrossTrade {
+	pdeCrossTrade := []model.PDECrossTrade{}
+	for _, crossTrade := range pdeCrossTradeStore.PDECrossTradeDetails {
+		pdeCrossTrade = append(pdeCrossTrade, model.PDECrossTrade{
+			Height:                pdeCrossTradeStore.Height,
+			Hash:                  pdeCrossTradeStore.Hash,
+			Status:                crossTrade.Status,
+			TxReqId: 			   crossTrade.TxReqId,
+		})
+	}
+	return pdeCrossTrade
+}
+
+func convertPDEWithdrawalStatusStoreToPDEWithdrawalStatus(pdeWithdrawalStatusStore *rawdbv2.PDEWithdrawalStatusStore) []model.PDEWithdrawalStatus {
+	pdeContributionStatus := []model.PDEWithdrawalStatus{}
+	for _, withdrawalStatus := range pdeWithdrawalStatusStore.PDEWithdrawalStatusDetails {
+		pdeContributionStatus = append(pdeContributionStatus, model.PDEWithdrawalStatus{
+			Height:                pdeWithdrawalStatusStore.Height,
+			Hash:                  pdeWithdrawalStatusStore.Hash,
+			Status:                withdrawalStatus.Status,
+			TxReqId:               withdrawalStatus.TxReqId,
+		})
+	}
+	return pdeContributionStatus
+}
+
+func convertPDEFeeWithdrawalStatusStoreToPDEFeeWithdrawalStatus(pdeFeeWithdrawalStatusStore *rawdbv2.PDEFeeWithdrawalStatusStore) []model.PDEFeeWithdrawalStatus {
+	pdeContributionStatus := []model.PDEFeeWithdrawalStatus{}
+	for _, feeWithdrawalStatus := range pdeFeeWithdrawalStatusStore.PDEFeeWithdrawalStatusDetails {
+		pdeContributionStatus = append(pdeContributionStatus, model.PDEFeeWithdrawalStatus{
+			Height:                pdeFeeWithdrawalStatusStore.Height,
+			Hash:                  pdeFeeWithdrawalStatusStore.Hash,
+			Status:                feeWithdrawalStatus.Status,
+			TxReqId:               feeWithdrawalStatus.TxReqId,
+		})
+	}
+	return pdeContributionStatus
 }
