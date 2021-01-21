@@ -69,6 +69,17 @@ type TxSalaryOutputParams struct{
 	Type 				string
 }
 
+func (pr TxSalaryOutputParams) getVersion() int{
+	// can create mint TX iff the version is 1 or 2
+	if pr.PublicKey!=nil && pr.TxRandom!=nil{
+		return 2
+	}
+	if _, err := metadata.AssertPaymentAddressAndTxVersion(&pr.ReceiverAddress, 1); err == nil{
+		return 1
+	}
+	return 0
+}
+
 func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error){
 	var err error
 	var outputCoin *privacy.CoinV2
@@ -94,7 +105,8 @@ func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error){
 func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, mdMaker func(privacy.Coin) metadata.Metadata) (metadata.Transaction, error) {
 	var res metadata.Transaction
 	isPRV := (pr.TokenID==nil) || (*pr.TokenID==common.PRVCoinID)
-	if _, err := metadata.AssertPaymentAddressAndTxVersion(&pr.ReceiverAddress, 1); err == nil {
+	switch pr.getVersion(){
+	case 1:
 		if isPRV{
 			temp := new(TxVersion1)
 			err := temp.InitTxSalary(pr.Amount, pr.ReceiverAddress, privateKey, stateDB, mdMaker(nil))
@@ -140,7 +152,7 @@ func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, sta
 			}
 			res = temp
 		}
-	}else{
+	case 2:
 		otaCoin, err := pr.generateOutputCoin()
 		if err != nil {
 			Logger.Log.Errorf("Cannot create coin for TX salary. Err: %v", err)
@@ -176,6 +188,9 @@ func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, sta
 			}
 			res = temp
 		}
+	default:
+		Logger.Log.Errorf("Cannot build Tx Salary - invalid parameters %v", pr)
+		return nil, errors.New("Cannot build Tx Salary - invalid parameters")
 	}
 	jsb, _ := json.MarshalIndent(res, "", "\t")
 	Logger.Log.Infof("Built new salary transaction %s", string(jsb))
