@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -95,8 +94,13 @@ func buildTradeResTx(
 		}
 		txParam = transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: nil, PublicKey: publicKey, TxRandom: txRandom, TokenID: tokenID, Info: []byte{}}
 	} else {
-		return nil, errors.New("cannot create trade response without txRandom info")
+		paymentAddress, err := wallet.Base58CheckDeserialize(receiverAddressStr)
+		if err != nil {
+			return nil, err
+		}
+		txParam = transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: &paymentAddress.KeySet.PaymentAddress, TokenID: tokenID, Info: []byte{}}
 	}
+
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadata.Metadata{
 		return meta
 	})

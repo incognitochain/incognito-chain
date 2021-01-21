@@ -94,7 +94,7 @@ func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error){
 func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, mdMaker func(privacy.Coin) metadata.Metadata) (metadata.Transaction, error) {
 	var res metadata.Transaction
 	isPRV := (pr.TokenID==nil) || (*pr.TokenID==common.PRVCoinID)
-	if pr.ReceiverAddress!=nil && pr.ReceiverAddress.OTAPublic==nil{
+	if _, err := metadata.AssertPaymentAddressAndTxVersion(&pr.ReceiverAddress, 1); err == nil {
 		if isPRV{
 			temp := new(TxVersion1)
 			err := temp.InitTxSalary(pr.Amount, pr.ReceiverAddress, privateKey, stateDB, mdMaker(nil))
