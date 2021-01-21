@@ -95,7 +95,8 @@ There is more than 1 million lines of code in the Incognito codebase. Below is a
 
     * **Bitcoin**.  Incognito is working on a trustless two-way bridge between Incognito and Bitcoin to let anyone send and receive BTC privately. Here is its proposal (TBD). Estimated ship date: April 2021.
     
-  * **pDEX** Incognito implements a first privacy-protecting decentralized exchange to let anyone freely trade without disclosing their identity with high throughput and low latency. Its code is in the [blockchain](https://github.com/incognitochain/incognito-chain/tree/production/blockchain) package.
+  * **pDEX** 
+  * **pDEX**.  Incognito implements a first privacy-protecting decentralized exchange to let anyone freely trade without disclosing their identity with high throughput and low latency. Its code is in the [blockchain](https://github.com/incognitochain/incognito-chain/tree/production/blockchain) package.
 
 * **Developer Tools**
 
