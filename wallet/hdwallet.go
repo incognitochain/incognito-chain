@@ -294,7 +294,7 @@ func GetPaymentAddressV1(addr string, isNewEncoding bool) (string, error) {
 			return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addr))
 		}
 
-		addrV1 := base58.Base58Check{}.NewEncode(addr1InBytes, common.ZeroByte)
+		addrV1 := base58.Base58Check{}.Encode(addr1InBytes, common.ZeroByte)
 		if len(addrV1) == 0 {
 			return "", errors.New(fmt.Sprintf("cannot decode new payment address: %v", addr))
 		}

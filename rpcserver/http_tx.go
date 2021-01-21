@@ -494,7 +494,7 @@ func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interf
 	}
 
 	// #1: payment address
-	paymentAddressStr, ok := arrayParams[0].(string)
+	shardID, ok := arrayParams[0].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PaymentAddress is invalid"))
 	}
@@ -522,7 +522,7 @@ func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interf
 		}
 	}
 
-	commitmentIndices, publicKeys, commitments, assetTags, err2 := httpServer.txService.RandomCommitmentsAndPublicKeys(paymentAddressStr, int(numOutputs), tokenID)
+	commitmentIndices, publicKeys, commitments, assetTags, err2 := httpServer.txService.RandomCommitmentsAndPublicKeys(byte(shardID), int(numOutputs), tokenID)
 	if err2 != nil {
 		return nil, err2
 	}
