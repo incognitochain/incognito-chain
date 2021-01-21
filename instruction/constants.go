@@ -16,6 +16,7 @@ const (
 	SPLITTER               = ","
 	TRUE                   = "true"
 	FALSE                  = "false"
+	FINISH_SYNC_ACTION     = "finish_sync"
 )
 
 const (

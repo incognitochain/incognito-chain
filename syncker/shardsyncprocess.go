@@ -209,6 +209,9 @@ func (s *ShardSyncProcess) syncShardProcess() {
 				//TODO: @tin
 				// call blockchain for get shardchain by shard id
 				// then call a method for building a tx send to network for announcing readyForCommitee
+				/*if s.blockchain.ShardChain[s.shardID].FinishedSync() {*/
+				////rpcserver.
+				/*}*/
 
 			}
 			time.Sleep(time.Second * 5)

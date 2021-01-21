@@ -148,39 +148,6 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 	return hashes, committeeChange, incurredInstructions, nil
 }
 
-//GenerateAssignInstruction generate assign instructions for assign from syncing pool to shard pending pool
-func (engine *BeaconCommitteeEngineV3) GenerateAssignInstruction(rand int64, assignOffset int, activeShards int, beaconHeight uint64) []*instruction.AssignInstruction {
-	assignInstructions := []*instruction.AssignInstruction{}
-
-	/*for i := 0; i < activeShards; i++ {*/
-	//shardID := byte(i)
-	//syncingValidators, _ := incognitokey.CommitteeKeyListToString(engine.finalState.SyncPool()[shardID])
-
-	//validKeys := []string{}
-	//for _, v := range syncingValidators {
-	//if beaconHeight-syncTerm-engine.finalState.Terms()[v] < 0 {
-	//break
-	//}
-	//validKeys = append(validKeys, v)
-	//}
-
-	//validKeysStruct, _ := incognitokey.CommitteeBase58KeyListToStruct(validKeys)
-	//assignInstruction := &instruction.AssignInstruction{
-	//ChainID:               int(shardID),
-	//ShardCandidates:       validKeys,
-	//ShardCandidatesStruct: validKeysStruct,
-	//}
-
-	//if !assignInstruction.IsEmpty() {
-	//assignInstructions = append(assignInstructions, assignInstruction)
-	//} else {
-	//Logger.log.Infof("Generate empty assign instruction beacon hash: %s & height: %v \n", engine.beaconHash, engine.beaconHeight)
-	//}
-	//}
-
-	return assignInstructions
-}
-
 func (engine BeaconCommitteeEngineV3) SyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
 	engine.finalState.Mu().RLock()
 	defer engine.finalState.Mu().RUnlock()
