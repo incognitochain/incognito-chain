@@ -432,7 +432,7 @@ func (blockchain *BlockChain) processPDECrossPoolTrade(pdexStateDB *statedb.Stat
 		}
 		state.pdeCrossTradeStore.PDECrossTradeDetails = append(state.pdeCrossTradeStore.PDECrossTradeDetails, rawdbv2.PDECrossTradeInfo{
 			TxReqId:  pdeRefundCrossPoolTrade.TxReqID.String(),
-			Status:  common.PDETradeAcceptedStatus,
+			Status:  common.PDECrossPoolTradeRefundStatus,
 		})
 		return nil
 	}
@@ -476,7 +476,7 @@ func (blockchain *BlockChain) processPDECrossPoolTrade(pdexStateDB *statedb.Stat
 	}
 	state.pdeCrossTradeStore.PDECrossTradeDetails = append(state.pdeCrossTradeStore.PDECrossTradeDetails, rawdbv2.PDECrossTradeInfo{
 		TxReqId:  pdeTradeAcceptedContents[0].RequestedTxID.String(),
-		Status:  common.PDETradeAcceptedStatus,
+		Status:  common.PDECrossPoolTradeAcceptedStatus,
 	})
 	return nil
 }

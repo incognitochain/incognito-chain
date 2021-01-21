@@ -403,7 +403,7 @@ func (m *mongoDBDriver) createIndexForPdeContributionStatusBestState(ctx context
 }
 
 func (m *mongoDBDriver) createIndexForPdeContributionStatusFinalState(ctx context.Context) error {
-	m.pdeContributionStatusFinalState = m.client.Database(DataBaseName).Collection(PDECrossTradeFinalState)
+	m.pdeContributionStatusFinalState = m.client.Database(DataBaseName).Collection(PDEContributionStatusFinalState)
 	return nil
 }
 
@@ -453,7 +453,7 @@ func (m *mongoDBDriver) createIndexForPdeWithdrawalStatusFinalState(ctx context.
 }
 
 func (m *mongoDBDriver) createIndexForPdeFeeWithdrawalStatusTrackChange(ctx context.Context) error {
-	m.pdeFeeWithdrawalStatusBestState = m.client.Database(DataBaseName).Collection(PDEFeeWithdrawalStatusTrackChange)
+	m.pdeFeeWithdrawalStatusTrackChange = m.client.Database(DataBaseName).Collection(PDEFeeWithdrawalStatusTrackChange)
 	return nil
 }
 
