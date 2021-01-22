@@ -528,9 +528,6 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 		v.BestBlock = block
-		if v.GetHeight() == 964567 {
-			break
-		}
 
 		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain)
 		if err != nil {
