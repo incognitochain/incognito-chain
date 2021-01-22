@@ -246,20 +246,28 @@ func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetri
 }
 
 //Checks if a string payment address is supported by the underlying transaction.
+//
+//TODO: try another approach since the function itself is too complicated.
 func AssertPaymentAddressAndTxVersion(paymentAddress interface{}, version int8) (privacy.PaymentAddress, error) {
 	var addr privacy.PaymentAddress
 	var ok bool
 	//try to parse the payment address
 	if addr, ok = paymentAddress.(privacy.PaymentAddress); !ok {
-		addrStr, ok := paymentAddress.(string)
-		if !ok {
-			return privacy.PaymentAddress{}, errors.New(fmt.Sprintf("cannot parse payment address - %v: Not a payment address or string address (txversion %v)", paymentAddress, version))
+		//try the pointer
+		if tmpAddr, ok := paymentAddress.(*privacy.PaymentAddress); !ok {
+			//try the string one
+			addrStr, ok := paymentAddress.(string)
+			if !ok {
+				return privacy.PaymentAddress{}, errors.New(fmt.Sprintf("cannot parse payment address - %v: Not a payment address or string address (txversion %v)", paymentAddress, version))
+			}
+			keyWallet, err := wallet.Base58CheckDeserialize(addrStr)
+			if err != nil {
+				return privacy.PaymentAddress{}, err
+			}
+			addr = keyWallet.KeySet.PaymentAddress
+		} else {
+			addr = *tmpAddr
 		}
-		keyWallet, err := wallet.Base58CheckDeserialize(addrStr)
-		if err != nil {
-			return privacy.PaymentAddress{}, err
-		}
-		addr = keyWallet.KeySet.PaymentAddress
 	}
 
 	//Always check public spend and public view keys

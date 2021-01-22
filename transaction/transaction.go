@@ -74,10 +74,12 @@ func (pr TxSalaryOutputParams) getVersion() int{
 	if pr.PublicKey!=nil && pr.TxRandom!=nil{
 		return 2
 	}
-	if _, err := metadata.AssertPaymentAddressAndTxVersion(&pr.ReceiverAddress, 1); err == nil{
+	if _, err := metadata.AssertPaymentAddressAndTxVersion(*pr.ReceiverAddress, 1); err == nil{
 		return 1
+	} else {
+		Logger.Log.Errorf("AssertPaymentAddressAndTxVersion error: %v\n", err)
+		return 0
 	}
-	return 0
 }
 
 func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error){
