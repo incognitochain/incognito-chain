@@ -919,4 +919,13 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		newBeaconCommitteeStateV2,
 	)
 	beaconBestState.beaconCommitteeEngine = newCommitteeEngineV2
+	shardCommitteeFlattenList := []string{}
+	for _, committee := range shardCommittee {
+		committeeFlatten, err := incognitokey.CommitteeKeyListToString(committee)
+		if err != nil {
+			panic(err)
+		}
+		shardCommitteeFlattenList = append(shardCommitteeFlattenList, committeeFlatten...)
+	}
+	beaconBestState.missingSignatureCounter.Reset(shardCommitteeFlattenList)
 }
