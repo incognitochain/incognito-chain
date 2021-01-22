@@ -220,11 +220,21 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 	//fullnode delay 1 block (make sure insert final block)
 	if os.Getenv("FULLNODE") != "" {
 		toHeight = pState.BestViewHeight - 1
+		if toHeight <= s.Chain.GetBestViewHeight() {
+			return
+		}
 	}
 
-	if toHeight <= s.Chain.GetBestViewHeight() {
+	//if is behind, and
+	//if peerstate show fork, sync that peerID
+	if pState.BestViewHeight < s.Chain.GetBestViewHeight() || (pState.BestViewHeight == s.Chain.GetBestViewHeight() && s.Chain.GetBestViewHash() == pState.BestViewHash) {
 		return
 	}
+
+	//if pState.BestViewHeight == s.Chain.GetBestViewHeight() {
+	//	fmt.Println("debug ", pState.BestViewHeight, s.Chain.GetBestViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
+	//	panic(1)
+	//}
 
 	//fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
 	ch, err := s.Network.RequestShardBlocksViaStream(ctx, peerID, s.shardID, s.Chain.GetFinalViewHeight()+1, toHeight)
