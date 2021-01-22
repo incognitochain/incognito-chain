@@ -518,16 +518,15 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	blockchain.ShardChain[shardID].multiView.Reset()
 
 	for _, v := range allViews {
-		if v.GetHeight() == 964568 {
-			break
-		}
-
 		block, _, err := blockchain.GetShardBlockByHash(v.BestBlockHash)
 		if err != nil || block == nil {
 			fmt.Println("block ", block)
 			panic(err)
 		}
 		v.BestBlock = block
+		if v.GetHeight() == 964568 {
+			break
+		}
 
 		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain)
 		if err != nil {
