@@ -297,9 +297,14 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 	//fullnode delay 1 block (make sure insert final block)
 	if os.Getenv("FULLNODE") != "" {
 		toHeight = toHeight - 1
+		if toHeight <= s.chain.GetBestViewHeight() {
+			return
+		}
 	}
 
-	if toHeight <= s.chain.GetBestViewHeight() {
+	//if is behind, and
+	//if peerstate show fork, sync that block
+	if pState.BestViewHeight < s.chain.GetBestViewHeight() || (pState.BestViewHeight == s.chain.GetBestViewHeight() && s.chain.GetBestViewHash() == pState.BestViewHash) {
 		return
 	}
 
