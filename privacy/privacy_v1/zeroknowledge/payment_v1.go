@@ -854,11 +854,11 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, sha
 			}
 
 		}
-		valid, err := proof.aggregatedRangeProof.Verify()
-		if !valid {
-			Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
-			return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
-		}
+		//valid, err := proof.aggregatedRangeProof.Verify()
+		//if !valid {
+		//	Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
+		//	return false, errhandler.NewPrivacyErr(errhandler.VerifyAggregatedProofFailedErr, err)
+		//}
 	}
 
 	// Verify the proof that sum of all input values is equal to sum of all output values
