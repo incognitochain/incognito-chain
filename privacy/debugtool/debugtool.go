@@ -39,7 +39,7 @@ func (this *DebugTool) InitDevNet() *DebugTool {
 	if this == nil {
 		this = new(DebugTool)
 	}
-	this.url = "http://139.162.55.124:8334"
+	this.url = "http://139.162.55.124:3334"
 	return this
 }
 

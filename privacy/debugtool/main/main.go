@@ -141,7 +141,7 @@ func GetPRVOutPutCoin(tool *debugtool.DebugTool, privkey string, height uint64) 
 		fmt.Println(err)
 		return
 	}
-	outCoinKey.SetReadonlyKey("") //Call this if you dont want the full node to decrypt your amount.
+	//outCoinKey.SetReadonlyKey("") //Call this if you dont want the full node to decrypt your amount.
 
 	b, err := tool.GetListOutputCoinsByRPC(outCoinKey, common.PRVIDStr, height)
 	if err != nil {

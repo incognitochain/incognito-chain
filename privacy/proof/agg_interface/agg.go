@@ -10,3 +10,4 @@ type AggregatedRangeProof interface {
 
 // type AggregatedRangeProofV1 = aggregatedrange.AggregatedRangeProof
 // type AggregatedRangeProofV2 = bulletproofs.AggregatedRangeProof
+

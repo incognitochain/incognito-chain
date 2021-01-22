@@ -71,7 +71,7 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		}
 	}
 	//TODO: add go routine
-	ok, err, i := aggregatedrange.VerifyBatchingAggregatedRangeProofs(bulletProofListVer1)
+	ok, err, i := aggregatedrange.VerifyBatch(bulletProofListVer1)
 	if err != nil {
 		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, err), -1
 	}
