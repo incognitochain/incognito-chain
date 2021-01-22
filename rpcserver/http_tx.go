@@ -682,7 +682,23 @@ func (httpServer *HttpServer) handleHasSerialNumbers(params interface{}, closeCh
 	// #1: ShardID
 	shardID, ok := arrayParams[0].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("ShardID is invalid"))
+		//If no direct shardID provided, try a payment address
+		paymentAddressStr ,ok := arrayParams[0].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("shardID is invalid: expect a shardID or a payment address, have %v", arrayParams[0])))
+		}
+
+		tmpWallet, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("error when deserialized payment address %v: %v", paymentAddressStr, err)))
+		}
+
+		pk := tmpWallet.KeySet.PaymentAddress.Pk
+		if len(pk) == 0 {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf( "payment address %v invalid: no public key found", paymentAddressStr)))
+		}
+
+		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk) - 1]))
 	}
 
 	//#2: list serialnumbers in base58check encode string
