@@ -1087,7 +1087,7 @@ func (m *mongoDBDriver) storeAllBeaconStateDataWithTransaction(ctx context.Conte
 
 	defer session.EndSession(ctx)
 
-	err = mongo.WithSession(ctx, session, func(sessionContext mongo.SessionContext) error {
+	return mongo.WithSession(ctx, session, func(sessionContext mongo.SessionContext) error {
 		if err := session.StartTransaction(txnOpts); err != nil {
 			return err
 		}
@@ -1098,18 +1098,16 @@ func (m *mongoDBDriver) storeAllBeaconStateDataWithTransaction(ctx context.Conte
 			return err
 		}
 
+		if err != nil {
+			_ = session.AbortTransaction(ctx)
+			return err
+		}
+
 		if err := session.CommitTransaction(sessionContext); err != nil {
 			return err
 		}
 		return nil
 	})
-
-	if err != nil {
-		if abortErr := session.AbortTransaction(ctx); abortErr != nil {
-			return abortErr
-		}
-	}
-	return err
 }
 
 func (m *mongoDBDriver) storeAllBeaconStateData(ctx context.Context, beaconState model.BeaconState, pdeShares model.PDEShare, pdePoolPairs model.PDEPoolForPair, pdeTradingFees model.PDETradingFee, waitingPDEContributionStates model.WaitingPDEContribution, custodians model.Custodian, waitingPortingRequests model.WaitingPortingRequest, matchedRedeemRequests model.RedeemRequest, waitingRedeemRequests model.RedeemRequest, finalExchangeRates model.FinalExchangeRate, lockedCollaterals model.LockedCollateral, bridgeTokenState model.BridgeTokenState) error {
@@ -1223,14 +1221,17 @@ func (m *mongoDBDriver) storeAllShardStateDataWithTransaction(ctx context.Contex
 
 	defer session.EndSession(ctx)
 
-	err = mongo.WithSession(ctx, session, func(sessionContext mongo.SessionContext) error {
+	return mongo.WithSession(ctx, session, func(sessionContext mongo.SessionContext) error {
 		log.Printf("Shard Enter session")
-		if err = session.StartTransaction(txnOpts); err != nil {
+		if err := session.StartTransaction(txnOpts); err != nil {
 			return err
 		}
 
-		if err := m.storeAllShardStateData(sessionContext, shardId, shardState, transactions, inputCoins, outputCoins,
-			crossOutputCoins, commitments, publicKeyToHashes, tokenState, rewardState); err != nil {
+		err := m.storeAllShardStateData(sessionContext, shardId, shardState, transactions, inputCoins, outputCoins,
+			crossOutputCoins, commitments, publicKeyToHashes, tokenState, rewardState);
+
+		if err != nil {
+			_ = session.AbortTransaction(ctx)
 			return err
 		}
 
@@ -1240,13 +1241,6 @@ func (m *mongoDBDriver) storeAllShardStateDataWithTransaction(ctx context.Contex
 		}
 		return nil
 	})
-
-	if err != nil {
-		if abortErr := session.AbortTransaction(ctx); abortErr != nil {
-			return abortErr
-		}
-	}
-	return err
 }
 
 func (m *mongoDBDriver) storeAllShardStateData(ctx context.Context, shardId byte, shardState model.ShardState, transactions []model.Transaction, inputCoins []model.InputCoin, outputCoins []model.OutputCoin, crossOutputCoins []model.OutputCoin, commitments []model.Commitment, publicKeyToHashes []model.PublicKeyToTransactionHash, tokenState model.TokenState, rewardState model.CommitteeRewardState) error {
