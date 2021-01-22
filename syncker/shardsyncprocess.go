@@ -235,16 +235,20 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 	//	fmt.Println("debug ", pState.BestViewHeight, s.Chain.GetBestViewHash(), s.Chain.GetBestViewHash(), pState.BestViewHash)
 	//	panic(1)
 	//}
-
+	if !((pState.BestViewHeight == s.Chain.GetBestViewHeight()) && (s.Chain.GetBestViewHash() != pState.BestViewHash)) {
+		peerID = ""
+		requestCnt++
+	} 
 	//fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
 	ch, err := s.Network.RequestShardBlocksViaStream(ctx, peerID, s.shardID, s.Chain.GetFinalViewHeight()+1, toHeight)
 	// ch, err := s.Server.RequestShardBlocksViaStream(ctx, "", s.shardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
 	if err != nil {
 		fmt.Println("Syncker: create channel fail")
+		requestCnt = 0
 		return
 	}
 
-	requestCnt++
+	
 	insertTime := time.Now()
 	for {
 		select {
