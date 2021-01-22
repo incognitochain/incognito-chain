@@ -308,15 +308,20 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 		return
 	}
 
+	if !(pState.BestViewHeight == s.chain.GetBestViewHeight() && s.chain.GetBestViewHash() == pState.BestViewHash) {
+		requestCnt++
+		peerID = ""
+	}
+	
 	//stream
-	ch, err := s.network.RequestBeaconBlocksViaStream(ctx, "", s.chain.GetFinalViewHeight()+1, toHeight)
+	ch, err := s.network.RequestBeaconBlocksViaStream(ctx, peerID, s.chain.GetFinalViewHeight()+1, toHeight)
 	if err != nil {
 		fmt.Println("Syncker: create channel fail")
+		requestCnt = 0
 		return
 	}
 
 	//receive
-	requestCnt++
 	insertTime := time.Now()
 	for {
 		select {
