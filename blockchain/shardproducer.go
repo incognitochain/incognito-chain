@@ -106,6 +106,9 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	BLogger.log.Infof("Producing block: %d", shardBestState.ShardHeight+1)
 	if beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
 		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
+		if beaconProcessHeight > blockchain.config.ChainParams.ConsensusV3Height {
+			beaconProcessHeight = blockchain.config.ChainParams.ConsensusV3Height
+		}
 	}
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {

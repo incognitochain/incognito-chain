@@ -831,11 +831,13 @@ func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 	firstBeaconHeightOfEpoch := bc.GetFirstBeaconHeightInEpoch(curView.Epoch)
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height
-	allShardStates := make(map[byte][]types.ShardState)
 
 	for tempBeaconHeight >= firstBeaconHeightOfEpoch {
 		for shardID, shardStates := range tempBeaconBlock.Body.ShardState {
-			allShardStates[shardID] = append(allShardStates[shardID], shardStates...)
+			err := curView.countMissingSignature(bc, shardID, shardStates, tempBeaconHeight)
+			if err != nil {
+				return err
+			}
 		}
 		if tempBeaconHeight == 1 {
 			break
@@ -847,8 +849,7 @@ func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 		tempBeaconBlock = previousBeaconBlock
 		tempBeaconHeight--
 	}
-
-	return curView.countMissingSignature(bc, allShardStates)
+	return nil
 }
 
 func (beaconBestState *BeaconBestState) CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey {

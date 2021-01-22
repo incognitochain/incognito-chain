@@ -719,6 +719,24 @@ func TestBlockChain_GetFirstBeaconHeightInEpoch(t *testing.T) {
 			want: 301,
 		},
 		{
+			name: "= break point 2",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             10,
+						EpochV2:           20,
+						EpochV2BreakPoint: 999,
+						RandomTime:        5,
+						RandomTimeV2:      10,
+					},
+				},
+			},
+			args: args{
+				epoch: 999,
+			},
+			want: 9981,
+		},
+		{
 			name: "> break point",
 			fields: fields{
 				config: Config{

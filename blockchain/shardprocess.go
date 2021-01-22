@@ -1104,7 +1104,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if newShardState.BeaconHeight == blockchain.config.ChainParams.ConsensusV3Height {
+	if newShardState.BeaconHeight >= blockchain.config.ChainParams.ConsensusV3Height {
 		err := newShardState.upgradeCommitteeEngineV2(blockchain)
 		if err != nil {
 			panic(NewBlockChainError(-11111, fmt.Errorf("Upgrade Committe Engine Error, %+v", err)))
