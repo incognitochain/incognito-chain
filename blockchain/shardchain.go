@@ -85,7 +85,7 @@ func (s *ShardChain) GetFinalViewHeight() uint64 {
 }
 
 func (s *ShardChain) GetBestViewHash() string {
-	return s.GetBestState().Hash().String()
+	return s.GetBestState().BestBlockHash.String()
 }
 
 func (s *ShardChain) GetFinalViewHash() string {
