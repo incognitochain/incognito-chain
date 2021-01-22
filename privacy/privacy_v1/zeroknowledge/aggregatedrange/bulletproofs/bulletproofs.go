@@ -516,7 +516,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	expVector := vectorMulScalar(powerVector(z, numValuePad), zSquare)
 	RHS.Add(RHS, new(operation.Point).MultiScalarMult(expVector, cmsValue))
 	if !operation.IsPointEqual(LHS, RHS) {
-		Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
+		//Logger.Log.Errorf("verify aggregated range proof statement 1 failed")
 		return false, errors.New("verify aggregated range proof statement 1 failed")
 	}
 
@@ -542,7 +542,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	PPrime := new(operation.Point).Add(proof.innerProductProof.p, new(operation.Point).ScalarMult(operation.HBase, proof.mu) )
 
 	if !operation.IsPointEqual(P, PPrime) {
-		Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
+		//Logger.Log.Errorf("verify aggregated range proof statement 2-1 failed")
 		return false, errors.New("verify aggregated range proof statement 2-1 failed")
 	}
 
@@ -592,7 +592,7 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 
 	res := operation.IsPointEqual(rightHS, leftHS)
 	if !res {
-		Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
+		//Logger.Log.Errorf("verify aggregated range proof statement 2 failed")
 		return false, errors.New("verify aggregated range proof statement 2 failed")
 	}
 
@@ -777,7 +777,7 @@ func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 	//fmt.Println("Batch Verification ", RHSPrime)
 
 	if !operation.IsPointEqual(LHSPrime, RHSPrime) {
-		Logger.Log.Errorf("batch verify aggregated range proof failed")
+		//Logger.Log.Errorf("batch verify aggregated range proof failed")
 		return false, errors.New("batch verify aggregated range proof failed"), -1
 	}
 	return true, nil, -1
