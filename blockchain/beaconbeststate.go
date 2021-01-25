@@ -927,5 +927,8 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		}
 		shardCommitteeFlattenList = append(shardCommitteeFlattenList, committeeFlatten...)
 	}
-	beaconBestState.missingSignatureCounter.Reset(shardCommitteeFlattenList)
+	if beaconBestState.missingSignatureCounter != nil {
+		beaconBestState.missingSignatureCounter.Reset(shardCommitteeFlattenList)
+	}
+	Logger.log.Infof("BEACON | Beacon Height %+v, UPGRADE Beacon Committee Engine from V1 to V2", beaconBestState.BeaconHeight)
 }
