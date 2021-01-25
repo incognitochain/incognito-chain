@@ -349,7 +349,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 		dsaKey := []byte{}
 		if vote.IsValid == 0 {
 			for _, c := range v.committees {
-				e.Logger.Info(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
+				//e.Logger.Info(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
 				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
 					dsaKey = c.MiningPubKey[common.BridgeConsensus]
 				}

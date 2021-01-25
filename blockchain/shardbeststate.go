@@ -422,6 +422,7 @@ func InitShardCommitteeEngineV2(
 		shardCommittees, err = bc.GetShardCommitteeFromBeaconHash(committeeFromBlockHash, shardID)
 		if err != nil {
 			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
+			panic(err)
 		}
 	}
 	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(shardCommittees, committeeFromBlockHash)
