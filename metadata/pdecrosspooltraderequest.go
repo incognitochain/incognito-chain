@@ -215,6 +215,11 @@ func (pc PDECrossPoolTradeRequest) Hash() *common.Hash {
 }
 
 func (pc *PDECrossPoolTradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+	// for tx trade v1 compatibility
+	if len(pc.SubTraderAddressStr) == 0 {
+		pc.SubTraderAddressStr = pc.TraderAddressStr
+	}
+
 	actionContent := PDECrossPoolTradeRequestAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),
