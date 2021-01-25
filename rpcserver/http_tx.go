@@ -445,10 +445,26 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
 	}
 
-	// #1: payment address
-	paymentAddressStr, ok := arrayParams[0].(string)
+	// #1: ShardID
+	shardID, ok := arrayParams[0].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PaymentAddress is invalid"))
+		//If no direct shardID provided, try a payment address
+		paymentAddressStr ,ok := arrayParams[0].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("shardID is invalid: expect a shardID or a payment address, have %v", arrayParams[0])))
+		}
+
+		tmpWallet, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("error when deserialized payment address %v: %v", paymentAddressStr, err)))
+		}
+
+		pk := tmpWallet.KeySet.PaymentAddress.Pk
+		if len(pk) == 0 {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf( "payment address %v invalid: no public key found", paymentAddressStr)))
+		}
+
+		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk) - 1]))
 	}
 
 	// #2: available inputCoin from old outputcoin
@@ -477,7 +493,7 @@ func (httpServer *HttpServer) handleRandomCommitments(params interface{}, closeC
 		}
 	}
 
-	commitmentIndexs, myCommitmentIndexs, commitments, err2 := httpServer.txService.RandomCommitments(paymentAddressStr, outputs, tokenID)
+	commitmentIndexs, myCommitmentIndexs, commitments, err2 := httpServer.txService.RandomCommitments(byte(shardID), outputs, tokenID)
 	if err2 != nil {
 		return nil, err2
 	}
@@ -493,10 +509,26 @@ func (httpServer *HttpServer) handleRandomCommitmentsAndPublicKeys(params interf
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 2 element"))
 	}
 
-	// #1: payment address
+	// #1: ShardID
 	shardID, ok := arrayParams[0].(float64)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PaymentAddress is invalid"))
+		//If no direct shardID provided, try a payment address
+		paymentAddressStr ,ok := arrayParams[0].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("shardID is invalid: expect a shardID or a payment address, have %v", arrayParams[0])))
+		}
+
+		tmpWallet, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf("error when deserialized payment address %v: %v", paymentAddressStr, err)))
+		}
+
+		pk := tmpWallet.KeySet.PaymentAddress.Pk
+		if len(pk) == 0 {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New(fmt.Sprintf( "payment address %v invalid: no public key found", paymentAddressStr)))
+		}
+
+		shardID = float64(common.GetShardIDFromLastByte(pk[len(pk) - 1]))
 	}
 
 	// #2: Number of commitments

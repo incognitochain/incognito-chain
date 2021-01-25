@@ -1444,13 +1444,7 @@ func (txService TxService) PrivacyCustomTokenDetail(tokenIDStr string) ([]common
 	return txs, tokenData, nil
 }
 
-func (txService TxService) RandomCommitments(paymentAddressStr string, outputs []interface{}, tokenID *common.Hash) ([]uint64, []uint64, [][]byte, *RPCError) {
-	_, shardIDSender, err := GetKeySetFromPaymentAddressParam(paymentAddressStr)
-	if err != nil {
-		Logger.log.Debugf("handleRandomCommitments result: %+v, err: %+v", nil, err)
-		return nil, nil, nil, NewRPCError(UnexpectedError, err)
-	}
-
+func (txService TxService) RandomCommitments(shardIDSender byte, outputs []interface{}, tokenID *common.Hash) ([]uint64, []uint64, [][]byte, *RPCError) {
 	usableCoin := make([]coin.PlainCoin, len(outputs))
 	for index, item := range outputs {
 		out, err1 := jsonresult.NewOutcoinFromInterface(item)
