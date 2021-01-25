@@ -315,9 +315,10 @@ func (chain *ShardChain) GetAllView() []multiview.View {
 // Input block must be ShardBlock
 func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
 	var err error
+	var isShardView bool
 	var shardView *ShardBestState
-	shardView, err = chain.GetViewByHash(block.GetPrevHash()).(*ShardBestState)
-	if err != nil {
+	shardView, isShardView = chain.GetViewByHash(block.GetPrevHash()).(*ShardBestState)
+	if !isShardView {
 		shardView = chain.GetBestState()
 	}
 	result := []incognitokey.CommitteePublicKey{}
