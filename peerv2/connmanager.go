@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 
+	pubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
@@ -17,7 +18,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
 )
 
@@ -109,7 +109,12 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 func (cm *ConnManager) Start(ns NetSync) {
 	// Pubsub
 	var err error
-	cm.ps, err = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host, pubsub.WithMaxMessageSize(common.MaxPSMsgSize))
+	cm.ps, err = pubsub.NewFloodSub(
+		context.Background(),
+		cm.LocalHost.Host,
+		pubsub.WithMaxMessageSize(common.MaxPSMsgSize),
+		pubsub.WithPeerOutboundQueueSize(1024),
+	)
 	if err != nil {
 		panic(err)
 	}
