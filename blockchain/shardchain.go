@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -323,7 +324,11 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognito
 	}
 	result := []incognitokey.CommitteePublicKey{}
 
-	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+	shardBlock, isShardBlock := block.(*types.ShardBlock)
+	if !isShardBlock {
+		return result, fmt.Errorf("Shard Chain NOT insert Shard Block Types")
+	}
+	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION || shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
 		result = append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
 	} else if shardView.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
 		result, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID))
