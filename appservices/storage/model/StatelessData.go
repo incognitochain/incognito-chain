@@ -1,9 +1,5 @@
 package model
 
-import (
-	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-)
-
 type Transaction struct {
 	ShardHash 			 string `json:"ShardHash"`
 	ShardHeight 		 uint64 `json:"ShardHeight"`
@@ -18,7 +14,7 @@ type Transaction struct {
 	Image                string  `json:"Image"`
 	IsPrivacy            bool `json:"IsPrivacy"`
 	Proof           	 *string `json:"Proof,omitempty"`
-	ProofDetail          jsonresult.ProofDetail       `json:"ProofDetail"`
+	ProofDetail          ProofDetail       `json:"ProofDetail"`
 	InputCoinPubKey 	 string            `json:"InputCoinPubKey"`
 	SigPubKey            string `json:"SigPubKey,omitempty"` // 33 bytes
 	Sig                  string `json:"Sig,omitempty"`       //
@@ -29,7 +25,7 @@ type Transaction struct {
 	PrivacyCustomTokenName        string      `json:"PrivacyCustomTokenName"`
 	PrivacyCustomTokenSymbol      string      `json:"PrivacyCustomTokenSymbol"`
 	PrivacyCustomTokenData        string      `json:"PrivacyCustomTokenData"`
-	PrivacyCustomTokenProofDetail jsonresult.ProofDetail `json:"PrivacyCustomTokenProofDetail"`
+	PrivacyCustomTokenProofDetail ProofDetail `json:"PrivacyCustomTokenProofDetail"`
 	PrivacyCustomTokenProof 		*string `json:"PrivacyCustomTokenProof"`
 	PrivacyCustomTokenIsPrivacy   bool        `json:"PrivacyCustomTokenIsPrivacy"`
 	PrivacyCustomTokenFee         uint64      `json:"PrivacyCustomTokenFee"`
@@ -37,6 +33,27 @@ type Transaction struct {
 	IsInBlock   bool `json:"IsInBlock"`
 	Info     			string `json:"Info"` // 512 bytes
 }
+
+type ProofDetail struct {
+	InputCoins  []*CoinDetail
+	OutputCoins []*CoinDetail
+}
+
+type CoinDetail struct {
+	CoinDetails          Coin
+	CoinDetailsEncrypted string
+}
+
+type Coin struct {
+	PublicKey      string
+	CoinCommitment string
+	SNDerivator    string
+	SerialNumber   string
+	Randomness     string
+	Value          string
+	Info           string
+}
+
 
 type TransactionCustomToken struct {
 	Tx			   Transaction          // used for privacy functionality

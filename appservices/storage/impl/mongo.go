@@ -12,7 +12,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
-	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -1228,7 +1227,7 @@ func (m *mongoDBDriver) storeAllShardStateDataWithTransaction(ctx context.Contex
 		}
 
 		err := m.storeAllShardStateData(sessionContext, shardId, shardState, transactions, inputCoins, outputCoins,
-			crossOutputCoins, commitments, publicKeyToHashes, tokenState, rewardState);
+			crossOutputCoins, commitments, publicKeyToHashes, tokenState, rewardState)
 
 		if err != nil {
 			_ = session.AbortTransaction(ctx)
@@ -1733,35 +1732,35 @@ func getTransactionFromShardState(shard *data.Shard) []model.Transaction {
 	return transactions
 }
 
-func getProofDetail (normalTx *data.Transaction) (jsonresult.ProofDetail, *string) {
+func getProofDetail (normalTx *data.Transaction) (model.ProofDetail, *string) {
 	if normalTx.Proof == nil {
-		return jsonresult.ProofDetail{}, nil
+		return model.ProofDetail{}, nil
 	}
 	b, _:= normalTx.Proof.MarshalJSON()
 	proof := string(b)
-	return jsonresult.ProofDetail{
+	return model.ProofDetail{
 		InputCoins:  getProofDetailInputCoin(normalTx.Proof),
 		OutputCoins: getProofDetailOutputCoin(normalTx.Proof),
 	}, &proof
 }
 
-func getProofDetailInputCoin(proof *zkp.PaymentProof) []*jsonresult.CoinDetail {
-	inputCoins := make([]*jsonresult.CoinDetail, 0)
+func getProofDetailInputCoin(proof *zkp.PaymentProof) []*model.CoinDetail {
+	inputCoins := make([]*model.CoinDetail, 0)
 	for _, input := range proof.GetInputCoins() {
-		in := jsonresult.CoinDetail{
-			CoinDetails: jsonresult.Coin{},
+		in := model.CoinDetail{
+			CoinDetails: model.Coin{},
 		}
 		if input.CoinDetails != nil {
-			in.CoinDetails.Value = input.CoinDetails.GetValue()
+			in.CoinDetails.Value = strconv.FormatUint(input.CoinDetails.GetValue(), 10)
 			in.CoinDetails.Info = base58.Base58Check{}.Encode(input.CoinDetails.GetInfo(), 0x0)
 			if input.CoinDetails.GetCoinCommitment() != nil {
 				in.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(input.CoinDetails.GetCoinCommitment().ToBytesS(), 0x0)
 			}
 			if input.CoinDetails.GetRandomness() != nil {
-				in.CoinDetails.Randomness = *input.CoinDetails.GetRandomness()
+				in.CoinDetails.Randomness = base58.Base58Check{}.Encode(input.CoinDetails.GetRandomness().ToBytesS(), 0x0)
 			}
 			if input.CoinDetails.GetSNDerivator() != nil {
-				in.CoinDetails.SNDerivator = *input.CoinDetails.GetSNDerivator()
+				in.CoinDetails.SNDerivator = base58.Base58Check{}.Encode(input.CoinDetails.GetSNDerivator().ToBytesS(), 0x0)
 			}
 			if input.CoinDetails.GetSerialNumber() != nil {
 				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)
@@ -1775,23 +1774,23 @@ func getProofDetailInputCoin(proof *zkp.PaymentProof) []*jsonresult.CoinDetail {
 	return inputCoins
 }
 
-func getProofDetailOutputCoin(proof *zkp.PaymentProof) []*jsonresult.CoinDetail {
-	outputCoins := make([]*jsonresult.CoinDetail, 0)
+func getProofDetailOutputCoin(proof *zkp.PaymentProof) []*model.CoinDetail {
+	outputCoins := make([]*model.CoinDetail, 0)
 	for _, output := range proof.GetOutputCoins() {
-		out := jsonresult.CoinDetail{
-			CoinDetails: jsonresult.Coin{},
+		out := model.CoinDetail{
+			CoinDetails: model.Coin{},
 		}
 		if output.CoinDetails != nil {
-			out.CoinDetails.Value = output.CoinDetails.GetValue()
+			out.CoinDetails.Value = strconv.FormatUint(output.CoinDetails.GetValue(), 10)
 			out.CoinDetails.Info = base58.Base58Check{}.Encode(output.CoinDetails.GetInfo(), 0x0)
 			if output.CoinDetails.GetCoinCommitment() != nil {
 				out.CoinDetails.CoinCommitment = base58.Base58Check{}.Encode(output.CoinDetails.GetCoinCommitment().ToBytesS(), 0x0)
 			}
 			if output.CoinDetails.GetRandomness() != nil {
-				out.CoinDetails.Randomness = *output.CoinDetails.GetRandomness()
+				out.CoinDetails.Randomness = base58.Base58Check{}.Encode(output.CoinDetails.GetRandomness().ToBytesS(), 0x0)
 			}
 			if output.CoinDetails.GetSNDerivator() != nil {
-				out.CoinDetails.SNDerivator = *output.CoinDetails.GetSNDerivator()
+				out.CoinDetails.SNDerivator = base58.Base58Check{}.Encode(output.CoinDetails.GetSNDerivator().ToBytesS(), 0x0)
 			}
 			if output.CoinDetails.GetSerialNumber() != nil {
 				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)
