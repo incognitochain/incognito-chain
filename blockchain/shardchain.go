@@ -315,7 +315,7 @@ func (chain *ShardChain) GetAllView() []multiview.View {
 // Input block must be ShardBlock
 func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
 	var err error
-	shardView := chain.GetBestState()
+	shardView := chain.GetViewByHash(block.GetPrevHash()).(*ShardBestState)
 	result := []incognitokey.CommitteePublicKey{}
 
 	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
