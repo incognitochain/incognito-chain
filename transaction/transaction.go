@@ -74,6 +74,9 @@ func (pr TxSalaryOutputParams) getVersion() int{
 	if pr.PublicKey!=nil && pr.TxRandom!=nil{
 		return 2
 	}
+	if _, err := metadata.AssertPaymentAddressAndTxVersion(*pr.ReceiverAddress, 2); err == nil{
+		return 2
+	}
 	if _, err := metadata.AssertPaymentAddressAndTxVersion(*pr.ReceiverAddress, 1); err == nil{
 		return 1
 	} else {

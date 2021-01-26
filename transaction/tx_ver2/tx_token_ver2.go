@@ -744,7 +744,7 @@ func (tx TxToken) GetSigPubKey() []byte           { return []byte{} }
 func (tx *TxToken) SetSigPubKey(sigPubkey []byte) {}
 func (tx TxToken) GetSig() []byte                 { return []byte{} }
 func (tx *TxToken) SetSig(sig []byte)             {}
-func (tx TxToken) GetProof() privacy.Proof        { return nil }
+func (tx TxToken) GetProof() privacy.Proof        { return tx.Tx.Proof }
 func (tx *TxToken) SetProof(proof privacy.Proof)  {}
 func (tx TxToken) GetCachedActualSize() *uint64 {
 	return nil
