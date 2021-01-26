@@ -217,7 +217,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 }
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReqV2 (params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	return httpServer.handleCreateAndSendTxWithIssuingETHReqV2(params, closeChan)
+	return httpServer.handleCreateAndSendTxWithIssuingETHReq(params, closeChan)
 }
 
 

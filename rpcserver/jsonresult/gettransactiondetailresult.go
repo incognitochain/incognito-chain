@@ -94,9 +94,11 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				Sig:         base58.Base58Check{}.Encode(tx.GetSig(), 0x0),
 				Info:        string(tx.GetInfo()),
 			}
-			inputCoins := result.Proof.GetInputCoins()
-			if result.Proof != nil && len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {
-				result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].GetPublicKey().ToBytesS(), common.ZeroByte)
+			if result.Proof != nil {
+				inputCoins := result.Proof.GetInputCoins()
+				if len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {
+					result.InputCoinPubKey = base58.Base58Check{}.Encode(inputCoins[0].GetPublicKey().ToBytesS(), common.ZeroByte)
+				}
 			}
 			meta := tx.GetMetadata()
 			if meta != nil {
