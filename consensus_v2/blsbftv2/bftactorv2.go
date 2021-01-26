@@ -409,7 +409,10 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 
 		go e.Chain.InsertAndBroadcastBlock(v.block)
 
-		delete(e.receiveBlockByHash, blockHash)
+		time.AfterFunc(time.Minute, func() {
+			delete(e.receiveBlockByHash, blockHash)
+		})
+
 	}
 }
 
