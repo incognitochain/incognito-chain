@@ -117,6 +117,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 		cm.LocalHost.Host,
 		pubsub.WithMaxMessageSize(common.MaxPSMsgSize),
 		pubsub.WithPeerOutboundQueueSize(1024),
+		pubsub.WithValidateQueueSize(1024),
 	)
 	if err != nil {
 		panic(err)
