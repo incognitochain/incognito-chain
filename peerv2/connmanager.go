@@ -3,7 +3,6 @@ package peerv2
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"io"
 	"reflect"
 	"time"
@@ -17,7 +16,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/peerv2/rpcclient"
-	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
