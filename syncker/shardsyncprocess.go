@@ -3,8 +3,8 @@ package syncker
 import (
 	"context"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"os"
 	"sync"
 	"time"
@@ -270,6 +270,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 				for {
 					time1 := time.Now()
 					if successBlk, err := InsertBatchBlock(s.Chain, blockBuffer); err != nil {
+						Logger.Errorf("Fail to Insert Batch Block, %+v", err)
 						return
 					} else {
 						insertBlkCnt += successBlk

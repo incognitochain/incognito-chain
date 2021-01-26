@@ -831,11 +831,13 @@ func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 	firstBeaconHeightOfEpoch := bc.GetFirstBeaconHeightInEpoch(curView.Epoch)
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height
-	allShardStates := make(map[byte][]types.ShardState)
 
 	for tempBeaconHeight >= firstBeaconHeightOfEpoch {
 		for shardID, shardStates := range tempBeaconBlock.Body.ShardState {
-			allShardStates[shardID] = append(allShardStates[shardID], shardStates...)
+			err := curView.countMissingSignature(bc, shardID, shardStates, tempBeaconHeight)
+			if err != nil {
+				return err
+			}
 		}
 		if tempBeaconHeight == 1 {
 			break
@@ -847,8 +849,7 @@ func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 		tempBeaconBlock = previousBeaconBlock
 		tempBeaconHeight--
 	}
-
-	return curView.countMissingSignature(bc, allShardStates)
+	return nil
 }
 
 func (beaconBestState *BeaconBestState) CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey {
@@ -918,4 +919,16 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		newBeaconCommitteeStateV2,
 	)
 	beaconBestState.beaconCommitteeEngine = newCommitteeEngineV2
+	shardCommitteeFlattenList := []string{}
+	for _, committee := range shardCommittee {
+		committeeFlatten, err := incognitokey.CommitteeKeyListToString(committee)
+		if err != nil {
+			panic(err)
+		}
+		shardCommitteeFlattenList = append(shardCommitteeFlattenList, committeeFlatten...)
+	}
+	if beaconBestState.missingSignatureCounter != nil {
+		beaconBestState.missingSignatureCounter.Reset(shardCommitteeFlattenList)
+	}
+	Logger.log.Infof("BEACON | Beacon Height %+v, UPGRADE Beacon Committee Engine from V1 to V2", beaconBestState.BeaconHeight)
 }
