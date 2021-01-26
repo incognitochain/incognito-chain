@@ -164,8 +164,8 @@ func (sub *SubManager) Subscribe(forced bool) error {
 
 		topics, _, err := sub.registerToProxy(
 			nodePK,
-			"",
-			"netmonitor",
+			"beacon",
+			"committee",
 			[]byte{255},
 		)
 		if err != nil {
