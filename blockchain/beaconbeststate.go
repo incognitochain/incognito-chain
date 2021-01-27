@@ -83,6 +83,14 @@ type BeaconBestState struct {
 	FeatureStateDBRootHash   common.Hash
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
+
+	//Add Store For PDE
+	pdeContributionStore *rawdbv2.PDEContributionStore
+	pdeTradeStore        *rawdbv2.PDETradeStore
+	pdeCrossTradeStore        *rawdbv2.PDECrossTradeStore
+	pdeWithdrawalStatusStore        *rawdbv2.PDEWithdrawalStatusStore
+	pdeFeeWithdrawalStatusStore        *rawdbv2.PDEFeeWithdrawalStatusStore
+
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -139,6 +147,14 @@ func NewBeaconBestStateWithConfig(netparam *Params) *BeaconBestState {
 
 func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
 	return bc.BeaconChain.multiView.GetBestView().(*BeaconBestState)
+}
+
+func (bc *BlockChain) GetChain(cid int) ChainInterface {
+	if cid == -1 {
+		return bc.BeaconChain
+	} else {
+		return bc.ShardChain[cid]
+	}
 }
 
 func (beaconBestState *BeaconBestState) InitStateRootHash(bc *BlockChain) error {
@@ -354,9 +370,9 @@ func (beaconBestState *BeaconBestState) GetCommittee() []incognitokey.CommitteeP
 	return append(result, beaconBestState.BeaconCommittee...)
 }
 
-func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey {
+func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int) {
 	id := GetProposerByTimeSlot(ts, beaconBestState.MinBeaconCommitteeSize)
-	return beaconBestState.BeaconCommittee[id]
+	return beaconBestState.BeaconCommittee[id], id
 }
 
 func (beaconBestState *BeaconBestState) GetBlock() common.BlockInterface {
@@ -739,7 +755,7 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 	}
 	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
 	if err != nil {
-		return 0, fmt.Errorf("init beacon consensus statedb return error", err)
+		return 0, fmt.Errorf("init beacon consensus statedb return error %v", err)
 	}
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }

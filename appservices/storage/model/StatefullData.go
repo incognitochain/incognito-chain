@@ -1,19 +1,18 @@
 package model
 
-import (
-	"github.com/incognitochain/incognito-chain/appservices/data"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-)
-
 type PDEShare struct {
 	BeaconBlockHash    string					 	`json:"BeaconBlockHash"`
 	BeaconEpoch									uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight									uint64					 					`json:"BeaconHeight"`
 	BeaconTime			int64 `json:"BeaconTime"`
+	PDEShareInfo []PDEShareInfo `json:"PDEShareInfo"`
+}
+
+type PDEShareInfo struct {
 	Token1ID           string
 	Token2ID           string
 	ContributorAddress string
-	Amount             uint64
+	Amount         string // init amount store as string because mongodb don't support uint64
 }
 
 type PDEPoolForPair struct {
@@ -21,10 +20,13 @@ type PDEPoolForPair struct {
 	BeaconEpoch									uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight									uint64					 					`json:"BeaconHeight"`
 	BeaconTime			int64 `json:"BeaconTime"`
+	PDEPoolForPairInfo  []PDEPoolForPairInfo `json:"PDEPoolForPairInfo"`
+}
+type PDEPoolForPairInfo struct {
 	Token1ID        string
-	Token1PoolValue uint64
+	Token1PoolValue string
 	Token2ID        string
-	Token2PoolValue uint64
+	Token2PoolValue string
 }
 
 type PDETradingFee struct {
@@ -32,10 +34,14 @@ type PDETradingFee struct {
 	BeaconEpoch									uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight									uint64					 					`json:"BeaconHeight"`
 	BeaconTime			int64 `json:"BeaconTime"`
+	PDETradingFeeInfo  []PDETradingFeeInfo `json:"PDETradingFeeInfo"`
+}
+
+type PDETradingFeeInfo struct {
 	Token1ID           string
 	Token2ID           string
 	ContributorAddress string
-	Amount             uint64
+	Amount         string // init amount store as string because mongodb don't support uint64
 }
 
 type WaitingPDEContribution struct {
@@ -43,26 +49,34 @@ type WaitingPDEContribution struct {
 	BeaconEpoch									uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight									uint64					 					`json:"BeaconHeight"`
 	BeaconTime			int64 `json:"BeaconTime"`
+	WaitingPDEContributionInfo []WaitingPDEContributionInfo `json:"WaitingPDEContributionInfo"`
+}
+
+type WaitingPDEContributionInfo struct {
 	PairID             string
 	ContributorAddress string
 	TokenID            string
-	Amount             uint64
+	Amount         string // init amount store as string because mongodb don't support uint64
 	TXReqID            string
+
 }
 
-
 type Custodian struct {
-	BeaconBlockHash    string					 	`json:"BeaconBlockHash"`
-	BeaconEpoch									uint64					 					`json:"BeaconEpoch"`
-	BeaconHeight									uint64					 					`json:"BeaconHeight"`
+	BeaconBlockHash     string					 	`json:"BeaconBlockHash"`
+	BeaconEpoch			uint64					 					`json:"BeaconEpoch"`
+	BeaconHeight		uint64					 					`json:"BeaconHeight"`
 	BeaconTime			int64 `json:"BeaconTime"`
+	CustodianInfo       []CustodianInfo  `json:"CustodianInfo"`
+}
+
+type CustodianInfo struct {
 	IncognitoAddress       string
 	TotalCollateral        uint64            // prv
 	FreeCollateral         uint64            // prv
-	HoldingPubTokens       map[string]uint64 // tokenID : amount
-	LockedAmountCollateral map[string]uint64 // tokenID : amount
+	HoldingPubTokens       map[string]string // tokenID : amount
+	LockedAmountCollateral map[string]string // tokenID : amount
 	RemoteAddresses        map[string]string // tokenID : remote address
-	RewardAmount           map[string]uint64 // tokenID : amount
+	RewardAmount           map[string]string // tokenID : amount
 }
 
 type WaitingPortingRequest struct {
@@ -70,11 +84,22 @@ type WaitingPortingRequest struct {
 	BeaconEpoch				uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight			uint64					 					`json:"BeaconHeight"`
 	BeaconTime				int64 `json:"BeaconTime"`
+	WaitingPortingRequestInfo []WaitingPortingRequestInfo   `json:"WaitingPortingRequestInfo"`
+}
+
+type MatchingPortingCustodianDetail struct {
+	IncAddress             string
+	RemoteAddress          string
+	Amount                 string
+	LockedAmountCollateral string
+}
+
+type WaitingPortingRequestInfo struct {
 	UniquePortingID 		string
 	TokenID         		string
 	PorterAddress   		string
-	Amount          		uint64
-	Custodians      		[]statedb.MatchingPortingCustodianDetail
+	Amount          		string
+	Custodians      		[]MatchingPortingCustodianDetail
 	PortingFee      		uint64
 	WaitingBeaconHeight    	uint64
 	TXReqID         		string
@@ -84,8 +109,12 @@ type FinalExchangeRate struct {
 	BeaconBlockHash    		string					 	`json:"BeaconBlockHash"`
 	BeaconEpoch				uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight			uint64					 					`json:"BeaconHeight"`
-	BeaconTime				int64 `json:"BeaconTime"`
-	Amount					uint64
+	BeaconTime				int64 			`json:"BeaconTime"`
+	FinalExchangeRateInfo    []FinalExchangeRateInfo `json:"FinalExchangeRateInfo"`
+}
+
+type FinalExchangeRateInfo struct {
+	Amount					string
 	TokenID					string
 }
 
@@ -94,12 +123,23 @@ type RedeemRequest struct {
 	BeaconEpoch				uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight			uint64					 					`json:"BeaconHeight"`
 	BeaconTime				int64 `json:"BeaconTime"`
+	RedeemRequestInfo []RedeemRequestInfo   `json:"RedeemRequestInfo"`
+}
+
+type MatchingRedeemCustodianDetail struct {
+	IncAddress    string
+	RemoteAddress string
+	Amount        string
+}
+
+
+type RedeemRequestInfo struct {
 	UniqueRedeemID        string
 	TokenID               string
 	RedeemerAddress       string
 	RedeemerRemoteAddress string
-	RedeemAmount          uint64
-	Custodians            []data.MatchingRedeemCustodianDetail
+	RedeemAmount          string
+	Custodians            []MatchingRedeemCustodianDetail
 	RedeemFee             uint64
 	RedeemBeaconHeight    uint64
 	TXReqID               string
@@ -110,10 +150,14 @@ type LockedCollateral struct {
 	BeaconEpoch				uint64					 					`json:"BeaconEpoch"`
 	BeaconHeight			uint64					 					`json:"BeaconHeight"`
 	BeaconTime				int64 `json:"BeaconTime"`
+	LockedCollateralInfo     []LockedCollateralInfo  `json:"LockedCollateralInfo"`
+
+}
+
+type LockedCollateralInfo struct {
 	TotalLockedCollateralForRewards uint64
 	CustodianAddress		string
-	Amount                  uint64
-	//LockedCollateralDetail          map[string]uint64 // custodianAddress : amount
+	Amount                  string
 }
 
 
@@ -130,15 +174,38 @@ type TokenInformation struct {
 	PropertySymbol string
 	TokenType      int    // action type
 	Mintable       bool   // default false
-	Amount         uint64 // init amount
+	Amount         string // init amount store as string because mongodb don't support uint64
 	Info           []byte
 	InitTx         string
 	Txs            []string
+}
+
+type BridgeTokenState struct {
+	BeaconBlockHash    		string					 	`json:"BeaconBlockHash"`
+	BeaconEpoch				uint64					 					`json:"BeaconEpoch"`
+	BeaconHeight			uint64					 					`json:"BeaconHeight"`
+	BeaconTime				int64 `json:"BeaconTime"`
+	BridgeTokenInfo []BridgeTokenInfo  `json:"BridgeTokenInfo"`
+}
+
+type BridgeTokenInfo struct {
+	TokenID         string `json:"tokenId"`
+	Amount          string // init amount store as string because mongodb don't support uint64
+	ExternalTokenID []byte       `json:"externalTokenId"`
+	Network         string       `json:"network"`
+	IsCentralized   bool         `json:"isCentralized"`
+
 }
 
 type CommitteeRewardState struct {
 	ShardID		   byte         `json:"ShardID"`
 	ShardHash 			string `json:"ShardHash"`
 	ShardHeight 		uint64 `json:"ShardHeight"`
-	CommitteeRewardState map[string]map[string]uint64 `json:"CommitteeRewardState"` //address->tokenId->amount
+	CommitteeReward     []CommitteeReward `json:"CommitteeReward"`
+}
+
+type CommitteeReward struct {
+	Address      string `json:"Address"`
+	TokenId      string `json:"TokenId"`
+	Amount         string // init amount store as string because mongodb don't support uint64
 }

@@ -14,9 +14,9 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-// PortalRedeemRequest - portal user redeem requests to get public token by burning ptoken
+// PortalRedeemRequestV2 - portal user redeem requests to get public token by burning ptoken
 // metadata - redeem request - create normal tx with this metadata
-type PortalRedeemRequest struct {
+type PortalRedeemRequestV2 struct {
 	MetadataBase
 	UniqueRedeemID        string
 	TokenID               string // pTokenID in incognito chain
@@ -26,11 +26,32 @@ type PortalRedeemRequest struct {
 	RedeemFee             uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
 }
 
+// PortalRedeemRequest - portal user redeem requests to get public token by burning ptoken
+// metadata - redeem request - create normal tx with this metadata
+type PortalRedeemRequest struct {
+	MetadataBase
+	UniqueRedeemID          string
+	TokenID                 string // pTokenID in incognito chain
+	RedeemAmount            uint64
+	RedeemerIncAddressStr   string
+	RemoteAddress           string // btc/bnb/etc address
+	RedeemFee               uint64 // redeem fee in PRV, 0.01% redeemAmount in PRV
+	RedeemerExternalAddress string
+}
+
 // PortalRedeemRequestAction - shard validator creates instruction that contain this action content
 type PortalRedeemRequestAction struct {
-	Meta    PortalRedeemRequest
+	Meta    PortalRedeemRequestV2
 	TxReqID common.Hash
 	ShardID byte
+}
+
+// PortalRedeemRequestAction - shard validator creates instruction that contain this action content
+type PortalRedeemRequestActionV3 struct {
+	Meta        PortalRedeemRequest
+	TxReqID     common.Hash
+	ShardID     byte
+	ShardHeight uint64
 }
 
 // PortalRedeemRequestContent - Beacon builds a new instruction with this content after receiving a instruction from shard
@@ -46,6 +67,8 @@ type PortalRedeemRequestContent struct {
 	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail // key: incAddressCustodian
 	TxReqID                 common.Hash
 	ShardID                 byte
+	ShardHeight             uint64
+	RedeemerExternalAddress string
 }
 
 // PortalRedeemRequestStatus - Beacon tracks status of redeem request into db
@@ -59,6 +82,10 @@ type PortalRedeemRequestStatus struct {
 	RedeemFee               uint64                                   // redeem fee in PRV, 0.01% redeemAmount in PRV
 	MatchingCustodianDetail []*statedb.MatchingRedeemCustodianDetail // key: incAddressCustodian
 	TxReqID                 common.Hash
+	ShardID                 byte
+	ShardHeight             uint64
+	BeaconHeight            uint64
+	RedeemerExternalAddress string
 }
 
 func NewPortalRedeemRequest(
@@ -68,17 +95,20 @@ func NewPortalRedeemRequest(
 	redeemAmount uint64,
 	incAddressStr string,
 	remoteAddr string,
-	redeemFee uint64) (*PortalRedeemRequest, error) {
+	redeemFee uint64,
+	redeemerExternalAddress string,
+) (*PortalRedeemRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	requestPTokenMeta := &PortalRedeemRequest{
-		UniqueRedeemID:        uniqueRedeemID,
-		TokenID:               tokenID,
-		RedeemAmount:          redeemAmount,
-		RedeemerIncAddressStr: incAddressStr,
-		RemoteAddress:         remoteAddr,
-		RedeemFee:             redeemFee,
+		UniqueRedeemID:          uniqueRedeemID,
+		TokenID:                 tokenID,
+		RedeemAmount:            redeemAmount,
+		RedeemerIncAddressStr:   incAddressStr,
+		RemoteAddress:           remoteAddr,
+		RedeemFee:               redeemFee,
+		RedeemerExternalAddress: redeemerExternalAddress,
 	}
 	requestPTokenMeta.MetadataBase = metadataBase
 	return requestPTokenMeta, nil
@@ -149,7 +179,7 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(chainRetriever ChainRetr
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
 	}
 	// check tokenId is portal token or not
-	if !common.IsPortalToken(redeemReq.TokenID) {
+	if !IsPortalToken(redeemReq.TokenID) {
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("TokenID is not in portal tokens list"))
 	}
 
@@ -157,16 +187,30 @@ func (redeemReq PortalRedeemRequest) ValidateSanityData(chainRetriever ChainRetr
 	if len(redeemReq.RemoteAddress) == 0 {
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Remote address is invalid"))
 	}
-	chainID := GetChainIDByTokenID(redeemReq.TokenID, chainRetriever)
-	if !IsValidRemoteAddress(chainRetriever, redeemReq.RemoteAddress, redeemReq.TokenID, chainID) {
+	if !IsValidPortalRemoteAddress(chainRetriever, redeemReq.RemoteAddress, redeemReq.TokenID) {
 		return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", redeemReq.RemoteAddress, redeemReq.TokenID)
+	}
+
+	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() {
+		// validate metadata type
+		if redeemReq.Type != PortalRedeemRequestMetaV3 {
+			return false, false, fmt.Errorf("Metadata type should be %v", PortalRedeemRequestMetaV3)
+		}
+
+		//validate RedeemerExternalAddress
+		if len(redeemReq.RedeemerExternalAddress) == 0 {
+			return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Redeemer address for liquidating is invalid"))
+		}
+		if isValid, err := ValidatePortalExternalAddress(common.ETHChainName, "", redeemReq.RedeemerExternalAddress); !isValid || err != nil {
+			return false, false, fmt.Errorf("RedeemerExternalAddress %v is not a valid address of ethereum network", redeemReq.RedeemerExternalAddress)
+		}
 	}
 
 	return true, true, nil
 }
 
 func (redeemReq PortalRedeemRequest) ValidateMetadataByItself() bool {
-	return redeemReq.Type == PortalRedeemRequestMeta
+	return redeemReq.Type == PortalRedeemRequestMeta || redeemReq.Type == PortalRedeemRequestMetaV3
 }
 
 func (redeemReq PortalRedeemRequest) Hash() *common.Hash {
@@ -177,24 +221,51 @@ func (redeemReq PortalRedeemRequest) Hash() *common.Hash {
 	record += strconv.FormatUint(redeemReq.RedeemFee, 10)
 	record += redeemReq.RedeemerIncAddressStr
 	record += redeemReq.RemoteAddress
+	record += redeemReq.RedeemerExternalAddress
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
 }
 
-func (redeemReq *PortalRedeemRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
-	actionContent := PortalRedeemRequestAction{
-		Meta:    *redeemReq,
-		TxReqID: *tx.Hash(),
-		ShardID: shardID,
+func (redeemReq *PortalRedeemRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+	if redeemReq.Type == PortalRedeemRequestMeta {
+		actionContent := PortalRedeemRequestAction{
+			Meta: PortalRedeemRequestV2{
+				MetadataBase:          redeemReq.MetadataBase,
+				UniqueRedeemID:        redeemReq.UniqueRedeemID,
+				TokenID:               redeemReq.TokenID,
+				RedeemAmount:          redeemReq.RedeemAmount,
+				RedeemerIncAddressStr: redeemReq.RedeemerIncAddressStr,
+				RemoteAddress:         redeemReq.RemoteAddress,
+				RedeemFee:             redeemReq.RedeemFee,
+			},
+			TxReqID: *tx.Hash(),
+			ShardID: shardID,
+		}
+		actionContentBytes, err := json.Marshal(actionContent)
+		if err != nil {
+			return [][]string{}, err
+		}
+		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+		action := []string{strconv.Itoa(redeemReq.Type), actionContentBase64Str}
+		return [][]string{action}, nil
+	} else if redeemReq.Type == PortalRedeemRequestMetaV3 {
+		actionContent := PortalRedeemRequestActionV3{
+			Meta:        *redeemReq,
+			TxReqID:     *tx.Hash(),
+			ShardID:     shardID,
+			ShardHeight: shardHeight,
+		}
+		actionContentBytes, err := json.Marshal(actionContent)
+		if err != nil {
+			return [][]string{}, err
+		}
+		actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+		action := []string{strconv.Itoa(redeemReq.Type), actionContentBase64Str}
+		return [][]string{action}, nil
 	}
-	actionContentBytes, err := json.Marshal(actionContent)
-	if err != nil {
-		return [][]string{}, err
-	}
-	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(PortalRedeemRequestMeta), actionContentBase64Str}
-	return [][]string{action}, nil
+
+	return nil, nil
 }
 
 func (redeemReq *PortalRedeemRequest) CalculateSize() uint64 {

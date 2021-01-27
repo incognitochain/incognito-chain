@@ -7,6 +7,7 @@ type BeaconState struct {
 	ShardID									int							`json:"ShardID"`
 	BlockHash 								string					 	`json:"BlockHash"`
 	PreviousBlockHash 						string					 	`json:"PreviousBlockHash"`
+	NextBlockHash                           string                       `json:"NextBlockHash"`
 	BestShardHash 							map[byte]string			 	`json:"BestShardHash"`
 	BestShardHeight     					map[byte]uint64          	`json:"BestShardHeight"`
 	Epoch									uint64					 					`json:"Epoch"`
@@ -33,4 +34,14 @@ type BeaconState struct {
 	ConsensusAlgorithm                     	string                      `json:"ConsensusAlgorithm"`
 	ShardConsensusAlgorithm                	map[byte]string             `json:"ShardConsensusAlgorithm"`
 	Instruction								[][]string				 	`json:"Instruction"`
+	BlockProducer							string							`json:"BlockProducer"`
+	BlockProducerPublicKey                           string                           `json:"BlockProducerPublicKey"`
+	BlockProposer							string							`json:"BlockProposer"`
+	ValidationData    string      `json:"ValidationData"`
+	Version           int         `json:"Version"`
+	Round             int         `json:"Round"`
+	Size              uint64      `json:"Size"`
+	ShardState   		map[byte][]data.CrossShardState `json:"ShardState"`
+	RewardReceiver 				map[string]string  `json:"RewardReceiver"`
+	IsGetRandomNumber  bool  `json:"IsGetRandomNumber"`
 }

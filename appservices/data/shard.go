@@ -42,6 +42,10 @@ type OutputCoin struct {
 	Type             int    // action type
 	Mintable         bool   // default false
 	Amount           uint64 // init amount
+	LockTime 		 int64
+	CoinDetailsEncrypted *privacy.HybridCipherText
+	TransactionMemo             []byte //256 bytes
+
 }
 
 // InputCoin represents a input coin of transaction
@@ -84,7 +88,6 @@ type Transaction struct {
 	Metadata  metadata.Metadata
 	Proof     *zkp.PaymentProof   `json:"Proof"`
 	InputCoins           []*InputCoin
-	OutputCoin           []*OutputCoin
 	InputCoinPubKey 	 string            `json:"InputCoinPubKey"`
 	PrivacyCustomTokenData     string
 	TxPrivacy *TxPrivacyTokenData `json:"TxPrivacy,omitempty"` //NormalTX if this field null don't serialize it
@@ -118,10 +121,18 @@ type Shard struct {
 	Height                 uint64                            `json:"Height"`
 	Version                int                               `json:"Version"`
 	TxRoot                 string                            `json:"TxRoot"`
+	ShardTxRoot            string            `json:"ShardTxRoot"`           // output root created for other shard
+	CrossTransactionRoot   string            `json:"CrossTransactionRoot"`  // transaction root created from transaction of micro shard to shard block (from other shard)
+	InstructionsRoot      string            `json:"InstructionsRoot"`      // actions root created from Instructions and Metadata of transaction
+	CommitteeRoot         string            `json:"CommitteeRoot"`         // hash from public key list of all committees designated to create this block
+	PendingValidatorRoot  string            `json:"PendingValidatorRoot"`  // hash from public key list of all pending validators designated to this ShardID
+	StakingTxRoot         string            `json:"StakingTxRoot"`         // hash from staking transaction map in shard best state
+	InstructionMerkleRoot string            `json:"InstructionMerkleRoot"` // Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
 	Time                   int64                             `json:"Time"`
 	TxHashes               []string                          `json:"TxHashes"`
 	Txs                    []TxInfo                          `json:"Txs"`
 	BlockProducer          string                            `json:"BlockProducer"`
+	BlockProducerPubKeyStr          string                            `json:"BlockProducerPubKeyStr"`
 	ValidationData         string                            `json:"ValidationData"`
 	ConsensusType          string                            `json:"ConsensusType"`
 	Data                   string                            `json:"Data"`
@@ -142,6 +153,11 @@ type Shard struct {
 	ActiveShards           int                               `json:"ActiveShards"`
 	ConsensusAlgorithm     string                            `json:"ConsensusAlgorithm"`
 	NumOfBlocksByProducers map[string]uint64                 `json:"NumOfBlocksByProducers"`
+	TotalTxsFee           map[string]uint64 `json:"TotalTxsFee"`           // fee of all txs in block
+
+	//for version 2
+	Proposer    			string							 `json:"Proposer"`
+	ProposeTime 			int64							 `json:"ProposeTime"`
 	ShardCommittee         []incognitokey.CommitteeKeyString `json:"ShardCommittee"`
 	ShardPendingValidator  []incognitokey.CommitteeKeyString `json:"ShardPendingValidator"`
 
@@ -150,6 +166,15 @@ type Shard struct {
 	Transactions         []*Transaction                `json:"Transactions"`
 	Commitments          []*CommitmentState           `json:"Commitments"`
 	OutputCoins          []*OutputCoin                 `json:"OutputCoins"`
+
+	MaxShardCommitteeSize  int                               `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize  int                               `json:"MinShardCommitteeSize"`
+	ShardProposerIdx       int                               `json:"ShardProposerIdx"`
+	MetricBlockHeight      uint64   `json:"MetricBlockHeight"`
+	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
+
+	StakingTx              map[string]string                  `json:"StakingTx"`
+
 }
 
 func NewShardFromShardState(shardState *blockchain.ShardBestState) *Shard {
@@ -160,10 +185,18 @@ func NewShardFromShardState(shardState *blockchain.ShardBestState) *Shard {
 		Height:                 shardState.GetHeight(),
 		Version:                shardState.BestBlock.GetVersion(),
 		TxRoot:                 shardState.BestBlock.Header.TxRoot.String(),
+		ShardTxRoot:            shardState.BestBlock.Header.ShardTxRoot.String(),
+		CrossTransactionRoot:   shardState.BestBlock.Header.CrossTransactionRoot.String(),
+		InstructionsRoot:       shardState.BestBlock.Header.InstructionsRoot.String(),
+		CommitteeRoot:          shardState.BestBlock.Header.CommitteeRoot.String(),
+		PendingValidatorRoot:   shardState.BestBlock.Header.PendingValidatorRoot.String(),
+		StakingTxRoot:          shardState.BestBlock.Header.ShardTxRoot.String(),
+		InstructionMerkleRoot:  shardState.BestBlock.Header.InstructionMerkleRoot.String(),
 		Time:                   shardState.GetBlockTime(),
 		TxHashes:               []string{},
 		Txs:                    getBlockTx(shardState.BestBlock.Body.Transactions),
 		BlockProducer:          shardState.BestBlock.GetProducer(),
+		BlockProducerPubKeyStr: shardState.BestBlock.GetProducerPubKeyStr(),
 		ValidationData:         shardState.BestBlock.GetValidationField(),
 		ConsensusType:          shardState.BestBlock.GetConsensusType(),
 		Data:                   "",
@@ -184,10 +217,19 @@ func NewShardFromShardState(shardState *blockchain.ShardBestState) *Shard {
 		ActiveShards:           shardState.ActiveShards,
 		ConsensusAlgorithm:     shardState.ConsensusAlgorithm,
 		NumOfBlocksByProducers: getNumOfBlocksByProducers(shardState.NumOfBlocksByProducers),
+		TotalTxsFee:            getTotalTransactionFee(shardState.BestBlock.Header.TotalTxsFee),
+		Proposer:               shardState.BestBlock.GetProposer(),
+		ProposeTime:            shardState.BestBlock.GetProposeTime(),
 		ShardCommittee:         incognitokey.CommitteeKeyListToStringList(shardState.ShardCommittee),
 		ShardPendingValidator:  incognitokey.CommitteeKeyListToStringList(shardState.ShardPendingValidator),
 		CommitteeRewardState:   getRewardCommittee(shardState.GetShardRewardStateDB()),
 		TokenState:             getPrivacyToken(shardState.GetCopiedTransactionStateDB()),
+		MaxShardCommitteeSize:  shardState.MaxShardCommitteeSize,
+		MinShardCommitteeSize:  shardState.MinShardCommitteeSize,
+		ShardProposerIdx:       shardState.ShardProposerIdx,
+		MetricBlockHeight:      shardState.MetricBlockHeight,
+		BestCrossShard:         getBestCrossShard(shardState.BestCrossShard),
+		StakingTx:              getStackingTx(shardState),
 	}
 	if len(shardState.BestBlock.Body.Transactions) > 0 {
 		for _, tx := range shardState.BestBlock.Body.Transactions {
@@ -204,6 +246,30 @@ func NewShardFromShardState(shardState *blockchain.ShardBestState) *Shard {
 	}
 	shard.Transactions, shard.OutputCoins, shard.Commitments = getTransactionsAndOutputCoinAndCommitmentBestShardState(shardState)
 	return shard
+}
+
+func getStackingTx(shardState *blockchain.ShardBestState) map[string]string {
+	result := make(map[string]string)
+	for k, v := range shardState.StakingTx.GetMap() {
+		result[k] = v
+	}
+	return result
+}
+
+func getBestCrossShard(bestCrossShard  map[byte]uint64)  map[byte]uint64 {
+	result := make (map[byte]uint64)
+	for key, val := range bestCrossShard {
+		result[key] = val
+	}
+	return result
+}
+
+func getTotalTransactionFee (TotalTxsFee   map[common.Hash]uint64) map[string]uint64{
+	totalFee := make(map[string]uint64)
+	for key, val := range TotalTxsFee {
+		totalFee[key.String()] = val
+	}
+	return totalFee
 }
 
 func getCrossShardBitMap(srcCrossShardBitMap []byte) []int {
@@ -336,7 +402,7 @@ func convertSlicePrivacyInputCoinToSliceInputCoin(TokenID string, privacyCoins [
 	return coins
 }
 
-func convertPrivacyOutputCoinToOutputCoin(shardID byte, transactionHash string, tokenID string, coin *privacy.OutputCoin) *OutputCoin {
+func convertPrivacyOutputCoinToOutputCoin(shardID byte, transactionHash string, tokenID string, coin *privacy.OutputCoin, lockTime int64, memo []byte ) *OutputCoin {
 	//fmt.Printf("Handle output coin %v", coin)
 	pubkey := coin.CoinDetails.GetPublicKey().ToBytesS()
 	lastByte := pubkey[len(pubkey)-1]
@@ -360,19 +426,22 @@ func convertPrivacyOutputCoinToOutputCoin(shardID byte, transactionHash string, 
 		Type:             0,
 		Mintable:         false,
 		Amount:           0,
+		LockTime: lockTime,
+		CoinDetailsEncrypted: coin.CoinDetailsEncrypted,
+		TransactionMemo: memo,
 	}
 
 }
 
-func convertSlicePrivacyOutputCoinToSliceOutputCoin(shardID byte, transactionHash string, tokenID string, privacyCoins []*privacy.OutputCoin, ) []*OutputCoin {
+func convertSlicePrivacyOutputCoinToSliceOutputCoin(shardID byte, transactionHash string, tokenID string, privacyCoins []*privacy.OutputCoin, lockTime int64, memo []byte) []*OutputCoin {
 	coins := make([]*OutputCoin, 0, len(privacyCoins))
 	for _, privacyCoin := range privacyCoins {
-		coins = append(coins, convertPrivacyOutputCoinToOutputCoin(shardID, transactionHash, tokenID, privacyCoin))
+		coins = append(coins, convertPrivacyOutputCoinToOutputCoin(shardID, transactionHash, tokenID, privacyCoin, lockTime, memo))
 	}
 	return coins
 }
 
-func convertNormalInternalTransactionToTransaction(sharID byte, tokenID string, normalTx *transaction.Tx, index int) (*Transaction, []*OutputCoin) {
+func convertNormalInternalTransactionToTransaction(sharID byte, tokenID string, normalTx *transaction.Tx, index int, lockTime int64, memo []byte ) (*Transaction, []*OutputCoin) {
 	tx := &Transaction{
 		Version:              normalTx.Version,
 		Type:                 normalTx.Type,
@@ -382,7 +451,6 @@ func convertNormalInternalTransactionToTransaction(sharID byte, tokenID string, 
 		SigPubKey:            normalTx.SigPubKey,
 		Sig:                  normalTx.Sig,
 		InputCoins:           nil,
-		OutputCoin:           nil,
 		PubKeyLastByteSender: normalTx.PubKeyLastByteSender,
 		Metadata:             normalTx.Metadata,
 		Proof:                normalTx.Proof,
@@ -400,14 +468,13 @@ func convertNormalInternalTransactionToTransaction(sharID byte, tokenID string, 
 
 	if normalTx.Proof != nil {
 		tx.InputCoins = convertSlicePrivacyInputCoinToSliceInputCoin(tokenID, normalTx.Proof.GetInputCoins())
-		outputCoins = convertSlicePrivacyOutputCoinToSliceOutputCoin(sharID, tx.Hash, tokenID, normalTx.Proof.GetOutputCoins())
-		tx.OutputCoin = append(tx.OutputCoin, outputCoins...)
+		outputCoins = convertSlicePrivacyOutputCoinToSliceOutputCoin(sharID, tx.Hash, tokenID, normalTx.Proof.GetOutputCoins(), lockTime, memo)
 	}
 	return tx, outputCoins
 }
 
-func convertInternalTokenPrivacyToTokenPrivacy(sharID byte, data *transaction.TxCustomTokenPrivacy, index int) (*TxPrivacyTokenData, []*OutputCoin) {
-	tx, outputCoins := convertNormalInternalTransactionToTransaction(sharID, data.TxPrivacyTokenData.PropertyID.String(), &data.TxPrivacyTokenData.TxNormal, index)
+func convertInternalTokenPrivacyToTokenPrivacy(sharID byte, data *transaction.TxCustomTokenPrivacy, index int, lockTime int64, memo []byte) (*TxPrivacyTokenData, []*OutputCoin) {
+	tx, outputCoins := convertNormalInternalTransactionToTransaction(sharID, data.TxPrivacyTokenData.PropertyID.String(), &data.TxPrivacyTokenData.TxNormal, index, lockTime, memo)
 	return &TxPrivacyTokenData{
 		Tx:             tx,
 		PropertyID:     data.TxPrivacyTokenData.PropertyID.String(),
@@ -427,7 +494,7 @@ func getTransactionAndOutputCoin(shardID byte, transactions []metadata.Transacti
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				tx, coins := convertNormalInternalTransactionToTransaction(shardID, common.PRVIDStr, normalTx, index)
+				tx, coins := convertNormalInternalTransactionToTransaction(shardID, common.PRVIDStr, normalTx, index, normalTx.LockTime, normalTx.Info)
 				outputCoins = append(outputCoins, coins...)
 				newTransactions = append(newTransactions, tx)
 			}
@@ -454,13 +521,13 @@ func getTransactionAndOutputCoin(shardID byte, transactions []metadata.Transacti
 				}
 				tokenData, _ := json.MarshalIndent(tx.TxPrivacyTokenData, "", "\t")
 				newTx.PrivacyCustomTokenData = string(tokenData)
-				txPrivacy, coins := convertInternalTokenPrivacyToTokenPrivacy(shardID, tx, index)
+				txPrivacy, coins := convertInternalTokenPrivacyToTokenPrivacy(shardID, tx, index, tx.LockTime, tx.Info)
 				outputCoins = append(outputCoins, coins...)
 				newTx.TxPrivacy = txPrivacy
 
 				if tx.Proof != nil {
-					newTx.InputCoins = convertSlicePrivacyInputCoinToSliceInputCoin("", tx.Proof.GetInputCoins())
-					coins = convertSlicePrivacyOutputCoinToSliceOutputCoin(shardID, newTx.Hash, common.PRVIDStr, tx.Proof.GetOutputCoins())
+					newTx.InputCoins = convertSlicePrivacyInputCoinToSliceInputCoin(common.PRVIDStr, tx.Proof.GetInputCoins())
+					coins = convertSlicePrivacyOutputCoinToSliceOutputCoin(shardID, newTx.Hash, common.PRVIDStr, tx.Proof.GetOutputCoins(), tx.LockTime, tx.Info)
 					outputCoins = append(outputCoins, coins...)
 				}
 				if newTx.TxPrivacy != nil {

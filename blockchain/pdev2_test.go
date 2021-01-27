@@ -212,17 +212,17 @@ func processAllNewInsts(
 		var err error
 		switch inst[0] {
 		case strconv.Itoa(metadata.PDEContributionMeta):
-			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState, blockchain.GetBeaconBestState())
 		case strconv.Itoa(metadata.PDEPRVRequiredContributionRequestMeta):
-			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDEContributionV2(pdexStateDB, beaconHeight, inst, currentPDEState, blockchain.GetBeaconBestState())
 		case strconv.Itoa(metadata.PDETradeRequestMeta):
-			err = blockchain.processPDETrade(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDETrade(pdexStateDB, beaconHeight, inst, currentPDEState, blockchain.GetBeaconBestState())
 		case strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta):
-			err = blockchain.processPDECrossPoolTrade(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDECrossPoolTrade(pdexStateDB, beaconHeight, inst, currentPDEState, blockchain.GetBeaconBestState())
 		case strconv.Itoa(metadata.PDEWithdrawalRequestMeta):
-			err = blockchain.processPDEWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDEWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState, blockchain.GetBeaconBestState())
 		case strconv.Itoa(metadata.PDEFeeWithdrawalRequestMeta):
-			err = blockchain.processPDEFeeWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState)
+			err = blockchain.processPDEFeeWithdrawal(pdexStateDB, beaconHeight, inst, currentPDEState, blockchain.GetBeaconBestState())
 		case strconv.Itoa(metadata.PDETradingFeesDistributionMeta):
 			err = blockchain.processPDETradingFeesDistribution(pdexStateDB, beaconHeight, inst, currentPDEState)
 		}

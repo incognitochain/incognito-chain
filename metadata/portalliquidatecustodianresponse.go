@@ -91,7 +91,8 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		}
 		instMetaType := inst[0]
 		if instUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(PortalLiquidateCustodianMeta) {
+			(instMetaType != strconv.Itoa(PortalLiquidateCustodianMeta) &&
+			instMetaType != strconv.Itoa(PortalLiquidateCustodianMetaV3)) {
 			continue
 		}
 
@@ -106,6 +107,7 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		var custodianAddrStrFromInst string
 		var redeemerIncAddressStrFromInst string
 		var mintedCollateralAmountFromInst uint64
+		var uniqueRedeemIDFromInst string
 
 		contentBytes := []byte(inst[3])
 		var liqCustodianContent PortalLiquidateCustodianContent
@@ -122,6 +124,12 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 
 		if shardIDFromInst != shardID {
 			Logger.log.Error("WARNING - VALIDATION: shardID is incorrect: shardIDFromInst %v - shardID %v ", shardIDFromInst, shardID)
+			continue
+		}
+
+		uniqueRedeemIDFromInst = liqCustodianContent.UniqueRedeemID
+		if uniqueRedeemIDFromInst != iRes.UniqueRedeemID {
+			Logger.log.Error("WARNING - VALIDATION: UniqueRedeemID is incorrect: uniqueRedeemIDFromInst %v - UniqueRedeemID in response %v ", uniqueRedeemIDFromInst, iRes.UniqueRedeemID)
 			continue
 		}
 

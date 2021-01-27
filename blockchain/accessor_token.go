@@ -8,7 +8,7 @@ import (
 )
 
 func (blockchain *BlockChain) ListAllPrivacyCustomTokenAndPRV() (map[common.Hash]*statedb.TokenState, error) {
-	tokenStates := make(map[common.Hash]*statedb.TokenState)
+		tokenStates := make(map[common.Hash]*statedb.TokenState)
 	for i := 0; i < blockchain.GetBeaconBestState().ActiveShards; i++ {
 		shardID := byte(i)
 		m, err := blockchain.ListPrivacyCustomTokenAndPRVByShardID(shardID)
@@ -116,4 +116,24 @@ func (blockchain *BlockChain) GetAllBridgeTokens() ([]common.Hash, []*rawdbv2.Br
 		bridgeTokenIDs = append(bridgeTokenIDs, *bridgeTokenInfo.TokenID)
 	}
 	return bridgeTokenIDs, allBridgeTokens, nil
+}
+
+func (blockchain *BlockChain) PrivacyTokenIDExistedInAllShards(curView *BeaconBestState, tokenID common.Hash) (bool, error) {
+	for shardID, shardHash := range curView.BestShardHash {
+		db := blockchain.GetShardChainDatabase(shardID)
+		shardRootHash, err := GetShardRootsHashByBlockHash(db, shardID, shardHash)
+		if err != nil {
+			return false, err
+		}
+		stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.TransactionStateDBRootHash,
+			statedb.NewDatabaseAccessWarper(db))
+		if err != nil {
+			return false, err
+		}
+		isExist := statedb.PrivacyTokenIDExisted(stateDB, tokenID)
+		if isExist {
+			return true, nil
+		}
+	}
+	return false, nil
 }

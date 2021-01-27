@@ -1,9 +1,5 @@
 package model
 
-import (
-	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-)
-
 type Transaction struct {
 	ShardHash 			 string `json:"ShardHash"`
 	ShardHeight 		 uint64 `json:"ShardHeight"`
@@ -18,7 +14,7 @@ type Transaction struct {
 	Image                string  `json:"Image"`
 	IsPrivacy            bool `json:"IsPrivacy"`
 	Proof           	 *string `json:"Proof,omitempty"`
-	ProofDetail          jsonresult.ProofDetail       `json:"ProofDetail"`
+	ProofDetail          ProofDetail       `json:"ProofDetail"`
 	InputCoinPubKey 	 string            `json:"InputCoinPubKey"`
 	SigPubKey            string `json:"SigPubKey,omitempty"` // 33 bytes
 	Sig                  string `json:"Sig,omitempty"`       //
@@ -29,7 +25,7 @@ type Transaction struct {
 	PrivacyCustomTokenName        string      `json:"PrivacyCustomTokenName"`
 	PrivacyCustomTokenSymbol      string      `json:"PrivacyCustomTokenSymbol"`
 	PrivacyCustomTokenData        string      `json:"PrivacyCustomTokenData"`
-	PrivacyCustomTokenProofDetail jsonresult.ProofDetail `json:"PrivacyCustomTokenProofDetail"`
+	PrivacyCustomTokenProofDetail ProofDetail `json:"PrivacyCustomTokenProofDetail"`
 	PrivacyCustomTokenProof 		*string `json:"PrivacyCustomTokenProof"`
 	PrivacyCustomTokenIsPrivacy   bool        `json:"PrivacyCustomTokenIsPrivacy"`
 	PrivacyCustomTokenFee         uint64      `json:"PrivacyCustomTokenFee"`
@@ -38,6 +34,27 @@ type Transaction struct {
 	Info     			string `json:"Info"` // 512 bytes
 }
 
+type ProofDetail struct {
+	InputCoins  []*CoinDetail
+	OutputCoins []*CoinDetail
+}
+
+type CoinDetail struct {
+	CoinDetails          Coin
+	CoinDetailsEncrypted string
+}
+
+type Coin struct {
+	PublicKey      string
+	CoinCommitment string
+	SNDerivator    string
+	SerialNumber   string
+	Randomness     string
+	Value          string
+	Info           string
+}
+
+
 type TransactionCustomToken struct {
 	Tx			   Transaction          // used for privacy functionality
 	PropertyID     string// = hash of TxCustomTokenprivacy data
@@ -45,7 +62,7 @@ type TransactionCustomToken struct {
 	PropertySymbol string
 	Type     int    // action type
 	Mintable bool   // default false
-	Amount   uint64 // init amount
+	Amount   string // init amount
 }
 
 type Instruction struct {
@@ -62,7 +79,7 @@ type InputCoin struct {
 	SNDerivator    string `json:"SNDerivator"`
 	SerialNumber   string `json:"SerialNumber"`
 	Randomness     string `json:"Randomness"`
-	Value          uint64 `json:"Value"`
+	Value          string `json:"Value"`
 	Info           string `json:"Info"` //256 bytes
 	TokenID		   string `json:"TokenID"`
 
@@ -78,7 +95,7 @@ type OutputCoin struct {
 	SNDerivator    		string `json:"SNDerivator"`
 	SerialNumber   		string `json:"SerialNumber"`
 	Randomness     		string `json:"Randomness"`
-	Value          		uint64 `json:"Value"`
+	Value          		string `json:"Value"`
 	Info           		string `json:"Info"` //256 bytes
 	TokenID		   		string  `json:"TokenID"`
 	FromShardID      	byte `json:"FromShardID"`
@@ -90,8 +107,10 @@ type OutputCoin struct {
 	PropertySymbol   	string `json:"PropertySymbol"`
 	Type             	int `json:"Type"`   // action type
 	Mintable         	bool `json:"Mintable"`  // default false
-	Amount           	uint64 `json:"Amount"` // init amount
-
+	Amount           	string `json:"Amount"` // init amount
+	LockTime 			 int64  `json:"LockTime"`
+	CoinDetailsEncrypted string `json:"CoinDetailsEncrypted"`
+	TransactionMemo       string `json:"TransactionMemo"`
 }
 
 type Commitment struct {
@@ -102,4 +121,12 @@ type Commitment struct {
 	TokenID    string `json:"TokenID"`
 	Commitment string `json:"Commitment"`
 	Index      uint64 `json:"Index"`
+}
+
+type PublicKeyToTransactionHash struct {
+	ShardId  			byte `json:"ShardId"`
+	ShardHash 			string `json:"ShardHash"`
+	ShardHeight 		uint64 `json:"ShardHeight"`
+	TransactionHash     string `json:"TransactionHash"`
+	PublicKey			string `json:"PublicKey"`
 }
