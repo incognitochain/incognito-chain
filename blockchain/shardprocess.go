@@ -43,7 +43,8 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 			case <-ctx.Done():
 				return errors.New(fmt.Sprintf("ShardBlock %v link to wrong view (%s)", shardBlock.GetHeight(), preHash.String()))
 			default:
-				if blockchain.ShardChain[shardID].GetViewByHash(preHash) != nil {
+				view = blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
+				if view != nil {
 					return nil
 				}
 				time.Sleep(time.Second)
@@ -1104,7 +1105,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if newShardState.BeaconHeight >= blockchain.config.ChainParams.ConsensusV3Height {
+	if newShardState.BeaconHeight == blockchain.config.ChainParams.ConsensusV3Height {
 		err := newShardState.upgradeCommitteeEngineV2(blockchain)
 		if err != nil {
 			panic(NewBlockChainError(-11111, fmt.Errorf("Upgrade Committe Engine Error, %+v", err)))

@@ -82,36 +82,27 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
 		return nil, err
 	}
+	BLogger.log.Infof("Producing block: %d", shardBestState.ShardHeight+1)
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
 	beaconProcessView = blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
 	beaconProcessHeight := beaconProcessView.GetHeight()
+	if beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
+		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
+	}
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		currentCommitteePublicKeysStructs = shardBestState.GetShardCommittee()
-	} else {
+		if beaconProcessHeight > blockchain.config.ChainParams.ConsensusV3Height {
+			beaconProcessHeight = blockchain.config.ChainParams.ConsensusV3Height
+		}
+	} else if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
 		if beaconProcessHeight <= shardBestState.BeaconHeight {
 			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
 				beaconProcessHeight, shardBestState.BeaconHeight)
 			return nil, errors.New("Waiting For Beacon Produce Block")
 		}
 		currentCommitteePublicKeysStructs = committees
-	}
 
-	currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
-	if err != nil {
-		return nil, err
-	}
-
-	// Fetch Beacon Blocks
-	BLogger.log.Infof("Producing block: %d", shardBestState.ShardHeight+1)
-	if beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
-		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
-		if beaconProcessHeight > blockchain.config.ChainParams.ConsensusV3Height {
-			beaconProcessHeight = blockchain.config.ChainParams.ConsensusV3Height
-		}
-	}
-
-	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
 		if !shardBestState.CommitteeFromBlock().IsZeroValue() {
 			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
 			temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
@@ -137,7 +128,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 			committeeFromBlockHash = committeeFinalViewHash
 		}
 	}
-
+	currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
+	if err != nil {
+		return nil, err
+	}
+	// Fetch Beacon Blocks
 	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconProcessHeight)
 	if err != nil {
 		Logger.log.Errorf("Beacon block %+v not found", beaconProcessHeight)

@@ -36,7 +36,8 @@ type GetBeaconBestState struct {
 	MinShardCommitteeSize                  int                                          `json:"MinShardCommitteeSize"`
 	ActiveShards                           int                                          `json:"ActiveShards"`
 	LastCrossShardState                    map[byte]map[byte]uint64                     `json:"LastCrossShardState"`
-	ShardHandle                            map[byte]bool                                `json:"ShardHandle"`             // lock sync.RWMutex
+	ShardHandle                            map[byte]bool                                `json:"ShardHandle"` // lock sync.RWMutex
+	CommitteeEngineVersion                 uint                                         `json:"CommitteeEngineVersion"`
 	NumberOfMissingSignature               map[string]signaturecounter.MissingSignature `json:"MissingSignature"`        // lock sync.RWMutex
 	MissingSignaturePenalty                map[string]signaturecounter.Penalty          `json:"MissingSignaturePenalty"` // lock sync.RWMutex
 }
@@ -159,6 +160,7 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 	for k, v := range data.GetMissingSignaturePenalty() {
 		result.MissingSignaturePenalty[k] = v
 	}
+	result.CommitteeEngineVersion = data.CommitteeEngineVersion()
 	return result
 }
 
