@@ -75,8 +75,12 @@ func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(
 
 func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	feederAddress := chainRetriever.GetPortalFeederAddress()
-	if portalExchangeRates.SenderAddress != feederAddress {
-		return false, false, fmt.Errorf("Sender must be feeder's address %v\n", feederAddress)
+	isEqual, err := wallet.ComparePaymentAddresses(portalExchangeRates.SenderAddress, feederAddress)
+	if err != nil {
+		return false, false, fmt.Errorf("cannot compare payment address %v and %v: %v", portalExchangeRates.SenderAddress, feederAddress, err)
+	}
+	if !isEqual {
+		return false, false, fmt.Errorf("sender address and feeder address mismatch (%v != %v)\n", portalExchangeRates.SenderAddress, feederAddress)
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(portalExchangeRates.SenderAddress)
