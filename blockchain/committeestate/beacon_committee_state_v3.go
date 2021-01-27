@@ -121,42 +121,15 @@ func (b *BeaconCommitteeStateV3) assignToPending(candidates []string, rand int64
 	return newCommitteeChange
 }
 
-func (b *BeaconCommitteeStateV3) processAssignInstruction(
-	assignInstruction *instruction.AssignInstruction,
-	env *BeaconCommitteeStateEnvironment,
-	committeeChange *CommitteeChange,
-	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	oldState, newState BeaconCommitteeState,
-) (
-	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
-	newCommitteeChange := committeeChange
-	newCommitteeChange.SyncingPoolRemoved[byte(assignInstruction.ChainID)] =
-		append(newCommitteeChange.SyncingPoolRemoved[byte(assignInstruction.ChainID)], assignInstruction.ShardCandidatesStruct...)
-	b.syncPool[byte(assignInstruction.ChainID)] = b.syncPool[byte(assignInstruction.ChainID)][len(assignInstruction.ShardCandidates):]
-
-	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, assignInstruction.ShardCandidates, newCommitteeChange, returnStakingInstruction, oldState, newState)
-	if err != nil {
-		return newCommitteeChange, returnStakingInstruction, err
-	}
-
-	committeeChange = b.assignToPending(
-		candidates,
-		env.RandomNumber,
-		byte(assignInstruction.ChainID),
-		newCommitteeChange)
-
-	return newCommitteeChange, returnStakingInstruction, nil
-}
-
 func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 	env *BeaconCommitteeStateEnvironment,
 	outPublicKeys []string,
 	committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	oldState, newState BeaconCommitteeState,
+	oldState BeaconCommitteeState,
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	newCommitteeChange := committeeChange
-	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, outPublicKeys, newCommitteeChange, returnStakingInstruction, oldState, newState)
+	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, outPublicKeys, newCommitteeChange, returnStakingInstruction, oldState)
 	if err != nil {
 		return newCommitteeChange, returnStakingInstruction, err
 	}
@@ -197,7 +170,7 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	swapShardInstruction *instruction.SwapShardInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	oldState, newState BeaconCommitteeState,
+	oldState BeaconCommitteeState,
 ) (
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	shardID := byte(swapShardInstruction.ChainID)
@@ -211,7 +184,6 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 		newCommitteeChange,
 		returnStakingInstruction,
 		oldState,
-		newState,
 	)
 	if err != nil {
 		return nil, returnStakingInstruction, err
@@ -224,7 +196,6 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 		returnStakingInstruction,
 		newCommitteeChange,
 		oldState,
-		newState,
 	)
 	if err != nil {
 		return nil, returnStakingInstruction, err
@@ -232,4 +203,24 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	newCommitteeChange.SlashingCommittee[shardID] = append(committeeChange.SlashingCommittee[shardID], slashingCommittees...)
 
 	return newCommitteeChange, returnStakingInstruction, nil
+}
+
+func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
+	finishSyncInstruction *instruction.FinishSyncInstruction,
+	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
+	oldState BeaconCommitteeState,
+) (
+	*CommitteeChange, error) {
+	newCommitteeChange := committeeChange
+	newCommitteeChange.SyncingPoolRemoved[byte(finishSyncInstruction.ChainID)] =
+		append(newCommitteeChange.SyncingPoolRemoved[byte(finishSyncInstruction.ChainID)], finishSyncInstruction.PublicKeysStruct...)
+	b.syncPool[byte(finishSyncInstruction.ChainID)] = b.syncPool[byte(finishSyncInstruction.ChainID)][len(finishSyncInstruction.PublicKeysStruct):]
+
+	committeeChange = b.assignToPending(
+		finishSyncInstruction.PublicKeys,
+		env.RandomNumber,
+		byte(finishSyncInstruction.ChainID),
+		newCommitteeChange)
+
+	return newCommitteeChange, nil
 }
