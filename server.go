@@ -275,8 +275,9 @@ func (serverObj *Server) NewServer(
 			OnAddr:           serverObj.OnAddr,
 
 			//mubft
-			OnBFTMsg:    serverObj.OnBFTMsg,
-			OnPeerState: serverObj.OnPeerState,
+			OnBFTMsg:     serverObj.OnBFTMsg,
+			OnPeerState:  serverObj.OnPeerState,
+			OnFinishSync: serverObj.OnFinishSync,
 		},
 		BC: serverObj.blockChain,
 	}
@@ -930,6 +931,7 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			// OnInvalidBlock:  serverObj.OnInvalidBlock,
 			OnPeerState: serverObj.OnPeerState,
 			//
+			OnFinishSync:         serverObj.OnFinishSync,
 			PushRawBytesToShard:  serverObj.PushRawBytesToShard,
 			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
@@ -943,6 +945,12 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 	// 	config.UserKeySet = KeySetUser
 	// }
 	return config
+}
+
+//OnFinishSync ...
+func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishSync) {
+	//TODO: @tin
+	//receive finish sync msg
 }
 
 // OnBlock is invoked when a peer receives a block message.  It

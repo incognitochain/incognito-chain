@@ -90,22 +90,6 @@ func (b *BeaconCommitteeStateV3) assignToSync(
 	return committeeChange
 }
 
-func (b *BeaconCommitteeStateV3) assignAfterNormalSwapOut(
-	candidates []string, rand int64, activeShards int, committeeChange *CommitteeChange,
-	oldState BeaconCommitteeState, oldShardID byte, beaconHeight uint64,
-) *CommitteeChange {
-	newCommitteeChange := committeeChange
-	assignedCandidates := b.getAssignCandidates(candidates, rand, activeShards, oldState)
-	for shardID, tempCandidates := range assignedCandidates {
-		if shardID == oldShardID {
-			newCommitteeChange = b.assignToPending(tempCandidates, rand, shardID, newCommitteeChange)
-		} else {
-			newCommitteeChange = b.assignToSync(shardID, tempCandidates, newCommitteeChange, beaconHeight)
-		}
-	}
-	return newCommitteeChange
-}
-
 //assignToPending assign candidates to pending list
 // update beacon state and committeeChange
 // UPDATE PENDING LIST ONLY
@@ -134,18 +118,7 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 		return newCommitteeChange, returnStakingInstruction, err
 	}
 	newReturnStakingInstruction := returnStakingInstruction
-	backToPendingCandidates := []string{}
-
-	for i := 0; i < len(candidates); i++ {
-		candidate := candidates[i]
-		key := incognitokey.CommitteePublicKey{}
-		err := key.FromBase58(candidate)
-		if err != nil {
-			return newCommitteeChange, returnStakingInstruction, err
-		}
-	}
-	newCommitteeChange = b.assignToPending(backToPendingCandidates, env.RandomNumber, env.ShardID, newCommitteeChange)
-	newCommitteeChange = b.assignAfterNormalSwapOut(candidates, env.RandomNumber, env.ActiveShards, newCommitteeChange, oldState, env.ShardID, env.BeaconHeight)
+	newCommitteeChange = b.assignToPending(candidates, env.RandomNumber, env.ShardID, newCommitteeChange)
 	return newCommitteeChange, newReturnStakingInstruction, nil
 }
 

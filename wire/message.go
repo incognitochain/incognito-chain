@@ -34,6 +34,9 @@ const (
 	// heavy message check cmd
 	CmdMsgCheck     = "msgcheck"
 	CmdMsgCheckResp = "msgcheckresp"
+
+	// validator state messages
+	CmdMsgFinishSync = "msg_finish_sync"
 )
 
 // Interface for message wire on P2P network
@@ -125,6 +128,10 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 		msg = &MessageBFT{
 			Timestamp: time.Now().Unix(),
 		}
+		break
+	case CmdMsgFinishSync:
+		msg = &MessageFinishSync{}
+		break
 	default:
 		return nil, fmt.Errorf("unhandled this message type [%s]", messageType)
 	}
@@ -181,6 +188,8 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdMsgCheckResp, nil
 	case reflect.TypeOf(&MessageBFT{}):
 		return CmdBFT, nil
+	case reflect.TypeOf(&MessageFinishSync{}):
+		return CmdMsgFinishSync, nil
 	default:
 		return common.EmptyString, fmt.Errorf("unhandled this message type [%s]", msgType)
 	}
