@@ -196,7 +196,7 @@ handles reading and responding to RPC messages.
 
 func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isLimitedUser bool) {
 	defer func() {
-		if r.Method != getShardBestState {
+		if r.Method == getShardBestState {
 			return
 		}
 		err := recover()
