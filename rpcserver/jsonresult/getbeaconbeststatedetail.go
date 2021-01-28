@@ -148,7 +148,9 @@ func NewGetBeaconBestStateDetail(data *blockchain.BeaconBestState) *GetBeaconBes
 
 	result.StakingTx = make(map[string]common.Hash)
 	for k, v := range data.GetStakingTx() {
-		result.StakingTx[k] = v
+		committeePublicKey := incognitokey.CommitteePublicKey{}
+		committeePublicKey.FromString(k)
+		result.StakingTx[committeePublicKey.GetIncKeyBase58()] = v
 	}
 
 	result.NumberOfMissingSignature = make(map[string]signaturecounter.MissingSignature)
