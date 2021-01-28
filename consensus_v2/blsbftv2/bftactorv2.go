@@ -60,10 +60,12 @@ func (e BLSBFT_V2) IsStarted() bool {
 }
 
 type ProposeBlockInfo struct {
-	block      common.BlockInterface
-	votes      map[string]*BFTVote //pk->BFTVote
-	isValid    bool
-	hasNewVote bool
+	receiveTime time.Time
+	block       common.BlockInterface
+	votes       map[string]*BFTVote //pk->BFTVote
+	isValid     bool
+	hasNewVote  bool
+	sendVote    bool
 }
 
 func (e *BLSBFT_V2) GetConsensusName() string {
@@ -104,6 +106,7 @@ func (e *BLSBFT_V2) Start() error {
 
 	//init view maps
 	ticker := time.Tick(200 * time.Millisecond)
+	cleanMemTicker := time.Tick(5 * time.Minute)
 	e.Logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
 	go func() {
 		for { //actor loop
@@ -124,9 +127,10 @@ func (e *BLSBFT_V2) Start() error {
 
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
 					e.receiveBlockByHash[blkHash] = &ProposeBlockInfo{
-						block:      block,
-						votes:      make(map[string]*BFTVote),
-						hasNewVote: false,
+						block:       block,
+						votes:       make(map[string]*BFTVote),
+						hasNewVote:  false,
+						receiveTime: time.Now(),
 					}
 					e.Logger.Info(e.ChainKey, "Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
@@ -174,7 +178,22 @@ func (e *BLSBFT_V2) Start() error {
 						e.Logger.Infof("%v Receive vote (%d) for block from unknown validator", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
 					}
 				}
-
+			case <-cleanMemTicker:
+				for h, _ := range e.receiveBlockByHeight {
+					if h <= e.Chain.GetFinalView().GetHeight() {
+						delete(e.receiveBlockByHeight, h)
+					}
+				}
+				for h, _ := range e.voteHistory {
+					if h <= e.Chain.GetFinalView().GetHeight() {
+						delete(e.voteHistory, h)
+					}
+				}
+				for h, proposeBlk := range e.receiveBlockByHash {
+					if time.Now().Sub(proposeBlk.receiveTime) > time.Minute {
+						delete(e.receiveBlockByHash, h)
+					}
+				}
 			case <-ticker:
 				if !e.Chain.IsReady() {
 					continue
@@ -272,7 +291,12 @@ func (e *BLSBFT_V2) Start() error {
 				sort.Slice(validProposeBlock, func(i, j int) bool {
 					return validProposeBlock[i].block.GetProduceTime() < validProposeBlock[j].block.GetProduceTime()
 				})
+
 				for _, v := range validProposeBlock {
+					if v.sendVote {
+						continue
+					}
+
 					blkCreateTimeSlot := common.CalculateTimeSlot(v.block.GetProduceTime())
 					bestViewHeight := bestView.GetHeight()
 
@@ -401,18 +425,13 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		valData.BridgeSig = brigSigs
 		valData.ValidatiorsIdx = validatorIdx
 		validationDataString, _ := EncodeValidationData(*valData)
-		e.Logger.Infof("%v Validation Data", e.ChainKey, aggSig, brigSigs, validatorIdx, validationDataString)
+		e.Logger.Infof("%v Validation Data %v %v %v %v", e.ChainKey, aggSig, brigSigs, validatorIdx, validationDataString)
 		if err := v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
 			e.Logger.Error(err)
 			return
 		}
 
 		go e.Chain.InsertAndBroadcastBlock(v.block)
-
-		time.AfterFunc(time.Minute, func() {
-			delete(e.receiveBlockByHash, blockHash)
-		})
-
 	}
 }
 
@@ -454,6 +473,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 			v.isValid = true
 			e.voteHistory[v.block.GetHeight()] = v.block
 			e.Logger.Info(e.ChainKey, "sending vote...")
+			v.sendVote = true
 			go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
 			go e.Node.PushMessageToChain(msg, e.Chain)
 		}
