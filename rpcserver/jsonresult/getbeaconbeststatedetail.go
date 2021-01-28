@@ -32,6 +32,7 @@ type GetBeaconBestStateDetail struct {
 	ShardCommittee                         map[byte][]incognitokey.CommitteeKeyString   `json:"ShardCommittee"`        // current committee and validator of all shard
 	ShardPendingValidator                  map[byte][]incognitokey.CommitteeKeyString   `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
 	AutoStaking                            []committeeKeySetAutoStake                   `json:"AutoStaking"`
+	StakingTx                              map[string]common.Hash                       `json:"StakingTx"`
 	CurrentRandomNumber                    int64                                        `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp                 int64                                        `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                                         `json:"IsGetRandomNumber"`
@@ -143,6 +144,11 @@ func NewGetBeaconBestStateDetail(data *blockchain.BeaconBestState) *GetBeaconBes
 		keyMap.IsAutoStake = v
 		result.AutoStaking = append(result.AutoStaking, keyMap)
 
+	}
+
+	result.StakingTx = make(map[string]common.Hash)
+	for k, v := range data.GetStakingTx() {
+		result.StakingTx[k] = v
 	}
 
 	result.NumberOfMissingSignature = make(map[string]signaturecounter.MissingSignature)

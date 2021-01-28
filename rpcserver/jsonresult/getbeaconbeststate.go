@@ -144,14 +144,17 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 			result.LastCrossShardState[k1][k2] = v2
 		}
 	}
+
 	result.AutoStaking = make(map[string]bool)
 	for k, v := range data.GetAutoStaking() {
 		result.AutoStaking[k] = v
 	}
+
 	result.StakingTx = make(map[string]common.Hash)
 	for k, v := range data.GetStakingTx() {
 		result.StakingTx[k] = v
 	}
+
 	result.NumberOfMissingSignature = make(map[string]signaturecounter.MissingSignature)
 	for k, v := range data.GetNumberOfMissingSignature() {
 		result.NumberOfMissingSignature[k] = v
