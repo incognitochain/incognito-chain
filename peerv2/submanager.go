@@ -348,8 +348,10 @@ func (sub *SubManager) registerToProxy(
 }
 
 func getMessagesForLayer(layer string, shardID []byte) []string {
-	if layer == common.ShardRole {
-		return []string{
+	msgs := []string{}
+	switch layer {
+	case common.ShardRole:
+		msgs = []string{
 			wire.CmdBlockShard,
 			wire.CmdBlockBeacon,
 			wire.CmdBFT,
@@ -358,21 +360,26 @@ func getMessagesForLayer(layer string, shardID []byte) []string {
 			wire.CmdTx,
 			wire.CmdPrivacyCustomToken,
 		}
-	} else if layer == common.BeaconRole {
-		return []string{
+	case common.BeaconRole:
+		msgs = []string{
 			wire.CmdBlockBeacon,
 			wire.CmdBFT,
 			wire.CmdPeerState,
 			wire.CmdBlockShard,
+			wire.CmdMsgFinishSync,
 		}
-	} else {
+	case common.SyncingRole:
+		msgs = []string{
+			wire.CmdMsgFinishSync,
+		}
+	default:
 		containShard := false
 		for _, s := range shardID {
 			if s != HighwayBeaconID {
 				containShard = true
 			}
 		}
-		msgs := []string{
+		msgs = []string{
 			wire.CmdBlockBeacon,
 			wire.CmdPeerState,
 			wire.CmdTx,
@@ -381,8 +388,6 @@ func getMessagesForLayer(layer string, shardID []byte) []string {
 		if containShard {
 			msgs = append(msgs, wire.CmdBlockShard)
 		}
-		return msgs
 	}
-
-	return []string{}
+	return msgs
 }
