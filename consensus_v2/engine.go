@@ -140,13 +140,13 @@ func (s *Engine) WatchCommitteeChange() {
 		} else { //if not run correct version => stop and init
 			if s.version[chainID] == 1 {
 				if _, ok := s.BFTProcess[chainID].(*blsbft.BLSBFT); !ok {
-					s.BFTProcess[chainID].Stop()
+					s.BFTProcess[chainID].Destroy()
 					s.initProcess(chainID, chainName)
 				}
 			}
 			if s.version[chainID] == 2 {
 				if _, ok := s.BFTProcess[chainID].(*blsbft2.BLSBFT_V2); !ok {
-					s.BFTProcess[chainID].Stop()
+					s.BFTProcess[chainID].Destroy()
 					s.initProcess(chainID, chainName)
 				}
 			}
@@ -155,6 +155,7 @@ func (s *Engine) WatchCommitteeChange() {
 		for _, validator := range validators {
 			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
+
 		s.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
 		s.BFTProcess[chainID].Start()
 		miningProc = s.BFTProcess[chainID]

@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 
+	pubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
@@ -17,7 +18,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
 )
 
@@ -93,7 +93,7 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 		if msgType == p {
 			// Get topic for mess
 			for _, availableTopic := range subs[msgType] {
-				Logger.Info(availableTopic)
+				//Logger.Info(availableTopic)
 				cID := GetCommitteeIDOfTopic(availableTopic.Name)
 				if (byte(cID) == shardID) && ((availableTopic.Act == proto.MessageTopicPair_PUB) || (availableTopic.Act == proto.MessageTopicPair_PUBSUB)) {
 					return broadcastMessage(msg, availableTopic.Name, cm.ps)
@@ -109,7 +109,13 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 func (cm *ConnManager) Start(ns NetSync) {
 	// Pubsub
 	var err error
-	cm.ps, err = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host, pubsub.WithMaxMessageSize(common.MaxPSMsgSize))
+	cm.ps, err = pubsub.NewFloodSub(
+		context.Background(),
+		cm.LocalHost.Host,
+		pubsub.WithMaxMessageSize(common.MaxPSMsgSize),
+		pubsub.WithPeerOutboundQueueSize(1024),
+		pubsub.WithValidateQueueSize(1024),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -379,7 +385,7 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	}
 
 	// Broadcast
-	Logger.Infof("Publishing to topic %s", topic)
+	//Logger.Infof("Publishing to topic %s", topic)
 	return ps.Publish(topic, []byte(messageHex))
 }
 

@@ -49,9 +49,9 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 
-	p2ppubsub "github.com/libp2p/go-libp2p-pubsub"
+	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 
-	pb "github.com/libp2p/go-libp2p-pubsub/pb"
+	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 )
 
 type Server struct {
