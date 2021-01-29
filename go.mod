@@ -58,15 +58,11 @@ require (
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tendermint/go-amino v0.14.1
 	github.com/tendermint/tendermint v0.32.0
-	go.opencensus.io v0.22.0 // indirect
-	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
-	golang.org/x/net v0.0.0-20190628185345-da137c7871d7 // indirect
-	golang.org/x/tools v0.0.0-20190524140312-2c0ae7006135 // indirect
+	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5
 	google.golang.org/api v0.10.0
 	google.golang.org/grpc v1.27.1
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v2 v2.2.4
-	honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc // indirect
 	stathat.com/c/consistent v1.0.0
 
 )
