@@ -325,3 +325,7 @@ var (
 )
 
 var TIMESLOT = uint64(0) //need to be set when init chain
+
+const (
+	BeaconChainID = 255
+)

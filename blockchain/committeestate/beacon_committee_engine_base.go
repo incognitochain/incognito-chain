@@ -300,3 +300,11 @@ func (engine *beaconCommitteeEngineBase) SplitReward(
 func (engine beaconCommitteeEngineBase) NumberOfAssignedCandidates() int {
 	panic("Implement this function")
 }
+
+func (engine beaconCommitteeEngineBase) AddFinishedSyncValidators([]string) error {
+	panic("Implement this function")
+}
+
+func (engine beaconCommitteeEngineBase) GenerateFinishSyncInstructions() ([]*instruction.FinishSyncInstruction, error) {
+	return []*instruction.FinishSyncInstruction{}, nil
+}

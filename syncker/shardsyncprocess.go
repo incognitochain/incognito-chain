@@ -12,6 +12,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -37,10 +38,18 @@ type ShardSyncProcess struct {
 	beaconChain           Chain
 	shardPool             *BlkPool
 	actionCh              chan func()
+	miningKey             string
 	lock                  *sync.RWMutex
 }
 
-func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain, beaconChain BeaconChainInterface, chain ShardChainInterface) *ShardSyncProcess {
+func NewShardSyncProcess(
+	shardID int,
+	network Network,
+	bc *blockchain.BlockChain,
+	beaconChain BeaconChainInterface,
+	chain ShardChainInterface,
+	miningKey string,
+) *ShardSyncProcess {
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
 			return true
@@ -58,6 +67,7 @@ func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain
 		shardPool:        NewBlkPool("ShardPool-"+string(shardID), isOutdatedBlock),
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState),
+		miningKey:        miningKey,
 
 		actionCh: make(chan func()),
 	}
@@ -206,13 +216,16 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		} else {
 			if len(s.shardPeerState) > 0 {
 				s.isCatchUp = true
-				//TODO: @tin
-				// call blockchain for get shardchain by shard id
-				// then call a method for building a tx send to network for announcing readyForCommitee
-				/*if s.blockchain.ShardChain[s.shardID].FinishedSync() {*/
-				////rpcserver.
-				/*}*/
+				committeeView := s.blockchain.BeaconChain.FinalView().(*blockchain.BeaconBestState)
+				if committeeView.CommitteeEngineVersion() == committeestate.DCS_VERSION {
 
+					if committeeView.ShouldSendFinishSyncMessage(s.miningKey, byte(s.shardID)) {
+						msg := &wire.MessageFinishSync{
+							CommitteePublicKey: s.miningKey,
+						}
+						s.Network.PublishMessageToShard(msg, common.BeaconChainID)
+					}
+				}
 			}
 			time.Sleep(time.Second * 5)
 		}

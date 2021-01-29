@@ -463,7 +463,13 @@ func (serverObj *Server) NewServer(
 
 	serverObj.connManager = connManager
 	serverObj.consensusEngine.Init(&consensus.EngineConfig{Node: serverObj, Blockchain: serverObj.blockChain, PubSubManager: serverObj.pusubManager})
-	serverObj.syncker.Init(&syncker.SynckerManagerConfig{Network: serverObj.highway, Blockchain: serverObj.blockChain, Consensus: serverObj.consensusEngine})
+	serverObj.syncker.Init(
+		&syncker.SynckerManagerConfig{
+			Network:    serverObj.highway,
+			Blockchain: serverObj.blockChain,
+			Consensus:  serverObj.consensusEngine,
+			MiningKey:  serverObj.miningKeys,
+		})
 
 	// Start up persistent peers.
 	permanentPeers := cfg.ConnectPeers
@@ -949,8 +955,18 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 
 //OnFinishSync ...
 func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishSync) {
-	//TODO: @tin
-	//receive finish sync msg
+	Logger.log.Debug("Receive a MsgFinishSync")
+	beaconBestView := serverObj.blockChain.GetBeaconBestState()
+	beaconCommittees, err := incognitokey.CommitteeKeyListToString(beaconBestView.GetBeaconCommittee())
+	if err != nil {
+		panic(err)
+	}
+
+	for _, v := range beaconCommittees {
+		if serverObj.miningKeys == v {
+			beaconBestView.AddFinishedSyncValidators([]string{msg.CommitteePublicKey})
+		}
+	}
 }
 
 // OnBlock is invoked when a peer receives a block message.  It

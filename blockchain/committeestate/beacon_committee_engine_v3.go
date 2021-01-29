@@ -158,3 +158,21 @@ func (engine BeaconCommitteeEngineV3) SyncingValidators() map[byte][]incognitoke
 	}
 	return res
 }
+
+func (engine BeaconCommitteeEngineV3) AddFinishedSyncValidators(committeePublicKeys []string) error {
+	engine.finalState.Mu().Lock()
+	defer engine.finalState.Mu().Unlock()
+	committeePublicKeysStruct, err := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
+	if err != nil {
+		return err
+	}
+	beaconStateV3 := engine.finalState.(*BeaconCommitteeStateV3)
+	beaconStateV3.AddFinishedSyncValidators(committeePublicKeysStruct)
+	return nil
+}
+
+func (engine BeaconCommitteeEngineV3) GenerateFinishSyncInstructions() ([]*instruction.FinishSyncInstruction, error) {
+	//TODO: @tin
+	// Implement this function
+	return nil, nil
+}

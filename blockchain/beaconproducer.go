@@ -418,18 +418,18 @@ func (curView *BeaconBestState) GenerateInstruction(
 					instructions = append(instructions, swapShardInstruction.ToString())
 				}
 			}
-
-			assignInstructions := curView.beaconCommitteeEngine.AssignInstructions(env)
-			if err != nil {
-				return [][]string{}, err
-			}
-			for _, assignInstruction := range assignInstructions {
-				if !assignInstruction.IsEmpty() {
-					instructions = append(instructions, assignInstruction.ToString())
-				}
-			}
 		}
 	}
+
+	// Finish Sync Instructions
+	finishSyncInstructions, err := curView.beaconCommitteeEngine.GenerateFinishSyncInstructions()
+	if err != nil {
+		return instructions, err
+	}
+	for _, finishSyncInstruction := range finishSyncInstructions {
+		instructions = append(instructions, finishSyncInstruction.ToString())
+	}
+
 	// Stop Auto Stake
 	for _, stopAutoStakeInstruction := range shardInstruction.stopAutoStakeInstructions {
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())

@@ -9,7 +9,8 @@ import (
 
 type BeaconCommitteeStateV3 struct {
 	beaconCommitteeStateSlashingBase
-	syncPool map[byte][]incognitokey.CommitteePublicKey
+	syncPool               map[byte][]incognitokey.CommitteePublicKey
+	finishedSyncValidators []incognitokey.CommitteePublicKey
 }
 
 func NewBeaconCommitteeStateV3() *BeaconCommitteeStateV3 {
@@ -73,6 +74,24 @@ func (b *BeaconCommitteeStateV3) Version() int {
 
 func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePublicKey {
 	return b.syncPool
+}
+
+func (b *BeaconCommitteeStateV3) FinishedSyncValidators() []incognitokey.CommitteePublicKey {
+	return b.finishedSyncValidators
+}
+
+func (b *BeaconCommitteeStateV3) AddFinishedSyncValidators(syncingValidators []incognitokey.CommitteePublicKey) {
+	finishedSyncValidators := make(map[string]bool)
+	for _, v := range b.finishedSyncValidators {
+		key, _ := v.ToBase58()
+		finishedSyncValidators[key] = true
+	}
+	for _, v := range syncingValidators {
+		key, _ := v.ToBase58()
+		if !finishedSyncValidators[key] {
+			b.finishedSyncValidators = append(b.finishedSyncValidators, v)
+		}
+	}
 }
 
 //assignToSync assign validatrors to syncPool

@@ -448,7 +448,7 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.featureStateDB = target.featureStateDB.Copy()
 	beaconBestState.rewardStateDB = target.rewardStateDB.Copy()
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
-	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine.Clone() //TODO: @tin add here in version 2 and 3
+	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine.Clone()
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
 	return nil
 }
@@ -891,7 +891,6 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }
 
-//TODO: @tin fix here
 func (beaconBestState *BeaconBestState) upgradeCommitteeEngine(bc *BlockChain) {
 	if beaconBestState.CommitteeEngineVersion() == committeestate.DCS_VERSION {
 		return
@@ -974,4 +973,19 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngine(bc *BlockChain) {
 		}
 	}
 	beaconBestState.beaconCommitteeEngine = committeeEngine
+}
+
+func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePublicKey string, shardID byte) bool {
+	syncingValidators := beaconBestState.beaconCommitteeEngine.SyncingValidators()[shardID]
+	for _, v := range syncingValidators {
+		key, _ := v.ToBase58()
+		if key == committeePublicKey {
+			return true
+		}
+	}
+	return false
+}
+
+func (beaconBestState *BeaconBestState) AddFinishedSyncValidators(committeePublicKeys []string) {
+	beaconBestState.beaconCommitteeEngine.AddFinishedSyncValidators(committeePublicKeys)
 }
