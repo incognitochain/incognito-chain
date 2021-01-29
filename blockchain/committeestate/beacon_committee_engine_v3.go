@@ -174,5 +174,6 @@ func (engine BeaconCommitteeEngineV3) AddFinishedSyncValidators(committeePublicK
 func (engine BeaconCommitteeEngineV3) GenerateFinishSyncInstructions() ([]*instruction.FinishSyncInstruction, error) {
 	//TODO: @tin
 	// Implement this function
-	return nil, nil
+	res := []*instruction.FinishSyncInstruction{}
+	return res, nil
 }
