@@ -29,7 +29,7 @@ type BLSBFT_V2 struct {
 	UserKeySet   []signatureschemes2.MiningKey
 	BFTMessageCh chan wire.MessageBFT
 	isStarted    bool
-	StopCh       chan struct{}
+	destroyCh    chan struct{}
 	Logger       common.Logger
 
 	currentTime      int64
@@ -60,10 +60,12 @@ func (e BLSBFT_V2) IsStarted() bool {
 }
 
 type ProposeBlockInfo struct {
-	block      common.BlockInterface
-	votes      map[string]*BFTVote //pk->BFTVote
-	isValid    bool
-	hasNewVote bool
+	receiveTime time.Time
+	block       common.BlockInterface
+	votes       map[string]*BFTVote //pk->BFTVote
+	isValid     bool
+	hasNewVote  bool
+	sendVote    bool
 }
 
 func (e *BLSBFT_V2) GetConsensusName() string {
@@ -72,45 +74,40 @@ func (e *BLSBFT_V2) GetConsensusName() string {
 
 func (e *BLSBFT_V2) Stop() error {
 	if e.isStarted {
-		e.Logger.Info("stop bls-bft2 consensus for chain", e.ChainKey)
-		select {
-		case <-e.StopCh:
-			return nil
-		default:
-			close(e.StopCh)
-		}
-		e.isStarted = false
+		e.Logger.Info("stop bls-bftv2 consensus for chain", e.ChainKey)
 	}
-	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(e.ChainKey))
+	e.isStarted = false
+	return nil
 }
 
 func (e *BLSBFT_V2) Start() error {
-	if e.isStarted {
-		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(e.ChainKey))
+	if !e.isStarted {
+		e.Logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
 	}
-
 	e.isStarted = true
-	e.StopCh = make(chan struct{})
-	e.ProposeMessageCh = make(chan BFTPropose)
-	e.VoteMessageCh = make(chan BFTVote)
-	e.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
-	e.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
-	e.voteHistory = make(map[uint64]common.BlockInterface)
-	var err error
-	e.proposeHistory, err = lru.New(1000)
-	if err != nil {
-		panic(err)
-	}
+	return nil
+}
 
-	//init view maps
-	ticker := time.Tick(200 * time.Millisecond)
-	e.Logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
+func (e *BLSBFT_V2) Destroy() {
+	close(e.destroyCh)
+}
+
+//only run when init process
+func (e *BLSBFT_V2) run() error {
 	go func() {
-		for { //actor loop
+		//init view maps
+		ticker := time.Tick(200 * time.Millisecond)
+		cleanMemTicker := time.Tick(5 * time.Minute)
+		e.Logger.Info("init bls-bftv2 consensus for chain", e.ChainKey)
 
-			//e.Logger.Debug("Current time ", currentTime, "time slot ", currentTimeSlot)
+		for { //actor loop
+			if !e.isStarted { //sleep if this process is not start
+				time.Sleep(time.Second)
+				continue
+			}
 			select {
-			case <-e.StopCh:
+			case <-e.destroyCh:
+				e.Logger.Info("exit bls-bftv2 consensus for chain", e.ChainKey)
 				return
 			case proposeMsg := <-e.ProposeMessageCh:
 				//fmt.Println("debug receive propose message", string(proposeMsg.Block))
@@ -124,9 +121,10 @@ func (e *BLSBFT_V2) Start() error {
 
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
 					e.receiveBlockByHash[blkHash] = &ProposeBlockInfo{
-						block:      block,
-						votes:      make(map[string]*BFTVote),
-						hasNewVote: false,
+						block:       block,
+						votes:       make(map[string]*BFTVote),
+						hasNewVote:  false,
+						receiveTime: time.Now(),
 					}
 					e.Logger.Info(e.ChainKey, "Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
@@ -174,7 +172,22 @@ func (e *BLSBFT_V2) Start() error {
 						e.Logger.Infof("%v Receive vote (%d) for block from unknown validator", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
 					}
 				}
-
+			case <-cleanMemTicker:
+				for h, _ := range e.receiveBlockByHeight {
+					if h <= e.Chain.GetFinalView().GetHeight() {
+						delete(e.receiveBlockByHeight, h)
+					}
+				}
+				for h, _ := range e.voteHistory {
+					if h <= e.Chain.GetFinalView().GetHeight() {
+						delete(e.voteHistory, h)
+					}
+				}
+				for h, proposeBlk := range e.receiveBlockByHash {
+					if time.Now().Sub(proposeBlk.receiveTime) > time.Minute {
+						delete(e.receiveBlockByHash, h)
+					}
+				}
 			case <-ticker:
 				if !e.Chain.IsReady() {
 					continue
@@ -258,10 +271,9 @@ func (e *BLSBFT_V2) Start() error {
 					if proposeBlockInfo.block == nil {
 						continue
 					}
-					bestViewHeight := bestView.GetHeight()
 					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
-					if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
-
+					// check if propose block in current time
+					if e.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) {
 						validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 					}
 
@@ -273,7 +285,12 @@ func (e *BLSBFT_V2) Start() error {
 				sort.Slice(validProposeBlock, func(i, j int) bool {
 					return validProposeBlock[i].block.GetProduceTime() < validProposeBlock[j].block.GetProduceTime()
 				})
+
 				for _, v := range validProposeBlock {
+					if v.sendVote {
+						continue
+					}
+
 					blkCreateTimeSlot := common.CalculateTimeSlot(v.block.GetProduceTime())
 					bestViewHeight := bestView.GetHeight()
 
@@ -302,12 +319,24 @@ func (e *BLSBFT_V2) Start() error {
 }
 
 func NewInstance(chain ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT_V2 {
+	var err error
 	var newInstance = new(BLSBFT_V2)
 	newInstance.Chain = chain
 	newInstance.ChainKey = chainKey
 	newInstance.ChainID = chainID
 	newInstance.Node = node
 	newInstance.Logger = logger
+	newInstance.destroyCh = make(chan struct{})
+	newInstance.ProposeMessageCh = make(chan BFTPropose)
+	newInstance.VoteMessageCh = make(chan BFTVote)
+	newInstance.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
+	newInstance.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
+	newInstance.voteHistory = make(map[uint64]common.BlockInterface)
+	newInstance.proposeHistory, err = lru.New(1000)
+	if err != nil {
+		panic(err) //must not error
+	}
+	newInstance.run()
 	return newInstance
 }
 
@@ -402,15 +431,13 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		valData.BridgeSig = brigSigs
 		valData.ValidatiorsIdx = validatorIdx
 		validationDataString, _ := EncodeValidationData(*valData)
-		e.Logger.Infof("%v Validation Data", e.ChainKey, aggSig, brigSigs, validatorIdx, validationDataString)
+		e.Logger.Infof("%v Validation Data %v %v %v %v", e.ChainKey, aggSig, brigSigs, validatorIdx, validationDataString)
 		if err := v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
 			e.Logger.Error(err)
 			return
 		}
 
 		go e.Chain.InsertAndBroadcastBlock(v.block)
-
-		delete(e.receiveBlockByHash, blockHash)
 	}
 }
 
@@ -452,6 +479,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 			v.isValid = true
 			e.voteHistory[v.block.GetHeight()] = v.block
 			e.Logger.Info(e.ChainKey, "sending vote...")
+			v.sendVote = true
 			go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
 			go e.Node.PushMessageToChain(msg, e.Chain)
 		}

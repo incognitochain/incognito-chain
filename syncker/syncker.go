@@ -155,7 +155,7 @@ func (synckerManager *SynckerManager) ReceiveBlock(blk interface{}, peerID strin
 	switch blk.(type) {
 	case *blockchain.BeaconBlock:
 		beaconBlk := blk.(*blockchain.BeaconBlock)
-		fmt.Printf("syncker: receive beacon block %d \n", beaconBlk.GetHeight())
+		//fmt.Printf("syncker: receive beacon block %d \n", beaconBlk.GetHeight())
 		//create fake s2b pool peerstate
 		if synckerManager.BeaconSyncProcess != nil {
 			synckerManager.beaconPool.AddBlock(beaconBlk)

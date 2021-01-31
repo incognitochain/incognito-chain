@@ -8,11 +8,11 @@ import (
 	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
+	pubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/peer"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
 )
 
@@ -37,11 +37,10 @@ type SubManager struct {
 
 type info struct {
 	consensusData ConsensusData
-
-	pubkey string
-	// nodeMode   string
-	relayShard []byte
-	peerID     peer.ID
+	pubkey        string
+	syncMode      string
+	relayShard    []byte
+	peerID        peer.ID
 }
 
 type Subscriber interface {
@@ -75,79 +74,107 @@ func (sub *SubManager) GetMsgToTopics() msgToTopics {
 	return sub.subs // no need to make a copy since topics rarely changed (when role changed)
 }
 
+func (sub *SubManager) SetSyncMode(s string) {
+	sub.syncMode = s
+}
+
 // Subscribe registers to proxy and save the list of new topics if needed
 func (sub *SubManager) Subscribe(forced bool) error {
-
 	rolehash := ""
 	relayShardIDs := sub.relayShard
-	newRole := sub.consensusData.GetOneValidatorForEachConsensusProcess()
 	var newTopics = make(msgToTopics)
 	var err error
-
 	shardIDs := []int{}
-	for _, sid := range relayShardIDs {
-		if newRole[int(sid)] == nil {
-			newRole[int(sid)] = &consensus.Validator{}
-		}
-	}
-
-	//recalculate rolehash
-	for k := range newRole {
-		shardIDs = append(shardIDs, int(k))
-	}
-	sort.Ints(shardIDs)
-	str := ""
-	for _, chainID := range shardIDs {
-		if newRole[chainID] != nil {
-			str += fmt.Sprintf("%v-%v", chainID, newRole[chainID].State.Role)
-		} else {
-			str += fmt.Sprintf("%v-", chainID)
-		}
-	}
-	rolehash = common.HashH([]byte(str)).String()
-
-	//check if role hash is changed
-	if rolehash == sub.rolehash && !forced { // Not forced => no need to subscribe when role stays the same
-		return nil
-	}
-
-	Logger.Infof("Role changed %+v", rolehash)
-
-	// Registering relay
-	if len(relayShardIDs) == 0 {
-		relayShardIDs = []byte{255}
-	}
 	nodePK, _ := new(incognitokey.CommitteePublicKey).ToBase58()
-	validator := sub.consensusData.GetOneValidator()
-	if validator != nil {
-		nodePK = validator.MiningKey.GetPublicKeyBase58()
-	}
-	newTopics, _, err = sub.registerToProxy(
-		nodePK,
-		"",
-		"",
-		relayShardIDs,
-	)
-	if err != nil {
-		return err
-	}
 
-	// Registering mining
-	for chainID, validator := range newRole {
-		if validator.PrivateSeed != "" {
-			topics, _, err := sub.registerToProxy(
-				validator.MiningKey.GetPublicKeyBase58(),
-				validator.State.Layer,
-				validator.State.Role,
-				[]byte{byte(chainID)},
-			)
-			if err != nil {
-				return err // Don't save new role and topics since we need to retry later
-			}
-			for msg, topic := range topics {
-				newTopics[msg] = append(newTopics[msg], topic...)
+	if sub.syncMode == "" {
+		newRole := sub.consensusData.GetOneValidatorForEachConsensusProcess()
+
+		for _, sid := range relayShardIDs {
+			if newRole[int(sid)] == nil {
+				newRole[int(sid)] = &consensus.Validator{}
 			}
 		}
+
+		//recalculate rolehash
+		for k := range newRole {
+			shardIDs = append(shardIDs, int(k))
+		}
+		sort.Ints(shardIDs)
+		str := ""
+		for _, chainID := range shardIDs {
+			if newRole[chainID] != nil {
+				str += fmt.Sprintf("%v-%v", chainID, newRole[chainID].State.Role)
+			} else {
+				str += fmt.Sprintf("%v-", chainID)
+			}
+		}
+		rolehash = common.HashH([]byte(str)).String()
+
+		//check if role hash is changed
+		if rolehash == sub.rolehash && !forced { // Not forced => no need to subscribe when role stays the same
+			return nil
+		}
+
+		Logger.Infof("Role changed %+v", rolehash)
+
+		// Registering relay
+		if len(relayShardIDs) == 0 {
+			relayShardIDs = []byte{255}
+		}
+
+		validator := sub.consensusData.GetOneValidator()
+		if validator != nil {
+			nodePK = validator.MiningKey.GetPublicKeyBase58()
+		}
+		newTopics, _, err = sub.registerToProxy(
+			nodePK,
+			"",
+			"",
+			relayShardIDs,
+		)
+		if err != nil {
+			return err
+		}
+
+		// Registering mining
+		for chainID, validator := range newRole {
+			if validator.PrivateSeed != "" {
+				topics, _, err := sub.registerToProxy(
+					validator.MiningKey.GetPublicKeyBase58(),
+					validator.State.Layer,
+					validator.State.Role,
+					[]byte{byte(chainID)},
+				)
+				if err != nil {
+					return err // Don't save new role and topics since we need to retry later
+				}
+				for msg, topic := range topics {
+					newTopics[msg] = append(newTopics[msg], topic...)
+				}
+			}
+		}
+	} else if sub.syncMode == "netmonitor" {
+		rolehash = common.HashH([]byte("netmonitor")).String()
+
+		//check if role hash is changed
+		if rolehash == sub.rolehash && !forced { // Not forced => no need to subscribe when role stays the same
+			return nil
+		}
+
+		topics, _, err := sub.registerToProxy(
+			nodePK,
+			"",
+			"netmonitor",
+			[]byte{255},
+		)
+		if err != nil {
+			return err // Don't save new role and topics since we need to retry later
+		}
+		for msg, topic := range topics {
+			newTopics[msg] = append(newTopics[msg], topic...)
+		}
+
 	}
 
 	Logger.Infof("newTopics %v", newTopics)
