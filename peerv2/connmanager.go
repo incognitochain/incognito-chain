@@ -94,7 +94,7 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 		if msgType == p {
 			// Get topic for mess
 			for _, availableTopic := range subs[msgType] {
-				Logger.Info(availableTopic)
+				//Logger.Info(availableTopic)
 				cID := GetCommitteeIDOfTopic(availableTopic.Name)
 				if (byte(cID) == shardID) && ((availableTopic.Act == proto.MessageTopicPair_PUB) || (availableTopic.Act == proto.MessageTopicPair_PUBSUB)) {
 					return broadcastMessage(msg, availableTopic.Name, cm.ps)
@@ -386,7 +386,7 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	}
 
 	// Broadcast
-	Logger.Infof("Publishing to topic %s", topic)
+	//Logger.Infof("Publishing to topic %s", topic)
 	return ps.Publish(topic, []byte(messageHex))
 }
 
