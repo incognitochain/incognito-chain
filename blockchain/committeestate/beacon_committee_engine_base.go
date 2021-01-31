@@ -301,7 +301,7 @@ func (engine beaconCommitteeEngineBase) NumberOfAssignedCandidates() int {
 	panic("Implement this function")
 }
 
-func (engine beaconCommitteeEngineBase) AddFinishedSyncValidators([]string) error {
+func (engine beaconCommitteeEngineBase) AddFinishedSyncValidators([]string, byte) error {
 	panic("Implement this function")
 }
 

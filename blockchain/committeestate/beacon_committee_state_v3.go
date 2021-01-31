@@ -10,13 +10,14 @@ import (
 type BeaconCommitteeStateV3 struct {
 	beaconCommitteeStateSlashingBase
 	syncPool               map[byte][]incognitokey.CommitteePublicKey
-	finishedSyncValidators []incognitokey.CommitteePublicKey
+	finishedSyncValidators map[byte][]incognitokey.CommitteePublicKey
 }
 
 func NewBeaconCommitteeStateV3() *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
 		beaconCommitteeStateSlashingBase: *NewBeaconCommitteeStateSlashingBase(),
 		syncPool:                         make(map[byte][]incognitokey.CommitteePublicKey),
+		finishedSyncValidators:           make(map[byte][]incognitokey.CommitteePublicKey),
 	}
 }
 
@@ -37,7 +38,8 @@ func NewBeaconCommitteeStateV3WithValue(
 			beaconCommittee, shardCommittee, shardSubstitute, autoStake, rewardReceiver, stakingTx,
 			shardCommonPool, numberOfAssignedCandidates, swapRule,
 		),
-		syncPool: syncPool,
+		syncPool:               syncPool,
+		finishedSyncValidators: make(map[byte][]incognitokey.CommitteePublicKey),
 	}
 }
 
@@ -76,20 +78,20 @@ func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePub
 	return b.syncPool
 }
 
-func (b *BeaconCommitteeStateV3) FinishedSyncValidators() []incognitokey.CommitteePublicKey {
+func (b *BeaconCommitteeStateV3) FinishedSyncValidators() map[byte][]incognitokey.CommitteePublicKey {
 	return b.finishedSyncValidators
 }
 
-func (b *BeaconCommitteeStateV3) AddFinishedSyncValidators(syncingValidators []incognitokey.CommitteePublicKey) {
+func (b *BeaconCommitteeStateV3) AddFinishedSyncValidators(syncingValidators []incognitokey.CommitteePublicKey, shardID byte) {
 	finishedSyncValidators := make(map[string]bool)
-	for _, v := range b.finishedSyncValidators {
+	for _, v := range b.finishedSyncValidators[shardID] {
 		key, _ := v.ToBase58()
 		finishedSyncValidators[key] = true
 	}
 	for _, v := range syncingValidators {
 		key, _ := v.ToBase58()
 		if !finishedSyncValidators[key] {
-			b.finishedSyncValidators = append(b.finishedSyncValidators, v)
+			b.finishedSyncValidators[shardID] = append(b.finishedSyncValidators[shardID], v)
 		}
 	}
 }

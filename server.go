@@ -964,7 +964,7 @@ func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishS
 
 	for _, v := range beaconCommittees {
 		if serverObj.miningKeys == v {
-			beaconBestView.AddFinishedSyncValidators([]string{msg.CommitteePublicKey})
+			beaconBestView.AddFinishedSyncValidators([]string{msg.CommitteePublicKey}, msg.ShardID)
 		}
 	}
 }

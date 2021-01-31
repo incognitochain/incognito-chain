@@ -43,7 +43,7 @@ type BeaconCommitteeEngine interface {
 	AssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
 	SyncingValidators() map[byte][]incognitokey.CommitteePublicKey
 	NumberOfAssignedCandidates() int
-	AddFinishedSyncValidators([]string) error
+	AddFinishedSyncValidators([]string, byte) error
 	GenerateFinishSyncInstructions() ([]*instruction.FinishSyncInstruction, error)
 }
 

@@ -11,6 +11,7 @@ import (
 
 type MessageFinishSync struct {
 	CommitteePublicKey string
+	ShardID            byte
 }
 
 func (msg *MessageFinishSync) Hash() string {

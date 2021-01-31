@@ -986,6 +986,6 @@ func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePub
 	return false
 }
 
-func (beaconBestState *BeaconBestState) AddFinishedSyncValidators(committeePublicKeys []string) {
-	beaconBestState.beaconCommitteeEngine.AddFinishedSyncValidators(committeePublicKeys)
+func (beaconBestState *BeaconBestState) AddFinishedSyncValidators(committeePublicKeys []string, shardID byte) {
+	beaconBestState.beaconCommitteeEngine.AddFinishedSyncValidators(committeePublicKeys, shardID)
 }
