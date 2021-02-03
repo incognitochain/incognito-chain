@@ -38,10 +38,10 @@ func (app *AppService) PublishShardState(shardBestState *blockchain.ShardBestSta
 	Logger.log.Infof("Publish shardState with hash %v at height %d of Shard ID: %d", shardBestState.BestBlock.Hash().String(), shardBestState.BeaconHeight, shardBestState.ShardID)
 	shard := data.NewShardFromShardState(shardBestState)
 	err := storage.StoreLatestShardFinalState(context.TODO(), shard)
-	if err !=nil && !impl.IsMongoDupKey(err) {
+	//if err !=nil && !impl.IsMongoDupKey(err) {
 		return err
-	}
-	return nil
+	//}
+	//return nil
 }
 
 func (app *AppService) PublishPDEState(pdeContributionStore *rawdbv2.PDEContributionStore, pdeTradeStore *rawdbv2.PDETradeStore, pdeCrossTradeStore *rawdbv2.PDECrossTradeStore,

@@ -1206,12 +1206,11 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		if err := blockchain.config.Server.PublishShardState(newFinalView.(*ShardBestState));  err != nil {
-			panic(err)
-			return err
+			return NewBlockChainError(StoreShardBlockError, err)
 		}
 		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {
-			return NewBlockChainError(StoreBeaconBlockError, err)
+			return NewBlockChainError(StoreShardBlockError, err)
 		}
 		if storeBlock.GetHeight() == 1 {
 			break
@@ -1219,6 +1218,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		prevHash := storeBlock.GetPrevHash()
 		newFinalView = blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
 		if newFinalView == nil {
+			panic("Database is corrupt")
 			storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
 			if err != nil {
 				panic("Database is corrupt")

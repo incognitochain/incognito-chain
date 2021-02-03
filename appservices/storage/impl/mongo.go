@@ -1385,7 +1385,7 @@ func (m *mongoDBDriver) storeAllShardStateData(ctx context.Context, shardId byte
 		return err
 	}
 
-	log.Printf("Commit Transaction sucessfully")
+	log.Printf("Store shard id %d, shard hash %s sucessfully", shardId, shardState.BlockHash)
 	return nil
 }
 
