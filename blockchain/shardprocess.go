@@ -1218,7 +1218,6 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		prevHash := storeBlock.GetPrevHash()
 		newFinalView = blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
 		if newFinalView == nil {
-			panic("Database is corrupt")
 			storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
 			if err != nil {
 				panic("Database is corrupt")
