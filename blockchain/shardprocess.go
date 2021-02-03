@@ -1205,8 +1205,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	storeBlock := newFinalView.GetBlock()
 
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
-		err = blockchain.config.Server.PublishShardState(newFinalView.(*ShardBestState))
-		if err != nil {
+		if err := blockchain.config.Server.PublishShardState(newFinalView.(*ShardBestState));  err != nil {
 			panic(err)
 			return err
 		}

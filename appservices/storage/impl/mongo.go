@@ -19,7 +19,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -101,15 +100,16 @@ const (
 )
 
 func IsMongoDupKey(err error) bool {
-/*	wce, ok := err.(mongo.WriteError)
+	wce, ok := err.(mongo.WriteError)
 	if !ok {
 		log.Printf("%v", err)
 		return false
 	}
 	log.Printf("message: %s  code: %d", wce.Message, wce.Code)
-	return wce.Code == 11000 || wce.Code == 11001 || wce.Code == 12582 || wce.Code == 16460 && strings.Contains(wce.Message, " E11000 ")*/
+	return false
+	/*return wce.Code == 11000 || wce.Code == 11001 || wce.Code == 12582 || wce.Code == 16460 && strings.Contains(wce.Message, " E11000 ")
 	log.Printf("message: %s", err.Error())
-	return strings.Contains(err.Error(), "E11000 duplicate key error")
+	return strings.Contains(err.Error(), "E11000 duplicate key error")*/
 }
 
 func LoadMongoDBDriver(dbConnectionString string) error {
