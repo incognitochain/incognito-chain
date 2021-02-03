@@ -103,7 +103,7 @@ const (
 func IsMongoDupKey(err error) bool {
 	writeErrors, ok := err.(mongo.WriteErrors)
 	if !ok {
-		log.Printf("%v", err)
+		log.Printf("failed to caset to WriteErrors %v", err)
 		return false
 	}
 	for _, writeError := range writeErrors {
