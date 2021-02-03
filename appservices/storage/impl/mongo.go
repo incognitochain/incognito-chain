@@ -101,12 +101,12 @@ const (
 )
 
 func IsMongoDupKey(err error) bool {
-	writeErrors, ok := err.(mongo.WriteErrors)
+	we, ok := err.(mongo.WriteException)
 	if !ok {
 		log.Printf("failed to caset to WriteErrors %v", err)
 		return false
 	}
-	for _, writeError := range writeErrors {
+	for _, writeError := range we.WriteErrors {
 		log.Printf("message: %s  code: %d", writeError.Message, writeError.Code)
 		if ! strings.Contains(writeError.Message , "E11000 duplicate key error") {
 			return false
