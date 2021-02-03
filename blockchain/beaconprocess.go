@@ -1571,7 +1571,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	finalizedBlocks := []*BeaconBlock{}
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
-		blockchain.config.Server.PublishBeaconState(newFinalView.(*BeaconBestState))
+		err = blockchain.config.Server.PublishBeaconState(newFinalView.(*BeaconBestState))
 		if err != nil {
 			panic(err)
 			return err
