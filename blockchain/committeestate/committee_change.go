@@ -28,6 +28,7 @@ type CommitteeChange struct {
 	ShardCommitteeReplaced             map[byte][2][]incognitokey.CommitteePublicKey
 	StopAutoStake                      []string
 	RemovedStaker                      []string
+	FinishedSyncValidators             map[byte][]string
 	SlashingCommittee                  map[byte][]string
 }
 
@@ -71,6 +72,7 @@ func NewCommitteeChange() *CommitteeChange {
 		ShardCommitteeReplaced:  make(map[byte][2][]incognitokey.CommitteePublicKey),
 		BeaconCommitteeReplaced: [2][]incognitokey.CommitteePublicKey{},
 		SlashingCommittee:       make(map[byte][]string),
+		FinishedSyncValidators:  make(map[byte][]string),
 		SyncingPoolAdded:        make(map[byte][]incognitokey.CommitteePublicKey),
 		SyncingPoolRemoved:      make(map[byte][]incognitokey.CommitteePublicKey),
 	}
@@ -83,6 +85,7 @@ func NewCommitteeChange() *CommitteeChange {
 		committeeChange.SyncingPoolAdded[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.SyncingPoolRemoved[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.SlashingCommittee[shardID] = []string{}
+		committeeChange.FinishedSyncValidators[shardID] = []string{}
 	}
 	return committeeChange
 }

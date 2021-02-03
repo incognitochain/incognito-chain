@@ -286,6 +286,7 @@ func (b *beaconCommitteeStateBase) getAllSubstituteCommittees() ([]string, error
 		}
 		validators = append(validators, committeeStr...)
 	}
+
 	for _, substitute := range b.shardSubstitute {
 		substituteStr, err := incognitokey.CommitteeKeyListToString(substitute)
 		if err != nil {
@@ -325,15 +326,12 @@ func (b *beaconCommitteeStateBase) processStakeInstruction(
 	return committeeChange, err
 }
 
-func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
-	stopAutoStakeInstruction *instruction.StopAutoStakeInstruction,
-	env *BeaconCommitteeStateEnvironment,
+func (b *beaconCommitteeStateBase) turnOffAutoStake(
+	validators, stopAutoStakeKeys []string,
 	committeeChange *CommitteeChange,
 	oldState BeaconCommitteeState,
 ) *CommitteeChange {
-	//careful with this variable
-	validators := env.newAllCandidateSubstituteCommittee
-	for _, committeePublicKey := range stopAutoStakeInstruction.CommitteePublicKeys {
+	for _, committeePublicKey := range stopAutoStakeKeys {
 		if common.IndexOfStr(committeePublicKey, validators) == -1 {
 			// if not found then delete auto staking data for this public key if present
 			if _, ok := oldState.AutoStake()[committeePublicKey]; ok {
@@ -342,11 +340,21 @@ func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
 		} else {
 			// if found in committee list then turn off auto staking
 			if _, ok := oldState.AutoStake()[committeePublicKey]; ok {
+				//Logger.log.Info("[dcs] committeePublicKey:", committeePublicKey)
 				committeeChange = b.stopAutoStake(committeePublicKey, committeeChange)
 			}
 		}
 	}
 	return committeeChange
+}
+
+func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
+	stopAutoStakeInstruction *instruction.StopAutoStakeInstruction,
+	env *BeaconCommitteeStateEnvironment,
+	committeeChange *CommitteeChange,
+	oldState BeaconCommitteeState,
+) *CommitteeChange {
+	return b.turnOffAutoStake(env.newValidators, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange, oldState)
 }
 
 func (b *beaconCommitteeStateBase) SyncPool() map[byte][]incognitokey.CommitteePublicKey {

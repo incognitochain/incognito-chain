@@ -72,7 +72,8 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 
 	env.newUnassignedCommonPool = newState.UnassignedCommonPool()
 	env.newAllSubstituteCommittees = newState.AllSubstituteCommittees()
-	env.newAllCandidateSubstituteCommittee = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
+	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
+	env.newValidators = append(env.newValidators, newState.AllSyncingValidators()...)
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -109,8 +110,8 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, returnStakingInstruction, err = newState.processUnstakeInstruction(
-				unstakeInstruction, env, committeeChange, returnStakingInstruction, oldState)
+			committeeChange = newState.processUnstakeInstruction(
+				unstakeInstruction, env, committeeChange, oldState)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}

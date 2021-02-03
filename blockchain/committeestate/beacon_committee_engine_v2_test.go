@@ -1145,7 +1145,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 	committeeChangeProcessUnstakeInstruction := NewCommitteeChange()
 	committeeChangeProcessUnstakeInstruction.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{*incKey0}
 	committeeChangeProcessUnstakeInstruction.RemovedStaker = []string{key0}
-	committeeChangeProcessUnstakeInstruction.TermsRemoved = []string{}
 
 	committeeChangeSwapRuleV3 := NewCommitteeChange()
 	committeeChangeSwapRuleV3.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
@@ -2203,7 +2202,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 		*incKey0,
 		*incKey6,
 	}
-	committeeChangeUnstakeAssign2.TermsRemoved = []string{}
 
 	committeeChangeUnstakeAssign3 := NewCommitteeChange()
 	committeeChangeUnstakeAssign3.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
@@ -2216,7 +2214,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 		*incKey6,
 		*incKey0,
 	}
-	committeeChangeUnstakeAssign3.TermsRemoved = []string{}
 
 	committeeChangeUnstakeSwap := NewCommitteeChange()
 	committeeChangeUnstakeSwap.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
@@ -2258,7 +2255,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	committeeChangeUnstakeAndRandomTime.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{
 		*incKey0,
 	}
-	committeeChangeUnstakeAndRandomTime.TermsRemoved = []string{}
 
 	committeeChangeUnstakeAndRandomTime.RemovedStaker = []string{key0}
 	committeeChangeUnstakeAndRandomTime2 := NewCommitteeChange()
@@ -2315,7 +2311,6 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	committeeChangeTwoSlashing.RemovedStaker = []string{key4, key10}
 	committeeChangeTwoSlashing.SlashingCommittee[0] = []string{key4}
 	committeeChangeTwoSlashing.SlashingCommittee[1] = []string{key10}
-	committeeChangeTwoSlashing.TermsRemoved = []string{}
 	statedb.StoreStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{*incKey, *incKey0, *incKey4, *incKey10, *incKey7},

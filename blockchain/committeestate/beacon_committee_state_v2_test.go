@@ -856,7 +856,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		*incKey6,
 	}
 	committeeChangeValidInputSwapOut.RemovedStaker = []string{key6}
-	committeeChangeValidInputSwapOut.TermsRemoved = []string{}
 
 	committeeChangeValidInputSwapOut2 := NewCommitteeChange()
 	committeeChangeValidInputSwapOut2.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
@@ -869,7 +868,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		*incKey6,
 	}
 	committeeChangeValidInputSwapOut2.RemovedStaker = []string{key6}
-	committeeChangeValidInputSwapOut2.TermsRemoved = []string{}
 
 	committeeChangeValidInputBackToSub := NewCommitteeChange()
 	committeeChangeValidInputBackToSub.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
@@ -911,7 +909,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 	}
 	committeeChangeSlashingForceSwapOut.RemovedStaker = []string{key}
 	committeeChangeSlashingForceSwapOut.SlashingCommittee[0] = []string{key}
-	committeeChangeSlashingForceSwapOut.TermsRemoved = []string{}
 
 	committeeChangeSwapRuleV3 := NewCommitteeChange()
 	committeeChangeSwapRuleV3.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
@@ -925,7 +922,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 	}
 	committeeChangeSwapRuleV3.RemovedStaker = []string{key11}
 	committeeChangeSwapRuleV3.SlashingCommittee[0] = []string{key11}
-	committeeChangeSwapRuleV3.TermsRemoved = []string{}
 
 	//Define swap rule mock here
 	swapRuleSingleInstructionOut := &mocks.SwapRule{}
@@ -1717,7 +1713,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				tt.args.committeeChange,
 				tt.args.returnStakingInstructions,
 				tt.args.oldState,
-				b,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeStateV2.processSwapShardInstruction() error = %v, wantErr %v", err, tt.wantErr)
@@ -2015,7 +2010,6 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			},
 			want1: &CommitteeChange{
 				RemovedStaker: []string{key},
-				TermsRemoved:  []string{},
 			},
 			want2: instruction.NewReturnStakeInsWithValue(
 				[]string{key},
@@ -2346,7 +2340,6 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 				tt.args.committeeChange,
 				tt.args.returnStakeInstructions,
 				tt.args.oldState,
-				b,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processAfterNormalSwap() error = %v, wantErr %v", err, tt.wantErr)
@@ -2574,7 +2567,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 			want: &CommitteeChange{
 				NextEpochShardCandidateRemoved: []incognitokey.CommitteePublicKey{*incKey},
 				RemovedStaker:                  []string{key},
-				TermsRemoved:                   []string{},
 			},
 			want1: instruction.NewReturnStakeInsWithValue(
 				[]string{key},
@@ -2690,7 +2682,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 					*incKey, *incKey2, *incKey5, *incKey6,
 				},
 				RemovedStaker: []string{key, key2, key5, key6},
-				TermsRemoved:  []string{},
 			},
 			want1: &instruction.ReturnStakeInstruction{
 				PublicKeys: []string{key, key2, key5, key6},
@@ -2737,14 +2728,13 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				tt.args.committeeChange,
 				tt.args.returnStakingInstructions,
 				tt.args.oldState,
-				b,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processUnstakeInstruction() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("processUnstakeInstruction() got = %v, want %v", got.TermsRemoved, tt.want.TermsRemoved)
+				t.Errorf("processUnstakeInstruction() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("processUnstakeInstruction() got1 = %v, want %v", got1, tt.want1)
@@ -2782,7 +2772,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					newAllCandidateSubstituteCommittee: []string{key2},
+					newValidators: []string{key2},
 				},
 				committeeChange: &CommitteeChange{},
 				oldState:        &BeaconCommitteeStateV2{},
@@ -2814,7 +2804,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					newAllCandidateSubstituteCommittee: []string{key},
+					newValidators: []string{key},
 				},
 				committeeChange: &CommitteeChange{},
 				oldState: &BeaconCommitteeStateV2{

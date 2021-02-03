@@ -8,40 +8,40 @@ import (
 )
 
 type BeaconCommitteeStateEnvironment struct {
-	BeaconHeight                       uint64
-	Epoch                              uint64
-	BeaconHash                         common.Hash
-	BeaconInstructions                 [][]string
-	EpochBreakPointSwapNewKey          []uint64
-	RandomNumber                       int64
-	IsFoundRandomNumber                bool
-	IsBeaconRandomTime                 bool
-	AssignOffset                       int
-	DefaultOffset                      int
-	SwapOffset                         int
-	ActiveShards                       int
-	MinShardCommitteeSize              int
-	MinBeaconCommitteeSize             int
-	MaxBeaconCommitteeSize             int
-	MaxShardCommitteeSize              int
-	ConsensusStateDB                   *statedb.StateDB
-	IsReplace                          bool
-	newAllCandidateSubstituteCommittee []string
-	newUnassignedCommonPool            []string
-	newAllSubstituteCommittees         []string
-	LatestShardsState                  map[byte][]types.ShardState
-	SwapSubType                        uint
-	ShardID                            byte
-	TotalReward                        map[common.Hash]uint64
-	IsSplitRewardForCustodian          bool
-	PercentCustodianReward             uint64
-	DAOPercent                         int
-	NumberOfFixedBeaconBlockValidator  uint64
-	NumberOfFixedShardBlockValidator   int
-	MissingSignaturePenalty            map[string]signaturecounter.Penalty
-	DcsMinShardCommitteeSize           int
-	DcsMaxShardCommitteeSize           int
-	BeaconStateV3Height                uint64
+	BeaconHeight                      uint64
+	Epoch                             uint64
+	BeaconHash                        common.Hash
+	BeaconInstructions                [][]string
+	EpochBreakPointSwapNewKey         []uint64
+	RandomNumber                      int64
+	IsFoundRandomNumber               bool
+	IsBeaconRandomTime                bool
+	AssignOffset                      int
+	DefaultOffset                     int
+	SwapOffset                        int
+	ActiveShards                      int
+	MinShardCommitteeSize             int
+	MinBeaconCommitteeSize            int
+	MaxBeaconCommitteeSize            int
+	MaxShardCommitteeSize             int
+	ConsensusStateDB                  *statedb.StateDB
+	IsReplace                         bool
+	newValidators                     []string
+	newUnassignedCommonPool           []string
+	newAllSubstituteCommittees        []string
+	LatestShardsState                 map[byte][]types.ShardState
+	SwapSubType                       uint
+	ShardID                           byte
+	TotalReward                       map[common.Hash]uint64
+	IsSplitRewardForCustodian         bool
+	PercentCustodianReward            uint64
+	DAOPercent                        int
+	NumberOfFixedBeaconBlockValidator uint64
+	NumberOfFixedShardBlockValidator  int
+	MissingSignaturePenalty           map[string]signaturecounter.Penalty
+	DcsMinShardCommitteeSize          int
+	DcsMaxShardCommitteeSize          int
+	BeaconStateV3Height               uint64
 }
 
 type BeaconCommitteeStateHash struct {

@@ -3,39 +3,7 @@ package committeestate
 import (
 	"reflect"
 	"testing"
-
-	"github.com/incognitochain/incognito-chain/instruction"
 )
-
-func TestBeaconCommitteeEngineV3_GenerateAssignInstruction(t *testing.T) {
-	type fields struct {
-		beaconCommitteeEngineSlashingBase beaconCommitteeEngineSlashingBase
-	}
-	type args struct {
-		rand         int64
-		assignOffset int
-		activeShards int
-		beaconHeight uint64
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   []*instruction.AssignInstruction
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			engine := &BeaconCommitteeEngineV3{
-				beaconCommitteeEngineSlashingBase: tt.fields.beaconCommitteeEngineSlashingBase,
-			}
-			if got := engine.GenerateAssignInstruction(tt.args.rand, tt.args.assignOffset, tt.args.activeShards, tt.args.beaconHeight); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BeaconCommitteeEngineV3.GenerateAssignInstruction() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
 
 func TestBeaconCommitteeEngineV3_UpdateCommitteeState(t *testing.T) {
 	type fields struct {

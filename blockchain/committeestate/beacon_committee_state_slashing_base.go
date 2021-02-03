@@ -309,7 +309,6 @@ func (b *beaconCommitteeStateSlashingBase) processNormalSwap(
 			fmt.Errorf("expect swap out keys %+v, got %+v",
 				comparedShardSwapInstruction.OutPublicKeys, swapShardInstruction.OutPublicKeys)
 	}
-
 	b.shardCommittee[shardID], _ = incognitokey.CommitteeBase58KeyListToStruct(newCommittees)
 	b.shardSubstitute[shardID] = b.shardSubstitute[shardID][len(swapShardInstruction.InPublicKeys):]
 

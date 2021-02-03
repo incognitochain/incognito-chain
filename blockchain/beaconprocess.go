@@ -1080,5 +1080,6 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			return err
 		}
 	}
+	//TODO: @tin store finish sync validators or delete sync pool validators
 	return nil
 }

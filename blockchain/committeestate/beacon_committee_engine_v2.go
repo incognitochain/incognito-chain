@@ -72,7 +72,7 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 
 	env.newUnassignedCommonPool = newState.UnassignedCommonPool()
 	env.newAllSubstituteCommittees = newState.AllSubstituteCommittees()
-	env.newAllCandidateSubstituteCommittee = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
+	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
