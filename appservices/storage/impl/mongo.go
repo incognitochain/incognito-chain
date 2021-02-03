@@ -24,9 +24,9 @@ import (
 )
 
 const (
-	NumOfShard = 32
+	NumOfShard = 8
 
-	DataBaseName = "Incognito-Testnet"
+	DataBaseName = "Incognito-MainNet"
 
 	//Beacon
 	BeaconState = "BeaconState"
@@ -398,12 +398,24 @@ func (m *mongoDBDriver) createIndexForPdeContributionStatusTrackChange(ctx conte
 
 func (m *mongoDBDriver) createIndexForPdeContributionStatusBestState(ctx context.Context) error {
 	m.pdeContributionStatusBestState = m.client.Database(DataBaseName).Collection(PDEContributionStatusBestState)
-	return nil
+	indexView := m.pdeContributionStatusBestState.Indexes()
+	pdeContributionPairId := mongo.IndexModel{
+		Keys:    bson.D{ bson.E{ Key: "pdecontributionpairid" , Value: 1 }},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{pdeContributionPairId})
+	return err
 }
 
 func (m *mongoDBDriver) createIndexForPdeContributionStatusFinalState(ctx context.Context) error {
 	m.pdeContributionStatusFinalState = m.client.Database(DataBaseName).Collection(PDEContributionStatusFinalState)
-	return nil
+	indexView := m.pdeContributionStatusFinalState.Indexes()
+	pdeContributionPairId := mongo.IndexModel{
+		Keys:    bson.D{ bson.E{ Key: "pdecontributionpairid" , Value: 1 }},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{pdeContributionPairId})
+	return err
 }
 
 func (m *mongoDBDriver) createIndexForPdeTradeTrackChange(ctx context.Context) error {
@@ -413,12 +425,24 @@ func (m *mongoDBDriver) createIndexForPdeTradeTrackChange(ctx context.Context) e
 
 func (m *mongoDBDriver) createIndexForPdeTradeBestState(ctx context.Context) error {
 	m.pdeTradeBestState = m.client.Database(DataBaseName).Collection(PDETradeBestState)
-	return nil
+	indexView := m.pdeTradeBestState.Indexes()
+	pdeContributionPairId := mongo.IndexModel{
+		Keys:    bson.D{ bson.E{ Key: "txreqid" , Value: 1 }},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{pdeContributionPairId})
+	return err
 }
 
 func (m *mongoDBDriver) createIndexForPdeTradeFinalState(ctx context.Context) error {
 	m.pdeTradeFinalState = m.client.Database(DataBaseName).Collection(PDETradeFinalState)
-	return nil
+	indexView := m.pdeTradeFinalState.Indexes()
+	pdeContributionPairId := mongo.IndexModel{
+		Keys:    bson.D{ bson.E{ Key: "txreqid" , Value: 1 }},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{pdeContributionPairId})
+	return err
 }
 
 func (m *mongoDBDriver) createIndexForPdeCrossTradeTrackChange(ctx context.Context) error {
@@ -428,12 +452,24 @@ func (m *mongoDBDriver) createIndexForPdeCrossTradeTrackChange(ctx context.Conte
 
 func (m *mongoDBDriver) createIndexForPdeCrossTradeBestState(ctx context.Context) error {
 	m.pdeCrossTradeBestState = m.client.Database(DataBaseName).Collection(PDECrossTradeBestState)
-	return nil
+	indexView := m.pdeCrossTradeBestState.Indexes()
+	pdeContributionPairId := mongo.IndexModel{
+		Keys:    bson.D{ bson.E{ Key: "txreqid" , Value: 1 }},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{pdeContributionPairId})
+	return err
 }
 
 func (m *mongoDBDriver) createIndexForPdeCrossTradeFinalState(ctx context.Context) error {
 	m.pdeCrossTradeFinalState = m.client.Database(DataBaseName).Collection(PDECrossTradeFinalState)
-	return nil
+	indexView := m.pdeCrossTradeFinalState.Indexes()
+	pdeContributionPairId := mongo.IndexModel{
+		Keys:    bson.D{ bson.E{ Key: "txreqid" , Value: 1 }},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{pdeContributionPairId})
+	return err
 }
 
 func (m *mongoDBDriver) createIndexForPdeWithdrawalStatusTrackChange(ctx context.Context) error {
@@ -443,12 +479,24 @@ func (m *mongoDBDriver) createIndexForPdeWithdrawalStatusTrackChange(ctx context
 
 func (m *mongoDBDriver) createIndexForPdeWithdrawalStatusBestState(ctx context.Context) error {
 	m.pdeWithdrawalStatusBestState = m.client.Database(DataBaseName).Collection(PDEWithdrawalStatusBestState)
-	return nil
+	indexView := m.pdeWithdrawalStatusBestState.Indexes()
+	pdeContributionPairId := mongo.IndexModel{
+		Keys:    bson.D{ bson.E{ Key: "txreqid" , Value: 1 }},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{pdeContributionPairId})
+	return err
 }
 
 func (m *mongoDBDriver) createIndexForPdeWithdrawalStatusFinalState(ctx context.Context) error {
 	m.pdeWithdrawalStatusFinalState = m.client.Database(DataBaseName).Collection(PDEWithdrawalStatusFinalState)
-	return nil
+	indexView := m.pdeWithdrawalStatusFinalState.Indexes()
+	pdeContributionPairId := mongo.IndexModel{
+		Keys:    bson.D{ bson.E{ Key: "txreqid" , Value: 1 }},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{pdeContributionPairId})
+	return err
 }
 
 func (m *mongoDBDriver) createIndexForPdeFeeWithdrawalStatusTrackChange(ctx context.Context) error {
@@ -458,12 +506,24 @@ func (m *mongoDBDriver) createIndexForPdeFeeWithdrawalStatusTrackChange(ctx cont
 
 func (m *mongoDBDriver) createIndexForPdeFeeWithdrawalStatusBestState(ctx context.Context) error {
 	m.pdeFeeWithdrawalStatusBestState = m.client.Database(DataBaseName).Collection(PDEFeeWithdrawalStatusBestState)
-	return nil
+	indexView := m.pdeFeeWithdrawalStatusBestState.Indexes()
+	pdeContributionPairId := mongo.IndexModel{
+		Keys:    bson.D{ bson.E{ Key: "txreqid" , Value: 1 }},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{pdeContributionPairId})
+	return err
 }
 
 func (m *mongoDBDriver) createIndexForPdeFeeWithdrawalStatusFinalState(ctx context.Context) error {
 	m.pdeFeeWithdrawalStatusFinalState = m.client.Database(DataBaseName).Collection(PDEFeeWithdrawalStatusFinalState)
-	return nil
+	indexView := m.pdeFeeWithdrawalStatusFinalState.Indexes()
+	pdeContributionPairId := mongo.IndexModel{
+		Keys:    bson.D{ bson.E{ Key: "txreqid" , Value: 1 }},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{pdeContributionPairId})
+	return err
 }
 
 func (m *mongoDBDriver) createIndexForBeaconCollection(ctx context.Context) error {
@@ -1717,6 +1777,7 @@ func getTransactionFromShardState(shard *data.Shard) []model.Transaction {
 		if transaction.Metadata != nil {
 			metaData, _ := json.MarshalIndent(transaction.Metadata, "", "\t")
 			newTransaction.Metadata = string(metaData)
+			newTransaction.MetadataType  = transaction.Metadata.GetType()
 		}
 		if transaction.TxPrivacy != nil {
 			newTransaction.PrivacyCustomTokenID = transaction.TxPrivacy.PropertyID
@@ -2059,7 +2120,7 @@ func (m *mongoDBDriver) storeAllLatestPDEBestStateDataWithTransaction (ctx conte
 
 	defer session.EndSession(ctx)
 
-	err = mongo.WithSession(ctx, session, func(sessionContext mongo.SessionContext) error {
+	return mongo.WithSession(ctx, session, func(sessionContext mongo.SessionContext) error {
 		if err := session.StartTransaction(txnOpts); err != nil {
 			return err
 		}
@@ -2068,18 +2129,17 @@ func (m *mongoDBDriver) storeAllLatestPDEBestStateDataWithTransaction (ctx conte
 			return err
 		}
 
+		if err != nil {
+			if abortErr := session.AbortTransaction(ctx); abortErr != nil {
+				return err
+			}
+		}
+
 		if err := session.CommitTransaction(sessionContext); err != nil {
 			return err
 		}
 		return nil
 	})
-
-	if err != nil {
-		if abortErr := session.AbortTransaction(ctx); abortErr != nil {
-			return abortErr
-		}
-	}
-	return err
 }
 
 func (m *mongoDBDriver) storeAllLatestPDEBestStateData(ctx context.Context, pdeContributionStatuses []model.PDEContributionStatus, pdeTrades []model.PDETrade,

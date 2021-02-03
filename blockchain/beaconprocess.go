@@ -1548,16 +1548,16 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		SlashStateDBRootHash:     slashRootHash,
 	}
 
+	if err := blockchain.config.Server.PublishPDEState(newBestState.pdeContributionStore, newBestState.pdeTradeStore, newBestState.pdeCrossTradeStore,
+		newBestState.pdeWithdrawalStatusStore, newBestState.pdeFeeWithdrawalStatusStore); err != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err)
+	}
+
 	if err := rawdbv2.StoreBeaconRootsHash(batch, blockHash, bRH); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
 	if err := rawdbv2.StoreBeaconBlockByHash(batch, blockHash, beaconBlock); err != nil {
-		return NewBlockChainError(StoreBeaconBlockError, err)
-	}
-
-	if err := blockchain.config.Server.PublishPDEState(newBestState.pdeContributionStore, newBestState.pdeTradeStore, newBestState.pdeCrossTradeStore,
-									newBestState.pdeWithdrawalStatusStore, newBestState.pdeFeeWithdrawalStatusStore); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
@@ -1571,15 +1571,16 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	finalizedBlocks := []*BeaconBlock{}
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
-		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
-		if err != nil {
-			return NewBlockChainError(StoreBeaconBlockError, err)
-		}
 		blockchain.config.Server.PublishBeaconState(newFinalView.(*BeaconBestState))
 		if err != nil {
 			panic(err)
 			return err
 		}
+		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
+		if err != nil {
+			return NewBlockChainError(StoreBeaconBlockError, err)
+		}
+
 		if storeBlock.GetHeight() == 1 {
 			break
 		}

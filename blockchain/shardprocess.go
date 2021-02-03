@@ -1205,14 +1205,14 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	storeBlock := newFinalView.GetBlock()
 
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
-		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
-		if err != nil {
-			return NewBlockChainError(StoreBeaconBlockError, err)
-		}
 		err = blockchain.config.Server.PublishShardState(newFinalView.(*ShardBestState))
 		if err != nil {
 			panic(err)
 			return err
+		}
+		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())
+		if err != nil {
+			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
 		if storeBlock.GetHeight() == 1 {
 			break

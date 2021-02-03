@@ -18,7 +18,8 @@ type Transaction struct {
 	InputCoinPubKey 	 string            `json:"InputCoinPubKey"`
 	SigPubKey            string `json:"SigPubKey,omitempty"` // 33 bytes
 	Sig                  string `json:"Sig,omitempty"`       //
-	PubKeyLastByteSender byte
+	PubKeyLastByteSender byte     `json:"PubKeyLastByteSender,omitempty"`
+	MetadataType		 int     `json:"MetadataType,omitempty"`
 	Metadata                      string     `json:"Metadata"`
 	CustomTokenData               string      `json:"CustomTokenData"`
 	PrivacyCustomTokenID          string      `json:"PrivacyCustomTokenID"`
@@ -52,17 +53,6 @@ type Coin struct {
 	Randomness     string
 	Value          string
 	Info           string
-}
-
-
-type TransactionCustomToken struct {
-	Tx			   Transaction          // used for privacy functionality
-	PropertyID     string// = hash of TxCustomTokenprivacy data
-	PropertyName   string
-	PropertySymbol string
-	Type     int    // action type
-	Mintable bool   // default false
-	Amount   string // init amount
 }
 
 type Instruction struct {
