@@ -93,6 +93,7 @@ var HttpHandler = map[string]httpHandler{
 	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
 	getCommitteeState:       (*HttpServer).handleGetCommitteeState,
 	getRewardAmountByEpoch:  (*HttpServer).handleGetRewardAmountByEpoch,
+	convertPaymentAddress:	 (*HttpServer).handleConvertPaymentAddress,
 
 	//=================================
 

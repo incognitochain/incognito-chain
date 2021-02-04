@@ -112,6 +112,7 @@ const (
 	getAutoStakingByHeight  = "getautostakingbyheight"
 	getCommitteeState       = "getcommitteestate"
 	getRewardAmountByEpoch  = "getrewardamountbyepoch"
+	convertPaymentAddress  = "convertpaymentaddress"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"

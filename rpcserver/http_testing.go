@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"io/ioutil"
 	"time"
 
@@ -406,6 +407,24 @@ func (httpServer *HttpServer) handleGetAndSendTxsFromFileV2(params interface{}, 
 		}
 	}
 	return CountResult{Success: success, Fail: fail}, nil
+}
+
+func (httpServer *HttpServer) handleConvertPaymentAddress(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("a payment address is needed to proceed"))
+	}
+	address, ok := arrayParams[0].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("the payment address should be a string"))
+	}
+
+	convertedAddress, err := wallet.GetPaymentAddressV1(address, false)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	return convertedAddress, nil
 }
 
 // func (httpServer *HttpServer) handleTestBuildDoubleSpendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
