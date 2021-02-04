@@ -635,7 +635,7 @@ func getCommitmentFromBestShardState(shardBestState *blockchain.ShardBestState, 
 		if currentLength == nil {
 			continue
 		}
-		Logger.log.Infof("Previously Length %d and Current Length %d of coin %v", previousLength.Uint64(), currentLength.Uint64(), tokenID.String())
+		//Logger.log.Infof("Previously Length %d and Current Length %d of coin %v", previousLength.Uint64(), currentLength.Uint64(), tokenID.String())
 		for previousLength.Cmp(currentLength) <= 0 {
 			if commitmentState, err := statedb.GetCommitmentStateByIndex(currentTransactionDB, tokenID, previousLength.Uint64(), shardBestState.ShardID); err == nil {
 				//Logger.log.Infof("Commitment data %v ", commitmentState)
@@ -648,7 +648,7 @@ func getCommitmentFromBestShardState(shardBestState *blockchain.ShardBestState, 
 			temp2 := previousLength.Uint64() + 1
 			previousLength = new(big.Int).SetUint64(temp2)
 		}
-		Logger.log.Infof("Commitment total size: %d", len(commitmentStates))
+		//Logger.log.Infof("Commitment total size: %d", len(commitmentStates))
 
 	}
 	for _, commitmentState := range commitmentStates {
@@ -661,9 +661,9 @@ func getCommitmentFromBestShardState(shardBestState *blockchain.ShardBestState, 
 func updateTransactionHashForCommitment(outputCoins []*OutputCoin, commitment *CommitmentState) {
 	for _, outputCoin := range outputCoins {
 		if bytes.Compare(commitment.Commitment, outputCoin.CoinCommitment.ToBytesS()) == 0 {
-			Logger.log.Debugf("Compare commitment %v and transaction commitment %v", commitment.Commitment, outputCoin.CoinCommitment.ToBytesS())
+			//Logger.log.Debugf("Compare commitment %v and transaction commitment %v", commitment.Commitment, outputCoin.CoinCommitment.ToBytesS())
 			commitment.TransactionHash = outputCoin.TransactionHash
-			Logger.log.Debugf("commitment Transaction Hash %v", commitment.TransactionHash)
+			//Logger.log.Debugf("commitment Transaction Hash %v", commitment.TransactionHash)
 			break
 		}
 	}

@@ -1206,6 +1206,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		if err := blockchain.config.Server.PublishShardState(newFinalView.(*ShardBestState));  err != nil {
+			panic(err)
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
 		err := rawdbv2.StoreFinalizedShardBlockHashByIndex(batchData, shardID, storeBlock.GetHeight(), *storeBlock.Hash())

@@ -25,7 +25,7 @@ func (app *AppService) Init(cfg *AppConfig) {
 }
 
 func (app *AppService) PublishBeaconState(beaconState *blockchain.BeaconBestState) error {
-	Logger.log.Debugf("Publish beaconState with hash %v at height %d", beaconState.BestBlock.Hash().String(), beaconState.BeaconHeight)
+	Logger.log.Infof("Publish beaconState with hash %v at height %d", beaconState.BestBlock.Hash().String(), beaconState.BeaconHeight)
 	beacon := data.NewBeaconFromBeaconState(beaconState)
 	err := storage.StoreLatestBeaconFinalState(context.TODO(), beacon)
 	if err !=nil && !impl.IsMongoDupKey(err) {
@@ -35,7 +35,7 @@ func (app *AppService) PublishBeaconState(beaconState *blockchain.BeaconBestStat
 }
 
 func (app *AppService) PublishShardState(shardBestState *blockchain.ShardBestState) error {
-	Logger.log.Infof("Publish shardState with hash %v at height %d of Shard ID: %d", shardBestState.BestBlock.Hash().String(), shardBestState.BeaconHeight, shardBestState.ShardID)
+	Logger.log.Infof("Publish shardState with hash %v at height %d of Shard ID: %d", shardBestState.BestBlock.Hash().String(), shardBestState.ShardHeight, shardBestState.ShardID)
 	shard := data.NewShardFromShardState(shardBestState)
 	err := storage.StoreLatestShardFinalState(context.TODO(), shard)
 	//if err !=nil && !impl.IsMongoDupKey(err) {

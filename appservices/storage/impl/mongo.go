@@ -103,7 +103,7 @@ const (
 func IsMongoDupKey(err error) bool {
 	we, ok := err.(mongo.WriteException)
 	if !ok {
-		log.Printf("failed to caset to WriteErrors %v", err)
+		log.Printf("failed to cast to WriteException %v", err)
 		return false
 	}
 	for _, writeError := range we.WriteErrors {
@@ -116,6 +116,19 @@ func IsMongoDupKey(err error) bool {
 	/*return wce.Code == 11000 || wce.Code == 11001 || wce.Code == 12582 || wce.Code == 16460 && strings.Contains(wce.Message, " E11000 ")
 	log.Printf("message: %s", err.Error())
 	return strings.Contains(err.Error(), "E11000 duplicate key error")*/
+}
+
+func IsWriteConflict(err error) bool {
+	we, ok := err.(mongo.WriteError)
+	if !ok {
+		log.Printf("Failed to cast to WriteError %v", err)
+		return false
+	}
+	if strings.Contains(we.Message,"WriteConflict") {
+		log.Printf("WriteConflict error %v", we)
+		return true
+	}
+	return false
 }
 
 func LoadMongoDBDriver(dbConnectionString string) error {
@@ -573,9 +586,14 @@ func (m *mongoDBDriver) createIndexForTransactionCollection(ctx context.Context)
 		indexView := m.transactionCollection[i].Indexes()
 		transactionHashIndex := mongo.IndexModel{
 			Keys:    bson.D{bson.E{Key: "hash", Value: 1}},
+		}
+
+		transactionHashShardHashIndex := mongo.IndexModel{
+			Keys:    bson.D{bson.E{Key: "hash", Value: 1} ,
+							bson.E{Key: "shardhash", Value: 1}},
 			Options: options.Index().SetUnique(true),
 		}
-		if _, err := indexView.CreateMany(ctx, []mongo.IndexModel{transactionHashIndex}); err != nil {
+		if _, err := indexView.CreateMany(ctx, []mongo.IndexModel{transactionHashIndex, transactionHashShardHashIndex}); err != nil {
 			return err
 		}
 	}
