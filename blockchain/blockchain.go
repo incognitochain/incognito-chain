@@ -311,11 +311,17 @@ func (blockchain *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
 }
 
 func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []coin.PlainCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
+	if int(shardID) >= common.MaxShardNumber {
+		return nil, nil, nil
+	}
 	param := transaction.NewRandomCommitmentsProcessParam(usableInputCoins, randNum, blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(), shardID, tokenID)
 	return transaction.RandomCommitmentsProcess(param)
 }
 
 func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs int, shardID byte, tokenID *common.Hash) ([]uint64, [][]byte, [][]byte, [][]byte, error) {
+	if int(shardID) >= common.MaxShardNumber {
+		return nil, nil, nil, nil, fmt.Errorf("shardID %v is out of range, maxShardNumber is %v", shardID, common.MaxShardNumber)
+	}
 	db := blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 	lenOTA, err := statedb.GetOTACoinLength(db, *tokenID, shardID)
 	if err != nil || lenOTA == nil {
