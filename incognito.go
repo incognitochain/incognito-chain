@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/appservices/storage/impl"
+	"github.com/incognitochain/incognito-chain/appservices/storage"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -174,7 +174,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 
 	//Load MongoDBDriver
-	err = impl.LoadMongoDBDriver(cfg.MongoDBConnection)
+	err = storage.LoadMongoDBDriver(cfg.MongoDBConnection)
 	if err != nil {
 		Logger.log.Error(err)
 		return err

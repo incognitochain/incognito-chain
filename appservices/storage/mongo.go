@@ -1,11 +1,10 @@
-package impl
+package storage
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/appservices/data"
-	"github.com/incognitochain/incognito-chain/appservices/storage"
 	"github.com/incognitochain/incognito-chain/appservices/storage/model"
 	"github.com/incognitochain/incognito-chain/appservices/storage/repository"
 	"github.com/incognitochain/incognito-chain/common"
@@ -146,7 +145,7 @@ func LoadMongoDBDriver(dbConnectionString string) error {
 		return err
 	}
 
-	err = storage.AddDBDriver(storage.MONGODB, mongoDBDriver)
+	err = AddDBDriver(MONGODB, mongoDBDriver)
 
 	if err != nil {
 		return err

@@ -4,8 +4,6 @@ import (
 	"context"
 	"github.com/incognitochain/incognito-chain/appservices/data"
 	"github.com/incognitochain/incognito-chain/appservices/storage"
-	"github.com/incognitochain/incognito-chain/appservices/storage/impl"
-	_ "github.com/incognitochain/incognito-chain/appservices/storage/impl"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
@@ -28,7 +26,7 @@ func (app *AppService) PublishBeaconState(beaconState *blockchain.BeaconBestStat
 	Logger.log.Infof("Publish beaconState with hash %v at height %d", beaconState.BestBlock.Hash().String(), beaconState.BeaconHeight)
 	beacon := data.NewBeaconFromBeaconState(beaconState)
 	err := storage.StoreLatestBeaconFinalState(context.TODO(), beacon)
-	if err !=nil && !impl.IsMongoDupKey(err) {
+	if err !=nil && !storage.IsMongoDupKey(err) {
 		return err
 	}
 	return nil
@@ -48,7 +46,7 @@ func (app *AppService) PublishPDEState(pdeContributionStore *rawdbv2.PDEContribu
 						pdeWithdrawalStatusStore *rawdbv2.PDEWithdrawalStatusStore, pdeFeeWithdrawalStatusStore *rawdbv2.PDEFeeWithdrawalStatusStore) error {
 	Logger.log.Infof("Publish pdeStateStore")
 	err := storage.StorePDEShareState(context.TODO(), pdeContributionStore, pdeTradeStore, pdeCrossTradeStore, pdeWithdrawalStatusStore, pdeFeeWithdrawalStatusStore)
-	if err !=nil && !impl.IsMongoDupKey(err) {
+	if err !=nil && !storage.IsMongoDupKey(err) {
 		return err
 	}
 	return nil
