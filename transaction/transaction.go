@@ -440,6 +440,8 @@ func NewTransactionTokenFromParams(params *tx_generic.TxTokenParams) (tx_generic
 		return nil, err
 	}
 
+	fmt.Println("BUGLOG2 coin version", ver)
+
 	if ver == 1 {
 		return new(TxTokenVersion1), nil
 	} else if ver == 2 {

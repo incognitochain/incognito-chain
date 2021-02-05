@@ -86,6 +86,9 @@ func (txService TxService) ListCommitmentIndices(tokenID common.Hash, shardID by
 }
 
 func (txService TxService) HasSerialNumbers(shardID byte, serialNumbersStr []interface{}, tokenID common.Hash) ([]bool, error) {
+	if int(shardID) >= common.MaxShardNumber {
+		return nil, fmt.Errorf("shardID %v is out of range [0 - %v]", shardID, common.MaxShardNumber - 1)
+	}
 	result := make([]bool, 0)
 	for _, item := range serialNumbersStr {
 		itemStr, okParam := item.(string)
@@ -819,7 +822,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 					}
 
 					for i:=0;i<len(bridgeTokenIDs);i++{
-						Logger.log.Errorf("BUGLOG tokenID: %v, %v\n", bridgeTokenIDs[i].String(), allBridgeTokens[i].TokenID.String())
+						Logger.log.Infof("BUGLOG tokenID: %v, %v\n", bridgeTokenIDs[i].String(), allBridgeTokens[i].TokenID.String())
 					}
 
 					return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))

@@ -322,6 +322,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 	var err error
 	offset := 0
 
+	Logger.Log.Infof("BUGLOG2 proof: %v\n", proofbytes)
+
 	// Set OneOfManyProofSize
 	if offset >= len(proofbytes) {
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range one out of many proof"))
@@ -385,6 +387,8 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *errhandler.PrivacyError 
 		}
 		lenSNNoPrivacyProof := int(proofbytes[offset])
 		offset += 1
+
+		Logger.Log.Infof("BUGLOG2 lenSNNo: %v, offset: %v, len(proofBytes): %v\n", lenSNNoPrivacyProof, offset, len(proofbytes))
 
 		proof.serialNumberNoPrivacyProof[i] = new(serialnumbernoprivacy.SNNoPrivacyProof).Init()
 		if offset+lenSNNoPrivacyProof > len(proofbytes) {

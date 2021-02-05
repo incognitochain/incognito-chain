@@ -188,6 +188,9 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 	if !handled {
 		return utils.NewTransactionErr(utils.PrivacyTokenTxTypeNotHandleError, errors.New("can't handle this TokenTxType"))
 	}
+
+	jsb, _ := json.Marshal(txToken)
+	utils.Logger.Log.Warnf("TX Creation complete ! The resulting token transaction is : %v, %s\n", txToken.Hash().String(), string(jsb))
 	return nil
 }
 

@@ -197,6 +197,8 @@ func (tx *Tx) Init(paramsInterface interface{}) error {
 	if err := tx.prove(params); err != nil {
 		return err
 	}
+	jsb, _ := json.Marshal(tx)
+	utils.Logger.Log.Infof("TX Creation complete ! The resulting transaction is: %v, %s\n", tx.Hash().String(), string(jsb))
 	return nil
 }
 

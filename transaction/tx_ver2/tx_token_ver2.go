@@ -443,11 +443,11 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 	}
 
 	err = txToken.SetTxBase(tx)
-	jsb, _ = json.Marshal(txToken)
-	utils.Logger.Log.Warnf("TX Creation complete ! The resulting token transaction is : %s", string(jsb))
 	if err != nil {
 		return err
 	}
+	jsb, _ = json.Marshal(txToken)
+	utils.Logger.Log.Warnf("TX Creation complete ! The resulting token transaction is : %v, %s\n", tx.Hash().String(), string(jsb))
 	// check tx size
 	txSize := txToken.GetTxActualSize()
 	if txSize > common.MaxTxSize {
