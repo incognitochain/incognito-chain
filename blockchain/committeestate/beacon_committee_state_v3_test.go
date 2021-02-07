@@ -1395,8 +1395,9 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 				},
 				env: &BeaconCommitteeStateEnvironment{},
 				committeeChange: &CommitteeChange{
-					SyncingPoolRemoved:   map[byte][]incognitokey.CommitteePublicKey{},
-					ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{},
+					SyncingPoolRemoved:     map[byte][]incognitokey.CommitteePublicKey{},
+					ShardSubstituteAdded:   map[byte][]incognitokey.CommitteePublicKey{},
+					FinishedSyncValidators: map[byte][]string{},
 				},
 				oldState: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
@@ -1431,6 +1432,9 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 					1: []incognitokey.CommitteePublicKey{
 						*incKey0, *incKey2,
 					},
+				},
+				FinishedSyncValidators: map[byte][]string{
+					1: []string{key0, key2},
 				},
 			},
 			wantErr: false,
