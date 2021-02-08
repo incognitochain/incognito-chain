@@ -39,8 +39,10 @@ var (
 
 	// output coins by OTA key storage (optional)
 	// this will use its own separate folder
-	reindexedOutputCoinPrefix          = []byte("reindexed-output-coin" + string(splitter))
-	reindexedKeysPrefix                = []byte("reindexed-key" + string(splitter))
+	reindexedOutputCoinPrefix = []byte("reindexed-output-coin" + string(splitter))
+	reindexedKeysPrefix       = []byte("reindexed-key" + string(splitter))
+	txByCoinIndexPrefix       = []byte("tx-index" + string(splitter))
+	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
 )
 
 func GetLastShardBlockKey(shardID byte) []byte {
@@ -342,8 +344,12 @@ func getShardPendingValidatorsKey(hash common.Hash) []byte {
 // ============================= Coin By OTA Key =======================================
 
 const (
-	outcoinPrefixHashKeyLength = 12
-	outcoinPrefixKeyLength     = 20
+	outcoinPrefixHashKeyLength          = 12
+	outcoinPrefixKeyLength              = 20
+	txByCoinIndexPrefixHashKeyLength    = 12
+	txByCoinIndexPrefixKeyLength        = 20
+	txBySerialNumberPrefixHashKeyLength = 12
+	txBySerialNumberPrefixKeyLength     = 20
 )
 
 func getReindexedOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []byte {
@@ -366,4 +372,34 @@ func generateReindexedOTAKeyObjectKey(theKey []byte) []byte {
 	prefixHash := getReindexedKeysPrefix()
 	valueHash := common.HashH(theKey)
 	return append(prefixHash, valueHash[:][:outcoinPrefixKeyLength]...)
+}
+
+func getTxByCoinIndexPrefix() []byte {
+	h := common.HashH(txByCoinIndexPrefix)
+	return h[:][:txByCoinIndexPrefixHashKeyLength]
+}
+
+func generateTxByCoinIndexObjectKey(index []byte, tokenID common.Hash, shardID byte) []byte {
+	prefixHash := getTxByCoinIndexPrefix()
+
+	valueToBeHashed := append(index, shardID)
+	valueToBeHashed = append(valueToBeHashed, tokenID.Bytes()...)
+	valueHash := common.HashH(valueToBeHashed)
+
+	return append(prefixHash, valueHash[:][:txByCoinIndexPrefixKeyLength]...)
+}
+
+func getTxBySerialNumberPrefix() []byte {
+	h := common.HashH(txBySerialNumberPrefix)
+	return h[:][:txByCoinIndexPrefixHashKeyLength]
+}
+
+func generateTxBySerialNumberObjectKey(serialNumber []byte, tokenID common.Hash, shardID byte) []byte {
+	prefixHash := getTxBySerialNumberPrefix()
+
+	valueToBeHashed := append(serialNumber, shardID)
+	valueToBeHashed = append(valueToBeHashed, tokenID.Bytes()...)
+	valueHash := common.HashH(valueToBeHashed)
+
+	return append(prefixHash, valueHash[:][:txBySerialNumberPrefixKeyLength]...)
 }
