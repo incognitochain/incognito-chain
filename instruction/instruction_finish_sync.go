@@ -56,6 +56,8 @@ func (f *FinishSyncInstruction) SetChainID(chainID int) *FinishSyncInstruction {
 
 func (f *FinishSyncInstruction) SetPublicKeys(publicKeys []string) *FinishSyncInstruction {
 	f.PublicKeys = publicKeys
+	publicKeyStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(publicKeys)
+	f.PublicKeysStruct = publicKeyStructs
 	return f
 }
 
