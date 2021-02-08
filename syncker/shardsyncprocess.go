@@ -25,21 +25,22 @@ type ShardPeerState struct {
 }
 
 type ShardSyncProcess struct {
-	isCommittee           bool
-	isCatchUp             bool
-	shardID               int
-	status                string                    //stop, running
-	shardPeerState        map[string]ShardPeerState //peerid -> state
-	shardPeerStateCh      chan *wire.MessagePeerState
-	crossShardSyncProcess *CrossShardSyncProcess
-	blockchain            *blockchain.BlockChain
-	Network               Network
-	Chain                 ShardChainInterface
-	beaconChain           Chain
-	shardPool             *BlkPool
-	actionCh              chan func()
-	miningKey             string
-	lock                  *sync.RWMutex
+	isCommittee             bool
+	isCatchUp               bool
+	latestBeaconBlockHeight uint64
+	shardID                 int
+	status                  string                    //stop, running
+	shardPeerState          map[string]ShardPeerState //peerid -> state
+	shardPeerStateCh        chan *wire.MessagePeerState
+	crossShardSyncProcess   *CrossShardSyncProcess
+	blockchain              *blockchain.BlockChain
+	Network                 Network
+	Chain                   ShardChainInterface
+	beaconChain             Chain
+	shardPool               *BlkPool
+	actionCh                chan func()
+	miningKey               string
+	lock                    *sync.RWMutex
 }
 
 func NewShardSyncProcess(
@@ -217,13 +218,15 @@ func (s *ShardSyncProcess) syncShardProcess() {
 			if len(s.shardPeerState) > 0 {
 				s.isCatchUp = true
 				committeeView := s.blockchain.BeaconChain.FinalView().(*blockchain.BeaconBestState)
-				if committeeView.CommitteeEngineVersion() == committeestate.DCS_VERSION {
-
-					if committeeView.ShouldSendFinishSyncMessage(s.miningKey, byte(s.shardID)) {
-						msg := &wire.MessageFinishSync{
-							CommitteePublicKey: s.miningKey,
+				if s.latestBeaconBlockHeight < committeeView.BeaconHeight {
+					s.latestBeaconBlockHeight = committeeView.BeaconHeight
+					if committeeView.CommitteeEngineVersion() == committeestate.DCS_VERSION {
+						if committeeView.ShouldSendFinishSyncMessage(s.miningKey, byte(s.shardID)) {
+							msg := &wire.MessageFinishSync{
+								CommitteePublicKey: s.miningKey,
+							}
+							s.Network.PublishMessageToShard(msg, common.BeaconChainID)
 						}
-						s.Network.PublishMessageToShard(msg, common.BeaconChainID)
 					}
 				}
 			}
