@@ -94,6 +94,11 @@ const (
 	GetOutcoinByOTAKeyError
 	StoreOTAKeyError
 	GetOTAKeyError
+	//Tx by input or output
+	StoreTxByCoinIndexError
+	GetTxByCoinIndexError
+	StoreTxBySerialNumberError
+	GetTxBySerialNumberError
 )
 
 var ErrCodeMessage = map[int]struct {
