@@ -619,6 +619,11 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *Shar
 	if err != nil {
 		return err
 	}
+
+	err = blockchain.StoreTxBySerialNumber(shardBlock.Body.Transactions, shardBlock.Header.ShardID)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -851,5 +856,31 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(sh
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (blockchain *BlockChain) StoreTxBySerialNumber(txList []metadata.Transaction, shardID byte) error {
+	var err error
+	db := blockchain.GetShardChainDatabase(shardID)
+
+	for _, tx := range txList {
+		txHash := *tx.Hash()
+		tokenID := *tx.GetTokenID()
+		if tx.GetProof() != nil {
+			for _, inputCoin := range tx.GetProof().GetInputCoins() {
+				serialNumber := inputCoin.GetKeyImage().ToBytesS()
+				err = rawdbv2.StoreTxBySerialNumber(db, serialNumber, tokenID, shardID, txHash)
+				if err != nil {
+					Logger.log.Errorf("StoreTxBySerialNumber with serialNumber %v, tokenID %v, shardID %v, txHash %v returns an error: %v\n", serialNumber, tokenID.String(), shardID, txHash.String())
+					return err
+				}
+			}
+		} else {
+			Logger.log.Infof("tx %v has no proof\n", txHash.String())
+		}
+	}
+
+	Logger.log.Infof("Finish StoreTxBySerialNumber!!!\n")
+
 	return nil
 }

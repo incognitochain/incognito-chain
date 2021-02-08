@@ -79,6 +79,7 @@ const (
 	gettransactionhashbyreceiverv2             = "gettransactionhashbyreceiverv2"
 	gettransactionbyreceiver                   = "gettransactionbyreceiver"
 	gettransactionbyreceiverv2                 = "gettransactionbyreceiverv2"
+	gettransactionbyserialnumber               = "gettransactionbyserialnumber"
 	listCustomToken                            = "listcustomtoken"
 	listPrivacyCustomToken                     = "listprivacycustomtoken"
 	getPrivacyCustomToken                      = "getprivacycustomtoken"
