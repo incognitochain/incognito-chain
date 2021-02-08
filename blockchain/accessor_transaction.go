@@ -866,21 +866,60 @@ func (blockchain *BlockChain) StoreTxBySerialNumber(txList []metadata.Transactio
 	for _, tx := range txList {
 		txHash := *tx.Hash()
 		tokenID := *tx.GetTokenID()
-		if tx.GetProof() != nil {
-			for _, inputCoin := range tx.GetProof().GetInputCoins() {
-				serialNumber := inputCoin.GetKeyImage().ToBytesS()
-				err = rawdbv2.StoreTxBySerialNumber(db, serialNumber, tokenID, shardID, txHash)
-				if err != nil {
-					Logger.log.Errorf("StoreTxBySerialNumber with serialNumber %v, tokenID %v, shardID %v, txHash %v returns an error: %v\n", serialNumber, tokenID.String(), shardID, txHash.String())
-					return err
+		Logger.log.Infof("Process StoreTxBySerialNumber for tx %v, tokenID %v\n", txHash.String(), tokenID.String())
+
+		if tokenID.String() != common.PRVIDStr {
+			txToken, ok := tx.(transaction.TransactionToken)
+			if !ok {
+				return fmt.Errorf("cannot parse tx %v to transactionToken", txHash.String())
+			}
+
+			txFee := txToken.GetTxBase()
+			txNormal := txToken.GetTxNormal()
+			//Process storing serialNumber for PRV
+			if txFee.GetProof() != nil {
+				for _, inputCoin := range txFee.GetProof().GetInputCoins() {
+					serialNumber := inputCoin.GetKeyImage().ToBytesS()
+					err = rawdbv2.StoreTxBySerialNumber(db, serialNumber, common.PRVCoinID, shardID, txHash)
+					if err != nil {
+						Logger.log.Errorf("StoreTxBySerialNumber with serialNumber %v, tokenID %v, shardID %v, txHash %v returns an error: %v\n", serialNumber, common.PRVCoinID.String(), shardID, txHash.String())
+						return err
+					}
 				}
+			} else {
+				Logger.log.Infof("txFee of %v has no proof\n", txHash.String())
+			}
+
+			//Process storing serialNumber for token
+			if txNormal.GetProof() != nil {
+				for _, inputCoin := range txNormal.GetProof().GetInputCoins() {
+					serialNumber := inputCoin.GetKeyImage().ToBytesS()
+					err = rawdbv2.StoreTxBySerialNumber(db, serialNumber, tokenID, shardID, txHash)
+					if err != nil {
+						Logger.log.Errorf("StoreTxBySerialNumber with serialNumber %v, tokenID %v, shardID %v, txHash %v returns an error: %v\n", serialNumber, tokenID.String(), shardID, txHash.String())
+						return err
+					}
+				}
+			} else {
+				Logger.log.Infof("txToken of %v has no proof\n", txHash.String())
 			}
 		} else {
-			Logger.log.Infof("tx %v has no proof\n", txHash.String())
+			if tx.GetProof() != nil {
+				for _, inputCoin := range tx.GetProof().GetInputCoins() {
+					serialNumber := inputCoin.GetKeyImage().ToBytesS()
+					err = rawdbv2.StoreTxBySerialNumber(db, serialNumber, tokenID, shardID, txHash)
+					if err != nil {
+						Logger.log.Errorf("StoreTxBySerialNumber with serialNumber %v, tokenID %v, shardID %v, txHash %v returns an error: %v\n", serialNumber, tokenID.String(), shardID, txHash.String())
+						return err
+					}
+				}
+			} else {
+				Logger.log.Infof("tx %v has no proof\n", txHash.String())
+			}
 		}
 	}
 
-	Logger.log.Infof("Finish StoreTxBySerialNumber!!!\n")
+	Logger.log.Infof("Finish StoreTxBySerialNumber, #txs: %v!!!\n", len(txList))
 
 	return nil
 }

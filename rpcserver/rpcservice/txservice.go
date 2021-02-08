@@ -1243,8 +1243,9 @@ func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID
 			for shard := 0; shard < common.MaxShardNumber; shard++ {
 				shardDB := txService.BlockChain.GetShardChainDatabase(byte(shard))
 
-				txHash, err := rawdbv2.GetTxBySerialNumber(shardDB, snBytes, tokenID, shardID)
+				txHash, err := rawdbv2.GetTxBySerialNumber(shardDB, snBytes, tokenID, byte(shard))
 				if err != nil {
+					Logger.log.Infof("sn %v has not been seen in shard %v: %v\n", snStr, shard, err)
 					continue
 				} else {
 					txHashStr = txHash.String()
