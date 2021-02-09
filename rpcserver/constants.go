@@ -80,6 +80,7 @@ const (
 	gettransactionbyreceiver                   = "gettransactionbyreceiver"
 	gettransactionbyreceiverv2                 = "gettransactionbyreceiverv2"
 	gettransactionbyserialnumber               = "gettransactionbyserialnumber"
+	gettransactionbypublickey                  = "gettransactionbypublickey"
 	listCustomToken                            = "listcustomtoken"
 	listPrivacyCustomToken                     = "listprivacycustomtoken"
 	getPrivacyCustomToken                      = "getprivacycustomtoken"

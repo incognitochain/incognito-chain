@@ -366,6 +366,38 @@ func (httpServer *HttpServer) handleGetTransactionBySerialNumber(params interfac
 	return httpServer.txService.GetTransactionBySerialNumber(snList, byte(shardID), *tokenID)
 }
 
+func (httpServer *HttpServer) handleGetTransactionHashPublicKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
+	paramList, ok := arrayParams[0].(map[string]interface{})
+	if !ok || len(paramList) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,fmt.Errorf("paramList %v is not a map[string]interface{}", arrayParams[0]))
+	}
+
+	//Get snList
+	publicKey := "PublicKey"
+	if _, ok = paramList[publicKey]; !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("%v not found in %v", publicKey, paramList))
+	}
+	publicKeyString, ok := paramList[publicKey].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse paymentaddress, not a string: %v", paramList[publicKey]))
+	}
+
+
+	result, err := httpServer.txService.GetTransactionHashByPublicKey(publicKeyString)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	return result, nil
+}
+
+
 // handleGetListPrivacyCustomTokenBalance - return list privacy token + balance for one account payment address
 func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 

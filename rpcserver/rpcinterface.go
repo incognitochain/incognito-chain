@@ -76,6 +76,7 @@ var HttpHandler = map[string]httpHandler{
 	gettransactionbyreceiver:                (*HttpServer).handleGetTransactionByReceiver,
 	gettransactionbyreceiverv2:              (*HttpServer).handleGetTransactionByReceiverV2,
 	gettransactionbyserialnumber: 			 (*HttpServer).handleGetTransactionBySerialNumber,
+	gettransactionbypublickey: 			     (*HttpServer).handleGetTransactionHashPublicKey,
 	createAndSendStakingTransaction:         (*HttpServer).handleCreateAndSendStakingTx,
 	createAndSendStopAutoStakingTransaction: (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
 	randomCommitments:                       (*HttpServer).handleRandomCommitments,
