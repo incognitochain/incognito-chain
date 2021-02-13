@@ -184,6 +184,8 @@ github.com/huin/goupnp v1.0.0/go.mod h1:n9v9KO1tAxYH82qOn+UTIFQDmx5n1Zxd/ClZDMX7
 github.com/huin/goutil v0.0.0-20170803182201-1ca381bf3150/go.mod h1:PpLOETDnJ0o3iZrZfqZzyLl6l7F3c6L1oWn7OICBi6o=
 github.com/incognitochain/go-libp2p-grpc v0.0.0-20181024123959-d1f24bf49b50 h1:+OZyF0LeA+XFjSUH5cDwwtEV9+niTQhjUF+xus1aFgw=
 github.com/incognitochain/go-libp2p-grpc v0.0.0-20181024123959-d1f24bf49b50/go.mod h1:5riooInEdamsXRruHSbk5aScSOFvreGwiYCdLOPOETY=
+github.com/incognitochain/go-libp2p-pubsub v0.2.7-0.20210126072501-9870234752e4 h1:OUGl26tgtimTN+oxaNe6iP6WCdiw4dQfAzQ0wvmW4Do=
+github.com/incognitochain/go-libp2p-pubsub v0.2.7-0.20210126072501-9870234752e4/go.mod h1:VBmC+rS6BugyDYO7nSLQQVZ3AbHRGeyE4o8kT1zuvXo=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
 github.com/ipfs/go-cid v0.0.1/go.mod h1:GHWU/WuQdMPmIosc4Yn1bcCT7dSeX4lBafM7iqUPQvM=
 github.com/ipfs/go-cid v0.0.2 h1:tuuKaZPU1M6HcejsO3AcYWW8sZ8MTvyxfc4uqB4eFE8=

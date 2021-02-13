@@ -126,6 +126,10 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleCreateAndSendTxV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleCreateAndSendTx(params, closeChan)
+}
+
 func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
@@ -1130,6 +1134,10 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleCreateAndSendStakingTxV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleCreateAndSendStakingTx(params, closeChan)
+}
+
 // handleCreateRawStopAutoStakingTransaction - RPC create stop auto stake tx
 func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// get component
@@ -1227,6 +1235,10 @@ func (httpServer *HttpServer) handleCreateAndSendStopAutoStakingTransaction(para
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendStopAutoStakingTransactionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleCreateAndSendStopAutoStakingTransaction(params, closeChan)
 }
 
 func (httpServer *HttpServer) handleDecryptOutputCoinByKeyOfTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

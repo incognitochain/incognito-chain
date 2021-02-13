@@ -88,6 +88,11 @@ var HttpHandler = map[string]httpHandler{
 	decryptoutputcoinbykeyoftransaction:     (*HttpServer).handleDecryptOutputCoinByKeyOfTransaction,
 	randomCommitmentsAndPublicKeys:			 (*HttpServer).handleRandomCommitmentsAndPublicKeys,
 
+	createAndSendTransactionV2:                (*HttpServer).handleCreateAndSendTxV2,
+	createAndSendStakingTransactionV2:         (*HttpServer).handleCreateAndSendStakingTxV2,
+	createAndSendStopAutoStakingTransactionV2: (*HttpServer).handleCreateAndSendStopAutoStakingTransactionV2,
+	hasSerialNumbersInMempool:               	(*HttpServer).handleHasSerialNumbersInMempool,
+
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,

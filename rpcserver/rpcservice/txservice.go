@@ -1916,6 +1916,8 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 	return &result, nil
 }
 
+
+
 func (txService TxService) GetInputSerialNumberByTransaction(txHashStr string) (map[string][]string, *RPCError) {
 	txHash, err := common.Hash{}.NewHashFromStr(txHashStr)
 	if err != nil {
@@ -1931,7 +1933,6 @@ func (txService TxService) GetInputSerialNumberByTransaction(txHashStr string) (
 		}
 	}
 	results := make(map[string][]string)
-
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
 		{
@@ -1967,7 +1968,6 @@ func (txService TxService) GetInputSerialNumberByTransaction(txHashStr string) (
 		}
 	}
 	return results, nil
-
 }
 
 func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incognitokey.KeySet, txHashStr string) (map[string]interface{}, *RPCError) {

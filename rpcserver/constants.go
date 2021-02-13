@@ -107,6 +107,15 @@ const (
 	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
 	randomCommitmentsAndPublicKeys			   = "randomcommitmentsandpublickeys"
 
+
+
+	createAndSendTransactionV2                   = "createandsendtransactionv2"
+	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"
+
+	hasSerialNumbersInMempool                    = "hasserialnumbersinmempool"
+	createAndSendStakingTransactionV2            = "createandsendstakingtransactionv2"
+	createAndSendStopAutoStakingTransactionV2    = "createandsendstopautostakingtransactionv2"
+
 	//===========For Testing and Benchmark==============
 	getAndSendTxsFromFile   = "getandsendtxsfromfile"
 	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"

@@ -2,6 +2,7 @@ package blsbftv2
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -45,7 +46,7 @@ func MakeBFTProposeMsg(proposeCtn *BFTPropose, chainKey string, ts int64, height
 	msg.(*wire.MessageBFT).Content = proposeCtnBytes
 	msg.(*wire.MessageBFT).Type = MSG_PROPOSE
 	msg.(*wire.MessageBFT).TimeSlot = ts
-	msg.(*wire.MessageBFT).Timestamp = int64(height)
+	msg.(*wire.MessageBFT).Timestamp = time.Now().UnixNano() / int64(time.Millisecond)
 	msg.(*wire.MessageBFT).PeerID = proposeCtn.PeerID
 	return msg, nil
 }
@@ -60,7 +61,7 @@ func MakeBFTVoteMsg(vote *BFTVote, chainKey string, ts int64, height uint64) (wi
 	msg.(*wire.MessageBFT).Content = voteCtnBytes
 	msg.(*wire.MessageBFT).Type = MSG_VOTE
 	msg.(*wire.MessageBFT).TimeSlot = ts
-	msg.(*wire.MessageBFT).Timestamp = int64(height)
+	msg.(*wire.MessageBFT).Timestamp = time.Now().UnixNano() / int64(time.Millisecond)
 	return msg, nil
 }
 
