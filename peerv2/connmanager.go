@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 
+	pubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
@@ -17,7 +18,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
 )
 
@@ -29,7 +29,7 @@ func NewConnManager(
 	ikey *incognitokey.CommitteePublicKey,
 	cd ConsensusData,
 	dispatcher *Dispatcher,
-	nodeMode string,
+	syncMode string, //netmonitor or default
 	relayShard []byte,
 ) *ConnManager {
 	pubkey, _ := ikey.ToBase58()
@@ -38,7 +38,7 @@ func NewConnManager(
 			consensusData: cd,
 			pubkey:        pubkey,
 			relayShard:    relayShard,
-			nodeMode:      nodeMode,
+			syncMode:      syncMode,
 			peerID:        host.Host.ID(),
 		},
 		keeper:               NewAddrKeeper(),
@@ -58,7 +58,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 
 	// msgCrossShard := msg.(wire.MessageCrossShard)
 	msgType := msg.MessageType()
-	subs := cm.subscriber.GetMsgToTopics()
+	subs := cm.Subscriber.GetMsgToTopics()
 	for _, p := range publishable {
 		topic = ""
 		if msgType == p {
@@ -88,12 +88,12 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
 	publishable := []string{wire.CmdPeerState, wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT, wire.CmdTx, wire.CmdPrivacyCustomToken}
 	msgType := msg.MessageType()
-	subs := cm.subscriber.GetMsgToTopics()
+	subs := cm.Subscriber.GetMsgToTopics()
 	for _, p := range publishable {
 		if msgType == p {
 			// Get topic for mess
 			for _, availableTopic := range subs[msgType] {
-				Logger.Info(availableTopic)
+				//Logger.Info(availableTopic)
 				cID := GetCommitteeIDOfTopic(availableTopic.Name)
 				if (byte(cID) == shardID) && ((availableTopic.Act == proto.MessageTopicPair_PUB) || (availableTopic.Act == proto.MessageTopicPair_PUBSUB)) {
 					return broadcastMessage(msg, availableTopic.Name, cm.ps)
@@ -109,7 +109,13 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 func (cm *ConnManager) Start(ns NetSync) {
 	// Pubsub
 	var err error
-	cm.ps, err = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host, pubsub.WithMaxMessageSize(common.MaxPSMsgSize))
+	cm.ps, err = pubsub.NewFloodSub(
+		context.Background(),
+		cm.LocalHost.Host,
+		pubsub.WithMaxMessageSize(common.MaxPSMsgSize),
+		pubsub.WithPeerOutboundQueueSize(1024),
+		pubsub.WithValidateQueueSize(1024),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -119,7 +125,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 	go cm.keepHighwayConnection()
 
 	cm.Requester = NewRequester(cm.LocalHost.GRPC)
-	cm.subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages)
+	cm.Subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages)
 	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
 	go cm.manageRoleSubscription()
 	cm.process()
@@ -161,12 +167,13 @@ func (cm *ConnManager) BroadcastCommittee(
 type ForcedSubscriber interface {
 	Subscribe(forced bool) error
 	GetMsgToTopics() msgToTopics
+	SetSyncMode(string)
 }
 
 type ConnManager struct {
 	info         // info of running node
 	LocalHost    *Host
-	subscriber   ForcedSubscriber
+	Subscriber   ForcedSubscriber
 	disconnected int
 	registered   bool
 
@@ -299,15 +306,17 @@ func (cm *ConnManager) manageRoleSubscription() {
 			target := cm.Requester.Target()
 			if hwID.Pretty() != target {
 				cm.Requester.UpdateTarget(hwID)
-				Logger.Errorf("Waiting to establish connection to highway: new highway = %v, current = %v", hwID.Pretty(), target)
+				Logger.Warnf("Waiting to establish connection to highway: new highway = %v, current = %v", hwID.Pretty(), target)
 				continue
 			}
 
-			err = cm.subscriber.Subscribe(forced)
-			if err != nil {
-				Logger.Errorf("Subscribe failed: forced = %v hwID = %s err = %+v", forced, hwID.String(), err)
-			} else {
-				forced = false
+			if hwID != peer.ID("") {
+				err = cm.Subscriber.Subscribe(forced)
+				if err != nil {
+					Logger.Errorf("Subscribe failed: forced = %v hwID = %s err = %+v", forced, hwID.String(), err)
+				} else {
+					forced = false
+				}
 			}
 
 		case newID := <-cm.registerRequests:
@@ -376,7 +385,7 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	}
 
 	// Broadcast
-	Logger.Infof("Publishing to topic %s", topic)
+	//Logger.Infof("Publishing to topic %s", topic)
 	return ps.Publish(topic, []byte(messageHex))
 }
 

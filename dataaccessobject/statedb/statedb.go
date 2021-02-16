@@ -1666,3 +1666,27 @@ func (stateDB *StateDB) getAllStaker(ids []int) int {
 	allStaker = append(allStaker, resCurrentEpochBeaconCandidate...)
 	return len(allStaker)
 }
+
+// ================================= Portal ETH tx OBJECT =======================================
+func (stateDB *StateDB) getPortalExternalTxState(key common.Hash) (*PortalExternalTxState, bool, error) {
+	ethTxState, err := stateDB.getStateObject(PortalExternalTxObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if ethTxState != nil {
+		return ethTxState.GetValue().(*PortalExternalTxState), true, nil
+	}
+	return NewPortalExternalTxState(), false, nil
+}
+
+// ================================= Portal confirm proof OBJECT =======================================
+func (stateDB *StateDB) getPortalConfirmProofState(key common.Hash) (*PortalConfirmProofState, bool, error) {
+	portalConfirmProofState, err := stateDB.getStateObject(PortalConfirmProofObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if portalConfirmProofState != nil {
+		return portalConfirmProofState.GetValue().(*PortalConfirmProofState), true, nil
+	}
+	return NewPortalConfirmProofState(), false, nil
+}

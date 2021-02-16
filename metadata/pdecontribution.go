@@ -165,7 +165,7 @@ func (pc PDEContribution) Hash() *common.Hash {
 	return &hash
 }
 
-func (pc *PDEContribution) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (pc *PDEContribution) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PDEContributionAction{
 		Meta:    *pc,
 		TxReqID: *tx.Hash(),

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"testing"
 
+	pubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/mocks"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/peer"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -84,7 +84,7 @@ func TestSubscribeRoleChanged(t *testing.T) {
 	sub := &SubManager{
 		info: info{
 			consensusData: consensusData,
-			nodeMode:      common.NodeModeAuto,
+			syncMode:      common.NodeModeAuto,
 			relayShard:    []byte{},
 		},
 		role:       role,
@@ -110,7 +110,7 @@ func TestSubscribeForced(t *testing.T) {
 	sub := &SubManager{
 		info: info{
 			consensusData: consensusData,
-			nodeMode:      common.NodeModeAuto,
+			syncMode:      common.NodeModeAuto,
 			relayShard:    []byte{},
 		},
 		role:       role,
@@ -293,7 +293,7 @@ func TestRegisterToProxy(t *testing.T) {
 
 	sub := &SubManager{
 		info: info{
-			nodeMode: common.NodeModeAuto,
+			syncMode: common.NodeModeAuto,
 			peerID:   peer.ID(""),
 		},
 		registerer: registerer,

@@ -14,7 +14,7 @@ type PortalExpiredWaitingPortingReq struct {
 	ExpiredByLiquidation bool
 }
 
-// PortalExpiredWaitingPortingReqContent - Beacon builds a new instruction with this content after detecting custodians run away
+// PortalExpiredWaitingPortingReqContent - Beacon builds a new instruction with this content after detecting user haven't sent public token to custodian
 // It will be appended to beaconBlock
 type PortalExpiredWaitingPortingReqContent struct {
 	MetadataBase
