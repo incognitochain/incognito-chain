@@ -152,7 +152,10 @@ func (b *BeaconCommitteeStateV3) assignToPending(candidates []string, rand int64
 		key := incognitokey.CommitteePublicKey{}
 		key.FromString(candidate)
 		newCommitteeChange.ShardSubstituteAdded[shardID] = append(newCommitteeChange.ShardSubstituteAdded[shardID], key)
-		randomOffset := calculateCandidatePosition(candidate, rand, len(b.shardSubstitute[shardID]))
+		randomOffset := 0
+		if len(b.shardSubstitute[shardID]) != 0 {
+			randomOffset = calculateCandidatePosition(candidate, rand, len(b.shardSubstitute[shardID]))
+		}
 		b.shardSubstitute[shardID] = incognitokey.InsertCommitteePublicKeyToSlice(b.shardSubstitute[shardID], key, randomOffset)
 	}
 	return newCommitteeChange

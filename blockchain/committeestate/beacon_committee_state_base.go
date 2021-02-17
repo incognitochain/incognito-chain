@@ -339,9 +339,10 @@ func (b *beaconCommitteeStateBase) turnOffAutoStake(
 			}
 		} else {
 			// if found in committee list then turn off auto staking
-			if _, ok := oldState.AutoStake()[committeePublicKey]; ok {
-				//Logger.log.Info("[dcs] committeePublicKey:", committeePublicKey)
-				committeeChange = b.stopAutoStake(committeePublicKey, committeeChange)
+			if autoStake, ok := oldState.AutoStake()[committeePublicKey]; ok {
+				if autoStake {
+					committeeChange = b.stopAutoStake(committeePublicKey, committeeChange)
+				}
 			}
 		}
 	}
