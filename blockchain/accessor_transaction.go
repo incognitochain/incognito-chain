@@ -864,6 +864,9 @@ func (blockchain *BlockChain) StoreTxBySerialNumber(txList []metadata.Transactio
 	db := blockchain.GetShardChainDatabase(shardID)
 
 	for _, tx := range txList {
+		if tx.GetVersion() < 2 {//Only process txver2
+			continue
+		}
 		txHash := *tx.Hash()
 		tokenID := *tx.GetTokenID()
 		Logger.log.Infof("Process StoreTxBySerialNumber for tx %v, tokenID %v\n", txHash.String(), tokenID.String())

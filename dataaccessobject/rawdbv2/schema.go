@@ -395,6 +395,9 @@ func getTxBySerialNumberPrefix() []byte {
 }
 
 func generateTxBySerialNumberObjectKey(serialNumber []byte, tokenID common.Hash, shardID byte) []byte {
+	if tokenID.String() != common.PRVIDStr {
+		tokenID = common.ConfidentialAssetID
+	}
 	prefixHash := getTxBySerialNumberPrefix()
 
 	valueToBeHashed := append(serialNumber, shardID)
