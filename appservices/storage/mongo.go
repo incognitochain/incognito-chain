@@ -118,13 +118,13 @@ func IsMongoDupKey(err error) bool {
 }
 
 func IsWriteConflict(err error) bool {
-	we, ok := err.(mongo.WriteError)
+	/*we, ok := err.(mongo.WriteError)
 	if !ok {
 		log.Printf("Failed to cast to WriteError %v", err)
 		return false
-	}
-	if strings.Contains(we.Message,"WriteConflict") {
-		log.Printf("WriteConflict error %v", we)
+	}*/
+	if strings.Contains(err.Error(),"WriteConflict error") {
+		log.Printf("WriteConflict error %v", err)
 		return true
 	}
 	return false
