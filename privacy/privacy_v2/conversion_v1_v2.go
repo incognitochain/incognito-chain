@@ -367,6 +367,7 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 	//	- verify if serial number of each input coin has been derived correctly
 	//	- verify input coins' randomness
 	//	- verify if output coins' commitment has been calculated correctly
+	var err error
 	hasPrivacy, ok := boolParams["hasPrivacy"]
 	if !ok {
 		hasPrivacy = false
@@ -409,7 +410,15 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 		//check output commitment
 		outputValue := proof.outputCoins[i].GetValue()
 		randomness := proof.outputCoins[i].GetRandomness()
-		tmpCommitment := operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(outputValue), randomness, operation.PedersenValueIndex)
+		var tmpCommitment *operation.Point
+		if tokenID.String() == common.PRVIDStr {
+			tmpCommitment = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(outputValue), randomness, operation.PedersenValueIndex)
+		} else {
+			tmpCommitment, err = proof.outputCoins[i].ComputeCommitmentCA()
+			if err != nil {
+				return false, fmt.Errorf("cannot compute output coin commitment for token %v: %v", tokenID.String(), err)
+			}
+		}
 		if !bytes.Equal(tmpCommitment.ToBytesS(), proof.outputCoins[i].GetCommitment().ToBytesS()) {
 			return false, fmt.Errorf("commitment of coin %v is not valid", i)
 		}
