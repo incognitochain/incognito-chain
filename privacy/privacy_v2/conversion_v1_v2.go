@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 
 	"github.com/incognitochain/incognito-chain/privacy/coin"
@@ -361,6 +362,7 @@ func (proof *ConversionProofVer1ToVer2) ValidateSanity(additionalData interface{
 
 func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error) {
 	//Step to verify ConversionProofVer1ToVer2
+	//  - verify if inputCommitments existed
 	//	- verify sumInput = sumOutput + fee
 	//	- verify if serial number of each input coin has been derived correctly
 	//	- verify input coins' randomness
@@ -404,8 +406,15 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 		if proof.outputCoins[i].IsEncrypted() {
 			return false, errors.New("ConversionProof output should not be encrypted")
 		}
-		//Check output overflow
+		//check output commitment
 		outputValue := proof.outputCoins[i].GetValue()
+		randomness := proof.outputCoins[i].GetRandomness()
+		tmpCommitment := operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(outputValue), randomness, operation.PedersenValueIndex)
+		if !bytes.Equal(tmpCommitment.ToBytesS(), proof.outputCoins[i].GetCommitment().ToBytesS()) {
+			return false, fmt.Errorf("commitment of coin %v is not valid", i)
+		}
+
+		//Check output overflow
 		tmpOutputSum := sumOutput + outputValue
 		if tmpOutputSum < sumOutput || tmpOutputSum < outputValue{
 			return false, errors.New("Overflown sumOutput")

@@ -157,7 +157,7 @@ func (c *CoinV2) ConcealOutputCoin(additionalData interface{}) error {
 	return nil
 }
 
-// Conceal the input coin of a transaction: keep only the keyImage + publicOTA
+// Conceal the input coin of a transaction: keep only the keyImage
 func (c *CoinV2) ConcealInputCoin() {
 	c.SetValue(0)
 	c.SetRandomness(nil)
