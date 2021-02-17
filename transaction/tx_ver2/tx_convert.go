@@ -218,12 +218,12 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 	inputCoins := proofConversion.GetInputCoins()
 	for i := 0; i < len(inputCoins); i++ {
 		//Check if commitment has existed
-		if ok, err := statedb.HasCommitment(db, *tokenID, inputCoins[i].GetCommitment().ToBytesS(), shardID); ok || err != nil {
+		if ok, err := statedb.HasCommitment(db, *tokenID, inputCoins[i].GetCommitment().ToBytesS(), shardID); !ok || err != nil {
 			if err != nil {
 				errStr := fmt.Sprintf("TxConversion database inputCommitment got error: %v", err)
 				return false, errors.New(errStr)
 			}
-			return false, errors.New("TxConversion found existing inputCommitment in database error")
+			return false, errors.New("TxConversion not found existing inputCommitment in database error")
 		}
 
 		//Check if input coin has not been spent
