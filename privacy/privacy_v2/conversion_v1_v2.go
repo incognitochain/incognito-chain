@@ -414,6 +414,10 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 		if tokenID.String() == common.PRVIDStr {
 			tmpCommitment = operation.PedCom.CommitAtIndex(new(operation.Scalar).FromUint64(outputValue), randomness, operation.PedersenValueIndex)
 		} else {
+			tmpAssetTag := operation.HashToPoint(tokenID[:])
+			if !bytes.Equal(tmpAssetTag.ToBytesS(), proof.outputCoins[i].GetAssetTag().ToBytesS()) {
+				return false, fmt.Errorf("something is wrong with assetTag %v of tokenID %v: %v", proof.outputCoins[i].GetAssetTag().ToBytesS(), tokenID.String(), err)
+			}
 			tmpCommitment, err = proof.outputCoins[i].ComputeCommitmentCA()
 			if err != nil {
 				return false, fmt.Errorf("cannot compute output coin commitment for token %v: %v", tokenID.String(), err)
