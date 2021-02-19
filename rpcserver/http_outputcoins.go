@@ -22,14 +22,14 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
 	}
 
-	var min, max int
+	var min, max uint64
 
 	if paramsArray[0] != nil {
 		minParam, ok := paramsArray[0].(float64)
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min param is invalid"))
 		}
-		min = int(minParam)
+		min = uint64(minParam)
 	}
 
 	if paramsArray[1] != nil {
@@ -37,10 +37,10 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("max param is invalid"))
 		}
-		max = int(maxParam)
+		max = uint64(maxParam)
 	}
 	_ = min
-	_ = max
+	// _ = max
 
 	listKeyParams := common.InterfaceSlice(paramsArray[2])
 	if listKeyParams == nil {
@@ -66,7 +66,7 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 		}
 	}
 
-	result, err := httpServer.outputCoinService.ListUnspentOutputCoinsByKey(listKeyParams, tokenID)
+	result, err := httpServer.outputCoinService.ListUnspentOutputCoinsByKey(listKeyParams, tokenID, max)
 	if err != nil {
 		return nil, err
 	}
@@ -93,16 +93,16 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min param is invalid"))
 	}
-	min := int(minTemp)
+	min := uint64(minTemp)
 
 	maxTemp, ok := paramsArray[1].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("max param is invalid"))
 	}
-	max := int(maxTemp)
+	max := uint64(maxTemp)
 
 	_ = min
-	_ = max
+	// _ = max
 
 	//#3: list key component
 	listKeyParams := common.InterfaceSlice(paramsArray[2])
@@ -128,7 +128,7 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err1)
 		}
 	}
-	result, err1 := httpServer.outputCoinService.ListOutputCoinsByKey(listKeyParams, *tokenID)
+	result, err1 := httpServer.outputCoinService.ListOutputCoinsByKey(listKeyParams, *tokenID, max)
 	if err1 != nil {
 		return nil, err1
 	}

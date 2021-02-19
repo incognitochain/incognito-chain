@@ -36,7 +36,7 @@ func (coinService CoinService) ListDecryptedOutputCoinsByKeySet(keySet *incognit
 	return plainCoins, fh, nil
 }
 
-func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []interface{}, tokenID *common.Hash) (*jsonresult.ListOutputCoins, *RPCError) {
+func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []interface{}, tokenID *common.Hash, toHeight uint64) (*jsonresult.ListOutputCoins, *RPCError) {
 	result := &jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
@@ -62,18 +62,18 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 		keyWallet.KeySet = *keySetTmp
 
 		// get shard height
-		shardHeightTemp, ok := keys["StartHeight"].(float64)
-		if !ok {
-			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid height param"))
-		}
-		shardHeight := uint64(shardHeightTemp)
+		// shardHeightTemp, ok := keys["StartHeight"].(float64)
+		// if !ok {
+		// 	return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid height param"))
+		// }
+		// shardHeight := uint64(shardHeightTemp)
 
-		outCoins, fh, err := coinService.ListDecryptedOutputCoinsByKeySet(&keyWallet.KeySet, shardID, shardHeight)
+		outCoins, fromHeight, err := coinService.ListDecryptedOutputCoinsByKeySet(&keyWallet.KeySet, shardID, toHeight)
 		if err != nil {
 			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, err)
 		}
-		result.ToHeight = shardHeight
-		result.FromHeight = fh
+		result.ToHeight = toHeight
+		result.FromHeight = fromHeight
 		item := make([]jsonresult.OutCoin, 0)
 		for _, outCoin := range outCoins {
 			if outCoin.GetValue() == 0{
@@ -111,7 +111,7 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 	return result, nil
 }
 
-func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{}, tokenID common.Hash) (*jsonresult.ListOutputCoins, *RPCError) {
+func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{}, tokenID common.Hash, toHeight uint64) (*jsonresult.ListOutputCoins, *RPCError) {
 	result := &jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
@@ -157,11 +157,11 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 		}
 
 		// Get start height
-		startHeightTemp, ok := keys["StartHeight"].(float64)
-		if !ok {
-			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid start height"))
-		}
-		startHeight := uint64(startHeightTemp)
+		// startHeightTemp, ok := keys["StartHeight"].(float64)
+		// if !ok {
+		// 	return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid start height"))
+		// }
+		// startHeight := uint64(startHeightTemp)
 
 		// create a key set
 		keySet := incognitokey.KeySet{
@@ -177,13 +177,13 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 
 		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
-		plainOutputCoins, outputCoins, fh, err := coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID, startHeight)
+		plainOutputCoins, outputCoins, fromHeight, err := coinService.BlockChain.GetListDecryptedOutputCoinsByKeyset(&keySet, shardIDSender, &tokenID, toHeight)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 		}
-		result.ToHeight = startHeight
-		result.FromHeight = fh
+		result.ToHeight = toHeight
+		result.FromHeight = fromHeight
 		item := make([]jsonresult.OutCoin, 0)
 
 		//If the ReadonlyKey is provided, return decrypted coins
