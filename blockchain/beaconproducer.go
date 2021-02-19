@@ -421,6 +421,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 		}
 	}
 
+	// TODO: @tin move finish instruction to bottom
 	// Finish Sync Instructions
 	finishSyncInstructions, err := curView.beaconCommitteeEngine.GenerateFinishSyncInstructions()
 	if err != nil {

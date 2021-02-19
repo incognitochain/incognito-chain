@@ -89,6 +89,7 @@ func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePub
 	return b.syncPool
 }
 
+// TODO: @tin copy map
 func (b *BeaconCommitteeStateV3) FinishedSyncValidators() map[byte][]incognitokey.CommitteePublicKey {
 	return b.finishedSyncValidators
 }
