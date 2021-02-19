@@ -301,7 +301,12 @@ type coinMatcher func(*privacy.CoinV2, map[string]interface{}) bool
 
 func queryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, shardHeight, destHeight uint64, db *statedb.StateDB, filters ...coinMatcher) ([]privacy.Coin, error) {
 	var outCoins []privacy.Coin
-	for height := shardHeight; height <= destHeight; height += 1 {
+	// avoid overlap; unless lower height is 0
+	start := shardHeight + 1
+	if shardHeight == 0{
+		start = 0
+	}
+	for height := start; height <= destHeight; height += 1 {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
 			Logger.log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
@@ -416,12 +421,12 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 				resultPlainCoins = append(resultPlainCoins, decryptedOut)
 			}
 		}
-		
+
 		return resultPlainCoins, nil, lowerHeight, nil
 	}else{//Just return the raw coins
 		return nil, outCoins, lowerHeight, nil
 	}
-	
+
 }
 
 func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer2ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, startHeight uint64) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
