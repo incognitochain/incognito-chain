@@ -190,19 +190,32 @@ func HasBridgeInstructions(instructions [][]string) bool {
 }
 
 func NoInputNoOutput(metaType int) bool {
-	return true
+	if detail, ok := MetadataSyntaxDetail[metaType]; ok {
+		return (detail.HasInput == false) && (detail.HasOutput == false)
+	} else {
+		return false
+	}
 }
 
 func HasInputNoOutput(metaType int) bool {
-	return true
+	return false
 }
 
 func NoInputHasOutput(metaType int) bool {
-	return true
+	if detail, ok := MetadataSyntaxDetail[metaType]; ok {
+		return (detail.HasInput == false) && (detail.HasOutput == true)
+	} else {
+		return false
+	}
 }
 
 func IsAvailableMetaInTxType(metaType int, txType string) bool {
-	return true
+	if detail, ok := MetadataSyntaxDetail[metaType]; ok {
+		_, ok := detail.TxType[txType]
+		return ok
+	} else {
+		return false
+	}
 }
 
 // TODO: add more meta data types
