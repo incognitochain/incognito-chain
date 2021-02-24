@@ -183,7 +183,7 @@ func (httpServer *HttpServer) handleGetLatestBNBHeaderBlockHeight(params interfa
 	bc := httpServer.config.BlockChain
 	result, err := bc.GetLatestBNBBlockHeight()
 	if err != nil {
-		result, _ = bnbrelaying.GetGenesisBNBHeaderBlockHeight(bc.GetConfig().ChainParams.BNBRelayingHeaderChainID)
+		result, _ = bnbrelaying.GetGenesisBNBHeaderBlockHeight(bc.GetConfig().ChainParams.PortalParams.RelayingParam.BTCRelayingHeaderChainID)
 	}
 	return result, nil
 }

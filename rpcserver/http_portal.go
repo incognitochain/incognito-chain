@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -39,7 +39,7 @@ func (httpServer *HttpServer) handleGetPortalState(params interface{}, closeChan
 	}
 	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
 
-	portalState, err := blockchain.InitCurrentPortalStateFromDB(beaconFeatureStateDB)
+	portalState, err := portalprocessv3.InitCurrentPortalStateFromDB(beaconFeatureStateDB)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
 	}
@@ -103,7 +103,7 @@ func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, cl
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
-	if !metadata.IsPortalToken(tokenID) {
+	if !httpServer.config.BlockChain.IsPortalToken(0, tokenID) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID should be a portal token"))
 	}
 
@@ -126,7 +126,7 @@ func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, cl
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortingRequestFeesError, fmt.Errorf("Can't get final exchange rate of beacon height %+v, error %+v", beaconHeight, err))
 	}
 
-	portalParams := httpServer.config.BlockChain.GetPortalParams(uint64(beaconHeight))
+	portalParams := httpServer.config.BlockChain.GetPortalParamsV3(beaconHeight)
 
 	result, err := httpServer.portal.GetPortingFees(finalExchangeRates, tokenID, uint64(valuePToken), portalParams)
 	if err != nil {
@@ -168,7 +168,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortingRequest(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId is invalid"))
 	}
 
-	if !metadata.IsPortalToken(pTokenId) {
+	if !httpServer.config.BlockChain.IsPortalToken(0, pTokenId) {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -783,7 +783,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalExchangeRate(params int
 	beaconHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
 	for tokenID, value := range exchangeRateMap {
 		tokenID = strings.ToLower(common.Remove0xPrefix(tokenID))
-		if !metadata.IsPortalExchangeRateToken(tokenID, httpServer.config.BlockChain, beaconHeight) {
+		if !httpServer.config.BlockChain.IsPortalExchangeRateToken(beaconHeight, tokenID) {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("TokenID is not portal exchange rate token"))
 		}
 
@@ -941,7 +941,7 @@ func (httpServer *HttpServer) handleConvertExchangeRates(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.ConvertExchangeRatesError, fmt.Errorf("Can't get final exchange rate of beacon height %+v, error %+v", beaconHeight, err))
 	}
 
-	portalParam := httpServer.blockService.BlockChain.GetPortalParams(beaconHeight)
+	portalParam := httpServer.blockService.BlockChain.GetPortalParamsV3(beaconHeight)
 
 	result, err := httpServer.portal.ConvertExchangeRates(finalExchangeRates, portalParam, amount, tokenIDFrom, tokenIDTo)
 	if err != nil {
