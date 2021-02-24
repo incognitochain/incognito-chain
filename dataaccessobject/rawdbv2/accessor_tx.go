@@ -236,19 +236,5 @@ func GetTxBySerialNumber(db incdb.Database, serialNumber []byte, tokenID common.
 		return txHash, nil
 	}
 
-	//If this is a token transaction, try with assetTag
-	if tokenID.String() != common.PRVIDStr {
-		iterator := db.NewIteratorWithPrefix(generateTxBySerialNumberObjectKey(serialNumber, common.ConfidentialAssetID, shardID))
-		if iterator.Next() {
-			value := iterator.Value()
-			txHash, err := new(common.Hash).NewHash(value)
-			if err != nil {
-				return nil, NewRawdbError(GetTxBySerialNumberError, err, serialNumber, tokenID.String(), shardID)
-			}
-
-			return txHash, nil
-		}
-	}
-
 	return nil, NewRawdbError(GetTxBySerialNumberError, fmt.Errorf("no tx found for serialNumber %v, tokenID %v, shardID %v", serialNumber, tokenID.String(), shardID))
 }

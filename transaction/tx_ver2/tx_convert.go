@@ -214,9 +214,19 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 		return false, errors.New("Error casting ConversionProofVer1ToVer2")
 	}
 
-	//Verify that input coins have not been spent
+	//Verify that input coins have been created and have not been spent
 	inputCoins := proofConversion.GetInputCoins()
 	for i := 0; i < len(inputCoins); i++ {
+		//Check if commitment has existed
+		if ok, err := statedb.HasCommitment(db, *tokenID, inputCoins[i].GetCommitment().ToBytesS(), shardID); !ok || err != nil {
+			if err != nil {
+				errStr := fmt.Sprintf("TxConversion database inputCommitment got error: %v", err)
+				return false, errors.New(errStr)
+			}
+			return false, errors.New("TxConversion not found existing inputCommitment in database error")
+		}
+
+		//Check if input coin has not been spent
 		if ok, err := statedb.HasSerialNumber(db, *tokenID, inputCoins[i].GetKeyImage().ToBytesS(), shardID); ok || err != nil {
 			if err != nil {
 				errStr := fmt.Sprintf("TxConversion database serialNumber got error: %v", err)

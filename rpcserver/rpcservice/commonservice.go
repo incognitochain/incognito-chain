@@ -176,8 +176,17 @@ func GetKeySetFromPrivateKeyParams(privateKeyWalletStr string) (*incognitokey.Ke
 	if err != nil {
 		return nil, byte(0), err
 	}
-
-	return GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
+	if keyWallet.KeySet.PrivateKey != nil{
+		return GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
+	} else{
+		pk := keyWallet.KeySet.OTAKey.GetPublicSpend()
+		if pk ==nil {
+			return nil, byte(0), errors.New("OTA Public Key not found")
+		}
+		pkb := pk.ToBytesS()
+		shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
+		return &keyWallet.KeySet, shardID, nil
+	}
 }
 
 // GetKeySetFromPrivateKeyParams - deserialize a private key string

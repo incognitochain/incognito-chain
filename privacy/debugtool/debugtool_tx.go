@@ -159,6 +159,10 @@ func (this *DebugTool) GetBalanceByPrivatekey(privKeyStr string) ([]byte, error)
 }
 
 func (this *DebugTool) SubmitKey(privKeyStr string) ([]byte, error) {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyStr)
+	_ = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	otaKeyStr := keyWallet.Base58CheckSerialize(wallet.OTAKeyType)
+	_= otaKeyStr
 	if len(this.url) == 0 {
 		return []byte{}, errors.New("Debugtool has not set mainnet or testnet")
 	}
@@ -168,7 +172,7 @@ func (this *DebugTool) SubmitKey(privKeyStr string) ([]byte, error) {
 	   "method":"submitkey",
 	   "params":["%s"],
 	   "id":1
-	}`, privKeyStr)
+	}`, otaKeyStr)
 
 	return this.SendPostRequestWithQuery(query)
 }
@@ -275,7 +279,7 @@ func (this *DebugTool) SwitchCoinVersion(privKey string) ([]byte, error) {
 func (this *DebugTool) Stake(privKey string, seed string) ([]byte, error) {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKey)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	
+
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 	query := fmt.Sprintf(`{
 	  "jsonrpc":"1.0",

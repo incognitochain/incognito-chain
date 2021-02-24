@@ -51,25 +51,18 @@ func (walletService WalletService) SubmitKey(keyStr string) (struct{}, *RPCError
 	// this function accepts a private key or a hex-encoded OTA key
 	var otaKey privacy.OTAKey
 	keySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(keyStr)
-	if err==nil{
+	if err==nil || keySet.OTAKey.GetOTASecretKey()==nil{
 		otaKey = keySet.OTAKey
 	}else{
-		keySlice, err := hex.DecodeString(keyStr)
-		if err!=nil || len(keySlice)!=64{
-			return struct{}{}, NewRPCError(InvalidSenderViewingKeyError, errors.New("OTA key must be hex-encoded 64 bytes"))
-		}
-		var b [64]byte
-		copy(b[:], keySlice)
-		otaKey = blockchain.OTAKeyFromRaw(b)
-		shardIDSender = common.GetShardIDFromLastByte(keySlice[len(keySlice)-1])
+		return struct{}{}, NewRPCError(InvalidSenderViewingKeyError, errors.New("OTA key not found"))
 	}
 	result := struct{}{}
-	
+
 	err = walletService.BlockChain.SubmitOTAKey(otaKey, shardIDSender)
 	if err != nil {
 		return struct{}{}, NewRPCError(UnexpectedError, err)
 	}
-	
+
 	return result, nil
 }
 
