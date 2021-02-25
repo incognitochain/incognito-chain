@@ -26,6 +26,7 @@ type GetBeaconBestState struct {
 	ShardCommittee                         map[byte][]string                            `json:"ShardCommittee"`        // current committee and validator of all shard
 	ShardPendingValidator                  map[byte][]string                            `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
 	AutoStaking                            map[string]bool                              `json:"AutoStaking"`
+	StakingTx                              map[string]common.Hash                       `json:"StakingTx"`
 	CurrentRandomNumber                    int64                                        `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp                 int64                                        `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                                         `json:"IsGetRandomNumber"`
@@ -35,7 +36,8 @@ type GetBeaconBestState struct {
 	MinShardCommitteeSize                  int                                          `json:"MinShardCommitteeSize"`
 	ActiveShards                           int                                          `json:"ActiveShards"`
 	LastCrossShardState                    map[byte]map[byte]uint64                     `json:"LastCrossShardState"`
-	ShardHandle                            map[byte]bool                                `json:"ShardHandle"`             // lock sync.RWMutex
+	ShardHandle                            map[byte]bool                                `json:"ShardHandle"` // lock sync.RWMutex
+	CommitteeEngineVersion                 uint                                         `json:"CommitteeEngineVersion"`
 	NumberOfMissingSignature               map[string]signaturecounter.MissingSignature `json:"MissingSignature"`        // lock sync.RWMutex
 	MissingSignaturePenalty                map[string]signaturecounter.Penalty          `json:"MissingSignaturePenalty"` // lock sync.RWMutex
 }
@@ -142,10 +144,17 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 			result.LastCrossShardState[k1][k2] = v2
 		}
 	}
+
 	result.AutoStaking = make(map[string]bool)
 	for k, v := range data.GetAutoStaking() {
 		result.AutoStaking[k] = v
 	}
+
+	result.StakingTx = make(map[string]common.Hash)
+	for k, v := range data.GetStakingTx() {
+		result.StakingTx[k] = v
+	}
+
 	result.NumberOfMissingSignature = make(map[string]signaturecounter.MissingSignature)
 	for k, v := range data.GetNumberOfMissingSignature() {
 		result.NumberOfMissingSignature[k] = v
@@ -154,6 +163,7 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 	for k, v := range data.GetMissingSignaturePenalty() {
 		result.MissingSignaturePenalty[k] = v
 	}
+	result.CommitteeEngineVersion = data.CommitteeEngineVersion()
 	return result
 }
 

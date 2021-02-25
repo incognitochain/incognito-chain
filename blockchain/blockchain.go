@@ -541,7 +541,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 		var shardCommitteeEngine committeestate.ShardCommitteeEngine
-		if v.BestBlock.Header.BeaconHeight >= blockchain.config.ChainParams.ConsensusV3Height {
+		if v.BeaconHeight > blockchain.config.ChainParams.ConsensusV3Height {
 			shardCommitteeEngine = InitShardCommitteeEngineV2(
 				v.consensusStateDB,
 				v.ShardHeight, v.ShardID, v.BestBlockHash,
@@ -551,7 +551,12 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 				v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
 		}
 		v.shardCommitteeEngine = shardCommitteeEngine
-
+		if v.BeaconHeight == blockchain.config.ChainParams.ConsensusV3Height {
+			err := v.upgradeCommitteeEngineV2(blockchain)
+			if err != nil {
+				panic(err)
+			}
+		}
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			panic("Restart shard views fail")
 		}

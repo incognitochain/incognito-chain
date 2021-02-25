@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -44,9 +45,9 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	p2ppubsub "github.com/libp2p/go-libp2p-pubsub"
-	pb "github.com/libp2p/go-libp2p-pubsub/pb"
 	"google.golang.org/api/option"
+
+	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 )
 
 type Server struct {

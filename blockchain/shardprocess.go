@@ -44,7 +44,8 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 			case <-ctx.Done():
 				return errors.New(fmt.Sprintf("ShardBlock %v link to wrong view (%s)", shardBlock.GetHeight(), preHash.String()))
 			default:
-				if blockchain.ShardChain[shardID].GetViewByHash(preHash) != nil {
+				view = blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
+				if view != nil {
 					return nil
 				}
 				time.Sleep(time.Second)

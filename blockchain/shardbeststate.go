@@ -422,6 +422,7 @@ func InitShardCommitteeEngineV2(
 		shardCommittees, err = bc.GetShardCommitteeFromBeaconHash(committeeFromBlockHash, shardID)
 		if err != nil {
 			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
+			panic(err)
 		}
 	}
 	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(shardCommittees, committeeFromBlockHash)
@@ -461,5 +462,6 @@ func (shardBestState *ShardBestState) upgradeCommitteeEngineV2(bc *BlockChain) e
 		shardBestState.ShardID,
 		newShardCommitteeStateV2,
 	)
+	Logger.log.Infof("SHARDID %+v | Shard Height %+v, UPGRADE Shard Committee Engine from V1 to V2", shardBestState.ShardID, shardBestState.ShardHeight)
 	return nil
 }
