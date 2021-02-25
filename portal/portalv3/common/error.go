@@ -7,9 +7,6 @@ import (
 
 const (
 	UnexpectedError = iota
-
-	// eth utils
-	VerifyProofAndParseReceiptError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -17,9 +14,6 @@ var ErrCodeMessage = map[int]struct {
 	Message string
 }{
 	UnexpectedError: {-1, "Unexpected error"},
-
-	// eth utils
-	VerifyProofAndParseReceiptError: {-16001, "Verify proof and parse receipt eth error"},
 }
 
 type PortalCommonError struct {
