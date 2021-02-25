@@ -450,7 +450,7 @@ func (p *PortalCustodianDepositProcessorV3) PrepareDataForBlockProducer(stateDB 
 	meta := actionData.Meta
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 	// so must build unique external tx as combination of chain name and block hash and tx index.
-	uniqExternalTxID := pCommon.GetUniqExternalTxID(pCommon.ETHChainName, meta.BlockHash, meta.TxIndex)
+	uniqExternalTxID := GetUniqExternalTxID(pCommon.ETHChainName, meta.BlockHash, meta.TxIndex)
 	isSubmitted, err := statedb.IsPortalExternalTxHashSubmitted(stateDB, uniqExternalTxID)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while checking eth tx submitted: %+v", err)
@@ -551,7 +551,7 @@ func (p *PortalCustodianDepositProcessorV3) BuildNewInsts(
 	}
 
 	// verify proof and parse receipt
-	ethReceipt, err := pCommon.VerifyProofAndParseReceipt(meta.BlockHash, meta.TxIndex, meta.ProofStrs)
+	ethReceipt, err := metadata.VerifyProofAndParseReceipt(meta.BlockHash, meta.TxIndex, meta.ProofStrs)
 	if err != nil {
 		Logger.log.Errorf("Custodian deposit v3: Verify eth proof error: %+v", err)
 		return [][]string{rejectedInst}, nil
@@ -561,7 +561,7 @@ func (p *PortalCustodianDepositProcessorV3) BuildNewInsts(
 		return [][]string{rejectedInst}, nil
 	}
 
-	logMap, err := pCommon.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
+	logMap, err := metadata.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
 	if err != nil {
 		Logger.log.Errorf("WARNING: an error occured while parsing log map from receipt: ", err)
 		return [][]string{rejectedInst}, nil
@@ -1065,7 +1065,7 @@ func (p *PortalCusUnlockOverRateCollateralsProcessor) BuildNewInsts(
 		metaType,
 		shardID,
 		actionData.TxReqID,
-		pCommon.PortalCusUnlockOverRateCollateralsRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 	)
 	//check key from db
 	exchangeTool := NewPortalExchangeRateTool(currentPortalState.FinalExchangeRatesState, portalParams)
@@ -1136,7 +1136,7 @@ func (p *PortalCusUnlockOverRateCollateralsProcessor) BuildNewInsts(
 		metaType,
 		shardID,
 		actionData.TxReqID,
-		pCommon.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 	)
 
 	return [][]string{inst}, nil
@@ -1167,7 +1167,7 @@ func (p *PortalCusUnlockOverRateCollateralsProcessor) ProcessInsts(
 	Logger.log.Infof("Portal unlock over rate collaterals, data input: %+v, status: %+v", unlockOverRateCollateralsContent, reqStatus)
 
 	switch reqStatus {
-	case pCommon.PortalCusUnlockOverRateCollateralsAcceptedChainStatus:
+	case pCommon.PortalRequestAcceptedChainStatus:
 		custodianStateKey := statedb.GenerateCustodianStateObjectKey(unlockOverRateCollateralsContent.CustodianAddressStr)
 		custodianStateKeyStr := custodianStateKey.String()
 		listTokensWithValue := cloneMap(unlockOverRateCollateralsContent.UnlockedAmounts)
@@ -1181,7 +1181,7 @@ func (p *PortalCusUnlockOverRateCollateralsProcessor) ProcessInsts(
 
 		//save db
 		newUnlockOverRateCollaterals := metadata.NewUnlockOverRateCollateralsRequestStatus(
-			pCommon.PortalUnlockOverRateCollateralsAcceptedStatus,
+			pCommon.PortalRequestAcceptedStatus,
 			unlockOverRateCollateralsContent.CustodianAddressStr,
 			unlockOverRateCollateralsContent.TokenID,
 			unlockOverRateCollateralsContent.UnlockedAmounts,
@@ -1199,10 +1199,10 @@ func (p *PortalCusUnlockOverRateCollateralsProcessor) ProcessInsts(
 			return nil
 		}
 
-	case pCommon.PortalCusUnlockOverRateCollateralsRejectedChainStatus:
+	case pCommon.PortalRequestRejectedChainStatus:
 		//save db
 		newUnlockOverRateCollaterals := metadata.NewUnlockOverRateCollateralsRequestStatus(
-			pCommon.PortalUnlockOverRateCollateralsRejectedStatus,
+			pCommon.PortalRequestRejectedStatus,
 			unlockOverRateCollateralsContent.CustodianAddressStr,
 			unlockOverRateCollateralsContent.TokenID,
 			map[string]uint64{},

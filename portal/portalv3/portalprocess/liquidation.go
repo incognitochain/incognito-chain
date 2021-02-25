@@ -1053,7 +1053,7 @@ func (p *PortalCustodianTopupProcessorV3) PrepareDataForBlockProducer(stateDB *s
 	if meta.DepositAmount > 0 {
 		// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 		// so must build unique external tx as combination of chain name and block hash and tx index.
-		uniqExternalTxID := pCommon.GetUniqExternalTxID(pCommon.ETHChainName, meta.BlockHash, meta.TxIndex)
+		uniqExternalTxID := GetUniqExternalTxID(pCommon.ETHChainName, meta.BlockHash, meta.TxIndex)
 		isSubmitted, err := statedb.IsPortalExternalTxHashSubmitted(stateDB, uniqExternalTxID)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while checking eth tx submitted: %+v", err)
@@ -1205,7 +1205,7 @@ func (p *PortalCustodianTopupProcessorV3) BuildNewInsts(
 		}
 
 		// verify proof and parse receipt
-		ethReceipt, err := pCommon.VerifyProofAndParseReceipt(meta.BlockHash, meta.TxIndex, meta.ProofStrs)
+		ethReceipt, err := metadata.VerifyProofAndParseReceipt(meta.BlockHash, meta.TxIndex, meta.ProofStrs)
 		if err != nil {
 			Logger.log.Errorf("Topup v3: Verify eth proof error: %+v", err)
 			return [][]string{rejectInst2}, nil
@@ -1215,7 +1215,7 @@ func (p *PortalCustodianTopupProcessorV3) BuildNewInsts(
 			return [][]string{rejectInst2}, nil
 		}
 
-		logMap, err := pCommon.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
+		logMap, err := metadata.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
 		if err != nil {
 			Logger.log.Errorf("WARNING: an error occured while parsing log map from receipt: ", err)
 			return [][]string{rejectInst2}, nil
@@ -1407,7 +1407,7 @@ func (p *PortalTopupWaitingPortingReqProcessorV3) PrepareDataForBlockProducer(st
 	if meta.DepositAmount > 0 {
 		// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 		// so must build unique external tx as combination of chain name and block hash and tx index.
-		uniqExternalTxID := pCommon.GetUniqExternalTxID(pCommon.ETHChainName, meta.BlockHash, meta.TxIndex)
+		uniqExternalTxID := GetUniqExternalTxID(pCommon.ETHChainName, meta.BlockHash, meta.TxIndex)
 		isSubmitted, err := statedb.IsPortalExternalTxHashSubmitted(stateDB, uniqExternalTxID)
 		if err != nil {
 			Logger.log.Errorf("ERROR: an error occured while checking eth tx submitted: %+v", err)
@@ -1575,7 +1575,7 @@ func (p *PortalTopupWaitingPortingReqProcessorV3) BuildNewInsts(
 		}
 
 		// verify proof and parse receipt
-		ethReceipt, err := pCommon.VerifyProofAndParseReceipt(meta.BlockHash, meta.TxIndex, meta.ProofStrs)
+		ethReceipt, err := metadata.VerifyProofAndParseReceipt(meta.BlockHash, meta.TxIndex, meta.ProofStrs)
 		if err != nil {
 			Logger.log.Errorf("Topup waiting porting v3: Verify eth proof error: %+v", err)
 			return [][]string{rejectInst2}, nil
@@ -1585,7 +1585,7 @@ func (p *PortalTopupWaitingPortingReqProcessorV3) BuildNewInsts(
 			return [][]string{rejectInst2}, nil
 		}
 
-		logMap, err := pCommon.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
+		logMap, err := metadata.PickAndParseLogMapFromReceiptByContractAddr(ethReceipt, portalParams.PortalETHContractAddressStr, "Deposit")
 		if err != nil {
 			Logger.log.Errorf("WARNING: an error occured while parsing log map from receipt: ", err)
 			return [][]string{rejectInst2}, nil

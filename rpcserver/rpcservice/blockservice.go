@@ -1250,7 +1250,7 @@ func (blockService BlockService) CheckPortalExternalTxSubmitted(data map[string]
 		chainName = chainNameTmp
 	}
 
-	uniqExternalTx := metadata.GetUniqExternalTxID(chainName, blockHash, txIdx)
+	uniqExternalTx := portalprocessv3.GetUniqExternalTxID(chainName, blockHash, txIdx)
 	featureStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	submitted, err := statedb.IsPortalExternalTxHashSubmitted(featureStateDB, uniqExternalTx)
 	return submitted, err

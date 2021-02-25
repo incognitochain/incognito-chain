@@ -1104,7 +1104,7 @@ func buildCustodianDepositActionsV3FromTcs(tcs []TestCaseCustodianDepositV3, sha
 
 	for _, tc := range tcs {
 		inst := buildPortalCustodianDepositActionV3(tc.remoteAddress, tc.blockHash, tc.txIndex, tc.proofStrs, shardID)
-		uniqExternalTxID := pCommon.GetUniqExternalTxID(pCommon.ETHChainName, tc.blockHash, tc.txIndex)
+		uniqExternalTxID := portalprocessv3.GetUniqExternalTxID(pCommon.ETHChainName, tc.blockHash, tc.txIndex)
 		insts = append(insts, instructionForProducer{
 			inst: inst,
 			optionalData: map[string]interface{}{
@@ -5073,10 +5073,10 @@ func buildExpectedResultUnlockOverRateCollaterals() ([]TestCaseUnlockOverRateCol
 		numBeaconInsts:        4,
 		liquidationPool:       map[string]*statedb.LiquidationPool{},
 		statusInsts: []string{
-			pCommon.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
-			pCommon.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
-			pCommon.PortalCusUnlockOverRateCollateralsAcceptedChainStatus,
-			pCommon.PortalCusUnlockOverRateCollateralsRejectedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
+			pCommon.PortalRequestRejectedChainStatus,
 		},
 	}
 

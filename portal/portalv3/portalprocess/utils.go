@@ -3,6 +3,7 @@ package portalprocess
 import (
 	"encoding/json"
 	"fmt"
+	eCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -12,6 +13,7 @@ import (
 	"math"
 	"math/big"
 	"sort"
+	"strconv"
 )
 
 type CurrentPortalState struct {
@@ -2322,4 +2324,10 @@ func CloneWPortingRequests(wPortingReqs map[string]*statedb.WaitingPortingReques
 		)
 	}
 	return newReqs
+}
+
+func GetUniqExternalTxID(chainName string, blockHash eCommon.Hash, txIndex uint) []byte {
+	uniqExternalID := append([]byte(chainName), blockHash[:]...)
+	uniqExternalID = append(uniqExternalID, []byte(strconv.Itoa(int(txIndex)))...)
+	return uniqExternalID
 }
