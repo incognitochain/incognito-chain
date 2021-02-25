@@ -177,3 +177,9 @@ var (
 )
 
 var TIMESLOT = uint64(0) //need to be set when init chain
+
+/* ================ Feature Flags ================ */
+const (
+	PortalRelayingFlag = 0
+	PortalV3Flag = 1
+)

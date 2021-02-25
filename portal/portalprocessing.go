@@ -32,26 +32,27 @@ func HandlePortalInsts(
 	portalParams PortalParams,
 	pm *PortalManager,
 ) ([][]string, error) {
+	enableFeatures := bc.GetEnableFeatureFlags()
 	instructions := [][]string{}
-
 	// handle portal instructions v3
-	portalInstsV3, err := portalprocessv3.HandlePortalInstsV3(
-		bc, stateDB, beaconHeight, shardHeight, currentPortalState, rewardForCustodianByEpoch,
-		portalParams.GetPortalParamsV3(beaconHeight), pm.PortalInstProcessorsV3)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	if len(portalInstsV3) > 0 {
-		instructions = append(instructions, portalInstsV3...)
+	if enableFeatures[common.PortalV3Flag] {
+		portalInstsV3, err := portalprocessv3.HandlePortalInstsV3(
+			bc, stateDB, beaconHeight, shardHeight, currentPortalState, rewardForCustodianByEpoch,
+			portalParams.GetPortalParamsV3(beaconHeight), pm.PortalInstProcessorsV3)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+		if len(portalInstsV3) > 0 {
+			instructions = append(instructions, portalInstsV3...)
+		}
 	}
 
 	// Handle relaying instruction
-	relayingInsts := portalrelaying.HandleRelayingInsts(bc, relayingState, pm.RelayingChainsProcessors)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	if len(relayingInsts) > 0 {
-		instructions = append(instructions, relayingInsts...)
+	if enableFeatures[common.PortalRelayingFlag] {
+		relayingInsts := portalrelaying.HandleRelayingInsts(bc, relayingState, pm.RelayingChainsProcessors)
+		if len(relayingInsts) > 0 {
+			instructions = append(instructions, relayingInsts...)
+		}
 	}
 
 	// Handle next things ...
@@ -60,6 +61,7 @@ func HandlePortalInsts(
 }
 
 func ProcessPortalInsts(
+	bc metadata.ChainRetriever,
 	portalStateDB *statedb.StateDB,
 	relayingState *portalrelaying.RelayingHeaderChainState,
 	portalParams PortalParams,
@@ -68,8 +70,9 @@ func ProcessPortalInsts(
 	pm *PortalManager,
 	epoch uint64,
 	isSkipPortalV3Ints bool) error {
+	enableFeatures := bc.GetEnableFeatureFlags()
 	// process portal instructions v3
-	if !isSkipPortalV3Ints {
+	if !isSkipPortalV3Ints && enableFeatures[common.PortalV3Flag] {
 		err := portalprocessv3.ProcessPortalInstsV3(
 			portalStateDB, portalParams.GetPortalParamsV3(beaconHeight),
 			beaconHeight, instructions, pm.PortalInstProcessorsV3, epoch)
@@ -80,10 +83,12 @@ func ProcessPortalInsts(
 	}
 
 	// process relaying instructions
-	err := portalrelaying.ProcessRelayingInstructions(instructions, relayingState)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
+	if enableFeatures[common.PortalRelayingFlag] {
+		err := portalrelaying.ProcessRelayingInstructions(instructions, relayingState)
+		if err != nil {
+			Logger.log.Error(err)
+			return err
+		}
 	}
 
 	// Handle next things ...

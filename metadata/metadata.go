@@ -78,6 +78,7 @@ type ChainRetriever interface {
 	IsPortalToken(beaconHeight uint64, tokenIDStr string) bool
 	IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error)
 	ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64) (bool, error)
+	GetEnableFeatureFlags() map[int]bool
 }
 
 type BeaconViewRetriever interface {

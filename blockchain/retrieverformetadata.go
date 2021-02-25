@@ -208,3 +208,7 @@ func (blockchain *BlockChain) ValidatePortalRemoteAddresses(remoteAddresses map[
 	return true, nil
 }
 
+func (blockchain *BlockChain) GetEnableFeatureFlags() map[int]bool {
+	return blockchain.GetChainParams().EnableFeatureFlags
+}
+

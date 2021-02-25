@@ -144,7 +144,7 @@ const (
 
 	// Enable Feature Flag
 	TestnetEnablePortalRelaying = true
-	TestnetEnablePortalV3       = true
+	TestnetEnablePortalV3       = false
 )
 
 // CONSTANT for network TESTNET-2
@@ -349,10 +349,4 @@ var (
 
 const (
 	Duration = 1000000
-)
-
-/* ================ Feature Flags ================ */
-const (
-	PortalRelayingFlag = 0
-	PortalV3Flag       = 1
 )

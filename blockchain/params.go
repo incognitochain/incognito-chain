@@ -245,8 +245,8 @@ func SetupParam() {
 
 		BCHeightBreakPointPortalV3: 30158,
 		EnableFeatureFlags: map[int]bool{
-			PortalV3Flag:       TestnetEnablePortalV3,
-			PortalRelayingFlag: TestnetEnablePortalRelaying,
+			common.PortalV3Flag:       TestnetEnablePortalV3,
+			common.PortalRelayingFlag: TestnetEnablePortalRelaying,
 		},
 	}
 	// END TESTNET
@@ -345,8 +345,8 @@ func SetupParam() {
 		BCHeightBreakPointPortalV3: 1328816,
 
 		EnableFeatureFlags: map[int]bool{
-			PortalV3Flag:       Testnet2EnablePortalV3,
-			PortalRelayingFlag: Testnet2EnablePortalRelaying,
+			common.PortalV3Flag:       Testnet2EnablePortalV3,
+			common.PortalRelayingFlag: Testnet2EnablePortalRelaying,
 		},
 	}
 	// END TESTNET-2
@@ -443,8 +443,8 @@ func SetupParam() {
 		BCHeightBreakPointPortalV3: 40, // todo: should update before deploying
 
 		EnableFeatureFlags: map[int]bool{
-			PortalV3Flag:       MainnetEnablePortalV3,
-			PortalRelayingFlag: MainnetEnablePortalRelaying,
+			common.PortalV3Flag:       MainnetEnablePortalV3,
+			common.PortalRelayingFlag: MainnetEnablePortalRelaying,
 		},
 	}
 	if IsTestNet {

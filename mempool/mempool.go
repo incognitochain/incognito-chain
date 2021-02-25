@@ -1124,9 +1124,9 @@ func (tp *TxPool) checkEnableFeatureFlagMetadata(metaType int) (bool, bool) {
 	enableFeatureFlagParams := tp.config.BlockChain.GetConfig().ChainParams.EnableFeatureFlags
 
 	if metadata.IsPortalRelayingMetaType(metaType) {
-		return true, enableFeatureFlagParams[blockchain.PortalRelayingFlag]
+		return true, enableFeatureFlagParams[common.PortalRelayingFlag]
 	} else if metadata.IsPortalMetaTypeV3(metaType) {
-		return true, enableFeatureFlagParams[blockchain.PortalV3Flag]
+		return true, enableFeatureFlagParams[common.PortalV3Flag]
 	}
 	return false, false
 }

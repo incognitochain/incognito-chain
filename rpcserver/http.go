@@ -656,9 +656,9 @@ func (httpServer *HttpServer) checkEnableFeatureFlagRPC(methodName string) (bool
 	enableFeatureFlagParams := httpServer.GetBlockchain().GetConfig().ChainParams.EnableFeatureFlags
 
 	if httpServer.isPortalRelayingRPC(methodName) {
-		return true, enableFeatureFlagParams[blockchain.PortalRelayingFlag]
+		return true, enableFeatureFlagParams[common.PortalRelayingFlag]
 	} else if httpServer.isPortalV3RPC(methodName) {
-		return true, enableFeatureFlagParams[blockchain.PortalV3Flag]
+		return true, enableFeatureFlagParams[common.PortalV3Flag]
 	}
 	return false, false
 }
