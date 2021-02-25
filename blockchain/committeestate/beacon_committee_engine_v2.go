@@ -2,7 +2,9 @@ package committeestate
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type BeaconCommitteeEngineV2 struct {
@@ -137,4 +139,48 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	}
 
 	return hashes, committeeChange, incurredInstructions, nil
+}
+
+func (engine BeaconCommitteeEngineV2) getDataForUpgrading(env *BeaconCommitteeStateEnvironment) (
+	[]incognitokey.CommitteePublicKey,
+	map[byte][]incognitokey.CommitteePublicKey,
+	map[byte][]incognitokey.CommitteePublicKey,
+	[]incognitokey.CommitteePublicKey,
+	int,
+	map[string]bool,
+	map[string]privacy.PaymentAddress,
+	map[string]common.Hash,
+	SwapRule,
+) {
+	beaconCommittee, shardCommittee, shardSubstitute,
+		shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, swapRule := engine.getDataForUpgrading(env)
+
+	numberOfAssignedCandidates = engine.NumberOfAssignedCandidates()
+	shardCommonPool = make([]incognitokey.CommitteePublicKey, numberOfAssignedCandidates)
+	copy(shardCommonPool, engine.finalState.ShardCommonPool())
+	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, swapRule
+}
+
+//Upgrade check interface method for des
+func (engine BeaconCommitteeEngineV2) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeEngine {
+	beaconCommittee, shardCommittee, shardSubstitute,
+		shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, swapRule := engine.getDataForUpgrading(env)
+
+	committeeStateV3 := NewBeaconCommitteeStateV3WithValue(
+		beaconCommittee,
+		shardCommittee,
+		shardSubstitute,
+		shardCommonPool,
+		numberOfAssignedCandidates,
+		autoStake,
+		rewardReceiver,
+		stakingTx,
+		map[byte][]incognitokey.CommitteePublicKey{},
+		swapRule,
+	)
+	committeeEngine := NewBeaconCommitteeEngineV3(env.BeaconHeight, env.BeaconHash, committeeStateV3)
+	return committeeEngine
 }

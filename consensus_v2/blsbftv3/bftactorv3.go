@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"reflect"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -107,7 +108,7 @@ func (e *BLSBFT_V3) Start() error {
 	e.Logger.Info("start bls-bftV3 consensus for chain", e.ChainKey)
 	go func() {
 		for { //actor loop
-			if e.Chain.CommitteeEngineVersion() != committeestate.SLASHING_VERSION {
+			if e.Chain.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 				continue
 			}
 			//e.Logger.Debug("Current time ", currentTime, "time slot ", currentTimeSlot)
@@ -321,11 +322,12 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	if v.block == nil {
 		return
 	}
-	e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
+
+	//e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//already in chain
 	view := e.Chain.GetViewByHash(*v.block.Hash())
 	if view != nil {
-		e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
+		//e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 		return
 	}
 
@@ -342,7 +344,6 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 		dsaKey := []byte{}
 		if vote.IsValid == 0 {
 			for _, c := range v.committees {
-				e.Logger.Info(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
 				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
 					dsaKey = c.MiningPubKey[common.BridgeConsensus]
 				}
@@ -352,7 +353,6 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 			}
 			err := vote.validateVoteOwner(dsaKey)
 			if err != nil {
-				e.Logger.Error("")
 				e.Logger.Error(dsaKey)
 				e.Logger.Error(err)
 				vote.IsValid = -1

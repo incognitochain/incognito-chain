@@ -36,7 +36,7 @@ func cloneSwapRuleByVersion(swapRule SwapRule) SwapRule {
 
 func SwapRuleByEnv(env *BeaconCommitteeStateEnvironment) SwapRule {
 	var swapRule SwapRule
-	if env.BeaconHeight >= env.BeaconStateV3Height {
+	if env.BeaconHeight >= env.StakingV3Height {
 		swapRule = NewSwapRuleV3()
 	} else {
 		swapRule = NewSwapRuleV2()

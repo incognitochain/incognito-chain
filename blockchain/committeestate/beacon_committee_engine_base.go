@@ -308,3 +308,136 @@ func (engine beaconCommitteeEngineBase) AddFinishedSyncValidators([]string, byte
 func (engine beaconCommitteeEngineBase) GenerateFinishSyncInstructions() ([]*instruction.FinishSyncInstruction, error) {
 	return []*instruction.FinishSyncInstruction{}, nil
 }
+
+//IsSwapTime is this the moment for process a swap action
+func (engine beaconCommitteeEngineBase) IsSwapTime(beaconHeight, numberBlocksEachEpoch uint64) bool {
+	panic("Implement this function")
+}
+
+//NewBaeconCommitteeEngine constructor for BeaconCommitteeEngine by version
+func NewBeaconCommitteeEngine(
+	version int,
+	beaconCommittee []incognitokey.CommitteePublicKey,
+	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
+	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
+	shardCommonPool []incognitokey.CommitteePublicKey,
+	numberOfAssignedCandidates int,
+	autoStake map[string]bool,
+	rewardReceivers map[string]privacy.PaymentAddress,
+	stakingTx map[string]common.Hash,
+	syncPool map[byte][]incognitokey.CommitteePublicKey,
+	swapRule SwapRule,
+	nextEpochShardCandidate []incognitokey.CommitteePublicKey,
+	currentEpochShardCandidate []incognitokey.CommitteePublicKey,
+	beaconHeight uint64,
+	beaconBlockHash common.Hash,
+) BeaconCommitteeEngine {
+	var committeeEngine BeaconCommitteeEngine
+	switch version {
+	case SELF_SWAP_SHARD_VERSION:
+		committeeState := NewBeaconCommitteeStateV1WithValue(
+			beaconCommittee,
+			[]incognitokey.CommitteePublicKey{},
+			nextEpochShardCandidate,
+			currentEpochShardCandidate,
+			[]incognitokey.CommitteePublicKey{},
+			[]incognitokey.CommitteePublicKey{},
+			shardCommittee,
+			shardSubstitute,
+			autoStake,
+			rewardReceivers,
+			stakingTx,
+		)
+		committeeEngine = NewBeaconCommitteeEngineV1(beaconHeight, beaconBlockHash, committeeState)
+
+	case SLASHING_VERSION:
+		committeeState := NewBeaconCommitteeStateV2WithValue(
+			beaconCommittee,
+			shardCommittee,
+			shardSubstitute,
+			shardCommonPool,
+			numberOfAssignedCandidates,
+			autoStake,
+			rewardReceivers,
+			stakingTx,
+			swapRule,
+		)
+		committeeEngine = NewBeaconCommitteeEngineV2(beaconHeight, beaconBlockHash, committeeState)
+
+	case DCS_VERSION:
+		committeeState := NewBeaconCommitteeStateV3WithValue(
+			beaconCommittee,
+			shardCommittee,
+			shardSubstitute,
+			shardCommonPool,
+			numberOfAssignedCandidates,
+			autoStake,
+			rewardReceivers,
+			stakingTx,
+			syncPool,
+			swapRule,
+		)
+		committeeEngine = NewBeaconCommitteeEngineV3(beaconHeight, beaconBlockHash, committeeState)
+
+	}
+	return committeeEngine
+}
+
+//Upgrade upgrade committee engine by version
+func (engine beaconCommitteeEngineBase) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeEngine {
+	panic("Implement this function")
+}
+
+func (engine beaconCommitteeEngineBase) getDataForUpgrading(env *BeaconCommitteeStateEnvironment) (
+	[]incognitokey.CommitteePublicKey,
+	map[byte][]incognitokey.CommitteePublicKey,
+	map[byte][]incognitokey.CommitteePublicKey,
+	[]incognitokey.CommitteePublicKey,
+	int,
+	map[string]bool,
+	map[string]privacy.PaymentAddress,
+	map[string]common.Hash,
+	SwapRule,
+) {
+	beaconCommittee := make([]incognitokey.CommitteePublicKey, len(engine.GetBeaconCommittee()))
+	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
+	shardCommonPool := make([]incognitokey.CommitteePublicKey, len(engine.GetShardCommittee()))
+	numberOfAssignedCandidates := len(engine.GetCandidateShardWaitingForCurrentRandom())
+	autoStake := make(map[string]bool)
+	rewardReceiver := make(map[string]privacy.PaymentAddress)
+	stakingTx := make(map[string]common.Hash)
+
+	copy(beaconCommittee, engine.GetBeaconCommittee())
+	for shardID, oneShardCommittee := range engine.GetShardCommittee() {
+		shardCommittee[shardID] = make([]incognitokey.CommitteePublicKey, len(oneShardCommittee))
+		copy(shardCommittee[shardID], oneShardCommittee)
+	}
+	for shardID, oneShardSubsitute := range engine.GetShardSubstitute() {
+		shardSubstitute[shardID] = make([]incognitokey.CommitteePublicKey, len(oneShardSubsitute))
+		copy(shardSubstitute[shardID], oneShardSubsitute)
+	}
+	currentEpochShardCandidate := engine.GetCandidateShardWaitingForCurrentRandom()
+	nextEpochShardCandidate := engine.GetCandidateShardWaitingForNextRandom()
+	shardCandidates := append(currentEpochShardCandidate, nextEpochShardCandidate...)
+
+	copy(shardCommonPool, shardCandidates)
+	for k, v := range engine.GetAutoStaking() {
+		autoStake[k] = v
+	}
+	for k, v := range engine.GetRewardReceiver() {
+		rewardReceiver[k] = v
+	}
+	for k, v := range engine.GetStakingTx() {
+		stakingTx[k] = v
+	}
+
+	swapRuleEnv := NewBeaconCommitteeStateEnvironmentForSwapRule(env.BeaconHeight, env.StakingV3Height)
+	swapRule := SwapRuleByEnv(swapRuleEnv)
+	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, swapRule
+}
+
+func (engine *beaconCommitteeEngineBase) UncommittedState() BeaconCommitteeState {
+	return engine.uncommittedState
+}

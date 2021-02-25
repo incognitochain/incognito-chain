@@ -98,7 +98,6 @@ CONTINUE_VERIFY:
 // var bcTmp time.Duration
 // var bcStart time.Time
 // var bcAllTime time.Duration
-
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
 	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
@@ -470,13 +469,9 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 /*
 	Update Beststate with new Block
 */
-func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconBlock, blockchain *BlockChain) (
+func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconBlock, blockchain *BlockChain) (
 	*BeaconBestState, *committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, [][]string, error) {
 	startTimeUpdateBeaconBestState := time.Now()
-	beaconBestState := NewBeaconBestState()
-	if err := beaconBestState.cloneBeaconBestStateFrom(curView); err != nil {
-		return nil, nil, nil, nil, err
-	}
 	var isBeginRandom = false
 	var isFoundRandomInstruction = false
 	Logger.log.Debugf("Start processing new block at height %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
@@ -629,8 +624,7 @@ func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardSt
 				if err != nil {
 					return err
 				}
-			}
-			if curView.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
+			} else {
 				err := curView.countMissingSignatureV2(cacheCommittees, bc, shardID, shardState)
 				if err != nil {
 					return err
@@ -921,15 +915,16 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
+	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height ||
+		beaconBlock.Header.Height == blockchain.config.ChainParams.StakingV3Height {
 		newBestState.upgradeCommitteeEngine(blockchain)
 	}
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 	blockchain.BeaconChain.multiView.AddView(newBestState)
 	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
 	storeBlock := newFinalView.GetBlock()
-
 	finalizedBlocks := []*types.BeaconBlock{}
+
 	for finalView == nil || storeBlock.GetHeight() > finalView.GetHeight() {
 		err := rawdbv2.StoreFinalizedBeaconBlockHashByIndex(batch, storeBlock.GetHeight(), *storeBlock.Hash())
 		if err != nil {

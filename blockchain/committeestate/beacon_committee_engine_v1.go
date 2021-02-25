@@ -237,3 +237,37 @@ func (b *BeaconCommitteeEngineV1) SplitReward(
 
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 }
+
+//IsSwapTime read from interface des
+func (engine BeaconCommitteeEngineV1) IsSwapTime(beaconHeight, numberOfBlockEachEpoch uint64) bool {
+	if beaconHeight%numberOfBlockEachEpoch == 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
+//Upgrade check interface method for des
+func (engine BeaconCommitteeEngineV1) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeEngine {
+	beaconCommittee, shardCommittee, shardSubstitute,
+		shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, swapRule := engine.getDataForUpgrading(env)
+
+	committeeStateV2 := NewBeaconCommitteeStateV2WithValue(
+		beaconCommittee,
+		shardCommittee,
+		shardSubstitute,
+		shardCommonPool,
+		numberOfAssignedCandidates,
+		autoStake,
+		rewardReceiver,
+		stakingTx,
+		swapRule,
+	)
+	committeeEngine := NewBeaconCommitteeEngineV2(
+		env.BeaconHeight,
+		env.BeaconHash,
+		committeeStateV2,
+	)
+	return committeeEngine
+}

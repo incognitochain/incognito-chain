@@ -41,7 +41,7 @@ type BeaconCommitteeStateEnvironment struct {
 	MissingSignaturePenalty           map[string]signaturecounter.Penalty
 	DcsMinShardCommitteeSize          int
 	DcsMaxShardCommitteeSize          int
-	BeaconStateV3Height               uint64
+	StakingV3Height                   uint64
 }
 
 type BeaconCommitteeStateHash struct {
@@ -61,10 +61,10 @@ func NewBeaconCommitteeStateEnvironmentForUpdateDB(
 	}
 }
 
-func NewBeaconCommitteeStateEnvironmentForSwapRule(currentHeight, beaconStateV3Height uint64) *BeaconCommitteeStateEnvironment {
+func NewBeaconCommitteeStateEnvironmentForSwapRule(currentHeight, stakingV3Height uint64) *BeaconCommitteeStateEnvironment {
 	return &BeaconCommitteeStateEnvironment{
-		BeaconHeight:        currentHeight,
-		BeaconStateV3Height: beaconStateV3Height,
+		BeaconHeight:    currentHeight,
+		StakingV3Height: stakingV3Height,
 	}
 }
 
@@ -73,5 +73,13 @@ func NewBeaconCommitteeStateEnvironmentForAssigningToPendingList(randomNumber in
 		RandomNumber: randomNumber,
 		AssignOffset: assignOffset,
 		BeaconHeight: beaconHeight,
+	}
+}
+
+func NewBeaconCommitteeStateEnvironmentForUpgrading(currentHeight, stakingV3Height uint64, beaconBlockHash common.Hash) *BeaconCommitteeStateEnvironment {
+	return &BeaconCommitteeStateEnvironment{
+		BeaconHeight:    currentHeight,
+		StakingV3Height: stakingV3Height,
+		BeaconHash:      beaconBlockHash,
 	}
 }

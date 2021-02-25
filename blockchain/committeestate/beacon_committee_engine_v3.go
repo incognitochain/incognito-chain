@@ -19,7 +19,7 @@ func NewBeaconCommitteeEngineV3(
 	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconHeight)
 	return &BeaconCommitteeEngineV3{
 		beaconCommitteeEngineSlashingBase: *NewBeaconCommitteeEngineSlashingBaseWithValue(
-			beaconHeight, beaconHash, &finalBeaconCommitteeStateV3.beaconCommitteeStateBase,
+			beaconHeight, beaconHash, finalBeaconCommitteeStateV3,
 		),
 	}
 }
@@ -148,7 +148,6 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 	if !returnStakingInstruction.IsEmpty() {
 		incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
 	}
-
 	return hashes, committeeChange, incurredInstructions, nil
 }
 

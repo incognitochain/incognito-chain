@@ -195,15 +195,22 @@ func (blockchain *BlockChain) initBeaconState() error {
 	var committeeEngine committeestate.BeaconCommitteeEngine
 
 	if blockchain.config.ChainParams.ConsensusV3Height == 1 {
-		committeeEngine = committeestate.
-			NewBeaconCommitteeEngineV2(1, initBlock.Header.Hash(),
-				committeestate.NewBeaconCommitteeStateV2())
+		if blockchain.config.ChainParams.StakingV3Height != 1 {
+			committeeEngine = committeestate.
+				NewBeaconCommitteeEngineV2(1, initBlock.Header.Hash(),
+					committeestate.NewBeaconCommitteeStateV2())
+		} else {
+			committeeEngine = committeestate.
+				NewBeaconCommitteeEngineV3(1, initBlock.Header.Hash(),
+					committeestate.NewBeaconCommitteeStateV3())
+		}
 	} else {
 		committeeEngine = committeestate.
 			NewBeaconCommitteeEngineV1(
 				1, initBlock.Header.Hash(),
 				committeestate.NewBeaconCommitteeStateV1())
 	}
+
 	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeeEngine)
 	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {

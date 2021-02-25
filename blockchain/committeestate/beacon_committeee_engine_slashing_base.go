@@ -13,22 +13,17 @@ type beaconCommitteeEngineSlashingBase struct {
 func NewBeaconCommitteeEngineSlashingBaseWithValue(
 	beaconHeight uint64,
 	beaconHash common.Hash,
-	finalState *beaconCommitteeStateBase) *beaconCommitteeEngineSlashingBase {
+	finalState BeaconCommitteeState) *beaconCommitteeEngineSlashingBase {
 	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconHeight)
 	return &beaconCommitteeEngineSlashingBase{
-		beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-			beaconHeight:     beaconHeight,
-			beaconHash:       beaconHash,
-			finalState:       finalState,
-			uncommittedState: NewBeaconCommitteeStateBase(),
-		},
+		beaconCommitteeEngineBase: *NewBeaconCommitteeEngineBaseWithValue(
+			beaconHeight, beaconHash, finalState,
+		),
 	}
 }
 
 func (engine *beaconCommitteeEngineSlashingBase) InitCommitteeState(env *BeaconCommitteeStateEnvironment) {
 	engine.beaconCommitteeEngineBase.InitCommitteeState(env)
-	////Declare business rules here
-	////Declare swaprule interface
 	engine.finalState.SetSwapRule(SwapRuleByEnv(env))
 }
 
@@ -116,4 +111,13 @@ func (engine *beaconCommitteeEngineSlashingBase) GenerateAllSwapShardInstruction
 
 func (engine beaconCommitteeEngineSlashingBase) NumberOfAssignedCandidates() int {
 	return engine.finalState.NumberOfAssignedCandidates()
+}
+
+//IsSwapTime read from interface des
+func (engine beaconCommitteeEngineSlashingBase) IsSwapTime(beaconHeight, numberOfBlockEachEpoch uint64) bool {
+	if beaconHeight%numberOfBlockEachEpoch == 1 {
+		return true
+	} else {
+		return false
+	}
 }

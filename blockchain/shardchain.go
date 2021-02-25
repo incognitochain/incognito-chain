@@ -320,7 +320,7 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognito
 
 	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		result = append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
-	} else if shardView.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
+	} else {
 		result, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID))
 		if err != nil {
 			return result, err

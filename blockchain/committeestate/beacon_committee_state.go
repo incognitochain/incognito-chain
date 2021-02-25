@@ -39,6 +39,10 @@ func cloneBeaconCommitteeStateFromTo(fromB, toB BeaconCommitteeState) {
 	if fromB == nil {
 		return
 	}
+
+	/*Logger.log.Infof("[dcs] fromB 0: %p \n", fromB)*/
+	//Logger.log.Infof("[dcs] toB 0: %p \n", toB)
+
 	switch fromB.Version() {
 	case SELF_SWAP_SHARD_VERSION:
 		toB.(*BeaconCommitteeStateV1).cloneFrom(*fromB.(*BeaconCommitteeStateV1))
@@ -49,6 +53,8 @@ func cloneBeaconCommitteeStateFromTo(fromB, toB BeaconCommitteeState) {
 	case STATE_TEST_VERSION:
 		toB = fromB
 	}
+	/*Logger.log.Infof("[dcs] fromB 1: %p \n", fromB)*/
+	/*Logger.log.Infof("[dcs] toB 1: %p \n", toB)*/
 }
 
 func cloneBeaconCommitteeStateFrom(state BeaconCommitteeState) BeaconCommitteeState {

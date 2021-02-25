@@ -596,7 +596,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 			}
 		}
 
-		if beaconBestState.beaconCommitteeEngine.Version() == committeestate.SLASHING_VERSION &&
+		if beaconBestState.beaconCommitteeEngine.Version() != committeestate.SELF_SWAP_SHARD_VERSION &&
 			(len(stakeInstruction.PublicKeys) != len(tempStakePublicKey)) {
 			duplicateStakePublicKeys = common.DifferentElementStrings(stakeInstruction.PublicKeys, tempStakePublicKey)
 			if len(duplicateStakePublicKeys) > 0 {

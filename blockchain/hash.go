@@ -375,7 +375,7 @@ func generateHashFromShardState(allShardState map[byte][]types.ShardState, versi
 			res += shardState.Hash.String()
 			crossShard, _ := json.Marshal(shardState.CrossShard)
 			res += string(crossShard)
-			if version == committeestate.SLASHING_VERSION {
+			if version != committeestate.SELF_SWAP_SHARD_VERSION {
 				res += shardState.ValidationData
 				res += shardState.CommitteeFromBlock.String()
 			}
