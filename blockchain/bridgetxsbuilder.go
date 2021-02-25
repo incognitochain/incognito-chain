@@ -255,7 +255,13 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 	return append(instructions, acceptedInst), nil
 }
 
-func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) buildIssuanceTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	featureStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
 	Logger.log.Info("[Centralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -299,7 +305,13 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
 
-func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	featureStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {

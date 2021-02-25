@@ -69,6 +69,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &WithDrawRewardRequest{}
 	case WithDrawRewardResponseMeta:
 		md = &WithDrawRewardResponse{}
+	case UnStakingMeta:
+		md = &UnStakingMetadata{}
 	case StopAutoStakingMeta:
 		md = &StopAutoStakingMetadata{}
 	case PDEContributionMeta:

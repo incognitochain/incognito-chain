@@ -5,30 +5,28 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
-	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
-	btcRelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-
-	"github.com/incognitochain/incognito-chain/syncker"
-
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	main2 "github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
-
 	//privacy "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	btcRelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/syncker"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -70,6 +68,8 @@ var (
 	synckerLogger          = backendLog.Logger("Syncker log ", false)
 	privacyV1Logger        = backendLog.Logger("Privacy V1 log ", false)
 	privacyV2Logger        = backendLog.Logger("Privacy V2 log ", false)
+	instructionLogger      = backendLog.Logger("Instruction log ", false)
+	committeeStateLogger   = backendLog.Logger("Committee State log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -99,7 +99,6 @@ func init() {
 	blockchain.Logger.Init(blockchainLogger)
 	consensus.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
-	main2.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)
 	//privacy.Logger.Init(privacyLogger)
 	databasemp.Logger.Init(dbmpLogger)
@@ -115,6 +114,8 @@ func init() {
 	syncker.Logger.Init(synckerLogger)
 	privacy.LoggerV1.Init(privacyV1Logger)
 	privacy.LoggerV2.Init(privacyV2Logger)
+	instruction.Logger.Init(instructionLogger)
+	committeestate.Logger.Init(committeeStateLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -144,6 +145,8 @@ var subsystemLoggers = map[string]common.Logger{
 	"DAO":               daov2Logger,
 	"BTCRELAYING":       btcRelayingLogger,
 	"SYNCKER":           synckerLogger,
+	"INST":              instructionLogger,
+	"COMS":              committeeStateLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

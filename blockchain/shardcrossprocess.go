@@ -1,165 +1,63 @@
 package blockchain
 
 import (
-	"encoding/binary"
-	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-
+	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-type CrossOutputCoin struct {
-	BlockHeight uint64
-	BlockHash   common.Hash
-	OutputCoin  []coin.Coin
+
+func CreateAllCrossShardBlock(shardBlock *types.ShardBlock, activeShards int) map[byte]*types.CrossShardBlock {
+	allCrossShard := make(map[byte]*types.CrossShardBlock)
+	if activeShards == 1 {
+		return allCrossShard
+	}
+	for i := 0; i < activeShards; i++ {
+		shardID := common.GetShardIDFromLastByte(byte(i))
+		if shardID != shardBlock.Header.ShardID {
+			crossShard, err := CreateCrossShardBlock(shardBlock, shardID)
+			if crossShard != nil {
+				Logger.log.Criticalf("Create CrossShardBlock from Shard %+v to Shard %+v: %+v \n", shardBlock.Header.ShardID, shardID, crossShard)
+			}
+			if crossShard != nil && err == nil {
+				allCrossShard[byte(i)] = crossShard
+			}
+		}
+	}
+	return allCrossShard
 }
 
-type CrossTokenPrivacyData struct {
-	BlockHeight      uint64
-	BlockHash        common.Hash
-	TokenPrivacyData []ContentCrossShardTokenPrivacyData
-}
-type CrossTransaction struct {
-	BlockHeight      uint64
-	BlockHash        common.Hash
-	TokenPrivacyData []ContentCrossShardTokenPrivacyData
-	OutputCoin       []coin.Coin
-}
-type ContentCrossShardTokenPrivacyData struct {
-	OutputCoin     []coin.Coin
-	PropertyID     common.Hash // = hash of TxCustomTokenprivacy data
-	PropertyName   string
-	PropertySymbol string
-	Type           int    // action type
-	Mintable       bool   // default false
-	Amount         uint64 // init amount
-}
-type CrossShardTokenPrivacyMetaData struct {
-	TokenID        common.Hash
-	PropertyName   string
-	PropertySymbol string
-	Type           int    // action type
-	Mintable       bool   // default false
-	Amount         uint64 // init amount
-}
-
-func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Bytes() []byte {
-	res := []byte{}
-	for _, item := range contentCrossShardTokenPrivacyData.OutputCoin {
-		res = append(res, item.Bytes()...)
-	}
-	res = append(res, contentCrossShardTokenPrivacyData.PropertyID.GetBytes()...)
-	res = append(res, []byte(contentCrossShardTokenPrivacyData.PropertyName)...)
-	res = append(res, []byte(contentCrossShardTokenPrivacyData.PropertySymbol)...)
-	typeBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(typeBytes, uint32(contentCrossShardTokenPrivacyData.Type))
-	res = append(res, typeBytes...)
-	amountBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint32(amountBytes, uint32(contentCrossShardTokenPrivacyData.Amount))
-	res = append(res, amountBytes...)
-	if contentCrossShardTokenPrivacyData.Mintable {
-		res = append(res, []byte("true")...)
-	} else {
-		res = append(res, []byte("false")...)
-	}
-	return res
-}
-func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Hash() common.Hash {
-	return common.HashH(contentCrossShardTokenPrivacyData.Bytes())
-}
-func (contentCrossShardTokenPrivacyData *ContentCrossShardTokenPrivacyData) UnmarshalJSON(data []byte) error {
-	type Alias ContentCrossShardTokenPrivacyData
-	temp := &struct {
-		OutputCoin []json.RawMessage
-		*Alias
-	}{
-		Alias: (*Alias)(contentCrossShardTokenPrivacyData),
-	}
-	if err := json.Unmarshal(data, temp); err != nil {
-		Logger.log.Error("UnmarshalJSON ContentCrossShardTokenPrivacyData", err)
-		return err
-	}
-	outputCoinList, err := coin.ParseCoinsFromBytes(temp.OutputCoin)
+func CreateCrossShardBlock(shardBlock *types.ShardBlock, shardID byte) (*types.CrossShardBlock, error) {
+	crossShard := &types.CrossShardBlock{}
+	crossOutputCoin, crossCustomTokenPrivacyData, err := types.GetCrossShardData(shardBlock.Body.Transactions, shardID)
 	if err != nil {
-		Logger.log.Error("UnmarshalJSON Cannot parse crossOutputCoins", err)
-		return err
+		return nil, errors.New("No cross Outputcoin, Cross Custom Token, Cross Custom Token Privacy")
 	}
-	contentCrossShardTokenPrivacyData.OutputCoin = outputCoinList
-	return nil
+	// Return nothing if nothing to cross
+	if len(crossOutputCoin) == 0 && len(crossCustomTokenPrivacyData) == 0 {
+		return nil, errors.New("No cross Outputcoin, Cross Custom Token, Cross Custom Token Privacy")
+	}
+	merklePathShard, merkleShardRoot := GetMerklePathCrossShard(shardBlock.Body.Transactions, shardID)
+	if merkleShardRoot != shardBlock.Header.ShardTxRoot {
+		return crossShard, fmt.Errorf("Expect Shard Tx Root To be %+v but get %+v", shardBlock.Header.ShardTxRoot, merkleShardRoot)
+	}
+	crossShard.ValidationData = shardBlock.ValidationData
+	crossShard.Header = shardBlock.Header
+	crossShard.MerklePathShard = merklePathShard
+	crossShard.CrossOutputCoin = crossOutputCoin
+	crossShard.CrossTxTokenPrivacyData = crossCustomTokenPrivacyData
+	crossShard.ToShardID = shardID
+	return crossShard, nil
 }
 
-func (crossOutputCoin CrossOutputCoin) Hash() common.Hash {
-	res := []byte{}
-	res = append(res, crossOutputCoin.BlockHash.GetBytes()...)
-	for _, coins := range crossOutputCoin.OutputCoin {
-		res = append(res, coins.Bytes()...)
-	}
-	return common.HashH(res)
-}
-func (crossOutputCoin *CrossOutputCoin) UnmarshalJSON(data []byte) error {
-	type Alias CrossOutputCoin
-	temp := &struct {
-		OutputCoin []json.RawMessage
-		*Alias
-	}{
-		Alias: (*Alias)(crossOutputCoin),
-	}
-	if err := json.Unmarshal(data, temp); err != nil {
-		Logger.log.Error("UnmarshalJSON CrossOutputCoin", err)
-		return err
-	}
-	outputCoinList, err := coin.ParseCoinsFromBytes(temp.OutputCoin)
-	if err != nil {
-		Logger.log.Error("UnmarshalJSON Cannot parse CrossOutputCoin", err)
-		return err
-	}
-	crossOutputCoin.OutputCoin = outputCoinList
-	return nil
-}
 
-func (crossTransaction CrossTransaction) Bytes() []byte {
-	res := []byte{}
-	res = append(res, crossTransaction.BlockHash.GetBytes()...)
-	for _, coins := range crossTransaction.OutputCoin {
-		res = append(res, coins.Bytes()...)
-	}
-	for _, coins := range crossTransaction.TokenPrivacyData {
-		res = append(res, coins.Bytes()...)
-	}
-	return res
-}
-func (crossTransaction CrossTransaction) Hash() common.Hash {
-	return common.HashH(crossTransaction.Bytes())
-}
-func (crossTransaction *CrossTransaction) UnmarshalJSON(data []byte) error {
-	type Alias CrossTransaction
-	temp := &struct {
-		OutputCoin []json.RawMessage
-		*Alias
-	}{
-		Alias: (*Alias)(crossTransaction),
-	}
-	if err := json.Unmarshal(data, temp); err != nil {
-		Logger.log.Error("UnmarshalJSON CrossTransaction", string(data), err)
-		return err
-	}
-	outputCoinList, err := coin.ParseCoinsFromBytes(temp.OutputCoin)
-	if err != nil {
-		Logger.log.Error("UnmarshalJSON Cannot parse CrossTransaction", err)
-		return err
-	}
-	crossTransaction.OutputCoin = outputCoinList
-	return nil
-}
 
-/*
-	Verify CrossShard Block
-	- Agg Signature
-	- MerklePath
-*/
-func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(blockchain *BlockChain, committees []incognitokey.CommitteePublicKey) error {
+// VerifyCrossShardBlock Verify CrossShard Block
+//- Agg Signature
+//- MerklePath
+func VerifyCrossShardBlock(crossShardBlock *types.CrossShardBlock, blockchain *BlockChain, committees []incognitokey.CommitteePublicKey) error {
 	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(crossShardBlock, committees); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
@@ -167,4 +65,23 @@ func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(blockchain *BlockC
 		return NewBlockChainError(HashError, errors.New("Fail to verify Merkle Path Shard"))
 	}
 	return nil
+}
+
+// VerifyCrossShardBlockUTXO Calculate Final Hash as Hash of:
+//	1. CrossTransactionFinalHash
+//	2. TxTokenDataVoutFinalHash
+//	3. CrossTxTokenPrivacyData
+// These hashes will be calculated as comment in getCrossShardDataHash function
+func VerifyCrossShardBlockUTXO(block *types.CrossShardBlock, merklePathShard []common.Hash) bool {
+	var outputCoinHash common.Hash
+	var txTokenDataHash common.Hash
+	var txTokenPrivacyDataHash common.Hash
+	outCoins := block.CrossOutputCoin
+	outputCoinHash = calHashOutCoinCrossShard(outCoins)
+	txTokenDataHash = calHashTxTokenDataHashList()
+	txTokenPrivacyDataList := block.CrossTxTokenPrivacyData
+	txTokenPrivacyDataHash = calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList)
+	tmpByte := append(append(outputCoinHash.GetBytes(), txTokenDataHash.GetBytes()...), txTokenPrivacyDataHash.GetBytes()...)
+	finalHash := common.HashH(tmpByte)
+	return Merkle{}.VerifyMerkleRootFromMerklePath(finalHash, merklePathShard, block.Header.ShardTxRoot, block.ToShardID)
 }

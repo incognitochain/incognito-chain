@@ -124,6 +124,9 @@ const (
 	getCommitteeState       = "getcommitteestate"
 	getRewardAmountByEpoch  = "getrewardamountbyepoch"
 	convertPaymentAddress  = "convertpaymentaddress"
+	getCommitteeStateByShard   = "getcommitteestatebyshard"
+	getSlashingCommittee       = "getslashingcommittee"
+	getSlashingCommitteeDetail = "getslashingcommitteedetail"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
@@ -198,10 +201,6 @@ const (
 	getRoleByValidatorKey       = "getrolebyvalidatorkey"
 	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
-
-	// slash
-	getProducersBlackList       = "getproducersblacklist"
-	getProducersBlackListDetail = "getproducersblacklistdetail"
 
 	// pde
 	getPDEState                                = "getpdestate"
@@ -305,6 +304,9 @@ const (
 
 	//validator state
 	getValKeyState = "getvalkeystate"
+
+	// stake
+	unstake = "createunstaketransaction"
 )
 
 const (
@@ -324,6 +326,7 @@ const (
 	subcribeMempoolInfo                         = "subcribemempoolinfo"
 	subcribeShardBestState                      = "subcribeshardbeststate"
 	subcribeBeaconBestState                     = "subcribebeaconbeststate"
+	subcribeBeaconBestStateFromMem              = "subcribebeaconbeststatefrommem"
 	subcribeBeaconPoolBeststate                 = "subcribebeaconpoolbeststate"
 	subcribeShardPoolBeststate                  = "subcribeshardpoolbeststate"
 )

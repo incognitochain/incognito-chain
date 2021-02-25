@@ -1,7 +1,10 @@
 package blockchain
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -53,21 +56,26 @@ type Params struct {
 	NumberOfFixedBlockValidators     int
 	StakingAmountShard               uint64
 	ActiveShards                     int
-	GenesisBeaconBlock               *BeaconBlock // GenesisBlock defines the first block of the chain.
-	GenesisShardBlock                *ShardBlock  // GenesisBlock defines the first block of the chain.
+	GenesisBeaconBlock               *types.BeaconBlock // GenesisBlock defines the first block of the chain.
+	GenesisShardBlock                *types.ShardBlock  // GenesisBlock defines the first block of the chain.
 	BasicReward                      uint64
 	Epoch                            uint64
+	EpochV2                          uint64
+	EpochV2BreakPoint                uint64
 	RandomTime                       uint64
+	RandomTimeV2                     uint64
 	SlashLevels                      []SlashLevel
 	EthContractAddressStr            string // smart contract of ETH for bridge
 	Offset                           int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
 	SwapOffset                       int    // is used for case that good producers length is equal to max committee size
+	MaxSwapOrAssign                  int
 	IncognitoDAOAddress              string
 	CentralizedWebsitePaymentAddress string //centralized website's pubkey
 	CheckForce                       bool   // true on testnet and false on mainnet
 	ChainVersion                     string
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
+	ConsensusV3Height                uint64
 	Timeslot                         uint64
 	BeaconHeightBreakPointBurnAddr   uint64
 	BNBRelayingHeaderChainID         string
@@ -85,6 +93,7 @@ type Params struct {
 	ReplaceStakingTxHeight           uint64
 	ETHRemoveBridgeSigEpoch          uint64
 	BCHeightBreakPointNewZKP         uint64
+	MissingSignaturePenalty          []signaturecounter.Penalty
 	PortalETHContractAddressStr      string // smart contract of ETH for portal
 	BCHeightBreakPointPortalV3       uint64
 	BCHeightBreakPointPrivacyV2      uint64
@@ -227,6 +236,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               16930,
+		ConsensusV3Height:              1e12,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
@@ -262,7 +272,9 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:     21920,
-
+		EpochV2:                     TestnetEpochV2,
+		EpochV2BreakPoint:           TestnetEpochV2BreakPoint,
+		RandomTimeV2:                TestnetRandomTimeV2,
 		PortalETHContractAddressStr: "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address
 		BCHeightBreakPointPortalV3:  30158,
 		BCHeightBreakPointPrivacyV2:  30, //TODO: change this value when deployed testnet
@@ -280,8 +292,8 @@ func SetupParam() {
 		SelectShardNodeSerializedPubkeyV2:           SelectShardNodeTestnetSerializedPubkeyV2,
 		SelectShardNodeSerializedPaymentAddressV2:   SelectShardNodeTestnetSerializedPaymentAddressV2,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
-		//InitialIncognito: IntegrationTestInitPRV,
-		InitialIncognito:   TestnetInitPRV,
+		InitialIncognito: IntegrationTestInitPRV,
+		//InitialIncognito:   TestnetInitPRV,
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTest2Param = Params{
@@ -320,6 +332,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
+		ConsensusV3Height:              1e12,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
@@ -354,6 +367,9 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    1148608, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:     2085,
+		EpochV2:                     Testnet2EpochV2,
+		EpochV2BreakPoint:           Testnet2EpochV2BreakPoint,
+		RandomTimeV2:                Testnet2RandomTimeV2,
 		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46",   // todo: update sc address
 		BCHeightBreakPointPortalV3:  8974, // todo: should update before deploying
 		BCHeightBreakPointPrivacyV2:  30, //TODO: change this value when deployed testnet2
@@ -409,6 +425,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
+		ConsensusV3Height:              1e12,
 		Timeslot:                       40,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
@@ -443,6 +460,9 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    934858,
 		ETHRemoveBridgeSigEpoch:     1973,
+		EpochV2:                     MainnetEpochV2,
+		EpochV2BreakPoint:           MainnetEpochV2BreakPoint,
+		RandomTimeV2:                MainnetRandomTimeV2,
 		PortalETHContractAddressStr: "", // todo: update sc address
 		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
 		BCHeightBreakPointPrivacyV2:  1000000, //TODO: change this value when deployed testnet

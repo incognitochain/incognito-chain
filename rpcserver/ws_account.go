@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -51,7 +52,7 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 		select {
 		case msg := <-subChan:
 			{
-				shardBlock, ok := msg.Value.(*blockchain.ShardBlock)
+				shardBlock, ok := msg.Value.(*types.ShardBlock)
 				if !ok {
 					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BeaconBlock, have %+v", reflect.TypeOf(msg.Value))
 					continue
@@ -140,7 +141,7 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 		select {
 		case msg := <-subChan:
 			{
-				shardBlock, ok := msg.Value.(*blockchain.ShardBlock)
+				shardBlock, ok := msg.Value.(*types.ShardBlock)
 				if !ok {
 					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BeaconBlock, have %+v", reflect.TypeOf(msg.Value))
 					continue

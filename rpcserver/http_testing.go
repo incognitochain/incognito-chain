@@ -9,6 +9,10 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/wallet"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -93,7 +97,7 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
 	}
 
-	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _ := statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
+	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(stateDB, shardIDs)
 	currentValidatorStr := make(map[int][]string)
 	for shardID, v := range currentValidator {
 		tempV, _ := incognitokey.CommitteeKeyListToString(v)
@@ -106,13 +110,116 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 	}
 	nextEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
 	currentEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
+	tempStakingTx := make(map[string]string)
+	for k, v := range stakingTx {
+		tempStakingTx[k] = v.String()
+	}
+	tempRewardReceiver := make(map[string]string)
+	for k, v := range rewardReceivers {
+		wl := wallet.KeyWallet{}
+		wl.KeySet.PaymentAddress = v
+		paymentAddress := wl.Base58CheckSerialize(wallet.PaymentAddressType)
+		tempRewardReceiver[k] = paymentAddress
+	}
 	return map[string]interface{}{
 		"root":             beaconConsensusStateRootHash.ConsensusStateDBRootHash,
 		"committee":        currentValidatorStr,
 		"substitute":       substituteValidatorStr,
 		"nextCandidate":    nextEpochShardCandidateStr,
 		"currentCandidate": currentEpochShardCandidateStr,
+		"rewardReceivers":  tempRewardReceiver,
+		"autoStaking":      autoStaking,
+		"stakingTx":        tempStakingTx,
 	}, nil
+}
+
+func (httpServer *HttpServer) handleGetCommitteeStateByShard(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	shardID := uint64(arrayParams[0].(float64))
+	tempHash := arrayParams[1].(string)
+
+	hash, err := common.Hash{}.NewHashFromStr(tempHash)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	shardRootHash, err := blockchain.GetShardRootsHashByBlockHash(
+		httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID)),
+		byte(shardID),
+		*hash,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID))))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	committees := statedb.GetOneShardCommittee(stateDB, byte(shardID))
+	resCommittees := make([]string, len(committees))
+	for i := 0; i < len(resCommittees); i++ {
+		key, _ := committees[i].ToBase58()
+		resCommittees[i] = key
+	}
+	substitutes := statedb.GetOneShardSubstituteValidator(stateDB, byte(shardID))
+	resSubstitutes := make([]string, len(substitutes))
+	for i := 0; i < len(resSubstitutes); i++ {
+		key, _ := substitutes[i].ToBase58()
+		resSubstitutes[i] = key
+	}
+
+	return map[string]interface{}{
+		"root":       shardRootHash.ConsensusStateDBRootHash,
+		"shardID":    shardID,
+		"committee":  resCommittees,
+		"substitute": resSubstitutes,
+	}, nil
+}
+
+func (httpServer *HttpServer) handleGetSlashingCommittee(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Number Of Params"))
+	}
+	epoch := uint64(arrayParams[0].(float64))
+	if epoch < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Epoch Value"))
+	}
+	beaconBestState := httpServer.blockService.BlockChain.GetBeaconBestState()
+	if epoch >= beaconBestState.Epoch {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Epoch Value"+
+			"expect epoch from %+v to %+v", 1, beaconBestState.Epoch-1))
+	}
+	slashingCommittee := statedb.GetSlashingCommittee(beaconBestState.GetBeaconSlashStateDB(), epoch)
+	return slashingCommittee, nil
+}
+
+func (httpServer *HttpServer) handleGetSlashingCommitteeDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Number Of Params"))
+	}
+	epoch := uint64(arrayParams[0].(float64))
+	if epoch < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Epoch Value"))
+	}
+	beaconBestState := httpServer.blockService.BlockChain.GetBeaconBestState()
+	if epoch >= beaconBestState.Epoch {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Epoch Value"+
+			"expect epoch from %+v to %+v", 1, beaconBestState.Epoch-1))
+	}
+	slashingCommittees := statedb.GetSlashingCommittee(beaconBestState.GetBeaconSlashStateDB(), epoch)
+	slashingCommitteeDetail := make(map[byte][]incognitokey.CommitteeKeyString)
+	for shardID, slashingCommittee := range slashingCommittees {
+		res, err := incognitokey.CommitteeBase58KeyListToStruct(slashingCommittee)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		slashingCommitteeDetail[shardID] = incognitokey.CommitteeKeyListToStringList(res)
+	}
+	return slashingCommitteeDetail, nil
 }
 
 func (httpServer *HttpServer) handleGetRewardAmountByEpoch(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

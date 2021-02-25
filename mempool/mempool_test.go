@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"io/ioutil"
 	"log"
 	"math"
@@ -133,8 +134,8 @@ var _ = func() (_ struct{}) {
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
 		bc.BestState.Shard[shardID] = &blockchain.ShardBestState{
-			BestBlock: &blockchain.ShardBlock{
-				Header: blockchain.ShardHeader{
+			BestBlock: &types.ShardBlock{
+				Header: types.ShardHeader{
 					Height: 1,
 				},
 			},
@@ -160,9 +161,9 @@ var _ = func() (_ struct{}) {
 		txs := initTx(strconv.Itoa(maxAmount), privateKey, db)
 		transactions = append(transactions, txs...)
 	}
-	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&blockchain.ShardBlock{
-		Header: blockchain.ShardHeader{ShardID: 0},
-		Body: blockchain.ShardBody{
+	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&types.ShardBlock{
+		Header: types.ShardHeader{ShardID: 0},
+		Body: types.ShardBody{
 			Transactions: transactions,
 		},
 	}, &[]incdb.BatchData{})
@@ -171,9 +172,9 @@ var _ = func() (_ struct{}) {
 		txs := initTx(strconv.Itoa(maxAmount), privateKey, db)
 		transactions = append(transactions, txs...)
 	}
-	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&blockchain.ShardBlock{
-		Header: blockchain.ShardHeader{ShardID: 0},
-		Body: blockchain.ShardBody{
+	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&types.ShardBlock{
+		Header: types.ShardHeader{ShardID: 0},
+		Body: types.ShardBody{
 			Transactions: transactions,
 		},
 	}, &[]incdb.BatchData{})
@@ -940,9 +941,9 @@ func TestTxPoolValidateTransaction(t *testing.T) {
 	}
 	// check Condition 6: validate by it self
 	ResetMempoolTest()
-	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&blockchain.ShardBlock{
-		Header: blockchain.ShardHeader{ShardID: 0},
-		Body: blockchain.ShardBody{
+	err = tp.config.BlockChain.CreateAndSaveTxViewPointFromBlock(&types.ShardBlock{
+		Header: types.ShardHeader{ShardID: 0},
+		Body: types.ShardBody{
 			Transactions: []metadata.Transaction{tx1},
 		},
 	}, &[]incdb.BatchData{})

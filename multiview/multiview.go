@@ -2,9 +2,12 @@ package multiview
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/incdb"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"time"
 )
 
 type View interface {
@@ -12,8 +15,11 @@ type View interface {
 	GetPreviousHash() *common.Hash
 	GetHeight() uint64
 	GetCommittee() []incognitokey.CommitteePublicKey
+	GetPreviousBlockCommittee(db incdb.Database) ([]incognitokey.CommitteePublicKey, error)
+	CommitteeEngineVersion() uint
+	GetBlock() types.BlockInterface
+	GetBeaconHeight() uint64
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
-	GetBlock() common.BlockInterface
 }
 
 type MultiView struct {
