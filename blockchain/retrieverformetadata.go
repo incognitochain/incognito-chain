@@ -68,7 +68,8 @@ func (blockchain *BlockChain) IsPortalToken(beaconHeight uint64, tokenIDStr stri
 }
 
 func (blockchain *BlockChain) IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error) {
-	portalToken, ok := blockchain.GetPortalParamsV3(beaconHeight).PortalTokens[tokenIDStr]
+	portalTokens := blockchain.GetPortalParamsV3(beaconHeight).PortalTokens
+	portalToken, ok := portalTokens[tokenIDStr]
 	if !ok || portalToken == nil {
 		return false, errors.New("Portal token ID is invalid")
 	}
@@ -198,7 +199,7 @@ func (blockchain *BlockChain) ValidatePortalRemoteAddresses(remoteAddresses map[
 		if len(remoteAddr) == 0 {
 			return false, errors.New("Remote address is invalid")
 		}
-		isValid, err := blockchain.IsValidPortalRemoteAddress(remoteAddr, tokenID, beaconHeight)
+		isValid, err := blockchain.IsValidPortalRemoteAddress(tokenID, remoteAddr, beaconHeight)
 		if !isValid || err != nil {
 			return false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v - Error %v", remoteAddr, tokenID, err)
 		}

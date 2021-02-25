@@ -60,8 +60,9 @@ func (blockchain *BlockChain) handlePortalInsts(
 // Beacon process for portal protocol
 func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
 	// Note: should comment this code if you need to create local chain.
+	isSkipPortalV3Ints := false
 	if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {
-		return nil
+		isSkipPortalV3Ints = true
 	}
 	beaconHeight := block.Header.Height - 1
 	relayingState, err := blockchain.InitRelayingHeaderChainStateFromDB()
@@ -74,7 +75,7 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 	epoch := blockchain.config.ChainParams.Epoch
 
 	err = portal.ProcessPortalInsts(
-		portalStateDB, relayingState, portalParams, beaconHeight, block.Body.Instructions, pm, epoch)
+		portalStateDB, relayingState, portalParams, beaconHeight, block.Body.Instructions, pm, epoch, isSkipPortalV3Ints)
 	if err != nil {
 		Logger.log.Error(err)
 	}
