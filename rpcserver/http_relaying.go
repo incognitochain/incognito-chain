@@ -14,6 +14,11 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
+func (httpServer *HttpServer) isPortalRelayingRPC(methodName string) bool {
+	result, _ := common.SliceExists(PortalRelayingRPCs, methodName)
+	return result
+}
+
 func (httpServer *HttpServer) handleCreateRawTxWithRelayingBTCHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.handleCreateRawTxWithRelayingHeader(
 		metadata.RelayingBTCHeaderMeta,

@@ -235,6 +235,13 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	if uint64(len(tp.pool)) >= tp.config.MaxTx {
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
+	if tx.GetMetadata() != nil {
+		isFeatureFlag, isEnable := tp.checkEnableFeatureFlagMetadata(tx.GetMetadataType())
+		if isFeatureFlag && !isEnable {
+			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("This tx %v with metadata %v is disable", tx.Hash().String(), tx.GetMetadataType()))
+		}
+	}
+
 	if tx.GetType() == common.TxReturnStakingType{
 		return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", tx.Hash().String()))
 	}
@@ -1111,6 +1118,17 @@ func (tp *TxPool) calPoolSize() uint64 {
 		totalSize += size
 	}
 	return totalSize
+}
+
+func (tp *TxPool) checkEnableFeatureFlagMetadata(metaType int) (bool, bool) {
+	enableFeatureFlagParams := tp.config.BlockChain.GetConfig().ChainParams.EnableFeatureFlags
+
+	if metadata.IsPortalRelayingMetaType(metaType) {
+		return true, enableFeatureFlagParams[blockchain.PortalRelayingFlag]
+	} else if metadata.IsPortalMetaTypeV3(metaType) {
+		return true, enableFeatureFlagParams[blockchain.PortalV3Flag]
+	}
+	return false, false
 }
 
 // ----------- transaction.MempoolRetriever's implementation -----------------

@@ -80,6 +80,10 @@ const (
 	MainnetBNBFullNodePort     = "443"
 
 	MainnetPortalFeeder = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
+
+	// Enable Feature Flag
+	MainnetEnablePortalRelaying = true
+	MainnetEnablePortalV3       = false
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -137,6 +141,10 @@ const (
 	TestnetBNBFullNodeProtocol = "https"
 	TestnetBNBFullNodePort     = "443"
 	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+
+	// Enable Feature Flag
+	TestnetEnablePortalRelaying = true
+	TestnetEnablePortalV3       = true
 )
 
 // CONSTANT for network TESTNET-2
@@ -179,6 +187,10 @@ const (
 	Testnet2BNBFullNodeProtocol = "https"
 	Testnet2BNBFullNodePort     = "443"
 	Testnet2PortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+
+	// Enable Feature Flag
+	Testnet2EnablePortalRelaying = true
+	Testnet2EnablePortalV3       = false
 )
 
 // VARIABLE for testnet
@@ -337,4 +349,10 @@ var (
 
 const (
 	Duration = 1000000
+)
+
+/* ================ Feature Flags ================ */
+const (
+	PortalRelayingFlag = 0
+	PortalV3Flag       = 1
 )

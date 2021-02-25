@@ -15,6 +15,11 @@ import (
 	"strings"
 )
 
+func (httpServer *HttpServer) isPortalV3RPC(methodName string) bool {
+	result, _ := common.SliceExists(PortalV3RPCs, methodName)
+	return result
+}
+
 /*
 ====== Portal state
 */

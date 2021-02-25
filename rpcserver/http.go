@@ -310,7 +310,14 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 				}
 			}
 			if command != nil {
-				result, jsonErr = command(httpServer, request.Params, closeChan)
+				// check feature flags
+				isFeatureFlag, isEnable := httpServer.checkEnableFeatureFlagRPC(request.Method)
+				if isFeatureFlag && !isEnable {
+					result = nil
+					jsonErr = rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Method is disabled on this version: "+request.Method))
+				} else {
+					result, jsonErr = command(httpServer, request.Params, closeChan)
+				}
 			} else {
 				jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, errors.New("Method not found: "+request.Method))
 			}
@@ -641,4 +648,17 @@ func (httpServer *HttpServer) GetShardChainDatabase(shardID byte) incdb.Database
 
 func (httpServer *HttpServer) GetBlockchain() *blockchain.BlockChain {
 	return httpServer.config.BlockChain
+}
+
+// checkEnableFeatureFlagRPC checks methodName is belong to any featureFlag or not: the first boolean result
+// and checks featureFlag is enabled or not: the second boolean result
+func (httpServer *HttpServer) checkEnableFeatureFlagRPC(methodName string) (bool, bool) {
+	enableFeatureFlagParams := httpServer.GetBlockchain().GetConfig().ChainParams.EnableFeatureFlags
+
+	if httpServer.isPortalRelayingRPC(methodName) {
+		return true, enableFeatureFlagParams[blockchain.PortalRelayingFlag]
+	} else if httpServer.isPortalV3RPC(methodName) {
+		return true, enableFeatureFlagParams[blockchain.PortalV3Flag]
+	}
+	return false, false
 }

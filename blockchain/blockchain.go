@@ -741,3 +741,7 @@ func (s *BlockChain) RemoveRelayShard(sid int) {
 	s.config.relayShardLck.Unlock()
 	return
 }
+
+func (blockchain *BlockChain) IsEnableFeature(featureFlag int) bool {
+	return blockchain.config.ChainParams.EnableFeatureFlags[featureFlag]
+}

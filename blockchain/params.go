@@ -15,6 +15,7 @@ type SlashLevel struct {
 	MinRange        uint8
 	PunishedEpoches uint8
 }
+
 /*
 Params defines a network by its component. These component may be used by Applications
 to differentiate network as well as addresses and keys for one network
@@ -61,6 +62,7 @@ type Params struct {
 	ETHRemoveBridgeSigEpoch          uint64
 	BCHeightBreakPointNewZKP         uint64
 	BCHeightBreakPointPortalV3       uint64
+	EnableFeatureFlags               map[int]bool
 }
 
 type GenesisParams struct {
@@ -192,7 +194,7 @@ func SetupParam() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -209,39 +211,43 @@ func SetupParam() {
 					TimeOutWaitingPortingRequest:         15 * time.Minute,
 					TimeOutWaitingRedeemRequest:          10 * time.Minute,
 					MaxPercentLiquidatedCollateralAmount: 105,
-					MaxPercentCustodianRewards:     10, // todo: need to be updated before deploying
-					MinPercentCustodianRewards:     1,
-					MinLockCollateralAmountInEpoch: 10000 * 1e9, // 10000 usd
-					MinPercentLockedCollateral:     150,
-					TP120:                          120,
-					TP130:                          130,
-					MinPercentPortingFee:           0.01,
-					MinPercentRedeemFee:            0.01,
-					SupportedCollateralTokens:      getSupportedPortalCollateralsTestnet(), // todo: need to be updated before deploying
-					MinPortalFee:                   100,
-					PortalTokens:                   initPortalTokensV3ForTestNet(),
-					PortalFeederAddress:            TestnetPortalFeeder,
-					PortalETHContractAddressStr:    "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address,
-					MinUnlockOverRateCollaterals:   25,
+					MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
+					MinPercentCustodianRewards:           1,
+					MinLockCollateralAmountInEpoch:       10000 * 1e9, // 10000 usd
+					MinPercentLockedCollateral:           150,
+					TP120:                                120,
+					TP130:                                130,
+					MinPercentPortingFee:                 0.01,
+					MinPercentRedeemFee:                  0.01,
+					SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(), // todo: need to be updated before deploying
+					MinPortalFee:                         100,
+					PortalTokens:                         initPortalTokensV3ForTestNet(),
+					PortalFeederAddress:                  TestnetPortalFeeder,
+					PortalETHContractAddressStr:          "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address,
+					MinUnlockOverRateCollaterals:         25,
 				},
 			},
 			RelayingParam: portalrelaying.RelayingParams{
-				BNBRelayingHeaderChainID:       TestnetBNBChainID,
-				BTCRelayingHeaderChainID:       TestnetBTCChainID,
-				BTCDataFolderName:              TestnetBTCDataFolderName,
-				BNBFullNodeProtocol:            TestnetBNBFullNodeProtocol,
-				BNBFullNodeHost:                TestnetBNBFullNodeHost,
-				BNBFullNodePort:                TestnetBNBFullNodePort,
+				BNBRelayingHeaderChainID: TestnetBNBChainID,
+				BTCRelayingHeaderChainID: TestnetBTCChainID,
+				BTCDataFolderName:        TestnetBTCDataFolderName,
+				BNBFullNodeProtocol:      TestnetBNBFullNodeProtocol,
+				BNBFullNodeHost:          TestnetBNBFullNodeHost,
+				BNBFullNodePort:          TestnetBNBFullNodePort,
 			},
 		},
-		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:      1,
-		IsBackup:                    false,
-		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
-		ETHRemoveBridgeSigEpoch:     21920,
+		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    1,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  2300000, //TODO: change this value when deployed testnet
+		ETHRemoveBridgeSigEpoch:   21920,
 
-		BCHeightBreakPointPortalV3:  30158,
+		BCHeightBreakPointPortalV3: 30158,
+		EnableFeatureFlags: map[int]bool{
+			PortalV3Flag:       TestnetEnablePortalV3,
+			PortalRelayingFlag: TestnetEnablePortalRelaying,
+		},
 	}
 	// END TESTNET
 
@@ -288,7 +294,7 @@ func SetupParam() {
 		EthContractAddressStr:            Testnet2ETHContractAddressStr,
 		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -305,38 +311,43 @@ func SetupParam() {
 					TimeOutWaitingPortingRequest:         15 * time.Minute,
 					TimeOutWaitingRedeemRequest:          10 * time.Minute,
 					MaxPercentLiquidatedCollateralAmount: 105,
-					MaxPercentCustodianRewards:     10, // todo: need to be updated before deploying
-					MinPercentCustodianRewards:     1,
-					MinLockCollateralAmountInEpoch: 10000 * 1e9, // 10000 usd
-					MinPercentLockedCollateral:     150,
-					TP120:                          120,
-					TP130:                          130,
-					MinPercentPortingFee:           0.01,
-					MinPercentRedeemFee:            0.01,
-					SupportedCollateralTokens:      getSupportedPortalCollateralsTestnet2(), // todo: need to be updated before deploying
-					MinPortalFee:                   100,
-					PortalTokens:                   initPortalTokensV3ForTestNet(),
-					PortalFeederAddress:            Testnet2PortalFeeder,
-					PortalETHContractAddressStr:    "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46", // todo: update sc address,
-					MinUnlockOverRateCollaterals:   25,
+					MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
+					MinPercentCustodianRewards:           1,
+					MinLockCollateralAmountInEpoch:       10000 * 1e9, // 10000 usd
+					MinPercentLockedCollateral:           150,
+					TP120:                                120,
+					TP130:                                130,
+					MinPercentPortingFee:                 0.01,
+					MinPercentRedeemFee:                  0.01,
+					SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet2(), // todo: need to be updated before deploying
+					MinPortalFee:                         100,
+					PortalTokens:                         initPortalTokensV3ForTestNet(),
+					PortalFeederAddress:                  Testnet2PortalFeeder,
+					PortalETHContractAddressStr:          "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46", // todo: update sc address,
+					MinUnlockOverRateCollaterals:         25,
 				},
 			},
 			RelayingParam: portalrelaying.RelayingParams{
-				BNBRelayingHeaderChainID:       Testnet2BNBChainID,
-				BTCRelayingHeaderChainID:       Testnet2BTCChainID,
-				BTCDataFolderName:              Testnet2BTCDataFolderName,
-				BNBFullNodeProtocol:            Testnet2BNBFullNodeProtocol,
-				BNBFullNodeHost:                Testnet2BNBFullNodeHost,
-				BNBFullNodePort:                Testnet2BNBFullNodePort,
+				BNBRelayingHeaderChainID: Testnet2BNBChainID,
+				BTCRelayingHeaderChainID: Testnet2BTCChainID,
+				BTCDataFolderName:        Testnet2BTCDataFolderName,
+				BNBFullNodeProtocol:      Testnet2BNBFullNodeProtocol,
+				BNBFullNodeHost:          Testnet2BNBFullNodeHost,
+				BNBFullNodePort:          Testnet2BNBFullNodePort,
 			},
 		},
-		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:      1,
-		IsBackup:                    false,
-		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    1148608, //TODO: change this value when deployed testnet2
-		ETHRemoveBridgeSigEpoch:     2085,
-		BCHeightBreakPointPortalV3:  1328816,
+		EpochBreakPointSwapNewKey:  TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:     1,
+		IsBackup:                   false,
+		PreloadAddress:             "",
+		BCHeightBreakPointNewZKP:   1148608, //TODO: change this value when deployed testnet2
+		ETHRemoveBridgeSigEpoch:    2085,
+		BCHeightBreakPointPortalV3: 1328816,
+
+		EnableFeatureFlags: map[int]bool{
+			PortalV3Flag:       Testnet2EnablePortalV3,
+			PortalRelayingFlag: Testnet2EnablePortalRelaying,
+		},
 	}
 	// END TESTNET-2
 
@@ -381,7 +392,7 @@ func SetupParam() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -398,38 +409,43 @@ func SetupParam() {
 					TimeOutWaitingPortingRequest:         24 * time.Hour,
 					TimeOutWaitingRedeemRequest:          15 * time.Minute,
 					MaxPercentLiquidatedCollateralAmount: 120,
-					MaxPercentCustodianRewards:     20, // todo: need to be updated before deploying
-					MinPercentCustodianRewards:     1,
-					MinLockCollateralAmountInEpoch: 35000 * 1e9, // 35000 usd = 350 * 100
-					MinPercentLockedCollateral:     200,
-					TP120:                          120,
-					TP130:                          130,
-					MinPercentPortingFee:           0.01,
-					MinPercentRedeemFee:            0.01,
-					SupportedCollateralTokens:      getSupportedPortalCollateralsMainnet(), // todo: need to be updated before deploying
-					MinPortalFee:                   100,
-					PortalTokens:                   initPortalTokensV3ForMainNet(),
-					PortalFeederAddress:            MainnetPortalFeeder,
-					PortalETHContractAddressStr:    "", // todo: update sc address,
-					MinUnlockOverRateCollaterals:   25,
+					MaxPercentCustodianRewards:           20, // todo: need to be updated before deploying
+					MinPercentCustodianRewards:           1,
+					MinLockCollateralAmountInEpoch:       35000 * 1e9, // 35000 usd = 350 * 100
+					MinPercentLockedCollateral:           200,
+					TP120:                                120,
+					TP130:                                130,
+					MinPercentPortingFee:                 0.01,
+					MinPercentRedeemFee:                  0.01,
+					SupportedCollateralTokens:            getSupportedPortalCollateralsMainnet(), // todo: need to be updated before deploying
+					MinPortalFee:                         100,
+					PortalTokens:                         initPortalTokensV3ForMainNet(),
+					PortalFeederAddress:                  MainnetPortalFeeder,
+					PortalETHContractAddressStr:          "", // todo: update sc address,
+					MinUnlockOverRateCollaterals:         25,
 				},
 			},
 			RelayingParam: portalrelaying.RelayingParams{
-				BNBRelayingHeaderChainID:       MainnetBNBChainID,
-				BTCRelayingHeaderChainID:       MainnetBTCChainID,
-				BTCDataFolderName:              MainnetBTCDataFolderName,
-				BNBFullNodeProtocol:            MainnetBNBFullNodeProtocol,
-				BNBFullNodeHost:                MainnetBNBFullNodeHost,
-				BNBFullNodePort:                MainnetBNBFullNodePort,
+				BNBRelayingHeaderChainID: MainnetBNBChainID,
+				BTCRelayingHeaderChainID: MainnetBTCChainID,
+				BTCDataFolderName:        MainnetBTCDataFolderName,
+				BNBFullNodeProtocol:      MainnetBNBFullNodeProtocol,
+				BNBFullNodeHost:          MainnetBNBFullNodeHost,
+				BNBFullNodePort:          MainnetBNBFullNodePort,
 			},
 		},
-		EpochBreakPointSwapNewKey:   MainnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:      559380,
-		IsBackup:                    false,
-		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    934858,
-		ETHRemoveBridgeSigEpoch:     1973,
-		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
+		EpochBreakPointSwapNewKey:  MainnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:     559380,
+		IsBackup:                   false,
+		PreloadAddress:             "",
+		BCHeightBreakPointNewZKP:   934858,
+		ETHRemoveBridgeSigEpoch:    1973,
+		BCHeightBreakPointPortalV3: 40, // todo: should update before deploying
+
+		EnableFeatureFlags: map[int]bool{
+			PortalV3Flag:       MainnetEnablePortalV3,
+			PortalRelayingFlag: MainnetEnablePortalRelaying,
+		},
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
