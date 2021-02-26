@@ -9,8 +9,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+// CACommitmentScheme defines the Pedersen Commitment Scheme used for Confidential Asset feature.
 var CACommitmentScheme operation.PedersenCommitment = CopyPedersenCommitmentScheme(operation.PedCom)
 
+// CopyPedersenCommitmentScheme is called upon package initialization to make a clone of generators.
 func CopyPedersenCommitmentScheme(sch operation.PedersenCommitment) operation.PedersenCommitment{
 	var result operation.PedersenCommitment
 	var generators []*operation.Point
@@ -21,6 +23,8 @@ func CopyPedersenCommitmentScheme(sch operation.PedersenCommitment) operation.Pe
 	return result
 }
 
+// GetFirstAssetTag is a helper that returns the asset tag field of the first coin from the input.
+// That will be used as base when proving.
 func GetFirstAssetTag(coins []*coin.CoinV2) (*operation.Point,error){
 	if coins==nil || len(coins)==0{
 		return nil, errors.New("Cannot get asset tag from empty input")
@@ -32,6 +36,7 @@ func GetFirstAssetTag(coins []*coin.CoinV2) (*operation.Point,error){
 	return result, nil
 }
 
+// ProveUsingBase runs like the Bulletproof Prove function, except it sets a Pederson base point before proving.
 func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*AggregatedRangeProof, error) {
 	CACommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
 	proof := new(AggregatedRangeProof)
@@ -204,6 +209,7 @@ func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*
 	return proof, nil
 }
 
+// VerifyUsingBase runs like the Bulletproof Verify function, except it sets a Pederson base point before verifying.
 func (proof AggregatedRangeProof) VerifyUsingBase(anAssetTag *operation.Point) (bool, error) {
 	CACommitmentScheme.G[operation.PedersenValueIndex] = anAssetTag
 	numValue := len(proof.cmsValue)
@@ -540,6 +546,12 @@ func (proof AggregatedRangeProof) VerifyFasterUsingBase(anAssetTag *operation.Po
 // 	return true, nil, -1
 // }
 
+// TransformWitnessToCAWitness does base transformation.
+// Our Bulletproof(G_r) scheme is parameterized by a base G_r.
+// PRV transfers' Bulletproofs use a fixed N.U.M.S point for G_r.
+//
+// Confidential Asset transfers use G_r = G_at, which is a blinded asset tag.
+// This function will return a suitable witness for Bulletproof(G_at).
 func TransformWitnessToCAWitness(wit *AggregatedRangeWitness, assetTagBlinders []*operation.Scalar) (*AggregatedRangeWitness,error){
 	if len(assetTagBlinders)!=len(wit.values) || len(assetTagBlinders)!=len(wit.rands){
 		return nil, errors.New("Cannot transform witness. Parameter lengths mismatch")

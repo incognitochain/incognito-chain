@@ -17,6 +17,8 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 )
 
+// PaymentProofV2 contains the input & output coins, along with the Bulletproofs for output coin range.
+// This is what shows up in a transaction's Proof field.
 type PaymentProofV2 struct {
 	Version              uint8
 	aggregatedRangeProof *bulletproofs.AggregatedRangeProof
@@ -27,7 +29,9 @@ type PaymentProofV2 struct {
 func (proof *PaymentProofV2) SetVersion() { proof.Version = 2 }
 func (proof *PaymentProofV2) GetVersion() uint8 { return 2 }
 
+// GetInputCoins is the getter for input coins.
 func (proof PaymentProofV2) GetInputCoins() []coin.PlainCoin { return proof.inputCoins }
+// GetOutputCoins is the getter for output coins.
 func (proof PaymentProofV2) GetOutputCoins() []coin.Coin {
 	res := make([]coin.Coin, len(proof.outputCoins))
 	for i := 0; i < len(proof.outputCoins); i += 1 {
@@ -35,6 +39,7 @@ func (proof PaymentProofV2) GetOutputCoins() []coin.Coin {
 	}
 	return res
 }
+// GetAggregatedRangeProof returns the Bulletproof in this, but as a generic range proof object.
 func (proof PaymentProofV2) GetAggregatedRangeProof() agg_interface.AggregatedRangeProof {
 	return proof.aggregatedRangeProof
 }
@@ -83,7 +88,7 @@ func (proof *PaymentProofV2) SetOutputCoins(v []coin.Coin) error {
 
 func (proof *PaymentProofV2) SetAggregatedRangeProof(aggregatedRangeProof *bulletproofs.AggregatedRangeProof){proof.aggregatedRangeProof = aggregatedRangeProof}
 
-
+// Init allocates and zeroes all fields in this proof.
 func (proof *PaymentProofV2) Init() {
 	aggregatedRangeProof := &bulletproofs.AggregatedRangeProof{}
 	aggregatedRangeProof.Init()
@@ -93,13 +98,14 @@ func (proof *PaymentProofV2) Init() {
 	proof.outputCoins = []*coin.CoinV2{}
 }
 
+// MarshalJSON implements JSON Marshaller
 func (proof PaymentProofV2) MarshalJSON() ([]byte, error) {
 	data := proof.Bytes()
 	//temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	temp := base64.StdEncoding.EncodeToString(data)
 	return json.Marshal(temp)
 }
-
+// UnmarshalJSON implements JSON Unmarshaller
 func (proof *PaymentProofV2) UnmarshalJSON(data []byte) error {
 	Logger.Log.Infof("Unmarshalling PaymentProofV2: %v\n", string(data))
 	dataStr := common.EmptyString
@@ -121,7 +127,7 @@ func (proof *PaymentProofV2) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
-
+// Bytes does byte serialization for this payment proof
 func (proof PaymentProofV2) Bytes() []byte {
 	var bytes []byte
 	bytes = append(bytes, proof.GetVersion())
@@ -165,7 +171,7 @@ func (proof PaymentProofV2) Bytes() []byte {
 
 	return bytes
 }
-
+// SetBytes does byte deserialization for this payment proof
 func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyError {
 	if len(proofbytes) == 0 {
 		return errhandler.NewPrivacyErr(errhandler.InvalidInputToSetBytesErr, errors.New("Proof bytes is zero"))
@@ -297,11 +303,17 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 	return nil
 }
 
+// IsPrivacy is a helper that returns true when an output is encrypted,
+// which means the transaction is of "privacy" type. It says nothing about the validity of this proof.
+//
+// This is not a tight classifier between "privacy" and "non-privacy",
+// and should not be called before sanity check.
 func (proof *PaymentProofV2) IsPrivacy() bool {
 	return proof.GetOutputCoins()[0].IsEncrypted()
 }
 
-// error means the proof is invalid altogether. After this function returns, we will need to check error first
+// IsConfidentialAsset returns true if this is a Confidential Asset transaction (all coins in it must have asset tag field).
+// An error means the proof is simply invalid. After this function returns, check the error first.
 func (proof *PaymentProofV2) IsConfidentialAsset() (bool, error){
 	// asset tag consistency check
 	assetTagCount := 0
@@ -327,15 +339,17 @@ func (proof *PaymentProofV2) IsConfidentialAsset() (bool, error){
 			assetTagCount += 1
 		}
 	}
-	
+
 	if assetTagCount==len(inputCoins)+len(outputCoins){
 		return true, nil
 	}else if assetTagCount==0{
-		return false, nil		
+		return false, nil
 	}
 	return false, errhandler.NewPrivacyErr(errhandler.UnexpectedErr, errors.New("Error : TX contains both confidential asset & non-CA coins"))
 }
 
+// ValidateSanity performs sanity check for this proof.
+// The input parameter is ingored.
 func (proof PaymentProofV2) ValidateSanity(additionalData interface{}) (bool, error) {
 	if len(proof.GetInputCoins()) > 255 {
 		return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(proof.GetInputCoins())))
@@ -394,6 +408,10 @@ func (proof PaymentProofV2) ValidateSanity(additionalData interface{}) (bool, er
 	return true, nil
 }
 
+// Prove returns the payment proof object.
+// It generates Bulletproofs for output commitments,
+// then conceals sensitive information in the coins.
+// The parameter hasConfidentialAsset will determine the type of Bulletproof prover to use.
 func Prove(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, sharedSecrets []*operation.Point, hasConfidentialAsset bool, paymentInfo []*key.PaymentInfo) (*PaymentProofV2, error) {
 	var err error
 
@@ -574,6 +592,9 @@ func (proof PaymentProofV2) verifyHasNoCA(isBatch bool) (bool, error) {
 	// return true, nil
 }
 
+// Verify performs verification on this payment proof.
+// It verifies the Bulletproof inside & checks for duplicates among outputs.
+// It works with Bulletproof batching (in which case it skips that verification, since that is handled in batchTransaction struct).
 func (proof PaymentProofV2) Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error) {
 	hasConfidentialAsset, ok := boolParams["hasConfidentialAsset"]
 	if !ok {

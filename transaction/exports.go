@@ -44,6 +44,9 @@ func NewTxTokenParams(senderKey *privacy.PrivateKey, paymentInfo []*privacy.Paym
 	return tx_generic.NewTxTokenParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, transactionStateDB, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info, bridgeStateDB)
 }
 
+// EstimateTxSize gives an estimate of TX size based on the number of inputs, outputs, token parameters & metadata.
+// It handles both version 1 & version 2 TXs.
+// Since the transaction has not been created yet, we estimate using the upper bound of coin & proof sizes.
 func EstimateTxSize(estimateTxSizeParam *tx_generic.EstimateTxSizeParam) uint64 {
 	return tx_generic.EstimateTxSize(estimateTxSizeParam)
 }
