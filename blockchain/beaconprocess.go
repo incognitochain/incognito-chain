@@ -469,14 +469,19 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 /*
 	Update Beststate with new Block
 */
-func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconBlock, blockchain *BlockChain) (
+func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconBlock, blockchain *BlockChain) (
 	*BeaconBestState, *committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, [][]string, error) {
 	startTimeUpdateBeaconBestState := time.Now()
+	beaconBestState := NewBeaconBestState()
+	if err := beaconBestState.cloneBeaconBestStateFrom(curView); err != nil {
+		return nil, nil, nil, nil, err
+	}
 	var isBeginRandom = false
 	var isFoundRandomInstruction = false
 	Logger.log.Debugf("Start processing new block at height %d, with hash %+v", beaconBlock.Header.Height, *beaconBlock.Hash())
 	// signal of random parameter from beacon block
 	// update BestShardHash, BestBlock, BestBlockHash
+
 	beaconBestState.PreviousBestBlockHash = beaconBestState.BestBlockHash
 	beaconBestState.BestBlockHash = *beaconBlock.Hash()
 	beaconBestState.BestBlock = *beaconBlock
@@ -493,6 +498,7 @@ func (beaconBestState *BeaconBestState) updateBeaconBestState(beaconBlock *types
 			}
 		}
 	}
+
 	if beaconBestState.BestShardHash == nil {
 		beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	}

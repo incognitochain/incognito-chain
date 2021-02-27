@@ -20,23 +20,27 @@ type beaconCommitteeEngineBase struct {
 func NewBeaconCommitteeEngineBaseWithValue(
 	beaconHeight uint64,
 	beaconHash common.Hash,
-	finalState BeaconCommitteeState) *beaconCommitteeEngineBase {
+	finalState BeaconCommitteeState,
+	uncommittedState BeaconCommitteeState,
+) *beaconCommitteeEngineBase {
 	Logger.log.Debugf("Init Beacon Committee Engine Base With Height %+v And Beacon Committee State Version %+v", beaconHeight, finalState.Version())
 	return &beaconCommitteeEngineBase{
-		beaconHeight: beaconHeight,
-		beaconHash:   beaconHash,
-		finalState:   finalState,
+		beaconHeight:     beaconHeight,
+		beaconHash:       beaconHash,
+		finalState:       finalState,
+		uncommittedState: uncommittedState,
 	}
 }
 
 func (engine *beaconCommitteeEngineBase) Clone() BeaconCommitteeEngine {
 	finalState := cloneBeaconCommitteeStateFrom(engine.finalState)
+	uncommittedState := cloneBeaconCommitteeStateFrom(engine.uncommittedState)
 	res := NewBeaconCommitteeEngineBaseWithValue(
 		engine.beaconHeight,
 		engine.beaconHash,
 		finalState,
+		uncommittedState,
 	)
-
 	return res
 }
 

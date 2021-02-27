@@ -25,6 +25,7 @@ type GetBeaconBestState struct {
 	RewardReceiver                         map[string]string                            `json:"RewardReceiver"`        // key: incognito public key of committee, value: payment address reward receiver
 	ShardCommittee                         map[byte][]string                            `json:"ShardCommittee"`        // current committee and validator of all shard
 	ShardPendingValidator                  map[byte][]string                            `json:"ShardPendingValidator"` // pending candidate waiting for swap to get in committee of all shard
+	SyncingValidators                      map[byte][]string                            `json:"SyncingValidators"`     // current syncing validators of all shard
 	AutoStaking                            map[string]bool                              `json:"AutoStaking"`
 	StakingTx                              map[string]common.Hash                       `json:"StakingTx"`
 	CurrentRandomNumber                    int64                                        `json:"CurrentRandomNumber"`
@@ -164,6 +165,17 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 		result.MissingSignaturePenalty[k] = v
 	}
 	result.CommitteeEngineVersion = data.CommitteeEngineVersion()
+
+	result.SyncingValidators = make(map[byte][]string)
+	for k, v := range data.SyncingValidators() {
+		result.SyncingValidators[k] = make([]string, len(v))
+		tempV, err := incognitokey.CommitteeKeyListToString(v)
+		if err != nil {
+			panic(err)
+		}
+		copy(result.SyncingValidators[k], tempV)
+	}
+
 	return result
 }
 

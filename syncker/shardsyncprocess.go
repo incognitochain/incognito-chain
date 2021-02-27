@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
+	"github.com/incognitochain/incognito-chain/peerv2"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -25,22 +26,22 @@ type ShardPeerState struct {
 }
 
 type ShardSyncProcess struct {
-	isCommittee             bool
-	isCatchUp               bool
-	latestBeaconBlockHeight uint64
-	shardID                 int
-	status                  string                    //stop, running
-	shardPeerState          map[string]ShardPeerState //peerid -> state
-	shardPeerStateCh        chan *wire.MessagePeerState
-	crossShardSyncProcess   *CrossShardSyncProcess
-	blockchain              *blockchain.BlockChain
-	Network                 Network
-	Chain                   ShardChainInterface
-	beaconChain             Chain
-	shardPool               *BlkPool
-	actionCh                chan func()
-	miningKey               string
-	lock                    *sync.RWMutex
+	isCommittee            bool
+	isCatchUp              bool
+	finalBeaconBlockHeight uint64
+	shardID                int
+	status                 string                    //stop, running
+	shardPeerState         map[string]ShardPeerState //peerid -> state
+	shardPeerStateCh       chan *wire.MessagePeerState
+	crossShardSyncProcess  *CrossShardSyncProcess
+	blockchain             *blockchain.BlockChain
+	Network                Network
+	Chain                  ShardChainInterface
+	beaconChain            Chain
+	shardPool              *BlkPool
+	actionCh               chan func()
+	consensus              peerv2.ConsensusData
+	lock                   *sync.RWMutex
 }
 
 func NewShardSyncProcess(
@@ -49,7 +50,7 @@ func NewShardSyncProcess(
 	bc *blockchain.BlockChain,
 	beaconChain BeaconChainInterface,
 	chain ShardChainInterface,
-	miningKey string,
+	consensus peerv2.ConsensusData,
 ) *ShardSyncProcess {
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
@@ -68,7 +69,7 @@ func NewShardSyncProcess(
 		shardPool:        NewBlkPool("ShardPool-"+string(shardID), isOutdatedBlock),
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState),
-		miningKey:        miningKey,
+		consensus:        consensus,
 
 		actionCh: make(chan func()),
 	}
@@ -218,13 +219,16 @@ func (s *ShardSyncProcess) syncShardProcess() {
 			if len(s.shardPeerState) > 0 {
 				s.isCatchUp = true
 				committeeView := s.blockchain.BeaconChain.FinalView().(*blockchain.BeaconBestState)
-				if s.latestBeaconBlockHeight < committeeView.BeaconHeight {
-					s.latestBeaconBlockHeight = committeeView.BeaconHeight
+				if s.finalBeaconBlockHeight < committeeView.BeaconHeight {
+					s.finalBeaconBlockHeight = committeeView.BeaconHeight
 					if committeeView.CommitteeEngineVersion() == committeestate.DCS_VERSION {
-						if committeeView.ShouldSendFinishSyncMessage(s.miningKey, byte(s.shardID)) {
+						syncingValidators := s.consensus.SyncingValidatorsByShardID(s.shardID)
+						if committeeView.ShouldSendFinishSyncMessage(syncingValidators, byte(s.shardID)) {
+							Logger.Info("[dcs] syncingValidators:", syncingValidators)
 							msg := &wire.MessageFinishSync{
-								CommitteePublicKey: s.miningKey,
+								CommitteePublicKey: syncingValidators,
 							}
+							Logger.Info("[dcs] msg:", msg)
 							s.Network.PublishMessageToShard(msg, common.BeaconChainID)
 						}
 					}

@@ -710,8 +710,6 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 		return nil, err
 	}
 
-	Logger.log.Info("[dcs] v:", v.(*BeaconBestState))
-
 	beaconView := &BeaconBestState{
 		BestBlockHash:            blockHash,
 		ActiveShards:             blockchain.config.ChainParams.ActiveShards, //we assume active shard not change (if not, we must store active shard in db)

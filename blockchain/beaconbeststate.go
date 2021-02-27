@@ -843,12 +843,25 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngine(bc *BlockChain) {
 	beaconBestState.beaconCommitteeEngine = committeeEngine
 }
 
-func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePublicKey string, shardID byte) bool {
+func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePublicKeys []string, shardID byte) bool {
+	if len(committeePublicKeys) == 0 {
+		return false
+	}
 	syncingValidators := beaconBestState.beaconCommitteeEngine.SyncingValidators()[shardID]
+	mySyncingValidators := make(map[string]bool)
+	count := 0
+	for _, committeePublicKey := range committeePublicKeys {
+		mySyncingValidators[committeePublicKey] = true
+	}
+
 	for _, v := range syncingValidators {
-		key, _ := v.ToBase58()
-		if key == committeePublicKey {
+		if count == len(committeePublicKeys) {
 			return true
+		}
+		key, _ := v.ToBase58()
+		Logger.log.Info("[dcs] key:", key)
+		if mySyncingValidators[key] {
+			count++
 		}
 	}
 	return false

@@ -73,7 +73,12 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	//init shard sync process
 	for _, chain := range synckerManager.config.Blockchain.ShardChain {
 		sid := chain.GetShardID()
-		synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(sid, synckerManager.config.Network, synckerManager.config.Blockchain, synckerManager.config.Blockchain.BeaconChain, chain, config.MiningKey)
+		synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(
+			sid, synckerManager.config.Network,
+			synckerManager.config.Blockchain,
+			synckerManager.config.Blockchain.BeaconChain,
+			chain, synckerManager.config.Consensus,
+		)
 		synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].shardPool
 		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
 		synckerManager.crossShardPool[sid] = synckerManager.CrossShardSyncProcess[sid].crossShardPool

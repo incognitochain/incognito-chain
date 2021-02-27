@@ -2,9 +2,10 @@ package consensus_v2
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/consensus"
@@ -17,9 +18,11 @@ import (
 )
 
 type Engine struct {
-	BFTProcess map[int]ConsensusInterface //chainID -> consensus
-	validators []*consensus.Validator     //list of validator
-	version    map[int]int                //chainID -> version
+	BFTProcess             map[int]ConsensusInterface    //chainID -> consensus
+	validators             []*consensus.Validator        //list of validator
+	syncingValidators      map[int][]consensus.Validator // syncing validators
+	syncingValidatorsIndex map[string]int                // syncing validators
+	version                map[int]int                   //chainID -> version
 
 	consensusName string
 	config        *EngineConfig
@@ -42,6 +45,14 @@ func (s *Engine) GetUserRole() (string, string, int) {
 
 func (s *Engine) GetCurrentValidators() []*consensus.Validator {
 	return s.validators
+}
+
+func (s *Engine) SyncingValidatorsByShardID(shardID int) []string {
+	res := []string{}
+	for _, validator := range s.syncingValidators[shardID] {
+		res = append(res, validator.MiningKey.GetPublicKeyBase58())
+	}
+	return res
 }
 
 func (s *Engine) GetOneValidator() *consensus.Validator {
@@ -113,6 +124,17 @@ func (s *Engine) WatchCommitteeChange() {
 			validator.State = consensus.MiningState{role, "beacon", -1}
 		} else if chainID > -1 {
 			validator.State = consensus.MiningState{role, "shard", chainID}
+			if role == common.PendingRole {
+				if len(s.syncingValidators[chainID]) != 0 {
+					s.syncingValidators[chainID] = append(
+						s.syncingValidators[chainID][:s.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]],
+						s.syncingValidators[chainID][s.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]+1:]...)
+				}
+			}
+			if role == common.SyncingRole {
+				s.syncingValidators[chainID] = append(s.syncingValidators[chainID], *validator)
+				s.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()] = len(s.syncingValidators[chainID]) - 1
+			}
 		} else {
 			if role != "" {
 				validator.State = consensus.MiningState{role, "shard", -2}
@@ -179,9 +201,11 @@ func (s *Engine) WatchCommitteeChange() {
 func NewConsensusEngine() *Engine {
 	Logger.Log.Infof("CONSENSUS: NewConsensusEngine")
 	engine := &Engine{
-		BFTProcess:    make(map[int]ConsensusInterface),
-		consensusName: common.BlsConsensus,
-		version:       make(map[int]int),
+		BFTProcess:             make(map[int]ConsensusInterface),
+		syncingValidators:      make(map[int][]consensus.Validator),
+		syncingValidatorsIndex: make(map[string]int),
+		consensusName:          common.BlsConsensus,
+		version:                make(map[int]int),
 	}
 	return engine
 }

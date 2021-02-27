@@ -13,11 +13,12 @@ type beaconCommitteeEngineSlashingBase struct {
 func NewBeaconCommitteeEngineSlashingBaseWithValue(
 	beaconHeight uint64,
 	beaconHash common.Hash,
-	finalState BeaconCommitteeState) *beaconCommitteeEngineSlashingBase {
-	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconHeight)
+	finalState BeaconCommitteeState,
+	uncommittedState BeaconCommitteeState,
+) *beaconCommitteeEngineSlashingBase {
 	return &beaconCommitteeEngineSlashingBase{
 		beaconCommitteeEngineBase: *NewBeaconCommitteeEngineBaseWithValue(
-			beaconHeight, beaconHash, finalState,
+			beaconHeight, beaconHash, finalState, uncommittedState,
 		),
 	}
 }

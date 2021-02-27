@@ -99,7 +99,7 @@ func (e *BLSBFT_V3) run() error {
 		e.Logger.Info("init bls-bftv3 consensus for chain", e.ChainKey)
 
 		for { //actor loop
-			if e.Chain.CommitteeEngineVersion() != committeestate.SLASHING_VERSION {
+			if e.Chain.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 				continue
 			}
 			if !e.isStarted { //sleep if this process is not start
@@ -329,11 +329,11 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	if v.block == nil {
 		return
 	}
-	e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
+	//e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//already in chain
 	view := e.Chain.GetViewByHash(*v.block.Hash())
 	if view != nil {
-		e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
+		//e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 		return
 	}
 
@@ -360,7 +360,6 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 			}
 			err := vote.validateVoteOwner(dsaKey)
 			if err != nil {
-				e.Logger.Error("")
 				e.Logger.Error(dsaKey)
 				e.Logger.Error(err)
 				vote.IsValid = -1

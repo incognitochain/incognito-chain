@@ -17,6 +17,7 @@ import (
 )
 
 type ConsensusData interface {
+	SyncingValidatorsByShardID(int) []string
 	GetOneValidator() *consensus.Validator
 	GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
 }

@@ -89,9 +89,13 @@ func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePub
 	return b.syncPool
 }
 
-// TODO: @tin copy map
 func (b *BeaconCommitteeStateV3) FinishedSyncValidators() map[byte][]incognitokey.CommitteePublicKey {
-	return b.finishedSyncValidators
+	res := make(map[byte][]incognitokey.CommitteePublicKey)
+	for i, v := range b.finishedSyncValidators {
+		res[i] = make([]incognitokey.CommitteePublicKey, len(v))
+		copy(res[i], v)
+	}
+	return res
 }
 
 func (b *BeaconCommitteeStateV3) AddFinishedSyncValidators(syncingValidators []incognitokey.CommitteePublicKey, shardID byte) {
@@ -126,6 +130,8 @@ func (b *BeaconCommitteeStateV3) AddFinishedSyncValidators(syncingValidators []i
 		}
 	}
 	committeePublicKeys, _ := incognitokey.CommitteeBase58KeyListToStruct(validKeys)
+	keys, _ := incognitokey.CommitteeKeyListToString(committeePublicKeys)
+	Logger.log.Info("[dcs] Add finishedSyncValidators with keys:", keys)
 	b.finishedSyncValidators[shardID] = append(b.finishedSyncValidators[shardID], committeePublicKeys...)
 }
 

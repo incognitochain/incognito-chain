@@ -10,7 +10,7 @@ import (
 )
 
 type MessageFinishSync struct {
-	CommitteePublicKey string
+	CommitteePublicKey []string
 	ShardID            byte
 }
 

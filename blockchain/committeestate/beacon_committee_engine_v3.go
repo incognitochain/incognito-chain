@@ -19,7 +19,7 @@ func NewBeaconCommitteeEngineV3(
 	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconHeight)
 	return &BeaconCommitteeEngineV3{
 		beaconCommitteeEngineSlashingBase: *NewBeaconCommitteeEngineSlashingBaseWithValue(
-			beaconHeight, beaconHash, finalBeaconCommitteeStateV3,
+			beaconHeight, beaconHash, finalBeaconCommitteeStateV3, NewBeaconCommitteeStateV3(),
 		),
 	}
 }

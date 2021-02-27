@@ -360,7 +360,6 @@ func (blockService BlockService) RetrieveBeaconBlockByHeight(blockHeight uint64)
 	var err error
 	nextBeaconBlocks := []*types.BeaconBlock{}
 	beaconBlocks, err := blockService.BlockChain.GetBeaconBlockByHeight(blockHeight)
-	Logger.log.Info("[dcs] beaconBlocks[0]:", beaconBlocks[0])
 	if err != nil {
 		Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, err)
 		return nil, NewRPCError(GetBeaconBlockByHashError, err)
@@ -370,8 +369,6 @@ func (blockService BlockService) RetrieveBeaconBlockByHeight(blockHeight uint64)
 	// Get next block hash unless there are none.
 	if blockHeight < bestBeaconBlock.Header.Height {
 		nextBeaconBlocks, err = blockService.BlockChain.GetBeaconBlockByHeight(blockHeight + 1)
-		Logger.log.Info("[dcs] err:", err)
-
 		if err != nil {
 			Logger.log.Debugf("handleRetrieveBeaconBlock result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(GetBeaconBlockByHeightError, err)

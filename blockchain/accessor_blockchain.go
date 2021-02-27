@@ -31,8 +31,6 @@ func (blockchain *BlockChain) GetBeaconBlockHashByHeight(finalView, bestView mul
 
 	// => check if <= final block, using rawdb
 	if height <= finalView.GetHeight() { //note there is chance that == final view, but block is not stored (store in progress)
-		Logger.log.Info("[dcs] height:", height)
-		Logger.log.Info("[dcs] finalView.GetHeight():", finalView.GetHeight())
 		return rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), height)
 	}
 
