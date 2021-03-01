@@ -62,7 +62,7 @@ type Params struct {
 	ETHRemoveBridgeSigEpoch          uint64
 	BCHeightBreakPointNewZKP         uint64
 	BCHeightBreakPointPortalV3       uint64
-	EnableFeatureFlags               map[int]bool
+	EnableFeatureFlags               map[int]uint64   // featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature
 }
 
 type GenesisParams struct {
@@ -244,7 +244,7 @@ func SetupParam() {
 		ETHRemoveBridgeSigEpoch:   21920,
 
 		BCHeightBreakPointPortalV3: 30158,
-		EnableFeatureFlags: map[int]bool{
+		EnableFeatureFlags: map[int]uint64{
 			common.PortalV3Flag:       TestnetEnablePortalV3,
 			common.PortalRelayingFlag: TestnetEnablePortalRelaying,
 		},
@@ -344,7 +344,7 @@ func SetupParam() {
 		ETHRemoveBridgeSigEpoch:    2085,
 		BCHeightBreakPointPortalV3: 1328816,
 
-		EnableFeatureFlags: map[int]bool{
+		EnableFeatureFlags: map[int]uint64{
 			common.PortalV3Flag:       Testnet2EnablePortalV3,
 			common.PortalRelayingFlag: Testnet2EnablePortalRelaying,
 		},
@@ -442,7 +442,7 @@ func SetupParam() {
 		ETHRemoveBridgeSigEpoch:    1973,
 		BCHeightBreakPointPortalV3: 40, // todo: should update before deploying
 
-		EnableFeatureFlags: map[int]bool{
+		EnableFeatureFlags: map[int]uint64{
 			common.PortalV3Flag:       MainnetEnablePortalV3,
 			common.PortalRelayingFlag: MainnetEnablePortalRelaying,
 		},

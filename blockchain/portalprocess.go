@@ -52,9 +52,11 @@ func (blockchain *BlockChain) handlePortalInsts(
 		shardHeights[byte(i)] = blockchain.ShardChain[i].multiView.GetBestView().GetHeight()
 	}
 
+	epochBlocks := blockchain.config.ChainParams.Epoch
+
 	return portal.HandlePortalInsts(
 		blockchain, stateDB, beaconHeight, shardHeights, currentPortalState, relayingState,
-		rewardForCustodianByEpoch, portalParams, pm)
+		rewardForCustodianByEpoch, portalParams, pm, epochBlocks)
 }
 
 // Beacon process for portal protocol

@@ -653,12 +653,12 @@ func (httpServer *HttpServer) GetBlockchain() *blockchain.BlockChain {
 // checkEnableFeatureFlagRPC checks methodName is belong to any featureFlag or not: the first boolean result
 // and checks featureFlag is enabled or not: the second boolean result
 func (httpServer *HttpServer) checkEnableFeatureFlagRPC(methodName string) (bool, bool) {
-	enableFeatureFlagParams := httpServer.GetBlockchain().GetConfig().ChainParams.EnableFeatureFlags
-
+	bc := httpServer.GetBlockchain()
+	epoch := bc.GetBeaconBestState().Epoch
 	if httpServer.isPortalRelayingRPC(methodName) {
-		return true, enableFeatureFlagParams[common.PortalRelayingFlag]
+		return true, bc.IsEnableFeature(common.PortalRelayingFlag, epoch)
 	} else if httpServer.isPortalV3RPC(methodName) {
-		return true, enableFeatureFlagParams[common.PortalV3Flag]
+		return true, bc.IsEnableFeature(common.PortalV3Flag, epoch)
 	}
 	return false, false
 }

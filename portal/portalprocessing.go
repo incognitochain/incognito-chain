@@ -31,11 +31,12 @@ func HandlePortalInsts(
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams PortalParams,
 	pm *PortalManager,
+	epochBlocks uint64,
 ) ([][]string, error) {
-	enableFeatures := bc.GetEnableFeatureFlags()
+	currentEpoch := (beaconHeight + 1) / epochBlocks
 	instructions := [][]string{}
 	// handle portal instructions v3
-	if enableFeatures[common.PortalV3Flag] {
+	if bc.IsEnableFeature(common.PortalV3Flag, currentEpoch) {
 		portalInstsV3, err := portalprocessv3.HandlePortalInstsV3(
 			bc, stateDB, beaconHeight, shardHeight, currentPortalState, rewardForCustodianByEpoch,
 			portalParams.GetPortalParamsV3(beaconHeight), pm.PortalInstProcessorsV3)
@@ -48,7 +49,7 @@ func HandlePortalInsts(
 	}
 
 	// Handle relaying instruction
-	if enableFeatures[common.PortalRelayingFlag] {
+	if bc.IsEnableFeature(common.PortalRelayingFlag, currentEpoch) {
 		relayingInsts := portalrelaying.HandleRelayingInsts(bc, relayingState, pm.RelayingChainsProcessors)
 		if len(relayingInsts) > 0 {
 			instructions = append(instructions, relayingInsts...)
@@ -70,9 +71,8 @@ func ProcessPortalInsts(
 	pm *PortalManager,
 	epoch uint64,
 	isSkipPortalV3Ints bool) error {
-	enableFeatures := bc.GetEnableFeatureFlags()
 	// process portal instructions v3
-	if !isSkipPortalV3Ints && enableFeatures[common.PortalV3Flag] {
+	if !isSkipPortalV3Ints {
 		err := portalprocessv3.ProcessPortalInstsV3(
 			portalStateDB, portalParams.GetPortalParamsV3(beaconHeight),
 			beaconHeight, instructions, pm.PortalInstProcessorsV3, epoch)
@@ -83,17 +83,13 @@ func ProcessPortalInsts(
 	}
 
 	// process relaying instructions
-	if enableFeatures[common.PortalRelayingFlag] {
-		err := portalrelaying.ProcessRelayingInstructions(instructions, relayingState)
-		if err != nil {
-			Logger.log.Error(err)
-			return err
-		}
+	err := portalrelaying.ProcessRelayingInstructions(instructions, relayingState)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
 	}
 
 	// Handle next things ...
 
 	return nil
 }
-
-

@@ -82,8 +82,8 @@ const (
 	MainnetPortalFeeder = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
 
 	// Enable Feature Flag
-	MainnetEnablePortalRelaying = true
-	MainnetEnablePortalV3       = false
+	MainnetEnablePortalRelaying = 1
+	MainnetEnablePortalV3       = 0
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -143,8 +143,8 @@ const (
 	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
 
 	// Enable Feature Flag
-	TestnetEnablePortalRelaying = true
-	TestnetEnablePortalV3       = false
+	TestnetEnablePortalRelaying = 1
+	TestnetEnablePortalV3       = 0
 )
 
 // CONSTANT for network TESTNET-2
@@ -189,8 +189,8 @@ const (
 	Testnet2PortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
 
 	// Enable Feature Flag
-	Testnet2EnablePortalRelaying = true
-	Testnet2EnablePortalV3       = false
+	Testnet2EnablePortalRelaying = 1
+	Testnet2EnablePortalV3       = 0
 )
 
 // VARIABLE for testnet
