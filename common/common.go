@@ -610,3 +610,5 @@ func DecodeETHAddr(addr string) ([]byte, error) {
 	copy(addrFixedLen[32-len(remoteAddr):], remoteAddr)
 	return addrFixedLen[:], nil
 }
+
+

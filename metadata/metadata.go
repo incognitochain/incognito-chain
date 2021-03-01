@@ -74,7 +74,6 @@ type ChainRetriever interface {
 	GetBTCHeaderChain() *btcrelaying.BlockChain
 	GetPortalFeederAddress() string
 	GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error)
-	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
 	IsAfterNewZKPCheckPoint(beaconHeight uint64) bool
 	GetSupportedCollateralTokenIDs(beaconHeight uint64) []string
 	GetPortalETHContractAddrStr() string

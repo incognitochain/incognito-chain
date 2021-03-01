@@ -1,12 +1,11 @@
 package bulletproofs
 
 import (
-	"math"
-
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/pkg/errors"
+	"math"
 )
 
 var CACommitmentScheme operation.PedersenCommitment = CopyPedersenCommitmentScheme(operation.PedCom)

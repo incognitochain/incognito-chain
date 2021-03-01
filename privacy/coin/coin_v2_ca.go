@@ -1,13 +1,12 @@
 package coin
 
-import(
+import (
 	"errors"
 	"fmt"
-
-	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 )
 
 const MAX_TRIES_OTA int = 50000
@@ -113,7 +112,7 @@ func NewCoinCA(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation
 	c.SetInfo(info.Message)
 
 	// If this is going to burning address then dont need to create ota
-	if wallet.IsPublicKeyBurningAddress(info.PaymentAddress.Pk) {
+	if privacy_util.IsPublicKeyBurningAddress(info.PaymentAddress.Pk) {
 		publicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
 		if err != nil {
 			panic("Something is wrong with info.paymentAddress.pk, burning address should be a valid point")

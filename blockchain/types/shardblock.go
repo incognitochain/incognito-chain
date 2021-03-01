@@ -163,6 +163,28 @@ func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
 	return &hash
 }
 
+func (crossShardBlock *CrossShardBlock) UnmarshalJSON(data []byte) error {
+	type Alias CrossShardBlock
+	temp := &struct {
+		CrossOutputCoin []json.RawMessage
+		*Alias
+	}{
+		Alias: (*Alias)(crossShardBlock),
+	}
+
+	if err := json.Unmarshal(data, temp); err != nil {
+		return fmt.Errorf("UnmarshalJSON crossShardBlock. Error %v", err)
+	}
+
+	outputCoinList, err := coin.ParseCoinsFromBytes(temp.CrossOutputCoin)
+	if err != nil {
+		return fmt.Errorf("UnmarshalJSON Cannot parse crossOutputCoins. Error %v", err)
+	}
+
+	crossShardBlock.CrossOutputCoin = outputCoinList
+	return nil
+}
+
 func (shardBlock ShardBlock) Hash() *common.Hash {
 	hash := shardBlock.Header.Hash()
 	return &hash
@@ -378,7 +400,7 @@ because we have many types of block, so we can need to customize data from marsh
 func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 	type Alias ShardBody
 	temp := &struct {
-		Transactions []map[string]*json.RawMessage
+		Transactions []json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(shardBody),
@@ -386,38 +408,24 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
-		return err
+		return fmt.Errorf("unmarshall Json Shard Block Is Failed. Error %v", err)
 	}
 
 	// process tx from tx interface of temp
 	for _, txTemp := range temp.Transactions {
-		txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
+		// txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
 		var tx metadata.Transaction
 		var parseErr error
-		txType := ""
-		err = json.Unmarshal(*txTemp["Type"], &txType)
-		if err != nil {
-			return err
-		}
-		switch txType {
-		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
-			{
-				tx = &metadata.Transaction{}
-				parseErr = json.Unmarshal(txTempJson, &tx)
-			}
-		case common.TxCustomTokenPrivacyType:
-			{
-				tx = &transaction.TransactionToken{}
-				parseErr = json.Unmarshal(txTempJson, &tx)
-			}
-		default:
-			{
-				return errors.New("can not parse a wrong tx")
-			}
-		}
+		var txChoice *transaction.TxChoice
+		txChoice, parseErr = transaction.DeserializeTransactionJSON(txTemp)
 		if parseErr != nil {
-			return parseErr
+			return fmt.Errorf("unmarshall Json Shard Block Is Failed. Error %v", parseErr)
 		}
+		tx = txChoice.ToTx()
+		if tx==nil{
+			return fmt.Errorf("unmarshall Json Shard Block Is Failed. Corrupted TX")
+		}
+
 		shardBody.Transactions = append(shardBody.Transactions, tx)
 	}
 	return nil
@@ -706,7 +714,7 @@ func (crossTransaction *CrossTransaction) UnmarshalJSON(data []byte) error {
 // 1. (Privacy) PRV: Output coin
 // 2. Tx Custom Token: Tx Token Data
 // 3. Privacy Custom Token: Token Data + Output coin
-func GetCrossShardData(txList []metadata.Transaction, shardID byte) ([]coin.Coin, []ContentCrossShardTokenPrivacyData, error) {
+func GetCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.Coin, []ContentCrossShardTokenPrivacyData, error) {
 	coinList := []coin.Coin{}
 	txTokenPrivacyDataMap := make(map[common.Hash]*ContentCrossShardTokenPrivacyData)
 	var txTokenPrivacyDataList []ContentCrossShardTokenPrivacyData

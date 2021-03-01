@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -65,7 +67,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		newShardBlock                     = types.NewShardBlock()
 		shardInstructions                 = [][]string{}
 		isOldBeaconHeight                 = false
-		tempPrivateKey                    = blockchain.config.BlockGen.createTempKeyset(start)
+		tempPrivateKey                    = blockchain.config.BlockGen.createTempKeyset()
 		shardBestState                    = NewShardBestState()
 		shardID                           = curView.ShardID
 		currentCommitteePublicKeys        = []string{}
@@ -226,8 +228,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	// producer key
 	producerKey := proposer
 	producerPubKeyStr := proposer
-
 	totalTxsFee := shardBestState.shardCommitteeEngine.BuildTotalTxsFeeFromTxs(newShardBlock.Body.Transactions)
+	crossShards, err := CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID)
+	if err != nil {
+		return nil, err
+	}
 
 	newShardBlock.Header = types.ShardHeader{
 		Producer:           producerKey, //committeeMiningKeys[producerPosition],
@@ -238,7 +243,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		Height:             shardBestState.ShardHeight + 1,
 		Round:              round,
 		Epoch:              epoch,
-		CrossShardBitMap:   CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
+		CrossShardBitMap:   crossShards,
 		BeaconHeight:       beaconProcessHeight,
 		BeaconHash:         *beaconHash,
 		TotalTxsFee:        totalTxsFee,
@@ -732,11 +737,6 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 }
 
 func (blockGenerator *BlockGenerator) createTempKeyset() privacy.PrivateKey {
-	// b := make([]byte, common.HashSize)
-	// _, err := rand.Read(b)
-	// if err != nil {
-	// 	panic("Cannot create random keyset")
-	// }
 	b := common.RandBytes(common.HashSize)
 	return privacy.GeneratePrivateKey(b)
 }

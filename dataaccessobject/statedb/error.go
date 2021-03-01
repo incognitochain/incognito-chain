@@ -50,7 +50,6 @@ const (
 	ErrInvalidSlasingCommitteeStateType       = "invalid slashing committee state type"
 	ErrInvalidPortalExternalTxStateType          = "invalid portal external tx state type"
 	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
-	ErrInvalidBlockHashType                      = "invalid block hash type"
 )
 const (
 	InvalidByteArrayTypeError = iota

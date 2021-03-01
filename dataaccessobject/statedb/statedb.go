@@ -3,10 +3,10 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/pkg/errors"
 	"math/big"
@@ -536,7 +536,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	currentEpochShardCandidate []*CommitteeState,
 	nextEpochBeaconCandidate []*CommitteeState,
 	currentEpochBeaconCandidate []*CommitteeState,
-	rewardReceiver map[string]privacy.PaymentAddress,
+	rewardReceiver map[string]key.PaymentAddress,
 	autoStake map[string]bool,
 	stakingTx map[string]common.Hash,
 ) {
@@ -546,7 +546,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	currentEpochShardCandidate = []*CommitteeState{}
 	nextEpochBeaconCandidate = []*CommitteeState{}
 	currentEpochBeaconCandidate = []*CommitteeState{}
-	rewardReceiver = make(map[string]privacy.PaymentAddress)
+	rewardReceiver = make(map[string]key.PaymentAddress)
 	autoStake = make(map[string]bool)
 	stakingTx = map[string]common.Hash{}
 	for _, shardID := range ids {

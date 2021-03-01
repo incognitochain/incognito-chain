@@ -4,9 +4,6 @@ import (
 	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
-	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
-
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
@@ -14,7 +11,9 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/hybridencryption"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/schnorr"
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/aggregatedrange"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 	"github.com/incognitochain/incognito-chain/privacy/proof"
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
@@ -75,6 +74,7 @@ type PrivateKey = key.PrivateKey
 type OTAKey = key.OTAKey
 type PaymentInfo = key.PaymentInfo
 type PaymentAddress = key.PaymentAddress
+
 
 func GeneratePrivateKey(seed []byte) PrivateKey {
 	return key.GeneratePrivateKey(seed)

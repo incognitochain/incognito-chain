@@ -1,9 +1,10 @@
 package metadata
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -15,6 +16,21 @@ type UnStakingMetadata struct {
 	MetadataBase
 	CommitteePublicKey string
 }
+
+func (meta *UnStakingMetadata) Hash() *common.Hash {
+	record := strconv.Itoa(meta.Type)
+	data := []byte(record)
+	data = append(data, meta.Sig...)
+	hash := common.HashH(data)
+	return &hash
+}
+
+func (meta *UnStakingMetadata) HashWithoutSig() *common.Hash {
+	return meta.MetadataBase.Hash()
+}
+
+func (*UnStakingMetadata) ShouldSignMetaData() bool { return true }
+
 
 //NewUnStakingMetadata : Constructor of UnStakingMetadata struct
 func NewUnStakingMetadata(committeePublicKey string) (*UnStakingMetadata, error) {
@@ -73,8 +89,16 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 	if err != nil {
 		return false, NewMetadataTxError(UnStakingRequestStakingTransactionNotFoundError, err)
 	}
-	if !bytes.Equal(stakingTx.GetSender(), tx.GetSender()) {
-		return false, NewMetadataTxError(UnStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send unstake request but get %+v", stakingTx.GetSender(), tx.GetSender()))
+
+	stakingMetadata := stakingTx.GetMetadata().(*StakingMetadata)
+	funderPaymentAddress := stakingMetadata.FunderPaymentAddress
+	funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
+	if err != nil || funderWallet == nil {
+		return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
+	}
+
+	if ok, err := tx.CheckAuthorizedSender(funderWallet.KeySet.PaymentAddress.Pk); !ok || err != nil {
+		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
 	}
 
 	waitingValidatorsList, err := incognitokey.CommitteeKeyListToString(beaconViewRetriever.CandidateWaitingForNextRandom())
