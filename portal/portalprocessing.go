@@ -33,7 +33,7 @@ func HandlePortalInsts(
 	pm *PortalManager,
 	epochBlocks uint64,
 ) ([][]string, error) {
-	currentEpoch := (beaconHeight + 1) / epochBlocks
+	currentEpoch := common.GetEpochFromBeaconHeight(beaconHeight, epochBlocks)
 	instructions := [][]string{}
 	// handle portal instructions v3
 	if bc.IsEnableFeature(common.PortalV3Flag, currentEpoch) {
