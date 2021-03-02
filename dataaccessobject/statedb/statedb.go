@@ -1690,3 +1690,56 @@ func (stateDB *StateDB) getPortalConfirmProofState(key common.Hash) (*PortalConf
 	}
 	return NewPortalConfirmProofState(), false, nil
 }
+
+
+// ================================= Portal V4 OBJECT =======================================
+func (stateDB *StateDB) getShieldingRequestByKey(key common.Hash) (*ShieldingRequest, bool, error) {
+	shieldingRequest, err := stateDB.getStateObject(PortalV4ShieldRequestObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if shieldingRequest != nil {
+		return shieldingRequest.GetValue().(*ShieldingRequest), true, nil
+	}
+	return NewShieldingRequest(), false, nil
+}
+
+func (stateDB *StateDB) getShieldingRequestsByTokenID(tokenID string) map[string]*ShieldingRequest {
+	shieldingRequests := make(map[string]*ShieldingRequest)
+	temp := stateDB.trie.NodeIterator(GetShieldingRequestPrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		sr := NewShieldingRequest()
+		err := json.Unmarshal(newValue, sr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		shieldingRequests[keyHash.String()] = sr
+	}
+	return shieldingRequests
+}
+
+func (stateDB *StateDB) getUTXOsByTokenID(tokenID string) map[string]*UTXO {
+	utxos := make(map[string]*UTXO)
+	temp := stateDB.trie.NodeIterator(GetPortalUTXOStatePrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewUTXO()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		utxos[keyHash.String()] = wr
+	}
+	return utxos
+}

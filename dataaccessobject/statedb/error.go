@@ -45,6 +45,8 @@ const (
 	ErrInvalidBlockHashType                      = "invalid block hash type"
 	ErrInvalidPortalExternalTxStateType          = "invalid portal external tx state type"
 	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
+	ErrInvalidPortalUTXOType                     = "invalid portal utxo state type"
+	ErrInvalidPortalShieldingRequestType         = "invalid portal shielding request type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -192,6 +194,13 @@ const (
 	GetWithdrawCollateralConfirmError
 	StorePortalUnlockOverRateCollateralsError
 	GetPortalUnlockOverRateCollateralsStatusError
+
+	// portal v4
+	StorePortalV4UTXOsError
+	StorePortalV4ShieldingRequestStatusError
+	GetPortalV4ShieldingRequestStatusError
+	StorePortalShieldingRequestsError
+	GetPortalShieldingRequestsError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -335,6 +344,13 @@ var ErrCodeMessage = map[int]struct {
 	GetAllRewardFeatureError:             {-15002, "Get all reward feature state error"},
 	GetRewardFeatureAmountByTokenIDError: {-15004, "Get reward feature amount by tokenID error"},
 	InvalidStakerInfoTypeError:           {-15005, "Staker info invalid"},
+
+	// Portal v4
+	StorePortalV4UTXOsError:                  {-15006, "Store portal v4 list uxtos error"},
+	StorePortalV4ShieldingRequestStatusError: {-15007, "Store portal v4 shielding request status error"},
+	GetPortalV4ShieldingRequestStatusError:   {-15008, "Get portal v4 shielding request status error"},
+	StorePortalShieldingRequestsError:        {-15009, "Store portal v4 list shielding requests error"},
+	GetPortalShieldingRequestsError:          {-15010, "Get portal v4 list shielding requests error"},
 }
 
 type StatedbError struct {

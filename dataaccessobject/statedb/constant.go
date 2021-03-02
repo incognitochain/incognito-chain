@@ -52,6 +52,10 @@ const (
 	PortalExternalTxObjectType
 	PortalConfirmProofObjectType
 	PortalUnlockOverRateCollaterals
+
+	// Portal v4
+	PortalV4UTXOObjectType
+	PortalV4ShieldRequestObjectType
 )
 
 // Prefix length

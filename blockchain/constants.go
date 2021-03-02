@@ -84,6 +84,7 @@ const (
 	// Enable Feature Flag
 	MainnetEnablePortalRelaying = 1
 	MainnetEnablePortalV3       = 0
+	MainnetEnablePortalV4       = 0
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -145,6 +146,7 @@ const (
 	// Enable Feature Flag
 	TestnetEnablePortalRelaying = 1
 	TestnetEnablePortalV3       = 0
+	TestnetEnablePortalV4       = 1
 )
 
 // CONSTANT for network TESTNET-2
@@ -191,6 +193,7 @@ const (
 	// Enable Feature Flag
 	Testnet2EnablePortalRelaying = 1
 	Testnet2EnablePortalV3       = 0
+	Testnet2EnablePortalV4       = 1
 )
 
 // VARIABLE for testnet

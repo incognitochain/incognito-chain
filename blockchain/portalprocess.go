@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -41,6 +42,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 	currentPortalState *portalprocessv3.CurrentPortalState,
+	currentPortalStateV4 *portalprocessv4.CurrentPortalStateV4,
 	relayingState *portalrelaying.RelayingHeaderChainState,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams portal.PortalParams,
@@ -55,7 +57,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	epochBlocks := blockchain.config.ChainParams.Epoch
 
 	return portal.HandlePortalInsts(
-		blockchain, stateDB, beaconHeight, shardHeights, currentPortalState, relayingState,
+		blockchain, stateDB, beaconHeight, shardHeights, currentPortalState, currentPortalStateV4, relayingState,
 		rewardForCustodianByEpoch, portalParams, pm, epochBlocks)
 }
 

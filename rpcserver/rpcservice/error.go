@@ -128,6 +128,9 @@ const (
 	RestoreCandidateShardWaitingForNextRandom
 
 	GetTotalStakerError
+
+	// Portal v4
+	GetPortalV4ShieldReqStatusError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -256,6 +259,10 @@ var ErrCodeMessage = map[int]struct {
 	RestoreCandidateShardWaitingForNextRandom:     {-12008, "Restore candidate shard waiting for next random"},
 	GetAllBeaconViews:                             {-12009, "Get all beacon views"},
 	GetTotalStakerError:                           {-12010, "Get total staker return error"},
+
+
+	// Portal v4
+	GetPortalV4ShieldReqStatusError:  {-12501, "Get portal v4 shielding request status error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse

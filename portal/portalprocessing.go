@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 )
 
 func CollectPortalInstructions(pm *PortalManager, metaType int, action []string, shardID byte) bool {
@@ -13,7 +14,9 @@ func CollectPortalInstructions(pm *PortalManager, metaType int, action []string,
 	if metadata.IsPortalRelayingMetaType(metaType) {
 		portalrelaying.CollectPortalRelayingInsts(pm.RelayingChainsProcessors, metaType, action, shardID)
 	} else if metadata.IsPortalMetaTypeV3(metaType) {
-		portalprocessv3.CollectPortalInstsV3(pm.PortalInstProcessorsV3, metaType, action, shardID)
+		portalprocessv3.CollectPortalV3Insts(pm.PortalInstProcessorsV3, metaType, action, shardID)
+	} else if metadata.IsPortalMetaTypeV4(metaType) {
+		portalprocessv4.CollectPortalV4Insts(pm.PortalInstProcessorsV4, metaType, action, shardID)
 	} else {
 		isCollected = false
 	}
@@ -27,6 +30,7 @@ func HandlePortalInsts(
 	beaconHeight uint64,
 	shardHeight map[byte]uint64,
 	currentPortalState *portalprocessv3.CurrentPortalState,
+	currentPortalStateV4 *portalprocessv4.CurrentPortalStateV4,
 	relayingState *portalrelaying.RelayingHeaderChainState,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams PortalParams,
@@ -53,6 +57,19 @@ func HandlePortalInsts(
 		relayingInsts := portalrelaying.HandleRelayingInsts(bc, relayingState, pm.RelayingChainsProcessors)
 		if len(relayingInsts) > 0 {
 			instructions = append(instructions, relayingInsts...)
+		}
+	}
+
+	// handle portal instructions v4
+	if bc.IsEnableFeature(common.PortalV4Flag, currentEpoch) {
+		portalInstsV4, err := portalprocessv4.HandlePortalInstsV4(
+			bc, stateDB, beaconHeight, shardHeight, currentPortalStateV4,
+			portalParams.GetPortalParamsV4(beaconHeight), pm.PortalInstProcessorsV4)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+		if len(portalInstsV4) > 0 {
+			instructions = append(instructions, portalInstsV4...)
 		}
 	}
 
@@ -84,6 +101,15 @@ func ProcessPortalInsts(
 
 	// process relaying instructions
 	err := portalrelaying.ProcessRelayingInstructions(instructions, relayingState)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+
+	// process portal instructions v4
+	err = portalprocessv4.ProcessPortalInstsV4(
+		portalStateDB, portalParams.GetPortalParamsV4(beaconHeight),
+		beaconHeight, instructions, pm.PortalInstProcessorsV4, epoch)
 	if err != nil {
 		Logger.log.Error(err)
 		return err

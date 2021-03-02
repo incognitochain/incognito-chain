@@ -223,3 +223,8 @@ func IsPortalRelayingMetaType(metaType int) bool {
 	res, _ := common.SliceExists(portalRelayingMetaTypes, metaType)
 	return res
 }
+
+func IsPortalMetaTypeV4(metaType int) bool {
+	res, _ := common.SliceExists(portalV4MetaTypes, metaType)
+	return res
+}

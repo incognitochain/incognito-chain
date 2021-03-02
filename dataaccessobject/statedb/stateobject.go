@@ -91,6 +91,10 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newPortalConfirmProofStateObjectWithValue(db, hash, value)
 	case StakerObjectType:
 		return newStakerObjectWithValue(db, hash, value)
+	case PortalV4UTXOObjectType:
+		return newUTXOObjectWithValue(db, hash, value)
+	case PortalV4ShieldRequestObjectType:
+		return newShieldingRequestObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -162,6 +166,10 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newPortalConfirmProofStateObject(db, hash)
 	case StakerObjectType:
 		return newStakerObject(db, hash)
+	case PortalV4UTXOObjectType:
+		return newUTXOObject(db, hash)
+	case PortalV4ShieldRequestObjectType:
+		return newShieldingRequestObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

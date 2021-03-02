@@ -93,6 +93,10 @@ var (
 	portalExternalTxPrefix      = []byte("portalexttx-")
 	portalConfirmProofPrefix    = []byte("portalproof-")
 	withdrawCollateralProofType = []byte("0-")
+
+	// portal v4
+	portalUTXOStatePrefix                                = []byte("portalutxo-")
+	portalShieldRequestPrefix                            = []byte("portalshieldrequest-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -465,6 +469,24 @@ func PortalExpiredPortingReqPrefix() []byte {
 
 func PortalReqMatchingRedeemStatusByTxReqIDPrefix() []byte {
 	return portalReqMatchingRedeemStatusByTxReqIDPrefix
+}
+
+// TODO: rename
+// PORTAL V4
+// Portal v4 prefix for portal v4 status
+func PortalShieldingRequestStatusPrefix() []byte {
+	return portalShieldRequestPrefix
+}
+
+// Portal v4 prefix hash of the key
+func GetPortalUTXOStatePrefix(tokenID string) []byte {
+	h := common.HashH(append(portalUTXOStatePrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetShieldingRequestPrefix(tokenID string) []byte {
+	h := common.HashH(append(portalShieldRequestPrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
 }
 
 var _ = func() (_ struct{}) {

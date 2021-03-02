@@ -80,7 +80,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendStopAutoStakingTransactionV2: (*HttpServer).handleCreateAndSendStopAutoStakingTransactionV2,
 	randomCommitments:                         (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                          (*HttpServer).handleHasSerialNumbers,
-	hasSerialNumbersInMempool:               	 (*HttpServer).handleHasSerialNumbersInMempool,
+	hasSerialNumbersInMempool:                 (*HttpServer).handleHasSerialNumbersInMempool,
 	hasSnDerivators:                           (*HttpServer).handleHasSnDerivators,
 	listSerialNumbers:                         (*HttpServer).handleListSerialNumbers,
 	listCommitments:                           (*HttpServer).handleListCommitments,
@@ -275,6 +275,11 @@ var HttpHandler = map[string]httpHandler{
 
 	//validators state
 	getValKeyState: (*HttpServer).handleGetValKeyState,
+
+	// portal v4
+	getPortalV4State:                    (*HttpServer).handleGetPortalV4State,
+	createAndSendTxWithShieldingRequest: (*HttpServer).handleCreateAndSendTxWithShieldingReq,
+	getPortalShieldingRequestStatus:     (*HttpServer).handleGetPortalShieldingRequestStatus,
 }
 
 // Commands that are available to a limited user

@@ -1127,7 +1127,10 @@ func (tp *TxPool) checkEnableFeatureFlagMetadata(metaType int, epoch uint64) (bo
 		return true, bc.IsEnableFeature(common.PortalRelayingFlag, epoch)
 	} else if metadata.IsPortalMetaTypeV3(metaType) {
 		return true, bc.IsEnableFeature(common.PortalV3Flag, epoch)
+	} else if metadata.IsPortalMetaTypeV4(metaType) {
+		return true, bc.IsEnableFeature(common.PortalV4Flag, epoch)
 	}
+
 	return false, false
 }
 

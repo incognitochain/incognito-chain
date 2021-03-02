@@ -291,6 +291,11 @@ const (
 
 	//validator state
 	getValKeyState = "getvalkeystate"
+
+	// portal v4
+	getPortalV4State                    = "getportalv4state"
+	createAndSendTxWithShieldingRequest = "createandsendtxshieldingrequest"
+	getPortalShieldingRequestStatus     = "getportalshieldingrequeststatus"
 )
 
 const (
@@ -372,4 +377,10 @@ var PortalRelayingRPCs = []string{
 	getBTCRelayingBestState,
 	getBTCBlockByHash,
 	getLatestBNBHeaderBlockHeight,
+}
+
+var PortalV4RPCs = []string{
+	getPortalV4State,
+	createAndSendTxWithShieldingRequest,
+	getPortalShieldingRequestStatus,
 }
