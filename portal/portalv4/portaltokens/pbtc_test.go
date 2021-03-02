@@ -1,8 +1,6 @@
 package portaltokens
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
-	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"os"
 	"testing"
 	"time"
@@ -15,14 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
-
-var _ = func() (_ struct{}) {
-	Logger.Init(common.NewBackend(nil).Logger("test", true))
-	portalprocessv4.Logger.Init(common.NewBackend(nil).Logger("test", true))
-	Logger.Init(common.NewBackend(nil).Logger("test", true))
-	Logger.log.Info("This runs before init()!")
-	return
-}()
 
 func getBlockCypherAPI(networkName string) gobcy.API {
 	//explicitly
