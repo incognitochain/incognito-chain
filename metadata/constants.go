@@ -242,4 +242,5 @@ var portalRelayingMetaTypes = []int{
 
 var portalV4MetaTypes = []int{
 	PortalV4ShieldingRequestMeta,
+	PortalV4ShieldingResponseMeta,
 }
