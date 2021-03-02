@@ -27,7 +27,7 @@ if [ -z "$LIMIT_FEE" ]; then
 fi
 
 if [ -z "$PUBLIC_IP" ]; then
-    PUBLIC_IP=`dig -4 @resolver1.opendns.com ANY myip.opendns.com +short`;
+    PUBLIC_IP=`dig -4 @resolver1.opendns.com A myip.opendns.com +short`;
 fi
 CONTRACT_IP=`echo $PUBLIC_IP | cut -d '.' -f 1,4`
 
