@@ -18,15 +18,14 @@ import (
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
-	portalTokensV4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
+	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
 	"github.com/stretchr/testify/suite"
 )
 
 var _ = func() (_ struct{}) {
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	portalprocessv4.Logger.Init(common.NewBackend(nil).Logger("test", true))
-	portalTokensV4.Logger.Init(common.NewBackend(nil).Logger("test", true))
-	metadata.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	portaltokensv4.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	Logger.log.Info("This runs before init()!")
 	return
 }()
@@ -73,9 +72,9 @@ func (s *PortalTestSuiteV4) SetupTest() {
 		MultiSigScriptHexEncode: map[string]string{
 			portalcommonv4.PortalBTCIDStr: "",
 		},
-		PortalTokens: map[string]portalTokensV4.PortalTokenProcessor{
-			portalcommonv4.PortalBTCIDStr: &portalTokensV4.PortalBTCTokenProcessor{
-				&portalTokensV4.PortalToken{
+		PortalTokens: map[string]portaltokensv4.PortalTokenProcessor{
+			portalcommonv4.PortalBTCIDStr: &portaltokensv4.PortalBTCTokenProcessor{
+				&portaltokensv4.PortalToken{
 					ChainID:        "Bitcoin-Testnet",
 					MinTokenAmount: 10,
 				},
