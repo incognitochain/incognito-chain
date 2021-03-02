@@ -6,6 +6,9 @@ import (
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
+	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
+	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -150,6 +153,28 @@ func getSupportedPortalCollateralsTestnet2() []portalv3.PortalCollateral {
 	}
 }
 
+func initPortalTokensV4ForTestNet() map[string]portaltokensv4.PortalTokenProcessor {
+	return map[string]portaltokensv4.PortalTokenProcessor{
+		portalcommonv4.PortalBTCIDStr: &portaltokensv4.PortalBTCTokenProcessor{
+			&portaltokensv4.PortalToken{
+				ChainID:        TestnetBTCChainID,
+				MinTokenAmount: 10,
+			},
+		},
+	}
+}
+
+func initPortalTokensV4ForMainNet() map[string]portaltokensv4.PortalTokenProcessor {
+	return map[string]portaltokensv4.PortalTokenProcessor{
+		portalcommonv4.PortalBTCIDStr: &portaltokensv4.PortalBTCTokenProcessor{
+			&portaltokensv4.PortalToken{
+				ChainID:        MainnetBTCChainID,
+				MinTokenAmount: 10,
+			},
+		},
+	}
+}
+
 func SetupParam() {
 	// FOR TESTNET
 	genesisParamsTestnetNew = &GenesisParams{
@@ -234,6 +259,22 @@ func SetupParam() {
 				BNBFullNodeProtocol:      TestnetBNBFullNodeProtocol,
 				BNBFullNodeHost:          TestnetBNBFullNodeHost,
 				BNBFullNodePort:          TestnetBNBFullNodePort,
+			},
+			PortalParamsV4: map[uint64]portalv4.PortalParams{
+				0: {
+					// todo: should update before deploying
+					MultiSigAddresses: map[string]string{
+						portalcommonv4.PortalBTCIDStr: "2MvpFqydTR43TT4emMD84Mzhgd8F6dCow1X",
+					},
+					MultiSigScriptHexEncode: map[string]string{
+						portalcommonv4.PortalBTCIDStr: "",
+					},
+					PortalTokens: initPortalTokensV4ForTestNet(),
+					FeeUnshields: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 10, // 10 satoshi // todo: should update before deploying
+					},
+					BatchNumBlks: 60, // ~ 10 mins
+				},
 			},
 		},
 		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
@@ -336,6 +377,22 @@ func SetupParam() {
 				BNBFullNodeHost:          Testnet2BNBFullNodeHost,
 				BNBFullNodePort:          Testnet2BNBFullNodePort,
 			},
+			PortalParamsV4: map[uint64]portalv4.PortalParams{
+				0: {
+					// todo: should update before deploying
+					MultiSigAddresses: map[string]string{
+						portalcommonv4.PortalBTCIDStr: "",
+					},
+					MultiSigScriptHexEncode: map[string]string{
+						portalcommonv4.PortalBTCIDStr: "",
+					},
+					PortalTokens: initPortalTokensV4ForTestNet(),
+					FeeUnshields: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 10, // 10 satoshi // todo: should update before deploying
+					},
+					BatchNumBlks: 60, // ~ 10 mins
+				},
+			},
 		},
 		EpochBreakPointSwapNewKey:  TestnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:     1,
@@ -434,6 +491,22 @@ func SetupParam() {
 				BNBFullNodeProtocol:      MainnetBNBFullNodeProtocol,
 				BNBFullNodeHost:          MainnetBNBFullNodeHost,
 				BNBFullNodePort:          MainnetBNBFullNodePort,
+			},
+			PortalParamsV4: map[uint64]portalv4.PortalParams{
+				0: {
+					// todo: should update before deploying
+					MultiSigAddresses: map[string]string{
+						portalcommonv4.PortalBTCIDStr: "",
+					},
+					MultiSigScriptHexEncode: map[string]string{
+						portalcommonv4.PortalBTCIDStr: "",
+					},
+					PortalTokens: initPortalTokensV4ForMainNet(),
+					FeeUnshields: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 10, // 10 satoshi // todo: should update before deploying
+					},
+					BatchNumBlks: 60, // ~ 10 mins
+				},
 			},
 		},
 		EpochBreakPointSwapNewKey:  MainnetReplaceCommitteeEpoch,
