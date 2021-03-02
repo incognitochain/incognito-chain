@@ -188,6 +188,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 				Logger.log.Errorf("[Mint Withdraw Reward] CheckMintCoinValid: %v, %v, %v, %v, %v\n", mintCoin.GetVersion(), mintCoin.GetValue(), mintCoin.GetPublicKey(), rewardPaymentAddress, rewardPaymentAddress.GetPublicSpend().ToBytesS())
 				return errors.Errorf("[Mint Withdraw Reward] Mint Coin is invalid for receiver or amount")
 			}
+
 		}
 	}
 
