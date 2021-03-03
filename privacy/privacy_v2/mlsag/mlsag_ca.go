@@ -9,21 +9,21 @@ import (
 )
 
 
-func (ml *Mlsag) SignConfidentialAsset(message []byte) (*MlsagSig, error) {
+func (mlsag *Mlsag) SignConfidentialAsset(message []byte) (*MlsagSig, error) {
 	if len(message) != common.HashSize {
 		return nil, errors.New("Cannot mlsag sign the message because its length is not 32, maybe it has not been hashed")
 	}
 	var message32byte [32]byte
 	copy(message32byte[:], message)
 
-	alpha, r := ml.createRandomChallenges()          // step 2 in paper
-	c, err := ml.calculateCCA(message32byte, alpha, r) // step 3 and 4 in paper
+	alpha, r := mlsag.createRandomChallenges()            // step 2 in paper
+	c, err := mlsag.calculateCCA(message32byte, alpha, r) // step 3 and 4 in paper
 
 	if err != nil {
 		return nil, err
 	}
 	return &MlsagSig{
-		c[0], ml.keyImages, r,
+		c[0], mlsag.keyImages, r,
 	}, nil
 }
 
@@ -146,28 +146,28 @@ func calculateFirstCCA(digest [common.HashSize]byte, alpha []*operation.Scalar, 
 	return operation.HashToScalar(b), nil
 }
 
-func (this *Mlsag) calculateCCA(message [common.HashSize]byte, alpha []*operation.Scalar, r [][]*operation.Scalar) ([]*operation.Scalar, error) {
-	m := len(this.privateKeys)
-	n := len(this.R.keys)
+func (mlsag *Mlsag) calculateCCA(message [common.HashSize]byte, alpha []*operation.Scalar, r [][]*operation.Scalar) ([]*operation.Scalar, error) {
+	m := len(mlsag.privateKeys)
+	n := len(mlsag.R.keys)
 
 	c := make([]*operation.Scalar, n)
 	firstC, err := calculateFirstCCA(
 		message,
 		alpha,
-		this.R.keys[this.pi],
+		mlsag.R.keys[mlsag.pi],
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	var i int = (this.pi + 1) % n
+	var i int = (mlsag.pi + 1) % n
 	c[i] = firstC
-	for next := (i + 1) % n; i != this.pi; {
+	for next := (i + 1) % n; i != mlsag.pi; {
 		nextC, err := calculateNextCCA(
 			message,
 			r[i], c[i],
-			(*this.R).keys[i],
-			this.keyImages,
+			(*mlsag.R).keys[i],
+			mlsag.keyImages,
 		)
 		if err != nil {
 			return nil, err
@@ -178,8 +178,8 @@ func (this *Mlsag) calculateCCA(message [common.HashSize]byte, alpha []*operatio
 	}
 
 	for i := 0; i < m; i += 1 {
-		ck := new(operation.Scalar).Mul(c[this.pi], this.privateKeys[i])
-		r[this.pi][i] = new(operation.Scalar).Sub(alpha[i], ck)
+		ck := new(operation.Scalar).Mul(c[mlsag.pi], mlsag.privateKeys[i])
+		r[mlsag.pi][i] = new(operation.Scalar).Sub(alpha[i], ck)
 	}
 
 
