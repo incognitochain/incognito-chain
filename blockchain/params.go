@@ -77,6 +77,7 @@ type Params struct {
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
 	ConsensusV3Height                uint64
+	ConsensusV4Height                uint64
 	StakingV3Height                  uint64
 	BeaconCommitteeStateV3Height     uint64
 	Timeslot                         uint64
@@ -240,6 +241,7 @@ func SetupParam() {
 		BeaconCommitteeStateV3Height:   1e9,
 		ConsensusV2Epoch:               16930,
 		ConsensusV3Height:              1e12,
+		ConsensusV4Height:              1e12,
 		StakingV3Height:                1e12,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 250000,
@@ -336,7 +338,8 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
 		BeaconCommitteeStateV3Height:   1e9,
-		ConsensusV3Height:              1,
+		ConsensusV3Height:              1e9,
+		ConsensusV4Height:              1,
 		StakingV3Height:                1,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
@@ -429,7 +432,8 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Height:              1,
+		ConsensusV3Height:              1e9,
+		ConsensusV4Height:              1,
 		StakingV3Height:                1,
 		BeaconCommitteeStateV3Height:   1e9,
 		Timeslot:                       40,

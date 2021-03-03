@@ -105,17 +105,6 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 			}
 			committeeChange = newState.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange, oldState)
 
-		case instruction.UNSTAKE_ACTION:
-			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
-			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-			}
-			committeeChange = newState.processUnstakeInstruction(
-				unstakeInstruction, env, committeeChange, oldState)
-			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-			}
-
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {

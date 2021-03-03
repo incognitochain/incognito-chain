@@ -12,17 +12,18 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	blsbft2 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
 	blsbft3 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
+	blsbft4 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv4"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
 type Engine struct {
-	BFTProcess             map[int]ConsensusInterface    //chainID -> consensus
-	validators             []*consensus.Validator        //list of validator
+	BFTProcess             map[int]ConsensusInterface    // chainID -> consensus
+	validators             []*consensus.Validator        // list of validator
 	syncingValidators      map[int][]consensus.Validator // syncing validators
 	syncingValidatorsIndex map[string]int                // syncing validators
-	version                map[int]int                   //chainID -> version
+	version                map[int]int                   // chainID -> version
 
 	consensusName string
 	config        *EngineConfig
@@ -178,6 +179,12 @@ func (s *Engine) WatchCommitteeChange() {
 					s.initProcess(chainID, chainName)
 				}
 			}
+			if s.version[chainID] == 4 {
+				if _, ok := s.BFTProcess[chainID].(*blsbft4.BLSBFT_V4); !ok {
+					s.BFTProcess[chainID].Destroy()
+					s.initProcess(chainID, chainName)
+				}
+			}
 		}
 		validatorMiningKey := []signatureschemes2.MiningKey{}
 		for _, validator := range validators {
@@ -237,6 +244,20 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 				chainName, chainID,
 				engine.config.Node, Logger.Log)
 		}
+	} else if engine.version[chainID] == 4 {
+		if chainID == -1 {
+			engine.BFTProcess[chainID] = blsbft4.NewInstance(
+				engine.config.Blockchain.BeaconChain,
+				engine.config.Blockchain.BeaconChain,
+				chainName, chainID,
+				engine.config.Node, Logger.Log)
+		} else {
+			engine.BFTProcess[chainID] = blsbft4.NewInstance(
+				engine.config.Blockchain.ShardChain[chainID],
+				engine.config.Blockchain.BeaconChain,
+				chainName, chainID,
+				engine.config.Node, Logger.Log)
+		}
 	} else {
 		// Auto init version 1 if no suitable config is provided
 		if chainID == -1 {
@@ -264,6 +285,10 @@ func (engine *Engine) updateVersion(chainID int) {
 
 	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV3Height {
 		engine.version[chainID] = 3
+	}
+
+	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV4Height {
+		engine.version[chainID] = 4
 	}
 }
 

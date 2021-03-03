@@ -384,3 +384,14 @@ func (chain *BeaconChain) GetChainDatabase() incdb.Database {
 func (chain *BeaconChain) CommitteeEngineVersion() uint {
 	return chain.multiView.GetBestView().CommitteeEngineVersion()
 }
+
+func (chain *BeaconChain) CommitteesForSigning(committeePublicKeys []incognitokey.CommitteePublicKey, threshold int) []incognitokey.CommitteePublicKey {
+	res := []incognitokey.CommitteePublicKey{}
+	beaconFinalView := chain.GetFinalView().(*BeaconBestState)
+	for i, v := range committeePublicKeys {
+		if uint64(i%threshold) == beaconFinalView.BeaconHeight%uint64(threshold) {
+			res = append(res, v)
+		}
+	}
+	return res
+}
