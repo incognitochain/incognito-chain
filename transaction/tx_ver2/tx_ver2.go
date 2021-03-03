@@ -22,11 +22,12 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 )
 
-// TxSigPubKey of ver2 is array of Indexes in database
+// SigPubKey defines the public key to sign ring signatures in version 2. It is an array of coin indexes.
 type SigPubKey struct {
 	Indexes [][]*big.Int
 }
 
+// Tx struct for version 2 contains the same fields as before
 type Tx struct {
 	tx_generic.TxBase
 }
@@ -100,6 +101,7 @@ func (sigPub *SigPubKey) SetBytes(b []byte) error {
 
 // ========== GET FUNCTION ===========
 
+// GetReceiverData returns output coins for this function
 func (tx *Tx) GetReceiverData() ([]privacy.Coin, error) {
 	if tx.Proof != nil && len(tx.Proof.GetOutputCoins()) > 0 {
 		return tx.Proof.GetOutputCoins(), nil
@@ -109,6 +111,7 @@ func (tx *Tx) GetReceiverData() ([]privacy.Coin, error) {
 
 // ========== CHECK FUNCTION ===========
 
+// CheckAuthorizedSender verifies that this publicKey matches the signature inside the metadata
 func (tx *Tx) CheckAuthorizedSender(publicKey []byte) (bool, error) {
 	if !tx.Metadata.ShouldSignMetaData() {
 		utils.Logger.Log.Error("Check authorized sender failed because tx.Metadata is not appropriate")
@@ -173,6 +176,7 @@ func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.C
 	return privKeyMlsag, nil
 }
 
+// Init uses the information in parameter to create a valid, signed Tx.
 func (tx *Tx) Init(paramsInterface interface{}) error {
 	params, ok := paramsInterface.(*tx_generic.TxPrivacyInitParams)
 	if !ok {
@@ -465,6 +469,9 @@ func (tx *Tx) verifySig(transactionStateDB *statedb.StateDB, shardID byte, token
 	return mlsag.Verify(mlsagSignature, ring, tx.Hash()[:])
 }
 
+// Verify is the sub-function for ValidateTransaction.
+// It is called in the verification flow of most transactions, excluding some special TX types.
+// It takes in boolParams to reflect some big differences across code versions; and db pointer, shard ID & token ID to get coins from the chain database.
 func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	var err error
 	var valid bool
@@ -534,12 +541,14 @@ func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.Sta
 	return true, nil
 }
 
+// VerifyMinerCreatedTxBeforeGettingInBlock checks that a transaction was created by a miner
 func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	return tx_generic.VerifyTxCreatedByMiner(&tx, mintdata, shardID, bcr, accumulatedValues, retriever, viewRetriever)
 }
 
 // ========== SALARY FUNCTIONS: INIT AND VALIDATE  ==========
 
+// InitTxSalary is used to create a "mint" transaction of version 2. The minting rule is covered inside the metadata.
 func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
 	tokenID := &common.Hash{}
 	if err := tokenID.SetBytes(common.PRVCoinID[:]); err != nil {
@@ -581,6 +590,7 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 	return nil
 }
 
+// ValidateTxSalary verifies a transaction created by InitTxSalary
 func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	// verify signature
 	if valid, err := tx_generic.VerifySigNoPrivacy(tx.Sig, tx.SigPubKey, tx.Hash()[:]); !valid {
@@ -645,6 +655,8 @@ func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 // 	return record
 // }
 
+// Hash returns the hash of this transaction.
+// All non-signature fields are marshalled into JSON before hashing
 func (tx Tx) Hash() *common.Hash {
 	// leave out signature & its public key when hashing tx
 	tx.Sig = []byte{}
@@ -658,6 +670,7 @@ func (tx Tx) Hash() *common.Hash {
 	return &hash
 }
 
+// HashWithoutMetadataSig returns the hash of this transaction, but it leaves out the metadata's own signature field. It is used to verify that metadata signature.
 func (tx Tx) HashWithoutMetadataSig() *common.Hash {
 	md := tx.GetMetadata()
 	mdHash := md.HashWithoutSig()
@@ -762,6 +775,8 @@ func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *
 	return true, nil
 }
 
+// GetTxActualSize returns the size of this TX.
+// It is the length of its JSON form.
 func (tx Tx) GetTxActualSize() uint64 {
 	jsb, err := json.Marshal(tx)
 	if err!=nil{

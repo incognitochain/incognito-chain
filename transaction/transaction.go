@@ -16,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
+// Logger is the logger instance for this package
 var Logger = &utils.Logger
 
 type TxVersion1 		= tx_ver1.Tx
@@ -28,6 +29,9 @@ type TxTokenParams 		= tx_generic.TxTokenParams
 type TxTokenData 		= tx_generic.TxTokenData
 type TxSigPubKeyVer2	= tx_ver2.SigPubKey
 
+// BuildCoinBaseTxByCoinID is used to create a salary transaction. 
+// This is a legacy function; it will be deprecated in the future.
+// It must take its own defined parameter struct.
 func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
 	paymentInfo := &privacy.PaymentInfo{
 		PaymentAddress: *params.payToAddress,
@@ -57,8 +61,9 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 	return nil, nil
 }
 
-// use this to generate the output coin in salary TXs
-// when ReceiverAddress equals nil, we use public key & txRandom
+// TxSalaryOutputParams is a helper struct for "mint"-type transactions.
+// It first tries to create a TX in version 2; if that fails, it falls back to the older version.
+// The receiver is defined by either the ReceiverAddress field (for non-privacy use), or the fields PublicKey & TxRandom combined.
 type TxSalaryOutputParams struct{
 	Amount 				uint64
 	ReceiverAddress 	*privacy.PaymentAddress
@@ -107,6 +112,11 @@ func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error){
 	return outputCoin, err
 }
 
+// BuildTXSalary is called from the parameter struct to actually create a "mint" transaction. It takes parameters:
+//
+//  - private key : to sign the TX
+//  - db pointer : to get other coins for the ring signature
+//  - metadata maker (optional): a closure that returns a metadata object (this allows making the metadata based on the output coin)
 func (pr TxSalaryOutputParams) BuildTxSalary(privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, mdMaker func(privacy.Coin) metadata.Metadata) (metadata.Transaction, error) {
 	var res metadata.Transaction
 	isPRV := (pr.TokenID==nil) || (*pr.TokenID==common.PRVCoinID)
@@ -208,7 +218,8 @@ type txJsonDataVersion struct {
 	Type    string
 }
 
-// For PRV and the Fee inside TokenTx
+// NewTransactionFromJsonBytes parses a transaction from raw JSON, assuming it is a PRV transfer.
+// This is a legacy function; it will be replaced by DeserializeTransactionJSON.
 func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
 	choices, err := DeserializeTransactionJSON(data)
 	if err!=nil{
@@ -255,7 +266,8 @@ func NewTransactionFromJsonBytes(data []byte) (metadata.Transaction, error) {
 	// }
 }
 
-// Return token transaction from bytes
+// NewTransactionTokenFromJsonBytes parses a transaction from raw JSON, assuming it is a pToken transfer.
+// This is a legacy function; it will be replaced by DeserializeTransactionJSON.
 func NewTransactionTokenFromJsonBytes(data []byte) (tx_generic.TransactionToken, error) {
 	choices, err := DeserializeTransactionJSON(data)
 	if err!=nil{
@@ -303,12 +315,17 @@ func NewTransactionTokenFromJsonBytes(data []byte) (tx_generic.TransactionToken,
 	// }
 }
 
+// TxChoice is a helper struct for parsing transactions of all types from JSON.
+// After parsing succeeds, one of its fields will have the TX object; others will be nil.
+// This can be used to assert the transaction type.
 type TxChoice struct{
 	Version1 		*TxVersion1 		`json:"TxVersion1,omitempty"`
 	TokenVersion1 	*TxTokenVersion1 	`json:"TxTokenVersion1,omitempty"`
 	Version2 		*TxVersion2 		`json:"TxVersion2,omitempty"`
 	TokenVersion2 	*TxTokenVersion2 	`json:"TxTokenVersion2,omitempty"`
 }
+// ToTx returns a generic transaction from a TxChoice object.
+// Use this when the underlying TX type is irrelevant.
 func (ch *TxChoice) ToTx() metadata.Transaction{
 	if ch==nil{
 		return nil
@@ -328,6 +345,8 @@ func (ch *TxChoice) ToTx() metadata.Transaction{
 	}
 	return nil
 }
+// DeserializeTransactionJSON parses a transaction from raw JSON into a TxChoice object.
+// It covers all transaction types.
 func DeserializeTransactionJSON(data []byte) (*TxChoice, error){
 	result := &TxChoice{}
 	holder := make(map[string]interface{})
@@ -379,6 +398,7 @@ func DeserializeTransactionJSON(data []byte) (*TxChoice, error){
 
 }
 
+// BuildCoinBaseTxByCoinIDParams defines the parameters for BuildCoinBaseTxByCoinID
 type BuildCoinBaseTxByCoinIDParams struct {
 	payToAddress       *privacy.PaymentAddress
 	amount             uint64
@@ -418,6 +438,9 @@ func NewBuildCoinBaseTxByCoinIDParams(payToAddress *privacy.PaymentAddress,
 	return params
 }
 
+// NewTransactionFromParams is a helper that returns a new transaction whose version matches the parameter object.
+// The result is a PRV-transfer transaction that only has the version ready, nothing else.
+// One needs to call ".Init(params)" after this to get a valid TX.
 func NewTransactionFromParams(params *tx_generic.TxPrivacyInitParams) (metadata.Transaction, error) {
 	inputCoins := params.InputCoins
 	ver, err := tx_generic.GetTxVersionFromCoins(inputCoins)
@@ -433,6 +456,9 @@ func NewTransactionFromParams(params *tx_generic.TxPrivacyInitParams) (metadata.
 	return nil, errors.New("Cannot create new transaction from params, ver is wrong")
 }
 
+// NewTransactionTokenFromParams is a helper that returns a new transaction whose version matches the parameter object.
+// The result is a pToken transaction that only has the version ready, nothing else.
+// One needs to call ".Init(params)" after this to get a valid TX.
 func NewTransactionTokenFromParams(params *tx_generic.TxTokenParams) (tx_generic.TransactionToken, error) {
 	inputCoins := params.InputCoin
 	ver, err := tx_generic.GetTxVersionFromCoins(inputCoins)
@@ -450,6 +476,9 @@ func NewTransactionTokenFromParams(params *tx_generic.TxTokenParams) (tx_generic
 	return nil, errors.New("Something is wrong when NewTransactionFromParams")
 }
 
+// GetTxTokenDataFromTransaction is an alternative getter for the TokenData field.
+// It takes the most generic TX interface and casts it to a token transaction.
+// Upon any error, it returns nil.
 func GetTxTokenDataFromTransaction(tx metadata.Transaction) *tx_generic.TxTokenData {
 	if tx.GetType() != common.TxCustomTokenPrivacyType && tx.GetType() != common.TxTokenConversionType {
 		return nil
@@ -468,6 +497,8 @@ func GetTxTokenDataFromTransaction(tx metadata.Transaction) *tx_generic.TxTokenD
 	}
 }
 
+// GetFullBurnData is a helper that indicates whether or not a TX is burning any coin.
+// Returned values beyond the first will contain the coins (PRV or pToken) being burnt and its token ID.
 func GetFullBurnData(tx metadata.Transaction) (bool, coin.Coin, coin.Coin, *common.Hash, error) {
 
 	switch  tx.GetType() {

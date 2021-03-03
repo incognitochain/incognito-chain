@@ -20,6 +20,10 @@ import (
 	"strconv"
 )
 
+// TxTokenDataVersion2 contains the token data
+// for a pToken transaction (input / output coins, signature, token ID, type of transfer, ...).
+// Unlike the previous version, this does not have a *Tx field in it;
+// this avoids duplication of data.
 type TxTokenDataVersion2 struct {
 	PropertyID     common.Hash
 	PropertyName   string
@@ -32,6 +36,8 @@ type TxTokenDataVersion2 struct {
 	Mintable bool
 }
 
+// Hash returns the hash of this object.
+// All non-signature fields are marshalled to JSON beforehand.
 func (td TxTokenDataVersion2) Hash() (*common.Hash, error) {
 	// leave out signature & its public key when hashing tx
 	td.Sig = []byte{}
@@ -64,7 +70,7 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx {
 		copy(clonedInfo, txPRV.Info)
 	}
 	var clonedProof privacy.Proof = nil
-	// feed the type to parse proof 
+	// feed the type to parse proof
 	proofType := txPRV.Type
 	if proofType == common.TxTokenConversionType {
 		proofType = common.TxConversionType
@@ -96,11 +102,18 @@ func makeTxToken(txPRV *Tx, pubkey, sig []byte, proof privacy.Proof) *Tx {
 	return result
 }
 
+// TxToken is the struct for pToken transaction. Its attributes:
+//
+// - Tx describes a PRV transfer (typically the fee payment)
+// - TokenData describes a pToken transfer / creation
 type TxToken struct {
 	Tx             Tx                  `json:"Tx"`
 	TokenData      TxTokenDataVersion2 `json:"TxTokenPrivacyData"`
 	cachedTxNormal *Tx
 }
+
+// Hash returns the hash of this object.
+// For TxToken, we just concatenate the hash of its fields, then hash that again.
 func (tx *TxToken) Hash() *common.Hash {
 	firstHash := tx.Tx.Hash()
 	secondHash, err := tx.TokenData.Hash()
@@ -110,6 +123,9 @@ func (tx *TxToken) Hash() *common.Hash {
 	result := common.HashH(append(firstHash[:], secondHash[:]...))
 	return &result
 }
+
+// ToCompatTokenData uses the data from TxToken to construct a TxTokenData of the previous version
+// (for compatibility).
 func (td TxTokenDataVersion2) ToCompatTokenData(ttx metadata.Transaction) tx_generic.TxTokenData {
 	return tx_generic.TxTokenData{
 		TxNormal:       ttx,
@@ -135,9 +151,12 @@ func decomposeTokenData(td tx_generic.TxTokenData) (*TxTokenDataVersion2, *Tx, e
 	}
 	return &result, tx, nil
 }
+
+// GetTxBase returns the Tx field in this TxToken as a generic Transaction.
 func (tx *TxToken) GetTxBase() metadata.Transaction {
 	return &tx.Tx
 }
+// SetTxBase tries to set the Tx field to inTx. It can fail when inTx has the wrong version.
 func (tx *TxToken) SetTxBase(inTx metadata.Transaction) error {
 	temp, ok := inTx.(*Tx)
 	if !ok {
@@ -146,6 +165,7 @@ func (tx *TxToken) SetTxBase(inTx metadata.Transaction) error {
 	tx.Tx = *temp
 	return nil
 }
+// GetTxNormal returns a Transaction describing the "token" part of this TxToken.
 func (tx *TxToken) GetTxNormal() metadata.Transaction {
 	if tx.cachedTxNormal != nil {
 		return tx.cachedTxNormal
@@ -154,6 +174,8 @@ func (tx *TxToken) GetTxNormal() metadata.Transaction {
 	// tx.cachedTxNormal = result
 	return result
 }
+// SetTxNormal extracts the data in inTx
+// & puts it in the TokenData of this TxToken
 func (tx *TxToken) SetTxNormal(inTx metadata.Transaction) error {
 	temp, ok := inTx.(*Tx)
 	if !ok {
@@ -370,6 +392,7 @@ func (txToken *TxToken) initPRV(feeTx *Tx, params *tx_generic.TxPrivacyInitParam
 	return inps, outs, nil
 }
 
+// Init uses the information in the parameter to create a valid, signed pToken transaction.
 func (txToken *TxToken) Init(paramsInterface interface{}) error {
 	params, ok := paramsInterface.(*tx_generic.TxTokenParams)
 	if !ok {
@@ -456,6 +479,7 @@ func (txToken *TxToken) Init(paramsInterface interface{}) error {
 	return nil
 }
 
+// InitTxTokenSalary creates a transaction that "mints" some pToken. The minting rule is covered by the metadata.
 func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata, coinID *common.Hash, coinName string) error {
 	var err error
 	// Check validate params
@@ -513,6 +537,7 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 	return nil
 }
 
+// ValidateTxSalary validates a minting pToken transaction
 func (tx *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	return false, nil
 }
@@ -581,6 +606,9 @@ func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID b
 	return mlsag.Verify(mlsagSignature, ring, message[:])
 }
 
+// ValidateTxByItself does most of the verification for TxToken, including bulletproofs, signatures & metadata.
+// This depends on the chain state defined by shard ID & db pointer, as well as boolParams (which handles code
+// version differences)
 func (txToken TxToken) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	// check for proof, signature ...
 	// isBatch = false
@@ -600,6 +628,8 @@ func (txToken TxToken) ValidateTxByItself(boolParams map[string]bool, transactio
 	return true, nil
 }
 
+// ValidateTransaction does the same verification as ValidateTxByItself,
+// but it works with Bulletproof batching.
 func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, []privacy.Proof, error) {
 	var err error
 	jsb, _ := json.Marshal(txToken)
@@ -667,6 +697,7 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 	}
 }
 
+// ValidateSanityData performs sanity checks for this TxToken (including its descendant fields & metadata)
 func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	if txToken.GetType() != common.TxCustomTokenPrivacyType && txToken.GetType() != common.TxTokenConversionType {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.Tx should have type tp"))
@@ -697,6 +728,8 @@ func (txToken TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever
 	return true, nil
 }
 
+// GetTxActualSize returns the size of this TxToken.
+// It is the length of its JSON form.
 func (txToken TxToken) GetTxActualSize() uint64 {
 	jsb, err := json.Marshal(txToken)
 	if err != nil {
@@ -710,6 +743,7 @@ func (tx TxToken) GetVersion() int8 { return tx.Tx.Version }
 
 func (tx *TxToken) SetVersion(version int8) { tx.Tx.Version = version }
 
+// GetMetadataType returns the metadata type. A pToken transaction only has one metadata.
 func (tx TxToken) GetMetadataType() int {
 	if tx.Tx.Metadata != nil {
 		return tx.Tx.Metadata.GetType()
@@ -717,53 +751,73 @@ func (tx TxToken) GetMetadataType() int {
 	return metadata.InvalidMeta
 }
 
+// GetType returns the transaction type. A pToken transaction only has one Type (TokenData's Type is a separate enum).
 func (tx TxToken) GetType() string { return tx.Tx.Type }
 
 func (tx *TxToken) SetType(t string) { tx.Tx.Type = t }
 
+// GetLockTime returns the transaction's time. A pToken transaction only has one LockTime.
 func (tx TxToken) GetLockTime() int64 { return tx.Tx.LockTime }
 
 func (tx *TxToken) SetLockTime(locktime int64) { tx.Tx.LockTime = locktime }
 
+// GetSenderAddrLastByte returns the SHARD ID of this transaction sender.
+// It uses this legacy function name for compatibility purposes.
 func (tx TxToken) GetSenderAddrLastByte() byte { return tx.Tx.PubKeyLastByteSender }
 
 func (tx *TxToken) SetGetSenderAddrLastByte(b byte) { tx.Tx.PubKeyLastByteSender = b }
 
+// GetTxFee returns the fee of this TxToken (fee is in PRV). A pToken transaction only has one Fee.
 func (tx TxToken) GetTxFee() uint64 { return tx.Tx.Fee }
 
 func (tx *TxToken) SetTxFee(fee uint64) { tx.Tx.Fee = fee }
 
+// GetTxFeeToken is a filler function to satisfy the interface.
+// It returns zero since paying fee in pToken is no longer supported.
 func (tx TxToken) GetTxFeeToken() uint64 { return uint64(0) }
 
+// GetInfo returns the transaction's extra information. A pToken transaction only has one Info.
 func (tx TxToken) GetInfo() []byte { return tx.Tx.Info }
 
 func (tx *TxToken) SetInfo(info []byte) { tx.Tx.Info = info }
 
 // not supported
 func (tx TxToken) GetSigPubKey() []byte           { return []byte{} }
+// not supported
 func (tx *TxToken) SetSigPubKey(sigPubkey []byte) {}
+// not supported
 func (tx TxToken) GetSig() []byte                 { return []byte{} }
+// not supported
 func (tx *TxToken) SetSig(sig []byte)             {}
+// not supported
 func (tx TxToken) GetProof() privacy.Proof        { return tx.Tx.Proof }
+// not supported
 func (tx *TxToken) SetProof(proof privacy.Proof)  {}
+// not supported
 func (tx TxToken) GetCachedActualSize() *uint64 {
 	return nil
 }
 func (tx *TxToken) SetCachedActualSize(sz *uint64) {}
-
+// not supported
 func (tx TxToken) GetCachedHash() *common.Hash {
 	return nil
 }
+// not supported
 func (tx *TxToken) SetCachedHash(h *common.Hash) {}
+// Verify is the sub-function for ValidateTransaction. This is in the verification flow of most TXs (excluding some special types).
 func (tx *TxToken) Verify(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	return false, nil
 }
 
+// GetTokenID returns the token ID for this TxToken.
 func (tx TxToken) GetTokenID() *common.Hash { return &tx.TokenData.PropertyID }
 
+// GetMetadataType returns the transaction's metadata. A pToken transaction only has one metadata.
 func (tx TxToken) GetMetadata() metadata.Metadata { return tx.Tx.Metadata }
 
 func (tx *TxToken) SetMetadata(meta metadata.Metadata) { tx.Tx.Metadata = meta }
+// GetPrivateKey returns the private key being used to sign this TxToken.
+// The private key is always cleared after signing.
 func (tx TxToken) GetPrivateKey() []byte {
 	return tx.Tx.GetPrivateKey()
 }

@@ -1,5 +1,4 @@
-// MAIN IMPLEMENTATION OF MLSAG
-
+// Package mlsag contains the implementation of MLSAG, a ring signature scheme.
 package mlsag
 
 import (
@@ -13,10 +12,13 @@ import (
 
 var CurveOrder = new(operation.Scalar).SetKeyUnsafe(&C25519.L)
 
+// Ring is the struct for a MLSAG ring. It is a matrix of public keys.
+// One of these rows is the actual coin transfer, others consist of "decoy" public keys from the chain data.
 type Ring struct {
 	keys [][]*operation.Point
 }
 
+// GetKeys returns the public keys in this Ring as a 2-dimensional array
 func (ring Ring) GetKeys() [][]*operation.Point {
 	return ring.keys
 }
@@ -25,6 +27,7 @@ func NewRing(keys [][]*operation.Point) *Ring {
 	return &Ring{keys}
 }
 
+// ToBytes encodes this Ring's dimensions & contents into a byte array.
 func (ring Ring) ToBytes() ([]byte, error) {
 	k := ring.keys
 	if len(k) == 0 {
@@ -55,6 +58,7 @@ func (ring Ring) ToBytes() ([]byte, error) {
 	return b, nil
 }
 
+// FromBytes decodes a byte array into a Ring
 func (ring *Ring) FromBytes(b []byte) (*Ring, error) {
 	if len(b) < 3 {
 		return nil, errors.New("RingFromBytes: byte length is too short")
@@ -96,7 +100,7 @@ func createFakePublicKeyArray(length int) []*operation.Point {
 	return K
 }
 
-// Create a random ring with dimension: (numFake; len(privateKeys)) where we generate fake public keys inside
+// NewRandomRing creates a random ring with dimension: (numFake; len(privateKeys)) where we generate fake public keys inside
 func NewRandomRing(privateKeys []*operation.Scalar, numFake, pi int) (K *Ring) {
 	m := len(privateKeys)
 
@@ -115,6 +119,9 @@ func NewRandomRing(privateKeys []*operation.Scalar, numFake, pi int) (K *Ring) {
 	return
 }
 
+// Mlsag struct contains the data needed to sign a Ring.
+//
+// pi : the row index of the "real" coins
 type Mlsag struct {
 	R           *Ring
 	pi          int
@@ -317,6 +324,7 @@ func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, er
 	return bytes.Equal(c.ToBytesS(), cBefore.ToBytesS()), nil
 }
 
+// Verify does verification of a ring signature on a message.
 func Verify(sig *MlsagSig, K *Ring, message []byte) (bool, error) {
 	if len(message) != common.HashSize {
 		return false, fmt.Errorf("Cannot mlsag verify the message because its length is not 32, maybe it has not been hashed")
@@ -331,6 +339,8 @@ func Verify(sig *MlsagSig, K *Ring, message []byte) (bool, error) {
 	return b2, err
 }
 
+// Sign uses the private key in this Mlsag to sign a message (which is the transaction hash).
+// It returns a MlsagSig.
 func (mlsag *Mlsag) Sign(message []byte) (*MlsagSig, error) {
 	if len(message) != common.HashSize {
 		return nil, errors.New("Cannot mlsag sign the message because its length is not 32, maybe it has not been hashed")

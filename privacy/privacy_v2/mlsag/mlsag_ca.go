@@ -8,7 +8,10 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
-
+// SignConfidentialAsset uses the private key in this Mlsag to sign a message (which is the transaction hash).
+// It returns a MlsagSig.
+//
+// The Ring for Confidential Asset transactions has one extra column; it contains the asset tag sums.
 func (mlsag *Mlsag) SignConfidentialAsset(message []byte) (*MlsagSig, error) {
 	if len(message) != common.HashSize {
 		return nil, errors.New("Cannot mlsag sign the message because its length is not 32, maybe it has not been hashed")
@@ -27,6 +30,7 @@ func (mlsag *Mlsag) SignConfidentialAsset(message []byte) (*MlsagSig, error) {
 	}, nil
 }
 
+// VerifyConfidentialAsset does verification of a (Confidential Asset) ring signature on a message.
 func VerifyConfidentialAsset(sig *MlsagSig, K *Ring, message []byte) (bool, error) {
 	if len(message) != common.HashSize {
 		return false, errors.New("Cannot mlsag verify the message because its length is not 32, maybe it has not been hashed")

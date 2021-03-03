@@ -1,3 +1,5 @@
+// Package bulletproofs manages the creation, proving & verification of Bulletproofs.
+// This is a class of compact-sized range proof that require no trusted setup.
 package bulletproofs
 
 import (
@@ -8,11 +10,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+// AggregatedRangeWitness contains the prover's secret data (the actual values to be proven & the generated random blinders)
+// needed for creating a range proof.
 type AggregatedRangeWitness struct {
 	values []uint64
 	rands  []*operation.Scalar
 }
 
+// AggregatedRangeProof is the struct for Bulletproof.
+// The statement being proven is that output coins' values are in the uint64 range.
 type AggregatedRangeProof struct {
 	cmsValue          []*operation.Point
 	a                 *operation.Point
@@ -34,6 +40,7 @@ type bulletproofParams struct {
 
 var AggParam = newBulletproofParams(privacy_util.MaxOutputCoin)
 
+// ValidateSanity performs sanity checks for this proof.
 func (proof AggregatedRangeProof) ValidateSanity() bool {
 	for i := 0; i < len(proof.cmsValue); i++ {
 		if !proof.cmsValue[i].PointValid() {
@@ -50,6 +57,7 @@ func (proof AggregatedRangeProof) ValidateSanity() bool {
 	return proof.innerProductProof.ValidateSanity()
 }
 
+// Init creates an allocated, blank AggregatedRangeProof object
 func (proof *AggregatedRangeProof) Init() {
 	proof.a = new(operation.Point).Identity()
 	proof.s = new(operation.Point).Identity()
@@ -61,6 +69,7 @@ func (proof *AggregatedRangeProof) Init() {
 	proof.innerProductProof = new(InnerProductProof).Init()
 }
 
+// IsNil returns true if any field in this proof is nil
 func (proof AggregatedRangeProof) IsNil() bool {
 	if proof.a == nil {
 		return true
@@ -86,6 +95,7 @@ func (proof AggregatedRangeProof) IsNil() bool {
 	return proof.innerProductProof == nil
 }
 
+// Bytes does byte-marshalling
 func (proof AggregatedRangeProof) Bytes() []byte {
 	var res []byte
 
@@ -111,6 +121,7 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	return res
 }
 
+// GetCommitments is the getter for cmsValue
 func (proof AggregatedRangeProof) GetCommitments() []*operation.Point {return proof.cmsValue}
 
 func (proof *AggregatedRangeProof) SetCommitments(cmsValue []*operation.Point) {
@@ -191,7 +202,7 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	}
 	proof.mu = new(operation.Scalar).FromBytesS(bytes[offset : offset+operation.Ed25519KeySize])
 	offset += operation.Ed25519KeySize
-	
+
 	if offset >= len(bytes){
 		return errors.New("Range Proof unmarshaling from bytes failed")
 	}
@@ -389,6 +400,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	return proof, nil
 }
 
+// Verify does verification for this Bulletproof.
+// No view into chain data is needed.
 func (proof AggregatedRangeProof) Verify() (bool, error) {
 	numValue := len(proof.cmsValue)
 	if numValue > privacy_util.MaxOutputCoin {
@@ -600,6 +613,8 @@ func (proof AggregatedRangeProof) VerifyFaster() (bool, error) {
 	return true, nil
 }
 
+// VerifyBatch verifies a list of Bulletproofs in batched fashion.
+// It saves time by using a multi-exponent operation.
 func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 	maxExp := privacy_util.MaxExp
 	baseG := operation.PedCom.G[operation.PedersenValueIndex]
@@ -784,7 +799,7 @@ func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 	return true, nil, -1
 }
 
-// estimateMultiRangeProofSize estimate multi range proof size
+// EstimateMultiRangeProofSize returns the upper bound of Bulletproof size given the number of output coins.
 func EstimateMultiRangeProofSize(nOutput int) uint64 {
 	return uint64((nOutput+2*int(math.Log2(float64(privacy_util.MaxExp*roundUpPowTwo(nOutput))))+5)*operation.Ed25519KeySize + 5*operation.Ed25519KeySize + 2)
 }
