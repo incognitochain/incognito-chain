@@ -12,12 +12,12 @@ import (
 
 // config is a descriptor containing the memory pool configuration.
 type AppConfig struct {
-	BlockChain         *blockchain.BlockChain       // Block chain of node
+	BlockChain *blockchain.BlockChain // Block chain of node
 }
 
 type AppService struct {
 	// The following variables must only be used atomically.
-	config             AppConfig
+	config AppConfig
 }
 
 func (app *AppService) Init(cfg *AppConfig) {
@@ -28,7 +28,7 @@ func (app *AppService) PublishBeaconState(beaconState *blockchain.BeaconBestStat
 	Logger.log.Debugf("Publish beaconState with hash %v at height %d", beaconState.BestBlock.Hash().String(), beaconState.BeaconHeight)
 	beacon := data.NewBeaconFromBeaconState(beaconState)
 	err := storage.StoreLatestBeaconFinalState(context.TODO(), beacon)
-	if err !=nil && !impl.IsMongoDupKey(err) {
+	if err != nil && !impl.IsMongoDupKey(err) {
 		return err
 	}
 	return nil
@@ -38,17 +38,17 @@ func (app *AppService) PublishShardState(shardBestState *blockchain.ShardBestSta
 	Logger.log.Infof("Publish shardState with hash %v at height %d of Shard ID: %d", shardBestState.BestBlock.Hash().String(), shardBestState.BeaconHeight, shardBestState.ShardID)
 	shard := data.NewShardFromShardState(shardBestState)
 	err := storage.StoreLatestShardFinalState(context.TODO(), shard)
-	if err !=nil && !impl.IsMongoDupKey(err) {
+	if err != nil && !impl.IsMongoDupKey(err) {
 		return err
 	}
 	return nil
 }
 
 func (app *AppService) PublishPDEState(pdeContributionStore *rawdbv2.PDEContributionStore, pdeTradeStore *rawdbv2.PDETradeStore, pdeCrossTradeStore *rawdbv2.PDECrossTradeStore,
-						pdeWithdrawalStatusStore *rawdbv2.PDEWithdrawalStatusStore, pdeFeeWithdrawalStatusStore *rawdbv2.PDEFeeWithdrawalStatusStore) error {
+	pdeWithdrawalStatusStore *rawdbv2.PDEWithdrawalStatusStore, pdeFeeWithdrawalStatusStore *rawdbv2.PDEFeeWithdrawalStatusStore) error {
 	Logger.log.Infof("Publish pdeStateStore")
 	err := storage.StorePDEShareState(context.TODO(), pdeContributionStore, pdeTradeStore, pdeCrossTradeStore, pdeWithdrawalStatusStore, pdeFeeWithdrawalStatusStore)
-	if err !=nil && !impl.IsMongoDupKey(err) {
+	if err != nil && !impl.IsMongoDupKey(err) {
 		return err
 	}
 	return nil

@@ -49,7 +49,7 @@ const (
 	ShardCommitmentIndex = "ShardCommitmentIndex"
 
 	//Cross Shard Output Coin
-	CrossShardOutputCoin= "CrossShardOutputCoin"
+	CrossShardOutputCoin = "CrossShardOutputCoin"
 
 	//TokenState
 	TokenState = "TokenState"
@@ -74,49 +74,48 @@ const (
 	MatchedRedeemRequest  = "MatchedRedeemRequest"
 	LockedCollateral      = "LockedCollateral"
 
-
 	//PDE Trade Status State
 	PDEContributionStatusTrackChange = "PDEContributionStatusTrackChange"
-	PDEContributionStatusBestState = "PDEContributionStatusBestState"
-	PDEContributionStatusFinalState = "PDEContributionStatusFinalState"
+	PDEContributionStatusBestState   = "PDEContributionStatusBestState"
+	PDEContributionStatusFinalState  = "PDEContributionStatusFinalState"
 
 	PDETradeTrackChange = "PDETradeTrackChange"
-	PDETradeBestState = "PDETradeBestState"
-	PDETradeFinalState = "PDETradeFinalState"
+	PDETradeBestState   = "PDETradeBestState"
+	PDETradeFinalState  = "PDETradeFinalState"
 
 	PDECrossTradeTrackChange = "PDECrossTradeTrackChange"
-	PDECrossTradeBestState = "PDECrossTradeBestState"
-	PDECrossTradeFinalState = "PDECrossTradeFinalState"
+	PDECrossTradeBestState   = "PDECrossTradeBestState"
+	PDECrossTradeFinalState  = "PDECrossTradeFinalState"
 
 	PDEWithdrawalStatusTrackChange = "PDEWithdrawalStatusTrackChange"
-	PDEWithdrawalStatusBestState = "PDEWithdrawalStatusBestState"
-	PDEWithdrawalStatusFinalState = "PDEWithdrawalStatusFinalState"
+	PDEWithdrawalStatusBestState   = "PDEWithdrawalStatusBestState"
+	PDEWithdrawalStatusFinalState  = "PDEWithdrawalStatusFinalState"
 
 	PDEFeeWithdrawalStatusTrackChange = "PDEFeeWithdrawalStatusTrackChange"
-	PDEFeeWithdrawalStatusBestState = "PDEFeeWithdrawalStatusBestState"
-	PDEFeeWithdrawalStatusFinalState = "PDEFeeWithdrawalStatusFinalState"
-
-
-
+	PDEFeeWithdrawalStatusBestState   = "PDEFeeWithdrawalStatusBestState"
+	PDEFeeWithdrawalStatusFinalState  = "PDEFeeWithdrawalStatusFinalState"
 )
 
 func IsMongoDupKey(err error) bool {
-/*	wce, ok := err.(mongo.WriteError)
+	we, ok := err.(mongo.WriteException)
 	if !ok {
-		log.Printf("%v", err)
+		log.Printf("failed to cast to WriteException %v", err)
 		return false
 	}
-	log.Printf("message: %s  code: %d", wce.Message, wce.Code)
-	return wce.Code == 11000 || wce.Code == 11001 || wce.Code == 12582 || wce.Code == 16460 && strings.Contains(wce.Message, " E11000 ")*/
-	log.Printf("message: %s", err.Error())
-	return strings.Contains(err.Error(), "E11000 duplicate key error")
+	for _, writeError := range we.WriteErrors {
+		log.Printf("message: %s  code: %d", writeError.Message, writeError.Code)
+		if !strings.Contains(writeError.Message, "E11000 duplicate key error") {
+			return false
+		}
+	}
+	return true
 }
 
 func LoadMongoDBDriver(dbConnectionString string) error {
 	log.Printf("Init mongodb to server %s", dbConnectionString)
 	ctx := context.TODO()
 	clientOptions := options.Client().ApplyURI(dbConnectionString)
-	client, err := mongo.Connect( ctx, clientOptions)
+	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
 		return err
 	}
@@ -172,55 +171,54 @@ type mongoDBDriver struct {
 	rewardStateCollection [256]*mongo.Collection
 
 	//PDE
-	pdeShareCollection *mongo.Collection
-	pdePoolForPairCollection *mongo.Collection
-	pdeTradingFeeCollection *mongo.Collection
+	pdeShareCollection               *mongo.Collection
+	pdePoolForPairCollection         *mongo.Collection
+	pdeTradingFeeCollection          *mongo.Collection
 	waitingPDEContributionCollection *mongo.Collection
 
 	//Portal
-	custodianCollection *mongo.Collection
+	custodianCollection             *mongo.Collection
 	waitingPortingRequestCollection *mongo.Collection
-	finalExchangeRatesCollection *mongo.Collection
-	waitingRedeemRequestCollection *mongo.Collection
-	matchedRedeemRequestCollection *mongo.Collection
-	lockedCollateralCollection *mongo.Collection
+	finalExchangeRatesCollection    *mongo.Collection
+	waitingRedeemRequestCollection  *mongo.Collection
+	matchedRedeemRequestCollection  *mongo.Collection
+	lockedCollateralCollection      *mongo.Collection
 
 	//PDETradeStatus
 	pdeContributionStatusTrackChange *mongo.Collection
-	pdeContributionStatusBestState *mongo.Collection
-	pdeContributionStatusFinalState *mongo.Collection
+	pdeContributionStatusBestState   *mongo.Collection
+	pdeContributionStatusFinalState  *mongo.Collection
 
 	pdeTradeTrackChange *mongo.Collection
-	pdeTradeBestState *mongo.Collection
-	pdeTradeFinalState *mongo.Collection
+	pdeTradeBestState   *mongo.Collection
+	pdeTradeFinalState  *mongo.Collection
 
 	pdeCrossTradeTrackChange *mongo.Collection
-	pdeCrossTradeBestState *mongo.Collection
-	pdeCrossTradeFinalState *mongo.Collection
+	pdeCrossTradeBestState   *mongo.Collection
+	pdeCrossTradeFinalState  *mongo.Collection
 
 	pdeWithdrawalStatusTrackChange *mongo.Collection
-	pdeWithdrawalStatusBestState *mongo.Collection
-	pdeWithdrawalStatusFinalState *mongo.Collection
+	pdeWithdrawalStatusBestState   *mongo.Collection
+	pdeWithdrawalStatusFinalState  *mongo.Collection
 
 	pdeFeeWithdrawalStatusTrackChange *mongo.Collection
-	pdeFeeWithdrawalStatusBestState *mongo.Collection
-	pdeFeeWithdrawalStatusFinalState *mongo.Collection
-
+	pdeFeeWithdrawalStatusBestState   *mongo.Collection
+	pdeFeeWithdrawalStatusFinalState  *mongo.Collection
 }
 
-func (m *mongoDBDriver) GetBeaconStateRepository () repository.BeaconStateRepository {
+func (m *mongoDBDriver) GetBeaconStateRepository() repository.BeaconStateRepository {
 	return m
 }
 
-func (m *mongoDBDriver) GetShardStateRepository () repository.ShardStateRepository {
+func (m *mongoDBDriver) GetShardStateRepository() repository.ShardStateRepository {
 	return m
 }
 
-func (m *mongoDBDriver) GetPDEStateRepository () repository.PDEStateRepository {
+func (m *mongoDBDriver) GetPDEStateRepository() repository.PDEStateRepository {
 	return m
 }
 
-func (m *mongoDBDriver)  createIndex(ctx context.Context) error {
+func (m *mongoDBDriver) createIndex(ctx context.Context) error {
 	log.Printf("Init Index")
 
 	//Beacon
@@ -264,7 +262,6 @@ func (m *mongoDBDriver)  createIndex(ctx context.Context) error {
 		return err
 	}
 	log.Printf("Finish Cross Shard Output Coin Index")
-
 
 	//Commitment
 	if err := m.createIndexForShardCommitmentIndexCollection(ctx); err != nil {
@@ -384,7 +381,6 @@ func (m *mongoDBDriver)  createIndex(ctx context.Context) error {
 		return err
 	}
 
-
 	log.Printf("Finish Custodian Index")
 	log.Printf("Finish Init Index")
 
@@ -470,13 +466,13 @@ func (m *mongoDBDriver) createIndexForBeaconCollection(ctx context.Context) erro
 	m.beaconCollection = m.client.Database(DataBaseName).Collection(BeaconState)
 	indexView := m.beaconCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "blockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "blockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "height" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "height", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
@@ -523,7 +519,7 @@ func (m *mongoDBDriver) createIndexForShardOutputCoinCollection(ctx context.Cont
 		m.shardOutputCoinCollection[i] = m.client.Database(DataBaseName).Collection(collectionName)
 		indexView := m.shardOutputCoinCollection[i].Indexes()
 		shardOutputCoinSNDerivatorIndex := mongo.IndexModel{
-			Keys:    bson.D{
+			Keys: bson.D{
 				bson.E{Key: "tokenid", Value: 1},
 				bson.E{Key: "snderivator", Value: 1},
 			},
@@ -531,8 +527,8 @@ func (m *mongoDBDriver) createIndexForShardOutputCoinCollection(ctx context.Cont
 		}
 		shardOutputCoinTokenIdPublicKeyLockTimeIndex := mongo.IndexModel{
 			Keys: bson.D{bson.E{Key: "tokenid", Value: 1},
-				bson.E{ Key:   "publickey", Value: 1 },
-				bson.E{ Key:   "locktime", Value: -1 },
+				bson.E{Key: "publickey", Value: 1},
+				bson.E{Key: "locktime", Value: -1},
 			},
 		}
 		if _, err := indexView.CreateMany(ctx, []mongo.IndexModel{shardOutputCoinSNDerivatorIndex, shardOutputCoinTokenIdPublicKeyLockTimeIndex}); err != nil {
@@ -549,7 +545,7 @@ func (m *mongoDBDriver) createIndexForCrossShardOutputCoinCollection(ctx context
 		m.crossShardOutputCoinCollection[i] = m.client.Database(DataBaseName).Collection(collectionName)
 		indexView := m.crossShardOutputCoinCollection[i].Indexes()
 		crossShardOutputCoinSNDerivatorIndex := mongo.IndexModel{
-			Keys:    bson.D{
+			Keys: bson.D{
 				bson.E{Key: "tokenid", Value: 1},
 				bson.E{Key: "snderivator", Value: 1},
 			},
@@ -557,8 +553,8 @@ func (m *mongoDBDriver) createIndexForCrossShardOutputCoinCollection(ctx context
 		}
 		crossShardOutputCoinTokenIdPublicKeyLockTimeIndex := mongo.IndexModel{
 			Keys: bson.D{bson.E{Key: "tokenid", Value: 1},
-				bson.E{ Key:   "publickey", Value: 1 },
-				bson.E{ Key:   "locktime", Value: -1 },
+				bson.E{Key: "publickey", Value: 1},
+				bson.E{Key: "locktime", Value: -1},
 			},
 		}
 		if _, err := indexView.CreateMany(ctx, []mongo.IndexModel{crossShardOutputCoinSNDerivatorIndex, crossShardOutputCoinTokenIdPublicKeyLockTimeIndex}); err != nil {
@@ -575,7 +571,7 @@ func (m *mongoDBDriver) createIndexForInputCoinCollection(ctx context.Context) e
 		m.inputCoinCollection[i] = m.client.Database(DataBaseName).Collection(collectionName)
 		indexView := m.inputCoinCollection[i].Indexes()
 		inputCoinSNIndex := mongo.IndexModel{
-			Keys:    bson.D{
+			Keys: bson.D{
 				bson.E{Key: "tokenid", Value: 1},
 				bson.E{Key: "serialnumber", Value: 1},
 				bson.E{Key: "shardheight", Value: -1},
@@ -596,7 +592,7 @@ func (m *mongoDBDriver) createIndexForShardCommitmentIndexCollection(ctx context
 		m.shardCommitmentIndexCollection[i] = m.client.Database(DataBaseName).Collection(collectionName)
 		indexView := m.shardCommitmentIndexCollection[i].Indexes()
 		shardCommitmentIndexTokenIdIndexIndex := mongo.IndexModel{
-			Keys:    bson.D{
+			Keys: bson.D{
 				bson.E{Key: "tokenid", Value: 1},
 				bson.E{Key: "index", Value: 1},
 			},
@@ -614,7 +610,7 @@ func (m *mongoDBDriver) createIndexForPublicKeyToTransactionHashCollection(ctx c
 	m.publicKeyToTransactionHashCollection = m.client.Database(DataBaseName).Collection(PublicKeyToTransactionHash)
 	indexView := m.publicKeyToTransactionHashCollection.Indexes()
 	publicKeyShardHashTransactionHashIndex := mongo.IndexModel{
-		Keys:    bson.D{
+		Keys: bson.D{
 			bson.E{Key: "publickey", Value: 1},
 			bson.E{Key: "shardhash", Value: 1},
 			bson.E{Key: "transactionhash", Value: 1},
@@ -671,13 +667,13 @@ func (m *mongoDBDriver) createIndexForBridgeTokenCollection(ctx context.Context)
 	m.bridgeTokenStateCollection = m.client.Database(DataBaseName).Collection(BridgeTokenState)
 	indexView := m.bridgeTokenStateCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconblockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "beaconblockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconheight" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "beaconheight", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
@@ -685,13 +681,13 @@ func (m *mongoDBDriver) createIndexForCustodianCollection(ctx context.Context) e
 	m.custodianCollection = m.client.Database(DataBaseName).Collection(Custodian)
 	indexView := m.custodianCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconblockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "beaconblockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconheight" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "beaconheight", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
@@ -699,13 +695,13 @@ func (m *mongoDBDriver) createIndexForFinalExchangeRatesCollection(ctx context.C
 	m.finalExchangeRatesCollection = m.client.Database(DataBaseName).Collection(FinalExchangeRates)
 	indexView := m.finalExchangeRatesCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconblockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "beaconblockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconheight" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "beaconheight", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
@@ -713,13 +709,13 @@ func (m *mongoDBDriver) createIndexForLockedCollateralCollection(ctx context.Con
 	m.lockedCollateralCollection = m.client.Database(DataBaseName).Collection(LockedCollateral)
 	indexView := m.lockedCollateralCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconblockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "beaconblockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconheight" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "beaconheight", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
@@ -727,13 +723,13 @@ func (m *mongoDBDriver) createIndexForMatchedRedeemRequestCollection(ctx context
 	m.matchedRedeemRequestCollection = m.client.Database(DataBaseName).Collection(MatchedRedeemRequest)
 	indexView := m.matchedRedeemRequestCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconblockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "beaconblockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconheight" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "beaconheight", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
@@ -741,13 +737,13 @@ func (m *mongoDBDriver) createIndexForPDEPoolForPairCollection(ctx context.Conte
 	m.pdePoolForPairCollection = m.client.Database(DataBaseName).Collection(PDEPoolForPair)
 	indexView := m.pdePoolForPairCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconblockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "beaconblockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconheight" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "beaconheight", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
@@ -755,13 +751,13 @@ func (m *mongoDBDriver) createIndexForPDEShareCollection(ctx context.Context) er
 	m.pdeShareCollection = m.client.Database(DataBaseName).Collection(PDEShare)
 	indexView := m.pdeShareCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconblockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "beaconblockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconheight" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "beaconheight", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
@@ -769,13 +765,13 @@ func (m *mongoDBDriver) createIndexForPDETradingFeeCollection(ctx context.Contex
 	m.pdeTradingFeeCollection = m.client.Database(DataBaseName).Collection(PDETradingFee)
 	indexView := m.pdeTradingFeeCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconblockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "beaconblockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconheight" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "beaconheight", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
@@ -783,13 +779,13 @@ func (m *mongoDBDriver) createIndexForWaitingPDEContributionCollection(ctx conte
 	m.waitingPDEContributionCollection = m.client.Database(DataBaseName).Collection(WaitingPDEContribution)
 	indexView := m.waitingPDEContributionCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconblockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "beaconblockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconheight" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "beaconheight", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
@@ -797,13 +793,13 @@ func (m *mongoDBDriver) createIndexForWaitingPortingRequestCollection(ctx contex
 	m.waitingPortingRequestCollection = m.client.Database(DataBaseName).Collection(WaitingPortingRequest)
 	indexView := m.waitingPortingRequestCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconblockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "beaconblockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconheight" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "beaconheight", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
@@ -811,17 +807,17 @@ func (m *mongoDBDriver) createIndexForWaitingRedeemRequestCollection(ctx context
 	m.waitingRedeemRequestCollection = m.client.Database(DataBaseName).Collection(WaitingRedeemRequest)
 	indexView := m.waitingRedeemRequestCollection.Indexes()
 	blockHashIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconblockhash" , Value: 1 }},
+		Keys:    bson.D{bson.E{Key: "beaconblockhash", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
 	blockHeightIndex := mongo.IndexModel{
-		Keys:    bson.D{ bson.E{ Key: "beaconheight" , Value: 1 }},
+		Keys: bson.D{bson.E{Key: "beaconheight", Value: 1}},
 	}
-	_, err:= indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
+	_, err := indexView.CreateMany(ctx, []mongo.IndexModel{blockHashIndex, blockHeightIndex})
 	return err
 }
 
-func (m *mongoDBDriver) StoreLatestBeaconState(ctx context.Context ,beacon *data.Beacon) error {
+func (m *mongoDBDriver) StoreLatestBeaconState(ctx context.Context, beacon *data.Beacon) error {
 	//Logger.log.Infof("Store beacon with block hash %v and block height %d", beacon.BlockHash, beacon.Height)
 	beaconState := getBeaconFromBeaconState(beacon)
 
@@ -850,24 +846,24 @@ func (m *mongoDBDriver) StoreLatestBeaconState(ctx context.Context ,beacon *data
 	return m.storeAllBeaconStateDataWithTransaction(ctx, beaconState, pdeShares, pdePoolPairs, pdeTradingFees, waitingPDEContributionStates, custodians, waitingPortingRequests, matchedRedeemRequests, waitingRedeemRequests, finalExchangeRates, lockedCollaterals, bridgeTokenState)
 }
 
-func (m *mongoDBDriver) movePDEBestStateToFinalState(ctx context.Context , hash string) error {
-	if err:= m.movePDEContribution(ctx,hash); err != nil {
+func (m *mongoDBDriver) movePDEBestStateToFinalState(ctx context.Context, hash string) error {
+	if err := m.movePDEContribution(ctx, hash); err != nil {
 		return err
 	}
 
-	if err:= m.movePDETrade(ctx,hash); err != nil {
+	if err := m.movePDETrade(ctx, hash); err != nil {
 		return err
 	}
 
-	if err:= m.movePDECrossTrade(ctx,hash); err != nil {
+	if err := m.movePDECrossTrade(ctx, hash); err != nil {
 		return err
 	}
 
-	if err:= m.movePDEWithdrawal(ctx,hash); err != nil {
+	if err := m.movePDEWithdrawal(ctx, hash); err != nil {
 		return err
 	}
 
-	if err:= m.movePDEFeeWithdrawal(ctx,hash); err != nil {
+	if err := m.movePDEFeeWithdrawal(ctx, hash); err != nil {
 		return err
 	}
 
@@ -875,7 +871,7 @@ func (m *mongoDBDriver) movePDEBestStateToFinalState(ctx context.Context , hash 
 }
 
 func (m *mongoDBDriver) movePDEContribution(ctx context.Context, hash string) error {
-	condition := 	bson.M{"hash": hash}
+	condition := bson.M{"hash": hash}
 	cursor, err := m.pdeContributionStatusBestState.Find(ctx, condition)
 	if err != nil {
 		return err
@@ -891,15 +887,15 @@ func (m *mongoDBDriver) movePDEContribution(ctx context.Context, hash string) er
 
 		update := bson.M{
 			"$set": bson.M{
-				"hash": value.Hash,
-				"height": value.Height,
-				"status":	value.Status,
-				"tokenid1str": value.TokenID1Str,
-				"contributed1amount": value.Contributed1Amount,
-				"returned1amount":    value.Returned1Amount,
-				"tokenid2str": value.TokenID2Str,
-				"contributed2amount": value.Contributed2Amount,
-				"returned2amount":    value.Returned2Amount,
+				"hash":                  value.Hash,
+				"height":                value.Height,
+				"status":                value.Status,
+				"tokenid1str":           value.TokenID1Str,
+				"contributed1amount":    value.Contributed1Amount,
+				"returned1amount":       value.Returned1Amount,
+				"tokenid2str":           value.TokenID2Str,
+				"contributed2amount":    value.Contributed2Amount,
+				"returned2amount":       value.Returned2Amount,
 				"pdecontributionpairid": value.PDEContributionPairID,
 			},
 		}
@@ -918,7 +914,7 @@ func (m *mongoDBDriver) movePDEContribution(ctx context.Context, hash string) er
 }
 
 func (m *mongoDBDriver) movePDETrade(ctx context.Context, hash string) error {
-	condition := 	bson.M{"hash": hash}
+	condition := bson.M{"hash": hash}
 	cursor, err := m.pdeTradeBestState.Find(ctx, condition)
 	if err != nil {
 		return err
@@ -935,10 +931,10 @@ func (m *mongoDBDriver) movePDETrade(ctx context.Context, hash string) error {
 
 		update := bson.M{
 			"$set": bson.M{
-				"hash": value.Hash,
-				"height": value.Height,
+				"hash":    value.Hash,
+				"height":  value.Height,
 				"txreqid": value.TxReqId,
-				"status":	value.Status,
+				"status":  value.Status,
 			},
 		}
 
@@ -957,7 +953,7 @@ func (m *mongoDBDriver) movePDETrade(ctx context.Context, hash string) error {
 }
 
 func (m *mongoDBDriver) movePDECrossTrade(ctx context.Context, hash string) error {
-	condition := 	bson.M{"hash": hash}
+	condition := bson.M{"hash": hash}
 	cursor, err := m.pdeCrossTradeBestState.Find(ctx, condition)
 	if err != nil {
 		return err
@@ -974,10 +970,10 @@ func (m *mongoDBDriver) movePDECrossTrade(ctx context.Context, hash string) erro
 
 		update := bson.M{
 			"$set": bson.M{
-				"hash": value.Hash,
-				"height": value.Height,
+				"hash":    value.Hash,
+				"height":  value.Height,
 				"txreqid": value.TxReqId,
-				"status":	value.Status,
+				"status":  value.Status,
 			},
 		}
 
@@ -996,7 +992,7 @@ func (m *mongoDBDriver) movePDECrossTrade(ctx context.Context, hash string) erro
 }
 
 func (m *mongoDBDriver) movePDEWithdrawal(ctx context.Context, hash string) error {
-	condition := 	bson.M{"hash": hash}
+	condition := bson.M{"hash": hash}
 	cursor, err := m.pdeWithdrawalStatusBestState.Find(ctx, condition)
 	if err != nil {
 		return err
@@ -1013,10 +1009,10 @@ func (m *mongoDBDriver) movePDEWithdrawal(ctx context.Context, hash string) erro
 
 		update := bson.M{
 			"$set": bson.M{
-				"hash": value.Hash,
-				"height": value.Height,
+				"hash":    value.Hash,
+				"height":  value.Height,
 				"txreqid": value.TxReqId,
-				"status":	value.Status,
+				"status":  value.Status,
 			},
 		}
 
@@ -1035,7 +1031,7 @@ func (m *mongoDBDriver) movePDEWithdrawal(ctx context.Context, hash string) erro
 }
 
 func (m *mongoDBDriver) movePDEFeeWithdrawal(ctx context.Context, hash string) error {
-	condition := 	bson.M{"hash": hash}
+	condition := bson.M{"hash": hash}
 	cursor, err := m.pdeFeeWithdrawalStatusBestState.Find(ctx, condition)
 	if err != nil {
 		return err
@@ -1052,10 +1048,10 @@ func (m *mongoDBDriver) movePDEFeeWithdrawal(ctx context.Context, hash string) e
 
 		update := bson.M{
 			"$set": bson.M{
-				"hash": value.Hash,
-				"height": value.Height,
+				"hash":    value.Hash,
+				"height":  value.Height,
 				"txreqid": value.TxReqId,
-				"status":	value.Status,
+				"status":  value.Status,
 			},
 		}
 
@@ -1073,8 +1069,7 @@ func (m *mongoDBDriver) movePDEFeeWithdrawal(ctx context.Context, hash string) e
 	return nil
 }
 
-
-func (m *mongoDBDriver) storeAllBeaconStateDataWithTransaction(ctx context.Context, beaconState model.BeaconState, pdeShares model.PDEShare, pdePoolPairs model.PDEPoolForPair, pdeTradingFees model.PDETradingFee, waitingPDEContributionStates model.WaitingPDEContribution, custodians model.Custodian, waitingPortingRequests model.WaitingPortingRequest, matchedRedeemRequests model.RedeemRequest, waitingRedeemRequests model.RedeemRequest, finalExchangeRates model.FinalExchangeRate, lockedCollaterals model.LockedCollateral, bridgeTokenState model.BridgeTokenState) error  {
+func (m *mongoDBDriver) storeAllBeaconStateDataWithTransaction(ctx context.Context, beaconState model.BeaconState, pdeShares model.PDEShare, pdePoolPairs model.PDEPoolForPair, pdeTradingFees model.PDETradingFee, waitingPDEContributionStates model.WaitingPDEContribution, custodians model.Custodian, waitingPortingRequests model.WaitingPortingRequest, matchedRedeemRequests model.RedeemRequest, waitingRedeemRequests model.RedeemRequest, finalExchangeRates model.FinalExchangeRate, lockedCollaterals model.LockedCollateral, bridgeTokenState model.BridgeTokenState) error {
 	wc := writeconcern.New(writeconcern.WMajority())
 	rc := readconcern.Snapshot()
 	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
@@ -1135,7 +1130,6 @@ func (m *mongoDBDriver) storeAllBeaconStateData(ctx context.Context, beaconState
 		return result.Err()
 	}
 
-
 	//PDE
 	_, err = m.pdeShareCollection.InsertOne(ctx, pdeShares)
 	if err != nil {
@@ -1188,7 +1182,7 @@ func (m *mongoDBDriver) storeAllBeaconStateData(ctx context.Context, beaconState
 	return nil
 }
 
-func (m *mongoDBDriver) StoreLatestShardState(ctx context.Context ,shard *data.Shard) error {
+func (m *mongoDBDriver) StoreLatestShardState(ctx context.Context, shard *data.Shard) error {
 
 	shardId := shard.ShardID
 	//Logger.log.Infof("Store shard with block hash %v and block height %d of Shard ID %d", shard.BlockHash, shard.Height, shard.ShardID)
@@ -1323,23 +1317,22 @@ func (m *mongoDBDriver) storeAllShardStateData(ctx context.Context, shardId byte
 	return nil
 }
 
-
 func getBrideTokenFromBeaconState(beacon *data.Beacon) model.BridgeTokenState {
 	brideTokenInfos := make([]model.BridgeTokenInfo, 0, len(beacon.BridgeToken))
 	for _, token := range beacon.BridgeToken {
 		brideTokenInfos = append(brideTokenInfos, model.BridgeTokenInfo{
 			TokenID:         token.TokenID.String(),
-			Amount:          strconv.FormatUint(token.Amount, 10) ,
+			Amount:          strconv.FormatUint(token.Amount, 10),
 			ExternalTokenID: token.ExternalTokenID,
 			Network:         token.Network,
 			IsCentralized:   token.IsCentralized,
 		})
 	}
 	return model.BridgeTokenState{
-		BeaconBlockHash:    beacon.BlockHash,
-		BeaconEpoch:        beacon.Epoch,
-		BeaconHeight:       beacon.Height,
-		BeaconTime:         beacon.Time,
+		BeaconBlockHash: beacon.BlockHash,
+		BeaconEpoch:     beacon.Epoch,
+		BeaconHeight:    beacon.Height,
+		BeaconTime:      beacon.Time,
 		BridgeTokenInfo: brideTokenInfos,
 	}
 }
@@ -1400,11 +1393,11 @@ func getPDEShareFromBeaconState(beacon *data.Beacon) model.PDEShare {
 		})
 	}
 	return model.PDEShare{
-		BeaconBlockHash:    beacon.BlockHash,
-		BeaconEpoch:        beacon.Epoch,
-		BeaconHeight:       beacon.Height,
-		BeaconTime:         beacon.Time,
-		PDEShareInfo:       pdeShareInfos,
+		BeaconBlockHash: beacon.BlockHash,
+		BeaconEpoch:     beacon.Epoch,
+		BeaconHeight:    beacon.Height,
+		BeaconTime:      beacon.Time,
+		PDEShareInfo:    pdeShareInfos,
 	}
 }
 func getWaitingPDEContributionStateFromBeaconState(beacon *data.Beacon) model.WaitingPDEContribution {
@@ -1419,10 +1412,10 @@ func getWaitingPDEContributionStateFromBeaconState(beacon *data.Beacon) model.Wa
 		})
 	}
 	return model.WaitingPDEContribution{
-		BeaconBlockHash:    beacon.BlockHash,
-		BeaconEpoch:        beacon.Epoch,
-		BeaconHeight:       beacon.Height,
-		BeaconTime:         beacon.Time,
+		BeaconBlockHash:            beacon.BlockHash,
+		BeaconEpoch:                beacon.Epoch,
+		BeaconHeight:               beacon.Height,
+		BeaconTime:                 beacon.Time,
 		WaitingPDEContributionInfo: waitingPDEContributionInfos,
 	}
 }
@@ -1438,11 +1431,11 @@ func getPDETradingFeeFromBeaconState(beacon *data.Beacon) model.PDETradingFee {
 		})
 	}
 	return model.PDETradingFee{
-		BeaconBlockHash:    beacon.BlockHash,
-		BeaconEpoch:        beacon.Epoch,
-		BeaconHeight:       beacon.Height,
-		BeaconTime:         beacon.Time,
-		PDETradingFeeInfo:  pdeTradingFeeInfos,
+		BeaconBlockHash:   beacon.BlockHash,
+		BeaconEpoch:       beacon.Epoch,
+		BeaconHeight:      beacon.Height,
+		BeaconTime:        beacon.Time,
+		PDETradingFeeInfo: pdeTradingFeeInfos,
 	}
 }
 
@@ -1457,10 +1450,10 @@ func getPDEPoolForPairStateFromBeaconState(beacon *data.Beacon) model.PDEPoolFor
 		})
 	}
 	return model.PDEPoolForPair{
-		BeaconBlockHash: beacon.BlockHash,
-		BeaconEpoch:     beacon.Epoch,
-		BeaconHeight:    beacon.Height,
-		BeaconTime:      beacon.Time,
+		BeaconBlockHash:    beacon.BlockHash,
+		BeaconEpoch:        beacon.Epoch,
+		BeaconHeight:       beacon.Height,
+		BeaconTime:         beacon.Time,
 		PDEPoolForPairInfo: pdeFoolForPairInfos,
 	}
 }
@@ -1489,14 +1482,14 @@ func getCustodianFromBeaconState(beacon *data.Beacon) model.Custodian {
 			info.RewardAmount[key] = strconv.FormatUint(val, 10)
 		}
 
-		custodianInfos = append(custodianInfos,info)
+		custodianInfos = append(custodianInfos, info)
 	}
 	return model.Custodian{
-		BeaconBlockHash:        beacon.BlockHash,
-		BeaconEpoch:            beacon.Epoch,
-		BeaconHeight:           beacon.Height,
-		BeaconTime:             beacon.Time,
-		CustodianInfo:          custodianInfos,
+		BeaconBlockHash: beacon.BlockHash,
+		BeaconEpoch:     beacon.Epoch,
+		BeaconHeight:    beacon.Height,
+		BeaconTime:      beacon.Time,
+		CustodianInfo:   custodianInfos,
 	}
 }
 
@@ -1515,14 +1508,14 @@ func getWaitingPortingRequestFromBeaconState(beacon *data.Beacon) model.WaitingP
 		})
 	}
 	return model.WaitingPortingRequest{
-		BeaconBlockHash:     beacon.BlockHash,
-		BeaconEpoch:         beacon.Epoch,
-		BeaconHeight:        beacon.Height,
-		BeaconTime:          beacon.Time,
+		BeaconBlockHash:           beacon.BlockHash,
+		BeaconEpoch:               beacon.Epoch,
+		BeaconHeight:              beacon.Height,
+		BeaconTime:                beacon.Time,
 		WaitingPortingRequestInfo: waitingPortingRequestInfos,
 	}
 }
-func getMatchingPortingCustodianDetailFromWaitingPortingRequest(request data.WaitingPortingRequest) []model.MatchingPortingCustodianDetail{
+func getMatchingPortingCustodianDetailFromWaitingPortingRequest(request data.WaitingPortingRequest) []model.MatchingPortingCustodianDetail {
 	result := make([]model.MatchingPortingCustodianDetail, 0)
 	for _, custodian := range request.Custodians {
 		result = append(result, model.MatchingPortingCustodianDetail{
@@ -1540,15 +1533,15 @@ func getFinalExchangeRatesFromBeaconState(beacon *data.Beacon) model.FinalExchan
 	finalExchangeRateInfos := make([]model.FinalExchangeRateInfo, 0, len(beacon.FinalExchangeRates.Rates))
 	for key, amount := range beacon.FinalExchangeRates.Rates {
 		finalExchangeRateInfos = append(finalExchangeRateInfos, model.FinalExchangeRateInfo{
-			Amount:          strconv.FormatUint(amount.Amount, 10),
-			TokenID:         key,
+			Amount:  strconv.FormatUint(amount.Amount, 10),
+			TokenID: key,
 		})
 	}
 	return model.FinalExchangeRate{
-		BeaconBlockHash: beacon.BlockHash,
-		BeaconEpoch:     beacon.Epoch,
-		BeaconHeight:    beacon.Height,
-		BeaconTime:      beacon.Time,
+		BeaconBlockHash:       beacon.BlockHash,
+		BeaconEpoch:           beacon.Epoch,
+		BeaconHeight:          beacon.Height,
+		BeaconTime:            beacon.Time,
 		FinalExchangeRateInfo: finalExchangeRateInfos,
 	}
 }
@@ -1569,16 +1562,16 @@ func getMatchedRedeemRequestFromBeaconState(beacon *data.Beacon) model.RedeemReq
 		})
 	}
 	return model.RedeemRequest{
-		BeaconBlockHash:       beacon.BlockHash,
-		BeaconEpoch:           beacon.Epoch,
-		BeaconHeight:          beacon.Height,
-		BeaconTime:            beacon.Time,
+		BeaconBlockHash:   beacon.BlockHash,
+		BeaconEpoch:       beacon.Epoch,
+		BeaconHeight:      beacon.Height,
+		BeaconTime:        beacon.Time,
 		RedeemRequestInfo: redeemRequestInfos,
 	}
 }
 
 func getMatchingRedeemCustodianDetail(request data.RedeemRequest) []model.MatchingRedeemCustodianDetail {
-	result:=make( []model.MatchingRedeemCustodianDetail, 0)
+	result := make([]model.MatchingRedeemCustodianDetail, 0)
 	for _, custodian := range request.Custodians {
 		result = append(result, model.MatchingRedeemCustodianDetail{
 			IncAddress:    custodian.IncAddress,
@@ -1606,10 +1599,10 @@ func getWaitingRedeemRequestFromBeaconState(beacon *data.Beacon) model.RedeemReq
 		})
 	}
 	return model.RedeemRequest{
-		BeaconBlockHash:       beacon.BlockHash,
-		BeaconEpoch:           beacon.Epoch,
-		BeaconHeight:          beacon.Height,
-		BeaconTime:            beacon.Time,
+		BeaconBlockHash:   beacon.BlockHash,
+		BeaconEpoch:       beacon.Epoch,
+		BeaconHeight:      beacon.Height,
+		BeaconTime:        beacon.Time,
 		RedeemRequestInfo: redeemRequestInfos,
 	}
 }
@@ -1624,10 +1617,10 @@ func getLockedCollateralFromBeaconState(beacon *data.Beacon) model.LockedCollate
 		})
 	}
 	return model.LockedCollateral{
-		BeaconBlockHash:                 beacon.BlockHash,
-		BeaconEpoch:                     beacon.Epoch,
-		BeaconHeight:                    beacon.Height,
-		BeaconTime:                      beacon.Time,
+		BeaconBlockHash:      beacon.BlockHash,
+		BeaconEpoch:          beacon.Epoch,
+		BeaconHeight:         beacon.Height,
+		BeaconTime:           beacon.Time,
 		LockedCollateralInfo: lockedCollateralInfos,
 	}
 }
@@ -1684,7 +1677,7 @@ func getShardFromShardState(shard *data.Shard) model.ShardState {
 		BestCrossShard:         shard.BestCrossShard,
 		ShardCommittee:         shard.ShardCommittee,
 		ShardPendingValidator:  shard.ShardPendingValidator,
-		StakingTx: shard.StakingTx,
+		StakingTx:              shard.StakingTx,
 	}
 }
 
@@ -1695,9 +1688,9 @@ func getTransactionFromShardState(shard *data.Shard) []model.Transaction {
 			ShardId:              shard.ShardID,
 			ShardHash:            shard.BlockHash,
 			ShardHeight:          shard.BeaconHeight,
-			Image:                 "",
-			IsPrivacy:             transaction.IsPrivacy,
-			TxSize:				  transaction.TxSize,
+			Image:                "",
+			IsPrivacy:            transaction.IsPrivacy,
+			TxSize:               transaction.TxSize,
 			Index:                transaction.Index,
 			Hash:                 transaction.Hash,
 			Version:              transaction.Version,
@@ -1708,12 +1701,12 @@ func getTransactionFromShardState(shard *data.Shard) []model.Transaction {
 			SigPubKey:            base58.Base58Check{}.Encode(transaction.SigPubKey, 0x0),
 			Sig:                  base58.Base58Check{}.Encode(transaction.Sig, 0x0),
 			PubKeyLastByteSender: transaction.PubKeyLastByteSender,
-			InputCoinPubKey: transaction.InputCoinPubKey,
-			IsInBlock: true,
-			IsInMempool: false,
+			InputCoinPubKey:      transaction.InputCoinPubKey,
+			IsInBlock:            true,
+			IsInMempool:          false,
 		}
-		newTransaction.ProofDetail, newTransaction.Proof = 	getProofDetail(transaction)
-		newTransaction.CustomTokenData =  ""
+		newTransaction.ProofDetail, newTransaction.Proof = getProofDetail(transaction)
+		newTransaction.CustomTokenData = ""
 		if transaction.Metadata != nil {
 			metaData, _ := json.MarshalIndent(transaction.Metadata, "", "\t")
 			newTransaction.Metadata = string(metaData)
@@ -1732,11 +1725,11 @@ func getTransactionFromShardState(shard *data.Shard) []model.Transaction {
 	return transactions
 }
 
-func getProofDetail (normalTx *data.Transaction) (model.ProofDetail, *string) {
+func getProofDetail(normalTx *data.Transaction) (model.ProofDetail, *string) {
 	if normalTx.Proof == nil {
 		return model.ProofDetail{}, nil
 	}
-	b, _:= normalTx.Proof.MarshalJSON()
+	b, _ := normalTx.Proof.MarshalJSON()
 	proof := string(b)
 	return model.ProofDetail{
 		InputCoins:  getProofDetailInputCoin(normalTx.Proof),
@@ -1802,11 +1795,10 @@ func getProofDetailOutputCoin(proof *zkp.PaymentProof) []*model.CoinDetail {
 				out.CoinDetailsEncrypted = base58.Base58Check{}.Encode(output.CoinDetailsEncrypted.Bytes(), 0x0)
 			}
 		}
-		outputCoins = append(outputCoins , &out)
+		outputCoins = append(outputCoins, &out)
 	}
 	return outputCoins
 }
-
 
 func getInputCoinFromShardState(shard *data.Shard) []model.InputCoin {
 	inputCoins := make([]model.InputCoin, 0, len(shard.Transactions))
@@ -1822,7 +1814,7 @@ func getInputCoinFromShardState(shard *data.Shard) []model.InputCoin {
 				TokenID:         input.TokenID,
 			}
 			if input.PublicKey != nil {
-				inputCoin.PublicKey =   base58.Base58Check{}.Encode(input.PublicKey.ToBytesS(), common.ZeroByte)
+				inputCoin.PublicKey = base58.Base58Check{}.Encode(input.PublicKey.ToBytesS(), common.ZeroByte)
 			}
 			if input.CoinCommitment != nil {
 				inputCoin.CoinCommitment = base58.Base58Check{}.Encode(input.CoinCommitment.ToBytesS(), common.ZeroByte)
@@ -1866,9 +1858,8 @@ func getCrossShardOutputCoinFromShardState(shard *data.Shard) []model.OutputCoin
 			Type:             output.Type,
 			Mintable:         output.Mintable,
 			Amount:           strconv.FormatUint(output.Amount, 10),
-			LockTime:		  output.LockTime,
-			TransactionMemo: string(output.TransactionMemo),
-
+			LockTime:         output.LockTime,
+			TransactionMemo:  string(output.TransactionMemo),
 		}
 		if output.PublicKey != nil {
 			outputCoin.PublicKey = base58.Base58Check{}.Encode(output.PublicKey.ToBytesS(), common.ZeroByte)
@@ -1916,9 +1907,8 @@ func getOutputCoinForThisShardFromShardState(shard *data.Shard) []model.OutputCo
 			Type:             output.Type,
 			Mintable:         output.Mintable,
 			Amount:           strconv.FormatUint(output.Amount, 10),
-			LockTime:		  output.LockTime,
-			TransactionMemo: string(output.TransactionMemo),
-
+			LockTime:         output.LockTime,
+			TransactionMemo:  string(output.TransactionMemo),
 		}
 		if output.PublicKey != nil {
 			outputCoin.PublicKey = base58.Base58Check{}.Encode(output.PublicKey.ToBytesS(), common.ZeroByte)
@@ -1954,7 +1944,7 @@ func getCommitmentFromShardState(shard *data.Shard) []model.Commitment {
 			TransactionHash: commitment.TransactionHash,
 			TokenID:         commitment.TokenID,
 			ShardId:         commitment.ShardID,
-			Commitment:      base58.Base58Check{}.Encode(commitment.Commitment,common.ZeroByte),
+			Commitment:      base58.Base58Check{}.Encode(commitment.Commitment, common.ZeroByte),
 			Index:           commitment.Index,
 		})
 	}
@@ -2025,7 +2015,7 @@ func getPublicKeyToTransactionHash(shard *data.Shard) []model.PublicKeyToTransac
 		if output.PublicKey != nil {
 			public.PublicKey = base58.Base58Check{}.Encode(output.PublicKey.ToBytesS(), common.ZeroByte)
 		}
-		if _ , ok := publicKeyMap[public.PublicKey+output.TransactionHash+shard.BlockHash]; ok {
+		if _, ok := publicKeyMap[public.PublicKey+output.TransactionHash+shard.BlockHash]; ok {
 			continue
 		} else {
 			publicKeyMap[public.PublicKey+output.TransactionHash+shard.BlockHash] = true
@@ -2034,7 +2024,7 @@ func getPublicKeyToTransactionHash(shard *data.Shard) []model.PublicKeyToTransac
 	}
 	return result
 }
-func (m *mongoDBDriver) StoreLatestPDEBestState(ctx context.Context , pdeContributionStore *rawdbv2.PDEContributionStore, pdeTradeStore *rawdbv2.PDETradeStore, pdeCrossTradeStore *rawdbv2.PDECrossTradeStore,
+func (m *mongoDBDriver) StoreLatestPDEBestState(ctx context.Context, pdeContributionStore *rawdbv2.PDEContributionStore, pdeTradeStore *rawdbv2.PDETradeStore, pdeCrossTradeStore *rawdbv2.PDECrossTradeStore,
 	pdeWithdrawalStatusStore *rawdbv2.PDEWithdrawalStatusStore, pdeFeeWithdrawalStatusStore *rawdbv2.PDEFeeWithdrawalStatusStore) error {
 
 	pdeContributionStatuses := convertPDEContributionStoreToPDEContributionStatus(pdeContributionStore)
@@ -2046,8 +2036,8 @@ func (m *mongoDBDriver) StoreLatestPDEBestState(ctx context.Context , pdeContrib
 	return m.storeAllLatestPDEBestStateDataWithTransaction(ctx, pdeContributionStatuses, pdeTrades, pdeCrossTrades, pdeWithdrawalStatuses, pdeFeeWithdrawalStatuses)
 }
 
-func (m *mongoDBDriver) storeAllLatestPDEBestStateDataWithTransaction (ctx context.Context , pdeContributionStatuses []model.PDEContributionStatus, pdeTrades []model.PDETrade,
-		pdeCrossTrades []model.PDECrossTrade, pdeWithdrawalStatuses []model.PDEWithdrawalStatus, pdeFeeWithdrawalStatuses []model.PDEFeeWithdrawalStatus) error {
+func (m *mongoDBDriver) storeAllLatestPDEBestStateDataWithTransaction(ctx context.Context, pdeContributionStatuses []model.PDEContributionStatus, pdeTrades []model.PDETrade,
+	pdeCrossTrades []model.PDECrossTrade, pdeWithdrawalStatuses []model.PDEWithdrawalStatus, pdeFeeWithdrawalStatuses []model.PDEFeeWithdrawalStatus) error {
 	wc := writeconcern.New(writeconcern.WMajority())
 	rc := readconcern.Snapshot()
 	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
@@ -2090,15 +2080,15 @@ func (m *mongoDBDriver) storeAllLatestPDEBestStateData(ctx context.Context, pdeC
 
 		update := bson.M{
 			"$set": bson.M{
-				"hash": value.Hash,
-				"height": value.Height,
-				"status":	value.Status,
-				"tokenid1str": value.TokenID1Str,
-				"contributed1amount": value.Contributed1Amount,
-				"returned1amount":    value.Returned1Amount,
-				"tokenid2str": value.TokenID2Str,
-				"contributed2amount": value.Contributed2Amount,
-				"returned2amount":    value.Returned2Amount,
+				"hash":                  value.Hash,
+				"height":                value.Height,
+				"status":                value.Status,
+				"tokenid1str":           value.TokenID1Str,
+				"contributed1amount":    value.Contributed1Amount,
+				"returned1amount":       value.Returned1Amount,
+				"tokenid2str":           value.TokenID2Str,
+				"contributed2amount":    value.Contributed2Amount,
+				"returned2amount":       value.Returned2Amount,
 				"pdecontributionpairid": value.PDEContributionPairID,
 			},
 		}
@@ -2126,10 +2116,10 @@ func (m *mongoDBDriver) storeAllLatestPDEBestStateData(ctx context.Context, pdeC
 
 		update := bson.M{
 			"$set": bson.M{
-				"hash": value.Hash,
-				"height": value.Height,
+				"hash":    value.Hash,
+				"height":  value.Height,
 				"txreqid": value.TxReqId,
-				"status":	value.Status,
+				"status":  value.Status,
 			},
 		}
 
@@ -2156,10 +2146,10 @@ func (m *mongoDBDriver) storeAllLatestPDEBestStateData(ctx context.Context, pdeC
 
 		update := bson.M{
 			"$set": bson.M{
-				"hash": value.Hash,
-				"height": value.Height,
+				"hash":    value.Hash,
+				"height":  value.Height,
 				"txreqid": value.TxReqId,
-				"status":	value.Status,
+				"status":  value.Status,
 			},
 		}
 
@@ -2180,17 +2170,16 @@ func (m *mongoDBDriver) storeAllLatestPDEBestStateData(ctx context.Context, pdeC
 		}
 	}
 
-
 	for _, value := range pdeWithdrawalStatuses {
 		//Update pde withdrawal status
 		filter := bson.M{"txreqid": value.TxReqId}
 
 		update := bson.M{
 			"$set": bson.M{
-				"hash": value.Hash,
-				"height": value.Height,
+				"hash":    value.Hash,
+				"height":  value.Height,
 				"txreqid": value.TxReqId,
-				"status":	value.Status,
+				"status":  value.Status,
 			},
 		}
 
@@ -2217,10 +2206,10 @@ func (m *mongoDBDriver) storeAllLatestPDEBestStateData(ctx context.Context, pdeC
 
 		update := bson.M{
 			"$set": bson.M{
-				"hash": value.Hash,
-				"height": value.Height,
+				"hash":    value.Hash,
+				"height":  value.Height,
 				"txreqid": value.TxReqId,
-				"status":	value.Status,
+				"status":  value.Status,
 			},
 		}
 
@@ -2247,20 +2236,20 @@ func (m *mongoDBDriver) storeAllLatestPDEBestStateData(ctx context.Context, pdeC
 
 func convertPDEContributionStoreToPDEContributionStatus(pdeContributionStore *rawdbv2.PDEContributionStore) []model.PDEContributionStatus {
 	pdeContributionStatus := []model.PDEContributionStatus{}
-		for _, contribution := range pdeContributionStore.PDEContributionStatus {
-			pdeContributionStatus = append(pdeContributionStatus, model.PDEContributionStatus{
-				Height:                pdeContributionStore.Height,
-				Hash:                  pdeContributionStore.Hash,
-				Status:                contribution.Status,
-				TokenID1Str:           contribution.TokenID1Str,
-				Contributed1Amount:    contribution.Contributed1Amount,
-				Returned1Amount:       contribution.Returned1Amount,
-				TokenID2Str:           contribution.TokenID2Str,
-				Contributed2Amount:    contribution.Contributed2Amount,
-				Returned2Amount:       contribution.Returned2Amount,
-				PDEContributionPairID: contribution.PDEContributionPairID,
-			})
-		}
+	for _, contribution := range pdeContributionStore.PDEContributionStatus {
+		pdeContributionStatus = append(pdeContributionStatus, model.PDEContributionStatus{
+			Height:                pdeContributionStore.Height,
+			Hash:                  pdeContributionStore.Hash,
+			Status:                contribution.Status,
+			TokenID1Str:           contribution.TokenID1Str,
+			Contributed1Amount:    contribution.Contributed1Amount,
+			Returned1Amount:       contribution.Returned1Amount,
+			TokenID2Str:           contribution.TokenID2Str,
+			Contributed2Amount:    contribution.Contributed2Amount,
+			Returned2Amount:       contribution.Returned2Amount,
+			PDEContributionPairID: contribution.PDEContributionPairID,
+		})
+	}
 
 	return pdeContributionStatus
 }
@@ -2269,10 +2258,10 @@ func convertPDETradeStoreToPDETrade(pdeTradeStore *rawdbv2.PDETradeStore) []mode
 	pdeTrade := []model.PDETrade{}
 	for _, trade := range pdeTradeStore.PDETradeDetails {
 		pdeTrade = append(pdeTrade, model.PDETrade{
-			Height:                pdeTradeStore.Height,
-			Hash:                  pdeTradeStore.Hash,
-			Status:                trade.Status,
-			TxReqId: 			   trade.TxReqId,
+			Height:  pdeTradeStore.Height,
+			Hash:    pdeTradeStore.Hash,
+			Status:  trade.Status,
+			TxReqId: trade.TxReqId,
 		})
 	}
 	return pdeTrade
@@ -2282,10 +2271,10 @@ func convertPDEtCrossTradeStoreToPDEtCrossTrade(pdeCrossTradeStore *rawdbv2.PDEC
 	pdeCrossTrade := []model.PDECrossTrade{}
 	for _, crossTrade := range pdeCrossTradeStore.PDECrossTradeDetails {
 		pdeCrossTrade = append(pdeCrossTrade, model.PDECrossTrade{
-			Height:                pdeCrossTradeStore.Height,
-			Hash:                  pdeCrossTradeStore.Hash,
-			Status:                crossTrade.Status,
-			TxReqId: 			   crossTrade.TxReqId,
+			Height:  pdeCrossTradeStore.Height,
+			Hash:    pdeCrossTradeStore.Hash,
+			Status:  crossTrade.Status,
+			TxReqId: crossTrade.TxReqId,
 		})
 	}
 	return pdeCrossTrade
@@ -2295,10 +2284,10 @@ func convertPDEWithdrawalStatusStoreToPDEWithdrawalStatus(pdeWithdrawalStatusSto
 	pdeContributionStatus := []model.PDEWithdrawalStatus{}
 	for _, withdrawalStatus := range pdeWithdrawalStatusStore.PDEWithdrawalStatusDetails {
 		pdeContributionStatus = append(pdeContributionStatus, model.PDEWithdrawalStatus{
-			Height:                pdeWithdrawalStatusStore.Height,
-			Hash:                  pdeWithdrawalStatusStore.Hash,
-			Status:                withdrawalStatus.Status,
-			TxReqId:               withdrawalStatus.TxReqId,
+			Height:  pdeWithdrawalStatusStore.Height,
+			Hash:    pdeWithdrawalStatusStore.Hash,
+			Status:  withdrawalStatus.Status,
+			TxReqId: withdrawalStatus.TxReqId,
 		})
 	}
 	return pdeContributionStatus
@@ -2308,10 +2297,10 @@ func convertPDEFeeWithdrawalStatusStoreToPDEFeeWithdrawalStatus(pdeFeeWithdrawal
 	pdeContributionStatus := []model.PDEFeeWithdrawalStatus{}
 	for _, feeWithdrawalStatus := range pdeFeeWithdrawalStatusStore.PDEFeeWithdrawalStatusDetails {
 		pdeContributionStatus = append(pdeContributionStatus, model.PDEFeeWithdrawalStatus{
-			Height:                pdeFeeWithdrawalStatusStore.Height,
-			Hash:                  pdeFeeWithdrawalStatusStore.Hash,
-			Status:                feeWithdrawalStatus.Status,
-			TxReqId:               feeWithdrawalStatus.TxReqId,
+			Height:  pdeFeeWithdrawalStatusStore.Height,
+			Hash:    pdeFeeWithdrawalStatusStore.Hash,
+			Status:  feeWithdrawalStatus.Status,
+			TxReqId: feeWithdrawalStatus.TxReqId,
 		})
 	}
 	return pdeContributionStatus
