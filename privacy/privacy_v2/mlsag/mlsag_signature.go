@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 )
 
+// MlsagSig is the ring signature that appears on transactions.
 type MlsagSig struct {
 	c         *operation.Scalar     // 32 bytes
 	keyImages []*operation.Point    // 32 * size bytes

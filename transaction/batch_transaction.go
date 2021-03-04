@@ -14,14 +14,24 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/bulletproofs"
 )
 
+
 type batchTransaction struct {
 	txs []metadata.Transaction
 }
 
+// NewBatchTransaction creates a batchTransaction object from the given TX array.
+// Batched transactions save verification time by batching many Bulletproof verifications together in one multi-exponent operation.
+//
+// One can then call ".Validate(" to validate all TXs in this batch. This does not cover sanity checks & double-spend checks, those are handled separately.
+// The batch can have transactions from both versions.
+// 
+// Outside of Bulletproofs, other verification steps are done normally.
+// Batching is applicable to PRV transfers, not pToken transfers.
 func NewBatchTransaction(txs []metadata.Transaction) *batchTransaction {
 	return &batchTransaction{txs: txs}
 }
 
+// Add a single transcation to this batch
 func (b *batchTransaction) AddTxs(txs []metadata.Transaction) {
 	b.txs = append(b.txs, txs...)
 }

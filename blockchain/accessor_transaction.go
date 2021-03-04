@@ -465,11 +465,12 @@ func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, shardID byte) 
 	return nil
 }
 
-func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin,  error) {
+// any coins that failed to decrypt are returned as privacy.Coin
+func (blockchain *BlockChain) GetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin, []privacy.Coin,  error) {
 	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
 	if !EnableIndexingCoinByOTAKey{
-		return nil, errors.New("Getting all coins not supported by this node configuration")
+		return nil, nil, errors.New("Getting all coins not supported by this node configuration")
 		// results, _, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, bss.ShardHeight, map[int]bool{1:withVersion1, 2:true})
 		// return results, err
 	}
@@ -477,32 +478,41 @@ func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.
 	outCoins, state, err := outcoinReindexer.GetReindexedOutcoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
 	switch state{
 	case 2:
-		var results []privacy.PlainCoin
+		var decryptedResults []privacy.PlainCoin
+		var otherResults []privacy.Coin
 		if withVersion1{
-			results, _, _, err = blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
+			decryptedResults, otherResults, _, err = blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
 			if err!=nil{
-				return nil, err
+				return nil, nil, err
 			}
 		}
 		for _, outCoin := range outCoins {
 			decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
 			if decryptedOut != nil {
-				results = append(results, decryptedOut)
+				decryptedResults = append(decryptedResults, decryptedOut)
+			} else {
+				otherResults = append(otherResults, outCoin)
 			}
 		}
 		Logger.log.Infof("Retrieved output coins ver2 for view key %v", keyset.OTAKey.GetOTASecretKey())
-		return results, nil
+		return decryptedResults, otherResults, nil
 	case 1:
-		return nil, errors.New("OTA Key indexing is in progress")
+		return nil, nil, errors.New("OTA Key indexing is in progress")
 	case 0:
 		err := blockchain.SubmitOTAKey(keyset.OTAKey, shardID)
 		if err==nil{
-			return nil, errors.New("Subscribed to OTA key to view all coins")
+			return nil, nil, errors.New("Subscribed to OTA key to view all coins")
 		}
-		return nil, err
+		return nil, nil, err
 	default:
-		return nil, errors.New("OTA Key indexing state is corrupted")
+		return nil, nil, errors.New("OTA Key indexing state is corrupted")
 	}
+}
+
+// any coins that failed to decrypt are skipped
+func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin,  error) {
+	res, _, err := blockchain.GetAllOutputCoinsByKeyset(keyset, shardID, tokenID, withVersion1)
+	return res, err
 }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db

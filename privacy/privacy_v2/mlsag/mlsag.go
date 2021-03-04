@@ -1,21 +1,25 @@
-// MAIN IMPLEMENTATION OF MLSAG
-
+// Package mlsag contains the implementation of MLSAG, a ring signature scheme.
 package mlsag
 
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
+	utils "github.com/incognitochain/incognito-chain/privacy/privacy_util"
 )
 
 var CurveOrder = new(operation.Scalar).SetKeyUnsafe(&C25519.L)
 
+// Ring is the struct for a MLSAG ring. It is a matrix of public keys.
+// One of these rows is the actual coin transfer, others consist of "decoy" public keys from the chain data.
 type Ring struct {
 	keys [][]*operation.Point
 }
 
+// GetKeys returns the public keys in this Ring as a 2-dimensional array
 func (ring Ring) GetKeys() [][]*operation.Point {
 	return ring.keys
 }
@@ -24,6 +28,7 @@ func NewRing(keys [][]*operation.Point) *Ring {
 	return &Ring{keys}
 }
 
+// ToBytes encodes this Ring's dimensions & contents into a byte array.
 func (ring Ring) ToBytes() ([]byte, error) {
 	k := ring.keys
 	if len(k) == 0 {
@@ -54,6 +59,7 @@ func (ring Ring) ToBytes() ([]byte, error) {
 	return b, nil
 }
 
+// FromBytes decodes a byte array into a Ring
 func (ring *Ring) FromBytes(b []byte) (*Ring, error) {
 	if len(b) < 3 {
 		return nil, errors.New("RingFromBytes: byte length is too short")
@@ -95,7 +101,7 @@ func createFakePublicKeyArray(length int) []*operation.Point {
 	return K
 }
 
-// Create a random ring with dimension: (numFake; len(privateKeys)) where we generate fake public keys inside
+// NewRandomRing creates a random ring with dimension: (numFake; len(privateKeys)) where we generate fake public keys inside
 func NewRandomRing(privateKeys []*operation.Scalar, numFake, pi int) (K *Ring) {
 	m := len(privateKeys)
 
@@ -114,6 +120,9 @@ func NewRandomRing(privateKeys []*operation.Scalar, numFake, pi int) (K *Ring) {
 	return
 }
 
+// Mlsag struct contains the data needed to sign a Ring.
+//
+// pi : the row index of the "real" coins
 type Mlsag struct {
 	R           *Ring
 	pi          int
@@ -154,9 +163,9 @@ func ParseKeyImages(privateKeys []*operation.Scalar) []*operation.Point {
 	return result
 }
 
-func (this *Mlsag) createRandomChallenges() (alpha []*operation.Scalar, r [][]*operation.Scalar) {
-	m := len(this.privateKeys)
-	n := len(this.R.keys)
+func (mlsag *Mlsag) createRandomChallenges() (alpha []*operation.Scalar, r [][]*operation.Scalar) {
+	m := len(mlsag.privateKeys)
+	n := len(mlsag.R.keys)
 
 	alpha = make([]*operation.Scalar, m)
 	for i := 0; i < m; i += 1 {
@@ -165,7 +174,7 @@ func (this *Mlsag) createRandomChallenges() (alpha []*operation.Scalar, r [][]*o
 	r = make([][]*operation.Scalar, n)
 	for i := 0; i < n; i += 1 {
 		r[i] = make([]*operation.Scalar, m)
-		if i == this.pi {
+		if i == mlsag.pi {
 			continue
 		}
 		for j := 0; j < m; j += 1 {
@@ -224,12 +233,6 @@ func calculateNextC(digest [common.HashSize]byte, r []*operation.Scalar, c *oper
 	// Process columns before the last
 	for i := 0; i < len(K)-1; i += 1 {
 		rG := new(operation.Point).ScalarMultBase(r[i])
-		if i == len(K)-1 {
-			rG = new(operation.Point).ScalarMult(
-				operation.PedCom.G[operation.PedersenRandomnessIndex],
-				r[i],
-			)
-		}
 		cK := new(operation.Point).ScalarMult(K[i], c)
 		rG_cK := new(operation.Point).Add(rG, cK)
 
@@ -254,40 +257,34 @@ func calculateNextC(digest [common.HashSize]byte, r []*operation.Scalar, c *oper
 	return operation.HashToScalar(b), nil
 }
 
-func (this *Mlsag) calculateC(message [common.HashSize]byte, alpha []*operation.Scalar, r [][]*operation.Scalar) ([]*operation.Scalar, error) {
-	m := len(this.privateKeys)
-	n := len(this.R.keys)
+func (mlsag *Mlsag) calculateC(message [common.HashSize]byte, alpha []*operation.Scalar, r [][]*operation.Scalar) ([]*operation.Scalar, error) {
+	m := len(mlsag.privateKeys)
+	n := len(mlsag.R.keys)
 
 	c := make([]*operation.Scalar, n)
 	firstC, err := calculateFirstC(
 		message,
 		alpha,
-		this.R.keys[this.pi],
+		mlsag.R.keys[mlsag.pi],
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	var i int = (this.pi + 1) % n
-	c[i] = firstC
-	for next := (i + 1) % n; i != this.pi; {
-		nextC, err := calculateNextC(
-			message,
-			r[i], c[i],
-			(*this.R).keys[i],
-			this.keyImages,
-		)
+	c[(mlsag.pi + 1) % n] = firstC
+	for i := (mlsag.pi + 1) % n; i != mlsag.pi; i = (i+1) %n {
+		next := (i + 1) % n
+		nextC, err := calculateNextC(message, r[i], c[i], mlsag.R.keys[i], mlsag.keyImages)
 		if err != nil {
 			return nil, err
 		}
+
 		c[next] = nextC
-		i = next
-		next = (next + 1) % n
 	}
 
 	for i := 0; i < m; i += 1 {
-		ck := new(operation.Scalar).Mul(c[this.pi], this.privateKeys[i])
-		r[this.pi][i] = new(operation.Scalar).Sub(alpha[i], ck)
+		ck := new(operation.Scalar).Mul(c[mlsag.pi], mlsag.privateKeys[i])
+		r[mlsag.pi][i] = new(operation.Scalar).Sub(alpha[i], ck)
 	}
 
 	return c, nil
@@ -295,15 +292,16 @@ func (this *Mlsag) calculateC(message [common.HashSize]byte, alpha []*operation.
 
 // check l*KI = 0 by checking KI is a valid point
 func verifyKeyImages(keyImages []*operation.Point) bool {
-	var check bool = true
 	for i := 0; i < len(keyImages); i += 1 {
 		if keyImages[i]==nil{
 			return false
 		}
 		lKI := new(operation.Point).ScalarMult(keyImages[i], CurveOrder)
-		check = check && lKI.IsIdentity()
+		if !lKI.IsIdentity() {
+			return false
+		}
 	}
-	return check
+	return true
 }
 
 func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, error) {
@@ -312,6 +310,7 @@ func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, er
 	if len(R.keys) != len(sig.r){
 		return false, errors.New("MLSAG Error : Malformed Ring")
 	}
+	utils.Logger.Log.Infof("BUGLOG3 cBefore = %v\n", c.String(), cBefore.String())
 	for i := 0; i < len(sig.r); i += 1 {
 		nextC, err := calculateNextC(
 			message,
@@ -322,36 +321,43 @@ func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, er
 		if err != nil {
 			return false, err
 		}
+		utils.Logger.Log.Infof("BUGLOG3 c[%] = %v\n", i + 1, nextC.String())
 		c = *nextC
 	}
 	return bytes.Equal(c.ToBytesS(), cBefore.ToBytesS()), nil
 }
 
+// Verify does verification of a ring signature on a message.
 func Verify(sig *MlsagSig, K *Ring, message []byte) (bool, error) {
 	if len(message) != common.HashSize {
-		return false, errors.New("Cannot mlsag verify the message because its length is not 32, maybe it has not been hashed")
+		return false, fmt.Errorf("Cannot mlsag verify the message because its length is not 32, maybe it has not been hashed")
 	}
 	message32byte := [32]byte{}
 	copy(message32byte[:], message)
 	b1 := verifyKeyImages(sig.keyImages)
+	if !b1 {
+		return false, fmt.Errorf("verify key-images %v failed", sig.keyImages)
+	}
 	b2, err := verifyRing(sig, K, message32byte)
-	return (b1 && b2), err
+	return b2, err
 }
 
-func (this *Mlsag) Sign(message []byte) (*MlsagSig, error) {
+// Sign uses the private key in this Mlsag to sign a message (which is the transaction hash).
+// It returns a MlsagSig.
+func (mlsag *Mlsag) Sign(message []byte) (*MlsagSig, error) {
 	if len(message) != common.HashSize {
 		return nil, errors.New("Cannot mlsag sign the message because its length is not 32, maybe it has not been hashed")
 	}
 	message32byte := [32]byte{}
 	copy(message32byte[:], message)
 
-	alpha, r := this.createRandomChallenges()          // step 2 in paper
-	c, err := this.calculateC(message32byte, alpha, r) // step 3 and 4 in paper
+	alpha, r := mlsag.createRandomChallenges()          // step 2 in paper
+	c, err := mlsag.calculateC(message32byte, alpha, r) // step 3 and 4 in paper
 
 	if err != nil {
 		return nil, err
 	}
 	return &MlsagSig{
-		c[0], this.keyImages, r,
+		c[0], mlsag.keyImages, r,
 	}, nil
 }
