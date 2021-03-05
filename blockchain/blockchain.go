@@ -5,8 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/portal"
-	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	"io"
 	"strconv"
 	"sync"
@@ -629,15 +627,6 @@ func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]st
 // GetConfig returns blockchain's config
 func (blockchain *BlockChain) GetConfig() *Config {
 	return &blockchain.config
-}
-
-// GetPortalParams returns portal params in beaconheight
-func (blockchain *BlockChain) GetPortalParams() portal.PortalParams {
-	return blockchain.GetConfig().ChainParams.PortalParams
-}
-
-func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.PortalParams {
-	return blockchain.GetConfig().ChainParams.PortalParams.GetPortalParamsV3(beaconHeight)
 }
 
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {

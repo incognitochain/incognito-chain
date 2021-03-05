@@ -74,10 +74,10 @@ type ChainRetriever interface {
 	GetBNBDataHash(blockHeight int64) ([]byte, error)
 	CheckBlockTimeIsReached(recentBeaconHeight, beaconHeight, recentShardHeight, shardHeight uint64, duration time.Duration) bool
 	IsPortalExchangeRateToken(beaconHeight uint64, tokenIDStr string) bool
-	GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error)
-	IsPortalToken(beaconHeight uint64, tokenIDStr string) bool
-	IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error)
-	ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64) (bool, error)
+	GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64, version uint) (uint64, error)
+	IsPortalToken(beaconHeight uint64, tokenIDStr string, version uint) (bool, error)
+	IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64, version uint) (bool, error)
+	ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64, version uint) (bool, error)
 	IsEnableFeature(featureFlag int, epoch uint64) bool
 }
 
