@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"strconv"
+	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -159,8 +159,14 @@ func newUTXOObjectWithValue(db *StateDB, key common.Hash, data interface{}) (*UT
 
 func GenerateUTXOObjectKey(tokenID string, walletAddress string, txHash string, outputIdx uint32) common.Hash {
 	prefixHash := GetPortalUTXOStatePrefix(tokenID)
-	value := append([]byte(walletAddress), []byte(txHash)...)
-	value = append(value, []byte(strconv.Itoa(int(outputIdx)))...)
+	paddedWalletAddress := walletAddress
+	if len(walletAddress) < 40 {
+		paddedWalletAddress = strings.Repeat("0", 40-len(walletAddress)) + walletAddress
+	}
+	paddedOutputIdx := fmt.Sprintf("%05d", outputIdx)
+
+	value := append([]byte(paddedWalletAddress), []byte(txHash)...)
+	value = append(value, []byte(paddedOutputIdx)...)
 	valueHash := common.HashH(value)
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
