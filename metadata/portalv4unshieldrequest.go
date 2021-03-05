@@ -115,9 +115,6 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 
 	// validate burning amount
 	minUnshieldAmount := chainRetriever.GetPortalV4MinUnshieldAmount(uReq.TokenID, beaconHeight)
-	if err != nil {
-		return false, false, fmt.Errorf("Error get min portal token amount: %v", err)
-	}
 	if uReq.UnshieldAmount < minUnshieldAmount {
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("burning amount should be larger or equal to %v", minUnshieldAmount))
 	}
@@ -132,15 +129,15 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
 	}
 	// check tokenId is portal token or not
-	if !chainRetriever.IsPortalToken(beaconHeight, uReq.TokenID) {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID is not in portal tokens list"))
+	if ok, err := chainRetriever.IsPortalToken(beaconHeight, uReq.TokenID, common.PortalVersion4); !ok || err != nil {
+		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID is not in portal tokens list v4"))
 	}
 
 	// validate RemoteAddress
 	if len(uReq.RemoteAddress) == 0 {
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("Remote address is invalid"))
 	}
-	isValidRemoteAddress, err := chainRetriever.IsValidPortalRemoteAddress(uReq.TokenID, uReq.RemoteAddress, beaconHeight)
+	isValidRemoteAddress, err := chainRetriever.IsValidPortalRemoteAddress(uReq.TokenID, uReq.RemoteAddress, beaconHeight, common.PortalVersion4)
 	if err != nil || !isValidRemoteAddress {
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("Remote address %v is not a valid address of tokenID %v - Error %v", uReq.RemoteAddress, uReq.TokenID, err))
 	}
