@@ -59,6 +59,8 @@ const (
 	InitPTokenRequestValidateSanityDataError
 	InitPTokenRequestBuildReqActionsError
 
+	InitPTokenResponseValidateSanityDataError
+
 	// portal v3
 	PortalCustodianDepositV3ValidateWithBCError
 	PortalCustodianDepositV3ValidateSanityDataError
@@ -119,12 +121,14 @@ var ErrCodeMessage = map[int]struct {
 	VerifyProofAndParseReceiptError: {-8001, "Verify proof and parse receipt eth error"},
 
 	// init privacy custom token
-	InitPTokenRequestDecodeInstructionError:           {-8001, "Cannot decode instruction"},
-	InitPTokenRequestUnmarshalJsonError:               {-8002, "Cannot unmarshall json"},
-	InitPTokenRequestNewInitPTokenRequestFromMapError: {-8003, "Cannot new InitPToken eth request from map"},
-	InitPTokenRequestValidateTxWithBlockChainError:    {-8004, "Validate tx with block chain error"},
-	InitPTokenRequestValidateSanityDataError:          {-8005, "Validate sanity data error"},
-	InitPTokenRequestBuildReqActionsError:             {-8006, "Build request action error"},
+	InitPTokenRequestDecodeInstructionError:           {-8002, "Cannot decode instruction"},
+	InitPTokenRequestUnmarshalJsonError:               {-8003, "Cannot unmarshall json"},
+	InitPTokenRequestNewInitPTokenRequestFromMapError: {-8004, "Cannot new InitPToken eth request from map"},
+	InitPTokenRequestValidateTxWithBlockChainError:    {-8005, "Validate tx with block chain error"},
+	InitPTokenRequestValidateSanityDataError:          {-8006, "Validate sanity data error"},
+	InitPTokenRequestBuildReqActionsError:             {-8007, "Build request action error"},
+
+	InitPTokenResponseValidateSanityDataError:          {-8008, "Validate sanity data error"},
 
 	// portal v3
 	PortalCustodianDepositV3ValidateWithBCError:     {-9001, "Validate with blockchain tx portal custodian deposit v3 error"},
