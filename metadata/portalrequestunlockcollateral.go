@@ -110,7 +110,8 @@ func (meta PortalRequestUnlockCollateral) ValidateSanityData(chainRetriever Chai
 	}
 
 	// validate tokenID
-	if !chainRetriever.IsPortalToken(beaconHeight, meta.TokenID) {
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, meta.TokenID, common.PortalVersion3)
+	if !isPortalToken || err != nil {
 		return false, false, errors.New("TokenID is not a portal token")
 	}
 
