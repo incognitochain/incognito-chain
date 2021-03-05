@@ -184,3 +184,7 @@ const (
 	PortalV3Flag       = 1
 	PortalV4Flag       = 2
 )
+const (
+	PortalVersion3 = 3
+	PortalVersion4 = 4
+)

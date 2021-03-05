@@ -159,7 +159,7 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRe
 	}
 
 	// validate redeem amount
-	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight)
+	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight, common.PortalVersion3)
 	if err != nil {
 		return false, false, fmt.Errorf("Error get min portal token amount: %v", err)
 	}
@@ -182,15 +182,16 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRe
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
 	}
 	// check tokenId is portal token or not
-	if !chainRetriever.IsPortalToken(beaconHeight, redeemReq.TokenID) {
-		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("TokenID is not in portal tokens list"))
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, redeemReq.TokenID, common.PortalVersion3)
+	if !isPortalToken || err != nil {
+		return false, false, errors.New("TokenID is not in portal tokens list")
 	}
 
 	//validate RemoteAddress
 	if len(redeemReq.RemoteAddress) == 0 {
 		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Remote address is invalid"))
 	}
-	isValidRemoteAddress, err := chainRetriever.IsValidPortalRemoteAddress(redeemReq.TokenID, redeemReq.RemoteAddress, beaconHeight)
+	isValidRemoteAddress, err := chainRetriever.IsValidPortalRemoteAddress(redeemReq.TokenID, redeemReq.RemoteAddress, beaconHeight, common.PortalVersion3)
 	if err != nil || !isValidRemoteAddress {
 		return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v - Error %v", redeemReq.RemoteAddress, redeemReq.TokenID, err)
 	}

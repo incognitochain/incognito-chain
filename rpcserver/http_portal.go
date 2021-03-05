@@ -108,7 +108,7 @@ func (httpServer *HttpServer) handleGetPortingRequestFees(params interface{}, cl
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
-	if !httpServer.config.BlockChain.IsPortalToken(0, tokenID) {
+	if ok, err := httpServer.config.BlockChain.IsPortalToken(0, tokenID, common.PortalVersion3); !ok || err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID should be a portal token"))
 	}
 
@@ -173,7 +173,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortingRequest(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId is invalid"))
 	}
 
-	if !httpServer.config.BlockChain.IsPortalToken(0, pTokenId) {
+	if ok, err := httpServer.config.BlockChain.IsPortalToken(0, pTokenId, common.PortalVersion3); !ok || err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 

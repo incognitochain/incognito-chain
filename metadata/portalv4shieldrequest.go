@@ -98,8 +98,9 @@ func (shieldingReq PortalShieldingRequest) ValidateSanityData(chainRetriever Cha
 	}
 
 	// validate tokenID and shielding proof
-	if !chainRetriever.IsPortalToken(beaconHeight, shieldingReq.TokenID) {
-		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("TokenID is not supported currently on Portal"))
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, shieldingReq.TokenID, common.PortalVersion4)
+	if !isPortalToken || err != nil {
+		return false, false, errors.New("TokenID is not supported currently on Portal v4")
 	}
 
 	return true, true, nil

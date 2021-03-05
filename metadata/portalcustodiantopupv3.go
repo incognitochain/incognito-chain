@@ -133,7 +133,8 @@ func (req PortalLiquidationCustodianDepositV3) ValidateSanityData(chainRetriever
 	}
 
 	// check PortalTokenID
-	if !chainRetriever.IsPortalToken(beaconHeight, req.PortalTokenID) {
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, req.PortalTokenID, common.PortalVersion3)
+	if !isPortalToken || err != nil {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}
 
