@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -26,7 +27,7 @@ func genBTCPrivateKey(IncKeyBytes []byte) []byte {
 }
 
 func (p PortalBTCTokenProcessor) GetExpectedMemoForShielding(incAddress string) string {
-	return p.PortalToken.GetExpectedMemoForShielding(incAddress)
+	return "PS1-" + incAddress
 }
 
 func (p PortalBTCTokenProcessor) ConvertExternalToIncAmount(externalAmt uint64) uint64 {
