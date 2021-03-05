@@ -114,12 +114,12 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 	}
 
 	// validate burning amount
-	minAmount, err := chainRetriever.GetMinAmountPortalToken(uReq.TokenID, beaconHeight)
+	minUnshieldAmount := chainRetriever.GetPortalV4MinUnshieldAmount(uReq.TokenID, beaconHeight)
 	if err != nil {
 		return false, false, fmt.Errorf("Error get min portal token amount: %v", err)
 	}
-	if uReq.UnshieldAmount < minAmount {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("burning amount should be larger or equal to %v", minAmount))
+	if uReq.UnshieldAmount < minUnshieldAmount {
+		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("burning amount should be larger or equal to %v", minUnshieldAmount))
 	}
 
 	// validate value transfer of tx for redeem amount in ptoken

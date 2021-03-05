@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
@@ -58,6 +61,19 @@ func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 
 
 /* ================== Retriever for portal v3 ================== */
+// GetPortalParams returns portal params in beaconheight
+func (blockchain *BlockChain) GetPortalParams() portal.PortalParams {
+	return blockchain.GetConfig().ChainParams.PortalParams
+}
+
+func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.PortalParams {
+	return blockchain.GetConfig().ChainParams.PortalParams.GetPortalParamsV3(beaconHeight)
+}
+
+func (blockchain *BlockChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
+	return blockchain.GetConfig().ChainParams.PortalParams.GetPortalParamsV4(beaconHeight)
+}
+
 func (blockchain *BlockChain) GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error) {
 	return blockchain.GetPortalParamsV3(beaconHeight).GetMinAmountPortalToken(tokenIDStr)
 }
@@ -218,4 +234,8 @@ func (blockchain *BlockChain) IsEnableFeature(featureFlag int, epoch uint64) boo
 		return false
 	}
 	return epoch >= enableFeatureFlags[featureFlag]
+}
+
+func (blockchain *BlockChain) GetPortalV4MinUnshieldAmount (tokenIDStr string, beaconHeight uint64) uint64 {
+	return blockchain.GetPortalParamsV4(beaconHeight).MinUnshieldAmts[tokenIDStr]
 }

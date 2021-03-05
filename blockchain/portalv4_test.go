@@ -80,7 +80,7 @@ func (s *PortalTestSuiteV4) SetupTest() {
 				},
 			},
 		},
-		FeeUnshields: map[string]uint64{
+		DefaultFeeUnshields: map[string]uint64{
 			portalcommonv4.PortalBTCIDStr: 100000, // in nano pBTC - 10000 satoshi ~ 4 usd
 		},
 		BatchNumBlks:               45,

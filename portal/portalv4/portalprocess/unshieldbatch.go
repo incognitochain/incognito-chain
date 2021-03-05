@@ -100,7 +100,7 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 		}
 
 		// use default unshield fee in nano ptoken
-		feeUnshield := portalParams.FeeUnshields[tokenID]
+		feeUnshield := portalParams.DefaultFeeUnshields[tokenID]
 
 		// choose waiting unshield IDs to process with current UTXOs
 		utxos := CurrentPortalStateV4.UTXOs[tokenID]

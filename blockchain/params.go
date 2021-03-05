@@ -260,9 +260,9 @@ func SetupParam() {
 				BNBFullNodeHost:          TestnetBNBFullNodeHost,
 				BNBFullNodePort:          TestnetBNBFullNodePort,
 			},
+			// todo: should update before deploying
 			PortalParamsV4: map[uint64]portalv4.PortalParams{
 				0: {
-					// todo: should update before deploying
 					MultiSigAddresses: map[string]string{
 						portalcommonv4.PortalBTCIDStr: "2MvpFqydTR43TT4emMD84Mzhgd8F6dCow1X",
 					},
@@ -270,8 +270,11 @@ func SetupParam() {
 						portalcommonv4.PortalBTCIDStr: "552102aebe5baaf8358c55b04b8d86d705c23c83fc3737f573e248acbcc2921f2dae77210259e3ed53f662136c1e3e689d70fd79b6accec2769bf49a2a89db055c8375c9262102f6ed0484d3b43fbbae9c655678015466c33221cd6492171acaed24d1a708a55921022d4ac32653fc1fdd14e330246f3975a0b771ae211dc5ad989a102069a975088c210276e4c846beb0c3042b5d3dc400000c34fbd15c1ed188e413c7e97bd2b5493c5e2103f7343ba1d5a451adaa052f61fd5c2f935611310b2a7ce15da22af3490f4f0d4621020243cfba9a4b1217a704f64e50f1b5bc9d0fc2110362b01c3ae2d97b0be08b8d57ae",
 					},
 					PortalTokens: initPortalTokensV4ForTestNet(),
-					FeeUnshields: map[string]uint64{
-						portalcommonv4.PortalBTCIDStr: 50, // 100000 nano pbtc // todo: should update before deploying
+					DefaultFeeUnshields: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 100000, // 100000 nano pbtc = 10000 satoshi
+					},
+					MinUnshieldAmts: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
 					},
 					BatchNumBlks: 15, // ~ 10 mins
 				},
@@ -377,9 +380,9 @@ func SetupParam() {
 				BNBFullNodeHost:          Testnet2BNBFullNodeHost,
 				BNBFullNodePort:          Testnet2BNBFullNodePort,
 			},
+			// todo: should update before deploying
 			PortalParamsV4: map[uint64]portalv4.PortalParams{
 				0: {
-					// todo: should update before deploying
 					MultiSigAddresses: map[string]string{
 						portalcommonv4.PortalBTCIDStr: "",
 					},
@@ -387,8 +390,11 @@ func SetupParam() {
 						portalcommonv4.PortalBTCIDStr: "",
 					},
 					PortalTokens: initPortalTokensV4ForTestNet(),
-					FeeUnshields: map[string]uint64{
-						portalcommonv4.PortalBTCIDStr: 100000, // 100000 nano pbtc // todo: should update before deploying
+					DefaultFeeUnshields: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 100000, // 100000 nano pbtc = 10000 satoshi
+					},
+					MinUnshieldAmts: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
 					},
 					BatchNumBlks: 60, // ~ 10 mins
 				},
@@ -492,9 +498,9 @@ func SetupParam() {
 				BNBFullNodeHost:          MainnetBNBFullNodeHost,
 				BNBFullNodePort:          MainnetBNBFullNodePort,
 			},
+			// todo: should update before deploying
 			PortalParamsV4: map[uint64]portalv4.PortalParams{
 				0: {
-					// todo: should update before deploying
 					MultiSigAddresses: map[string]string{
 						portalcommonv4.PortalBTCIDStr: "",
 					},
@@ -502,8 +508,11 @@ func SetupParam() {
 						portalcommonv4.PortalBTCIDStr: "",
 					},
 					PortalTokens: initPortalTokensV4ForMainNet(),
-					FeeUnshields: map[string]uint64{
-						portalcommonv4.PortalBTCIDStr: 100000, // 100000 nano pbtc // todo: should update before deploying
+					DefaultFeeUnshields: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 100000, // 100000 nano pbtc = 10000 satoshi
+					},
+					MinUnshieldAmts: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
 					},
 					BatchNumBlks: 60, // ~ 10 mins
 				},
