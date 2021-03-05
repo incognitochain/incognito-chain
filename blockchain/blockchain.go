@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	"io"
 	"strconv"
 	"sync"
@@ -638,6 +639,10 @@ func (blockchain *BlockChain) GetPortalParams() portal.PortalParams {
 
 func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.PortalParams {
 	return blockchain.GetConfig().ChainParams.PortalParams.GetPortalParamsV3(beaconHeight)
+}
+
+func (blockchain *BlockChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
+	return blockchain.GetConfig().ChainParams.PortalParams.GetPortalParamsV4(beaconHeight)
 }
 
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {

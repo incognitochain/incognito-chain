@@ -14,4 +14,13 @@ const (
 	// status of portal v4 request - used to store db
 	PortalV4RequestRejectedStatus = 0
 	PortalV4RequestAcceptedStatus = 1
+
+	/// status of unshield processing - used to store db
+	PortalUnshieldReqWaitingStatus   = 0
+	PortalUnshieldReqProcessedStatus = 1
+	PortalUnshieldReqCompletedStatus = 2
+
+	// status of batching unshield processing by batchID - used to store db
+	PortalBatchUnshieldReqProcessedStatus = 0
+	PortalBatchUnshieldReqCompletedStatus = 1
 )

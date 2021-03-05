@@ -1256,19 +1256,3 @@ func (blockService BlockService) CheckPortalExternalTxSubmitted(data map[string]
 	return submitted, err
 }
 
-// ============================= Portal v4 ===============================
-func (blockService BlockService) GetPortalShieldingRequestStatus(reqTxID string) (*metadata.PortalShieldingRequestStatus, error) {
-	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
-	data, err := statedb.GetShieldingRequestStatus(stateDB, reqTxID)
-	if err != nil {
-		return nil, err
-	}
-
-	var status metadata.PortalShieldingRequestStatus
-	err = json.Unmarshal(data, &status)
-	if err != nil {
-		return nil, err
-	}
-
-	return &status, nil
-}

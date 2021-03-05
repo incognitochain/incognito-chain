@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	"sync"
 	"time"
 
@@ -317,4 +318,8 @@ func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterf
 
 func (chain *BeaconChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
+}
+
+func (chain *BeaconChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
+	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }

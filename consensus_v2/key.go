@@ -8,6 +8,7 @@ import (
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strings"
 
@@ -189,6 +190,14 @@ func (engine *Engine) ExtractBridgeValidationData(block common.BlockInterface) (
 	}
 	return nil, nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }
+
+func (engine *Engine) ExtractPortalV4ValidationData(block common.BlockInterface) ([]*portalprocessv4.PortalSig, error) {
+	if block.GetVersion() == 2 {
+		return blsbftv2.ExtractPortalV4ValidationData(block)
+	}
+	return nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
+}
+
 
 func LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {
 	wl, err := wallet.Base58CheckDeserialize(privateKey)

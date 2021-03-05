@@ -1,9 +1,13 @@
 package rpcserver
 
 import (
+	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -55,15 +59,19 @@ func (httpServer *HttpServer) handleGetPortalV4State(params interface{}, closeCh
 	beaconBlock := beaconBlocks[0]
 
 	type CurrentPortalState struct {
-		UTXOs               map[string]map[string]*statedb.UTXO
-		ShieldingExternalTx map[string]map[string]*statedb.ShieldingRequest
-		BeaconTimeStamp     int64
+		UTXOs                     map[string]map[string]*statedb.UTXO
+		ShieldingExternalTx       map[string]map[string]*statedb.ShieldingRequest
+		WaitingUnshieldRequests   map[string]map[string]*statedb.WaitingUnshieldRequest
+		ProcessedUnshieldRequests map[string]map[string]*statedb.ProcessedUnshieldRequestBatch
+		BeaconTimeStamp           int64
 	}
 
 	result := CurrentPortalState{
-		BeaconTimeStamp:     beaconBlock.Header.Timestamp,
-		UTXOs:               portalState.UTXOs,
-		ShieldingExternalTx: portalState.ShieldingExternalTx,
+		BeaconTimeStamp:           beaconBlock.Header.Timestamp,
+		UTXOs:                     portalState.UTXOs,
+		ShieldingExternalTx:       portalState.ShieldingExternalTx,
+		WaitingUnshieldRequests:   portalState.WaitingUnshieldRequests,
+		ProcessedUnshieldRequests: portalState.ProcessedUnshieldRequests,
 	}
 	return result, nil
 }
@@ -169,4 +177,247 @@ func (httpServer *HttpServer) handleGetPortalShieldingRequestStatus(params inter
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalV4ShieldReqStatusError, err)
 	}
 	return status, nil
+}
+
+/*
+====== Unshielding request - Burn Ptoken
+*/
+func (httpServer *HttpServer) handleCreateRawTxWithPortalV4UnshieldRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+
+	if len(arrayParams) >= 7 {
+		hasPrivacyTokenParam, ok := arrayParams[6].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("HasPrivacyToken is invalid"))
+		}
+		hasPrivacyToken := int(hasPrivacyTokenParam) > 0
+		if hasPrivacyToken {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("The privacy mode must be disabled"))
+		}
+	}
+	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param metadata is invalid"))
+	}
+
+	portalTokenID, ok := tokenParamsRaw["PortalTokenID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("PortalTokenID is invalid"))
+	}
+
+	unshieldAmount, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["UnshieldAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	incAddressStr, ok := tokenParamsRaw["IncAddressStr"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("IncAddressStr is invalid"))
+	}
+
+	remoteAddress, ok := tokenParamsRaw["RemoteAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("RemoteAddress is invalid"))
+	}
+
+	meta, err := metadata.NewPortalUnshieldRequest(metadata.PortalV4UnshieldingRequestMeta,
+		incAddressStr, portalTokenID, remoteAddress, unshieldAmount)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
+	if rpcErr != nil {
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+
+	byteArrays, err2 := json.Marshal(customTokenTx)
+	if err2 != nil {
+		Logger.log.Error(err2)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            customTokenTx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithPortalV4UnshieldRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithPortalV4UnshieldRequest(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleGetPortalUnshieldingRequestStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	unshieldID, ok := data["UnshieldID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param UnshieldID is invalid"))
+	}
+	status, err := httpServer.blockService.GetPortalUnshieldingRequestStatus(unshieldID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalV4UnshieldReqStatusError, err)
+	}
+	return status, nil
+}
+
+func (httpServer *HttpServer) handleGetPortalBatchUnshieldingRequestStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	batchID, ok := data["BatchID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param BatchID is invalid"))
+	}
+	status, err := httpServer.blockService.GetPortalBatchUnshieldingRequestStatus(batchID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalV4BatchUnshieldReqStatusError, err)
+	}
+	return status, nil
+}
+
+/*
+====== Get raw signed tx
+*/
+func (httpServer *HttpServer) handleGetPortalTransactionSignedWithBatchID(
+	params interface{},
+	closeChan <-chan struct{},
+) (interface{}, *rpcservice.RPCError) {
+	listParams, ok := params.([]interface{})
+	if !ok || len(listParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+	data, ok := listParams[0].(map[string]interface{})
+	if !ok || len(listParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an map[string]interface{}"))
+	}
+	batchIDParam, ok := data["BatchID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param TxID should be a string"))
+	}
+
+	// Get beacon block height from txID
+	unshieldBatch, err := httpServer.blockService.GetPortalBatchUnshieldingRequestStatus(batchIDParam)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Get portal proof error: %v", err))
+	}
+
+	// get signed transaction
+	return getRawSignedTxByHeight(httpServer, unshieldBatch.BeaconHeight, unshieldBatch.RawExternalTx)
+}
+
+type GetSignedTxResult struct {
+	SignedTx     string
+	BeaconHeight uint64
+}
+
+func getRawSignedTxByHeight(
+	httpServer *HttpServer,
+	height uint64,
+	rawTx string,
+) (interface{}, *rpcservice.RPCError) {
+	// Get beacon block
+	beaconBlockQueried, err := getSingleBeaconBlockByHeight(httpServer.GetBlockchain(), height)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	block := &beaconBlock{BeaconBlock: beaconBlockQueried}
+	portalV4Sig, err := block.ProtalV4Sigs(httpServer.config.ConsensusEngine)
+	Logger.log.Errorf("portalV4Sig: %+v\n", portalV4Sig)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	hexRawTx, err := hex.DecodeString(rawTx)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	buffer := bytes.NewReader(hexRawTx)
+	redeemTx := wire.NewMsgTx(wire.TxVersion)
+	err = redeemTx.Deserialize(buffer)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	signatures := make([]*txscript.ScriptBuilder, len(redeemTx.TxIn))
+	for i := range signatures {
+		signature := txscript.NewScriptBuilder()
+		signature.AddOp(txscript.OP_FALSE)
+		signatures[i] = signature
+	}
+
+	redeemTxHash := redeemTx.TxHash().String()
+	var tokenID string
+	for _, v := range portalV4Sig {
+		if v.RawTxHash == redeemTxHash {
+			if tokenID == "" {
+				tokenID = v.TokenID
+			}
+			for i, v2 := range v.Sigs {
+				if i >= len(signatures) {
+					// TODO: update errors
+					return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+				}
+				signatures[i].AddData(v2)
+			}
+		}
+	}
+	if tokenID == "" {
+		// TODO: update errors
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	redeemScriptStr := httpServer.portal.BlockChain.GetPortalParamsV4(height).MultiSigScriptHexEncode[tokenID]
+	redeemScriptHex, err := hex.DecodeString(redeemScriptStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	for i, v := range signatures {
+		v.AddData(redeemScriptHex)
+		signatureScript, err := v.Script()
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		redeemTx.TxIn[i].SignatureScript = signatureScript
+	}
+
+	var signedTx bytes.Buffer
+	err = redeemTx.Serialize(&signedTx)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	hexSignedTx := hex.EncodeToString(signedTx.Bytes())
+
+	return GetSignedTxResult{
+		SignedTx:     hexSignedTx,
+		BeaconHeight: height,
+	}, nil
 }

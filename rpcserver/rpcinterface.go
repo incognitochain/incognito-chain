@@ -277,9 +277,13 @@ var HttpHandler = map[string]httpHandler{
 	getValKeyState: (*HttpServer).handleGetValKeyState,
 
 	// portal v4
-	getPortalV4State:                    (*HttpServer).handleGetPortalV4State,
-	createAndSendTxWithShieldingRequest: (*HttpServer).handleCreateAndSendTxWithShieldingReq,
-	getPortalShieldingRequestStatus:     (*HttpServer).handleGetPortalShieldingRequestStatus,
+	getPortalV4State:                           (*HttpServer).handleGetPortalV4State,
+	createAndSendTxWithShieldingRequest:        (*HttpServer).handleCreateAndSendTxWithShieldingReq,
+	getPortalShieldingRequestStatus:            (*HttpServer).handleGetPortalShieldingRequestStatus,
+	createAndSendTxWithPortalV4UnshieldRequest: (*HttpServer).handleCreateAndSendTxWithPortalV4UnshieldRequest,
+	getPortalUnshieldingRequestStatus:          (*HttpServer).handleGetPortalUnshieldingRequestStatus,
+	getPortalBatchUnshieldingRequestStatus:     (*HttpServer).handleGetPortalBatchUnshieldingRequestStatus,
+	getSignedRawTransactionByBatchID:           (*HttpServer).handleGetPortalTransactionSignedWithBatchID,
 }
 
 // Commands that are available to a limited user

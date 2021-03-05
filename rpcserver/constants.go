@@ -293,9 +293,13 @@ const (
 	getValKeyState = "getvalkeystate"
 
 	// portal v4
-	getPortalV4State                    = "getportalv4state"
-	createAndSendTxWithShieldingRequest = "createandsendtxshieldingrequest"
-	getPortalShieldingRequestStatus     = "getportalshieldingrequeststatus"
+	getPortalV4State                           = "getportalv4state"
+	createAndSendTxWithShieldingRequest        = "createandsendtxshieldingrequest"
+	getPortalShieldingRequestStatus            = "getportalshieldingrequeststatus"
+	createAndSendTxWithPortalV4UnshieldRequest = "createandsendtxwithportalv4unshieldrequest"
+	getPortalUnshieldingRequestStatus          = "getportalunshieldrequeststatus"
+	getPortalBatchUnshieldingRequestStatus     = "getportalbatchunshieldrequeststatus"
+	getSignedRawTransactionByBatchID           = "getporalsignedrawtransaction"
 )
 
 const (
@@ -383,4 +387,8 @@ var PortalV4RPCs = []string{
 	getPortalV4State,
 	createAndSendTxWithShieldingRequest,
 	getPortalShieldingRequestStatus,
+	createAndSendTxWithPortalV4UnshieldRequest,
+	getPortalUnshieldingRequestStatus,
+	getPortalBatchUnshieldingRequestStatus,
+	getSignedRawTransactionByBatchID,
 }

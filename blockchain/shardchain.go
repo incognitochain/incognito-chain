@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	"sync"
 	"time"
 
@@ -268,4 +269,8 @@ func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error
 
 func (chain *ShardChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
+}
+
+func (chain *ShardChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
+	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }

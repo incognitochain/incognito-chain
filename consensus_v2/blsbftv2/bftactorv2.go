@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"sort"
 	"time"
 
@@ -415,7 +417,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 			e.Logger.Error(err)
 			return
 		}
-		aggSig, brigSigs, validatorIdx, err := CombineVotes(v.votes, committeeBLSString)
+		aggSig, brigSigs, validatorIdx, portalSigs, err := CombineVotes(v.votes, committeeBLSString)
 		if err != nil {
 			e.Logger.Error(err)
 			return
@@ -430,6 +432,7 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		valData.AggSig = aggSig
 		valData.BridgeSig = brigSigs
 		valData.ValidatiorsIdx = validatorIdx
+		valData.PortalSig = portalSigs
 		validationDataString, _ := EncodeValidationData(*valData)
 		e.Logger.Infof("%v Validation Data %v %v %v %v", e.ChainKey, aggSig, brigSigs, validatorIdx, validationDataString)
 		if err := v.block.(blockValidation).AddValidationField(validationDataString); err != nil {
@@ -464,7 +467,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	for _, userKey := range e.UserKeySet {
 		pubKey := userKey.GetPublicKey()
 		if common.IndexOfStr(pubKey.GetMiningKeyBase58(e.GetConsensusName()), committeeBLSString) != -1 {
-			Vote, err := CreateVote(&userKey, v.block, e.Chain.GetBestView().GetCommittee())
+			Vote, err := CreateVote(&userKey, v.block, e.Chain.GetBestView().GetCommittee(), e.Chain.GetPortalParamsV4(0))
 			if err != nil {
 				e.Logger.Error(err)
 				return NewConsensusError(UnExpectedError, err)
@@ -488,7 +491,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	return nil
 }
 
-func CreateVote(userKey *signatureschemes2.MiningKey, block common.BlockInterface, committees []incognitokey.CommitteePublicKey) (*BFTVote, error) {
+func CreateVote(userKey *signatureschemes2.MiningKey, block common.BlockInterface, committees []incognitokey.CommitteePublicKey, portalParamsV4 portalv4.PortalParams) (*BFTVote, error) {
 	var Vote = new(BFTVote)
 	bytelist := []blsmultisig.PublicKey{}
 	selfIdx := 0
@@ -512,8 +515,16 @@ func CreateVote(userKey *signatureschemes2.MiningKey, block common.BlockInterfac
 			return nil, NewConsensusError(UnExpectedError, err)
 		}
 	}
+	// check and sign on unshielding external tx for Portal v4
+	portalSigs, err := portalprocessv4.CheckAndSignPortalUnshieldExternalTx(userKey.PriKey[common.BridgeConsensus], block.GetInstructions(), portalParamsV4)
+	if err != nil {
+		return nil, NewConsensusError(UnExpectedError, err)
+	}
+	fmt.Println("[BEACON VALIDATOR] Portal sigs : ", portalSigs)
+
 	Vote.BLS = blsSig
 	Vote.BRI = bridgeSig
+	Vote.PortalSigs = portalSigs
 	Vote.BlockHash = block.Hash().String()
 
 	userPk := userKey.GetPublicKey()
@@ -555,6 +566,15 @@ func (e *BLSBFT_V2) proposeBlock(userMiningKey signatureschemes2.MiningKey, prop
 	}
 
 	var validationData ValidationData
+	// check and sign on unshielding external tx for Portal v4
+	portalParam := e.Chain.GetPortalParamsV4(0)
+	portalSigs, err := portalprocessv4.CheckAndSignPortalUnshieldExternalTx(userMiningKey.PriKey[common.BridgeConsensus], block.GetInstructions(), portalParam)
+	if err != nil {
+		return nil, NewConsensusError(UnExpectedError, err)
+	}
+	fmt.Println("[BEACON PRODUCER] Portal sigs : ", portalSigs)
+	validationData.PortalSig = portalSigs
+	// producer bls sig
 	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
 	validationDataString, _ := EncodeValidationData(validationData)
 	block.(blockValidation).AddValidationField(validationDataString)
@@ -631,4 +651,12 @@ func ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, 
 		return nil, nil, NewConsensusError(UnExpectedError, err)
 	}
 	return valData.BridgeSig, valData.ValidatiorsIdx, nil
+}
+
+func ExtractPortalV4ValidationData(block common.BlockInterface) ([]*portalprocessv4.PortalSig, error) {
+	valData, err := DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return nil, NewConsensusError(UnExpectedError, err)
+	}
+	return valData.PortalSig, nil
 }

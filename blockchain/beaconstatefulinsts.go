@@ -69,7 +69,8 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalTopUpWaitingPortingRequestMetaV3,
 			metadata.PortalRequestPortingMetaV3,
 			metadata.PortalRedeemRequestMetaV3,
-			metadata.PortalV4ShieldingRequestMeta:
+			metadata.PortalV4ShieldingRequestMeta,
+			metadata.PortalV4UnshieldingRequestMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:

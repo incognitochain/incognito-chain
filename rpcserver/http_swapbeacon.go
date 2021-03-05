@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -29,6 +30,7 @@ type swapProof struct {
 
 type ConsensusEngine interface {
 	ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
+	ExtractPortalV4ValidationData(block common.BlockInterface) ([]*portalprocessv4.PortalSig, error)
 }
 
 // handleGetLatestBeaconSwapProof returns the latest proof of a change in bridge's committee
@@ -144,6 +146,7 @@ type block interface {
 	InstructionMerkleRoot() []byte
 	MetaHash() []byte
 	Sig(ce ConsensusEngine) ([][]byte, []int, error)
+	ProtalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error)
 }
 
 // buildProofForBlock builds a swapProof for an instruction in a block (beacon or shard)
@@ -316,6 +319,10 @@ func (bb *beaconBlock) Sig(ce ConsensusEngine) ([][]byte, []int, error) {
 	return ce.ExtractBridgeValidationData(bb)
 }
 
+func (bb *beaconBlock) ProtalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error) {
+	return ce.ExtractPortalV4ValidationData(bb)
+}
+
 type shardBlock struct {
 	*blockchain.ShardBlock
 }
@@ -331,6 +338,10 @@ func (sb *shardBlock) MetaHash() []byte {
 
 func (sb *shardBlock) Sig(ce ConsensusEngine) ([][]byte, []int, error) {
 	return ce.ExtractBridgeValidationData(sb)
+}
+
+func (sb *shardBlock) ProtalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error) {
+	return ce.ExtractPortalV4ValidationData(sb)
 }
 
 // findBeaconBlockWithInst finds a beacon block with a specific instruction and the instruction's index; nil if not found

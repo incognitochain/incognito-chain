@@ -156,6 +156,16 @@ func NewPortalManager() *PortalManager {
 				Actions: map[byte][][]string{},
 			},
 		},
+		metadata.PortalV4UnshieldingRequestMeta: &portalprocessv4.PortalUnshieldRequestProcessor{
+			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
+				Actions: map[byte][][]string{},
+			},
+		},
+		metadata.PortalV4UnshieldBatchingMeta: &portalprocessv4.PortalUnshieldBatchingProcessor{
+			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
+				Actions: map[byte][][]string{},
+			},
+		},
 	}
 
 	return &PortalManager{

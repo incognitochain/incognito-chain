@@ -159,6 +159,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalShieldingRequest{}
 	case PortalV4ShieldingResponseMeta:
 		md = &PortalShieldingResponse{}
+	case PortalV4UnshieldingRequestMeta:
+		md = &PortalUnshieldRequest{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
@@ -232,3 +234,25 @@ func IsPortalMetaTypeV4(metaType int) bool {
 	res, _ := common.SliceExists(portalV4MetaTypes, metaType)
 	return res
 }
+
+// TODO: add more meta data types
+var portalV4MetaTypesRequireMultiSig = []string{
+	strconv.Itoa(PortalV4UnshieldBatchingMeta),
+}
+
+func HasPortalInstructionsV4(instructions [][]string) bool {
+	for _, inst := range instructions {
+		for _, meta := range portalV4MetaTypesRequireMultiSig {
+			if len(inst) > 0 && inst[0] == meta {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func IsRequireBeaconSigForPortalV4Meta(inst []string) bool {
+	isExist, _ := common.SliceExists(portalV4MetaTypesRequireMultiSig, inst[0])
+	return isExist
+}
+

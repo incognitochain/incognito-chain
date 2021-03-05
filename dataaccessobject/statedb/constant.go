@@ -56,6 +56,8 @@ const (
 	// Portal v4
 	PortalV4UTXOObjectType
 	PortalV4ShieldRequestObjectType
+	PortalWaitingUnshieldObjectType
+	PortalProcessedUnshieldRequestBatchObjectType
 )
 
 // Prefix length

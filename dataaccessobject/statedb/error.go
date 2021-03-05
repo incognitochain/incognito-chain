@@ -47,6 +47,8 @@ const (
 	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
 	ErrInvalidPortalUTXOType                     = "invalid portal utxo state type"
 	ErrInvalidPortalShieldingRequestType         = "invalid portal shielding request type"
+	ErrInvalidPortalV4WaitingUnshieldRequestType = "invalid portal waiting unshielding request type"
+	ErrInvalidPortalV4BatchUnshieldRequestType   = "invalid portal batch unshielding request type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -201,6 +203,13 @@ const (
 	GetPortalV4ShieldingRequestStatusError
 	StorePortalShieldingRequestsError
 	GetPortalShieldingRequestsError
+	GetPortalUnshieldRequestStatusError
+	StorePortalUnshieldRequestStatusError
+	GetPortalBatchUnshieldRequestStatusError
+	StorePortalBatchUnshieldRequestStatusError
+	StorePortalListWaitingUnshieldRequestError
+	StorePortalListProcessedBatchUnshieldRequestError
+
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -351,6 +360,12 @@ var ErrCodeMessage = map[int]struct {
 	GetPortalV4ShieldingRequestStatusError:   {-15008, "Get portal v4 shielding request status error"},
 	StorePortalShieldingRequestsError:        {-15009, "Store portal v4 list shielding requests error"},
 	GetPortalShieldingRequestsError:          {-15010, "Get portal v4 list shielding requests error"},
+	GetPortalUnshieldRequestStatusError:                   {-15011, "Get portal v4 unshielding request status error"},
+	StorePortalUnshieldRequestStatusError:                 {-15012, "Store portal v4 unshielding request status error"},
+	GetPortalBatchUnshieldRequestStatusError:              {-15013, "Get portal v4 batching unshield request status error"},
+	StorePortalBatchUnshieldRequestStatusError:            {-15014, "Store portal v4 batching unshield request status error"},
+	StorePortalListWaitingUnshieldRequestError:            {-15015, "Store portal v4 list waiting unshield request error"},
+	StorePortalListProcessedBatchUnshieldRequestError:   {-15016, "Store portal v4 list processed batch unshield request error"},
 }
 
 type StatedbError struct {

@@ -95,8 +95,12 @@ var (
 	withdrawCollateralProofType = []byte("0-")
 
 	// portal v4
-	portalUTXOStatePrefix                                = []byte("portalutxo-")
-	portalShieldRequestPrefix                            = []byte("portalshieldrequest-")
+	portalUTXOStatePrefix                  = []byte("portalutxo-")
+	portalShieldRequestPrefix              = []byte("portalshieldrequest-")
+	portalWaitingUnshieldRequestsPrefix    = []byte("portalwaitingunshieldrequest-")
+	portalUnshieldRequestsProcessedPrefix  = []byte("portalprocessingbatchunshield-")
+	portalUnshieldRequestStatusPrefix      = []byte("unshieldrequest-")
+	portalBatchUnshieldRequestStatusPrefix = []byte("batchunshield-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -478,6 +482,14 @@ func PortalShieldingRequestStatusPrefix() []byte {
 	return portalShieldRequestPrefix
 }
 
+func PortalUnshieldRequestStatusPrefix() []byte {
+	return portalUnshieldRequestStatusPrefix
+}
+
+func PortalBatchUnshieldRequestStatusPrefix() []byte {
+	return portalBatchUnshieldRequestStatusPrefix
+}
+
 // Portal v4 prefix hash of the key
 func GetPortalUTXOStatePrefix(tokenID string) []byte {
 	h := common.HashH(append(portalUTXOStatePrefix, []byte(tokenID)...))
@@ -486,6 +498,16 @@ func GetPortalUTXOStatePrefix(tokenID string) []byte {
 
 func GetShieldingRequestPrefix(tokenID string) []byte {
 	h := common.HashH(append(portalShieldRequestPrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetWaitingUnshieldRequestPrefix(tokenID string) []byte {
+	h := common.HashH(append(portalWaitingUnshieldRequestsPrefix, []byte(tokenID)...))
+	return h[:][:prefixHashKeyLength]
+}
+
+func GetProcessedUnshieldRequestBatchPrefix(tokenID string) []byte {
+	h := common.HashH(append(portalUnshieldRequestsProcessedPrefix, []byte(tokenID)...))
 	return h[:][:prefixHashKeyLength]
 }
 

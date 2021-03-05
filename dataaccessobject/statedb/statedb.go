@@ -1743,3 +1743,43 @@ func (stateDB *StateDB) getUTXOsByTokenID(tokenID string) map[string]*UTXO {
 	}
 	return utxos
 }
+
+func (stateDB *StateDB) getListWaitingUnshieldRequestsByTokenID(tokenID string) map[string]*WaitingUnshieldRequest {
+	waitingUnshieldRequests := make(map[string]*WaitingUnshieldRequest)
+	temp := stateDB.trie.NodeIterator(GetWaitingUnshieldRequestPrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewWaitingUnshieldRequestState()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		waitingUnshieldRequests[keyHash.String()] = wr
+	}
+	return waitingUnshieldRequests
+}
+
+func (stateDB *StateDB) getListProcessedBatchUnshieldRequestsByTokenID(tokenID string) map[string]*ProcessedUnshieldRequestBatch {
+	processedBatchUnshieldRequests := make(map[string]*ProcessedUnshieldRequestBatch)
+	temp := stateDB.trie.NodeIterator(GetProcessedUnshieldRequestBatchPrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewProcessedUnshieldRequestBatch()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		processedBatchUnshieldRequests[keyHash.String()] = wr
+	}
+	return processedBatchUnshieldRequests
+}

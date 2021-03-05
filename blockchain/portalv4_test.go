@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"testing"
 	"time"
-	
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"

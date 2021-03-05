@@ -1,6 +1,8 @@
 package statedb
 
-import "github.com/incognitochain/incognito-chain/common"
+import (
+	"github.com/incognitochain/incognito-chain/common"
+)
 
 // ================= Shielding Request =================
 func StoreShieldingRequestStatus(stateDB *StateDB, txID string, statusContent []byte) error {
@@ -71,4 +73,102 @@ func StoreUTXOs(stateDB *StateDB, utxos map[string]*UTXO) error {
 	}
 
 	return nil
+}
+
+// ================= List Waiting Unshielding Requests =================
+func GetWaitingUnshieldRequestsByTokenID(stateDB *StateDB, tokenID string) (map[string]*WaitingUnshieldRequest, error) {
+	return stateDB.getListWaitingUnshieldRequestsByTokenID(tokenID), nil
+}
+
+func StoreWaitingUnshieldRequests(
+	stateDB *StateDB,
+	waitingUnshieldReqs map[string]*WaitingUnshieldRequest) error {
+	for keyStr, waitingReq := range waitingUnshieldReqs {
+		key, err := common.Hash{}.NewHashFromStr(keyStr)
+		if err != nil {
+			return NewStatedbError(StorePortalListWaitingUnshieldRequestError, err)
+		}
+		err = stateDB.SetStateObject(PortalWaitingUnshieldObjectType, *key, waitingReq)
+		if err != nil {
+			return NewStatedbError(StorePortalListWaitingUnshieldRequestError, err)
+		}
+	}
+
+	return nil
+}
+
+func DeleteWaitingUnshieldRequest(stateDB *StateDB, tokenID string, unshieldID string) {
+	key := GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID)
+	stateDB.MarkDeleteStateObject(PortalWaitingUnshieldObjectType, key)
+}
+
+// ================= Unshielding Request Status =================
+// Store and get the status of the Unshield Request by unshieldID
+func StorePortalUnshieldRequestStatus(stateDB *StateDB, unshieldID string, statusContent []byte) error {
+	statusType := PortalUnshieldRequestStatusPrefix()
+	statusSuffix := []byte(unshieldID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalUnshieldRequestStatusError, err)
+	}
+
+	return nil
+}
+
+func GetPortalUnshieldRequestStatus(stateDB *StateDB, unshieldID string) ([]byte, error) {
+	statusType := PortalUnshieldRequestStatusPrefix()
+	statusSuffix := []byte(unshieldID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil && err.(*StatedbError).GetErrorCode() != ErrCodeMessage[GetPortalStatusNotFoundError].Code {
+		return []byte{}, NewStatedbError(GetPortalUnshieldRequestStatusError, err)
+	}
+
+	return data, nil
+}
+
+// ================= List Batching Unshielding Request =================
+
+func GetListProcessedBatchUnshieldRequestsByTokenID(stateDB *StateDB, tokenID string) (map[string]*ProcessedUnshieldRequestBatch, error) {
+	return stateDB.getListProcessedBatchUnshieldRequestsByTokenID(tokenID), nil
+}
+
+func StoreProcessedBatchUnshieldRequests(
+	stateDB *StateDB,
+	processedBatchUnshieldReqs map[string]*ProcessedUnshieldRequestBatch) error {
+	for keyStr, batchReq := range processedBatchUnshieldReqs {
+		key, err := common.Hash{}.NewHashFromStr(keyStr)
+		if err != nil {
+			return NewStatedbError(StorePortalListProcessedBatchUnshieldRequestError, err)
+		}
+		err = stateDB.SetStateObject(PortalProcessedUnshieldRequestBatchObjectType, *key, batchReq)
+		if err != nil {
+			return NewStatedbError(StorePortalListProcessedBatchUnshieldRequestError, err)
+		}
+	}
+
+	return nil
+}
+
+// Store and get the status of the Unshield Request by unshieldID
+func StorePortalBatchUnshieldRequestStatus(stateDB *StateDB, batchID string, statusContent []byte) error {
+	statusType := PortalBatchUnshieldRequestStatusPrefix()
+	statusSuffix := []byte(batchID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalBatchUnshieldRequestStatusError, err)
+	}
+
+	return nil
+}
+
+// ================= Batching Unshielding Request Status =================
+func GetPortalBatchUnshieldRequestStatus(stateDB *StateDB, batchID string) ([]byte, error) {
+	statusType := PortalBatchUnshieldRequestStatusPrefix()
+	statusSuffix := []byte(batchID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil && err.(*StatedbError).GetErrorCode() != ErrCodeMessage[GetPortalStatusNotFoundError].Code {
+		return []byte{}, NewStatedbError(GetPortalBatchUnshieldRequestStatusError, err)
+	}
+
+	return data, nil
 }
