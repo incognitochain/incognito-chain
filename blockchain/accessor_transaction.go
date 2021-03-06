@@ -12,8 +12,8 @@ import (
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/transaction"
+	txutils "github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/pkg/errors"
 	"sort"
 	"strconv"
@@ -22,7 +22,7 @@ import (
 
 var(
 	EnableIndexingCoinByOTAKey bool
-	outcoinReindexer *coinReindexer
+	outcoinReindexer *txutils.CoinReindexer
 )
 
 // DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
@@ -279,97 +279,6 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *
 	return append(transactions, txsResponse...), nil
 }
 
-func queryDbCoinVer1(pubkey []byte, shardID byte, tokenID *common.Hash, db *statedb.StateDB) ([]privacy.Coin, error) {
-	outCoinsBytes, err := statedb.GetOutcoinsByPubkey(db, *tokenID, pubkey, shardID)
-	if err != nil {
-		Logger.log.Error("GetOutcoinsBytesByKeyset Get by PubKey", err)
-		return nil, err
-	}
-	var outCoins []privacy.Coin
-	for _, item := range outCoinsBytes{
-		outCoin, err := coin.NewCoinFromByte(item)
-		if err != nil {
-			Logger.log.Errorf("Cannot create coin from byte %v", err)
-			return nil, err
-		}
-		outCoins = append(outCoins, outCoin)
-	}
-	return outCoins, nil
-}
-
-type coinMatcher func(*privacy.CoinV2, map[string]interface{}) bool
-
-func queryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, shardHeight, destHeight uint64, db *statedb.StateDB, filters ...coinMatcher) ([]privacy.Coin, error) {
-	var outCoins []privacy.Coin
-	// avoid overlap; unless lower height is 0
-	start := shardHeight + 1
-	if shardHeight == 0{
-		start = 0
-	}
-	for height := start; height <= destHeight; height += 1 {
-		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
-		if err != nil {
-			Logger.log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
-			return nil, err
-		}
-		params := make(map[string]interface{})
-		params["otaKey"] = otaKey
-		params["db"] = db
-		params["tokenID"] = tokenID
-		for _, coinBytes := range currentHeightCoins {
-			c, err := coin.NewCoinFromByte(coinBytes)
-			if err != nil {
-				Logger.log.Error("Get outcoins ver 2 bytes by keyset Parse Coin From Bytes", err)
-				return nil, err
-			}
-			cv2, ok := c.(*privacy.CoinV2)
-			if !ok{
-				Logger.log.Error("Get outcoins ver 2 bytes by keyset cast coin to version 2", err)
-				return nil, errors.New("Cannot cast a coin to version 2")
-			}
-			pass := true
-			for _, f := range filters{
-				if !f(cv2, params){
-					pass = false
-				}
-			}
-			if pass{
-				outCoins = append(outCoins, cv2)
-			}
-		}
-	}
-	return outCoins, nil
-}
-
-func getCoinFilterByOTAKeyAndToken() coinMatcher{
-	return func(c *privacy.CoinV2, kvargs map[string]interface{}) bool{
-		entry, exists := kvargs["otaKey"]
-		if !exists{
-			return false
-		}
-		vk, ok := entry.(privacy.OTAKey)
-		if !ok{
-			return false
-		}
-		entry, exists = kvargs["tokenID"]
-		if !exists{
-			return false
-		}
-		tokenID, ok := entry.(*common.Hash)
-		if !ok{
-			return false
-		}
-		ks := &incognitokey.KeySet{}
-		ks.OTAKey = vk
-
-		if pass, sharedSecret := c.DoesCoinBelongToKeySet(ks); pass {
-			pass, _ = c.ValidateAssetTag(sharedSecret, tokenID)
-			return pass
-		}
-		return false
-	}
-}
-
 //Return all coins belonging to the provided keyset
 //
 //If there is a ReadonlyKey, return decrypted coins; otherwise, just return raw coins
@@ -383,7 +292,7 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
 	if versionsIncluded[1]{
-		results, err := queryDbCoinVer1(keyset.PaymentAddress.Pk, shardID, tokenID, transactionStateDB)
+		results, err := txutils.QueryDbCoinVer1(keyset.PaymentAddress.Pk, shardID, tokenID, transactionStateDB)
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -400,12 +309,12 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 		if upToHeight > latest || upToHeight==0{
 			upToHeight = latest
 		}
-		lowerHeight = getLowerHeight(upToHeight)
+		lowerHeight = txutils.GetNextLowerHeight(upToHeight)
 		fromHeight := uint64(0)
 		if lowerHeight!=0{
 			fromHeight = lowerHeight
 		}
-		results, err := queryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, getCoinFilterByOTAKeyAndToken())
+		results, err := txutils.QueryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, txutils.GetCoinFilterByOTAKeyAndToken())
 		if err != nil {
 			return nil, nil, 0, err
 		}
@@ -731,7 +640,7 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 						if processing!=1 && processing!=2{
 							return false
 						}
-						otaKey := OTAKeyFromRaw(vkArr)
+						otaKey := txutils.OTAKeyFromRaw(vkArr)
 						ks := &incognitokey.KeySet{}
 						ks.OTAKey = otaKey
 						belongs, _ := outputCoin.DoesCoinBelongToKeySet(ks)
