@@ -18,8 +18,22 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 	curEpoch := chain.GetEpoch()
 	sameCommitteeBlock := blocks
 	for i, v := range blocks {
-		if v.GetCurrentEpoch() == curEpoch+1 {
-			sameCommitteeBlock = blocks[:i+1]
+		shouldBreak := false
+		switch v.(type) {
+		case *blockchain.BeaconBlock:
+			// do nothing, beacon committee assume not change
+			//if v.GetCurrentEpoch() == curEpoch+1 {
+			//	sameCommitteeBlock = blocks[:i+1]
+			//	break
+			//}
+		case *blockchain.ShardBlock:
+			//if block contain swap inst,
+			if containSwap(v.(*blockchain.ShardBlock).Body.Instructions) {
+				sameCommitteeBlock = blocks[:i+1]
+				shouldBreak = true
+			}
+		}
+		if shouldBreak {
 			break
 		}
 	}
