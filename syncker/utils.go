@@ -1,6 +1,7 @@
 package syncker
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,8 +16,18 @@ func isNil(v interface{}) bool {
 }
 
 func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) {
-	curEpoch := chain.GetEpoch()
 	sameCommitteeBlock := blocks
+
+	containSwap := func(inst [][]string) bool {
+		for _, inst := range inst {
+			if inst[0] == blockchain.SwapAction {
+				return true
+			}
+		}
+		return false
+	}
+
+	//loop through block, to get same committee
 	for i, v := range blocks {
 		shouldBreak := false
 		switch v.(type) {
