@@ -87,7 +87,7 @@ const (
 
 // bridge
 const (
-	BridgeMinorOperator = "-"
+	BridgeMinusOperator = "-"
 	BridgePlusOperator  = "+"
 )
 
