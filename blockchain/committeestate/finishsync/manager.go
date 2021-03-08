@@ -11,6 +11,19 @@ type Manager struct {
 	mu         *sync.RWMutex // beware of this, any class extend this class need to use this mutex carefully
 }
 
+func NewManager() *Manager {
+	return &Manager{
+		mu: &sync.RWMutex{},
+	}
+}
+
+func NewManagerWithValue(validators map[byte][]incognitokey.CommitteePublicKey) *Manager {
+	return &Manager{
+		validators: validators,
+		mu:         &sync.RWMutex{},
+	}
+}
+
 func (manager *Manager) AddFinishedSyncValidators(
 	validators []string,
 	syncingValidators []incognitokey.CommitteePublicKey,
