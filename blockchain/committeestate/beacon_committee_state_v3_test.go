@@ -882,14 +882,6 @@ func TestBeaconCommitteeStateV3_cloneFrom(t *testing.T) {
 							*incKey, *incKey0, *incKey2, *incKey3,
 						},
 					},
-					finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey, *incKey0, *incKey2, *incKey3,
-						},
-						1: []incognitokey.CommitteePublicKey{
-							*incKey, *incKey0, *incKey2, *incKey3,
-						},
-					},
 				},
 			},
 		},
@@ -1046,14 +1038,6 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 						*incKey, *incKey0, *incKey2, *incKey3,
 					},
 				},
-				finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{
-						*incKey, *incKey0, *incKey2, *incKey3,
-					},
-					1: []incognitokey.CommitteePublicKey{
-						*incKey, *incKey0, *incKey2, *incKey3,
-					},
-				},
 			},
 		},
 	}
@@ -1062,71 +1046,9 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 			b := &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
-				finishedSyncValidators:           tt.fields.finishedSyncValidators,
 			}
-			if got := b.clone(); !reflect.DeepEqual(got.finishedSyncValidators, tt.want.finishedSyncValidators) {
-				t.Errorf("BeaconCommitteeStateV3.clone() = %v, want %v", got.finishedSyncValidators, tt.want.finishedSyncValidators)
-			}
-		})
-	}
-}
-
-func TestBeaconCommitteeStateV3_AddFinishedSyncValidators(t *testing.T) {
-
-	initLog()
-	initTestParams()
-
-	type fields struct {
-		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
-		syncPool                         map[byte][]incognitokey.CommitteePublicKey
-		finishedSyncValidators           map[byte][]incognitokey.CommitteePublicKey
-	}
-	type args struct {
-		syncingValidators []incognitokey.CommitteePublicKey
-		shardID           byte
-	}
-	tests := []struct {
-		name               string
-		fields             fields
-		fieldsAfterProcess fields
-		args               args
-	}{
-		{
-			name: "Valid Input",
-			fields: fields{
-				syncPool: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{*incKey0, *incKey},
-					1: []incognitokey.CommitteePublicKey{*incKey2, *incKey3, *incKey5},
-				},
-				finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{*incKey0, *incKey},
-					1: []incognitokey.CommitteePublicKey{*incKey2},
-				},
-			},
-			fieldsAfterProcess: fields{
-				finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{
-					0: []incognitokey.CommitteePublicKey{*incKey0, *incKey},
-					1: []incognitokey.CommitteePublicKey{*incKey2, *incKey3},
-				},
-			},
-			args: args{
-				syncingValidators: []incognitokey.CommitteePublicKey{
-					*incKey2, *incKey3, *incKey4,
-				},
-				shardID: 1,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			b := &BeaconCommitteeStateV3{
-				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
-				syncPool:                         tt.fields.syncPool,
-				finishedSyncValidators:           tt.fields.finishedSyncValidators,
-			}
-			b.AddFinishedSyncValidators(tt.args.syncingValidators, tt.args.shardID)
-			if !reflect.DeepEqual(b.finishedSyncValidators, tt.fieldsAfterProcess.finishedSyncValidators) {
-				t.Errorf("BeaconCommitteeStateV3.AddFinishedSyncValidators() b.finishedSyncValidators = %v, tt.fieldsAfterProcess.finishedSyncValidators %v", b.finishedSyncValidators, tt.fieldsAfterProcess.finishedSyncValidators)
+			if got := b.clone(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BeaconCommitteeStateV3.clone() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -1305,7 +1227,6 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			b := &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
-				finishedSyncValidators:           tt.fields.finishedSyncValidators,
 			}
 			got := b.processUnstakeInstruction(tt.args.unstakeInstruction, tt.args.env, tt.args.committeeChange, tt.args.oldState)
 			if !reflect.DeepEqual(got, tt.want) {
@@ -1414,12 +1335,6 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 						0: []incognitokey.CommitteePublicKey{},
 						1: []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
 					},
-					finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{},
-						1: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey2,
-						},
-					},
 				},
 			},
 			want: &CommitteeChange{
@@ -1445,7 +1360,6 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			b := &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
-				finishedSyncValidators:           tt.fields.finishedSyncValidators,
 			}
 			got, err := b.processFinishSyncInstruction(tt.args.finishSyncInstruction, tt.args.env, tt.args.committeeChange, tt.args.oldState)
 			if (err != nil) != tt.wantErr {
@@ -1460,9 +1374,6 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			}
 			if !reflect.DeepEqual(b.syncPool, tt.fieldsAfterProcess.syncPool) {
 				t.Errorf("BeaconCommitteeStateV3.syncPool = %v, want %v", b.syncPool, tt.fieldsAfterProcess.syncPool)
-			}
-			if !reflect.DeepEqual(b.finishedSyncValidators, tt.fieldsAfterProcess.finishedSyncValidators) {
-				t.Errorf("BeaconCommitteeStateV3.finishedSyncValidators = %v, want %v", b.finishedSyncValidators, tt.fieldsAfterProcess.finishedSyncValidators)
 			}
 		})
 	}

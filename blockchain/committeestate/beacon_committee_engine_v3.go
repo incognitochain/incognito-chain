@@ -1,8 +1,6 @@
 package committeestate
 
 import (
-	"sort"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -148,32 +146,4 @@ func (engine BeaconCommitteeEngineV3) SyncingValidators() map[byte][]incognitoke
 		res[k] = v
 	}
 	return res
-}
-
-func (engine BeaconCommitteeEngineV3) AddFinishedSyncValidators(committeePublicKeys []string, shardID byte) error {
-	engine.finalState.Mu().Lock()
-	defer engine.finalState.Mu().Unlock()
-	committeePublicKeysStruct, err := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
-	if err != nil {
-		return err
-	}
-	beaconStateV3 := engine.finalState.(*BeaconCommitteeStateV3)
-	beaconStateV3.AddFinishedSyncValidators(committeePublicKeysStruct, shardID)
-	return nil
-}
-
-func (engine BeaconCommitteeEngineV3) GenerateFinishSyncInstructions() ([]*instruction.FinishSyncInstruction, error) {
-	res := []*instruction.FinishSyncInstruction{}
-	keys := []int{}
-	beaconState := engine.finalState.(*BeaconCommitteeStateV3)
-	for shardID, _ := range beaconState.finishedSyncValidators {
-		keys = append(keys, int(shardID))
-	}
-	sort.Ints(keys)
-	for _, v := range keys {
-		committeePublicKeys, _ := incognitokey.CommitteeKeyListToString(beaconState.finishedSyncValidators[byte(v)])
-		finishSyncInstruction := instruction.NewFinishSyncInstructionWithValue(v, committeePublicKeys)
-		res = append(res, finishSyncInstruction)
-	}
-	return res, nil
 }

@@ -958,18 +958,24 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 
 //OnFinishSync ...
 func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishSync) {
-	Logger.log.Debug("[dcs] Receive a MsgFinishSync")
+	Logger.log.Debug("Receive a MsgFinishSync")
 	beaconBestView := serverObj.blockChain.GetBeaconBestState()
-	beaconCommittees, err := incognitokey.CommitteeKeyListToString(beaconBestView.GetBeaconCommittee())
-	if err != nil {
-		panic(err)
+	syncingValidators := beaconBestView.SyncingValidators()[msg.ShardID]
+	finishedSyncValidators := make(map[string]bool)
+	for _, v := range msg.CommitteePublicKey {
+		finishedSyncValidators[v] = true
 	}
+	count := 0
 
-	for _, v := range beaconCommittees {
-		if serverObj.miningKeys == v {
-			Logger.log.Info("[dcs] add key to finish sync list :", msg.CommitteePublicKey)
-			//beaconBestView.AddFinishedSyncValidators(msg.CommitteePublicKey, msg.ShardID)
-			beaconBestView.AddFinishedSyncValidators(msg.CommitteePublicKey, msg.ShardID)
+	for _, v := range syncingValidators {
+		if count == len(finishedSyncValidators) {
+			return
+		}
+		key := v.GetMiningKeyBase58(common.BlsConsensus)
+		if finishedSyncValidators[key] {
+			committeePublickey, _ := v.ToBase58()
+			beaconBestView.AddFinishedSyncValidators([]string{committeePublickey}, msg.ShardID)
+			count++
 		}
 	}
 }

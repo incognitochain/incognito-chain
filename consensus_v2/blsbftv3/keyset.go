@@ -7,11 +7,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func (e *BLSBFT_V3) LoadUserKeys(miningKey []signatureschemes2.MiningKey) error {
@@ -40,9 +37,9 @@ func (e BLSBFT_V3) SignData(data []byte) (string, error) {
 
 func CombineVotes(votes map[string]*BFTVote, committee []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
 	var blsSigList [][]byte
-	for validator, _ := range votes {
-		if index := common.IndexOfStr(validator, committee); index != -1 {
-			validatorIdx = append(validatorIdx, index)
+	for validator, vote := range votes {
+		if vote.IsValid == 1 {
+			validatorIdx = append(validatorIdx, common.IndexOfStr(validator, committee))
 		}
 	}
 	sort.Ints(validatorIdx)
@@ -55,37 +52,4 @@ func CombineVotes(votes map[string]*BFTVote, committee []string) (aggSig []byte,
 		return nil, nil, nil, NewConsensusError(CombineSignatureError, err)
 	}
 	return
-}
-
-func GetMiningKeyFromPrivateSeed(privateSeed string) (*consensustypes.MiningKey, error) {
-	var miningKey consensustypes.MiningKey
-	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
-	if err != nil {
-		return nil, NewConsensusError(LoadKeyError, err)
-	}
-
-	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)
-
-	miningKey.PriKey = map[string][]byte{}
-	miningKey.PubKey = map[string][]byte{}
-	miningKey.PriKey[common.BlsConsensus] = blsmultisig.SKBytes(blsPriKey)
-	miningKey.PubKey[common.BlsConsensus] = blsmultisig.PKBytes(blsPubKey)
-	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateSeedBytes)
-	miningKey.PriKey[common.BridgeConsensus] = bridgesig.SKBytes(&bridgePriKey)
-	miningKey.PubKey[common.BridgeConsensus] = bridgesig.PKBytes(&bridgePubKey)
-
-	return &miningKey, nil
-}
-
-func LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {
-	wl, err := wallet.Base58CheckDeserialize(privateKey)
-	if err != nil {
-		return "", NewConsensusError(LoadKeyError, err)
-	}
-	privateSeedBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
-	if err != nil {
-		return "", NewConsensusError(LoadKeyError, err)
-	}
-	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
-	return privateSeed, nil
 }

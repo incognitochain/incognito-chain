@@ -421,16 +421,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 		}
 	}
 
-	// TODO: @tin move finish instruction to bottom
-	// Finish Sync Instructions
-	finishSyncInstructions, err := curView.beaconCommitteeEngine.GenerateFinishSyncInstructions()
-	if err != nil {
-		return instructions, err
-	}
-	for _, finishSyncInstruction := range finishSyncInstructions {
-		instructions = append(instructions, finishSyncInstruction.ToString())
-	}
-
 	// Stop Auto Stake
 	for _, stopAutoStakeInstruction := range shardInstruction.stopAutoStakeInstructions {
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())
@@ -439,6 +429,14 @@ func (curView *BeaconBestState) GenerateInstruction(
 	// Unstake
 	for _, unstakeInstruction := range shardInstruction.unstakeInstructions {
 		instructions = append(instructions, unstakeInstruction.ToString())
+	}
+
+	// Finish Sync Instructions
+	finishSyncInstructions := curView.FinishSyncInstructions()
+	for _, finishSyncInstruction := range finishSyncInstructions {
+		if !finishSyncInstruction.IsEmpty() {
+			instructions = append(instructions, finishSyncInstruction.ToString())
+		}
 	}
 
 	return instructions, nil
@@ -754,4 +752,19 @@ func (shardInstruction *shardInstruction) compose() {
 	if !stopAutoStakeInstruction.IsEmpty() {
 		shardInstruction.stopAutoStakeInstructions = append(shardInstruction.stopAutoStakeInstructions, stopAutoStakeInstruction)
 	}
+}
+
+func (beaconBestState *BeaconBestState) FinishSyncInstructions() []*instruction.FinishSyncInstruction {
+	res := []*instruction.FinishSyncInstruction{}
+	keys := []int{}
+	for i := 0; i < beaconBestState.beaconCommitteeEngine.ActiveShards(); i++ {
+		keys = append(keys, i)
+	}
+	sort.Ints(keys)
+	for _, v := range keys {
+		committeePublicKeys, _ := incognitokey.CommitteeKeyListToString(beaconBestState.finishSyncManager.Validators(byte(v)))
+		finishSyncInstruction := instruction.NewFinishSyncInstructionWithValue(v, committeePublicKeys)
+		res = append(res, finishSyncInstruction)
+	}
+	return res
 }

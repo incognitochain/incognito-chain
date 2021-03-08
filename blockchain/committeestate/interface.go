@@ -43,8 +43,6 @@ type BeaconCommitteeEngine interface {
 	AssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
 	SyncingValidators() map[byte][]incognitokey.CommitteePublicKey
 	NumberOfAssignedCandidates() int
-	AddFinishedSyncValidators([]string, byte) error
-	GenerateFinishSyncInstructions() ([]*instruction.FinishSyncInstruction, error)
 	IsSwapTime(uint64, uint64) bool
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeEngine
 	UncommittedState() BeaconCommitteeState

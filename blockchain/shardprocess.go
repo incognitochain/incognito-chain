@@ -161,13 +161,25 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	committees := []incognitokey.CommitteePublicKey{}
+	committeesForSigning := []incognitokey.CommitteePublicKey{}
 	if curView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION ||
 		shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
 		committees = curView.GetShardCommittee()
+		committeesForSigning = committees
 	} else {
 		committees, err = blockchain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID)
 		if err != nil {
 			return err
+		}
+		committeeStateVersion := blockchain.BeaconChain.GetFinalView().(*BeaconBestState).CommitteeEngineVersion()
+		if committeeStateVersion == committeestate.DCS_VERSION {
+			beaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.CommitteeFromBlock)
+			if err != nil {
+				return err
+			}
+			committeesForSigning = blockchain.getShardCommitteesForSigning(committees, beaconBlock.Header.Height, divideShardCommitteesPartThreshold)
+		} else {
+			committeesForSigning = committees
 		}
 	}
 
@@ -176,7 +188,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		"Engine %+v, Height %+v, Committee From Block %+v \n"+
 		"Committees %+v", curView.shardCommitteeEngine.Version(), shardBlock.Header.Height, shardBlock.Header.CommitteeFromBlock, res)
 
-	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, committees); err != nil {
+	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, committees, committeesForSigning); err != nil {
 		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committees, err)
 		return err
 	}

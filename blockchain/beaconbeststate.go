@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate/finishsync"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/incdb"
 
@@ -59,6 +60,7 @@ type BeaconBestState struct {
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeEngine   committeestate.BeaconCommitteeEngine
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter
+	finishSyncManager       finishsync.Manager
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
 	// e.g 1 -> 2 -> 3 // shard 1 send cross shard to shard 2 at  height 3
 	// e.g 1 -> 3 -> 2 // shard 1 send cross shard to shard 3 at  height 2
@@ -848,25 +850,32 @@ func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePub
 		return false
 	}
 	syncingValidators := beaconBestState.beaconCommitteeEngine.SyncingValidators()[shardID]
-	mySyncingValidators := make(map[string]bool)
+	currentSelfSyncingValidators := make(map[string]bool)
 	count := 0
 	for _, committeePublicKey := range committeePublicKeys {
-		mySyncingValidators[committeePublicKey] = true
+		currentSelfSyncingValidators[committeePublicKey] = true
 	}
 
 	for _, v := range syncingValidators {
 		if count == len(committeePublicKeys) {
 			return true
 		}
-		key, _ := v.ToBase58()
-		Logger.log.Info("[dcs] key:", key)
-		if mySyncingValidators[key] {
+		key := v.GetMiningKeyBase58(common.BlsConsensus)
+		if currentSelfSyncingValidators[key] {
 			count++
 		}
+	}
+
+	if count == len(committeePublicKeys) {
+		return true
 	}
 	return false
 }
 
 func (beaconBestState *BeaconBestState) AddFinishedSyncValidators(committeePublicKeys []string, shardID byte) {
-	beaconBestState.beaconCommitteeEngine.AddFinishedSyncValidators(committeePublicKeys, shardID)
+	beaconBestState.finishSyncManager.AddFinishedSyncValidators(
+		committeePublicKeys,
+		beaconBestState.beaconCommitteeEngine.SyncingValidators()[shardID],
+		shardID,
+	)
 }

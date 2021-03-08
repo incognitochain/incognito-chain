@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -162,10 +163,14 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	initShardBlockHeight := initShardBlock.Header.Height
 	var committeeEngine committeestate.ShardCommitteeEngine
 
-	if blockchain.config.ChainParams.ConsensusV3Height == 1 {
+	if blockchain.config.ChainParams.StakingV3Height == 1 {
 		committeeEngine = committeestate.NewShardCommitteeEngineV2(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV2())
 	} else {
-		committeeEngine = committeestate.NewShardCommitteeEngineV1(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
+		if blockchain.config.ChainParams.ConsensusV3Height == 1 {
+			committeeEngine = committeestate.NewShardCommitteeEngineV2(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV2())
+		} else {
+			committeeEngine = committeestate.NewShardCommitteeEngineV1(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
+		}
 	}
 
 	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams, committeeEngine)
@@ -194,21 +199,21 @@ func (blockchain *BlockChain) initBeaconState() error {
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	var committeeEngine committeestate.BeaconCommitteeEngine
 
-	if blockchain.config.ChainParams.ConsensusV3Height == 1 {
-		if blockchain.config.ChainParams.StakingV3Height != 1 {
+	if blockchain.config.ChainParams.StakingV3Height == 1 {
+		committeeEngine = committeestate.
+			NewBeaconCommitteeEngineV3(1, initBlock.Header.Hash(),
+				committeestate.NewBeaconCommitteeStateV3())
+	} else {
+		if blockchain.config.ChainParams.ConsensusV3Height == 1 {
 			committeeEngine = committeestate.
 				NewBeaconCommitteeEngineV2(1, initBlock.Header.Hash(),
 					committeestate.NewBeaconCommitteeStateV2())
 		} else {
 			committeeEngine = committeestate.
-				NewBeaconCommitteeEngineV3(1, initBlock.Header.Hash(),
-					committeestate.NewBeaconCommitteeStateV3())
+				NewBeaconCommitteeEngineV1(
+					1, initBlock.Header.Hash(),
+					committeestate.NewBeaconCommitteeStateV1())
 		}
-	} else {
-		committeeEngine = committeestate.
-			NewBeaconCommitteeEngineV1(
-				1, initBlock.Header.Hash(),
-				committeestate.NewBeaconCommitteeStateV1())
 	}
 
 	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeeEngine)
@@ -535,21 +540,29 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 		v.BestBlock = block
-
 		err = v.InitStateRootHash(blockchain.GetShardChainDatabase(shardID), blockchain)
 		if err != nil {
 			panic(err)
 		}
+
 		var shardCommitteeEngine committeestate.ShardCommitteeEngine
-		if v.BeaconHeight > blockchain.config.ChainParams.ConsensusV3Height {
+		if v.BeaconHeight > blockchain.config.ChainParams.StakingV3Height {
 			shardCommitteeEngine = InitShardCommitteeEngineV2(
 				v.consensusStateDB,
 				v.ShardHeight, v.ShardID, v.BestBlockHash,
 				block.Header.CommitteeFromBlock, blockchain)
 		} else {
-			shardCommitteeEngine = InitShardCommitteeEngineV1(
-				v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
+			if v.BeaconHeight > blockchain.config.ChainParams.ConsensusV3Height {
+				shardCommitteeEngine = InitShardCommitteeEngineV2(
+					v.consensusStateDB,
+					v.ShardHeight, v.ShardID, v.BestBlockHash,
+					block.Header.CommitteeFromBlock, blockchain)
+			} else {
+				shardCommitteeEngine = InitShardCommitteeEngineV1(
+					v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
+			}
 		}
+
 		v.shardCommitteeEngine = shardCommitteeEngine
 		if v.BeaconHeight == blockchain.config.ChainParams.ConsensusV3Height {
 			err := v.upgradeCommitteeEngineV2(blockchain)
@@ -935,4 +948,14 @@ func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
 		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
 		return newEpochBlocks%params.EpochV2 == params.RandomTimeV2
 	}
+}
+
+func (blockchain *BlockChain) getShardCommitteesForSigning(committees []incognitokey.CommitteePublicKey, beaconHeight uint64, threshold int) []incognitokey.CommitteePublicKey {
+	res := []incognitokey.CommitteePublicKey{}
+	for i, v := range committees {
+		if uint64(i%threshold) == beaconHeight%uint64(threshold) {
+			res = append(res, v)
+		}
+	}
+	return res
 }
