@@ -45,7 +45,6 @@ type BeaconCommitteeEngine interface {
 	NumberOfAssignedCandidates() int
 	IsSwapTime(uint64, uint64) bool
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeEngine
-	UncommittedState() BeaconCommitteeState
 }
 
 //ShardCommitteeEngine :

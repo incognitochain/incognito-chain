@@ -433,7 +433,3 @@ func (engine beaconCommitteeEngineBase) getDataForUpgrading(env *BeaconCommittee
 	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
 		autoStake, rewardReceiver, stakingTx, swapRule
 }
-
-func (engine *beaconCommitteeEngineBase) UncommittedState() BeaconCommitteeState {
-	return engine.uncommittedState
-}

@@ -8,7 +8,7 @@ import (
 
 type Manager struct {
 	validators map[byte][]incognitokey.CommitteePublicKey
-	mu         *sync.RWMutex // beware of this, any class extend this class need to use this mutex carefully
+	mu         *sync.RWMutex
 }
 
 func NewManager() *Manager {
@@ -22,6 +22,16 @@ func NewManagerWithValue(validators map[byte][]incognitokey.CommitteePublicKey) 
 		validators: validators,
 		mu:         &sync.RWMutex{},
 	}
+}
+
+func (manager *Manager) Clone() *Manager {
+	res := NewManager()
+	res.validators = make(map[byte][]incognitokey.CommitteePublicKey)
+	for i, v := range manager.validators {
+		res.validators[i] = make([]incognitokey.CommitteePublicKey, len(v))
+		copy(res.validators[i], v)
+	}
+	return res
 }
 
 func (manager *Manager) AddFinishedSyncValidators(

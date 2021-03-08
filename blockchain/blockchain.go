@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate/finishsync"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
@@ -499,6 +500,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			}
 			Logger.log.Infof("Init Missing Signature Counter, %+v, height %+v", beaconState.missingSignatureCounter, beaconState.BeaconHeight)
 		}
+		beaconState.finishSyncManager = finishsync.NewManager()
 	}
 	return nil
 }

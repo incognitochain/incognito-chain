@@ -227,7 +227,6 @@ func (s *ShardSyncProcess) syncShardProcess() {
 							msg := &wire.MessageFinishSync{
 								CommitteePublicKey: syncingValidators,
 							}
-							Logger.Info("[dcs] msg:", msg)
 							s.Network.PublishMessageToShard(msg, common.BeaconChainID)
 						}
 					}
