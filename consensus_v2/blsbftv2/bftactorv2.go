@@ -439,6 +439,8 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 
 		//pre validate block agg sig => agg flow can be wrong and we dont want to insert to db
 		if err := ValidateCommitteeSig(v.block, view.GetCommittee()); err != nil {
+			committeeStr, _ := incognitokey.CommitteeKeyListToString(view.GetCommittee())
+			fmt.Printf("[ValidateBLS] Validate BLS sig of block %v return error %v; Validators index %v; Signature %v; committee %v\n", v.block.Hash().String(), err, valData.ValidatiorsIdx, valData.AggSig, committeeStr)
 			e.Logger.Error(err)
 			return
 		}
