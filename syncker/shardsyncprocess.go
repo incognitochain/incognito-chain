@@ -244,9 +244,14 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 		peerID = ""
 	}
 
-	//fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
-	ch, err := s.Network.RequestShardBlocksViaStream(ctx, peerID, s.shardID, s.Chain.GetFinalViewHeight()+1, toHeight)
-	// ch, err := s.Server.RequestShardBlocksViaStream(ctx, "", s.shardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
+	//incase, we have long multiview chain, just sync last 100 block (very low probability that we have fork more than 100 blocks
+	fromHeight := s.Chain.GetFinalViewHeight() + 1
+	if s.Chain.GetBestViewHeight()-100 > fromHeight {
+		fromHeight = s.Chain.GetBestViewHeight()
+	}
+
+	//stream
+	ch, err := s.Network.RequestShardBlocksViaStream(ctx, peerID, s.shardID, fromHeight, toHeight)
 	if err != nil {
 		fmt.Println("Syncker: create channel fail")
 		requestCnt = 0
