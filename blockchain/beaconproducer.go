@@ -223,7 +223,6 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		portalParams,
 	)
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
-
 	shardInstruction.compose()
 
 	instructions, err := curView.GenerateInstruction(
@@ -432,8 +431,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 	}
 
 	// Finish Sync Instructions
-	finishSyncInstructions := curView.FinishSyncInstructions()
-	for _, finishSyncInstruction := range finishSyncInstructions {
+	for _, finishSyncInstruction := range curView.FinishSyncInstructions() {
 		if !finishSyncInstruction.IsEmpty() {
 			instructions = append(instructions, finishSyncInstruction.ToString())
 		}

@@ -226,6 +226,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 						if committeeView.ShouldSendFinishSyncMessage(syncingValidators, byte(s.shardID)) {
 							msg := &wire.MessageFinishSync{
 								CommitteePublicKey: syncingValidators,
+								ShardID:            byte(s.shardID),
 							}
 							s.Network.PublishMessageToShard(msg, common.BeaconChainID)
 						}

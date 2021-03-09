@@ -773,10 +773,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreSyncingValidators(newBestState.consensusStateDB, committeeChange.SyncingPoolAdded)
-	if err != nil {
-		return err
-	}
 	// Deleted
 	err = statedb.DeleteCurrentEpochShardCandidate(newBestState.consensusStateDB, committeeChange.CurrentEpochShardCandidateRemoved)
 	if err != nil {
@@ -1085,6 +1081,9 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			return err
 		}
 	}
-	//TODO: @tin store finish sync validators or delete sync pool validators
+	err := statedb.StoreSyncingValidators(beaconBestState.consensusStateDB, committeeChange.SyncingPoolAdded)
+	if err != nil {
+		return err
+	}
 	return nil
 }
