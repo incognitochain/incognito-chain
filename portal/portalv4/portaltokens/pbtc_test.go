@@ -3,7 +3,6 @@ package portaltokens
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"os"
 	"testing"
 	"time"
@@ -158,22 +157,13 @@ func TestParseAndVerifyProof(t *testing.T) {
 }
 
 func TestGenerateMultiSigWalletFromSeeds(t *testing.T) {
-	incKey1 := "112t8rnXRDT21fsx5UYR1kGd8yjiygUS3tXfhcRfXy2nmJS3U39vkf76wbQsXguwhHwN2EtBF4YZJ8o1i7MMF9BsKngcgxfkCZBa5P3Fq9xp"
-	incKey2 := "112t8rnXLn4sD7rP98ALejLKoTJm4N9uwavXE2m98h9hcMN9fC7Lp1MRoZJ4G4aXd3ShpaaSzna8s3V8xkvDaKHBBD9mzx9ToDHk6gz5nTnf"
-	incKey3 := "112t8rnXQoMqs6hcf36qSzyypndZFxRSPQEjoq8AqV7DBM14TY66CdVRTxHwaMSTQ4XCBPEXF5zfwE4wEPSqeD1MaacWa9DwYNcxr16bMFSR"
-	incKey4 := "112t8rnXMK3U2VNDaHhxLx9FrS75wVq5YupVk99YenYTYGU2KXJg4iR1j7KDGesi7ju1btmELbPqxtMni1gNHUp6HmYTapBd6Bq4WcjvqdoG"
-	incKey5 := "112t8rnXL7kKwhkeZurgPAyJqjwrsWLWHMXzmFJS5XimqFFMxtv94ZiQ9YhriGdNvNA7JQckVoMjfrkzhzSoeRdNZAhRJKNfXbreZ22yBzLB"
-	incKey6 := "112t8rnXUAuUsefZK35qVWrtvQpZn9RqX9LSLT5XxGyvNF5VyKrjAZXy7ZZg1qrC1v18j81p5ckDukMFgpPVxSeLopKwCw7KoUWkYPWuPXJ5"
-	incKey7 := "112t8rnXbYudqWAujTBJMFjf4DtEK7Hs8vVsSM7588svyrs1mYjFMYEwpc7roxdZLbZUmjwiru85q19die3dhUvFePuccEmUWkbfCNXeU2vU"
+	required := 3
 
-	incKeys := []string{incKey1, incKey2, incKey3, incKey4, incKey5, incKey6, incKey7}
-
-	required := 5
-
-	seeds := [][]byte{}
-	for _, key := range incKeys {
-		keyWallet ,  _ := wallet.Base58CheckDeserialize(key)
-		seeds = append(seeds, keyWallet.KeySet.PrivateKey)
+	seeds := [][]byte{
+		[]byte{0xf1, 0x29, 0xb7, 0xa, 0x46, 0xac, 0x35, 0xc4, 0x17, 0x94, 0x10, 0xf3, 0x52, 0xd7, 0xf5, 0x5c, 0xc5, 0x47, 0xe1, 0xa9, 0x26, 0x1f, 0xe8, 0xed, 0xe7, 0x72, 0x34, 0x4, 0x71, 0xeb, 0xc6, 0x9},
+		[]byte{0xca, 0xa8, 0xaa, 0xdf, 0x1e, 0xdb, 0xc5, 0x72, 0x80, 0x8f, 0x8, 0x65, 0x1d, 0x41, 0x85, 0xde, 0xd1, 0x21, 0x5a, 0xd4, 0x7, 0xe6, 0x3c, 0xb4, 0x6f, 0x11, 0xc5, 0x5, 0xc6, 0x16, 0x7e, 0xfe},
+		[]byte{0x64, 0x3b, 0x2d, 0xb2, 0x89, 0x5c, 0x53, 0x11, 0x5a, 0xb1, 0x53, 0xd, 0xfd, 0xb3, 0x32, 0xee, 0x1b, 0xe0, 0x7d, 0xcc, 0xd4, 0x3a, 0xd9, 0xf5, 0x62, 0x9b, 0x4c, 0x50, 0x88, 0xa8, 0xad, 0x1a},
+		[]byte{0x0, 0xa, 0x43, 0x51, 0xdf, 0x7b, 0x2b, 0x86, 0xc3, 0x40, 0x58, 0xe6, 0x42, 0xa6, 0xc2, 0x5d, 0xb6, 0x6c, 0x30, 0x88, 0x8d, 0xb5, 0x8e, 0xe1, 0x44, 0xce, 0xc0, 0x45, 0xc, 0xf5, 0xa0, 0xeb},
 	}
 	multiSigScript, privateKeys, multiSigAddr, err := GenerateMultiSigWalletFromSeeds(&chaincfg.TestNet3Params, seeds, required)
 	fmt.Printf("multiSigScript: hex encode: %v\n", hex.EncodeToString(multiSigScript))
@@ -181,3 +171,4 @@ func TestGenerateMultiSigWalletFromSeeds(t *testing.T) {
 	fmt.Printf("multiSigAddr: %v\n", multiSigAddr)
 	fmt.Printf("err: %v\n", err)
 }
+

@@ -10,6 +10,7 @@ import (
 
 // todo: add more params for portal v4
 type PortalParams struct {
+	NumRequiredSigs         uint
 	MultiSigAddresses       map[string]string
 	MultiSigScriptHexEncode map[string]string
 	PortalTokens            map[string]portaltokensv4.PortalTokenProcessor
@@ -36,4 +37,3 @@ func (p PortalParams) GetMinAmountPortalToken(tokenIDStr string) (uint64, error)
 	}
 	return portalToken.GetMinTokenAmount(), nil
 }
-

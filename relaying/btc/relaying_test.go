@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"os"
 	"path/filepath"
 	"testing"
@@ -248,13 +249,13 @@ func TestGenerateAndFaucetBTCAddresses(t *testing.T) {
 	}
 	fmt.Printf("Account 2: %+v\n", addrKeys2)
 
-	//Fund it with faucet
-	txhash, err := bc.Faucet(addrKeys1, 100000)
-	if err != nil {
-		t.Errorf("Could not do faucet by using cypher api - with err: %v", err)
-		return
-	}
-	fmt.Printf("Address: %v, Faucet TXHash: %v\n", addrKeys1.Address, txhash)
+	////Fund it with faucet
+	//txhash, err := bc.Faucet(addrKeys1, 100000)
+	//if err != nil {
+	//	t.Errorf("Could not do faucet by using cypher api - with err: %v", err)
+	//	return
+	//}
+	//fmt.Printf("Address: %v, Faucet TXHash: %v\n", addrKeys1.Address, txhash)
 }
 
 func TestGetBTCTxFromCypher(t *testing.T) {
@@ -268,9 +269,9 @@ func TestCreateAndSendBTCTxToCypher(t *testing.T) {
 	// bc := gobcy.API{"029727206f7e4c8fb19301e4629c5793", "bcy", "test"}
 	bc := getBlockCypherAPI("test3")
 
-	inAddr := "n4UtqQiW3qYjtiEUMscwPoBtUuYAK1AqKJ"
-	outAddr := "mgLFmRTFRakf5zs23YHB4Pcd8JF7TWCy6E"
-	amount := int(100)
+	inAddr := "n1hKfBsGHxhGXRorJ7VzUctwn5AbdPJb6K"
+	outAddr := "2NGFTTKNj59NGmjQpajsEXGxwf9SP8gvJiv"
+	amount := int(300000)
 	trans := gobcy.TX{}
 	trans.Fees = int(5000)
 	trans.Inputs = make([]gobcy.TXInput, 1)
@@ -284,8 +285,16 @@ func TestCreateAndSendBTCTxToCypher(t *testing.T) {
 		0x10,
 	}
 
-	uniquePortingID := "btcporting2"
-	msg := HashAndEncodeBase58(uniquePortingID)
+	// memo
+	incAddress := "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+	type shieldingMemoStruct struct {
+		IncAddress string `json:"ShieldingIncAddress"`
+	}
+	memoShielding := shieldingMemoStruct{IncAddress: incAddress}
+	memoShieldingBytes, _ := json.Marshal(memoShielding)
+	memoShieldingHashBytes := common.HashB(memoShieldingBytes)
+	memoShieldingStr := base64.StdEncoding.EncodeToString(memoShieldingHashBytes)
+	msg := memoShieldingStr
 	fmt.Println("hashed msg: ", msg)
 	script = append(script, []byte(msg)...)
 	trans.Outputs[0].Script = hex.EncodeToString(script)
@@ -301,7 +310,13 @@ func TestCreateAndSendBTCTxToCypher(t *testing.T) {
 		return
 	}
 
-	privateKeys := []string{"abc440d4db1e72008343231abcfde64f3e5c09df3927e52317435981bab90bfa"}
+	privateKeys := []string{"5499ca57e5bd043b0d6840ecbd9e7cf793733115c88a94e34a41c101671ca30c"}
+	//wifDecoded, err := btcutil.DecodeWIF("cSoBn9ayvDT1WsxmArCxq2Deot5sYswSqtxu4UTuAbSTHBsDdTCm")
+	//if err != nil {
+	//	t.Errorf("Could not decode wif - with err: %v", err)
+	//	return
+	//}
+	//privateKeys := []string{wifDecoded.PrivKey.D.Text(16)}
 	err = skelTx.Sign(privateKeys)
 	if err != nil {
 		t.Errorf("Could not sign btc tx by using cypher api - with err: %v", err)
@@ -372,7 +387,7 @@ func TestCreateAndSendBTCTxToCypherForRedeem(t *testing.T) {
 
 func TestBuildBTCMerkleProof(t *testing.T) {
 	bc := getBlockCypherAPI("test3")
-	txID := "4478038c54fe1ea19668afc5f088861152cb35559f90ee39024b393a21a612cb"
+	txID := "98db20f279467e1f041f12b9c96f80ace7cbc6005ddd6c53e3c6e0d44090d852"
 	msgTx := buildMsgTxFromCypher(txID, "test3")
 
 	cypherBlock, err := bc.GetBlock(

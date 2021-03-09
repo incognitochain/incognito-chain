@@ -110,6 +110,7 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 		for _, bcTx := range broadCastTxs {
 			totalFee := uint64(0)
 			// prepare outputs for tx
+			totalOutput := uint64(0)
 			outputTxs := []*portaltokens.OutputTx{}
 			for _, chosenUnshieldID := range bcTx.UnshieldIDs {
 				keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, chosenUnshieldID).String()
@@ -119,6 +120,24 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 					Amount:          portalTokenProcessor.ConvertIncToExternalAmount(wUnshieldReq.GetAmount() - feeUnshield),
 				})
 				totalFee += feeUnshield
+				totalOutput += wUnshieldReq.GetAmount()
+			}
+			totalOutput = portalTokenProcessor.ConvertIncToExternalAmount(totalOutput)
+
+			// calculate the change output coin
+			totalInput := uint64(0)
+			for _, in := range bcTx.UTXOs {
+				totalInput += in.GetOutputAmount()
+			}
+			if totalInput < totalOutput {
+				Logger.log.Errorf("[Batch Unshield Request]: Total input coins %v is less than total output coins %v", totalInput, totalOutput)
+				continue
+			}
+			if totalInput > totalOutput {
+				outputTxs = append(outputTxs, &portaltokens.OutputTx{
+					ReceiverAddress: portalParams.MultiSigAddresses[tokenID],
+					Amount:          totalInput - totalOutput,
+				})
 			}
 
 			// memo in tx: batchId: combine beacon height and list of unshieldIDs
@@ -147,6 +166,7 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 			// remove chosen waiting unshield requests from waiting list
 			UpdatePortalStateAfterProcessBatchUnshieldRequest(
 				CurrentPortalStateV4, batchID, chosenUTXOs, externalFees, bcTx.UnshieldIDs, tokenID, beaconHeight+1)
+			Logger.log.Errorf("Waiting unshield after producer: %+v\n", CurrentPortalStateV4.WaitingUnshieldRequests)
 		}
 	}
 	return newInsts, nil
@@ -190,6 +210,8 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 				Logger.log.Errorf("[processPortalBatchUnshieldRequest] Error when updating status of unshielding request with unshieldID %v: %v\n", unshieldID, err)
 				return nil
 			}
+			// delete waiting unshield request from db
+			statedb.DeleteWaitingUnshieldRequest(stateDB, actionData.TokenID, unshieldID)
 		}
 
 		// store status of batch unshield by batchID

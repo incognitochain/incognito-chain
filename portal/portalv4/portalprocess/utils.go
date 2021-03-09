@@ -156,7 +156,7 @@ func UpdatePortalStateAfterUnshieldRequest(
 func UpdatePortalStateAfterProcessBatchUnshieldRequest(
 	CurrentPortalStateV4 *CurrentPortalStateV4,
 	batchID string, utxos map[string][]*statedb.UTXO, externalFees map[uint64]uint, unshieldIDs []string, tokenID string, beaconHeight uint64) {
-	// remove unshieldIDs from WaitingUnshieldRequests
+	// remove unshieldIDs from WaitingUnshieldRequests\
 	for _, unshieldID := range unshieldIDs {
 		keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID).String()
 		delete(CurrentPortalStateV4.WaitingUnshieldRequests[tokenID], keyWaitingUnshieldRequest)

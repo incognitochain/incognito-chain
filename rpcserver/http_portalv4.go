@@ -342,6 +342,9 @@ func getRawSignedTxByHeight(
 	height uint64,
 	rawTx string,
 ) (interface{}, *rpcservice.RPCError) {
+	// get portal params v4
+	portalParamsv4 := httpServer.config.BlockChain.GetPortalParamsV4(height)
+
 	// Get beacon block
 	beaconBlockQueried, err := getSingleBeaconBlockByHeight(httpServer.GetBlockchain(), height)
 	if err != nil {
@@ -350,7 +353,6 @@ func getRawSignedTxByHeight(
 
 	block := &beaconBlock{BeaconBlock: beaconBlockQueried}
 	portalV4Sig, err := block.ProtalV4Sigs(httpServer.config.ConsensusEngine)
-	Logger.log.Errorf("portalV4Sig: %+v\n", portalV4Sig)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -374,6 +376,7 @@ func getRawSignedTxByHeight(
 
 	redeemTxHash := redeemTx.TxHash().String()
 	var tokenID string
+	numSig := uint(0)
 	for _, v := range portalV4Sig {
 		if v.RawTxHash == redeemTxHash {
 			if tokenID == "" {
@@ -381,16 +384,18 @@ func getRawSignedTxByHeight(
 			}
 			for i, v2 := range v.Sigs {
 				if i >= len(signatures) {
-					// TODO: update errors
-					return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+					return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Invalid length of portal sigs"))
 				}
 				signatures[i].AddData(v2)
+			}
+			numSig++
+			if numSig == portalParamsv4.NumRequiredSigs {
+				break
 			}
 		}
 	}
 	if tokenID == "" {
-		// TODO: update errors
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Not found portal sigs for batchID"))
 	}
 
 	redeemScriptStr := httpServer.portal.BlockChain.GetPortalParamsV4(height).MultiSigScriptHexEncode[tokenID]
