@@ -50,12 +50,12 @@ func ParseInitTokenInstContent(instContentStr string) (*InitTokenReqAction, erro
 	return &initPTokenReqAction, nil
 }
 
-func NewTokenInitRequest(convertingAddress string, txRandomStr string, amount uint64, tokenName, tokenSymbol string, metaType int) (*InitTokenRequest, error) {
+func NewInitTokenRequest(otaStr string, txRandomStr string, amount uint64, tokenName, tokenSymbol string, metaType int) (*InitTokenRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	initPTokenMeta := &InitTokenRequest{
-		OTAStr:      convertingAddress,
+		OTAStr:      otaStr,
 		TxRandomStr: txRandomStr,
 		TokenName:   tokenName,
 		TokenSymbol: tokenSymbol,
