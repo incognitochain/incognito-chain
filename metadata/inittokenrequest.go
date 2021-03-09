@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-type InitPTokenRequest struct {
+type InitTokenRequest struct {
 	OTAStr      string
 	TxRandomStr string
 	Amount      uint64
@@ -19,39 +19,42 @@ type InitPTokenRequest struct {
 	MetadataBase
 }
 
-type InitPTokenReqAction struct {
-	Meta    InitPTokenRequest `json:"meta"`
-	TxReqID common.Hash       `json:"txReqID"`
-	TokenID common.Hash       `json:"tokenID"`
+type InitTokenReqAction struct {
+	Meta    InitTokenRequest `json:"meta"`
+	TxReqID common.Hash      `json:"txReqID"`
+	TokenID common.Hash      `json:"tokenID"`
 }
 
-type InitPTokenAcceptedInst struct {
+type InitTokenAcceptedInst struct {
 	OTAStr        string      `json:"OTAStr"`
 	TxRandomStr   string      `json:"TxRandomStr"`
 	Amount        uint64      `json:"Amount"`
 	TokenID       common.Hash `json:"TokenID"`
+	TokenName     string      `json:"TokenName"`
+	TokenSymbol   string      `json:"TokenSymbol"`
+	TokenType     int         `json:"TokenType"`
 	ShardID       byte        `json:"ShardID"`
 	RequestedTxID common.Hash `json:"txReqID"`
 }
 
-func ParseInitPTokenInstContent(instContentStr string) (*InitPTokenReqAction, error) {
+func ParseInitTokenInstContent(instContentStr string) (*InitTokenReqAction, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
 	if err != nil {
-		return nil, NewMetadataTxError(InitPTokenRequestDecodeInstructionError, err)
+		return nil, NewMetadataTxError(InitTokenRequestDecodeInstructionError, err)
 	}
-	var initPTokenReqAction InitPTokenReqAction
+	var initPTokenReqAction InitTokenReqAction
 	err = json.Unmarshal(contentBytes, &initPTokenReqAction)
 	if err != nil {
-		return nil, NewMetadataTxError(InitPTokenRequestUnmarshalJsonError, err)
+		return nil, NewMetadataTxError(InitTokenRequestUnmarshalJsonError, err)
 	}
 	return &initPTokenReqAction, nil
 }
 
-func NewPTokenInitRequest(convertingAddress string, txRandomStr string, amount uint64, tokenName, tokenSymbol string, metaType int) (*InitPTokenRequest, error) {
+func NewTokenInitRequest(convertingAddress string, txRandomStr string, amount uint64, tokenName, tokenSymbol string, metaType int) (*InitTokenRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
-	initPTokenMeta := &InitPTokenRequest{
+	initPTokenMeta := &InitTokenRequest{
 		OTAStr:      convertingAddress,
 		TxRandomStr: txRandomStr,
 		TokenName:   tokenName,
@@ -62,11 +65,11 @@ func NewPTokenInitRequest(convertingAddress string, txRandomStr string, amount u
 	return initPTokenMeta, nil
 }
 
-func (iReq InitPTokenRequest) ValidateMetadataByItself() bool {
-	return iReq.Type == InitPTokenRequestMeta
+func (iReq InitTokenRequest) ValidateMetadataByItself() bool {
+	return iReq.Type == InitTokenRequestMeta
 }
 
-func (iReq InitPTokenRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (iReq InitTokenRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	return true, nil
 }
 
@@ -75,42 +78,42 @@ func (iReq InitPTokenRequest) ValidateTxWithBlockChain(tx Transaction, chainRetr
 //	2. Check the addressV2 is valid
 //	3. Check if the amount is not 0
 //	4. Check tokenName and tokenSymbol
-func (iReq InitPTokenRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (iReq InitTokenRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	//Step 1
 	if tx.GetType() != common.TxNormalType {
-		return false, false, NewMetadataTxError(InitPTokenRequestValidateSanityDataError, fmt.Errorf("tx InitPTokenRequest must have type `%v`", common.TxNormalType))
+		return false, false, NewMetadataTxError(InitTokenRequestValidateSanityDataError, fmt.Errorf("tx InitTokenRequest must have type `%v`", common.TxNormalType))
 	}
 
 	//Step 2
 	recvPubKey, _, err := coin.ParseOTAInfoFromString(iReq.OTAStr, iReq.TxRandomStr)
 	if err != nil {
-		return false, false, NewMetadataTxError(InitPTokenRequestValidateSanityDataError, fmt.Errorf("cannot parse OTA params (%v, %v): %v", iReq.OTAStr, iReq.TxRandomStr, err))
+		return false, false, NewMetadataTxError(InitTokenRequestValidateSanityDataError, fmt.Errorf("cannot parse OTA params (%v, %v): %v", iReq.OTAStr, iReq.TxRandomStr, err))
 	}
 	recvKeyBytes := recvPubKey.ToBytesS()
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	receiverShardID := common.GetShardIDFromLastByte(recvKeyBytes[len(recvKeyBytes) - 1])
+	receiverShardID := common.GetShardIDFromLastByte(recvKeyBytes[len(recvKeyBytes)-1])
 	if senderShardID != receiverShardID {
-		return false, false, NewMetadataTxError(InitPTokenRequestValidateSanityDataError, fmt.Errorf("sender shardID and receiver shardID mismatch: %v != %v", senderShardID, receiverShardID))
+		return false, false, NewMetadataTxError(InitTokenRequestValidateSanityDataError, fmt.Errorf("sender shardID and receiver shardID mismatch: %v != %v", senderShardID, receiverShardID))
 	}
 
 	//Step 3
 	if iReq.Amount == 0 {
-		return false, false, NewMetadataTxError(InitPTokenRequestValidateSanityDataError, fmt.Errorf("initialized amount must not be 0"))
+		return false, false, NewMetadataTxError(InitTokenRequestValidateSanityDataError, fmt.Errorf("initialized amount must not be 0"))
 	}
 
 	//Step 4
 	if len(iReq.TokenName) == 0 {
-		return false, false, NewMetadataTxError(InitPTokenRequestValidateSanityDataError, fmt.Errorf("tokenName must not be empty"))
+		return false, false, NewMetadataTxError(InitTokenRequestValidateSanityDataError, fmt.Errorf("tokenName must not be empty"))
 	}
 	if len(iReq.TokenSymbol) == 0 {
-		return false, false, NewMetadataTxError(InitPTokenRequestValidateSanityDataError, fmt.Errorf("tokenSymbol must not be empty"))
+		return false, false, NewMetadataTxError(InitTokenRequestValidateSanityDataError, fmt.Errorf("tokenSymbol must not be empty"))
 	}
 
 	return true, true, nil
 }
 
 //Hash returns the hash of all components in the request.
-func (iReq InitPTokenRequest) Hash() *common.Hash {
+func (iReq InitTokenRequest) Hash() *common.Hash {
 	record := iReq.MetadataBase.Hash().String()
 	record += iReq.OTAStr
 	record += iReq.TxRandomStr
@@ -126,10 +129,10 @@ func (iReq InitPTokenRequest) Hash() *common.Hash {
 //genTokenID generates a (deterministically) random tokenID for the request transaction.
 //From now on, users cannot generate their own tokenID.
 //The generated tokenID is calculated as the hash of the following components:
-//	- The InitPTokenRequest hash
+//	- The InitTokenRequest hash
 //	- The Tx hash
 //	- The shardID at which the request is sent
-func (iReq *InitPTokenRequest) genTokenID(tx Transaction, shardID byte) *common.Hash {
+func (iReq *InitTokenRequest) genTokenID(tx Transaction, shardID byte) *common.Hash {
 	record := iReq.Hash().String()
 	record += tx.Hash().String()
 	record += strconv.FormatUint(uint64(shardID), 10)
@@ -139,7 +142,7 @@ func (iReq *InitPTokenRequest) genTokenID(tx Transaction, shardID byte) *common.
 }
 
 //BuildReqActions builds an request action content from the shard chain to the beacon chain.
-func (iReq *InitPTokenRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (iReq *InitTokenRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	tokenID := iReq.genTokenID(tx, shardID)
 	txReqID := tx.Hash()
 	actionContent := map[string]interface{}{
@@ -149,14 +152,14 @@ func (iReq *InitPTokenRequest) BuildReqActions(tx Transaction, chainRetriever Ch
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
-		return [][]string{}, NewMetadataTxError(InitPTokenRequestBuildReqActionsError, err)
+		return [][]string{}, NewMetadataTxError(InitTokenRequestBuildReqActionsError, err)
 	}
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
-	action := []string{strconv.Itoa(InitPTokenRequestMeta), actionContentBase64Str}
+	action := []string{strconv.Itoa(InitTokenRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
 }
 
 //CalculateSize returns the size of the request.
-func (iReq *InitPTokenRequest) CalculateSize() uint64 {
+func (iReq *InitTokenRequest) CalculateSize() uint64 {
 	return calculateSize(iReq)
 }

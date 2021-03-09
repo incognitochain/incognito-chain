@@ -12,48 +12,48 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
-type InitPTokenResponse struct {
+type InitTokenResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
 }
 
-func NewInitPTokenResponse(requestedTxID common.Hash, metaType int) *InitPTokenResponse {
+func NewInitTokenResponse(requestedTxID common.Hash, metaType int) *InitTokenResponse {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
-	return &InitPTokenResponse{
+	return &InitTokenResponse{
 		RequestedTxID: requestedTxID,
 		MetadataBase:  metadataBase,
 	}
 }
 
-func (iRes InitPTokenResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes InitTokenResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes InitPTokenResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+func (iRes InitTokenResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID) in current block
 	return true, nil
 }
 
 //ValidateSanityData performs the following verification:
 //	1. Check transaction type
-func (iRes InitPTokenResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (iRes InitTokenResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	//Step 1
 	if tx.GetType() != common.TxCustomTokenPrivacyType {
-		return false, false, NewMetadataTxError(InitPTokenResponseValidateSanityDataError, fmt.Errorf("tx InitPTokenResponse must have type `%v`", common.TxCustomTokenPrivacyType))
+		return false, false, NewMetadataTxError(InitTokenResponseValidateSanityDataError, fmt.Errorf("tx InitTokenResponse must have type `%v`", common.TxCustomTokenPrivacyType))
 	}
 
 	return false, true, nil
 }
 
-func (iRes InitPTokenResponse) ValidateMetadataByItself() bool {
+func (iRes InitTokenResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
-	return iRes.Type == InitPTokenResponseMeta
+	return iRes.Type == InitTokenResponseMeta
 }
 
-func (iRes InitPTokenResponse) Hash() *common.Hash {
+func (iRes InitTokenResponse) Hash() *common.Hash {
 	record := iRes.RequestedTxID.String()
 	record += iRes.MetadataBase.Hash().String()
 
@@ -62,7 +62,7 @@ func (iRes InitPTokenResponse) Hash() *common.Hash {
 	return &hash
 }
 
-func (iRes *InitPTokenResponse) CalculateSize() uint64 {
+func (iRes *InitTokenResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
@@ -77,7 +77,7 @@ func (iRes *InitPTokenResponse) CalculateSize() uint64 {
 //It returns false if no instruction from the beacon satisfies the above conditions.
 //
 //TODO: reviewers should double-check if the above conditions are sufficient
-func (iRes InitPTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData,
+func (iRes InitTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData,
 	shardID byte,
 	tx Transaction,
 	chainRetriever ChainRetriever,
@@ -88,7 +88,7 @@ func (iRes InitPTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 	idx := -1
 	Logger.log.Infof("Number of instructions: %v\n", len(mintData.Insts))
 	for i, inst := range mintData.Insts {
-		if len(inst) < 4 { // this is not InitPTokenRequest instruction
+		if len(inst) < 4 { // this is not InitTokenRequest instruction
 			continue
 		}
 
@@ -96,7 +96,7 @@ func (iRes InitPTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
-			instMetaType != strconv.Itoa(InitPTokenRequestMeta) {
+			instMetaType != strconv.Itoa(InitTokenRequestMeta) {
 			continue
 		}
 
@@ -105,7 +105,7 @@ func (iRes InitPTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 			Logger.log.Errorf("WARNING - VALIDATION: an error occurred while parsing instruction content: %v\n", err)
 			continue
 		}
-		var acceptedInst InitPTokenAcceptedInst
+		var acceptedInst InitTokenAcceptedInst
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
 			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
@@ -125,7 +125,7 @@ func (iRes InitPTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 
 		_, mintedCoin, mintedTokenID, err := tx.GetTxMintData()
 		if err != nil {
-			return false, fmt.Errorf("cannot get tx minted data of txResp %v: %v", tx.Hash().String(), err)
+			return false, fmt.Errorf("cannot get minted data of txResp %v: %v", tx.Hash().String(), err)
 		}
 
 		if !bytes.Equal(mintedCoin.GetPublicKey().ToBytesS(), recvPubKey.ToBytesS()){
@@ -153,7 +153,7 @@ func (iRes InitPTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 	}
 
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf("no InitPTokenRequest tx found for tx %s", tx.Hash().String())
+		return false, fmt.Errorf("no InitTokenRequest tx found for tx %s", tx.Hash().String())
 	}
 	mintData.InstsUsed[idx] = 1
 
