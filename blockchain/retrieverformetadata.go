@@ -3,6 +3,7 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/incognitochain/incognito-chain/portal"
@@ -134,6 +135,10 @@ func (blockchain *BlockChain) GetBTCChainID() string {
 
 func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
 	return blockchain.GetConfig().BTCChain
+}
+
+func (blockchain *BlockChain) GetBTCChainParams() *chaincfg.Params {
+	return blockchain.GetBTCHeaderChain().GetChainParams()
 }
 
 func (blockchain *BlockChain) GetPortalFeederAddress(beaconHeight uint64) string {

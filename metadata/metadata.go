@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -66,6 +67,7 @@ type ChainRetriever interface {
 	GetBNBChainID() string
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
+	GetBTCChainParams() *chaincfg.Params
 	GetPortalFeederAddress(beaconHeight uint64) string
 	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
 	IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool

@@ -207,7 +207,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	// add TxOuts into raw tx
 	for _, out := range outputs {
 		// adding the output to tx
-		decodedAddr, err := btcutil.DecodeAddress(out.ReceiverAddress, bc.GetBTCHeaderChain().GetChainParams())
+		decodedAddr, err := btcutil.DecodeAddress(out.ReceiverAddress, bc.GetBTCChainParams())
 		if err != nil {
 			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when decoding receiver address: %v", err)
 			return "", "", err
