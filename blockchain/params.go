@@ -405,7 +405,7 @@ func SetupParam() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
-		ConsensusV2Epoch:               1e9,
+		ConsensusV2Epoch:               3053,
 		Timeslot:                       40,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
