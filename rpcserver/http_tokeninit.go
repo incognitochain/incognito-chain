@@ -1,6 +1,7 @@
 package rpcserver
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -25,16 +26,22 @@ func (httpServer *HttpServer) handleCreateRawTokenInitTx(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("no param found"))
 	}
 
-	tokenInitParam, ok := arrayParams[0].(TokenInitParam)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse %v init a tokenInit param", arrayParams[0]))
+	tmpBytes, err := json.Marshal(arrayParams[0])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse %v init a tokenInit param: %v", arrayParams[0], err))
+	}
+
+	var tokenInitParam TokenInitParam
+	err = json.Unmarshal(tmpBytes, &tokenInitParam)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse %v init a tokenInit param: %v", arrayParams[0], err))
 	}
 
 	keyWallet, err := wallet.Base58CheckDeserialize(tokenInitParam.PrivateKey)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot deserialize private key %v: %v", tokenInitParam.PrivateKey, err))
 	}
-	if len(keyWallet.KeySet.PrivateKey) != 32 {
+	if len(keyWallet.KeySet.PrivateKey) == 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("private key length not valid: %v", keyWallet.KeySet.PrivateKey))
 	}
 	senderAddr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
@@ -60,7 +67,7 @@ func (httpServer *HttpServer) handleCreateRawTokenInitTx(params interface{}, clo
 		SenderKeySet:         &keyWallet.KeySet,
 		ShardIDSender:        shardID,
 		PaymentInfos:         []*privacy.PaymentInfo{},
-		EstimateFeeCoinPerKb: 0,
+		EstimateFeeCoinPerKb: 1,
 		HasPrivacyCoin:       false,
 		Info:                 []byte{},
 	}
@@ -70,7 +77,7 @@ func (httpServer *HttpServer) handleCreateRawTokenInitTx(params interface{}, clo
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 
-	Logger.log.Infof("creating staking transaction: txHash = %v, shardID = %v, stakingMeta = %v", txID.String(), txShardID, *stakingMetadata)
+	Logger.log.Infof("creating staking transaction: txHash = %v, shardID = %v, stakingMeta = %v", txID.String(), txShardID, *tokenInitMeta)
 	result := jsonresult.CreateTransactionResult{
 		TxID:            txID.String(),
 		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
