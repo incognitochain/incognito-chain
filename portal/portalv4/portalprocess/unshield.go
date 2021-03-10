@@ -102,13 +102,13 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal unshield request action: %+v", err)
-		return nil, fmt.Errorf("ERROR: an error occured while decoding content string of portal unshield request action: %+v", err)
+		return nil, nil
 	}
 	var actionData metadata.PortalUnshieldRequestAction
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshal portal unshield request action: %+v", err)
-		return nil, fmt.Errorf("ERROR: an error occured while unmarshal portal unshield request action: %+v", err)
+		return nil, nil
 	}
 
 	if CurrentPortalStateV4 == nil {
@@ -176,7 +176,7 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	)
 
 	// add new waiting unshield request to waiting list
-	UpdatePortalStateAfterUnshieldRequest(CurrentPortalStateV4, unshieldID, meta.TokenID, meta.RemoteAddress, meta.UnshieldAmount, beaconHeight)
+	UpdatePortalStateAfterUnshieldRequest(CurrentPortalStateV4, unshieldID, meta.TokenID, meta.RemoteAddress, meta.UnshieldAmount, beaconHeight + 1)
 
 	return [][]string{newInst}, nil
 }
@@ -209,7 +209,7 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 	reqStatus := instructions[2]
 	if reqStatus == portalcommonv4.PortalV4RequestAcceptedChainStatus {
 		// add new waiting unshield request to waiting list
-		UpdatePortalStateAfterUnshieldRequest(CurrentPortalStateV4, actionData.TxReqID.String(), actionData.TokenID, actionData.RemoteAddress, actionData.UnshieldAmount, beaconHeight)
+		UpdatePortalStateAfterUnshieldRequest(CurrentPortalStateV4, actionData.TxReqID.String(), actionData.TokenID, actionData.RemoteAddress, actionData.UnshieldAmount, beaconHeight+1)
 
 		// track status of unshield request by unshieldID (txID)
 		unshieldRequestStatus := metadata.PortalUnshieldRequestStatus{
