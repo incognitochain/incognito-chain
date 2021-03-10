@@ -284,7 +284,8 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *
 //If there is a ReadonlyKey, return decrypted coins; otherwise, just return raw coins
 func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, upToHeight uint64, versionsIncluded map[int]bool) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
 	var outCoins []privacy.Coin
-	var lowerHeight uint64 = 0
+	var lowestHeightForV2 uint64 = blockchain.GetConfig().ChainParams.CoinVersion2LowestHeight
+	var fromHeight uint64
 	if keyset == nil {
 		return nil, nil, 0, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
 	}
@@ -309,11 +310,7 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 		if upToHeight > latest || upToHeight==0{
 			upToHeight = latest
 		}
-		lowerHeight = txutils.GetNextLowerHeight(upToHeight)
-		fromHeight := uint64(0)
-		if lowerHeight!=0{
-			fromHeight = lowerHeight
-		}
+		fromHeight = txutils.GetNextLowerHeight(upToHeight, lowestHeightForV2)
 		results, err := txutils.QueryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, txutils.GetCoinFilterByOTAKeyAndToken())
 		if err != nil {
 			return nil, nil, 0, err
@@ -331,9 +328,9 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 			}
 		}
 
-		return resultPlainCoins, nil, lowerHeight, nil
+		return resultPlainCoins, nil, fromHeight, nil
 	}else{//Just return the raw coins
-		return nil, outCoins, lowerHeight, nil
+		return nil, outCoins, fromHeight, nil
 	}
 
 }
@@ -361,14 +358,22 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 	return blockchain.getOutputCoins(keyset, shardID, tokenID, shardHeight, map[int]bool{1:true, 2:true})
 }
 
-func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, shardID byte) error{
+func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, syncNeeded bool, heightToSyncFrom uint64) error{
 	if !EnableIndexingCoinByOTAKey{
 		return errors.New("OTA key submission not supported by this node configuration")
 	}
+	pkb := theKey.GetPublicSpend().ToBytesS()
+	shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
 	bss := blockchain.GetBestStateShard(shardID)
 	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
-
-	go outcoinReindexer.ReindexOutcoin(bss.ShardHeight, theKey, transactionStateDB, shardID)
+	if syncNeeded {
+		var lowestHeightForV2 uint64 = blockchain.GetConfig().ChainParams.CoinVersion2LowestHeight
+		if heightToSyncFrom < lowestHeightForV2 {
+			heightToSyncFrom = lowestHeightForV2
+		}
+		Logger.log.Infof("Sync started from height %d", heightToSyncFrom)
+		go outcoinReindexer.ReindexOutcoin(heightToSyncFrom, bss.ShardHeight, theKey, transactionStateDB, shardID, false)
+	}
 	return nil
 }
 
@@ -406,11 +411,8 @@ func (blockchain *BlockChain) GetAllOutputCoinsByKeyset(keyset *incognitokey.Key
 	case 1:
 		return nil, nil, errors.New("OTA Key indexing is in progress")
 	case 0:
-		err := blockchain.SubmitOTAKey(keyset.OTAKey, shardID)
-		if err==nil{
-			return nil, nil, errors.New("Subscribed to OTA key to view all coins")
-		}
-		return nil, nil, err
+		// err := blockchain.SubmitOTAKey(keyset.OTAKey)
+		return nil, nil, errors.New("Need to subscribe to OTA key to view all coins")
 	default:
 		return nil, nil, errors.New("OTA Key indexing state is corrupted")
 	}

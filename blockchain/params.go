@@ -88,6 +88,7 @@ type Params struct {
 	PortalETHContractAddressStr      string // smart contract of ETH for portal
 	BCHeightBreakPointPortalV3       uint64
 	BCHeightBreakPointPrivacyV2      uint64
+	CoinVersion2LowestHeight 		 uint64
 }
 
 type GenesisParams struct {
@@ -266,6 +267,7 @@ func SetupParam() {
 		PortalETHContractAddressStr: "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address
 		BCHeightBreakPointPortalV3:  30158,
 		BCHeightBreakPointPrivacyV2:  30, //TODO: change this value when deployed testnet
+		CoinVersion2LowestHeight: 10,
 	}
 	// END TESTNET
 
@@ -357,6 +359,7 @@ func SetupParam() {
 		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46",   // todo: update sc address
 		BCHeightBreakPointPortalV3:  8974, // todo: should update before deploying
 		BCHeightBreakPointPrivacyV2:  30, //TODO: change this value when deployed testnet2
+		CoinVersion2LowestHeight: 10,
 	}
 	// END TESTNET-2
 
@@ -446,6 +449,7 @@ func SetupParam() {
 		PortalETHContractAddressStr: "", // todo: update sc address
 		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
 		BCHeightBreakPointPrivacyV2:  1000000, //TODO: change this value when deployed testnet
+		CoinVersion2LowestHeight: 900000, //TODO
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

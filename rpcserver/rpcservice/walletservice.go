@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -42,25 +41,6 @@ func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPC
 			amount += out.GetValue()
 		}
 		result.Accounts[accountName] = amount
-	}
-
-	return result, nil
-}
-
-func (walletService WalletService) SubmitKey(keyStr string) (struct{}, *RPCError) {
-	// this function accepts a private key or a hex-encoded OTA key
-	var otaKey privacy.OTAKey
-	keySet, shardIDSender, err := GetKeySetFromPrivateKeyParams(keyStr)
-	if err==nil || keySet.OTAKey.GetOTASecretKey()==nil{
-		otaKey = keySet.OTAKey
-	}else{
-		return struct{}{}, NewRPCError(InvalidSenderViewingKeyError, errors.New("OTA key not found"))
-	}
-	result := struct{}{}
-
-	err = walletService.BlockChain.SubmitOTAKey(otaKey, shardIDSender)
-	if err != nil {
-		return struct{}{}, NewRPCError(UnexpectedError, err)
 	}
 
 	return result, nil

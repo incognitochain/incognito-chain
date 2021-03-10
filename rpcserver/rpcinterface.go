@@ -1,9 +1,14 @@
 package rpcserver
 
-import "github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+import (
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcv2"
+)
 
 type httpHandler func(*HttpServer, interface{}, <-chan struct{}) (interface{}, *rpcservice.RPCError)
 type wsHandler func(*WsServer, interface{}, string, chan RpcSubResult, <-chan struct{})
+
+var HttpHandlerV2 rpcv2.ServiceContainer
 
 // Commands valid for normal user
 var HttpHandler = map[string]httpHandler{
@@ -298,7 +303,6 @@ var LimitedHttpHandler = map[string]httpHandler{
 	setTxFee:                         (*HttpServer).handleSetTxFee,
 	convertNativeTokenToPrivacyToken: (*HttpServer).handleConvertNativeTokenToPrivacyToken,
 	convertPrivacyTokenToNativeToken: (*HttpServer).handleConvertPrivacyTokenToNativeToken,
-	submitKey:                     	  (*HttpServer).handleSubmitKey,
 }
 
 var WsHandler = map[string]wsHandler{

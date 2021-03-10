@@ -20,6 +20,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	rpcservicev2 "github.com/incognitochain/incognito-chain/rpcserver/rpcservice/v2"
 )
 
 type HttpServer struct {
@@ -93,6 +94,11 @@ func (httpServer *HttpServer) Init(config *RpcServerConfig) {
 	httpServer.portal = &rpcservice.PortalService{
 		BlockChain: httpServer.config.BlockChain,
 	}
+
+	svc := &rpcservicev2.WalletService{
+		BlockChain: httpServer.config.BlockChain,
+	}
+	HttpHandlerV2.RegisterName("wallet", svc)
 }
 
 // Start is used by rpcserver.go to start the rpc listener.
@@ -301,18 +307,19 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 			// Attempt to parse the JSON-RPC request into a known concrete
 			// command.
 			command := HttpHandler[request.Method]
-			if command == nil {
-				if isLimitedUser {
-					command = LimitedHttpHandler[request.Method]
-				} else {
-					result = nil
-					jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, errors.New("Method not found: "+request.Method))
-				}
+			if command == nil && isLimitedUser {
+				command = LimitedHttpHandler[request.Method]
 			}
 			if command != nil {
 				result, jsonErr = command(httpServer, request.Params, closeChan)
 			} else {
-				jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, errors.New("Method not found: "+request.Method))
+				Logger.log.Infof("Routing to new RPC with method %s and parameters %v", request.Method, request.Params)
+				result, jsonErr = HttpHandlerV2.HandleSingleRequest(request.Params, request.Method, closeChan)
+				if jsonErr != nil {
+					jsonErr = rpcservice.NewRPCError(rpcservice.UnexpectedError, jsonErr)
+				} else {
+					jsonErr = (*rpcservice.RPCError)(nil)
+				}
 			}
 		}
 	}

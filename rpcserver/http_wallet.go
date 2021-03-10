@@ -30,30 +30,6 @@ func (httpServer *HttpServer) handleListAccounts(params interface{}, closeChan <
 }
 
 /*
-this submits a chain-facing `OTA key` to view its balances later
-
-Parameter #1—the OTA key that will be submitted
-Result—success or error
-
-*/
-func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if arrayParams==nil || len(arrayParams)!=1 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array with 1 element"))
-	}
-	key, ok := arrayParams[0].(string)
-	if !ok{
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OTA key is invalid"))
-	}
-	result, err := httpServer.walletService.SubmitKey(key)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-/*
 getaccount RPC returns the name of the account associated with the given address.
 - Param #1: address
 */

@@ -169,8 +169,8 @@ func (this *DebugTool) SubmitKey(privKeyStr string) ([]byte, error) {
 
 	query := fmt.Sprintf(`{
 	   "jsonrpc":"1.0",
-	   "method":"submitkey",
-	   "params":["%s"],
+	   "method":"wallet_submitKey",
+	   "params":["%s", 0],
 	   "id":1
 	}`, otaKeyStr)
 
