@@ -138,7 +138,7 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 		waitingUnshieldRequest := wUnshieldReqsByTokenID[keyWaitingUnshieldRequestStr]
 		if waitingUnshieldRequest != nil {
 			Logger.log.Errorf("[Unshield Request] unshieldID is existed in waiting unshield requests list %v\n", unshieldID)
-			return [][]string{rejectInst}, nil
+			return [][]string{}, nil
 		}
 	}
 
@@ -154,7 +154,7 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	}
 	if isExist {
 		Logger.log.Errorf("[Unshield Request] UnshieldID exist in db %v", unshieldID)
-		return [][]string{rejectInst}, nil
+		return [][]string{}, nil
 	}
 
 	// validate unshield amount
