@@ -234,25 +234,3 @@ func IsPortalMetaTypeV4(metaType int) bool {
 	res, _ := common.SliceExists(portalV4MetaTypes, metaType)
 	return res
 }
-
-// TODO: add more meta data types
-var portalV4MetaTypesRequireMultiSig = []string{
-	strconv.Itoa(PortalV4UnshieldBatchingMeta),
-}
-
-func HasPortalInstructionsV4(instructions [][]string) bool {
-	for _, inst := range instructions {
-		for _, meta := range portalV4MetaTypesRequireMultiSig {
-			if len(inst) > 0 && inst[0] == meta {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func IsRequireBeaconSigForPortalV4Meta(inst []string) bool {
-	isExist, _ := common.SliceExists(portalV4MetaTypesRequireMultiSig, inst[0])
-	return isExist
-}
-

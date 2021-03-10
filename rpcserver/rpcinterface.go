@@ -283,7 +283,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithPortalV4UnshieldRequest: (*HttpServer).handleCreateAndSendTxWithPortalV4UnshieldRequest,
 	getPortalUnshieldingRequestStatus:          (*HttpServer).handleGetPortalUnshieldingRequestStatus,
 	getPortalBatchUnshieldingRequestStatus:     (*HttpServer).handleGetPortalBatchUnshieldingRequestStatus,
-	getSignedRawTransactionByBatchID:           (*HttpServer).handleGetPortalTransactionSignedWithBatchID,
+	getSignedRawTransactionByBatchID:           (*HttpServer).handleGetPortalSignedExtTxWithBatchID,
 }
 
 // Commands that are available to a limited user

@@ -243,7 +243,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		portalParams,
 		pm,
 	)
-
 	if err != nil {
 		Logger.log.Error(err)
 		return instructions

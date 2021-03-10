@@ -158,7 +158,7 @@ func (btcChain *BlockChain) VerifyTxWithMerkleProofs(
 	btcProof *BTCProof,
 ) (bool, error) {
 	//todo:
-	return true, nil
+	//return true, nil
 	btcBlock, err := btcChain.BlockByHash(btcProof.BlockHash)
 	if err != nil {
 		Logger.log.Errorf("Failed to get BTC block by hash %s - with error: %v\n", btcProof.BlockHash.String(), err)

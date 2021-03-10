@@ -36,7 +36,6 @@ type PortalUnshieldRequestContent struct {
 	ShardID        byte
 }
 
-//TODO: add external tx id and actual external fee charged (if then)
 type PortalUnshieldRequestStatus struct {
 	IncAddressStr  string
 	RemoteAddress  string
@@ -84,7 +83,6 @@ func (uReq PortalUnshieldRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-// TODO: need to write funcs for portal token v4
 func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {

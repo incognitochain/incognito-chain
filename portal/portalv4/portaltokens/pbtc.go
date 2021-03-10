@@ -15,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	btcwire "github.com/btcsuite/btcd/wire"
 	"sort"
 )
 
@@ -235,6 +236,37 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 
 	hexRawTx := hex.EncodeToString(rawTxBytes.Bytes())
 	return hexRawTx, msgTx.TxHash().String(), nil
+}
+
+func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSigScript []byte, rawTxBytes []byte) ([][]byte, string, error) {
+	// new MsgTx from rawTxBytes
+	msgTx := new(btcwire.MsgTx)
+	rawTxBuffer := bytes.NewBuffer(rawTxBytes)
+	err := msgTx.Deserialize(rawTxBuffer)
+	if err != nil {
+		return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when deserializing raw tx bytes: %v", err)
+	}
+
+	// sign on each TxIn
+	sigs := [][]byte{}
+	for i := range msgTx.TxIn {
+		signature := txscript.NewScriptBuilder()
+		signature.AddOp(txscript.OP_FALSE)
+
+		// generate btc private key from seed: private key of bridge consensus
+		btcPrivateKeyBytes, err := p.GeneratePrivateKeyFromSeed(seedKey)
+		if err != nil {
+			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when generate btc private key from seed: %v", err)
+		}
+		btcPrivateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), btcPrivateKeyBytes)
+		sig, err := txscript.RawTxInSignature(msgTx, i, multiSigScript, txscript.SigHashAll, btcPrivateKey)
+		if err != nil {
+			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when signing on raw btc tx: %v", err)
+		}
+		sigs = append(sigs, sig)
+	}
+
+	return sigs, msgTx.TxHash().String(), nil
 }
 
 func (p PortalBTCTokenProcessor) IsAcceptableTxSize(num_utxos int, num_unshield_id int) bool {

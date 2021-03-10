@@ -130,8 +130,6 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 
 	unshieldID := actionData.TxReqID.String()
 	tokenID := meta.TokenID
-	Logger.log.Errorf("UNSHIELD REQUEST - unshieldID: %+v\n", unshieldID)
-	Logger.log.Errorf("UNSHIELD REQUEST - beaconHeight: %+v\n", beaconHeight)
 
 	// check unshieldID is existed waitingUnshield list or not
 	wUnshieldReqsByTokenID := CurrentPortalStateV4.WaitingUnshieldRequests[tokenID]
@@ -156,6 +154,12 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	}
 	if isExist {
 		Logger.log.Errorf("[Unshield Request] UnshieldID exist in db %v", unshieldID)
+		return [][]string{rejectInst}, nil
+	}
+
+	// validate unshield amount
+	if meta.UnshieldAmount < portalParams.MinUnshieldAmts[meta.TokenID] {
+		Logger.log.Errorf("[Unshield Request] Unshield amount %v is less than min amount %v", meta.UnshieldAmount, portalParams.MinUnshieldAmts[meta.TokenID])
 		return [][]string{rejectInst}, nil
 	}
 
@@ -226,8 +230,6 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 			return nil
 		}
 
-		//todo: review
-		// update bridge/portal token info
 		incTokenID, err := common.Hash{}.NewHashFromStr(actionData.TokenID)
 		if err != nil {
 			Logger.log.Errorf("ERROR: Can not new hash from porting incTokenID: %+v", err)

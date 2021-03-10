@@ -184,7 +184,6 @@ func (httpServer *HttpServer) handleGetPortalShieldingRequestStatus(params inter
 */
 func (httpServer *HttpServer) handleCreateRawTxWithPortalV4UnshieldRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-
 	if len(arrayParams) >= 7 {
 		hasPrivacyTokenParam, ok := arrayParams[6].(float64)
 		if !ok {
@@ -305,7 +304,7 @@ func (httpServer *HttpServer) handleGetPortalBatchUnshieldingRequestStatus(param
 /*
 ====== Get raw signed tx
 */
-func (httpServer *HttpServer) handleGetPortalTransactionSignedWithBatchID(
+func (httpServer *HttpServer) handleGetPortalSignedExtTxWithBatchID(
 	params interface{},
 	closeChan <-chan struct{},
 ) (interface{}, *rpcservice.RPCError) {
@@ -332,7 +331,7 @@ func (httpServer *HttpServer) handleGetPortalTransactionSignedWithBatchID(
 	return getRawSignedTxByHeight(httpServer, unshieldBatch.BeaconHeight, unshieldBatch.RawExternalTx)
 }
 
-type GetSignedTxResult struct {
+type getSignedTxResult struct {
 	SignedTx     string
 	BeaconHeight uint64
 }
@@ -421,7 +420,7 @@ func getRawSignedTxByHeight(
 
 	hexSignedTx := hex.EncodeToString(signedTx.Bytes())
 
-	return GetSignedTxResult{
+	return getSignedTxResult{
 		SignedTx:     hexSignedTx,
 		BeaconHeight: height,
 	}, nil

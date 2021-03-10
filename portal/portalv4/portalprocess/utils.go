@@ -138,8 +138,6 @@ func GetMaxKeyValue(input map[uint64]uint) (max uint64) {
 func UpdatePortalStateAfterUnshieldRequest(
 	CurrentPortalStateV4 *CurrentPortalStateV4,
 	unshieldID string, tokenID string, remoteAddress string, unshieldAmt uint64, beaconHeight uint64) {
-	Logger.log.Errorf("UNSHIELD REQUEST - unshieldID: %+v\n", unshieldID)
-	Logger.log.Errorf("UNSHIELD REQUEST - beaconHeight: %+v\n", beaconHeight)
 
 	if CurrentPortalStateV4.WaitingUnshieldRequests == nil {
 		CurrentPortalStateV4.WaitingUnshieldRequests = map[string]map[string]*statedb.WaitingUnshieldRequest{}
@@ -155,8 +153,8 @@ func UpdatePortalStateAfterUnshieldRequest(
 
 func UpdatePortalStateAfterProcessBatchUnshieldRequest(
 	CurrentPortalStateV4 *CurrentPortalStateV4,
-	batchID string, utxos map[string][]*statedb.UTXO, externalFees map[uint64]uint, unshieldIDs []string, tokenID string, beaconHeight uint64) {
-	// remove unshieldIDs from WaitingUnshieldRequests\
+	batchID string, utxos map[string][]*statedb.UTXO, externalFees map[uint64]uint, unshieldIDs []string, tokenID string) {
+	// remove unshieldIDs from WaitingUnshieldRequests
 	for _, unshieldID := range unshieldIDs {
 		keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID).String()
 		delete(CurrentPortalStateV4.WaitingUnshieldRequests[tokenID], keyWaitingUnshieldRequest)
