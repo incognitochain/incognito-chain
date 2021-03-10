@@ -70,10 +70,11 @@ func (iRes *InitTokenResponse) CalculateSize() uint64 {
 //The response is valid for a specific instruction if
 //	1. the instruction has a valid metadata type
 //	2. the requested txIDs match
-//	3. the minted public key and the one in the instruction match
-//	4. the minted tx random and the one in the instruction match
-//	5. the minted amount and the requested amount match
-//	6. the minted and requested tokens match
+//  3. the tokenID has not been accumulated (i.e, not seen in the current block)
+//	4. the minted public key and the one in the instruction match
+//	5. the minted tx random and the one in the instruction match
+//	6. the minted amount and the requested amount match
+//	7. the minted and requested tokens match
 //It returns false if no instruction from the beacon satisfies the above conditions.
 //
 //TODO: reviewers should double-check if the above conditions are sufficient
@@ -94,6 +95,7 @@ func (iRes InitTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData 
 
 		Logger.log.Infof("Currently processing instruction: %v\n", inst)
 
+		//Step 1
 		instMetaType := inst[0]
 		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(InitTokenRequestMeta) {
@@ -102,25 +104,32 @@ func (iRes InitTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData 
 
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			Logger.log.Errorf("WARNING - VALIDATION: an error occurred while parsing instruction content: %v\n", err)
+			Logger.log.Errorf("an error occurred while parsing instruction content: %v\n", err)
 			continue
 		}
 		var acceptedInst InitTokenAcceptedInst
 		err = json.Unmarshal(contentBytes, &acceptedInst)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Errorf("an error occurred while parsing instruction content: %v\n", err)
 			continue
 		}
 
-		recvPubKey, txRandom, err := coin.ParseOTAInfoFromString(acceptedInst.OTAStr, acceptedInst.TxRandomStr)
-		if err != nil {
-			Logger.log.Errorf("WARNING - VALIDATION: cannot parse OTA params (%v, %v): %v", acceptedInst.OTAStr, acceptedInst.TxRandomStr, err)
-			continue
-		}
-
+		//Step 2
 		if iRes.RequestedTxID.String() != acceptedInst.RequestedTxID.String() {
 			Logger.log.Infof("txHash mismatch: %v != %v\n", iRes.RequestedTxID.String(), acceptedInst.RequestedTxID.String())
 			continue
+		}
+
+		//Step 3
+		if !ac.CanProcessTokenInit(acceptedInst.TokenID) {
+			Logger.log.Infof("tokenID %v has been added to accumulate values\n", acceptedInst.TokenID.String())
+			continue
+		}
+
+		//Step 4 + 5 + 6 + 7
+		recvPubKey, txRandom, err := coin.ParseOTAInfoFromString(acceptedInst.OTAStr, acceptedInst.TxRandomStr)
+		if err != nil {
+			return false, fmt.Errorf("cannot parse OTA params (%v, %v): %v", acceptedInst.OTAStr, acceptedInst.TxRandomStr, err)
 		}
 
 		_, mintedCoin, mintedTokenID, err := tx.GetTxMintData()
@@ -149,6 +158,7 @@ func (iRes InitTokenResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData 
 		}
 
 		idx = i
+		ac.InitTokens = append(ac.InitTokens, &acceptedInst.TokenID)
 		break
 	}
 
