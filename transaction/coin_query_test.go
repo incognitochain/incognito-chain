@@ -62,7 +62,9 @@ var (
 	limit1      = 1
 
 	dummyDB *statedb.StateDB
-	diskDB incdb.Database
+	chainStorage incdb.Database
+	featureStorage incdb.Database
+	coinReindexer *utils.CoinReindexer
 	bridgeDB *statedb.StateDB
 	activeLogger common.Logger
 	inactiveLogger common.Logger
@@ -89,17 +91,30 @@ var _ = func() (_ struct{}) {
 	return
 }()
 
-func init() {
-	dbPath, err := ioutil.TempDir(os.TempDir(), "test_statedb_")
+func setup() {
+	dbPath, err := ioutil.TempDir(os.TempDir(), "test_chaindb_")
 	if err != nil {
 		panic(err)
 	}
-	diskDB, err = incdb.Open("leveldb", dbPath)
+	chainStorage, err = incdb.Open("leveldb", dbPath)
+	if err != nil {
+		panic(err)
+	}
+	dbPath, err = ioutil.TempDir(os.TempDir(), "test_featuredb_")
+	if err != nil {
+		panic(err)
+	}
+	featureStorage, err = incdb.Open("leveldb", dbPath)
+	if err != nil {
+		panic(err)
+	}
+	// use only 1 worker for benchmark
+	coinReindexer, err = utils.NewOutcoinReindexer(1, featureStorage)
 	if err != nil {
 		panic(err)
 	}
 
-	warperDBStatedbTest = statedb.NewDatabaseAccessWarper(diskDB)
+	warperDBStatedbTest = statedb.NewDatabaseAccessWarper(chainStorage)
 	dummyDB, _ = statedb.NewWithPrefixTrie(emptyRoot, warperDBStatedbTest)
 }
 
@@ -165,23 +180,8 @@ func createSamplePlainCoinV1(privKey privacy.PrivateKey, pubKey *operation.Point
 	return c, nil
 }
 
-func storeCoinV2(db *statedb.StateDB, coinsToBeSaved []coin.Coin, shardID byte, tokenID common.Hash, height uint64){
-	coinsInBytes := make([][]byte, 0)
-	otas := make([][]byte, 0)
-	for _,c := range coinsToBeSaved{
-		// jsb, _ := json.Marshal(c)
-		// fmt.Printf("Coin is %s\n", string(jsb))
-		coinsInBytes = append(coinsInBytes, c.Bytes())
-		otas = append(otas, c.GetPublicKey().ToBytesS())
-	}
-	// fmt.Printf("Db is %v\n", db)
-	err := statedb.StoreOTACoinsAndOnetimeAddresses(db, tokenID, height, coinsInBytes, otas, shardID)
-	if err!=nil{
-		panic(err)
-	}
-}
-
 func BenchmarkQueryCoinV1(b *testing.B) {
+	setup()
 	rand.Seed(time.Now().UnixNano())
 	clargs := os.Args[len(os.Args)-2:]
 	// fmt.Println(clargs)
@@ -243,8 +243,26 @@ func BenchmarkQueryCoinV1(b *testing.B) {
 		assert.Equal(b, numOfCoinsPerKey, len(results))
 		assert.Equal(b, nil, err)
 	}
+
+	err = chainStorage.Clear()
+	assert.Equal(b, nil, err)
 }
 
+func storeCoinV2(db *statedb.StateDB, coinsToBeSaved []coin.Coin, shardID byte, tokenID common.Hash, height uint64){
+	coinsInBytes := make([][]byte, 0)
+	otas := make([][]byte, 0)
+	for _,c := range coinsToBeSaved{
+		// jsb, _ := json.Marshal(c)
+		// fmt.Printf("Coin is %s\n", string(jsb))
+		coinsInBytes = append(coinsInBytes, c.Bytes())
+		otas = append(otas, c.GetPublicKey().ToBytesS())
+	}
+	// fmt.Printf("Db is %v\n", db)
+	err := statedb.StoreOTACoinsAndOnetimeAddresses(db, tokenID, height, coinsInBytes, otas, shardID)
+	if err!=nil{
+		panic(err)
+	}
+}
 
 func prepareKeysAndPaymentsV2(count int) ([]*incognitokey.KeySet, []*key.PaymentInfo) {
 	// create many random private keys
@@ -298,6 +316,7 @@ func getCoinFilterByOTAKey() utils.CoinMatcher{
 }
 
 func BenchmarkQueryCoinV2(b *testing.B) {
+	setup()
 	rand.Seed(time.Now().UnixNano())
 	clargs := os.Args[len(os.Args)-3:]
 	// fmt.Println(clargs)
@@ -341,15 +360,115 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 		panic(err)
 	}
 
+	b.Run("Query Coin V2", func(b *testing.B) {
+		// each loop reads all output coins for a public key
+		b.ResetTimer()
+		for loop := 0; loop < b.N; loop++ {
+			chosenIndex := rand.Int() % len(keySets)
+			ks := keySets[chosenIndex]
+			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
+			otaKey := ks.OTAKey
+			results, err := utils.QueryDbCoinVer2(otaKey, shardID, &common.PRVCoinID, 0, maxHeight, coinDB, getCoinFilterByOTAKey())
+			assert.Equal(b, len(results), numOfCoinsPerKey)
+			if err != nil {
+				panic(err)
+			}
+			assert.Equal(b, nil, err)
+		}
+	})
+
+	reindexFrom := rand.Int() % len(keySets)
+	b.Run("Reindex Coin V2", func(b *testing.B) {
+		// each loop reindexes output coins for an OTA key
+		b.ResetTimer()
+		for loop := 0; loop < b.N; loop++ {
+			assert.Equal(b, true, loop < numOfPrivateKeys)
+			ks := keySets[(reindexFrom + loop) % numOfPrivateKeys]
+			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
+			otaKey := ks.OTAKey
+			err := coinReindexer.ReindexOutcoin(maxHeight, otaKey, coinDB, shardID)
+			// assert.Equal(b, len(results), numOfCoinsPerKey)
+			if err != nil {
+				panic(err)
+			}
+			assert.Equal(b, nil, err)
+		}
+	})
+
+	b.Run("Query Indexed Coin", func(b *testing.B) {
+		// each loop reads all output coins for a public key
+		b.ResetTimer()
+		for loop := 0; loop < b.N; loop++ {
+			ks := keySets[(reindexFrom + loop) % numOfPrivateKeys]
+			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
+			otaKey := ks.OTAKey
+			results, _, err := coinReindexer.GetReindexedOutcoin(otaKey, &common.PRVCoinID, coinDB, shardID)
+			assert.Equal(b, len(results), numOfCoinsPerKey)
+			if err != nil {
+				panic(err)
+			}
+			assert.Equal(b, nil, err)
+		}
+	})
+
+	
+
+	err = chainStorage.Clear()
+	assert.Equal(b, nil, err)
+	err = featureStorage.Clear()
+	assert.Equal(b, nil, err)
+}
+
+func BenchmarkReindexCoinV2(b *testing.B) {
+	rand.Seed(time.Now().UnixNano())
+	clargs := os.Args[len(os.Args)-3:]
+	// fmt.Println(clargs)
+
+	numOfCoinsTotal, _ := strconv.Atoi(clargs[0])
+	numOfCoinsPerKey, _ := strconv.Atoi(clargs[1])
+
+	numOfPrivateKeys := numOfCoinsTotal / numOfCoinsPerKey
+	// numOfWorkers,_ := strconv.Atoi(clargs[2])
+	
+	fmt.Printf("\n------------------CoinV2 Query Benchmark\n")
+	fmt.Printf("Number of coins in db   : %d\n", numOfCoinsTotal)
+	fmt.Printf("Number of coins per key : %d\n", numOfCoinsPerKey)
+
+	keySets, paymentInfos := prepareKeysAndPaymentsV2(numOfPrivateKeys)
+
+	pastCoins := make([]coin.Coin, numOfCoinsPerKey * numOfPrivateKeys)
+	for i, _ := range pastCoins {
+		tempCoin, err := coin.NewCoinFromPaymentInfo(paymentInfos[i % numOfPrivateKeys])
+		assert.Equal(b, nil, err)
+		assert.Equal(b, false, tempCoin.IsEncrypted())
+		tempCoin.ConcealOutputCoin(keySets[i % numOfPrivateKeys].PaymentAddress.GetPublicView())
+		assert.Equal(b, true, tempCoin.IsEncrypted())
+		assert.Equal(b, true, tempCoin.GetSharedRandom() == nil)
+		// fmt.Printf("Add coin by key %x\n", keySets[i % numOfPrivateKeys].OTAKey)
+		pastCoins[i] = tempCoin
+	}	
+	storeCoinV2(dummyDB, pastCoins, 0, common.PRVCoinID, 1)
+
+	newRoot, err := dummyDB.Commit(true)
+	assert.Equal(b, nil, err)
+	err = warperDBStatedbTest.TrieDB().Commit(newRoot, false)
+	assert.Equal(b, nil, err)
+	coinDB, err := statedb.NewWithPrefixTrie(newRoot, warperDBStatedbTest)
+	if err != nil {
+		panic(err)
+	}
+
+	
+	chosenIndex := rand.Int() % len(keySets)
 	// each loop reads all output coins for a public key
 	b.ResetTimer()
 	for loop := 0; loop < b.N; loop++ {
-		chosenIndex := rand.Int() % len(keySets)
-		ks := keySets[chosenIndex]
+		assert.Equal(b, true, loop < numOfPrivateKeys)
+		ks := keySets[(chosenIndex + loop) % numOfPrivateKeys]
 		// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 		otaKey := ks.OTAKey
-		results, err := utils.QueryDbCoinVer2(otaKey, shardID, &common.PRVCoinID, 0, maxHeight, coinDB, getCoinFilterByOTAKey())
-		assert.Equal(b, len(results), numOfCoinsPerKey)
+		err := coinReindexer.ReindexOutcoin(1, otaKey, coinDB, shardID)
+		// assert.Equal(b, len(results), numOfCoinsPerKey)
 		if err != nil {
 			panic(err)
 		}
