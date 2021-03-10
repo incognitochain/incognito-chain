@@ -75,6 +75,11 @@ func StoreUTXOs(stateDB *StateDB, utxos map[string]*UTXO) error {
 	return nil
 }
 
+func DeleteUTXO(stateDB *StateDB, tokenID string, walletAddress string, txHash string, inputIndex uint32) {
+	key := GenerateUTXOObjectKey(tokenID, walletAddress, txHash, inputIndex)
+	stateDB.MarkDeleteStateObject(PortalV4UTXOObjectType, key)
+}
+
 // ================= List Waiting Unshielding Requests =================
 func GetWaitingUnshieldRequestsByTokenID(stateDB *StateDB, tokenID string) (map[string]*WaitingUnshieldRequest, error) {
 	return stateDB.getListWaitingUnshieldRequestsByTokenID(tokenID), nil

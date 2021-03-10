@@ -65,7 +65,7 @@ func buildUnshieldBatchingInst(
 }
 
 // batchID is hash of current beacon height and unshieldIDs that processed
-func getBatchID(beaconHeight uint64, unshieldIDs []string) string {
+func GetBatchID(beaconHeight uint64, unshieldIDs []string) string {
 	dataBytes := []byte(fmt.Sprintf("%d", beaconHeight))
 	for _, id := range unshieldIDs {
 		dataBytes = append(dataBytes, []byte(id)...)
@@ -140,7 +140,7 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 			}
 
 			// memo in tx: batchId: combine beacon height and list of unshieldIDs
-			batchID := getBatchID(beaconHeight+1, bcTx.UnshieldIDs)
+			batchID := GetBatchID(beaconHeight+1, bcTx.UnshieldIDs)
 			memo := batchID
 
 			// create raw tx
@@ -159,6 +159,7 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 			}
 			// update current portal state
 			// remove chosen waiting unshield requests from waiting list
+			// remove utxos
 			UpdatePortalStateAfterProcessBatchUnshieldRequest(
 				CurrentPortalStateV4, batchID, chosenUTXOs, externalFees, bcTx.UnshieldIDs, tokenID)
 
@@ -203,6 +204,7 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 		// remove waiting unshield request from waiting list
 		UpdatePortalStateAfterProcessBatchUnshieldRequest(
 			CurrentPortalStateV4, actionData.BatchID, actionData.UTXOs, actionData.NetworkFee, actionData.UnshieldIDs, actionData.TokenID)
+		RemoveListUtxoFromDB(stateDB, actionData.UTXOs, actionData.TokenID)
 
 		for _, unshieldID := range actionData.UnshieldIDs {
 			// update status of unshield request that processed

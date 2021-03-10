@@ -171,7 +171,36 @@ func UpdatePortalStateAfterProcessBatchUnshieldRequest(
 	keyProcessedUnshieldRequest := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenID, batchID).String()
 	CurrentPortalStateV4.ProcessedUnshieldRequests[tokenID][keyProcessedUnshieldRequest] = statedb.NewProcessedUnshieldRequestBatchWithValue(
 		batchID, unshieldIDs, utxos, externalFees)
+
+	// remove list utxos from state
+	RemoveListUtxoFromState(CurrentPortalStateV4, utxos, tokenID)
 }
+
+func RemoveListUtxoFromState(
+	CurrentPortalStateV4 *CurrentPortalStateV4,
+	utxos map[string][]*statedb.UTXO, tokenID string) {
+
+	// remove list utxos that spent
+	for walletAddr, listUtxos := range utxos {
+		for _, u := range listUtxos {
+			keyUtxo := statedb.GenerateUTXOObjectKey(tokenID, walletAddr, u.GetTxHash(), u.GetOutputIndex()).String()
+			delete(CurrentPortalStateV4.UTXOs[tokenID], keyUtxo)
+		}
+	}
+}
+
+func RemoveListUtxoFromDB(
+	stateDB *statedb.StateDB,
+	utxos map[string][]*statedb.UTXO, tokenID string) {
+
+	// remove list utxos that spent
+	for walletAddr, listUtxos := range utxos {
+		for _, u := range listUtxos {
+			statedb.DeleteUTXO(stateDB, tokenID, walletAddr, u.GetTxHash(), u.GetOutputIndex())
+		}
+	}
+}
+
 
 func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, stateDB *statedb.StateDB) error {
 	// get unshield request by unshield ID

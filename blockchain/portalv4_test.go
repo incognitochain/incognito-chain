@@ -592,6 +592,198 @@ func (s *PortalTestSuiteV4) TestUnshieldRequest() {
 	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
 }
 
+
+/*
+	Batch unshield process
+*/
+type TestCaseBatchUnshieldProcess struct {
+	waitingUnshieldReqs map[string]map[string]*statedb.WaitingUnshieldRequest
+	utxos map[string]map[string]*statedb.UTXO
+}
+
+type ExpectedResultBatchUnshieldProcess struct {
+	waitingUnshieldReqs map[string]map[string]*statedb.WaitingUnshieldRequest
+	batchUnshieldProcesses map[string]map[string]*statedb.ProcessedUnshieldRequestBatch
+	utxos map[string]map[string]*statedb.UTXO
+	numBeaconInsts uint
+	statusInsts    []string
+}
+
+func (s *PortalTestSuiteV4) SetupTestBatchUnshieldProcess() {
+	// do nothing
+}
+
+func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshieldProcess, []ExpectedResultBatchUnshieldProcess) {
+	beaconHeight := uint64(45)
+	// waiting unshielding requests
+	unshieldId1 :=  common.HashH([]byte{1}).String()
+	unshieldAmt1 := uint64(1*1e9)
+	remoteAddr1 := USER_BTC_ADDRESS_1
+	wUnshieldReqKey1 := statedb.GenerateWaitingUnshieldRequestObjectKey(portalcommonv4.PortalBTCIDStr, unshieldId1).String()
+	wUnshieldReq1 := statedb.NewWaitingUnshieldRequestStateWithValue(
+		remoteAddr1, unshieldAmt1, unshieldId1, beaconHeight)
+	//wUnshieldReqKey2 := statedb.GenerateWaitingUnshieldRequestObjectKey(portalcommonv4.PortalBTCIDStr, common.HashH([]byte{2}).String()).String()
+	//wUnshieldReq2 := statedb.NewWaitingUnshieldRequestStateWithValue(
+	//	USER_BTC_ADDRESS_2, 0.5*1e9, common.HashH([]byte{2}).String(), beaconHeight)
+
+	// utxos
+	walletAddress := "2MvpFqydTR43TT4emMD84Mzhgd8F6dCow1X"
+	var utxoTxHash1 string
+	var utxoOutputIdx uint32
+	var utxoAmount uint64
+
+	utxoTxHash1 = "251f22409938485254c6c739b9f91cb7f0bce784b018de5b0bdb88d10f17e355"
+	utxoOutputIdx = 1
+	utxoAmount = 2*1e8
+	keyUtxo1, valueUtxo1 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, utxoTxHash1, utxoOutputIdx, utxoAmount)
+
+	//utxoTxHash1 = "b44f6c7c896757abe7afd6ac083c2930f1d0f57a356887e872f3b88bba5ea0b7"
+	//utxoOutputIdx = 1
+	//utxoAmount = 800
+	//keyUtxo2, valueUtxo2 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, utxoTxHash1, utxoOutputIdx, utxoAmount)
+
+	// build test cases
+	testcases := []TestCaseBatchUnshieldProcess{
+		// success: there is only one waiting unshield request
+		{
+			waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
+				portalcommonv4.PortalBTCIDStr: {
+					wUnshieldReqKey1: wUnshieldReq1,
+				},
+			},
+			utxos:               map[string]map[string]*statedb.UTXO{
+				portalcommonv4.PortalBTCIDStr: {
+					keyUtxo1: valueUtxo1,
+				},
+			},
+		},
+		//// success: there is only one waiting unshield request
+		//{
+		//	waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
+		//		portalcommonv4.PortalBTCIDStr: {
+		//			batchUnshieldProcessKey1: batchUnshieldProcess1,
+		//		},
+		//	},
+		//	utxos:               map[string]map[string]*statedb.UTXO{
+		//		portalcommonv4.PortalBTCIDStr: {
+		//			keyUtxo1: valueUtxo1,
+		//		},
+		//	},
+		//},
+		//// success: there is only one waiting unshield request
+		//{
+		//	waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
+		//		portalcommonv4.PortalBTCIDStr: {
+		//			batchUnshieldProcessKey1: batchUnshieldProcess1,
+		//		},
+		//	},
+		//	utxos:               map[string]map[string]*statedb.UTXO{
+		//		portalcommonv4.PortalBTCIDStr: {
+		//			keyUtxo1: valueUtxo1,
+		//		},
+		//	},
+		//},
+		//// success: there is only one waiting unshield request
+		//{
+		//	waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
+		//		portalcommonv4.PortalBTCIDStr: {
+		//			batchUnshieldProcessKey1: batchUnshieldProcess1,
+		//		},
+		//	},
+		//	utxos:               map[string]map[string]*statedb.UTXO{
+		//		portalcommonv4.PortalBTCIDStr: {
+		//			keyUtxo1: valueUtxo1,
+		//		},
+		//	},
+		//},
+
+	}
+
+	// build expected results
+	// batch unshielding process
+	var batchID string
+	var processedUnshieldIDs []string
+	var spendUtxos map[string][]*statedb.UTXO
+	var externalFee map[uint64]uint
+	processedUnshieldIDs = []string{unshieldId1}
+	batchID = portalprocessv4.GetBatchID(beaconHeight, processedUnshieldIDs)
+	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo1}}
+	externalFee = map[uint64]uint{
+		beaconHeight: 100000,
+	}
+	batchUnshieldProcessKey1 := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(portalcommonv4.PortalBTCIDStr, batchID).String()
+	batchUnshieldProcess1 := statedb.NewProcessedUnshieldRequestBatchWithValue(
+		batchID, processedUnshieldIDs, spendUtxos, externalFee)
+
+	expectedRes := []ExpectedResultBatchUnshieldProcess{
+		{
+			waitingUnshieldReqs:    map[string]map[string]*statedb.WaitingUnshieldRequest{
+				portalcommonv4.PortalBTCIDStr: {},
+			},
+			batchUnshieldProcesses: map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{
+				portalcommonv4.PortalBTCIDStr: {
+					batchUnshieldProcessKey1: batchUnshieldProcess1,
+				},
+			},
+			utxos:                  map[string]map[string]*statedb.UTXO{
+				portalcommonv4.PortalBTCIDStr: {
+				},
+			},
+			numBeaconInsts:         1,
+			//statusInsts:            []string{
+			//	portalcommonv4.PortalV4RequestAcceptedChainStatus,
+			//	portalcommonv4.PortalV4RequestAcceptedChainStatus,
+			//	portalcommonv4.PortalV4RequestRejectedChainStatus,
+			//},
+		},
+	}
+
+	return testcases, expectedRes
+}
+
+func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
+	fmt.Println("Running TestUnshieldRequest - beacon height 1003 ...")
+	bc := s.blockChain
+	pm := portal.NewPortalManager()
+	beaconHeight := uint64(45)
+	shardHeights := map[byte]uint64{
+		0: uint64(1003),
+	}
+	shardID := byte(0)
+
+	s.SetupTestBatchUnshieldProcess()
+
+	// build test cases and expected results
+	testcases, expectedResults := buildTestCaseAndExpectedResultBatchUnshieldProcess()
+
+	for i:=0; i<len(testcases); i++ {
+		tc := testcases[i]
+		expectedRes := expectedResults[i]
+
+		s.currentPortalStateForProducer.UTXOs = tc.utxos
+		s.currentPortalStateForProducer.WaitingUnshieldRequests = tc.waitingUnshieldReqs
+
+		// beacon producer instructions
+		newInsts, err := pm.PortalInstProcessorsV4[metadata.PortalV4UnshieldBatchingMeta].BuildNewInsts(bc, "", shardID, &s.currentPortalStateForProducer, beaconHeight-1, shardHeights, s.portalParams, nil)
+		s.Equal(nil, err)
+
+		// process new instructions
+		err = processPortalInstructionsV4(
+			bc, beaconHeight-1, newInsts, s.sdb, &s.currentPortalStateForProcess, s.portalParams, pm.PortalInstProcessorsV4)
+
+		// check results
+		s.Equal(expectedRes.numBeaconInsts, uint(len(newInsts)))
+		s.Equal(nil, err)
+
+		//for i, inst := range newInsts {
+		//	s.Equal(expectedRes.statusInsts[i], inst[2], "Instruction index %v", i)
+		//}
+
+		s.Equal(expectedRes.waitingUnshieldReqs, s.currentPortalStateForProducer.WaitingUnshieldRequests)
+		s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
+	}
+}
+
 func TestPortalSuiteV4(t *testing.T) {
 	suite.Run(t, new(PortalTestSuiteV4))
 }
