@@ -77,6 +77,10 @@ func (e *BLSBFT) GetChainID() int {
 	return e.ChainID
 }
 
+func (e *BLSBFT) Destroy() {
+	e.Stop()
+}
+
 func (e *BLSBFT) Stop() error {
 	if e.isStarted {
 		e.logger.Info("stop bls-bft consensus for chain", e.ChainKey)

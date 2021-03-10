@@ -317,7 +317,7 @@ func SetupParam() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
-		ConsensusV2Epoch:               1e9,
+		ConsensusV2Epoch:               15290,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
