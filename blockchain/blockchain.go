@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"runtime"
 	"sort"
 	"strconv"
 	"sync"
@@ -105,8 +106,12 @@ func (blockchain *BlockChain) Init(config *Config) error {
 
 	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb!=nil)
 	if EnableIndexingCoinByOTAKey{
+		// -1 means do not change #cores; this returns the current value only
+		numOfCores := runtime.GOMAXPROCS(-1)
+		numOfOutcoinIndexWorkers := numOfCores / 2
 		var err error
-		outcoinReindexer, err = txutils.NewOutcoinReindexer(txutils.OutcoinReindexerRoutines, *config.OutcoinByOTAKeyDb)
+		outcoinReindexer, err = txutils.NewOutcoinReindexer(int64(numOfOutcoinIndexWorkers), *config.OutcoinByOTAKeyDb)
+		Logger.log.Infof("Outcoin Indexer created with %d workers", numOfOutcoinIndexWorkers)
 		return err
 	}
 	return nil

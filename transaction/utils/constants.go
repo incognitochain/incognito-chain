@@ -30,5 +30,5 @@ const (
 const (
 	MaxOutcoinQueryInterval 	  = 8640 // 1 day worth of blocks
 	OutcoinReindexerTimeout 	  = 90	 // seconds
-	OutcoinReindexerRoutines 	  = 2
+	// OutcoinReindexerRoutines 	  = 2
 )
