@@ -284,7 +284,6 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 				Logger.log.Errorf("GetShardBlockByHeightV1 shard %+v, error  %+v", shardID, err)
 				break
 			}
-
 			//only get shard block within epoch
 			if lastEpoch == 0 {
 				lastEpoch = tempShardBlock.GetCurrentEpoch() //update epoch of first block
@@ -295,9 +294,22 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 			}
 
 			shardBlocks = append(shardBlocks, tempShardBlock)
+
+			containSwap := func(inst [][]string) bool {
+				for _, inst := range inst {
+					if inst[0] == SwapAction {
+						return true
+					}
+				}
+				return false
+			}
+			if containSwap(tempShardBlock.Body.Instructions) {
+				break
+			}
 		}
 		Logger.log.Info("[slashing] shardID:", shardID)
 		Logger.log.Info("[slashing] shardBlocks:", shardBlocks)
+
 		allShardBlocks[shardID] = shardBlocks
 	}
 	return allShardBlocks
@@ -323,6 +335,19 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 			}
 
 			shardBlocks = append(shardBlocks, shardBlock)
+
+			containSwap := func(inst [][]string) bool {
+				for _, inst := range inst {
+					if inst[0] == SwapAction {
+						return true
+					}
+				}
+				return false
+			}
+			if containSwap(shardBlock.Body.Instructions) {
+				break
+			}
+
 		}
 		allRequireShardBlocks[shardID] = shardBlocks
 	}
