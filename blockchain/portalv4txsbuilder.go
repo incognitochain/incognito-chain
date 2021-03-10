@@ -10,7 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-// buildPortalAcceptedShieldingRequestTx builds response tx for the shielding request tx with status "accepted"
+// buildPortalAcceptedShieldingRequestTx builds response tx for the shielding request tx with status "accepted"
 // mints pToken to return to user
 func (curView *ShardBestState) buildPortalAcceptedShieldingRequestTx(
 	beaconState *BeaconBestState,
@@ -18,7 +18,7 @@ func (curView *ShardBestState) buildPortalAcceptedShieldingRequestTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (metadata.Transaction, error) {
-	Logger.log.Errorf("[Shard buildPortalAcceptedShieldingRequestTx] Starting...")
+	Logger.log.Errorf("[Shard buildPortalAcceptedShieldingRequestTx] Starting...")
 	contentBytes := []byte(contentStr)
 	var acceptedShieldingReq metadata.PortalShieldingRequestContent
 	err := json.Unmarshal(contentBytes, &acceptedShieldingReq)

@@ -166,8 +166,7 @@ func ProcessPortalInstsV4(
 		if updatingInfo.CountUpAmt > updatingInfo.DeductAmt {
 			updatingAmt = updatingInfo.CountUpAmt - updatingInfo.DeductAmt
 			updatingType = "+"
-		}
-		if updatingInfo.CountUpAmt < updatingInfo.DeductAmt {
+		} else if updatingInfo.CountUpAmt < updatingInfo.DeductAmt {
 			updatingAmt = updatingInfo.DeductAmt - updatingInfo.CountUpAmt
 			updatingType = "-"
 		}

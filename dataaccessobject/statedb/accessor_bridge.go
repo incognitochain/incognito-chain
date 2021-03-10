@@ -138,7 +138,7 @@ func UpdateBridgeTokenInfo(stateDB *StateDB, incTokenID common.Hash, externalTok
 		bridgeTokenInfoState.SetIncTokenID(incTokenID)
 		bridgeTokenInfoState.SetExternalTokenID(externalTokenID)
 		bridgeTokenInfoState.SetIsCentralized(isCentralized)
-		if updateType == BridgeMinorOperator {
+		if updateType == BridgeMinusOperator {
 			bridgeTokenInfoState.SetAmount(0)
 		} else {
 			bridgeTokenInfoState.SetAmount(updatingAmount)
