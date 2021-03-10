@@ -33,7 +33,8 @@ func (blockchain *BlockChain) collectStatefulActions(
 			continue
 		}
 		switch metaType {
-		case metadata.IssuingRequestMeta,
+		case metadata.InitTokenRequestMeta,
+			metadata.IssuingRequestMeta,
 			metadata.IssuingETHRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,

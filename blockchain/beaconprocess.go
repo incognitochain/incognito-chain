@@ -1432,6 +1432,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
+	// execute, store token init instructions
+	blockchain.processTokenInitInstructions(newBestState.featureStateDB, beaconBlock)
 	// execute, store PDE instruction
 	err = blockchain.processPDEInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
