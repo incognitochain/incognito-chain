@@ -43,6 +43,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 	theType := int(typeFloat)
 	switch theType {
+	case InitTokenRequestMeta:
+		md = &InitTokenRequest{}
+	case InitTokenResponseMeta:
+		md = &InitTokenResponse{}
 	case IssuingRequestMeta:
 		md = &IssuingRequest{}
 	case IssuingResponseMeta:
