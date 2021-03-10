@@ -321,7 +321,12 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(utxos map[strin
 	}
 
 	sort.SliceStable(wReqsArr, func(i, j int) bool {
-		return wReqsArr[i].value.GetBeaconHeight() < wReqsArr[j].value.GetBeaconHeight()
+		if wReqsArr[i].value.GetBeaconHeight() < wReqsArr[j].value.GetBeaconHeight() {
+			return true
+		} else if wReqsArr[i].value.GetBeaconHeight() == wReqsArr[j].value.GetBeaconHeight() {
+			return wReqsArr[i].key < wReqsArr[j].key
+		}
+		return false
 	})
 
 	broadcastTxs := []*BroadcastTx{}
