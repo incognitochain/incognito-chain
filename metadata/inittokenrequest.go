@@ -50,6 +50,19 @@ func ParseInitTokenInstContent(instContentStr string) (*InitTokenReqAction, erro
 	return &initPTokenReqAction, nil
 }
 
+func ParseInitTokenInstAcceptedContent(instContentStr string) (*InitTokenAcceptedInst, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(instContentStr)
+	if err != nil {
+		return nil, NewMetadataTxError(InitTokenRequestDecodeInstructionError, err)
+	}
+	var initPTokenReqAction InitTokenAcceptedInst
+	err = json.Unmarshal(contentBytes, &initPTokenReqAction)
+	if err != nil {
+		return nil, NewMetadataTxError(InitTokenRequestUnmarshalJsonError, err)
+	}
+	return &initPTokenReqAction, nil
+}
+
 func NewInitTokenRequest(otaStr string, txRandomStr string, amount uint64, tokenName, tokenSymbol string, metaType int) (*InitTokenRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
