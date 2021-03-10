@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-// todo: add more params for portal v4
 type PortalParams struct {
 	NumRequiredSigs         uint
 	MultiSigAddresses       map[string]string

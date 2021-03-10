@@ -161,6 +161,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalShieldingResponse{}
 	case PortalV4UnshieldingRequestMeta:
 		md = &PortalUnshieldRequest{}
+	case PortalV4UnshieldingResponseMeta:
+		md = &PortalUnshieldResponse{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))

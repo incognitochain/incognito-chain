@@ -12,7 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-type PortalV4UnshieldResponse struct {
+type PortalUnshieldResponse struct {
 	MetadataBase
 	RequestStatus    string
 	ReqTxID          common.Hash
@@ -28,11 +28,11 @@ func NewPortalV4UnshieldResponse(
 	amount uint64,
 	tokenID string,
 	metaType int,
-) *PortalV4UnshieldResponse {
+) *PortalUnshieldResponse {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
-	return &PortalV4UnshieldResponse{
+	return &PortalUnshieldResponse{
 		RequestStatus:    requestStatus,
 		ReqTxID:          reqTxID,
 		MetadataBase:     metadataBase,
@@ -42,26 +42,26 @@ func NewPortalV4UnshieldResponse(
 	}
 }
 
-func (iRes PortalV4UnshieldResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PortalUnshieldResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes PortalV4UnshieldResponse) ValidateTxWithBlockChain(txr Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
+func (iRes PortalUnshieldResponse) ValidateTxWithBlockChain(txr Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PortalV4UnshieldResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
+func (iRes PortalUnshieldResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	return false, true, nil
 }
 
-func (iRes PortalV4UnshieldResponse) ValidateMetadataByItself() bool {
+func (iRes PortalUnshieldResponse) ValidateMetadataByItself() bool {
 	// The validation just need to check at tx level, so returning true here
 	return iRes.Type == PortalV4UnshieldingResponseMeta
 }
 
-func (iRes PortalV4UnshieldResponse) Hash() *common.Hash {
+func (iRes PortalUnshieldResponse) Hash() *common.Hash {
 	record := iRes.MetadataBase.Hash().String()
 	record += iRes.RequestStatus
 	record += iRes.ReqTxID.String()
@@ -73,11 +73,11 @@ func (iRes PortalV4UnshieldResponse) Hash() *common.Hash {
 	return &hash
 }
 
-func (iRes *PortalV4UnshieldResponse) CalculateSize() uint64 {
+func (iRes *PortalUnshieldResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes PortalV4UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
+func (iRes PortalUnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []Transaction,
 	txsUsed []int,
 	insts [][]string,
@@ -91,7 +91,7 @@ func (iRes PortalV4UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 ) (bool, error) {
 	idx := -1
 	for i, inst := range insts {
-		if len(inst) < 4 { // this is not PortalV4UnshieldResponse instruction
+		if len(inst) < 4 { // this is not PortalUnshieldResponse instruction
 			continue
 		}
 		instMetaType := inst[0]
@@ -153,7 +153,7 @@ func (iRes PortalV4UnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf(fmt.Sprintf("no PortalV4UnshieldRequest instruction found for PortalV4UnshieldResponse tx %s", tx.Hash().String()))
+		return false, fmt.Errorf(fmt.Sprintf("no PortalV4UnshieldRequest instruction found for PortalUnshieldResponse tx %s", tx.Hash().String()))
 	}
 	instUsed[idx] = 1
 	return true, nil
