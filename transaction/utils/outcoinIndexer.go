@@ -90,25 +90,31 @@ func GetCoinFilterByOTAKeyAndToken() CoinMatcher{
 	}
 }
 
-func (ci *CoinReindexer) ReindexOutcoin(toHeight uint64, vk privacy.OTAKey, txdb *statedb.StateDB, shardID byte) error{
+func (ci *CoinReindexer) ReindexOutcoin(fromHeight, toHeight uint64, vk privacy.OTAKey, txdb *statedb.StateDB, shardID byte, isReset bool) error{
     vkb := OTAKeyToRaw(vk)
     Logger.Log.Infof("Re-index output coins for key %x", vkb)
     keyExists, processing := ci.HasOTAKey(vkb)
-    if keyExists && (processing==1 || processing==2){
-        return nil
+    if keyExists {
+    	if processing==1 {
+        	return nil
+        }
+        // resetting entries for this key is reserved for debugging RPCs
+        if processing==2 && !isReset {
+        	return nil
+        }
     }
     ci.ManagedOTAKeys.Store(vkb, 1)
     defer func(){
+    	if r := recover(); r != nil {
+            Logger.Log.Errorf("Recovered from : ", r)
+        }
         if exists, processing := ci.HasOTAKey(vkb); exists && processing==1{
             ci.ManagedOTAKeys.Delete(vkb)
         }
     }()
     var allOutputCoins []privacy.Coin
-    // read
-    // if err!=nil{
-    //  return err
-    // }
-    for height:=uint64(0); height <= toHeight;{
+
+    for height := fromHeight; height <= toHeight;{
         nextHeight := height + MaxOutcoinQueryInterval
         
         ctx, cancel := context.WithTimeout(context.Background(), OutcoinReindexerTimeout * time.Second)
@@ -197,11 +203,11 @@ func (ci *CoinReindexer) StoreReindexedOutputCoins(viewKey privacy.OTAKey, outpu
     return err
 }
 
-func GetNextLowerHeight(upper uint64) uint64{
-    if upper > MaxOutcoinQueryInterval{
+func GetNextLowerHeight(upper, floor uint64) uint64{
+    if upper > MaxOutcoinQueryInterval + floor{
         return upper - MaxOutcoinQueryInterval
     }
-    return 0
+    return floor
 }
 
 func OTAKeyToRaw(vk privacy.OTAKey) [64]byte{
