@@ -253,7 +253,7 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 	return nil
 }
 
-func (chain *ShardChain) CheckExistedBlk(block common.BlockInterface) bool {
+func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
 	_, err := rawdbv2.GetShardBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
 	return err == nil
@@ -282,12 +282,6 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 	}
 
 	return nil
-}
-
-func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
-	blkHash := block.Hash()
-	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
-	return err == nil
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {

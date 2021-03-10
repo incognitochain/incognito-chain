@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -297,7 +298,7 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 
 			containSwap := func(inst [][]string) bool {
 				for _, inst := range inst {
-					if inst[0] == SwapAction {
+					if inst[0] == instruction.SWAP_ACTION {
 						return true
 					}
 				}
@@ -338,7 +339,7 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 
 			containSwap := func(inst [][]string) bool {
 				for _, inst := range inst {
-					if inst[0] == SwapAction {
+					if inst[0] == instruction.SWAP_ACTION {
 						return true
 					}
 				}
