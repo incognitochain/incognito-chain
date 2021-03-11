@@ -39,12 +39,12 @@ func (engine BeaconCommitteeEngineV1) Version() uint {
 
 //GetCandidateShardWaitingForCurrentRandom :
 func (engine BeaconCommitteeEngineV1) GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
-	return engine.finalState.CandidateShardWaitingForCurrentRandom()
+	return engine.finalState.GetCandidateShardWaitingForCurrentRandom()
 }
 
 //GetCandidateShardWaitingForNextRandom :
 func (engine BeaconCommitteeEngineV1) GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey {
-	return engine.finalState.CandidateShardWaitingForNextRandom()
+	return engine.finalState.GetCandidateShardWaitingForNextRandom()
 }
 
 //UpdateCommitteeState :
@@ -163,10 +163,10 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 }
 
 func (engine *BeaconCommitteeEngineV1) AssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction {
-	candidates, _ := incognitokey.CommitteeKeyListToString(engine.finalState.CandidateShardWaitingForCurrentRandom())
+	candidates, _ := incognitokey.CommitteeKeyListToString(engine.finalState.GetCandidateShardWaitingForCurrentRandom())
 	numberOfPendingValidator := make(map[byte]int)
-	shardPendingValidator := engine.finalState.ShardSubstitute()
-	for i := 0; i < len(engine.finalState.ShardCommittee()); i++ {
+	shardPendingValidator := engine.finalState.GetShardSubstitute()
+	for i := 0; i < len(engine.finalState.GetShardCommittee()); i++ {
 		if pendingValidators, ok := shardPendingValidator[byte(i)]; ok {
 			numberOfPendingValidator[byte(i)] = len(pendingValidators)
 		} else {
@@ -176,7 +176,7 @@ func (engine *BeaconCommitteeEngineV1) AssignInstructions(env *BeaconCommitteeSt
 	assignedCandidates := make(map[byte][]string)
 	shuffledCandidate := shuffleShardCandidate(candidates, env.RandomNumber)
 	for _, candidate := range shuffledCandidate {
-		shardID := calculateCandidateShardID(candidate, env.RandomNumber, len(engine.finalState.ShardCommittee()))
+		shardID := calculateCandidateShardID(candidate, env.RandomNumber, len(engine.finalState.GetShardCommittee()))
 		if numberOfPendingValidator[shardID]+1 <= env.AssignOffset {
 			assignedCandidates[shardID] = append(assignedCandidates[shardID], candidate)
 			numberOfPendingValidator[shardID] += 1

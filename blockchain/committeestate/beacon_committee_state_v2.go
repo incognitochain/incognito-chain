@@ -52,3 +52,46 @@ func (b *BeaconCommitteeStateV2) cloneFrom(fromB BeaconCommitteeStateV2) {
 	b.reset()
 	b.beaconCommitteeStateSlashingBase.cloneFrom(fromB.beaconCommitteeStateSlashingBase)
 }
+
+//Upgrade check interface method for des
+func (engine *BeaconCommitteeStateV2) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
+	beaconCommittee, shardCommittee, shardSubstitute,
+		shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, swapRule := engine.getDataForUpgrading(env)
+
+	committeeStateV3 := NewBeaconCommitteeStateV3WithValue(
+		beaconCommittee,
+		shardCommittee,
+		shardSubstitute,
+		shardCommonPool,
+		numberOfAssignedCandidates,
+		autoStake,
+		rewardReceiver,
+		stakingTx,
+		map[byte][]incognitokey.CommitteePublicKey{},
+		swapRule,
+	)
+	return committeeStateV3
+}
+
+func (b *BeaconCommitteeStateV2) getDataForUpgrading(env *BeaconCommitteeStateEnvironment) (
+	[]incognitokey.CommitteePublicKey,
+	map[byte][]incognitokey.CommitteePublicKey,
+	map[byte][]incognitokey.CommitteePublicKey,
+	[]incognitokey.CommitteePublicKey,
+	int,
+	map[string]bool,
+	map[string]privacy.PaymentAddress,
+	map[string]common.Hash,
+	SwapRule,
+) {
+	beaconCommittee, shardCommittee, shardSubstitute,
+		shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, swapRule := b.getDataForUpgrading(env)
+
+	numberOfAssignedCandidates = b.NumberOfAssignedCandidates()
+	shardCommonPool = make([]incognitokey.CommitteePublicKey, numberOfAssignedCandidates)
+	copy(shardCommonPool, b.shardCommonPool)
+	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, swapRule
+}

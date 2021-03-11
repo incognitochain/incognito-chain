@@ -29,16 +29,14 @@ type BeaconCommitteeEngine interface {
 	GetStakingTx() map[string]common.Hash
 	GetRewardReceiver() map[string]privacy.PaymentAddress
 	GetAllCandidateSubstituteCommittee() []string
-	Commit(*BeaconCommitteeStateHash) error
-	AbortUncommittedBeaconState()
 	UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 		*BeaconCommitteeStateHash,
 		*CommitteeChange,
 		[][]string,
 		error)
 	InitCommitteeState(env *BeaconCommitteeStateEnvironment)
+
 	GenerateAllSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
-	SplitReward(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
 	ActiveShards() int
 	AssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
 	SyncingValidators() map[byte][]incognitokey.CommitteePublicKey
@@ -62,4 +60,8 @@ type ShardCommitteeEngine interface {
 	ProcessInstructionFromBeacon(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
 	GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
 	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
+}
+
+type RewardSplitRule interface {
+	SplitReward(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
 }

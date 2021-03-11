@@ -57,9 +57,9 @@ func (engine *BeaconCommitteeEngineV3) UpdateCommitteeState(env *BeaconCommittee
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
 		newState.SetNumberOfAssignedCandidates(SnapshotShardCommonPoolV2(
-			oldState.ShardCommonPool(),
-			oldState.ShardCommittee(),
-			oldState.ShardSubstitute(),
+			oldState.GetShardCommonPool(),
+			oldState.GetShardCommittee(),
+			oldState.GetShardSubstitute(),
 			env.NumberOfFixedShardBlockValidator,
 			env.MinShardCommitteeSize,
 			oldState.SwapRule(),
@@ -172,7 +172,7 @@ func (engine *BeaconCommitteeEngineV3) SplitReward(
 		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
 		totalRewardForShardAndBeaconValidators := totalReward - totalRewardForDAOAndCustodians
 		shardWeight := float64(lenShardCommittees)
-		beaconWeight := 2 * float64(lenBeaconCommittees) / float64(len(engine.finalState.ShardCommittee()))
+		beaconWeight := 2 * float64(lenBeaconCommittees) / float64(len(engine.finalState.GetShardCommittee()))
 		totalValidatorWeight := shardWeight + beaconWeight
 
 		rewardForShard[key] = uint64(shardWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)

@@ -1,6 +1,7 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/instruction"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -10,19 +11,42 @@ import (
 
 type BeaconCommitteeState interface {
 	Version() int
-	BeaconCommittee() []incognitokey.CommitteePublicKey
-	ShardCommittee() map[byte][]incognitokey.CommitteePublicKey
-	ShardSubstitute() map[byte][]incognitokey.CommitteePublicKey
-	ShardCommonPool() []incognitokey.CommitteePublicKey
-	CandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
-	CandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey
+	Clone() BeaconCommitteeState
+
+	GetBeaconCommittee() []incognitokey.CommitteePublicKey
+	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
+	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
+	GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
+	GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey
+	GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey
+	GetOneShardCommittee(shardID byte) []incognitokey.CommitteePublicKey
+	GetShardCommittee() map[byte][]incognitokey.CommitteePublicKey
+	GetUncommittedCommittee() map[byte][]incognitokey.CommitteePublicKey
+	GetOneShardSubstitute(shardID byte) []incognitokey.CommitteePublicKey
+	GetShardSubstitute() map[byte][]incognitokey.CommitteePublicKey
+	GetAutoStaking() map[string]bool
+	GetStakingTx() map[string]common.Hash
+	GetRewardReceiver() map[string]privacy.PaymentAddress
+	GetAllCandidateSubstituteCommittee() []string
+	GetShardCommonPool() []incognitokey.CommitteePublicKey
+
+	UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
+		*BeaconCommitteeStateHash,
+		*CommitteeChange,
+		[][]string,
+		error)
+	InitCommitteeState(env *BeaconCommitteeStateEnvironment)
+
+	GenerateAllSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
+
+	ActiveShards() int
+	AssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
+	SyncingValidators() map[byte][]incognitokey.CommitteePublicKey
+	IsSwapTime(uint64, uint64) bool
+	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
+
 	NumberOfAssignedCandidates() int
-	AutoStake() map[string]bool
-	RewardReceiver() map[string]privacy.PaymentAddress
-	StakingTx() map[string]common.Hash
-	Mu() *sync.RWMutex
-	AllCandidateSubstituteCommittees() []string
-	IsEmpty() bool
+
 	Hash() (*BeaconCommitteeStateHash, error)
 	Reset()
 	SetBeaconCommittees([]incognitokey.CommitteePublicKey)
@@ -32,6 +56,8 @@ type BeaconCommitteeState interface {
 	AllSubstituteCommittees() []string
 	SetSwapRule(SwapRule)
 	SyncPool() map[byte][]incognitokey.CommitteePublicKey
+
+	Mu() *sync.RWMutex
 }
 
 //fromB and toB need to be different from null

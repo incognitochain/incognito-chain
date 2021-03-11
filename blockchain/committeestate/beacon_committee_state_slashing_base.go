@@ -23,7 +23,7 @@ type beaconCommitteeStateSlashingBase struct {
 
 func NewBeaconCommitteeStateSlashingBase() *beaconCommitteeStateSlashingBase {
 	return &beaconCommitteeStateSlashingBase{
-		beaconCommitteeStateBase: *NewBeaconCommitteeStateBase(),
+		beaconCommitteeStateBase: *newBeaconCommitteeStateBase(),
 	}
 }
 
@@ -39,7 +39,7 @@ func NewBeaconCommitteeStateSlashingBaseWithValue(
 	swapRule SwapRule,
 ) *beaconCommitteeStateSlashingBase {
 	return &beaconCommitteeStateSlashingBase{
-		beaconCommitteeStateBase: *NewBeaconCommitteeStateBaseWithValue(
+		beaconCommitteeStateBase: *newBeaconCommitteeStateBaseWithValue(
 			beaconCommittee, shardCommittee, shardSubstitute,
 			autoStake, rewardReceiver, stakingTx,
 		),
@@ -49,7 +49,11 @@ func NewBeaconCommitteeStateSlashingBaseWithValue(
 	}
 }
 
-func (b beaconCommitteeStateSlashingBase) ShardCommonPool() []incognitokey.CommitteePublicKey {
+func (b beaconCommitteeStateSlashingBase) isEmpty() bool {
+	return reflect.DeepEqual(b, NewBeaconCommitteeStateSlashingBase)
+}
+
+func (b beaconCommitteeStateSlashingBase) GetShardCommonPool() []incognitokey.CommitteePublicKey {
 	return b.shardCommonPool
 }
 
@@ -93,7 +97,7 @@ func (b beaconCommitteeStateSlashingBase) Version() int {
 	return SLASHING_VERSION
 }
 
-func (b beaconCommitteeStateSlashingBase) AllCandidateSubstituteCommittees() []string {
+func (b beaconCommitteeStateSlashingBase) GetAllCandidateSubstituteCommittee() []string {
 	return b.getAllCandidateSubstituteCommittee()
 }
 
@@ -109,12 +113,17 @@ func (b beaconCommitteeStateSlashingBase) getAllCandidateSubstituteCommittee() [
 	return res
 }
 
-func (b beaconCommitteeStateSlashingBase) IsEmpty() bool {
-	return reflect.DeepEqual(b, NewBeaconCommitteeStateSlashingBase())
+//IsSwapTime read from interface des
+func (beaconCommitteeStateSlashingBase) IsSwapTime(beaconHeight, numberOfBlockEachEpoch uint64) bool {
+	if beaconHeight%numberOfBlockEachEpoch == 1 {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (b beaconCommitteeStateSlashingBase) Hash() (*BeaconCommitteeStateHash, error) {
-	if b.IsEmpty() {
+	if b.isEmpty() {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
 	}
 	hashes, err := b.beaconCommitteeStateBase.Hash()
@@ -225,7 +234,7 @@ func (b *beaconCommitteeStateSlashingBase) updateCandidatesByRandom(
 	committeeChange *CommitteeChange, oldState BeaconCommitteeState,
 ) (*CommitteeChange, []string) {
 	newCommitteeChange := committeeChange
-	candidateStructs := oldState.ShardCommonPool()[:b.numberOfAssignedCandidates]
+	candidateStructs := oldState.GetShardCommonPool()[:b.numberOfAssignedCandidates]
 	candidates, _ := incognitokey.CommitteeKeyListToString(candidateStructs)
 	newCommitteeChange.NextEpochShardCandidateRemoved = append(newCommitteeChange.NextEpochShardCandidateRemoved, candidateStructs...)
 	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
@@ -247,8 +256,8 @@ func (b *beaconCommitteeStateSlashingBase) processAssignWithRandomInstruction(
 func (b *beaconCommitteeStateSlashingBase) getAssignCandidates(candidates []string, rand int64, activeShards int, oldState BeaconCommitteeState) map[byte][]string {
 	numberOfValidator := make([]int, activeShards)
 	for i := 0; i < activeShards; i++ {
-		numberOfValidator[byte(i)] += len(oldState.ShardSubstitute()[byte(i)])
-		numberOfValidator[byte(i)] += len(oldState.ShardCommittee()[byte(i)])
+		numberOfValidator[byte(i)] += len(oldState.GetShardSubstitute()[byte(i)])
+		numberOfValidator[byte(i)] += len(oldState.GetShardCommittee()[byte(i)])
 	}
 	assignedCandidates := assignShardCandidateV2(candidates, numberOfValidator, rand)
 	return assignedCandidates
@@ -275,8 +284,8 @@ func (b *beaconCommitteeStateSlashingBase) processNormalSwap(
 ) {
 	shardID := byte(swapShardInstruction.ChainID)
 	newCommitteeChange := committeeChange
-	committees := oldState.ShardCommittee()[shardID]
-	substitutes := oldState.ShardSubstitute()[shardID]
+	committees := oldState.GetShardCommittee()[shardID]
+	substitutes := oldState.GetShardSubstitute()[shardID]
 	tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 	tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
@@ -473,8 +482,8 @@ func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 		if common.IndexOfStr(publicKey, env.newUnassignedCommonPool) == -1 {
 			if common.IndexOfStr(publicKey, env.newAllSubstituteCommittees) != -1 {
 				// if found in committee list then turn off auto staking
-				if _, ok := oldState.AutoStake()[publicKey]; ok {
-					committeeChange = b.stopAutoStake(publicKey, committeeChange)
+				if _, ok := oldState.GetAutoStaking()[publicKey]; ok {
+					committeeChange = b.turnOffStopAutoStake(publicKey, committeeChange)
 				}
 			}
 		} else {
@@ -510,4 +519,78 @@ func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 	}
 
 	return committeeChange, returnStakingInstruction, nil
+}
+
+//SplitReward ...
+func (engine *beaconCommitteeStateSlashingBase) SplitReward(
+	env *BeaconCommitteeStateEnvironment) (
+	map[common.Hash]uint64, map[common.Hash]uint64,
+	map[common.Hash]uint64, map[common.Hash]uint64, error,
+) {
+	devPercent := uint64(env.DAOPercent)
+	allCoinTotalReward := env.TotalReward
+	rewardForBeacon := map[common.Hash]uint64{}
+	rewardForShard := map[common.Hash]uint64{}
+	rewardForIncDAO := map[common.Hash]uint64{}
+	rewardForCustodian := map[common.Hash]uint64{}
+	lenBeaconCommittees := uint64(len(engine.GetBeaconCommittee()))
+	lenShardCommittees := uint64(len(engine.GetShardCommittee()[env.ShardID]))
+
+	if len(allCoinTotalReward) == 0 {
+		Logger.log.Info("Beacon Height %+v, 😭 found NO reward", env.BeaconHeight)
+		return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
+	}
+
+	for key, totalReward := range allCoinTotalReward {
+		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
+		totalRewardForShardAndBeaconValidators := totalReward - totalRewardForDAOAndCustodians
+		shardWeight := float64(lenShardCommittees)
+		beaconWeight := 2 * float64(lenBeaconCommittees) / float64(env.ActiveShards)
+		totalValidatorWeight := shardWeight + beaconWeight
+
+		rewardForShard[key] = uint64(shardWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)
+		Logger.log.Infof("[test-salary] totalRewardForDAOAndCustodians tokenID %v - %v\n",
+			key.String(), totalRewardForDAOAndCustodians)
+
+		if env.IsSplitRewardForCustodian {
+			rewardForCustodian[key] += env.PercentCustodianReward * totalRewardForDAOAndCustodians / 100
+			rewardForIncDAO[key] += totalRewardForDAOAndCustodians - rewardForCustodian[key]
+		} else {
+			rewardForIncDAO[key] += totalRewardForDAOAndCustodians
+		}
+		rewardForBeacon[key] += totalReward - (rewardForShard[key] + totalRewardForDAOAndCustodians)
+	}
+
+	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
+}
+
+func (b *beaconCommitteeStateSlashingBase) GenerateAllSwapShardInstructions(
+	env *BeaconCommitteeStateEnvironment) (
+	[]*instruction.SwapShardInstruction, error) {
+	swapShardInstructions := []*instruction.SwapShardInstruction{}
+	for i := 0; i < len(b.shardCommittee); i++ {
+		shardID := byte(i)
+		committees := b.shardCommittee[shardID]
+		substitutes := b.shardSubstitute[shardID]
+		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
+		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
+
+		swapShardInstruction, _, _, _, _ := b.SwapRule().GenInstructions(
+			shardID,
+			tempCommittees,
+			tempSubstitutes,
+			env.MinShardCommitteeSize,
+			env.MaxShardCommitteeSize,
+			instruction.SWAP_BY_END_EPOCH,
+			env.NumberOfFixedShardBlockValidator,
+			env.MissingSignaturePenalty,
+		)
+
+		if !swapShardInstruction.IsEmpty() {
+			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
+		} else {
+			Logger.log.Infof("Generate empty swap shard instructions")
+		}
+	}
+	return swapShardInstructions, nil
 }

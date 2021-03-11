@@ -61,9 +61,9 @@ func (engine *BeaconCommitteeEngineV2) UpdateCommitteeState(env *BeaconCommittee
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
 		newState.SetNumberOfAssignedCandidates(SnapshotShardCommonPoolV2(
-			oldState.ShardCommonPool(),
-			oldState.ShardCommittee(),
-			oldState.ShardSubstitute(),
+			oldState.GetShardCommonPool(),
+			oldState.GetShardCommittee(),
+			oldState.GetShardSubstitute(),
 			env.NumberOfFixedShardBlockValidator,
 			env.MinShardCommitteeSize,
 			oldState.SwapRule(),
@@ -158,7 +158,7 @@ func (engine BeaconCommitteeEngineV2) getDataForUpgrading(env *BeaconCommitteeSt
 
 	numberOfAssignedCandidates = engine.NumberOfAssignedCandidates()
 	shardCommonPool = make([]incognitokey.CommitteePublicKey, numberOfAssignedCandidates)
-	copy(shardCommonPool, engine.finalState.ShardCommonPool())
+	copy(shardCommonPool, engine.finalState.GetShardCommonPool())
 	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
 		autoStake, rewardReceiver, stakingTx, swapRule
 }

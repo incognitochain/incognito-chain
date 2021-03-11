@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -216,7 +217,7 @@ func (beaconBestState *BeaconBestState) calculateReward(
 			byte(id),
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := beaconBestState.
-			beaconCommitteeEngine.SplitReward(env)
+			beaconCommitteeEngine.(committeestate.RewardSplitRule).SplitReward(env)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}

@@ -83,10 +83,10 @@ func (engine *beaconCommitteeEngineSlashingBase) GenerateAllSwapShardInstruction
 	env *BeaconCommitteeStateEnvironment) (
 	[]*instruction.SwapShardInstruction, error) {
 	swapShardInstructions := []*instruction.SwapShardInstruction{}
-	for i := 0; i < len(engine.finalState.ShardCommittee()); i++ {
+	for i := 0; i < len(engine.finalState.GetShardCommittee()); i++ {
 		shardID := byte(i)
-		committees := engine.finalState.ShardCommittee()[shardID]
-		substitutes := engine.finalState.ShardSubstitute()[shardID]
+		committees := engine.finalState.GetShardCommittee()[shardID]
+		substitutes := engine.finalState.GetShardSubstitute()[shardID]
 		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
 
