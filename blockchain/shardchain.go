@@ -211,12 +211,12 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 // 	return chain.Blockchain.InsertShardBlock(shardBlock, false)
 // }
 
-func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, committee, committeesForSigning []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
 	}
 
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, committee); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, committeesForSigning); err != nil {
 		return err
 	}
 	return nil
@@ -314,7 +314,7 @@ func (chain *ShardChain) GetAllView() []multiview.View {
 
 //CommitteesV2 get committees by block for shardChain
 // Input block must be ShardBlock
-func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	var err error
 	var isShardView bool
 	var shardView *ShardBestState
@@ -322,22 +322,24 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognito
 	if !isShardView {
 		shardView = chain.GetBestState()
 	}
-	result := []incognitokey.CommitteePublicKey{}
+	committees := []incognitokey.CommitteePublicKey{}
+	committeesForSigning := []incognitokey.CommitteePublicKey{}
 
 	shardBlock, isShardBlock := block.(*types.ShardBlock)
 	if !isShardBlock {
-		return result, fmt.Errorf("Shard Chain NOT insert Shard Block Types")
+		return committees, committeesForSigning, fmt.Errorf("Shard Chain NOT insert Shard Block Types")
 	}
 	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION || shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
-		result = append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
+		committees = append(committees, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
+		committeesForSigning = committees
 	} else {
-		result, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID))
+		committees, committeesForSigning, err = chain.Blockchain.GetShardCommitteesSigningFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID), divideShardCommitteesPartThreshold)
 		if err != nil {
-			return result, err
+			return committees, committeesForSigning, err
 		}
 	}
 
-	return result, nil
+	return committees, committeesForSigning, nil
 }
 
 func (chain *ShardChain) CommitteeStateVersion() uint {

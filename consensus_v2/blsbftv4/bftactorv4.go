@@ -91,13 +91,15 @@ func (e *BLSBFT_V4) Destroy() {
 	close(e.destroyCh)
 }
 
-func (e *BLSBFT_V4) getCommitteesForSigning(committees []incognitokey.CommitteePublicKey, threshold int) []incognitokey.CommitteePublicKey {
-	if e.Chain.IsBeaconChain() {
-		return committees
+func (e *BLSBFT_V4) getCommitteeForBlock(v types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+	var err error = nil
+	var committees []incognitokey.CommitteePublicKey
+	if !e.Chain.IsBeaconChain() {
+		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(e.Chain.GetShardID()))
 	} else {
-		committeesForSigning := e.CommitteeChain.CommitteesForSigning(committees, threshold)
-		return committeesForSigning
+		committees = e.Chain.GetBestView().GetCommittee()
 	}
+	return committees, err
 }
 
 func (e *BLSBFT_V4) getUserKeySetForSigning(
@@ -132,7 +134,6 @@ func (e *BLSBFT_V4) verifyVersion() bool {
 
 func (e *BLSBFT_V4) run() error {
 	go func() {
-		var err error
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
 		e.Logger.Info("init bls-bftv4 consensus for chain", e.ChainKey)
@@ -159,15 +160,14 @@ func (e *BLSBFT_V4) run() error {
 				block := blockIntf.(types.BlockInterface)
 				blkHash := block.Hash().String()
 
-				committees, err := e.getCommitteeForBlock(block)
+				committees, committeesForSigning, err := e.getCommitteesSigningForBlock(block, committeeDividePart)
 				if err != nil {
 					e.Logger.Debug("error", err)
 					continue
 				}
-				committeesForSigning := e.getCommitteesForSigning(committees, committeeDividePart)
 				userKeySet := e.getUserKeySetForSigning(committeesForSigning, e.UserKeySet)
 				if len(userKeySet) == 0 {
-					e.Logger.Info("[dcs] Not in round for voting")
+					e.Logger.Info("Not in round for voting")
 					continue
 				}
 
@@ -222,26 +222,35 @@ func (e *BLSBFT_V4) run() error {
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
 				bestView := e.Chain.GetBestView()
 				committeeViewHash := common.Hash{}
-				committees := []incognitokey.CommitteePublicKey{}
 				proposerPk := incognitokey.CommitteePublicKey{}
 				var userProposeKey signatureschemes2.MiningKey
 				shouldPropose := false
 				shouldListen := true
+				committees := []incognitokey.CommitteePublicKey{}
+				committeesForSigning := []incognitokey.CommitteePublicKey{}
+				var err error
 
-				if e.ChainID == BEACON_CHAIN_ID {
-					proposerPk, _ = bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
+				if e.Chain.IsBeaconChain() {
+					committeeViewHash = *e.Chain.GetBestView().GetHash()
 					committees = e.Chain.GetBestView().GetCommittee()
+					committeesForSigning = committees
+					proposerPk, _ = bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
 				} else {
 					committeeViewHash = *e.CommitteeChain.FinalView().GetHash()
-					committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID))
+					committees, committeesForSigning, err = e.
+						CommitteeChain.
+						GetCommitteesForSigningFromViewHashForShard(committeeViewHash, byte(e.ChainID), committeeDividePart)
 					if err != nil {
 						e.Logger.Error(err)
+						continue
 					}
 					proposerPk = e.CommitteeChain.ProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, committees)
 				}
-				committeesForSigning := e.getCommitteesForSigning(committees, committeeDividePart)
-				userKeySet := e.getUserKeySetForSigning(committeesForSigning, e.UserKeySet)
 
+				userKeySet := e.getUserKeySetForSigning(committeesForSigning, e.UserKeySet)
+				if len(userKeySet) == 0 {
+					continue
+				}
 				for _, userKey := range userKeySet {
 					userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 					if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk {
@@ -261,10 +270,10 @@ func (e *BLSBFT_V4) run() error {
 					e.Logger.Info("======================================================")
 					e.Logger.Info("")
 					if shouldListen {
-						e.Logger.Infof("[dcs] %v TS: %v, LISTEN BLOCK %v, Round %v", e.ChainKey, common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1, e.currentTimeSlot-common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()))
+						e.Logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v", e.ChainKey, common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1, e.currentTimeSlot-common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()))
 					}
 					if shouldPropose {
-						e.Logger.Infof("[dcs] %v TS: %v, PROPOSE BLOCK %v, Round %v", e.ChainKey, common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1, e.currentTimeSlot-common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()))
+						e.Logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v", e.ChainKey, common.CalculateTimeSlot(e.currentTime), bestView.GetHeight()+1, e.currentTimeSlot-common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()))
 					}
 				}
 
@@ -414,11 +423,11 @@ func (e *BLSBFT_V4) processIfBlockGetEnoughVote(
 			if ok {
 				dsaKey = v.committeesForSigning[value].MiningPubKey[common.BridgeConsensus]
 			} else {
-				e.Logger.Debug("[dcs] Voting with wrong index of committees from:", vote.Validator)
+				e.Logger.Debug("Voting with wrong index of committees from:", vote.Validator)
 				continue
 			}
 			if len(dsaKey) == 0 {
-				e.Logger.Error("[dcs] canot find dsa key")
+				e.Logger.Error("canot find dsa key")
 			}
 			err := vote.validateVoteOwner(dsaKey)
 			if err != nil {
@@ -434,7 +443,7 @@ func (e *BLSBFT_V4) processIfBlockGetEnoughVote(
 			validVote++
 		}
 	}
-	e.Logger.Info("[dcs] Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
+	e.Logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
 	v.hasNewVote = false
 	for key, value := range v.votes {
 		if value.IsValid == -1 {
@@ -442,7 +451,7 @@ func (e *BLSBFT_V4) processIfBlockGetEnoughVote(
 		}
 	}
 	if validVote > 2*len(v.committeesForSigning)/3 {
-		e.Logger.Infof("[dcs] Commit block %v , height: %v", blockHash, v.block.GetHeight())
+		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
 		if e.ChainID == BEACON_CHAIN_ID {
 			e.processWithEnoughVotesBeaconChain(v)
 		} else {
@@ -769,15 +778,22 @@ func (e *BLSBFT_V4) preValidateVote(blockHash []byte, Vote *BFTVote, candidate [
 	return err
 }
 
-func (e *BLSBFT_V4) getCommitteeForBlock(v types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
-	var err error = nil
-	var committees []incognitokey.CommitteePublicKey
+func (e *BLSBFT_V4) getCommitteesSigningForBlock(
+	v types.BlockInterface, threshold int,
+) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+	var err error
+	committees := []incognitokey.CommitteePublicKey{}
+	committeesForSigning := []incognitokey.CommitteePublicKey{}
 	if !e.Chain.IsBeaconChain() {
-		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(e.Chain.GetShardID()))
+		committees, committeesForSigning, err = e.CommitteeChain.GetCommitteesForSigningFromViewHashForShard(v.CommitteeFromBlock(), byte(e.ChainID), threshold)
+		if err != nil {
+			return committees, committeesForSigning, err
+		}
 	} else {
 		committees = e.Chain.GetBestView().GetCommittee()
+		committeesForSigning = committees
 	}
-	return committees, err
+	return committees, committeesForSigning, err
 }
 
 func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {

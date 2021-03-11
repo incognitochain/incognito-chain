@@ -1244,6 +1244,34 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 	}()
 }
 
+func (blockchain *BlockChain) GetShardCommitteesSigningFromBeaconHash(
+	hash common.Hash, shardID byte, threshold int,
+) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+	beaconBlock, _, err := blockchain.GetBeaconBlockByHash(hash)
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+	}
+
+	bRH, err := GetBeaconRootsHashByBlockHash(blockchain.GetBeaconChainDatabase(), hash)
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+	}
+
+	stateDB, err := statedb.NewWithPrefixTrie(
+		bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+	}
+	committees := statedb.GetOneShardCommittee(stateDB, shardID)
+	committeesForSigning := []incognitokey.CommitteePublicKey{}
+	for i, v := range committees {
+		if uint64(i%threshold) == beaconBlock.Header.Height%uint64(threshold) {
+			committeesForSigning = append(committeesForSigning, v)
+		}
+	}
+	return committees, committeesForSigning, nil
+}
+
 func (blockchain *BlockChain) GetShardCommitteeFromBeaconHash(
 	committeeFromBlock common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
 	_, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlock)
