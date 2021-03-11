@@ -54,3 +54,35 @@ func (blockService BlockService) GetPortalBatchUnshieldingRequestStatus(batchID 
 
 	return &status, nil
 }
+
+func (blockService BlockService) GetPortalReqReplacementFeeStatus(reqTxID string) (*metadata.PortalReplacementFeeRequestStatus, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPortalUnshieldBatchReplacementRequestStatus(stateDB, reqTxID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalReplacementFeeRequestStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
+
+func (blockService BlockService) GetPortalSubmitConfirmedTxStatus(reqTxID string) (*metadata.PortalSubmitConfirmedTxStatus, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPortalSubmitConfirmedTxRequestStatus(stateDB, reqTxID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalSubmitConfirmedTxStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}

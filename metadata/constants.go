@@ -116,11 +116,13 @@ const (
 	BurningConfirmForDepositToSCMetaV2 = 243
 
 	// PORTAL V4
-	PortalV4ShieldingRequestMeta    = 250
-	PortalV4ShieldingResponseMeta   = 251
-	PortalV4UnshieldingRequestMeta  = 252
-	PortalV4UnshieldingResponseMeta = 253
-	PortalV4UnshieldBatchingMeta    = 254
+	PortalV4ShieldingRequestMeta      = 250
+	PortalV4ShieldingResponseMeta     = 251
+	PortalV4UnshieldingRequestMeta    = 252
+	PortalV4UnshieldingResponseMeta   = 253
+	PortalV4UnshieldBatchingMeta      = 254
+	PortalV4FeeReplacementRequestMeta = 255
+	PortalV4SubmitConfirmedTxMeta     = 256
 )
 
 var minerCreatedMetaTypes = []int{
@@ -248,4 +250,6 @@ var portalV4MetaTypes = []int{
 	PortalV4ShieldingResponseMeta,
 	PortalV4UnshieldingRequestMeta,
 	PortalV4UnshieldBatchingMeta,
+	PortalV4FeeReplacementRequestMeta,
+	PortalV4SubmitConfirmedTxMeta,
 }

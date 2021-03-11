@@ -166,6 +166,16 @@ func NewPortalManager() *PortalManager {
 				Actions: map[byte][][]string{},
 			},
 		},
+		metadata.PortalV4FeeReplacementRequestMeta: &portalprocessv4.PortalFeeReplacementRequestProcessor{
+			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
+				Actions: map[byte][][]string{},
+			},
+		},
+		metadata.PortalV4SubmitConfirmedTxMeta: &portalprocessv4.PortalSubmitConfirmedTxProcessor{
+			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
+				Actions: map[byte][][]string{},
+			},
+		},
 	}
 
 	return &PortalManager{

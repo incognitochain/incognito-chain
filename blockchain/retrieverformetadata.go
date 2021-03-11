@@ -46,8 +46,6 @@ func (blockchain *BlockChain) GetETHRemoveBridgeSigEpoch() uint64 {
 	return blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch
 }
 
-
-
 func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 	breakPoint := blockchain.GetBeaconHeightBreakPointBurnAddr()
 	if beaconHeight == 0 {
@@ -59,7 +57,6 @@ func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 
 	return burningAddress2
 }
-
 
 /* ================== Retriever for portal v3 ================== */
 // GetPortalParams returns portal params in beaconheight
@@ -100,22 +97,24 @@ func (blockchain *BlockChain) IsPortalToken(beaconHeight uint64, tokenIDStr stri
 
 func (blockchain *BlockChain) IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64, version uint) (bool, error) {
 	switch version {
-	case common.PortalVersion3: {
-		portalTokens := blockchain.GetPortalParamsV3(beaconHeight).PortalTokens
-		portalToken, ok := portalTokens[tokenIDStr]
-		if !ok || portalToken == nil {
-			return false, errors.New("Portal token ID is invalid")
+	case common.PortalVersion3:
+		{
+			portalTokens := blockchain.GetPortalParamsV3(beaconHeight).PortalTokens
+			portalToken, ok := portalTokens[tokenIDStr]
+			if !ok || portalToken == nil {
+				return false, errors.New("Portal token ID is invalid")
+			}
+			return portalToken.IsValidRemoteAddress(remoteAddr, blockchain)
 		}
-		return portalToken.IsValidRemoteAddress(remoteAddr, blockchain)
-	}
-	case common.PortalVersion4: {
-		portalTokens := blockchain.GetPortalParamsV4(beaconHeight).PortalTokens
-		portalToken, ok := portalTokens[tokenIDStr]
-		if !ok || portalToken == nil {
-			return false, errors.New("Portal v4 token ID is invalid")
+	case common.PortalVersion4:
+		{
+			portalTokens := blockchain.GetPortalParamsV4(beaconHeight).PortalTokens
+			portalToken, ok := portalTokens[tokenIDStr]
+			if !ok || portalToken == nil {
+				return false, errors.New("Portal v4 token ID is invalid")
+			}
+			return portalToken.IsValidRemoteAddress(remoteAddr, blockchain)
 		}
-		return portalToken.IsValidRemoteAddress(remoteAddr, blockchain)
-	}
 	default:
 		return false, errors.New("Invalid portal version")
 	}
@@ -266,6 +265,10 @@ func (blockchain *BlockChain) IsEnableFeature(featureFlag int, epoch uint64) boo
 	return epoch >= enableFeatureFlags[featureFlag]
 }
 
-func (blockchain *BlockChain) GetPortalV4MinUnshieldAmount (tokenIDStr string, beaconHeight uint64) uint64 {
+func (blockchain *BlockChain) GetPortalV4MinUnshieldAmount(tokenIDStr string, beaconHeight uint64) uint64 {
 	return blockchain.GetPortalParamsV4(beaconHeight).MinUnshieldAmts[tokenIDStr]
+}
+
+func (blockchain *BlockChain) GetPortalReplacementAddress(beaconHeight uint64) string {
+	return blockchain.GetPortalParamsV4(beaconHeight).PortalReplacementAddress
 }

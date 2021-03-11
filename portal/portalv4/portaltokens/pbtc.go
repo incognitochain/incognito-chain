@@ -12,11 +12,11 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
+	btcwire "github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	btcwire "github.com/btcsuite/btcd/wire"
 	"sort"
 )
 
@@ -385,4 +385,98 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(utxos map[strin
 		})
 	}
 	return broadcastTxs
+}
+
+func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
+	proof string, bc metadata.ChainRetriever, expectedMemo string, expectedMultisigAddress string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error) {
+	btcChain := bc.GetBTCHeaderChain()
+	if btcChain == nil {
+		Logger.log.Error("BTC relaying chain should not be null")
+		return false, nil, errors.New("BTC relaying chain should not be null")
+	}
+	// parse BTCProof in meta
+	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
+	if err != nil {
+		Logger.log.Errorf("ShieldingProof is invalid %v\n", err)
+		return false, nil, fmt.Errorf("ShieldingProof is invalid %v\n", err)
+	}
+
+	// verify tx with merkle proofs
+	isValid, err := btcChain.VerifyTxWithMerkleProofs(btcTxProof)
+	if !isValid || err != nil {
+		Logger.log.Errorf("Verify btcTxProof failed %v", err)
+		return false, nil, fmt.Errorf("Verify btcTxProof failed %v", err)
+	}
+
+	// extract attached message from txOut's OP_RETURN
+	btcAttachedMsg, err := btcrelaying.ExtractAttachedMsgFromTx(btcTxProof.BTCTx)
+	if err != nil {
+		Logger.log.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
+		return false, nil, fmt.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
+	}
+	if btcAttachedMsg != expectedMemo {
+		Logger.log.Errorf("ShieldingId in the btc attached message is not matched with portingID in metadata")
+		return false, nil, fmt.Errorf("ShieldingId in the btc attached message %v is not matched with portingID in metadata %v", btcAttachedMsg, expectedMemo)
+	}
+
+	// verify spent outputs
+	if len(btcTxProof.BTCTx.TxIn) < 1 {
+		Logger.log.Errorf("Can not find the tx inputs in proof")
+		return false, nil, fmt.Errorf("Submit confirmed tx: no tx inputs in proof")
+	}
+	input := btcTxProof.BTCTx.TxIn[0]
+	isMached := false
+	for _, v := range utxos {
+		if v.GetTxHash() == input.PreviousOutPoint.Hash.String() && v.GetOutputIndex() == input.PreviousOutPoint.Index {
+			isMached = true
+			break
+		}
+	}
+	if !isMached {
+		Logger.log.Errorf("Submit confirmed: tx inputs from proof is diff utxos from unshield batch")
+		return false, nil, fmt.Errorf("Submit confirmed tx: tx inputs from proof is diff utxos from unshield batch")
+	}
+
+	// check whether amount transfer in txBNB is equal porting amount or not
+	// check receiver and amount in tx
+	outputs := btcTxProof.BTCTx.TxOut
+	for receiverAddress := range expectPaymentInfo {
+		isMached = false
+		for _, out := range outputs {
+			addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
+			if err != nil {
+				Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
+				continue
+			}
+			if addrStr != receiverAddress {
+				continue
+			}
+			isMached = true
+			break
+		}
+		if !isMached {
+			Logger.log.Error("BTC-TxProof is invalid")
+			return false, nil, errors.New("BTC-TxProof is invalid")
+		}
+	}
+
+	listUTXO := []*statedb.UTXO{}
+	for idx, out := range outputs {
+		addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
+		if err != nil {
+			Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
+			continue
+		}
+		if addrStr != expectedMultisigAddress {
+			continue
+		}
+		listUTXO = append(listUTXO, statedb.NewUTXOWithValue(
+			addrStr,
+			btcTxProof.BTCTx.TxHash().String(),
+			uint32(idx),
+			uint64(out.Value),
+		))
+	}
+
+	return true, listUTXO, nil
 }

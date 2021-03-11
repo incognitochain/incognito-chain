@@ -300,6 +300,11 @@ const (
 	getPortalUnshieldingRequestStatus          = "getportalunshieldrequeststatus"
 	getPortalBatchUnshieldingRequestStatus     = "getportalbatchunshieldrequeststatus"
 	getSignedRawTransactionByBatchID           = "getporalsignedrawtransaction"
+	createAndSendTxWithPortalReplacementFee    = "createandsendtxwithportalreplacementfee"
+	getPortalReplacementFeeStatus              = "getportalreplacementfeestatus"
+	createAndSendTxWithPortalSubmitConfirmedTx = "createandsendtxwithportalsubmitconfirmedtx"
+	getPortalSubmitConfirmedTx                 = "getportalsubmitconfirmedtxstatus"
+	getSignedRawReplaceFeeTransaction          = "getporalsignedrawreplacefeetransaction"
 )
 
 const (

@@ -17,6 +17,12 @@ func CollectPortalV4Insts(ppv4 map[int]PortalInstructionProcessorV4, metaType in
 	// unshield
 	case metadata.PortalV4UnshieldingRequestMeta:
 		ppv4[metadata.PortalV4UnshieldingRequestMeta].PutAction(action, shardID)
+	// replacement fee
+	case metadata.PortalV4FeeReplacementRequestMeta:
+		ppv4[metadata.PortalV4FeeReplacementRequestMeta].PutAction(action, shardID)
+	// submit confirmed tx
+	case metadata.PortalV4SubmitConfirmedTxMeta:
+		ppv4[metadata.PortalV4SubmitConfirmedTxMeta].PutAction(action, shardID)
 
 	default:
 		return
@@ -113,7 +119,7 @@ func HandlePortalInstsV4(
 
 	// handle intervally
 	// handle batching process unshield requests
-	if (beaconHeight + 1) % uint64(portalParams.BatchNumBlks) == 0 {
+	if (beaconHeight+1)%uint64(portalParams.BatchNumBlks) == 0 {
 		batchUnshieldInsts, err := handleBatchingUnshieldRequests(bc, stateDB, beaconHeight, shardHeights, currentPortalState, portalParams, ppv4)
 		if err != nil {
 			Logger.log.Error(err)

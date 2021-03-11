@@ -209,7 +209,10 @@ const (
 	StorePortalBatchUnshieldRequestStatusError
 	StorePortalListWaitingUnshieldRequestError
 	StorePortalListProcessedBatchUnshieldRequestError
-
+	GetPortalUnshieldBatchFeeReplacementRequestStatusError
+	StorePortalUnshieldBatchFeeReplacementRequestStatusError
+	GetPortalSubmitConfirmedTxRequestStatusError
+	StorePortalSubmitConfirmedTxRequestStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -355,17 +358,21 @@ var ErrCodeMessage = map[int]struct {
 	InvalidStakerInfoTypeError:           {-15005, "Staker info invalid"},
 
 	// Portal v4
-	StorePortalV4UTXOsError:                  {-15006, "Store portal v4 list uxtos error"},
-	StorePortalV4ShieldingRequestStatusError: {-15007, "Store portal v4 shielding request status error"},
-	GetPortalV4ShieldingRequestStatusError:   {-15008, "Get portal v4 shielding request status error"},
-	StorePortalShieldingRequestsError:        {-15009, "Store portal v4 list shielding requests error"},
-	GetPortalShieldingRequestsError:          {-15010, "Get portal v4 list shielding requests error"},
-	GetPortalUnshieldRequestStatusError:                   {-15011, "Get portal v4 unshielding request status error"},
-	StorePortalUnshieldRequestStatusError:                 {-15012, "Store portal v4 unshielding request status error"},
-	GetPortalBatchUnshieldRequestStatusError:              {-15013, "Get portal v4 batching unshield request status error"},
-	StorePortalBatchUnshieldRequestStatusError:            {-15014, "Store portal v4 batching unshield request status error"},
-	StorePortalListWaitingUnshieldRequestError:            {-15015, "Store portal v4 list waiting unshield request error"},
-	StorePortalListProcessedBatchUnshieldRequestError:   {-15016, "Store portal v4 list processed batch unshield request error"},
+	StorePortalV4UTXOsError:                                  {-15006, "Store portal v4 list uxtos error"},
+	StorePortalV4ShieldingRequestStatusError:                 {-15007, "Store portal v4 shielding request status error"},
+	GetPortalV4ShieldingRequestStatusError:                   {-15008, "Get portal v4 shielding request status error"},
+	StorePortalShieldingRequestsError:                        {-15009, "Store portal v4 list shielding requests error"},
+	GetPortalShieldingRequestsError:                          {-15010, "Get portal v4 list shielding requests error"},
+	GetPortalUnshieldRequestStatusError:                      {-15011, "Get portal v4 unshielding request status error"},
+	StorePortalUnshieldRequestStatusError:                    {-15012, "Store portal v4 unshielding request status error"},
+	GetPortalBatchUnshieldRequestStatusError:                 {-15013, "Get portal v4 batching unshield request status error"},
+	StorePortalBatchUnshieldRequestStatusError:               {-15014, "Store portal v4 batching unshield request status error"},
+	StorePortalListWaitingUnshieldRequestError:               {-15015, "Store portal v4 list waiting unshield request error"},
+	StorePortalListProcessedBatchUnshieldRequestError:        {-15016, "Store portal v4 list processed batch unshield request error"},
+	GetPortalUnshieldBatchFeeReplacementRequestStatusError:   {-15017, "Get portal unshield batch replacement request status error"},
+	StorePortalUnshieldBatchFeeReplacementRequestStatusError: {-15018, "Store portal unshield batch replacement request status error"},
+	GetPortalSubmitConfirmedTxRequestStatusError:             {-15019, "Get portal submit confirmed tx request status error"},
+	StorePortalSubmitConfirmedTxRequestStatusError:           {-15020, "Store portal submit confirmed tx request status error"},
 }
 
 type StatedbError struct {

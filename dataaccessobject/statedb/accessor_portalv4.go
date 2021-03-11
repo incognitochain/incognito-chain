@@ -177,3 +177,51 @@ func GetPortalBatchUnshieldRequestStatus(stateDB *StateDB, batchID string) ([]by
 
 	return data, nil
 }
+
+// ================= Unshielding Batch Fee Replacement Status =================
+// Store and get the status of the Unshield Batch Replacement Request by batchID
+func StorePortalUnshieldBatchReplacementRequestStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalUnshielFeeReplacementBatchStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalUnshieldBatchFeeReplacementRequestStatusError, err)
+	}
+
+	return nil
+}
+
+func GetPortalUnshieldBatchReplacementRequestStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalUnshielFeeReplacementBatchStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil && err.(*StatedbError).GetErrorCode() != ErrCodeMessage[GetPortalStatusNotFoundError].Code {
+		return []byte{}, NewStatedbError(GetPortalUnshieldBatchFeeReplacementRequestStatusError, err)
+	}
+
+	return data, nil
+}
+
+// ================= Submit unshield batch confirmed Status =================
+// Store and get the status of the Unshield Batch Replacement Request by batchID
+func StorePortalSubmitConfirmedTxRequestStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortalSubmitConfirmedTxStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalSubmitConfirmedTxRequestStatusError, err)
+	}
+
+	return nil
+}
+
+func GetPortalSubmitConfirmedTxRequestStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortalSubmitConfirmedTxStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	if err != nil && err.(*StatedbError).GetErrorCode() != ErrCodeMessage[GetPortalStatusNotFoundError].Code {
+		return []byte{}, NewStatedbError(GetPortalSubmitConfirmedTxRequestStatusError, err)
+	}
+
+	return data, nil
+}

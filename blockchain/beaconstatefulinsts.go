@@ -70,7 +70,9 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalRequestPortingMetaV3,
 			metadata.PortalRedeemRequestMetaV3,
 			metadata.PortalV4ShieldingRequestMeta,
-			metadata.PortalV4UnshieldingRequestMeta:
+			metadata.PortalV4UnshieldingRequestMeta,
+			metadata.PortalV4FeeReplacementRequestMeta,
+			metadata.PortalV4SubmitConfirmedTxMeta:
 			statefulInsts = append(statefulInsts, inst)
 
 		default:
@@ -603,4 +605,3 @@ func (blockchain *BlockChain) handlePDEInsts(
 	}
 	return instructions, nil
 }
-

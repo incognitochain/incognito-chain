@@ -134,7 +134,6 @@ func GetMaxKeyValue(input map[uint64]uint) (max uint64) {
 	return max
 }
 
-
 func UpdatePortalStateAfterUnshieldRequest(
 	CurrentPortalStateV4 *CurrentPortalStateV4,
 	unshieldID string, tokenID string, remoteAddress string, unshieldAmt uint64, beaconHeight uint64) {
@@ -201,7 +200,6 @@ func RemoveListUtxoFromDB(
 	}
 }
 
-
 func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, stateDB *statedb.StateDB) error {
 	// get unshield request by unshield ID
 	unshieldRequestBytes, err := statedb.GetPortalUnshieldRequestStatus(stateDB, unshieldID)
@@ -233,4 +231,23 @@ func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, stateDB *s
 		return err
 	}
 	return nil
+}
+
+func UpdatePortalStateAfterReplaceFeedRequest(
+	currentPortalV4State *CurrentPortalStateV4, unshieldBatch *statedb.ProcessedUnshieldRequestBatch, beaconHeight uint64, fee uint, tokenIDStr, batchIDStr string) {
+	if currentPortalV4State.ProcessedUnshieldRequests == nil {
+		currentPortalV4State.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
+	}
+	if currentPortalV4State.ProcessedUnshieldRequests[tokenIDStr] == nil {
+		currentPortalV4State.ProcessedUnshieldRequests[tokenIDStr] = map[string]*statedb.ProcessedUnshieldRequestBatch{}
+	}
+	keyWaitingReplacementRequest := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenIDStr, batchIDStr).String()
+	fees := unshieldBatch.GetExternalFees()
+	fees[beaconHeight] = fee
+	waitingReplacementRequest := statedb.NewProcessedUnshieldRequestBatchWithValue(unshieldBatch.GetBatchID(), unshieldBatch.GetUnshieldRequests(), unshieldBatch.GetUTXOs(), fees)
+	currentPortalV4State.ProcessedUnshieldRequests[tokenIDStr][keyWaitingReplacementRequest] = waitingReplacementRequest
+}
+
+func UpdatePortalStateAfterSubmitConfirmedTx(currentPortalV4State *CurrentPortalStateV4, tokenIDStr, batchKey string) {
+	delete(currentPortalV4State.ProcessedUnshieldRequests[tokenIDStr], batchKey)
 }

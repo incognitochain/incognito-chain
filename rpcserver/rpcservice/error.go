@@ -133,6 +133,8 @@ const (
 	GetPortalV4ShieldReqStatusError
 	GetPortalV4UnshieldReqStatusError
 	GetPortalV4BatchUnshieldReqStatusError
+	GetPortalV4FeeReplacementReqStatusError
+	GetPortalV4SubmitConfirmedTxStatusError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -262,11 +264,12 @@ var ErrCodeMessage = map[int]struct {
 	GetAllBeaconViews:                             {-12009, "Get all beacon views"},
 	GetTotalStakerError:                           {-12010, "Get total staker return error"},
 
-
 	// Portal v4
-	GetPortalV4ShieldReqStatusError:  {-12501, "Get portal v4 shielding request status error"},
-	GetPortalV4UnshieldReqStatusError:  {-12502, "Get portal v4 unshielding request status error"},
+	GetPortalV4ShieldReqStatusError:         {-12501, "Get portal v4 shielding request status error"},
+	GetPortalV4UnshieldReqStatusError:       {-12502, "Get portal v4 unshielding request status error"},
 	GetPortalV4BatchUnshieldReqStatusError:  {-12503, "Get portal v4 batch unshielding request status error"},
+	GetPortalV4FeeReplacementReqStatusError: {-12504, "Get portal v4 fee replacement request status error"},
+	GetPortalV4SubmitConfirmedTxStatusError: {-12505, "Get portal v4 submit external confirmed tx request status error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
