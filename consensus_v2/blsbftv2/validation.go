@@ -169,6 +169,5 @@ func validateBLSSig(
 }
 
 func (e BLSBFT_V2) ValidateBlockWithConsensus(block types.BlockInterface) error {
-
 	return nil
 }

@@ -169,7 +169,7 @@ func (chain *ShardChain) CreateNewBlock(
 		Logger.log.Error(err)
 		return nil, err
 	}
-	if version == 2 {
+	if version != 1 {
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
@@ -216,7 +216,7 @@ func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, com
 		return err
 	}
 
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, committee); err != nil {
 		return err
 	}
 	return nil

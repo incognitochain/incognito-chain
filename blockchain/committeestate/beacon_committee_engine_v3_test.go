@@ -189,7 +189,6 @@ func TestBeaconCommitteeEngineV3_UpdateCommitteeState(t *testing.T) {
 								0: []incognitokey.CommitteePublicKey{*incKey},
 								1: []incognitokey.CommitteePublicKey{*incKey0},
 							},
-							finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{},
 						},
 					},
 				},
@@ -293,7 +292,6 @@ func TestBeaconCommitteeEngineV3_UpdateCommitteeState(t *testing.T) {
 								0: []incognitokey.CommitteePublicKey{*incKey12, *incKey13},
 								1: []incognitokey.CommitteePublicKey{*incKey14, *incKey15},
 							},
-							finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{},
 						},
 					},
 				},
@@ -348,10 +346,6 @@ func TestBeaconCommitteeEngineV3_UpdateCommitteeState(t *testing.T) {
 								0: []incognitokey.CommitteePublicKey{*incKey12, *incKey13},
 								1: []incognitokey.CommitteePublicKey{*incKey14, *incKey15},
 							},
-							finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{
-								0: []incognitokey.CommitteePublicKey{},
-								1: []incognitokey.CommitteePublicKey{},
-							},
 						},
 						uncommittedState: &BeaconCommitteeStateV3{
 							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
@@ -401,10 +395,6 @@ func TestBeaconCommitteeEngineV3_UpdateCommitteeState(t *testing.T) {
 							syncPool: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{*incKey12, *incKey13},
 								1: []incognitokey.CommitteePublicKey{*incKey14},
-							},
-							finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{
-								0: []incognitokey.CommitteePublicKey{},
-								1: []incognitokey.CommitteePublicKey{},
 							},
 						},
 					},
@@ -461,10 +451,6 @@ func TestBeaconCommitteeEngineV3_UpdateCommitteeState(t *testing.T) {
 								0: []incognitokey.CommitteePublicKey{*incKey12, *incKey13},
 								1: []incognitokey.CommitteePublicKey{*incKey14, *incKey15},
 							},
-							finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{
-								0: []incognitokey.CommitteePublicKey{},
-								1: []incognitokey.CommitteePublicKey{},
-							},
 						},
 						uncommittedState: &BeaconCommitteeStateV3{
 							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
@@ -514,10 +500,6 @@ func TestBeaconCommitteeEngineV3_UpdateCommitteeState(t *testing.T) {
 							syncPool: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{*incKey12, *incKey13},
 								1: []incognitokey.CommitteePublicKey{*incKey14, *incKey15},
-							},
-							finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{
-								0: []incognitokey.CommitteePublicKey{},
-								1: []incognitokey.CommitteePublicKey{},
 							},
 						},
 					},
@@ -616,182 +598,6 @@ func TestBeaconCommitteeEngineV3_UpdateCommitteeState_MultipleInstructions(t *te
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
 				t.Errorf("BeaconCommitteeEngineV3.UpdateCommitteeState() got2 = %v, want %v", got2, tt.want2)
-			}
-		})
-	}
-}
-
-func TestBeaconCommitteeEngineV3_GenerateFinishSyncInstructions(t *testing.T) {
-
-	initLog()
-	initTestParams()
-
-	type fields struct {
-		beaconCommitteeEngineSlashingBase beaconCommitteeEngineSlashingBase
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		want    []*instruction.FinishSyncInstruction
-		wantErr bool
-	}{
-		{
-			name: "Valid Input",
-			fields: fields{
-				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-						finalState: &BeaconCommitteeStateV3{
-							syncPool: map[byte][]incognitokey.CommitteePublicKey{
-								0: []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2},
-								1: []incognitokey.CommitteePublicKey{*incKey3, *incKey4, *incKey5},
-							},
-							finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{
-								0: []incognitokey.CommitteePublicKey{*incKey0, *incKey},
-								1: []incognitokey.CommitteePublicKey{*incKey5},
-							},
-						},
-					},
-				},
-			},
-			want: []*instruction.FinishSyncInstruction{
-				&instruction.FinishSyncInstruction{
-					ChainID:          0,
-					PublicKeys:       []string{key0, key},
-					PublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey0, *incKey},
-				},
-				&instruction.FinishSyncInstruction{
-					ChainID:          1,
-					PublicKeys:       []string{key5},
-					PublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey5},
-				},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			engine := BeaconCommitteeEngineV3{
-				beaconCommitteeEngineSlashingBase: tt.fields.beaconCommitteeEngineSlashingBase,
-			}
-			got, err := engine.GenerateFinishSyncInstructions()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BeaconCommitteeEngineV3.GenerateFinishSyncInstructions() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			for i, v := range got {
-				if !reflect.DeepEqual(v, tt.want[i]) {
-					t.Errorf("v = %v, want %v", v, tt.want[i])
-					return
-				}
-			}
-		})
-	}
-}
-
-func TestBeaconCommitteeEngineV3_AddFinishedSyncValidators(t *testing.T) {
-
-	initLog()
-	initTestParams()
-
-	finalMutex := &sync.RWMutex{}
-	unCommittedMutex := &sync.RWMutex{}
-
-	type fields struct {
-		beaconCommitteeEngineSlashingBase beaconCommitteeEngineSlashingBase
-	}
-	type args struct {
-		committeePublicKeys []string
-		shardID             byte
-	}
-	tests := []struct {
-		name               string
-		fields             fields
-		fieldsAfterProcess fields
-		args               args
-		wantErr            bool
-	}{
-		{
-			name: "Valid Input",
-			fields: fields{
-				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-						beaconHeight: 10,
-						beaconHash:   common.Hash{},
-						finalState: &BeaconCommitteeStateV3{
-							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-								beaconCommitteeStateBase: beaconCommitteeStateBase{
-									mu: finalMutex,
-								},
-							},
-							syncPool: map[byte][]incognitokey.CommitteePublicKey{
-								1: []incognitokey.CommitteePublicKey{
-									*incKey0, *incKey, *incKey2,
-								},
-							},
-							finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{},
-						},
-						uncommittedState: &BeaconCommitteeStateV3{
-							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-								beaconCommitteeStateBase: beaconCommitteeStateBase{
-									mu: unCommittedMutex,
-								},
-							},
-						},
-					},
-				},
-			},
-			args: args{
-				committeePublicKeys: []string{key0, key},
-				shardID:             1,
-			},
-			fieldsAfterProcess: fields{
-				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-						beaconHeight: 10,
-						beaconHash:   common.Hash{},
-						finalState: &BeaconCommitteeStateV3{
-							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-								beaconCommitteeStateBase: beaconCommitteeStateBase{
-									mu: finalMutex,
-								},
-							},
-							syncPool: map[byte][]incognitokey.CommitteePublicKey{
-								1: []incognitokey.CommitteePublicKey{
-									*incKey0, *incKey, *incKey2,
-								},
-							},
-							finishedSyncValidators: map[byte][]incognitokey.CommitteePublicKey{
-								1: []incognitokey.CommitteePublicKey{
-									*incKey0, *incKey,
-								},
-							},
-						},
-						uncommittedState: &BeaconCommitteeStateV3{
-							beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-								beaconCommitteeStateBase: beaconCommitteeStateBase{
-									mu: unCommittedMutex,
-								},
-							},
-						},
-					},
-				},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			engine := BeaconCommitteeEngineV3{
-				beaconCommitteeEngineSlashingBase: tt.fields.beaconCommitteeEngineSlashingBase,
-			}
-			if err := engine.AddFinishedSyncValidators(tt.args.committeePublicKeys, tt.args.shardID); (err != nil) != tt.wantErr {
-				t.Errorf("BeaconCommitteeEngineV3.AddFinishedSyncValidators() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !reflect.DeepEqual(engine.beaconCommitteeEngineSlashingBase.beaconCommitteeEngineBase.finalState, tt.fieldsAfterProcess.beaconCommitteeEngineSlashingBase.beaconCommitteeEngineBase.finalState) {
-				t.Errorf("finalState = %v, fieldsAfterProcess.finalState %v", engine.finalState, tt.fieldsAfterProcess.beaconCommitteeEngineSlashingBase.finalState)
-			}
-			if !reflect.DeepEqual(engine.beaconCommitteeEngineSlashingBase.beaconCommitteeEngineBase.uncommittedState, tt.fieldsAfterProcess.beaconCommitteeEngineSlashingBase.beaconCommitteeEngineBase.uncommittedState) {
-				t.Errorf("uncommittedState = %v, fieldsAfterProcess.uncommittedState %v", engine.uncommittedState, tt.fieldsAfterProcess.beaconCommitteeEngineSlashingBase.uncommittedState)
 			}
 		})
 	}

@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type BeaconCommitteeStateEnvironment struct {
@@ -39,6 +40,7 @@ type BeaconCommitteeStateEnvironment struct {
 	NumberOfFixedBeaconBlockValidator uint64
 	NumberOfFixedShardBlockValidator  int
 	MissingSignaturePenalty           map[string]signaturecounter.Penalty
+	FinishedSyncValidators            map[byte][]incognitokey.CommitteePublicKey
 	DcsMinShardCommitteeSize          int
 	DcsMaxShardCommitteeSize          int
 	StakingV3Height                   uint64

@@ -305,14 +305,6 @@ func (engine beaconCommitteeEngineBase) NumberOfAssignedCandidates() int {
 	panic("Implement this function")
 }
 
-func (engine beaconCommitteeEngineBase) AddFinishedSyncValidators([]string, byte) error {
-	panic("Implement this function")
-}
-
-func (engine beaconCommitteeEngineBase) GenerateFinishSyncInstructions() ([]*instruction.FinishSyncInstruction, error) {
-	return []*instruction.FinishSyncInstruction{}, nil
-}
-
 //IsSwapTime is this the moment for process a swap action
 func (engine beaconCommitteeEngineBase) IsSwapTime(beaconHeight, numberBlocksEachEpoch uint64) bool {
 	panic("Implement this function")
@@ -440,8 +432,4 @@ func (engine beaconCommitteeEngineBase) getDataForUpgrading(env *BeaconCommittee
 	swapRule := SwapRuleByEnv(swapRuleEnv)
 	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
 		autoStake, rewardReceiver, stakingTx, swapRule
-}
-
-func (engine *beaconCommitteeEngineBase) UncommittedState() BeaconCommitteeState {
-	return engine.uncommittedState
 }

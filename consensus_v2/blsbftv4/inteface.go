@@ -79,4 +79,5 @@ type CommitteeChainHandler interface {
 	ProposerByTimeSlot(byte, int64, []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey
 	CommitteesForSigning([]incognitokey.CommitteePublicKey, int) []incognitokey.CommitteePublicKey
 	FinalView() multiview.View
+	CommitteeEngineVersion() uint
 }

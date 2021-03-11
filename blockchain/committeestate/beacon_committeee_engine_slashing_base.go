@@ -83,7 +83,7 @@ func (engine *beaconCommitteeEngineSlashingBase) GenerateAllSwapShardInstruction
 	env *BeaconCommitteeStateEnvironment) (
 	[]*instruction.SwapShardInstruction, error) {
 	swapShardInstructions := []*instruction.SwapShardInstruction{}
-	for i := 0; i < env.ActiveShards; i++ {
+	for i := 0; i < len(engine.finalState.ShardCommittee()); i++ {
 		shardID := byte(i)
 		committees := engine.finalState.ShardCommittee()[shardID]
 		substitutes := engine.finalState.ShardSubstitute()[shardID]
@@ -104,7 +104,7 @@ func (engine *beaconCommitteeEngineSlashingBase) GenerateAllSwapShardInstruction
 		if !swapShardInstruction.IsEmpty() {
 			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
 		} else {
-			Logger.log.Infof("Generate empty instructions beacon hash: %s & height: %v \n", engine.beaconHash, engine.beaconHash)
+			Logger.log.Infof("Generate empty swap shard instructions beacon hash: %s & height: %v \n", engine.beaconHash, engine.beaconHash)
 		}
 	}
 	return swapShardInstructions, nil

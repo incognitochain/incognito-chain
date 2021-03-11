@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate/finishsync"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -190,6 +191,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	if beaconBlock.Header.Height%50 == 0 {
 		BLogger.log.Debugf("Inserted beacon height: %d", beaconBlock.Header.Height)
 	}
+	newBestState.RemoveFinishedSyncValidators(committeeChange)
 
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
@@ -374,7 +376,7 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 		return err
 	}
 	if isVerifySig {
-		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, beaconBestState.GetBeaconCommittee()); err != nil {
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, beaconBestState.GetBeaconCommittee(), beaconBestState.GetBeaconCommittee()); err != nil {
 			return err
 		}
 	}
@@ -612,6 +614,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.
 		NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
 			genesisBeaconBlock.Body.Instructions, false, false))
+	beaconBestState.finishSyncManager = finishsync.NewManager()
 
 	beaconBestState.Epoch = 1
 	return nil
@@ -767,10 +770,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return err
 	}
 	err = statedb.ReplaceBeaconCommittee(newBestState.consensusStateDB, committeeChange.BeaconCommitteeReplaced)
-	if err != nil {
-		return err
-	}
-	err = statedb.StoreSyncingValidators(newBestState.consensusStateDB, committeeChange.SyncingPoolAdded)
 	if err != nil {
 		return err
 	}
@@ -1082,6 +1081,9 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			return err
 		}
 	}
-	//TODO: @tin store finish sync validators or delete sync pool validators
+	err := statedb.StoreSyncingValidators(beaconBestState.consensusStateDB, committeeChange.SyncingPoolAdded)
+	if err != nil {
+		return err
+	}
 	return nil
 }

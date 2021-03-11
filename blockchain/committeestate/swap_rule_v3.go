@@ -83,6 +83,9 @@ func (s *swapRuleV3) getSwapInOffset(
 	if lenCommitteesAfterSwapOut+offset > maxCommitteeSize {
 		offset = maxCommitteeSize - lenCommitteesAfterSwapOut
 	}
+	if offset == 0 && lenCommitteesAfterSwapOut < maxSwapInPercent && lenSubstitutes > 0 {
+		offset = 1
+	}
 	return offset
 }
 
@@ -112,6 +115,13 @@ func (s *swapRuleV3) getNormalSwapOutOffset(
 ) int {
 	offset := lenCommitteesBeforeSlash / maxSwapOutPercent
 	if lenSlashedCommittees >= offset {
+		if lenSlashedCommittees == offset {
+			if offset == 0 {
+				if lenCommitteesBeforeSlash < maxSwapOutPercent && lenSubstitutes > 0 {
+					return 1
+				}
+			}
+		}
 		return 0
 	}
 	if lenCommitteesBeforeSlash < minCommitteeSize {

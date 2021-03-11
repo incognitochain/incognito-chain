@@ -1,8 +1,6 @@
 package committeestate
 
 import (
-	"sort"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -150,30 +148,44 @@ func (engine BeaconCommitteeEngineV3) SyncingValidators() map[byte][]incognitoke
 	return res
 }
 
-func (engine BeaconCommitteeEngineV3) AddFinishedSyncValidators(committeePublicKeys []string, shardID byte) error {
-	engine.finalState.Mu().Lock()
-	defer engine.finalState.Mu().Unlock()
-	committeePublicKeysStruct, err := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys)
-	if err != nil {
-		return err
-	}
-	beaconStateV3 := engine.finalState.(*BeaconCommitteeStateV3)
-	beaconStateV3.AddFinishedSyncValidators(committeePublicKeysStruct, shardID)
-	return nil
-}
+//SplitReward ...
+func (engine *BeaconCommitteeEngineV3) SplitReward(
+	env *BeaconCommitteeStateEnvironment) (
+	map[common.Hash]uint64, map[common.Hash]uint64,
+	map[common.Hash]uint64, map[common.Hash]uint64, error,
+) {
+	devPercent := uint64(env.DAOPercent)
+	allCoinTotalReward := env.TotalReward
+	rewardForBeacon := map[common.Hash]uint64{}
+	rewardForShard := map[common.Hash]uint64{}
+	rewardForIncDAO := map[common.Hash]uint64{}
+	rewardForCustodian := map[common.Hash]uint64{}
+	lenBeaconCommittees := uint64(len(engine.GetBeaconCommittee()))
+	lenShardCommittees := uint64(len(engine.GetShardCommittee()[env.ShardID]))
 
-func (engine BeaconCommitteeEngineV3) GenerateFinishSyncInstructions() ([]*instruction.FinishSyncInstruction, error) {
-	res := []*instruction.FinishSyncInstruction{}
-	keys := []int{}
-	beaconState := engine.finalState.(*BeaconCommitteeStateV3)
-	for shardID, _ := range beaconState.finishedSyncValidators {
-		keys = append(keys, int(shardID))
+	if len(allCoinTotalReward) == 0 {
+		Logger.log.Info("Beacon Height %+v, 😭 found NO reward", env.BeaconHeight)
+		return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 	}
-	sort.Ints(keys)
-	for _, v := range keys {
-		committeePublicKeys, _ := incognitokey.CommitteeKeyListToString(beaconState.finishedSyncValidators[byte(v)])
-		finishSyncInstruction := instruction.NewFinishSyncInstructionWithValue(v, committeePublicKeys)
-		res = append(res, finishSyncInstruction)
+
+	for key, totalReward := range allCoinTotalReward {
+		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
+		totalRewardForShardAndBeaconValidators := totalReward - totalRewardForDAOAndCustodians
+		shardWeight := float64(lenShardCommittees)
+		beaconWeight := 2 * float64(lenBeaconCommittees) / float64(len(engine.finalState.ShardCommittee()))
+		totalValidatorWeight := shardWeight + beaconWeight
+
+		rewardForShard[key] = uint64(shardWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)
+		Logger.log.Infof("totalRewardForDAOAndCustodians tokenID %v - %v\n", key.String(), totalRewardForDAOAndCustodians)
+
+		if env.IsSplitRewardForCustodian {
+			rewardForCustodian[key] += env.PercentCustodianReward * totalRewardForDAOAndCustodians / 100
+			rewardForIncDAO[key] += totalRewardForDAOAndCustodians - rewardForCustodian[key]
+		} else {
+			rewardForIncDAO[key] += totalRewardForDAOAndCustodians
+		}
+		rewardForBeacon[key] += totalReward - (rewardForShard[key] + totalRewardForDAOAndCustodians)
 	}
-	return res, nil
+
+	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 }

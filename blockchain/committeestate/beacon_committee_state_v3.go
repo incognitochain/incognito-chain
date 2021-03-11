@@ -9,15 +9,13 @@ import (
 
 type BeaconCommitteeStateV3 struct {
 	beaconCommitteeStateSlashingBase
-	syncPool               map[byte][]incognitokey.CommitteePublicKey
-	finishedSyncValidators map[byte][]incognitokey.CommitteePublicKey
+	syncPool map[byte][]incognitokey.CommitteePublicKey
 }
 
 func NewBeaconCommitteeStateV3() *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
 		beaconCommitteeStateSlashingBase: *NewBeaconCommitteeStateSlashingBase(),
 		syncPool:                         make(map[byte][]incognitokey.CommitteePublicKey),
-		finishedSyncValidators:           make(map[byte][]incognitokey.CommitteePublicKey),
 	}
 }
 
@@ -38,8 +36,7 @@ func NewBeaconCommitteeStateV3WithValue(
 			beaconCommittee, shardCommittee, shardSubstitute, autoStake, rewardReceiver, stakingTx,
 			shardCommonPool, numberOfAssignedCandidates, swapRule,
 		),
-		syncPool:               syncPool,
-		finishedSyncValidators: make(map[byte][]incognitokey.CommitteePublicKey),
+		syncPool: syncPool,
 	}
 }
 
@@ -51,17 +48,11 @@ func (b *BeaconCommitteeStateV3) cloneFrom(fromB BeaconCommitteeStateV3) {
 		b.syncPool[i] = make([]incognitokey.CommitteePublicKey, len(v))
 		copy(b.syncPool[i], v)
 	}
-
-	for i, v := range fromB.finishedSyncValidators {
-		b.finishedSyncValidators[i] = make([]incognitokey.CommitteePublicKey, len(v))
-		copy(b.finishedSyncValidators[i], v)
-	}
 }
 
 func (b *BeaconCommitteeStateV3) reset() {
 	b.beaconCommitteeStateSlashingBase.reset()
 	b.syncPool = map[byte][]incognitokey.CommitteePublicKey{}
-	b.finishedSyncValidators = map[byte][]incognitokey.CommitteePublicKey{}
 }
 
 func (b *BeaconCommitteeStateV3) clone() *BeaconCommitteeStateV3 {
@@ -73,11 +64,6 @@ func (b *BeaconCommitteeStateV3) clone() *BeaconCommitteeStateV3 {
 		copy(newB.syncPool[i], v)
 	}
 
-	for i, v := range b.finishedSyncValidators {
-		newB.finishedSyncValidators[i] = make([]incognitokey.CommitteePublicKey, len(v))
-		copy(newB.finishedSyncValidators[i], v)
-	}
-
 	return newB
 }
 
@@ -87,52 +73,6 @@ func (b *BeaconCommitteeStateV3) Version() int {
 
 func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePublicKey {
 	return b.syncPool
-}
-
-func (b *BeaconCommitteeStateV3) FinishedSyncValidators() map[byte][]incognitokey.CommitteePublicKey {
-	res := make(map[byte][]incognitokey.CommitteePublicKey)
-	for i, v := range b.finishedSyncValidators {
-		res[i] = make([]incognitokey.CommitteePublicKey, len(v))
-		copy(res[i], v)
-	}
-	return res
-}
-
-func (b *BeaconCommitteeStateV3) AddFinishedSyncValidators(syncingValidators []incognitokey.CommitteePublicKey, shardID byte) {
-	finishedSyncValidators := make(map[string]bool)
-	for _, v := range b.finishedSyncValidators[shardID] {
-		key, _ := v.ToBase58()
-		finishedSyncValidators[key] = true
-	}
-	validKeys := []string{}
-	for _, v := range syncingValidators {
-		key, _ := v.ToBase58()
-		if !finishedSyncValidators[key] {
-			validKeys = append(validKeys, key)
-		}
-	}
-
-	finishedSyncValidators = make(map[string]bool)
-	for _, v := range validKeys {
-		finishedSyncValidators[v] = true
-	}
-	count := 0
-	lenValidKeys := len(validKeys)
-	validKeys = []string{}
-	for _, v := range b.syncPool[shardID] {
-		if count == lenValidKeys {
-			break
-		}
-		key, _ := v.ToBase58()
-		if finishedSyncValidators[key] {
-			validKeys = append(validKeys, key)
-			count++
-		}
-	}
-	committeePublicKeys, _ := incognitokey.CommitteeBase58KeyListToStruct(validKeys)
-	keys, _ := incognitokey.CommitteeKeyListToString(committeePublicKeys)
-	Logger.log.Info("[dcs] Add finishedSyncValidators with keys:", keys)
-	b.finishedSyncValidators[shardID] = append(b.finishedSyncValidators[shardID], committeePublicKeys...)
 }
 
 //assignToSync assign validatrors to syncPool
@@ -244,23 +184,10 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 
 func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []string, shardID byte) {
 	finishedSyncValidators := make(map[string]bool)
-	for _, validator := range validators {
-		finishedSyncValidators[validator] = true
+	for _, v := range validators {
+		finishedSyncValidators[v] = true
 	}
 	count := 0
-	for i := 0; i < len(b.finishedSyncValidators[shardID]); i++ {
-		if count == len(validators) {
-			break
-		}
-		v := b.finishedSyncValidators[shardID][i]
-		key, _ := v.ToBase58()
-		if finishedSyncValidators[key] {
-			b.finishedSyncValidators[shardID] = append(b.finishedSyncValidators[shardID][:i], b.finishedSyncValidators[shardID][i+1:]...)
-			i--
-			count++
-		}
-	}
-	count = 0
 	for i := 0; i < len(b.syncPool[shardID]); i++ {
 		if count == len(validators) {
 			break

@@ -62,7 +62,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 	epoch := uint64(0)
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == instruction.STAKE_ACTION || l[0] == instruction.RANDOM_ACTION {
+			if l[0] == instruction.STAKE_ACTION || l[0] == instruction.RANDOM_ACTION || l[0] == instruction.FINISH_SYNC_ACTION {
 				continue
 			}
 			if len(l) <= 2 {

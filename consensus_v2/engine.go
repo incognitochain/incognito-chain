@@ -22,7 +22,7 @@ type Engine struct {
 	BFTProcess             map[int]ConsensusInterface    // chainID -> consensus
 	validators             []*consensus.Validator        // list of validator
 	syncingValidators      map[int][]consensus.Validator // syncing validators
-	syncingValidatorsIndex map[string]int                // syncing validators
+	syncingValidatorsIndex map[string]int                // syncing validators index
 	version                map[int]int                   // chainID -> version
 
 	consensusName string
@@ -51,7 +51,7 @@ func (s *Engine) GetCurrentValidators() []*consensus.Validator {
 func (s *Engine) SyncingValidatorsByShardID(shardID int) []string {
 	res := []string{}
 	for _, validator := range s.syncingValidators[shardID] {
-		res = append(res, validator.MiningKey.GetPublicKeyBase58())
+		res = append(res, validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus))
 	}
 	return res
 }
@@ -120,7 +120,7 @@ func (s *Engine) WatchCommitteeChange() {
 		s.userMiningPublicKeys = validator.MiningKey.GetPublicKey()
 		s.userKeyListString = validator.PrivateSeed
 		role, chainID := s.config.Node.GetPubkeyMiningState(validator.MiningKey.GetPublicKey())
-		//Logger.Log.Info(validator.miningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus))
+		//Logger.Log.Info("validator key", validator.MiningKey.GetPublicKeyBase58())
 		if chainID == -1 {
 			validator.State = consensus.MiningState{role, "beacon", -1}
 		} else if chainID > -1 {
@@ -133,8 +133,10 @@ func (s *Engine) WatchCommitteeChange() {
 				}
 			}
 			if role == common.SyncingRole {
-				s.syncingValidators[chainID] = append(s.syncingValidators[chainID], *validator)
-				s.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()] = len(s.syncingValidators[chainID]) - 1
+				if _, ok := s.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]; !ok {
+					s.syncingValidators[chainID] = append(s.syncingValidators[chainID], *validator)
+					s.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()] = len(s.syncingValidators[chainID]) - 1
+				}
 			}
 		} else {
 			if role != "" {
