@@ -10,7 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blockcypher/gobcy"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/mocks"
 	"github.com/incognitochain/incognito-chain/portal"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -20,6 +26,7 @@ import (
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -27,6 +34,7 @@ var _ = func() (_ struct{}) {
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	portalprocessv4.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	portaltokensv4.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	btcrelaying.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	Logger.log.Info("This runs before init()!")
 	return
 }()
@@ -364,11 +372,87 @@ func buildShieldingRequestActionsFromTcs(tcs []TestCaseShieldingRequest, shardID
 	return insts
 }
 
+func getBlockCypherAPI(networkName string) gobcy.API {
+	//explicitly
+	bc := gobcy.API{}
+	bc.Token = "a8ed119b4edf4f609a83bd3fbe9a3831"
+	bc.Coin = "btc"        //options: "btc","bcy","ltc","doge"
+	bc.Chain = networkName //depending on coin: "main","test3","test"
+	return bc
+}
+
+func buildBTCBlockFromCypher(networkName string, blkHeight int) (*btcutil.Block, error) {
+	bc := getBlockCypherAPI(networkName)
+	cypherBlock, err := bc.GetBlock(blkHeight, "", nil)
+	if err != nil {
+		return nil, err
+	}
+	prevBlkHash, _ := chainhash.NewHashFromStr(cypherBlock.PrevBlock)
+	merkleRoot, _ := chainhash.NewHashFromStr(cypherBlock.MerkleRoot)
+	msgBlk := wire.MsgBlock{
+		Header: wire.BlockHeader{
+			Version:    int32(cypherBlock.Ver),
+			PrevBlock:  *prevBlkHash,
+			MerkleRoot: *merkleRoot,
+			Timestamp:  cypherBlock.Time,
+			Bits:       uint32(cypherBlock.Bits),
+			Nonce:      uint32(cypherBlock.Nonce),
+		},
+		Transactions: []*wire.MsgTx{},
+	}
+	blk := btcutil.NewBlock(&msgBlk)
+	blk.SetHeight(int32(blkHeight))
+	return blk, nil
+}
+
+func setGenesisBlockToChainParams(networkName string, genesisBlkHeight int) (*chaincfg.Params, error) {
+	blk, err := buildBTCBlockFromCypher(networkName, genesisBlkHeight)
+	if err != nil {
+		return nil, err
+	}
+
+	chainParams := chaincfg.TestNet3Params
+	chainParams.GenesisBlock = blk.MsgBlock()
+	chainParams.GenesisHash = blk.Hash()
+	return &chainParams, nil
+}
+
 func (s *PortalTestSuiteV4) TestShieldingRequest() {
 	fmt.Println("Running TestShieldingRequest - beacon height 1003 ...")
-	bc := s.blockChain
 
-	// TODO: Init btc relaying blockchain and/or turn off verify merkle roof
+	networkName := "test3"
+	genesisBlockHeight := 1939008
+	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
+	dbName := "btc-blocks-test"
+	btcChain, err := btcrelaying.GetChainV2(dbName, chainParams, int32(genesisBlockHeight))
+	defer os.RemoveAll(dbName)
+
+	if err != nil {
+		s.FailNow(fmt.Sprintf("Could not get chain instance with err: %v", err), nil)
+		return
+	}
+
+	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+10; i++ {
+		blk, err := buildBTCBlockFromCypher(networkName, i)
+		if err != nil {
+			s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)
+			return
+		}
+		isMainChain, isOrphan, err := btcChain.ProcessBlockV2(blk, 0)
+		if err != nil {
+			s.FailNow(fmt.Sprintf("ProcessBlock fail on block %v: %v\n", i, err))
+			return
+		}
+		if isOrphan {
+			s.FailNow(fmt.Sprintf("ProcessBlock incorrectly returned block %v is an orphan\n", i))
+			return
+		}
+		fmt.Printf("Block %s (%d) is on main chain: %t\n", blk.Hash(), blk.Height(), isMainChain)
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	bc := new(mocks.ChainRetriever)
+	bc.On("GetBTCHeaderChain").Return(btcChain)
 
 	pm := portal.NewPortalManager()
 	beaconHeight := uint64(1003)
