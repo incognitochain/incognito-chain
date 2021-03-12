@@ -580,10 +580,11 @@ func buildTestCaseAndExpectedResultUnshieldRequest() ([]TestCaseUnshieldRequest,
 				waitingUnshieldReqKey2: waitingUnshieldReq2,
 			},
 		},
-		numBeaconInsts: 3,
+		numBeaconInsts: 4,
 		statusInsts: []string{
 			portalcommonv4.PortalV4RequestAcceptedChainStatus,
 			portalcommonv4.PortalV4RequestAcceptedChainStatus,
+			portalcommonv4.PortalV4RequestRefundedChainStatus,
 			portalcommonv4.PortalV4RequestRejectedChainStatus,
 		},
 	}

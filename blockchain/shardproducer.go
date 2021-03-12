@@ -425,8 +425,8 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					newTx, err = curView.buildPortalAcceptedShieldingRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalV4UnshieldingRequestMeta:
-				if len(l) >= 4 && l[2] == portalcommonv4.PortalV4RequestRejectedChainStatus {
-					newTx, err = curView.buildPortalRejectedUnshieldingRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
+				if len(l) >= 4 && l[2] == portalcommonv4.PortalV4RequestRefundedChainStatus {
+					newTx, err = curView.buildPortalRefundedUnshieldingRequestTx(blockGenerator.chain.GetBeaconBestState(), l[3], producerPrivateKey, shardID)
 				}
 
 			default:

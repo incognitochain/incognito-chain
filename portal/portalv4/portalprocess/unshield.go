@@ -102,13 +102,13 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal unshield request action: %+v", err)
-		return nil, nil
+		return [][]string{}, nil
 	}
 	var actionData metadata.PortalUnshieldRequestAction
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while unmarshal portal unshield request action: %+v", err)
-		return nil, nil
+		return [][]string{}, nil
 	}
 
 	if CurrentPortalStateV4 == nil {
@@ -128,6 +128,17 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 		portalcommonv4.PortalV4RequestRejectedChainStatus,
 	)
 
+	refundInst := buildUnshieldRequestInst(
+		meta.TokenID,
+		meta.UnshieldAmount,
+		meta.IncAddressStr,
+		meta.RemoteAddress,
+		meta.Type,
+		actionData.ShardID,
+		actionData.TxReqID,
+		portalcommonv4.PortalV4RequestRefundedChainStatus,
+	)
+
 	unshieldID := actionData.TxReqID.String()
 	tokenID := meta.TokenID
 
@@ -138,7 +149,7 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 		waitingUnshieldRequest := wUnshieldReqsByTokenID[keyWaitingUnshieldRequestStr]
 		if waitingUnshieldRequest != nil {
 			Logger.log.Errorf("[Unshield Request] unshieldID is existed in waiting unshield requests list %v\n", unshieldID)
-			return [][]string{}, nil
+			return [][]string{rejectInst}, nil
 		}
 	}
 
@@ -154,13 +165,13 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	}
 	if isExist {
 		Logger.log.Errorf("[Unshield Request] UnshieldID exist in db %v", unshieldID)
-		return [][]string{}, nil
+		return [][]string{rejectInst}, nil
 	}
 
 	// validate unshield amount
 	if meta.UnshieldAmount < portalParams.MinUnshieldAmts[meta.TokenID] {
 		Logger.log.Errorf("[Unshield Request] Unshield amount %v is less than min amount %v", meta.UnshieldAmount, portalParams.MinUnshieldAmts[meta.TokenID])
-		return [][]string{rejectInst}, nil
+		return [][]string{refundInst}, nil
 	}
 
 	// build accept instruction
@@ -226,13 +237,13 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 			actionData.TxReqID.String(),
 			unshieldRequestStatusBytes)
 		if err != nil {
-			Logger.log.Errorf("[processPortalRedeemRequest] Error when storing status of redeem request by redeemID: %v\n", err)
+			Logger.log.Errorf("[processPortalUnshieldRequest] Error when storing status of unshield request by unshieldID: %v\n", err)
 			return nil
 		}
 
 		incTokenID, err := common.Hash{}.NewHashFromStr(actionData.TokenID)
 		if err != nil {
-			Logger.log.Errorf("ERROR: Can not new hash from porting incTokenID: %+v", err)
+			Logger.log.Errorf("ERROR: Can not new hash from incTokenID: %+v", err)
 			return nil
 		}
 		updatingInfo, found := updatingInfoByTokenID[*incTokenID]
@@ -248,6 +259,25 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 			}
 		}
 		updatingInfoByTokenID[*incTokenID] = updatingInfo
+	} else if reqStatus == portalcommonv4.PortalV4RequestRefundedChainStatus {
+		// track status of unshield request by unshieldID (txID)
+		unshieldRequestStatus := metadata.PortalUnshieldRequestStatus{
+			IncAddressStr:  actionData.IncAddressStr,
+			RemoteAddress:  actionData.RemoteAddress,
+			TokenID:        actionData.TokenID,
+			UnshieldAmount: actionData.UnshieldAmount,
+			TxHash:         actionData.TxReqID.String(),
+			Status:         portalcommonv4.PortalUnshieldReqRefundedStatus,
+		}
+		unshieldRequestStatusBytes, _ := json.Marshal(unshieldRequestStatus)
+		err := statedb.StorePortalUnshieldRequestStatus(
+			stateDB,
+			actionData.TxReqID.String(),
+			unshieldRequestStatusBytes)
+		if err != nil {
+			Logger.log.Errorf("[processPortalUnshieldRequest] Error when storing status of unshield request by unshieldID: %v\n", err)
+			return nil
+		}
 	}
 
 	return nil
