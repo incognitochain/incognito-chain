@@ -228,7 +228,7 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 			RemoteAddress:  actionData.RemoteAddress,
 			TokenID:        actionData.TokenID,
 			UnshieldAmount: actionData.UnshieldAmount,
-			TxHash:         actionData.TxReqID.String(),
+			UnshieldID:     actionData.TxReqID.String(),
 			Status:         portalcommonv4.PortalUnshieldReqWaitingStatus,
 		}
 		unshieldRequestStatusBytes, _ := json.Marshal(unshieldRequestStatus)
@@ -266,7 +266,7 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 			RemoteAddress:  actionData.RemoteAddress,
 			TokenID:        actionData.TokenID,
 			UnshieldAmount: actionData.UnshieldAmount,
-			TxHash:         actionData.TxReqID.String(),
+			UnshieldID:     actionData.TxReqID.String(),
 			Status:         portalcommonv4.PortalUnshieldReqRefundedStatus,
 		}
 		unshieldRequestStatusBytes, _ := json.Marshal(unshieldRequestStatus)

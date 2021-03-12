@@ -205,6 +205,7 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 		UpdatePortalStateAfterProcessBatchUnshieldRequest(
 			CurrentPortalStateV4, actionData.BatchID, actionData.UTXOs, actionData.NetworkFee, actionData.UnshieldIDs, actionData.TokenID)
 		RemoveListUtxoFromDB(stateDB, actionData.UTXOs, actionData.TokenID)
+		RemoveListWaitingUnshieldFromDB(stateDB, actionData.UnshieldIDs, actionData.TokenID)
 
 		for _, unshieldID := range actionData.UnshieldIDs {
 			// update status of unshield request that processed
@@ -213,8 +214,6 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 				Logger.log.Errorf("[processPortalBatchUnshieldRequest] Error when updating status of unshielding request with unshieldID %v: %v\n", unshieldID, err)
 				return nil
 			}
-			// delete waiting unshield request from db
-			statedb.DeleteWaitingUnshieldRequest(stateDB, actionData.TokenID, unshieldID)
 		}
 
 		// store status of batch unshield by batchID

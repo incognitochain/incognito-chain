@@ -155,10 +155,10 @@ func UpdatePortalStateAfterProcessBatchUnshieldRequest(
 	CurrentPortalStateV4 *CurrentPortalStateV4,
 	batchID string, utxos map[string][]*statedb.UTXO, externalFees map[uint64]uint, unshieldIDs []string, tokenID string) {
 	// remove unshieldIDs from WaitingUnshieldRequests
-	for _, unshieldID := range unshieldIDs {
-		keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID).String()
-		delete(CurrentPortalStateV4.WaitingUnshieldRequests[tokenID], keyWaitingUnshieldRequest)
-	}
+	RemoveListWaitingUnshieldFromState(CurrentPortalStateV4, unshieldIDs, tokenID)
+
+	// remove list utxos from state
+	RemoveListUtxoFromState(CurrentPortalStateV4, utxos, tokenID)
 
 	// add batch process to ProcessedUnshieldRequests
 	if CurrentPortalStateV4.ProcessedUnshieldRequests == nil {
@@ -171,15 +171,11 @@ func UpdatePortalStateAfterProcessBatchUnshieldRequest(
 	keyProcessedUnshieldRequest := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenID, batchID).String()
 	CurrentPortalStateV4.ProcessedUnshieldRequests[tokenID][keyProcessedUnshieldRequest] = statedb.NewProcessedUnshieldRequestBatchWithValue(
 		batchID, unshieldIDs, utxos, externalFees)
-
-	// remove list utxos from state
-	RemoveListUtxoFromState(CurrentPortalStateV4, utxos, tokenID)
 }
 
 func RemoveListUtxoFromState(
 	CurrentPortalStateV4 *CurrentPortalStateV4,
 	utxos map[string][]*statedb.UTXO, tokenID string) {
-
 	// remove list utxos that spent
 	for walletAddr, listUtxos := range utxos {
 		for _, u := range listUtxos {
@@ -192,12 +188,30 @@ func RemoveListUtxoFromState(
 func RemoveListUtxoFromDB(
 	stateDB *statedb.StateDB,
 	utxos map[string][]*statedb.UTXO, tokenID string) {
-
 	// remove list utxos that spent
 	for walletAddr, listUtxos := range utxos {
 		for _, u := range listUtxos {
 			statedb.DeleteUTXO(stateDB, tokenID, walletAddr, u.GetTxHash(), u.GetOutputIndex())
 		}
+	}
+}
+
+func RemoveListWaitingUnshieldFromState(
+	CurrentPortalStateV4 *CurrentPortalStateV4,
+	unshieldIDs []string, tokenID string) {
+	// remove unshieldIDs from WaitingUnshieldRequests
+	for _, unshieldID := range unshieldIDs {
+		keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID).String()
+		delete(CurrentPortalStateV4.WaitingUnshieldRequests[tokenID], keyWaitingUnshieldRequest)
+	}
+}
+
+func RemoveListWaitingUnshieldFromDB(
+	stateDB *statedb.StateDB,
+	unshieldIDs []string, tokenID string) {
+	// delete waiting unshield request from db
+	for _, unshieldID := range unshieldIDs {
+		statedb.DeleteWaitingUnshieldRequest(stateDB, tokenID, unshieldID)
 	}
 }
 
@@ -221,7 +235,7 @@ func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, stateDB *s
 		RemoteAddress:  unshieldRequest.RemoteAddress,
 		TokenID:        unshieldRequest.TokenID,
 		UnshieldAmount: unshieldRequest.UnshieldAmount,
-		TxHash:         unshieldRequest.TxHash,
+		UnshieldID:     unshieldRequest.UnshieldID,
 		Status:         newStatus,
 	}
 	unshieldRequestNewStatusBytes, _ := json.Marshal(unshieldRequestNewStatus)

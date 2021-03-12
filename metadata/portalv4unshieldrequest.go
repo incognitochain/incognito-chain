@@ -41,7 +41,7 @@ type PortalUnshieldRequestStatus struct {
 	RemoteAddress  string
 	TokenID        string
 	UnshieldAmount uint64
-	TxHash         string
+	UnshieldID     string
 	Status         int
 }
 

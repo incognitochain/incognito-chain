@@ -351,7 +351,7 @@ func getRawSignedTxByHeight(
 	}
 
 	block := &beaconBlock{BeaconBlock: beaconBlockQueried}
-	portalV4Sig, err := block.ProtalV4Sigs(httpServer.config.ConsensusEngine)
+	portalV4Sig, err := block.PortalV4Sigs(httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

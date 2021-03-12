@@ -115,7 +115,7 @@ func (curView *ShardBestState) buildPortalRefundedUnshieldingRequestTx(
 	}
 
 	meta := metadata.NewPortalV4UnshieldResponse(
-		"rejected",
+		"refunded",
 		rejectedUnshieldingReq.TxReqID,
 		rejectedUnshieldingReq.IncAddressStr,
 		rejectedUnshieldingReq.UnshieldAmount,
