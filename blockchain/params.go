@@ -68,6 +68,7 @@ type Params struct {
 	ChainVersion                     string
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
+	Timeslot                         uint64
 	BeaconHeightBreakPointBurnAddr   uint64
 	BNBRelayingHeaderChainID         string
 	BTCRelayingHeaderChainID         string
@@ -225,6 +226,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               16930,
+		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
@@ -316,6 +318,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
+		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
 		BTCRelayingHeaderChainID:       Testnet2BTCChainID,
@@ -349,8 +352,8 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    1148608, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:     2085,
-		PortalETHContractAddressStr: "",   // todo: update sc address
-		BCHeightBreakPointPortalV3:  8974, // todo: should update before deploying
+		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46",   // todo: update sc address
+		BCHeightBreakPointPortalV3:  1328816,
 	}
 	// END TESTNET-2
 
@@ -403,6 +406,7 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
+		Timeslot:                       40,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,
 		BTCRelayingHeaderChainID:       MainnetBTCChainID,
@@ -434,7 +438,7 @@ func SetupParam() {
 		ReplaceStakingTxHeight:      559380,
 		IsBackup:                    false,
 		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    737450,
+		BCHeightBreakPointNewZKP:    934858,
 		ETHRemoveBridgeSigEpoch:     1973,
 		PortalETHContractAddressStr: "", // todo: update sc address
 		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying

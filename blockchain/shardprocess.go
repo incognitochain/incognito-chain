@@ -39,7 +39,8 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 			case <-ctx.Done():
 				return errors.New(fmt.Sprintf("ShardBlock %v link to wrong view (%s)", shardBlock.GetHeight(), preHash.String()))
 			default:
-				if blockchain.ShardChain[shardID].GetViewByHash(preHash) != nil {
+				view = blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
+				if view != nil {
 					return nil
 				}
 				time.Sleep(time.Second)
@@ -317,9 +318,10 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	if len(txMerkleTree) > 0 {
 		txRoot = txMerkleTree[len(txMerkleTree)-1]
 	}
-	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) && (blockchain.config.ChainParams.Net == Testnet && shardBlock.Header.Height != 487260 && shardBlock.Header.Height != 487261 && shardBlock.Header.Height != 494144) {
+	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) && (blockchain.config.ChainParams.Net != Testnet || (shardBlock.Header.Height != 487260 && shardBlock.Header.Height != 487261 && shardBlock.Header.Height != 494144)) {
 		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
 	}
+
 	// Verify ShardTx Root
 	_, shardTxMerkleData := CreateShardTxRoot(shardBlock.Body.Transactions)
 	shardTxRoot := shardTxMerkleData[len(shardTxMerkleData)-1]

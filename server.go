@@ -49,9 +49,9 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 
-	p2ppubsub "github.com/libp2p/go-libp2p-pubsub"
+	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 
-	pb "github.com/libp2p/go-libp2p-pubsub/pb"
+	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 )
 
 type Server struct {
@@ -222,11 +222,11 @@ func (serverObj *Server) NewServer(
 
 	serverObj.miningKeys = cfg.MiningKeys
 	serverObj.privateKey = cfg.PrivateKey
-	if serverObj.miningKeys == "" && serverObj.privateKey == "" {
-		if cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeBeacon || cfg.NodeMode == common.NodeModeShard {
-			panic("miningkeys can't be empty in this node mode")
-		}
-	}
+	// if serverObj.miningKeys == "" && serverObj.privateKey == "" {
+	// 	if cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeBeacon || cfg.NodeMode == common.NodeModeShard {
+	// 		panic("miningkeys can't be empty in this node mode")
+	// 	}
+	// }
 	//pusub???
 	serverObj.pusubManager = pubsubManager
 	serverObj.blockChain = &blockchain.BlockChain{}
@@ -307,7 +307,7 @@ func (serverObj *Server) NewServer(
 		pubkey,
 		serverObj.consensusEngine,
 		dispatcher,
-		cfg.NodeMode,
+		"",
 		relayShards,
 	)
 	poolManager, _ := txpool.NewPoolManager(
@@ -327,7 +327,7 @@ func (serverObj *Server) NewServer(
 		Server:      serverObj,
 		Syncker:     serverObj.syncker,
 		// UserKeySet:        serverObj.userKeySet,
-		NodeMode:        cfg.NodeMode,
+		// NodeMode:        cfg.NodeMode,
 		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
 		PubSubManager:   pubsubManager,
 		RandomClient:    randomClient,
@@ -531,16 +531,16 @@ func (serverObj *Server) NewServer(
 			RPCLimitUser:                cfg.RPCLimitUser,
 			RPCLimitPass:                cfg.RPCLimitPass,
 			DisableAuth:                 cfg.RPCDisableAuth,
-			NodeMode:                    cfg.NodeMode,
-			FeeEstimator:                serverObj.feeEstimator,
-			ProtocolVersion:             serverObj.protocolVersion,
-			Database:                    serverObj.dataBase,
-			MiningKeys:                  cfg.MiningKeys,
-			NetSync:                     serverObj.netSync,
-			PubSubManager:               pubsubManager,
-			ConsensusEngine:             serverObj.consensusEngine,
-			MemCache:                    serverObj.memCache,
-			Syncker:                     serverObj.syncker,
+			// NodeMode:                    cfg.NodeMode,
+			FeeEstimator:    serverObj.feeEstimator,
+			ProtocolVersion: serverObj.protocolVersion,
+			Database:        serverObj.dataBase,
+			MiningKeys:      cfg.MiningKeys,
+			NetSync:         serverObj.netSync,
+			PubSubManager:   pubsubManager,
+			ConsensusEngine: serverObj.consensusEngine,
+			MemCache:        serverObj.memCache,
+			Syncker:         serverObj.syncker,
 		}
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
@@ -726,13 +726,9 @@ func (serverObj Server) Start() {
 		serverObj.rpcServer.Start()
 	}
 
-	if cfg.NodeMode != common.NodeModeRelay {
+	if cfg.MiningKeys != "" || cfg.PrivateKey != "" {
 		serverObj.memPool.IsBlockGenStarted = true
 		serverObj.blockChain.SetIsBlockGenStarted(true)
-		// for _, shardPool := range serverObj.shardPool {
-		// 	go shardPool.Start(serverObj.cQuit)
-		// }
-		// go serverObj.beaconPool.Start(serverObj.cQuit)
 	}
 
 	//go serverObj.blockChain.Synker.Start()
@@ -1231,9 +1227,6 @@ func (serverObj *Server) GetPeerIDsFromPublicKey(pubKey string) []libp2p.ID {
 
 func (serverObj *Server) GetNodeRole() string {
 	if serverObj.miningKeys == "" && serverObj.privateKey == "" {
-		return ""
-	}
-	if cfg.NodeMode == "relay" {
 		return "RELAY"
 	}
 	role, shardID := serverObj.GetUserMiningState()
@@ -1631,6 +1624,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 		pending   = "pending"
 		waiting   = "waiting"
 	)
+
 	if chain >= common.MaxShardNumber || chain < -1 {
 		return notmining
 	}

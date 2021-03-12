@@ -585,7 +585,7 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 		prvCollateralAmountToUpdate := uint64(0)
 		if unlockedAmount >= tokenAmtInUSD {
 			unlockedAmount -= tokenAmtInUSD
-			prvCollateralAmountToUpdate = lockedPrvAmount[tokenID]
+			prvCollateralAmountToUpdate = lockedPrvAmountToProcess
 		} else {
 			prvCollateralAmountToUpdate, err = convertRateTool.ConvertFromUSD(common.PRVIDStr, unlockedAmount)
 			unlockedAmount = 0
@@ -632,7 +632,7 @@ func updateCustodianStateAfterReqUnlockCollateralV3(custodianState *statedb.Cust
 			tokenCollateralAmountToUpdate := uint64(0)
 			if unlockedAmount >= tokenValueLocked {
 				unlockedAmount -= tokenValueLocked
-				tokenCollateralAmountToUpdate = lockedTokenAmounts[tokenID][tokenCollateralID]
+				tokenCollateralAmountToUpdate = lockedTokenAmountToProcess
 			} else {
 				tokenCollateralAmountToUpdate, err = convertRateTool.ConvertFromUSD(tokenCollateralID, unlockedAmount)
 				unlockedAmount = 0
