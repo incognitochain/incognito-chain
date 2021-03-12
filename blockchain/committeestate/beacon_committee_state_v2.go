@@ -43,9 +43,8 @@ func (b BeaconCommitteeStateV2) Version() uint {
 	return SLASHING_VERSION
 }
 
-func (b *BeaconCommitteeStateV2) cloneFrom(fromB BeaconCommitteeStateV2) {
-	b.reset()
-	b.beaconCommitteeStateSlashingBase.cloneFrom(fromB.beaconCommitteeStateSlashingBase)
+func (b *BeaconCommitteeStateV2) Clone() BeaconCommitteeState {
+	return b.clone()
 }
 
 func (b *BeaconCommitteeStateV2) clone() *BeaconCommitteeStateV2 {

@@ -53,13 +53,8 @@ func (b beaconCommitteeStateSlashingBase) Version() uint {
 	panic("implement me")
 }
 
-func (b *beaconCommitteeStateSlashingBase) cloneFrom(fromB beaconCommitteeStateSlashingBase) {
-	b.reset()
-	b.beaconCommitteeStateBase.cloneFrom(fromB.beaconCommitteeStateBase)
-	b.numberOfAssignedCandidates = fromB.numberOfAssignedCandidates
-	b.shardCommonPool = make([]incognitokey.CommitteePublicKey, len(fromB.shardCommonPool))
-	copy(b.shardCommonPool, fromB.shardCommonPool)
-	b.swapRule = cloneSwapRuleByVersion(fromB.swapRule)
+func (b *beaconCommitteeStateSlashingBase) Clone() BeaconCommitteeState {
+	return b.clone()
 }
 
 func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingBase {
@@ -109,6 +104,14 @@ func (b beaconCommitteeStateSlashingBase) isEmpty() bool {
 
 func (b beaconCommitteeStateSlashingBase) GetShardCommonPool() []incognitokey.CommitteePublicKey {
 	return b.shardCommonPool
+}
+
+func (b beaconCommitteeStateSlashingBase) GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey {
+	return b.shardCommonPool[b.numberOfAssignedCandidates:]
+}
+
+func (b beaconCommitteeStateSlashingBase) GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
+	return b.shardCommonPool[:b.numberOfAssignedCandidates]
 }
 
 func (b beaconCommitteeStateSlashingBase) NumberOfAssignedCandidates() int {

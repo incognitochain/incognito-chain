@@ -46,14 +46,8 @@ func (b *BeaconCommitteeStateV3) Version() uint {
 	return DCS_VERSION
 }
 
-func (b *BeaconCommitteeStateV3) cloneFrom(fromB BeaconCommitteeStateV3) {
-	b.reset()
-	b.beaconCommitteeStateSlashingBase.cloneFrom(fromB.beaconCommitteeStateSlashingBase)
-
-	for i, v := range fromB.syncPool {
-		b.syncPool[i] = make([]incognitokey.CommitteePublicKey, len(v))
-		copy(b.syncPool[i], v)
-	}
+func (b *BeaconCommitteeStateV3) Clone() BeaconCommitteeState {
+	return b.clone()
 }
 
 func (b *BeaconCommitteeStateV3) clone() *BeaconCommitteeStateV3 {

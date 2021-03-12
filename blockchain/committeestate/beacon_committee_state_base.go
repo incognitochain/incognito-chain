@@ -139,34 +139,6 @@ func (b beaconCommitteeStateBase) Clone() BeaconCommitteeState {
 	return b.clone()
 }
 
-func (b *beaconCommitteeStateBase) cloneFrom(fromB beaconCommitteeStateBase) {
-	b.reset()
-	b.beaconCommittee = make([]incognitokey.CommitteePublicKey, len(fromB.beaconCommittee))
-	copy(b.beaconCommittee, fromB.beaconCommittee)
-
-	for i, v := range fromB.shardCommittee {
-		b.shardCommittee[i] = make([]incognitokey.CommitteePublicKey, len(v))
-		copy(b.shardCommittee[i], v)
-	}
-
-	for i, v := range fromB.shardSubstitute {
-		b.shardSubstitute[i] = make([]incognitokey.CommitteePublicKey, len(v))
-		copy(b.shardSubstitute[i], v)
-	}
-
-	for k, v := range fromB.autoStake {
-		b.autoStake[k] = v
-	}
-
-	for k, v := range fromB.rewardReceiver {
-		b.rewardReceiver[k] = v
-	}
-
-	for k, v := range fromB.stakingTx {
-		b.stakingTx[k] = v
-	}
-}
-
 func (b beaconCommitteeStateBase) clone() *beaconCommitteeStateBase {
 	newB := newBeaconCommitteeStateBase()
 	newB.beaconCommittee = make([]incognitokey.CommitteePublicKey, len(b.beaconCommittee))

@@ -64,13 +64,8 @@ func (b *BeaconCommitteeStateV1) reset() {
 	b.nextEpochShardCandidate = []incognitokey.CommitteePublicKey{}
 }
 
-func (b *BeaconCommitteeStateV1) cloneFrom(fromB BeaconCommitteeStateV1) {
-	b.reset()
-	b.beaconCommitteeStateBase.cloneFrom(fromB.beaconCommitteeStateBase)
-	b.currentEpochShardCandidate = make([]incognitokey.CommitteePublicKey, len(fromB.currentEpochShardCandidate))
-	copy(b.currentEpochShardCandidate, fromB.currentEpochShardCandidate)
-	b.nextEpochShardCandidate = make([]incognitokey.CommitteePublicKey, len(fromB.nextEpochShardCandidate))
-	copy(b.nextEpochShardCandidate, fromB.nextEpochShardCandidate)
+func (b *BeaconCommitteeStateV1) Clone() BeaconCommitteeState {
+	return b.clone()
 }
 
 func (b *BeaconCommitteeStateV1) clone() *BeaconCommitteeStateV1 {
