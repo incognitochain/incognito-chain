@@ -197,7 +197,7 @@ func (b beaconCommitteeStateBase) clone() *beaconCommitteeStateBase {
 	return newB
 }
 
-func (b beaconCommitteeStateBase) Version() int {
+func (b beaconCommitteeStateBase) Version() uint {
 	panic("Implement version for committee state")
 }
 

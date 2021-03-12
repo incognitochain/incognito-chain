@@ -179,7 +179,7 @@ func (beaconBestState *BeaconBestState) calculateReward(
 	map[common.Hash]uint64,
 	map[common.Hash]uint64, error,
 ) {
-	numberOfActiveShards := beaconBestState.beaconCommitteeEngine.ActiveShards()
+	numberOfActiveShards := beaconBestState.beaconCommitteeState.ActiveShards()
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
 	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
 	percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
@@ -217,7 +217,7 @@ func (beaconBestState *BeaconBestState) calculateReward(
 			byte(id),
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := beaconBestState.
-			beaconCommitteeEngine.(committeestate.RewardSplitRule).SplitReward(env)
+			beaconCommitteeState.(committeestate.RewardSplitRule).SplitReward(env)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}

@@ -869,7 +869,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 		ActiveShards             int
 		ConsensusAlgorithm       string
 		ShardConsensusAlgorithm  map[byte]string
-		beaconCommitteeEngine    committeestate.BeaconCommitteeEngine
+		beaconCommitteeEngine    committeestate.BeaconCommitteeState
 		LastCrossShardState      map[byte]map[byte]uint64
 		ShardHandle              map[byte]bool
 		NumOfBlocksByProducers   map[string]uint64
@@ -1029,7 +1029,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 				ActiveShards:             tt.fields.ActiveShards,
 				ConsensusAlgorithm:       tt.fields.ConsensusAlgorithm,
 				ShardConsensusAlgorithm:  tt.fields.ShardConsensusAlgorithm,
-				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
+				beaconCommitteeState:     tt.fields.beaconCommitteeEngine,
 				LastCrossShardState:      tt.fields.LastCrossShardState,
 				ShardHandle:              tt.fields.ShardHandle,
 				BlockInterval:            tt.fields.BlockInterval,

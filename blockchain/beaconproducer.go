@@ -378,7 +378,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 				blockchain.config.ChainParams.AssignOffset,
 				newBeaconHeight,
 			)
-			assignInstructions := curView.beaconCommitteeEngine.AssignInstructions(env)
+			assignInstructions := curView.beaconCommitteeState.AssignInstructions(env)
 			for _, assignInstruction := range assignInstructions {
 				instructions = append(instructions, assignInstruction.ToString())
 			}
@@ -407,7 +407,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
 			env := curView.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
 			env.LatestShardsState = shardsState
-			swapShardInstructions, err := curView.beaconCommitteeEngine.GenerateAllSwapShardInstructions(env)
+			swapShardInstructions, err := curView.beaconCommitteeState.GenerateAllSwapShardInstructions(env)
 			if err != nil {
 				return [][]string{}, err
 			}
@@ -473,7 +473,7 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 	shardInstruction := newShardInstruction()
 	// extract instructions
 
-	waitingValidatorsList, err := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeEngine.GetCandidateShardWaitingForNextRandom())
+	waitingValidatorsList, err := incognitokey.CommitteeKeyListToString(beaconBestState.beaconCommitteeState.GetCandidateShardWaitingForNextRandom())
 	if err != nil {
 		return shardInstruction
 	}
@@ -592,7 +592,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 			}
 		}
 
-		if beaconBestState.beaconCommitteeEngine.Version() != committeestate.SELF_SWAP_SHARD_VERSION &&
+		if beaconBestState.beaconCommitteeState.Version() != committeestate.SELF_SWAP_SHARD_VERSION &&
 			(len(stakeInstruction.PublicKeys) != len(tempStakePublicKey)) {
 			duplicateStakePublicKeys = common.DifferentElementStrings(stakeInstruction.PublicKeys, tempStakePublicKey)
 			if len(duplicateStakePublicKeys) > 0 {
@@ -754,7 +754,7 @@ func (shardInstruction *shardInstruction) compose() {
 func (beaconBestState *BeaconBestState) FinishSyncInstructions() []*instruction.FinishSyncInstruction {
 	res := []*instruction.FinishSyncInstruction{}
 	keys := []int{}
-	for i := 0; i < beaconBestState.beaconCommitteeEngine.ActiveShards(); i++ {
+	for i := 0; i < beaconBestState.beaconCommitteeState.ActiveShards(); i++ {
 		keys = append(keys, i)
 	}
 	sort.Ints(keys)

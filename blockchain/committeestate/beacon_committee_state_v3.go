@@ -42,7 +42,7 @@ func NewBeaconCommitteeStateV3WithValue(
 	}
 }
 
-func (b *BeaconCommitteeStateV3) Version() int {
+func (b *BeaconCommitteeStateV3) Version() uint {
 	return DCS_VERSION
 }
 

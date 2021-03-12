@@ -10,7 +10,7 @@ import (
 )
 
 type BeaconCommitteeState interface {
-	Version() int
+	Version() uint
 	Clone() BeaconCommitteeState
 
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey

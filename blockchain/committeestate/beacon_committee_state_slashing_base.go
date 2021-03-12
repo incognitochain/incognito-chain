@@ -49,8 +49,8 @@ func newBeaconCommitteeStateSlashingBaseWithValue(
 	}
 }
 
-func (b beaconCommitteeStateSlashingBase) Version() int {
-	return SLASHING_VERSION
+func (b beaconCommitteeStateSlashingBase) Version() uint {
+	panic("implement me")
 }
 
 func (b *beaconCommitteeStateSlashingBase) cloneFrom(fromB beaconCommitteeStateSlashingBase) {

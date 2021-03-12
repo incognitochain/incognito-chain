@@ -527,7 +527,7 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
 		beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
 
-	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeEngine.UpdateCommitteeState(env)
+	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
 	if err != nil {
 		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
@@ -598,7 +598,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 
-	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.
+	beaconBestState.beaconCommitteeState.InitCommitteeState(beaconBestState.
 		NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
 			genesisBeaconBlock.Body.Instructions, false, false))
 	beaconBestState.finishSyncManager = finishsync.NewManager()
@@ -1060,9 +1060,9 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 		err := statedb.StoreStakerInfo(
 			beaconBestState.consensusStateDB,
 			committees,
-			beaconBestState.beaconCommitteeEngine.GetRewardReceiver(),
-			beaconBestState.beaconCommitteeEngine.GetAutoStaking(),
-			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
+			beaconBestState.beaconCommitteeState.GetRewardReceiver(),
+			beaconBestState.beaconCommitteeState.GetAutoStaking(),
+			beaconBestState.beaconCommitteeState.GetStakingTx(),
 		)
 		if err != nil {
 			return err
