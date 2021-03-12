@@ -469,15 +469,6 @@ func GetShardChainKey(shardID byte) string {
 	return ShardChainKey + "-" + strconv.Itoa(int(shardID))
 }
 
-func IsPortalToken(tokenIDStr string) bool {
-	isExisted, _ := SliceExists(PortalSupportedIncTokenIDs, tokenIDStr)
-	return isExisted
-}
-
-func IsPortalExchangeRateToken(tokenIDStr string) bool {
-	return IsPortalToken(tokenIDStr) || tokenIDStr == PRVIDStr
-}
-
 // CopyBytes returns an exact copy of the provided bytes.
 func CopyBytes(b []byte) (copiedBytes []byte) {
 	if b == nil {
@@ -489,9 +480,25 @@ func CopyBytes(b []byte) (copiedBytes []byte) {
 	return
 }
 
-// has0xPrefix validates str begins with '0x' or '0X'.
-func has0xPrefix(str string) bool {
+// Has0xPrefix validates str begins with '0x' or '0X'.
+func Has0xPrefix(str string) bool {
 	return len(str) >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X')
+}
+
+// Remove0xPrefix removes 0x prefix (if there) from string
+func Remove0xPrefix(str string) string {
+	if Has0xPrefix(str) {
+		return str[2:]
+	}
+	return str
+}
+
+// Add0xPrefix adds 0x prefix (if there) from string
+func Add0xPrefix(str string) string {
+	if !Has0xPrefix(str) {
+		return "0x"+str
+	}
+	return str
 }
 
 // Hex2Bytes returns the bytes represented by the hexadecimal string str.
@@ -503,7 +510,7 @@ func Hex2Bytes(str string) []byte {
 // FromHex returns the bytes represented by the hexadecimal string s.
 // s may be prefixed with "0x".
 func FromHex(s string) []byte {
-	if has0xPrefix(s) {
+	if Has0xPrefix(s) {
 		s = s[2:]
 	}
 	if len(s)%2 == 1 {
@@ -532,4 +539,15 @@ func IndexOfUint64(target uint64, arr []uint64) int {
 		}
 	}
 	return -1
+}
+
+// DecodeETHAddr converts address string (not contain 0x prefix) to 32 bytes slice
+func DecodeETHAddr(addr string) ([]byte, error) {
+	remoteAddr, err := hex.DecodeString(addr)
+	if err != nil {
+		return nil, err
+	}
+	addrFixedLen := [32]byte{}
+	copy(addrFixedLen[32-len(remoteAddr):], remoteAddr)
+	return addrFixedLen[:], nil
 }

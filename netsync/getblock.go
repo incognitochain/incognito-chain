@@ -20,6 +20,7 @@ func (netSync *NetSync) GetBlockByHeight(
 	interface{},
 	error,
 ) {
+	panic("We dont use this function anymore")
 	bc := netSync.config.BlockChain
 	switch blkType {
 	case proto.BlkType_BlkBc:
@@ -46,6 +47,7 @@ func (netSync *NetSync) GetBlockByHash(
 	interface{},
 	error,
 ) {
+	panic("We dont use this function anymore")
 	bc := netSync.config.BlockChain
 	switch blkType {
 	case proto.BlkType_BlkBc:
@@ -72,6 +74,7 @@ func (netSync *NetSync) GetBlockByHash(
 }
 
 func (netSync *NetSync) GetBlockShardByHash(blkHashes []common.Hash) []wire.Message {
+	panic("We dont use this function anymore")
 	blkMsgs := []wire.Message{}
 	for _, blkHash := range blkHashes {
 		blk, _, err := netSync.config.BlockChain.GetShardBlockByHash(blkHash)
@@ -112,6 +115,7 @@ func (netSync *NetSync) getBlockShardByHashAndSend(peerID libp2p.ID, blkType byt
 func (netSync *NetSync) GetBlockBeaconByHash(
 	blkHashes []common.Hash,
 ) []wire.Message {
+	panic("We dont use this function anymore")
 	blkMsgs := []wire.Message{}
 	for _, blkHash := range blkHashes {
 		blk, _, err := netSync.config.BlockChain.GetBeaconBlockByHash(blkHash)
@@ -131,6 +135,7 @@ func (netSync *NetSync) GetBlockBeaconByHash(
 }
 
 func (netSync *NetSync) getBlockBeaconByHashAndSend(peerID libp2p.ID, blkHashes []common.Hash) {
+	panic("We dont use this function anymore")
 	for _, blkHash := range blkHashes {
 		blk, _, err := netSync.config.BlockChain.GetBeaconBlockByHash(blkHash)
 		if err != nil {
@@ -152,6 +157,7 @@ func (netSync *NetSync) getBlockBeaconByHashAndSend(peerID libp2p.ID, blkHashes 
 }
 
 func (netSync *NetSync) GetBlockShardByHeight(fromPool bool, blkType byte, specificHeight bool, shardID byte, blkHeights []uint64, crossShardID byte) []wire.Message {
+	panic("We dont use this function anymore")
 	if !specificHeight {
 		if len(blkHeights) != 2 || blkHeights[1] < blkHeights[0] {
 			return nil
@@ -222,6 +228,7 @@ func (netSync *NetSync) getBlockShardByHeightAndSend(peerID libp2p.ID, fromPool 
 }
 
 func (netSync *NetSync) GetBlockBeaconByHeight(fromPool bool, specificHeight bool, blkHeights []uint64) []wire.Message {
+	panic("We dont use this function anymore")
 	if !specificHeight {
 		if len(blkHeights) != 2 || blkHeights[1] < blkHeights[0] {
 			return nil
@@ -278,6 +285,7 @@ func (netSync *NetSync) getBlockBeaconByHeightAndSend(peerID libp2p.ID, fromPool
 // 1: crossShard
 // 2: shardToBeacon
 func (netSync *NetSync) createBlockShardMsgByType(block *blockchain.ShardBlock, blkType byte, crossShardID byte) (wire.Message, error) {
+	panic("We dont use this function anymore")
 	var (
 		blkMsg wire.Message
 		err    error
@@ -312,6 +320,7 @@ func (netSync *NetSync) StreamBlockByHeight(
 	fromPool bool,
 	req *proto.BlockByHeightRequest,
 ) chan interface{} {
+	panic("We dont use this function anymore")
 	// Logger.log.Infof("[stream] Netsync received request get block %v %v [%v...%v] len %v", fromPool, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights))
 	Logger.log.Infof("[stream] Netsync received request stream block type %v, spec %v, height [%v..%v] len %v, from %v to %v uuid %v", req.Type, req.Specific, req.Heights[0], req.Heights[len(req.Heights)-1], len(req.Heights), req.From, req.To, req.UUID)
 	blkCh := make(chan interface{})
@@ -329,7 +338,7 @@ func (netSync *NetSync) streamBlkByHeight(
 	req *proto.BlockByHeightRequest,
 	blkCh chan interface{},
 ) {
-
+	panic("We dont use this function anymore")
 	blkHeight := req.Heights[0] - 1
 	idx := 0
 	for blkHeight < req.Heights[len(req.Heights)-1] {
@@ -357,6 +366,7 @@ func (netSync *NetSync) StreamBlockByHash(
 	fromPool bool,
 	req *proto.BlockByHashRequest,
 ) chan interface{} {
+	panic("We dont use this function anymore")
 	Logger.log.Infof("[stream] Netsync received request stream block type %v, hashes [%v..%v] len %v, from %v to %v uuid %v", req.Type, req.Hashes[0], req.Hashes[len(req.Hashes)-1], len(req.Hashes), req.From, req.To, req.UUID)
 	blkCh := make(chan interface{})
 	go netSync.streamBlkByHash(req, blkCh)

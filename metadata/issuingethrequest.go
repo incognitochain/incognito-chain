@@ -173,7 +173,7 @@ func (iReq IssuingETHRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (iReq *IssuingETHRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	ethReceipt, err := iReq.verifyProofAndParseReceipt()
 	if err != nil {
 		return [][]string{}, NewMetadataTxError(IssuingEthRequestBuildReqActionsError, err)
@@ -302,6 +302,11 @@ func GetETHHeader(
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByHash: %s", getETHHeaderByHashRes.RPCError.Message))
 	}
 
+	if getETHHeaderByHashRes.Result == nil {
+		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByHash: result is nil")
+		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByHash: result is nil"))
+	}
+
 	ethHeaderByHash := getETHHeaderByHashRes.Result
 	headerNum := ethHeaderByHash.Number
 
@@ -322,6 +327,12 @@ func GetETHHeader(
 		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByNumber: %s", getETHHeaderByNumberRes.RPCError.Message)
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: %s", getETHHeaderByNumberRes.RPCError.Message))
 	}
+
+	if getETHHeaderByNumberRes.Result == nil {
+		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByNumber: result is nil")
+		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: result is nil"))
+	}
+
 
 	ethHeaderByNum := getETHHeaderByNumberRes.Result
 	if ethHeaderByNum.Hash().String() != ethHeaderByHash.Hash().String() {

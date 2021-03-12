@@ -214,10 +214,15 @@ func (b *BlockChain) ExtractPaymentAddrStrFromPkScript(pkScript []byte) (string,
 // IsBTCAddressValid checks whether the passed btc address string is valid or not
 func (btcChain *BlockChain) IsBTCAddressValid(addrStr string) bool {
 	params := btcChain.GetChainParams()
-	_, err := btcutil.DecodeAddress(addrStr, params)
+	btcAddress, err := btcutil.DecodeAddress(addrStr, params)
 	if err != nil {
 		Logger.log.Warnf("IsBTCAddressValid - Failed to decode btc address with error: %v\n", err)
 		return false
 	}
+	if !btcAddress.IsForNet(params) {
+		Logger.log.Warn("IsBTCAddressValid - Failed to check valid network.")
+		return false
+	}
+
 	return true
 }

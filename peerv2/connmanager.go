@@ -106,7 +106,7 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 	return errors.Errorf("Can not publish message, this msg type %v is not allow", msgType)
 }
 
-func (cm *ConnManager) Start(ns NetSync) {
+func (cm *ConnManager) Start(bg BlockGetter) {
 	// Pubsub
 	var err error
 	cm.ps, err = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host, pubsub.WithMaxMessageSize(common.MaxPSMsgSize))
@@ -119,8 +119,8 @@ func (cm *ConnManager) Start(ns NetSync) {
 	go cm.keepHighwayConnection()
 
 	cm.Requester = NewRequester(cm.LocalHost.GRPC)
-	cm.subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages)
-	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
+	cm.subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages, cm.disp)
+	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, bg)
 	go cm.manageRoleSubscription()
 	cm.process()
 }

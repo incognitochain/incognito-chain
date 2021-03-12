@@ -36,8 +36,6 @@ const (
 	PortalWaitingPortingRequestObjectType
 	//liquidation
 	PortalLiquidationPoolObjectType
-
-	//B
 	PortalStatusObjectType
 	CustodianStateObjectType
 	WaitingRedeemRequestObjectType
@@ -49,6 +47,11 @@ const (
 	PDETradingFeeObjectType
 
 	StakerObjectType
+
+	// Portal v3
+	PortalExternalTxObjectType
+	PortalConfirmProofObjectType
+	PortalUnlockOverRateCollaterals
 )
 
 // Prefix length
