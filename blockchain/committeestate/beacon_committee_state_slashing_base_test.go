@@ -111,7 +111,7 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 				swapRule:                   tt.fields.swapRule,
 			}
 			if got := b.clone(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("beaconCommitteeStateSlashingBase.clone() = %v, want %v", got, tt.want)
+				t.Errorf("beaconCommitteeStateV2.clone() = %v, want %v", got, tt.want)
 			}
 		})
 	}

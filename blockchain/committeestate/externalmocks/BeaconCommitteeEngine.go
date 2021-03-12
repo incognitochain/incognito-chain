@@ -20,11 +20,6 @@ type BeaconCommitteeEngine struct {
 	mock.Mock
 }
 
-// AbortUncommittedBeaconState provides a mock function with given fields:
-func (_m *BeaconCommitteeEngine) AbortUncommittedBeaconState() {
-	_m.Called()
-}
-
 // ActiveShards provides a mock function with given fields:
 func (_m *BeaconCommitteeEngine) ActiveShards() int {
 	ret := _m.Called()
@@ -34,20 +29,6 @@ func (_m *BeaconCommitteeEngine) ActiveShards() int {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(int)
-	}
-
-	return r0
-}
-
-// AddFinishedSyncValidators provides a mock function with given fields: _a0, _a1
-func (_m *BeaconCommitteeEngine) AddFinishedSyncValidators(_a0 []string, _a1 byte) error {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func([]string, byte) error); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		r0 = ret.Error(0)
 	}
 
 	return r0
@@ -85,20 +66,6 @@ func (_m *BeaconCommitteeEngine) Clone() committeestate.BeaconCommitteeEngine {
 	return r0
 }
 
-// Commit provides a mock function with given fields: _a0
-func (_m *BeaconCommitteeEngine) Commit(_a0 *committeestate.BeaconCommitteeStateHash) error {
-	ret := _m.Called(_a0)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*committeestate.BeaconCommitteeStateHash) error); ok {
-		r0 = rf(_a0)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
 // GenerateAllSwapShardInstructions provides a mock function with given fields: env
 func (_m *BeaconCommitteeEngine) GenerateAllSwapShardInstructions(env *committeestate.BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error) {
 	ret := _m.Called(env)
@@ -115,29 +82,6 @@ func (_m *BeaconCommitteeEngine) GenerateAllSwapShardInstructions(env *committee
 	var r1 error
 	if rf, ok := ret.Get(1).(func(*committeestate.BeaconCommitteeStateEnvironment) error); ok {
 		r1 = rf(env)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GenerateFinishSyncInstructions provides a mock function with given fields:
-func (_m *BeaconCommitteeEngine) GenerateFinishSyncInstructions() ([]*instruction.FinishSyncInstruction, error) {
-	ret := _m.Called()
-
-	var r0 []*instruction.FinishSyncInstruction
-	if rf, ok := ret.Get(0).(func() []*instruction.FinishSyncInstruction); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*instruction.FinishSyncInstruction)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -448,56 +392,6 @@ func (_m *BeaconCommitteeEngine) NumberOfAssignedCandidates() int {
 	return r0
 }
 
-// SplitReward provides a mock function with given fields: _a0
-func (_m *BeaconCommitteeEngine) SplitReward(_a0 *committeestate.BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error) {
-	ret := _m.Called(_a0)
-
-	var r0 map[common.Hash]uint64
-	if rf, ok := ret.Get(0).(func(*committeestate.BeaconCommitteeStateEnvironment) map[common.Hash]uint64); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[common.Hash]uint64)
-		}
-	}
-
-	var r1 map[common.Hash]uint64
-	if rf, ok := ret.Get(1).(func(*committeestate.BeaconCommitteeStateEnvironment) map[common.Hash]uint64); ok {
-		r1 = rf(_a0)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(map[common.Hash]uint64)
-		}
-	}
-
-	var r2 map[common.Hash]uint64
-	if rf, ok := ret.Get(2).(func(*committeestate.BeaconCommitteeStateEnvironment) map[common.Hash]uint64); ok {
-		r2 = rf(_a0)
-	} else {
-		if ret.Get(2) != nil {
-			r2 = ret.Get(2).(map[common.Hash]uint64)
-		}
-	}
-
-	var r3 map[common.Hash]uint64
-	if rf, ok := ret.Get(3).(func(*committeestate.BeaconCommitteeStateEnvironment) map[common.Hash]uint64); ok {
-		r3 = rf(_a0)
-	} else {
-		if ret.Get(3) != nil {
-			r3 = ret.Get(3).(map[common.Hash]uint64)
-		}
-	}
-
-	var r4 error
-	if rf, ok := ret.Get(4).(func(*committeestate.BeaconCommitteeStateEnvironment) error); ok {
-		r4 = rf(_a0)
-	} else {
-		r4 = ret.Error(4)
-	}
-
-	return r0, r1, r2, r3, r4
-}
-
 // SyncingValidators provides a mock function with given fields:
 func (_m *BeaconCommitteeEngine) SyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
 	ret := _m.Called()
@@ -508,22 +402,6 @@ func (_m *BeaconCommitteeEngine) SyncingValidators() map[byte][]incognitokey.Com
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[byte][]incognitokey.CommitteePublicKey)
-		}
-	}
-
-	return r0
-}
-
-// UncommittedState provides a mock function with given fields:
-func (_m *BeaconCommitteeEngine) UncommittedState() committeestate.BeaconCommitteeState {
-	ret := _m.Called()
-
-	var r0 committeestate.BeaconCommitteeState
-	if rf, ok := ret.Get(0).(func() committeestate.BeaconCommitteeState); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(committeestate.BeaconCommitteeState)
 		}
 	}
 

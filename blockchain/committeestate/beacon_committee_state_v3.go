@@ -1,10 +1,12 @@
 package committeestate
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"reflect"
 )
 
 type BeaconCommitteeStateV3 struct {
@@ -14,7 +16,7 @@ type BeaconCommitteeStateV3 struct {
 
 func NewBeaconCommitteeStateV3() *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
-		beaconCommitteeStateSlashingBase: *NewBeaconCommitteeStateSlashingBase(),
+		beaconCommitteeStateSlashingBase: *newBeaconCommitteeStateSlashingBase(),
 		syncPool:                         make(map[byte][]incognitokey.CommitteePublicKey),
 	}
 }
@@ -32,12 +34,16 @@ func NewBeaconCommitteeStateV3WithValue(
 	swapRule SwapRule,
 ) *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
-		beaconCommitteeStateSlashingBase: *NewBeaconCommitteeStateSlashingBaseWithValue(
+		beaconCommitteeStateSlashingBase: *newBeaconCommitteeStateSlashingBaseWithValue(
 			beaconCommittee, shardCommittee, shardSubstitute, autoStake, rewardReceiver, stakingTx,
 			shardCommonPool, numberOfAssignedCandidates, swapRule,
 		),
 		syncPool: syncPool,
 	}
+}
+
+func (b *BeaconCommitteeStateV3) Version() int {
+	return DCS_VERSION
 }
 
 func (b *BeaconCommitteeStateV3) cloneFrom(fromB BeaconCommitteeStateV3) {
@@ -48,11 +54,6 @@ func (b *BeaconCommitteeStateV3) cloneFrom(fromB BeaconCommitteeStateV3) {
 		b.syncPool[i] = make([]incognitokey.CommitteePublicKey, len(v))
 		copy(b.syncPool[i], v)
 	}
-}
-
-func (b *BeaconCommitteeStateV3) reset() {
-	b.beaconCommitteeStateSlashingBase.reset()
-	b.syncPool = map[byte][]incognitokey.CommitteePublicKey{}
 }
 
 func (b *BeaconCommitteeStateV3) clone() *BeaconCommitteeStateV3 {
@@ -67,8 +68,51 @@ func (b *BeaconCommitteeStateV3) clone() *BeaconCommitteeStateV3 {
 	return newB
 }
 
-func (b *BeaconCommitteeStateV3) Version() int {
-	return DCS_VERSION
+func (b *BeaconCommitteeStateV3) reset() {
+	b.beaconCommitteeStateSlashingBase.reset()
+	b.syncPool = map[byte][]incognitokey.CommitteePublicKey{}
+}
+
+func (b BeaconCommitteeStateV3) Hash() (*BeaconCommitteeStateHash, error) {
+	if b.isEmpty() {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
+	}
+
+	hashes, err := b.beaconCommitteeStateSlashingBase.Hash()
+	if err != nil {
+		return nil, err
+	}
+
+	shardNextEpochCandidateStr, err := incognitokey.CommitteeKeyListToString(b.shardCommonPool)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+
+	tempShardCandidateHash, err := common.GenerateHashFromStringArray(shardNextEpochCandidateStr)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+	hashes.ShardCandidateHash = tempShardCandidateHash
+
+	syncPool := make(map[byte][]string)
+	for shardID, keys := range b.syncPool {
+		keysStr, err := incognitokey.CommitteeKeyListToString(keys)
+		if err != nil {
+			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+		}
+		syncPool[shardID] = keysStr
+	}
+
+	tempSyncPoolHash, err := common.GenerateHashFromMapByteString(syncPool)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+	hashes.ShardSyncValidatorsHash = tempSyncPoolHash
+
+	return hashes, nil
+}
+func (b BeaconCommitteeStateV3) isEmpty() bool {
+	return reflect.DeepEqual(b, NewBeaconCommitteeStateV3())
 }
 
 func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePublicKey {
@@ -248,6 +292,114 @@ func (b *BeaconCommitteeStateV3) AllSyncingValidators() []string {
 	return res
 }
 
+func (b BeaconCommitteeStateV3) SyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	res := make(map[byte][]incognitokey.CommitteePublicKey)
+	for k, v := range b.syncPool {
+		res[k] = v
+	}
+	return res
+}
+
+func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
+	*BeaconCommitteeStateHash, *CommitteeChange, [][]string, error) {
+	var err error
+	incurredInstructions := [][]string{}
+	returnStakingInstruction := instruction.NewReturnStakeIns()
+	committeeChange := NewCommitteeChange()
+	newB := b
+	oldB := newB.clone()
+
+	oldB.Mu().RLock()
+	defer oldB.Mu().RUnlock()
+	newB.mu.Lock()
+	defer newB.mu.Unlock()
+
+	// snapshot shard common pool in beacon random time
+	if env.IsBeaconRandomTime {
+		newB.SetNumberOfAssignedCandidates(SnapshotShardCommonPoolV2(
+			oldB.shardCommonPool,
+			oldB.shardCommittee,
+			oldB.shardSubstitute,
+			env.NumberOfFixedShardBlockValidator,
+			env.MinShardCommitteeSize,
+			oldB.swapRule,
+		))
+
+		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newB.NumberOfAssignedCandidates())
+	}
+
+	env.newUnassignedCommonPool = newB.UnassignedCommonPool()
+	env.newAllSubstituteCommittees = newB.AllSubstituteCommittees()
+	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
+	env.newValidators = append(env.newValidators, newB.AllSyncingValidators()...)
+
+	for _, inst := range env.BeaconInstructions {
+		if len(inst) == 0 {
+			continue
+		}
+		switch inst[0] {
+		case instruction.STAKE_ACTION:
+			stakeInstruction, err := instruction.ValidateAndImportStakeInstructionFromString(inst)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			committeeChange, err = newB.processStakeInstruction(stakeInstruction, committeeChange)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+
+		case instruction.RANDOM_ACTION:
+			randomInstruction, err := instruction.ValidateAndImportRandomInstructionFromString(inst)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			committeeChange = newB.processAssignWithRandomInstruction(
+				randomInstruction.BtcNonce, env.ActiveShards, committeeChange, oldB, env.BeaconHeight)
+
+		case instruction.STOP_AUTO_STAKE_ACTION:
+			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			committeeChange = newB.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange, oldB)
+
+		case instruction.SWAP_SHARD_ACTION:
+			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			committeeChange, returnStakingInstruction, err = newB.processSwapShardInstruction(
+				swapShardInstruction, env, committeeChange, returnStakingInstruction, oldB)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+
+		case instruction.FINISH_SYNC_ACTION:
+			finishSyncInstruction, err := instruction.ValidateAndImportFinishSyncInstructionFromString(inst)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			committeeChange, err = newB.processFinishSyncInstruction(
+				finishSyncInstruction, env, committeeChange, oldB)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+
+		}
+	}
+
+	hashes, err := newB.Hash()
+	if err != nil {
+		return hashes, committeeChange, incurredInstructions, err
+	}
+	if !returnStakingInstruction.IsEmpty() {
+		incurredInstructions = append(incurredInstructions, returnStakingInstruction.ToString())
+	}
+	return hashes, committeeChange, incurredInstructions, nil
+}
+
 //SplitReward ...
 func (b *BeaconCommitteeStateV3) SplitReward(
 	env *BeaconCommitteeStateEnvironment) (
@@ -288,14 +440,4 @@ func (b *BeaconCommitteeStateV3) SplitReward(
 	}
 
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
-}
-
-func (b BeaconCommitteeStateV3) SyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	res := make(map[byte][]incognitokey.CommitteePublicKey)
-	for k, v := range b.syncPool {
-		res[k] = v
-	}
-	return res
 }

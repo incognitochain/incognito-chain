@@ -21,13 +21,13 @@ type beaconCommitteeStateSlashingBase struct {
 	swapRule SwapRule
 }
 
-func NewBeaconCommitteeStateSlashingBase() *beaconCommitteeStateSlashingBase {
+func newBeaconCommitteeStateSlashingBase() *beaconCommitteeStateSlashingBase {
 	return &beaconCommitteeStateSlashingBase{
 		beaconCommitteeStateBase: *newBeaconCommitteeStateBase(),
 	}
 }
 
-func NewBeaconCommitteeStateSlashingBaseWithValue(
+func newBeaconCommitteeStateSlashingBaseWithValue(
 	beaconCommittee []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
 	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
@@ -49,20 +49,8 @@ func NewBeaconCommitteeStateSlashingBaseWithValue(
 	}
 }
 
-func (b beaconCommitteeStateSlashingBase) isEmpty() bool {
-	return reflect.DeepEqual(b, NewBeaconCommitteeStateSlashingBase)
-}
-
-func (b beaconCommitteeStateSlashingBase) GetShardCommonPool() []incognitokey.CommitteePublicKey {
-	return b.shardCommonPool
-}
-
-func (b beaconCommitteeStateSlashingBase) NumberOfAssignedCandidates() int {
-	return b.numberOfAssignedCandidates
-}
-
-func (b beaconCommitteeStateSlashingBase) SwapRule() SwapRule {
-	return b.swapRule
+func (b beaconCommitteeStateSlashingBase) Version() int {
+	return SLASHING_VERSION
 }
 
 func (b *beaconCommitteeStateSlashingBase) cloneFrom(fromB beaconCommitteeStateSlashingBase) {
@@ -75,7 +63,7 @@ func (b *beaconCommitteeStateSlashingBase) cloneFrom(fromB beaconCommitteeStateS
 }
 
 func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingBase {
-	res := NewBeaconCommitteeStateSlashingBase()
+	res := newBeaconCommitteeStateSlashingBase()
 	res.beaconCommitteeStateBase = *b.beaconCommitteeStateBase.clone()
 
 	res.numberOfAssignedCandidates = b.numberOfAssignedCandidates
@@ -93,8 +81,42 @@ func (b *beaconCommitteeStateSlashingBase) reset() {
 	b.swapRule = nil // be careful here
 }
 
-func (b beaconCommitteeStateSlashingBase) Version() int {
-	return SLASHING_VERSION
+func (b beaconCommitteeStateSlashingBase) Hash() (*BeaconCommitteeStateHash, error) {
+	if b.isEmpty() {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
+	}
+	hashes, err := b.beaconCommitteeStateBase.Hash()
+	if err != nil {
+		return nil, err
+	}
+
+	shardNextEpochCandidateStr, err := incognitokey.CommitteeKeyListToString(b.shardCommonPool)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+	tempShardCandidateHash, err := common.GenerateHashFromStringArray(shardNextEpochCandidateStr)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+
+	hashes.ShardCandidateHash = tempShardCandidateHash
+	return hashes, nil
+}
+
+func (b beaconCommitteeStateSlashingBase) isEmpty() bool {
+	return reflect.DeepEqual(b, newBeaconCommitteeStateSlashingBase())
+}
+
+func (b beaconCommitteeStateSlashingBase) GetShardCommonPool() []incognitokey.CommitteePublicKey {
+	return b.shardCommonPool
+}
+
+func (b beaconCommitteeStateSlashingBase) NumberOfAssignedCandidates() int {
+	return b.numberOfAssignedCandidates
+}
+
+func (b beaconCommitteeStateSlashingBase) SwapRule() SwapRule {
+	return b.swapRule
 }
 
 func (b beaconCommitteeStateSlashingBase) GetAllCandidateSubstituteCommittee() []string {
@@ -120,28 +142,6 @@ func (beaconCommitteeStateSlashingBase) IsSwapTime(beaconHeight, numberOfBlockEa
 	} else {
 		return false
 	}
-}
-
-func (b beaconCommitteeStateSlashingBase) Hash() (*BeaconCommitteeStateHash, error) {
-	if b.isEmpty() {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
-	}
-	hashes, err := b.beaconCommitteeStateBase.Hash()
-	if err != nil {
-		return nil, err
-	}
-
-	shardNextEpochCandidateStr, err := incognitokey.CommitteeKeyListToString(b.shardCommonPool)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-	tempShardCandidateHash, err := common.GenerateHashFromStringArray(shardNextEpochCandidateStr)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-
-	hashes.ShardCandidateHash = tempShardCandidateHash
-	return hashes, nil
 }
 
 func (b beaconCommitteeStateSlashingBase) UnassignedCommonPool() []string {
@@ -172,6 +172,42 @@ func (b beaconCommitteeStateSlashingBase) getAllSubstituteCommittees() ([]string
 
 func (b *beaconCommitteeStateSlashingBase) SetSwapRule(swapRule SwapRule) {
 	b.swapRule = swapRule
+}
+
+func (b *beaconCommitteeStateSlashingBase) InitCommitteeState(env *BeaconCommitteeStateEnvironment) {
+	b.beaconCommitteeStateBase.InitCommitteeState(env)
+	b.SetSwapRule(SwapRuleByEnv(env))
+}
+
+func (b *beaconCommitteeStateSlashingBase) GenerateAllSwapShardInstructions(
+	env *BeaconCommitteeStateEnvironment) (
+	[]*instruction.SwapShardInstruction, error) {
+	swapShardInstructions := []*instruction.SwapShardInstruction{}
+	for i := 0; i < len(b.shardCommittee); i++ {
+		shardID := byte(i)
+		committees := b.shardCommittee[shardID]
+		substitutes := b.shardSubstitute[shardID]
+		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
+		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
+
+		swapShardInstruction, _, _, _, _ := b.swapRule.GenInstructions(
+			shardID,
+			tempCommittees,
+			tempSubstitutes,
+			env.MinShardCommitteeSize,
+			env.MaxShardCommitteeSize,
+			instruction.SWAP_BY_END_EPOCH,
+			env.NumberOfFixedShardBlockValidator,
+			env.MissingSignaturePenalty,
+		)
+
+		if !swapShardInstruction.IsEmpty() {
+			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
+		} else {
+			Logger.log.Infof("Generate empty swap shard instructions")
+		}
+	}
+	return swapShardInstructions, nil
 }
 
 func (b *beaconCommitteeStateSlashingBase) buildReturnStakingInstructionAndDeleteStakerInfo(
@@ -562,35 +598,4 @@ func (engine *beaconCommitteeStateSlashingBase) SplitReward(
 	}
 
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
-}
-
-func (b *beaconCommitteeStateSlashingBase) GenerateAllSwapShardInstructions(
-	env *BeaconCommitteeStateEnvironment) (
-	[]*instruction.SwapShardInstruction, error) {
-	swapShardInstructions := []*instruction.SwapShardInstruction{}
-	for i := 0; i < len(b.shardCommittee); i++ {
-		shardID := byte(i)
-		committees := b.shardCommittee[shardID]
-		substitutes := b.shardSubstitute[shardID]
-		tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
-		tempSubstitutes, _ := incognitokey.CommitteeKeyListToString(substitutes)
-
-		swapShardInstruction, _, _, _, _ := b.SwapRule().GenInstructions(
-			shardID,
-			tempCommittees,
-			tempSubstitutes,
-			env.MinShardCommitteeSize,
-			env.MaxShardCommitteeSize,
-			instruction.SWAP_BY_END_EPOCH,
-			env.NumberOfFixedShardBlockValidator,
-			env.MissingSignaturePenalty,
-		)
-
-		if !swapShardInstruction.IsEmpty() {
-			swapShardInstructions = append(swapShardInstructions, swapShardInstruction)
-		} else {
-			Logger.log.Infof("Generate empty swap shard instructions")
-		}
-	}
-	return swapShardInstructions, nil
 }
