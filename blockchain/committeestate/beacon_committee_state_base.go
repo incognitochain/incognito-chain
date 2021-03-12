@@ -241,6 +241,13 @@ func (b beaconCommitteeStateBase) GetCandidateShardWaitingForCurrentRandom() []i
 	panic("Implement this function")
 }
 
+func (b beaconCommitteeStateBase) GetCandidateBeaconWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+func (b beaconCommitteeStateBase) GetCandidateBeaconWaitingForNextRandom() []incognitokey.CommitteePublicKey {
+	panic("implement me")
+}
+
 func (b beaconCommitteeStateBase) GetShardCommonPool() []incognitokey.CommitteePublicKey {
 	panic("Implement this function")
 }

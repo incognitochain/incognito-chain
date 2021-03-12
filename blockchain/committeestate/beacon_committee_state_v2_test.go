@@ -539,10 +539,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 		[]string{}, []string{}, []string{}, []string{})
 
 	type fields struct {
-		beaconHeight                      uint64
-		beaconHash                        common.Hash
-		finalBeaconCommitteeStateV2       *BeaconCommitteeStateV2
-		uncommittedBeaconCommitteeStateV2 *BeaconCommitteeStateV2
+		BeaconCommitteeState *BeaconCommitteeStateV2
 	}
 	type args struct {
 		env *BeaconCommitteeStateEnvironment
@@ -557,7 +554,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 		{
 			name: "len(subtitutes) == len(committeess) == 0",
 			fields: fields{
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+				BeaconCommitteeState: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
@@ -583,7 +580,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 		{
 			name: "Valid Input",
 			fields: fields{
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+				BeaconCommitteeState: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
@@ -653,7 +650,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 		{
 			name: "[Valid input] SwapruleV3 - slashing + normal + swap in + 1 shard",
 			fields: fields{
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+				BeaconCommitteeState: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
@@ -708,7 +705,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 		{
 			name: "[Valid input] SwapruleV3 - slashing + normal + swap in + 2 shards",
 			fields: fields{
-				finalBeaconCommitteeStateV2: &BeaconCommitteeStateV2{
+				BeaconCommitteeState: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
@@ -787,17 +784,8 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			engine := &BeaconCommitteeEngineV2{
-				beaconCommitteeEngineSlashingBase: beaconCommitteeEngineSlashingBase{
-					beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-						beaconHeight:     tt.fields.beaconHeight,
-						beaconHash:       tt.fields.beaconHash,
-						finalState:       tt.fields.finalBeaconCommitteeStateV2,
-						uncommittedState: tt.fields.uncommittedBeaconCommitteeStateV2,
-					},
-				},
-			}
-			got, err := engine.GenerateAllSwapShardInstructions(tt.args.env)
+			b := tt.fields.BeaconCommitteeState
+			got, err := b.GenerateAllSwapShardInstructions(tt.args.env)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeEngineV2.GenerateAllRequestShardSwapInstruction() error = %v, wantErr %v", err, tt.wantErr)
 				return

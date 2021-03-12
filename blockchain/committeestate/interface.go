@@ -43,6 +43,8 @@ type BeaconCommitteeEngine interface {
 	NumberOfAssignedCandidates() int
 	IsSwapTime(uint64, uint64) bool
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeEngine
+
+	SplitReward(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
 }
 
 //ShardCommitteeEngine :
@@ -63,5 +65,4 @@ type ShardCommitteeEngine interface {
 }
 
 type RewardSplitRule interface {
-	SplitReward(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
 }
