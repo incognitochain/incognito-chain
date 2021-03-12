@@ -754,6 +754,11 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 	utxoAmount = 1 * 1e8
 	keyUtxo2, valueUtxo2 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, utxoTxHash1, utxoOutputIdx, utxoAmount)
 
+	utxoTxHash1 = "93aaa4b3109815cc33273154732d033ddc959f2aad166a5dbeac1f72b3f5e5cd"
+	utxoOutputIdx = 1
+	utxoAmount = 0.1 * 1e8
+	keyUtxo3, valueUtxo3 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, utxoTxHash1, utxoOutputIdx, utxoAmount)
+
 	// build test cases
 	testcases := []TestCaseBatchUnshieldProcess{
 		// TC0 - success: there is only one waiting unshield request, one utxo
@@ -813,6 +818,21 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 				portalcommonv4.PortalBTCIDStr: {
 					keyUtxo1: valueUtxo1,
 					keyUtxo2: valueUtxo2,
+				},
+			},
+		},
+		// TC4 - success: doesn't have enough utxos for any unshield request
+		{
+			waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
+				portalcommonv4.PortalBTCIDStr: {
+					wUnshieldReqKey5: wUnshieldReq5,
+					wUnshieldReqKey1: wUnshieldReq1,
+					wUnshieldReqKey2: wUnshieldReq2,
+				},
+			},
+			utxos: map[string]map[string]*statedb.UTXO{
+				portalcommonv4.PortalBTCIDStr: {
+					keyUtxo3: valueUtxo3,
 				},
 			},
 		},
@@ -937,6 +957,22 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 				portalcommonv4.PortalBTCIDStr: {},
 			},
 			numBeaconInsts: 1,
+		},
+		{
+			waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
+				portalcommonv4.PortalBTCIDStr: {
+					wUnshieldReqKey5: wUnshieldReq5,
+					wUnshieldReqKey1: wUnshieldReq1,
+					wUnshieldReqKey2: wUnshieldReq2,
+				},
+			},
+			batchUnshieldProcesses: map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{},
+			utxos: map[string]map[string]*statedb.UTXO{
+				portalcommonv4.PortalBTCIDStr: {
+					keyUtxo3: valueUtxo3,
+				},
+			},
+			numBeaconInsts: 0,
 		},
 	}
 
