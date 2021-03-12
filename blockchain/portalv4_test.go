@@ -4,25 +4,29 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/incognitochain/incognito-chain/mocks"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/blockcypher/gobcy"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/mocks"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
+	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -30,6 +34,7 @@ var _ = func() (_ struct{}) {
 	Logger.Init(common.NewBackend(nil).Logger("test", true))
 	portalprocessv4.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	portaltokensv4.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	btcrelaying.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	Logger.log.Info("This runs before init()!")
 	return
 }()
@@ -98,8 +103,8 @@ func (s *PortalTestSuiteV4) SetupTest() {
 		},
 		BatchNumBlks:               45,
 		PortalReplacementAddress:   "",
-		MaxFeeForEachStep:          0,
-		TimeSpaceForFeeReplacement: 0,
+		MaxFeeForEachStep:          500,
+		TimeSpaceForFeeReplacement: 2 * time.Minute,
 	}
 	s.blockChain = &BlockChain{
 		config: Config{
@@ -376,11 +381,87 @@ func buildShieldingRequestActionsFromTcs(tcs []TestCaseShieldingRequest, shardID
 	return insts
 }
 
+func getBlockCypherAPI(networkName string) gobcy.API {
+	//explicitly
+	bc := gobcy.API{}
+	bc.Token = "cbaa6f3dc69b42079f5bab8c31c50bdf"
+	bc.Coin = "btc"        //options: "btc","bcy","ltc","doge"
+	bc.Chain = networkName //depending on coin: "main","test3","test"
+	return bc
+}
+
+func buildBTCBlockFromCypher(networkName string, blkHeight int) (*btcutil.Block, error) {
+	bc := getBlockCypherAPI(networkName)
+	cypherBlock, err := bc.GetBlock(blkHeight, "", nil)
+	if err != nil {
+		return nil, err
+	}
+	prevBlkHash, _ := chainhash.NewHashFromStr(cypherBlock.PrevBlock)
+	merkleRoot, _ := chainhash.NewHashFromStr(cypherBlock.MerkleRoot)
+	msgBlk := wire.MsgBlock{
+		Header: wire.BlockHeader{
+			Version:    int32(cypherBlock.Ver),
+			PrevBlock:  *prevBlkHash,
+			MerkleRoot: *merkleRoot,
+			Timestamp:  cypherBlock.Time,
+			Bits:       uint32(cypherBlock.Bits),
+			Nonce:      uint32(cypherBlock.Nonce),
+		},
+		Transactions: []*wire.MsgTx{},
+	}
+	blk := btcutil.NewBlock(&msgBlk)
+	blk.SetHeight(int32(blkHeight))
+	return blk, nil
+}
+
+func setGenesisBlockToChainParams(networkName string, genesisBlkHeight int) (*chaincfg.Params, error) {
+	blk, err := buildBTCBlockFromCypher(networkName, genesisBlkHeight)
+	if err != nil {
+		return nil, err
+	}
+
+	chainParams := chaincfg.TestNet3Params
+	chainParams.GenesisBlock = blk.MsgBlock()
+	chainParams.GenesisHash = blk.Hash()
+	return &chainParams, nil
+}
+
 func (s *PortalTestSuiteV4) TestShieldingRequest() {
 	fmt.Println("Running TestShieldingRequest - beacon height 1003 ...")
-	bc := s.blockChain
 
-	// TODO: Init btc relaying blockchain and/or turn off verify merkle roof
+	networkName := "test3"
+	genesisBlockHeight := 1939008
+	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
+	dbName := "btc-blocks-test"
+	btcChain, err := btcrelaying.GetChainV2(dbName, chainParams, int32(genesisBlockHeight))
+	defer os.RemoveAll(dbName)
+
+	if err != nil {
+		s.FailNow(fmt.Sprintf("Could not get chain instance with err: %v", err), nil)
+		return
+	}
+
+	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+10; i++ {
+		blk, err := buildBTCBlockFromCypher(networkName, i)
+		if err != nil {
+			s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)
+			return
+		}
+		isMainChain, isOrphan, err := btcChain.ProcessBlockV2(blk, 0)
+		if err != nil {
+			s.FailNow(fmt.Sprintf("ProcessBlock fail on block %v: %v\n", i, err))
+			return
+		}
+		if isOrphan {
+			s.FailNow(fmt.Sprintf("ProcessBlock incorrectly returned block %v is an orphan\n", i))
+			return
+		}
+		fmt.Printf("Block %s (%d) is on main chain: %t\n", blk.Hash(), blk.Height(), isMainChain)
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	bc := new(mocks.ChainRetriever)
+	bc.On("GetBTCHeaderChain").Return(btcChain)
 
 	pm := portal.NewPortalManager()
 	beaconHeight := uint64(1003)
@@ -924,7 +1005,7 @@ const BatchID1 = "batch1"
 const BatchID2 = "batch2"
 const BatchID3 = "batch3"
 const keyBatchShield1 = "9da36f3e18071935a3d812f47e2cb86f48f49260d89b62fbf8b8c9bdc1cceb5a"
-const keyBatchShield2 = "b83ad865d55f3e5399e455ad5c561ecc9b31f8cb681df4129d4538f9bfcd4cad"
+const keyBatchShield2 = "b83ad865d55f3e5399e455ad5c561ecc9b31f8cbd89b62fbf8b8c9bdc1cceb5a"
 const keyBatchShield3 = "8da36f3e18071935a3d812f47e2cb86f48f49260681df4129d4538f9bfcd4cad"
 
 type OutPut struct {
@@ -1184,12 +1265,12 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		processedUnshieldRequests: processedUnshieldRequests,
 		numBeaconInsts:            6,
 		statusInsts: []string{
-			pCommon.PortalRequestRejectedChainStatus,
-			pCommon.PortalRequestRejectedChainStatus,
-			pCommon.PortalRequestAcceptedChainStatus,
-			pCommon.PortalRequestRejectedChainStatus,
-			pCommon.PortalRequestAcceptedChainStatus,
-			pCommon.PortalRequestRejectedChainStatus,
+			portalcommonv4.PortalV4RequestRejectedChainStatus,
+			portalcommonv4.PortalV4RequestRejectedChainStatus,
+			portalcommonv4.PortalV4RequestAcceptedChainStatus,
+			portalcommonv4.PortalV4RequestRejectedChainStatus,
+			portalcommonv4.PortalV4RequestAcceptedChainStatus,
+			portalcommonv4.PortalV4RequestRejectedChainStatus,
 		},
 	}
 
@@ -1198,8 +1279,47 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 
 func (s *PortalTestSuiteV4) TestFeeReplacement() {
 	fmt.Println("Running TestCaseFeeReplacement - beacon height 1501 ...")
+	networkName := "test3"
+	genesisBlockHeight := 1938974
+	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
+	dbName := "btc-blocks-test"
+	btcChain, err := btcrelaying.GetChainV2(dbName, chainParams, int32(genesisBlockHeight))
+	defer os.RemoveAll(dbName)
+
+	if err != nil {
+		s.FailNow(fmt.Sprintf("Could not get chain instance with err: %v", err), nil)
+		return
+	}
+
+	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+10; i++ {
+		blk, err := buildBTCBlockFromCypher(networkName, i)
+		if err != nil {
+			s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)
+			return
+		}
+		isMainChain, isOrphan, err := btcChain.ProcessBlockV2(blk, 0)
+		if err != nil {
+			s.FailNow(fmt.Sprintf("ProcessBlock fail on block %v: %v\n", i, err))
+			return
+		}
+		if isOrphan {
+			s.FailNow(fmt.Sprintf("ProcessBlock incorrectly returned block %v is an orphan\n", i))
+			return
+		}
+		fmt.Printf("Block %s (%d) is on main chain: %t\n", blk.Hash(), blk.Height(), isMainChain)
+		time.Sleep(500 * time.Millisecond)
+	}
+
 	bc := new(mocks.ChainRetriever)
-	bc.On("GetBTCHeaderChain").Return(&btcrelaying.BlockChain{})
+	bc.On("GetBTCHeaderChain").Return(btcChain)
+	bc.On("CheckBlockTimeIsReachedByBeaconHeight", mock.AnythingOfTypeArgument("uint64"), mock.AnythingOfTypeArgument("uint64"), mock.AnythingOfTypeArgument("time.Duration")).Return(
+		func(recentBeaconHeight, beaconHeight uint64, duration time.Duration) bool {
+			{
+				return (recentBeaconHeight+1)-beaconHeight >= s.blockChain.convertDurationTimeToBeaconBlocks(duration)
+			}
+		})
+	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
+
 	beaconHeight := uint64(1501)
 	shardHeights := map[byte]uint64{
 		0: uint64(1501),
@@ -1445,10 +1565,10 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 		processedUnshieldRequests: processedUnshieldRequests,
 		numBeaconInsts:            4,
 		statusInsts: []string{
-			pCommon.PortalRequestAcceptedChainStatus,
-			pCommon.PortalRequestRejectedChainStatus,
-			pCommon.PortalRequestRejectedChainStatus,
-			pCommon.PortalRequestRejectedChainStatus,
+			portalcommonv4.PortalV4RequestAcceptedChainStatus,
+			portalcommonv4.PortalV4RequestRejectedChainStatus,
+			portalcommonv4.PortalV4RequestRejectedChainStatus,
+			portalcommonv4.PortalV4RequestRejectedChainStatus,
 		},
 		utxos: utxos,
 	}
@@ -1458,8 +1578,40 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 
 func (s *PortalTestSuiteV4) TestSubmitConfirmedTx() {
 	fmt.Println("Running TestSubmitConfirmedTx - beacon height 1501 ...")
+	networkName := "test3"
+	genesisBlockHeight := 1938974
+	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
+	dbName := "btc-blocks-test"
+	btcChain, err := btcrelaying.GetChainV2(dbName, chainParams, int32(genesisBlockHeight))
+	defer os.RemoveAll(dbName)
+
+	if err != nil {
+		s.FailNow(fmt.Sprintf("Could not get chain instance with err: %v", err), nil)
+		return
+	}
+
+	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+10; i++ {
+		blk, err := buildBTCBlockFromCypher(networkName, i)
+		if err != nil {
+			s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)
+			return
+		}
+		isMainChain, isOrphan, err := btcChain.ProcessBlockV2(blk, 0)
+		if err != nil {
+			s.FailNow(fmt.Sprintf("ProcessBlock fail on block %v: %v\n", i, err))
+			return
+		}
+		if isOrphan {
+			s.FailNow(fmt.Sprintf("ProcessBlock incorrectly returned block %v is an orphan\n", i))
+			return
+		}
+		fmt.Printf("Block %s (%d) is on main chain: %t\n", blk.Hash(), blk.Height(), isMainChain)
+		time.Sleep(500 * time.Millisecond)
+	}
+
 	bc := new(mocks.ChainRetriever)
-	bc.On("GetBTCHeaderChain").Return(&btcrelaying.BlockChain{})
+	bc.On("GetBTCHeaderChain").Return(btcChain)
+
 	beaconHeight := uint64(1501)
 	shardHeights := map[byte]uint64{
 		0: uint64(1501),
