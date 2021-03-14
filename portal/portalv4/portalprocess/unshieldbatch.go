@@ -101,9 +101,22 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 		// use default unshield fee in nano ptoken
 		feeUnshield := portalParams.DefaultFeeUnshields[tokenID]
 
+		// only process for waiting unshield request has enough minimum confirmation incognito blocks (avoid fork beacon chain)
+		wReqForProcess := map[string]*statedb.WaitingUnshieldRequest{}
+		for key, wR := range wReqs {
+			if wR.GetBeaconHeight() + uint64(portalParams.MinConfirmationIncBlockNum) > beaconHeight {
+				continue
+			}
+			wReqForProcess[key] = statedb.NewWaitingUnshieldRequestStateWithValue(
+				wR.GetRemoteAddress(),
+				wR.GetAmount(),
+				wR.GetUnshieldID(),
+				wR.GetBeaconHeight())
+		}
+
 		// choose waiting unshield IDs to process with current UTXOs
 		utxos := CurrentPortalStateV4.UTXOs[tokenID]
-		broadCastTxs := portalTokenProcessor.ChooseUnshieldIDsFromCandidates(utxos, wReqs)
+		broadCastTxs := portalTokenProcessor.ChooseUnshieldIDsFromCandidates(utxos, wReqForProcess)
 
 		// create raw external txs
 		for _, bcTx := range broadCastTxs {

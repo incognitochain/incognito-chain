@@ -101,6 +101,7 @@ func (s *PortalTestSuiteV4) SetupTest() {
 			portalcommonv4.PortalBTCIDStr: 1000000, // in nano pBTC - 1000000 satoshi ~ 4 usd
 		},
 		BatchNumBlks:               45,
+		MinConfirmationIncBlockNum: 3,
 		PortalReplacementAddress:   "",
 		MaxFeeForEachStep:          0,
 		TimeSpaceForFeeReplacement: 0,
@@ -739,6 +740,14 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 	wUnshieldReq5 := statedb.NewWaitingUnshieldRequestStateWithValue(
 		remoteAddr5, unshieldAmt5, unshieldId5, beaconHeight)
 
+	unshieldId6 := common.HashH([]byte{6}).String()
+	unshieldAmt6 := uint64(0.1 * 1e9)
+	remoteAddr6 := USER_BTC_ADDRESS_2
+	beaconHeight = uint64(43)
+	wUnshieldReqKey6 := statedb.GenerateWaitingUnshieldRequestObjectKey(portalcommonv4.PortalBTCIDStr, unshieldId6).String()
+	wUnshieldReq6 := statedb.NewWaitingUnshieldRequestStateWithValue(
+		remoteAddr6, unshieldAmt6, unshieldId6, beaconHeight)
+
 	// utxos
 	walletAddress := "2MvpFqydTR43TT4emMD84Mzhgd8F6dCow1X"
 	var utxoTxHash1 string
@@ -829,6 +838,19 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 					wUnshieldReqKey5: wUnshieldReq5,
 					wUnshieldReqKey1: wUnshieldReq1,
 					wUnshieldReqKey2: wUnshieldReq2,
+				},
+			},
+			utxos: map[string]map[string]*statedb.UTXO{
+				portalcommonv4.PortalBTCIDStr: {
+					keyUtxo3: valueUtxo3,
+				},
+			},
+		},
+		// TC5 - success: there is a waiting unshield request hasn't enough confirmation blocks
+		{
+			waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
+				portalcommonv4.PortalBTCIDStr: {
+					wUnshieldReqKey6: wUnshieldReq6,
 				},
 			},
 			utxos: map[string]map[string]*statedb.UTXO{
@@ -965,6 +987,20 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 					wUnshieldReqKey5: wUnshieldReq5,
 					wUnshieldReqKey1: wUnshieldReq1,
 					wUnshieldReqKey2: wUnshieldReq2,
+				},
+			},
+			batchUnshieldProcesses: map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{},
+			utxos: map[string]map[string]*statedb.UTXO{
+				portalcommonv4.PortalBTCIDStr: {
+					keyUtxo3: valueUtxo3,
+				},
+			},
+			numBeaconInsts: 0,
+		},
+		{
+			waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
+				portalcommonv4.PortalBTCIDStr: {
+					wUnshieldReqKey6: wUnshieldReq6,
 				},
 			},
 			batchUnshieldProcesses: map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{},
