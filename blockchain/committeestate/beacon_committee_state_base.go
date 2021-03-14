@@ -244,11 +244,6 @@ func (b beaconCommitteeStateBase) GetAllCandidateSubstituteCommittee() []string 
 	return b.getAllCandidateSubstituteCommittee()
 }
 
-// TODO: @0xmerman
-func (b beaconCommitteeStateBase) GetUncommittedCommittee() map[byte][]incognitokey.CommitteePublicKey {
-	panic("implement me")
-}
-
 func (b beaconCommitteeStateBase) SyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
 	return map[byte][]incognitokey.CommitteePublicKey{}
 }

@@ -250,7 +250,7 @@ func (beaconBestState *BeaconBestState) GetShardCommitteeFlattenList() []string 
 func (beaconBestState *BeaconBestState) getUncommittedShardCommitteeFlattenList() []string {
 
 	committees := []string{}
-	for _, committeeStructs := range beaconBestState.beaconCommitteeState.GetUncommittedCommittee() {
+	for _, committeeStructs := range beaconBestState.beaconCommitteeState.GetShardCommittee() {
 		for _, committee := range committeeStructs {
 			res, _ := committee.ToBase58()
 			committees = append(committees, res)

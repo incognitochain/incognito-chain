@@ -347,22 +347,6 @@ func (_m *BeaconCommitteeState) GetStakingTx() map[string]common.Hash {
 	return r0
 }
 
-// GetUncommittedCommittee provides a mock function with given fields:
-func (_m *BeaconCommitteeState) GetUncommittedCommittee() map[byte][]incognitokey.CommitteePublicKey {
-	ret := _m.Called()
-
-	var r0 map[byte][]incognitokey.CommitteePublicKey
-	if rf, ok := ret.Get(0).(func() map[byte][]incognitokey.CommitteePublicKey); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[byte][]incognitokey.CommitteePublicKey)
-		}
-	}
-
-	return r0
-}
-
 // Hash provides a mock function with given fields:
 func (_m *BeaconCommitteeState) Hash() (*committeestate.BeaconCommitteeStateHash, error) {
 	ret := _m.Called()
