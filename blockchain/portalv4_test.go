@@ -675,6 +675,15 @@ func (s *PortalTestSuiteV4) TestUnshieldRequest() {
 
 	s.Equal(expectedResult.waitingUnshieldReqs, s.currentPortalStateForProducer.WaitingUnshieldRequests)
 	s.Equal(s.currentPortalStateForProcess, s.currentPortalStateForProducer)
+
+
+	str := fmt.Sprintf("%d", beaconHeight)
+	dataBytes := []byte(fmt.Sprintf("%d", beaconHeight))
+	//dataBytes2 := []byte(beaconHeight)
+	fmt.Println("str: ", str)
+	fmt.Println("dataBytes: ", dataBytes)
+
+
 }
 
 /*
