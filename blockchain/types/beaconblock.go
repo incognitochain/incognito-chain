@@ -135,6 +135,10 @@ func (beaconBlock BeaconBlock) CommitteeFromBlock() common.Hash {
 	return common.Hash{}
 }
 
+func (beaconBlock BeaconBlock) PreviousBestBlockHash() common.Hash {
+	return beaconBlock.Header.PreviousBlockHash
+}
+
 func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
 	tempBeaconBlock := &struct {
 		ValidationData string `json:"ValidationData"`

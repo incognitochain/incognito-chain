@@ -3,14 +3,17 @@ package syncker
 import (
 	"context"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
+	"github.com/incognitochain/incognito-chain/peerv2"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -23,23 +26,32 @@ type ShardPeerState struct {
 }
 
 type ShardSyncProcess struct {
-	isCommittee           bool
-	isCatchUp             bool
-	shardID               int
-	status                string                    //stop, running
-	shardPeerState        map[string]ShardPeerState //peerid -> state
-	shardPeerStateCh      chan *wire.MessagePeerState
-	crossShardSyncProcess *CrossShardSyncProcess
-	blockchain            *blockchain.BlockChain
-	Network               Network
-	Chain                 ShardChainInterface
-	beaconChain           Chain
-	shardPool             *BlkPool
-	actionCh              chan func()
-	lock                  *sync.RWMutex
+	isCommittee            bool
+	isCatchUp              bool
+	finalBeaconBlockHeight uint64
+	shardID                int
+	status                 string                    //stop, running
+	shardPeerState         map[string]ShardPeerState //peerid -> state
+	shardPeerStateCh       chan *wire.MessagePeerState
+	crossShardSyncProcess  *CrossShardSyncProcess
+	blockchain             *blockchain.BlockChain
+	Network                Network
+	Chain                  ShardChainInterface
+	beaconChain            Chain
+	shardPool              *BlkPool
+	actionCh               chan func()
+	consensus              peerv2.ConsensusData
+	lock                   *sync.RWMutex
 }
 
-func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain, beaconChain BeaconChainInterface, chain ShardChainInterface) *ShardSyncProcess {
+func NewShardSyncProcess(
+	shardID int,
+	network Network,
+	bc *blockchain.BlockChain,
+	beaconChain BeaconChainInterface,
+	chain ShardChainInterface,
+	consensus peerv2.ConsensusData,
+) *ShardSyncProcess {
 	var isOutdatedBlock = func(blk interface{}) bool {
 		if blk.(*types.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
 			return true
@@ -57,6 +69,7 @@ func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain
 		shardPool:        NewBlkPool("ShardPool-"+string(shardID), isOutdatedBlock),
 		shardPeerState:   make(map[string]ShardPeerState),
 		shardPeerStateCh: make(chan *wire.MessagePeerState),
+		consensus:        consensus,
 
 		actionCh: make(chan func()),
 	}
@@ -205,6 +218,20 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		} else {
 			if len(s.shardPeerState) > 0 {
 				s.isCatchUp = true
+				committeeView := s.blockchain.BeaconChain.FinalView().(*blockchain.BeaconBestState)
+				if s.finalBeaconBlockHeight < committeeView.BeaconHeight {
+					s.finalBeaconBlockHeight = committeeView.BeaconHeight
+					if committeeView.CommitteeEngineVersion() == committeestate.DCS_VERSION {
+						syncingValidators := s.consensus.SyncingValidatorsByShardID(s.shardID)
+						if committeeView.ShouldSendFinishSyncMessage(syncingValidators, byte(s.shardID)) {
+							msg := &wire.MessageFinishSync{
+								CommitteePublicKey: syncingValidators,
+								ShardID:            byte(s.shardID),
+							}
+							s.Network.PublishMessageToShard(msg, common.BeaconChainID)
+						}
+					}
+				}
 			}
 			time.Sleep(time.Second * 5)
 		}
@@ -252,7 +279,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 	if !((pState.BestViewHeight == s.Chain.GetBestViewHeight()) && (s.Chain.GetBestViewHash() != pState.BestViewHash)) {
 		peerID = ""
 		requestCnt++
-	} 
+	}
 	//fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
 	ch, err := s.Network.RequestShardBlocksViaStream(ctx, peerID, s.shardID, s.Chain.GetFinalViewHeight()+1, toHeight)
 	// ch, err := s.Server.RequestShardBlocksViaStream(ctx, "", s.shardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
@@ -262,7 +289,6 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 		return
 	}
 
-	
 	insertTime := time.Now()
 	for {
 		select {

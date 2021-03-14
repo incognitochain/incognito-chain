@@ -17,6 +17,7 @@ import (
 )
 
 type ConsensusData interface {
+	SyncingValidatorsByShardID(int) []string
 	GetOneValidator() *consensus.Validator
 	GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
 }
@@ -289,7 +290,7 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 			Logger.Warn(err)
 			return
 		}
-
+		//Logger.Info("[dcs] sub.Topic():", sub.Topic())
 		inbox <- msg
 	}
 }
@@ -308,14 +309,14 @@ func (sub *SubManager) registerToProxy(
 	role string,
 	shardID []byte,
 ) (msgToTopics, userRole, error) {
-	messagesWanted := getMessagesForLayer(layer, shardID)
-	Logger.Infof("Registering: message: %v", messagesWanted)
+	messagesWanted := getMessagesForLayer(layer, role, shardID)
 	// Logger.Infof("Registering: nodeMode: %v", sub.nodeMode)
 	Logger.Infof("Registering: layer: %v", layer)
 	Logger.Infof("Registering: role: %v", role)
 	Logger.Infof("Registering: shardID: %v", shardID)
 	Logger.Infof("Registering: peerID: %v", sub.peerID.String())
 	Logger.Infof("Registering: pubkey: %v", pubkey)
+	Logger.Infof("Registering: wantedMessages: %v", messagesWanted)
 
 	pairs, topicRole, err := sub.registerer.Register(
 		context.Background(),
@@ -339,6 +340,7 @@ func (sub *SubManager) registerToProxy(
 			})
 		}
 	}
+
 	r := userRole{
 		layer:   topicRole.Layer,
 		role:    topicRole.Role,
@@ -347,32 +349,55 @@ func (sub *SubManager) registerToProxy(
 	return topics, r, nil
 }
 
-func getMessagesForLayer(layer string, shardID []byte) []string {
-	if layer == common.ShardRole {
-		return []string{
-			wire.CmdBlockShard,
+func getMessagesForLayer(layer, role string, shardID []byte) []string {
+	msgs := []string{}
+	switch layer {
+	case common.ShardRole:
+		switch role {
+		case common.CommitteeRole:
+			msgs = []string{
+				wire.CmdBlockShard,
+				wire.CmdBlockBeacon,
+				wire.CmdBFT,
+				wire.CmdPeerState,
+				wire.CmdCrossShard,
+				wire.CmdTx,
+				wire.CmdPrivacyCustomToken,
+			}
+
+		case common.SyncingRole:
+			msgs = []string{
+				wire.CmdBlockBeacon,
+				wire.CmdMsgFinishSync,
+				wire.CmdPeerState,
+				wire.CmdTx,
+				wire.CmdPrivacyCustomToken,
+			}
+		case common.PendingRole:
+			msgs = []string{
+				wire.CmdBlockBeacon,
+				wire.CmdPeerState,
+				wire.CmdTx,
+				wire.CmdPrivacyCustomToken,
+			}
+		}
+
+	case common.BeaconRole:
+		msgs = []string{
 			wire.CmdBlockBeacon,
 			wire.CmdBFT,
 			wire.CmdPeerState,
-			wire.CmdCrossShard,
-			wire.CmdTx,
-			wire.CmdPrivacyCustomToken,
-		}
-	} else if layer == common.BeaconRole {
-		return []string{
-			wire.CmdBlockBeacon,
-			wire.CmdBFT,
-			wire.CmdPeerState,
 			wire.CmdBlockShard,
+			wire.CmdMsgFinishSync,
 		}
-	} else {
+	default:
 		containShard := false
 		for _, s := range shardID {
 			if s != HighwayBeaconID {
 				containShard = true
 			}
 		}
-		msgs := []string{
+		msgs = []string{
 			wire.CmdBlockBeacon,
 			wire.CmdPeerState,
 			wire.CmdTx,
@@ -381,8 +406,6 @@ func getMessagesForLayer(layer string, shardID []byte) []string {
 		if containShard {
 			msgs = append(msgs, wire.CmdBlockShard)
 		}
-		return msgs
 	}
-
-	return []string{}
+	return msgs
 }

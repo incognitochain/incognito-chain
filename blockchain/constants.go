@@ -28,6 +28,7 @@ const (
 	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
 	NumberOfFixedBeaconBlockValidators = 4
 	NumberOfFixedShardBlockValidators  = 4
+	divideShardCommitteesPartThreshold = 2
 )
 
 // burning addresses
@@ -108,8 +109,8 @@ const (
 	TestnetName              = "testnet"
 	TestnetDefaultPort       = "9444"
 	TestnetGenesisBlockTime  = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch             = 100
-	TestnetRandomTime        = 50
+	TestnetEpoch             = 5
+	TestnetRandomTime        = 3
 	TestnetEpochV2BreakPoint = 1e9
 	TestnetEpochV2           = 100
 	TestnetRandomTimeV2      = 50
@@ -117,12 +118,14 @@ const (
 	TestnetSwapOffset        = 1
 	TestnetAssignOffset      = 2
 
-	TestNetShardCommitteeSize     = 32
+	//Committee size
+	TestNetShardCommitteeSize     = 6
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
-	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+	//
+	TestNetActiveShards       = 1
+	TestNetStakingAmountShard = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
 	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second

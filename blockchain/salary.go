@@ -5,11 +5,10 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/instruction"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -62,7 +61,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 	epoch := uint64(0)
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == instruction.STAKE_ACTION || l[0] == instruction.RANDOM_ACTION {
+			if l[0] == instruction.STAKE_ACTION || l[0] == instruction.RANDOM_ACTION || l[0] == instruction.FINISH_SYNC_ACTION {
 				continue
 			}
 			if len(l) <= 2 {
@@ -178,7 +177,7 @@ func (beaconBestState *BeaconBestState) calculateReward(
 	map[common.Hash]uint64,
 	map[common.Hash]uint64, error,
 ) {
-	numberOfActiveShards := beaconBestState.beaconCommitteeEngine.ActiveShards()
+	numberOfActiveShards := beaconBestState.beaconCommitteeState.ActiveShards()
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
 	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
 	percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
@@ -216,7 +215,7 @@ func (beaconBestState *BeaconBestState) calculateReward(
 			byte(id),
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := beaconBestState.
-			beaconCommitteeEngine.SplitReward(env)
+			beaconCommitteeState.SplitReward(env)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}

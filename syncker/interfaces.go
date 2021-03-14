@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/wire"
 
 	"github.com/incognitochain/incognito-chain/incdb"
 
@@ -19,6 +20,7 @@ type Network interface {
 	RequestCrossShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, toSID int, hashes [][]byte) (blockCh chan types.BlockInterface, err error)
 	RequestBeaconBlocksByHashViaStream(ctx context.Context, peerID string, hashes [][]byte) (blockCh chan types.BlockInterface, err error)
 	RequestShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan types.BlockInterface, err error)
+	PublishMessageToShard(msg wire.Message, shardID byte) error
 }
 
 type BeaconChainInterface interface {

@@ -2,10 +2,12 @@ package statedb
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
+//@tin use this function for add reward
 // Reward in Beacon
 func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash, rewardAmount uint64) error {
 	key := GenerateRewardRequestObjectKey(epoch, shardID, tokenID)

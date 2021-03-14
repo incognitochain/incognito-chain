@@ -2,7 +2,8 @@
 echo "Start Install Dependencies Package"
 GO111MODULE=on go get -v
 
-cd ./blockchain/committeestate/ && mockery --name=BeaconCommitteeEngine && cd -
+cd ./blockchain/committeestate/ && mockery --name=BeaconCommitteeState --outpkg=externalmocks --output=./externalmocks && cd -
+cd ./blockchain/committeestate/ && mockery --name=RewardSplitRule --outpkg=externalmocks --output=./externalmocks && cd -
 cd ./metadata/ && mockery --name=ChainRetriever && mockery --name=BeaconViewRetriever && mockery --name=ShardViewRetriever && mockery --name=Transaction && cd -
 echo "Start Unit-Test"
 echo "package committeestate"

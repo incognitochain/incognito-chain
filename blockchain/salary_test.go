@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate/mocks"
+	mocks "github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
@@ -740,7 +740,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 	shardReward := []uint64{933543, 787677}
 	daoReward := []uint64{109399, 109399}
 	sDBs := []*statedb.StateDB{}
-	committeeEngines := []*mocks.BeaconCommitteeEngine{}
+	committeeStates := []*mocks.BeaconCommitteeState{}
 	for i := 0; i < 2; i++ {
 		sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 		assert.Nil(t, err)
@@ -750,14 +750,14 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 			)
 		}
 		sDBs = append(sDBs, sDB)
-		committeeEngine := &mocks.BeaconCommitteeEngine{}
-		committeeEngine.On("ActiveShards").Return(8)
-		committeeEngine.On("GetBeaconCommittee").Return(
+		committeeState := &mocks.BeaconCommitteeState{}
+		committeeState.On("ActiveShards").Return(8)
+		committeeState.On("GetBeaconCommittee").Return(
 			[]incognitokey.CommitteePublicKey{
 				*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
 			},
 		)
-		committeeEngine.On("GetShardCommittee").Return(
+		committeeState.On("GetShardCommittee").Return(
 			map[byte][]incognitokey.CommitteePublicKey{
 				0: []incognitokey.CommitteePublicKey{
 					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
@@ -826,7 +826,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 			},
 		)
 		for j := 0; j < 8; j++ {
-			committeeEngine.On("SplitReward", &committeestate.BeaconCommitteeStateEnvironment{
+			committeeState.On("SplitReward", &committeestate.BeaconCommitteeStateEnvironment{
 				ActiveShards:           8,
 				DAOPercent:             10,
 				PercentCustodianReward: 0,
@@ -846,7 +846,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 				nil,
 			)
 		}
-		committeeEngines = append(committeeEngines, committeeEngine)
+		committeeStates = append(committeeStates, committeeState)
 	}
 
 	type fields struct {
@@ -869,7 +869,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 		ActiveShards             int
 		ConsensusAlgorithm       string
 		ShardConsensusAlgorithm  map[byte]string
-		beaconCommitteeEngine    committeestate.BeaconCommitteeEngine
+		BeaconCommitteeState     committeestate.BeaconCommitteeState
 		LastCrossShardState      map[byte]map[byte]uint64
 		ShardHandle              map[byte]bool
 		NumOfBlocksByProducers   map[string]uint64
@@ -905,7 +905,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 		{
 			name: "Year 1 - V2",
 			fields: fields{
-				beaconCommitteeEngine: committeeEngines[0],
+				BeaconCommitteeState: committeeStates[0],
 			},
 			args: args{
 				blockchain: &BlockChain{
@@ -957,7 +957,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 		{
 			name: "Year 1 - V1",
 			fields: fields{
-				beaconCommitteeEngine: committeeEngines[1],
+				BeaconCommitteeState: committeeStates[1],
 			},
 			args: args{
 				blockchain: &BlockChain{
@@ -1029,7 +1029,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 				ActiveShards:             tt.fields.ActiveShards,
 				ConsensusAlgorithm:       tt.fields.ConsensusAlgorithm,
 				ShardConsensusAlgorithm:  tt.fields.ShardConsensusAlgorithm,
-				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
+				beaconCommitteeState:     tt.fields.BeaconCommitteeState,
 				LastCrossShardState:      tt.fields.LastCrossShardState,
 				ShardHandle:              tt.fields.ShardHandle,
 				BlockInterval:            tt.fields.BlockInterval,

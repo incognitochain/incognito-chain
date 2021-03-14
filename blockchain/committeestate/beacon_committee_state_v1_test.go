@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-func TestBeaconCommitteeEngineV1_SplitReward(t *testing.T) {
+func TestBeaconCommitteeStateV1_SplitReward(t *testing.T) {
 
 	initLog()
 
@@ -77,12 +77,8 @@ func TestBeaconCommitteeEngineV1_SplitReward(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := &BeaconCommitteeEngineV1{
-				beaconHeight:                      10,
-				beaconHash:                        common.Hash{},
-				beaconCommitteeStateV1:            &BeaconCommitteeStateV1{},
-				uncommittedBeaconCommitteeStateV1: &BeaconCommitteeStateV1{},
-				version:                           1,
+			b := &BeaconCommitteeStateV1{
+				beaconCommitteeStateBase: beaconCommitteeStateBase{},
 			}
 			got, got1, got2, got3, err := b.SplitReward(tt.args.env)
 			if (err != nil) != tt.wantErr {

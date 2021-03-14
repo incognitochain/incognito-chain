@@ -12,6 +12,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv4"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
@@ -149,6 +151,8 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 		tempProducer = committee[tempProducerID]
 		b58Str, _ = tempProducer.ToBase58()
 		if strings.Compare(b58Str, proposer) != 0 {
+			fmt.Println("[dcs] b58Str:", b58Str)
+			fmt.Println("[dcs] proposer:", proposer)
 			return fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, proposer)
 		}
 	}
@@ -161,15 +165,23 @@ func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusT
 		return blsbft.ValidateProducerSig(block)
 	} else if block.GetVersion() == 2 {
 		return blsbftv2.ValidateProducerSig(block)
+	} else if block.GetVersion() == 3 {
+		return blsbftv3.ValidateProducerSig(block)
+	} else if block.GetVersion() == 4 {
+		return blsbftv4.ValidateProducerSig(block)
 	}
 	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }
 
-func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committees, committeesForSigning []incognitokey.CommitteePublicKey) error {
 	if block.GetVersion() == 1 {
-		return blsbft.ValidateCommitteeSig(block, committee)
+		return blsbft.ValidateCommitteeSig(block, committees)
 	} else if block.GetVersion() == 2 {
-		return blsbftv2.ValidateCommitteeSig(block, committee)
+		return blsbftv2.ValidateCommitteeSig(block, committees)
+	} else if block.GetVersion() == 3 {
+		return blsbftv3.ValidateCommitteeSig(block, committees)
+	} else if block.GetVersion() == 4 {
+		return blsbftv4.ValidateCommitteeSig(block, committees, committeesForSigning)
 	}
 	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }
@@ -187,6 +199,10 @@ func (engine *Engine) ExtractBridgeValidationData(block types.BlockInterface) ([
 		return blsbft.ExtractBridgeValidationData(block)
 	} else if block.GetVersion() == 2 {
 		return blsbftv2.ExtractBridgeValidationData(block)
+	} else if block.GetVersion() == 3 {
+		return blsbftv3.ExtractBridgeValidationData(block)
+	} else if block.GetVersion() == 4 {
+		return blsbftv4.ExtractBridgeValidationData(block)
 	}
 	return nil, nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))
 }

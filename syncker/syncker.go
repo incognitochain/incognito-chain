@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/peerv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -28,6 +28,7 @@ type SynckerManagerConfig struct {
 	Network    Network
 	Blockchain *blockchain.BlockChain
 	Consensus  peerv2.ConsensusData
+	MiningKey  string
 }
 
 type SynckerManager struct {
@@ -72,11 +73,15 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	//init shard sync process
 	for _, chain := range synckerManager.config.Blockchain.ShardChain {
 		sid := chain.GetShardID()
-		synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(sid, synckerManager.config.Network, synckerManager.config.Blockchain, synckerManager.config.Blockchain.BeaconChain, chain)
+		synckerManager.ShardSyncProcess[sid] = NewShardSyncProcess(
+			sid, synckerManager.config.Network,
+			synckerManager.config.Blockchain,
+			synckerManager.config.Blockchain.BeaconChain,
+			chain, synckerManager.config.Consensus,
+		)
 		synckerManager.shardPool[sid] = synckerManager.ShardSyncProcess[sid].shardPool
 		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
 		synckerManager.crossShardPool[sid] = synckerManager.CrossShardSyncProcess[sid].crossShardPool
-
 	}
 
 	//watch commitee change

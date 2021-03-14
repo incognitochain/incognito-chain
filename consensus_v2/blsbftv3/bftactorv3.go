@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"reflect"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -98,7 +99,7 @@ func (e *BLSBFT_V3) run() error {
 		e.Logger.Info("init bls-bftv3 consensus for chain", e.ChainKey)
 
 		for { //actor loop
-			if e.Chain.CommitteeEngineVersion() != committeestate.SLASHING_VERSION {
+			if e.Chain.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 				continue
 			}
 			if !e.isStarted { //sleep if this process is not start
@@ -328,11 +329,11 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	if v.block == nil {
 		return
 	}
-	e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
+	//e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//already in chain
 	view := e.Chain.GetViewByHash(*v.block.Hash())
 	if view != nil {
-		e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
+		//e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 		return
 	}
 
@@ -359,7 +360,6 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 			}
 			err := vote.validateVoteOwner(dsaKey)
 			if err != nil {
-				e.Logger.Error("")
 				e.Logger.Error(dsaKey)
 				e.Logger.Error(err)
 				vote.IsValid = -1
@@ -619,7 +619,7 @@ func (e *BLSBFT_V3) proposeBeaconBlock(
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
 		e.Logger.Info("CreateNewBlock")
-		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime, committees, committeeViewHash)
+		block, err = e.Chain.CreateNewBlock(3, b58Str, 1, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -659,7 +659,7 @@ func (e *BLSBFT_V3) proposeShardBlock(
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
 		e.Logger.Info("CreateNewBlock")
-		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime, committees, committeeViewHash)
+		block, err = e.Chain.CreateNewBlock(3, b58Str, 1, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}

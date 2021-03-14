@@ -1,8 +1,9 @@
 package blsbftv3
 
 import (
-	"github.com/incognitochain/incognito-chain/incdb"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"

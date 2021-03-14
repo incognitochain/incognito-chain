@@ -46,7 +46,9 @@ const (
 	// PDEX v2
 	PDETradingFeeObjectType
 
+	// Committee State
 	StakerObjectType
+	CommitteeTermObjectType
 
 	// Portal v3
 	PortalExternalTxObjectType
@@ -76,6 +78,7 @@ const (
 	ShardPool
 	BeaconCommittee
 	ShardCommittee
+	SyncingValidators
 )
 const (
 	BeaconChainID    = -1

@@ -3,10 +3,11 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"math"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -374,7 +375,7 @@ func generateHashFromShardState(allShardState map[byte][]types.ShardState, versi
 			res += shardState.Hash.String()
 			crossShard, _ := json.Marshal(shardState.CrossShard)
 			res += string(crossShard)
-			if version == committeestate.SLASHING_VERSION {
+			if version != committeestate.SELF_SWAP_SHARD_VERSION {
 				res += shardState.ValidationData
 				res += shardState.CommitteeFromBlock.String()
 			}

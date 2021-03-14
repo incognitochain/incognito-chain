@@ -16,6 +16,8 @@ type CommitteeChange struct {
 	CurrentEpochShardCandidateRemoved  []incognitokey.CommitteePublicKey
 	ShardSubstituteAdded               map[byte][]incognitokey.CommitteePublicKey
 	ShardSubstituteRemoved             map[byte][]incognitokey.CommitteePublicKey
+	SyncingPoolAdded                   map[byte][]incognitokey.CommitteePublicKey
+	SyncingPoolRemoved                 map[byte][]incognitokey.CommitteePublicKey
 	ShardCommitteeAdded                map[byte][]incognitokey.CommitteePublicKey
 	ShardCommitteeRemoved              map[byte][]incognitokey.CommitteePublicKey
 	BeaconSubstituteAdded              []incognitokey.CommitteePublicKey
@@ -26,6 +28,7 @@ type CommitteeChange struct {
 	ShardCommitteeReplaced             map[byte][2][]incognitokey.CommitteePublicKey
 	StopAutoStake                      []string
 	RemovedStaker                      []string
+	FinishedSyncValidators             map[byte][]string
 	SlashingCommittee                  map[byte][]string
 }
 
@@ -69,6 +72,9 @@ func NewCommitteeChange() *CommitteeChange {
 		ShardCommitteeReplaced:  make(map[byte][2][]incognitokey.CommitteePublicKey),
 		BeaconCommitteeReplaced: [2][]incognitokey.CommitteePublicKey{},
 		SlashingCommittee:       make(map[byte][]string),
+		FinishedSyncValidators:  make(map[byte][]string),
+		SyncingPoolAdded:        make(map[byte][]incognitokey.CommitteePublicKey),
+		SyncingPoolRemoved:      make(map[byte][]incognitokey.CommitteePublicKey),
 	}
 	for i := 0; i < common.MaxShardNumber; i++ {
 		shardID := byte(i)
@@ -76,7 +82,10 @@ func NewCommitteeChange() *CommitteeChange {
 		committeeChange.ShardSubstituteRemoved[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.ShardCommitteeAdded[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.ShardCommitteeRemoved[shardID] = []incognitokey.CommitteePublicKey{}
+		committeeChange.SyncingPoolAdded[shardID] = []incognitokey.CommitteePublicKey{}
+		committeeChange.SyncingPoolRemoved[shardID] = []incognitokey.CommitteePublicKey{}
 		committeeChange.SlashingCommittee[shardID] = []string{}
+		committeeChange.FinishedSyncValidators[shardID] = []string{}
 	}
 	return committeeChange
 }

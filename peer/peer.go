@@ -104,6 +104,7 @@ type MessageListeners struct {
 	//PBFT
 	OnBFTMsg             func(p *PeerConn, msg wire.Message)
 	OnPeerState          func(p *PeerConn, msg *wire.MessagePeerState)
+	OnFinishSync         func(p *PeerConn, msg *wire.MessageFinishSync)
 	PushRawBytesToShard  func(p *PeerConn, msgBytes *[]byte, shard byte) error
 	PushRawBytesToBeacon func(p *PeerConn, msgBytes *[]byte) error
 	GetCurrentRoleShard  func() (string, *byte)

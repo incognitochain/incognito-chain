@@ -696,7 +696,6 @@ func (tx Tx) ListSNDOutputsHashH() []common.Hash {
 	return result
 }
 
-
 // CheckCMExistence returns true if cm exists in cm list
 func (tx Tx) CheckCMExistence(cm []byte, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	ok, err := statedb.HasCommitment(stateDB, *tokenID, cm, shardID)
@@ -851,7 +850,6 @@ func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 
-
 }
 
 // ValidateDoubleSpend - check double spend for any transaction type
@@ -978,7 +976,7 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 				return false, errors.New("invalid cmValues in Bullet proof")
 			}
 
-			if len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetSerialNumberProof()) || len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetOneOfManyProof()){
+			if len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetSerialNumberProof()) || len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetOneOfManyProof()) {
 				return false, errors.New("the number of input coins must be equal to the number of serialnumber proofs and the number of one-of-many proofs")
 			}
 
@@ -1122,7 +1120,7 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 			}
 			inputCoins := txN.Proof.GetInputCoins()
 
-			if len(inputCoins) != len(txN.Proof.GetSerialNumberNoPrivacyProof()){
+			if len(inputCoins) != len(txN.Proof.GetSerialNumberNoPrivacyProof()) {
 				return false, errors.New("the number of input coins must be equal to the number of serialnumbernoprivacy proofs")
 			}
 
@@ -1238,7 +1236,6 @@ func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *
 	}
 	return true, nil
 }
-
 
 // GetMetadataType returns the type of underlying metadata if is existed
 func (tx Tx) GetMetadataType() int {
@@ -1488,7 +1485,7 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.Tran
 		}
 	}
 	//if type is reward and not have metadata
-	if tx.GetType() == common.TxRewardType && meta == nil  {
+	if tx.GetType() == common.TxRewardType && meta == nil {
 		return false, nil
 	}
 	//if type is return staking and not have metadata

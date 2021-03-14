@@ -170,7 +170,7 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
 	if err != nil {
 		return nil, err
 	}
-	if version == 2 {
+	if version != 1 {
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
@@ -260,7 +260,7 @@ func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, co
 		return err
 	}
 
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, committee); err != nil {
 		return err
 	}
 	return nil
@@ -365,7 +365,7 @@ func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognit
 }
 
 func (chain *BeaconChain) CommitteeStateVersion() uint {
-	return chain.GetBestView().(*BeaconBestState).beaconCommitteeEngine.Version()
+	return chain.GetBestView().(*BeaconBestState).beaconCommitteeState.Version()
 }
 
 func (chain *BeaconChain) FinalView() multiview.View {
@@ -383,4 +383,15 @@ func (chain *BeaconChain) GetChainDatabase() incdb.Database {
 
 func (chain *BeaconChain) CommitteeEngineVersion() uint {
 	return chain.multiView.GetBestView().CommitteeEngineVersion()
+}
+
+func (chain *BeaconChain) CommitteesForSigning(committeePublicKeys []incognitokey.CommitteePublicKey, threshold int) []incognitokey.CommitteePublicKey {
+	res := []incognitokey.CommitteePublicKey{}
+	beaconFinalView := chain.GetFinalView().(*BeaconBestState)
+	for i, v := range committeePublicKeys {
+		if uint64(i%threshold) == beaconFinalView.BeaconHeight%uint64(threshold) {
+			res = append(res, v)
+		}
+	}
+	return res
 }

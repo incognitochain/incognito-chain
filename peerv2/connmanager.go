@@ -70,6 +70,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 					err := broadcastMessage(msg, topic, cm.ps)
 					if err != nil {
 						Logger.Errorf("Broadcast to topic %v error %v", topic, err)
+						Logger.Infof("Broadcast to topic %v error %v", topic, err)
 						return err
 					}
 				}
@@ -87,7 +88,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 }
 
 func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
-	publishable := []string{wire.CmdPeerState, wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT}
+	publishable := []string{wire.CmdPeerState, wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT, wire.CmdMsgFinishSync}
 	msgType := msg.MessageType()
 	subs := cm.Subscriber.GetMsgToTopics()
 	for _, p := range publishable {
