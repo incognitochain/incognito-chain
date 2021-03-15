@@ -25,7 +25,7 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 		beaconCommitteeStateBase   beaconCommitteeStateBase
 		shardCommonPool            []incognitokey.CommitteePublicKey
 		numberOfAssignedCandidates int
-		swapRule                   SwapRule
+		swapRule                   SwapRuleProcessor
 	}
 	tests := []struct {
 		name   string

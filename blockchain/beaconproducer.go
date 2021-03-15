@@ -378,7 +378,8 @@ func (curView *BeaconBestState) GenerateInstruction(
 				blockchain.config.ChainParams.AssignOffset,
 				newBeaconHeight,
 			)
-			assignInstructions := curView.beaconCommitteeState.AssignInstructions(env)
+
+			assignInstructions := curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV1).GenerateAssignInstructions(env)
 			for _, assignInstruction := range assignInstructions {
 				instructions = append(instructions, assignInstruction.ToString())
 			}
@@ -407,7 +408,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
 			env := curView.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
 			env.LatestShardsState = shardsState
-			swapShardInstructions, err := curView.beaconCommitteeState.GenerateAllSwapShardInstructions(env)
+			swapShardInstructions, err := curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV2).GenerateAllSwapShardInstructions(env)
 			if err != nil {
 				return [][]string{}, err
 			}

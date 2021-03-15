@@ -89,21 +89,21 @@ func Test_swapRuleV3_GenInstructions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			got, got1, got2, got3, got4 := s.GenInstructions(tt.args.shardID, tt.args.committees, tt.args.substitutes, tt.args.minCommitteeSize, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidators, tt.args.penalty)
+			got, got1, got2, got3, got4 := s.Process(tt.args.shardID, tt.args.committees, tt.args.substitutes, tt.args.minCommitteeSize, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidators, tt.args.penalty)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("swapRuleV3.GenInstructions() got = %v, want %v", got, tt.want)
+				t.Errorf("swapRuleV3.Process() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("swapRuleV3.GenInstructions() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("swapRuleV3.Process() got1 = %v, want %v", got1, tt.want1)
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("swapRuleV3.GenInstructions() got2 = %v, want %v", got2, tt.want2)
+				t.Errorf("swapRuleV3.Process() got2 = %v, want %v", got2, tt.want2)
 			}
 			if !reflect.DeepEqual(got3, tt.want3) {
-				t.Errorf("swapRuleV3.GenInstructions() got3 = %v, want %v", got3, tt.want3)
+				t.Errorf("swapRuleV3.Process() got3 = %v, want %v", got3, tt.want3)
 			}
 			if !reflect.DeepEqual(got4, tt.want4) {
-				t.Errorf("swapRuleV3.GenInstructions() got4 = %v, want %v", got4, tt.want4)
+				t.Errorf("swapRuleV3.Process() got4 = %v, want %v", got4, tt.want4)
 			}
 		})
 	}
@@ -144,8 +144,8 @@ func Test_swapRuleV3_AssignOffset(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			if got := s.AssignOffset(tt.args.lenShardSubstitute, tt.args.lenCommittees, tt.args.numberOfFixedValidators, tt.args.minCommitteeSize); got != tt.want {
-				t.Errorf("swapRuleV3.AssignOffset() = %v, want %v", got, tt.want)
+			if got := s.CalculateAssignOffset(tt.args.lenShardSubstitute, tt.args.lenCommittees, tt.args.numberOfFixedValidators, tt.args.minCommitteeSize); got != tt.want {
+				t.Errorf("swapRuleV3.CalculateAssignOffset() = %v, want %v", got, tt.want)
 			}
 		})
 	}

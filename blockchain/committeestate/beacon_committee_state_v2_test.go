@@ -349,9 +349,9 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 	initLog()
 
 	swapRule1 := &mocks.SwapRule{}
-	swapRule1.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
+	swapRule1.On("CalculateAssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
 	swapRule2 := &mocks.SwapRule{}
-	swapRule2.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(10)
+	swapRule2.On("CalculateAssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(10)
 
 	type args struct {
 		shardCommonPool        []incognitokey.CommitteePublicKey
@@ -359,7 +359,7 @@ func TestSnapshotShardCommonPoolV2(t *testing.T) {
 		shardSubstitute        map[byte][]incognitokey.CommitteePublicKey
 		numberOfFixedValidator int
 		minCommitteeSize       int
-		swapRule               SwapRule
+		swapRule               SwapRuleProcessor
 	}
 	tests := []struct {
 		name                           string
@@ -477,10 +477,10 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 	initLog()
 
 	emptySwapShardInstruction := &mocks.SwapRule{}
-	emptySwapShardInstruction.On("GenInstructions", mock.AnythingOfType("uint8"), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(&instruction.SwapShardInstruction{}, []string{}, []string{}, []string{}, []string{})
+	emptySwapShardInstruction.On("Process", mock.AnythingOfType("uint8"), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(&instruction.SwapShardInstruction{}, []string{}, []string{}, []string{}, []string{})
 
 	validInputSwapShardInstruction := &mocks.SwapRule{}
-	validInputSwapShardInstruction.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	validInputSwapShardInstruction.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			InPublicKeys: []string{
 				key5,
@@ -500,7 +500,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 		[]string{}, []string{}, []string{}, []string{})
 
 	swapRuleV3SingleShard := &mocks.SwapRule{}
-	swapRuleV3SingleShard.On("GenInstructions", mock.AnythingOfType("uint8"), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRuleV3SingleShard.On("Process", mock.AnythingOfType("uint8"), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			InPublicKeys: []string{
 				key13, key14,
@@ -519,7 +519,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 		},
 		[]string{}, []string{}, []string{}, []string{})
 
-	validInputSwapShardInstruction.On("GenInstructions", uint8(1), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	validInputSwapShardInstruction.On("Process", uint8(1), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			InPublicKeys: []string{
 				key10,
@@ -915,7 +915,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 
 	//Define swap rule mock here
 	swapRuleSingleInstructionOut := &mocks.SwapRule{}
-	swapRuleSingleInstructionOut.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRuleSingleInstructionOut.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey6,
@@ -927,7 +927,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		[]string{}, []string{}, []string{}, []string{})
 
 	swapRuleSingleInstructionIn := &mocks.SwapRule{}
-	swapRuleSingleInstructionIn.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRuleSingleInstructionIn.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey6,
@@ -939,7 +939,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		[]string{}, []string{}, []string{}, []string{})
 
 	swapRule1 := &mocks.SwapRule{}
-	swapRule1.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule1.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		instruction.NewSwapShardInstructionWithValue(
 			[]string{key5},
 			[]string{key7},
@@ -949,7 +949,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		[]string{}, []string{}, []string{}, []string{})
 
 	swapRule2 := &mocks.SwapRule{}
-	swapRule2.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule2.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		instruction.NewSwapShardInstructionWithValue(
 			[]string{key5},
 			[]string{key},
@@ -959,7 +959,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		[]string{key2, key3, key4, key5}, []string{}, []string{}, []string{key})
 
 	swapRule3 := &mocks.SwapRule{}
-	swapRule3.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule3.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		instruction.NewSwapShardInstructionWithValue(
 			[]string{key5},
 			[]string{key6},
@@ -969,7 +969,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		[]string{key2, key3, key4, key5}, []string{}, []string{}, []string{key6})
 
 	swapRule4 := &mocks.SwapRule{}
-	swapRule4.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule4.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		instruction.NewSwapShardInstructionWithValue(
 			[]string{key},
 			[]string{key6},
@@ -978,7 +978,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		),
 		[]string{key2, key3, key4, key}, []string{}, []string{}, []string{key6})
 
-	swapRule4.On("GenInstructions", uint8(1), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule4.On("Process", uint8(1), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		instruction.NewSwapShardInstructionWithValue(
 			[]string{key},
 			[]string{key6},
@@ -988,7 +988,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		[]string{key7, key8, key9, key10}, []string{}, []string{}, []string{})
 
 	swapRule5 := &mocks.SwapRule{}
-	swapRule5.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule5.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		instruction.NewSwapShardInstructionWithValue(
 			[]string{key5},
 			[]string{key},
@@ -998,7 +998,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		[]string{key6, key2, key3, key5}, []string{}, []string{key}, []string{})
 
 	swapRuleV3 := &mocks.SwapRule{}
-	swapRuleV3.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRuleV3.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		instruction.NewSwapShardInstructionWithValue(
 			[]string{key13, key14},
 			[]string{key11},
@@ -3785,22 +3785,22 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 					},
 				},
 			}
-			got, got1, got2, got3, err := b.SplitReward(tt.args.env)
+			got, got1, got2, got3, err := b.Process(tt.args.env)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("BeaconCommitteeStateV2.SplitReward() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BeaconCommitteeStateV2.Process() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BeaconCommitteeStateV2.SplitReward() got = %v, want %v", got, tt.want)
+				t.Errorf("BeaconCommitteeStateV2.Process() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("BeaconCommitteeStateV2.SplitReward() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("BeaconCommitteeStateV2.Process() got1 = %v, want %v", got1, tt.want1)
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("BeaconCommitteeStateV2.SplitReward() got2 = %v, want %v", got2, tt.want2)
+				t.Errorf("BeaconCommitteeStateV2.Process() got2 = %v, want %v", got2, tt.want2)
 			}
 			if !reflect.DeepEqual(got3, tt.want3) {
-				t.Errorf("BeaconCommitteeStateV2.SplitReward() got3 = %v, want %v", got3, tt.want3)
+				t.Errorf("BeaconCommitteeStateV2.Process() got3 = %v, want %v", got3, tt.want3)
 			}
 		})
 	}
@@ -3946,7 +3946,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 
 	//define swapRule interface
 	swapRuleSingleInstructionOut := &mocks.SwapRule{}
-	swapRuleSingleInstructionOut.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRuleSingleInstructionOut.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey0,
@@ -3963,7 +3963,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 	swapRuleSingleInstructionOut.On("Version").Return(swapRuleTestVersion)
 
 	swapRuleIn2Keys := &mocks.SwapRule{}
-	swapRuleIn2Keys.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRuleIn2Keys.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey0, *incKey,
@@ -3978,7 +3978,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 	swapRuleIn2Keys.On("Version").Return(swapRuleTestVersion)
 
 	swapRuleOut2Keys := &mocks.SwapRule{}
-	swapRuleOut2Keys.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRuleOut2Keys.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey, *incKey4,
@@ -3993,7 +3993,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 	swapRuleOut2Keys.On("Version").Return(swapRuleTestVersion)
 
 	swapRuleInAndOut2Keys := &mocks.SwapRule{}
-	swapRuleInAndOut2Keys.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRuleInAndOut2Keys.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey0, *incKey,
@@ -4010,7 +4010,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 	swapRuleInAndOut2Keys.On("Version").Return(swapRuleTestVersion)
 
 	swapRuleInAndOut2Keys2 := &mocks.SwapRule{}
-	swapRuleInAndOut2Keys2.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRuleInAndOut2Keys2.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey12, *incKey,
@@ -4027,7 +4027,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 	swapRuleInAndOut2Keys2.On("Version").Return(swapRuleTestVersion)
 
 	swapRuleV3 := &mocks.SwapRule{}
-	swapRuleV3.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRuleV3.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey11,
@@ -5119,7 +5119,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 
 	//Declare swaprule
 	swapRule1 := &mocks.SwapRule{}
-	swapRule1.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule1.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey,
@@ -5134,10 +5134,10 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 		},
 		[]string{key2, key3, key4, key0}, []string{}, []string{}, []string{key})
 	swapRule1.On("Version").Return(swapRuleTestVersion)
-	swapRule1.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
+	swapRule1.On("CalculateAssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
 
 	swapRule2 := &mocks.SwapRule{}
-	swapRule2.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule2.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey0,
@@ -5152,10 +5152,10 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 		},
 		[]string{key2, key3, key4, key}, []string{}, []string{}, []string{key0})
 	swapRule2.On("Version").Return(swapRuleTestVersion)
-	swapRule2.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
+	swapRule2.On("CalculateAssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
 
 	swapRule3 := &mocks.SwapRule{}
-	swapRule3.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule3.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey,
@@ -5170,7 +5170,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 		},
 		[]string{key2, key3, key4, key5}, []string{}, []string{}, []string{key})
 
-	swapRule3.On("GenInstructions", uint8(1), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule3.On("Process", uint8(1), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey7,
@@ -5186,10 +5186,10 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 		[]string{key8, key9, key10, key11}, []string{}, []string{}, []string{key7})
 
 	swapRule3.On("Version").Return(swapRuleTestVersion)
-	swapRule3.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
+	swapRule3.On("CalculateAssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
 
 	swapRule4 := &mocks.SwapRule{}
-	swapRule4.On("GenInstructions", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule4.On("Process", uint8(0), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey4,
@@ -5204,7 +5204,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 		},
 		[]string{key, key2, key3, key5}, []string{}, []string{key4}, []string{})
 
-	swapRule4.On("GenInstructions", uint8(1), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
+	swapRule4.On("Process", uint8(1), mock.AnythingOfType("[]string"), mock.AnythingOfType("[]string"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("map[string]signaturecounter.Penalty")).Return(
 		&instruction.SwapShardInstruction{
 			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
 				*incKey10,
@@ -5220,7 +5220,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 		[]string{key7, key8, key9, key11}, []string{}, []string{key10}, []string{})
 
 	swapRule4.On("Version").Return(swapRuleTestVersion)
-	swapRule4.On("AssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
+	swapRule4.On("CalculateAssignOffset", mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int"), mock.AnythingOfType("int")).Return(1)
 
 	type fields struct {
 		beaconCommitteeStateV2 *BeaconCommitteeStateV2

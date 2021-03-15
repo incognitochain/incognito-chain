@@ -671,21 +671,21 @@ func Test_swapRuleV2_GenInstructions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV2{}
-			got, got1, got2, got3, got4 := s.GenInstructions(tt.args.shardID, tt.args.committees, tt.args.substitutes, tt.args.minCommitteeSize, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidators, tt.args.penalty)
+			got, got1, got2, got3, got4 := s.Process(tt.args.shardID, tt.args.committees, tt.args.substitutes, tt.args.minCommitteeSize, tt.args.maxCommitteeSize, tt.args.typeIns, tt.args.numberOfFixedValidators, tt.args.penalty)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("swapRuleV2.GenInstructions() got = %v, want %v", got, tt.want)
+				t.Errorf("swapRuleV2.Process() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("swapRuleV2.GenInstructions() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("swapRuleV2.Process() got1 = %v, want %v", got1, tt.want1)
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("swapRuleV2.GenInstructions() got2 = %v, want %v", got2, tt.want2)
+				t.Errorf("swapRuleV2.Process() got2 = %v, want %v", got2, tt.want2)
 			}
 			if !reflect.DeepEqual(got3, tt.want3) {
-				t.Errorf("swapRuleV2.GenInstructions() got3 = %v, want %v", got3, tt.want3)
+				t.Errorf("swapRuleV2.Process() got3 = %v, want %v", got3, tt.want3)
 			}
 			if !reflect.DeepEqual(got4, tt.want4) {
-				t.Errorf("swapRuleV2.GenInstructions() got4 = %v, want %v", got4, tt.want4)
+				t.Errorf("swapRuleV2.Process() got4 = %v, want %v", got4, tt.want4)
 			}
 		})
 	}

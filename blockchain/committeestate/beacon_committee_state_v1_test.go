@@ -80,9 +80,9 @@ func TestBeaconCommitteeStateV1_SplitReward(t *testing.T) {
 			b := &BeaconCommitteeStateV1{
 				beaconCommitteeStateBase: beaconCommitteeStateBase{},
 			}
-			got, got1, got2, got3, err := b.SplitReward(tt.args.env)
+			got, got1, got2, got3, err := b.Process(tt.args.env)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("BeaconCommitteeEngineV1.SplitReward() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BeaconCommitteeEngineV1.Process() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
