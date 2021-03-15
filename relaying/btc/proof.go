@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -184,18 +185,24 @@ func ExtractAttachedMsgFromTx(msgTx *wire.MsgTx) (string, error) {
 	opReturnPrefix := []byte{
 		txscript.OP_RETURN,
 	}
-	opReturnPkScript := []byte{}
 	for _, txOut := range msgTx.TxOut {
-		if txOut.Value == 0 && bytes.HasPrefix(txOut.PkScript, opReturnPrefix) {
-			opReturnPkScript = txOut.PkScript
-			break
+		if txOut.Value != 0 || !bytes.HasPrefix(txOut.PkScript, opReturnPrefix) {
+			continue
+		}
+		opReturnPkScript := txOut.PkScript
+		if len(opReturnPkScript) < 5 {
+			return "", fmt.Errorf("Memo is invalid")
+		}
+		first_byte := opReturnPkScript[1]
+		if first_byte <= 75 {
+			return string(opReturnPkScript[2:]), nil
+		} else if first_byte == 76 { //0x4c
+			return string(opReturnPkScript[3:]), nil
+		} else if first_byte == 77 { //0x4d
+			return string(opReturnPkScript[4:]), nil
 		}
 	}
-	if len(opReturnPkScript) <= 3 {
-		return "", nil
-	}
-	// the first byte is for opcode type (OP_RETURN) and the second byte is for message length
-	return string(opReturnPkScript[2:]), nil
+	return "", nil
 }
 
 // ExtractPaymentAddrStrFromPkScript extracts payment address string from pkscript
