@@ -48,7 +48,7 @@ func (blockchain *BlockChain) buildInstructionsForTokenInitReq(
 	}
 
 	// check existence in previous blocks (on blockchain's db)
-	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, tokenID)
+	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInNetwork(beaconBestState, tokenID)
 	if err != nil {
 		Logger.log.Warnf("checking tokenID existed error: %v\n", err)
 		return append(instructions, rejectedInst), nil
