@@ -340,7 +340,7 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognito
 	return result, nil
 }
 
-func (chain *ShardChain) CommitteeStateVersion() uint {
+func (chain *ShardChain) CommitteeStateVersion() int {
 	return chain.GetBestState().shardCommitteeEngine.Version()
 }
 
@@ -353,6 +353,6 @@ func (chain *ShardChain) GetChainDatabase() incdb.Database {
 	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }
 
-func (chain *ShardChain) CommitteeEngineVersion() uint {
+func (chain *ShardChain) CommitteeEngineVersion() int {
 	return chain.multiView.GetBestView().CommitteeEngineVersion()
 }

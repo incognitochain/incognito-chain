@@ -26,7 +26,7 @@ type GetShardBestState struct {
 	ActiveShards           int               `json:"ActiveShards"`
 	MetricBlockHeight      uint64            `json:"MetricBlockHeight"`
 	CommitteeFromBlock     common.Hash       `json:"CommitteeFromBlock"`
-	CommitteeEngineVersion uint              `json:"CommitteeEngineVersion"`
+	CommitteeEngineVersion int               `json:"CommitteeEngineVersion"`
 }
 
 func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {

@@ -420,7 +420,7 @@ func (_m *BeaconCommitteeState) Upgrade(_a0 *committeestate.BeaconCommitteeState
 }
 
 // Version provides a mock function with given fields:
-func (_m *BeaconCommitteeState) Version() uint {
+func (_m *BeaconCommitteeState) Version() int {
 	ret := _m.Called()
 
 	var r0 uint

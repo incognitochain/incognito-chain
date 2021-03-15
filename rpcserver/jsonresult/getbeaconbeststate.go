@@ -38,7 +38,7 @@ type GetBeaconBestState struct {
 	ActiveShards                           int                                          `json:"ActiveShards"`
 	LastCrossShardState                    map[byte]map[byte]uint64                     `json:"LastCrossShardState"`
 	ShardHandle                            map[byte]bool                                `json:"ShardHandle"` // lock sync.RWMutex
-	CommitteeEngineVersion                 uint                                         `json:"CommitteeEngineVersion"`
+	CommitteeEngineVersion                 int                                          `json:"CommitteeEngineVersion"`
 	NumberOfMissingSignature               map[string]signaturecounter.MissingSignature `json:"MissingSignature"`        // lock sync.RWMutex
 	MissingSignaturePenalty                map[string]signaturecounter.Penalty          `json:"MissingSignaturePenalty"` // lock sync.RWMutex
 }

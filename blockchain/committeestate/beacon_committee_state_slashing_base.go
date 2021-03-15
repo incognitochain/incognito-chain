@@ -49,7 +49,7 @@ func newBeaconCommitteeStateSlashingBaseWithValue(
 	}
 }
 
-func (b beaconCommitteeStateSlashingBase) Version() uint {
+func (b beaconCommitteeStateSlashingBase) Version() int {
 	panic("implement me")
 }
 

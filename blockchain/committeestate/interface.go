@@ -9,7 +9,7 @@ import (
 )
 
 type BeaconCommitteeState interface {
-	Version() uint
+	Version() int
 	Clone() BeaconCommitteeState
 
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey
@@ -62,7 +62,7 @@ type SplitRewardRuleProcessor interface {
 
 //ShardCommitteeEngine :
 type ShardCommitteeEngine interface {
-	Version() uint
+	Version() int
 	Clone() ShardCommitteeEngine
 	Commit(*ShardCommitteeStateHash) error
 	AbortUncommittedShardState()

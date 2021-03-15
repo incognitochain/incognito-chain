@@ -1991,7 +1991,10 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 	shardPendingCommiteeFromBeaconView := beaconFinalView.GetShardPendingValidator()
 	shardCommiteeFromBeaconView := beaconFinalView.GetShardCommittee()
 	shardCandidateFromBeaconView := beaconFinalView.GetShardCandidate()
-	shardSyncingValidatorsFromBeaconView := beaconFinalView.SyncingValidators()
+	shardSyncingValidatorsFromBeaconView := make(map[byte][]incognitokey.CommitteePublicKey)
+	if beaconFinalView.CommitteeEngineVersion() == committeestate.DCS_VERSION {
+		shardSyncingValidatorsFromBeaconView = beaconFinalView.SyncingValidators()
+	}
 
 	//check if in committee of any shard
 	for _, chain := range s.blockChain.ShardChain {

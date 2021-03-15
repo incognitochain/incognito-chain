@@ -50,7 +50,7 @@ func NewBeaconCommitteeStateV1WithValue(
 	}
 }
 
-func (b *BeaconCommitteeStateV1) Version() uint {
+func (b *BeaconCommitteeStateV1) Version() int {
 	return SELF_SWAP_SHARD_VERSION
 }
 
