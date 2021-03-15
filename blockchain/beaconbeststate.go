@@ -429,7 +429,7 @@ func (beaconBestState *BeaconBestState) SyncingValidators() map[byte][]incognito
 }
 
 //CommitteeEngineVersion ...
-func (beaconBestState *BeaconBestState) CommitteeEngineVersion() uint {
+func (beaconBestState *BeaconBestState) CommitteeEngineVersion() int {
 	return beaconBestState.beaconCommitteeState.Version()
 }
 

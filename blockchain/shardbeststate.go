@@ -437,7 +437,7 @@ func (shardBestState *ShardBestState) ShardCommitteeEngine() committeestate.Shar
 }
 
 //CommitteeEngineVersion ...
-func (shardBestState *ShardBestState) CommitteeEngineVersion() uint {
+func (shardBestState *ShardBestState) CommitteeEngineVersion() int {
 	return shardBestState.shardCommitteeEngine.Version()
 }
 

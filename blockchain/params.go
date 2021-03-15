@@ -242,7 +242,7 @@ func SetupParam() {
 		ConsensusV2Epoch:               16930,
 		ConsensusV3Height:              1,
 		ConsensusV4Height:              1e12,
-		StakingV3Height:                1,
+		StakingV3Height:                1e9,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,

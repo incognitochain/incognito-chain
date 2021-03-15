@@ -39,7 +39,7 @@ func NewBeaconCommitteeStateV2WithValue(
 	}
 }
 
-func (b BeaconCommitteeStateV2) Version() uint {
+func (b BeaconCommitteeStateV2) Version() int {
 	return SLASHING_VERSION
 }
 

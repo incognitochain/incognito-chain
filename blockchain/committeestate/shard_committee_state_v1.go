@@ -100,7 +100,7 @@ func (engine *ShardCommitteeEngineV1) Clone() ShardCommitteeEngine {
 }
 
 //Version get version of engine
-func (engine *ShardCommitteeEngineV1) Version() uint {
+func (engine *ShardCommitteeEngineV1) Version() int {
 	return SELF_SWAP_SHARD_VERSION
 }
 

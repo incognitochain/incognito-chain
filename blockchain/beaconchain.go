@@ -364,7 +364,7 @@ func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognit
 	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee(), nil
 }
 
-func (chain *BeaconChain) CommitteeStateVersion() uint {
+func (chain *BeaconChain) CommitteeStateVersion() int {
 	return chain.GetBestView().(*BeaconBestState).beaconCommitteeState.Version()
 }
 
@@ -381,7 +381,7 @@ func (chain *BeaconChain) GetChainDatabase() incdb.Database {
 	return chain.Blockchain.GetBeaconChainDatabase()
 }
 
-func (chain *BeaconChain) CommitteeEngineVersion() uint {
+func (chain *BeaconChain) CommitteeEngineVersion() int {
 	return chain.multiView.GetBestView().CommitteeEngineVersion()
 }
 

@@ -100,7 +100,7 @@ func (s *ShardCommitteeStateV2) reset() {
 }
 
 //Version ...
-func (engine *ShardCommitteeEngineV2) Version() uint {
+func (engine *ShardCommitteeEngineV2) Version() int {
 	return SLASHING_VERSION
 }
 
