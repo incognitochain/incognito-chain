@@ -27,7 +27,7 @@ func (blockchain *BlockChain) buildInstructionsForTokenInitReq(
 	metaType int,
 	ac *metadata.AccumulatedValues,
 ) ([][]string, error) {
-	Logger.log.Info("Starting building instructions for token init requests...")
+	Logger.log.Infof("Starting building instructions for token init requests: %v\n...", contentStr)
 	instructions := [][]string{}
 	initTokenReqAction, err := metadata.ParseInitTokenInstContent(contentStr)
 	if err != nil {
@@ -95,8 +95,9 @@ func (blockGenerator *BlockGenerator) buildTokenInitAcceptedTx(
 	shardView *ShardBestState,
 	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
-	acceptedContent, err := parseInitTokenAcceptedContent(contentStr)
+	acceptedContent, err := metadata.ParseInitTokenInstAcceptedContent(contentStr)
 	if err != nil {
+		Logger.log.Errorf("ParseInitTokenInstAcceptedContent(%v) error: %v\n", contentStr, err)
 		return nil, nil
 	}
 
@@ -144,7 +145,7 @@ func buildTokenInitTx(
 
 	if len(txRandomStr) == 0 || len(otaStr) == 0 {
 		Logger.log.Errorf("txRandomStr or otaStr is empty\n")
-		return nil, fmt.Errorf("txRandomStr (%v) or otaStr(%) is empty", txRandomStr, otaStr)
+		return nil, fmt.Errorf("txRandomStr (%v) or otaStr(%v) is empty", txRandomStr, otaStr)
 	}
 
 	publicKey, txRandom, err := coin.ParseOTAInfoFromString(otaStr, txRandomStr)
@@ -157,17 +158,4 @@ func buildTokenInitTx(
 	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadata.Metadata {
 		return meta
 	})
-}
-
-func parseInitTokenAcceptedContent(
-	contentStr string,
-) (*metadata.InitTokenAcceptedInst, error) {
-	contentBytes := []byte(contentStr)
-	var acceptedContent metadata.InitTokenAcceptedInst
-	err := json.Unmarshal(contentBytes, &acceptedContent)
-	if err != nil {
-		Logger.log.Errorf("parsing tokenInit accepted instruction failed: %v\n", err)
-		return nil, err
-	}
-	return &acceptedContent, nil
 }
