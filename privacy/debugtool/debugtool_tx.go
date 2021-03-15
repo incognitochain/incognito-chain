@@ -11,6 +11,13 @@ import (
 	// "github.com/incognitochain/incognito-chain/transaction"
 )
 
+type TokenInitParam struct {
+	PrivateKey  string `json:"PrivateKey"`
+	TokenName   string `json:"TokenName"`
+	TokenSymbol string `json:"TokenSymbol"`
+	Amount      uint64 `json:"Amount"`
+}
+
 var privIndicator string = "1"
 
 // Parse from byte to AutoTxByHash
@@ -206,6 +213,33 @@ func (this *DebugTool) CreateAndSendPrivacyCustomTokenTransaction(privKeyStr, to
 			]
 	}`, privKeyStr, tokenName, paymentAddStr)
 	return this.SendPostRequestWithQuery(query)
+}
+
+func (this *DebugTool) CreateAndSendTokenInitTransaction(privateKey, tokenName, tokenSymbol string, initValue uint64) ([]byte, error) {
+	if len(this.url) == 0 {
+		return []byte{}, errors.New("Server has not set mainnet or testnet")
+	}
+	method := "createandsendtokeninittransaction"
+	params := make([]interface{}, 0)
+
+	initParam := TokenInitParam{
+		PrivateKey:  privateKey,
+		TokenName:   tokenName,
+		TokenSymbol: tokenSymbol,
+		Amount:      initValue,
+	}
+
+	params = append(params, initParam)
+
+	request := CreateJsonRequest("1.0", method, params, 1)
+	query, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(string(query))
+
+	return this.SendPostRequestWithQuery(string(query))
 }
 
 func (this *DebugTool) TransferPrivacyCustomToken(privKeyStrA string, paymentAddress string, tokenID string, amount string) ([]byte, error) {
