@@ -207,7 +207,7 @@ var SelectShardNodeTestnetSerializedPaymentAddressV2 = make(map[uint64][]string)
 var TestnetReplaceCommitteeEpoch = []uint64{}
 
 var IsTestNet = true
-var IsTestNet2 = true
+var IsTestNet2 = false
 
 func ReadKey(v1, v2 []byte) {
 
