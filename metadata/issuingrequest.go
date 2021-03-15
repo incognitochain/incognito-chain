@@ -49,6 +49,19 @@ func ParseIssuingInstContent(instContentStr string) (*IssuingReqAction, error) {
 	return &issuingReqAction, nil
 }
 
+func ParseIssuingInstAcceptedContent(instAcceptedContentStr string) (*IssuingAcceptedInst, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(instAcceptedContentStr)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingEthRequestDecodeInstructionError, err)
+	}
+	var issuingAcceptedInst IssuingAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingEthRequestUnmarshalJsonError, err)
+	}
+	return &issuingAcceptedInst, nil
+}
+
 func NewIssuingRequest(
 	receiverAddress privacy.PaymentAddress,
 	depositedAmount uint64,
