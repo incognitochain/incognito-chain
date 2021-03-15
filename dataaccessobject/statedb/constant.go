@@ -56,8 +56,6 @@ const (
 	PortalExternalTxObjectType
 	PortalConfirmProofObjectType
 	PortalUnlockOverRateCollaterals
-
-	TokenInitObjectType
 )
 
 // Prefix length

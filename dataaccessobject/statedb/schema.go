@@ -98,9 +98,6 @@ var (
 	portalExternalTxPrefix      = []byte("portalexttx-")
 	portalConfirmProofPrefix    = []byte("portalproof-")
 	withdrawCollateralProofType = []byte("0-")
-
-	// privacy custom token initialization
-	tokenInitPrefix = []byte("token-init-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -521,11 +518,6 @@ func PortalExpiredPortingReqPrefix() []byte {
 
 func PortalReqMatchingRedeemStatusByTxReqIDPrefix() []byte {
 	return portalReqMatchingRedeemStatusByTxReqIDPrefix
-}
-
-func GetTokenInitPrefix() []byte {
-	h := common.HashH(tokenInitPrefix)
-	return h[:][:prefixHashKeyLength]
 }
 
 var _ = func() (_ struct{}) {
