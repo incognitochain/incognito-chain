@@ -67,7 +67,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 	)
 
 	swapRule := &mocks.SwapRule{}
-	swapRule.On("GenInstructions", uint8(1),
+	swapRule.On("Process", uint8(1),
 		[]string{key4, key5, key6, key7},
 		[]string{key12, key13, key14, key15},
 		4,
@@ -1343,7 +1343,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 	swapShardInstructionCommitteeChange.ShardSubstituteRemoved[1] = []incognitokey.CommitteePublicKey{*incKey10, *incKey11, *incKey18}
 
 	swapRule := &mocks.SwapRule{}
-	swapRule.On("GenInstructions", uint8(1),
+	swapRule.On("Process", uint8(1),
 		[]string{key6, key7, key17},
 		[]string{key10, key11, key18},
 		mock.AnythingOfType("int"),

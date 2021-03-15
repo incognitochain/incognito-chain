@@ -27,7 +27,7 @@ func NewBeaconCommitteeStateV2WithValue(
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
-	swapRule SwapRule,
+	swapRule SwapRuleProcessor,
 ) *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
 		beaconCommitteeStateSlashingBase: *newBeaconCommitteeStateSlashingBaseWithValue(
@@ -51,10 +51,6 @@ func (b *BeaconCommitteeStateV2) clone() *BeaconCommitteeStateV2 {
 	res := NewBeaconCommitteeStateV2()
 	res.beaconCommitteeStateSlashingBase = *b.beaconCommitteeStateSlashingBase.clone()
 	return res
-}
-
-func (b *BeaconCommitteeStateV2) reset() {
-	b.beaconCommitteeStateBase.reset()
 }
 
 //Upgrade check interface method for des
@@ -96,20 +92,20 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
-		b.SetNumberOfAssignedCandidates(SnapshotShardCommonPoolV2(
+		b.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
 			oldB.GetShardCommonPool(),
 			oldB.GetShardCommittee(),
 			oldB.GetShardSubstitute(),
 			env.NumberOfFixedShardBlockValidator,
 			env.MinShardCommitteeSize,
-			oldB.SwapRule(),
-		))
+			oldB.swapRule,
+		)
 
-		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, b.NumberOfAssignedCandidates())
+		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, b.numberOfAssignedCandidates)
 	}
 
-	env.newUnassignedCommonPool = b.UnassignedCommonPool()
-	env.newAllSubstituteCommittees = b.AllSubstituteCommittees()
+	env.newUnassignedCommonPool, _ = incognitokey.CommitteeKeyListToString(b.shardCommonPool[b.numberOfAssignedCandidates:])
+	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
 	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
 
 	for _, inst := range env.BeaconInstructions {
@@ -186,15 +182,42 @@ func (b *BeaconCommitteeStateV2) getDataForUpgrading(env *BeaconCommitteeStateEn
 	map[string]bool,
 	map[string]privacy.PaymentAddress,
 	map[string]common.Hash,
-	SwapRule,
+	SwapRuleProcessor,
 ) {
-	beaconCommittee, shardCommittee, shardSubstitute,
-		shardCommonPool, numberOfAssignedCandidates,
-		autoStake, rewardReceiver, stakingTx, swapRule := b.getDataForUpgrading(env)
+	beaconCommittee := make([]incognitokey.CommitteePublicKey, len(b.beaconCommittee))
+	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
+	shardCommonPool := make([]incognitokey.CommitteePublicKey, len(b.shardCommittee))
+	numberOfAssignedCandidates := b.numberOfAssignedCandidates
+	autoStake := make(map[string]bool)
+	rewardReceiver := make(map[string]privacy.PaymentAddress)
+	stakingTx := make(map[string]common.Hash)
+	swapRule := b.swapRule
 
-	numberOfAssignedCandidates = b.NumberOfAssignedCandidates()
-	shardCommonPool = make([]incognitokey.CommitteePublicKey, numberOfAssignedCandidates)
-	copy(shardCommonPool, b.shardCommonPool)
+	copy(beaconCommittee, b.beaconCommittee)
+	for shardID, oneShardCommittee := range b.shardCommittee {
+		shardCommittee[shardID] = make([]incognitokey.CommitteePublicKey, len(oneShardCommittee))
+		copy(shardCommittee[shardID], oneShardCommittee)
+	}
+	for shardID, oneShardSubsitute := range b.shardSubstitute {
+		shardSubstitute[shardID] = make([]incognitokey.CommitteePublicKey, len(oneShardSubsitute))
+		copy(shardSubstitute[shardID], oneShardSubsitute)
+	}
+	nextEpochShardCandidate := b.shardCommonPool[numberOfAssignedCandidates:]
+	currentEpochShardCandidate := b.shardCommonPool[:numberOfAssignedCandidates]
+	shardCandidates := append(currentEpochShardCandidate, nextEpochShardCandidate...)
+
+	copy(shardCommonPool, shardCandidates)
+	for k, v := range b.autoStake {
+		autoStake[k] = v
+	}
+	for k, v := range b.rewardReceiver {
+		rewardReceiver[k] = v
+	}
+	for k, v := range b.stakingTx {
+		stakingTx[k] = v
+	}
+
 	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
 		autoStake, rewardReceiver, stakingTx, swapRule
 }

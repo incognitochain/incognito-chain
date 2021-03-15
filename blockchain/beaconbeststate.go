@@ -247,7 +247,7 @@ func (beaconBestState *BeaconBestState) GetShardCommitteeFlattenList() []string 
 	return committees
 }
 
-func (beaconBestState *BeaconBestState) getUncommittedShardCommitteeFlattenList() []string {
+func (beaconBestState *BeaconBestState) getNewShardCommitteeFlattenList() []string {
 
 	committees := []string{}
 	for _, committeeStructs := range beaconBestState.beaconCommitteeState.GetShardCommittee() {
@@ -425,7 +425,7 @@ func (beaconBestState *BeaconBestState) GetCandidateShardWaitingForNextRandom() 
 }
 
 func (beaconBestState *BeaconBestState) SyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
-	return beaconBestState.beaconCommitteeState.SyncingValidators()
+	return beaconBestState.beaconCommitteeState.GetSyncingValidators()
 }
 
 //CommitteeEngineVersion ...
@@ -676,13 +676,14 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	}
 }
 
-func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForReward(
+func newBeaconCommitteeStateEnvironmentForReward(
 	totalReward map[common.Hash]uint64,
 	percentCustodianReward uint64,
 	percentForIncognitoDAO int,
 	isSplitRewardForCustodian bool,
 	activeShards int,
 	shardID byte,
+	beaconHeight uint64,
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	env := committeestate.NewBeaconCommitteeStateEnvironment()
 	env.TotalReward = totalReward
@@ -691,7 +692,7 @@ func (beaconBestState *BeaconBestState) NewBeaconCommitteeStateEnvironmentForRew
 	env.IsSplitRewardForCustodian = isSplitRewardForCustodian
 	env.ActiveShards = activeShards
 	env.ShardID = shardID
-	env.BeaconHeight = beaconBestState.BeaconHeight
+	env.BeaconHeight = beaconHeight
 	return env
 }
 
@@ -724,7 +725,7 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 
 	shardCommonPool := []incognitokey.CommitteePublicKey{}
 	numberOfAssignedCandidates := 0
-	var swapRule committeestate.SwapRule
+	var swapRule committeestate.SwapRuleProcessor
 
 	if version != committeestate.SELF_SWAP_SHARD_VERSION {
 		shardCommonPool = nextEpochShardCandidate
@@ -851,7 +852,7 @@ func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePub
 	if len(committeePublicKeys) == 0 {
 		return false
 	}
-	syncingValidators := beaconBestState.beaconCommitteeState.SyncingValidators()[shardID]
+	syncingValidators := beaconBestState.beaconCommitteeState.GetSyncingValidators()[shardID]
 	currentSelfSyncingValidators := make(map[string]bool)
 	count := 0
 	for _, committeePublicKey := range committeePublicKeys {
@@ -877,7 +878,7 @@ func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePub
 func (beaconBestState *BeaconBestState) AddFinishedSyncValidators(committeePublicKeys []string, shardID byte) {
 	beaconBestState.finishSyncManager.AddFinishedSyncValidators(
 		committeePublicKeys,
-		beaconBestState.beaconCommitteeState.SyncingValidators()[shardID],
+		beaconBestState.beaconCommitteeState.GetSyncingValidators()[shardID],
 		shardID,
 	)
 }

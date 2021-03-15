@@ -54,16 +54,6 @@ func (b *BeaconCommitteeStateV1) Version() uint {
 	return SELF_SWAP_SHARD_VERSION
 }
 
-func (b *BeaconCommitteeStateV1) Reset() {
-	b.reset()
-}
-
-func (b *BeaconCommitteeStateV1) reset() {
-	b.beaconCommitteeStateBase.reset()
-	b.currentEpochShardCandidate = []incognitokey.CommitteePublicKey{}
-	b.nextEpochShardCandidate = []incognitokey.CommitteePublicKey{}
-}
-
 func (b *BeaconCommitteeStateV1) Clone() BeaconCommitteeState {
 	return b.clone()
 }
@@ -84,6 +74,10 @@ func (b BeaconCommitteeStateV1) GetCandidateShardWaitingForNextRandom() []incogn
 
 func (b BeaconCommitteeStateV1) GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey {
 	return b.currentEpochShardCandidate
+}
+
+func (b BeaconCommitteeStateV1) GetShardCommonPool() []incognitokey.CommitteePublicKey {
+	return append(b.currentEpochShardCandidate, b.nextEpochShardCandidate...)
 }
 
 func (b BeaconCommitteeStateV1) GetAllCandidateSubstituteCommittee() []string {
@@ -447,7 +441,7 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 }
 
 //SplitReward ...
-func (b *BeaconCommitteeStateV1) SplitReward(
+func (b *BeaconCommitteeStateV1) Process(
 	env *BeaconCommitteeStateEnvironment) (
 	map[common.Hash]uint64, map[common.Hash]uint64,
 	map[common.Hash]uint64, map[common.Hash]uint64, error,
@@ -485,7 +479,7 @@ func (b *BeaconCommitteeStateV1) SplitReward(
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 }
 
-func (b *BeaconCommitteeStateV1) AssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction {
+func (b *BeaconCommitteeStateV1) GenerateAssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction {
 	candidates, _ := incognitokey.CommitteeKeyListToString(b.currentEpochShardCandidate)
 	numberOfPendingValidator := make(map[byte]int)
 	shardPendingValidator := b.shardSubstitute
@@ -551,7 +545,7 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 	map[string]bool,
 	map[string]privacy.PaymentAddress,
 	map[string]common.Hash,
-	SwapRule,
+	SwapRuleProcessor,
 ) {
 	beaconCommittee := make([]incognitokey.CommitteePublicKey, len(b.beaconCommittee))
 	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)

@@ -31,7 +31,7 @@ func NewBeaconCommitteeStateV3WithValue(
 	rewardReceiver map[string]privacy.PaymentAddress,
 	stakingTx map[string]common.Hash,
 	syncPool map[byte][]incognitokey.CommitteePublicKey,
-	swapRule SwapRule,
+	swapRule SwapRuleProcessor,
 ) *BeaconCommitteeStateV3 {
 	return &BeaconCommitteeStateV3{
 		beaconCommitteeStateSlashingBase: *newBeaconCommitteeStateSlashingBaseWithValue(
@@ -60,11 +60,6 @@ func (b *BeaconCommitteeStateV3) clone() *BeaconCommitteeStateV3 {
 	}
 
 	return newB
-}
-
-func (b *BeaconCommitteeStateV3) reset() {
-	b.beaconCommitteeStateSlashingBase.reset()
-	b.syncPool = map[byte][]incognitokey.CommitteePublicKey{}
 }
 
 func (b BeaconCommitteeStateV3) Hash() (*BeaconCommitteeStateHash, error) {
@@ -109,7 +104,7 @@ func (b BeaconCommitteeStateV3) isEmpty() bool {
 	return reflect.DeepEqual(b, NewBeaconCommitteeStateV3())
 }
 
-func (b *BeaconCommitteeStateV3) SyncPool() map[byte][]incognitokey.CommitteePublicKey {
+func (b *BeaconCommitteeStateV3) GetSyncPool() map[byte][]incognitokey.CommitteePublicKey {
 	return b.syncPool
 }
 
@@ -286,7 +281,7 @@ func (b *BeaconCommitteeStateV3) AllSyncingValidators() []string {
 	return res
 }
 
-func (b BeaconCommitteeStateV3) SyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
+func (b BeaconCommitteeStateV3) GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	res := make(map[byte][]incognitokey.CommitteePublicKey)
@@ -302,32 +297,31 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 	incurredInstructions := [][]string{}
 	returnStakingInstruction := instruction.NewReturnStakeIns()
 	committeeChange := NewCommitteeChange()
-	newB := b
-	oldB := newB.clone()
+	oldB := b.clone()
 
-	oldB.Mu().RLock()
-	defer oldB.Mu().RUnlock()
-	newB.mu.Lock()
-	defer newB.mu.Unlock()
+	oldB.mu.RLock()
+	defer oldB.mu.RUnlock()
+	b.mu.Lock()
+	defer b.mu.Unlock()
 
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
-		newB.SetNumberOfAssignedCandidates(SnapshotShardCommonPoolV2(
+		b.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
 			oldB.shardCommonPool,
 			oldB.shardCommittee,
 			oldB.shardSubstitute,
 			env.NumberOfFixedShardBlockValidator,
 			env.MinShardCommitteeSize,
 			oldB.swapRule,
-		))
+		)
 
-		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, newB.NumberOfAssignedCandidates())
+		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, b.numberOfAssignedCandidates)
 	}
 
-	env.newUnassignedCommonPool = newB.UnassignedCommonPool()
-	env.newAllSubstituteCommittees = newB.AllSubstituteCommittees()
+	env.newUnassignedCommonPool, _ = incognitokey.CommitteeKeyListToString(b.shardCommonPool[b.numberOfAssignedCandidates:])
+	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
 	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
-	env.newValidators = append(env.newValidators, newB.AllSyncingValidators()...)
+	env.newValidators = append(env.newValidators, b.AllSyncingValidators()...)
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -339,7 +333,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, err = newB.processStakeInstruction(stakeInstruction, committeeChange)
+			committeeChange, err = b.processStakeInstruction(stakeInstruction, committeeChange)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -349,7 +343,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange = newB.processAssignWithRandomInstruction(
+			committeeChange = b.processAssignWithRandomInstruction(
 				randomInstruction.BtcNonce, env.ActiveShards, committeeChange, oldB, env.BeaconHeight)
 
 		case instruction.STOP_AUTO_STAKE_ACTION:
@@ -357,14 +351,14 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange = newB.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange, oldB)
+			committeeChange = b.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange, oldB)
 
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, returnStakingInstruction, err = newB.processSwapShardInstruction(
+			committeeChange, returnStakingInstruction, err = b.processSwapShardInstruction(
 				swapShardInstruction, env, committeeChange, returnStakingInstruction, oldB)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -375,7 +369,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, err = newB.processFinishSyncInstruction(
+			committeeChange, err = b.processFinishSyncInstruction(
 				finishSyncInstruction, env, committeeChange, oldB)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
@@ -384,7 +378,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 		}
 	}
 
-	hashes, err := newB.Hash()
+	hashes, err := b.Hash()
 	if err != nil {
 		return hashes, committeeChange, incurredInstructions, err
 	}
@@ -395,7 +389,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 }
 
 //SplitReward ...
-func (b *BeaconCommitteeStateV3) SplitReward(
+func (b *BeaconCommitteeStateV3) Process(
 	env *BeaconCommitteeStateEnvironment) (
 	map[common.Hash]uint64, map[common.Hash]uint64,
 	map[common.Hash]uint64, map[common.Hash]uint64, error,
