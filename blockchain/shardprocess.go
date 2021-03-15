@@ -1046,6 +1046,7 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 // processStoreShardBlock Store All information after Insert
 //	- Shard Block
 //	- Shard Best State
+//	- Store tokenInit transactions (with metadata: InitTokenRequestMeta, IssuingRequestMeta, IssuingETHRequestMeta)
 //	- Transaction => UTXO, serial number, snd, commitment
 //	- Cross Output Coin => UTXO, snd, commmitment
 //	- Store transaction metadata:
@@ -1058,6 +1059,11 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	shardID := shardBlock.Header.ShardID
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
+
+	err := blockchain.storeTokenInitInstructions(newShardState.transactionStateDB, beaconBlocks)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, fmt.Errorf("storeTokenInitInstructions error: %v", err))
+	}
 
 	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, blockHeight, *shardBlock.Hash())
 	if len(shardBlock.Body.CrossTransactions) != 0 {
@@ -1094,7 +1100,7 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 		strconv.Itoa(metadata.BurningConfirmMeta),
 		strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta),
 	}
-	err := blockchain.storeBurningConfirm(newShardState.featureStateDB, shardBlock.Body.Instructions, shardBlock.Header.Height, metas)
+	err = blockchain.storeBurningConfirm(newShardState.featureStateDB, shardBlock.Body.Instructions, shardBlock.Header.Height, metas)
 	if err != nil {
 		return NewBlockChainError(StoreBurningConfirmError, err)
 	}
@@ -1313,4 +1319,106 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 		//Remove tx out of pool
 		go blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)
 	}()
+}
+
+//storeTokenInitInstructions tries to store new tokens when they are initialized. There are 3 ways to init a token:
+//	1. InitTokenRequestMeta - for user-customized tokens
+//	2. IssuingRequestMeta - for centralized bridge tokens
+//	3. IssuingETHRequestMeta - for centralized bridge tokens
+func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateDB, beaconBlocks []*BeaconBlock) error {
+	for _, block := range beaconBlocks {
+		instructions := block.Body.Instructions
+
+		for _, l := range instructions {
+			if len(l) < 4 {
+				continue
+			}
+			switch l[0] {
+			case SetAction, StakeAction, RandomAction, AssignAction, SwapAction, StopAutoStake:
+				continue
+			}
+
+			metaType, err := strconv.Atoi(l[0])
+			if err != nil {
+				return err
+			}
+			switch metaType {
+			case metadata.InitTokenRequestMeta:
+				if len(l) == 4 && l[2] == "accepted" {
+					acceptedContent, err := metadata.ParseInitTokenInstAcceptedContent(l[3])
+					if err != nil {
+						Logger.log.Errorf("ParseInitTokenInstAcceptedContent(%v) error: %v\n", l[3], err)
+						return err
+					}
+
+					Logger.log.Infof("process storing tokenInit: %v\n", *acceptedContent)
+
+					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.TokenID); existed {
+						Logger.log.Infof("token %v existed\n", acceptedContent.TokenID.String())
+						continue
+					}
+
+					err = statedb.StorePrivacyToken(stateDB, acceptedContent.TokenID, acceptedContent.TokenName,
+						acceptedContent.TokenSymbol, statedb.InitToken, true, acceptedContent.Amount, []byte{}, acceptedContent.RequestedTxID,
+					)
+					if err != nil {
+						Logger.log.Errorf("StorePrivacyToken error: %v\n", err)
+						return err
+					}
+
+					Logger.log.Infof("store token %v succeeded\n", acceptedContent.TokenID.String())
+				}
+
+			case metadata.IssuingETHRequestMeta:
+				if len(l) >= 4 && l[2] == "accepted" {
+					acceptedContent, err := metadata.ParseETHIssuingInstAcceptedContent(l[3])
+					if err != nil {
+						Logger.log.Errorf("ParseETHIssuingInstAcceptedContent(%v) error: %v\n", l[3], err)
+						return err
+					}
+
+					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.IncTokenID); existed {
+						Logger.log.Infof("token %v existed\n", acceptedContent.IncTokenID.String())
+						continue
+					}
+
+					err = statedb.StorePrivacyToken(stateDB, acceptedContent.IncTokenID, "",
+						"", statedb.BridgeToken, true, acceptedContent.IssuingAmount, []byte{}, acceptedContent.TxReqID,
+					)
+					if err != nil {
+						Logger.log.Errorf("StorePrivacyToken error: %v\n", err)
+						return err
+					}
+
+					Logger.log.Infof("store token %v succeeded\n", acceptedContent.IncTokenID.String())
+				}
+
+			case metadata.IssuingRequestMeta:
+				if len(l) >= 4 && l[2] == "accepted" {
+					acceptedContent, err := metadata.ParseIssuingInstAcceptedContent(l[3])
+					if err != nil {
+						Logger.log.Errorf("ParseIssuingInstAcceptedContent(%v) error: %v\n", l[3], err)
+						return err
+					}
+
+					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.IncTokenID); existed {
+						Logger.log.Infof("token %v existed\n", acceptedContent.IncTokenID.String())
+						continue
+					}
+
+					err = statedb.StorePrivacyToken(stateDB, acceptedContent.IncTokenID, acceptedContent.IncTokenName,
+						acceptedContent.IncTokenName, statedb.BridgeToken, true, acceptedContent.DepositedAmount, []byte{}, acceptedContent.TxReqID,
+					)
+					if err != nil {
+						Logger.log.Errorf("StorePrivacyToken error: %v\n", err)
+						return err
+					}
+
+					Logger.log.Infof("store token %v succeeded\n", acceptedContent.IncTokenID.String())
+				}
+			}
+		}
+	}
+
+	return nil
 }
