@@ -141,7 +141,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, should
 	}
 
 	// Verify beaconBlock with previous best state
-	if shouldValidate || true {
+	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		// Verify beaconBlock with previous best state
 		if err := curView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, true, blockchain.config.ChainParams.Epoch); err != nil {

@@ -151,7 +151,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, shouldVal
 		Logger.log.Infof("SHARD %+v | SKIP Verify Pre Processing, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	}
 
-	if shouldValidate || true {
+	if shouldValidate {
 		// Verify block with previous best state
 		Logger.log.Debugf("SHARD %+v | Verify BestState With Shard Block, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 		if err := curView.verifyBestStateWithShardBlock(blockchain, shardBlock, true, shardID); err != nil {
