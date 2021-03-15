@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"sort"
 	"time"
@@ -201,6 +202,10 @@ func (e *BLSBFT_V2) run() error {
 
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
 				bestView := e.Chain.GetBestView()
+
+				//set round for monitor
+				round := e.currentTimeSlot - common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
 				/*
 					Check for whether we should propose block
