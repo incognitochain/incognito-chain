@@ -248,6 +248,9 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 			if tempTxToken2.TokenData.Mintable{
 				return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
 			}
+			if tempTxToken2.TokenData.Type == transaction.CustomTokenInit {
+				return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("tx %v used a deprecated method for initialize a token, consider use a metadata tx instead", tx.Hash().String()))
+			}
 		}else if tempTx.TxTokenData.Mintable{
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
 		}
