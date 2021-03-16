@@ -473,12 +473,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalReplaceUnshieldFee(para
 	}
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
-	// HasPrivacyCoin param is always false
-	createRawTxParam.HasPrivacyCoin = false
 
 	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
@@ -578,12 +576,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalSubmitConfirmedTx(param
 	}
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
-	// HasPrivacyCoin param is always false
-	createRawTxParam.HasPrivacyCoin = false
 
 	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
 	if err1 != nil {
