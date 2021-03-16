@@ -482,7 +482,7 @@ func (p *PortalFeeReplacementRequestProcessor) ProcessInsts(
 			BatchID:       actionData.BatchID,
 			Fee:           actionData.Fee,
 			ExternalRawTx: actionData.ExternalRawTx,
-			BeaconHeight:  beaconHeight,
+			BeaconHeight:  beaconHeight + 1,
 			TxHash:        actionData.TxReqID.String(),
 			Status:        pCommon.PortalRequestAcceptedStatus,
 		}
@@ -494,7 +494,7 @@ func (p *PortalFeeReplacementRequestProcessor) ProcessInsts(
 			BatchID:       actionData.BatchID,
 			ExternalRawTx: actionData.ExternalRawTx,
 			Fee:           actionData.Fee,
-			BeaconHeight:  beaconHeight,
+			BeaconHeight:  beaconHeight + 1,
 			TxHash:        actionData.TxReqID.String(),
 			Status:        pCommon.PortalRequestRejectedStatus,
 		}
