@@ -1,6 +1,8 @@
 #!/bin/sh
-mkdir -p /data
+mkdir -p /data_v2
 cron
+./incognito --discoverpeersaddress "mainnet-bootnode.incognito.org:9330" GETH_NAME="https://mainnet.infura.io/v3/34918000975d4374a056ed78fe21c517" GETH_PORT="" GETH_PROTOCOL="" --testnet false --relayshards "all" --datadir "/data_v2" --listen "0.0.0.0:9433" --externaladdress "0.0.0.0:9433" --norpcauth --rpclisten "0.0.0.0:39334" --rpcwslisten 0.0.0.0:49334 --txpoolmaxtx 100000 --loglevel debug > /data_v2/mainnet/logfullnodemainnet.log
+exit
 
 if [ "$1" == "y" ]; then
     find /data -maxdepth 1 -mindepth 1 -type d | xargs rm -rf
