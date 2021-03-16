@@ -754,16 +754,16 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 			consensusSnapshotTimeStateDB, _ := statedb.NewWithPrefixTrie(tempRootHash.ConsensusStateDBRootHash, dbWarper)
 			snapshotCurrentValidator, snapshotSubstituteValidator, snapshotNextEpochShardCandidate,
 				_, _, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusSnapshotTimeStateDB, shardIDs)
-			snapshotShardCommonPool := snapshotNextEpochShardCandidate
-			snapshotShardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-			snapshotShardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
+			snapshotShardCommonPool, _ := incognitokey.CommitteeKeyListToString(snapshotNextEpochShardCandidate)
+			snapshotShardCommittee := make(map[byte][]string)
+			snapshotShardSubstitute := make(map[byte][]string)
 			delete(snapshotCurrentValidator, statedb.BeaconChainID)
 			delete(snapshotSubstituteValidator, statedb.BeaconChainID)
 			for k, v := range snapshotCurrentValidator {
-				snapshotShardCommittee[byte(k)] = v
+				snapshotShardCommittee[byte(k)], _ = incognitokey.CommitteeKeyListToString(v)
 			}
 			for k, v := range snapshotSubstituteValidator {
-				snapshotShardSubstitute[byte(k)] = v
+				snapshotShardSubstitute[byte(k)], _ = incognitokey.CommitteeKeyListToString(v)
 			}
 
 			numberOfAssignedCandidates = committeestate.SnapshotShardCommonPoolV2(

@@ -39,6 +39,10 @@ type BeaconCommitteeState interface {
 		error)
 	Hash() (*BeaconCommitteeStateHash, error)
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
+
+	getBeaconCommittee() []incognitokey.CommitteePublicKey
+	getShardCommittee() map[byte][]incognitokey.CommitteePublicKey
+	getShardSubstitute() map[byte][]incognitokey.CommitteePublicKey
 }
 
 type AssignInstructionsGenerator interface {
@@ -50,7 +54,7 @@ type SwapShardInstructionsGenerator interface {
 }
 
 type SplitRewardRuleProcessor interface {
-	Process(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
+	SplitReward(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
 }
 
 type BeaconCommitteeStateEnvironment struct {

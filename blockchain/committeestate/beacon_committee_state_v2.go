@@ -1,11 +1,9 @@
 package committeestate
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type BeaconCommitteeStateV2 struct {
@@ -20,9 +18,9 @@ func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
 
 func NewBeaconCommitteeStateV2WithValue(
 	beaconCommittee []string,
-	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
-	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
-	shardCommonPool []incognitokey.CommitteePublicKey,
+	shardCommittee map[byte][]string,
+	shardSubstitute map[byte][]string,
+	shardCommonPool []string,
 	numberOfAssignedCandidates int,
 	autoStake map[string]bool,
 	rewardReceiver map[string]privacy.PaymentAddress,
@@ -78,9 +76,9 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
 		b.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
-			oldB.GetShardCommonPool(),
-			oldB.GetShardCommittee(),
-			oldB.GetShardSubstitute(),
+			oldB.shardCommonPool,
+			oldB.shardCommittee,
+			oldB.shardSubstitute,
 			env.NumberOfFixedShardBlockValidator,
 			env.MinShardCommitteeSize,
 			oldB.swapRule,
@@ -89,7 +87,9 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, b.numberOfAssignedCandidates)
 	}
 
-	env.newUnassignedCommonPool, _ = incognitokey.CommitteeKeyListToString(b.shardCommonPool[b.numberOfAssignedCandidates:])
+	env.newUnassignedCommonPool = make([]string, len(b.shardCommonPool[b.numberOfAssignedCandidates:]))
+	copy(env.newUnassignedCommonPool, b.shardCommonPool[b.numberOfAssignedCandidates:])
+
 	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
 	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
 
@@ -173,7 +173,7 @@ func (engine *BeaconCommitteeStateV2) Upgrade(env *BeaconCommitteeStateEnvironme
 		autoStake,
 		rewardReceiver,
 		stakingTx,
-		map[byte][]incognitokey.CommitteePublicKey{},
+		map[byte][]string{},
 		swapRule,
 	)
 	return committeeStateV3
@@ -181,9 +181,9 @@ func (engine *BeaconCommitteeStateV2) Upgrade(env *BeaconCommitteeStateEnvironme
 
 func (b *BeaconCommitteeStateV2) getDataForUpgrading(env *BeaconCommitteeStateEnvironment) (
 	[]string,
-	map[byte][]incognitokey.CommitteePublicKey,
-	map[byte][]incognitokey.CommitteePublicKey,
-	[]incognitokey.CommitteePublicKey,
+	map[byte][]string,
+	map[byte][]string,
+	[]string,
 	int,
 	map[string]bool,
 	map[string]privacy.PaymentAddress,
@@ -191,9 +191,9 @@ func (b *BeaconCommitteeStateV2) getDataForUpgrading(env *BeaconCommitteeStateEn
 	SwapRuleProcessor,
 ) {
 	beaconCommittee := make([]string, len(b.beaconCommittee))
-	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
-	shardCommonPool := make([]incognitokey.CommitteePublicKey, len(b.shardCommittee))
+	shardCommittee := make(map[byte][]string)
+	shardSubstitute := make(map[byte][]string)
+	shardCommonPool := make([]string, len(b.shardCommittee))
 	numberOfAssignedCandidates := b.numberOfAssignedCandidates
 	autoStake := make(map[string]bool)
 	rewardReceiver := make(map[string]privacy.PaymentAddress)
@@ -202,11 +202,11 @@ func (b *BeaconCommitteeStateV2) getDataForUpgrading(env *BeaconCommitteeStateEn
 
 	copy(beaconCommittee, b.beaconCommittee)
 	for shardID, oneShardCommittee := range b.shardCommittee {
-		shardCommittee[shardID] = make([]incognitokey.CommitteePublicKey, len(oneShardCommittee))
+		shardCommittee[shardID] = make([]string, len(oneShardCommittee))
 		copy(shardCommittee[shardID], oneShardCommittee)
 	}
 	for shardID, oneShardSubsitute := range b.shardSubstitute {
-		shardSubstitute[shardID] = make([]incognitokey.CommitteePublicKey, len(oneShardSubsitute))
+		shardSubstitute[shardID] = make([]string, len(oneShardSubsitute))
 		copy(shardSubstitute[shardID], oneShardSubsitute)
 	}
 	nextEpochShardCandidate := b.shardCommonPool[numberOfAssignedCandidates:]
