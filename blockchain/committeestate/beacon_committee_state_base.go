@@ -231,7 +231,7 @@ func (b beaconCommitteeStateBase) GetAllCandidateSubstituteCommittee() []string 
 }
 
 func (b beaconCommitteeStateBase) GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
-	panic("do not use function of beaconCommitteeStateBase struct")
+	return make(map[byte][]incognitokey.CommitteePublicKey)
 }
 
 func (b *beaconCommitteeStateBase) ActiveShards() int {
