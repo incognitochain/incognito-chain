@@ -550,7 +550,6 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 	beaconCommittee := make([]incognitokey.CommitteePublicKey, len(b.beaconCommittee))
 	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
-	shardCommonPool := make([]incognitokey.CommitteePublicKey, len(b.shardCommittee))
 	numberOfAssignedCandidates := len(b.currentEpochShardCandidate)
 	autoStake := make(map[string]bool)
 	rewardReceiver := make(map[string]privacy.PaymentAddress)
@@ -561,14 +560,14 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 		shardCommittee[shardID] = make([]incognitokey.CommitteePublicKey, len(oneShardCommittee))
 		copy(shardCommittee[shardID], oneShardCommittee)
 	}
-	for shardID, oneShardSubsitute := range b.shardSubstitute {
-		shardSubstitute[shardID] = make([]incognitokey.CommitteePublicKey, len(oneShardSubsitute))
-		copy(shardSubstitute[shardID], oneShardSubsitute)
+	for shardID, oneShardSubstitute := range b.shardSubstitute {
+		shardSubstitute[shardID] = make([]incognitokey.CommitteePublicKey, len(oneShardSubstitute))
+		copy(shardSubstitute[shardID], oneShardSubstitute)
 	}
 	currentEpochShardCandidate := b.currentEpochShardCandidate
 	nextEpochShardCandidate := b.nextEpochShardCandidate
 	shardCandidates := append(currentEpochShardCandidate, nextEpochShardCandidate...)
-
+	shardCommonPool := make([]incognitokey.CommitteePublicKey, len(shardCandidates))
 	copy(shardCommonPool, shardCandidates)
 	for k, v := range b.autoStake {
 		autoStake[k] = v
