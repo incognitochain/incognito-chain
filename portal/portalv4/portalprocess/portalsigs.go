@@ -37,6 +37,18 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 				hexRawExternalTx = actionData.RawExternalTx
 
 			}
+		case strconv.Itoa(metadata.PortalV4FeeReplacementRequestMeta):
+			{
+				// unmarshal instructions content
+				var actionData metadata.PortalReplacementFeeRequestContent
+				err := json.Unmarshal([]byte(inst[3]), &actionData)
+				if err != nil {
+					return nil, fmt.Errorf("[checkAndSignPortalV4] Can not unmarshal instruction content %v - Error %v\n", inst[3], err)
+				}
+				tokenID = actionData.TokenID
+				hexRawExternalTx = actionData.ExternalRawTx
+
+			}
 		// other cases
 		default:
 			continue
