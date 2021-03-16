@@ -328,7 +328,7 @@ func (b *beaconCommitteeStateBase) InitCommitteeState(env *BeaconCommitteeStateE
 	b.beaconCommittee = []incognitokey.CommitteePublicKey{}
 	b.beaconCommittee = append(b.beaconCommittee, newBeaconCandidates...)
 	for shardID := 0; shardID < env.ActiveShards; shardID++ {
-		b.GetShardCommittee()[byte(shardID)] = append(b.GetShardCommittee()[byte(shardID)], newShardCandidates[shardID*env.MinShardCommitteeSize:(shardID+1)*env.MinShardCommitteeSize]...)
+		b.shardCommittee[byte(shardID)] = append(b.shardCommittee[byte(shardID)], newShardCandidates[shardID*env.MinShardCommitteeSize:(shardID+1)*env.MinShardCommitteeSize]...)
 	}
 }
 
