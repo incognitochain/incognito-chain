@@ -234,13 +234,8 @@ func (b beaconCommitteeStateBase) GetSyncingValidators() map[byte][]incognitokey
 	return make(map[byte][]incognitokey.CommitteePublicKey)
 }
 
-func (b *beaconCommitteeStateBase) ActiveShards() int {
+func (b *beaconCommitteeStateBase) GetNumberOfActiveShards() int {
 	return len(b.shardCommittee)
-}
-
-//IsSwapTime is this the moment for process a swbap action
-func (b beaconCommitteeStateBase) IsSwapTime(beaconHeight, numberBlocksEachEpoch uint64) bool {
-	panic("Implement this function")
 }
 
 func (b beaconCommitteeStateBase) Hash() (*BeaconCommitteeStateHash, error) {
@@ -292,7 +287,7 @@ func (b beaconCommitteeStateBase) Hash() (*BeaconCommitteeStateHash, error) {
 	return hashes, nil
 }
 
-func (b *beaconCommitteeStateBase) InitCommitteeState(env *BeaconCommitteeStateEnvironment) {
+func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateEnvironment) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
@@ -445,10 +440,6 @@ func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
 	oldState BeaconCommitteeState,
 ) *CommitteeChange {
 	return b.turnOffAutoStake(env.newValidators, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange, oldState)
-}
-
-func (b *beaconCommitteeStateBase) GetSyncPool() map[byte][]incognitokey.CommitteePublicKey {
-	panic("do not use function of beaconCommitteeStateBase struct")
 }
 
 //SplitReward ...

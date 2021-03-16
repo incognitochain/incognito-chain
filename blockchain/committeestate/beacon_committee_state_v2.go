@@ -53,25 +53,10 @@ func (b *BeaconCommitteeStateV2) clone() *BeaconCommitteeStateV2 {
 	return res
 }
 
-//Upgrade check interface method for des
-func (engine *BeaconCommitteeStateV2) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
-	beaconCommittee, shardCommittee, shardSubstitute,
-		shardCommonPool, numberOfAssignedCandidates,
-		autoStake, rewardReceiver, stakingTx, swapRule := engine.getDataForUpgrading(env)
-
-	committeeStateV3 := NewBeaconCommitteeStateV3WithValue(
-		beaconCommittee,
-		shardCommittee,
-		shardSubstitute,
-		shardCommonPool,
-		numberOfAssignedCandidates,
-		autoStake,
-		rewardReceiver,
-		stakingTx,
-		map[byte][]incognitokey.CommitteePublicKey{},
-		swapRule,
-	)
-	return committeeStateV3
+func InitCommitteeStateV2(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV2 {
+	beaconCommitteeStateV2 := NewBeaconCommitteeStateV2()
+	beaconCommitteeStateV2.initCommitteeState(env)
+	return beaconCommitteeStateV2
 }
 
 // UpdateCommitteeState New flow
@@ -171,6 +156,27 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 	}
 
 	return hashes, committeeChange, incurredInstructions, nil
+}
+
+//Upgrade check interface method for des
+func (engine *BeaconCommitteeStateV2) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
+	beaconCommittee, shardCommittee, shardSubstitute,
+		shardCommonPool, numberOfAssignedCandidates,
+		autoStake, rewardReceiver, stakingTx, swapRule := engine.getDataForUpgrading(env)
+
+	committeeStateV3 := NewBeaconCommitteeStateV3WithValue(
+		beaconCommittee,
+		shardCommittee,
+		shardSubstitute,
+		shardCommonPool,
+		numberOfAssignedCandidates,
+		autoStake,
+		rewardReceiver,
+		stakingTx,
+		map[byte][]incognitokey.CommitteePublicKey{},
+		swapRule,
+	)
+	return committeeStateV3
 }
 
 func (b *BeaconCommitteeStateV2) getDataForUpgrading(env *BeaconCommitteeStateEnvironment) (

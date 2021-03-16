@@ -121,15 +121,6 @@ func (b *BeaconCommitteeStateV1) getAllCandidateSubstituteCommittee() []string {
 	return res
 }
 
-//IsSwapTime read from interface des
-func (b BeaconCommitteeStateV1) IsSwapTime(beaconHeight, numberOfBlockEachEpoch uint64) bool {
-	if beaconHeight%numberOfBlockEachEpoch == 0 {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (b *BeaconCommitteeStateV1) Hash() (*BeaconCommitteeStateHash, error) {
 	res, err := b.beaconCommitteeStateBase.Hash()
 	if err != nil {
@@ -147,6 +138,12 @@ func (b *BeaconCommitteeStateV1) Hash() (*BeaconCommitteeStateHash, error) {
 	}
 	res.ShardCandidateHash = tempShardCandidateHash
 	return res, nil
+}
+
+func InitCommitteeStateV1(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV1 {
+	beaconCommitteeStateV1 := NewBeaconCommitteeStateV1()
+	beaconCommitteeStateV1.initCommitteeState(env)
+	return beaconCommitteeStateV1
 }
 
 //UpdateCommitteeState :
@@ -479,7 +476,7 @@ func (b *BeaconCommitteeStateV1) Process(
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 }
 
-func (b *BeaconCommitteeStateV1) GenerateAssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction {
+func (b *BeaconCommitteeStateV1) GenerateInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction {
 	candidates, _ := incognitokey.CommitteeKeyListToString(b.currentEpochShardCandidate)
 	numberOfPendingValidator := make(map[byte]int)
 	shardPendingValidator := b.shardSubstitute

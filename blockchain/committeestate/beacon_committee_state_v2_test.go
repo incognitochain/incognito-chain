@@ -785,7 +785,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := tt.fields.BeaconCommitteeState
-			got, err := b.GenerateAllSwapShardInstructions(tt.args.env)
+			got, err := b.GenerateInstructions(tt.args.env)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeEngineV2.GenerateAllRequestShardSwapInstruction() error = %v, wantErr %v", err, tt.wantErr)
 				return

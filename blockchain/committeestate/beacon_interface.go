@@ -28,8 +28,7 @@ type BeaconCommitteeState interface {
 	GetStakingTx() map[string]common.Hash
 	GetRewardReceiver() map[string]privacy.PaymentAddress
 	GetAllCandidateSubstituteCommittee() []string
-
-	GetSyncPool() map[byte][]incognitokey.CommitteePublicKey
+	GetNumberOfActiveShards() int
 	GetShardCommonPool() []incognitokey.CommitteePublicKey
 	GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey
 
@@ -38,24 +37,16 @@ type BeaconCommitteeState interface {
 		*CommitteeChange,
 		[][]string,
 		error)
-	//TODO: refactor to non-method function
-	InitCommitteeState(env *BeaconCommitteeStateEnvironment)
 	Hash() (*BeaconCommitteeStateHash, error)
-
-	ActiveShards() int
-	IsSwapTime(uint64, uint64) bool
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
 }
 
-type BeaconCommitteeStateProcessor interface {
-}
-
 type AssignInstructionsGenerator interface {
-	GenerateAssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
+	GenerateInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
 }
 
 type SwapShardInstructionsGenerator interface {
-	GenerateAllSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
+	GenerateInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
 }
 
 type SplitRewardRuleProcessor interface {

@@ -104,10 +104,6 @@ func (b BeaconCommitteeStateV3) isEmpty() bool {
 	return reflect.DeepEqual(b, NewBeaconCommitteeStateV3())
 }
 
-func (b *BeaconCommitteeStateV3) GetSyncPool() map[byte][]incognitokey.CommitteePublicKey {
-	return b.syncPool
-}
-
 //assignToSync assign validatrors to syncPool
 // update beacon committee state and committeechange
 // UPDATE SYNC POOL ONLY
@@ -289,6 +285,12 @@ func (b BeaconCommitteeStateV3) GetSyncingValidators() map[byte][]incognitokey.C
 		res[k] = v
 	}
 	return res
+}
+
+func InitCommitteeStateV3(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV3 {
+	beaconCommitteeStateV3 := NewBeaconCommitteeStateV3()
+	beaconCommitteeStateV3.initCommitteeState(env)
+	return beaconCommitteeStateV3
 }
 
 func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (

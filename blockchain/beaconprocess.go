@@ -601,9 +601,18 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 
-	beaconBestState.beaconCommitteeState.InitCommitteeState(beaconBestState.
-		NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
-			genesisBeaconBlock.Body.Instructions, false, false))
+	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
+		genesisBeaconBlock.Body.Instructions, false, false)
+	if blockchain.config.ChainParams.StakingFlowV3 == 1 {
+		beaconBestState.beaconCommitteeState = committeestate.InitCommitteeStateV3(beaconCommitteeStateEnv)
+	} else {
+		if blockchain.config.ChainParams.StakingFlowV2 == 1 {
+			beaconBestState.beaconCommitteeState = committeestate.InitCommitteeStateV2(beaconCommitteeStateEnv)
+		} else {
+			beaconBestState.beaconCommitteeState = committeestate.InitCommitteeStateV1(beaconCommitteeStateEnv)
+		}
+	}
+
 	beaconBestState.finishSyncManager = finishsync.NewManager()
 
 	beaconBestState.Epoch = 1
@@ -910,8 +919,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height ||
-		beaconBlock.Header.Height == blockchain.config.ChainParams.StakingV3Height {
+	if beaconBlock.Header.Height == blockchain.config.ChainParams.StakingFlowV2 ||
+		beaconBlock.Header.Height == blockchain.config.ChainParams.StakingFlowV3 {
 		newBestState.upgradeCommitteeEngine(blockchain)
 	}
 

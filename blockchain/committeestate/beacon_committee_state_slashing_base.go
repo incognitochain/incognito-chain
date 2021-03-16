@@ -123,15 +123,6 @@ func (b beaconCommitteeStateSlashingBase) getAllCandidateSubstituteCommittee() [
 	return res
 }
 
-//IsSwapTime read from interface des
-func (beaconCommitteeStateSlashingBase) IsSwapTime(beaconHeight, numberOfBlockEachEpoch uint64) bool {
-	if beaconHeight%numberOfBlockEachEpoch == 1 {
-		return true
-	} else {
-		return false
-	}
-}
-
 func (b beaconCommitteeStateSlashingBase) getAllSubstituteCommittees() ([]string, error) {
 	validators, err := b.beaconCommitteeStateBase.getAllSubstituteCommittees()
 	if err != nil {
@@ -146,12 +137,12 @@ func (b beaconCommitteeStateSlashingBase) getAllSubstituteCommittees() ([]string
 	return validators, nil
 }
 
-func (b *beaconCommitteeStateSlashingBase) InitCommitteeState(env *BeaconCommitteeStateEnvironment) {
-	b.beaconCommitteeStateBase.InitCommitteeState(env)
+func (b *beaconCommitteeStateSlashingBase) initCommitteeState(env *BeaconCommitteeStateEnvironment) {
+	b.beaconCommitteeStateBase.initCommitteeState(env)
 	b.swapRule = SwapRuleByEnv(env)
 }
 
-func (b *beaconCommitteeStateSlashingBase) GenerateAllSwapShardInstructions(
+func (b *beaconCommitteeStateSlashingBase) GenerateInstructions(
 	env *BeaconCommitteeStateEnvironment) (
 	[]*instruction.SwapShardInstruction, error) {
 	swapShardInstructions := []*instruction.SwapShardInstruction{}
