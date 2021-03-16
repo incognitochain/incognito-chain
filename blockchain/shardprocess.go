@@ -156,6 +156,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 
 	beaconHeight := shardBlock.Header.BeaconHeight
 	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(beaconHeight), curView); err != nil {
+		Logger.log.Errorf("BUGLOG2 verifyTransactionFromNewBlock for block %v, shard %v error: %v\n", blockHeight, shardID, err)
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 
@@ -250,13 +251,12 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, newBestState))
-	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v 🔗, "+
+	Logger.log.Infof("BUGLOG2 SHARD %+v | Finish Insert new block %d, with hash %+v 🔗, "+
 		"Found 🔎 %+v transactions, "+
 		"%+v cross shard transactions, "+
 		"%+v instruction",
 		shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash,
 		len(shardBlock.Body.Transactions), len(shardBlock.Body.CrossTransactions), len(shardBlock.Body.Instructions))
-
 	return nil
 }
 
