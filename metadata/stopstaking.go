@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
-
-	"github.com/incognitochain/incognito-chain/wallet"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type StopAutoStakingMetadata struct {
@@ -77,34 +74,31 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 	if !(common.IndexOfStr(requestedPublicKey, committees) > -1) {
 		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, fmt.Errorf("Committee Publickey %+v not found in any committee list of current beacon beststate", requestedPublicKey))
 	}
-	stakingTx := shardViewRetriever.GetStakingTx()
-	if tempStakingTxHash, ok := stakingTx[requestedPublicKey]; !ok {
-		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", requestedPublicKey, shardID))
-	} else {
-		stakingTxHash, err := common.Hash{}.NewHashFromStr(tempStakingTxHash)
-		if err != nil {
-			return false, err
-		}
-		_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(*stakingTxHash)
-		if err != nil {
-			return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, err)
-		}
-
-		stakingMetadata := stakingTx.GetMetadata().(*StakingMetadata)
-		funderPaymentAddress := stakingMetadata.FunderPaymentAddress
-		funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
-		if err != nil || funderWallet == nil {
-			return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
-		}
-
-		if ok, err := tx.CheckAuthorizedSender(funderWallet.KeySet.PaymentAddress.Pk); !ok || err != nil {
-			fmt.Println("Tx Meatadata Sig", tx.GetMetadata().GetSig())
-			fmt.Println("Check authorized sender:", ok, err)
-			return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
-		}
-		//if !bytes.Equal(stakingTx.GetSender(), txr.GetSender()) {
-		//}
+	stakerInfo, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)
+	if err != nil {
+		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, err)
 	}
+	if !has {
+		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", requestedPublicKey, shardID))
+	}
+	stakingTxHash := stakerInfo.TxStakingID()
+
+	_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(stakingTxHash)
+	if err != nil {
+		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, err)
+	}
+
+	stakingMetadata := stakingTx.GetMetadata().(*StakingMetadata)
+	funderPaymentAddress := stakingMetadata.FunderPaymentAddress
+	funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
+	if err != nil || funderWallet == nil {
+		return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
+	}
+
+	if ok, err := tx.CheckAuthorizedSender(funderWallet.KeySet.PaymentAddress.Pk); !ok || err != nil {
+		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
+	}
+
 	autoStakingList := beaconViewRetriever.GetAutoStakingList()
 	if isAutoStaking, ok := autoStakingList[stopStakingMetadata.CommitteePublicKey]; !ok {
 		return false, NewMetadataTxError(StopAutoStakingRequestNoAutoStakingAvaiableError, fmt.Errorf("Committe Publickey %+v already request stop auto re-staking", stopStakingMetadata.CommitteePublicKey))

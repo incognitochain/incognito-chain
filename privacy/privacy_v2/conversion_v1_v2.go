@@ -7,13 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy/key"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
-
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
+	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/serialnumbernoprivacy"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge/utils"
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 )
 

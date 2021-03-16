@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"time"
 
@@ -33,7 +34,7 @@ type BLSBFT struct {
 
 	RoundData struct {
 		TimeStart         time.Time
-		Block             common.BlockInterface
+		Block             types.BlockInterface
 		BlockHash         common.Hash
 		BlockValidateData ValidationData
 		lockVotes         sync.Mutex
@@ -49,7 +50,7 @@ type BLSBFT struct {
 		}
 		LastProposerIndex int
 	}
-	Blocks         map[string]common.BlockInterface
+	Blocks         map[string]types.BlockInterface
 	EarlyVotes     map[string]map[string]vote
 	lockEarlyVotes sync.Mutex
 	isOngoing      bool
@@ -77,6 +78,10 @@ func (e *BLSBFT) GetChainID() int {
 	return e.ChainID
 }
 
+func (e *BLSBFT) Destroy() {
+	e.Stop()
+}
+
 func (e *BLSBFT) Stop() error {
 	if e.isStarted {
 		e.logger.Info("stop bls-bft consensus for chain", e.ChainKey)
@@ -97,7 +102,7 @@ func (e *BLSBFT) Start() error {
 	e.isOngoing = false
 	e.StopCh = make(chan struct{})
 	e.EarlyVotes = make(map[string]map[string]vote)
-	e.Blocks = map[string]common.BlockInterface{}
+	e.Blocks = map[string]types.BlockInterface{}
 	e.ProposeMessageCh = make(chan BFTPropose)
 	e.VoteMessageCh = make(chan BFTVote)
 	e.InitRoundData()
@@ -236,7 +241,7 @@ func (e *BLSBFT) Start() error {
 
 					if e.Blocks[roundKey] != nil {
 						monitor.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
-						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]); err != nil {
+						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey], []incognitokey.CommitteePublicKey{}); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
 							continue
@@ -439,10 +444,10 @@ func (e *BLSBFT) addEarlyVote(voteMsg BFTVote) {
 	return
 }
 
-func (e *BLSBFT) createNewBlock(userKey *signatureschemes2.MiningKey) (common.BlockInterface, error) {
+func (e *BLSBFT) createNewBlock(userKey *signatureschemes2.MiningKey) (types.BlockInterface, error) {
 
 	var errCh chan error
-	var block common.BlockInterface = nil
+	var block types.BlockInterface = nil
 	errCh = make(chan error)
 	timeout := time.NewTimer(timeout / 2).C
 
@@ -458,7 +463,7 @@ func (e *BLSBFT) createNewBlock(userKey *signatureschemes2.MiningKey) (common.Bl
 			return
 		}
 
-		block, err = e.Chain.CreateNewBlock(1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix())
+		block, err = e.Chain.CreateNewBlock(1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix(), []incognitokey.CommitteePublicKey{}, common.Hash{})
 		if block != nil {
 			e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
 		} else {

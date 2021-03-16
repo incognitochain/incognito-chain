@@ -89,6 +89,11 @@ var HttpHandler = map[string]httpHandler{
 	decryptoutputcoinbykeyoftransaction:     (*HttpServer).handleDecryptOutputCoinByKeyOfTransaction,
 	randomCommitmentsAndPublicKeys:			 (*HttpServer).handleRandomCommitmentsAndPublicKeys,
 
+	createAndSendTransactionV2:                (*HttpServer).handleCreateAndSendTxV2,
+	createAndSendStakingTransactionV2:         (*HttpServer).handleCreateAndSendStakingTxV2,
+	createAndSendStopAutoStakingTransactionV2: (*HttpServer).handleCreateAndSendStopAutoStakingTransactionV2,
+	hasSerialNumbersInMempool:               	(*HttpServer).handleHasSerialNumbersInMempool,
+
 	//======Testing and Benchmark======
 	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
 	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
@@ -97,6 +102,9 @@ var HttpHandler = map[string]httpHandler{
 	getCommitteeState:       (*HttpServer).handleGetCommitteeState,
 	getRewardAmountByEpoch:  (*HttpServer).handleGetRewardAmountByEpoch,
 	convertPaymentAddress:	 (*HttpServer).handleConvertPaymentAddress,
+	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
+	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
+	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,
 
 	//=================================
 
@@ -174,8 +182,6 @@ var HttpHandler = map[string]httpHandler{
 	getRoleByValidatorKey:       (*HttpServer).handleGetValidatorKeyRole,
 	getIncognitoPublicKeyRole:   (*HttpServer).handleGetIncognitoPublicKeyRole,
 	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
-	getProducersBlackList:       (*HttpServer).handleGetProducersBlackList,
-	getProducersBlackListDetail: (*HttpServer).handleGetProducersBlackListDetail,
 
 	// pde
 	getPDEState:                                (*HttpServer).handleGetPDEState,
@@ -279,6 +285,9 @@ var HttpHandler = map[string]httpHandler{
 
 	//validators state
 	getValKeyState: (*HttpServer).handleGetValKeyState,
+
+	// unstake
+	unstake: (*HttpServer).handleCreateUnstakeTransaction,
 }
 
 // Commands that are available to a limited user
@@ -318,6 +327,7 @@ var WsHandler = map[string]wsHandler{
 	subcribeCrossCustomTokenPrivacyByPrivateKey: (*WsServer).handleSubcribeCrossCustomTokenPrivacyByPrivateKey,
 	subcribeShardBestState:                      (*WsServer).handleSubscribeShardBestState,
 	subcribeBeaconBestState:                     (*WsServer).handleSubscribeBeaconBestState,
+	subcribeBeaconBestStateFromMem:              (*WsServer).handleSubscribeBeaconBestStateFromMem,
 	subcribeBeaconPoolBeststate:                 (*WsServer).handleSubscribeBeaconPoolBestState,
 	subcribeShardPoolBeststate:                  (*WsServer).handleSubscribeShardPoolBeststate,
 }

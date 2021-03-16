@@ -28,6 +28,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/incognitochain/go-libp2p-grpc v0.0.0-20181024123959-d1f24bf49b50
+	github.com/incognitochain/go-libp2p-pubsub v0.2.7-0.20210126072501-9870234752e4
 	github.com/jbenet/goprocess v0.1.4
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0

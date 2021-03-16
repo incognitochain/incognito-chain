@@ -32,21 +32,16 @@ type ConsensusInterface interface {
 	GetConsensusName() string
 	GetChainKey() string
 	GetChainID() int
-
 	// Start - start consensus
 	Start() error
 	// Stop - stop consensus
 	Stop() error
+	Destroy()
 	// IsOngoing - check whether consensus is currently voting on a block
 	IsOngoing() bool
 	IsStarted() bool
 	// ProcessBFTMsg - process incoming BFT message
 	ProcessBFTMsg(msg *wire.MessageBFT)
-	// ValidateProducerSig - validate a block producer signature
-	//ValidateProducerSig(block common.BlockInterface) error
-	// ValidateCommitteeSig - validate a block committee signature
-	//ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-
 	// LoadUserKey - load user mining key
 	LoadUserKeys(miningKey []signatureschemes2.MiningKey) error
 	// GetUserPublicKey - get user public key of loaded mining key

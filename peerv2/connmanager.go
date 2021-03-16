@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 
+	pubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
@@ -17,7 +19,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
 )
 
@@ -29,7 +30,7 @@ func NewConnManager(
 	ikey *incognitokey.CommitteePublicKey,
 	cd ConsensusData,
 	dispatcher *Dispatcher,
-	// nodeMode string,
+	syncMode string, //netmonitor or default
 	relayShard []byte,
 ) *ConnManager {
 	pubkey, _ := ikey.ToBase58()
@@ -38,8 +39,8 @@ func NewConnManager(
 			consensusData: cd,
 			pubkey:        pubkey,
 			relayShard:    relayShard,
-			// nodeMode:      nodeMode,
-			peerID: host.Host.ID(),
+			syncMode:      syncMode,
+			peerID:        host.Host.ID(),
 		},
 		keeper:               NewAddrKeeper(),
 		LocalHost:            host,
@@ -58,7 +59,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 
 	// msgCrossShard := msg.(wire.MessageCrossShard)
 	msgType := msg.MessageType()
-	subs := cm.subscriber.GetMsgToTopics()
+	subs := cm.Subscriber.GetMsgToTopics()
 	for _, p := range publishable {
 		topic = ""
 		if msgType == p {
@@ -88,12 +89,12 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
 	publishable := []string{wire.CmdPeerState, wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT}
 	msgType := msg.MessageType()
-	subs := cm.subscriber.GetMsgToTopics()
+	subs := cm.Subscriber.GetMsgToTopics()
 	for _, p := range publishable {
 		if msgType == p {
 			// Get topic for mess
 			for _, availableTopic := range subs[msgType] {
-				Logger.Info(availableTopic)
+				//Logger.Info(availableTopic)
 				cID := GetCommitteeIDOfTopic(availableTopic.Name)
 				if (byte(cID) == shardID) && ((availableTopic.Act == proto.MessageTopicPair_PUB) || (availableTopic.Act == proto.MessageTopicPair_PUBSUB)) {
 					return broadcastMessage(msg, availableTopic.Name, cm.ps)
@@ -109,7 +110,13 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 func (cm *ConnManager) Start(ns NetSync) {
 	// Pubsub
 	var err error
-	cm.ps, err = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host, pubsub.WithMaxMessageSize(common.MaxPSMsgSize))
+	cm.ps, err = pubsub.NewFloodSub(
+		context.Background(),
+		cm.LocalHost.Host,
+		pubsub.WithMaxMessageSize(common.MaxPSMsgSize),
+		pubsub.WithPeerOutboundQueueSize(1024),
+		pubsub.WithValidateQueueSize(1024),
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -119,7 +126,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 	go cm.keepHighwayConnection()
 
 	cm.Requester = NewRequester(cm.LocalHost.GRPC)
-	cm.subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages)
+	cm.Subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages)
 	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
 	go cm.manageRoleSubscription()
 	cm.process()
@@ -161,12 +168,13 @@ func (cm *ConnManager) BroadcastCommittee(
 type ForcedSubscriber interface {
 	Subscribe(forced bool) error
 	GetMsgToTopics() msgToTopics
+	SetSyncMode(string)
 }
 
 type ConnManager struct {
 	info         // info of running node
 	LocalHost    *Host
-	subscriber   ForcedSubscriber
+	Subscriber   ForcedSubscriber
 	disconnected int
 	registered   bool
 
@@ -299,15 +307,17 @@ func (cm *ConnManager) manageRoleSubscription() {
 			target := cm.Requester.Target()
 			if hwID.Pretty() != target {
 				cm.Requester.UpdateTarget(hwID)
-				Logger.Errorf("Waiting to establish connection to highway: new highway = %v, current = %v", hwID.Pretty(), target)
+				Logger.Warnf("Waiting to establish connection to highway: new highway = %v, current = %v", hwID.Pretty(), target)
 				continue
 			}
 
-			err = cm.subscriber.Subscribe(forced)
-			if err != nil {
-				Logger.Errorf("Subscribe failed: forced = %v hwID = %s err = %+v", forced, hwID.String(), err)
-			} else {
-				forced = false
+			if hwID != peer.ID("") {
+				err = cm.Subscriber.Subscribe(forced)
+				if err != nil {
+					Logger.Errorf("Subscribe failed: forced = %v hwID = %s err = %+v", forced, hwID.String(), err)
+				} else {
+					forced = false
+				}
 			}
 
 		case newID := <-cm.registerRequests:
@@ -376,7 +386,7 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 	}
 
 	// Broadcast
-	Logger.Infof("Publishing to topic %s", topic)
+	//Logger.Infof("Publishing to topic %s", topic)
 	return ps.Publish(topic, []byte(messageHex))
 }
 
@@ -384,7 +394,7 @@ type HighwayDiscoverer interface {
 	DiscoverHighway(discoverPeerAddress string, shardsStr []string) (map[string][]rpcclient.HighwayAddr, error)
 }
 
-func (conn *ConnManager) RequestBeaconBlocksViaStream(ctx context.Context, peerID string, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
+func (conn *ConnManager) RequestBeaconBlocksViaStream(ctx context.Context, peerID string, from uint64, to uint64) (blockCh chan types.BlockInterface, err error) {
 	Logger.Infof("[SyncBeacon] from %v to %v ", from, to)
 	req := &proto.BlockByHeightRequest{
 		Type:         proto.BlkType_BlkBc,
@@ -397,7 +407,7 @@ func (conn *ConnManager) RequestBeaconBlocksViaStream(ctx context.Context, peerI
 	return conn.requestBlocksViaStream(ctx, peerID, req)
 }
 
-func (conn *ConnManager) RequestShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan common.BlockInterface, err error) {
+func (conn *ConnManager) RequestShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, from uint64, to uint64) (blockCh chan types.BlockInterface, err error) {
 	Logger.Infof("[SyncShard] from %v to %v fromShard %v", from, to, fromSID)
 	req := &proto.BlockByHeightRequest{
 		Type:         proto.BlkType_BlkShard,
@@ -410,7 +420,7 @@ func (conn *ConnManager) RequestShardBlocksViaStream(ctx context.Context, peerID
 	return conn.requestBlocksViaStream(ctx, peerID, req)
 }
 
-func (conn *ConnManager) RequestCrossShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, toSID int, heights []uint64) (blockCh chan common.BlockInterface, err error) {
+func (conn *ConnManager) RequestCrossShardBlocksViaStream(ctx context.Context, peerID string, fromSID int, toSID int, heights []uint64) (blockCh chan types.BlockInterface, err error) {
 	Logger.Infof("[SyncXShard] heights %v fromShard %v toShard %v", heights, fromSID, toSID)
 	req := &proto.BlockByHeightRequest{
 		Type:         proto.BlkType_BlkXShard,
@@ -423,7 +433,7 @@ func (conn *ConnManager) RequestCrossShardBlocksViaStream(ctx context.Context, p
 	return conn.requestBlocksViaStream(ctx, peerID, req)
 }
 
-func (conn *ConnManager) RequestCrossShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, toSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
+func (conn *ConnManager) RequestCrossShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, toSID int, hashes [][]byte) (blockCh chan types.BlockInterface, err error) {
 	req := &proto.BlockByHashRequest{
 		Type:         proto.BlkType_BlkXShard,
 		Hashes:       hashes,
@@ -434,7 +444,7 @@ func (conn *ConnManager) RequestCrossShardBlocksByHashViaStream(ctx context.Cont
 	return conn.requestBlocksByHashViaStream(ctx, peerID, req)
 }
 
-func (conn *ConnManager) RequestBeaconBlocksByHashViaStream(ctx context.Context, peerID string, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
+func (conn *ConnManager) RequestBeaconBlocksByHashViaStream(ctx context.Context, peerID string, hashes [][]byte) (blockCh chan types.BlockInterface, err error) {
 	req := &proto.BlockByHashRequest{
 		Type:         proto.BlkType_BlkBc,
 		Hashes:       hashes,
@@ -445,7 +455,7 @@ func (conn *ConnManager) RequestBeaconBlocksByHashViaStream(ctx context.Context,
 	return conn.requestBlocksByHashViaStream(ctx, peerID, req)
 }
 
-func (conn *ConnManager) RequestShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan common.BlockInterface, err error) {
+func (conn *ConnManager) RequestShardBlocksByHashViaStream(ctx context.Context, peerID string, fromSID int, hashes [][]byte) (blockCh chan types.BlockInterface, err error) {
 	req := &proto.BlockByHashRequest{
 		Type:         proto.BlkType_BlkShard,
 		Hashes:       hashes,
@@ -456,9 +466,9 @@ func (conn *ConnManager) RequestShardBlocksByHashViaStream(ctx context.Context, 
 	return conn.requestBlocksByHashViaStream(ctx, peerID, req)
 }
 
-func (conn *ConnManager) requestBlocksViaStream(ctx context.Context, peerID string, req *proto.BlockByHeightRequest) (blockCh chan common.BlockInterface, err error) {
+func (conn *ConnManager) requestBlocksViaStream(ctx context.Context, peerID string, req *proto.BlockByHeightRequest) (blockCh chan types.BlockInterface, err error) {
 	Logger.Infof("[stream] Request Block type %v from peer %v from cID %v, [%v %v] ", req.Type, peerID, req.GetFrom(), req.Heights[0], req.Heights[len(req.Heights)-1])
-	blockCh = make(chan common.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
+	blockCh = make(chan types.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
 	stream, err := conn.Requester.StreamBlockByHeight(ctx, req)
 	if err != nil {
 		Logger.Errorf("[stream] %v", err)
@@ -489,11 +499,11 @@ func (conn *ConnManager) requestBlocksViaStream(ctx context.Context, peerID stri
 				return
 			}
 
-			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
+			var newBlk types.BlockInterface = types.NewBeaconBlock()
 			if req.Type == proto.BlkType_BlkShard {
-				newBlk = new(blockchain.ShardBlock)
+				newBlk = types.NewShardBlock()
 			} else if req.Type == proto.BlkType_BlkXShard {
-				newBlk = new(blockchain.CrossShardBlock)
+				newBlk = types.NewCrossShardBlock()
 			}
 
 			err = wrapper.DeCom(blkData.Data[1:], newBlk)
@@ -516,9 +526,9 @@ func (conn *ConnManager) requestBlocksViaStream(ctx context.Context, peerID stri
 	return blockCh, nil
 }
 
-func (conn *ConnManager) requestBlocksByHashViaStream(ctx context.Context, peerID string, req *proto.BlockByHashRequest) (blockCh chan common.BlockInterface, err error) {
+func (conn *ConnManager) requestBlocksByHashViaStream(ctx context.Context, peerID string, req *proto.BlockByHashRequest) (blockCh chan types.BlockInterface, err error) {
 	Logger.Infof("SYNCKER Request Block by hash from peerID %v, from CID %v, total %v blocks", peerID, req.From, len(req.Hashes))
-	blockCh = make(chan common.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
+	blockCh = make(chan types.BlockInterface, blockchain.DefaultMaxBlkReqPerPeer)
 	stream, err := conn.Requester.StreamBlockByHash(ctx, req)
 	if err != nil {
 		return nil, err
@@ -544,11 +554,11 @@ func (conn *ConnManager) requestBlocksByHashViaStream(ctx context.Context, peerI
 				return
 			}
 
-			var newBlk common.BlockInterface = new(blockchain.BeaconBlock)
+			var newBlk types.BlockInterface = types.NewBeaconBlock()
 			if req.Type == proto.BlkType_BlkShard {
-				newBlk = new(blockchain.ShardBlock)
+				newBlk = types.NewShardBlock()
 			} else if req.Type == proto.BlkType_BlkXShard {
-				newBlk = new(blockchain.CrossShardBlock)
+				newBlk = types.NewCrossShardBlock()
 			}
 
 			err = wrapper.DeCom(blkData.Data[1:], newBlk)

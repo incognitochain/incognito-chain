@@ -3,14 +3,13 @@ package privacy_v2
 import (
 	"bytes"
 	"fmt"
-	"testing"
-
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 // TEST DURATION NOTE : 100 iterations of 1-to-12 coins = 15sec
 var (

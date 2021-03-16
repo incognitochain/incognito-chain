@@ -4,17 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"math/big"
-	"strconv"
-
-	"github.com/incognitochain/incognito-chain/incognitokey"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	henc "github.com/incognitochain/incognito-chain/privacy/privacy_v1/hybridencryption"
+	"math/big"
+	"strconv"
 )
 
 // Coin represents a coin

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"math"
 	"math/big"
 	"sort"
@@ -742,7 +743,7 @@ func (txService TxService) BuildTokenParam(tokenParamsRaw map[string]interface{}
 	return privacyTokenParam, nil
 }
 
-func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.TokenParam, map[common.Hash]transaction.TransactionToken, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
+func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.TokenParam, map[common.Hash]transaction.TransactionToken, map[common.Hash]types.CrossShardTokenPrivacyMetaData, *RPCError) {
 	property, ok := tokenParamsRaw["TokenID"].(string)
 	if !ok {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token ID, Params %+v ", tokenParamsRaw))
@@ -1916,6 +1917,8 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 	return &result, nil
 }
 
+
+
 func (txService TxService) GetInputSerialNumberByTransaction(txHashStr string) (map[string][]string, *RPCError) {
 	txHash, err := common.Hash{}.NewHashFromStr(txHashStr)
 	if err != nil {
@@ -1931,7 +1934,6 @@ func (txService TxService) GetInputSerialNumberByTransaction(txHashStr string) (
 		}
 	}
 	results := make(map[string][]string)
-
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
 		{
@@ -1967,7 +1969,6 @@ func (txService TxService) GetInputSerialNumberByTransaction(txHashStr string) (
 		}
 	}
 	return results, nil
-
 }
 
 func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incognitokey.KeySet, txHashStr string) (map[string]interface{}, *RPCError) {

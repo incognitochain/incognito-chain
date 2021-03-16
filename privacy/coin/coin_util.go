@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
-	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
 )
 
 const (
@@ -140,7 +140,7 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
 
 	// If this is going to burning address then dont need to create ota
-	if wallet.IsPublicKeyBurningAddress(info.PaymentAddress.Pk) {
+	if privacy_util.IsPublicKeyBurningAddress(info.PaymentAddress.Pk) {
 		publicKey, err := new(operation.Point).FromBytesS(info.PaymentAddress.Pk)
 		if err != nil {
 			panic("Something is wrong with info.paymentAddress.pk, burning address should be a valid point")

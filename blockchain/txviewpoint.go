@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sort"
 	"strconv"
 
@@ -35,7 +36,7 @@ type TxViewPoint struct {
 	// This is Token Transaction
 	privacyCustomTokenTxs       map[int32]transaction.TransactionToken
 
-	privacyCustomTokenMetadata  *CrossShardTokenPrivacyMetaData
+	privacyCustomTokenMetadata  *types.CrossShardTokenPrivacyMetaData
 
 	// use to fetch tx - pubkey
 	txByPubKey map[string]interface{} // map[base58check.encode{pubkey}+"_"+base58check.encode{txid})
@@ -53,7 +54,7 @@ func NewTxViewPoint(shardID byte, height uint64) *TxViewPoint {
 		tokenID:                     &common.Hash{},
 		privacyCustomTokenViewPoint: make(map[int32]*TxViewPoint),
 		privacyCustomTokenTxs:       make(map[int32]transaction.TransactionToken),
-		privacyCustomTokenMetadata:  &CrossShardTokenPrivacyMetaData{},
+		privacyCustomTokenMetadata:  &types.CrossShardTokenPrivacyMetaData{},
 		txByPubKey:                  make(map[string]interface{}),
 	}
 	result.tokenID.SetBytes(common.PRVCoinID[:])
@@ -154,7 +155,7 @@ func (view *TxViewPoint) processFetchTxViewPointFromProof(stateDB *statedb.State
 	return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 }
 
-func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, block *ShardBlock) error {
+func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, block *types.ShardBlock) error {
 	transactions := block.Body.Transactions
 
 	// Loop through all of the transaction descs (except for the salary tx)
@@ -333,7 +334,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPointFromOutputCoins(stateDB
 	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 }
 
-func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(stateDB *statedb.StateDB, block *ShardBlock) error {
+func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(stateDB *statedb.StateDB, block *types.ShardBlock) error {
 	allShardCrossTransactions := block.Body.CrossTransactions
 	// Loop through all of the transaction descs (except for the salary tx)
 	acceptedOutputcoins := make(map[string][]coin.Coin)

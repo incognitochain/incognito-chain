@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -124,6 +126,10 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleCreateAndSendTx(params, closeChan)
 }
 
 func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -1130,6 +1136,10 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleCreateAndSendStakingTxV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleCreateAndSendStakingTx(params, closeChan)
+}
+
 // handleCreateRawStopAutoStakingTransaction - RPC create stop auto stake tx
 func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	// get component
@@ -1196,6 +1206,17 @@ func (httpServer *HttpServer) handleCreateRawStopAutoStakingTransaction(params i
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+
+	beaconview := httpServer.blockService.BlockChain.BeaconChain.GetFinalView()
+	beaconFinalView := beaconview.(*blockchain.BeaconBestState)
+	check, ok := beaconFinalView.GetAutoStaking()[stakingMetadata.CommitteePublicKey]
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Committee Public Key has not staked yet"))
+	}
+	if !check {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Committee Public Key AutoStaking has been already false"))
+	}
+
 	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
@@ -1227,6 +1248,10 @@ func (httpServer *HttpServer) handleCreateAndSendStopAutoStakingTransaction(para
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendStopAutoStakingTransactionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleCreateAndSendStopAutoStakingTransaction(params, closeChan)
 }
 
 func (httpServer *HttpServer) handleDecryptOutputCoinByKeyOfTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

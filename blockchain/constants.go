@@ -11,38 +11,44 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                       = 1
-	RANDOM_NUMBER                 = 3
-	SHARD_BLOCK_VERSION           = 1
-	DefaultMaxBlkReqPerPeer       = 900
-	MinCommitteeSize              = 3 // min size to run bft
-	WorkerNumber                  = 5
-	MAX_S2B_BLOCK                 = 30
-	MAX_BEACON_BLOCK              = 5
-	LowerBoundPercentForIncDAO    = 3
-	UpperBoundPercentForIncDAO    = 10
-	TestRandom                    = true
-	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
-	TransactionBatchSize          = 30
-	SpareTime                     = 1000 // in mili-second
+	VERSION                            = 1
+	RANDOM_NUMBER                      = 3
+	SHARD_BLOCK_VERSION                = 1
+	DefaultMaxBlkReqPerPeer            = 900
+	MinCommitteeSize                   = 3 // min size to run bft
+	WorkerNumber                       = 5
+	MAX_S2B_BLOCK                      = 30
+	MAX_BEACON_BLOCK                   = 5
+	LowerBoundPercentForIncDAO         = 3
+	UpperBoundPercentForIncDAO         = 10
+	TestRandom                         = true
+	ValidateTimeForSpamRequestTxs      = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
+	TransactionBatchSize               = 30
+	SpareTime                          = 1000             // in mili-second
+	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
+	NumberOfFixedBeaconBlockValidators = 4
+	NumberOfFixedShardBlockValidators  = 4
 	MaxOutcoinQueryInterval 	  = 8640 // 1 day worth of blocks
 	OutcoinReindexerTimeout 	  = 90	 // seconds
 	OutcoinReindexerRoutines 	  = 2
-	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 )
 
 // CONSTANT for network MAINNET
 const (
 	// ------------- Mainnet ---------------------------------------------
-	Mainnet                 = 0x01
-	MainetName              = "mainnet"
-	MainnetDefaultPort      = "9333"
-	MainnetGenesisBlockTime = "2019-10-29T00:00:00.000Z"
-	MainnetEpoch            = 350
-	MainnetRandomTime       = 175
-	MainnetOffset           = 4
-	MainnetSwapOffset       = 4
-	MainnetAssignOffset     = 8
+	Mainnet                  = 0x01
+	MainetName               = "mainnet"
+	MainnetDefaultPort       = "9333"
+	MainnetGenesisBlockTime  = "2019-10-29T00:00:00.000Z"
+	MainnetEpoch             = 350
+	MainnetRandomTime        = 175
+	MainnetEpochV2BreakPoint = 10e9
+	MainnetEpochV2           = 350
+	MainnetRandomTimeV2      = 175
+	MainnetOffset            = 4
+	MainnetSwapOffset        = 4
+	MainnetAssignOffset      = 8
+	MainnetMaxSwapOrAssign   = 10
 
 	MainNetShardCommitteeSize     = 32
 	MainNetMinShardCommitteeSize  = 22
@@ -75,8 +81,7 @@ const (
 	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
 	MainnetBNBFullNodeProtocol = "https"
 	MainnetBNBFullNodePort     = "443"
-
-	MainnetPortalFeeder = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
+	MainnetPortalFeeder        = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -96,15 +101,18 @@ var MainnetReplaceCommitteeEpoch = []uint64{}
 
 // CONSTANT for network TESTNET
 const (
-	Testnet                 = 0x16
-	TestnetName             = "testnet"
-	TestnetDefaultPort      = "9444"
-	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch            = 20
-	TestnetRandomTime       = 10
-	TestnetOffset           = 1
-	TestnetSwapOffset       = 1
-	TestnetAssignOffset     = 2
+	Testnet                  = 0x16
+	TestnetName              = "testnet"
+	TestnetDefaultPort       = "9444"
+	TestnetGenesisBlockTime  = "2019-11-29T00:00:00.000Z"
+	TestnetEpoch             = 100
+	TestnetRandomTime        = 50
+	TestnetEpochV2BreakPoint = 1e9
+	TestnetEpochV2           = 100
+	TestnetRandomTimeV2      = 50
+	TestnetOffset            = 1
+	TestnetSwapOffset        = 1
+	TestnetAssignOffset      = 2
 
 	TestNetShardCommitteeSize     = 32
 	TestNetMinShardCommitteeSize  = 4
@@ -138,15 +146,18 @@ const (
 
 // CONSTANT for network TESTNET-2
 const (
-	Testnet2                 = 0x32
-	Testnet2Name             = "testnet-2"
-	Testnet2DefaultPort      = "9444"
-	Testnet2GenesisBlockTime = "2020-08-11T00:00:00.000Z"
-	Testnet2Epoch            = 100
-	Testnet2RandomTime       = 50
-	Testnet2Offset           = 1
-	Testnet2SwapOffset       = 1
-	Testnet2AssignOffset     = 2
+	Testnet2                  = 0x32
+	Testnet2Name              = "testnet-2"
+	Testnet2DefaultPort       = "9444"
+	Testnet2GenesisBlockTime  = "2020-08-11T00:00:00.000Z"
+	Testnet2Epoch             = 100
+	Testnet2RandomTimeV2      = 50
+	Testnet2EpochV2BreakPoint = 10e9
+	Testnet2EpochV2           = 100
+	Testnet2RandomTime        = 50
+	Testnet2Offset            = 1
+	Testnet2SwapOffset        = 1
+	Testnet2AssignOffset      = 2
 
 	TestNet2ShardCommitteeSize     = 32
 	TestNet2MinShardCommitteeSize  = 4
@@ -302,17 +313,6 @@ func ReadKey(v1, v2 []byte) {
 // public key
 
 // END CONSTANT for network TESTNET
-
-// -------------- FOR INSTRUCTION --------------
-// Action for instruction
-const (
-	SetAction     = "set"
-	SwapAction    = "swap"
-	RandomAction  = "random"
-	StakeAction   = "stake"
-	AssignAction  = "assign"
-	StopAutoStake = "stopautostake"
-)
 
 var (
 	shardInsertBlockTimer                  = metrics.NewRegisteredTimer("shard/insert", nil)

@@ -11,7 +11,7 @@ func (this *DebugTool) PDEContributePRV(privKeyStr string, amount string) ([]byt
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	//Attempt to contribute to pdex using old address
-	paymentAddStr, _ = wallet.GetPaymentAddressV1(paymentAddStr, false)
+	//paymentAddStr, _ = wallet.GetPaymentAddressV1(paymentAddStr, false)
 	query := fmt.Sprintf(`{
 				"id": 1,
 				"jsonrpc": "1.0",
@@ -40,7 +40,7 @@ func (this *DebugTool) PDEContributeToken(privKeyStr, tokenID, amount string) ([
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 
 	//Attempt to contribute to pdex using old address
-	paymentAddStr, _ = wallet.GetPaymentAddressV1(paymentAddStr, false)
+	//paymentAddStr, _ = wallet.GetPaymentAddressV1(paymentAddStr, false)
 	query := fmt.Sprintf(`{
 				"id": 1,
 				"jsonrpc": "1.0",

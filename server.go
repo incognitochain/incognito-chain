@@ -17,40 +17,37 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
-	"github.com/incognitochain/incognito-chain/syncker"
-
-	"github.com/incognitochain/incognito-chain/peerv2"
-
 	"cloud.google.com/go/storage"
-	"google.golang.org/api/option"
-
+	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/syncker"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
+	"google.golang.org/api/option"
 
-	p2ppubsub "github.com/libp2p/go-libp2p-pubsub"
-
-	pb "github.com/libp2p/go-libp2p-pubsub/pb"
+	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 )
 
 type Server struct {
@@ -249,18 +246,6 @@ func (serverObj *Server) NewServer(
 			}
 		}
 	}
-	var randomClient btc.RandomClient
-	if cfg.BtcClient == 0 {
-		randomClient = &btc.BlockCypherClient{}
-		Logger.log.Info("Init 3-rd Party Random Client")
-
-	} else {
-		if cfg.BtcClientIP == common.EmptyString || cfg.BtcClientUsername == common.EmptyString || cfg.BtcClientPassword == common.EmptyString {
-			Logger.log.Error("Please input Bitcoin Client Ip, Username, password. Otherwise, set btcclient is 0 or leave it to default value")
-			os.Exit(2)
-		}
-		randomClient = btc.NewBTCClient(cfg.BtcClientUsername, cfg.BtcClientPassword, cfg.BtcClientIP, cfg.BtcClientPort)
-	}
 	// Init block template generator
 	serverObj.blockgen, err = blockchain.NewBlockGenerator(serverObj.memPool, serverObj.blockChain, serverObj.syncker, cPendingTxs, cRemovedTxs)
 	if err != nil {
@@ -307,7 +292,7 @@ func (serverObj *Server) NewServer(
 		pubkey,
 		serverObj.consensusEngine,
 		dispatcher,
-		// cfg.NodeMode,
+		"",
 		relayShards,
 	)
 
@@ -327,7 +312,6 @@ func (serverObj *Server) NewServer(
 		// NodeMode:        cfg.NodeMode,
 		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
 		PubSubManager:   pubsubManager,
-		RandomClient:    randomClient,
 		ConsensusEngine: serverObj.consensusEngine,
 		Highway:         serverObj.highway,
 		GenesisParams:   blockchain.GenesisParam,
@@ -966,39 +950,21 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 // blocks until the coin block has been fully processed.
 func (serverObj *Server) OnBlockShard(p *peer.PeerConn,
 	msg *wire.MessageBlockShard) {
-	//Logger.log.Debug("[bcsyncshard] Receive a new blockshard START")
-	//
-	//var txProcessed chan struct{}
-	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	////<-txProcessed
-	//
-	//Logger.log.Debug("Receive a new blockshard END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
+	Logger.log.Infof("[bcsyncshard] Receive a new blockshard START")
+
+	go serverObj.syncker.ReceiveBlock(msg.Block, msg.PreviousValidationData, p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnBlockBeacon(p *peer.PeerConn,
 	msg *wire.MessageBlockBeacon) {
 
-	//Logger.log.Info("Receive a new blockbeacon START")
-	//
-	//var txProcessed chan struct{}
-	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	////<-txProcessed
-	//
-	//Logger.log.Debug("Receive a new blockbeacon END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
+	go serverObj.syncker.ReceiveBlock(msg.Block, "", p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnCrossShard(p *peer.PeerConn,
 	msg *wire.MessageCrossShard) {
-	//Logger.log.Debug("Receive a new crossshard START")
-	//
-	//var txProcessed chan struct{}
-	//serverObj.netSync.QueueBlock(nil, msg, txProcessed)
-	////<-txProcessed
-	//
-	//Logger.log.Debug("Receive a new crossshard END")
-	go serverObj.syncker.ReceiveBlock(msg.Block, p.GetRemotePeerID().String())
+
+	go serverObj.syncker.ReceiveBlock(msg.Block, "", p.GetRemotePeerID().String())
 }
 
 func (serverObj *Server) OnGetBlockBeacon(_ *peer.PeerConn, msg *wire.MessageGetBlockBeacon) {
@@ -1209,7 +1175,7 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 		// os.Exit(0)
 		//TODO hy check here
 		bestState := serverObj.blockChain.GetBeaconBestState()
-		beaconCommitteeList, err := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
+		beaconCommitteeList, err := incognitokey.CommitteeKeyListToString(bestState.GetBeaconCommittee())
 		if err != nil {
 			panic(err)
 		}
@@ -1746,7 +1712,7 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain common.Chain
 	return nil
 }
 
-func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bool) error {
+func (serverObj *Server) PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error {
 	var ok bool
 	if isBeacon {
 		msg, err := wire.MakeEmptyMessage(wire.CmdBlockBeacon)
@@ -1754,14 +1720,14 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 			Logger.log.Error(err)
 			return err
 		}
-		msg.(*wire.MessageBlockBeacon).Block, ok = block.(*blockchain.BeaconBlock)
+		msg.(*wire.MessageBlockBeacon).Block, ok = block.(*types.BeaconBlock)
 		if !ok || msg.(*wire.MessageBlockBeacon).Block == nil {
 			return fmt.Errorf("Can not parse beacon block or beacon block is nil %v %v", ok, msg.(*wire.MessageBlockBeacon).Block == nil)
 		}
 		serverObj.PushMessageToAll(msg)
 		return nil
 	} else {
-		shardBlock, ok := block.(*blockchain.ShardBlock)
+		shardBlock, ok := block.(*types.ShardBlock)
 		if !ok || shardBlock == nil {
 			return fmt.Errorf("Can not parse shard block or shard block is nil %v %v", ok, shardBlock == nil)
 		}
@@ -1771,9 +1737,10 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 			return err
 		}
 		msgShard.(*wire.MessageBlockShard).Block = shardBlock
+		msgShard.(*wire.MessageBlockShard).PreviousValidationData = previousValidationData
 		serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID, map[libp2p.ID]bool{})
 
-		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.GetBeaconBestState().ActiveShards)
+		crossShardBlks := blockchain.CreateAllCrossShardBlock(shardBlock, serverObj.blockChain.GetBeaconBestState().ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
 			if err != nil {
@@ -1793,14 +1760,14 @@ func (serverObj *Server) GetPublicKeyRole(publicKey string, keyType string) (int
 	if err != nil {
 		return -2, -1
 	}
-	for shardID, pubkeyArr := range beaconBestState.ShardPendingValidator {
+	for shardID, pubkeyArr := range beaconBestState.GetShardPendingValidator() {
 		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, keyType)
 		found := common.IndexOfStr(publicKey, keyList)
 		if found > -1 {
 			return 0, int(shardID)
 		}
 	}
-	for shardID, pubkeyArr := range beaconBestState.ShardCommittee {
+	for shardID, pubkeyArr := range beaconBestState.GetShardCommittee() {
 		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, keyType)
 		found := common.IndexOfStr(publicKey, keyList)
 		if found > -1 {
@@ -1808,37 +1775,37 @@ func (serverObj *Server) GetPublicKeyRole(publicKey string, keyType string) (int
 		}
 	}
 
-	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconCommittee, keyType)
+	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetBeaconCommittee(), keyType)
 	found := common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
 		return 1, -1
 	}
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconPendingValidator, keyType)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetBeaconPendingValidator(), keyType)
 	found = common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
 		return 0, -1
 	}
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateBeaconWaitingForCurrentRandom, keyType)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetCandidateBeaconWaitingForCurrentRandom(), keyType)
 	found = common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
 		return 0, -1
 	}
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateBeaconWaitingForNextRandom, keyType)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetCandidateBeaconWaitingForNextRandom(), keyType)
 	found = common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
 		return 0, -1
 	}
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateShardWaitingForCurrentRandom, keyType)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetCandidateShardWaitingForCurrentRandom(), keyType)
 	found = common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
 		return 0, -1
 	}
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateShardWaitingForNextRandom, keyType)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetCandidateShardWaitingForNextRandom(), keyType)
 	found = common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
 		return 0, -1
@@ -1854,14 +1821,14 @@ func (serverObj *Server) GetIncognitoPublicKeyRole(publicKey string) (int, bool,
 		return -2, false, -1
 	}
 
-	for shardID, pubkeyArr := range beaconBestState.ShardPendingValidator {
+	for shardID, pubkeyArr := range beaconBestState.GetShardPendingValidator() {
 		for _, key := range pubkeyArr {
 			if key.GetIncKeyBase58() == publicKey {
 				return 1, false, int(shardID)
 			}
 		}
 	}
-	for shardID, pubkeyArr := range beaconBestState.ShardCommittee {
+	for shardID, pubkeyArr := range beaconBestState.GetShardCommittee() {
 		for _, key := range pubkeyArr {
 			if key.GetIncKeyBase58() == publicKey {
 				return 2, false, int(shardID)
@@ -1869,36 +1836,36 @@ func (serverObj *Server) GetIncognitoPublicKeyRole(publicKey string) (int, bool,
 		}
 	}
 
-	for _, key := range beaconBestState.BeaconCommittee {
+	for _, key := range beaconBestState.GetBeaconCommittee() {
 		if key.GetIncKeyBase58() == publicKey {
 			return 2, true, -1
 		}
 	}
 
-	for _, key := range beaconBestState.BeaconPendingValidator {
+	for _, key := range beaconBestState.GetBeaconPendingValidator() {
 		if key.GetIncKeyBase58() == publicKey {
 			return 1, true, -1
 		}
 	}
 
-	for _, key := range beaconBestState.CandidateBeaconWaitingForCurrentRandom {
+	for _, key := range beaconBestState.GetCandidateBeaconWaitingForCurrentRandom() {
 		if key.GetIncKeyBase58() == publicKey {
 			return 0, true, -1
 		}
 	}
 
-	for _, key := range beaconBestState.CandidateBeaconWaitingForNextRandom {
+	for _, key := range beaconBestState.GetCandidateBeaconWaitingForNextRandom() {
 		if key.GetIncKeyBase58() == publicKey {
 			return 0, true, -1
 		}
 	}
 
-	for _, key := range beaconBestState.CandidateShardWaitingForCurrentRandom {
+	for _, key := range beaconBestState.GetCandidateShardWaitingForCurrentRandom() {
 		if key.GetIncKeyBase58() == publicKey {
 			return 0, false, -1
 		}
 	}
-	for _, key := range beaconBestState.CandidateShardWaitingForNextRandom {
+	for _, key := range beaconBestState.GetCandidateShardWaitingForNextRandom() {
 		if key.GetIncKeyBase58() == publicKey {
 			return 0, false, -1
 		}
@@ -1913,14 +1880,14 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 	if err != nil {
 		return nil
 	}
-	for _, pubkeyArr := range beaconBestState.ShardPendingValidator {
+	for _, pubkeyArr := range beaconBestState.GetShardPendingValidator() {
 		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, keyType)
 		found := common.IndexOfStr(publicKey, keyList)
 		if found > -1 {
 			return pubkeyArr[found].GetNormalKey()
 		}
 	}
-	for _, pubkeyArr := range beaconBestState.ShardCommittee {
+	for _, pubkeyArr := range beaconBestState.GetShardCommittee() {
 		keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(pubkeyArr, keyType)
 		found := common.IndexOfStr(publicKey, keyList)
 		if found > -1 {
@@ -1928,40 +1895,40 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 		}
 	}
 
-	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconCommittee, keyType)
+	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetBeaconCommittee(), keyType)
 	found := common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
-		return beaconBestState.BeaconCommittee[found].GetNormalKey()
+		return beaconBestState.GetBeaconCommittee()[found].GetNormalKey()
 	}
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.BeaconPendingValidator, keyType)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetBeaconPendingValidator(), keyType)
 	found = common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
-		return beaconBestState.BeaconPendingValidator[found].GetNormalKey()
+		return beaconBestState.GetBeaconPendingValidator()[found].GetNormalKey()
 	}
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateBeaconWaitingForCurrentRandom, keyType)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetCandidateBeaconWaitingForCurrentRandom(), keyType)
 	found = common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
-		return beaconBestState.CandidateBeaconWaitingForCurrentRandom[found].GetNormalKey()
+		return beaconBestState.GetCandidateBeaconWaitingForCurrentRandom()[found].GetNormalKey()
 	}
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateBeaconWaitingForNextRandom, keyType)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetCandidateBeaconWaitingForNextRandom(), keyType)
 	found = common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
-		return beaconBestState.CandidateBeaconWaitingForNextRandom[found].GetNormalKey()
+		return beaconBestState.GetCandidateBeaconWaitingForNextRandom()[found].GetNormalKey()
 	}
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateShardWaitingForCurrentRandom, keyType)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetCandidateShardWaitingForCurrentRandom(), keyType)
 	found = common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
-		return beaconBestState.CandidateShardWaitingForCurrentRandom[found].GetNormalKey()
+		return beaconBestState.GetCandidateShardWaitingForCurrentRandom()[found].GetNormalKey()
 	}
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.CandidateShardWaitingForNextRandom, keyType)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(beaconBestState.GetCandidateShardWaitingForNextRandom(), keyType)
 	found = common.IndexOfStr(publicKey, keyList)
 	if found > -1 {
-		return beaconBestState.CandidateShardWaitingForNextRandom[found].GetNormalKey()
+		return beaconBestState.GetCandidateShardWaitingForNextRandom()[found].GetNormalKey()
 	}
 
 	return nil
@@ -1985,50 +1952,77 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 		}
 	}
 
-	//For Shard
-	shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
-	shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()
-	shardCandidateFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCandidate()
-	//check if in committee of any shard
-	for _, chain := range s.blockChain.ShardChain {
-		for _, v := range chain.GetCommittee() {
-			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
-				return common.CommitteeRole, chain.GetShardID()
+	beaconFinalView := s.blockChain.BeaconChain.FinalView().(*blockchain.BeaconBestState)
+	shardCandidateFromBeaconView := []incognitokey.CommitteePublicKey{}
+	if beaconFinalView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+		//For Shard
+		shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
+		shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()
+		shardCandidateFromBeaconView = s.blockChain.GetBeaconBestState().GetShardCandidate()
+		//check if in committee of any shard
+		for _, chain := range s.blockChain.ShardChain {
+			for _, v := range chain.GetCommittee() {
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
+					return common.CommitteeRole, chain.GetShardID()
+				}
+			}
+
+			for _, v := range chain.GetPendingCommittee() {
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending ommitee in shard state
+					return common.PendingRole, chain.GetShardID()
+				}
 			}
 		}
 
-		for _, v := range chain.GetPendingCommittee() {
-			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending ommitee in shard state
-				return common.PendingRole, chain.GetShardID()
+		//check if in committee or pending committee in beacon
+		for _, chain := range s.blockChain.ShardChain {
+			for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+					return common.PendingRole, chain.GetShardID()
+				}
+			}
+
+			for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in commitee in beacon state, but not in shard
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+					return common.SyncingRole, chain.GetShardID()
+				}
 			}
 		}
+	} else {
+		//For Shard
+		shardPendingCommiteeFromBeaconView := beaconFinalView.GetShardPendingValidator()
+		shardCommiteeFromBeaconView := beaconFinalView.GetShardCommittee()
+		shardCandidateFromBeaconView = beaconFinalView.GetShardCandidate()
+
+		//check if in committee of any shard
+		for _, chain := range s.blockChain.ShardChain {
+			for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] {
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
+					return common.CommitteeRole, chain.GetShardID()
+				}
+			}
+
+			for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] {
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending ommitee in shard state
+					return common.PendingRole, chain.GetShardID()
+				}
+			}
+		}
+
+		//if is waiting for assigning
+
 	}
 
-	//check if in committee or pending committee in beacon
-	for _, chain := range s.blockChain.ShardChain {
-		for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
-			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
-				return common.PendingRole, chain.GetShardID()
-			}
-		}
-
-		for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in commitee in beacon state, but not in shard
-			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
-				return common.SyncingRole, chain.GetShardID()
-			}
-		}
-	}
-
-	//if is waiting for assigning
 	for _, v := range shardCandidateFromBeaconView {
 		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
 			return common.WaitingRole, -2
 		}
 	}
-
 	return "", -2
 }
 
+// GetUserMiningState get user mining state by latest beacon view
+// Sync latest by beacon view
 func (s *Server) GetUserMiningState() (role string, chainID int) {
 	userPk := s.consensusEngine.GetMiningPublicKeys()
 	if s.blockChain == nil || userPk == nil {
@@ -2046,41 +2040,65 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 			return common.PendingRole, -1
 		}
 	}
+	beaconFinalView := s.blockChain.BeaconChain.FinalView().(*blockchain.BeaconBestState)
+	shardCandidateFromBeaconView := []incognitokey.CommitteePublicKey{}
+	if beaconFinalView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+		//For Shard
+		shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
+		shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()
+		shardCandidateFromBeaconView = s.blockChain.GetBeaconBestState().GetShardCandidate()
+		//check if in committee of any shard
+		for _, chain := range s.blockChain.ShardChain {
+			for _, v := range chain.GetCommittee() {
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
+					return common.CommitteeRole, chain.GetShardID()
+				}
+			}
 
-	//For Shard
-	shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
-	shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()
-	shardCandidateFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCandidate()
-	//check if in committee of any shard
-	for _, chain := range s.blockChain.ShardChain {
-		for _, v := range chain.GetCommittee() {
-			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard commitee in shard state
-				return common.CommitteeRole, chain.GetShardID()
+			for _, v := range chain.GetPendingCommittee() {
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending ommitee in shard state
+					return common.PendingRole, chain.GetShardID()
+				}
 			}
 		}
 
-		for _, v := range chain.GetPendingCommittee() {
-			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) { // in shard pending ommitee in shard state
-				return common.PendingRole, chain.GetShardID()
+		//check if in committee or pending committee in beacon
+		for _, chain := range s.blockChain.ShardChain {
+			for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+					return common.PendingRole, chain.GetShardID()
+				}
+			}
+
+			for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in commitee in beacon state, but not in shard
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+					return common.SyncingRole, chain.GetShardID()
+				}
+			}
+		}
+	} else {
+		//For Shard
+		shardPendingCommiteeFromBeaconView := beaconFinalView.GetShardPendingValidator()
+		shardCommiteeFromBeaconView := beaconFinalView.GetShardCommittee()
+		shardCandidateFromBeaconView = beaconFinalView.GetShardCandidate()
+
+		//check if in committee or pending committee in beacon
+		for _, chain := range s.blockChain.ShardChain {
+			for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
+				key, _ := v.ToBase58()
+				Logger.log.Info("[slashing] key:", key)
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+					return common.PendingRole, chain.GetShardID()
+				}
+			}
+
+			for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in commitee in beacon state, but not in shard
+				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
+					return common.CommitteeRole, chain.GetShardID()
+				}
 			}
 		}
 	}
-
-	//check if in committee or pending committee in beacon
-	for _, chain := range s.blockChain.ShardChain {
-		for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
-			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
-				return common.PendingRole, chain.GetShardID()
-			}
-		}
-
-		for _, v := range shardCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in commitee in beacon state, but not in shard
-			if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
-				return common.SyncingRole, chain.GetShardID()
-			}
-		}
-	}
-
 	//if is waiting for assigning
 	for _, v := range shardCandidateFromBeaconView {
 		if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {

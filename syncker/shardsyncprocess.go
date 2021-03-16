@@ -3,14 +3,15 @@ package syncker
 import (
 	"context"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"os"
 	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -40,7 +41,7 @@ type ShardSyncProcess struct {
 
 func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain, beaconChain BeaconChainInterface, chain ShardChainInterface) *ShardSyncProcess {
 	var isOutdatedBlock = func(blk interface{}) bool {
-		if blk.(*blockchain.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
+		if blk.(*types.ShardBlock).GetHeight() < chain.GetFinalViewHeight() {
 			return true
 		}
 		return false
@@ -141,9 +142,9 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 
 	//loop all current views, if there is any block connect to the view
 	for _, viewHash := range s.Chain.GetAllViewHash() {
-		blks := s.shardPool.GetBlockByPrevHash(viewHash)
-		for _, blk := range blks {
-			if blk == nil {
+		blocks := s.shardPool.GetBlockByPrevHash(viewHash)
+		for _, block := range blocks {
+			if block == nil {
 				continue
 			}
 			//if already insert and error, last time insert is < 10s then we skip
@@ -154,7 +155,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 
 			//fullnode delay 1 block (make sure insert final block)
 			if os.Getenv("FULLNODE") != "" {
-				preBlk := s.shardPool.GetBlockByPrevHash(*blk.Hash())
+				preBlk := s.shardPool.GetBlockByPrevHash(*block.Hash())
 				if len(preBlk) == 0 {
 					continue
 				}
@@ -163,11 +164,24 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			insertShardTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++
 			//must validate this block when insert
-			if err := s.Chain.InsertBlk(blk.(common.BlockInterface), true); err != nil {
-				Logger.Error("Insert shard block from pool fail", blk.GetHeight(), blk.Hash(), err)
+			if err := s.Chain.InsertBlock(block.(types.BlockInterface), true); err != nil {
+				Logger.Error("Insert shard block from pool fail", block.GetHeight(), block.Hash(), err)
 				continue
+			} else {
+				previousValidationData := s.shardPool.GetPreviousValidationData(block.GetPrevHash())
+				if previousValidationData == common.EmptyString {
+					continue
+				}
+				_, err := consensustypes.DecodeValidationData(previousValidationData)
+				if err != nil {
+					continue
+				}
+				err1 := s.Chain.ReplacePreviousValidationData(block.GetPrevHash(), previousValidationData)
+				if err1 != nil {
+					Logger.Error("Replace Previous Validation Data Fail", block.GetPrevHash(), previousValidationData, err)
+				}
 			}
-			s.shardPool.RemoveBlock(blk.Hash())
+			s.shardPool.RemoveBlock(block)
 		}
 	}
 }
@@ -203,7 +217,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 		return
 	}
 
-	blockBuffer := []common.BlockInterface{}
+	blockBuffer := []types.BlockInterface{}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer func() {
 		if requestCnt == 0 {
@@ -220,21 +234,44 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 	//fullnode delay 1 block (make sure insert final block)
 	if os.Getenv("FULLNODE") != "" {
 		toHeight = pState.BestViewHeight - 1
+		if toHeight <= s.Chain.GetBestViewHeight() {
+			return
+		}
 	}
 
-	if toHeight <= s.Chain.GetBestViewHeight() {
+	//if is behind, and
+	//if peerstate show fork, sync that peerID
+	if pState.BestViewHeight < s.Chain.GetBestViewHeight() || (pState.BestViewHeight == s.Chain.GetBestViewHeight() && s.Chain.GetBestViewHash() == pState.BestViewHash) {
 		return
 	}
 
-	//fmt.Println("SYNCKER Request Shard Block", peerID, s.ShardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
-	ch, err := s.Network.RequestShardBlocksViaStream(ctx, peerID, s.shardID, s.Chain.GetFinalViewHeight()+1, toHeight)
-	// ch, err := s.Server.RequestShardBlocksViaStream(ctx, "", s.shardID, s.Chain.GetBestViewHeight()+1, pState.BestViewHeight)
+	if pState.BestViewHeight == s.Chain.GetBestViewHeight() && s.Chain.GetBestViewHash() != pState.BestViewHash {
+		for _, h := range s.Chain.GetAllViewHash() { //check if block exist in multiview, then return
+			if h.String() == pState.BestViewHash {
+				return
+			}
+		}
+	}
+
+	if pState.BestViewHeight > s.Chain.GetBestViewHeight() {
+		requestCnt++
+		peerID = ""
+	}
+
+	//incase, we have long multiview chain, just sync last 100 block (very low probability that we have fork more than 100 blocks
+	fromHeight := s.Chain.GetFinalViewHeight() + 1
+	if s.Chain.GetBestViewHeight()-100 > fromHeight {
+		fromHeight = s.Chain.GetBestViewHeight()
+	}
+
+	//stream
+	ch, err := s.Network.RequestShardBlocksViaStream(ctx, peerID, s.shardID, fromHeight, toHeight)
 	if err != nil {
 		fmt.Println("Syncker: create channel fail")
+		requestCnt = 0
 		return
 	}
 
-	requestCnt++
 	insertTime := time.Now()
 	for {
 		select {
@@ -242,7 +279,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 			if !isNil(blk) {
 				blockBuffer = append(blockBuffer, blk)
 
-				if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
+				if blk.(*types.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
 					time.Sleep(30 * time.Second)
 				}
 				// if blk.(*blockchain.ShardBlock).Header.BeaconHeight > s.beaconChain.GetBestViewHeight() {
@@ -256,6 +293,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 				for {
 					time1 := time.Now()
 					if successBlk, err := InsertBatchBlock(s.Chain, blockBuffer); err != nil {
+						Logger.Errorf("Fail to Insert Batch Block, %+v", err)
 						return
 					} else {
 						insertBlkCnt += successBlk
@@ -268,7 +306,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 				}
 
 				insertTime = time.Now()
-				blockBuffer = []common.BlockInterface{}
+				blockBuffer = []types.BlockInterface{}
 			}
 
 			if isNil(blk) && len(blockBuffer) == 0 {

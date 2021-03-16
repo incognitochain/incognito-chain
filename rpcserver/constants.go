@@ -108,6 +108,15 @@ const (
 	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
 	randomCommitmentsAndPublicKeys			   = "randomcommitmentsandpublickeys"
 
+
+
+	createAndSendTransactionV2                   = "createandsendtransactionv2"
+	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"
+
+	hasSerialNumbersInMempool                    = "hasserialnumbersinmempool"
+	createAndSendStakingTransactionV2            = "createandsendstakingtransactionv2"
+	createAndSendStopAutoStakingTransactionV2    = "createandsendstopautostakingtransactionv2"
+
 	//===========For Testing and Benchmark==============
 	getAndSendTxsFromFile   = "getandsendtxsfromfile"
 	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
@@ -116,6 +125,9 @@ const (
 	getCommitteeState       = "getcommitteestate"
 	getRewardAmountByEpoch  = "getrewardamountbyepoch"
 	convertPaymentAddress  = "convertpaymentaddress"
+	getCommitteeStateByShard   = "getcommitteestatebyshard"
+	getSlashingCommittee       = "getslashingcommittee"
+	getSlashingCommitteeDetail = "getslashingcommitteedetail"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
@@ -190,10 +202,6 @@ const (
 	getRoleByValidatorKey       = "getrolebyvalidatorkey"
 	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
-
-	// slash
-	getProducersBlackList       = "getproducersblacklist"
-	getProducersBlackListDetail = "getproducersblacklistdetail"
 
 	// pde
 	getPDEState                                = "getpdestate"
@@ -297,6 +305,9 @@ const (
 
 	//validator state
 	getValKeyState = "getvalkeystate"
+
+	// stake
+	unstake = "createunstaketransaction"
 )
 
 const (
@@ -316,6 +327,7 @@ const (
 	subcribeMempoolInfo                         = "subcribemempoolinfo"
 	subcribeShardBestState                      = "subcribeshardbeststate"
 	subcribeBeaconBestState                     = "subcribebeaconbeststate"
+	subcribeBeaconBestStateFromMem              = "subcribebeaconbeststatefrommem"
 	subcribeBeaconPoolBeststate                 = "subcribebeaconpoolbeststate"
 	subcribeShardPoolBeststate                  = "subcribeshardpoolbeststate"
 )

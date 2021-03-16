@@ -26,6 +26,23 @@ fi
 if [ "$1" == "shard0-new-3" ]; then
 ./incognito --usecoindata --coindatapre="__coins__"  --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rwXq7wh46QCmZUuqUTaQwbrXi7mvZnPayhjaUqa2MCnGbXRxHQhxyShfRLpvQzUzqqmDGMqfmLR6R2WayyyBhXU1b6Hhz8CnZVPTBG7"  --datadir "data/shard0-3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337"
 fi
+
+if [ "$1" == "staker-0" ]; then
+./incognito --usecoindata --coindatapre="__coins__"  --discoverpeersaddress "0.0.0.0:9330" --miningkeys "12MZ4QiFoETNbdLKgRQWPMQMqsceWPKo71Jma9NzwvLTabpcDhn"  --datadir "data/shard2-0" --listen "0.0.0.0:9442" --externaladdress "0.0.0.0:9442" --norpcauth --rpclisten "0.0.0.0:9342"
+fi
+if [ "$1" == "staker-1" ]; then
+./incognito --usecoindata --coindatapre="__coins__"  --discoverpeersaddress "0.0.0.0:9330" --miningkeys "158ZGK5EHmoyrHEd8aA2HCaqbNQ4r45ZsnwL4Zh8mH8dueWHWs"  --datadir "data/shard2-1" --listen "0.0.0.0:9443" --externaladdress "0.0.0.0:9443" --norpcauth --rpclisten "0.0.0.0:9343"
+fi
+if [ "$1" == "staker-2" ]; then
+./incognito --usecoindata --coindatapre="__coins__"  --discoverpeersaddress "0.0.0.0:9330" --miningkeys "1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88"  --datadir "data/shard2-2" --listen "0.0.0.0:9444" --externaladdress "0.0.0.0:9444" --norpcauth --rpclisten "0.0.0.0:9344"
+fi
+if [ "$1" == "staker-3" ]; then
+./incognito --usecoindata --coindatapre="__coins__"  --discoverpeersaddress "0.0.0.0:9330" --miningkeys "12MZ4QiFoETNbdLKgRQWPMQMqsceWPKo71Jma9NzwvLTabpcDhn"  --datadir "data/shard2-3" --listen "0.0.0.0:9445" --externaladdress "0.0.0.0:9445" --norpcauth --rpclisten "0.0.0.0:9345"
+fi
+if [ "$1" == "staker-4" ]; then
+./incognito --usecoindata --coindatapre="__coins__"  --discoverpeersaddress "0.0.0.0:9330" --miningkeys "1cQCTV1m33LxBKpNW2SisbuJfp5VcBSEau7PE5aD16gGLAN7eq"  --datadir "data/shard3-0" --listen "0.0.0.0:9446" --externaladdress "0.0.0.0:9446" --norpcauth --rpclisten "0.0.0.0:9346"
+fi
+
 # Shard 1
 if [ "$1" == "shard1-0" ]; then
 ./incognito --usecoindata --coindatapre="__coins__"  --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXBPJQWJTyPdzWsfsUCFTDhcas3y2MYsauKo66euh1udG8dSh2ZszSbfqHwCpYHPRSpFTxYkUcVa619XUM6DjdV7FfUWvYoziWE2Bm"  --datadir "data/shard1-0" --listen "0.0.0.0:9438" --externaladdress "0.0.0.0:9438" --norpcauth --rpclisten "0.0.0.0:9338" --rpcwslisten "127.0.0.1:19338" 
