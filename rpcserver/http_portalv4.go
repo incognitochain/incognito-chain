@@ -506,7 +506,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPortalReplaceUnshieldFee(
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
 	if err1 != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
 	}
@@ -609,7 +609,7 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPortalPortalSubmitConfirm
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	sendResult, err1 := httpServer.handleSendRawTransaction(newParam, closeChan)
 	if err1 != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
 	}
