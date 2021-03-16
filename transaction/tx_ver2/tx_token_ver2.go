@@ -651,11 +651,7 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 			if txToken.TokenData.Mintable {
 				return true, nil, nil
 			} else {
-				// check exist token
-				if statedb.PrivacyTokenIDExisted(transactionStateDB, tokenID) {
-					return false, nil, errors.New("Cannot validate Tx Init Token. It is tx mint from User")
-				}
-				return true, nil, nil
+				return false, nil, fmt.Errorf("only shard committee is able to mint tokenV2")
 			}
 		case utils.CustomTokenTransfer:
 			if txToken.GetType() == common.TxTokenConversionType {
