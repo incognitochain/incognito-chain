@@ -384,8 +384,8 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 			var newTx metadata.Transaction
 			switch metaType {
 			case metadata.InitTokenRequestMeta:
-				if len(l) == 4 && l[2] == "accepted" {
-					newTx, err = blockGenerator.buildTokenInitAcceptedTx(l[3], producerPrivateKey, shardID, curView, beaconView)
+				if len(inst) == 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildTokenInitAcceptedTx(inst[3], producerPrivateKey, shardID, curView)
 				}
 			case metadata.IssuingETHRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {

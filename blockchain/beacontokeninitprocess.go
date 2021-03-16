@@ -3,12 +3,13 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"strconv"
 )
 
-func (blockchain *BlockChain) processTokenInitInstructions(tokenInitStateDB *statedb.StateDB, block *BeaconBlock) {
+func (blockchain *BlockChain) processTokenInitInstructions(tokenInitStateDB *statedb.StateDB, block *types.BeaconBlock) {
 	for _, inst := range block.Body.Instructions {
 		if len(inst) != 4 {
 			continue

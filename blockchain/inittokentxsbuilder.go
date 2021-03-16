@@ -93,7 +93,6 @@ func (blockGenerator *BlockGenerator) buildTokenInitAcceptedTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	shardView *ShardBestState,
-	beaconView *BeaconBestState,
 ) (metadata.Transaction, error) {
 	acceptedContent, err := metadata.ParseInitTokenInstAcceptedContent(contentStr)
 	if err != nil {

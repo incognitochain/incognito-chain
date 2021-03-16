@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"strconv"
 	"time"
@@ -1304,7 +1305,7 @@ func (blockchain *BlockChain) GetShardCommitteeFromBeaconHash(
 //	1. InitTokenRequestMeta - for user-customized tokens
 //	2. IssuingRequestMeta - for centralized bridge tokens
 //	3. IssuingETHRequestMeta - for centralized bridge tokens
-func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateDB, beaconBlocks []*BeaconBlock) error {
+func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateDB, beaconBlocks []*types.BeaconBlock) error {
 	for _, block := range beaconBlocks {
 		instructions := block.Body.Instructions
 
@@ -1313,7 +1314,8 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 				continue
 			}
 			switch l[0] {
-			case SetAction, StakeAction, RandomAction, AssignAction, SwapAction, StopAutoStake:
+			case instruction.SET_ACTION, instruction.STAKE_ACTION, instruction.RANDOM_ACTION,
+			instruction.ASSIGN_ACTION, instruction.SWAP_ACTION, instruction.STOP_AUTO_STAKE_ACTION:
 				continue
 			}
 
