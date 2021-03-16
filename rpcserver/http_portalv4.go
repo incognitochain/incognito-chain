@@ -650,16 +650,12 @@ func (httpServer *HttpServer) handleGetPortalTransactionSignedWithFeeReplacement
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an map[string]interface{}"))
 	}
 	txIDParam, ok := data["TxID"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param TxID should be a string"))
-	}
-	txID, err := common.Hash{}.NewHashFromStr(txIDParam)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	if !ok || txIDParam == "" {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param TxID should be a string and not empty"))
 	}
 
-	replaceFeeStatus, err := httpServer.blockService.GetPortalReqReplacementFeeStatus(txID.String())
-	if err != nil {
+	replaceFeeStatus, err := httpServer.blockService.GetPortalReqReplacementFeeStatus(txIDParam)
+	if err != nil || replaceFeeStatus == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Get portal btc signed tx error: %v", err))
 	}
 
