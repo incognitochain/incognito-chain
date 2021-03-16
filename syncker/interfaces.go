@@ -46,6 +46,7 @@ type Chain interface {
 	GetEpoch() uint64
 	ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCommittee() []incognitokey.CommitteePublicKey
+	GetLastCommittee() []incognitokey.CommitteePublicKey
 	CurrentHeight() uint64
 	InsertBlock(block types.BlockInterface, shouldValidate bool) error
 	ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error
