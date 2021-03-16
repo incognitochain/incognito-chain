@@ -103,9 +103,22 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 		// use default unshield fee in nano ptoken
 		feeUnshield := portalParams.DefaultFeeUnshields[tokenID]
 
+		// only process for waiting unshield request has enough minimum confirmation incognito blocks (avoid fork beacon chain)
+		wReqForProcess := map[string]*statedb.WaitingUnshieldRequest{}
+		for key, wR := range wReqs {
+			if wR.GetBeaconHeight()+uint64(portalParams.MinConfirmationIncBlockNum) > beaconHeight {
+				continue
+			}
+			wReqForProcess[key] = statedb.NewWaitingUnshieldRequestStateWithValue(
+				wR.GetRemoteAddress(),
+				wR.GetAmount(),
+				wR.GetUnshieldID(),
+				wR.GetBeaconHeight())
+		}
+
 		// choose waiting unshield IDs to process with current UTXOs
 		utxos := CurrentPortalStateV4.UTXOs[tokenID]
-		broadCastTxs := portalTokenProcessor.ChooseUnshieldIDsFromCandidates(utxos, wReqs)
+		broadCastTxs := portalTokenProcessor.ChooseUnshieldIDsFromCandidates(utxos, wReqForProcess)
 
 		// create raw external txs
 		for _, bcTx := range broadCastTxs {
@@ -207,6 +220,7 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 		UpdatePortalStateAfterProcessBatchUnshieldRequest(
 			CurrentPortalStateV4, actionData.BatchID, actionData.UTXOs, actionData.NetworkFee, actionData.UnshieldIDs, actionData.TokenID)
 		RemoveListUtxoFromDB(stateDB, actionData.UTXOs, actionData.TokenID)
+		RemoveListWaitingUnshieldFromDB(stateDB, actionData.UnshieldIDs, actionData.TokenID)
 
 		for _, unshieldID := range actionData.UnshieldIDs {
 			// update status of unshield request that processed
@@ -215,8 +229,6 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 				Logger.log.Errorf("[processPortalBatchUnshieldRequest] Error when updating status of unshielding request with unshieldID %v: %v\n", unshieldID, err)
 				return nil
 			}
-			// delete waiting unshield request from db
-			statedb.DeleteWaitingUnshieldRequest(stateDB, actionData.TokenID, unshieldID)
 		}
 
 		// store status of batch unshield by batchID
@@ -757,7 +769,7 @@ func (p *PortalSubmitConfirmedTxProcessor) ProcessInsts(
 				RemoteAddress:  unshielRequest.RemoteAddress,
 				TokenID:        unshielRequest.TokenID,
 				UnshieldAmount: unshielRequest.UnshieldAmount,
-				TxHash:         unshielRequest.TxHash,
+				UnshieldID:     unshielRequest.UnshieldID,
 				Status:         portalcommonv4.PortalUnshieldReqCompletedStatus,
 			}
 			redeemRequestStatusBytes, _ := json.Marshal(unshieldRequestStatus)

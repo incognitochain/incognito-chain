@@ -146,7 +146,7 @@ type block interface {
 	InstructionMerkleRoot() []byte
 	MetaHash() []byte
 	Sig(ce ConsensusEngine) ([][]byte, []int, error)
-	ProtalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error)
+	PortalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error)
 }
 
 // buildProofForBlock builds a swapProof for an instruction in a block (beacon or shard)
@@ -319,7 +319,7 @@ func (bb *beaconBlock) Sig(ce ConsensusEngine) ([][]byte, []int, error) {
 	return ce.ExtractBridgeValidationData(bb)
 }
 
-func (bb *beaconBlock) ProtalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error) {
+func (bb *beaconBlock) PortalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error) {
 	return ce.ExtractPortalV4ValidationData(bb)
 }
 
@@ -340,7 +340,7 @@ func (sb *shardBlock) Sig(ce ConsensusEngine) ([][]byte, []int, error) {
 	return ce.ExtractBridgeValidationData(sb)
 }
 
-func (sb *shardBlock) ProtalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error) {
+func (sb *shardBlock) PortalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error) {
 	return ce.ExtractPortalV4ValidationData(sb)
 }
 

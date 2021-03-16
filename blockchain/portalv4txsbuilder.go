@@ -95,13 +95,13 @@ func (curView *ShardBestState) buildPortalAcceptedShieldingRequestTx(
 
 // buildPortalAcceptedShieldingRequestTx builds response tx for the shielding request tx with status "accepted"
 // mints pToken to return to user
-func (curView *ShardBestState) buildPortalRejectedUnshieldingRequestTx(
+func (curView *ShardBestState) buildPortalRefundedUnshieldingRequestTx(
 	beaconState *BeaconBestState,
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (metadata.Transaction, error) {
-	Logger.log.Errorf("[Shard buildPortalRejectedUnshieldingRequestTx] Starting...")
+	Logger.log.Errorf("[Shard buildPortalRefundedUnshieldingRequestTx] Starting...")
 	contentBytes := []byte(contentStr)
 	var rejectedUnshieldingReq metadata.PortalUnshieldRequestContent
 	err := json.Unmarshal(contentBytes, &rejectedUnshieldingReq)
@@ -115,7 +115,7 @@ func (curView *ShardBestState) buildPortalRejectedUnshieldingRequestTx(
 	}
 
 	meta := metadata.NewPortalV4UnshieldResponse(
-		"rejected",
+		"refunded",
 		rejectedUnshieldingReq.TxReqID,
 		rejectedUnshieldingReq.IncAddressStr,
 		rejectedUnshieldingReq.UnshieldAmount,

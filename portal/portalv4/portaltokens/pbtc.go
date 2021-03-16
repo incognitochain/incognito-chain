@@ -279,7 +279,9 @@ func (p PortalBTCTokenProcessor) IsAcceptableTxSize(num_utxos int, num_unshield_
 }
 
 // Choose list of pairs (UTXOs and unshield IDs) for broadcast external transactions
-func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(utxos map[string]*statedb.UTXO, waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest) []*BroadcastTx {
+func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
+	utxos map[string]*statedb.UTXO,
+	waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest) []*BroadcastTx {
 	if len(utxos) == 0 || len(waitingUnshieldReqs) == 0 {
 		return []*BroadcastTx{}
 	}

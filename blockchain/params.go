@@ -219,7 +219,7 @@ func SetupParam() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -277,7 +277,8 @@ func SetupParam() {
 					MinUnshieldAmts: map[string]uint64{
 						portalcommonv4.PortalBTCIDStr: 500000, // 1000000 nano pbtc = 100000 satoshi
 					},
-					BatchNumBlks: 15, // ~ 10 mins
+					BatchNumBlks:               15, // ~ 10 mins
+					MinConfirmationIncBlockNum: 3,
 				},
 			},
 		},
@@ -340,7 +341,7 @@ func SetupParam() {
 		EthContractAddressStr:            Testnet2ETHContractAddressStr,
 		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -398,7 +399,8 @@ func SetupParam() {
 					MinUnshieldAmts: map[string]uint64{
 						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
 					},
-					BatchNumBlks: 60, // ~ 10 mins
+					BatchNumBlks:               60, // ~ 10 mins
+					MinConfirmationIncBlockNum: 3,
 				},
 			},
 		},
@@ -459,7 +461,7 @@ func SetupParam() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -517,7 +519,8 @@ func SetupParam() {
 					MinUnshieldAmts: map[string]uint64{
 						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
 					},
-					BatchNumBlks: 60, // ~ 10 mins
+					BatchNumBlks:               60, // ~ 10 mins
+					MinConfirmationIncBlockNum: 3,
 				},
 			},
 		},

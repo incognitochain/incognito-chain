@@ -41,17 +41,17 @@ type PortalUnshieldRequestStatus struct {
 	RemoteAddress  string
 	TokenID        string
 	UnshieldAmount uint64
-	TxHash         string
+	UnshieldID     string
 	Status         int
 }
 
 func NewPortalUnshieldRequestStatus(incAddressStr, tokenID, remoteAddress string, burnAmount uint64, status int) *PortalUnshieldRequestStatus {
 	return &PortalUnshieldRequestStatus{
-		IncAddressStr:          incAddressStr,
-		UnshieldAmount:         burnAmount,
-		Status:                 status,
-		TokenID:                tokenID,
-		RemoteAddress:          remoteAddress,
+		IncAddressStr:  incAddressStr,
+		UnshieldAmount: burnAmount,
+		Status:         status,
+		TokenID:        tokenID,
+		RemoteAddress:  remoteAddress,
 	}
 }
 
@@ -61,10 +61,10 @@ func NewPortalUnshieldRequest(metaType int, incAddressStr, tokenID, remoteAddres
 	}
 
 	portalUnshieldReq := &PortalUnshieldRequest{
-		IncAddressStr:        incAddressStr,
-		UnshieldAmount:       burnAmount,
-		RemoteAddress:        remoteAddress,
-		TokenID:              tokenID,
+		IncAddressStr:  incAddressStr,
+		UnshieldAmount: burnAmount,
+		RemoteAddress:  remoteAddress,
+		TokenID:        tokenID,
 	}
 
 	portalUnshieldReq.MetadataBase = metadataBase

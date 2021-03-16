@@ -15,9 +15,10 @@ type PortalParams struct {
 	PortalTokens            map[string]portaltokensv4.PortalTokenProcessor
 
 	// for unshielding
-	DefaultFeeUnshields map[string]uint64 // in nano ptokens
-	MinUnshieldAmts     map[string]uint64 // in nano ptokens
-	BatchNumBlks        uint
+	DefaultFeeUnshields        map[string]uint64 // in nano ptokens
+	MinUnshieldAmts            map[string]uint64 // in nano ptokens
+	BatchNumBlks               uint
+	MinConfirmationIncBlockNum uint
 
 	// for replacement
 	PortalReplacementAddress   string

@@ -99,8 +99,8 @@ func (iRes PortalUnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			continue
 		}
 		instReqStatus := inst[2]
-		if iRes.RequestStatus != "rejected" ||
-			(instReqStatus != portalcommonv4.PortalV4RequestRejectedChainStatus) {
+		if iRes.RequestStatus != "refunded" ||
+			(instReqStatus != portalcommonv4.PortalV4RequestRefundedChainStatus) {
 			continue
 		}
 
