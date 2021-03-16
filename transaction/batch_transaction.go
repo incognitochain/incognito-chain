@@ -81,15 +81,33 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 		}
 	}
 	//TODO: add go routine
-	ok, err, i := aggregatedrange.VerifyBatch(bulletProofListVer1)
-	if err != nil {
-		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, err), -1
-	}
+	isNewZKP, ok := boolParams["isNewZKP"]
 	if !ok {
-		Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 %d", i)
-		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH VER 1 PAYMENT PROOF %d", i)), -1
+		isNewZKP = true
 	}
-	ok, err, i = bulletproofs.VerifyBatch(bulletProofListVer2)
+
+	if isNewZKP {
+		ok, err, index := aggregatedrange.VerifyBatch(bulletProofListVer1)
+		if err != nil {
+			return false, NewTransactionErr(TxProofVerifyFailError, err), -1
+		}
+		if !ok {
+			Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 %d", index)
+			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF %d", index)), index
+		}
+	} else {
+		ok, err, index := aggregatedrange.VerifyBatchOld(bulletProofListVer1)
+		if err != nil {
+			return false, NewTransactionErr(TxProofVerifyFailError, err), -1
+		}
+		if !ok {
+			Logger.Log.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 OLD %d", index)
+			return false, NewTransactionErr(TxProofVerifyFailError, fmt.Errorf("FAILED VERIFICATION BATCH PAYMENT PROOF VER 1 OLD %d", index)), index
+		}
+	}
+
+
+	ok, err, i := bulletproofs.VerifyBatch(bulletProofListVer2)
 	if err != nil {
 		return false, utils.NewTransactionErr(utils.TxProofVerifyFailError, err), -1
 	}
