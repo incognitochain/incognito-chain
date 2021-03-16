@@ -22,7 +22,7 @@ func NewBeaconCommitteeStateV3() *BeaconCommitteeStateV3 {
 }
 
 func NewBeaconCommitteeStateV3WithValue(
-	beaconCommittee []incognitokey.CommitteePublicKey,
+	beaconCommittee []string,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
 	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
 	shardCommonPool []incognitokey.CommitteePublicKey,

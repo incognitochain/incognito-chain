@@ -105,7 +105,7 @@ func TestBeaconCommitteeStateV2_processStakeInstruction(t *testing.T) {
 				oldState: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee:  map[byte][]incognitokey.CommitteePublicKey{},
 							shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{},
 							autoStake:       map[string]bool{},
@@ -2870,8 +2870,8 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
-						beaconCommittee: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
 						},
 						shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 							0: []incognitokey.CommitteePublicKey{
@@ -2971,8 +2971,8 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
-						beaconCommittee: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
 						},
 						shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 							0: []incognitokey.CommitteePublicKey{
@@ -3072,8 +3072,8 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
-						beaconCommittee: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
 						},
 						shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 							0: []incognitokey.CommitteePublicKey{
@@ -3173,8 +3173,8 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
-						beaconCommittee: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
 						},
 						shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 							0: []incognitokey.CommitteePublicKey{
@@ -3274,8 +3274,8 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
-						beaconCommittee: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
 						},
 						shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 							0: []incognitokey.CommitteePublicKey{
@@ -3375,8 +3375,8 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
-						beaconCommittee: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
 						},
 						shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 							0: []incognitokey.CommitteePublicKey{
@@ -3476,8 +3476,8 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
-						beaconCommittee: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
 						},
 						shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 							0: []incognitokey.CommitteePublicKey{
@@ -3577,8 +3577,8 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
-						beaconCommittee: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
 						},
 						shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 							0: []incognitokey.CommitteePublicKey{
@@ -3678,8 +3678,8 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
-						beaconCommittee: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
 						},
 						shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 							0: []incognitokey.CommitteePublicKey{
@@ -4067,7 +4067,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -4090,7 +4090,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -4146,7 +4146,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -4171,7 +4171,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -4219,7 +4219,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -4242,7 +4242,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -4288,7 +4288,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -4318,7 +4318,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -4368,7 +4368,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey0, *incKey, *incKey2, *incKey3,
@@ -4399,7 +4399,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -4454,7 +4454,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -4486,7 +4486,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -4538,7 +4538,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey2, *incKey3, *incKey4, *incKey5, *incKey6, *incKey7,
@@ -4572,7 +4572,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey2, *incKey3, *incKey4, *incKey5, *incKey6, *incKey7, *incKey0, *incKey,
@@ -4630,7 +4630,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey0, *incKey, *incKey4, *incKey5, *incKey2, *incKey3, *incKey6,
@@ -4662,7 +4662,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey0, *incKey5, *incKey2, *incKey3, *incKey6,
@@ -4722,7 +4722,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey0, *incKey, *incKey4, *incKey5, *incKey6, *incKey7,
@@ -4756,7 +4756,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey4, *incKey5, *incKey6, *incKey7, *incKey2, *incKey3,
@@ -4813,7 +4813,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey12, *incKey, *incKey4, *incKey5, *incKey6, *incKey7,
@@ -4847,7 +4847,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState(t *testing.T) {
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey4, *incKey5, *incKey6, *incKey7, *incKey2, *incKey3,
@@ -5244,7 +5244,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5275,7 +5275,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5338,7 +5338,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5369,7 +5369,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5432,7 +5432,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5467,7 +5467,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5529,7 +5529,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5564,7 +5564,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5626,7 +5626,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5658,7 +5658,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5716,7 +5716,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5748,7 +5748,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5806,7 +5806,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5840,7 +5840,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey2, *incKey3, *incKey4, *incKey0,
@@ -5901,7 +5901,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -5935,7 +5935,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey2, *incKey3, *incKey4, *incKey0,
@@ -5996,7 +5996,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -6026,7 +6026,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -6075,7 +6075,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -6107,7 +6107,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -6160,7 +6160,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -6190,7 +6190,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -6240,7 +6240,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey0, *incKey2, *incKey3, *incKey4,
@@ -6274,7 +6274,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey2, *incKey3, *incKey4, *incKey,
@@ -6335,7 +6335,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey0, *incKey2, *incKey3, *incKey4,
@@ -6369,7 +6369,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey2, *incKey3, *incKey4, *incKey,
@@ -6430,7 +6430,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey0, *incKey2, *incKey3, *incKey4,
@@ -6464,7 +6464,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey2, *incKey3, *incKey4, *incKey,
@@ -6525,7 +6525,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey0, *incKey2, *incKey3, *incKey4,
@@ -6559,7 +6559,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey2, *incKey3, *incKey4, *incKey,
@@ -6620,7 +6620,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -6663,7 +6663,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey2, *incKey3, *incKey4, *incKey5,
@@ -6736,7 +6736,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey4,
@@ -6785,7 +6785,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 				beaconCommitteeStateV2: &BeaconCommitteeStateV2{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []incognitokey.CommitteePublicKey{},
+							beaconCommittee: []string{},
 							shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 								0: []incognitokey.CommitteePublicKey{
 									*incKey, *incKey2, *incKey3, *incKey5,

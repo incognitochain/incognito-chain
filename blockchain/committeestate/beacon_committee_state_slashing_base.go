@@ -28,7 +28,7 @@ func newBeaconCommitteeStateSlashingBase() *beaconCommitteeStateSlashingBase {
 }
 
 func newBeaconCommitteeStateSlashingBaseWithValue(
-	beaconCommittee []incognitokey.CommitteePublicKey,
+	beaconCommittee []string,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
 	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
 	autoStake map[string]bool,

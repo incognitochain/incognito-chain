@@ -19,7 +19,7 @@ func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
 }
 
 func NewBeaconCommitteeStateV2WithValue(
-	beaconCommittee []incognitokey.CommitteePublicKey,
+	beaconCommittee []string,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
 	shardSubstitute map[byte][]incognitokey.CommitteePublicKey,
 	shardCommonPool []incognitokey.CommitteePublicKey,
@@ -180,7 +180,7 @@ func (engine *BeaconCommitteeStateV2) Upgrade(env *BeaconCommitteeStateEnvironme
 }
 
 func (b *BeaconCommitteeStateV2) getDataForUpgrading(env *BeaconCommitteeStateEnvironment) (
-	[]incognitokey.CommitteePublicKey,
+	[]string,
 	map[byte][]incognitokey.CommitteePublicKey,
 	map[byte][]incognitokey.CommitteePublicKey,
 	[]incognitokey.CommitteePublicKey,
@@ -190,7 +190,7 @@ func (b *BeaconCommitteeStateV2) getDataForUpgrading(env *BeaconCommitteeStateEn
 	map[string]common.Hash,
 	SwapRuleProcessor,
 ) {
-	beaconCommittee := make([]incognitokey.CommitteePublicKey, len(b.beaconCommittee))
+	beaconCommittee := make([]string, len(b.beaconCommittee))
 	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
 	shardCommonPool := make([]incognitokey.CommitteePublicKey, len(b.shardCommittee))

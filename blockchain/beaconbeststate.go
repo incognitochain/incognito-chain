@@ -781,7 +781,6 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 		version, beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool,
 		numberOfAssignedCandidates, autoStaking, rewardReceivers, stakingTx, syncingValidators,
 		swapRule, nextEpochShardCandidate, currentEpochShardCandidate,
-		beaconBestState.BeaconHeight, beaconBestState.BestBlockHash,
 	)
 
 	beaconBestState.beaconCommitteeState = committeeState

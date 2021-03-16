@@ -36,8 +36,8 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 			name: "[valid input] full data",
 			fields: fields{
 				beaconCommitteeStateBase: beaconCommitteeStateBase{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey6, *incKey7, *incKey8,
+					beaconCommittee: []string{
+						key6, key7, key8,
 					},
 					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 						0: []incognitokey.CommitteePublicKey{
@@ -69,8 +69,8 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 			},
 			want: &beaconCommitteeStateSlashingBase{
 				beaconCommitteeStateBase: beaconCommitteeStateBase{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey6, *incKey7, *incKey8,
+					beaconCommittee: []string{
+						key6, key7, key8,
 					},
 					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
 						0: []incognitokey.CommitteePublicKey{

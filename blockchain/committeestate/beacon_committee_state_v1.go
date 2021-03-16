@@ -28,12 +28,9 @@ func NewBeaconCommitteeStateV1() *BeaconCommitteeStateV1 {
 }
 
 func NewBeaconCommitteeStateV1WithValue(
-	beaconCurrentValidator []incognitokey.CommitteePublicKey,
-	beaconSubstituteValidator []incognitokey.CommitteePublicKey,
+	beaconCommittee []string,
 	nextEpochShardCandidate []incognitokey.CommitteePublicKey,
 	currentEpochShardCandidate []incognitokey.CommitteePublicKey,
-	nextEpochBeaconCandidate []incognitokey.CommitteePublicKey,
-	currentEpochBeaconCandidate []incognitokey.CommitteePublicKey,
 	shardCurrentValidator map[byte][]incognitokey.CommitteePublicKey,
 	shardSubstituteValidator map[byte][]incognitokey.CommitteePublicKey,
 	autoStaking map[string]bool,
@@ -42,7 +39,7 @@ func NewBeaconCommitteeStateV1WithValue(
 ) *BeaconCommitteeStateV1 {
 	return &BeaconCommitteeStateV1{
 		beaconCommitteeStateBase: *newBeaconCommitteeStateBaseWithValue(
-			beaconCurrentValidator, shardCurrentValidator, shardSubstituteValidator,
+			beaconCommittee, shardCurrentValidator, shardSubstituteValidator,
 			autoStaking, rewardReceivers, stakingTx,
 		),
 		nextEpochShardCandidate:    nextEpochShardCandidate,
@@ -100,12 +97,7 @@ func (b *BeaconCommitteeStateV1) getAllCandidateSubstituteCommittee() []string {
 		}
 		res = append(res, substituteStr...)
 	}
-	beaconCommittee := b.beaconCommittee
-	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconCommittee)
-	if err != nil {
-		panic(err)
-	}
-	res = append(res, beaconCommitteeStr...)
+	res = append(res, b.beaconCommittee...)
 	candidateShardWaitingForCurrentRandom := b.currentEpochShardCandidate
 	candidateShardWaitingForCurrentRandomStr, err := incognitokey.CommitteeKeyListToString(candidateShardWaitingForCurrentRandom)
 	if err != nil {
@@ -391,8 +383,11 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 		committeeChange.BeaconCommitteeReplaced[common.REPLACE_OUT] = append(committeeChange.BeaconCommitteeReplaced[common.REPLACE_OUT], swapInstruction.OutPublicKeyStructs...)
 		// add new public key to committees
 		committeeChange.BeaconCommitteeReplaced[common.REPLACE_IN] = append(committeeChange.BeaconCommitteeReplaced[common.REPLACE_IN], swapInstruction.InPublicKeyStructs...)
-		remainedBeaconCommittees := b.beaconCommittee[removedCommittee:]
-		b.beaconCommittee = append(swapInstruction.InPublicKeyStructs, remainedBeaconCommittees...)
+		remainedBeaconCommittees := make([]string, len(b.beaconCommittee[removedCommittee:]))
+		copy(remainedBeaconCommittees, b.beaconCommittee[removedCommittee:])
+		newCommittees := make([]string, len(swapInstruction.InPublicKeys))
+		copy(newCommittees, swapInstruction.InPublicKeys)
+		b.beaconCommittee = append(newCommittees, remainedBeaconCommittees...)
 	} else {
 		shardID := byte(swapInstruction.ChainID)
 		committeeReplace := [2][]incognitokey.CommitteePublicKey{}
@@ -534,7 +529,7 @@ func (b *BeaconCommitteeStateV1) Upgrade(env *BeaconCommitteeStateEnvironment) B
 }
 
 func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEnvironment) (
-	[]incognitokey.CommitteePublicKey,
+	[]string,
 	map[byte][]incognitokey.CommitteePublicKey,
 	map[byte][]incognitokey.CommitteePublicKey,
 	[]incognitokey.CommitteePublicKey,
@@ -544,7 +539,7 @@ func (b *BeaconCommitteeStateV1) getDataForUpgrading(env *BeaconCommitteeStateEn
 	map[string]common.Hash,
 	SwapRuleProcessor,
 ) {
-	beaconCommittee := make([]incognitokey.CommitteePublicKey, len(b.beaconCommittee))
+	beaconCommittee := make([]string, len(b.beaconCommittee))
 	shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
 	shardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
 	numberOfAssignedCandidates := len(b.currentEpochShardCandidate)
