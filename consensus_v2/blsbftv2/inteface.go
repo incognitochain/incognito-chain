@@ -35,7 +35,7 @@ type ChainInterface interface {
 		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
 	ValidateBlockSignatures(block types.BlockInterface, committee, committeesForSigning []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, committee, committeesForSigning []incognitokey.CommitteePublicKey) error
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	GetShardID() int
 	GetViewByHash(hash common.Hash) multiview.View

@@ -460,7 +460,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	if err := e.Chain.ValidatePreSignBlock(v.block, []incognitokey.CommitteePublicKey{}); err != nil {
+	if err := e.Chain.ValidatePreSignBlock(v.block, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}); err != nil {
 		e.Logger.Error(err)
 		return err
 	}

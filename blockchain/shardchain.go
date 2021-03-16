@@ -186,6 +186,7 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.ShardBlock)
 	json.Unmarshal(b, &newBlock)
+	Logger.log.Info("[dcs] hash:", newBlock.Header.Hash(), "newBlock.Header.Timestamp:", newBlock.Header.Timestamp)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
 
@@ -213,17 +214,19 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 
 func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, committee, committeesForSigning []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
+		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, committeesForSigning); err != nil {
+		Logger.log.Info("[dcs] err:", err)
+		panic(err)
 		return err
 	}
 	return nil
 }
 
 func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
-
 	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), shouldValidate)
 	if err != nil {
 		Logger.log.Error(err)
@@ -304,8 +307,8 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (types.BlockInterfac
 	return &shardBlk, nil
 }
 
-func (chain *ShardChain) ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
-	return chain.Blockchain.VerifyPreSignShardBlock(block.(*types.ShardBlock), committees, byte(block.(*types.ShardBlock).GetShardID()))
+func (chain *ShardChain) ValidatePreSignBlock(block types.BlockInterface, committees, committeesForSigning []incognitokey.CommitteePublicKey) error {
+	return chain.Blockchain.VerifyPreSignShardBlock(block.(*types.ShardBlock), committees, committeesForSigning, byte(block.(*types.ShardBlock).GetShardID()))
 }
 
 func (chain *ShardChain) GetAllView() []multiview.View {

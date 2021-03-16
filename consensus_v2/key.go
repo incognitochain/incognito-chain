@@ -151,8 +151,6 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 		tempProducer = committee[tempProducerID]
 		b58Str, _ = tempProducer.ToBase58()
 		if strings.Compare(b58Str, proposer) != 0 {
-			fmt.Println("[dcs] b58Str:", b58Str)
-			fmt.Println("[dcs] proposer:", proposer)
 			return fmt.Errorf("Expect Proposer Public Key to be equal but get %+v From Index, %+v From Header", b58Str, proposer)
 		}
 	}
