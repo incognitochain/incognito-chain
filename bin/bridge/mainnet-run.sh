@@ -28,7 +28,7 @@ run()
   docker pull incognitochain/incognito-mainnet:${latest_tag}
   docker network create --driver bridge inc_net || true
   # Start the incognito mainnet docker container
-  docker run --restart=always --net inc_net -p $node_port:$node_port -p $rpc_port:$rpc_port -e NODE_PORT=$node_port -e RPC_PORT=$rpc_port -e BOOTNODE_IP=$bootnode -e GETH_NAME=mainnet.infura.io/v3/YYYZZZ -e GETH_PROTOCOL=https -e GETH_PORT= -e MININGKEY=${validator_key} -e TESTNET=false -e LIMIT_FEE=1 -v $PWD/${data_dir}:/data -d --name inc_mainnet incognitochain/incognito-mainnet:${latest_tag}
+  docker run --restart=always --net inc_net -p $node_port:$node_port -p $rpc_port:$rpc_port -e NODE_PORT=$node_port -e RPC_PORT=$rpc_port -e BOOTNODE_IP=$bootnode -e GETH_NAME=mainnet.infura.io/v3/yyyzzz -e GETH_PROTOCOL=https -e GETH_PORT= -e MININGKEY=${validator_key} -e TESTNET=false -e LIMIT_FEE=1 -v $PWD/${data_dir}:/data -d --name inc_mainnet incognitochain/incognito-mainnet:${latest_tag}
 
   if [ $backup_log -eq 1 ]; then
     mv $data_dir/log.txt $data_dir/log_$(date "+%Y%m%d_%H%M%S").txt
