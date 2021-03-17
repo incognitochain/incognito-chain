@@ -486,7 +486,7 @@ func (e *BLSBFT_V3) validateAndVote(
 		return err
 	}
 
-	if err := e.Chain.ValidatePreSignBlock(v.block, v.committees, v.committees); err != nil {
+	if err := e.Chain.ValidatePreSignBlock(v.block, v.committees); err != nil {
 		e.Logger.Error(err)
 		return err
 	}

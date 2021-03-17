@@ -171,7 +171,7 @@ func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusT
 	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }
 
-func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committees, committeesForSigning []incognitokey.CommitteePublicKey) error {
+func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
 	if block.GetVersion() == 1 {
 		return blsbft.ValidateCommitteeSig(block, committees)
 	} else if block.GetVersion() == 2 {
@@ -179,7 +179,7 @@ func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, commi
 	} else if block.GetVersion() == 3 {
 		return blsbftv3.ValidateCommitteeSig(block, committees)
 	} else if block.GetVersion() == 4 {
-		return blsbftv4.ValidateCommitteeSig(block, committees, committeesForSigning)
+		return blsbftv4.ValidateCommitteeSig(block, committees)
 	}
 	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }

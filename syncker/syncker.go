@@ -285,7 +285,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 							}
 							beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
 							committee := statedb.GetOneShardCommittee(beaconConsensusStateDB, byte(i))
-							err = bc.ShardChain[byte(i)].ValidateBlockSignatures(blkXShard.(types.BlockInterface), committee, committee)
+							err = bc.ShardChain[byte(i)].ValidateBlockSignatures(blkXShard.(types.BlockInterface), committee)
 							if err != nil {
 								Logger.Error("Validate crossshard block fail", blkXShard.GetHeight(), blkXShard.Hash())
 								return nil

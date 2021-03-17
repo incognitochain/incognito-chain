@@ -521,3 +521,7 @@ func (ShardCommitteeEngineV1 ShardCommitteeEngineV1) BuildTotalTxsFeeFromTxs(txs
 	}
 	return totalTxsFee
 }
+
+func (ShardCommitteeEngineV1 ShardCommitteeEngineV1) CommitteesSubsetFromBlock() common.Hash {
+	return common.Hash{}
+}

@@ -59,6 +59,7 @@ type ShardCommitteeEngine interface {
 	GetShardCommittee() []incognitokey.CommitteePublicKey
 	GetShardSubstitute() []incognitokey.CommitteePublicKey
 	CommitteeFromBlock() common.Hash
+	CommitteesSubsetFromBlock() common.Hash
 	ProcessInstructionFromBeacon(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
 	GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
 	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
