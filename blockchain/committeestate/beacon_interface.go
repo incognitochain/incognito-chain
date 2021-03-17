@@ -11,9 +11,6 @@ import (
 )
 
 type BeaconCommitteeState interface {
-	Version() int
-	Clone() BeaconCommitteeState
-
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey
 	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
@@ -32,17 +29,15 @@ type BeaconCommitteeState interface {
 	GetShardCommonPool() []incognitokey.CommitteePublicKey
 	GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey
 
+	Version() int
+	Clone() BeaconCommitteeState
 	UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 		*BeaconCommitteeStateHash,
 		*CommitteeChange,
 		[][]string,
 		error)
-	Hash() (*BeaconCommitteeStateHash, error)
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
-
-	getBeaconCommittee() []incognitokey.CommitteePublicKey
-	getShardCommittee() map[byte][]incognitokey.CommitteePublicKey
-	getShardSubstitute() map[byte][]incognitokey.CommitteePublicKey
+	Hash() (*BeaconCommitteeStateHash, error)
 }
 
 type AssignInstructionsGenerator interface {

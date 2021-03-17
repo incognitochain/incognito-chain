@@ -283,7 +283,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
 			}
-			got, got1, err := b.processSwapShardInstruction(tt.args.swapShardInstruction, tt.args.env, tt.args.committeeChange, tt.args.returnStakingInstruction, tt.args.oldState)
+			got, got1, err := b.processSwapShardInstruction(tt.args.swapShardInstruction, tt.args.env, tt.args.committeeChange, tt.args.returnStakingInstruction)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeStateV3.processSwapShardInstruction() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -314,11 +314,11 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 		syncPool                         map[byte][]string
 	}
 	type args struct {
-		rand            int64
-		activeShards    int
-		committeeChange *CommitteeChange
-		oldState        BeaconCommitteeState
-		beaconHeight    uint64
+		rand              int64
+		numberOfValidator []int
+		committeeChange   *CommitteeChange
+		oldState          BeaconCommitteeState
+		beaconHeight      uint64
 	}
 	tests := []struct {
 		name               string
@@ -391,37 +391,10 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 				},
 			},
 			args: args{
-				rand:         1000,
-				activeShards: 2,
+				rand:              1000,
+				numberOfValidator: []int{8, 8},
 				committeeChange: &CommitteeChange{
 					SyncingPoolAdded: map[byte][]incognitokey.CommitteePublicKey{},
-				},
-				oldState: &BeaconCommitteeStateV3{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3,
-								},
-								1: []string{
-									key0, key, key2, key3,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3,
-								},
-								1: []string{
-									key0, key, key2, key3,
-								},
-							},
-						},
-						shardCommonPool: []string{
-							key0, key, key2, key3,
-						},
-						numberOfAssignedCandidates: 2,
-					},
-					syncPool: map[byte][]string{},
 				},
 				beaconHeight: 1000,
 			},
@@ -442,7 +415,7 @@ func TestBeaconCommitteeStateV3_processAssignWithRandomInstruction(t *testing.T)
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
 			}
-			if got := b.processAssignWithRandomInstruction(tt.args.rand, tt.args.activeShards, tt.args.committeeChange, tt.args.oldState); !reflect.DeepEqual(got, tt.want) {
+			if got := b.processAssignWithRandomInstruction(tt.args.rand, tt.args.numberOfValidator, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BeaconCommitteeStateV3.processAssignWithRandomInstruction() = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(b.beaconCommitteeStateSlashingBase, tt.fieldsAfterProcess.beaconCommitteeStateSlashingBase) {
@@ -618,7 +591,7 @@ func TestBeaconCommitteeStateV3_processAfterNormalSwap(t *testing.T) {
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
 			}
-			got, got1, err := b.processAfterNormalSwap(tt.args.env, tt.args.outPublicKeys, tt.args.committeeChange, tt.args.returnStakingInstruction, tt.args.oldState)
+			got, got1, err := b.processAfterNormalSwap(tt.args.env, tt.args.outPublicKeys, tt.args.committeeChange, tt.args.returnStakingInstruction)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeStateV3.processAfterNormalSwap() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -1262,7 +1235,7 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
 			}
-			got, err := b.processFinishSyncInstruction(tt.args.finishSyncInstruction, tt.args.env, tt.args.committeeChange, tt.args.oldState)
+			got, err := b.processFinishSyncInstruction(tt.args.finishSyncInstruction, tt.args.env, tt.args.committeeChange)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeStateV3.processFinishSyncInstruction() error = %v, wantErr %v", err, tt.wantErr)
 				return

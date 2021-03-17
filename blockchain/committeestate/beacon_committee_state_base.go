@@ -409,17 +409,16 @@ func (b *beaconCommitteeStateBase) processStakeInstruction(
 func (b *beaconCommitteeStateBase) turnOffAutoStake(
 	validators, stopAutoStakeKeys []string,
 	committeeChange *CommitteeChange,
-	oldState BeaconCommitteeState,
 ) *CommitteeChange {
 	for _, committeePublicKey := range stopAutoStakeKeys {
 		if common.IndexOfStr(committeePublicKey, validators) == -1 {
 			// if not found then delete auto staking data for this public key if present
-			if _, ok := oldState.GetAutoStaking()[committeePublicKey]; ok {
+			if _, ok := b.autoStake[committeePublicKey]; ok {
 				delete(b.autoStake, committeePublicKey)
 			}
 		} else {
 			// if found in committee list then turn off auto staking
-			if autoStake, ok := oldState.GetAutoStaking()[committeePublicKey]; ok {
+			if autoStake, ok := b.autoStake[committeePublicKey]; ok {
 				if autoStake {
 					committeeChange = b.turnOffStopAutoStake(committeePublicKey, committeeChange)
 				}
@@ -433,9 +432,8 @@ func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
 	stopAutoStakeInstruction *instruction.StopAutoStakeInstruction,
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
-	oldState BeaconCommitteeState,
 ) *CommitteeChange {
-	return b.turnOffAutoStake(env.newValidators, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange, oldState)
+	return b.turnOffAutoStake(env.newValidators, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange)
 }
 
 //SplitReward ...

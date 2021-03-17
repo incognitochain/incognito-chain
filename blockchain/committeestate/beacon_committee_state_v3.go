@@ -117,22 +117,18 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 	incurredInstructions := [][]string{}
 	returnStakingInstruction := instruction.NewReturnStakeIns()
 	committeeChange := NewCommitteeChange()
-	oldB := b.clone()
-
-	oldB.mu.RLock()
-	defer oldB.mu.RUnlock()
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
 		b.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
-			oldB.shardCommonPool,
-			oldB.shardCommittee,
-			oldB.shardSubstitute,
+			b.shardCommonPool,
+			b.shardCommittee,
+			b.shardSubstitute,
 			env.NumberOfFixedShardBlockValidator,
 			env.MinShardCommitteeSize,
-			oldB.swapRule,
+			b.swapRule,
 		)
 
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, b.numberOfAssignedCandidates)
@@ -142,6 +138,12 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
 	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
 	env.newValidators = append(env.newValidators, b.AllSyncingValidators()...)
+
+	numberOfValidator := make([]int, env.ActiveShards)
+	for i := 0; i < env.ActiveShards; i++ {
+		numberOfValidator[i] += len(b.shardCommittee[byte(i)])
+		numberOfValidator[i] += len(b.shardSubstitute[byte(i)])
+	}
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -164,14 +166,14 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange = b.processAssignWithRandomInstruction(
-				randomInstruction.BtcNonce, env.ActiveShards, committeeChange, oldB)
+				randomInstruction.BtcNonce, numberOfValidator, committeeChange)
 
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange = b.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange, oldB)
+			committeeChange = b.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
 
 		case instruction.SWAP_SHARD_ACTION:
 			swapShardInstruction, err := instruction.ValidateAndImportSwapShardInstructionFromString(inst)
@@ -179,7 +181,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange, returnStakingInstruction, err = b.processSwapShardInstruction(
-				swapShardInstruction, env, committeeChange, returnStakingInstruction, oldB)
+				swapShardInstruction, env, committeeChange, returnStakingInstruction)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -190,7 +192,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange, err = b.processFinishSyncInstruction(
-				finishSyncInstruction, env, committeeChange, oldB)
+				finishSyncInstruction, env, committeeChange)
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
@@ -245,10 +247,9 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 	outPublicKeys []string,
 	committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	oldState BeaconCommitteeState,
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	newCommitteeChange := committeeChange
-	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, outPublicKeys, newCommitteeChange, returnStakingInstruction, oldState)
+	candidates, newCommitteeChange, returnStakingInstruction, err := b.getValidatorsByAutoStake(env, outPublicKeys, newCommitteeChange, returnStakingInstruction)
 	if err != nil {
 		return newCommitteeChange, returnStakingInstruction, err
 	}
@@ -261,12 +262,11 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 // update beacon state and committeechange
 func (b *BeaconCommitteeStateV3) processAssignWithRandomInstruction(
 	rand int64,
-	activeShards int,
+	numberOfValidator []int,
 	committeeChange *CommitteeChange,
-	oldState BeaconCommitteeState,
 ) *CommitteeChange {
-	newCommitteeChange, candidates := b.updateCandidatesByRandom(committeeChange, oldState)
-	assignedCandidates := b.getAssignCandidates(candidates, rand, activeShards, oldState)
+	newCommitteeChange, candidates := b.updateCandidatesByRandom(committeeChange)
+	assignedCandidates := b.getAssignCandidates(candidates, rand, numberOfValidator)
 	for shardID, candidates := range assignedCandidates {
 		newCommitteeChange = b.assignToSync(shardID, candidates, newCommitteeChange)
 	}
@@ -277,21 +277,19 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	swapShardInstruction *instruction.SwapShardInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	oldState BeaconCommitteeState,
 ) (
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	shardID := byte(swapShardInstruction.ChainID)
 	env.ShardID = shardID
 
 	// process normal swap out
-	newCommitteeChange, _, normalSwapOutCommittees, slashingCommittees, err := b.processNormalSwap(swapShardInstruction, env, committeeChange, oldState)
+	newCommitteeChange, _, normalSwapOutCommittees, slashingCommittees, err := b.processNormalSwap(swapShardInstruction, env, committeeChange)
 
 	// process after swap for assign old committees to current shard pool
 	newCommitteeChange, returnStakingInstruction, err = b.processAfterNormalSwap(env,
 		normalSwapOutCommittees,
 		newCommitteeChange,
 		returnStakingInstruction,
-		oldState,
 	)
 	if err != nil {
 		return nil, returnStakingInstruction, err
@@ -303,7 +301,6 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 		slashingCommittees,
 		returnStakingInstruction,
 		newCommitteeChange,
-		oldState,
 	)
 	if err != nil {
 		return nil, returnStakingInstruction, err
@@ -335,7 +332,6 @@ func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []strin
 func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	finishSyncInstruction *instruction.FinishSyncInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
-	oldState BeaconCommitteeState,
 ) (
 	*CommitteeChange, error) {
 	newCommitteeChange := committeeChange
@@ -363,7 +359,7 @@ func (b *BeaconCommitteeStateV3) processUnstakeInstruction(
 	oldState BeaconCommitteeState,
 
 ) *CommitteeChange {
-	return b.turnOffAutoStake(env.newValidators, unstakeInstruction.CommitteePublicKeys, committeeChange, oldState)
+	return b.turnOffAutoStake(env.newValidators, unstakeInstruction.CommitteePublicKeys, committeeChange)
 }
 
 func (b *BeaconCommitteeStateV3) AllSyncingValidators() []string {

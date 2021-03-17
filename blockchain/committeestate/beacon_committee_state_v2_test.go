@@ -60,7 +60,6 @@ func TestBeaconCommitteeStateV2_processStakeInstruction(t *testing.T) {
 		stakeInstruction *instruction.StakeInstruction
 		committeeChange  *CommitteeChange
 		env              *BeaconCommitteeStateEnvironment
-		oldState         *BeaconCommitteeStateV2
 	}
 	tests := []struct {
 		name           string
@@ -101,21 +100,6 @@ func TestBeaconCommitteeStateV2_processStakeInstruction(t *testing.T) {
 				committeeChange: &CommitteeChange{},
 				env: &BeaconCommitteeStateEnvironment{
 					ConsensusStateDB: sDB,
-				},
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []string{},
-							shardCommittee:  map[byte][]string{},
-							shardSubstitute: map[byte][]string{},
-							autoStake:       map[string]bool{},
-							rewardReceiver:  map[string]privacy.PaymentAddress{},
-							stakingTx:       map[string]common.Hash{},
-							mu:              &sync.RWMutex{},
-						},
-						shardCommonPool:            []string{},
-						numberOfAssignedCandidates: 0,
-					},
 				},
 			},
 			want: &CommitteeChange{
@@ -214,10 +198,9 @@ func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T)
 		beaconCommitteeStateSlashingBase
 	}
 	type args struct {
-		rand            int64
-		activeShards    int
-		committeeChange *CommitteeChange
-		oldState        *BeaconCommitteeStateV2
+		rand              int64
+		numberOfValidator []int
+		committeeChange   *CommitteeChange
 	}
 	tests := []struct {
 		name           string
@@ -250,31 +233,9 @@ func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T)
 				},
 			},
 			args: args{
-				rand:            10000,
-				activeShards:    2,
-				committeeChange: NewCommitteeChange(),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key,
-									key5,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{
-									key6,
-								},
-							},
-							mu: finalMu,
-						},
-						shardCommonPool: []string{
-							key2,
-						},
-						numberOfAssignedCandidates: 1,
-					},
-				},
+				rand:              10000,
+				numberOfValidator: []int{3, 0},
+				committeeChange:   NewCommitteeChange(),
 			},
 			wantSideEffect: &fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
@@ -320,9 +281,8 @@ func TestBeaconCommitteeStateV2_processAssignWithRandomInstruction(t *testing.T)
 			}
 			if got := b.processAssignWithRandomInstruction(
 				tt.args.rand,
-				tt.args.activeShards,
+				tt.args.numberOfValidator,
 				tt.args.committeeChange,
-				tt.args.oldState,
 			); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BeaconCommitteeStateV2.processAssignWithRandomInstruction() = %v, want %v", got, tt.want)
 			}
@@ -837,8 +797,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 	rootHash, _ := sDB.Commit(true)
 	sDB.Database().TrieDB().Commit(rootHash, false)
 
-	finalMu := new(sync.RWMutex)
-
 	committeeChangeValidInputSwapOut := NewCommitteeChange()
 	committeeChangeValidInputSwapOut.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
 		*incKey5,
@@ -1025,10 +983,10 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 
 	type args struct {
 		swapShardInstruction      *instruction.SwapShardInstruction
+		numberOfValidator         []int
 		returnStakingInstructions *instruction.ReturnStakeInstruction
 		env                       *BeaconCommitteeStateEnvironment
 		committeeChange           *CommitteeChange
-		oldState                  *BeaconCommitteeStateV2
 		newState                  *BeaconCommitteeStateV2
 	}
 	tests := []struct {
@@ -1080,6 +1038,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 						*incKey6,
 					},
 				},
+				numberOfValidator: []int{5},
 				env: &BeaconCommitteeStateEnvironment{
 					ConsensusStateDB:                 sDB,
 					NumberOfFixedShardBlockValidator: 0,
@@ -1088,27 +1047,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				},
 				committeeChange:           NewCommitteeChange(),
 				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key, key2, key3, key4,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{
-									key5,
-								},
-							},
-							autoStake:      map[string]bool{},
-							rewardReceiver: map[string]privacy.PaymentAddress{},
-							stakingTx:      map[string]common.Hash{},
-							mu:             finalMu,
-						},
-						swapRule: swapRuleSingleInstructionOut,
-					},
-				},
 			},
 			want1:   nil,
 			want2:   new(instruction.ReturnStakeInstruction),
@@ -1154,6 +1092,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 						*incKey6,
 					},
 				},
+				numberOfValidator: []int{5},
 				env: &BeaconCommitteeStateEnvironment{
 					ConsensusStateDB:                 sDB,
 					NumberOfFixedShardBlockValidator: 0,
@@ -1162,27 +1101,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				},
 				committeeChange:           NewCommitteeChange(),
 				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key, key2, key3, key4,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{
-									key5,
-								},
-							},
-							autoStake:      map[string]bool{},
-							rewardReceiver: map[string]privacy.PaymentAddress{},
-							stakingTx:      map[string]common.Hash{},
-							mu:             finalMu,
-						},
-						swapRule: swapRuleSingleInstructionIn,
-					},
-				},
 			},
 			want1:   nil,
 			want2:   new(instruction.ReturnStakeInstruction),
@@ -1229,6 +1147,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					0,
 					instruction.SWAP_BY_END_EPOCH,
 				),
+				numberOfValidator: []int{5},
 				env: &BeaconCommitteeStateEnvironment{
 					NumberOfFixedShardBlockValidator: 0,
 					ConsensusStateDB:                 sDB,
@@ -1238,27 +1157,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				},
 				committeeChange:           NewCommitteeChange(),
 				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key, key2, key3, key4,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{
-									key5,
-								},
-							},
-							autoStake:      map[string]bool{},
-							rewardReceiver: map[string]privacy.PaymentAddress{},
-							stakingTx:      map[string]common.Hash{},
-							mu:             finalMu,
-						},
-						swapRule: swapRule2,
-					},
-				},
 			},
 			want1:   committeeChangeValidInputBackToSub,
 			want2:   new(instruction.ReturnStakeInstruction),
@@ -1315,6 +1213,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					0,
 					instruction.SWAP_BY_END_EPOCH,
 				),
+				numberOfValidator: []int{5, 6},
 				env: &BeaconCommitteeStateEnvironment{
 					NumberOfFixedShardBlockValidator: 0,
 					ConsensusStateDB:                 sDB,
@@ -1324,33 +1223,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				},
 				committeeChange:           NewCommitteeChange(),
 				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key, key2, key3, key4,
-								},
-								1: []string{
-									key7, key8, key9, key10,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{
-									key5,
-								},
-								1: []string{
-									key11, key12,
-								},
-							},
-							autoStake:      map[string]bool{},
-							rewardReceiver: map[string]privacy.PaymentAddress{},
-							stakingTx:      map[string]common.Hash{},
-							mu:             finalMu,
-						},
-						swapRule: swapRule2,
-					},
-				},
 			},
 			want1:   committeeChangeValidInputBackToSub2,
 			want2:   new(instruction.ReturnStakeInstruction),
@@ -1395,6 +1267,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					0,
 					instruction.SWAP_BY_END_EPOCH,
 				),
+				numberOfValidator: []int{5},
 				env: &BeaconCommitteeStateEnvironment{
 					NumberOfFixedShardBlockValidator: 0,
 					ConsensusStateDB:                 sDB,
@@ -1404,27 +1277,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				},
 				committeeChange:           NewCommitteeChange(),
 				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key6, key2, key3, key4,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{
-									key5,
-								},
-							},
-							autoStake:      map[string]bool{},
-							rewardReceiver: map[string]privacy.PaymentAddress{},
-							stakingTx:      map[string]common.Hash{},
-							mu:             finalMu,
-						},
-						swapRule: swapRule3,
-					},
-				},
 			},
 			want1: committeeChangeValidInputSwapOut,
 			want2: instruction.NewReturnStakeInsWithValue(
@@ -1486,6 +1338,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					0,
 					instruction.SWAP_BY_END_EPOCH,
 				),
+				numberOfValidator: []int{6, 6},
 				env: &BeaconCommitteeStateEnvironment{
 					NumberOfFixedShardBlockValidator: 0,
 					ConsensusStateDB:                 sDB,
@@ -1495,33 +1348,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				},
 				committeeChange:           NewCommitteeChange(),
 				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key6, key2, key3, key4,
-								},
-								1: []string{
-									key7, key8, key9, key10,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{
-									key, key13,
-								},
-								1: []string{
-									key11, key12,
-								},
-							},
-							autoStake:      map[string]bool{},
-							rewardReceiver: map[string]privacy.PaymentAddress{},
-							stakingTx:      map[string]common.Hash{},
-							mu:             finalMu,
-						},
-						swapRule: swapRule4,
-					},
-				},
 			},
 			want1: committeeChangeValidInputSwapOut2,
 			want2: instruction.NewReturnStakeInsWithValue(
@@ -1569,6 +1395,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					0,
 					instruction.SWAP_BY_END_EPOCH,
 				),
+				numberOfValidator: []int{5},
 				env: &BeaconCommitteeStateEnvironment{
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key:  samplePenalty,
@@ -1583,27 +1410,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				},
 				committeeChange:           NewCommitteeChange(),
 				returnStakingInstructions: &instruction.ReturnStakeInstruction{},
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key6, key2, key3, key,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{
-									key5,
-								},
-							},
-							autoStake:      map[string]bool{},
-							rewardReceiver: map[string]privacy.PaymentAddress{},
-							stakingTx:      map[string]common.Hash{},
-							mu:             finalMu,
-						},
-						swapRule: swapRule5,
-					},
-				},
 			},
 			want1: committeeChangeSlashingForceSwapOut,
 			want2: instruction.NewReturnStakeInsWithValue(
@@ -1656,6 +1462,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					0,
 					instruction.SWAP_BY_END_EPOCH,
 				),
+				numberOfValidator: []int{20},
 				env: &BeaconCommitteeStateEnvironment{
 					MissingSignaturePenalty: map[string]signaturecounter.Penalty{
 						key11: samplePenalty,
@@ -1672,29 +1479,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 				},
 				committeeChange:           NewCommitteeChange(),
 				returnStakingInstructions: &instruction.ReturnStakeInstruction{},
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key0, key, key2, key3, key4, key5, key6, key7,
-									key8, key9, key10, key11, key12,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{
-									key13, key14, key15, key16,
-									key17, key18, key19,
-								},
-							},
-							autoStake:      map[string]bool{},
-							rewardReceiver: map[string]privacy.PaymentAddress{},
-							stakingTx:      map[string]common.Hash{},
-							mu:             finalMu,
-						},
-						swapRule: swapRuleV3,
-					},
-				},
 			},
 			want1: committeeChangeSwapRuleV3,
 			want2: instruction.NewReturnStakeInsWithValue(
@@ -1711,10 +1495,10 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 			}
 			got1, got2, err := b.processSwapShardInstruction(
 				tt.args.swapShardInstruction,
+				tt.args.numberOfValidator,
 				tt.args.env,
 				tt.args.committeeChange,
 				tt.args.returnStakingInstructions,
-				tt.args.oldState,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BeaconCommitteeStateV2.processSwapShardInstruction() error = %v, wantErr %v", err, tt.wantErr)
@@ -1810,17 +1594,15 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 	rootHash3, _ := sDB3.Commit(true)
 	sDB3.Database().TrieDB().Commit(rootHash3, false)
 
-	finalMu := new(sync.RWMutex)
-
 	type fields struct {
 		beaconCommitteeStateSlashingBase
 	}
 	type args struct {
 		env                     *BeaconCommitteeStateEnvironment
 		outPublicKeys           []string
+		numberOfValidator       []int
 		committeeChange         *CommitteeChange
 		returnStakeInstructions *instruction.ReturnStakeInstruction
-		oldState                *BeaconCommitteeStateV2
 		newState                *BeaconCommitteeStateV2
 	}
 	tests := []struct {
@@ -1891,34 +1673,9 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 					RandomNumber:     10000,
 				},
 				outPublicKeys:           []string{key5},
+				numberOfValidator:       []int{5},
 				committeeChange:         &CommitteeChange{},
 				returnStakeInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key, key2, key3, key4,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{},
-							},
-							autoStake: map[string]bool{
-								key:  true,
-								key8: false,
-							},
-							rewardReceiver: map[string]privacy.PaymentAddress{
-								incKey.GetIncKeyBase58(): paymentAddress,
-							},
-							stakingTx: map[string]common.Hash{
-								key:  *hash,
-								key6: *hash6,
-							},
-							mu: finalMu,
-						},
-					},
-				},
 			},
 			want1:   &CommitteeChange{},
 			want2:   new(instruction.ReturnStakeInstruction),
@@ -1983,36 +1740,9 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 					RandomNumber:     10000,
 				},
 				outPublicKeys:           []string{key},
+				numberOfValidator:       []int{4},
 				committeeChange:         &CommitteeChange{},
 				returnStakeInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key2, key3, key4, key5,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{},
-							},
-							autoStake: map[string]bool{
-								key:  true,
-								key5: true,
-								key8: true,
-							},
-							rewardReceiver: map[string]privacy.PaymentAddress{
-								incKey.GetIncKeyBase58(): paymentAddress,
-							},
-							stakingTx: map[string]common.Hash{
-								key:  *hash,
-								key5: *hash6,
-								key6: *hash6,
-							},
-							mu: finalMu,
-						},
-					},
-				},
 			},
 			want1: &CommitteeChange{
 				RemovedStaker: []string{key},
@@ -2080,33 +1810,9 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 					RandomNumber:     10000,
 				},
 				outPublicKeys:           []string{key5},
+				numberOfValidator:       []int{4},
 				committeeChange:         &CommitteeChange{},
 				returnStakeInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key, key2, key3, key4,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{},
-							},
-							autoStake: map[string]bool{
-								key:  true,
-								key8: false,
-							},
-							rewardReceiver: map[string]privacy.PaymentAddress{
-								incKey.GetIncKeyBase58(): paymentAddress,
-							},
-							stakingTx: map[string]common.Hash{
-								key: *hash,
-							},
-							mu: finalMu,
-						},
-					},
-				},
 			},
 			want1:   &CommitteeChange{},
 			want2:   new(instruction.ReturnStakeInstruction),
@@ -2172,39 +1878,14 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 					ActiveShards:     1,
 					RandomNumber:     10000,
 				},
-				outPublicKeys: []string{key},
+				outPublicKeys:     []string{key},
+				numberOfValidator: []int{4},
 				committeeChange: &CommitteeChange{
 					ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{
 						0: []incognitokey.CommitteePublicKey{},
 					},
 				},
 				returnStakeInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key2, key3, key4, key5,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{},
-							},
-							autoStake: map[string]bool{
-								key:  true,
-								key8: false,
-							},
-							rewardReceiver: map[string]privacy.PaymentAddress{
-								incKey.GetIncKeyBase58(): paymentAddress,
-							},
-							stakingTx: map[string]common.Hash{
-								key:  *hash,
-								key6: *hash6,
-							},
-							mu: finalMu,
-						},
-					},
-				},
 			},
 			want1: &CommitteeChange{
 				ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{
@@ -2280,39 +1961,14 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 					ActiveShards:     2,
 					RandomNumber:     10000,
 				},
-				outPublicKeys: []string{key},
+				outPublicKeys:     []string{key},
+				numberOfValidator: []int{6, 2},
 				committeeChange: &CommitteeChange{
 					ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{
 						0: []incognitokey.CommitteePublicKey{},
 					},
 				},
 				returnStakeInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardCommittee: map[byte][]string{
-								0: []string{
-									key2, key3, key4, key5,
-								},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{},
-							},
-							autoStake: map[string]bool{
-								key:  true,
-								key8: false,
-							},
-							rewardReceiver: map[string]privacy.PaymentAddress{
-								incKey.GetIncKeyBase58(): paymentAddress,
-							},
-							stakingTx: map[string]common.Hash{
-								key:  *hash,
-								key6: *hash6,
-							},
-							mu: finalMu,
-						},
-					},
-				},
 			},
 			want1: &CommitteeChange{
 				ShardSubstituteAdded: map[byte][]incognitokey.CommitteePublicKey{
@@ -2346,9 +2002,9 @@ func TestBeaconCommitteeStateV2_processAfterNormalSwap(t *testing.T) {
 			got1, got2, err := b.processAfterNormalSwap(
 				tt.args.env,
 				tt.args.outPublicKeys,
+				tt.args.numberOfValidator,
 				tt.args.committeeChange,
 				tt.args.returnStakeInstructions,
-				tt.args.oldState,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processAfterNormalSwap() error = %v, wantErr %v", err, tt.wantErr)
@@ -2436,7 +2092,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 		returnStakingInstructions *instruction.ReturnStakeInstruction
 		env                       *BeaconCommitteeStateEnvironment
 		committeeChange           *CommitteeChange
-		oldState                  *BeaconCommitteeStateV2
 		newState                  *BeaconCommitteeStateV2
 	}
 	tests := []struct {
@@ -2465,13 +2120,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				},
 				committeeChange:           &CommitteeChange{},
 				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase:   beaconCommitteeStateBase{},
-						shardCommonPool:            []string{key},
-						numberOfAssignedCandidates: 0,
-					},
-				},
 			},
 			want:    &CommitteeChange{},
 			want1:   &instruction.ReturnStakeInstruction{},
@@ -2506,22 +2154,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				},
 				committeeChange:           &CommitteeChange{},
 				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							autoStake: map[string]bool{
-								key: true,
-							},
-							rewardReceiver: map[string]privacy.PaymentAddress{
-								rewardReceiverkey: paymentAddress,
-							},
-							stakingTx: map[string]common.Hash{
-								key: *hash,
-							},
-						},
-						shardCommonPool: []string{key},
-					},
-				},
 			},
 			want:    &CommitteeChange{},
 			want1:   new(instruction.ReturnStakeInstruction),
@@ -2556,22 +2188,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 					ConsensusStateDB:        validSDB1,
 				},
 				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							autoStake: map[string]bool{
-								key: true,
-							},
-							rewardReceiver: map[string]privacy.PaymentAddress{
-								rewardReceiverkey: paymentAddress,
-							},
-							stakingTx: map[string]common.Hash{
-								key: *hash,
-							},
-						},
-						shardCommonPool: []string{key},
-					},
-				},
 			},
 			want: &CommitteeChange{
 				NextEpochShardCandidateRemoved: []incognitokey.CommitteePublicKey{*incKey},
@@ -2607,18 +2223,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				},
 				committeeChange:           &CommitteeChange{},
 				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardSubstitute: map[byte][]string{
-								0: []string{key},
-							},
-							autoStake: map[string]bool{
-								key: true,
-							},
-						},
-					},
-				},
 			},
 			want: &CommitteeChange{
 				StopAutoStake: []string{key},
@@ -2668,23 +2272,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				},
 				committeeChange:           &CommitteeChange{},
 				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							shardSubstitute: map[byte][]string{
-								0: []string{},
-							},
-							autoStake: map[string]bool{
-								key:  false,
-								key2: false,
-								key3: true,
-								key4: true,
-								key5: false,
-								key6: false,
-							},
-						},
-					},
-				},
 			},
 			want: &CommitteeChange{
 				NextEpochShardCandidateRemoved: []incognitokey.CommitteePublicKey{
@@ -2736,7 +2323,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 				tt.args.env,
 				tt.args.committeeChange,
 				tt.args.returnStakingInstructions,
-				tt.args.oldState,
 			)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processUnstakeInstruction() error = %v, wantErr %v", err, tt.wantErr)
@@ -2763,7 +2349,6 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 		stopAutoStakeInstruction *instruction.StopAutoStakeInstruction
 		env                      *BeaconCommitteeStateEnvironment
 		committeeChange          *CommitteeChange
-		oldState                 *BeaconCommitteeStateV2
 	}
 	tests := []struct {
 		name               string
@@ -2784,7 +2369,6 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 					newValidators: []string{key2},
 				},
 				committeeChange: &CommitteeChange{},
-				oldState:        &BeaconCommitteeStateV2{},
 			},
 			want: &CommitteeChange{},
 		},
@@ -2816,15 +2400,6 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 					newValidators: []string{key},
 				},
 				committeeChange: &CommitteeChange{},
-				oldState: &BeaconCommitteeStateV2{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							autoStake: map[string]bool{
-								key: true,
-							},
-						},
-					},
-				},
 			},
 			want: &CommitteeChange{
 				StopAutoStake: []string{key},
@@ -2852,7 +2427,6 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 				tt.args.stopAutoStakeInstruction,
 				tt.args.env,
 				tt.args.committeeChange,
-				tt.args.oldState,
 			); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("processStopAutoStakeInstruction() = %v, want %v", got, tt.want)
 			}
