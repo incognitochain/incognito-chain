@@ -460,7 +460,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	v.lastValidateTime = time.Now()
 
 	//not connected
-	e.Logger.Info(e.ChainKey, "validateAndVote")
+	e.Logger.Info(e.ChainKey, "validateAndVote", v.block.Hash().String())
 	view := e.Chain.GetViewByHash(v.block.GetPrevHash())
 	if view == nil {
 		e.Logger.Error(e.ChainKey, "view is null")
