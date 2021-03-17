@@ -122,6 +122,15 @@ func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
 }
 
+func (chain *ShardChain) GetLastCommittee() []incognitokey.CommitteePublicKey {
+	v := chain.multiView.GetViewByHash(*chain.GetBestView().GetPreviousHash())
+	if v == nil {
+		return nil
+	}
+	result := []incognitokey.CommitteePublicKey{}
+	return append(result, v.GetCommittee()...)
+}
+
 func (chain *ShardChain) GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error) {
 	bcStateRootHash := chain.Blockchain.GetBeaconBestState().ConsensusStateDBRootHash
 	bcDB := chain.Blockchain.GetBeaconChainDatabase()
@@ -244,6 +253,12 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 	return nil
 }
 
+func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
+	blkHash := block.Hash()
+	_, err := rawdbv2.GetShardBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
+	return err == nil
+}
+
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
 
 	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, newValidationData); err != nil {
@@ -267,12 +282,6 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 	}
 
 	return nil
-}
-
-func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
-	blkHash := block.Hash()
-	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
-	return err == nil
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {

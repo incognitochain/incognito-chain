@@ -441,6 +441,14 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		e.Logger.Infof("%v Validation Data %v %v %v %v", e.ChainKey, aggSig, brigSigs, validatorIdx, validationDataString)
 		v.block.(blockValidation).AddValidationField(validationDataString)
 
+		//pre validate block agg sig => agg flow can be wrong and we dont want to insert to db
+		if err := ValidateCommitteeSig(v.block, view.GetCommittee()); err != nil {
+			committeeStr, _ := incognitokey.CommitteeKeyListToString(view.GetCommittee())
+			fmt.Printf("[ValidateBLS] Validate BLS sig of block %v return error %v; Validators index %v; Signature %v; committee %v\n", v.block.Hash().String(), err, valData.ValidatiorsIdx, valData.AggSig, committeeStr)
+			e.Logger.Error(err)
+			return
+		}
+
 		go e.Chain.InsertAndBroadcastBlock(v.block)
 		delete(e.receiveBlockByHash, blockHash)
 	}
@@ -469,7 +477,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	for _, userKey := range e.UserKeySet {
 		pubKey := userKey.GetPublicKey()
 		if common.IndexOfStr(pubKey.GetMiningKeyBase58(e.GetConsensusName()), committeeBLSString) != -1 {
-			Vote, err := CreateVote(&userKey, v.block, e.Chain.GetBestView().GetCommittee())
+			Vote, err := CreateVote(&userKey, v.block, view.GetCommittee())
 			if err != nil {
 				e.Logger.Error(err)
 				return NewConsensusError(UnExpectedError, err)
