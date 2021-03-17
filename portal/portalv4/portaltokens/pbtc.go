@@ -96,7 +96,7 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 		))
 	}
 
-	if len(listUTXO) == 0 || totalValue < p.GetMinTokenAmount() {
+	if len(listUTXO) == 0 || p.ConvertExternalToIncAmount(totalValue) < p.GetMinTokenAmount() {
 		Logger.log.Errorf("Shielding amount: %v is less than the minimum threshold: %v\n", totalValue, p.GetMinTokenAmount())
 		return false, nil, fmt.Errorf("Shielding amount: %v is less than the minimum threshold: %v", totalValue, p.GetMinTokenAmount())
 	}
