@@ -63,11 +63,11 @@ func ValidateProducerSig(block types.BlockInterface) error {
 	return nil
 }
 
-func CheckValidationDataWithCommittee(valData *ValidationData, committees, committeesForSigning []incognitokey.CommitteePublicKey) bool {
+func CheckValidationDataWithCommittee(valData *ValidationData, committees []incognitokey.CommitteePublicKey) bool {
 	if len(committees) < 1 {
 		return false
 	}
-	if len(valData.ValidatiorsIdx) < len(committeesForSigning)*2/3+1 {
+	if len(valData.ValidatiorsIdx) < len(committees)*2/3+1 {
 		return false
 	}
 	for i := 0; i < len(valData.ValidatiorsIdx)-1; i++ {
@@ -78,22 +78,22 @@ func CheckValidationDataWithCommittee(valData *ValidationData, committees, commi
 	return true
 }
 
-func ValidateCommitteeSig(block types.BlockInterface, committees, committeesForSigning []incognitokey.CommitteePublicKey) error {
+func ValidateCommitteeSig(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
-	valid := CheckValidationDataWithCommittee(valData, committees, committeesForSigning)
+	valid := CheckValidationDataWithCommittee(valData, committees)
 	if !valid {
 		return NewConsensusError(UnExpectedError, errors.New(fmt.Sprintf("This validation Idx %v is not valid with this committee %v", valData.ValidatiorsIdx, committees)))
 	}
 	committeeBLSKeys := []blsmultisig.PublicKey{}
-	for _, member := range committeesForSigning {
+	for _, member := range committees {
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[common.BlsConsensus])
 	}
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
-		committeesForSigningStr, _ := incognitokey.CommitteeKeyListToString(committeesForSigning)
-		fmt.Printf("[ValidateBLS] Validate BLS sig of block %v return error %v; Validators index %v; Signature %v; committee %v\n", block.Hash().String(), err, valData.ValidatiorsIdx, valData.AggSig, committeesForSigningStr)
+		committeesStr, _ := incognitokey.CommitteeKeyListToString(committees)
+		fmt.Printf("[ValidateBLS] Validate BLS sig of block %v return error %v; Validators index %v; Signature %v; committee %v\n", block.Hash().String(), err, valData.ValidatiorsIdx, valData.AggSig, committeesStr)
 		return NewConsensusError(UnExpectedError, err)
 	}
 	return nil

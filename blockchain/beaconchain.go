@@ -243,7 +243,7 @@ func (chain *BeaconChain) GetChainName() string {
 	return chain.ChainName
 }
 
-func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, committees, committeesForSigning []incognitokey.CommitteePublicKey) error {
+func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
 	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*types.BeaconBlock), true)
 }
 
@@ -263,14 +263,18 @@ func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, commi
 // 	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
 // }
 
-func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, committees, committeesForSigning []incognitokey.CommitteePublicKey) error {
-
+func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
 
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees, committeesForSigning); err != nil {
+	committeesForSigning, err := chain.Blockchain.getCommitteesForSigning(committees, block, divideShardCommitteesPartThreshold)
+	if err != nil {
+		return err
+	}
+
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committeesForSigning); err != nil {
 		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
@@ -366,9 +370,9 @@ func (chain *BeaconChain) ProposerByTimeSlot(
 	return committees[id]
 }
 
-func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
 	committees := chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
-	return committees, committees, nil
+	return committees, nil
 }
 
 func (chain *BeaconChain) CommitteeStateVersion() int {

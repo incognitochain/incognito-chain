@@ -535,13 +535,13 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			shardCommitteeEngine = InitShardCommitteeEngineV2(
 				v.consensusStateDB,
 				v.ShardHeight, v.ShardID, v.BestBlockHash,
-				block.Header.CommitteeFromBlock, blockchain)
+				block.Header.CommitteeFromBlock, block.Header.CommitteesSubsetFromBlock, blockchain)
 		} else {
 			if v.BeaconHeight > blockchain.config.ChainParams.StakingFlowV2 {
 				shardCommitteeEngine = InitShardCommitteeEngineV2(
 					v.consensusStateDB,
 					v.ShardHeight, v.ShardID, v.BestBlockHash,
-					block.Header.CommitteeFromBlock, blockchain)
+					block.Header.CommitteeFromBlock, block.Header.CommitteesSubsetFromBlock, blockchain)
 			} else {
 				shardCommitteeEngine = InitShardCommitteeEngineV1(
 					v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
@@ -935,12 +935,23 @@ func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
 	}
 }
 
-func (blockchain *BlockChain) getShardCommitteesForSigning(committees []incognitokey.CommitteePublicKey, beaconHeight uint64, threshold int) []incognitokey.CommitteePublicKey {
+func (blockchain *BlockChain) getCommitteesForSigning(
+	committees []incognitokey.CommitteePublicKey, block types.BlockInterface, threshold int,
+) ([]incognitokey.CommitteePublicKey, error) {
 	res := []incognitokey.CommitteePublicKey{}
-	for i, v := range committees {
-		if uint64(i%threshold) == beaconHeight%uint64(threshold) {
-			res = append(res, v)
+	switch block.Type() {
+	case common.BeaconChainKey:
+		res = committees
+	case common.ShardChainKey:
+		beaconBlock, _, err := blockchain.GetBeaconBlockByHash(block.CommitteesSubsetFromBlock())
+		if err != nil {
+			return committees, err
+		}
+		for i, v := range committees {
+			if uint64(i%threshold) == beaconBlock.Header.Height%uint64(threshold) {
+				res = append(res, v)
+			}
 		}
 	}
-	return res
+	return res, nil
 }

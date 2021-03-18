@@ -244,3 +244,15 @@ func (header *BeaconHeader) Hash() common.Hash {
 	combined := append(blkMetaHash[:], blkInstHash[:]...)
 	return common.Keccak256(combined)
 }
+
+func (beaconBlock BeaconBlock) Type() string {
+	return common.BeaconChainKey
+}
+
+func (beaconBlock BeaconBlock) CommitteesSubsetFromBlock() common.Hash {
+	return common.Hash{}
+}
+
+func (beaconBlock BeaconBlock) BodyHash() common.Hash {
+	return beaconBlock.Body.Hash()
+}

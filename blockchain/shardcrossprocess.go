@@ -102,7 +102,11 @@ func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.O
 //- Agg Signature
 //- MerklePath
 func VerifyCrossShardBlock(crossShardBlock *types.CrossShardBlock, blockchain *BlockChain, committees []incognitokey.CommitteePublicKey) error {
-	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(crossShardBlock, committees, committees); err != nil { //@tin check this committees for signing
+	committeesForSigning, err := blockchain.getCommitteesForSigning(committees, crossShardBlock, divideShardCommitteesPartThreshold)
+	if err != nil {
+		return err
+	}
+	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(crossShardBlock, committeesForSigning); err != nil {
 		return NewBlockChainError(SignatureError, err)
 	}
 	if ok := VerifyCrossShardBlockUTXO(crossShardBlock, crossShardBlock.MerklePathShard); !ok {
