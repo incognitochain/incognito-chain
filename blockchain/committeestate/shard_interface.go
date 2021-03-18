@@ -22,6 +22,7 @@ type ShardCommitteeEngine interface {
 	ProcessInstructionFromBeacon(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
 	GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
 	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
+	CommitteesSubsetFromBlock() common.Hash
 }
 
 //ShardEnvBuilder : Interface for building shard environment

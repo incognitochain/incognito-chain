@@ -18,7 +18,6 @@ const STOP_SYNC = "stop_sync"
 func isNil(v interface{}) bool {
 	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }
-
 func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	sameCommitteeBlock := blocks
 
@@ -89,29 +88,24 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		}
 	}
 
-	batchingValidate := true
-	//if no valid block, this could be a fork chain, or the chunks that have old committee (current best block have swap) => try to insert all with full validation
-	if len(validBlockForInsert) == 0 {
-		validBlockForInsert = sameCommitteeBlock[:]
-		batchingValidate = false
-	}
-
-	for i, v := range validBlockForInsert {
+	for i, v := range sameCommitteeBlock {
 		if !chain.CheckExistedBlk(v) {
 			var err error
 			if i == 0 {
 				err = chain.InsertBlock(v, true)
 			} else {
-				err = chain.InsertBlock(v, batchingValidate == false)
+				err = chain.InsertBlock(v, false)
 			}
 			if err != nil {
-				committeeStr, _ := incognitokey.CommitteeKeyListToString(epochCommittee)
+				committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)
 				Logger.Errorf("Insert block %v hash %v got error %v, Committee of epoch %v", v.GetHeight(), *v.Hash(), err, committeeStr)
 				return 0, err
 			}
 		}
+
 	}
-	return len(validBlockForInsert), nil
+
+	return len(sameCommitteeBlock), nil
 }
 
 //final block
