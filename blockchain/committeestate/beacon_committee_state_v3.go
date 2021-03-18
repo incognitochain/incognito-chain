@@ -47,6 +47,8 @@ func (b *BeaconCommitteeStateV3) Version() int {
 }
 
 func (b *BeaconCommitteeStateV3) Clone() BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return b.clone()
 }
 
@@ -166,7 +168,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange = b.processAssignWithRandomInstruction(
-				randomInstruction.BtcNonce, numberOfValidator, committeeChange)
+				randomInstruction.RandomNumber(), numberOfValidator, committeeChange)
 
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)

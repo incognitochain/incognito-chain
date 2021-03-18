@@ -42,6 +42,8 @@ func (b BeaconCommitteeStateV2) Version() int {
 }
 
 func (b *BeaconCommitteeStateV2) Clone() BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return b.clone()
 }
 
@@ -115,7 +117,7 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange = b.processAssignWithRandomInstruction(
-				randomInstruction.BtcNonce, numberOfValidator, committeeChange)
+				randomInstruction.RandomNumber(), numberOfValidator, committeeChange)
 
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
@@ -160,10 +162,12 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 }
 
 //Upgrade check interface method for des
-func (engine *BeaconCommitteeStateV2) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
+func (b *BeaconCommitteeStateV2) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	beaconCommittee, shardCommittee, shardSubstitute,
 		shardCommonPool, numberOfAssignedCandidates,
-		autoStake, rewardReceiver, stakingTx, swapRule := engine.getDataForUpgrading(env)
+		autoStake, rewardReceiver, stakingTx, swapRule := b.getDataForUpgrading(env)
 
 	committeeStateV3 := NewBeaconCommitteeStateV3WithValue(
 		beaconCommittee,

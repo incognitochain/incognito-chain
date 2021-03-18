@@ -515,7 +515,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 				return nil, nil, nil, nil, NewBlockChainError(ProcessRandomInstructionError, err)
 			}
 			randomInstruction := instruction.ImportRandomInstructionFromString(inst)
-			beaconBestState.CurrentRandomNumber = randomInstruction.BtcNonce
+			beaconBestState.CurrentRandomNumber = randomInstruction.RandomNumber()
 			beaconBestState.IsGetRandomNumber = true
 			isFoundRandomInstruction = true
 			Logger.log.Infof("Random number found %d", beaconBestState.CurrentRandomNumber)

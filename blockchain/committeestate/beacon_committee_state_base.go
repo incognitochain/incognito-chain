@@ -3,6 +3,7 @@ package committeestate
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"math/big"
 	"reflect"
 	"sync"
 
@@ -145,6 +146,8 @@ func (b beaconCommitteeStateBase) isEmpty() bool {
 
 //Clone:
 func (b beaconCommitteeStateBase) Clone() BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return b.clone()
 }
 
@@ -257,15 +260,33 @@ func (b beaconCommitteeStateBase) GetShardCommonPool() []incognitokey.CommitteeP
 }
 
 func (b beaconCommitteeStateBase) GetAutoStaking() map[string]bool {
-	return b.autoStake
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	res := make(map[string]bool)
+	for k, v := range b.autoStake {
+		res[k] = v
+	}
+	return res
 }
 
 func (b beaconCommitteeStateBase) GetRewardReceiver() map[string]privacy.PaymentAddress {
-	return b.rewardReceiver
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	res := make(map[string]privacy.PaymentAddress)
+	for k, v := range b.rewardReceiver {
+		res[k] = v
+	}
+	return res
 }
 
 func (b beaconCommitteeStateBase) GetStakingTx() map[string]common.Hash {
-	return b.stakingTx
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	res := make(map[string]common.Hash)
+	for k, v := range b.stakingTx {
+		res[k] = v
+	}
+	return res
 }
 
 func (b beaconCommitteeStateBase) GetAllCandidateSubstituteCommittee() []string {
@@ -472,4 +493,23 @@ func SnapshotShardCommonPoolV2(
 //Upgrade upgrade committee engine by version
 func (b beaconCommitteeStateBase) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
 	panic("Implement this function")
+}
+
+func (b beaconCommitteeStateBase) GenerateIntrucstions(env *BeaconCommitteeStateEnvironment) (*instruction.RandomInstruction, int64) {
+	res := []byte{}
+	bestBeaconBlockHash := env.BeaconHash
+	res = append(res, bestBeaconBlockHash.Bytes()...)
+	for i := 0; i < env.ActiveShards; i++ {
+		shardID := byte(i)
+		bestShardBlockHash := env.BestShardHash[shardID]
+		res = append(res, bestShardBlockHash.Bytes()...)
+	}
+
+	bigInt := new(big.Int)
+	bigInt = bigInt.SetBytes(res)
+	randomNumber := int64(bigInt.Uint64())
+	randomInstruction := instruction.NewRandomInstructionWithValue(
+		randomNumber,
+	)
+	return randomInstruction, randomNumber
 }

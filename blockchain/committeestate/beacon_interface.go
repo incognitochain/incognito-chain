@@ -48,6 +48,10 @@ type SwapShardInstructionsGenerator interface {
 	GenerateInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
 }
 
+type RandomInstructionsGenerator interface {
+	GenerateIntrucstions(env *BeaconCommitteeStateEnvironment) (*instruction.RandomInstruction, int64)
+}
+
 type SplitRewardRuleProcessor interface {
 	SplitReward(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
 }
@@ -56,6 +60,7 @@ type BeaconCommitteeStateEnvironment struct {
 	BeaconHeight                      uint64
 	Epoch                             uint64
 	BeaconHash                        common.Hash
+	BestShardHash                     map[byte]common.Hash
 	BeaconInstructions                [][]string
 	EpochBreakPointSwapNewKey         []uint64
 	RandomNumber                      int64

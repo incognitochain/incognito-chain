@@ -368,8 +368,13 @@ func (curView *BeaconBestState) GenerateInstruction(
 
 	// Random number for Assign Instruction
 	if blockchain.IsGreaterThanRandomTime(newBeaconHeight) && !curView.IsGetRandomNumber {
-		randomInstruction, randomNumber := curView.generateRandomInstruction()
-		instructions = append(instructions, randomInstruction)
+		randomInstructionGenerator := curView.beaconCommitteeState.(committeestate.RandomInstructionsGenerator)
+		randomInstruction, randomNumber := randomInstructionGenerator.GenerateIntrucstions(&committeestate.BeaconCommitteeStateEnvironment{
+			BeaconHash:    curView.BestBlockHash,
+			BestShardHash: curView.BestShardHash,
+			ActiveShards:  curView.ActiveShards,
+		})
+		instructions = append(instructions, randomInstruction.ToString())
 		Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v, %+v", randomInstruction, newBeaconHeight)
 
 		if curView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
