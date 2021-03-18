@@ -148,26 +148,37 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 	// filter double withdraw request
 	withdrawReqTable := make(map[string]privacy.PaymentAddress)
 	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			metaRequest := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaRequest.PaymentAddress.Pk, common.Base58Version), metaRequest.TokenID.String())
-			if _, ok := withdrawReqTable[mapKey]; !ok {
-				withdrawReqTable[mapKey] = metaRequest.PaymentAddress
+		switch tx.GetMetadataType() {
+		case metadata.WithDrawRewardRequestMeta:
+			if tx.GetMetadata() == nil {
+				return fmt.Errorf("metadata is nil for type %v", tx.GetMetadataType())
+			}
+
+			md, ok := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			if !ok {
+				return fmt.Errorf("cannot parse withdraw request for tx %v", tx.Hash().String())
+			}
+			if _, ok = withdrawReqTable[tx.Hash().String()]; !ok {
+				withdrawReqTable[tx.Hash().String()] = md.PaymentAddress
 			}
 		}
 	}
+
 	// check tx withdraw response valid with the corresponding request
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			//check valid info with tx request
-			metaResponse := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
-			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaResponse.RewardPublicKey, common.Base58Version), metaResponse.TokenID.String())
-			rewardPaymentAddress, ok := withdrawReqTable[mapKey]
-			if !ok {
-				return errors.Errorf("[Mint Withdraw Reward] This response dont match with any request in this block - Reward Address: %v", mapKey)
-			} else {
-				delete(withdrawReqTable, mapKey)
+			if tx.GetMetadata() == nil {
+				return fmt.Errorf("metadata is nil for type %v", tx.GetMetadataType())
 			}
+			metaResponse := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
+			rewardPaymentAddress, ok := withdrawReqTable[metaResponse.TxRequest.String()]
+			if !ok {
+				return fmt.Errorf("cannot found tx request for tx withdraw reward response %v", tx.Hash().String())
+			} else {
+				delete(withdrawReqTable, metaResponse.TxRequest.String())
+			}
+
 			isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 			//check tx mint
 			if err != nil || !isMinted {
@@ -188,7 +199,6 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 				Logger.log.Errorf("[Mint Withdraw Reward] CheckMintCoinValid: %v, %v, %v, %v, %v\n", mintCoin.GetVersion(), mintCoin.GetValue(), mintCoin.GetPublicKey(), rewardPaymentAddress, rewardPaymentAddress.GetPublicSpend().ToBytesS())
 				return errors.Errorf("[Mint Withdraw Reward] Mint Coin is invalid for receiver or amount")
 			}
-
 		}
 	}
 
