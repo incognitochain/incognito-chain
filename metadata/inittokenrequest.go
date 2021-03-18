@@ -142,12 +142,10 @@ func (iReq InitTokenRequest) Hash() *common.Hash {
 //genTokenID generates a (deterministically) random tokenID for the request transaction.
 //From now on, users cannot generate their own tokenID.
 //The generated tokenID is calculated as the hash of the following components:
-//	- The InitTokenRequest hash
 //	- The Tx hash
 //	- The shardID at which the request is sent
 func (iReq *InitTokenRequest) genTokenID(tx Transaction, shardID byte) *common.Hash {
-	record := iReq.Hash().String()
-	record += tx.Hash().String()
+	record := tx.Hash().String()
 	record += strconv.FormatUint(uint64(shardID), 10)
 
 	tokenID := common.HashH([]byte(record))
