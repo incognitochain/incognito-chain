@@ -20,29 +20,30 @@ type ShardBlock struct {
 }
 
 type ShardHeader struct {
-	Producer              string                 `json:"Producer"`
-	ProducerPubKeyStr     string                 `json:"ProducerPubKeyStr"`
-	ShardID               byte                   `json:"ShardID"`               // shard ID which block belong to
-	Version               int                    `json:"Version"`               // version of block structure
-	PreviousBlockHash     common.Hash            `json:"PreviousBlockHash"`     // previous block hash or Parent block hash
-	Height                uint64                 `json:"Height"`                // block height
-	Round                 int                    `json:"Round"`                 // bpft consensus round
-	Epoch                 uint64                 `json:"Epoch"`                 // epoch of block (according to current beacon height)
-	CrossShardBitMap      []byte                 `json:"CrossShardBitMap"`      // crossShards bitmap for beacon
-	BeaconHeight          uint64                 `json:"BeaconHeight"`          // beacon check point height
-	BeaconHash            common.Hash            `json:"BeaconHash"`            // beacon check point hash
-	TotalTxsFee           map[common.Hash]uint64 `json:"TotalTxsFee"`           // fee of all txs in block
-	ConsensusType         string                 `json:"ConsensusType"`         // consensus type, by which this block is produced
-	Timestamp             int64                  `json:"Timestamp"`             // timestamp of block
-	TxRoot                common.Hash            `json:"TxRoot"`                // Transaction root created from transaction in shard
-	ShardTxRoot           common.Hash            `json:"ShardTxRoot"`           // output root created for other shard
-	CrossTransactionRoot  common.Hash            `json:"CrossTransactionRoot"`  // transaction root created from transaction of micro shard to shard block (from other shard)
-	InstructionsRoot      common.Hash            `json:"InstructionsRoot"`      // actions root created from Instructions and Metadata of transaction
-	CommitteeRoot         common.Hash            `json:"CommitteeRoot"`         // hash from public key list of all committees designated to create this block
-	PendingValidatorRoot  common.Hash            `json:"PendingValidatorRoot"`  // hash from public key list of all pending validators designated to this ShardID
-	StakingTxRoot         common.Hash            `json:"StakingTxRoot"`         // hash from staking transaction map in shard best state
-	InstructionMerkleRoot common.Hash            `json:"InstructionMerkleRoot"` // Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
-	CommitteeFromBlock    common.Hash            `json:"CommitteeFromBlock"`    // Block Hash Of Swapped Committees Block
+	Producer                  string                 `json:"Producer"`
+	ProducerPubKeyStr         string                 `json:"ProducerPubKeyStr"`
+	ShardID                   byte                   `json:"ShardID"`                   // shard ID which block belong to
+	Version                   int                    `json:"Version"`                   // version of block structure
+	PreviousBlockHash         common.Hash            `json:"PreviousBlockHash"`         // previous block hash or Parent block hash
+	Height                    uint64                 `json:"Height"`                    // block height
+	Round                     int                    `json:"Round"`                     // bpft consensus round
+	Epoch                     uint64                 `json:"Epoch"`                     // epoch of block (according to current beacon height)
+	CrossShardBitMap          []byte                 `json:"CrossShardBitMap"`          // crossShards bitmap for beacon
+	BeaconHeight              uint64                 `json:"BeaconHeight"`              // beacon check point height
+	BeaconHash                common.Hash            `json:"BeaconHash"`                // beacon check point hash
+	TotalTxsFee               map[common.Hash]uint64 `json:"TotalTxsFee"`               // fee of all txs in block
+	ConsensusType             string                 `json:"ConsensusType"`             // consensus type, by which this block is produced
+	Timestamp                 int64                  `json:"Timestamp"`                 // timestamp of block
+	TxRoot                    common.Hash            `json:"TxRoot"`                    // Transaction root created from transaction in shard
+	ShardTxRoot               common.Hash            `json:"ShardTxRoot"`               // output root created for other shard
+	CrossTransactionRoot      common.Hash            `json:"CrossTransactionRoot"`      // transaction root created from transaction of micro shard to shard block (from other shard)
+	InstructionsRoot          common.Hash            `json:"InstructionsRoot"`          // actions root created from Instructions and Metadata of transaction
+	CommitteeRoot             common.Hash            `json:"CommitteeRoot"`             // hash from public key list of all committees designated to create this block
+	PendingValidatorRoot      common.Hash            `json:"PendingValidatorRoot"`      // hash from public key list of all pending validators designated to this ShardID
+	StakingTxRoot             common.Hash            `json:"StakingTxRoot"`             // hash from staking transaction map in shard best state
+	InstructionMerkleRoot     common.Hash            `json:"InstructionMerkleRoot"`     // Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
+	CommitteeFromBlock        common.Hash            `json:"CommitteeFromBlock"`        // Block Hash Of Swapped Committees Block
+	CommitteesSubsetFromBlock common.Hash            `json:"CommitteesSubsetFromBlock"` // Calculate committees subset for signing block
 	// This obsoletes InstructionMerkleRoot but for simplicity, we keep it for now
 
 	//for version 2
@@ -642,4 +643,28 @@ func CloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxPriva
 	}
 	newContentCrossTokenPrivacyData.OutputCoin = []privacy.OutputCoin{}
 	return newContentCrossTokenPrivacyData
+}
+
+func (block ShardBlock) Type() string {
+	return common.ShardChainKey
+}
+
+func (block CrossShardBlock) Type() string {
+	return common.ShardChainKey
+}
+
+func (block ShardBlock) CommitteesSubsetFromBlock() common.Hash {
+	return block.Header.CommitteesSubsetFromBlock
+}
+
+func (block CrossShardBlock) CommitteesSubsetFromBlock() common.Hash {
+	return block.Header.CommitteesSubsetFromBlock
+}
+
+func (block ShardBlock) BodyHash() common.Hash {
+	return block.Body.Hash()
+}
+
+func (block CrossShardBlock) BodyHash() common.Hash {
+	return common.Hash{}
 }

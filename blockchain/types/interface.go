@@ -26,5 +26,8 @@ type BlockInterface interface {
 	GetProposeTime() int64
 	GetPrevHash() common.Hash
 	GetProposer() string
+	Type() string
 	CommitteeFromBlock() common.Hash
+	CommitteesSubsetFromBlock() common.Hash
+	BodyHash() common.Hash
 }

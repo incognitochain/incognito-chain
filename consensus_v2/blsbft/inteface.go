@@ -42,8 +42,8 @@ type ChainInterface interface {
 		startTime int64,
 		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
-	ValidateBlockSignatures(block types.BlockInterface, committee, committeesForSigning []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block types.BlockInterface, committee, committeesForSigning []incognitokey.CommitteePublicKey) error
+	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 
 	//for new syncker

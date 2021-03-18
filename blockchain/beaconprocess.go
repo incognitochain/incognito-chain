@@ -363,7 +363,11 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 		return err
 	}
 	if isVerifySig {
-		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, beaconBestState.GetBeaconCommittee(), beaconBestState.GetBeaconCommittee()); err != nil {
+		committeesForSigning, err := blockchain.getCommitteesForSigning(beaconBestState.GetBeaconCommittee(), beaconBlock, divideShardCommitteesPartThreshold)
+		if err != nil {
+			return err
+		}
+		if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(beaconBlock, committeesForSigning); err != nil {
 			return err
 		}
 	}

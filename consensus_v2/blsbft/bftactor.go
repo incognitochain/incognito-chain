@@ -242,7 +242,7 @@ func (e *BLSBFT) Start() error {
 
 					if e.Blocks[roundKey] != nil {
 						monitor.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
-						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey], []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}); err != nil {
+						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey], []incognitokey.CommitteePublicKey{}); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
 							continue

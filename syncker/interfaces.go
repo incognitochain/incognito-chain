@@ -44,7 +44,7 @@ type Chain interface {
 	GetBestViewHash() string
 	GetFinalViewHash() string
 	GetEpoch() uint64
-	ValidateBlockSignatures(block types.BlockInterface, committees, committeesForSigning []incognitokey.CommitteePublicKey) error
+	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetLastCommittee() []incognitokey.CommitteePublicKey
 	CurrentHeight() uint64
@@ -52,8 +52,8 @@ type Chain interface {
 	ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error
 	CheckExistedBlk(block types.BlockInterface) bool
 	GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error)
-	GetCommitteeV2(types.BlockInterface) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC
 	CommitteeStateVersion() int
+	GetCommitteeV2(types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC
 }
 
 const (
