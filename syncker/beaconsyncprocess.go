@@ -329,7 +329,7 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 
 	//stream
 	ch, err := s.network.RequestBeaconBlocksViaStream(ctx, peerID, fromHeight, toHeight)
-	if err != nil {
+	if err != nil || ch == nil {
 		fmt.Println("Syncker: create channel fail")
 		requestCnt = 0
 		return

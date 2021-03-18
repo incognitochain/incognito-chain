@@ -62,12 +62,13 @@ func (e BLSBFT_V2) IsStarted() bool {
 }
 
 type ProposeBlockInfo struct {
-	receiveTime time.Time
+	receiveTime      time.Time
 	block       types.BlockInterface
-	votes       map[string]*BFTVote //pk->BFTVote
-	isValid     bool
-	hasNewVote  bool
-	sendVote    bool
+	votes            map[string]*BFTVote //pk->BFTVote
+	isValid          bool
+	hasNewVote       bool
+	sendVote         bool
+	lastValidateTime time.Time
 }
 
 func (e *BLSBFT_V2) GetConsensusName() string {
@@ -279,6 +280,12 @@ func (e *BLSBFT_V2) run() error {
 					if proposeBlockInfo.block == nil {
 						continue
 					}
+
+					//not validate if we do it recently
+					if time.Since(proposeBlockInfo.lastValidateTime).Seconds() < 1 {
+						continue
+					}
+
 					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
 					// check if propose block in current time
 					if e.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) {
@@ -456,8 +463,10 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 }
 
 func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
+	v.lastValidateTime = time.Now()
+
 	//not connected
-	e.Logger.Info(e.ChainKey, "validateAndVote")
+	e.Logger.Info(e.ChainKey, "validateAndVote", v.block.Hash().String())
 	view := e.Chain.GetViewByHash(v.block.GetPrevHash())
 	if view == nil {
 		e.Logger.Error(e.ChainKey, "view is null")
@@ -577,7 +586,8 @@ func (e *BLSBFT_V2) proposeBlock(userMiningKey signatureschemes2.MiningKey, prop
 	proposeCtn.Block = blockData
 	proposeCtn.PeerID = e.Node.GetSelfPeerID().String()
 	msg, _ := MakeBFTProposeMsg(proposeCtn, e.ChainKey, e.currentTimeSlot, block.GetHeight())
-	go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
+
+	//push propose message to highway, and wait for highway send it back => only vote when connect to highway
 	go e.Node.PushMessageToChain(msg, e.Chain)
 
 	return block, nil
