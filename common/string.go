@@ -24,3 +24,12 @@ func DifferentElementStrings(src1, src2 []string) []string {
 	}
 	return res
 }
+
+func InsertValueToSliceByIndex(list []string, value string, index int) []string {
+	if len(list) == index { // nil or empty slice or after last element
+		return append(list, value)
+	}
+	list = append(list[:index+1], list[index:]...) // index < len(a)
+	list[index] = value
+	return list
+}

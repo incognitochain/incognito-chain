@@ -122,6 +122,15 @@ func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
 }
 
+func (chain *ShardChain) GetLastCommittee() []incognitokey.CommitteePublicKey {
+	v := chain.multiView.GetViewByHash(*chain.GetBestView().GetPreviousHash())
+	if v == nil {
+		return nil
+	}
+	result := []incognitokey.CommitteePublicKey{}
+	return append(result, v.GetCommittee()...)
+}
+
 func (chain *ShardChain) GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error) {
 	bcStateRootHash := chain.Blockchain.GetBeaconBestState().ConsensusStateDBRootHash
 	bcDB := chain.Blockchain.GetBeaconChainDatabase()
@@ -186,6 +195,7 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.ShardBlock)
 	json.Unmarshal(b, &newBlock)
+	Logger.log.Info("[dcs] hash:", newBlock.Header.Hash(), "newBlock.Header.Timestamp:", newBlock.Header.Timestamp)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
 
@@ -211,19 +221,21 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 // 	return chain.Blockchain.InsertShardBlock(shardBlock, false)
 // }
 
-func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, committee, committeesForSigning []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
+		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
 
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, committee); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee, committeesForSigning); err != nil {
+		Logger.log.Info("[dcs] err:", err)
+		panic(err)
 		return err
 	}
 	return nil
 }
 
 func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
-
 	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), shouldValidate)
 	if err != nil {
 		Logger.log.Error(err)
@@ -242,6 +254,12 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 	}
 
 	return nil
+}
+
+func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
+	blkHash := block.Hash()
+	_, err := rawdbv2.GetShardBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
+	return err == nil
 }
 
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
@@ -267,12 +285,6 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 	}
 
 	return nil
-}
-
-func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
-	blkHash := block.Hash()
-	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
-	return err == nil
 }
 
 func (chain *ShardChain) GetActiveShardNumber() int {
@@ -304,8 +316,8 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (types.BlockInterfac
 	return &shardBlk, nil
 }
 
-func (chain *ShardChain) ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
-	return chain.Blockchain.VerifyPreSignShardBlock(block.(*types.ShardBlock), committees, byte(block.(*types.ShardBlock).GetShardID()))
+func (chain *ShardChain) ValidatePreSignBlock(block types.BlockInterface, committees, committeesForSigning []incognitokey.CommitteePublicKey) error {
+	return chain.Blockchain.VerifyPreSignShardBlock(block.(*types.ShardBlock), committees, committeesForSigning, byte(block.(*types.ShardBlock).GetShardID()))
 }
 
 func (chain *ShardChain) GetAllView() []multiview.View {
@@ -314,7 +326,7 @@ func (chain *ShardChain) GetAllView() []multiview.View {
 
 //CommitteesV2 get committees by block for shardChain
 // Input block must be ShardBlock
-func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	var err error
 	var isShardView bool
 	var shardView *ShardBestState
@@ -322,22 +334,24 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognito
 	if !isShardView {
 		shardView = chain.GetBestState()
 	}
-	result := []incognitokey.CommitteePublicKey{}
+	committees := []incognitokey.CommitteePublicKey{}
+	committeesForSigning := []incognitokey.CommitteePublicKey{}
 
 	shardBlock, isShardBlock := block.(*types.ShardBlock)
 	if !isShardBlock {
-		return result, fmt.Errorf("Shard Chain NOT insert Shard Block Types")
+		return committees, committeesForSigning, fmt.Errorf("Shard Chain NOT insert Shard Block Types")
 	}
 	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION || shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
-		result = append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
+		committees = append(committees, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
+		committeesForSigning = committees
 	} else {
-		result, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID))
+		committees, committeesForSigning, err = chain.Blockchain.GetShardCommitteesSigningFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID), divideShardCommitteesPartThreshold)
 		if err != nil {
-			return result, err
+			return committees, committeesForSigning, err
 		}
 	}
 
-	return result, nil
+	return committees, committeesForSigning, nil
 }
 
 func (chain *ShardChain) CommitteeStateVersion() int {

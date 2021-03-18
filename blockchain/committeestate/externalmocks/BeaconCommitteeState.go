@@ -18,20 +18,6 @@ type BeaconCommitteeState struct {
 	mock.Mock
 }
 
-// ActiveShards provides a mock function with given fields:
-func (_m *BeaconCommitteeState) ActiveShards() int {
-	ret := _m.Called()
-
-	var r0 int
-	if rf, ok := ret.Get(0).(func() int); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(int)
-	}
-
-	return r0
-}
-
 // Clone provides a mock function with given fields:
 func (_m *BeaconCommitteeState) Clone() committeestate.BeaconCommitteeState {
 	ret := _m.Called()
@@ -176,6 +162,20 @@ func (_m *BeaconCommitteeState) GetCandidateShardWaitingForNextRandom() []incogn
 	return r0
 }
 
+// GetNumberOfActiveShards provides a mock function with given fields:
+func (_m *BeaconCommitteeState) GetNumberOfActiveShards() int {
+	ret := _m.Called()
+
+	var r0 int
+	if rf, ok := ret.Get(0).(func() int); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(int)
+	}
+
+	return r0
+}
+
 // GetOneShardCommittee provides a mock function with given fields: shardID
 func (_m *BeaconCommitteeState) GetOneShardCommittee(shardID byte) []incognitokey.CommitteePublicKey {
 	ret := _m.Called(shardID)
@@ -288,22 +288,6 @@ func (_m *BeaconCommitteeState) GetStakingTx() map[string]common.Hash {
 	return r0
 }
 
-// GetSyncPool provides a mock function with given fields:
-func (_m *BeaconCommitteeState) GetSyncPool() map[byte][]incognitokey.CommitteePublicKey {
-	ret := _m.Called()
-
-	var r0 map[byte][]incognitokey.CommitteePublicKey
-	if rf, ok := ret.Get(0).(func() map[byte][]incognitokey.CommitteePublicKey); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[byte][]incognitokey.CommitteePublicKey)
-		}
-	}
-
-	return r0
-}
-
 // GetSyncingValidators provides a mock function with given fields:
 func (_m *BeaconCommitteeState) GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey {
 	ret := _m.Called()
@@ -341,25 +325,6 @@ func (_m *BeaconCommitteeState) Hash() (*committeestate.BeaconCommitteeStateHash
 	}
 
 	return r0, r1
-}
-
-// InitCommitteeState provides a mock function with given fields: env
-func (_m *BeaconCommitteeState) InitCommitteeState(env *committeestate.BeaconCommitteeStateEnvironment) {
-	_m.Called(env)
-}
-
-// IsSwapTime provides a mock function with given fields: _a0, _a1
-func (_m *BeaconCommitteeState) IsSwapTime(_a0 uint64, _a1 uint64) bool {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 bool
-	if rf, ok := ret.Get(0).(func(uint64, uint64) bool); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		r0 = ret.Get(0).(bool)
-	}
-
-	return r0
 }
 
 // UpdateCommitteeState provides a mock function with given fields: env

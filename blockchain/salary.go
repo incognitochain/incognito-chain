@@ -219,7 +219,7 @@ func calculateReward(
 			byte(id),
 			beaconHeight,
 		)
-		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.Process(env)
+		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 		if err != nil {
 			return nil, nil, nil, nil, err
 		}

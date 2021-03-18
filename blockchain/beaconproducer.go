@@ -378,8 +378,8 @@ func (curView *BeaconBestState) GenerateInstruction(
 				blockchain.config.ChainParams.AssignOffset,
 				newBeaconHeight,
 			)
-
-			assignInstructions := curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV1).GenerateAssignInstructions(env)
+			assignInstructionGenerator := curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV1)
+			assignInstructions := assignInstructionGenerator.GenerateInstructions(env)
 			for _, assignInstruction := range assignInstructions {
 				instructions = append(instructions, assignInstruction.ToString())
 			}
@@ -408,7 +408,8 @@ func (curView *BeaconBestState) GenerateInstruction(
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
 			env := curView.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
 			env.LatestShardsState = shardsState
-			swapShardInstructions, err := curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV2).GenerateAllSwapShardInstructions(env)
+			swapShardInstructionsGenerator := curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV2)
+			swapShardInstructions, err := swapShardInstructionsGenerator.GenerateInstructions(env)
 			if err != nil {
 				return [][]string{}, err
 			}
@@ -755,7 +756,7 @@ func (shardInstruction *shardInstruction) compose() {
 func (beaconBestState *BeaconBestState) FinishSyncInstructions() []*instruction.FinishSyncInstruction {
 	res := []*instruction.FinishSyncInstruction{}
 	keys := []int{}
-	for i := 0; i < beaconBestState.beaconCommitteeState.ActiveShards(); i++ {
+	for i := 0; i < beaconBestState.beaconCommitteeState.GetNumberOfActiveShards(); i++ {
 		keys = append(keys, i)
 	}
 	sort.Ints(keys)

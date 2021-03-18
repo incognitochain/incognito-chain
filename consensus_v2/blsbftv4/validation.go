@@ -88,12 +88,12 @@ func ValidateCommitteeSig(block types.BlockInterface, committees, committeesForS
 		return NewConsensusError(UnExpectedError, errors.New(fmt.Sprintf("This validation Idx %v is not valid with this committee %v", valData.ValidatiorsIdx, committees)))
 	}
 	committeeBLSKeys := []blsmultisig.PublicKey{}
-	for _, member := range committees {
+	for _, member := range committeesForSigning {
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[common.BlsConsensus])
 	}
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
-		committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)
-		fmt.Printf("[ValidateBLS] Validate BLS sig of block %v return error %v; Validators index %v; Signature %v; committee %v\n", block.Hash().String(), err, valData.ValidatiorsIdx, valData.AggSig, committeeStr)
+		committeesForSigningStr, _ := incognitokey.CommitteeKeyListToString(committeesForSigning)
+		fmt.Printf("[ValidateBLS] Validate BLS sig of block %v return error %v; Validators index %v; Signature %v; committee %v\n", block.Hash().String(), err, valData.ValidatiorsIdx, valData.AggSig, committeesForSigningStr)
 		return NewConsensusError(UnExpectedError, err)
 	}
 	return nil

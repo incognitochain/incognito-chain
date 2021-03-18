@@ -62,12 +62,13 @@ func (e BLSBFT_V2) IsStarted() bool {
 }
 
 type ProposeBlockInfo struct {
-	receiveTime time.Time
+	receiveTime      time.Time
 	block       types.BlockInterface
-	votes       map[string]*BFTVote //pk->BFTVote
-	isValid     bool
-	hasNewVote  bool
-	sendVote    bool
+	votes            map[string]*BFTVote //pk->BFTVote
+	isValid          bool
+	hasNewVote       bool
+	sendVote         bool
+	lastValidateTime time.Time
 }
 
 func (e *BLSBFT_V2) GetConsensusName() string {
@@ -279,6 +280,12 @@ func (e *BLSBFT_V2) run() error {
 					if proposeBlockInfo.block == nil {
 						continue
 					}
+
+					//not validate if we do it recently
+					if time.Since(proposeBlockInfo.lastValidateTime).Seconds() < 1 {
+						continue
+					}
+
 					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
 					// check if propose block in current time
 					if e.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) {
@@ -442,14 +449,24 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 		e.Logger.Infof("%v Validation Data %v %v %v %v", e.ChainKey, aggSig, brigSigs, validatorIdx, validationDataString)
 		v.block.(blockValidation).AddValidationField(validationDataString)
 
+		//pre validate block agg sig => agg flow can be wrong and we dont want to insert to db
+		if err := ValidateCommitteeSig(v.block, view.GetCommittee()); err != nil {
+			committeeStr, _ := incognitokey.CommitteeKeyListToString(view.GetCommittee())
+			fmt.Printf("[ValidateBLS] Validate BLS sig of block %v return error %v; Validators index %v; Signature %v; committee %v\n", v.block.Hash().String(), err, valData.ValidatiorsIdx, valData.AggSig, committeeStr)
+			e.Logger.Error(err)
+			return
+		}
+
 		go e.Chain.InsertAndBroadcastBlock(v.block)
 		delete(e.receiveBlockByHash, blockHash)
 	}
 }
 
 func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
+	v.lastValidateTime = time.Now()
+
 	//not connected
-	e.Logger.Info(e.ChainKey, "validateAndVote")
+	e.Logger.Info(e.ChainKey, "validateAndVote", v.block.Hash().String())
 	view := e.Chain.GetViewByHash(v.block.GetPrevHash())
 	if view == nil {
 		e.Logger.Error(e.ChainKey, "view is null")
@@ -460,7 +477,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	if err := e.Chain.ValidatePreSignBlock(v.block, []incognitokey.CommitteePublicKey{}); err != nil {
+	if err := e.Chain.ValidatePreSignBlock(v.block, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}); err != nil {
 		e.Logger.Error(err)
 		return err
 	}
@@ -470,7 +487,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	for _, userKey := range e.UserKeySet {
 		pubKey := userKey.GetPublicKey()
 		if common.IndexOfStr(pubKey.GetMiningKeyBase58(e.GetConsensusName()), committeeBLSString) != -1 {
-			Vote, err := CreateVote(&userKey, v.block, e.Chain.GetBestView().GetCommittee())
+			Vote, err := CreateVote(&userKey, v.block, view.GetCommittee())
 			if err != nil {
 				e.Logger.Error(err)
 				return NewConsensusError(UnExpectedError, err)
@@ -569,7 +586,8 @@ func (e *BLSBFT_V2) proposeBlock(userMiningKey signatureschemes2.MiningKey, prop
 	proposeCtn.Block = blockData
 	proposeCtn.PeerID = e.Node.GetSelfPeerID().String()
 	msg, _ := MakeBFTProposeMsg(proposeCtn, e.ChainKey, e.currentTimeSlot, block.GetHeight())
-	go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
+
+	//push propose message to highway, and wait for highway send it back => only vote when connect to highway
 	go e.Node.PushMessageToChain(msg, e.Chain)
 
 	return block, nil

@@ -37,6 +37,7 @@ type SynckerManager struct {
 	BeaconSyncProcess     *BeaconSyncProcess
 	ShardSyncProcess      map[int]*ShardSyncProcess
 	CrossShardSyncProcess map[int]*CrossShardSyncProcess
+	Blockchain            *blockchain.BlockChain
 	beaconPool            *BlkPool
 	shardPool             map[int]*BlkPool
 	crossShardPool        map[int]*BlkPool
@@ -83,6 +84,7 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 		synckerManager.CrossShardSyncProcess[sid] = synckerManager.ShardSyncProcess[sid].crossShardSyncProcess
 		synckerManager.crossShardPool[sid] = synckerManager.CrossShardSyncProcess[sid].crossShardPool
 	}
+	synckerManager.Blockchain = config.Blockchain
 
 	//watch commitee change
 	go synckerManager.manageSyncProcess()
@@ -283,7 +285,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 							}
 							beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
 							committee := statedb.GetOneShardCommittee(beaconConsensusStateDB, byte(i))
-							err = bc.ShardChain[byte(i)].ValidateBlockSignatures(blkXShard.(types.BlockInterface), committee)
+							err = bc.ShardChain[byte(i)].ValidateBlockSignatures(blkXShard.(types.BlockInterface), committee, committee)
 							if err != nil {
 								Logger.Error("Validate crossshard block fail", blkXShard.GetHeight(), blkXShard.Hash())
 								return nil

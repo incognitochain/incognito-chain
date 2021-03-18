@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -23,7 +22,7 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 
 	type fields struct {
 		beaconCommitteeStateBase   beaconCommitteeStateBase
-		shardCommonPool            []incognitokey.CommitteePublicKey
+		shardCommonPool            []string
 		numberOfAssignedCandidates int
 		swapRule                   SwapRuleProcessor
 	}
@@ -36,17 +35,17 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 			name: "[valid input] full data",
 			fields: fields{
 				beaconCommitteeStateBase: beaconCommitteeStateBase{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey6, *incKey7, *incKey8,
+					beaconCommittee: []string{
+						key6, key7, key8,
 					},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey3, *incKey4, *incKey5,
+					shardCommittee: map[byte][]string{
+						0: []string{
+							key3, key4, key5,
 						},
 					},
-					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey,
+					shardSubstitute: map[byte][]string{
+						0: []string{
+							key,
 						},
 					},
 					autoStake: map[string]bool{
@@ -63,23 +62,23 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 					mu: mutex,
 				},
 				numberOfAssignedCandidates: 1,
-				shardCommonPool: []incognitokey.CommitteePublicKey{
-					*incKey2,
+				shardCommonPool: []string{
+					key2,
 				},
 			},
 			want: &beaconCommitteeStateSlashingBase{
 				beaconCommitteeStateBase: beaconCommitteeStateBase{
-					beaconCommittee: []incognitokey.CommitteePublicKey{
-						*incKey6, *incKey7, *incKey8,
+					beaconCommittee: []string{
+						key6, key7, key8,
 					},
-					shardCommittee: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey3, *incKey4, *incKey5,
+					shardCommittee: map[byte][]string{
+						0: []string{
+							key3, key4, key5,
 						},
 					},
-					shardSubstitute: map[byte][]incognitokey.CommitteePublicKey{
-						0: []incognitokey.CommitteePublicKey{
-							*incKey,
+					shardSubstitute: map[byte][]string{
+						0: []string{
+							key,
 						},
 					},
 					autoStake: map[string]bool{
@@ -96,8 +95,8 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 					mu: mutex,
 				},
 				numberOfAssignedCandidates: 1,
-				shardCommonPool: []incognitokey.CommitteePublicKey{
-					*incKey2,
+				shardCommonPool: []string{
+					key2,
 				},
 			},
 		},

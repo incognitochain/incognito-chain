@@ -559,7 +559,6 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				ActiveShards:             tt.fields.ActiveShards,
 				ConsensusAlgorithm:       tt.fields.ConsensusAlgorithm,
 				ShardConsensusAlgorithm:  tt.fields.ShardConsensusAlgorithm,
-				beaconCommitteeState:     tt.fields.BeaconCommitteeState,
 				LastCrossShardState:      tt.fields.LastCrossShardState,
 				ShardHandle:              tt.fields.ShardHandle,
 				BlockInterval:            tt.fields.BlockInterval,
@@ -570,6 +569,7 @@ func TestBeaconBestState_preProcessInstructionsFromShardBlock(t *testing.T) {
 				RewardStateDBRootHash:    tt.fields.RewardStateDBRootHash,
 				featureStateDB:           tt.fields.featureStateDB,
 				FeatureStateDBRootHash:   tt.fields.FeatureStateDBRootHash,
+				beaconCommitteeState:     tt.fields.BeaconCommitteeState,
 				slashStateDB:             tt.fields.slashStateDB,
 				SlashStateDBRootHash:     tt.fields.SlashStateDBRootHash,
 			}

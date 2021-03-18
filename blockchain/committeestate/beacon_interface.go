@@ -11,9 +11,6 @@ import (
 )
 
 type BeaconCommitteeState interface {
-	Version() int
-	Clone() BeaconCommitteeState
-
 	GetBeaconCommittee() []incognitokey.CommitteePublicKey
 	GetBeaconSubstitute() []incognitokey.CommitteePublicKey
 	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
@@ -28,38 +25,31 @@ type BeaconCommitteeState interface {
 	GetStakingTx() map[string]common.Hash
 	GetRewardReceiver() map[string]privacy.PaymentAddress
 	GetAllCandidateSubstituteCommittee() []string
-
-	GetSyncPool() map[byte][]incognitokey.CommitteePublicKey
+	GetNumberOfActiveShards() int
 	GetShardCommonPool() []incognitokey.CommitteePublicKey
 	GetSyncingValidators() map[byte][]incognitokey.CommitteePublicKey
 
+	Version() int
+	Clone() BeaconCommitteeState
 	UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 		*BeaconCommitteeStateHash,
 		*CommitteeChange,
 		[][]string,
 		error)
-	//TODO: refactor to non-method function
-	InitCommitteeState(env *BeaconCommitteeStateEnvironment)
-	Hash() (*BeaconCommitteeStateHash, error)
-
-	ActiveShards() int
-	IsSwapTime(uint64, uint64) bool
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
-}
-
-type BeaconCommitteeStateProcessor interface {
+	Hash() (*BeaconCommitteeStateHash, error)
 }
 
 type AssignInstructionsGenerator interface {
-	GenerateAssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
+	GenerateInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
 }
 
 type SwapShardInstructionsGenerator interface {
-	GenerateAllSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
+	GenerateInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
 }
 
 type SplitRewardRuleProcessor interface {
-	Process(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
+	SplitReward(*BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
 }
 
 type BeaconCommitteeStateEnvironment struct {

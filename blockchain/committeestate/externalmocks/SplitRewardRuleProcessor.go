@@ -14,8 +14,8 @@ type SplitRewardRuleProcessor struct {
 	mock.Mock
 }
 
-// Process provides a mock function with given fields: _a0
-func (_m *SplitRewardRuleProcessor) Process(_a0 *committeestate.BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error) {
+// SplitReward provides a mock function with given fields: _a0
+func (_m *SplitRewardRuleProcessor) SplitReward(_a0 *committeestate.BeaconCommitteeStateEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error) {
 	ret := _m.Called(_a0)
 
 	var r0 map[common.Hash]uint64
