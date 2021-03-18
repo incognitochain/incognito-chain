@@ -103,31 +103,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 			return nil, errors.New("Waiting For Beacon Produce Block")
 		}
 		currentCommitteePublicKeysStructs = committees
-
-		if !shardBestState.CommitteeFromBlock().IsZeroValue() {
-			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
-			temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
-			if len(temp) != 0 {
-				committeeFromBlockHash = committeeFinalViewHash
-				oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
-				if err != nil {
-					return nil, err
-				}
-				newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlockHash)
-				if err != nil {
-					return nil, err
-				}
-				if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
-					return nil, NewBlockChainError(WrongBlockHeightError,
-						fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
-							newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
-				}
-			} else {
-				committeeFromBlockHash = shardBestState.CommitteeFromBlock()
-			}
-		} else {
-			committeeFromBlockHash = committeeFinalViewHash
-		}
+		committeeFromBlockHash = committeeFinalViewHash
 	}
 
 	currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
@@ -306,6 +282,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	newShardBlock.Header.PendingValidatorRoot = hashes.ShardSubstituteHash
 	newShardBlock.Header.StakingTxRoot = common.Hash{}
 	newShardBlock.Header.Timestamp = start
+	Logger.log.Infof("[dcs] newShardBlock hash %+v height %+v timeslot %+v \n", newShardBlock.Hash().String, newShardBlock.Header.Height, newShardBlock.Header.Timestamp)
+
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 
 	return newShardBlock, nil
