@@ -150,7 +150,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
 			metaRequest := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaRequest.PaymentAddress .Pk, common.Base58Version), metaRequest.TokenID.String())
+			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaRequest.PaymentAddress.Pk, common.Base58Version), metaRequest.TokenID.String())
 			if _, ok := withdrawReqTable[mapKey]; !ok {
 				withdrawReqTable[mapKey] = metaRequest.PaymentAddress
 			}
