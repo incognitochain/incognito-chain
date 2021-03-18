@@ -53,6 +53,8 @@ func (b beaconCommitteeStateSlashingBase) Version() int {
 }
 
 func (b *beaconCommitteeStateSlashingBase) Clone() BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return b.clone()
 }
 

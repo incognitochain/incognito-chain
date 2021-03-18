@@ -52,6 +52,8 @@ func (b *BeaconCommitteeStateV1) Version() int {
 }
 
 func (b *BeaconCommitteeStateV1) Clone() BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	return b.clone()
 }
 
@@ -479,6 +481,8 @@ func (b *BeaconCommitteeStateV1) GenerateInstructions(env *BeaconCommitteeStateE
 
 //Upgrade check interface method for des
 func (b *BeaconCommitteeStateV1) Upgrade(env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	beaconCommittee, shardCommittee, shardSubstitute,
 		shardCommonPool, numberOfAssignedCandidates,
 		autoStake, rewardReceiver, stakingTx, swapRule := b.getDataForUpgrading(env)
