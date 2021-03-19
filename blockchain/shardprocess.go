@@ -168,6 +168,19 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	if curView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION || shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
 		committees = curView.GetShardCommittee()
 	} else {
+		beaconHeight := curView.BeaconHeight
+		for _, v := range beaconBlocks {
+			if v.GetHeight() >= beaconHeight {
+				beaconHeight = v.GetHeight()
+			}
+		}
+		if curView.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
+			if beaconHeight <= curView.BeaconHeight {
+				Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v curView.BeaconHeight %+v",
+					beaconHeight, curView.BeaconHeight)
+				return NewBlockChainError(WrongBlockHeightError, errors.New("Waiting For Beacon Produce Block"))
+			}
+		}
 		committees, err = blockchain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID)
 		if err != nil {
 			return err

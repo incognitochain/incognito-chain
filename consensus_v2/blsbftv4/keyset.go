@@ -38,13 +38,13 @@ func (e BLSBFT_V4) SignData(data []byte) (string, error) {
 func CombineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
 	var blsSigList [][]byte
 	for validator, vote := range votes {
-		fmt.Printf("[dcs] validator %+v vote.IsValid %+v\n", validator, vote.IsValid)
+		//fmt.Printf("[dcs] validator %+v vote.IsValid %+v\n", validator, vote.IsValid)
 		if vote.IsValid == 1 {
 			validatorIdx = append(validatorIdx, common.IndexOfStr(validator, committees))
 		}
 	}
 	sort.Ints(validatorIdx)
-	fmt.Println("[dcs] validatorIdx:", validatorIdx)
+	//fmt.Println("[dcs] validatorIdx:", validatorIdx)
 	for _, idx := range validatorIdx {
 		blsSigList = append(blsSigList, votes[committees[idx]].BLS)
 		brigSigs = append(brigSigs, votes[committees[idx]].BRI)

@@ -956,19 +956,25 @@ func (blockchain *BlockChain) getCommitteesForSigning(
 	committees []incognitokey.CommitteePublicKey, block types.BlockInterface, threshold int,
 ) ([]incognitokey.CommitteePublicKey, error) {
 	res := []incognitokey.CommitteePublicKey{}
-	switch block.Type() {
-	case common.BeaconChainKey:
-		res = committees
-	case common.ShardChainKey:
-		beaconBlock, _, err := blockchain.GetBeaconBlockByHash(block.CommitteesSubsetFromBlock())
-		if err != nil {
-			return committees, err
-		}
-		for i, v := range committees {
-			if uint64(i%threshold) == beaconBlock.Header.Height%uint64(threshold) {
-				res = append(res, v)
-			}
-		}
-	}
+	res = committees
+	/*beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)*/
+	//if beaconFinalView.beaconCommitteeEngine.Version() == committeestate.DCS_VERSION {
+	//switch block.Type() {
+	//case common.BeaconChainKey:
+	//res = committees
+	//case common.ShardChainKey:
+	//beaconBlock, _, err := blockchain.GetBeaconBlockByHash(block.CommitteesSubsetFromBlock())
+	//if err != nil {
+	//return committees, err
+	//}
+	//for i, v := range committees {
+	//if uint64(i%threshold) == beaconBlock.Header.Height%uint64(threshold) {
+	//res = append(res, v)
+	//}
+	//}
+	//}
+	//} else {
+	//res = committees
+	/*}*/
 	return res, nil
 }

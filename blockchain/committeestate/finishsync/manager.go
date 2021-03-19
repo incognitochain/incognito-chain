@@ -1,9 +1,11 @@
 package finishsync
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 type Manager struct {
@@ -110,4 +112,20 @@ func (manager *Manager) RemoveValidators(validators []incognitokey.CommitteePubl
 			count++
 		}
 	}
+}
+
+//Instructions ....
+func (manager *Manager) Instructions() []*instruction.FinishSyncInstruction {
+	res := []*instruction.FinishSyncInstruction{}
+	keys := []int{}
+	for i := 0; i < len(manager.validators); i++ {
+		keys = append(keys, i)
+	}
+	sort.Ints(keys)
+	for _, v := range keys {
+		committeePublicKeys, _ := incognitokey.CommitteeKeyListToString(manager.validators[byte(v)])
+		finishSyncInstruction := instruction.NewFinishSyncInstructionWithValue(v, committeePublicKeys)
+		res = append(res, finishSyncInstruction)
+	}
+	return res
 }
