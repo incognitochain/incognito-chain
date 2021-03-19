@@ -174,13 +174,13 @@ func (e *BLSBFT_V2) run() error {
 						for _, userKey := range e.UserKeySet {
 							pubKey := userKey.GetPublicKey()
 							if pubKey.GetMiningKeyBase58(e.GetConsensusName()) == b.proposerMiningKeyBas58 {
-								b.proposerSendVote = true
 								view := e.Chain.GetViewByHash(b.block.GetPrevHash())
 								err := e.SendVote(&userKey, b.block, view.GetCommittee())
 								if err != nil {
 									e.Logger.Error(err)
 								} else {
 									b.proposerSendVote = true
+									b.sendVote = true
 								}
 							}
 						}
@@ -507,10 +507,11 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	v.sendVote = true
 
 	// if valid then vote
-	// proposer not vote, (wait for receiving at least one vote)
+
 	committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(view.GetCommittee(), common.BlsConsensus)
 	for _, userKey := range e.UserKeySet {
 		pubKey := userKey.GetPublicKey()
+		// proposer not vote, (wait for receiving at least one vote)
 		if pubKey.GetMiningKeyBase58(e.GetConsensusName()) == v.proposerMiningKeyBas58 {
 			continue
 		}
