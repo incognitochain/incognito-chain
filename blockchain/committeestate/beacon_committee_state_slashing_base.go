@@ -137,6 +137,7 @@ func (b *beaconCommitteeStateSlashingBase) initCommitteeState(env *BeaconCommitt
 func (b *beaconCommitteeStateSlashingBase) GenerateInstructions(
 	env *BeaconCommitteeStateEnvironment) (
 	[]*instruction.SwapShardInstruction, error) {
+	b.addData(env)
 	swapShardInstructions := []*instruction.SwapShardInstruction{}
 	for i := 0; i < len(b.shardCommittee); i++ {
 		shardID := byte(i)
@@ -540,7 +541,7 @@ func (engine *beaconCommitteeStateSlashingBase) SplitReward(
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 }
 
-func (b *beaconCommitteeStateSlashingBase) addData(env *BeaconCommitteeStateEnvironment) []int {
+func (b *beaconCommitteeStateSlashingBase) addData(env *BeaconCommitteeStateEnvironment) {
 	env.newUnassignedCommonPool = make([]string, len(b.shardCommonPool[b.numberOfAssignedCandidates:]))
 	copy(env.newUnassignedCommonPool, b.shardCommonPool[b.numberOfAssignedCandidates:])
 	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
@@ -555,10 +556,9 @@ func (b *beaconCommitteeStateSlashingBase) addData(env *BeaconCommitteeStateEnvi
 		env.shardSubstitute[shardID] = make([]string, len(substitutes))
 		copy(env.shardSubstitute[shardID], substitutes)
 	}
-	numberOfValidator := make([]int, env.ActiveShards)
+	env.numberOfValidator = make([]int, env.ActiveShards)
 	for i := 0; i < env.ActiveShards; i++ {
-		numberOfValidator[i] += len(b.shardCommittee[byte(i)])
-		numberOfValidator[i] += len(b.shardSubstitute[byte(i)])
+		env.numberOfValidator[i] += len(b.shardCommittee[byte(i)])
+		env.numberOfValidator[i] += len(b.shardSubstitute[byte(i)])
 	}
-	return numberOfValidator
 }

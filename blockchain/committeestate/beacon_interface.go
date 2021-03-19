@@ -71,16 +71,18 @@ type BeaconCommitteeStateEnvironment struct {
 	MinShardCommitteeSize            int
 	MaxShardCommitteeSize            int
 	ConsensusStateDB                 *statedb.StateDB
-	newValidators                    []string
-	newUnassignedCommonPool          []string
-	newAllSubstituteCommittees       []string
-	shardCommittee                   map[byte][]string
-	shardSubstitute                  map[byte][]string
 	ShardID                          byte
 	NumberOfFixedShardBlockValidator int
 	MissingSignaturePenalty          map[string]signaturecounter.Penalty
 	StakingV3Height                  uint64
 	LatestShardsState                map[byte][]types.ShardState
+
+	newValidators              []string
+	newUnassignedCommonPool    []string
+	newAllSubstituteCommittees []string
+	shardCommittee             map[byte][]string
+	shardSubstitute            map[byte][]string
+	numberOfValidator          []int
 }
 
 func NewBeaconCommitteeStateEnvironment() *BeaconCommitteeStateEnvironment {

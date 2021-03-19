@@ -746,7 +746,7 @@ func Test_calculateReward(t *testing.T) {
 		sDBs = append(sDBs, sDB)
 		splitRewardRuleProcessor := &mocks.SplitRewardRuleProcessor{}
 		for j := 0; j < 8; j++ {
-			splitRewardRuleProcessor.On("SplitReward", &committeestate.BeaconCommitteeStateEnvironment{
+			splitRewardRuleProcessor.On("SplitReward", &committeestate.SplitRewardEnvironment{
 				ActiveShards:           8,
 				DAOPercent:             10,
 				PercentCustodianReward: 0,

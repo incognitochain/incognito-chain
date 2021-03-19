@@ -136,7 +136,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, b.numberOfAssignedCandidates)
 	}
 
-	numberOfValidator := b.addData(env)
+	b.addData(env)
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -159,7 +159,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			committeeChange = b.processAssignWithRandomInstruction(
-				randomInstruction.RandomNumber(), numberOfValidator, committeeChange)
+				randomInstruction.RandomNumber(), env.numberOfValidator, committeeChange)
 
 		case instruction.STOP_AUTO_STAKE_ACTION:
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
