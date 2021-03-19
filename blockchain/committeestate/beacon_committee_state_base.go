@@ -343,9 +343,9 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 		if inst[0] == instruction.STAKE_ACTION {
 			stakeInstruction := instruction.ImportInitStakeInstructionFromString(inst)
 			for index, candidate := range stakeInstruction.PublicKeyStructs {
-				b.GetRewardReceiver()[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
-				b.GetAutoStaking()[stakeInstruction.PublicKeys[index]] = stakeInstruction.AutoStakingFlag[index]
-				b.GetStakingTx()[stakeInstruction.PublicKeys[index]] = stakeInstruction.TxStakeHashes[index]
+				b.rewardReceiver[candidate.GetIncKeyBase58()] = stakeInstruction.RewardReceiverStructs[index]
+				b.autoStake[stakeInstruction.PublicKeys[index]] = stakeInstruction.AutoStakingFlag[index]
+				b.stakingTx[stakeInstruction.PublicKeys[index]] = stakeInstruction.TxStakeHashes[index]
 			}
 			if stakeInstruction.Chain == instruction.BEACON_INST {
 				newBeaconCandidates = append(newBeaconCandidates, stakeInstruction.PublicKeys...)
@@ -355,9 +355,9 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 			err := statedb.StoreStakerInfo(
 				env.ConsensusStateDB,
 				stakeInstruction.PublicKeyStructs,
-				b.GetRewardReceiver(),
-				b.GetAutoStaking(),
-				b.GetStakingTx(),
+				b.rewardReceiver,
+				b.autoStake,
+				b.stakingTx,
 			)
 			if err != nil {
 				panic(err)
