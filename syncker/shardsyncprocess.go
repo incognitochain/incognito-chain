@@ -266,7 +266,7 @@ func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) 
 
 	//stream
 	ch, err := s.Network.RequestShardBlocksViaStream(ctx, peerID, s.shardID, fromHeight, toHeight)
-	if err != nil {
+	if err != nil || ch == nil {
 		fmt.Println("Syncker: create channel fail")
 		requestCnt = 0
 		return
