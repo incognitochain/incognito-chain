@@ -60,15 +60,15 @@ func (e BLSBFT_V2) IsStarted() bool {
 }
 
 type ProposeBlockInfo struct {
-	receiveTime            time.Time
-	block                  common.BlockInterface
-	votes                  map[string]*BFTVote //pk->BFTVote
-	isValid                bool
-	hasNewVote             bool
-	sendVote               bool
-	proposerSendVote       bool
-	proposerMiningKeyBas58 string
-	lastValidateTime       time.Time
+	receiveTime             time.Time
+	block                   common.BlockInterface
+	votes                   map[string]*BFTVote //pk->BFTVote
+	isValid                 bool
+	hasNewVote              bool
+	sendVote                bool
+	proposerSendVote        bool
+	proposerMiningKeyBase58 string
+	lastValidateTime        time.Time
 }
 
 func (e *BLSBFT_V2) GetConsensusName() string {
@@ -128,17 +128,17 @@ func (e *BLSBFT_V2) run() error {
 
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
 					e.receiveBlockByHash[blkHash] = &ProposeBlockInfo{
-						block:                  block,
-						votes:                  make(map[string]*BFTVote),
-						hasNewVote:             false,
-						receiveTime:            time.Now(),
-						proposerMiningKeyBas58: proposerMiningKeyBas58,
+						block:                   block,
+						votes:                   make(map[string]*BFTVote),
+						hasNewVote:              false,
+						receiveTime:             time.Now(),
+						proposerMiningKeyBase58: proposerMiningKeyBas58,
 					}
 					e.Logger.Info(e.ChainKey, "Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
 				} else {
 					e.receiveBlockByHash[blkHash].block = block
-					e.receiveBlockByHash[blkHash].proposerMiningKeyBas58 = proposerMiningKeyBas58
+					e.receiveBlockByHash[blkHash].proposerMiningKeyBase58 = proposerMiningKeyBas58
 				}
 
 				if block.GetHeight() <= e.Chain.GetBestView().GetHeight() {
@@ -168,19 +168,23 @@ func (e *BLSBFT_V2) run() error {
 						b.hasNewVote = true
 					}
 
-					// if this node is proposer and not sending vote (because not receive any vote)
-					// => send vote
 					if !b.proposerSendVote {
 						for _, userKey := range e.UserKeySet {
 							pubKey := userKey.GetPublicKey()
-							if pubKey.GetMiningKeyBase58(e.GetConsensusName()) == b.proposerMiningKeyBas58 {
-								view := e.Chain.GetViewByHash(b.block.GetPrevHash())
-								err := e.SendVote(&userKey, b.block, view.GetCommittee())
-								if err != nil {
-									e.Logger.Error(err)
-								} else {
-									b.proposerSendVote = true
-									b.sendVote = true
+							if b.block != nil && pubKey.GetMiningKeyBase58(e.GetConsensusName()) == b.proposerMiningKeyBase58 { // if this node is proposer and not sending vote
+								err := e.validateAndVote(b) //validate in case we get malicious block
+								if err == nil {
+									bestViewHeight := e.Chain.GetBestView().GetHeight()
+									if b.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
+										view := e.Chain.GetViewByHash(b.block.GetPrevHash())
+										err := e.SendVote(&userKey, b.block, view.GetCommittee()) // => send vote
+										if err != nil {
+											e.Logger.Error(err)
+										} else {
+											b.proposerSendVote = true
+											b.sendVote = true
+										}
+									}
 								}
 							}
 						}
@@ -295,9 +299,14 @@ func (e *BLSBFT_V2) run() error {
 					Check for valid block to vote
 				*/
 				validProposeBlock := []*ProposeBlockInfo{}
-				//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
+				//get all block that has height = bestview height  + 1(rule 2 & rule 3)
+				bestViewHeight := bestView.GetHeight()
 				for h, proposeBlockInfo := range e.receiveBlockByHash {
 					if proposeBlockInfo.block == nil {
+						continue
+					}
+
+					if proposeBlockInfo.block.GetHeight() != bestViewHeight+1 {
 						continue
 					}
 
@@ -306,22 +315,25 @@ func (e *BLSBFT_V2) run() error {
 						continue
 					}
 
-					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
-					// check if propose block in current time
-					if e.currentTimeSlot == common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) {
-						validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+					// check if propose block in within last the 2 TS
+					if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) < e.currentTimeSlot-1 {
+						continue
 					}
+
+					validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 
 					if proposeBlockInfo.block.GetHeight() < e.Chain.GetFinalView().GetHeight() {
 						delete(e.receiveBlockByHash, h)
 					}
 				}
+
 				//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)
 				sort.Slice(validProposeBlock, func(i, j int) bool {
 					return validProposeBlock[i].block.GetProduceTime() < validProposeBlock[j].block.GetProduceTime()
 				})
 
 				for _, v := range validProposeBlock {
+
 					if v.sendVote {
 						continue
 					}
@@ -487,9 +499,14 @@ func (e *BLSBFT_V2) processIfBlockGetEnoughVote(blockHash string, v *ProposeBloc
 func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	v.lastValidateTime = time.Now()
 
+	if v.sendVote {
+		return nil
+	}
+
 	//not connected
-	e.Logger.Info(e.ChainKey, "validateAndVote", v.block.Hash().String())
 	view := e.Chain.GetViewByHash(v.block.GetPrevHash())
+
+	e.Logger.Info(e.ChainKey, "validateAndVote", v.block.Hash().String())
 	if view == nil {
 		e.Logger.Error(e.ChainKey, "view is null")
 		return errors.New("View not connect")
@@ -499,10 +516,13 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	if err := e.Chain.ValidatePreSignBlock(v.block); err != nil {
-		e.Logger.Error(err)
-		return err
+	if !v.isValid {
+		if err := e.Chain.ValidatePreSignBlock(v.block); err != nil {
+			e.Logger.Error(err)
+			return err
+		}
 	}
+
 	v.isValid = true
 	v.sendVote = true
 
@@ -511,8 +531,8 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(view.GetCommittee(), common.BlsConsensus)
 	for _, userKey := range e.UserKeySet {
 		pubKey := userKey.GetPublicKey()
-		// proposer not vote, (wait for receiving at least one vote)
-		if pubKey.GetMiningKeyBase58(e.GetConsensusName()) == v.proposerMiningKeyBas58 {
+		// proposer will not vote, (wait for receiving at least one vote)
+		if pubKey.GetMiningKeyBase58(e.GetConsensusName()) == v.proposerMiningKeyBase58 {
 			continue
 		}
 		if common.IndexOfStr(pubKey.GetMiningKeyBase58(e.GetConsensusName()), committeeBLSString) != -1 {
