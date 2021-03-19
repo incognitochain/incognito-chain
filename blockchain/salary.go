@@ -210,14 +210,14 @@ func calculateReward(
 			}
 		}
 
-		env := newBeaconCommitteeStateEnvironmentForReward(
-			totalRewards[id],
-			percentCustodianRewards,
-			percentForIncognitoDAO,
-			isSplitRewardForCustodian,
-			numberOfActiveShards,
+		env := committeestate.NewSplitRewardEnvironment(
 			byte(id),
 			beaconHeight,
+			totalRewards[id],
+			isSplitRewardForCustodian,
+			percentCustodianRewards,
+			percentForIncognitoDAO,
+			numberOfActiveShards,
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 		if err != nil {

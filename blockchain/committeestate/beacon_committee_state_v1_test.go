@@ -12,7 +12,7 @@ func TestBeaconCommitteeStateV1_SplitReward(t *testing.T) {
 	initLog()
 
 	type args struct {
-		env *BeaconCommitteeStateEnvironment
+		env *SplitRewardEnvironment
 	}
 	totalRewardYear1 := make(map[common.Hash]uint64)
 	totalRewardYear1[common.PRVCoinID] = 8751970
@@ -45,7 +45,7 @@ func TestBeaconCommitteeStateV1_SplitReward(t *testing.T) {
 		{
 			name: "year 1",
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                10,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -61,7 +61,7 @@ func TestBeaconCommitteeStateV1_SplitReward(t *testing.T) {
 		{
 			name: "year 2",
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                9,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,

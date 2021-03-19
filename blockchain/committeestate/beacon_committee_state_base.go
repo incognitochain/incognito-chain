@@ -459,7 +459,7 @@ func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
 
 //SplitReward ...
 func (b *beaconCommitteeStateBase) SplitReward(
-	env *BeaconCommitteeStateEnvironment) (
+	env *SplitRewardEnvironment) (
 	map[common.Hash]uint64, map[common.Hash]uint64,
 	map[common.Hash]uint64, map[common.Hash]uint64, error,
 ) {

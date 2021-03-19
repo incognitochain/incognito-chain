@@ -17,10 +17,6 @@ type BeaconCommitteeStateV1 struct {
 	nextEpochShardCandidate    []string
 }
 
-func NewBeaconCommitteeStateEnvironment() *BeaconCommitteeStateEnvironment {
-	return &BeaconCommitteeStateEnvironment{}
-}
-
 func NewBeaconCommitteeStateV1() *BeaconCommitteeStateV1 {
 	return &BeaconCommitteeStateV1{
 		beaconCommitteeStateBase: *newBeaconCommitteeStateBase(),
@@ -404,7 +400,7 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 
 //SplitReward ...
 func (b *BeaconCommitteeStateV1) SplitReward(
-	env *BeaconCommitteeStateEnvironment) (
+	env *SplitRewardEnvironment) (
 	map[common.Hash]uint64, map[common.Hash]uint64,
 	map[common.Hash]uint64, map[common.Hash]uint64, error,
 ) {

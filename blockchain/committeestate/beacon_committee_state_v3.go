@@ -135,17 +135,8 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, b.numberOfAssignedCandidates)
 	}
-	env.newUnassignedCommonPool = make([]string, len(b.shardCommonPool[b.numberOfAssignedCandidates:]))
-	copy(env.newUnassignedCommonPool, b.shardCommonPool[b.numberOfAssignedCandidates:])
-	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
-	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
-	env.newValidators = append(env.newValidators, b.AllSyncingValidators()...)
 
-	numberOfValidator := make([]int, env.ActiveShards)
-	for i := 0; i < env.ActiveShards; i++ {
-		numberOfValidator[i] += len(b.shardCommittee[byte(i)])
-		numberOfValidator[i] += len(b.shardSubstitute[byte(i)])
-	}
+	numberOfValidator := b.addData(env)
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -374,7 +365,7 @@ func (b *BeaconCommitteeStateV3) AllSyncingValidators() []string {
 
 //SplitReward ...
 func (b *BeaconCommitteeStateV3) SplitReward(
-	env *BeaconCommitteeStateEnvironment) (
+	env *SplitRewardEnvironment) (
 	map[common.Hash]uint64, map[common.Hash]uint64,
 	map[common.Hash]uint64, map[common.Hash]uint64, error,
 ) {

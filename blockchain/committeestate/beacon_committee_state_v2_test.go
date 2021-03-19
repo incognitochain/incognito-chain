@@ -1474,8 +1474,6 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 					ActiveShards:                     1,
 					MaxShardCommitteeSize:            8,
 					MinShardCommitteeSize:            4,
-					DcsMaxShardCommitteeSize:         51,
-					DcsMinShardCommitteeSize:         15,
 				},
 				committeeChange:           NewCommitteeChange(),
 				returnStakingInstructions: &instruction.ReturnStakeInstruction{},
@@ -2446,7 +2444,7 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 		beaconCommitteeStateSlashingBase
 	}
 	type args struct {
-		env *BeaconCommitteeStateEnvironment
+		env *SplitRewardEnvironment
 	}
 	tests := []struct {
 		name    string
@@ -2537,7 +2535,7 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 				},
 			},
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                10,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -2638,7 +2636,7 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 				},
 			},
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                9,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -2739,7 +2737,7 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 				},
 			},
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                8,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -2840,7 +2838,7 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 				},
 			},
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                7,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -2941,7 +2939,7 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 				},
 			},
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                6,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -3042,7 +3040,7 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 				},
 			},
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                5,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -3143,7 +3141,7 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 				},
 			},
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                4,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -3244,7 +3242,7 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 				},
 			},
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                3,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -3345,7 +3343,7 @@ func TestBeaconCommitteeStateV2_SplitReward(t *testing.T) {
 				},
 			},
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                3,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -4651,10 +4649,10 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 		*incKey7,
 	}
 	committeeChangeTwoSwapOut.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
-		*incKey5,
+		*incKey5, *incKey13,
 	}
 	committeeChangeTwoSwapOut.ShardCommitteeAdded[1] = []incognitokey.CommitteePublicKey{
-		*incKey11,
+		*incKey11, *incKey12,
 	}
 	committeeChangeTwoSwapOut.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
 		*incKey7,
@@ -4663,10 +4661,10 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 		*incKey,
 	}
 	committeeChangeTwoSwapOut.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
-		*incKey5,
+		*incKey5, *incKey13,
 	}
 	committeeChangeTwoSwapOut.ShardSubstituteRemoved[1] = []incognitokey.CommitteePublicKey{
-		*incKey11,
+		*incKey11, *incKey12,
 	}
 
 	committeeChangeTwoSlashing := NewCommitteeChange()
@@ -6256,7 +6254,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 								key:  *tempHash,
 							},
 						},
-						swapRule:        swapRule3,
+						swapRule:        NewSwapRuleV2(),
 						shardCommonPool: []string{},
 					},
 				},
@@ -6268,18 +6266,18 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 							beaconCommittee: []string{},
 							shardCommittee: map[byte][]string{
 								0: []string{
-									key2, key3, key4, key5,
+									key2, key3, key4, key5, key13,
 								},
 								1: []string{
-									key8, key9, key10, key11,
+									key8, key9, key10, key11, key12,
 								},
 							},
 							shardSubstitute: map[byte][]string{
 								0: []string{
-									key13, key7,
+									key7,
 								},
 								1: []string{
-									key12, key,
+									key,
 								},
 							},
 							mu: finalMu,
@@ -6299,7 +6297,7 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 								key:  *tempHash,
 							},
 						},
-						swapRule:        swapRule3,
+						swapRule:        NewSwapRuleV2(),
 						shardCommonPool: []string{},
 					},
 				},
@@ -6307,24 +6305,22 @@ func TestBeaconCommitteeStateV2_UpdateCommitteeState_MultipleInstructions(t *tes
 			args: args{
 				env: &BeaconCommitteeStateEnvironment{
 					BeaconInstructions: [][]string{
-						[]string{
-							instruction.SWAP_SHARD_ACTION,
-							key5,
-							key,
-							"0",
-							"0",
-						},
-						[]string{
-							instruction.SWAP_SHARD_ACTION,
-							key11,
-							key7,
-							"1",
-							"0",
-						},
+						instruction.NewSwapShardInstructionWithValue(
+							[]string{key5, key13},
+							[]string{key},
+							0,
+							0,
+						).ToString(),
+						instruction.NewSwapShardInstructionWithValue(
+							[]string{key11, key12},
+							[]string{key7},
+							1,
+							0,
+						).ToString(),
 					},
 					ConsensusStateDB:      sDB,
 					ActiveShards:          2,
-					MaxShardCommitteeSize: 4,
+					MaxShardCommitteeSize: 8,
 				},
 			},
 			want:    &BeaconCommitteeStateHash{},

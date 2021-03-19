@@ -266,8 +266,8 @@ func (b *beaconCommitteeStateSlashingBase) processNormalSwap(
 ) (*CommitteeChange, []string, []string, []string, error) {
 	shardID := byte(swapShardInstruction.ChainID)
 	newCommitteeChange := committeeChange
-	committees := b.shardCommittee[shardID]
-	substitutes := b.shardSubstitute[shardID]
+	committees := env.shardCommittee[shardID]
+	substitutes := env.shardSubstitute[shardID]
 	tempCommittees := make([]string, len(committees))
 	copy(tempCommittees, committees)
 	tempSubstitutes := make([]string, len(substitutes))
@@ -499,7 +499,7 @@ func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 
 //SplitReward ...
 func (engine *beaconCommitteeStateSlashingBase) SplitReward(
-	env *BeaconCommitteeStateEnvironment) (
+	env *SplitRewardEnvironment) (
 	map[common.Hash]uint64, map[common.Hash]uint64,
 	map[common.Hash]uint64, map[common.Hash]uint64, error,
 ) {
@@ -538,4 +538,27 @@ func (engine *beaconCommitteeStateSlashingBase) SplitReward(
 	}
 
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
+}
+
+func (b *beaconCommitteeStateSlashingBase) addData(env *BeaconCommitteeStateEnvironment) []int {
+	env.newUnassignedCommonPool = make([]string, len(b.shardCommonPool[b.numberOfAssignedCandidates:]))
+	copy(env.newUnassignedCommonPool, b.shardCommonPool[b.numberOfAssignedCandidates:])
+	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
+	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
+	env.shardCommittee = make(map[byte][]string)
+	for shardID, committees := range b.shardCommittee {
+		env.shardCommittee[shardID] = make([]string, len(committees))
+		copy(env.shardCommittee[shardID], committees)
+	}
+	env.shardSubstitute = make(map[byte][]string)
+	for shardID, substitutes := range b.shardSubstitute {
+		env.shardSubstitute[shardID] = make([]string, len(substitutes))
+		copy(env.shardSubstitute[shardID], substitutes)
+	}
+	numberOfValidator := make([]int, env.ActiveShards)
+	for i := 0; i < env.ActiveShards; i++ {
+		numberOfValidator[i] += len(b.shardCommittee[byte(i)])
+		numberOfValidator[i] += len(b.shardSubstitute[byte(i)])
+	}
+	return numberOfValidator
 }

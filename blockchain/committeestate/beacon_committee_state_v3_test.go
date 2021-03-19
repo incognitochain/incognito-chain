@@ -65,31 +65,6 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 			key11: *hash,
 		},
 	)
-
-	swapRule := &mocks.SwapRule{}
-	swapRule.On("Process", uint8(1),
-		[]string{key4, key5, key6, key7},
-		[]string{key12, key13, key14, key15},
-		4,
-		4,
-		mock.AnythingOfType("int"),
-		2,
-		map[string]signaturecounter.Penalty{}).Return(
-		&instruction.SwapShardInstruction{
-			OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
-				*incKey6,
-			},
-			OutPublicKeys: []string{key6},
-			InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-				*incKey12,
-			},
-			InPublicKeys: []string{key12},
-			ChainID:      1,
-			Type:         instruction.SWAP_BY_END_EPOCH,
-		},
-		[]string{key4, key5, key7, key12}, []string{}, []string{}, []string{key6})
-	swapRule.On("Version").Return(swapRuleTestVersion)
-
 	type fields struct {
 		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
 		syncPool                         map[byte][]string
@@ -144,7 +119,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 							key11: false,
 						},
 					},
-					swapRule: swapRule,
+					swapRule: NewSwapRuleV3(),
 				},
 				syncPool: map[byte][]string{
 					0: []string{key16, key17},
@@ -182,7 +157,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 							key11: false,
 						},
 					},
-					swapRule: swapRule,
+					swapRule: NewSwapRuleV3(),
 				},
 				syncPool: map[byte][]string{
 					0: []string{key16, key17},
@@ -200,6 +175,22 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 					MaxShardCommitteeSize:            4,
 					NumberOfFixedShardBlockValidator: 2,
 					MissingSignaturePenalty:          map[string]signaturecounter.Penalty{},
+					shardCommittee: map[byte][]string{
+						0: []string{
+							key0, key, key2, key3,
+						},
+						1: []string{
+							key4, key5, key6, key7,
+						},
+					},
+					shardSubstitute: map[byte][]string{
+						0: []string{
+							key8, key9, key10, key11,
+						},
+						1: []string{
+							key12, key13, key14, key15,
+						},
+					},
 				},
 				swapShardInstruction: &instruction.SwapShardInstruction{
 					InPublicKeys:        []string{key12},
@@ -248,7 +239,7 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 								key11: false,
 							},
 						},
-						swapRule: swapRule,
+						swapRule: NewSwapRuleV3(),
 					},
 					syncPool: map[byte][]string{
 						0: []string{key16, key17},
