@@ -315,8 +315,8 @@ func (e *BLSBFT_V2) run() error {
 						continue
 					}
 
-					// check if propose block in within last the 2 TS
-					if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) < e.currentTimeSlot-1 {
+					// check if propose block in within TS
+					if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != e.currentTimeSlot {
 						continue
 					}
 
