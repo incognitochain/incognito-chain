@@ -162,7 +162,7 @@ func (e *BLSBFT_V4) run() error {
 				block := blockIntf.(types.BlockInterface)
 				blkHash := block.Hash().String()
 
-				committees, _, _, err := e.getCommitteesAndCommitteeViewHash()
+				committees, committeesForSigning, _, _, err := e.getCommitteesAndCommitteeViewHash()
 				if err != nil {
 					e.Logger.Error(err)
 				}
@@ -172,10 +172,9 @@ func (e *BLSBFT_V4) run() error {
 					e.Logger.Info("[dcs] Not in round for voting")
 				}
 
-				committeesStr, _ := incognitokey.CommitteeKeyListToString(committees)
 				committeesForSigningStr, _ := incognitokey.CommitteeKeyListToString(committeesForSigning)
-				e.Logger.Infof("######### Shard %+v, BlockHeight %+v, Committee %+v, CommitteeForSigning %+v",
-					e.Chain.GetShardID(), block.GetHeight(), committeesStr, committeesForSigningStr)
+				e.Logger.Infof("######### Shard %+v, BlockHeight %+v, CommitteeForSigning %+v",
+					e.Chain.GetShardID(), block.GetHeight(), committeesForSigningStr)
 
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
 					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, committeesForSigning, userKeySet, make(map[string]*BFTVote), false, false)
@@ -230,12 +229,12 @@ func (e *BLSBFT_V4) run() error {
 				shouldListen := true
 				shouldVote := true
 
-				committees, proposerPk, committeeViewHash, err := e.getCommitteesAndCommitteeViewHash()
+				committees, committeesForSigning, proposerPk, committeeViewHash, err := e.getCommitteesAndCommitteeViewHash()
 				if err != nil {
 					e.Logger.Info(err)
 					continue
 				}
-				userKeySet := e.getUserKeySetForSigning(committees, e.UserKeySet)
+				userKeySet := e.getUserKeySetForSigning(committeesForSigning, e.UserKeySet)
 				if len(userKeySet) == 0 {
 					shouldVote = false
 				}
@@ -803,21 +802,28 @@ func ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, e
 	return valData.BridgeSig, valData.ValidatiorsIdx, nil
 }
 
-func (e *BLSBFT_V4) getCommitteesAndCommitteeViewHash() ([]incognitokey.CommitteePublicKey, incognitokey.CommitteePublicKey, common.Hash, error) {
+func (e *BLSBFT_V4) getCommitteesAndCommitteeViewHash() (
+	[]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey,
+	incognitokey.CommitteePublicKey, common.Hash, error,
+) {
 	committeeViewHash := common.Hash{}
 	committees := []incognitokey.CommitteePublicKey{}
+	committeesForSigning := []incognitokey.CommitteePublicKey{}
 	proposerPk := incognitokey.CommitteePublicKey{}
 	var err error
 	if e.ChainID == BEACON_CHAIN_ID {
 		proposerPk, _ = e.Chain.GetBestView().GetProposerByTimeSlot(e.currentTimeSlot, 2)
 		committees = e.Chain.GetBestView().GetCommittee()
+		committeesForSigning = committees
 	} else {
 		committeeViewHash = *e.CommitteeChain.FinalView().GetHash()
-		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID), committeeDividePart)
+		committees, committeesForSigning, err = e.
+			CommitteeChain.
+			CommitteesForSigningFromViewHashForShard(committeeViewHash, byte(e.ChainID), committeeDividePart)
 		if err != nil {
-			return committees, proposerPk, committeeViewHash, err
+			return committees, committeesForSigning, proposerPk, committeeViewHash, err
 		}
 		proposerPk = e.CommitteeChain.ProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, committees)
 	}
-	return committees, proposerPk, committeeViewHash, err
+	return committees, committeesForSigning, proposerPk, committeeViewHash, err
 }

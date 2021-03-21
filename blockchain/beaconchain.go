@@ -409,8 +409,30 @@ func (chain *BeaconChain) CommitteesFromViewHashForShard(
 	return committees, nil
 }
 
-func (chain *BeaconChain) GetCommitteesForSigningFromViewHashForShard(
+func (chain *BeaconChain) CommitteesForSigningFromViewHashForShard(
 	hash common.Hash, shardID byte, threshold int,
 ) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
-	return chain.Blockchain.GetShardCommitteesSigningFromBeaconHash(hash, shardID, threshold)
+	res := []incognitokey.CommitteePublicKey{}
+	beaconBlock, _, err := chain.Blockchain.GetBeaconBlockByHash(hash)
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+	}
+
+	bRH, err := GetBeaconRootsHashByBlockHash(chain.Blockchain.GetBeaconChainDatabase(), hash)
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+	}
+
+	stateDB, err := statedb.NewWithPrefixTrie(
+		bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(chain.Blockchain.GetBeaconChainDatabase()))
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+	}
+	committees := statedb.GetOneShardCommittee(stateDB, shardID)
+	for i, v := range committees {
+		if uint64(i%threshold) == beaconBlock.Header.Height%uint64(threshold) {
+			res = append(res, v)
+		}
+	}
+	return committees, res, nil
 }

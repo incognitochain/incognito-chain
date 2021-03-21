@@ -7,43 +7,48 @@ import (
 )
 
 type ProposeBlockInfo struct {
-	block      types.BlockInterface
-	committees []incognitokey.CommitteePublicKey
-	userKeySet []signatureschemes2.MiningKey
-	votes      map[string]*BFTVote //pk->BFTVote
-	isValid    bool
-	hasNewVote bool
-	isVoted    bool
-	validVotes int
-	errVotes   int
+	block                types.BlockInterface
+	committees           []incognitokey.CommitteePublicKey
+	committeesForSigning []incognitokey.CommitteePublicKey
+	userKeySet           []signatureschemes2.MiningKey
+	votes                map[string]*BFTVote //pk->BFTVote
+	isValid              bool
+	hasNewVote           bool
+	isVoted              bool
+	validVotes           int
+	errVotes             int
 }
 
 //NewProposeBlockInfoValue : new propose block info
 func newProposeBlockForProposeMsg(
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
+	committeesForSigning []incognitokey.CommitteePublicKey,
 	userKeySet []signatureschemes2.MiningKey,
 	votes map[string]*BFTVote,
 	isValid, hasNewVote bool,
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
-		block:      block,
-		committees: incognitokey.DeepCopy(committees),
-		userKeySet: signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
-		votes:      votes,
-		isValid:    isValid,
-		hasNewVote: hasNewVote,
+		block:                block,
+		committees:           incognitokey.DeepCopy(committees),
+		committeesForSigning: incognitokey.DeepCopy(committeesForSigning),
+		userKeySet:           signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
+		votes:                votes,
+		isValid:              isValid,
+		hasNewVote:           hasNewVote,
 	}
 }
 
 func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey,
+	committeesForSigning []incognitokey.CommitteePublicKey,
 	userKeySet []signatureschemes2.MiningKey,
 	validVotes, errVotes int,
 ) {
 	proposeBlockInfo.block = block
 	proposeBlockInfo.committees = incognitokey.DeepCopy(committees)
+	proposeBlockInfo.committeesForSigning = incognitokey.DeepCopy(committeesForSigning)
 	proposeBlockInfo.userKeySet = signatureschemes2.DeepCopyMiningKeyArray(userKeySet)
 	proposeBlockInfo.validVotes = validVotes
 	proposeBlockInfo.errVotes = errVotes
