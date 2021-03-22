@@ -249,10 +249,6 @@ func (beaconBlock BeaconBlock) Type() string {
 	return common.BeaconChainKey
 }
 
-func (beaconBlock BeaconBlock) CommitteesSubsetFromBlock() common.Hash {
-	return common.Hash{}
-}
-
 func (beaconBlock BeaconBlock) BodyHash() common.Hash {
 	return beaconBlock.Body.Hash()
 }

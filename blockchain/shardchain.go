@@ -225,11 +225,7 @@ func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, com
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
 	}
-	committeesForSigning, err := chain.Blockchain.getCommitteesForSigning(committees, block, divideShardCommitteesPartThreshold)
-	if err != nil {
-		return err
-	}
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committeesForSigning); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees); err != nil {
 		return err
 	}
 	return nil
@@ -343,7 +339,7 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognito
 	if shardView.shardCommitteeState.Version() == committeestate.SELF_SWAP_SHARD_VERSION || shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
 		committees = append(committees, chain.GetBestState().shardCommitteeState.GetShardCommittee()...)
 	} else {
-		committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID))
+		committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID), divideShardCommitteesPartThreshold)
 		if err != nil {
 			return committees, err
 		}

@@ -16,7 +16,6 @@ import (
 type ShardCommitteeStateV2 struct {
 	shardCommittee            []string
 	committeeFromBlock        common.Hash //Committees From Beacon Block Hash
-	committeesSubsetFromBlock common.Hash //Committees From Beacon Block Hash
 
 	mu *sync.RWMutex
 }
@@ -34,13 +33,11 @@ func NewShardCommitteeStateV2() *ShardCommitteeStateV2 {
 func NewShardCommitteeStateV2WithValue(
 	shardCommittee []incognitokey.CommitteePublicKey,
 	committeeFromBlockHash common.Hash,
-	committeesSubsetFromBlockHash common.Hash,
 ) *ShardCommitteeStateV2 {
 	res, _ := incognitokey.CommitteeKeyListToString(shardCommittee)
 	return &ShardCommitteeStateV2{
 		shardCommittee:            res,
 		committeeFromBlock:        committeeFromBlockHash,
-		committeesSubsetFromBlock: committeesSubsetFromBlockHash,
 		mu:                        new(sync.RWMutex),
 	}
 }
@@ -56,7 +53,6 @@ func (s *ShardCommitteeStateV2) Clone() ShardCommitteeState {
 func (s ShardCommitteeStateV2) clone(newCommitteeState *ShardCommitteeStateV2) {
 	newCommitteeState.shardCommittee = common.DeepCopyString(s.shardCommittee)
 	newCommitteeState.committeeFromBlock = s.committeeFromBlock
-	newCommitteeState.committeesSubsetFromBlock = s.committeesSubsetFromBlock
 }
 
 //Version ...
@@ -216,8 +212,4 @@ func (s ShardCommitteeStateV2) BuildTotalTxsFeeFromTxs(txs []metadata.Transactio
 		Logger.log.Info("[slashing] totalTxsFee[common.PRVCoinID]:", totalTxsFee[common.PRVCoinID])
 	}
 	return totalTxsFee
-}
-
-func (s *ShardCommitteeStateV2) GetCommitteesSubsetFromBlock() common.Hash {
-	return s.committeesSubsetFromBlock
 }

@@ -93,7 +93,6 @@ func (e *BLSBFT_V3) Destroy() {
 
 func (e *BLSBFT_V3) run() error {
 	go func() {
-		var err error
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
 		e.Logger.Info("init bls-bftv3 consensus for chain", e.ChainKey)
@@ -120,10 +119,9 @@ func (e *BLSBFT_V3) run() error {
 				block := blockIntf.(types.BlockInterface)
 				blkHash := block.Hash().String()
 
-				committees, err := e.getCommitteeForBlock(block)
+				committees, _, _, err := e.getCommitteesAndCommitteeViewHash()
 				if err != nil {
-					e.Logger.Debug(err)
-					continue
+					panic(err)
 				}
 
 				res, _ := incognitokey.CommitteeKeyListToString(committees)
@@ -177,23 +175,13 @@ func (e *BLSBFT_V3) run() error {
 
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
 				bestView := e.Chain.GetBestView()
-				committeeViewHash := common.Hash{}
-				committees := []incognitokey.CommitteePublicKey{}
-				proposerPk := incognitokey.CommitteePublicKey{}
 				var userProposeKey signatureschemes2.MiningKey
 				shouldPropose := false
 				shouldListen := true
 
-				if e.ChainID == BEACON_CHAIN_ID {
-					proposerPk, _ = bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
-					committees = e.Chain.GetBestView().GetCommittee()
-				} else {
-					committeeViewHash = *e.CommitteeChain.FinalView().GetHash()
-					committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID))
-					if err != nil {
-						e.Logger.Error(err)
-					}
-					proposerPk = e.CommitteeChain.ProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, committees)
+				committees, proposerPk, committeeViewHash, err := e.getCommitteesAndCommitteeViewHash()
+				if err != nil {
+					panic(err)
 				}
 
 				for _, userKey := range e.UserKeySet {
@@ -364,6 +352,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 				e.Logger.Error(err)
 				vote.IsValid = -1
 				errVote++
+				panic(err)
 			} else {
 				vote.IsValid = 1
 				validVote++
@@ -480,12 +469,6 @@ func (e *BLSBFT_V3) validateAndVote(
 	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	committees, err := e.getCommitteeForBlock(v.block)
-	if err != nil {
-		e.Logger.Error(err)
-		return err
-	}
-
 	if err := e.Chain.ValidatePreSignBlock(v.block, v.committees); err != nil {
 		e.Logger.Error(err)
 		return err
@@ -493,7 +476,7 @@ func (e *BLSBFT_V3) validateAndVote(
 
 	//if valid then vote
 	for _, userKey := range e.UserKeySet {
-		Vote, err := CreateVote(&userKey, v.block, committees)
+		Vote, err := CreateVote(&userKey, v.block, v.committees)
 		if err != nil {
 			e.Logger.Error(err)
 			return NewConsensusError(UnExpectedError, err)
@@ -712,7 +695,7 @@ func (e *BLSBFT_V3) getCommitteeForBlock(v types.BlockInterface) ([]incognitokey
 	var err error = nil
 	var committees []incognitokey.CommitteePublicKey
 	if !e.Chain.IsBeaconChain() {
-		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(e.Chain.GetShardID()))
+		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(e.Chain.GetShardID()), 0)
 	} else {
 		committees = e.Chain.GetBestView().GetCommittee()
 	}
@@ -746,4 +729,23 @@ func ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, e
 		return nil, nil, NewConsensusError(UnExpectedError, err)
 	}
 	return valData.BridgeSig, valData.ValidatiorsIdx, nil
+}
+
+func (e *BLSBFT_V3) getCommitteesAndCommitteeViewHash() ([]incognitokey.CommitteePublicKey, incognitokey.CommitteePublicKey, common.Hash, error) {
+	committeeViewHash := common.Hash{}
+	committees := []incognitokey.CommitteePublicKey{}
+	proposerPk := incognitokey.CommitteePublicKey{}
+	var err error
+	if e.ChainID == BEACON_CHAIN_ID {
+		proposerPk, _ = e.Chain.GetBestView().GetProposerByTimeSlot(e.currentTimeSlot, 2)
+		committees = e.Chain.GetBestView().GetCommittee()
+	} else {
+		committeeViewHash = *e.CommitteeChain.FinalView().GetHash()
+		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID), 0)
+		if err != nil {
+			return committees, proposerPk, committeeViewHash, err
+		}
+		proposerPk = e.CommitteeChain.ProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, committees)
+	}
+	return committees, proposerPk, committeeViewHash, err
 }

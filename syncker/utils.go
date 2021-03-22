@@ -70,8 +70,8 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	}
 
 	committees := []incognitokey.CommitteePublicKey{}
+	var err error
 	if len(sameCommitteeBlock) != 0 {
-		var err error
 		committees, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
 		if err != nil {
 			return 0, err
