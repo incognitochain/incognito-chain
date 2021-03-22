@@ -409,9 +409,9 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 	}
 	latestFee := unshieldBatch.GetExternalFees()[latestBeaconHeight]
 
-	maxFeeTemp := latestFee * portalParams.MaxFeeForEachStep
+	maxFeeTemp := latestFee * portalParams.MaxFeePercentageForEachStep
 	if maxFeeTemp < latestFee {
-		Logger.log.Errorf("Error: Invalid fee request with latest fee: %v, MaxFeeForEachStep : %v.", latestFee, portalParams.MaxFeeForEachStep)
+		Logger.log.Errorf("Error: Invalid fee request with latest fee: %v, MaxFeeForEachStep : %v.", latestFee, portalParams.MaxFeePercentageForEachStep)
 		return [][]string{rejectInst}, nil
 	}
 
@@ -762,19 +762,19 @@ func (p *PortalSubmitConfirmedTxProcessor) ProcessInsts(
 				Logger.log.Errorf("[processPortalSubmitConfirmedTx] Error when query unshield tx by unshieldID: %v\n err: %v", v, err)
 				return nil
 			}
-			var unshielRequest metadata.PortalUnshieldRequestStatus
-			err = json.Unmarshal(unshieldRequestBytes, &unshielRequest)
+			var unshieldRequest metadata.PortalUnshieldRequestStatus
+			err = json.Unmarshal(unshieldRequestBytes, &unshieldRequest)
 			if err != nil {
 				Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", unshieldRequestBytes, err)
 				return nil
 			}
 
 			unshieldRequestStatus := metadata.PortalUnshieldRequestStatus{
-				IncAddressStr:  unshielRequest.IncAddressStr,
-				RemoteAddress:  unshielRequest.RemoteAddress,
-				TokenID:        unshielRequest.TokenID,
-				UnshieldAmount: unshielRequest.UnshieldAmount,
-				UnshieldID:     unshielRequest.UnshieldID,
+				IncAddressStr:  unshieldRequest.IncAddressStr,
+				RemoteAddress:  unshieldRequest.RemoteAddress,
+				TokenID:        unshieldRequest.TokenID,
+				UnshieldAmount: unshieldRequest.UnshieldAmount,
+				UnshieldID:     unshieldRequest.UnshieldID,
 				Status:         portalcommonv4.PortalUnshieldReqCompletedStatus,
 			}
 			redeemRequestStatusBytes, _ := json.Marshal(unshieldRequestStatus)

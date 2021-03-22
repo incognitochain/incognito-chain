@@ -101,11 +101,11 @@ func (s *PortalTestSuiteV4) SetupTest() {
 		MinUnshieldAmts: map[string]uint64{
 			portalcommonv4.PortalBTCIDStr: 1000000, // in nano pBTC - 1000000 satoshi ~ 4 usd
 		},
-		BatchNumBlks:               45,
-		MinConfirmationIncBlockNum: 3,
-		PortalReplacementAddress:   "",
-		MaxFeeForEachStep:          20,
-		TimeSpaceForFeeReplacement: 2 * time.Minute,
+		BatchNumBlks:                45,
+		MinConfirmationIncBlockNum:  3,
+		PortalReplacementAddress:    "",
+		MaxFeePercentageForEachStep: 20,
+		TimeSpaceForFeeReplacement:  2 * time.Minute,
 	}
 	s.blockChain = &BlockChain{
 		config: Config{

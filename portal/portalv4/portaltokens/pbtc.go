@@ -427,14 +427,14 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 		return false, nil, fmt.Errorf("Submit confirmed tx: no tx inputs in proof")
 	}
 	input := btcTxProof.BTCTx.TxIn[0]
-	isMached := false
+	isMatched := false
 	for _, v := range utxos {
 		if v.GetTxHash() == input.PreviousOutPoint.Hash.String() && v.GetOutputIndex() == input.PreviousOutPoint.Index {
-			isMached = true
+			isMatched = true
 			break
 		}
 	}
-	if !isMached {
+	if !isMatched {
 		Logger.log.Errorf("Submit confirmed: tx inputs from proof is diff utxos from unshield batch")
 		return false, nil, fmt.Errorf("Submit confirmed tx: tx inputs from proof is diff utxos from unshield batch")
 	}
@@ -443,7 +443,7 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 	// check receiver and amount in tx
 	outputs := btcTxProof.BTCTx.TxOut
 	for receiverAddress := range expectPaymentInfo {
-		isMached = false
+		isMatched = false
 		for _, out := range outputs {
 			addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
 			if err != nil {
@@ -453,10 +453,10 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 			if addrStr != receiverAddress {
 				continue
 			}
-			isMached = true
+			isMatched = true
 			break
 		}
-		if !isMached {
+		if !isMatched {
 			Logger.log.Error("BTC-TxProof is invalid")
 			return false, nil, errors.New("BTC-TxProof is invalid")
 		}

@@ -21,9 +21,9 @@ type PortalParams struct {
 	MinConfirmationIncBlockNum uint
 
 	// for replacement
-	PortalReplacementAddress   string
-	MaxFeeForEachStep          uint
-	TimeSpaceForFeeReplacement time.Duration
+	PortalReplacementAddress    string
+	MaxFeePercentageForEachStep uint
+	TimeSpaceForFeeReplacement  time.Duration
 }
 
 func (p PortalParams) IsPortalToken(tokenIDStr string) bool {
