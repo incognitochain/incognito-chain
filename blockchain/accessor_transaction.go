@@ -197,7 +197,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 
 			//check amount & receiver
 			rewardAmount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB(),
-				base58.Base58Check{}.Encode(metaResponse.RewardPublicKey, common.Base58Version), *coinID)
+				base58.Base58Check{}.Encode(metaRequest.PaymentAddress.Pk, common.Base58Version), *coinID)
 			if err != nil {
 				return errors.Errorf("[Mint Withdraw Reward] Cannot get reward amount")
 			}
