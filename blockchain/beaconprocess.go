@@ -236,7 +236,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(beaconBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
 	}
 
-	if !verifyHashFromShardState(beaconBlock.Body.ShardState, beaconBlock.Header.ShardStateHash, curView.CommitteeEngineVersion()) {
+	if !verifyHashFromShardState(beaconBlock.Body.ShardState, beaconBlock.Header.ShardStateHash, curView.CommitteeStateVersion()) {
 		return NewBlockChainError(ShardStateHashError, fmt.Errorf("Expect shard state hash to be %+v", beaconBlock.Header.ShardStateHash))
 	}
 	tempInstructionArr := []string{}
@@ -544,7 +544,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		// Reset missing signature counter after finish process the last beacon block in an epoch
 		beaconBestState.missingSignatureCounter.Reset(beaconBestState.getNewShardCommitteeFlattenList())
 	}
-	if committeeChange.IsShardCommitteeChange() && beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+	if committeeChange.IsShardCommitteeChange() && beaconBestState.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		beaconBestState.missingSignatureCounter.CommitteeChange(beaconBestState.getNewShardCommitteeFlattenList())
 	}
 	err = beaconBestState.countMissingSignature(blockchain, beaconBlock.Body.ShardState)
@@ -608,17 +608,15 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
 		genesisBeaconBlock.Body.Instructions, false, false)
 	if blockchain.config.ChainParams.StakingFlowV3 == 1 {
-		beaconBestState.beaconCommitteeState = committeestate.InitCommitteeStateV3(beaconCommitteeStateEnv)
+		beaconBestState.beaconCommitteeState = committeestate.InitGenesisBeaconCommitteeStateV3(beaconCommitteeStateEnv)
 	} else {
 		if blockchain.config.ChainParams.StakingFlowV2 == 1 {
-			beaconBestState.beaconCommitteeState = committeestate.InitCommitteeStateV2(beaconCommitteeStateEnv)
+			beaconBestState.beaconCommitteeState = committeestate.InitGenesisBeaconCommitteeStateV2(beaconCommitteeStateEnv)
 		} else {
-			beaconBestState.beaconCommitteeState = committeestate.InitCommitteeStateV1(beaconCommitteeStateEnv)
+			beaconBestState.beaconCommitteeState = committeestate.InitGenesisBeaconCommitteeStateV1(beaconCommitteeStateEnv)
 		}
 	}
-
 	beaconBestState.finishSyncManager = finishsync.NewManager()
-
 	beaconBestState.Epoch = 1
 	return nil
 }
@@ -631,7 +629,7 @@ func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardSt
 			if shardState.Height == 1 {
 				continue
 			}
-			if curView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+			if curView.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 				err := curView.countMissingSignatureV1(bc, shardID, shardState)
 				if err != nil {
 					return err
@@ -1066,7 +1064,7 @@ func getStakingCandidate(beaconBlock types.BeaconBlock) ([]string, []string) {
 
 func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 	committeeChange *committeestate.CommitteeChange) error {
-	if beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+	if beaconBestState.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		return nil
 	}
 	stakerKeys := committeeChange.StakerKeys()

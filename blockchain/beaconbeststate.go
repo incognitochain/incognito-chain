@@ -429,7 +429,7 @@ func (beaconBestState *BeaconBestState) SyncingValidators() map[byte][]incognito
 }
 
 //CommitteeEngineVersion ...
-func (beaconBestState *BeaconBestState) CommitteeEngineVersion() int {
+func (beaconBestState *BeaconBestState) CommitteeStateVersion() int {
 	return beaconBestState.beaconCommitteeState.Version()
 }
 
@@ -629,7 +629,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	isBeaconRandomTime bool,
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
-	if beaconBestState.BeaconHeight != 1 && beaconBestState.CommitteeEngineVersion() == 2 {
+	if beaconBestState.BeaconHeight != 1 && beaconBestState.CommitteeStateVersion() == 2 {
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
 	}
 	return &committeestate.BeaconCommitteeStateEnvironment{

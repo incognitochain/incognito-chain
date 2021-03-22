@@ -221,7 +221,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 				committeeView := s.blockchain.BeaconChain.FinalView().(*blockchain.BeaconBestState)
 				if s.finalBeaconBlockHeight < committeeView.BeaconHeight {
 					s.finalBeaconBlockHeight = committeeView.BeaconHeight
-					if committeeView.CommitteeEngineVersion() == committeestate.DCS_VERSION {
+					if committeeView.CommitteeStateVersion() == committeestate.DCS_VERSION {
 						syncingValidators := s.consensus.SyncingValidatorsByShardID(s.shardID)
 						if committeeView.ShouldSendFinishSyncMessage(syncingValidators, byte(s.shardID)) {
 							msg := &wire.MessageFinishSync{

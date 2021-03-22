@@ -17,7 +17,7 @@ type View interface {
 	GetHeight() uint64
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetPreviousBlockCommittee(db incdb.Database) ([]incognitokey.CommitteePublicKey, error)
-	CommitteeEngineVersion() int
+	CommitteeStateVersion() int
 	GetBlock() types.BlockInterface
 	GetBeaconHeight() uint64
 	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)

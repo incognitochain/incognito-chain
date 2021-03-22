@@ -7,10 +7,10 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-//ShardCommitteeEngine :
-type ShardCommitteeEngine interface {
+//ShardCommitteeState :
+type ShardCommitteeState interface {
 	Version() int
-	Clone() ShardCommitteeEngine
+	Clone() ShardCommitteeState
 	GetShardCommittee() []incognitokey.CommitteePublicKey
 	GetShardSubstitute() []incognitokey.CommitteePublicKey
 	GetCommitteeFromBlock() common.Hash
@@ -20,9 +20,15 @@ type ShardCommitteeEngine interface {
 		*CommitteeChange, error)
 	InitCommitteeState(env ShardCommitteeStateEnvironment)
 
-	ProcessAssignInstruction(env ShardCommitteeStateEnvironment) []incognitokey.CommitteePublicKey
-	GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
 	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
+}
+
+type SwapInstructionGenerator interface {
+	GenerateSwapInstructions(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
+}
+
+type AssignInstructionProcessor interface {
+	ProcessAssignInstructions(env ShardCommitteeStateEnvironment) []incognitokey.CommitteePublicKey
 }
 
 //ShardEnvBuilder : Interface for building shard environment

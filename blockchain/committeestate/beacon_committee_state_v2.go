@@ -53,7 +53,7 @@ func (b *BeaconCommitteeStateV2) clone() *BeaconCommitteeStateV2 {
 	return res
 }
 
-func InitCommitteeStateV2(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV2 {
+func InitGenesisBeaconCommitteeStateV2(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV2 {
 	beaconCommitteeStateV2 := NewBeaconCommitteeStateV2()
 	beaconCommitteeStateV2.initCommitteeState(env)
 	return beaconCommitteeStateV2

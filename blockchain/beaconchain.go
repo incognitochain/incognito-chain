@@ -393,7 +393,7 @@ func (chain *BeaconChain) GetChainDatabase() incdb.Database {
 }
 
 func (chain *BeaconChain) CommitteeEngineVersion() int {
-	return chain.multiView.GetBestView().CommitteeEngineVersion()
+	return chain.multiView.GetBestView().CommitteeStateVersion()
 }
 
 func (chain *BeaconChain) CommitteesFromViewHashForShard(

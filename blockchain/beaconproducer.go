@@ -110,7 +110,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionHashError, err)
 	}
-	shardStatesHash, err := generateHashFromShardState(shardStates, curView.CommitteeEngineVersion())
+	shardStatesHash, err := generateHashFromShardState(shardStates, curView.CommitteeStateVersion())
 	if err != nil {
 		return nil, NewBlockChainError(GenerateShardStateError, err)
 	}
@@ -369,7 +369,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 	// Random number for Assign Instruction
 	if blockchain.IsGreaterThanRandomTime(newBeaconHeight) && !curView.IsGetRandomNumber {
 		randomInstructionGenerator := curView.beaconCommitteeState.(committeestate.RandomInstructionsGenerator)
-		randomInstruction, randomNumber := randomInstructionGenerator.GenerateIntrucstions(&committeestate.BeaconCommitteeStateEnvironment{
+		randomInstruction, randomNumber := randomInstructionGenerator.GenerateRandomInstructions(&committeestate.BeaconCommitteeStateEnvironment{
 			BeaconHash:    curView.BestBlockHash,
 			BestShardHash: curView.BestShardHash,
 			ActiveShards:  curView.ActiveShards,
@@ -377,14 +377,14 @@ func (curView *BeaconBestState) GenerateInstruction(
 		instructions = append(instructions, randomInstruction.ToString())
 		Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v, %+v", randomInstruction, newBeaconHeight)
 
-		if curView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+		if curView.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 			env := committeestate.NewBeaconCommitteeStateEnvironmentForAssigningToPendingList(
 				randomNumber,
 				blockchain.config.ChainParams.AssignOffset,
 				newBeaconHeight,
 			)
 			assignInstructionGenerator := curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV1)
-			assignInstructions := assignInstructionGenerator.GenerateInstructions(env)
+			assignInstructions := assignInstructionGenerator.GenerateAssignInstructions(env)
 			for _, assignInstruction := range assignInstructions {
 				instructions = append(instructions, assignInstruction.ToString())
 			}
@@ -393,7 +393,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 	}
 
 	// Generate swap shard instruction at block height %chainParamEpoch == 0
-	if curView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+	if curView.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		if blockchain.IsLastBeaconHeightInEpoch(newBeaconHeight) {
 			BeaconCommittee := curView.GetBeaconCommittee()
 			beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(BeaconCommittee)
@@ -414,7 +414,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 			env := curView.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
 			env.LatestShardsState = shardsState
 			swapShardInstructionsGenerator := curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV2)
-			swapShardInstructions, err := swapShardInstructionsGenerator.GenerateInstructions(env)
+			swapShardInstructions, err := swapShardInstructionsGenerator.GenerateSwapShardInstructions(env)
 			if err != nil {
 				return [][]string{}, err
 			}

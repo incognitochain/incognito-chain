@@ -113,7 +113,7 @@ func (b *BeaconCommitteeStateV1) Hash() (*BeaconCommitteeStateHash, error) {
 	return res, nil
 }
 
-func InitCommitteeStateV1(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV1 {
+func InitGenesisBeaconCommitteeStateV1(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV1 {
 	beaconCommitteeStateV1 := NewBeaconCommitteeStateV1()
 	beaconCommitteeStateV1.initCommitteeState(env)
 	return beaconCommitteeStateV1
@@ -437,7 +437,7 @@ func (b *BeaconCommitteeStateV1) SplitReward(
 	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
 }
 
-func (b *BeaconCommitteeStateV1) GenerateInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction {
+func (b *BeaconCommitteeStateV1) GenerateAssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction {
 	candidates := make([]string, len(b.currentEpochShardCandidate))
 	copy(candidates, b.currentEpochShardCandidate)
 	numberOfPendingValidator := make(map[byte]int)

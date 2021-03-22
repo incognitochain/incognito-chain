@@ -41,15 +41,15 @@ type BeaconCommitteeState interface {
 }
 
 type AssignInstructionsGenerator interface {
-	GenerateInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
+	GenerateAssignInstructions(env *BeaconCommitteeStateEnvironment) []*instruction.AssignInstruction
 }
 
 type SwapShardInstructionsGenerator interface {
-	GenerateInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
+	GenerateSwapShardInstructions(env *BeaconCommitteeStateEnvironment) ([]*instruction.SwapShardInstruction, error)
 }
 
 type RandomInstructionsGenerator interface {
-	GenerateIntrucstions(env *BeaconCommitteeStateEnvironment) (*instruction.RandomInstruction, int64)
+	GenerateRandomInstructions(env *BeaconCommitteeStateEnvironment) (*instruction.RandomInstruction, int64)
 }
 
 type SplitRewardRuleProcessor interface {

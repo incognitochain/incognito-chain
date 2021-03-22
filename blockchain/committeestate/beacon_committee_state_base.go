@@ -495,7 +495,7 @@ func (b beaconCommitteeStateBase) Upgrade(env *BeaconCommitteeStateEnvironment) 
 	panic("Implement this function")
 }
 
-func (b beaconCommitteeStateBase) GenerateIntrucstions(env *BeaconCommitteeStateEnvironment) (*instruction.RandomInstruction, int64) {
+func (b beaconCommitteeStateBase) GenerateRandomInstructions(env *BeaconCommitteeStateEnvironment) (*instruction.RandomInstruction, int64) {
 	res := []byte{}
 	bestBeaconBlockHash := env.BeaconHash
 	res = append(res, bestBeaconBlockHash.Bytes()...)

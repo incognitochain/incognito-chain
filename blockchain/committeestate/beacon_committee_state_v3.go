@@ -107,7 +107,7 @@ func (b BeaconCommitteeStateV3) isEmpty() bool {
 	return reflect.DeepEqual(b, NewBeaconCommitteeStateV3())
 }
 
-func InitCommitteeStateV3(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV3 {
+func InitGenesisBeaconCommitteeStateV3(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV3 {
 	beaconCommitteeStateV3 := NewBeaconCommitteeStateV3()
 	beaconCommitteeStateV3.initCommitteeState(env)
 	return beaconCommitteeStateV3

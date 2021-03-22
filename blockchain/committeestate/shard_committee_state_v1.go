@@ -55,7 +55,7 @@ func (s ShardCommitteeStateV1) clone(newCommitteeState *ShardCommitteeStateV1) {
 }
 
 //Clone ...
-func (s *ShardCommitteeStateV1) Clone() ShardCommitteeEngine {
+func (s *ShardCommitteeStateV1) Clone() ShardCommitteeState {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	newS := NewShardCommitteeStateV1()
@@ -125,6 +125,50 @@ func (s *ShardCommitteeStateV1) InitCommitteeState(env ShardCommitteeStateEnviro
 	s.shardSubstitute = append(s.shardSubstitute, newSubstitutes...)
 }
 
+//InitGenesisShardCommitteeStateV1 init committee state at genesis block or anytime restore program
+//	- call function processInstructionFromBeacon for process instructions received from beacon
+//	- call function processShardBlockInstruction for process shard block instructions
+func InitGenesisShardCommitteeStateV1(env ShardCommitteeStateEnvironment) *ShardCommitteeStateV1 {
+	s := NewShardCommitteeStateV1()
+
+	shardPendingValidator := []string{}
+	newSubstitutes := []incognitokey.CommitteePublicKey{}
+
+	shardsCommittees := []string{}
+
+	for _, beaconInstruction := range env.BeaconInstructions() {
+		if beaconInstruction[0] == instruction.STAKE_ACTION {
+			shardsCommittees = strings.Split(beaconInstruction[1], ",")
+		}
+		if beaconInstruction[0] == instruction.ASSIGN_ACTION {
+			assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(beaconInstruction)
+			if err == nil && assignInstruction.ChainID == int(env.ShardID()) {
+				shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
+				newSubstitutes = append(newSubstitutes, assignInstruction.ShardCandidatesStruct...)
+			}
+		}
+	}
+
+	newShardCandidateStructs := []incognitokey.CommitteePublicKey{}
+	for _, candidate := range shardsCommittees {
+		key := incognitokey.CommitteePublicKey{}
+		err := key.FromBase58(candidate)
+		if err != nil {
+			panic(err)
+		}
+		newShardCandidateStructs = append(newShardCandidateStructs, key)
+	}
+
+	newCommittees := []incognitokey.CommitteePublicKey{}
+	newCommittees = append(newCommittees, newShardCandidateStructs[int(env.ShardID())*
+		env.MinShardCommitteeSize():(int(env.ShardID())*env.MinShardCommitteeSize())+env.MinShardCommitteeSize()]...)
+
+	s.shardCommittee = append(s.shardCommittee, newCommittees...)
+	s.shardSubstitute = append(s.shardSubstitute, newSubstitutes...)
+
+	return s
+}
+
 //UpdateCommitteeState update committeState from valid data before
 //	- call process instructions from beacon
 //	- check conditions for epoch timestamp
@@ -161,7 +205,7 @@ func (s *ShardCommitteeStateV1) UpdateCommitteeState(
 	return hashes, committeeChange, nil
 }
 
-func (s *ShardCommitteeStateV1) GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error) {
+func (s *ShardCommitteeStateV1) GenerateSwapInstructions(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	shardSubstitutes, _ := incognitokey.CommitteeKeyListToString(s.shardSubstitute)
@@ -406,7 +450,7 @@ func (s *ShardCommitteeStateV1) processShardBlockInstructionForKeyListV2(
 }
 
 //ProcessInstructionFromBeacon : process instrucction from beacon
-func (s ShardCommitteeStateV1) ProcessAssignInstruction(env ShardCommitteeStateEnvironment) []incognitokey.CommitteePublicKey {
+func (s ShardCommitteeStateV1) ProcessAssignInstructions(env ShardCommitteeStateEnvironment) []incognitokey.CommitteePublicKey {
 	newSubstitutes := extractAssignInstruction(env.BeaconInstructions(), env.ShardID())
 	res, _ := incognitokey.CommitteeBase58KeyListToStruct(newSubstitutes)
 	return res

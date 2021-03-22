@@ -134,7 +134,7 @@ func (b *beaconCommitteeStateSlashingBase) initCommitteeState(env *BeaconCommitt
 	b.swapRule = SwapRuleByEnv(env)
 }
 
-func (b *beaconCommitteeStateSlashingBase) GenerateInstructions(
+func (b *beaconCommitteeStateSlashingBase) GenerateSwapShardInstructions(
 	env *BeaconCommitteeStateEnvironment) (
 	[]*instruction.SwapShardInstruction, error) {
 	b.addData(env)

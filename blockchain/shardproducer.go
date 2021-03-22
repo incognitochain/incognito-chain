@@ -91,7 +91,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
 
-	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+	if shardBestState.shardCommitteeState.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		currentCommitteePublicKeysStructs = shardBestState.GetShardCommittee()
 		if beaconProcessHeight > blockchain.config.ChainParams.StakingFlowV2 {
 			beaconProcessHeight = blockchain.config.ChainParams.StakingFlowV2
@@ -191,14 +191,15 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		return nil, err
 	}
 
-	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+	if shardBestState.shardCommitteeState.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		env := committeestate.
 			NewShardEnvBuilder().
 			BuildBeaconInstructions(beaconInstructions).
 			BuildShardID(shardBestState.ShardID).
 			Build()
 
-		addedSubstitutes := shardBestState.shardCommitteeEngine.ProcessAssignInstruction(env)
+		assignInstructionProcessor := shardBestState.shardCommitteeState.(committeestate.AssignInstructionProcessor)
+		addedSubstitutes := assignInstructionProcessor.ProcessAssignInstructions(env)
 
 		currentPendingValidators, err = updateCommitteesWithAddedAndRemovedListValidator(currentPendingValidators,
 			addedSubstitutes)
@@ -225,7 +226,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	// producer key
 	producerKey := proposer
 	producerPubKeyStr := proposer
-	totalTxsFee := shardBestState.shardCommitteeEngine.BuildTotalTxsFeeFromTxs(newShardBlock.Body.Transactions)
+	totalTxsFee := shardBestState.shardCommitteeState.BuildTotalTxsFeeFromTxs(newShardBlock.Body.Transactions)
 
 	newShardBlock.Header = types.ShardHeader{
 		Producer:                  producerKey, //committeeMiningKeys[producerPosition],
@@ -523,7 +524,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		err                               error
 	)
 	// if this beacon height has been seen already then DO NOT generate any more instruction
-	if view.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+	if view.shardCommitteeState.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		if blockchain.IsLastBeaconHeightInEpoch(beaconHeight) && isOldBeaconHeight == false {
 			Logger.log.Info("ShardPendingValidator", shardPendingValidators)
 			Logger.log.Info("ShardCommittee", shardCommittees)
@@ -558,7 +559,9 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 					BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
 					BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
 					Build()
-				tempSwapInstruction, shardPendingValidators, shardCommittees, err = view.shardCommitteeEngine.GenerateSwapInstruction(env)
+				swapInstructionGenerator := view.shardCommitteeState.(committeestate.SwapInstructionGenerator)
+				tempSwapInstruction, shardPendingValidators, shardCommittees, err =
+					swapInstructionGenerator.GenerateSwapInstructions(env)
 				if err != nil {
 					Logger.log.Error(err)
 					return instructions, shardPendingValidators, shardCommittees, err
