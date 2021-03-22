@@ -695,7 +695,7 @@ func (e *BLSBFT_V3) getCommitteeForBlock(v types.BlockInterface) ([]incognitokey
 	var err error = nil
 	var committees []incognitokey.CommitteePublicKey
 	if !e.Chain.IsBeaconChain() {
-		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(e.Chain.GetShardID()))
+		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(e.Chain.GetShardID()), 0)
 	} else {
 		committees = e.Chain.GetBestView().GetCommittee()
 	}
@@ -741,7 +741,7 @@ func (e *BLSBFT_V3) getCommitteesAndCommitteeViewHash() ([]incognitokey.Committe
 		committees = e.Chain.GetBestView().GetCommittee()
 	} else {
 		committeeViewHash = *e.CommitteeChain.FinalView().GetHash()
-		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID))
+		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID), 0)
 		if err != nil {
 			return committees, proposerPk, committeeViewHash, err
 		}

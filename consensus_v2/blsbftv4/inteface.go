@@ -75,8 +75,7 @@ type ChainInterface interface {
 
 //CommitteeChainHandler :
 type CommitteeChainHandler interface {
-	CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
-	CommitteesForSigningFromViewHashForShard(hash common.Hash, shardID byte, threshold int) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
+	CommitteesFromViewHashForShard(hash common.Hash, shardID byte, threshold int) ([]incognitokey.CommitteePublicKey, error)
 	ProposerByTimeSlot(byte, int64, []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey
 	FinalView() multiview.View
 	CommitteeEngineVersion() uint

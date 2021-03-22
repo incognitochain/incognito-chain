@@ -552,13 +552,13 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			shardCommitteeEngine = InitShardCommitteeEngineV2(
 				v.consensusStateDB,
 				v.ShardHeight, v.ShardID, v.BestBlockHash,
-				block.Header.CommitteeFromBlock, block.Header.CommitteesSubsetFromBlock, blockchain)
+				block.Header.CommitteeFromBlock, blockchain)
 		} else {
 			if v.BeaconHeight > blockchain.config.ChainParams.ConsensusV3Height {
 				shardCommitteeEngine = InitShardCommitteeEngineV2(
 					v.consensusStateDB,
 					v.ShardHeight, v.ShardID, v.BestBlockHash,
-					block.Header.CommitteeFromBlock, block.Header.CommitteesSubsetFromBlock, blockchain)
+					block.Header.CommitteeFromBlock, blockchain)
 			} else {
 				shardCommitteeEngine = InitShardCommitteeEngineV1(
 					v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
@@ -961,7 +961,7 @@ func (blockchain *BlockChain) getCommitteesForSigning(
 		res = committees
 	case common.ShardChainKey:
 		if blockchain.BeaconChain.GetFinalView().GetHeight() >= blockchain.config.ChainParams.ConsensusV4Height {
-			beaconBlock, _, err := blockchain.GetBeaconBlockByHash(block.CommitteesSubsetFromBlock())
+			beaconBlock, _, err := blockchain.GetBeaconBlockByHash(block.CommitteeFromBlock())
 			if err != nil {
 				return committees, err
 			}

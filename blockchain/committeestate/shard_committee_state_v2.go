@@ -17,13 +17,13 @@ import (
 type ShardCommitteeStateHashV2 struct {
 	ShardCommitteeHash  common.Hash
 	ShardSubstituteHash common.Hash
+	CommitteeViewHeight uint64
 }
 
 //ShardCommitteeStateV2
 type ShardCommitteeStateV2 struct {
-	shardCommittee            []incognitokey.CommitteePublicKey
-	committeeFromBlock        common.Hash //Committees From Beacon Block Hash
-	committeesSubsetFromBlock common.Hash //Committees From Beacon Block Hash
+	shardCommittee     []incognitokey.CommitteePublicKey
+	committeeFromBlock common.Hash //Committees From Beacon Block Hash
 
 	mu *sync.RWMutex
 }
@@ -50,13 +50,11 @@ func NewShardCommitteeStateV2() *ShardCommitteeStateV2 {
 func NewShardCommitteeStateV2WithValue(
 	shardCommittee []incognitokey.CommitteePublicKey,
 	committeeFromBlockHash common.Hash,
-	committeesSubsetFromBlockHash common.Hash,
 ) *ShardCommitteeStateV2 {
 	return &ShardCommitteeStateV2{
-		shardCommittee:            incognitokey.DeepCopy(shardCommittee),
-		committeeFromBlock:        committeeFromBlockHash,
-		committeesSubsetFromBlock: committeesSubsetFromBlockHash,
-		mu:                        new(sync.RWMutex),
+		shardCommittee:     incognitokey.DeepCopy(shardCommittee),
+		committeeFromBlock: committeeFromBlockHash,
+		mu:                 new(sync.RWMutex),
 	}
 }
 
@@ -94,14 +92,12 @@ func (s ShardCommitteeStateV2) clone(newCommitteeState *ShardCommitteeStateV2) {
 	newCommitteeState.reset()
 	newCommitteeState.shardCommittee = incognitokey.DeepCopy(s.shardCommittee)
 	newCommitteeState.committeeFromBlock = s.committeeFromBlock
-	newCommitteeState.committeesSubsetFromBlock = s.committeesSubsetFromBlock
 }
 
 //reset : reset ShardCommitteeStateV2 to default value
 func (s *ShardCommitteeStateV2) reset() {
 	s.shardCommittee = make([]incognitokey.CommitteePublicKey, 0)
 	s.committeeFromBlock = common.Hash{}
-	s.committeesSubsetFromBlock = common.Hash{}
 }
 
 //Version ...
@@ -352,8 +348,4 @@ func (ShardCommitteeEngineV2 ShardCommitteeEngineV2) BuildTotalTxsFeeFromTxs(txs
 		Logger.log.Info("[slashing] totalTxsFee[common.PRVCoinID]:", totalTxsFee[common.PRVCoinID])
 	}
 	return totalTxsFee
-}
-
-func (engine *ShardCommitteeEngineV2) CommitteesSubsetFromBlock() common.Hash {
-	return engine.shardCommitteeStateV2.committeesSubsetFromBlock
 }
