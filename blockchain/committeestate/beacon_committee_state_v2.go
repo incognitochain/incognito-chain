@@ -184,30 +184,27 @@ func (b *BeaconCommitteeStateV2) getDataForUpgrading(env *BeaconCommitteeStateEn
 	map[string]common.Hash,
 	SwapRuleProcessor,
 ) {
-	beaconCommittee := make([]string, len(b.beaconCommittee))
 	shardCommittee := make(map[byte][]string)
 	shardSubstitute := make(map[byte][]string)
-	shardCommonPool := make([]string, len(b.shardCommittee))
 	numberOfAssignedCandidates := b.numberOfAssignedCandidates
 	autoStake := make(map[string]bool)
 	rewardReceiver := make(map[string]privacy.PaymentAddress)
 	stakingTx := make(map[string]common.Hash)
 	swapRule := b.swapRule
 
-	copy(beaconCommittee, b.beaconCommittee)
+	beaconCommittee := common.DeepCopyString(b.beaconCommittee)
+
 	for shardID, oneShardCommittee := range b.shardCommittee {
-		shardCommittee[shardID] = make([]string, len(oneShardCommittee))
-		copy(shardCommittee[shardID], oneShardCommittee)
+		shardCommittee[shardID] = common.DeepCopyString(oneShardCommittee)
 	}
 	for shardID, oneShardSubsitute := range b.shardSubstitute {
-		shardSubstitute[shardID] = make([]string, len(oneShardSubsitute))
-		copy(shardSubstitute[shardID], oneShardSubsitute)
+		shardSubstitute[shardID] = common.DeepCopyString(oneShardSubsitute)
 	}
 	nextEpochShardCandidate := b.shardCommonPool[numberOfAssignedCandidates:]
 	currentEpochShardCandidate := b.shardCommonPool[:numberOfAssignedCandidates]
 	shardCandidates := append(currentEpochShardCandidate, nextEpochShardCandidate...)
 
-	copy(shardCommonPool, shardCandidates)
+	shardCommonPool := common.DeepCopyString(shardCandidates)
 	for k, v := range b.autoStake {
 		autoStake[k] = v
 	}

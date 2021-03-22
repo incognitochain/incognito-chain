@@ -153,17 +153,14 @@ func (b beaconCommitteeStateBase) Clone() BeaconCommitteeState {
 
 func (b beaconCommitteeStateBase) clone() *beaconCommitteeStateBase {
 	newB := newBeaconCommitteeStateBase()
-	newB.beaconCommittee = make([]string, len(b.beaconCommittee))
-	copy(newB.beaconCommittee, b.beaconCommittee)
+	newB.beaconCommittee = common.DeepCopyString(b.beaconCommittee)
 
 	for i, v := range b.shardCommittee {
-		newB.shardCommittee[i] = make([]string, len(v))
-		copy(newB.shardCommittee[i], v)
+		newB.shardCommittee[i] = common.DeepCopyString(v)
 	}
 
 	for i, v := range b.shardSubstitute {
-		newB.shardSubstitute[i] = make([]string, len(v))
-		copy(newB.shardSubstitute[i], v)
+		newB.shardSubstitute[i] = common.DeepCopyString(v)
 	}
 
 	for k, v := range b.autoStake {

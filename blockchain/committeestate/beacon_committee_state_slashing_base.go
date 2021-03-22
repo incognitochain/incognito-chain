@@ -63,8 +63,7 @@ func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingB
 	res.beaconCommitteeStateBase = *b.beaconCommitteeStateBase.clone()
 
 	res.numberOfAssignedCandidates = b.numberOfAssignedCandidates
-	res.shardCommonPool = make([]string, len(b.shardCommonPool))
-	copy(res.shardCommonPool, b.shardCommonPool)
+	res.shardCommonPool = common.DeepCopyString(b.shardCommonPool)
 	res.swapRule = cloneSwapRuleByVersion(b.swapRule)
 
 	return res
@@ -143,10 +142,8 @@ func (b *beaconCommitteeStateSlashingBase) GenerateSwapShardInstructions(
 		shardID := byte(i)
 		committees := b.shardCommittee[shardID]
 		substitutes := b.shardSubstitute[shardID]
-		tempCommittees := make([]string, len(committees))
-		copy(tempCommittees, committees)
-		tempSubstitutes := make([]string, len(substitutes))
-		copy(tempSubstitutes, substitutes)
+		tempCommittees := common.DeepCopyString(committees)
+		tempSubstitutes := common.DeepCopyString(substitutes)
 
 		swapShardInstruction, _, _, _, _ := b.swapRule.Process(
 			shardID,
@@ -269,10 +266,8 @@ func (b *beaconCommitteeStateSlashingBase) processNormalSwap(
 	newCommitteeChange := committeeChange
 	committees := env.shardCommittee[shardID]
 	substitutes := env.shardSubstitute[shardID]
-	tempCommittees := make([]string, len(committees))
-	copy(tempCommittees, committees)
-	tempSubstitutes := make([]string, len(substitutes))
-	copy(tempSubstitutes, substitutes)
+	tempCommittees := common.DeepCopyString(committees)
+	tempSubstitutes := common.DeepCopyString(substitutes)
 
 	comparedShardSwapInstruction, newCommittees, _,
 		slashingCommittees, normalSwapOutCommittees := b.swapRule.Process(
@@ -303,8 +298,7 @@ func (b *beaconCommitteeStateSlashingBase) processNormalSwap(
 			fmt.Errorf("expect swap out keys %+v, got %+v",
 				comparedShardSwapInstruction.OutPublicKeys, swapShardInstruction.OutPublicKeys)
 	}
-	b.shardCommittee[shardID] = make([]string, len(newCommittees))
-	copy(b.shardCommittee[shardID], newCommittees)
+	b.shardCommittee[shardID] = common.DeepCopyString(newCommittees)
 	b.shardSubstitute[shardID] = b.shardSubstitute[shardID][len(swapShardInstruction.InPublicKeys):]
 
 	newCommitteeChange.ShardCommitteeRemoved[shardID] = append(newCommitteeChange.ShardCommitteeRemoved[shardID],
@@ -542,19 +536,16 @@ func (engine *beaconCommitteeStateSlashingBase) SplitReward(
 }
 
 func (b *beaconCommitteeStateSlashingBase) addData(env *BeaconCommitteeStateEnvironment) {
-	env.newUnassignedCommonPool = make([]string, len(b.shardCommonPool[b.numberOfAssignedCandidates:]))
-	copy(env.newUnassignedCommonPool, b.shardCommonPool[b.numberOfAssignedCandidates:])
+	env.newUnassignedCommonPool = common.DeepCopyString(b.shardCommonPool[b.numberOfAssignedCandidates:])
 	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
 	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
 	env.shardCommittee = make(map[byte][]string)
 	for shardID, committees := range b.shardCommittee {
-		env.shardCommittee[shardID] = make([]string, len(committees))
-		copy(env.shardCommittee[shardID], committees)
+		env.shardCommittee[shardID] = common.DeepCopyString(committees)
 	}
 	env.shardSubstitute = make(map[byte][]string)
 	for shardID, substitutes := range b.shardSubstitute {
-		env.shardSubstitute[shardID] = make([]string, len(substitutes))
-		copy(env.shardSubstitute[shardID], substitutes)
+		env.shardSubstitute[shardID] = common.DeepCopyString(substitutes)
 	}
 	env.numberOfValidator = make([]int, env.ActiveShards)
 	for i := 0; i < env.ActiveShards; i++ {

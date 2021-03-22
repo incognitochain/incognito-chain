@@ -57,8 +57,7 @@ func (b *BeaconCommitteeStateV3) clone() *BeaconCommitteeStateV3 {
 	newB.beaconCommitteeStateSlashingBase = *b.beaconCommitteeStateSlashingBase.clone()
 
 	for i, v := range b.syncPool {
-		newB.syncPool[i] = make([]string, len(v))
-		copy(newB.syncPool[i], v)
+		newB.syncPool[i] = common.DeepCopyString(v)
 	}
 
 	return newB
