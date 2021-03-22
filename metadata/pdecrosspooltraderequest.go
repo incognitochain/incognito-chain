@@ -23,9 +23,9 @@ type PDECrossPoolTradeRequest struct {
 	MinAcceptableAmount uint64
 	TradingFee          uint64
 	TraderAddressStr    string
-	TxRandomStr         string
-	SubTraderAddressStr string
-	SubTxRandomStr		string
+	TxRandomStr         string `json:"TxRandomStr,omitempty"`
+	SubTraderAddressStr string `json:"SubTraderAddressStr,omitempty"`
+	SubTxRandomStr		string `json:"SubTxRandomStr,omitempty"`
 	MetadataBase
 }
 
