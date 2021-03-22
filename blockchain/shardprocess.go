@@ -758,6 +758,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		return nil, nil, nil, err
 	}
 
+	tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 	env := committeestate.
 		NewShardEnvBuilder().
 		BuildBeaconHeight(shardBestState.BeaconHeight).
@@ -776,7 +777,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildTxs(shardBlock.Body.Transactions).
 		BuildShardInstructions(shardBlock.Body.Instructions).
 		BuildCommitteesFromBlock(shardBlock.Header.CommitteeFromBlock).
-		BuildCommitteesFromBeaconView(committees).
+		BuildCommitteesFromBeaconView(tempCommittees).
 		BuildShardHeight(shardBlock.Header.Height).
 		Build()
 

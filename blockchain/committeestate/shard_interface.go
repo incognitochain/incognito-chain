@@ -18,7 +18,6 @@ type ShardCommitteeState interface {
 
 	UpdateCommitteeState(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash,
 		*CommitteeChange, error)
-	InitCommitteeState(env ShardCommitteeStateEnvironment)
 
 	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
 }
@@ -50,7 +49,7 @@ type ShardEnvBuilder interface {
 	BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder
 	BuildNumberOfFixedBlockValidators(int) ShardEnvBuilder
 	BuildCommitteesFromBlock(common.Hash) ShardEnvBuilder
-	BuildCommitteesFromBeaconView([]incognitokey.CommitteePublicKey) ShardEnvBuilder
+	BuildCommitteesFromBeaconView([]string) ShardEnvBuilder
 	Build() ShardCommitteeStateEnvironment
 }
 
@@ -78,7 +77,7 @@ type ShardCommitteeStateEnvironment interface {
 	StakingTx() map[string]string
 	CommitteesFromBlock() common.Hash
 	NumberOfFixedBlockValidators() int
-	CommitteesFromBeaconView() []incognitokey.CommitteePublicKey // This Field Is Only Use For Swap Committee
+	CommitteesFromBeaconView() []string // This Field Is Only Use For Swap Committee
 }
 
 //shardCommitteeStateEnvironment :
@@ -100,11 +99,11 @@ type shardCommitteeStateEnvironment struct {
 	stakingTx                    map[string]string
 	numberOfFixedBlockValidators int
 	committeesFromBlock          common.Hash
-	committeesFromBeaconView     []incognitokey.CommitteePublicKey
+	committeesFromBeaconView     []string
 }
 
 //BuildCommitteesFromBeacon :
-func (env *shardCommitteeStateEnvironment) BuildCommitteesFromBeaconView(committees []incognitokey.CommitteePublicKey) ShardEnvBuilder {
+func (env *shardCommitteeStateEnvironment) BuildCommitteesFromBeaconView(committees []string) ShardEnvBuilder {
 	env.committeesFromBeaconView = committees
 	return env
 }
@@ -297,7 +296,7 @@ func (env *shardCommitteeStateEnvironment) CommitteesFromBlock() common.Hash {
 	return env.committeesFromBlock
 }
 
-func (env *shardCommitteeStateEnvironment) CommitteesFromBeaconView() []incognitokey.CommitteePublicKey {
+func (env *shardCommitteeStateEnvironment) CommitteesFromBeaconView() []string {
 	return env.committeesFromBeaconView
 }
 

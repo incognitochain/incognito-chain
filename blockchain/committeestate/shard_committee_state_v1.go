@@ -22,8 +22,8 @@ type ShardCommitteeStateHash struct {
 
 //ShardCommitteeStateV1
 type ShardCommitteeStateV1 struct {
-	shardCommittee  []incognitokey.CommitteePublicKey
-	shardSubstitute []incognitokey.CommitteePublicKey
+	shardCommittee  []string
+	shardSubstitute []string
 
 	mu *sync.RWMutex
 }
@@ -39,19 +39,19 @@ func NewShardCommitteeStateV1() *ShardCommitteeStateV1 {
 //NewShardCommitteeStateV1WithValue is constructor for ShardCommitteeStateV1 with value
 //Output: pointer of ShardCommitteeStateV1 struct with value
 func NewShardCommitteeStateV1WithValue(shardCommittee, shardSubstitute []incognitokey.CommitteePublicKey) *ShardCommitteeStateV1 {
+	tempShardCommittee, _ := incognitokey.CommitteeKeyListToString(shardCommittee)
+	tempShardSubstitute, _ := incognitokey.CommitteeKeyListToString(shardSubstitute)
 	return &ShardCommitteeStateV1{
-		shardCommittee:  shardCommittee,
-		shardSubstitute: shardSubstitute,
+		shardCommittee:  tempShardCommittee,
+		shardSubstitute: tempShardSubstitute,
 		mu:              new(sync.RWMutex),
 	}
 }
 
 //clone ShardCommitteeStateV1 to new instance
 func (s ShardCommitteeStateV1) clone(newCommitteeState *ShardCommitteeStateV1) {
-	newCommitteeState.shardCommittee = make([]incognitokey.CommitteePublicKey, len(s.shardCommittee))
-	copy(newCommitteeState.shardCommittee, s.shardCommittee)
-	newCommitteeState.shardSubstitute = make([]incognitokey.CommitteePublicKey, len(s.shardSubstitute))
-	copy(newCommitteeState.shardSubstitute, s.shardSubstitute)
+	newCommitteeState.shardCommittee = common.DeepCopyString(s.shardCommittee)
+	newCommitteeState.shardSubstitute = common.DeepCopyString(s.shardSubstitute)
 }
 
 //Clone ...
@@ -70,59 +70,18 @@ func (s *ShardCommitteeStateV1) Version() int {
 
 //GetShardCommittee get shard committees
 func (s *ShardCommitteeStateV1) GetShardCommittee() []incognitokey.CommitteePublicKey {
-	return incognitokey.DeepCopy(s.shardCommittee)
+	res, _ := incognitokey.CommitteeBase58KeyListToStruct(s.shardCommittee)
+	return res
 }
 
 //GetShardSubstitute get shard pending validators
 func (s *ShardCommitteeStateV1) GetShardSubstitute() []incognitokey.CommitteePublicKey {
-	return incognitokey.DeepCopy(s.shardSubstitute)
+	res, _ := incognitokey.CommitteeBase58KeyListToStruct(s.shardSubstitute)
+	return res
 }
 
 func (s *ShardCommitteeStateV1) GetCommitteeFromBlock() common.Hash {
 	return common.Hash{}
-}
-
-//InitCommitteeState init committee state at genesis block or anytime restore program
-//	- call function processInstructionFromBeacon for process instructions received from beacon
-//	- call function processShardBlockInstruction for process shard block instructions
-func (s *ShardCommitteeStateV1) InitCommitteeState(env ShardCommitteeStateEnvironment) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	shardPendingValidator := []string{}
-	newSubstitutes := []incognitokey.CommitteePublicKey{}
-
-	shardsCommittees := []string{}
-
-	for _, beaconInstruction := range env.BeaconInstructions() {
-		if beaconInstruction[0] == instruction.STAKE_ACTION {
-			shardsCommittees = strings.Split(beaconInstruction[1], ",")
-		}
-		if beaconInstruction[0] == instruction.ASSIGN_ACTION {
-			assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(beaconInstruction)
-			if err == nil && assignInstruction.ChainID == int(env.ShardID()) {
-				shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
-				newSubstitutes = append(newSubstitutes, assignInstruction.ShardCandidatesStruct...)
-			}
-		}
-	}
-
-	newShardCandidateStructs := []incognitokey.CommitteePublicKey{}
-	for _, candidate := range shardsCommittees {
-		key := incognitokey.CommitteePublicKey{}
-		err := key.FromBase58(candidate)
-		if err != nil {
-			panic(err)
-		}
-		newShardCandidateStructs = append(newShardCandidateStructs, key)
-	}
-
-	newCommittees := []incognitokey.CommitteePublicKey{}
-	newCommittees = append(newCommittees, newShardCandidateStructs[int(env.ShardID())*
-		env.MinShardCommitteeSize():(int(env.ShardID())*env.MinShardCommitteeSize())+env.MinShardCommitteeSize()]...)
-
-	s.shardCommittee = append(s.shardCommittee, newCommittees...)
-	s.shardSubstitute = append(s.shardSubstitute, newSubstitutes...)
 }
 
 //InitGenesisShardCommitteeStateV1 init committee state at genesis block or anytime restore program
@@ -132,7 +91,7 @@ func InitGenesisShardCommitteeStateV1(env ShardCommitteeStateEnvironment) *Shard
 	s := NewShardCommitteeStateV1()
 
 	shardPendingValidator := []string{}
-	newSubstitutes := []incognitokey.CommitteePublicKey{}
+	newSubstituteStructs := []incognitokey.CommitteePublicKey{}
 
 	shardsCommittees := []string{}
 
@@ -144,7 +103,7 @@ func InitGenesisShardCommitteeStateV1(env ShardCommitteeStateEnvironment) *Shard
 			assignInstruction, err := instruction.ValidateAndImportAssignInstructionFromString(beaconInstruction)
 			if err == nil && assignInstruction.ChainID == int(env.ShardID()) {
 				shardPendingValidator = append(shardPendingValidator, assignInstruction.ShardCandidates...)
-				newSubstitutes = append(newSubstitutes, assignInstruction.ShardCandidatesStruct...)
+				newSubstituteStructs = append(newSubstituteStructs, assignInstruction.ShardCandidatesStruct...)
 			}
 		}
 	}
@@ -159,9 +118,12 @@ func InitGenesisShardCommitteeStateV1(env ShardCommitteeStateEnvironment) *Shard
 		newShardCandidateStructs = append(newShardCandidateStructs, key)
 	}
 
-	newCommittees := []incognitokey.CommitteePublicKey{}
-	newCommittees = append(newCommittees, newShardCandidateStructs[int(env.ShardID())*
+	newCommitteeStructs := []incognitokey.CommitteePublicKey{}
+	newCommitteeStructs = append(newCommitteeStructs, newShardCandidateStructs[int(env.ShardID())*
 		env.MinShardCommitteeSize():(int(env.ShardID())*env.MinShardCommitteeSize())+env.MinShardCommitteeSize()]...)
+
+	newCommittees, _ := incognitokey.CommitteeKeyListToString(newCommitteeStructs)
+	newSubstitutes, _ := incognitokey.CommitteeKeyListToString(newSubstituteStructs)
 
 	s.shardCommittee = append(s.shardCommittee, newCommittees...)
 	s.shardSubstitute = append(s.shardSubstitute, newSubstitutes...)
@@ -208,8 +170,8 @@ func (s *ShardCommitteeStateV1) UpdateCommitteeState(
 func (s *ShardCommitteeStateV1) GenerateSwapInstructions(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	shardSubstitutes, _ := incognitokey.CommitteeKeyListToString(s.shardSubstitute)
-	shardCommittees, _ := incognitokey.CommitteeKeyListToString(s.shardCommittee)
+	shardSubstitutes := common.DeepCopyString(s.shardSubstitute)
+	shardCommittees := common.DeepCopyString(s.shardCommittee)
 	fixedProducerShardValidators := make([]string, env.NumberOfFixedBlockValidators())
 	copy(fixedProducerShardValidators, shardCommittees[:env.NumberOfFixedBlockValidators()])
 	shardCommittees = shardCommittees[env.NumberOfFixedBlockValidators():]
@@ -236,22 +198,12 @@ func (s ShardCommitteeStateV1) hash() (*ShardCommitteeStateHash, error) {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
 	}
 
-	committeesStr, err := incognitokey.CommitteeKeyListToString(s.shardCommittee)
+	committeeHash, err := common.GenerateHashFromStringArray(s.shardCommittee)
 	if err != nil {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
 	}
 
-	committeeHash, err := common.GenerateHashFromStringArray(committeesStr)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-
-	substituteStr, err := incognitokey.CommitteeKeyListToString(s.shardSubstitute)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-
-	substituteHash, err := common.GenerateHashFromStringArray(substituteStr)
+	substituteHash, err := common.GenerateHashFromStringArray(s.shardSubstitute)
 	if err != nil {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
 	}
@@ -274,7 +226,7 @@ func (s *ShardCommitteeStateV1) processInstructionFromBeacon(
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 	newSubstitutes := extractAssignInstruction(listInstructions, shardID)
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(newSubstitutes)
-	s.shardSubstitute = append(s.shardSubstitute, temp...)
+	s.shardSubstitute = append(s.shardSubstitute, newSubstitutes...)
 	committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], temp...)
 	return committeeChange, nil
 }
@@ -303,11 +255,11 @@ func (s *ShardCommitteeStateV1) processShardBlockInstruction(
 	var err error
 	newCommitteeChange := committeeChange
 	shardID := env.ShardID()
-	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(s.shardSubstitute)
+	shardPendingValidator := common.DeepCopyString(s.shardSubstitute)
 	if err != nil {
 		return nil, err
 	}
-	shardCommittee, err := incognitokey.CommitteeKeyListToString(s.shardCommittee)
+	shardCommittee := common.DeepCopyString(s.shardCommittee)
 	if err != nil {
 		return nil, err
 	}
@@ -402,15 +354,8 @@ func (s *ShardCommitteeStateV1) processShardBlockInstruction(
 		}
 	}
 
-	s.shardSubstitute, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
-	if err != nil {
-		return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	}
-
-	s.shardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(append(fixedProducerShardValidators, shardCommittee...))
-	if err != nil {
-		return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	}
+	s.shardSubstitute = common.DeepCopyString(shardPendingValidator)
+	s.shardCommittee = common.DeepCopyString(append(fixedProducerShardValidators, shardCommittee...))
 
 	return newCommitteeChange, nil
 }
@@ -432,14 +377,13 @@ func (s *ShardCommitteeStateV1) processShardBlockInstructionForKeyListV2(
 				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
 			removedCommitteeSize := len(swapInstruction.InPublicKeys)
-			remainedShardCommittees := incognitokey.DeepCopy(s.shardCommittee[removedCommitteeSize:])
-			tempShardSwappedCommittees := incognitokey.DeepCopy(s.shardCommittee[:env.MinShardCommitteeSize()])
+			remainedShardCommittees := common.DeepCopyString(s.shardCommittee[removedCommitteeSize:])
+			tempShardSwappedCommittees := common.DeepCopyString(s.shardCommittee[:env.MinShardCommitteeSize()])
 			if !reflect.DeepEqual(swapInstruction.OutPublicKeyStructs, tempShardSwappedCommittees) {
 				return nil, NewCommitteeStateError(ErrUpdateCommitteeState,
 					fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeyStructs))
 			}
-			shardCommitteesStruct := append(swapInstruction.InPublicKeyStructs, remainedShardCommittees...)
-			s.shardCommittee = incognitokey.DeepCopy(shardCommitteesStruct)
+			s.shardCommittee = common.DeepCopyString(append(swapInstruction.InPublicKeys, remainedShardCommittees...))
 			committeeReplace := [2][]incognitokey.CommitteePublicKey{}
 			committeeReplace[common.REPLACE_IN] = incognitokey.DeepCopy(swapInstruction.InPublicKeyStructs)
 			committeeReplace[common.REPLACE_OUT] = incognitokey.DeepCopy(swapInstruction.OutPublicKeyStructs)
