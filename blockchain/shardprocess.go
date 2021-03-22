@@ -172,7 +172,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 				beaconHeight = v.GetHeight()
 			}
 		}
-		if curView.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
+		if curView.CommitteeStateVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
 			if beaconHeight <= curView.BeaconHeight {
 				Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v curView.BeaconHeight %+v",
 					beaconHeight, curView.BeaconHeight)

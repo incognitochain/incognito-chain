@@ -411,7 +411,3 @@ func (s ShardCommitteeStateV1) BuildTotalTxsFeeFromTxs(txs []metadata.Transactio
 	}
 	return totalTxsFee
 }
-
-func (s ShardCommitteeStateV1) GetCommitteesSubsetFromBlock() common.Hash {
-	return common.Hash{}
-}

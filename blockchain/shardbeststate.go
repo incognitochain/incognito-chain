@@ -409,7 +409,7 @@ func InitShardCommitteeStateV2(
 	shardID byte,
 	shardHash common.Hash,
 	committeeFromBlockHash common.Hash,
-	bc *BlockChain) committeestate.ShardCommitteeEngine {
+	bc *BlockChain) *committeestate.ShardCommitteeStateV2 {
 	Logger.log.Infof("SHARDID %+v | Shard Height %+v, Init Shard Committee Engine V2", shardID, shardHeight)
 	shardCommittees := []incognitokey.CommitteePublicKey{}
 	var err error
@@ -422,7 +422,7 @@ func InitShardCommitteeStateV2(
 			panic(err)
 		}
 	}
-	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(shardCommittees, committeeFromBlockHash, committeesSubsetFromBlockFromBlockHash)
+	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(shardCommittees, committeeFromBlockHash)
 
 	return shardCommitteeState
 }

@@ -14,7 +14,6 @@ type ShardCommitteeState interface {
 	GetShardCommittee() []incognitokey.CommitteePublicKey
 	GetShardSubstitute() []incognitokey.CommitteePublicKey
 	GetCommitteeFromBlock() common.Hash
-	GetCommitteesSubsetFromBlock() common.Hash
 
 	UpdateCommitteeState(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash,
 		*CommitteeChange, error)

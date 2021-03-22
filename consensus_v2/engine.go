@@ -289,7 +289,7 @@ func (engine *Engine) updateVersion(chainID int) {
 		engine.version[chainID] = 3
 	}
 
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.BlockProducingV3 {
+	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV4Height {
 		engine.version[chainID] = 4
 	}
 }
