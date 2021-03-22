@@ -569,7 +569,7 @@ func TestBeaconCommitteeEngineV2_GenerateAllSwapShardInstructions(t *testing.T) 
 			args: args{
 				env: &BeaconCommitteeStateEnvironment{
 					NumberOfFixedShardBlockValidator: 0,
-					ActiveShards:                     2,
+					ActiveShards:                     1,
 					MaxShardCommitteeSize:            4,
 				},
 			},

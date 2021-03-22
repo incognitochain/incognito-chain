@@ -36,6 +36,6 @@ func InsertValueToSliceByIndex(list []string, value string, index int) []string 
 
 func DeepCopyString(src []string) []string {
 	dst := make([]string, len(src))
-	copy(src, dst)
+	copy(dst, src)
 	return dst
 }

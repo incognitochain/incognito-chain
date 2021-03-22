@@ -138,12 +138,10 @@ func (b *beaconCommitteeStateSlashingBase) GenerateSwapShardInstructions(
 	[]*instruction.SwapShardInstruction, error) {
 	b.addData(env)
 	swapShardInstructions := []*instruction.SwapShardInstruction{}
-	for i := 0; i < len(b.shardCommittee); i++ {
+	for i := 0; i < env.ActiveShards; i++ {
 		shardID := byte(i)
-		committees := b.shardCommittee[shardID]
-		substitutes := b.shardSubstitute[shardID]
-		tempCommittees := common.DeepCopyString(committees)
-		tempSubstitutes := common.DeepCopyString(substitutes)
+		tempCommittees := common.DeepCopyString(b.shardCommittee[shardID])
+		tempSubstitutes := common.DeepCopyString(b.shardSubstitute[shardID])
 
 		swapShardInstruction, _, _, _, _ := b.swapRule.Process(
 			shardID,
