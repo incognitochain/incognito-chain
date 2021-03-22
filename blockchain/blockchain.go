@@ -170,7 +170,7 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 		if blockchain.config.ChainParams.StakingFlowV2 == 1 {
 			committeeEngine = committeestate.NewShardCommitteeEngineV2(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV2())
 		} else {
-			committeeEngine = committeestate.NewShardCommitteeEngineV1(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
+			committeeEngine = committeestate.NewShardCommitteeStateV1()
 		}
 	}
 

@@ -112,10 +112,8 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 	//========updateShardBestState best state with new shardBlock
 	newBeststate, hashes, _, err := shardBestState.updateShardBestState(blockchain, shardBlock, beaconBlocks, committees)
 	if err != nil {
-		Logger.log.Info("err:", err)
 		return err
 	}
-	shardBestState.shardCommitteeEngine.AbortUncommittedShardState()
 	//========Post verififcation: verify new beaconstate with corresponding shardBlock
 	if err := newBeststate.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
 		Logger.log.Info("err:", err)
@@ -214,32 +212,20 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	if err != nil {
 		return err
 	}
-	var err2 error
-	defer func() {
-		if err2 != nil {
-			newBestState.shardCommitteeEngine.AbortUncommittedShardState()
-		}
-	}()
 
 	//========Post verification: verify new beaconstate with corresponding block
 	if shouldValidate {
 		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-		if err2 = newBestState.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
-			return err2
+		if err = newBestState.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
+			return err
 		}
 	} else {
 		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
 	}
 
 	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardID, blockHeight, blockHash)
-	err2 = blockchain.processSalaryInstructions(newBestState.rewardStateDB, beaconBlocks, shardID)
+	err2 := blockchain.processSalaryInstructions(newBestState.rewardStateDB, beaconBlocks, shardID)
 	if err2 != nil {
-		return err2
-	}
-
-	Logger.log.Infof("SHARD %+v | Update Committee State Block Height %+v with hash %+v",
-		newBestState.ShardID, shardBlock.Header.Height, blockHash)
-	if err2 = newBestState.shardCommitteeEngine.Commit(hashes); err2 != nil {
 		return err2
 	}
 
@@ -492,6 +478,8 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	txInstructions [][]string, shardID byte, committees []incognitokey.CommitteePublicKey) error {
 	var err error
 	var isOldBeaconHeight = false
+	instructions := [][]string{}
+	beaconInstructions := [][]string{}
 	startTimeVerifyPreProcessingShardBlockForSigning := time.Now()
 	// Verify Transaction
 	//get beacon height from shard block
@@ -500,61 +488,42 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 	// Verify Instruction
-	beaconInstructions := [][]string{}
 
 	shardCommittee, err := incognitokey.CommitteeKeyListToString(committees)
 	if err != nil {
 		return err
 	}
 
-	shardPendingValidator := curView.GetShardPendingValidator()
-	shardPendingValidatorStr := []string{}
-
-	if curView != nil {
-		var err error
-		shardPendingValidatorStr, err = incognitokey.
-			CommitteeKeyListToString(shardPendingValidator)
-		if err != nil {
-			return err
-		}
-	}
+	currentPendingValidators := curView.GetShardPendingValidator()
+	shardPendingValidatorStr, _ := incognitokey.CommitteeKeyListToString(currentPendingValidators)
 
 	beaconInstructions, _, err = blockchain.
-		preProcessInstructionFromBeacon(beaconBlocks, curView.ShardID)
+		extractInstructionsFromBeacon(beaconBlocks, curView.ShardID)
 	if err != nil {
 		return err
 	}
 
-	env := committeestate.
-		NewShardEnvBuilder().
-		BuildShardID(curView.ShardID).
-		BuildBeaconInstructions(beaconInstructions).
-		BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
-		BuildShardHeight(curView.ShardHeight).
-		Build()
-
-	committeeChange, err := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
-	if err != nil {
-		return err
-	}
-	curView.shardCommitteeEngine.AbortUncommittedShardState()
-
-	instructions := [][]string{}
 	if curView.BeaconHeight == shardBlock.Header.BeaconHeight {
 		isOldBeaconHeight = true
 	}
 
-	shardPendingValidator, err = updateCommiteesWithAddedAndRemovedListValidator(shardPendingValidator,
-		committeeChange.ShardSubstituteAdded[curView.ShardID],
-		committeeChange.ShardSubstituteRemoved[curView.ShardID])
+	if curView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+		env := committeestate.
+			NewShardEnvBuilder().
+			BuildBeaconInstructions(beaconInstructions).
+			BuildShardID(curView.ShardID).
+			Build()
 
-	if err != nil {
-		return NewBlockChainError(ProcessInstructionFromBeaconError, err)
-	}
+		addedSubstitutes := curView.shardCommitteeEngine.ProcessAssignInstruction(env)
 
-	shardPendingValidatorStr, err = incognitokey.CommitteeKeyListToString(shardPendingValidator)
-	if err != nil {
-		return NewBlockChainError(ProcessInstructionFromBeaconError, err)
+		currentPendingValidators, err = updateCommitteesWithAddedAndRemovedListValidator(currentPendingValidators,
+			addedSubstitutes)
+		if err != nil {
+			return NewBlockChainError(ProcessInstructionFromBeaconError, err)
+		}
+
+		shardPendingValidatorStr, _ = incognitokey.CommitteeKeyListToString(currentPendingValidators)
+
 	}
 
 	instructions, _, shardCommittee, err = blockchain.generateInstruction(curView, shardID,
@@ -783,7 +752,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	}
 	shardBestState.TotalTxnsExcludeSalary += uint64(temp)
 	beaconInstructions, _, err := blockchain.
-		preProcessInstructionFromBeacon(beaconBlocks, shardBestState.ShardID)
+		extractInstructionsFromBeacon(beaconBlocks, shardBestState.ShardID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -837,7 +806,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 
 	// Get all instructions from beacon here
 	instructions, _, err := blockchain.
-		preProcessInstructionFromBeacon([]*types.BeaconBlock{genesisBeaconBlock}, shardBestState.ShardID)
+		extractInstructionsFromBeacon([]*types.BeaconBlock{genesisBeaconBlock}, shardBestState.ShardID)
 	if err != nil {
 		return err
 	}

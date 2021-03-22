@@ -11,18 +11,18 @@ import (
 type ShardCommitteeEngine interface {
 	Version() int
 	Clone() ShardCommitteeEngine
-	Commit(*ShardCommitteeStateHash) error
-	AbortUncommittedShardState()
+	GetShardCommittee() []incognitokey.CommitteePublicKey
+	GetShardSubstitute() []incognitokey.CommitteePublicKey
+	GetCommitteeFromBlock() common.Hash
+	GetCommitteesSubsetFromBlock() common.Hash
+
 	UpdateCommitteeState(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash,
 		*CommitteeChange, error)
 	InitCommitteeState(env ShardCommitteeStateEnvironment)
-	GetShardCommittee() []incognitokey.CommitteePublicKey
-	GetShardSubstitute() []incognitokey.CommitteePublicKey
-	CommitteeFromBlock() common.Hash
-	ProcessInstructionFromBeacon(env ShardCommitteeStateEnvironment) (*CommitteeChange, error)
+
+	ProcessAssignInstruction(env ShardCommitteeStateEnvironment) []incognitokey.CommitteePublicKey
 	GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
 	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
-	CommitteesSubsetFromBlock() common.Hash
 }
 
 //ShardEnvBuilder : Interface for building shard environment

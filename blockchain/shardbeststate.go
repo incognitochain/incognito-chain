@@ -114,11 +114,11 @@ func (shardBestState *ShardBestState) GetBlockTime() int64 {
 }
 
 func (shardBestState *ShardBestState) CommitteeFromBlock() common.Hash {
-	return shardBestState.shardCommitteeEngine.CommitteeFromBlock()
+	return shardBestState.shardCommitteeEngine.GetCommitteeFromBlock()
 }
 
 func (shardBestState *ShardBestState) CommitteesSubsetFromBlock() common.Hash {
-	return shardBestState.shardCommitteeEngine.CommitteesSubsetFromBlock()
+	return shardBestState.shardCommitteeEngine.GetCommitteesSubsetFromBlock()
 }
 
 // var bestStateShardMap = make(map[byte]*ShardBestState)
@@ -399,9 +399,8 @@ func InitShardCommitteeEngineV1(
 	shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
 
 	shardCommitteeState := committeestate.NewShardCommitteeStateV1WithValue(shardCommittees, shardPendingValidators)
-	shardCommitteeEngine := committeestate.NewShardCommitteeEngineV1(shardHeight, shardHash, shardID, shardCommitteeState)
 
-	return shardCommitteeEngine
+	return shardCommitteeState
 }
 
 //InitShardCommitteeEngineV2 : Init shard committee engine for every time restore process

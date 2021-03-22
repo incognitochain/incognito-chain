@@ -13,12 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
-//ShardCommitteeStateHash
-type ShardCommitteeStateHashV2 struct {
-	ShardCommitteeHash  common.Hash
-	ShardSubstituteHash common.Hash
-}
-
 //ShardCommitteeStateV2
 type ShardCommitteeStateV2 struct {
 	shardCommittee            []incognitokey.CommitteePublicKey
@@ -60,7 +54,7 @@ func NewShardCommitteeStateV2WithValue(
 	}
 }
 
-//NewShardCommitteeEngineV1 is default constructor for ShardCommitteeEngineV2
+//NewShardCommitteeStateV1WithValue is default constructor for ShardCommitteeEngineV2
 //Output: pointer of ShardCommitteeEngineV2
 func NewShardCommitteeEngineV2(shardHeight uint64,
 	shardHash common.Hash, shardID byte, shardCommitteeStateV2 *ShardCommitteeStateV2) *ShardCommitteeEngineV2 {
@@ -119,7 +113,7 @@ func (engine *ShardCommitteeEngineV2) GetShardSubstitute() []incognitokey.Commit
 	return []incognitokey.CommitteePublicKey{}
 }
 
-func (engine *ShardCommitteeEngineV2) CommitteeFromBlock() common.Hash {
+func (engine *ShardCommitteeEngineV2) GetCommitteeFromBlock() common.Hash {
 	return engine.shardCommitteeStateV2.committeeFromBlock
 }
 
@@ -294,9 +288,8 @@ func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 }
 
 //ProcessInstructionFromBeacon : process instrucction from beacon
-func (engine *ShardCommitteeEngineV2) ProcessInstructionFromBeacon(
-	env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
-	return NewCommitteeChange(), nil
+func (engine *ShardCommitteeEngineV2) ProcessAssignInstruction(env ShardCommitteeStateEnvironment) []incognitokey.CommitteePublicKey {
+	return []incognitokey.CommitteePublicKey{}
 }
 
 //generateUncommittedCommitteeHashes generate hashes relate to uncommitted committees of struct ShardCommitteeEngineV2
@@ -354,6 +347,6 @@ func (ShardCommitteeEngineV2 ShardCommitteeEngineV2) BuildTotalTxsFeeFromTxs(txs
 	return totalTxsFee
 }
 
-func (engine *ShardCommitteeEngineV2) CommitteesSubsetFromBlock() common.Hash {
+func (engine *ShardCommitteeEngineV2) GetCommitteesSubsetFromBlock() common.Hash {
 	return engine.shardCommitteeStateV2.committeesSubsetFromBlock
 }
