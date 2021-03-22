@@ -146,7 +146,7 @@ func (blockchain *BlockChain) GetTransactionHashByReceiverV2(
 
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *types.ShardBlock) error {
 	// filter double withdraw request
-	withdrawReqTable := make(map[string]privacy.PaymentAddress)
+	withdrawReqTable := make(map[string]*metadata.WithDrawRewardRequest)
 	for _, tx := range shardBlock.Body.Transactions {
 		switch tx.GetMetadataType() {
 		case metadata.WithDrawRewardRequestMeta:
@@ -159,7 +159,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 				return fmt.Errorf("cannot parse withdraw request for tx %v", tx.Hash().String())
 			}
 			if _, ok = withdrawReqTable[tx.Hash().String()]; !ok {
-				withdrawReqTable[tx.Hash().String()] = md.PaymentAddress
+				withdrawReqTable[tx.Hash().String()] = md
 			}
 		}
 	}
@@ -171,13 +171,19 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			if tx.GetMetadata() == nil {
 				return fmt.Errorf("metadata is nil for type %v", tx.GetMetadataType())
 			}
-			metaResponse := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
-			rewardPaymentAddress, ok := withdrawReqTable[metaResponse.TxRequest.String()]
+
+			metaResponse, ok := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
+			if !ok {
+				return fmt.Errorf("cannot cast %v to a withdraw reward response", tx.GetMetadata())
+			}
+
+			metaRequest, ok := withdrawReqTable[metaResponse.TxRequest.String()]
 			if !ok {
 				return fmt.Errorf("cannot found tx request for tx withdraw reward response %v", tx.Hash().String())
 			} else {
 				delete(withdrawReqTable, metaResponse.TxRequest.String())
 			}
+			rewardPaymentAddress := metaRequest.PaymentAddress
 
 			isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 			//check tx mint
@@ -185,8 +191,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 				return errors.Errorf("[Mint Withdraw Reward] It is not tx mint with error: %v", err)
 			}
 			//check tokenID
-			if cmp, err := metaResponse.TokenID.Cmp(coinID); err != nil || cmp != 0 {
-				return errors.Errorf("[Mint Withdraw Reward] Token dont match: %v and %v", metaResponse.TokenID.String(), coinID.String())
+			if metaRequest.TokenID.String() != coinID.String() {
+				return fmt.Errorf("token in the request (%v) and the minted token mismatch (%v)", metaRequest.TokenID.String(), coinID.String())
 			}
 
 			//check amount & receiver
