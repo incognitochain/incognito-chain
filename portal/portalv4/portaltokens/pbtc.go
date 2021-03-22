@@ -275,7 +275,7 @@ func (p PortalBTCTokenProcessor) IsAcceptableTxSize(num_utxos int, num_unshield_
 	// TODO: do experiments depend on external chain miner's habit
 	A := 1
 	B := 1
-	C := 8
+	C := 6
 	return A*num_utxos+B*num_unshield_id <= C
 }
 
