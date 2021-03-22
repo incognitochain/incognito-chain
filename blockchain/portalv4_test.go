@@ -104,7 +104,7 @@ func (s *PortalTestSuiteV4) SetupTest() {
 		BatchNumBlks:               45,
 		MinConfirmationIncBlockNum: 3,
 		PortalReplacementAddress:   "",
-		MaxFeeForEachStep:          500,
+		MaxFeeForEachStep:          20,
 		TimeSpaceForFeeReplacement: 2 * time.Minute,
 	}
 	s.blockChain = &BlockChain{
@@ -1207,11 +1207,11 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 			fee:                 1500,
 			outputs: []OutPut{
 				{
-					externalAddress: "bc1qqyxfxeh6k5kt29e30pzhxs7kd59fvr76u95qat",
+					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
 					amount:          100,
 				},
 				{
-					externalAddress: "bc1qj9dgez2sstg8d06ehjgw6wf4hsjxr3aake0dzs",
+					externalAddress: "2ND6aMnSBt4jrMiGvaxKzW57rUEDihsQARK",
 					amount:          100,
 				},
 			},
@@ -1224,11 +1224,11 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 			fee:                 800,
 			outputs: []OutPut{
 				{
-					externalAddress: "bc1qqyxfxeh6k5kt29e30pzhxs7kd59fvr76u95qat",
+					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
 					amount:          100,
 				},
 				{
-					externalAddress: "bc1qj9dgez2sstg8d06ehjgw6wf4hsjxr3aake0dzs",
+					externalAddress: "2ND6aMnSBt4jrMiGvaxKzW57rUEDihsQARK",
 					amount:          100,
 				},
 			},
@@ -1238,14 +1238,14 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			tokenID:             portalcommonv4.PortalBTCIDStr,
 			batchID:             BatchID1,
-			fee:                 1200,
+			fee:                 1000,
 			outputs: []OutPut{
 				{
-					externalAddress: "bc1qqyxfxeh6k5kt29e30pzhxs7kd59fvr76u95qat",
+					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
 					amount:          100,
 				},
 				{
-					externalAddress: "bc1qj9dgez2sstg8d06ehjgw6wf4hsjxr3aake0dzs",
+					externalAddress: "2ND6aMnSBt4jrMiGvaxKzW57rUEDihsQARK",
 					amount:          100,
 				},
 			},
@@ -1255,14 +1255,14 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			tokenID:             portalcommonv4.PortalBTCIDStr,
 			batchID:             BatchID1,
-			fee:                 1300,
+			fee:                 1100,
 			outputs: []OutPut{
 				{
-					externalAddress: "bc1qqyxfxeh6k5kt29e30pzhxs7kd59fvr76u95qat",
+					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
 					amount:          100,
 				},
 				{
-					externalAddress: "bc1qj9dgez2sstg8d06ehjgw6wf4hsjxr3aake0dzs",
+					externalAddress: "2ND6aMnSBt4jrMiGvaxKzW57rUEDihsQARK",
 					amount:          100,
 				},
 			},
@@ -1272,10 +1272,10 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			tokenID:             portalcommonv4.PortalBTCIDStr,
 			batchID:             BatchID2,
-			fee:                 1500,
+			fee:                 1200,
 			outputs: []OutPut{
 				{
-					externalAddress: "18d9DFY9oGVCLUg7mPbqj3ZxePspypsUHo",
+					externalAddress: "2NBf3uA9wMJRT2eM7AyXkM6RXcPfDi24rPA",
 					amount:          200,
 				},
 			},
@@ -1285,10 +1285,10 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 			custodianIncAddress: CUS_INC_ADDRESS_1,
 			tokenID:             portalcommonv4.PortalBTCIDStr,
 			batchID:             BatchID3,
-			fee:                 1500,
+			fee:                 1000,
 			outputs: []OutPut{
 				{
-					externalAddress: "18d9DFY9oGVCLUg7mPbqj3ZxePspypsUHo",
+					externalAddress: "2N8mFbLG59ugUJM9ZBP292i6nXZHmfAw5Lk",
 					amount:          100,
 				},
 			},
@@ -1308,7 +1308,7 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		},
 		map[uint64]uint{
 			900:  900,
-			1500: 1200,
+			1500: 1000,
 		},
 	)
 
@@ -1322,7 +1322,7 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		},
 		map[uint64]uint{
 			1000: 1000,
-			1500: 1500,
+			1500: 1200,
 		},
 	)
 

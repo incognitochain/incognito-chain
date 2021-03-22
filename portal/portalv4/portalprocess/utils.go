@@ -247,7 +247,7 @@ func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, stateDB *s
 	return nil
 }
 
-func UpdatePortalStateAfterReplaceFeedRequest(
+func UpdatePortalStateAfterReplaceFeeRequest(
 	currentPortalV4State *CurrentPortalStateV4, unshieldBatch *statedb.ProcessedUnshieldRequestBatch, beaconHeight uint64, fee uint, tokenIDStr, batchIDStr string) {
 	if currentPortalV4State.ProcessedUnshieldRequests == nil {
 		currentPortalV4State.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}

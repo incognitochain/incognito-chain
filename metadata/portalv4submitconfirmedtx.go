@@ -24,30 +24,27 @@ type PortalSubmitConfirmedTxAction struct {
 }
 
 type PortalSubmitConfirmedTxContent struct {
-	TokenID       string
-	UnshieldProof string
-	UTXOs         []*statedb.UTXO
-	BatchID       string
-	TxReqID       common.Hash
-	ShardID       byte
+	TokenID string
+	UTXOs   []*statedb.UTXO
+	BatchID string
+	TxReqID common.Hash
+	ShardID byte
 }
 
 type PortalSubmitConfirmedTxStatus struct {
-	TokenID       string
-	UnshieldProof string
-	UTXOs         []*statedb.UTXO
-	BatchID       string
-	TxHash        string
-	Status        int
+	TokenID string
+	UTXOs   []*statedb.UTXO
+	BatchID string
+	TxHash  string
+	Status  int
 }
 
-func NewPortalSubmitConfirmedTxStatus(unshieldProof, tokenID, batchID string, UTXOs []*statedb.UTXO, status int) *PortalSubmitConfirmedTxStatus {
+func NewPortalSubmitConfirmedTxStatus(tokenID, batchID string, UTXOs []*statedb.UTXO, status int) *PortalSubmitConfirmedTxStatus {
 	return &PortalSubmitConfirmedTxStatus{
-		TokenID:       tokenID,
-		BatchID:       batchID,
-		UnshieldProof: unshieldProof,
-		UTXOs:         UTXOs,
-		Status:        status,
+		TokenID: tokenID,
+		BatchID: batchID,
+		UTXOs:   UTXOs,
+		Status:  status,
 	}
 }
 
