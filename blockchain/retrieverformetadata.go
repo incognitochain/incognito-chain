@@ -272,3 +272,7 @@ func (blockchain *BlockChain) GetPortalV4MinUnshieldAmount(tokenIDStr string, be
 func (blockchain *BlockChain) GetPortalReplacementAddress(beaconHeight uint64) string {
 	return blockchain.GetPortalParamsV4(beaconHeight).PortalReplacementAddress
 }
+
+func (blockchain *BlockChain) GetPortalV4MultiSigAddress (tokenIDStr string, beaconHeight uint64) string {
+	return blockchain.GetPortalParamsV4(beaconHeight).MultiSigAddresses[tokenIDStr]
+}

@@ -317,6 +317,20 @@ func (_m *ChainRetriever) GetPortalV4MinUnshieldAmount(tokenIDStr string, beacon
 	return r0
 }
 
+// GetPortalV4MultiSigAddress provides a mock function with given fields: tokenIDStr, beaconHeight
+func (_m *ChainRetriever) GetPortalV4MultiSigAddress(tokenIDStr string, beaconHeight uint64) string {
+	ret := _m.Called(tokenIDStr, beaconHeight)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, uint64) string); ok {
+		r0 = rf(tokenIDStr, beaconHeight)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // GetStakingAmountShard provides a mock function with given fields:
 func (_m *ChainRetriever) GetStakingAmountShard() uint64 {
 	ret := _m.Called()
