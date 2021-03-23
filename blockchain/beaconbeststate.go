@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"time"
 
@@ -720,6 +721,13 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 				if err != nil {
 					panic(err)
 				}
+				for _, v := range tempBeaconBlock.Body.Instructions {
+					if _, err1 := instruction.ValidateAndImportRandomInstructionFromString(v); err1 == nil {
+						beaconBestState.IsGetRandomNumber = true
+						numberOfAssignedCandidates = 0
+						goto OUTER_LOOP
+					}
+				}
 				tempBeaconHeight--
 				randomTimeBeaconHash = tempBeaconBlock.Header.Hash()
 			}
@@ -754,7 +762,7 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 			)
 		}
 	}
-
+OUTER_LOOP:
 	committeeState := committeestate.NewBeaconCommitteeState(
 		version, beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool,
 		numberOfAssignedCandidates, autoStaking, rewardReceivers, stakingTx, syncingValidators,
