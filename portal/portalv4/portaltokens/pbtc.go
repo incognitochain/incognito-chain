@@ -7,17 +7,18 @@ import (
 	"errors"
 	"fmt"
 
+	"sort"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
+	btcwire "github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	btcwire "github.com/btcsuite/btcd/wire"
-	"sort"
 )
 
 type PortalBTCTokenProcessor struct {
@@ -99,7 +100,7 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 		))
 	}
 
-	if len(listUTXO) == 0 || totalValue < p.GetMinTokenAmount() {
+	if len(listUTXO) == 0 || p.ConvertExternalToIncAmount(totalValue) < p.GetMinTokenAmount() {
 		Logger.log.Errorf("Shielding amount: %v is less than the minimum threshold: %v\n", totalValue, p.GetMinTokenAmount())
 		return false, nil, fmt.Errorf("Shielding amount: %v is less than the minimum threshold: %v", totalValue, p.GetMinTokenAmount())
 	}
@@ -274,7 +275,7 @@ func (p PortalBTCTokenProcessor) IsAcceptableTxSize(num_utxos int, num_unshield_
 	// TODO: do experiments depend on external chain miner's habit
 	A := 416    // input size (include sig size) in byte
 	B := 43     // output size in byte
-	C := 102400 // max transaction size in byte ~ 100 KB
+	C := 10240 // max transaction size in byte ~ 10 KB
 	return A*num_utxos+B*num_unshield_id <= C
 }
 
@@ -334,7 +335,8 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 	broadcastTxs := []*BroadcastTx{}
 	utxo_idx := 0
 	unshield_idx := 0
-	for utxo_idx < len(utxos) && unshield_idx < len(wReqsArr) {
+	tiny_utxo_used := 0
+	for utxo_idx < len(utxos)-tiny_utxo_used && unshield_idx < len(wReqsArr) {
 		chosenUTXOs := []*statedb.UTXO{}
 		chosenUnshieldIDs := []string{}
 
@@ -352,13 +354,13 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 			utxo_idx += 1
 		} else {
 			// find the first utxo idx that the cummulative sum of utxo amount >= current unshield amount
-			for utxo_idx < len(utxos) && cur_sum_amount+utxosArr[utxo_idx].value.GetOutputAmount() < wReqsArr[unshield_idx].value.GetAmount() {
+			for utxo_idx < len(utxos)-tiny_utxo_used && cur_sum_amount+utxosArr[utxo_idx].value.GetOutputAmount() < wReqsArr[unshield_idx].value.GetAmount() {
 				cur_sum_amount += utxosArr[utxo_idx].value.GetOutputAmount()
 				chosenUTXOs = append(chosenUTXOs, utxosArr[utxo_idx].value)
 				utxo_idx += 1
 				cnt += 1
 			}
-			if utxo_idx < len(utxos) && p.IsAcceptableTxSize(cnt+1, 1) {
+			if utxo_idx < len(utxos)-tiny_utxo_used && p.IsAcceptableTxSize(cnt+1, 1) {
 				// insert new unshield ids if the current utxos still has enough amount
 				cur_sum_amount += utxosArr[utxo_idx].value.GetOutputAmount()
 				chosenUTXOs = append(chosenUTXOs, utxosArr[utxo_idx].value)
@@ -379,6 +381,27 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 			} else {
 				// not enough utxo for last unshield IDs
 				break
+			}
+		}
+
+		// use a tiny UTXO
+		if utxo_idx < len(utxos)-tiny_utxo_used {
+			tiny_utxo_used += 1
+			chosenUTXOs = append(chosenUTXOs, utxosArr[len(utxos)-tiny_utxo_used].value)
+		}
+
+		// merge small batches
+		if len(broadcastTxs) > 0 {
+			prevUTXOs := broadcastTxs[len(broadcastTxs)-1].UTXOs
+			prevRequests := broadcastTxs[len(broadcastTxs)-1].UnshieldIDs
+			lenUTXOs := len(prevUTXOs) + len(chosenUTXOs)
+			lenRequests := len(prevRequests) + len(chosenUnshieldIDs)
+			if p.IsAcceptableTxSize(lenUTXOs, lenRequests) {
+				broadcastTxs[len(broadcastTxs)-1] = &BroadcastTx{
+					UTXOs:       append(prevUTXOs, chosenUTXOs...),
+					UnshieldIDs: append(prevRequests, chosenUnshieldIDs...),
+				}
+				continue
 			}
 		}
 		broadcastTxs = append(broadcastTxs, &BroadcastTx{
