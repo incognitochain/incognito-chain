@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
@@ -1164,7 +1165,7 @@ func (blockService BlockService) GetCustodianTopupWaitingPortingStatusV3(txID st
 }
 
 func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr string, collateralTokenID string, beaconHeight uint64, stateDB *statedb.StateDB) (map[string]uint64, error) {
-	currentPortalState, err := blockchain.InitCurrentPortalStateFromDB(stateDB)
+	currentPortalState, err := portalprocessv3.InitCurrentPortalStateFromDB(stateDB)
 	if err != nil {
 		return nil, err
 	}
@@ -1175,8 +1176,8 @@ func (blockService BlockService) GetAmountTopUpWaitingPorting(custodianAddr stri
 		return nil, fmt.Errorf("Custodian address %v not found", custodianAddr)
 	}
 
-	portalParam := blockService.BlockChain.GetPortalParams(beaconHeight)
-	result, err := blockchain.CalAmountTopUpWaitingPortings(currentPortalState, custodianState, portalParam, collateralTokenID)
+	portalParam := blockService.BlockChain.GetPortalParamsV3(beaconHeight)
+	result, err := portalprocessv3.CalAmountTopUpWaitingPortings(currentPortalState, custodianState, portalParam, collateralTokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -1254,7 +1255,7 @@ func (blockService BlockService) CheckPortalExternalTxSubmitted(data map[string]
 		chainName = chainNameTmp
 	}
 
-	uniqExternalTx := metadata.GetUniqExternalTxID(chainName, blockHash, txIdx)
+	uniqExternalTx := portalprocessv3.GetUniqExternalTxID(chainName, blockHash, txIdx)
 	featureStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	submitted, err := statedb.IsPortalExternalTxHashSubmitted(featureStateDB, uniqExternalTx)
 	return submitted, err

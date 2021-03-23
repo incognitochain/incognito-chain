@@ -1,10 +1,10 @@
-package blockchain
+package portalprocess
 
 import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	"math"
 	"math/big"
 	"sort"
@@ -19,8 +19,9 @@ type PortalExchangeRateTool struct {
 }
 
 // getDecimal returns decimal for portal token or collateral tokens
-func getDecimal(supportPortalCollateral []PortalCollateral, tokenID string) uint8 {
-	if metadata.IsPortalToken(tokenID) || tokenID == common.PRVIDStr {
+func getDecimal(portalParams portalv3.PortalParams, tokenID string) uint8 {
+	supportPortalCollateral := portalParams.SupportedCollateralTokens
+	if portalParams.IsPortalToken(tokenID) || tokenID == common.PRVIDStr {
 		return 9
 	}
 	for _, col := range supportPortalCollateral {
@@ -34,7 +35,7 @@ func getDecimal(supportPortalCollateral []PortalCollateral, tokenID string) uint
 
 func NewPortalExchangeRateTool(
 	finalExchangeRate *statedb.FinalExchangeRatesState,
-	supportPortalCollateral []PortalCollateral,
+	portalParams portalv3.PortalParams,
 ) *PortalExchangeRateTool {
 	t := new(PortalExchangeRateTool)
 	t.Rates = map[string]RateInfo{}
@@ -42,7 +43,7 @@ func NewPortalExchangeRateTool(
 	rates := finalExchangeRate.Rates()
 
 	for tokenID, detail := range rates {
-		decimal := getDecimal(supportPortalCollateral, tokenID)
+		decimal := getDecimal(portalParams, tokenID)
 		if decimal > 0 {
 			t.Rates[tokenID] = RateInfo{
 				Rate:    detail.Amount,
