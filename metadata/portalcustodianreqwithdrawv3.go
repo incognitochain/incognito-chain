@@ -123,7 +123,7 @@ func (req PortalCustodianWithdrawRequestV3) ValidateSanityData(chainRetriever Ch
 		return false, false, errors.New("custodian request withdraw v3: external tokenID shouldn't have 0x prefix")
 	}
 	// check externalTokenID should be one of supported collateral tokenIDs
-	if !IsSupportedTokenCollateralV3(chainRetriever, beaconHeight, req.ExternalTokenID) {
+	if !chainRetriever.IsSupportedTokenCollateralV3(beaconHeight, req.ExternalTokenID) {
 		return false, false, errors.New("custodian request withdraw v3: ExternalTokenID is not portal collateral")
 	}
 

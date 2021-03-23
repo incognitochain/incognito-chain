@@ -143,8 +143,8 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 	// Create btcrelaying chain
 	btcChain, err := getBTCRelayingChain(
-		activeNetParams.Params.BTCRelayingHeaderChainID,
-		activeNetParams.Params.BTCDataFolderName,
+		activeNetParams.Params.PortalParams.RelayingParam.BTCRelayingHeaderChainID,
+		activeNetParams.Params.PortalParams.RelayingParam.BTCDataFolderName,
 	)
 	if err != nil {
 		Logger.log.Error("could not get or create btc relaying chain")
@@ -158,7 +158,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}()
 
 	// Create bnbrelaying chain state
-	bnbChainState, err := getBNBRelayingChainState(activeNetParams.Params.BNBRelayingHeaderChainID)
+	bnbChainState, err := getBNBRelayingChainState(activeNetParams.Params.PortalParams.RelayingParam.BNBRelayingHeaderChainID)
 	if err != nil {
 		Logger.log.Error("could not get or create bnb relaying chain state")
 		Logger.log.Error(err)

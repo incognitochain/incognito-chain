@@ -235,15 +235,23 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	if uint64(len(tp.pool)) >= tp.config.MaxTx {
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
-	if tx.GetType() == common.TxReturnStakingType{
+	if tx.GetMetadata() != nil {
+		currentEpoch := common.GetEpochFromBeaconHeight(uint64(beaconHeight), tp.config.BlockChain.GetChainParams().Epoch)
+		isFeatureFlag, isEnable := tp.checkEnableFeatureFlagMetadata(tx.GetMetadataType(), currentEpoch)
+		if isFeatureFlag && !isEnable {
+			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("This tx %v with metadata %v is disable", tx.Hash().String(), tx.GetMetadataType()))
+		}
+	}
+
+	if tx.GetType() == common.TxReturnStakingType {
 		return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", tx.Hash().String()))
 	}
-	if tx.GetType() == common.TxCustomTokenPrivacyType{
+	if tx.GetType() == common.TxCustomTokenPrivacyType {
 		tempTx, ok := tx.(*transaction.TxCustomTokenPrivacy)
 		if !ok {
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("cannot detect transaction type for tx %+v", tx.Hash().String()))
 		}
-		if tempTx.TxPrivacyTokenData.Mintable{
+		if tempTx.TxPrivacyTokenData.Mintable {
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
 		}
 	}
@@ -392,9 +400,9 @@ func (tp *TxPool) checkFees(
 		beaconStateDB, err := tp.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), tp.config.DataBase[common.BeaconChainDataBaseID])
 		if err != nil {
 			Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
-					fmt.Errorf("transaction %+v - cannot get beacon state db at height: %d",
-						tx.Hash().String(), beaconHeight)))
-				return false
+				fmt.Errorf("transaction %+v - cannot get beacon state db at height: %d",
+					tx.Hash().String(), beaconHeight)))
+			return false
 		}
 
 		// check transaction fee for meta data
@@ -1111,6 +1119,16 @@ func (tp *TxPool) calPoolSize() uint64 {
 		totalSize += size
 	}
 	return totalSize
+}
+
+func (tp *TxPool) checkEnableFeatureFlagMetadata(metaType int, epoch uint64) (bool, bool) {
+	bc := tp.config.BlockChain
+	if metadata.IsPortalRelayingMetaType(metaType) {
+		return true, bc.IsEnableFeature(common.PortalRelayingFlag, epoch)
+	} else if metadata.IsPortalMetaTypeV3(metaType) {
+		return true, bc.IsEnableFeature(common.PortalV3Flag, epoch)
+	}
+	return false, false
 }
 
 // ----------- transaction.MempoolRetriever's implementation -----------------

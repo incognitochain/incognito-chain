@@ -1,28 +1,30 @@
-package blockchain
+package portalprocess
 
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"testing"
 )
 
 func TestPickUpCustodianForPorting(t *testing.T) {
 	// 1BTC
 	portingAmount := uint64(1200000000)
-	portalTokenID := common.PortalBTCIDStr
+	portalTokenID := pCommon.PortalBTCIDStr
 
 	finalExchangeRate := statedb.NewFinalExchangeRatesStateWithValue(
 		map[string]statedb.FinalExchangeRatesDetail{
-			common.PRVIDStr:       {Amount: 1000000},
-			common.PortalBNBIDStr: {Amount: 20000000},
-			common.PortalBTCIDStr: {Amount: 10000000000},
-			common.EthAddrStr:     {Amount: 400000000},
+			common.PRVIDStr:        {Amount: 1000000},
+			pCommon.PortalBNBIDStr: {Amount: 20000000},
+			pCommon.PortalBTCIDStr: {Amount: 10000000000},
+			common.EthAddrStr:      {Amount: 400000000},
 		})
 
-	portalParam := PortalParams{
+	portalParam := portalv3.PortalParams{
 		MinPercentLockedCollateral: 150,
-		SupportedCollateralTokens: []PortalCollateral{
+		SupportedCollateralTokens: []portalv3.PortalCollateral{
 			{common.EthAddrStr, 9},
 		},
 	}
@@ -36,8 +38,8 @@ func TestPickUpCustodianForPorting(t *testing.T) {
 		"custodianIncAddress1", 7000*1e9, 7000*1e9,
 		map[string]uint64{}, map[string]uint64{},
 		map[string]string{
-			common.PortalBNBIDStr: "bnbAddress1",
-			common.PortalBTCIDStr: "btcAddress1",
+			pCommon.PortalBNBIDStr: "bnbAddress1",
+			pCommon.PortalBTCIDStr: "btcAddress1",
 		}, map[string]uint64{},
 		map[string]uint64{
 			common.EthAddrStr: 1e9,
@@ -50,8 +52,8 @@ func TestPickUpCustodianForPorting(t *testing.T) {
 		"custodianIncAddress2", 1000*1e9, 1000*1e9,
 		map[string]uint64{}, map[string]uint64{},
 		map[string]string{
-			common.PortalBNBIDStr: "bnbAddress2",
-			common.PortalBTCIDStr: "btcAddress2",
+			pCommon.PortalBNBIDStr: "bnbAddress2",
+			pCommon.PortalBTCIDStr: "btcAddress2",
 		}, map[string]uint64{},
 		map[string]uint64{
 			common.EthAddrStr: 1e9,
@@ -59,12 +61,11 @@ func TestPickUpCustodianForPorting(t *testing.T) {
 			common.EthAddrStr: 1e9,
 		}, map[string]map[string]uint64{})
 
-
 	custodian3 := statedb.NewCustodianStateWithValue(
 		"custodianIncAddress3", 10000*1e9, 10000*1e9,
 		map[string]uint64{}, map[string]uint64{},
 		map[string]string{
-			common.PortalBTCIDStr: "btcAddress3",
+			pCommon.PortalBTCIDStr: "btcAddress3",
 		}, map[string]uint64{},
 		map[string]uint64{
 			common.EthAddrStr: 1e9,
@@ -76,8 +77,8 @@ func TestPickUpCustodianForPorting(t *testing.T) {
 		"custodianIncAddress4", 1200*1e9, 1200*1e9,
 		map[string]uint64{}, map[string]uint64{},
 		map[string]string{
-			common.PortalBNBIDStr: "bnbAddress4",
-			common.PortalBTCIDStr: "btcAddress4",
+			pCommon.PortalBNBIDStr: "bnbAddress4",
+			pCommon.PortalBTCIDStr: "btcAddress4",
 		}, map[string]uint64{},
 		map[string]uint64{
 			common.EthAddrStr: 1e9,

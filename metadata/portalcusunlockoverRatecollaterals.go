@@ -86,7 +86,7 @@ func (portalUnlockCs PortalUnlockOverRateCollaterals) ValidateSanityData(chainRe
 	}
 
 	// check tokenId is portal token or not
-	if !IsPortalToken(portalUnlockCs.TokenID) {
+	if !chainRetriever.IsPortalToken(beaconHeight, portalUnlockCs.TokenID) {
 		return false, false, NewMetadataTxError(PortalUnlockOverRateCollateralsError, errors.New("TokenID is not in portal tokens list"))
 	}
 
