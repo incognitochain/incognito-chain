@@ -124,6 +124,8 @@ func (tx *TxToken) Hash() *common.Hash {
 	return &result
 }
 
+func (txToken TxToken) HashWithoutMetadataSig() *common.Hash { return txToken.Tx.HashWithoutMetadataSig(); }
+
 // ToCompatTokenData uses the data from TxToken to construct a TxTokenData of the previous version
 // (for compatibility).
 func (td TxTokenDataVersion2) ToCompatTokenData(ttx metadata.Transaction) tx_generic.TxTokenData {
@@ -362,8 +364,8 @@ func (tx *Tx) provePRV(params *tx_generic.TxPrivacyInitParams) ([]privacy.PlainC
 		return nil, nil, err
 	}
 
-	if tx.ShouldSignMetaData() {
-		if err := tx.signMetadata(params.SenderSK); err != nil {
+	if tx.GetMetadata() != nil {
+		if err := tx.GetMetadata().Sign(params.SenderSK, tx); err != nil {
 			utils.Logger.Log.Error("Cannot signOnMessage txMetadata in shouldSignMetadata")
 			return nil, nil, err
 		}
@@ -898,12 +900,6 @@ func (tx *TxToken) CalculateTxValue() uint64 {
 func (tx TxToken) CheckTxVersion(maxTxVersion int8) bool {
 	return !(tx.Tx.Version > maxTxVersion)
 }
-func (tx TxToken) ShouldSignMetaData() bool {
-	if tx.Tx.GetMetadata() == nil {
-		return false
-	}
-	return tx.Tx.GetMetadata().ShouldSignMetaData()
-}
 
 func (tx TxToken) IsSalaryTx() bool {
 	if tx.Tx.GetType() != common.TxRewardType {
@@ -930,10 +926,6 @@ func (txToken *TxToken) IsCoinsBurning(bcr metadata.ChainRetriever, retriever me
 		return false
 	}
 	return txToken.GetTxNormal().IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight)
-}
-
-func (txToken *TxToken) CheckAuthorizedSender(pk []byte) (bool, error) {
-	return txToken.Tx.CheckAuthorizedSender(pk)
 }
 
 func (tx *TxToken) GetReceiverData() ([]privacy.Coin, error) {

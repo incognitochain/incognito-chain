@@ -173,7 +173,7 @@ func (iRes PDETradeResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		Logger.log.Errorf("BUGLOG Instruction not found: %v, %v, %v, %v\n", iRes.RequestedTxID.String(), iRes.Type, iRes.Sig, iRes.TradeStatus)
+		Logger.log.Errorf("BUGLOG Instruction not found: %v, %v, %v\n", iRes.RequestedTxID.String(), iRes.Type, iRes.TradeStatus)
 		return false, fmt.Errorf(fmt.Sprintf("no PDETradeRequest or PDECrossPoolTradeRequestMeta tx found for PDETradeResponse tx %s", tx.Hash().String()))
 	}
 	mintData.InstsUsed[idx] = 1

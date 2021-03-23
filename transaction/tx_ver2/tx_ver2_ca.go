@@ -259,12 +259,6 @@ func (tx *Tx) proveCA(params *tx_generic.TxPrivacyInitParams) (bool, error) {
 		return false, err
 	}
 
-	if tx.ShouldSignMetaData() {
-		if err := tx.signMetadata(params.SenderSK); err != nil {
-			utils.Logger.Log.Error("Cannot signOnMessage txMetadata in shouldSignMetadata")
-			return false, err
-		}
-	}
 	err = tx.signCA(inputCoins, outputCoins, sharedSecrets, params, tx.Hash()[:])
 	return isBurning, err
 }

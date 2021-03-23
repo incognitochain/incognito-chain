@@ -19,9 +19,8 @@ import (
 // Interface for all types of metadata in tx
 type Metadata interface {
 	GetType() int
-	GetSig() []byte
-	SetSig([]byte)
-	ShouldSignMetaData() bool
+	Sign(*privacy.PrivateKey, Transaction) error
+	VerifyMetadataSignature([]byte, Transaction) (bool, error)
 	Hash() *common.Hash
 	HashWithoutSig() *common.Hash
 	CheckTransactionFee(Transaction, uint64, int64, *statedb.StateDB) bool
@@ -143,12 +142,11 @@ type Transaction interface {
 	ListSerialNumbersHashH() []common.Hash
 	String() string
 	Hash() *common.Hash
+	HashWithoutMetadataSig() *common.Hash
 	CalculateTxValue() uint64
 
 	// =================== FUNCTION THAT CHECK STUFFS  ===================
 	CheckTxVersion(int8) bool
-	CheckAuthorizedSender([]byte) (bool, error)
-	ShouldSignMetaData() bool
 	IsSalaryTx() bool
 	IsPrivacy() bool
 	IsCoinsBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool

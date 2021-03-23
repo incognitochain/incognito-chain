@@ -13,7 +13,7 @@ import (
 )
 
 type StopAutoStakingMetadata struct {
-	MetadataBase
+	MetadataBaseWithSignature
 	CommitteePublicKey string
 }
 
@@ -29,15 +29,13 @@ func (meta *StopAutoStakingMetadata) HashWithoutSig() *common.Hash {
 	return meta.MetadataBase.Hash()
 }
 
-func (*StopAutoStakingMetadata) ShouldSignMetaData() bool { return true }
-
 func NewStopAutoStakingMetadata(stopStakingType int, committeePublicKey string) (*StopAutoStakingMetadata, error) {
 	if stopStakingType != StopAutoStakingMeta {
 		return nil, errors.New("invalid stop staking type")
 	}
-	metadataBase := NewMetadataBase(stopStakingType)
+	metadataBase := NewMetadataBaseWithSignature(stopStakingType)
 	return &StopAutoStakingMetadata{
-		MetadataBase:       *metadataBase,
+		MetadataBaseWithSignature:       *metadataBase,
 		CommitteePublicKey: committeePublicKey,
 	}, nil
 }
@@ -95,7 +93,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 		return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
 	}
 
-	if ok, err := tx.CheckAuthorizedSender(funderWallet.KeySet.PaymentAddress.Pk); !ok || err != nil {
+	if ok, err := stopStakingMetadata.MetadataBaseWithSignature.VerifyMetadataSignature(funderWallet.KeySet.PaymentAddress.Pk, tx); !ok || err != nil {
 		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
 	}
 

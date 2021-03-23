@@ -210,6 +210,11 @@ func (txToken *TxTokenBase) Hash() *common.Hash {
 	return &hash
 }
 
+func (txToken *TxTokenBase) HashWithoutMetadataSig() *common.Hash {
+	// hashing to sign metadata is version-specific
+	return nil
+}
+
 // Get SigPubKey of ptoken
 func (txToken TxTokenBase) GetSigPubKey() []byte {
 	return txToken.TxTokenData.TxNormal.GetSigPubKey()

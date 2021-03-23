@@ -12,7 +12,7 @@ import (
 )
 
 type PortalExchangeRates struct {
-	MetadataBase
+	MetadataBaseWithSignature
 	SenderAddress string
 	Rates         []*ExchangeRateInfo //amount * 10^6 (USDT)
 }
@@ -40,19 +40,17 @@ func NewExchangeRatesRequestStatus(status byte, senderAddress string, rates []*E
 }
 
 func NewPortalExchangeRates(metaType int, senderAddress string, currency []*ExchangeRateInfo) (*PortalExchangeRates, error) {
-	metadataBase := MetadataBase{Type: metaType, Sig: []byte{}}
+	metadataBase := NewMetadataBaseWithSignature(metaType)
 
 	portalExchangeRates := &PortalExchangeRates{
 		SenderAddress: senderAddress,
 		Rates:         currency,
 	}
 
-	portalExchangeRates.MetadataBase = metadataBase
+	portalExchangeRates.MetadataBaseWithSignature = *metadataBase
 
 	return portalExchangeRates, nil
 }
-
-func (*PortalExchangeRates) ShouldSignMetaData() bool { return true }
 
 type PortalExchangeRatesContent struct {
 	SenderAddress string
@@ -92,7 +90,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever
 	if len(senderAddr.Pk) == 0 {
 		return false, false, errors.New("Sender address invalid, sender address must be incognito address")
 	}
-	if ok, err := txr.CheckAuthorizedSender(senderAddr.Pk); err != nil || !ok {
+	if ok, err := portalExchangeRates.MetadataBaseWithSignature.VerifyMetadataSignature(senderAddr.Pk, txr); err != nil || !ok {
 		return false, false, errors.New("Sender is unauthorized")
 	}
 
@@ -118,7 +116,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateMetadataByItself() bool {
 }
 
 func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
-	record := portalExchangeRates.MetadataBase.Hash().String()
+	record := portalExchangeRates.MetadataBaseWithSignature.Hash().String()
 	record += portalExchangeRates.SenderAddress
 	for _, rateInfo := range portalExchangeRates.Rates {
 		record += rateInfo.PTokenID
@@ -133,7 +131,7 @@ func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
 }
 
 func (portalExchangeRates PortalExchangeRates) HashWithoutSig() *common.Hash {
-	record := portalExchangeRates.MetadataBase.Hash().String()
+	record := portalExchangeRates.MetadataBaseWithSignature.Hash().String()
 	record += portalExchangeRates.SenderAddress
 	for _, rateInfo := range portalExchangeRates.Rates {
 		record += rateInfo.PTokenID

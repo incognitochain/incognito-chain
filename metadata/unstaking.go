@@ -13,20 +13,19 @@ import (
 
 //UnStakingMetadata : unstaking metadata
 type UnStakingMetadata struct {
-	MetadataBase
+	MetadataBaseWithSignature
 	CommitteePublicKey string
 }
 
 func (meta *UnStakingMetadata) Hash() *common.Hash {
 	record := strconv.Itoa(meta.Type)
 	data := []byte(record)
-	data = append(data, meta.Sig...)
 	hash := common.HashH(data)
 	return &hash
 }
 
 func (meta *UnStakingMetadata) HashWithoutSig() *common.Hash {
-	return meta.MetadataBase.Hash()
+	return meta.MetadataBaseWithSignature.Hash()
 }
 
 func (*UnStakingMetadata) ShouldSignMetaData() bool { return true }
@@ -34,9 +33,9 @@ func (*UnStakingMetadata) ShouldSignMetaData() bool { return true }
 
 //NewUnStakingMetadata : Constructor of UnStakingMetadata struct
 func NewUnStakingMetadata(committeePublicKey string) (*UnStakingMetadata, error) {
-	metadataBase := NewMetadataBase(UnStakingMeta)
+	metadataBase := NewMetadataBaseWithSignature(UnStakingMeta)
 	return &UnStakingMetadata{
-		MetadataBase:       *metadataBase,
+		MetadataBaseWithSignature:       *metadataBase,
 		CommitteePublicKey: committeePublicKey,
 	}, nil
 }
@@ -97,7 +96,7 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 		return false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
 	}
 
-	if ok, err := tx.CheckAuthorizedSender(funderWallet.KeySet.PaymentAddress.Pk); !ok || err != nil {
+	if ok, err := unStakingMetadata.MetadataBaseWithSignature.VerifyMetadataSignature(funderWallet.KeySet.PaymentAddress.Pk, tx); !ok || err != nil {
 		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("CheckAuthorizedSender fail"))
 	}
 

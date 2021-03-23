@@ -424,6 +424,11 @@ func (tx *TxBase) Hash() *common.Hash {
 	return &hash
 }
 
+func (txToken *TxBase) HashWithoutMetadataSig() *common.Hash {
+	// hashing to sign metadata is version-specific
+	return nil
+}
+
 func (tx TxBase) CalculateTxValue() uint64 {
 	if tx.Proof == nil {
 		return 0
@@ -473,13 +478,6 @@ func (tx *TxBase) IsNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error
 		return true, nil
 	}
 	return false, nil
-}
-
-func (tx TxBase) ShouldSignMetaData() bool {
-	if tx.GetMetadata() == nil {
-		return false
-	}
-	return tx.GetMetadata().ShouldSignMetaData()
 }
 
 func (tx TxBase) IsSalaryTx() bool {
