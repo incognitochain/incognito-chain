@@ -144,7 +144,7 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 			}
 
 			externalFees := map[uint64]uint{
-				beaconHeight + 1: uint(feeUnshield) * uint(len(outputTxs)),
+				beaconHeight + 1: uint(feeUnshield),
 			}
 			chosenUTXOs := map[string][]*statedb.UTXO{
 				portalParams.MultiSigAddresses[tokenID]: bcTx.UTXOs,
