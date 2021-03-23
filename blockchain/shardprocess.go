@@ -1031,9 +1031,22 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			if err != nil || !isMinted {
 				return NewBlockChainError(RemoveCommitteeRewardError, err)
 			}
-			err = statedb.RemoveCommitteeReward(newShardState.rewardStateDB, tx.GetMetadata().(*metadata.WithDrawRewardResponse).RewardPublicKey, mintCoin.GetValue(), *coinID)
-			if err != nil {
-				return NewBlockChainError(RemoveCommitteeRewardError, err)
+
+			if tx.GetVersion() == 1 {
+				err = statedb.RemoveCommitteeReward(newShardState.rewardStateDB, mintCoin.GetPublicKey().ToBytesS(), mintCoin.GetValue(), *coinID)
+				if err != nil {
+					return NewBlockChainError(RemoveCommitteeRewardError, err)
+				}
+			} else {
+				md, ok := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
+				if !ok {
+					return NewBlockChainError(RemoveCommitteeRewardError, fmt.Errorf("cannot parse withdraw reward response metadata for tx %v", tx.Hash().String()))
+				}
+
+				err = statedb.RemoveCommitteeReward(newShardState.rewardStateDB, md.RewardPublicKey, mintCoin.GetValue(), *coinID)
+				if err != nil {
+					return NewBlockChainError(RemoveCommitteeRewardError, err)
+				}
 			}
 		}
 		Logger.log.Debug("Transaction in block with hash", blockHash, "and index", index)
