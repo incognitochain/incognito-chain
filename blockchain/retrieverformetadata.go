@@ -269,3 +269,7 @@ func (blockchain *BlockChain) IsEnableFeature(featureFlag int, epoch uint64) boo
 func (blockchain *BlockChain) GetPortalV4MinUnshieldAmount (tokenIDStr string, beaconHeight uint64) uint64 {
 	return blockchain.GetPortalParamsV4(beaconHeight).MinUnshieldAmts[tokenIDStr]
 }
+
+func (blockchain *BlockChain) GetPortalV4MultiSigAddress (tokenIDStr string, beaconHeight uint64) string {
+	return blockchain.GetPortalParamsV4(beaconHeight).MultiSigAddresses[tokenIDStr]
+}

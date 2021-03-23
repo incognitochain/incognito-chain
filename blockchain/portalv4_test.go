@@ -1021,6 +1021,9 @@ func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
 	// mock test
 	bc := new(mocks.ChainRetriever)
 	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
+	tokenID := portalcommonv4.PortalBTCIDStr
+	bcH := uint64(0)
+	bc.On("GetPortalV4MultiSigAddress", tokenID, bcH).Return(s.portalParams.MultiSigAddresses[portalcommonv4.PortalBTCIDStr])
 
 	pm := portal.NewPortalManager()
 	beaconHeight := uint64(45)

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/portal/portalv4/common"
 
 	"sort"
 
@@ -190,10 +191,14 @@ func (p PortalBTCTokenProcessor) GeneratePrivateKeyFromSeed(seed []byte) ([]byte
 }
 
 // CreateRawExternalTx creates raw btc transaction (not include signatures of beacon validator)
-func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, networkFee uint64, memo string, bc metadata.ChainRetriever) (string, string, error) {
+// inputs: UTXO state of beacon, unit of amount in btc
+// outputs: unit of amount in pbtc ~ unshielding amount
+// feePerOutput: unit in pbtc
+func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, feePerOutput uint64, memo string, bc metadata.ChainRetriever) (string, string, error) {
 	msgTx := wire.NewMsgTx(wire.TxVersion)
 
 	// add TxIns into raw tx
+	totalInputAmount := uint64(0)
 	for _, in := range inputs {
 		utxoHash, err := chainhash.NewHashFromStr(in.GetTxHash())
 		if err != nil {
@@ -203,9 +208,11 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 		outPoint := wire.NewOutPoint(utxoHash, in.GetOutputIndex())
 		txIn := wire.NewTxIn(outPoint, nil, nil)
 		msgTx.AddTxIn(txIn)
+		totalInputAmount += in.GetOutputAmount()
 	}
 
 	// add TxOuts into raw tx
+	totalOutputAmount := uint64(0)
 	for _, out := range outputs {
 		// adding the output to tx
 		decodedAddr, err := btcutil.DecodeAddress(out.ReceiverAddress, bc.GetBTCChainParams())
@@ -220,7 +227,33 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 		}
 
 		// adding the destination address and the amount to the transaction
-		redeemTxOut := wire.NewTxOut(int64(out.Amount), destinationAddrByte)
+		if out.Amount <= feePerOutput {
+			Logger.log.Errorf("[CreateRawExternalTx-BTC] Output amount %v must greater than fee %v: %v", out.Amount, feePerOutput)
+			return "", "", err
+		}
+		redeemTxOut := wire.NewTxOut(int64(p.ConvertIncToExternalAmount(out.Amount - feePerOutput)), destinationAddrByte)
+		msgTx.AddTxOut(redeemTxOut)
+		totalOutputAmount += out.Amount
+	}
+	totalOutputAmount = p.ConvertIncToExternalAmount(totalOutputAmount)
+
+	// calculate the change output
+	if totalInputAmount - totalOutputAmount > 0 {
+		// adding the output to tx
+		multiSigAddress := bc.GetPortalV4MultiSigAddress(common.PortalBTCIDStr, 0)
+		decodedAddr, err := btcutil.DecodeAddress(multiSigAddress, bc.GetBTCChainParams())
+		if err != nil {
+			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when decoding multisig address: %v", err)
+			return "", "", err
+		}
+		destinationAddrByte, err := txscript.PayToAddrScript(decodedAddr)
+		if err != nil {
+			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when new multisig Address Script: %v", err)
+			return "", "", err
+		}
+
+		// adding the destination address and the amount to the transaction
+		redeemTxOut := wire.NewTxOut(int64(totalInputAmount - totalOutputAmount), destinationAddrByte)
 		msgTx.AddTxOut(redeemTxOut)
 	}
 

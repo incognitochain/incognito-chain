@@ -120,35 +120,14 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 
 		// create raw external txs
 		for _, bcTx := range broadCastTxs {
-			totalFee := uint64(0)
-			// prepare outputs for tx
-			totalOutputAmt := uint64(0)
+			// prepare outputs for tx in pbtc amount (haven't paid network fee)
 			outputTxs := []*portaltokens.OutputTx{}
 			for _, chosenUnshieldID := range bcTx.UnshieldIDs {
 				keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, chosenUnshieldID).String()
 				wUnshieldReq := wUnshieldRequests[tokenID][keyWaitingUnshieldRequest]
 				outputTxs = append(outputTxs, &portaltokens.OutputTx{
 					ReceiverAddress: wUnshieldReq.GetRemoteAddress(),
-					Amount:          portalTokenProcessor.ConvertIncToExternalAmount(wUnshieldReq.GetAmount() - feeUnshield),
-				})
-				totalFee += feeUnshield
-				totalOutputAmt += wUnshieldReq.GetAmount()
-			}
-			totalOutputAmt = portalTokenProcessor.ConvertIncToExternalAmount(totalOutputAmt)
-
-			// calculate the change output coin
-			totalInputAmt := uint64(0)
-			for _, in := range bcTx.UTXOs {
-				totalInputAmt += in.GetOutputAmount()
-			}
-			if totalInputAmt < totalOutputAmt {
-				Logger.log.Errorf("[Batch Unshield Request]: Total input coins %v is less than total output coins %v", totalInputAmt, totalOutputAmt)
-				continue
-			}
-			if totalInputAmt > totalOutputAmt {
-				outputTxs = append(outputTxs, &portaltokens.OutputTx{
-					ReceiverAddress: portalParams.MultiSigAddresses[tokenID],
-					Amount:          totalInputAmt - totalOutputAmt,
+					Amount:          wUnshieldReq.GetAmount(),
 				})
 			}
 
@@ -158,14 +137,14 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 
 			// create raw tx
 			hexRawExtTxStr, _, err := portalTokenProcessor.CreateRawExternalTx(
-				bcTx.UTXOs, outputTxs, portalTokenProcessor.ConvertIncToExternalAmount(totalFee), memo, bc)
+				bcTx.UTXOs, outputTxs, feeUnshield, memo, bc)
 			if err != nil {
 				Logger.log.Errorf("[Batch Unshield Request]: Error when creating raw external tx %v", err)
 				continue
 			}
 
 			externalFees := map[uint64]uint{
-				beaconHeight + 1: uint(totalFee),
+				beaconHeight + 1: uint(feeUnshield) * uint(len(outputTxs)),
 			}
 			chosenUTXOs := map[string][]*statedb.UTXO{
 				portalParams.MultiSigAddresses[tokenID]: bcTx.UTXOs,
