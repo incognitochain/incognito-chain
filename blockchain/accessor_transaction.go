@@ -366,14 +366,16 @@ func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, syncNeeded boo
 	shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
 	bss := blockchain.GetBestStateShard(shardID)
 	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
-	if syncNeeded {
-		var lowestHeightForV2 uint64 = blockchain.GetConfig().ChainParams.CoinVersion2LowestHeight
-		if heightToSyncFrom < lowestHeightForV2 {
-			heightToSyncFrom = lowestHeightForV2
-		}
-		Logger.log.Infof("Sync started from height %d", heightToSyncFrom)
-		go outcoinReindexer.ReindexOutcoin(heightToSyncFrom, bss.ShardHeight, theKey, transactionStateDB, shardID, false)
+	var lowestHeightForV2 uint64 = blockchain.GetConfig().ChainParams.CoinVersion2LowestHeight
+	if !syncNeeded {
+		heightToSyncFrom = bss.ShardHeight + 1
+	} else if heightToSyncFrom < lowestHeightForV2 {
+		heightToSyncFrom = lowestHeightForV2
 	}
+	
+	Logger.log.Infof("Sync started from height %d to %d", heightToSyncFrom, bss.ShardHeight)
+	go outcoinReindexer.ReindexOutcoin(heightToSyncFrom, bss.ShardHeight, theKey, transactionStateDB, shardID, false)
+	
 	return nil
 }
 

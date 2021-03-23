@@ -102,24 +102,24 @@ func (h *handler) close(err error, inflightReq *requestOp) {
 }
 
 // handleCall processes method calls.
-func (h *handler) handleCall(params interface{}, method string) (interface{}, error) {
+func (h *handler) handleCall(params interface{}, method string) (bool, interface{}, error) {
 	var callb = h.reg.callback(method)
 
 	if callb == nil {
-		return nil, errors.New("Method not found: " + method)
+		return false, nil, errors.New("Method not found: " + method)
 	}
 	var rawParams json.RawMessage
 	var err error
 	rawParams, err = json.Marshal(params)
 	if err != nil {
-		return nil, errors.New("Invalid parameters")
+		return true, nil, errors.New("Invalid parameters")
 	}
 	args, err := parsePositionalArguments(rawParams, callb.argTypes)
 	if err != nil {
-		return nil, errors.New("Invalid parameters")
+		return true, nil, errors.New("Invalid parameters")
 	}
-
-	return h.runMethod(h.rootCtx, method, callb, args)
+	result, err := h.runMethod(h.rootCtx, method, callb, args)
+	return true, result, err
 }
 
 // runMethod runs the Go callback for an RPC method.

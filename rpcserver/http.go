@@ -313,9 +313,11 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 			if command != nil {
 				result, jsonErr = command(httpServer, request.Params, closeChan)
 			} else {
-				Logger.log.Infof("Routing to new RPC with method %s and parameters %v", request.Method, request.Params)
-				result, jsonErr = HttpHandlerV2.HandleSingleRequest(request.Params, request.Method, closeChan)
-				if jsonErr != nil {
+				var methodExists bool
+				methodExists, result, jsonErr = HttpHandlerV2.HandleSingleRequest(request.Params, request.Method, closeChan)
+				if !methodExists {
+					jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, jsonErr)
+				} else if jsonErr != nil {
 					jsonErr = rpcservice.NewRPCError(rpcservice.UnexpectedError, jsonErr)
 				} else {
 					jsonErr = (*rpcservice.RPCError)(nil)
