@@ -1,13 +1,14 @@
 package metadata
 
 import (
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 type WithDrawRewardRequest struct {
@@ -54,12 +55,12 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 		MetadataBase:   metadataBase,
 		PaymentAddress: requesterPublicKeySet.KeySet.PaymentAddress,
 		TokenID:        *tokenID,
+		Version:        1,
 	}
 
-	versionFloat, ok := data["Version"].(float64)
+	versionInt, ok := data["Version"].(int)
 	if ok {
-		version := int(versionFloat)
-		result.Version = version
+		result.Version = versionInt
 	}
 	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, result.Version); !ok || err != nil {
 		return nil, errors.Errorf("Invalid version %d", result.Version)

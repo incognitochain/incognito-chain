@@ -157,6 +157,7 @@ func addShareAmountUpV2(
 	}
 	if poolValue == 0 {
 		currentPDEState.PDEShares[pdeShareKey] = amt
+		return
 	}
 	increasingAmt := big.NewInt(0)
 
