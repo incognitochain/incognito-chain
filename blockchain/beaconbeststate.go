@@ -3,20 +3,17 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate/finishsync"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/incdb"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -709,28 +706,9 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 		)
 		swapRule = committeestate.SwapRuleByEnv(swapRuleEnv)
 
-		if bc.IsGreaterThanRandomTime(beaconBestState.BeaconHeight) && !beaconBestState.IsGetRandomNumber {
+		if bc.IsEqualToRandomTime(beaconBestState.BeaconHeight) {
 			var err error
-			var tempBeaconBlock = types.NewBeaconBlock()
 			var randomTimeBeaconHash = beaconBestState.BestBlockHash
-			randomTimeBeaconHeight := bc.GetRandomTimeInEpoch(beaconBestState.Epoch)
-			tempBeaconHeight := beaconBestState.BeaconHeight
-			previousBeaconHash := beaconBestState.PreviousBestBlockHash
-			for tempBeaconHeight > randomTimeBeaconHeight {
-				tempBeaconBlock, _, err = bc.GetBeaconBlockByHash(previousBeaconHash)
-				if err != nil {
-					panic(err)
-				}
-				for _, v := range tempBeaconBlock.Body.Instructions {
-					if _, err1 := instruction.ValidateAndImportRandomInstructionFromString(v); err1 == nil {
-						beaconBestState.IsGetRandomNumber = true
-						numberOfAssignedCandidates = 0
-						goto OUTER_LOOP
-					}
-				}
-				tempBeaconHeight--
-				randomTimeBeaconHash = tempBeaconBlock.Header.Hash()
-			}
 
 			tempRootHash, err := GetBeaconRootsHashByBlockHash(bc.GetBeaconChainDatabase(), randomTimeBeaconHash)
 			if err != nil {
@@ -760,9 +738,10 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 				bc.config.ChainParams.MinShardCommitteeSize,
 				swapRule,
 			)
+		} else {
+			numberOfAssignedCandidates = 0
 		}
 	}
-OUTER_LOOP:
 	committeeState := committeestate.NewBeaconCommitteeState(
 		version, beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool,
 		numberOfAssignedCandidates, autoStaking, rewardReceivers, stakingTx, syncingValidators,
