@@ -256,11 +256,6 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 							}
 							txTokenPrivacyDataMap[shardID][txTokenData.PropertyID].OutputCoin = append(txTokenPrivacyDataMap[shardID][txTokenData.PropertyID].OutputCoin, outCoin)
 						}
-						if _, ok := txTokenPrivacyDataMap[shardID][txTokenData.PropertyID]; !ok {
-							contentCrossTokenPrivacyData := types.CloneTxTokenPrivacyDataForCrossShard(txTokenData)
-							txTokenPrivacyDataMap[shardID][txTokenData.PropertyID] = &contentCrossTokenPrivacyData
-						}
-						txTokenPrivacyDataMap[shardID][txTokenData.PropertyID].OutputCoin = append(txTokenPrivacyDataMap[shardID][txTokenData.PropertyID].OutputCoin, outCoin)
 					}
 				}
 			}
