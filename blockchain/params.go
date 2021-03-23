@@ -465,7 +465,7 @@ func SetupParam() {
 		RandomTimeV2:                MainnetRandomTimeV2,
 		PortalETHContractAddressStr: "", // todo: update sc address
 		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
-		BCHeightBreakPointPrivacyV2:  1000000, //TODO: change this value when deployed testnet
+		BCHeightBreakPointPrivacyV2:  1500000, //TODO: change this value when deployed mainnet
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
