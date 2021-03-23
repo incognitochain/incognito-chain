@@ -186,9 +186,9 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.ShardBlock)
 	json.Unmarshal(b, &newBlock)
-	Logger.log.Info("[dcs] hash:", newBlock.Header.Hash(), "newBlock.Header.Timestamp:", newBlock.Header.Timestamp)
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
+	newBlock.Header.CommitteeFromBlock = committeeViewHash
 
 	return newBlock, nil
 }
@@ -330,7 +330,7 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognito
 	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION || shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
 		committees = append(committees, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
 	} else {
-		committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID), divideShardCommitteesPartThreshold)
+		committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID), committeestate.MaxSubsetCommittees)
 		if err != nil {
 			return committees, err
 		}

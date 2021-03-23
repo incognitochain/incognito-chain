@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -137,6 +138,9 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 		//validate producer
 		producer := blk.GetProducer()
 		produceTime := blk.GetProduceTime()
+		if blk.GetVersion() >= 4 && blk.Type() == common.ShardRole {
+			produceTime = produceTime / committeestate.MaxSubsetCommittees
+		}
 		tempProducerID := blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), minCommitteeSize)
 		tempProducer := committee[tempProducerID]
 		b58Str, _ := tempProducer.ToBase58()
@@ -147,6 +151,9 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 		//validate proposer
 		proposer := blk.GetProposer()
 		proposeTime := blk.GetProposeTime()
+		if blk.GetVersion() >= 4 && blk.Type() == common.ShardRole {
+			proposeTime = proposeTime / committeestate.MaxSubsetCommittees
+		}
 		tempProducerID = blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(proposeTime), minCommitteeSize)
 		tempProducer = committee[tempProducerID]
 		b58Str, _ = tempProducer.ToBase58()

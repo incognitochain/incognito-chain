@@ -85,6 +85,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
 	if err != nil {
+		Logger.log.Error("err:", err)
 		return err
 	}
 
@@ -98,7 +99,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 	if err := blockchain.verifyPreProcessingShardBlock(
 		shardBestState, shardBlock, beaconBlocks,
 		shardID, true, committees); err != nil {
-		Logger.log.Info("err:", err)
+		Logger.log.Error("err:", err)
 		return err
 	}
 	//========Verify shardBlock with previous best state
@@ -106,19 +107,19 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 	// Verify shardBlock with previous best state
 	// DO NOT verify agg signature in this function
 	if err := shardBestState.verifyBestStateWithShardBlock(blockchain, shardBlock, committees); err != nil {
-		Logger.log.Info("err:", err)
+		Logger.log.Error("err:", err)
 		return err
 	}
 	//========updateShardBestState best state with new shardBlock
 	newBeststate, hashes, _, err := shardBestState.updateShardBestState(blockchain, shardBlock, beaconBlocks, committees)
 	if err != nil {
-		Logger.log.Info("err:", err)
+		Logger.log.Error("err:", err)
 		return err
 	}
 	shardBestState.shardCommitteeEngine.AbortUncommittedShardState()
 	//========Post verififcation: verify new beaconstate with corresponding shardBlock
 	if err := newBeststate.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err != nil {
-		Logger.log.Info("err:", err)
+		Logger.log.Error("err:", err)
 		return err
 	}
 	Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for 🖋 signing", shardID, shardBlock.GetHeight(), shardBlock.Hash().String())
@@ -134,7 +135,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	shardID := shardBlock.Header.ShardID
 	preHash := shardBlock.Header.PreviousBlockHash
 
-	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v \nPrev hash: %+v", shardID, blockHeight, blockHash, preHash)
+	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v \nPrev hash: %+v ", shardID, blockHeight, blockHash, preHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
 
@@ -181,7 +182,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 				return NewBlockChainError(WrongBlockHeightError, errors.New("Waiting For Beacon Produce Block"))
 			}
 		}
-		committees, err = blockchain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID, divideShardCommitteesPartThreshold)
+		committees, err = blockchain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID, committeestate.MaxSubsetCommittees)
 		if err != nil {
 			return err
 		}
@@ -691,7 +692,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 
 	minShardCommitteeSize := 0
 	if blockchain.BeaconChain.GetFinalView().GetHeight() >= blockchain.config.ChainParams.ConsensusV4Height {
-		minShardCommitteeSize = shardBestState.MinShardCommitteeSize / divideShardCommitteesPartThreshold
+		minShardCommitteeSize = shardBestState.MinShardCommitteeSize / committeestate.MaxSubsetCommittees
 	} else {
 		minShardCommitteeSize = shardBestState.MinShardCommitteeSize
 	}

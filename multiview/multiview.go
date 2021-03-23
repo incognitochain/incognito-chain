@@ -168,8 +168,10 @@ func (multiView *MultiView) updateViewState(newView View) {
 		if newView.GetBlock().GetVersion() == 4 {
 			bestViewTimeSlot := common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProduceTime())
 			prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProduceTime())
-			//fmt.Println("[dcs] bestViewTimeSlot:", bestViewTimeSlot)
-			//fmt.Println("[dcs] prev1TimeSlot:", prev1TimeSlot)
+			if newView.GetBlock().Type() == common.ShardRole {
+				fmt.Println("[dcs] bestViewTimeSlot:", bestViewTimeSlot)
+				fmt.Println("[dcs] prev1TimeSlot:", prev1TimeSlot)
+			}
 			if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 				multiView.finalView = prev1View
 			}

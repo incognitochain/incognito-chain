@@ -417,7 +417,7 @@ func InitShardCommitteeEngineV2(
 	if shardHeight == 1 {
 		shardCommittees = statedb.GetOneShardCommittee(consensusStateDB, shardID)
 	} else {
-		shardCommittees, err = bc.GetShardCommitteeFromBeaconHash(committeeFromBlockHash, shardID, divideShardCommitteesPartThreshold)
+		shardCommittees, err = bc.GetShardCommitteeFromBeaconHash(committeeFromBlockHash, shardID, committeestate.MaxSubsetCommittees)
 		if err != nil {
 			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
 			panic(err)
@@ -445,7 +445,7 @@ func (shardBestState *ShardBestState) upgradeCommitteeEngineV2(bc *BlockChain) e
 		return nil
 	}
 
-	shardCommittees, err := bc.GetShardCommitteeFromBeaconHash(shardBestState.BestBeaconHash, shardBestState.ShardID, divideShardCommitteesPartThreshold)
+	shardCommittees, err := bc.GetShardCommitteeFromBeaconHash(shardBestState.BestBeaconHash, shardBestState.ShardID, committeestate.MaxSubsetCommittees)
 	if err != nil {
 		return err
 	}

@@ -404,6 +404,8 @@ func (chain *BeaconChain) CommitteesFromViewHashForShard(
 				res = append(res, v)
 			}
 		}
+	} else {
+		res = committees
 	}
 	return res, nil
 }
