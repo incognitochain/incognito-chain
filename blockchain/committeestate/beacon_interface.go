@@ -59,6 +59,7 @@ type SplitRewardRuleProcessor interface {
 type BeaconCommitteeStateEnvironment struct {
 	BeaconHeight                     uint64
 	Epoch                            uint64
+	EpochLengthV1                    uint64
 	BeaconHash                       common.Hash
 	BestShardHash                    map[byte]common.Hash
 	BeaconInstructions               [][]string

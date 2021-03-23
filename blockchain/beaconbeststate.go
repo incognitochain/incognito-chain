@@ -647,6 +647,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		MaxShardCommitteeSize:            params.MaxShardCommitteeSize,
 		MissingSignaturePenalty:          slashingPenalty,
 		StakingV3Height:                  params.StakingFlowV3,
+		EpochLengthV1:                     params.Epoch,
 	}
 }
 
@@ -665,6 +666,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		NumberOfFixedShardBlockValidator: NumberOfFixedShardBlockValidators,
 		MissingSignaturePenalty:          beaconBestState.missingSignatureCounter.GetAllSlashingPenalty(),
 		StakingV3Height:                  params.StakingFlowV3,
+		EpochLengthV1:                     params.Epoch,
 	}
 }
 

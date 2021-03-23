@@ -273,7 +273,7 @@ func (b *BeaconCommitteeStateV1) processSwapInstruction(
 ) ([]string, []string, error) {
 	newBeaconCandidates := []string{}
 	newShardCandidates := []string{}
-	if common.IndexOfUint64(env.Epoch, env.EpochBreakPointSwapNewKey) > -1 || swapInstruction.IsReplace {
+	if common.IndexOfUint64(env.BeaconHeight/env.EpochLengthV1, env.EpochBreakPointSwapNewKey) > -1 || swapInstruction.IsReplace {
 		err := b.processReplaceInstruction(swapInstruction, committeeChange, env)
 		if err != nil {
 			return newBeaconCandidates, newShardCandidates, err
