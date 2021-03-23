@@ -19,7 +19,7 @@ type PortalRedeemFromLiquidationPoolResponseV3 struct {
 	RedeemAmount        uint64
 	MintedPRVCollateral uint64
 	TokenID             string
-	SharedRandom       []byte
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalRedeemFromLiquidationPoolResponseV3(

@@ -36,7 +36,7 @@ type TokenPoolValueOperation struct {
 
 type PDETradeAcceptedContent struct {
 	TraderAddressStr         string
-	TxRandomStr              string
+	TxRandomStr              string `json:"TxRandomStr,omitempty"`
 	TokenIDToBuyStr          string
 	ReceiveAmount            uint64
 	Token1IDStr              string

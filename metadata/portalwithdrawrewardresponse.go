@@ -18,7 +18,7 @@ type PortalWithdrawRewardResponse struct {
 	TokenID             common.Hash
 	RewardAmount        uint64
 	TxReqID             common.Hash
-	SharedRandom       []byte
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalWithdrawRewardResponse(

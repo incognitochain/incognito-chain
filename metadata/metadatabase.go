@@ -11,7 +11,7 @@ import (
 
 type MetadataBase struct {
 	Type int
-	Sig []byte
+	Sig []byte `json:"Sig,omitempty"`
 }
 
 func (mb *MetadataBase) SetSig(sig []byte) { mb.Sig = sig }

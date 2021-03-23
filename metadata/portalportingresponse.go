@@ -15,7 +15,7 @@ type PortalFeeRefundResponse struct {
 	MetadataBase
 	PortingRequestStatus string
 	ReqTxID              common.Hash
-	SharedRandom       []byte
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalFeeRefundResponse(

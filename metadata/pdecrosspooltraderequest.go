@@ -37,7 +37,7 @@ type PDECrossPoolTradeRequestAction struct {
 
 type PDECrossPoolTradeAcceptedContent struct {
 	TraderAddressStr         string
-	TxRandomStr              string
+	TxRandomStr              string `json:"TxRandomStr,omitempty"`
 	TokenIDToBuyStr          string
 	ReceiveAmount            uint64
 	Token1IDStr              string
@@ -51,7 +51,7 @@ type PDECrossPoolTradeAcceptedContent struct {
 
 type PDERefundCrossPoolTrade struct {
 	TraderAddressStr string
-	TxRandomStr      string
+	TxRandomStr      string `json:"TxRandomStr,omitempty"`
 	TokenIDStr       string
 	Amount           uint64
 	ShardID          byte
