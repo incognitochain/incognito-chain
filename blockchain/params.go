@@ -277,6 +277,9 @@ func SetupParam() {
 					MinUnshieldAmts: map[string]uint64{
 						portalcommonv4.PortalBTCIDStr: 500000, // 500000 nano pbtc = 50000 satoshi
 					},
+					TinyUTXOAmount:             map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
+					},
 					BatchNumBlks:                15, // ~ 10 mins
 					MinConfirmationIncBlockNum:  3,
 					PortalReplacementAddress:    "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
@@ -404,6 +407,9 @@ func SetupParam() {
 					},
 					BatchNumBlks:               60, // ~ 10 mins
 					MinConfirmationIncBlockNum: 3,
+					TinyUTXOAmount:             map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
+					},
 				},
 			},
 		},
@@ -524,6 +530,9 @@ func SetupParam() {
 					},
 					BatchNumBlks:               60, // ~ 10 mins
 					MinConfirmationIncBlockNum: 3,
+					TinyUTXOAmount:             map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
+					},
 				},
 			},
 		},

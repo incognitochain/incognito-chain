@@ -334,6 +334,7 @@ func (httpServer *HttpServer) handleGetPortalSignedExtTxWithBatchID(
 type getSignedTxResult struct {
 	SignedTx     string
 	BeaconHeight uint64
+	TxID         string
 }
 
 func getRawSignedTxByHeight(
@@ -423,6 +424,7 @@ func getRawSignedTxByHeight(
 	return getSignedTxResult{
 		SignedTx:     hexSignedTx,
 		BeaconHeight: height,
+		TxID:         redeemTx.TxHash().String(),
 	}, nil
 }
 

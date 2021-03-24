@@ -19,6 +19,7 @@ type PortalParams struct {
 	MinUnshieldAmts            map[string]uint64 // in nano ptokens
 	BatchNumBlks               uint
 	MinConfirmationIncBlockNum uint
+	TinyUTXOAmount             map[string]uint64 // in nano ptokens
 
 	// for replacement
 	PortalReplacementAddress    string

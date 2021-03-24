@@ -96,10 +96,13 @@ func (s *PortalTestSuiteV4) SetupTest() {
 			},
 		},
 		DefaultFeeUnshields: map[string]uint64{
-			portalcommonv4.PortalBTCIDStr: 100000, // in nano pBTC - 10000 satoshi ~ 4 usd
+			portalcommonv4.PortalBTCIDStr: 100000, // in nano pBTC - 10000 satoshi
 		},
 		MinUnshieldAmts: map[string]uint64{
-			portalcommonv4.PortalBTCIDStr: 1000000, // in nano pBTC - 1000000 satoshi ~ 4 usd
+			portalcommonv4.PortalBTCIDStr: 1000000, // in nano pBTC - 1000000 satoshi
+		},
+		TinyUTXOAmount: map[string]uint64{
+			portalcommonv4.PortalBTCIDStr: 1e9, // in nano pBTC - 100000 satoshi
 		},
 		BatchNumBlks:                45,
 		MinConfirmationIncBlockNum:  3,
