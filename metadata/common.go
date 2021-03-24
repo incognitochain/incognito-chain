@@ -425,7 +425,7 @@ func buildMetaInfo() {
 
 func init() {
 	buildMetaInfo()
-
+	setLimitMetadataInBlock()
 }
 
 func NoInputNoOutput(metaType int) bool {
