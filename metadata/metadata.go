@@ -95,17 +95,16 @@ type ShardViewRetriever interface {
 }
 
 type ValidationEnviroment interface {
-	// ShardView() ShardViewRetriever
-	BuilderSView() common.Hash
 	IsPrivacy() bool
 	IsConfimed() bool
 	TxType() string
+	TxAction() int
 	ShardID() int
 	ShardHeight() uint64
 	BeaconHeight() uint64
 	ConfimedTime() int64
 	Version() int
-	GetHeight() uint64
+	// GetHeight() uint64
 }
 
 // Interface for all type of transaction

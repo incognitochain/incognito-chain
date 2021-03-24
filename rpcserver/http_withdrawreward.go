@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -39,9 +40,9 @@ func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interfac
 	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
 	param["TokenID"] = tokenIDParam
 	param["Version"] = 1
-	if version, ok := metaParam["Version"]; ok {
-		param["Version"] = version
-	}
+	// if version, ok := metaParam["Version"]; ok {
+	// 	param["Version"] = version
+	// }
 	arrayParams[4] = interface{}(param)
 	return httpServer.createRawTxWithMetadata(
 		arrayParams,

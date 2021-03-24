@@ -57,9 +57,11 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 		return false, NewTransactionErr(RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(tx.Info), 512))
 	}
 	if tx.Metadata != nil {
-		if ((tx.Metadata.GetType() == metadata.ReturnStakingMeta) != (tx.valEnv.TxType() == common.TxReturnStakingType)) ||
-			((tx.Metadata.GetType() == metadata.WithDrawRewardResponseMeta) != (tx.valEnv.TxType() == common.TxRewardType)) {
-			return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", tx.valEnv.TxType(), tx.Metadata.GetType())
+		metaType := tx.Metadata.GetType()
+		txType := tx.valEnv.TxType()
+		if ((metaType == metadata.ReturnStakingMeta) != (txType == common.TxReturnStakingType)) ||
+			(((metaType == metadata.WithDrawRewardResponseMeta) || (metaType == metadata.PDETradeResponseMeta)) != (txType == common.TxRewardType)) {
+			return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", txType, metaType)
 		}
 	}
 
@@ -84,13 +86,14 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 	}
 
 	metaData := tx.GetMetadata()
+	proof := tx.GetProof()
 	if metaData != nil {
 		if !metaData.ValidateMetadataByItself() {
 			return false, errors.Errorf("Metadata is not valid")
 		}
 	}
 
-	if tx.GetProof() == nil {
+	if (proof == nil) || ((len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) == 0)) {
 		if metaData == nil {
 			return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is nil", tx.Hash().String()))
 		} else {
@@ -100,14 +103,15 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 			}
 		}
 	} else {
-		proof := tx.GetProof()
 		if len(proof.GetInputCoins()) == 0 {
-			if metaData == nil {
+			if (metaData == nil) && (tx.GetValidationEnv().TxAction() != common.TxActInit) {
 				return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no input, but metadata is nil", tx.Hash().String()))
 			} else {
-				metaType := metaData.GetType()
-				if !metadata.NoInputHasOutput(metaType) {
-					return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
+				if metaData != nil {
+					metaType := metaData.GetType()
+					if !metadata.NoInputHasOutput(metaType) {
+						return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
+					}
 				}
 			}
 		}
@@ -411,9 +415,9 @@ func (txN Tx) validateOutputPrivacy() (bool, error) {
 		if oCoin.CoinDetails.GetRandomness() != nil {
 			return false, errors.New("Randomness of output coin is not nil")
 		}
-		if oCoin.CoinDetails.GetSerialNumber() != nil {
-			return false, errors.New("SerialNumber of output coin is not nil")
-		}
+		// if oCoin.CoinDetails.GetSerialNumber() != nil {
+		// 	return false, errors.Errorf("SerialNumber of output coin is not nil %v", string(oCoin.CoinDetails.GetSerialNumber().MarshalText()))
+		// }
 
 		if !cmOutSIDs[i].PointValid() {
 			return false, errors.New("validate sanity ComOutputShardID of proof failed")
@@ -444,9 +448,9 @@ func (txN Tx) validateOutputNoPrivacy() (bool, error) {
 		if !oCoin.CoinDetails.GetSNDerivator().ScalarValid() {
 			return false, errors.New("validate sanity SNDerivator of output coin failed")
 		}
-		if oCoin.CoinDetails.GetSerialNumber() != nil {
-			return false, errors.New("SerialNumber of output coin is not nil")
-		}
+		// if oCoin.CoinDetails.GetSerialNumber() != nil {
+		// 	return false, errors.Errorf("SerialNumber of output coin is not nil %v", string(oCoin.CoinDetails.GetSerialNumber().MarshalText()))
+		// }
 	}
 	return true, nil
 }

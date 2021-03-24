@@ -278,21 +278,9 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		shardBlock.Body.Transactions = []metadata.Transaction{}
 	}
 	for _, tx := range shardBlock.Body.Transactions {
-		valEnv := tx.GetValidationEnv()
-		valEnv = transaction.
-			WithConfirmedTime(
-				transaction.WithBeaconHeight(
-					transaction.WithShardHeight(
-						transaction.WithShardID(
-							valEnv,
-							shardBlock.GetShardID(),
-						),
-						shardBlock.GetHeight(),
-					),
-					shardBlock.Header.BeaconHeight,
-				),
-				shardBlock.GetProduceTime(),
-			)
+		valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), shardBlock.GetHeight())
+		valEnv = transaction.WithShardHeight(valEnv, shardBlock.Header.BeaconHeight)
+		valEnv = transaction.WithConfirmedTime(valEnv, shardBlock.GetProduceTime())
 		tx.SetValidationEnv(valEnv)
 		// fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
 	}

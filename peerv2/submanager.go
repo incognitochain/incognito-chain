@@ -70,7 +70,6 @@ func NewSubManager(
 		//role:       newUserRole("dummyLayer", "dummyRole", -1000),
 		topics: msgToTopics{},
 		subs:   msgToTopics{},
-		role:   make(map[int]*consensus.Validator),
 		disp:   dispatcher,
 	}
 }

@@ -1,9 +1,14 @@
 package blockchain
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type SlashLevel struct {
@@ -113,6 +118,8 @@ var genesisParamsTestnetNew *GenesisParams
 var genesisParamsTestnet2New *GenesisParams
 var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
+var ListAccount map[byte][]string
+var ListPubkey map[byte][]string
 
 func initPortalTokensForTestNet() map[string]PortalTokenProcessor {
 	return map[string]PortalTokenProcessor{
@@ -227,7 +234,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               16930,
 		Timeslot:                       10,
-		BeaconHeightBreakPointBurnAddr: 250000,
+		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
 		BTCRelayingHeaderChainID:       TestnetBTCChainID,
 		BTCDataFolderName:              TestnetBTCDataFolderName,
@@ -254,13 +261,13 @@ func SetupParam() {
 				MinUnlockOverRateCollaterals:         25,
 			},
 		},
-		PortalTokens:                initPortalTokensForTestNet(),
-		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
-		ReplaceStakingTxHeight:      1,
-		IsBackup:                    false,
-		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
-		ETHRemoveBridgeSigEpoch:     21920,
+		PortalTokens:              initPortalTokensForTestNet(),
+		EpochBreakPointSwapNewKey: TestnetReplaceCommitteeEpoch,
+		ReplaceStakingTxHeight:    1,
+		IsBackup:                  false,
+		PreloadAddress:            "",
+		BCHeightBreakPointNewZKP:  1, //TODO: change this value when deployed testnet
+		ETHRemoveBridgeSigEpoch:   21920,
 
 		PortalETHContractAddressStr: "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address
 		BCHeightBreakPointPortalV3:  30158,
@@ -352,7 +359,7 @@ func SetupParam() {
 		PreloadAddress:              "",
 		BCHeightBreakPointNewZKP:    1148608, //TODO: change this value when deployed testnet2
 		ETHRemoveBridgeSigEpoch:     2085,
-		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46",   // todo: update sc address
+		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46", // todo: update sc address
 		BCHeightBreakPointPortalV3:  1328816,
 	}
 	// END TESTNET-2
@@ -444,6 +451,7 @@ func SetupParam() {
 		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
 	}
 	if IsTestNet {
+		getListAccountForBenchmark("account.json")
 		if !IsTestNet2 {
 			GenesisParam = genesisParamsTestnetNew
 		} else {
@@ -466,5 +474,30 @@ func (p *Params) CreateGenesisBlocks() {
 	}
 	p.GenesisBeaconBlock = CreateGenesisBeaconBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
 	p.GenesisShardBlock = CreateGenesisShardBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
+}
+
+func getListAccountForBenchmark(filename string) {
+	ListAccount = map[byte][]string{}
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		fmt.Print(err)
+	}
+	err = json.Unmarshal(data, &ListAccount)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	ListPubkey = map[byte][]string{}
+	for k, v := range ListAccount {
+		listPK := []string{}
+		for _, pk := range v {
+			keyWalletDevAccount, err := wallet.Base58CheckDeserialize(pk)
+			if err != nil {
+				panic(err)
+			}
+			tempPK := base58.Base58Check{}.Encode(keyWalletDevAccount.KeySet.PaymentAddress.Pk, common.Base58Version)
+			listPK = append(listPK, tempPK)
+		}
+		ListPubkey[k] = listPK
+	}
 	return
 }

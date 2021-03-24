@@ -472,13 +472,16 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(CloneBeaconBestStateError, err)
 	}
 	st := time.Now()
+	if ok := checkLimitTxAction(false, map[int]int{}, shardBlock); !ok {
+		return errors.Errorf("Total txs of this block %v %v shard %v is large than limit", shardBlock.GetHeight(), shardBlock.Hash().String(), shardBlock.GetShardID())
+	}
 	ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
 		blockchain,
 		curView,
 		bView,
 		shardBlock.Body.Transactions,
 	)
-	if len(shardBlock.Body.Transactions) > 0{
+	if len(shardBlock.Body.Transactions) > 0 {
 		Logger.log.Infof("[testperformance] SHARD %+v | Validate %v txs of block %v cost %v", shardID, len(shardBlock.Body.Transactions), shardBlock.GetHeight(), time.Since(st))
 	}
 	if !ok {
@@ -1154,7 +1157,14 @@ func (blockchain *BlockChain) processStoreShardBlock(newShardState *ShardBestSta
 	//	Logger.log.Debug(NewBlockChainError(StoreShardBlockError, err))
 	//	return NewBlockChainError(StoreShardBlockError, err)
 	//}
-
+	if pks, ok := ListPubkey[shardID]; ok {
+		for _, pk := range pks {
+			err = statedb.AddCommitteeReward(newShardState.rewardStateDB, pk, 3000000000, common.PRVCoinID)
+			if err != nil {
+				return NewBlockChainError(ProcessSalaryInstructionsError, err)
+			}
+		}
+	}
 	if len(committeeChange.shardCommitteeAdded[shardID]) > 0 || len(committeeChange.shardSubstituteAdded[shardID]) > 0 {
 		// beaconConsensusStateRootHash, err := blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconChainDatabase(), beaconBlock.Header.Height)
 		// if err != nil {

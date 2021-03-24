@@ -42,6 +42,23 @@ type Tx struct {
 	cachedActualSize *uint64      // cached actualsize data for tx
 }
 
+func (tx *Tx) initEnv() metadata.ValidationEnviroment {
+	valEnv := DefaultValEnv()
+	if tx.IsSalaryTx() {
+		valEnv = WithAct(valEnv, common.TxActInit)
+	}
+	if tx.IsPrivacy() {
+		valEnv = WithPrivacy(valEnv)
+	} else {
+		valEnv = WithNoPrivacy(valEnv)
+	}
+	valEnv = WithType(valEnv, tx.GetType())
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	valEnv = WithShardID(valEnv, int(sID))
+	tx.SetValidationEnv(valEnv)
+	return valEnv
+}
+
 func (tx *Tx) UnmarshalJSON(data []byte) error {
 	type Alias Tx
 	temp := &struct {
@@ -55,16 +72,7 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		Logger.log.Error("UnmarshalJSON tx", string(data))
 		return NewTransactionErr(UnexpectedError, err)
 	}
-	valEnv := DefaultValEnv()
-	if tx.IsPrivacy() {
-		valEnv = WithPrivacy(valEnv)
-	} else {
-		valEnv = WithNoPrivacy(valEnv)
-	}
-	valEnv = WithType(valEnv, tx.GetType())
-	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	valEnv = WithShardID(valEnv, int(sID))
-	tx.SetValidationEnv(valEnv)
+
 	if temp.Metadata == nil {
 		tx.SetMetadata(nil)
 		return nil
@@ -76,6 +84,7 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		return parseErr
 	}
 	tx.SetMetadata(meta)
+	tx.initEnv()
 	return nil
 }
 
@@ -707,7 +716,6 @@ func (tx Tx) ListSNDOutputsHashH() []common.Hash {
 	return result
 }
 
-
 // CheckCMExistence returns true if cm exists in cm list
 func (tx Tx) CheckCMExistence(cm []byte, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	ok, err := statedb.HasCommitment(stateDB, *tokenID, cm, shardID)
@@ -861,7 +869,6 @@ func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	// check double spend
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
-
 
 }
 

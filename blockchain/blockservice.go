@@ -3,6 +3,8 @@ package blockchain
 import (
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/metadata"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/pkg/errors"
@@ -137,4 +139,41 @@ func (bc *BlockChain) streamBlkByHash(
 	}
 	close(blkCh)
 	return
+}
+
+func checkLimitTxAction(
+	forBeacon bool,
+	remining map[int]int,
+	blk *ShardBlock,
+) bool {
+	txs := blk.Body.Transactions
+	count := map[int]int{}
+	for _, tx := range txs {
+		act := metadata.GetMetaAction(tx.GetMetadataType())
+		if act == metadata.NoAction {
+			continue
+		}
+		if total, ok := count[act]; ok {
+			count[act] = total + 1
+		} else {
+			count[act] = 1
+		}
+		if _, ok := remining[act]; !ok {
+			remining[act] = metadata.GetLimitOfMeta(tx.GetMetadataType())
+		}
+		limit := remining[act]
+		if limit-count[act] < 0 {
+			if forBeacon {
+				if act == metadata.MetaRequestBeaconMintTxs {
+					return false
+				}
+			} else {
+				return false
+			}
+		}
+	}
+	for k, v := range count {
+		remining[k] = remining[k] - v
+	}
+	return true
 }

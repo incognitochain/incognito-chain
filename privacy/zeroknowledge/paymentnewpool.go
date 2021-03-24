@@ -187,7 +187,9 @@ func (proof PaymentProof) verifyNoPrivacyV2(
 	if tmp < sumOutputValue || tmp < fee {
 		return false, privacy.NewPrivacyErr(privacy.UnexpectedErr, fmt.Errorf("Overflow fee value %v\n", fee))
 	}
-
+	if (vEnv.TxType() == common.TxRewardType) || (vEnv.TxAction() == common.TxActInit) {
+		return true, nil
+	}
 	// check if sum of input values equal sum of output values
 	if sumInputValue != sumOutputValue+fee {
 		privacy.Logger.Log.Debugf("sumInputValue: %v\n", sumInputValue)

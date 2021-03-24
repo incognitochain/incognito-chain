@@ -104,11 +104,12 @@ func (tx *TxCustomTokenPrivacy) LoadCommitment(
 	embededTx := tx.Tx
 	normalTx := tx.TxPrivacyTokenData.TxNormal
 	if embededTx.valEnv.IsPrivacy() {
-		tokenID := embededTx.GetTokenID()
+		// tokenID := embededTx.GetTokenID()
 		prf := embededTx.Proof
 		if prf != nil {
-			err := prf.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
+			err := prf.LoadCommitmentFromStateDB(db, &common.PRVCoinID, byte(tx.valEnv.ShardID()))
 			if err != nil {
+				Logger.log.Error(err)
 				return err
 			}
 		}
@@ -120,6 +121,7 @@ func (tx *TxCustomTokenPrivacy) LoadCommitment(
 		if prf != nil {
 			err := prf.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
 			if err != nil {
+				Logger.log.Error(err)
 				return err
 			}
 		} else {

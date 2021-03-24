@@ -30,6 +30,36 @@ type TxCustomTokenPrivacy struct {
 	cachedHash *common.Hash // cached hash data of tx
 }
 
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) initEnv() metadata.ValidationEnviroment {
+	valEnv := DefaultValEnv()
+	// if txCustomTokenPrivacy.IsSalaryTx() {
+	valEnv = WithAct(valEnv, common.TxActTranfer)
+	// }
+	if txCustomTokenPrivacy.IsPrivacy() {
+		valEnv = WithPrivacy(valEnv)
+	} else {
+		valEnv = WithNoPrivacy(valEnv)
+	}
+
+	valEnv = WithType(valEnv, txCustomTokenPrivacy.GetType())
+	sID := common.GetShardIDFromLastByte(txCustomTokenPrivacy.GetSenderAddrLastByte())
+	valEnv = WithShardID(valEnv, int(sID))
+	txCustomTokenPrivacy.SetValidationEnv(valEnv)
+	txNormalValEnv := valEnv.Clone()
+	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
+		txNormalValEnv = WithAct(txNormalValEnv, common.TxActInit)
+	} else {
+		txNormalValEnv = WithAct(txNormalValEnv, common.TxActTranfer)
+	}
+	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy() {
+		txNormalValEnv = WithPrivacy(txNormalValEnv)
+	} else {
+		txNormalValEnv = WithNoPrivacy(txNormalValEnv)
+	}
+	txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.SetValidationEnv(txNormalValEnv)
+	return valEnv
+}
+
 func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
 	tx := Tx{}
 	err := json.Unmarshal(data, &tx)
@@ -63,18 +93,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 			txCustomTokenPrivacy.TxPrivacyTokenData.Amount = 37772966455153487
 		}
 	}
-	valEnv := DefaultValEnv()
-	if tx.IsPrivacy() {
-		valEnv = WithPrivacy(valEnv)
-	} else {
-		valEnv = WithNoPrivacy(valEnv)
-	}
-	valEnv = WithType(valEnv, tx.GetType())
-	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	valEnv = WithShardID(valEnv, int(sID))
-
-	tx.SetValidationEnv(valEnv)
-
+	txCustomTokenPrivacy.initEnv()
 	return nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -265,6 +266,7 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 			finalizedShardHeight = bestShardHeight + MAX_S2B_BLOCK
 		}
 		lastEpoch := uint64(0)
+		limitTxs := map[int]int{}
 		for shardHeight := bestShardHeight + 1; shardHeight <= finalizedShardHeight; shardHeight++ {
 			tempShardBlock, err := blockchain.GetShardBlockByHeightV1(shardHeight, shardID)
 			if err != nil {
@@ -280,7 +282,10 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 					break
 				}
 			}
-
+			if ok := checkLimitTxAction(true, limitTxs, tempShardBlock); !ok {
+				Logger.log.Infof("Maximum tx action, return %v/%v block for shard %v", len(shardBlocks), finalizedShardHeight-bestShardHeight, shardID)
+				break
+			}
 			shardBlocks = append(shardBlocks, tempShardBlock)
 		}
 		allShardBlocks[shardID] = shardBlocks
@@ -291,12 +296,16 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight map[byte][]uint64) (map[byte][]*ShardBlock, error) {
 	allRequireShardBlocks := make(map[byte][]*ShardBlock)
 	for shardID, requiredShardBlockHeight := range allRequiredShardBlockHeight {
+		limitTxs := map[int]int{}
 		shardBlocks := []*ShardBlock{}
 		lastEpoch := uint64(0)
 		for _, height := range requiredShardBlockHeight {
 			shardBlock, err := blockchain.GetShardBlockByHeightV1(height, shardID)
 			if err != nil {
 				return nil, err
+			}
+			if ok := checkLimitTxAction(true, limitTxs, shardBlock); !ok {
+				return nil, errors.Errorf("Total txs of range ShardBlocks [%v..%v] is lager than limit", requiredShardBlockHeight[0], requiredShardBlockHeight[len(requiredShardBlockHeight)-1])
 			}
 			//only get shard block within epoch
 			if lastEpoch == 0 {

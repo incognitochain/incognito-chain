@@ -53,6 +53,16 @@ const (
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
 )
 
+const (
+	TxActTranfer = iota // Tx for tranfer PRV/Token
+	TxActBurning        // Tx burn PRV/Token
+	TxActInit           // Tx init PRV/Token
+)
+
+const (
+	MaxTxRequestIssue = 400
+)
+
 var (
 	MaxTxSize    = uint64(100)  // unit KB = 100KB
 	MaxBlockSize = uint64(2000) //unit kilobytes = 2 Megabyte

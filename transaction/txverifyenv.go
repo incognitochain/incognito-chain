@@ -6,10 +6,10 @@ import (
 )
 
 type ValidationEnv struct {
-	builderSView common.Hash
 	isPrivacy    bool
 	isConfimed   bool
 	txType       string
+	txAction     int
 	shardID      int
 	shardHeight  uint64
 	beaconHeight uint64
@@ -25,130 +25,67 @@ func NewValEnv(
 	sID int,
 	confimedTime uint64,
 	ver int,
+	act int,
 ) *ValidationEnv {
 	return &ValidationEnv{}
 }
 
 func DefaultValEnv() *ValidationEnv {
 	return &ValidationEnv{
-		builderSView: common.EmptyRoot,
 		isConfimed:   false,
 		shardHeight:  0,
 		beaconHeight: 0,
 		confimedTime: 0,
-	}
-}
-
-func WithBuilderSView(vE metadata.ValidationEnviroment, view common.Hash) *ValidationEnv {
-	return &ValidationEnv{
-		builderSView: view,
-		isConfimed:   vE.IsConfimed(),
-		shardHeight:  vE.ShardHeight(),
-		beaconHeight: vE.BeaconHeight(),
-		confimedTime: vE.ConfimedTime(),
-		shardID:      vE.ShardID(),
-		version:      vE.Version(),
-		isPrivacy:    true,
-		txType:       vE.TxType(),
+		txAction:     common.TxActTranfer,
 	}
 }
 
 func WithPrivacy(vE metadata.ValidationEnviroment) *ValidationEnv {
-	return &ValidationEnv{
-		builderSView: vE.BuilderSView(),
-		isConfimed:   vE.IsConfimed(),
-		shardHeight:  vE.ShardHeight(),
-		beaconHeight: vE.BeaconHeight(),
-		confimedTime: vE.ConfimedTime(),
-		shardID:      vE.ShardID(),
-		version:      vE.Version(),
-		isPrivacy:    true,
-		txType:       vE.TxType(),
-	}
+	vEnv := vE.(*ValidationEnv)
+	vEnv.isPrivacy = true
+	return vEnv
 }
 
 func WithNoPrivacy(vE metadata.ValidationEnviroment) *ValidationEnv {
-	return &ValidationEnv{
-		builderSView: vE.BuilderSView(),
-		isConfimed:   vE.IsConfimed(),
-		shardHeight:  vE.ShardHeight(),
-		beaconHeight: vE.BeaconHeight(),
-		confimedTime: vE.ConfimedTime(),
-		shardID:      vE.ShardID(),
-		version:      vE.Version(),
-		isPrivacy:    false,
-		txType:       vE.TxType(),
-	}
+	vEnv := vE.(*ValidationEnv)
+	vEnv.isPrivacy = false
+	return vEnv
 }
 
 func WithShardID(vE metadata.ValidationEnviroment, sID int) *ValidationEnv {
-	return &ValidationEnv{
-		builderSView: vE.BuilderSView(),
-		isConfimed:   vE.IsConfimed(),
-		shardHeight:  vE.ShardHeight(),
-		beaconHeight: vE.BeaconHeight(),
-		confimedTime: vE.ConfimedTime(),
-		shardID:      sID,
-		version:      vE.Version(),
-		isPrivacy:    vE.IsPrivacy(),
-		txType:       vE.TxType(),
-	}
+	vEnv := vE.(*ValidationEnv)
+	vEnv.shardID = sID
+	return vEnv
 }
 
 func WithShardHeight(vE metadata.ValidationEnviroment, sHeight uint64) *ValidationEnv {
-	return &ValidationEnv{
-		builderSView: vE.BuilderSView(),
-		isConfimed:   vE.IsConfimed(),
-		shardHeight:  sHeight,
-		beaconHeight: vE.BeaconHeight(),
-		confimedTime: vE.ConfimedTime(),
-		shardID:      vE.ShardID(),
-		version:      vE.Version(),
-		isPrivacy:    vE.IsPrivacy(),
-		txType:       vE.TxType(),
-	}
+	vEnv := vE.(*ValidationEnv)
+	vEnv.shardHeight = sHeight
+	return vEnv
 }
 
 func WithBeaconHeight(vE metadata.ValidationEnviroment, bcHeight uint64) *ValidationEnv {
-	return &ValidationEnv{
-		builderSView: vE.BuilderSView(),
-		isConfimed:   vE.IsConfimed(),
-		shardHeight:  vE.ShardHeight(),
-		beaconHeight: bcHeight,
-		confimedTime: vE.ConfimedTime(),
-		shardID:      vE.ShardID(),
-		version:      vE.Version(),
-		isPrivacy:    vE.IsPrivacy(),
-		txType:       vE.TxType(),
-	}
+	vEnv := vE.(*ValidationEnv)
+	vEnv.beaconHeight = bcHeight
+	return vEnv
 }
 
-func WithConfirmedTime(vE metadata.ValidationEnviroment, confimedTime int64) *ValidationEnv {
-	return &ValidationEnv{
-		builderSView: vE.BuilderSView(),
-		isConfimed:   true,
-		shardHeight:  vE.ShardHeight(),
-		beaconHeight: vE.BeaconHeight(),
-		confimedTime: confimedTime,
-		shardID:      vE.ShardID(),
-		version:      vE.Version(),
-		isPrivacy:    vE.IsPrivacy(),
-		txType:       vE.TxType(),
-	}
+func WithConfirmedTime(vE metadata.ValidationEnviroment, confirmedTime int64) *ValidationEnv {
+	vEnv := vE.(*ValidationEnv)
+	vEnv.confimedTime = confirmedTime
+	return vEnv
 }
 
 func WithType(vE metadata.ValidationEnviroment, t string) *ValidationEnv {
-	return &ValidationEnv{
-		builderSView: vE.BuilderSView(),
-		isConfimed:   vE.IsConfimed(),
-		shardHeight:  vE.ShardHeight(),
-		beaconHeight: vE.BeaconHeight(),
-		confimedTime: vE.ConfimedTime(),
-		shardID:      vE.ShardID(),
-		version:      vE.Version(),
-		isPrivacy:    vE.IsPrivacy(),
-		txType:       t,
-	}
+	vEnv := vE.(*ValidationEnv)
+	vEnv.txType = t
+	return vEnv
+}
+
+func WithAct(vE metadata.ValidationEnviroment, act int) *ValidationEnv {
+	vEnv := vE.(*ValidationEnv)
+	vEnv.txAction = act
+	return vEnv
 }
 
 func (vE *ValidationEnv) IsPrivacy() bool {
@@ -175,6 +112,21 @@ func (vE *ValidationEnv) ConfimedTime() int64 {
 func (vE *ValidationEnv) Version() int {
 	return vE.version
 }
-func (vE *ValidationEnv) BuilderSView() common.Hash {
-	return vE.builderSView
+
+func (vE *ValidationEnv) TxAction() int {
+	return vE.txAction
+}
+
+func (vE *ValidationEnv) Clone() *ValidationEnv {
+	return &ValidationEnv{
+		isConfimed:   vE.IsConfimed(),
+		shardHeight:  vE.ShardHeight(),
+		beaconHeight: vE.BeaconHeight(),
+		confimedTime: vE.ConfimedTime(),
+		shardID:      vE.ShardID(),
+		version:      vE.Version(),
+		isPrivacy:    vE.IsPrivacy(),
+		txAction:     vE.TxAction(),
+		txType:       vE.TxType(),
+	}
 }

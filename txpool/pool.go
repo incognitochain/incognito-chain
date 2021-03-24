@@ -163,6 +163,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	defer func() {
 		fmt.Printf("[testperformance] Return list txs #res %v cursize %v curtime %v maxsize %v maxtime %v \n", len(res), curSize, curTime, maxSize, maxTime)
 	}()
+	limitTxAction := map[int]int{}
 	for {
 		select {
 		case txDetails := <-txDetailCh:
@@ -171,6 +172,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			}
 			fmt.Printf("[testperformance] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
 			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
+				continue
+			}
+			if ok := checkTxAction(limitTxAction, txDetails.Tx); !ok {
 				continue
 			}
 			err := txDetails.Tx.LoadCommitment(sDB.Copy())
@@ -216,64 +220,66 @@ func (tp *TxsPool) CheckDoubleSpend(
 	bool,
 	TxInfo,
 ) {
-	iCoins := tx.GetProof().GetInputCoins()
-	oCoins := tx.GetProof().GetOutputCoins()
+	prf := tx.GetProof()
 	removedInfos := TxInfo{
 		Fee:   0,
 		VTime: 0,
 	}
-	removeIdx := map[uint]interface{}{}
-	for _, iCoin := range iCoins {
-		if info, ok := dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
-			fmt.Println("1", info)
-			if _, ok := removeIdx[info.Index]; ok {
-				continue
-			}
-			if tp.better(info.Detail.Tx, tx) {
-				return false, removedInfos
-			} else {
-				fmt.Println("Assign map remove 1")
-				removeIdx[info.Index] = nil
-			}
-		}
-	}
-	for _, oCoin := range oCoins {
-		if info, ok := dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
-			fmt.Println("2", info)
-			if _, ok := removeIdx[info.Index]; ok {
-				continue
-			}
-			if tp.better(info.Detail.Tx, tx) {
-				return false, removedInfos
-			} else {
-				fmt.Println("Assign map remove 2")
-				removeIdx[info.Index] = nil
-			}
-		}
-	}
-	if len(removeIdx) > 0 {
-		fmt.Printf("[testperformance] %v %v Doublespend %v ", len(removeIdx), len((*txs)), tx.Hash().String())
-		for k, v := range dataHelper {
-			if _, ok := removeIdx[v.Index]; ok {
-				delete(dataHelper, k)
-			}
-		}
-		for k := range removeIdx {
-			fmt.Printf("%v:", k)
-			if int(k) == len(*txs)-1 {
-				fmt.Printf("%v; ", (*txs)[k].Hash().String())
-				(*txs) = (*txs)[:k]
-			} else {
-				fmt.Printf("%v; ", (*txs)[k].Hash().String())
-				if int(k) < len((*txs))-1 {
-					(*txs) = append((*txs)[:k], (*txs)[k+1:]...)
+	if prf != nil {
+		iCoins := prf.GetInputCoins()
+		oCoins := prf.GetOutputCoins()
+		removeIdx := map[uint]interface{}{}
+		for _, iCoin := range iCoins {
+			if info, ok := dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
+				fmt.Println("1", info)
+				if _, ok := removeIdx[info.Index]; ok {
+					continue
+				}
+				if tp.better(info.Detail.Tx, tx) {
+					return false, removedInfos
+				} else {
+					fmt.Println("Assign map remove 1")
+					removeIdx[info.Index] = nil
 				}
 			}
-
 		}
-		fmt.Println()
-	}
+		for _, oCoin := range oCoins {
+			if info, ok := dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
+				fmt.Println("2", info)
+				if _, ok := removeIdx[info.Index]; ok {
+					continue
+				}
+				if tp.better(info.Detail.Tx, tx) {
+					return false, removedInfos
+				} else {
+					fmt.Println("Assign map remove 2")
+					removeIdx[info.Index] = nil
+				}
+			}
+		}
+		if len(removeIdx) > 0 {
+			fmt.Printf("[testperformance] %v %v Doublespend %v ", len(removeIdx), len((*txs)), tx.Hash().String())
+			for k, v := range dataHelper {
+				if _, ok := removeIdx[v.Index]; ok {
+					delete(dataHelper, k)
+				}
+			}
+			for k := range removeIdx {
+				fmt.Printf("%v:", k)
+				if int(k) == len(*txs)-1 {
+					fmt.Printf("%v; ", (*txs)[k].Hash().String())
+					(*txs) = (*txs)[:k]
+				} else {
+					fmt.Printf("%v; ", (*txs)[k].Hash().String())
+					if int(k) < len((*txs))-1 {
+						(*txs) = append((*txs)[:k], (*txs)[k+1:]...)
+					}
+				}
 
+			}
+			fmt.Println()
+		}
+	}
 	return true, removedInfos
 }
 
@@ -286,24 +292,27 @@ func insertTxIntoList(
 	txs []metadata.Transaction,
 ) []metadata.Transaction {
 	tx := txDetail.Tx
-	iCoins := tx.GetProof().GetInputCoins()
-	oCoins := tx.GetProof().GetOutputCoins()
-	for _, iCoin := range iCoins {
-		dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()] = struct {
-			Index  uint
-			Detail TxInfoDetail
-		}{
-			Index:  uint(len(txs)),
-			Detail: txDetail,
+	prf := tx.GetProof()
+	if prf != nil {
+		iCoins := prf.GetInputCoins()
+		oCoins := prf.GetOutputCoins()
+		for _, iCoin := range iCoins {
+			dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()] = struct {
+				Index  uint
+				Detail TxInfoDetail
+			}{
+				Index:  uint(len(txs)),
+				Detail: txDetail,
+			}
 		}
-	}
-	for _, oCoin := range oCoins {
-		dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()] = struct {
-			Index  uint
-			Detail TxInfoDetail
-		}{
-			Index:  uint(len(txs)),
-			Detail: txDetail,
+		for _, oCoin := range oCoins {
+			dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()] = struct {
+				Index  uint
+				Detail TxInfoDetail
+			}{
+				Index:  uint(len(txs)),
+				Detail: txDetail,
+			}
 		}
 	}
 	return append(txs, tx)
@@ -408,4 +417,21 @@ func (tp *TxsPool) getTxsFromPool(
 
 }
 
-// func (tp *TxsPool) removeTxs(tp)
+func checkTxAction(
+	remining map[int]int,
+	tx metadata.Transaction,
+) bool {
+	act := metadata.GetMetaAction(tx.GetMetadataType())
+	if act == metadata.NoAction {
+		return true
+	}
+	if _, ok := remining[act]; !ok {
+		remining[act] = metadata.GetLimitOfMeta(tx.GetMetadataType())
+	}
+	limit := remining[act]
+	if limit < 1 {
+		return false
+	}
+	remining[act] = limit - 1
+	return true
+}
