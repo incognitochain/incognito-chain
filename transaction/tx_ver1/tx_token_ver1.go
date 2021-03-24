@@ -232,7 +232,11 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 			} else {
 				// check exist token
 				if statedb.PrivacyTokenIDExisted(transactionStateDB, tokenID) {
-					return false, nil, fmt.Errorf("try to initialize an existed tokenID (%v)", tokenID.String())
+					if tokenID.String() == "5c24d2c930344186d37ed0825a3babeecd50c50a0c75d50ac2a8797cbbde816b" {
+						//skip for syncing
+						return true, batchedProof, nil
+					}
+					return false, nil, fmt.Errorf("try to initialize an existing tokenID (%v)", tokenID.String())
 				}
 
 				return true, batchedProof, nil
