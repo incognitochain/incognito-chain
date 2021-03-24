@@ -192,22 +192,6 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 
 	reqStatus := instructions[2]
 	if reqStatus == portalcommonv4.PortalV4RequestAcceptedChainStatus {
-		// add new processed batch unshield request to batch unshield list
-		// remove waiting unshield request from waiting list
-		UpdatePortalStateAfterProcessBatchUnshieldRequest(
-			CurrentPortalStateV4, actionData.BatchID, actionData.UTXOs, actionData.NetworkFee, actionData.UnshieldIDs, actionData.TokenID)
-		RemoveListUtxoFromDB(stateDB, actionData.UTXOs, actionData.TokenID)
-		RemoveListWaitingUnshieldFromDB(stateDB, actionData.UnshieldIDs, actionData.TokenID)
-
-		for _, unshieldID := range actionData.UnshieldIDs {
-			// update status of unshield request that processed
-			err := UpdateNewStatusUnshieldRequest(unshieldID, portalcommonv4.PortalUnshieldReqProcessedStatus, stateDB)
-			if err != nil {
-				Logger.log.Errorf("[processPortalBatchUnshieldRequest] Error when updating status of unshielding request with unshieldID %v: %v\n", unshieldID, err)
-				return nil
-			}
-		}
-
 		// store status of batch unshield by batchID
 		batchUnshieldRequestStatus := metadata.PortalUnshieldRequestBatchStatus{
 			BatchID:       actionData.BatchID,
@@ -227,6 +211,22 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 		if err != nil {
 			Logger.log.Errorf("[processPortalBatchUnshieldRequest] Error when storing status of redeem request by redeemID: %v\n", err)
 			return nil
+		}
+
+		// add new processed batch unshield request to batch unshield list
+		// remove waiting unshield request from waiting list
+		UpdatePortalStateAfterProcessBatchUnshieldRequest(
+			CurrentPortalStateV4, actionData.BatchID, actionData.UTXOs, actionData.NetworkFee, actionData.UnshieldIDs, actionData.TokenID)
+		RemoveListUtxoFromDB(stateDB, actionData.UTXOs, actionData.TokenID)
+		RemoveListWaitingUnshieldFromDB(stateDB, actionData.UnshieldIDs, actionData.TokenID)
+
+		for _, unshieldID := range actionData.UnshieldIDs {
+			// update status of unshield request that processed
+			err := UpdateNewStatusUnshieldRequest(unshieldID, portalcommonv4.PortalUnshieldReqProcessedStatus, stateDB)
+			if err != nil {
+				Logger.log.Errorf("[processPortalBatchUnshieldRequest] Error when updating status of unshielding request with unshieldID %v: %v\n", unshieldID, err)
+				return nil
+			}
 		}
 	}
 

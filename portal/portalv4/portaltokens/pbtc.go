@@ -41,7 +41,7 @@ func (p PortalBTCTokenProcessor) ConvertExternalToIncAmount(externalAmt uint64) 
 }
 
 func (p PortalBTCTokenProcessor) ConvertIncToExternalAmount(incAmt uint64) uint64 {
-	return incAmt / 10 // incAmt / 1^9 * 1^8
+	return incAmt / 10 // incAmt / 10^9 * 10^8
 }
 
 func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(

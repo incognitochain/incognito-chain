@@ -572,7 +572,6 @@ func (e *BLSBFT_V2) proposeBlock(userMiningKey signatureschemes2.MiningKey, prop
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
-	fmt.Println("[BEACON PRODUCER] Portal sigs : ", portalSigs)
 	validationData.PortalSig = portalSigs
 	// producer bls sig
 	validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
