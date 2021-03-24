@@ -429,6 +429,7 @@ func checkTxAction(
 		remining[act] = metadata.GetLimitOfMeta(tx.GetMetadataType())
 	}
 	limit := remining[act]
+	fmt.Printf("[rejecttx] Total txs %v is larger than limit %v, reject this tx %v \n", act, limit, tx.Hash().String())
 	if limit < 1 {
 		return false
 	}
