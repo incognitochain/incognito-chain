@@ -465,8 +465,10 @@ func GetMetaAction(metaType int) int {
 }
 
 func GetLimitOfMeta(metaType int) int {
-	if limit, ok := limitOfMetaAct[metaType]; ok {
-		return limit
+	if info, ok := metaInfoMap[metaType]; ok {
+		if limit, ok := limitOfMetaAct[info.MetaAction]; ok {
+			return limit
+		}
 	}
 	return -1
 }
