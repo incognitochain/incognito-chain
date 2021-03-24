@@ -785,7 +785,7 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 				},
 			},
 		},
-		// TC1 - success: there is only one waiting unshield request, multiple utxos (choose one to spend)
+		// TC1 - success: there is only one waiting unshield request, multiple utxos (choose one to spend, and a smaller one)
 		{
 			waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
 				portalcommonv4.PortalBTCIDStr: {
@@ -813,6 +813,7 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 				portalcommonv4.PortalBTCIDStr: {
 					keyUtxo1: valueUtxo1,
 					keyUtxo2: valueUtxo2,
+					keyUtxo3: valueUtxo3,
 				},
 			},
 		},
@@ -882,7 +883,7 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 
 	processedUnshieldIDs = []string{unshieldId1}
 	batchID = portalprocessv4.GetBatchID(currentBeaconHeight, processedUnshieldIDs)
-	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo1}}
+	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo1, valueUtxo2}}
 	externalFee = map[uint64]uint{
 		currentBeaconHeight: 100000,
 	}
@@ -892,9 +893,9 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 
 	processedUnshieldIDs = []string{unshieldId1, unshieldId2, unshieldId3}
 	batchID = portalprocessv4.GetBatchID(currentBeaconHeight, processedUnshieldIDs)
-	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo1}}
+	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo1, valueUtxo3}}
 	externalFee = map[uint64]uint{
-		currentBeaconHeight: uint(100000 * len(processedUnshieldIDs)),
+		currentBeaconHeight: 100000,
 	}
 	batchUnshieldProcessKey3 := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(portalcommonv4.PortalBTCIDStr, batchID).String()
 	batchUnshieldProcess3 := statedb.NewProcessedUnshieldRequestBatchWithValue(
@@ -904,7 +905,7 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 	batchID = portalprocessv4.GetBatchID(currentBeaconHeight, processedUnshieldIDs)
 	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo2}}
 	externalFee = map[uint64]uint{
-		currentBeaconHeight: uint(100000 * len(processedUnshieldIDs)),
+		currentBeaconHeight: 100000,
 	}
 	batchUnshieldProcessKey4 := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(portalcommonv4.PortalBTCIDStr, batchID).String()
 	batchUnshieldProcess4 := statedb.NewProcessedUnshieldRequestBatchWithValue(
@@ -914,7 +915,7 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 	batchID = portalprocessv4.GetBatchID(currentBeaconHeight, processedUnshieldIDs)
 	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo1, valueUtxo2}}
 	externalFee = map[uint64]uint{
-		currentBeaconHeight: uint(100000 * len(processedUnshieldIDs)),
+		currentBeaconHeight: 100000,
 	}
 	batchUnshieldProcessKey5 := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(portalcommonv4.PortalBTCIDStr, batchID).String()
 	batchUnshieldProcess5 := statedb.NewProcessedUnshieldRequestBatchWithValue(
@@ -945,9 +946,7 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 				},
 			},
 			utxos: map[string]map[string]*statedb.UTXO{
-				portalcommonv4.PortalBTCIDStr: {
-					keyUtxo2: valueUtxo2,
-				},
+				portalcommonv4.PortalBTCIDStr: {},
 			},
 			numBeaconInsts: 1,
 		},
@@ -1023,6 +1022,9 @@ func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
 	// mock test
 	bc := new(mocks.ChainRetriever)
 	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
+	tokenID := portalcommonv4.PortalBTCIDStr
+	bcH := uint64(0)
+	bc.On("GetPortalV4MultiSigAddress", tokenID, bcH).Return(s.portalParams.MultiSigAddresses[portalcommonv4.PortalBTCIDStr])
 
 	pm := portal.NewPortalManager()
 	beaconHeight := uint64(45)

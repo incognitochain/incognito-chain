@@ -120,7 +120,7 @@ func (curView *ShardBestState) buildPortalRefundedUnshieldingRequestTx(
 		rejectedUnshieldingReq.IncAddressStr,
 		rejectedUnshieldingReq.UnshieldAmount,
 		rejectedUnshieldingReq.TokenID,
-		metadata.PortalV4UnshieldingRequestMeta,
+		metadata.PortalV4UnshieldingResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(rejectedUnshieldingReq.IncAddressStr)

@@ -6,6 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/portal/portalv4/common"
+
+	"sort"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -17,7 +20,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"sort"
 )
 
 type PortalBTCTokenProcessor struct {
@@ -99,7 +101,7 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 		))
 	}
 
-	if len(listUTXO) == 0 || totalValue < p.GetMinTokenAmount() {
+	if len(listUTXO) == 0 || p.ConvertExternalToIncAmount(totalValue) < p.GetMinTokenAmount() {
 		Logger.log.Errorf("Shielding amount: %v is less than the minimum threshold: %v\n", totalValue, p.GetMinTokenAmount())
 		return false, nil, fmt.Errorf("Shielding amount: %v is less than the minimum threshold: %v", totalValue, p.GetMinTokenAmount())
 	}
@@ -189,10 +191,14 @@ func (p PortalBTCTokenProcessor) GeneratePrivateKeyFromSeed(seed []byte) ([]byte
 }
 
 // CreateRawExternalTx creates raw btc transaction (not include signatures of beacon validator)
-func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, networkFee uint64, memo string, bc metadata.ChainRetriever) (string, string, error) {
+// inputs: UTXO state of beacon, unit of amount in btc
+// outputs: unit of amount in pbtc ~ unshielding amount
+// feePerOutput: unit in pbtc
+func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, feePerOutput uint64, memo string, bc metadata.ChainRetriever) (string, string, error) {
 	msgTx := wire.NewMsgTx(wire.TxVersion)
 
 	// add TxIns into raw tx
+	totalInputAmount := uint64(0)
 	for _, in := range inputs {
 		utxoHash, err := chainhash.NewHashFromStr(in.GetTxHash())
 		if err != nil {
@@ -202,9 +208,11 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 		outPoint := wire.NewOutPoint(utxoHash, in.GetOutputIndex())
 		txIn := wire.NewTxIn(outPoint, nil, nil)
 		msgTx.AddTxIn(txIn)
+		totalInputAmount += in.GetOutputAmount()
 	}
 
 	// add TxOuts into raw tx
+	totalOutputAmount := uint64(0)
 	for _, out := range outputs {
 		// adding the output to tx
 		decodedAddr, err := btcutil.DecodeAddress(out.ReceiverAddress, bc.GetBTCChainParams())
@@ -219,7 +227,33 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 		}
 
 		// adding the destination address and the amount to the transaction
-		redeemTxOut := wire.NewTxOut(int64(out.Amount), destinationAddrByte)
+		if out.Amount <= feePerOutput {
+			Logger.log.Errorf("[CreateRawExternalTx-BTC] Output amount %v must greater than fee %v: %v", out.Amount, feePerOutput)
+			return "", "", err
+		}
+		redeemTxOut := wire.NewTxOut(int64(p.ConvertIncToExternalAmount(out.Amount - feePerOutput)), destinationAddrByte)
+		msgTx.AddTxOut(redeemTxOut)
+		totalOutputAmount += out.Amount
+	}
+	totalOutputAmount = p.ConvertIncToExternalAmount(totalOutputAmount)
+
+	// calculate the change output
+	if totalInputAmount - totalOutputAmount > 0 {
+		// adding the output to tx
+		multiSigAddress := bc.GetPortalV4MultiSigAddress(common.PortalBTCIDStr, 0)
+		decodedAddr, err := btcutil.DecodeAddress(multiSigAddress, bc.GetBTCChainParams())
+		if err != nil {
+			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when decoding multisig address: %v", err)
+			return "", "", err
+		}
+		destinationAddrByte, err := txscript.PayToAddrScript(decodedAddr)
+		if err != nil {
+			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when new multisig Address Script: %v", err)
+			return "", "", err
+		}
+
+		// adding the destination address and the amount to the transaction
+		redeemTxOut := wire.NewTxOut(int64(totalInputAmount - totalOutputAmount), destinationAddrByte)
 		msgTx.AddTxOut(redeemTxOut)
 	}
 
@@ -272,9 +306,9 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSi
 
 func (p PortalBTCTokenProcessor) IsAcceptableTxSize(num_utxos int, num_unshield_id int) bool {
 	// TODO: do experiments depend on external chain miner's habit
-	A := 1
-	B := 1
-	C := 10
+	A := 1    // input size (include sig size) in byte
+	B := 1     // output size in byte
+	C := 6 // max transaction size in byte ~ 10 KB
 	return A*num_utxos+B*num_unshield_id <= C
 }
 
@@ -334,7 +368,8 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 	broadcastTxs := []*BroadcastTx{}
 	utxo_idx := 0
 	unshield_idx := 0
-	for utxo_idx < len(utxos) && unshield_idx < len(wReqsArr) {
+	tiny_utxo_used := 0
+	for utxo_idx < len(utxos)-tiny_utxo_used && unshield_idx < len(wReqsArr) {
 		chosenUTXOs := []*statedb.UTXO{}
 		chosenUnshieldIDs := []string{}
 
@@ -352,13 +387,13 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 			utxo_idx += 1
 		} else {
 			// find the first utxo idx that the cummulative sum of utxo amount >= current unshield amount
-			for utxo_idx < len(utxos) && cur_sum_amount+utxosArr[utxo_idx].value.GetOutputAmount() < wReqsArr[unshield_idx].value.GetAmount() {
+			for utxo_idx < len(utxos)-tiny_utxo_used && cur_sum_amount+utxosArr[utxo_idx].value.GetOutputAmount() < wReqsArr[unshield_idx].value.GetAmount() {
 				cur_sum_amount += utxosArr[utxo_idx].value.GetOutputAmount()
 				chosenUTXOs = append(chosenUTXOs, utxosArr[utxo_idx].value)
 				utxo_idx += 1
 				cnt += 1
 			}
-			if utxo_idx < len(utxos) && p.IsAcceptableTxSize(cnt+1, 1) {
+			if utxo_idx < len(utxos)-tiny_utxo_used && p.IsAcceptableTxSize(cnt+1, 1) {
 				// insert new unshield ids if the current utxos still has enough amount
 				cur_sum_amount += utxosArr[utxo_idx].value.GetOutputAmount()
 				chosenUTXOs = append(chosenUTXOs, utxosArr[utxo_idx].value)
@@ -379,6 +414,27 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 			} else {
 				// not enough utxo for last unshield IDs
 				break
+			}
+		}
+
+		// use a tiny UTXO
+		if utxo_idx < len(utxos)-tiny_utxo_used {
+			tiny_utxo_used += 1
+			chosenUTXOs = append(chosenUTXOs, utxosArr[len(utxos)-tiny_utxo_used].value)
+		}
+
+		// merge small batches
+		if len(broadcastTxs) > 0 {
+			prevUTXOs := broadcastTxs[len(broadcastTxs)-1].UTXOs
+			prevRequests := broadcastTxs[len(broadcastTxs)-1].UnshieldIDs
+			lenUTXOs := len(prevUTXOs) + len(chosenUTXOs)
+			lenRequests := len(prevRequests) + len(chosenUnshieldIDs)
+			if p.IsAcceptableTxSize(lenUTXOs, lenRequests) {
+				broadcastTxs[len(broadcastTxs)-1] = &BroadcastTx{
+					UTXOs:       append(prevUTXOs, chosenUTXOs...),
+					UnshieldIDs: append(prevRequests, chosenUnshieldIDs...),
+				}
+				continue
 			}
 		}
 		broadcastTxs = append(broadcastTxs, &BroadcastTx{

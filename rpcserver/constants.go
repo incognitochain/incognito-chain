@@ -299,7 +299,7 @@ const (
 	createAndSendTxWithPortalV4UnshieldRequest = "createandsendtxwithportalv4unshieldrequest"
 	getPortalUnshieldingRequestStatus          = "getportalunshieldrequeststatus"
 	getPortalBatchUnshieldingRequestStatus     = "getportalbatchunshieldrequeststatus"
-	getSignedRawTransactionByBatchID           = "getporalsignedrawtransaction"
+	getSignedRawTransactionByBatchID           = "getportalsignedrawtransaction"
 	createAndSendTxWithPortalReplacementFee    = "createandsendtxwithportalreplacementfee"
 	getPortalReplacementFeeStatus              = "getportalreplacementfeestatus"
 	createAndSendTxWithPortalSubmitConfirmedTx = "createandsendtxwithportalsubmitconfirmedtx"

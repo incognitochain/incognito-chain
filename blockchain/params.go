@@ -272,10 +272,10 @@ func SetupParam() {
 					},
 					PortalTokens: initPortalTokensV4ForTestNet(),
 					DefaultFeeUnshields: map[string]uint64{
-						portalcommonv4.PortalBTCIDStr: 50000, // 100000 nano pbtc = 10000 satoshi
+						portalcommonv4.PortalBTCIDStr: 50000, // 50000 nano pbtc = 5000 satoshi
 					},
 					MinUnshieldAmts: map[string]uint64{
-						portalcommonv4.PortalBTCIDStr: 500000, // 1000000 nano pbtc = 100000 satoshi
+						portalcommonv4.PortalBTCIDStr: 500000, // 500000 nano pbtc = 50000 satoshi
 					},
 					BatchNumBlks:                15, // ~ 10 mins
 					MinConfirmationIncBlockNum:  3,
