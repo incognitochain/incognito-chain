@@ -92,6 +92,7 @@ type ShardViewRetriever interface {
 	GetShardRewardStateDB() *statedb.StateDB
 	GetCopiedFeatureStateDB() *statedb.StateDB
 	GetCopiedTransactionStateDB() *statedb.StateDB
+	GetHeight() uint64
 }
 
 type ValidationEnviroment interface {
@@ -104,7 +105,6 @@ type ValidationEnviroment interface {
 	BeaconHeight() uint64
 	ConfimedTime() int64
 	Version() int
-	// GetHeight() uint64
 }
 
 // Interface for all type of transaction

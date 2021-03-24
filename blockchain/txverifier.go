@@ -28,11 +28,10 @@ func NewTxsVerifier(
 	txDB *statedb.StateDB,
 	tp txpool.TxPool,
 ) txpool.TxVerifier {
-	x := &TxsVerifier{
+	return &TxsVerifier{
 		txDB:   txDB,
 		txPool: tp,
 	}
-	return x
 }
 
 func (v *TxsVerifier) LoadCommitment(
@@ -45,7 +44,7 @@ func (v *TxsVerifier) LoadCommitment(
 	}
 	err := tx.LoadCommitment(sDB.Copy())
 	if err != nil {
-		fmt.Println("Can not load commitment of this tx %v, error: %v", tx.Hash().String(), err)
+		fmt.Printf("Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
 		return false
 	}
 	return true
