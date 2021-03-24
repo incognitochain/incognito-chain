@@ -225,3 +225,7 @@ func GetPortalSubmitConfirmedTxRequestStatus(stateDB *StateDB, txID string) ([]b
 
 	return data, nil
 }
+
+func DeleteUnshieldBatchRequest(stateDB *StateDB, key common.Hash) {
+	stateDB.MarkDeleteStateObject(PortalProcessedUnshieldRequestBatchObjectType, key)
+}

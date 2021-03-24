@@ -740,9 +740,11 @@ func (p *PortalSubmitConfirmedTxProcessor) ProcessInsts(
 
 	if reqStatus == pCommon.PortalRequestAcceptedChainStatus {
 		// update unshield batch
-		keyUnshieldBatch := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(actionData.TokenID, actionData.BatchID).String()
+		keyUnshieldBatchHash := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(actionData.TokenID, actionData.BatchID)
+		keyUnshieldBatch := keyUnshieldBatchHash.String()
 		unshieldRequests := currentPortalV4State.ProcessedUnshieldRequests[actionData.TokenID][keyUnshieldBatch].GetUnshieldRequests()
 		UpdatePortalStateAfterSubmitConfirmedTx(currentPortalV4State, actionData.TokenID, keyUnshieldBatch)
+		statedb.DeleteUnshieldBatchRequest(stateDB, keyUnshieldBatchHash)
 		if len(actionData.UTXOs) > 0 {
 			UpdatePortalStateUTXOs(currentPortalV4State, actionData.TokenID, actionData.UTXOs)
 		}
