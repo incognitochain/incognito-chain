@@ -935,18 +935,18 @@ func (blockchain *BlockChain) getCommitteesForSigning(
 		case common.BeaconChainKey:
 			res = committees
 		case common.ShardChainKey:
-		if blockchain.BeaconChain.GetFinalView().GetHeight() >= blockchain.config.ChainParams.ConsensusV4Height {
-			beaconBlock, _, err := blockchain.GetBeaconBlockByHash(block.CommitteeFromBlock())
-			if err != nil {
-				return committees, err
-			}
-			for i, v := range committees {
-				if uint64(i%threshold) == beaconBlock.Header.Height%uint64(threshold) {
-					res = append(res, v)
+			if blockchain.BeaconChain.GetFinalView().GetHeight() >= blockchain.config.ChainParams.ConsensusV4Height {
+				beaconBlock, _, err := blockchain.GetBeaconBlockByHash(block.CommitteeFromBlock())
+				if err != nil {
+					return committees, err
 				}
-			}
-		} else {
-			res = committees
+				for i, v := range committees {
+					if uint64(i%threshold) == beaconBlock.Header.Height%uint64(threshold) {
+						res = append(res, v)
+					}
+				}
+			} else {
+				res = committees
 			}
 		}
 	} else {
