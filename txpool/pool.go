@@ -170,7 +170,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			if txDetails == nil {
 				return res
 			}
-			fmt.Printf("[testperformance] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
+			fmt.Printf("[testvalidate] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
 			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
 				continue
 			}
@@ -408,7 +408,7 @@ func (tp *TxsPool) getTxsFromPool(
 				}
 				if v != nil {
 					txDetails.Tx = v
-					fmt.Printf("[testperformance] Got %v, send to channel\n", txDetails.Hash)
+					fmt.Printf("[debugperformance] Got %v, send to channel\n", txDetails.Hash)
 					txCh <- txDetails
 				}
 			}
