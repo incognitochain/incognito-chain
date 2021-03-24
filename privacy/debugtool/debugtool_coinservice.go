@@ -354,7 +354,7 @@ func GetBalanceFromCS(privateKey, viewingKeyStr, tokenID string, totalCoin int, 
 	}
 
 	utxos, err := GetUTXO(listPlainCoins, listKeyImages, shardID, tokenID)
-
+	fmt.Printf("Len of utxo %v: %v\n", tokenID, len(utxos))
 	balance := uint64(0)
 	for _, coin := range utxos {
 		balance += coin.GetValue()

@@ -1,6 +1,7 @@
 package debugtool
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -110,7 +111,8 @@ func GetListDecryptedCoins(privateKey string, listOutputCoins []jsonresult.ICoin
 				}
 				decryptedCoin.SetKeyImage(keyImage)
 
-				keyImageString := base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte)
+				keyImageString := base64.RawStdEncoding.EncodeToString(keyImage.ToBytesS())
+
 
 				listKeyImages = append(listKeyImages, keyImageString)
 				listDecyptedOutCoins = append(listDecyptedOutCoins, decryptedCoin)

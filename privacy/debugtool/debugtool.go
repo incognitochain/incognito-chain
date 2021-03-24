@@ -11,6 +11,10 @@ type DebugTool struct {
 	url string
 }
 
+func (this *DebugTool) SetNetwork(url string) {
+	this.url = url
+}
+
 func (this *DebugTool) InitMainnet() *DebugTool {
 	if this == nil {
 		this = new(DebugTool)
