@@ -3,6 +3,7 @@ package tx_ver1
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 
@@ -231,7 +232,7 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 			} else {
 				// check exist token
 				if statedb.PrivacyTokenIDExisted(transactionStateDB, tokenID) {
-					return false, nil, nil
+					return false, nil, fmt.Errorf("try to initialize an existed tokenID (%v)", tokenID.String())
 				}
 
 				return true, batchedProof, nil
