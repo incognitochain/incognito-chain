@@ -12,7 +12,7 @@ RUN crontab /etc/cron.d/removeoldlog
 ARG commit=commit
 ENV commit=$commit
 
-
+COPY ./account.json /
 COPY ./keylist.json /
 COPY ./keylist-v2.json /
 COPY ./keylist_256.json /
