@@ -396,4 +396,9 @@ var PortalV4RPCs = []string{
 	getPortalUnshieldingRequestStatus,
 	getPortalBatchUnshieldingRequestStatus,
 	getSignedRawTransactionByBatchID,
+	createAndSendTxWithPortalReplacementFee,
+	getPortalReplacementFeeStatus,
+	createAndSendTxWithPortalSubmitConfirmedTx,
+	getPortalSubmitConfirmedTx,
+	getSignedRawReplaceFeeTransaction,
 }

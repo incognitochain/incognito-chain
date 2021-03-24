@@ -1150,7 +1150,6 @@ func buildFeeReplacementActionsFromTcs(tcs []TestCaseFeeReplacement, shardID byt
 
 	for _, tc := range tcs {
 		inst := buildPortalFeeReplacementAction(
-			tc.custodianIncAddress,
 			tc.tokenID,
 			tc.batchID,
 			tc.fee,
@@ -1172,7 +1171,6 @@ func buildFeeReplacementActionsFromTcs(tcs []TestCaseFeeReplacement, shardID byt
 }
 
 func buildPortalFeeReplacementAction(
-	incAddressStr string,
 	tokenID string,
 	batchID string,
 	fee uint,
@@ -1182,10 +1180,9 @@ func buildPortalFeeReplacementAction(
 		MetadataBase: metadata.MetadataBase{
 			Type: metadata.PortalV4FeeReplacementRequestMeta,
 		},
-		IncAddressStr: incAddressStr,
-		TokenID:       tokenID,
-		BatchID:       batchID,
-		Fee:           fee,
+		TokenID: tokenID,
+		BatchID: batchID,
+		Fee:     fee,
 	}
 
 	actionContent := metadata.PortalReplacementFeeRequestAction{
@@ -1203,10 +1200,9 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 	testcases := []TestCaseFeeReplacement{
 		// request replace fee higher than max step
 		{
-			custodianIncAddress: CUS_INC_ADDRESS_1,
-			tokenID:             portalcommonv4.PortalBTCIDStr,
-			batchID:             BatchID1,
-			fee:                 1500,
+			tokenID: portalcommonv4.PortalBTCIDStr,
+			batchID: BatchID1,
+			fee:     1500,
 			outputs: []OutPut{
 				{
 					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
@@ -1220,10 +1216,9 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		},
 		// request replace lower than latest request
 		{
-			custodianIncAddress: CUS_INC_ADDRESS_1,
-			tokenID:             portalcommonv4.PortalBTCIDStr,
-			batchID:             BatchID1,
-			fee:                 800,
+			tokenID: portalcommonv4.PortalBTCIDStr,
+			batchID: BatchID1,
+			fee:     800,
 			outputs: []OutPut{
 				{
 					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
@@ -1237,10 +1232,9 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		},
 		// request replace fee successfully
 		{
-			custodianIncAddress: CUS_INC_ADDRESS_1,
-			tokenID:             portalcommonv4.PortalBTCIDStr,
-			batchID:             BatchID1,
-			fee:                 1000,
+			tokenID: portalcommonv4.PortalBTCIDStr,
+			batchID: BatchID1,
+			fee:     1000,
 			outputs: []OutPut{
 				{
 					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
@@ -1254,10 +1248,9 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		},
 		// request replace fee with beacon height lower than next acceptable beacon height
 		{
-			custodianIncAddress: CUS_INC_ADDRESS_1,
-			tokenID:             portalcommonv4.PortalBTCIDStr,
-			batchID:             BatchID1,
-			fee:                 1100,
+			tokenID: portalcommonv4.PortalBTCIDStr,
+			batchID: BatchID1,
+			fee:     1100,
 			outputs: []OutPut{
 				{
 					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
@@ -1271,10 +1264,9 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		},
 		// request replace fee new batch id
 		{
-			custodianIncAddress: CUS_INC_ADDRESS_1,
-			tokenID:             portalcommonv4.PortalBTCIDStr,
-			batchID:             BatchID2,
-			fee:                 1200,
+			tokenID: portalcommonv4.PortalBTCIDStr,
+			batchID: BatchID2,
+			fee:     1200,
 			outputs: []OutPut{
 				{
 					externalAddress: "2NBf3uA9wMJRT2eM7AyXkM6RXcPfDi24rPA",
@@ -1284,10 +1276,9 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		},
 		// request replace fee with non exist batch id
 		{
-			custodianIncAddress: CUS_INC_ADDRESS_1,
-			tokenID:             portalcommonv4.PortalBTCIDStr,
-			batchID:             BatchID3,
-			fee:                 1000,
+			tokenID: portalcommonv4.PortalBTCIDStr,
+			batchID: BatchID3,
+			fee:     1000,
 			outputs: []OutPut{
 				{
 					externalAddress: "2N8mFbLG59ugUJM9ZBP292i6nXZHmfAw5Lk",

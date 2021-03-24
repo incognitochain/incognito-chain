@@ -13,10 +13,9 @@ import (
 
 type PortalReplacementFeeRequest struct {
 	MetadataBase
-	IncAddressStr string
-	TokenID       string
-	BatchID       string
-	Fee           uint
+	TokenID string
+	BatchID string
+	Fee     uint
 }
 
 type PortalReplacementFeeRequestAction struct {
@@ -26,7 +25,6 @@ type PortalReplacementFeeRequestAction struct {
 }
 
 type PortalReplacementFeeRequestContent struct {
-	IncAddressStr string
 	TokenID       string
 	BatchID       string
 	Fee           uint
@@ -36,7 +34,6 @@ type PortalReplacementFeeRequestContent struct {
 }
 
 type PortalReplacementFeeRequestStatus struct {
-	IncAddressStr string
 	TokenID       string
 	BatchID       string
 	Fee           uint
@@ -46,9 +43,8 @@ type PortalReplacementFeeRequestStatus struct {
 	Status        int
 }
 
-func NewPortalReplacementFeeRequestStatus(incAddressStr, tokenID, batchID string, fee uint, externalRawTx string, status int) *PortalReplacementFeeRequestStatus {
+func NewPortalReplacementFeeRequestStatus(tokenID, batchID string, fee uint, externalRawTx string, status int) *PortalReplacementFeeRequestStatus {
 	return &PortalReplacementFeeRequestStatus{
-		IncAddressStr: incAddressStr,
 		TokenID:       tokenID,
 		BatchID:       batchID,
 		Fee:           fee,
@@ -57,16 +53,15 @@ func NewPortalReplacementFeeRequestStatus(incAddressStr, tokenID, batchID string
 	}
 }
 
-func NewPortalReplacementFeeRequest(metaType int, incAddressStr, tokenID, batchID string, fee uint) (*PortalReplacementFeeRequest, error) {
+func NewPortalReplacementFeeRequest(metaType int, tokenID, batchID string, fee uint) (*PortalReplacementFeeRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 
 	portalUnshieldReq := &PortalReplacementFeeRequest{
-		IncAddressStr: incAddressStr,
-		TokenID:       tokenID,
-		BatchID:       batchID,
-		Fee:           fee,
+		TokenID: tokenID,
+		BatchID: batchID,
+		Fee:     fee,
 	}
 
 	portalUnshieldReq.MetadataBase = metadataBase
@@ -86,13 +81,8 @@ func (repl PortalReplacementFeeRequest) ValidateTxWithBlockChain(
 }
 
 func (repl PortalReplacementFeeRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-
-	if repl.IncAddressStr != chainRetriever.GetPortalReplacementAddress(beaconHeight) {
-		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError, errors.New("Requester incognito address is invalid"))
-	}
-
 	// validate IncAddressStr
-	keyWallet, err := wallet.Base58CheckDeserialize(repl.IncAddressStr)
+	keyWallet, err := wallet.Base58CheckDeserialize(chainRetriever.GetPortalReplacementAddress(beaconHeight))
 	if err != nil {
 		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError, errors.New("Requester incognito address is invalid"))
 	}
@@ -102,7 +92,7 @@ func (repl PortalReplacementFeeRequest) ValidateSanityData(chainRetriever ChainR
 	}
 
 	if !bytes.Equal(tx.GetSigPubKey()[:], incAddr.Pk[:]) {
-		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError, errors.New("Requester incognito address is not signer"))
+		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError, errors.New("Requester incognito address is not replace fee feeder"))
 	}
 
 	// check tx type
@@ -129,7 +119,6 @@ func (repl PortalReplacementFeeRequest) ValidateMetadataByItself() bool {
 
 func (repl PortalReplacementFeeRequest) Hash() *common.Hash {
 	record := repl.MetadataBase.Hash().String()
-	record += repl.IncAddressStr
 	record += repl.TokenID
 	record += repl.BatchID
 	record += strconv.FormatUint(uint64(repl.Fee), 10)

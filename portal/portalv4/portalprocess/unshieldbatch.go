@@ -307,7 +307,6 @@ func (p *PortalFeeReplacementRequestProcessor) PrepareDataForBlockProducer(state
 // beacon build new instruction from instruction received from ShardToBeaconBlock
 func buildReplacementFeeRequestInst(
 	tokenID string,
-	incAddressStr string,
 	fee uint,
 	batchID string,
 	metaType int,
@@ -318,7 +317,6 @@ func buildReplacementFeeRequestInst(
 ) []string {
 	replacementRequestContent := metadata.PortalReplacementFeeRequestContent{
 		TokenID:       tokenID,
-		IncAddressStr: incAddressStr,
 		Fee:           fee,
 		BatchID:       batchID,
 		TxReqID:       txReqID,
@@ -364,7 +362,6 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 	meta := actionData.Meta
 	rejectInst := buildReplacementFeeRequestInst(
 		meta.TokenID,
-		meta.IncAddressStr,
 		meta.Fee,
 		meta.BatchID,
 		meta.Type,
@@ -414,7 +411,6 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 	// build accept instruction
 	newInst := buildReplacementFeeRequestInst(
 		meta.TokenID,
-		meta.IncAddressStr,
 		meta.Fee,
 		meta.BatchID,
 		meta.Type,
@@ -466,7 +462,6 @@ func (p *PortalFeeReplacementRequestProcessor) ProcessInsts(
 
 		// track status of unshield batch request by batchID
 		unshieldBatchRequestStatus = metadata.PortalReplacementFeeRequestStatus{
-			IncAddressStr: actionData.IncAddressStr,
 			TokenID:       actionData.TokenID,
 			BatchID:       actionData.BatchID,
 			Fee:           actionData.Fee,
@@ -478,7 +473,6 @@ func (p *PortalFeeReplacementRequestProcessor) ProcessInsts(
 	} else if reqStatus == pCommon.PortalRequestRejectedChainStatus {
 
 		unshieldBatchRequestStatus = metadata.PortalReplacementFeeRequestStatus{
-			IncAddressStr: actionData.IncAddressStr,
 			TokenID:       actionData.TokenID,
 			BatchID:       actionData.BatchID,
 			ExternalRawTx: actionData.ExternalRawTx,

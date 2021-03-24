@@ -457,17 +457,12 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalReplaceUnshieldFee(para
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	incAddressStr, ok := tokenParamsRaw["IncAddressStr"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("IncAddressStr is invalid"))
-	}
-
 	batchID, ok := tokenParamsRaw["BatchID"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("BatchID is invalid"))
 	}
 
-	meta, err := metadata.NewPortalReplacementFeeRequest(metadata.PortalV4FeeReplacementRequestMeta, incAddressStr, portalTokenID, batchID, uint(replacementFee))
+	meta, err := metadata.NewPortalReplacementFeeRequest(metadata.PortalV4FeeReplacementRequestMeta, portalTokenID, batchID, uint(replacementFee))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
