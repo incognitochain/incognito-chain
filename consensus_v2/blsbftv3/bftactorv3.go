@@ -244,6 +244,10 @@ func (e *BLSBFT_V3) run() error {
 					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
 					if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
 						validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+					} else {
+						if proposeBlockInfo.block.Hash().String() == bestView.GetHash().String() && proposeBlockInfo.block.GetHeight() == bestView.GetHeight() {
+							validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+						}
 					}
 
 					if proposeBlockInfo.block.GetHeight() < e.Chain.GetFinalView().GetHeight() {
