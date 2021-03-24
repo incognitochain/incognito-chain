@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/portal/portalv4/common"
 
 	"sort"
@@ -231,14 +232,14 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 			Logger.log.Errorf("[CreateRawExternalTx-BTC] Output amount %v must greater than fee %v: %v", out.Amount, feePerOutput)
 			return "", "", err
 		}
-		redeemTxOut := wire.NewTxOut(int64(p.ConvertIncToExternalAmount(out.Amount - feePerOutput)), destinationAddrByte)
+		redeemTxOut := wire.NewTxOut(int64(p.ConvertIncToExternalAmount(out.Amount-feePerOutput)), destinationAddrByte)
 		msgTx.AddTxOut(redeemTxOut)
 		totalOutputAmount += out.Amount
 	}
 	totalOutputAmount = p.ConvertIncToExternalAmount(totalOutputAmount)
 
 	// calculate the change output
-	if totalInputAmount - totalOutputAmount > 0 {
+	if totalInputAmount-totalOutputAmount > 0 {
 		// adding the output to tx
 		multiSigAddress := bc.GetPortalV4MultiSigAddress(common.PortalBTCIDStr, 0)
 		decodedAddr, err := btcutil.DecodeAddress(multiSigAddress, bc.GetBTCChainParams())
@@ -253,7 +254,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 		}
 
 		// adding the destination address and the amount to the transaction
-		redeemTxOut := wire.NewTxOut(int64(totalInputAmount - totalOutputAmount), destinationAddrByte)
+		redeemTxOut := wire.NewTxOut(int64(totalInputAmount-totalOutputAmount), destinationAddrByte)
 		msgTx.AddTxOut(redeemTxOut)
 	}
 
@@ -306,8 +307,8 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSi
 
 func (p PortalBTCTokenProcessor) IsAcceptableTxSize(num_utxos int, num_unshield_id int) bool {
 	// TODO: do experiments depend on external chain miner's habit
-	A := 1    // input size (include sig size) in byte
-	B := 1     // output size in byte
+	A := 1 // input size (include sig size) in byte
+	B := 1 // output size in byte
 	C := 6 // max transaction size in byte ~ 10 KB
 	return A*num_utxos+B*num_unshield_id <= C
 }
@@ -370,6 +371,8 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 	unshield_idx := 0
 	tiny_utxo_used := 0
 	for utxo_idx < len(utxos)-tiny_utxo_used && unshield_idx < len(wReqsArr) {
+		// utxo_idx always increases at least 1 in this scope
+
 		chosenUTXOs := []*statedb.UTXO{}
 		chosenUnshieldIDs := []string{}
 
@@ -384,17 +387,16 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 				cnt += 1
 			}
 			chosenUTXOs = append(chosenUTXOs, utxosArr[utxo_idx].value)
-			utxo_idx += 1
+			utxo_idx += 1 // utxo_idx increases
 		} else {
 			// find the first utxo idx that the cummulative sum of utxo amount >= current unshield amount
 			for utxo_idx < len(utxos)-tiny_utxo_used && cur_sum_amount+utxosArr[utxo_idx].value.GetOutputAmount() < wReqsArr[unshield_idx].value.GetAmount() {
 				cur_sum_amount += utxosArr[utxo_idx].value.GetOutputAmount()
 				chosenUTXOs = append(chosenUTXOs, utxosArr[utxo_idx].value)
-				utxo_idx += 1
+				utxo_idx += 1 // utxo_idx increases
 				cnt += 1
 			}
 			if utxo_idx < len(utxos)-tiny_utxo_used && p.IsAcceptableTxSize(cnt+1, 1) {
-				// insert new unshield ids if the current utxos still has enough amount
 				cur_sum_amount += utxosArr[utxo_idx].value.GetOutputAmount()
 				chosenUTXOs = append(chosenUTXOs, utxosArr[utxo_idx].value)
 				utxo_idx += 1
@@ -404,6 +406,7 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 				target := cur_sum_amount
 				cur_sum_amount = 0
 
+				// insert new unshield IDs if the current utxos still has enough amount
 				for unshield_idx < len(wReqsArr) && cur_sum_amount+wReqsArr[unshield_idx].value.GetAmount() <= target && p.IsAcceptableTxSize(cnt, new_cnt+1) {
 					cur_sum_amount += wReqsArr[unshield_idx].value.GetAmount()
 					chosenUnshieldIDs = append(chosenUnshieldIDs, wReqsArr[unshield_idx].value.GetUnshieldID())
