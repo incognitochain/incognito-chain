@@ -59,7 +59,8 @@ type Params struct {
 	ChainVersion                     string
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
-	ConsensusV3Height                uint64
+	StakingFlowV2Height              uint64
+	EnableSlashingStakingFlowV2      uint64
 	Timeslot                         uint64
 	BeaconHeightBreakPointBurnAddr   uint64
 	PortalParams                     portal.PortalParams
@@ -72,7 +73,7 @@ type Params struct {
 	MissingSignaturePenalty          []signaturecounter.Penalty
 	PortalETHContractAddressStr      string // smart contract of ETH for portal
 	BCHeightBreakPointPortalV3       uint64
-	EnableFeatureFlags               map[int]uint64   // featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature
+	EnableFeatureFlags               map[int]uint64 // featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature
 }
 
 type GenesisParams struct {
@@ -204,7 +205,7 @@ func SetupParam() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -212,7 +213,8 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               16930,
-		ConsensusV3Height:              1e12,
+		StakingFlowV2Height:            1e12,
+		EnableSlashingStakingFlowV2:    1e12,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		PortalParams: portal.PortalParams{
@@ -308,7 +310,7 @@ func SetupParam() {
 		EthContractAddressStr:            Testnet2ETHContractAddressStr,
 		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -316,7 +318,8 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Height:              1e12,
+		StakingFlowV2Height:            1e12,
+		EnableSlashingStakingFlowV2:    1e12,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
 		PortalParams: portal.PortalParams{
@@ -360,7 +363,7 @@ func SetupParam() {
 		EpochV2:                     Testnet2EpochV2,
 		EpochV2BreakPoint:           Testnet2EpochV2BreakPoint,
 		RandomTimeV2:                Testnet2RandomTimeV2,
-		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46",   // todo: update sc address
+		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46", // todo: update sc address
 		BCHeightBreakPointPortalV3:  1328816,
 		EnableFeatureFlags: map[int]uint64{
 			common.PortalV3Flag:       Testnet2EnablePortalV3,
@@ -410,7 +413,7 @@ func SetupParam() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels: []SlashLevel{
+		SlashLevels:                      []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -418,7 +421,8 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Height:              1e12,
+		StakingFlowV2Height:            1e12,
+		EnableSlashingStakingFlowV2:    1e12,
 		Timeslot:                       40,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		PortalParams: portal.PortalParams{
