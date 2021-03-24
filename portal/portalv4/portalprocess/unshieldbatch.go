@@ -116,7 +116,8 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 
 		// choose waiting unshield IDs to process with current UTXOs
 		utxos := CurrentPortalStateV4.UTXOs[tokenID]
-		broadCastTxs := portalTokenProcessor.ChooseUnshieldIDsFromCandidates(utxos, wReqForProcess)
+		tinyAmount := portalTokenProcessor.ConvertIncToExternalAmount(portalParams.TinyUTXOAmount[tokenID])
+		broadCastTxs := portalTokenProcessor.ChooseUnshieldIDsFromCandidates(utxos, wReqForProcess, tinyAmount)
 
 		// create raw external txs
 		for _, bcTx := range broadCastTxs {

@@ -316,7 +316,8 @@ func (p PortalBTCTokenProcessor) IsAcceptableTxSize(num_utxos int, num_unshield_
 // Choose list of pairs (UTXOs and unshield IDs) for broadcast external transactions
 func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 	utxos map[string]*statedb.UTXO,
-	waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest) []*BroadcastTx {
+	waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest,
+	tinyAmount uint64) []*BroadcastTx {
 	if len(utxos) == 0 || len(waitingUnshieldReqs) == 0 {
 		return []*BroadcastTx{}
 	}
@@ -336,7 +337,12 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 			})
 	}
 	sort.SliceStable(utxosArr, func(i, j int) bool {
-		return utxosArr[i].value.GetOutputAmount() > utxosArr[j].value.GetOutputAmount()
+		if utxosArr[i].value.GetOutputAmount() > utxosArr[j].value.GetOutputAmount() {
+			return true
+		} else if utxosArr[i].value.GetOutputAmount() == utxosArr[j].value.GetOutputAmount() {
+			return utxosArr[i].key < utxosArr[j].key
+		}
+		return false
 	})
 
 	// ascending sort waitingUnshieldReqs by beaconHeight
@@ -421,7 +427,7 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 		}
 
 		// use a tiny UTXO
-		if utxo_idx < len(utxos)-tiny_utxo_used {
+		if utxo_idx < len(utxos)-tiny_utxo_used && utxosArr[len(utxos)-tiny_utxo_used-1].value.GetOutputAmount() <= tinyAmount {
 			tiny_utxo_used += 1
 			chosenUTXOs = append(chosenUTXOs, utxosArr[len(utxos)-tiny_utxo_used].value)
 		}
