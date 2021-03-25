@@ -14,8 +14,8 @@ import (
 
 //ShardCommitteeStateV2
 type ShardCommitteeStateV2 struct {
-	shardCommittee            []string
-	committeeFromBlock        common.Hash //Committees From Beacon Block Hash
+	shardCommittee     []string
+	committeeFromBlock common.Hash //Committees From Beacon Block Hash
 
 	mu *sync.RWMutex
 }
@@ -36,9 +36,9 @@ func NewShardCommitteeStateV2WithValue(
 ) *ShardCommitteeStateV2 {
 	res, _ := incognitokey.CommitteeKeyListToString(shardCommittee)
 	return &ShardCommitteeStateV2{
-		shardCommittee:            res,
-		committeeFromBlock:        committeeFromBlockHash,
-		mu:                        new(sync.RWMutex),
+		shardCommittee:     res,
+		committeeFromBlock: committeeFromBlockHash,
+		mu:                 new(sync.RWMutex),
 	}
 }
 
@@ -86,10 +86,7 @@ func InitGenesisShardCommitteeStateV2(env ShardCommitteeStateEnvironment) *Shard
 
 	for _, beaconInstruction := range env.BeaconInstructions() {
 		if beaconInstruction[0] == instruction.STAKE_ACTION {
-			stakeInstruction, err := instruction.ValidateAndImportStakeInstructionFromString(beaconInstruction)
-			if err != nil {
-				panic(err)
-			}
+			stakeInstruction := instruction.ImportStakeInstructionFromString(beaconInstruction)
 			candidates = append(candidates, stakeInstruction.PublicKeys...)
 		}
 	}
