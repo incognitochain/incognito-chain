@@ -7,8 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	"io"
-	"sort"
 	"strconv"
 	"sync"
 
@@ -161,7 +162,7 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	initShardBlockHeight := initShardBlock.Header.Height
 	var committeeEngine committeestate.ShardCommitteeEngine
 
-	if blockchain.config.ChainParams.ConsensusV3Height == 1 {
+	if blockchain.config.ChainParams.StakingFlowV2Height == 1 {
 		committeeEngine = committeestate.NewShardCommitteeEngineV2(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV2())
 	} else {
 		committeeEngine = committeestate.NewShardCommitteeEngineV1(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
@@ -193,7 +194,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
 	var committeeEngine committeestate.BeaconCommitteeEngine
 
-	if blockchain.config.ChainParams.ConsensusV3Height == 1 {
+	if blockchain.config.ChainParams.StakingFlowV2Height == 1 {
 		committeeEngine = committeestate.
 			NewBeaconCommitteeEngineV2(1, initBlock.Header.Hash(),
 				committeestate.NewBeaconCommitteeStateV2())
@@ -532,7 +533,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 		var shardCommitteeEngine committeestate.ShardCommitteeEngine
-		if v.BeaconHeight > blockchain.config.ChainParams.ConsensusV3Height {
+		if v.BeaconHeight > blockchain.config.ChainParams.StakingFlowV2Height {
 			shardCommitteeEngine = InitShardCommitteeEngineV2(
 				v.consensusStateDB,
 				v.ShardHeight, v.ShardID, v.BestBlockHash,
@@ -542,7 +543,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 				v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
 		}
 		v.shardCommitteeEngine = shardCommitteeEngine
-		if v.BeaconHeight == blockchain.config.ChainParams.ConsensusV3Height {
+		if v.BeaconHeight == blockchain.config.ChainParams.StakingFlowV2Height {
 			err := v.upgradeCommitteeEngineV2(blockchain)
 			if err != nil {
 				panic(err)
@@ -632,49 +633,12 @@ func (blockchain *BlockChain) GetConfig() *Config {
 }
 
 // GetPortalParams returns portal params in beaconheight
-func (blockchain *BlockChain) GetPortalParams(beaconHeight uint64) PortalParams {
-	portalParamMap := blockchain.GetConfig().ChainParams.PortalParams
-	// only has one value - default value
-	if len(portalParamMap) == 1 {
-		return portalParamMap[0]
-	}
-
-	bchs := []uint64{}
-	for bch := range portalParamMap {
-		bchs = append(bchs, bch)
-	}
-	sort.Slice(bchs, func(i, j int) bool {
-		return bchs[i] < bchs[j]
-	})
-
-	bchKey := bchs[len(bchs)-1]
-	for i := len(bchs) - 1; i >= 0; i-- {
-		if beaconHeight < bchs[i] {
-			continue
-		}
-		bchKey = bchs[i]
-		break
-	}
-
-	return portalParamMap[bchKey]
+func (blockchain *BlockChain) GetPortalParams() portal.PortalParams {
+	return blockchain.GetConfig().ChainParams.PortalParams
 }
 
-func (blockchain *BlockChain) GetSupportedCollateralTokenIDs(beaconHeight uint64) []string {
-	portalParams := blockchain.GetPortalParams(beaconHeight)
-	tokenIDs := []string{}
-	for _, col := range portalParams.SupportedCollateralTokens {
-		tokenIDs = append(tokenIDs, col.ExternalTokenID)
-	}
-	return tokenIDs
-}
-
-func (blockchain *BlockChain) GetSupportedCollateralInfo(beaconHeight uint64) []PortalCollateral {
-	portalParams := blockchain.GetPortalParams(beaconHeight)
-	return portalParams.SupportedCollateralTokens
-}
-
-func (blockchain *BlockChain) GetPortalETHContractAddrStr() string {
-	return blockchain.GetConfig().ChainParams.PortalETHContractAddressStr
+func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.PortalParams {
+	return blockchain.GetConfig().ChainParams.PortalParams.GetPortalParamsV3(beaconHeight)
 }
 
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {

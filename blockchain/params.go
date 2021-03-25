@@ -2,6 +2,11 @@ package blockchain
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
+	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
+	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -12,27 +17,6 @@ import (
 type SlashLevel struct {
 	MinRange        uint8
 	PunishedEpoches uint8
-}
-type PortalCollateral struct {
-	ExternalTokenID string
-	Decimal         uint8
-}
-type PortalParams struct {
-	TimeOutCustodianReturnPubToken       time.Duration
-	TimeOutWaitingPortingRequest         time.Duration
-	TimeOutWaitingRedeemRequest          time.Duration
-	MaxPercentLiquidatedCollateralAmount uint64
-	MaxPercentCustodianRewards           uint64
-	MinPercentCustodianRewards           uint64
-	MinLockCollateralAmountInEpoch       uint64
-	MinPercentLockedCollateral           uint64
-	TP120                                uint64
-	TP130                                uint64
-	MinPercentPortingFee                 float64
-	MinPercentRedeemFee                  float64
-	SupportedCollateralTokens            []PortalCollateral
-	MinPortalFee                         uint64 // nano PRV
-	MinUnlockOverRateCollaterals         uint64
 }
 
 /*
@@ -75,18 +59,11 @@ type Params struct {
 	ChainVersion                     string
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
-	ConsensusV3Height                uint64
+	StakingFlowV2Height              uint64
+	EnableSlashingStakingFlowV2      uint64
 	Timeslot                         uint64
 	BeaconHeightBreakPointBurnAddr   uint64
-	BNBRelayingHeaderChainID         string
-	BTCRelayingHeaderChainID         string
-	BTCDataFolderName                string
-	BNBFullNodeProtocol              string
-	BNBFullNodeHost                  string
-	BNBFullNodePort                  string
-	PortalParams                     map[uint64]PortalParams
-	PortalTokens                     map[string]PortalTokenProcessor
-	PortalFeederAddress              string
+	PortalParams                     portal.PortalParams
 	EpochBreakPointSwapNewKey        []uint64
 	IsBackup                         bool
 	PreloadAddress                   string
@@ -96,6 +73,7 @@ type Params struct {
 	MissingSignaturePenalty          []signaturecounter.Penalty
 	PortalETHContractAddressStr      string // smart contract of ETH for portal
 	BCHeightBreakPointPortalV3       uint64
+	EnableFeatureFlags               map[int]uint64 // featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature
 }
 
 type GenesisParams struct {
@@ -123,30 +101,30 @@ var genesisParamsTestnet2New *GenesisParams
 var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
 
-func initPortalTokensForTestNet() map[string]PortalTokenProcessor {
-	return map[string]PortalTokenProcessor{
-		common.PortalBTCIDStr: &PortalBTCTokenProcessor{
-			&PortalToken{
+func initPortalTokensV3ForTestNet() map[string]portaltokensv3.PortalTokenProcessorV3 {
+	return map[string]portaltokensv3.PortalTokenProcessorV3{
+		portalcommonv3.PortalBTCIDStr: &portaltokensv3.PortalBTCTokenProcessor{
+			&portaltokensv3.PortalTokenV3{
 				ChainID: TestnetBTCChainID,
 			},
 		},
-		common.PortalBNBIDStr: &PortalBNBTokenProcessor{
-			&PortalToken{
+		portalcommonv3.PortalBNBIDStr: &portaltokensv3.PortalBNBTokenProcessor{
+			&portaltokensv3.PortalTokenV3{
 				ChainID: TestnetBNBChainID,
 			},
 		},
 	}
 }
 
-func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
-	return map[string]PortalTokenProcessor{
-		common.PortalBTCIDStr: &PortalBTCTokenProcessor{
-			&PortalToken{
+func initPortalTokensV3ForMainNet() map[string]portaltokensv3.PortalTokenProcessorV3 {
+	return map[string]portaltokensv3.PortalTokenProcessorV3{
+		portalcommonv3.PortalBTCIDStr: &portaltokensv3.PortalBTCTokenProcessor{
+			&portaltokensv3.PortalTokenV3{
 				ChainID: MainnetBTCChainID,
 			},
 		},
-		common.PortalBNBIDStr: &PortalBNBTokenProcessor{
-			&PortalToken{
+		portalcommonv3.PortalBNBIDStr: &portaltokensv3.PortalBNBTokenProcessor{
+			&portaltokensv3.PortalTokenV3{
 				ChainID: MainnetBNBChainID,
 			},
 		},
@@ -155,8 +133,8 @@ func initPortalTokensForMainNet() map[string]PortalTokenProcessor {
 
 // external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
-func getSupportedPortalCollateralsMainnet() []PortalCollateral {
-	return []PortalCollateral{
+func getSupportedPortalCollateralsMainnet() []portalv3.PortalCollateral {
+	return []portalv3.PortalCollateral{
 		{"0000000000000000000000000000000000000000", 9}, // eth
 		{"dac17f958d2ee523a2206206994597c13d831ec7", 6}, // usdt
 		{"a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", 6}, // usdc
@@ -165,8 +143,8 @@ func getSupportedPortalCollateralsMainnet() []PortalCollateral {
 
 // external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
-func getSupportedPortalCollateralsTestnet() []PortalCollateral {
-	return []PortalCollateral{
+func getSupportedPortalCollateralsTestnet() []portalv3.PortalCollateral {
+	return []portalv3.PortalCollateral{
 		{"0000000000000000000000000000000000000000", 9}, // eth
 		{"3a829f4b97660d970428cd370c4e41cbad62092b", 6}, // usdt, kovan testnet
 		{"75b0622cec14130172eae9cf166b92e5c112faff", 6}, // usdc, kovan testnet
@@ -175,8 +153,8 @@ func getSupportedPortalCollateralsTestnet() []PortalCollateral {
 
 // external tokenID there is no 0x prefix, in lower case
 // @@Note: need to update before deploying
-func getSupportedPortalCollateralsTestnet2() []PortalCollateral {
-	return []PortalCollateral{
+func getSupportedPortalCollateralsTestnet2() []portalv3.PortalCollateral {
+	return []portalv3.PortalCollateral{
 		{"0000000000000000000000000000000000000000", 9}, // eth
 		{"3a829f4b97660d970428cd370c4e41cbad62092b", 6}, // usdt, kovan testnet
 		{"75b0622cec14130172eae9cf166b92e5c112faff", 6}, // usdc, kovan testnet
@@ -235,36 +213,42 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               16930,
-		ConsensusV3Height:              1e12,
+		StakingFlowV2Height:            1e12,
+		EnableSlashingStakingFlowV2:    1e12,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 250000,
-		BNBRelayingHeaderChainID:       TestnetBNBChainID,
-		BTCRelayingHeaderChainID:       TestnetBTCChainID,
-		BTCDataFolderName:              TestnetBTCDataFolderName,
-		BNBFullNodeProtocol:            TestnetBNBFullNodeProtocol,
-		BNBFullNodeHost:                TestnetBNBFullNodeHost,
-		BNBFullNodePort:                TestnetBNBFullNodePort,
-		PortalFeederAddress:            TestnetPortalFeeder,
-		PortalParams: map[uint64]PortalParams{
-			0: {
-				TimeOutCustodianReturnPubToken:       15 * time.Minute,
-				TimeOutWaitingPortingRequest:         15 * time.Minute,
-				TimeOutWaitingRedeemRequest:          10 * time.Minute,
-				MaxPercentLiquidatedCollateralAmount: 105,
-				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
-				MinPercentCustodianRewards:           1,
-				MinLockCollateralAmountInEpoch:       10000 * 1e9, // 10000 usd
-				MinPercentLockedCollateral:           150,
-				TP120:                                120,
-				TP130:                                130,
-				MinPercentPortingFee:                 0.01,
-				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(), // todo: need to be updated before deploying
-				MinPortalFee:                         100,
-				MinUnlockOverRateCollaterals:         25,
+		PortalParams: portal.PortalParams{
+			PortalParamsV3: map[uint64]portalv3.PortalParams{
+				0: {
+					TimeOutCustodianReturnPubToken:       15 * time.Minute,
+					TimeOutWaitingPortingRequest:         15 * time.Minute,
+					TimeOutWaitingRedeemRequest:          10 * time.Minute,
+					MaxPercentLiquidatedCollateralAmount: 105,
+					MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
+					MinPercentCustodianRewards:           1,
+					MinLockCollateralAmountInEpoch:       10000 * 1e9, // 10000 usd
+					MinPercentLockedCollateral:           150,
+					TP120:                                120,
+					TP130:                                130,
+					MinPercentPortingFee:                 0.01,
+					MinPercentRedeemFee:                  0.01,
+					SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(), // todo: need to be updated before deploying
+					MinPortalFee:                         100,
+					PortalTokens:                         initPortalTokensV3ForTestNet(),
+					PortalFeederAddress:                  TestnetPortalFeeder,
+					PortalETHContractAddressStr:          "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address,
+					MinUnlockOverRateCollaterals:         25,
+				},
+			},
+			RelayingParam: portalrelaying.RelayingParams{
+				BNBRelayingHeaderChainID: TestnetBNBChainID,
+				BTCRelayingHeaderChainID: TestnetBTCChainID,
+				BTCDataFolderName:        TestnetBTCDataFolderName,
+				BNBFullNodeProtocol:      TestnetBNBFullNodeProtocol,
+				BNBFullNodeHost:          TestnetBNBFullNodeHost,
+				BNBFullNodePort:          TestnetBNBFullNodePort,
 			},
 		},
-		PortalTokens:                initPortalTokensForTestNet(),
 		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:      1,
 		IsBackup:                    false,
@@ -276,6 +260,10 @@ func SetupParam() {
 		RandomTimeV2:                TestnetRandomTimeV2,
 		PortalETHContractAddressStr: "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address
 		BCHeightBreakPointPortalV3:  30158,
+		EnableFeatureFlags: map[int]uint64{
+			common.PortalV3Flag:       TestnetEnablePortalV3,
+			common.PortalRelayingFlag: TestnetEnablePortalRelaying,
+		},
 	}
 	// END TESTNET
 
@@ -330,35 +318,42 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Height:              1e12,
+		StakingFlowV2Height:            1e12,
+		EnableSlashingStakingFlowV2:    1e12,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
-		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
-		BTCRelayingHeaderChainID:       Testnet2BTCChainID,
-		BTCDataFolderName:              Testnet2BTCDataFolderName,
-		BNBFullNodeProtocol:            Testnet2BNBFullNodeProtocol,
-		BNBFullNodeHost:                Testnet2BNBFullNodeHost,
-		BNBFullNodePort:                Testnet2BNBFullNodePort,
-		PortalFeederAddress:            Testnet2PortalFeeder,
-		PortalParams: map[uint64]PortalParams{
-			0: {
-				TimeOutCustodianReturnPubToken:       1 * time.Hour,
-				TimeOutWaitingPortingRequest:         1 * time.Hour,
-				TimeOutWaitingRedeemRequest:          10 * time.Minute,
-				MaxPercentLiquidatedCollateralAmount: 105,
-				MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
-				MinPercentCustodianRewards:           1,
-				MinLockCollateralAmountInEpoch:       10000 * 1e9, // 10000 usd = 100 * 100
-				MinPercentLockedCollateral:           150,
-				TP120:                                120,
-				TP130:                                130,
-				MinPercentPortingFee:                 0.01,
-				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet2(),
-				MinPortalFee:                         100,
+		PortalParams: portal.PortalParams{
+			PortalParamsV3: map[uint64]portalv3.PortalParams{
+				0: {
+					TimeOutCustodianReturnPubToken:       15 * time.Minute,
+					TimeOutWaitingPortingRequest:         15 * time.Minute,
+					TimeOutWaitingRedeemRequest:          10 * time.Minute,
+					MaxPercentLiquidatedCollateralAmount: 105,
+					MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
+					MinPercentCustodianRewards:           1,
+					MinLockCollateralAmountInEpoch:       10000 * 1e9, // 10000 usd
+					MinPercentLockedCollateral:           150,
+					TP120:                                120,
+					TP130:                                130,
+					MinPercentPortingFee:                 0.01,
+					MinPercentRedeemFee:                  0.01,
+					SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet2(), // todo: need to be updated before deploying
+					MinPortalFee:                         100,
+					PortalTokens:                         initPortalTokensV3ForTestNet(),
+					PortalFeederAddress:                  Testnet2PortalFeeder,
+					PortalETHContractAddressStr:          "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46", // todo: update sc address,
+					MinUnlockOverRateCollaterals:         25,
+				},
+			},
+			RelayingParam: portalrelaying.RelayingParams{
+				BNBRelayingHeaderChainID: Testnet2BNBChainID,
+				BTCRelayingHeaderChainID: Testnet2BTCChainID,
+				BTCDataFolderName:        Testnet2BTCDataFolderName,
+				BNBFullNodeProtocol:      Testnet2BNBFullNodeProtocol,
+				BNBFullNodeHost:          Testnet2BNBFullNodeHost,
+				BNBFullNodePort:          Testnet2BNBFullNodePort,
 			},
 		},
-		PortalTokens:                initPortalTokensForTestNet(),
 		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:      1,
 		IsBackup:                    false,
@@ -368,8 +363,12 @@ func SetupParam() {
 		EpochV2:                     Testnet2EpochV2,
 		EpochV2BreakPoint:           Testnet2EpochV2BreakPoint,
 		RandomTimeV2:                Testnet2RandomTimeV2,
-		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46",   // todo: update sc address
+		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46", // todo: update sc address
 		BCHeightBreakPointPortalV3:  1328816,
+		EnableFeatureFlags: map[int]uint64{
+			common.PortalV3Flag:       Testnet2EnablePortalV3,
+			common.PortalRelayingFlag: Testnet2EnablePortalRelaying,
+		},
 	}
 	// END TESTNET-2
 
@@ -422,35 +421,42 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Height:              1e12,
+		StakingFlowV2Height:            1e12,
+		EnableSlashingStakingFlowV2:    1e12,
 		Timeslot:                       40,
 		BeaconHeightBreakPointBurnAddr: 150500,
-		BNBRelayingHeaderChainID:       MainnetBNBChainID,
-		BTCRelayingHeaderChainID:       MainnetBTCChainID,
-		BTCDataFolderName:              MainnetBTCDataFolderName,
-		BNBFullNodeProtocol:            MainnetBNBFullNodeProtocol,
-		BNBFullNodeHost:                MainnetBNBFullNodeHost,
-		BNBFullNodePort:                MainnetBNBFullNodePort,
-		PortalFeederAddress:            MainnetPortalFeeder,
-		PortalParams: map[uint64]PortalParams{
-			0: {
-				TimeOutCustodianReturnPubToken:       24 * time.Hour,
-				TimeOutWaitingPortingRequest:         24 * time.Hour,
-				TimeOutWaitingRedeemRequest:          15 * time.Minute,
-				MaxPercentLiquidatedCollateralAmount: 120,
-				MaxPercentCustodianRewards:           20,
-				MinPercentCustodianRewards:           1,
-				MinPercentLockedCollateral:           200,
-				MinLockCollateralAmountInEpoch:       35000 * 1e9, // 35000 usd = 350 * 100
-				TP120:                                120,
-				TP130:                                130,
-				MinPercentPortingFee:                 0.01,
-				MinPercentRedeemFee:                  0.01,
-				SupportedCollateralTokens:            getSupportedPortalCollateralsMainnet(),
-				MinPortalFee:                         100,
+		PortalParams: portal.PortalParams{
+			PortalParamsV3: map[uint64]portalv3.PortalParams{
+				0: {
+					TimeOutCustodianReturnPubToken:       24 * time.Hour,
+					TimeOutWaitingPortingRequest:         24 * time.Hour,
+					TimeOutWaitingRedeemRequest:          15 * time.Minute,
+					MaxPercentLiquidatedCollateralAmount: 120,
+					MaxPercentCustodianRewards:           20, // todo: need to be updated before deploying
+					MinPercentCustodianRewards:           1,
+					MinLockCollateralAmountInEpoch:       35000 * 1e9, // 35000 usd = 350 * 100
+					MinPercentLockedCollateral:           200,
+					TP120:                                120,
+					TP130:                                130,
+					MinPercentPortingFee:                 0.01,
+					MinPercentRedeemFee:                  0.01,
+					SupportedCollateralTokens:            getSupportedPortalCollateralsMainnet(), // todo: need to be updated before deploying
+					MinPortalFee:                         100,
+					PortalTokens:                         initPortalTokensV3ForMainNet(),
+					PortalFeederAddress:                  MainnetPortalFeeder,
+					PortalETHContractAddressStr:          "", // todo: update sc address,
+					MinUnlockOverRateCollaterals:         25,
+				},
+			},
+			RelayingParam: portalrelaying.RelayingParams{
+				BNBRelayingHeaderChainID: MainnetBNBChainID,
+				BTCRelayingHeaderChainID: MainnetBTCChainID,
+				BTCDataFolderName:        MainnetBTCDataFolderName,
+				BNBFullNodeProtocol:      MainnetBNBFullNodeProtocol,
+				BNBFullNodeHost:          MainnetBNBFullNodeHost,
+				BNBFullNodePort:          MainnetBNBFullNodePort,
 			},
 		},
-		PortalTokens:                initPortalTokensForMainNet(),
 		EpochBreakPointSwapNewKey:   MainnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:      559380,
 		IsBackup:                    false,
@@ -462,6 +468,10 @@ func SetupParam() {
 		RandomTimeV2:                MainnetRandomTimeV2,
 		PortalETHContractAddressStr: "", // todo: update sc address
 		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
+		EnableFeatureFlags: map[int]uint64{
+			common.PortalV3Flag:       MainnetEnablePortalV3,
+			common.PortalRelayingFlag: MainnetEnablePortalRelaying,
+		},
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

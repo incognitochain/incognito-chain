@@ -639,13 +639,18 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	isBeaconRandomTime bool,
 ) *committeestate.BeaconCommitteeStateEnvironment {
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
-	if beaconBestState.BeaconHeight != 1 && beaconBestState.CommitteeEngineVersion() == 2 {
+	if beaconBestState.BeaconHeight != 1 &&
+		beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION &&
+		params.EnableSlashingStakingFlowV2 >= beaconBestState.BeaconHeight {
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
+	} else {
+		slashingPenalty = make(map[string]signaturecounter.Penalty)
 	}
 	return &committeestate.BeaconCommitteeStateEnvironment{
 		BeaconHeight:                      beaconBestState.BeaconHeight,
 		BeaconHash:                        beaconBestState.BestBlockHash,
 		Epoch:                             beaconBestState.Epoch,
+		EpochLengthV1:                     params.Epoch,
 		BeaconInstructions:                beaconInstructions,
 		EpochBreakPointSwapNewKey:         params.EpochBreakPointSwapNewKey,
 		AssignOffset:                      params.AssignOffset,
@@ -669,6 +674,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		BeaconHeight:                      beaconBestState.BeaconHeight,
 		BeaconHash:                        beaconBestState.BestBlockHash,
 		Epoch:                             beaconBestState.Epoch,
+		EpochLengthV1:                     params.Epoch,
 		RandomNumber:                      beaconBestState.CurrentRandomNumber,
 		ActiveShards:                      beaconBestState.ActiveShards,
 		MinShardCommitteeSize:             beaconBestState.MinShardCommitteeSize,

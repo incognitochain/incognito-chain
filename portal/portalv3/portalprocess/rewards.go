@@ -1,4 +1,4 @@
-package blockchain
+package portalprocess
 
 import (
 	"encoding/base64"
@@ -6,12 +6,14 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"math/big"
 	"sort"
 	"strconv"
 )
 
-func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewardInfos map[string]*statedb.PortalRewardInfo) []string {
+func buildInstForPortalReward(beaconHeight uint64, rewardInfos map[string]*statedb.PortalRewardInfo) []string {
 	portalRewardContent := metadata.NewPortalReward(beaconHeight, rewardInfos)
 	contentStr, _ := json.Marshal(portalRewardContent)
 
@@ -25,7 +27,7 @@ func (blockchain *BlockChain) buildInstForPortalReward(beaconHeight uint64, rewa
 	return inst
 }
 
-func (blockchain *BlockChain) buildInstForPortalTotalReward(rewardInfos map[string]uint64) []string {
+func buildInstForPortalTotalReward(rewardInfos map[string]uint64) []string {
 	portalRewardContent := metadata.NewPortalTotalCustodianReward(rewardInfos)
 	contentStr, _ := json.Marshal(portalRewardContent)
 
@@ -138,7 +140,7 @@ func splitRewardForCustodians(
 	return rewardInfos
 }
 
-func (blockchain *BlockChain) buildPortalRewardsInsts(
+func buildPortalRewardsInsts(
 	beaconHeight uint64,
 	currentPortalState *CurrentPortalState,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
@@ -205,7 +207,7 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 				amount := rewardForCustodianByEpoch[key]
 				totalRewardForCustodians[tokenID.String()] = amount
 			}
-			instTotalReward := blockchain.buildInstForPortalTotalReward(totalRewardForCustodians)
+			instTotalReward := buildInstForPortalTotalReward(totalRewardForCustodians)
 			rewardInsts = append(rewardInsts, instTotalReward)
 		}
 	}
@@ -235,7 +237,7 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 		sortedRewardInfos[key] = new(statedb.PortalRewardInfo)
 		sortedRewardInfos[key].SetRewards(rewardInfoTmp)
 	}
-	inst := blockchain.buildInstForPortalReward(beaconHeight+1, sortedRewardInfos)
+	inst := buildInstForPortalReward(beaconHeight+1, sortedRewardInfos)
 	rewardInsts = append(rewardInsts, inst)
 
 	return rewardInsts, nil
@@ -246,34 +248,61 @@ func (blockchain *BlockChain) buildPortalRewardsInsts(
 Portal Custodian Request Withdraw Rewards Processor
 ======= */
 
-type portalReqWithdrawRewardProcessor struct {
-	*portalInstProcessor
+type PortalReqWithdrawRewardProcessor struct {
+	*PortalInstProcessorV3
 }
 
-func (p *portalReqWithdrawRewardProcessor) getActions() map[byte][][]string {
-	return p.actions
+func (p *PortalReqWithdrawRewardProcessor) GetActions() map[byte][][]string {
+	return p.Actions
 }
 
-func (p *portalReqWithdrawRewardProcessor) putAction(action []string, shardID byte) {
-	_, found := p.actions[shardID]
+func (p *PortalReqWithdrawRewardProcessor) PutAction(action []string, shardID byte) {
+	_, found := p.Actions[shardID]
 	if !found {
-		p.actions[shardID] = [][]string{action}
+		p.Actions[shardID] = [][]string{action}
 	} else {
-		p.actions[shardID] = append(p.actions[shardID], action)
+		p.Actions[shardID] = append(p.Actions[shardID], action)
 	}
 }
 
-func (p *portalReqWithdrawRewardProcessor) prepareDataBeforeProcessing(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
+func (p *PortalReqWithdrawRewardProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	return nil, nil
 }
 
-func (p *portalReqWithdrawRewardProcessor) buildNewInsts(
-	bc *BlockChain,
+// beacon build new instruction from instruction received from ShardToBeaconBlock
+func buildWithdrawPortalRewardInst(
+	custodianAddressStr string,
+	tokenID common.Hash,
+	rewardAmount uint64,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+	status string,
+) []string {
+	withdrawRewardContent := metadata.PortalRequestWithdrawRewardContent{
+		CustodianAddressStr: custodianAddressStr,
+		TokenID:             tokenID,
+		RewardAmount:        rewardAmount,
+		TxReqID:             txReqID,
+		ShardID:             shardID,
+	}
+	withdrawRewardContentBytes, _ := json.Marshal(withdrawRewardContent)
+	return []string{
+		strconv.Itoa(metaType),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(withdrawRewardContentBytes),
+	}
+}
+
+func (p *PortalReqWithdrawRewardProcessor) BuildNewInsts(
+	bc metadata.ChainRetriever,
 	contentStr string,
 	shardID byte,
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
-	portalParams PortalParams,
+	shardHeights map[byte]uint64,
+	portalParams portalv3.PortalParams,
 	optionalData map[string]interface{},
 ) ([][]string, error) {
 	// parse instruction
@@ -296,7 +325,7 @@ func (p *portalReqWithdrawRewardProcessor) buildNewInsts(
 		actionData.Meta.Type,
 		shardID,
 		actionData.TxReqID,
-		common.PortalReqWithdrawRewardRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 	)
 
 	if currentPortalState == nil {
@@ -327,7 +356,7 @@ func (p *portalReqWithdrawRewardProcessor) buildNewInsts(
 			actionData.Meta.Type,
 			shardID,
 			actionData.TxReqID,
-			common.PortalReqWithdrawRewardAcceptedChainStatus,
+			pCommon.PortalRequestAcceptedChainStatus,
 		)
 
 		// update reward amount of custodian
@@ -338,28 +367,169 @@ func (p *portalReqWithdrawRewardProcessor) buildNewInsts(
 	}
 }
 
-// beacon build new instruction from instruction received from ShardToBeaconBlock
-func buildWithdrawPortalRewardInst(
-	custodianAddressStr string,
-	tokenID common.Hash,
-	rewardAmount uint64,
-	metaType int,
-	shardID byte,
-	txReqID common.Hash,
-	status string,
-) []string {
-	withdrawRewardContent := metadata.PortalRequestWithdrawRewardContent{
-		CustodianAddressStr: custodianAddressStr,
-		TokenID:             tokenID,
-		RewardAmount:        rewardAmount,
-		TxReqID:             txReqID,
-		ShardID:             shardID,
+func (p *PortalReqWithdrawRewardProcessor) ProcessInsts(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+	instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams portalv3.PortalParams,
+	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+) error {
+	// unmarshal instructions content
+	var actionData metadata.PortalRequestWithdrawRewardContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
+		return nil
 	}
-	withdrawRewardContentBytes, _ := json.Marshal(withdrawRewardContent)
-	return []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		status,
-		string(withdrawRewardContentBytes),
+
+	reqStatus := instructions[2]
+	if reqStatus == pCommon.PortalRequestAcceptedChainStatus {
+		// update reward amount of custodian
+		cusStateKey := statedb.GenerateCustodianStateObjectKey(actionData.CustodianAddressStr)
+		cusStateKeyStr := cusStateKey.String()
+		custodianState := currentPortalState.CustodianPoolState[cusStateKeyStr]
+		if custodianState == nil {
+			Logger.log.Errorf("[processPortalWithdrawReward] Can not get custodian state with key %v", cusStateKey)
+			return nil
+		}
+		updatedRewardAmount := custodianState.GetRewardAmount()
+		updatedRewardAmount[actionData.TokenID.String()] = 0
+		currentPortalState.CustodianPoolState[cusStateKeyStr].SetRewardAmount(updatedRewardAmount)
+
+		// track request withdraw portal reward
+		portalReqRewardStatus := metadata.PortalRequestWithdrawRewardStatus{
+			Status:              pCommon.PortalRequestAcceptedStatus,
+			CustodianAddressStr: actionData.CustodianAddressStr,
+			TokenID:             actionData.TokenID,
+			RewardAmount:        actionData.RewardAmount,
+			TxReqID:             actionData.TxReqID,
+		}
+		portalReqRewardStatusBytes, _ := json.Marshal(portalReqRewardStatus)
+		err = statedb.StorePortalRequestWithdrawRewardStatus(
+			stateDB,
+			actionData.TxReqID.String(),
+			portalReqRewardStatusBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking liquidation custodian: %+v", err)
+			return nil
+		}
+
+	} else if reqStatus == pCommon.PortalRequestRejectedChainStatus {
+		// track request withdraw portal reward
+		portalReqRewardStatus := metadata.PortalRequestWithdrawRewardStatus{
+			Status:              pCommon.PortalRequestRejectedStatus,
+			CustodianAddressStr: actionData.CustodianAddressStr,
+			TokenID:             actionData.TokenID,
+			RewardAmount:        actionData.RewardAmount,
+			TxReqID:             actionData.TxReqID,
+		}
+		portalReqRewardStatusBytes, _ := json.Marshal(portalReqRewardStatus)
+		err = statedb.StorePortalRequestWithdrawRewardStatus(
+			stateDB,
+			actionData.TxReqID.String(),
+			portalReqRewardStatusBytes,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking liquidation custodian: %+v", err)
+			return nil
+		}
 	}
+
+	return nil
 }
+
+/*
+Portal reward process
+*/
+
+func ProcessPortalReward(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64, instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams portalv3.PortalParams, epoch uint64) error {
+
+	// unmarshal instructions content
+	var actionData metadata.PortalRewardContent
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
+		return nil
+	}
+
+	reqStatus := instructions[2]
+	metaType, _ := strconv.Atoi(instructions[0])
+	if reqStatus == "portalRewardInst" {
+		// update reward amount for custodian
+		UpdateCustodianRewards(currentPortalState, actionData.Rewards)
+
+		// at the end of epoch
+		if (beaconHeight+1)%epoch == 1 {
+			currentPortalState.LockedCollateralForRewards.Reset()
+		}
+
+		// update locked collateral for rewards base on holding public tokens
+		if metaType == metadata.PortalRewardMetaV3 {
+			UpdateLockedCollateralForRewardsV3(currentPortalState, portalParams)
+		} else if metaType == metadata.PortalRewardMeta {
+			UpdateLockedCollateralForRewards(currentPortalState, portalParams)
+		}
+
+		// store reward at beacon height into db
+		err = statedb.StorePortalRewards(
+			stateDB,
+			beaconHeight+1,
+			actionData.Rewards,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while tracking liquidation custodian: %+v", err)
+			return nil
+		}
+	} else {
+		Logger.log.Errorf("ERROR: Invalid status of instruction: %+v", reqStatus)
+		return nil
+	}
+
+	return nil
+}
+
+func ProcessPortalTotalCustodianReward(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64, instructions []string,
+	currentPortalState *CurrentPortalState,
+	portalParams portalv3.PortalParams,
+	epoch uint64) error {
+
+	// unmarshal instructions content
+	var actionData metadata.PortalTotalCustodianReward
+	err := json.Unmarshal([]byte(instructions[3]), &actionData)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", instructions[3], err)
+		return nil
+	}
+
+	reqStatus := instructions[2]
+	if reqStatus == "portalTotalRewardInst" {
+		epoch := beaconHeight / epoch
+		// store total custodian reward into db
+		err = statedb.StoreRewardFeatureState(
+			stateDB,
+			statedb.PortalRewardName,
+			actionData.Rewards,
+			epoch,
+		)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while storing total custodian reward: %+v", err)
+			return nil
+		}
+	} else {
+		Logger.log.Errorf("ERROR: Invalid status of instruction: %+v", reqStatus)
+		return nil
+	}
+
+	return nil
+}
+
+
+

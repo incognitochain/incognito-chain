@@ -303,9 +303,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
-
 	var err error
-	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
+	portalParams := blockchain.GetPortalParams()
+
+	// get shard to beacon blocks from pool
 	allRequiredShardBlockHeight := make(map[byte][]uint64)
 	for shardID, shardstates := range beaconBlock.Body.ShardState {
 		heights := []uint64{}
@@ -629,13 +630,13 @@ func (curView *BeaconBestState) countMissingSignature(
 		if shardState.Height == 1 {
 			continue
 		}
-		if beaconHeight <= bc.config.ChainParams.ConsensusV3Height {
+		if beaconHeight <= bc.config.ChainParams.StakingFlowV2Height {
 			err := curView.countMissingSignatureV1(bc, shardID, shardState)
 			if err != nil {
 				return err
 			}
 		}
-		if beaconHeight > bc.config.ChainParams.ConsensusV3Height {
+		if beaconHeight > bc.config.ChainParams.StakingFlowV2Height {
 			err := curView.countMissingSignatureV2(bc, shardID, shardState)
 			if err != nil {
 				return err
@@ -835,18 +836,13 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	// execute, store Portal Instruction
+	// execute, store Ralaying Instruction
 	//if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
 	err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
 	//}
-
-	// execute, store Ralaying Instruction
-	err = blockchain.processRelayingInstructions(beaconBlock)
-	if err != nil {
-		return NewBlockChainError(ProcessPortalRelayingError, err)
-	}
 
 	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
 	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
@@ -913,7 +909,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
+	if beaconBlock.Header.Height == blockchain.config.ChainParams.StakingFlowV2Height {
 		newBestState.upgradeCommitteeEngineV2(blockchain)
 	}
 
