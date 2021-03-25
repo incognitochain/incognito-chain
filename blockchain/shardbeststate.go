@@ -412,18 +412,20 @@ func InitShardCommitteeEngineV2(
 	committeeFromBlockHash common.Hash,
 	bc *BlockChain) committeestate.ShardCommitteeEngine {
 	Logger.log.Infof("SHARDID %+v | Shard Height %+v, Init Shard Committee Engine V2", shardID, shardHeight)
-	shardCommittees := []incognitokey.CommitteePublicKey{}
+	signingCommittes := []incognitokey.CommitteePublicKey{}
+	//committees := []incognitokey.CommitteePublicKey{}
 	var err error
 	if shardHeight == 1 {
-		shardCommittees = statedb.GetOneShardCommittee(consensusStateDB, shardID)
+		signingCommittes = statedb.GetOneShardCommittee(consensusStateDB, shardID)
+		//committees = signingCommittes
 	} else {
-		shardCommittees, err = bc.GetShardCommitteeFromBeaconHash(committeeFromBlockHash, shardID, committeestate.MaxSubsetCommittees)
+		signingCommittes, _, err = bc.GetShardCommitteeFromBeaconHash(committeeFromBlockHash, shardID, committeestate.MaxSubsetCommittees)
 		if err != nil {
 			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
 			panic(err)
 		}
 	}
-	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(shardCommittees, committeeFromBlockHash)
+	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(signingCommittes, committeeFromBlockHash)
 	shardCommitteeEngine := committeestate.NewShardCommitteeEngineV2(shardHeight, shardHash, shardID, shardCommitteeState)
 
 	return shardCommitteeEngine
@@ -445,12 +447,12 @@ func (shardBestState *ShardBestState) upgradeCommitteeEngineV2(bc *BlockChain) e
 		return nil
 	}
 
-	shardCommittees, err := bc.GetShardCommitteeFromBeaconHash(shardBestState.BestBeaconHash, shardBestState.ShardID, committeestate.MaxSubsetCommittees)
+	signingCommittees, _, err := bc.GetShardCommitteeFromBeaconHash(shardBestState.BestBeaconHash, shardBestState.ShardID, committeestate.MaxSubsetCommittees)
 	if err != nil {
 		return err
 	}
 	newShardCommitteeStateV2 := committeestate.NewShardCommitteeStateV2WithValue(
-		shardCommittees,
+		signingCommittees,
 		common.Hash{},
 	)
 

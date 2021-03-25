@@ -51,7 +51,7 @@ type Chain interface {
 	ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error
 	CheckExistedBlk(block types.BlockInterface) bool
 	GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error)
-	GetCommitteeV2(types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC
+	GetCommitteeV2(types.BlockInterface) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC
 	CommitteeStateVersion() uint
 }
 

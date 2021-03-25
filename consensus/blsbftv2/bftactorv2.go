@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 
@@ -386,7 +387,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	if err := e.Chain.ValidatePreSignBlock(v.block, []incognitokey.CommitteePublicKey{}); err != nil {
+	if err := e.Chain.ValidatePreSignBlock(v.block, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}); err != nil {
 		e.Logger.Error(err)
 		return err
 	}

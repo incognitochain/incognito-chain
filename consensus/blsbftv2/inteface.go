@@ -57,7 +57,7 @@ type ChainInterface interface {
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	// ValidateAndInsertBlock(block common.BlockInterface) error
 	ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committee []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 
 	//for new syncker

@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 
@@ -230,7 +231,7 @@ func (e *BLSBFT) Start() error {
 						monitor.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
 						//fmt.Println("CONSENSUS: listen phase 2")
 
-						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey], []incognitokey.CommitteePublicKey{}); err != nil {
+						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey], []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
 							continue

@@ -244,6 +244,10 @@ func (e *BLSBFT_V3) run() error {
 					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
 					if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
 						validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+					} else {
+						if proposeBlockInfo.block.Hash().String() == bestView.GetHash().String() {
+							validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+						}
 					}
 
 					if proposeBlockInfo.block.GetHeight() < e.Chain.GetFinalView().GetHeight() {
@@ -469,7 +473,7 @@ func (e *BLSBFT_V3) validateAndVote(
 	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	if err := e.Chain.ValidatePreSignBlock(v.block, v.committees); err != nil {
+	if err := e.Chain.ValidatePreSignBlock(v.block, v.committees, v.committees); err != nil {
 		e.Logger.Error(err)
 		return err
 	}
@@ -608,7 +612,7 @@ func (e *BLSBFT_V3) proposeBeaconBlock(
 		}
 	} else {
 		e.Logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v")
-		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committees, committeeViewHash)
+		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -648,7 +652,7 @@ func (e *BLSBFT_V3) proposeShardBlock(
 		}
 	} else {
 		e.Logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v")
-		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committees, committeeViewHash)
+		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -695,7 +699,7 @@ func (e *BLSBFT_V3) getCommitteeForBlock(v types.BlockInterface) ([]incognitokey
 	var err error = nil
 	var committees []incognitokey.CommitteePublicKey
 	if !e.Chain.IsBeaconChain() {
-		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(e.Chain.GetShardID()), 0)
+		committees, _, err = e.CommitteeChain.CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(e.Chain.GetShardID()), 0)
 	} else {
 		committees = e.Chain.GetBestView().GetCommittee()
 	}
@@ -741,7 +745,7 @@ func (e *BLSBFT_V3) getCommitteesAndCommitteeViewHash() ([]incognitokey.Committe
 		committees = e.Chain.GetBestView().GetCommittee()
 	} else {
 		committeeViewHash = *e.CommitteeChain.FinalView().GetHash()
-		committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID), 0)
+		committees, _, err = e.CommitteeChain.CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID), 0)
 		if err != nil {
 			return committees, proposerPk, committeeViewHash, err
 		}

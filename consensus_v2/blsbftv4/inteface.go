@@ -55,12 +55,11 @@ type ChainInterface interface {
 		oldBlock types.BlockInterface,
 		proposer string,
 		startTime int64,
-		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, validationData string) error
 	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 	GetChainDatabase() incdb.Database
 
@@ -75,7 +74,11 @@ type ChainInterface interface {
 
 //CommitteeChainHandler :
 type CommitteeChainHandler interface {
-	CommitteesFromViewHashForShard(hash common.Hash, shardID byte, threshold int) ([]incognitokey.CommitteePublicKey, error)
+	CommitteesFromViewHashForShard(
+		hash common.Hash, shardID byte, threshold int,
+	) (
+		[]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error,
+	)
 	ProposerByTimeSlot(byte, int64, []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey
 	FinalView() multiview.View
 	CommitteeEngineVersion() uint

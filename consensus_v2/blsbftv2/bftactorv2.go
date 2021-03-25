@@ -460,7 +460,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	if err := e.Chain.ValidatePreSignBlock(v.block, []incognitokey.CommitteePublicKey{}); err != nil {
+	if err := e.Chain.ValidatePreSignBlock(v.block, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}); err != nil {
 		e.Logger.Error(err)
 		return err
 	}
@@ -545,7 +545,7 @@ func (e *BLSBFT_V2) proposeBlock(userMiningKey signatureschemes2.MiningKey, prop
 		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime, []incognitokey.CommitteePublicKey{}, common.Hash{})
 	} else {
 		e.Logger.Info("debug CreateNewBlockFromOldBlock")
-		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, []incognitokey.CommitteePublicKey{}, common.Hash{})
+		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, common.Hash{})
 		//b58Str, _ := proposerPk.ToBase58()
 		//block = e.voteHistory[e.Chain.GetBestViewHeight()+1]
 	}

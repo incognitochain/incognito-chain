@@ -32,10 +32,9 @@ type ChainInterface interface {
 		oldBlock types.BlockInterface,
 		proposer string,
 		startTime int64,
-		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
 	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	GetShardID() int
 	GetViewByHash(hash common.Hash) multiview.View

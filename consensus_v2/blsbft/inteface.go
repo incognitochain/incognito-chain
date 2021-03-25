@@ -43,7 +43,7 @@ type ChainInterface interface {
 		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
 	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, signingCommittes, committees []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 
 	//for new syncker

@@ -1,6 +1,7 @@
 package blsbftv4
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 
@@ -39,17 +40,27 @@ func CombineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte
 	var blsSigList [][]byte
 	for validator, vote := range votes {
 		if vote.IsValid == 1 {
-			validatorIdx = append(validatorIdx, common.IndexOfStr(validator, committees))
+			index := common.IndexOfStr(validator, committees)
+			if index != -1 {
+				validatorIdx = append(validatorIdx, index)
+			}
 		}
 	}
+
+	if len(validatorIdx) == 0 {
+		return nil, nil, nil, NewConsensusError(CombineSignatureError, errors.New("len(validatorIdx) == 0"))
+	}
+
 	sort.Ints(validatorIdx)
 	for _, idx := range validatorIdx {
 		blsSigList = append(blsSigList, votes[committees[idx]].BLS)
 		brigSigs = append(brigSigs, votes[committees[idx]].BRI)
 	}
+
 	aggSig, err = blsmultisig.Combine(blsSigList)
 	if err != nil {
 		return nil, nil, nil, NewConsensusError(CombineSignatureError, err)
 	}
+
 	return
 }

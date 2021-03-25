@@ -61,7 +61,7 @@ type ChainInterface interface {
 	InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, validationData string) error
 	ReplacePreviousValidationData(blockHash common.Hash, newValidationData string) error
 	ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committee []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 	GetChainDatabase() incdb.Database
 

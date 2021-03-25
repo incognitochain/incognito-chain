@@ -182,7 +182,6 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
 func (chain *BeaconChain) CreateNewBlockFromOldBlock(
 	oldBlock types.BlockInterface, proposer string,
 	startTime int64,
-	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash,
 ) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
@@ -234,7 +233,7 @@ func (chain *BeaconChain) GetChainName() string {
 	return chain.ChainName
 }
 
-func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
+func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error {
 	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*types.BeaconBlock), true)
 }
 
@@ -352,9 +351,9 @@ func (chain *BeaconChain) ProposerByTimeSlot(
 	return committees[id]
 }
 
-func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
+func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	committees := chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
-	return committees, nil
+	return committees, committees, nil
 }
 
 func (chain *BeaconChain) CommitteeStateVersion() uint {
@@ -380,21 +379,21 @@ func (chain *BeaconChain) CommitteeEngineVersion() uint {
 
 func (chain *BeaconChain) CommitteesFromViewHashForShard(
 	hash common.Hash, shardID byte, threshold int,
-) ([]incognitokey.CommitteePublicKey, error) {
+) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	beaconBlock, _, err := chain.Blockchain.GetBeaconBlockByHash(hash)
 	if err != nil {
-		return []incognitokey.CommitteePublicKey{}, err
+		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 	}
 
 	bRH, err := GetBeaconRootsHashByBlockHash(chain.Blockchain.GetBeaconChainDatabase(), hash)
 	if err != nil {
-		return []incognitokey.CommitteePublicKey{}, err
+		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 	}
 
 	stateDB, err := statedb.NewWithPrefixTrie(
 		bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(chain.Blockchain.GetBeaconChainDatabase()))
 	if err != nil {
-		return []incognitokey.CommitteePublicKey{}, err
+		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 	}
 	committees := statedb.GetOneShardCommittee(stateDB, shardID)
 	res := []incognitokey.CommitteePublicKey{}
@@ -407,5 +406,5 @@ func (chain *BeaconChain) CommitteesFromViewHashForShard(
 	} else {
 		res = committees
 	}
-	return res, nil
+	return res, committees, nil
 }

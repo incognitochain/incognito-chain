@@ -1,8 +1,9 @@
 package blsbft
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -44,7 +45,7 @@ type ChainInterface interface {
 		hash common.Hash) (types.BlockInterface, error)
 	// ValidateAndInsertBlock(block common.BlockInterface) error
 	ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committee []incognitokey.CommitteePublicKey) error
 	GetShardID() int
 
 	//for new syncker
