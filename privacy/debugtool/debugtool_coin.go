@@ -11,14 +11,13 @@ import (
 	"math/big"
 )
 
-
 func (tool *DebugTool) GetOutputCoins(outCoinKey *OutCoinKey, tokenID string, height uint64) ([]jsonresult.ICoinInfo, []*big.Int, error) {
 	b, err := tool.GetListOutputCoinsByRPC(outCoinKey, tokenID, height)
-	if err != nil{
+	if err != nil {
 		return nil, nil, err
 	}
 
-	//fmt.Println(string(b))
+	fmt.Println(string(b))
 
 	return ParseCoinFromJsonResponse(b)
 }
@@ -26,14 +25,14 @@ func (tool *DebugTool) GetOutputCoins(outCoinKey *OutCoinKey, tokenID string, he
 //CheckCoinsSpent checks if the provided serial numbers have been spent or not.
 //
 //Returned result in boolean list.
-func (tool *DebugTool) CheckCoinsSpent(shardID byte, tokenID string, snList []string) ([]bool, error){
+func (tool *DebugTool) CheckCoinsSpent(shardID byte, tokenID string, snList []string) ([]bool, error) {
 	b, err := tool.HasSerialNumberByRPC(shardID, tokenID, snList)
-	if err != nil{
+	if err != nil {
 		return []bool{}, err
 	}
-
+	fmt.Print(string(b))
 	response, err := ParseResponse(b)
-	if err != nil{
+	if err != nil {
 		return []bool{}, err
 	}
 
@@ -43,7 +42,7 @@ func (tool *DebugTool) CheckCoinsSpent(shardID byte, tokenID string, snList []st
 		return []bool{}, err
 	}
 
-	if len(tmp) != len(snList){
+	if len(tmp) != len(snList) {
 		return []bool{}, errors.New(fmt.Sprintf("Length of result and length of snList mismathc: len(Result) = %v, len(snList) = %v. Perhaps the shardID was wrong.", len(tmp), len(snList)))
 	}
 
@@ -51,27 +50,27 @@ func (tool *DebugTool) CheckCoinsSpent(shardID byte, tokenID string, snList []st
 }
 
 //GetUnspentOutputCoins retrieves all unspent coins of a private key, without sending the private key to the remote full node.
-func (tool *DebugTool) GetUnspentOutputCoins(privateKey, tokenID string, height uint64) ([]coin.PlainCoin, []*big.Int, error){
+func (tool *DebugTool) GetUnspentOutputCoins(privateKey, tokenID string, height uint64) ([]coin.PlainCoin, []*big.Int, error) {
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
-	if err != nil{
+	if err != nil {
 		return nil, nil, err
 	}
 	outCoinKey, err := NewOutCoinKeyFromPrivateKey(privateKey)
-	if err != nil{
+	if err != nil {
 		return nil, nil, err
 	}
 	outCoinKey.SetReadonlyKey("") // call this if you do not want the remote full node to decrypt your coin
 
 	listOutputCoins, _, err := tool.GetOutputCoins(outCoinKey, tokenID, height)
-	if err != nil{
+	if err != nil {
 		return nil, nil, err
 	}
 
-	if len(listOutputCoins) == 0{
+	if len(listOutputCoins) == 0 {
 		return nil, nil, nil
 	}
 
-	listDecryptedOutCoins, listKeyImages, err := GetListDecryptedCoins(privateKey, listOutputCoins)
+	listDecryptedOutCoins, listKeyImages, err := GetListDecryptedCoins(privateKey, listOutputCoins, true)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -83,7 +82,7 @@ func (tool *DebugTool) GetUnspentOutputCoins(privateKey, tokenID string, height 
 	}
 
 	listUnspentOutputCoins := make([]coin.PlainCoin, 0)
-	for i, decryptedCoin := range listDecryptedOutCoins{
+	for i, decryptedCoin := range listDecryptedOutCoins {
 		if !checkSpentList[i] {
 			listUnspentOutputCoins = append(listUnspentOutputCoins, decryptedCoin)
 		}
@@ -93,9 +92,9 @@ func (tool *DebugTool) GetUnspentOutputCoins(privateKey, tokenID string, height 
 }
 
 //GetBalance retrieves balance of a private key without sending this private key to the remote full node.
-func (tool *DebugTool) GetBalance(privateKey, tokenID string) (uint64, error){
+func (tool *DebugTool) GetBalance(privateKey, tokenID string) (uint64, error) {
 	unspentCoins, _, err := tool.GetUnspentOutputCoins(privateKey, tokenID, 0)
-	if err != nil{
+	if err != nil {
 		return 0, err
 	}
 
@@ -169,7 +168,7 @@ func (this *DebugTool) GetListOutputCoinsCachedByRPC(privKeyStr, tokenID string,
 		"id": 1
 	}`, paymentAddStr, otaSecretKey, viewingKeyStr, h, tokenID)
 
-	//fmt.Println("==============")
+	fmt.Println("==============")
 
 	return this.SendPostRequestWithQuery(query)
 }
@@ -216,15 +215,14 @@ func (this *DebugTool) ListPrivacyCustomTokenByRPC() ([]byte, error) {
 //HasSerialNumberByRPC checks if the provided serial numbers have been spent or not.
 //
 //Returned result in raw json bytes.
-func (tool *DebugTool) HasSerialNumberByRPC(shardID byte, tokenID string, snList []string) ([]byte, error){
+func (tool *DebugTool) HasSerialNumberByRPC(shardID byte, tokenID string, snList []string) ([]byte, error) {
 	if len(snList) == 0 {
 		return nil, errors.New("no serial number provided to be checked")
 	}
 	snQueryList := make([]string, 0)
-	for _, sn := range snList{
+	for _, sn := range snList {
 		snQueryList = append(snQueryList, fmt.Sprintf(`"%s"`, sn))
 	}
-
 
 	method := "hasserialnumbers"
 
@@ -235,9 +233,8 @@ func (tool *DebugTool) HasSerialNumberByRPC(shardID byte, tokenID string, snList
 
 	request := CreateJsonRequest("1.0", method, params, 1)
 
-
 	query, err := json.Marshal(request)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -246,6 +243,3 @@ func (tool *DebugTool) HasSerialNumberByRPC(shardID byte, tokenID string, snList
 }
 
 //===================== END OF OUTPUT COINS RPC =====================//
-
-
-//func (tool *DebugTool) GetUnspentOutputCoins(priva)

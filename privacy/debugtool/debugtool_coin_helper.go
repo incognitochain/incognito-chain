@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -57,7 +58,7 @@ func NewOutCoinKeyFromPrivateKey(privateKey string) (*OutCoinKey, error) {
 
 func ParseCoinFromJsonResponse(b []byte) ([]jsonresult.ICoinInfo, []*big.Int, error){
 	response, err := ParseResponse(b)
-	fmt.Println(err)
+
 	if err != nil{
 		return nil, nil, err
 	}
@@ -84,15 +85,27 @@ func ParseCoinFromJsonResponse(b []byte) ([]jsonresult.ICoinInfo, []*big.Int, er
 	return resultOutCoins, nil, nil
 }
 
-func GetListDecryptedCoins(privateKey string, listOutputCoins []jsonresult.ICoinInfo) ([]coin.PlainCoin, []string, error){
+func GenerateSerialNumber(g *privacy.Point, privateKey, snd []byte) []byte {
+	sndScalar := new(privacy.Scalar).FromBytesS(snd)
+	privakeyScalar := new(privacy.Scalar).FromBytesS(privateKey)
+	snPoint := new(privacy.Point).Derive(g,
+		privakeyScalar, sndScalar)
+	fmt.Println("SND", snd)
+	fmt.Println("Key", privateKey)
+	fmt.Println("g", g.ToBytes())
+	return snPoint.ToBytesS()
+}
+
+func GetListDecryptedCoins(privateKey string, listOutputCoins []jsonresult.ICoinInfo, encode bool) ([]coin.PlainCoin, []string, error){
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil{
 		return nil, nil, err
 	}
+	g := new(privacy.Point).ScalarMultBase(new(privacy.Scalar).FromUint64(1))
 
 	listDecyptedOutCoins := make([]coin.PlainCoin, 0)
 	listKeyImages := make([]string, 0)
-	for _, outCoin := range listOutputCoins {
+	for i, outCoin := range listOutputCoins {
 		if outCoin.GetVersion() == 1{
 			if outCoin.IsEncrypted() {
 				tmpCoin, ok := outCoin.(*coin.CoinV1)
@@ -105,32 +118,42 @@ func GetListDecryptedCoins(privateKey string, listOutputCoins []jsonresult.ICoin
 					return nil, nil, err
 				}
 
-				keyImage, err := decryptedCoin.ParseKeyImageWithPrivateKey(keyWallet.KeySet.PrivateKey)
-				if err != nil{
-					return nil, nil, err
+				keyImageByte := GenerateSerialNumber(g, keyWallet.KeySet.PrivateKey, tmpCoin.GetSNDerivator().ToBytesS())
+				keyImage, err := new(privacy.Point).FromBytesS(keyImageByte)
+				if err != nil {
+					return nil, nil, fmt.Errorf("cannot derive key image")
 				}
 				decryptedCoin.SetKeyImage(keyImage)
-
-				keyImageString := base64.RawStdEncoding.EncodeToString(keyImage.ToBytesS())
-
-
-				listKeyImages = append(listKeyImages, keyImageString)
+				if encode == false {
+					listKeyImages = append(listKeyImages,base64.RawStdEncoding.EncodeToString(keyImage.ToBytesS()))
+				} else {
+					listKeyImages = append(listKeyImages,base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte))
+				}
 				listDecyptedOutCoins = append(listDecyptedOutCoins, decryptedCoin)
 			}else{
-				tmpPlainCoinV1, ok := outCoin.(*coin.PlainCoinV1)
+				tmpPlainCoinV1, ok := listOutputCoins[i].(*coin.PlainCoinV1)
 				if !ok {
 					return nil, nil, errors.New("invalid PlaincoinV1")
 				}
 
-				keyImage, err := tmpPlainCoinV1.ParseKeyImageWithPrivateKey(keyWallet.KeySet.PrivateKey)
-				if err != nil{
-					return nil, nil, err
+				//keyImage, err := tmpPlainCoinV1.ParseKeyImageWithPrivateKey(keyWallet.KeySet.PrivateKey)
+				//if err != nil{
+				//	return nil, nil, err
+				//}
+				keyImageByte := GenerateSerialNumber(g, keyWallet.KeySet.PrivateKey, tmpPlainCoinV1.GetSNDerivator().ToBytesS())
+				fmt.Println("KeyImage", keyImageByte)
+				fmt.Println("------")
+				keyImage, err := new(privacy.Point).FromBytesS(keyImageByte)
+				if err != nil {
+					return nil, nil, fmt.Errorf("cannot derive key image")
 				}
 				tmpPlainCoinV1.SetKeyImage(keyImage)
+				if encode == false {
+					listKeyImages = append(listKeyImages,base64.RawStdEncoding.EncodeToString(keyImage.ToBytesS()))
+				} else {
+					listKeyImages = append(listKeyImages,base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte))
+				}
 
-				keyImageString := base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte)
-
-				listKeyImages = append(listKeyImages, keyImageString)
 				listDecyptedOutCoins = append(listDecyptedOutCoins, tmpPlainCoinV1)
 			}
 		}else if outCoin.GetVersion() == 2 {
@@ -144,13 +167,14 @@ func GetListDecryptedCoins(privateKey string, listOutputCoins []jsonresult.ICoin
 			}
 
 			keyImage := decryptedCoin.GetKeyImage()
-			keyImageString := base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte)
-
-			listKeyImages = append(listKeyImages, keyImageString)
+			if encode == false {
+				listKeyImages = append(listKeyImages,base64.RawStdEncoding.EncodeToString(keyImage.ToBytesS()))
+			} else {
+				listKeyImages = append(listKeyImages,base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte))
+			}
 			listDecyptedOutCoins = append(listDecyptedOutCoins, decryptedCoin)
 		}
 	}
 
 	return listDecyptedOutCoins, listKeyImages, nil
 }
-

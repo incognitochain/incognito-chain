@@ -27,7 +27,7 @@ func (this *DebugTool) InitTestnet() *DebugTool {
 	if this == nil {
 		this = new(DebugTool)
 	}
-	this.url = "http://51.83.36.184:20002"
+	this.url = "http://51.161.119.66:9334"
 	return this
 }
 
@@ -53,6 +53,24 @@ func (this *DebugTool) SendPostRequestWithQuery(query string) ([]byte, error) {
 	}
 	var jsonStr = []byte(query)
 	req, _ := http.NewRequest("POST", this.url, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return []byte{}, err
+	} else {
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return []byte{}, err
+		}
+		return body, nil
+	}
+}
+
+func SendPostRequestWithQuery(url, query string) ([]byte, error) {
+	var jsonStr = []byte(query)
+	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	resp, err := client.Do(req)

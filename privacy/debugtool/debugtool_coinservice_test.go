@@ -73,7 +73,7 @@ func BenchmarkCheckKeyImageFromCS(b *testing.B) {
 		fmt.Printf("cannot get list output coins from CS. Error %v", err)
 		return
 	}
-	_, listKeyImages, err := GetListDecryptedCoins(privJKeyList[index], listOutputCoins)
+	_, listKeyImages, err := GetListDecryptedCoins(privJKeyList[index], listOutputCoins, true)
 	if err != nil {
 		fmt.Printf("cannot get plain coins from CS. Error %v", err)
 	}
@@ -103,7 +103,7 @@ func BenchmarkCheckKeyImageFromRPC(b *testing.B) {
 		fmt.Printf("cannot get list output coins from CS. Error %v", err)
 		return
 	}
-	_, listKeyImages, err := GetListDecryptedCoins(privJKeyList[index], listOutputCoins)
+	_, listKeyImages, err := GetListDecryptedCoins(privJKeyList[index], listOutputCoins, true)
 	if err != nil {
 		fmt.Printf("cannot get plain coins from CS. Error %v", err)
 	}

@@ -277,7 +277,7 @@ func SetupParam() {
 		RandomTimeV2:                TestnetRandomTimeV2,
 		PortalETHContractAddressStr: "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address
 		BCHeightBreakPointPortalV3:  30158,
-		BCHeightBreakPointPrivacyV2:  30, //TODO: change this value when deployed testnet
+		BCHeightBreakPointPrivacyV2:  1000, //TODO: change this value when deployed testnet
 	}
 	// END TESTNET
 
@@ -372,7 +372,7 @@ func SetupParam() {
 		RandomTimeV2:                Testnet2RandomTimeV2,
 		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46",   // todo: update sc address
 		BCHeightBreakPointPortalV3:  8974, // todo: should update before deploying
-		BCHeightBreakPointPrivacyV2:  30, //TODO: change this value when deployed testnet2
+		BCHeightBreakPointPrivacyV2:  1000, //TODO: change this value when deployed testnet2
 	}
 	// END TESTNET-2
 

@@ -310,6 +310,7 @@ func (this *DebugTool) Unstake(privKey string, seed string) ([]byte, error) {
 	keyWallet, _ := wallet.Base58CheckDeserialize(privKey)
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	paymentAddStr, _ = wallet.GetPaymentAddressV1(paymentAddStr, false)
 	query := fmt.Sprintf(`{
 		"id":1,
 		"jsonrpc":"1.0",

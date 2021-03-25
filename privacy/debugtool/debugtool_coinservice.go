@@ -13,7 +13,8 @@ import (
 )
 
 var privJKeyList = [...]string{
-	"113hagqt552h92LXY6dWPdBGS8pPdLQX5eFBLgsnzbEoU1nUTLGJkkyrTnWCz7XuURtSKzkUKFfKrMPmoNVPAbmryRbMxvNTst9cY5xqiPNN",
+	//"113hagqt552h92LXY6dWPdBGS8pPdLQX5eFBLgsnzbEoU1nUTLGJkkyrTnWCz7XuURtSKzkUKFfKrMPmoNVPAbmryRbMxvNTst9cY5xqiPNN",
+	"112t8rnXKfvZc5iAqrGtKT7kfMnbnrMLRfTTu5xfjgGYssEMdaSBC6NuPDqq8Z4QZAWhnBu1mccsJ2dU7S9f45zGyX1qw4DCRBe6Hjkhhvx7",
 	"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or",
 	"112t8rnjzNW1iKLjpNW9oJoD38pnVVgCiZWRuqGmMvcEgZEHjtg4tLRTAcfTCxNXrdzKcEmY9JVfX2Wb3JLaCjfRDEyGhXGK67VB297mZuwH",
 	"112t8rnmcQXPkPG3nHhhmLjKeqZEjBHcFCSxBdwRy2L6nGXBwKopc5PYWPVXu14xmec34LXxu5JJcf3N6wUfsbbNWKVotAMNrswhE6adbBmu",
@@ -133,6 +134,7 @@ func CheckCoinsSpent(shardID byte, listKeyImages []string) ([]bool, error) {
 		"ShardID":%v
 	}`, strings.Join(snQueryList, ","), shardID)
 
+	fmt.Println(query)
 	b, err := SendPost(URL, query)
 	if err != nil {
 		return []bool{}, err
@@ -264,6 +266,8 @@ func CheckCoinSpentFromRPC(tool *DebugTool, listSN []string, paymentAddress, tok
 		"id": 1
 	}`, paymentAddress, strings.Join(snQueryList, ","), tokenID)
 
+	fmt.Println(query)
+	
 	resp, err := tool.SendPostRequestWithQuery(query)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get list outputcoin from rpc. Error %v", err)
@@ -317,7 +321,7 @@ func GetBalanceFromRPC(tool *DebugTool, privateKey, paymentAddressStr, readOnlyK
 	if err != nil {
 		return 0, fmt.Errorf("error cannot get list output coin from rpc %v. error %v", tokenID, err)
 	}
-	listPlainCoins, listKeyImages, err := GetListDecryptedCoins(privateKey, listOutputCoins)
+	listPlainCoins, listKeyImages, err := GetListDecryptedCoins(privateKey, listOutputCoins, true)
 	if err != nil {
 		return 0, fmt.Errorf("error cannot get plain coins from output coins")
 	}
@@ -344,11 +348,13 @@ func GetBalanceFromCS(privateKey, viewingKeyStr, tokenID string, totalCoin int, 
 	if err != nil {
 		return 0, fmt.Errorf("cannot get list output coins from CS. Error %v", err)
 	}
+	fmt.Printf("Len of outcoins %v: %v\n", tokenID, len(listOutputCoins))
+
 	if totalCoin != len(listOutputCoins) {
 		fmt.Println("Wrong total coin")
 		return 0, fmt.Errorf("wrong total coin")
 	}
-	listPlainCoins, listKeyImages, err := GetListDecryptedCoins(privateKey, listOutputCoins)
+	listPlainCoins, listKeyImages, err := GetListDecryptedCoins(privateKey, listOutputCoins, false)
 	if err != nil {
 		return 0, fmt.Errorf("cannot get plain coins from CS. Error %v", err)
 	}

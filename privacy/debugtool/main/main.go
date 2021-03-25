@@ -111,6 +111,15 @@ func privateKeyToPaymentAddress(privkey string, keyType int) string {
 	}
 }
 
+func privateKeyToReadonlyKey(privkey string) string {
+	keyWallet, err := wallet.Base58CheckDeserialize(privkey)
+	if err != nil {
+		panic(err)
+	}
+	err = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	return keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
+}
+
 func privateKeyToPublicKey(privkey string) []byte {
 	keyWallet, err := wallet.Base58CheckDeserialize(privkey)
 	if err != nil {
@@ -248,55 +257,6 @@ func GenKeySet(b []byte) (string, string, string) {
 }
 
 
-// func DoubleSpendPRV(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
-// 	fmt.Println("========== TRANSFER PRV (DOUBLE SPEND - TEST) ==========")
-// 	b, _ := tool.CreateDoubleSpend(fromPrivKey, toPrivKey, amount)
-// 	fmt.Println(string(b))
-// 	fmt.Println("========== END TRANSFER PRV (DOUBLE SPEND - TEST) ==========")
-// }
-
-// func DoubleSpendToken(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, tokenID string, amount string) {
-// 	fmt.Println("========== TRANSFER PRV (DOUBLE SPEND TOKEN - TEST) ==========")
-// 	b, _ := tool.CreateDoubleSpendToken(fromPrivKey, toPrivKey, tokenID, amount)
-// 	fmt.Println(string(b))
-// 	fmt.Println("========== END TRANSFER PRV (DOUBLE SPEND TOKEN - TEST) ==========")
-// }
-
-// func DoCreateDuplicateInputTx(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
-// 	fmt.Println("========== TRANSFER PRV (DUP INPUT - TEST) ==========")
-// 	b, _ := tool.CreateDuplicateInput(fromPrivKey, toPrivKey, amount)
-// 	fmt.Println(string(b))
-// 	fmt.Println("========== END TRANSFER PRV (DUP INPUT - TEST) ==========")
-// }
-
-// func DoCreateDuplicateInputTokenTx(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, tokenID string, amount string) {
-// 	fmt.Println("========== TRANSFER PRV (DUPLICATE INPUT TOKEN - TEST) ==========")
-// 	b, _ := tool.CreateDuplicateInputToken(fromPrivKey, toPrivKey, tokenID, amount)
-// 	fmt.Println(string(b))
-// 	fmt.Println("========== END TRANSFER PRV (DUPLICATE INPUT TOKEN - TEST) ==========")
-// }
-
-// func DoCreateOutGtInTx(tool *debugtool.DebugTool, fromPrivKey, toPrivKey, amount string) {
-// 	fmt.Println("========== TRANSFER PRV (OUT > IN - TEST) ==========")
-// 	b, _ := tool.CreateOutGtIn(fromPrivKey, toPrivKey, amount)
-// 	fmt.Println(string(b))
-// 	fmt.Println("========== END TRANSFER PRV (OUT > IN - TEST) ==========")
-// }
-
-// func DoCreateReceiverExistsTx(tool *debugtool.DebugTool, fromPrivKey, amount string) {
-// 	fmt.Println("========== TRANSFER PRV (OTA EXISTS - TEST) ==========")
-// 	b, _ := tool.CreateReceiverExists(fromPrivKey, amount)
-// 	fmt.Println(string(b))
-// 	fmt.Println("========== END TRANSFER PRV (OTA EXISTS - TEST) ==========")
-// }
-
-// func DoCreateReceiverExistsTokenTx(tool *debugtool.DebugTool, fromPrivKey, tokenID string, amount string) {
-// 	fmt.Println("========== TRANSFER PRV (OTA EXISTS TOKEN - TEST) ==========")
-// 	b, _ := tool.CreateReceiverExistsToken(fromPrivKey, tokenID, amount)
-// 	fmt.Println(string(b))
-// 	fmt.Println("========== END TRANSFER PRV (OTA EXISTS TOKEN - TEST) ==========")
-// }
-
 // PDE
 func PDEContributePRV(tool *debugtool.DebugTool, privKey, amount string) {
 	fmt.Println("========== PDE CONTRIBUTE PRV  ==========")
@@ -381,7 +341,7 @@ func main() {
 		"1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88",
 		"1mYRSzV7yigD7qNpuQwnyKeVMQcnenjSxAB1L8MEpDuT3RRbZc",
 		"12MZ4QiFoETNbdLKgRQWPMQMqsceWPKo71Jma9NzwvLTabpcDhn",
-		"1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88",
+			"1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88",
 		"1cQCTV1m33LxBKpNW2SisbuJfp5VcBSEau7PE5aD16gGLAN7eq",
 		"1DRtHReKFQqPQzd689EsjivNgUScPBUwvbw8azgxaLRUBtmFL2",
 		"12YCyPu6KyBToSaaQkw7hzbWkJnUi78DLkfvWokgi4dCtkbVusC",
@@ -396,25 +356,10 @@ func main() {
 	tokenIDs["BTC"] = "b832e5d3b1f01a4f0623f7fe91d6673461e1f5d37d91fe78c5c2e6183ff39696"
 	tokenIDs["PRV"] = common.PRVIDStr
 
-	//paymentKeys := []string{
-	//	"",
-	//	"12RuhVZQtGgYmCVzVi49zFZD7gR8SQx8Uuz8oHh6eSZ8PwB2MwaNE6Kkhd6GoykfkRnHNSHz1o2CzMiQBCyFPikHmjvvrZkLERuhcVE",
-	//	"12RxDSnQVjPojzf7uju6dcgC2zkKkg85muvQh347S76wKSSsKPAqXkvfpSeJzyEH3PREHZZ6SKsXLkDZbs3BSqwEdxqprqih4VzANK9",
-	//	"12S6m2LpzN17jorYnLb2ApNKaV2EVeZtd6unvrPT1GH8yHGCyjYzKbywweQDZ7aAkhD31gutYAgfQizb2JhJTgBb3AJ8aB4hyppm2ax"}
+
 
 	tool := new(debugtool.DebugTool).InitLocal("9334")
-	//tool := new(debugtool.DebugTool).InitMainnet()
 
-	//tool := new(debugtool.DebugTool).InitDevNet()
-	//InitToken(tool, privateKeys[0], "something")
-
-	//a := ListTokens(tool)
-	//tokenID := a.Result.ListCustomToken[0].ID
-	//ConvertTokenCoinVersion(tool, privateKeys[0], tokenID)
-
-	//TransferToken(tool, privateKeys[0], privateKeys[1], tokenID,"1000")
-
-	//GetBalanceToken(tool, privateKeys[0], tokenID)
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -611,6 +556,25 @@ func main() {
 			fmt.Println("Public Key", privateKeyToPublicKey(args[1]))
 		}
 
+		if args[0] == "readonly" {
+			var privateKey string
+			if len(args[1]) < 3 {
+				index, err := strconv.ParseInt(args[1], 10, 32)
+				if err != nil {
+					fmt.Println(err)
+					panic(err)
+				}
+				if index >= int64(len(privateKeys)) {
+					fmt.Println("Cannot find the private key")
+					continue
+				}
+				privateKey = privateKeys[index]
+			} else {
+				privateKey = args[1]
+			}
+			privateOTAKey := privateKeyToReadonlyKey(privateKey)
+			fmt.Println("Readonly Key", privateOTAKey)
+		}
 		//TOKEN RPC
 		if args[0] == "inittoken" {
 			if len(args) < 3 {
@@ -943,192 +907,6 @@ func main() {
 
 			SubmitOTAKey(tool, privateKey)
 		}
-		// if args[0] == "doublespend" {
-		// 	indexFrom, err := strconv.ParseInt(args[1], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	indexTo, err := strconv.ParseInt(args[2], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	DoubleSpendPRV(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
-		// }
-		// if args[0] == "dupinput" {
-		// 	indexFrom, err := strconv.ParseInt(args[1], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	indexTo, err := strconv.ParseInt(args[2], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	DoCreateDuplicateInputTx(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
-		// }
-		// if args[0] == "outgtin" {
-		// 	indexFrom, err := strconv.ParseInt(args[1], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	indexTo, err := strconv.ParseInt(args[2], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	DoCreateOutGtInTx(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3])
-		// }
-		// if args[0] == "recvexists" {
-		// 	indexFrom, err := strconv.ParseInt(args[1], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	DoCreateReceiverExistsTx(tool, privateKeys[indexFrom], args[2])
-		// }
-		// if args[0] == "doublespendtoken"{
-		// 	if len(args) < 5 {
-		// 		panic("Not enough params for transfertoken")
-		// 	}
-		// 	indexFrom, err := strconv.ParseInt(args[1], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	indexTo, err := strconv.ParseInt(args[2], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	DoubleSpendToken(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3], args[4])
-		// }
-		// if args[0] == "dupinputtoken"{
-		// 	if len(args) < 5 {
-		// 		panic("Not enough params for transfertoken")
-		// 	}
-		// 	indexFrom, err := strconv.ParseInt(args[1], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	indexTo, err := strconv.ParseInt(args[2], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	DoCreateDuplicateInputTokenTx(tool, privateKeys[indexFrom], privateKeys[indexTo], args[3], args[4])
-		// }
-		// if args[0] == "recvexiststoken"{
-		// 	if len(args) < 4 {
-		// 		panic("Not enough params for transfertoken")
-		// 	}
-		// 	indexFrom, err := strconv.ParseInt(args[1], 10, 32)
-		// 	if err != nil {
-		// 		panic(err)
-		// 	}
-		// 	DoCreateReceiverExistsTokenTx(tool, privateKeys[indexFrom], args[2], args[3])
-		// }
-
-		// if args[0] == "sendraw"{
-		// 	/*
-		// 	args[1] = 0/1 => non-privacy/privacy transaction
-		// 	args[2]: 0 - tx without signature; 1 - tx with bulletproof tampered; 2 - tx with snProof tampered; 3 - tx with one-of-many proof tampered
-		// 	args[3]: sender index
-		// 	args[4]: receiver address (index or full paymentAddress)
-		// 	args[5]: tokenID (optional)
-		// 	*/
-		// 	if len(args) < 5 {
-		// 		fmt.Println("Need at least 5 arguments")
-		// 		continue
-		// 	}
-		// 	flagPrivacy, err := strconv.ParseInt(args[1], 10, 32)
-		// 	if err != nil{
-		// 		fmt.Println(err)
-		// 		continue
-		// 	}
-
-		// 	txType, err := strconv.ParseInt(args[2], 10, 32)
-		// 	if err != nil{
-		// 		fmt.Println(err)
-		// 		continue
-		// 	}
-
-		// 	idxSender, err := strconv.ParseInt(args[3], 10, 32)
-		// 	if err != nil{
-		// 		fmt.Println(err)
-		// 		continue
-		// 	}
-
-		// 	var paymentAddress string
-		// 	if len(args[4]) < 3{
-		// 		idxReceiver, err := strconv.ParseInt(args[4], 10, 32)
-		// 		if err != nil{
-		// 			fmt.Println(err)
-		// 			continue
-		// 		}
-		// 		paymentAddress = privateKeyToPaymentAddress(privateKeys[idxReceiver])
-		// 	}else{
-		// 		paymentAddress = args[3]
-		// 	}
-
-		// 	tokenID := common.PRVIDStr
-		// 	if len(args) > 5 {
-		// 		tokenID = args[5]
-		// 	}
-
-		// 	if flagPrivacy == 0{
-		// 		sendRawTxNoPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
-		// 	}else{
-		// 		sendRawTxPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
-		// 	}
-		// }
-
-		// if args[0] == "sendrawtoken"{
-		// 	/*
-		// 		args[1] = 0/1 => non-privacy/privacy transaction
-		// 		args[2]: 0 - tx without signature; 1 - tx with bulletproof tampered; 2 - tx with snProof tampered; 3 - tx with one-of-many proof tampered
-		// 		args[3]: sender index
-		// 		args[4]: receiver address (index or full paymentAddress)
-		// 		args[5]: tokenID (optional)
-		// 	*/
-		// 	if len(args) < 5 {
-		// 		fmt.Println("Need at least 5 arguments")
-		// 		continue
-		// 	}
-		// 	flagPrivacy, err := strconv.ParseInt(args[1], 10, 32)
-		// 	if err != nil{
-		// 		fmt.Println(err)
-		// 		continue
-		// 	}
-
-		// 	txType, err := strconv.ParseInt(args[2], 10, 32)
-		// 	if err != nil{
-		// 		fmt.Println(err)
-		// 		continue
-		// 	}
-
-		// 	idxSender, err := strconv.ParseInt(args[3], 10, 32)
-		// 	if err != nil{
-		// 		fmt.Println(err)
-		// 		continue
-		// 	}
-
-		// 	var paymentAddress string
-		// 	if len(args[4]) < 3{
-		// 		idxReceiver, err := strconv.ParseInt(args[4], 10, 32)
-		// 		if err != nil{
-		// 			fmt.Println(err)
-		// 			continue
-		// 		}
-		// 		paymentAddress = privateKeyToPaymentAddress(privateKeys[idxReceiver])
-		// 	}else{
-		// 		paymentAddress = args[3]
-		// 	}
-
-		// 	tokenID := common.PRVIDStr
-		// 	if len(args) > 5 {
-		// 		tokenID = args[5]
-		// 	}
-
-		// 	if flagPrivacy == 0{
-		// 		sendRawTxNoPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
-		// 	}else{
-		// 		sendRawTxPrivacy(tool, privateKeys[idxSender], tokenID, paymentAddress, txType)
-		// 	}
-		// }
 
 		if args[0] == "genkeyset" {
 			privateKey, payment, _ := GenKeySet([]byte(args[1]))

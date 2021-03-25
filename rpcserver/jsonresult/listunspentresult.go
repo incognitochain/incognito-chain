@@ -324,6 +324,36 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 		coinV2.SetTxRandom(txRandom)
 		
 		return coinV2, idx, nil
+	} else {
+		pCoinV1 := new(coin.PlainCoinV1).Init()
+
+		pCoinV1.SetRandomness(randomness)
+		pCoinV1.SetPublicKey(pubkey)
+		pCoinV1.SetCommitment(cm)
+		pCoinV1.SetSNDerivator(snd)
+		pCoinV1.SetKeyImage(keyImage)
+		pCoinV1.SetInfo(info)
+		pCoinV1.SetValue(value)
+
+		if len(jsonOutCoin.CoinDetailsEncrypted) != 0 && jsonOutCoin.CoinDetailsEncrypted != "13PMpZ4" {
+			coinDetailEncryptedInBytes, _, err := base58.Base58Check{}.Decode(jsonOutCoin.CoinDetailsEncrypted)
+			if err != nil {
+				return nil, nil, err
+			}
+			coinDetailEncrypted = new(privacy.HybridCipherText)
+			err = coinDetailEncrypted.SetBytes(coinDetailEncryptedInBytes)
+			if err != nil{
+				return nil, nil, err
+			}
+
+			coinV1 := new(coin.CoinV1).Init()
+			coinV1.CoinDetails = pCoinV1
+			coinV1.CoinDetailsEncrypted = coinDetailEncrypted
+
+			return coinV1, idx, nil
+		}
+
+		return pCoinV1, idx, nil
 	}
 
 	return nil, nil, errors.New("cannot find coin version")
