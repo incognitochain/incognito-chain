@@ -204,7 +204,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 		utxoHash, err := chainhash.NewHashFromStr(in.GetTxHash())
 		if err != nil {
 			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when new TxIn for tx: %v", err)
-			return "", "", nil
+			return "", "", err
 		}
 		outPoint := wire.NewOutPoint(utxoHash, in.GetOutputIndex())
 		txIn := wire.NewTxIn(outPoint, nil, nil)
@@ -230,7 +230,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 		// adding the destination address and the amount to the transaction
 		if out.Amount <= feePerOutput {
 			Logger.log.Errorf("[CreateRawExternalTx-BTC] Output amount %v must greater than fee %v: %v", out.Amount, feePerOutput)
-			return "", "", err
+			return "", "", fmt.Errorf("[CreateRawExternalTx-BTC] Output amount %v must greater than fee %v: %v", out.Amount, feePerOutput)
 		}
 		redeemTxOut := wire.NewTxOut(int64(p.ConvertIncToExternalAmount(out.Amount-feePerOutput)), destinationAddrByte)
 		msgTx.AddTxOut(redeemTxOut)
