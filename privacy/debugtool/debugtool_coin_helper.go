@@ -90,9 +90,6 @@ func GenerateSerialNumber(g *privacy.Point, privateKey, snd []byte) []byte {
 	privakeyScalar := new(privacy.Scalar).FromBytesS(privateKey)
 	snPoint := new(privacy.Point).Derive(g,
 		privakeyScalar, sndScalar)
-	fmt.Println("SND", snd)
-	fmt.Println("Key", privateKey)
-	fmt.Println("g", g.ToBytes())
 	return snPoint.ToBytesS()
 }
 
@@ -125,7 +122,7 @@ func GetListDecryptedCoins(privateKey string, listOutputCoins []jsonresult.ICoin
 				}
 				decryptedCoin.SetKeyImage(keyImage)
 				if encode == false {
-					listKeyImages = append(listKeyImages,base64.RawStdEncoding.EncodeToString(keyImage.ToBytesS()))
+					listKeyImages = append(listKeyImages,base64.StdEncoding.EncodeToString(keyImage.ToBytesS()))
 				} else {
 					listKeyImages = append(listKeyImages,base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte))
 				}
@@ -141,15 +138,13 @@ func GetListDecryptedCoins(privateKey string, listOutputCoins []jsonresult.ICoin
 				//	return nil, nil, err
 				//}
 				keyImageByte := GenerateSerialNumber(g, keyWallet.KeySet.PrivateKey, tmpPlainCoinV1.GetSNDerivator().ToBytesS())
-				fmt.Println("KeyImage", keyImageByte)
-				fmt.Println("------")
 				keyImage, err := new(privacy.Point).FromBytesS(keyImageByte)
 				if err != nil {
 					return nil, nil, fmt.Errorf("cannot derive key image")
 				}
 				tmpPlainCoinV1.SetKeyImage(keyImage)
 				if encode == false {
-					listKeyImages = append(listKeyImages,base64.RawStdEncoding.EncodeToString(keyImage.ToBytesS()))
+					listKeyImages = append(listKeyImages,base64.StdEncoding.EncodeToString(keyImage.ToBytesS()))
 				} else {
 					listKeyImages = append(listKeyImages,base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte))
 				}

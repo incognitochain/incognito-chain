@@ -6,16 +6,19 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"testing"
 	"time"
 )
 
 var privJKeyList = [...]string{
-	//"113hagqt552h92LXY6dWPdBGS8pPdLQX5eFBLgsnzbEoU1nUTLGJkkyrTnWCz7XuURtSKzkUKFfKrMPmoNVPAbmryRbMxvNTst9cY5xqiPNN",
-	"112t8rnXKfvZc5iAqrGtKT7kfMnbnrMLRfTTu5xfjgGYssEMdaSBC6NuPDqq8Z4QZAWhnBu1mccsJ2dU7S9f45zGyX1qw4DCRBe6Hjkhhvx7",
+	"112t8rneWAhErTC8YUFTnfcKHvB1x6uAVdehy1S8GP2psgqDxK3RHouUcd69fz88oAL9XuMyQ8mBY5FmmGJdcyrpwXjWBXRpoWwgJXjsxi4j",
 	"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or",
+	"113hagqt552h92LXY6dWPdBGS8pPdLQX5eFBLgsnzbEoU1nUTLGJkkyrTnWCz7XuURtSKzkUKFfKrMPmoNVPAbmryRbMxvNTst9cY5xqiPNN",
+	"112t8rnXKfvZc5iAqrGtKT7kfMnbnrMLRfTTu5xfjgGYssEMdaSBC6NuPDqq8Z4QZAWhnBu1mccsJ2dU7S9f45zGyX1qw4DCRBe6Hjkhhvx7",
 	"112t8rnjzNW1iKLjpNW9oJoD38pnVVgCiZWRuqGmMvcEgZEHjtg4tLRTAcfTCxNXrdzKcEmY9JVfX2Wb3JLaCjfRDEyGhXGK67VB297mZuwH",
 	"112t8rnmcQXPkPG3nHhhmLjKeqZEjBHcFCSxBdwRy2L6nGXBwKopc5PYWPVXu14xmec34LXxu5JJcf3N6wUfsbbNWKVotAMNrswhE6adbBmu",
 	"112t8rns2sxbuHFAAhtMksGhK9S1mFcyiGpKypzJuXJSmHZE8d4SqM3XNSy6i9QacqTeVmrneuEmNzF1kcwAvvf6d137PVJun1qnsxKr1gW6",
@@ -26,7 +29,7 @@ var privJKeyList = [...]string{
 	"112t8rnZqbTrW3BPYhCkw5FsFht9PwDBqJm3TogWjkQHr6WimG5v9g3eBPgKGm2yeuaLsn4eLPHvZGr8vBg7MLSWdU4tee1shqJ26sRSaSUo",
 	"112t8rnZywqj5s4nMRUp9NF9jX5ypZMxLStTvVweLowoF7Tpk8gwm6w1d9T2x2CQD1gbByKVBeUJsfB8eaJ7sVcxend1A7qjT2kdX6hH7uri",
 	"112t8rnb7Ld1PyzdMrcFnZhXiXfuDAj7KwyqQ3KyRAmpyeg8VUFmp6wZVUXE6A3YvwZZKPhnNMv62R14TJCCj91aEGuaLKW8bTs2FD83hTCG",
-	"112t8rndKzDhNcapS29umfdLiTZULG7nbcAiTwGfpLfoh6yhsbS9uPkhxuAYCuPKVrptPPG5q9Yx5M9Yhn9X4QYWQN6nPXhkMkdZwpyRQShi",
+	"112t8rndKzDh	NcapS29umfdLiTZULG7nbcAiTwGfpLfoh6yhsbS9uPkhxuAYCuPKVrptPPG5q9Yx5M9Yhn9X4QYWQN6nPXhkMkdZwpyRQShi",
 	"112t8rnZ5UZouZU9nFmYLfpHUp8NrvQkGLPD564mjzNDM8rMp9nc9sXZ6CFxCGEMuvHQpYN7af6KCPJnq9MfEnXQfntbM8hpy9LW8p4qzPxS",
 	"112t8rnan3pbXtdvfKSk3kti1tFcFpVSq5wp7c3hhLk7E4jQih2zsv8ynjpP1UQivExGwbMf9Ezp9qmKBJuHhNZPAzheqX4WTV8LfrdZY5Mh",
 	"112t8rncuhys7YDSqXfjVFjU52b6A9HHcUac2tLXSoqxduYSZHuQsZxybFtrhNqRqCKMMAzXTiJKE98vaXmzrqVQKT4kXUuRbuUAQyhUhuKK",
@@ -118,7 +121,7 @@ func SendPost(url, query string) ([]byte, error) {
 	}
 }
 
-func CheckCoinsSpent(shardID byte, listKeyImages []string) ([]bool, error) {
+func CheckCoinsSpent(shardID byte, listKeyImages []string, tokenID string) ([]bool, error) {
 	URL := "http://51.161.119.66:9001/checkkeyimages"
 	if len(listKeyImages) == 0 {
 		return nil, fmt.Errorf("no serial number provided to be checked")
@@ -134,7 +137,12 @@ func CheckCoinsSpent(shardID byte, listKeyImages []string) ([]bool, error) {
 		"ShardID":%v
 	}`, strings.Join(snQueryList, ","), shardID)
 
-	fmt.Println(query)
+	fmt.Println()
+	err := ioutil.WriteFile(fmt.Sprintf("query_%v.info", tokenID), []byte(query), 0644)
+	fmt.Println(err)
+
+
+	fmt.Println("=========")
 	b, err := SendPost(URL, query)
 	if err != nil {
 		return []bool{}, err
@@ -234,7 +242,7 @@ func GetOutputCoins(viewingKey, tokenID string) ([]jsonresult.ICoinInfo, int, er
 
 func GetUTXO(listPlainCoins []coin.PlainCoin, listKeyImages []string, shardID byte, tokenID string) ([]coin.PlainCoin, error) {
 
-	checkSpentList, err := CheckCoinsSpent(shardID, listKeyImages)
+	checkSpentList, err := CheckCoinsSpent(shardID, listKeyImages, tokenID)
 	if err != nil {
 		return nil, err
 	}
@@ -265,8 +273,6 @@ func CheckCoinSpentFromRPC(tool *DebugTool, listSN []string, paymentAddress, tok
 		],
 		"id": 1
 	}`, paymentAddress, strings.Join(snQueryList, ","), tokenID)
-
-	fmt.Println(query)
 	
 	resp, err := tool.SendPostRequestWithQuery(query)
 	if err != nil {
@@ -369,3 +375,61 @@ func GetBalanceFromCS(privateKey, viewingKeyStr, tokenID string, totalCoin int, 
 }
 
 
+func TestGetBalance(t *testing.T) {
+	tool := new(DebugTool)
+	tool.SetNetwork("http://51.161.119.66:9334")
+
+	//str := "dD/+QCWcmaKjatBNsoVY0LleZYUcmSMcDCVB5eme1/KExtkk+/nVI23RIz8u2CM4M+rPhGDmhwxS54TC9zTHTMhSjXYnPGI5yLqiu6fOnP+3i41x3JfLZXBsJeZI9H4ZL+ctXcUaVAg9DtSESpnDnqFaRZTSk3phAEdHc9bK+xf5LfXX5iIffrwjDiGmv3SKLEY2FrmYMUmDdNr046vSDTgLeDbjIUH9A6HUCwY7xw8tGQpge5gxTx24NTSVaZ+I5qSInc5w3WJHfTDTuoPKCjUafr1reFxGzo0q3Cb0v4RmdDdoIZN4KHaCEwRTWRYidwq+dZvUJX+XIHm+L3VRfCztzEqcU6YxIckcyopKvmcv38yjqf4F9esfNA2/XCzCAAYwJnom3RUSnc0XrN0HdM3JE7DfmdXMJPHFbQ9+4p678A6zffHTZNoh65cdQX19O59I9PNVWDngbQbIlP1QlrCVnnRCGJOBqUM7BspJIDIn3wQ1yN572tDO7Tdi2qJ0CMEqRfiVrUegHg4uY66fUvQzQgSG6y3vJlegKHzb6TCf0LkYF7Trs4CRhWSLhklWyA5CYiKWgd3hFICe14kTvTlCUvpj6REh07WvnqkrwZs2KsrxawsYAWqV2iug7kNh9fmRfsT8My0ZIFxQK02GWLVvDk3a+H4GQTKCzfNeJOyoe4z+a3l7e2wib+NsUCB+sRsyU/U25ooyI8+UL1DsPd0+lUxO7Jojjs/zornUC6KVAPmk98lDnnk3akrVdBDklhlCJwl7L5aeYtE84/70FDNo8V/exw+Zqr/ty5NpyLURiyk427jgPR/vPXu/DxhlMHj3FGWTZYsJwlk7DyqNZrVFPsblvhDDf85zgDdLgOK6yuJFVO6/IuHeX56zFe9gQfNmiJi6yJYGvKlPyiSJP57UU9sI/Z19RVxwtMNv3KQ="
+	//
+	//decodeStr, err := base64.StdEncoding.DecodeString(str)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	//fmt.Println(string(decodeStr))
+	//fmt.Println()
+	//
+	//return
+
+
+	for index := range privJKeyList {
+
+		keyWallet, _ := wallet.Base58CheckDeserialize(privJKeyList[index])
+		keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		shardID := byte(int(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]) % NoOfShard)
+		viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
+		paymentAddressStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+		paymentAddressStr, _ = wallet.GetPaymentAddressV1(paymentAddressStr, false)
+
+		listTokens, err := GetListToken(viewingKeyStr)
+		if listTokens == nil && err != nil{
+			fmt.Println("Cannot get list token", viewingKeyStr, privJKeyList[index])
+			return
+		}
+		total1 := time.Duration(0) * time.Millisecond
+		total2 := time.Duration(0) * time.Millisecond
+		for tokenID, tokenDetail := range listTokens {
+			start := time.Now()
+			balance, err := GetBalanceFromCS(privJKeyList[index], viewingKeyStr, tokenID, tokenDetail.Total, shardID)
+			if err != nil {
+				fmt.Println("error ", err)
+			}
+			elapsed1 := time.Since(start)
+			total1 += elapsed1
+
+			start = time.Now()
+			balancePrime, err := GetBalanceFromRPC(tool, privJKeyList[index], paymentAddressStr, viewingKeyStr, tokenID, shardID, 0)
+			if err != nil {
+				fmt.Println(err)
+			}
+			elapsed2 := time.Since(start)
+			total2 += elapsed2
+
+			if balance != balancePrime {
+				panic(fmt.Sprintf("Balance %v %v- %v : key %v", tokenID, balance, balancePrime, privJKeyList[index] ))
+			}
+			fmt.Printf("Balance token %v: %v (%v) - %v (%v)\n", tokenID, balance, elapsed1, balancePrime, elapsed2)
+		}
+		fmt.Println("=======", total1, total2, "=======")
+		return
+	}
+}

@@ -257,12 +257,8 @@ func (sc *Scalar) Invert(a *Scalar) *Scalar {
 		sc = new(Scalar)
 	}
 
-	fmt.Println("asdada")
-
 	var inverse_result C25519.Key
 	x := a.key
-
-	fmt.Println("x =", x)
 
 	reversex := Reverse(x)
 	bigX := new(big.Int).SetBytes(reversex[:])

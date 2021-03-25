@@ -193,14 +193,12 @@ func (p *Point) InvertScalarMultBase(a *Scalar) *Point {
 
 func (p *Point) InvertScalarMult(pa *Point, a *Scalar) *Point {
 	inv := new(Scalar).Invert(a)
-	fmt.Println("invert of c", inv.ToBytes())
 	p.ScalarMult(pa, inv)
 	return p
 }
 
 func (p *Point) Derive(pa *Point, a *Scalar, b *Scalar) *Point {
 	c := new(Scalar).Add(a, b)
-	fmt.Println("c = a +b", c.ToBytes())
 	return p.InvertScalarMult(pa, c)
 }
 

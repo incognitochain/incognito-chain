@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"testing"
 
 	//"os"
 	//"strconv"
@@ -974,6 +975,10 @@ func main() {
 				continue
 			}
 			fmt.Println(b)
+		}
+
+		if args[0] == "testbl" {
+			debugtool.TestGetBalance(new(testing.T))
 		}
 	}
 }
