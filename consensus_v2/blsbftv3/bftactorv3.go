@@ -150,15 +150,16 @@ func (e *BLSBFT_V3) run() error {
 			case voteMsg := <-e.VoteMessageCh:
 				voteMsg.IsValid = 0
 				if b, ok := e.receiveBlockByHash[voteMsg.BlockHash]; ok { //if receiveblock is already initiated
+					e.Logger.Info("[dcs] voteMsg.Validator ", voteMsg.Validator)
 					if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
 						b.votes[voteMsg.Validator] = &voteMsg // store it
-						e.Logger.Infof("Receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
+						e.Logger.Infof("[dcs] Receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
 						b.hasNewVote = true
 					}
 				} else {
 					e.receiveBlockByHash[voteMsg.BlockHash] = newBlockInfoForVoteMsg()
 					e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
-					e.Logger.Infof("[Monitor] receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
+					e.Logger.Infof("[dcs] [Monitor] receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
 				}
 				// e.Logger.Infof("receive vote for block %s (%d)", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes))
 
@@ -245,7 +246,7 @@ func (e *BLSBFT_V3) run() error {
 					if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
 						validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 					} else {
-						if proposeBlockInfo.block.Hash().String() == bestView.GetHash().String() && proposeBlockInfo.block.GetHeight() == bestView.GetHeight() {
+						if proposeBlockInfo.block.Hash().String() == bestView.GetHash().String() {
 							validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 						}
 					}
@@ -480,6 +481,7 @@ func (e *BLSBFT_V3) validateAndVote(
 
 	//if valid then vote
 	for _, userKey := range e.UserKeySet {
+		e.Logger.Info("[dcs] userKey:", userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus))
 		Vote, err := CreateVote(&userKey, v.block, v.committees)
 		if err != nil {
 			e.Logger.Error(err)
@@ -493,6 +495,7 @@ func (e *BLSBFT_V3) validateAndVote(
 		}
 
 		v.isValid = true
+		v.isVoted = true
 		e.voteHistory[v.block.GetHeight()] = v.block
 		e.Logger.Info(e.ChainKey, "sending vote...")
 		go e.ProcessBFTMsg(msg.(*wire.MessageBFT))

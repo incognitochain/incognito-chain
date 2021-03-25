@@ -1280,6 +1280,8 @@ func (blockchain *BlockChain) GetShardCommitteeFromBeaconHash(
 				res = append(res, v)
 			}
 		}
+	} else {
+		res = committees
 	}
 
 	return res, nil
