@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math"
@@ -63,7 +64,8 @@ func (mbs *MetadataBaseWithSignature) VerifyMetadataSignature(publicKey []byte, 
 	if len(mbs.Sig) == 0 {
 		if hashForMd == nil {
 			// the metadata type does not need signing
-			return true, nil
+			sigPubKey := tx.GetSigPubKey()
+			return bytes.Equal(sigPubKey, publicKey), nil
 		} else {
 			Logger.log.Error("CheckAuthorizedSender: should have sig for metadata to verify")
 			return false, errors.New("CheckAuthorizedSender should have sig for metadata to verify")
