@@ -124,15 +124,6 @@ func (txToken TxTokenBase) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin
 }
 // ========== CHECK FUNCTION ===========
 
-func (txToken TxTokenBase) CheckAuthorizedSender(publicKey []byte) (bool, error) {
-	sigPubKey := txToken.TxTokenData.TxNormal.GetSigPubKey()
-	if bytes.Equal(sigPubKey, publicKey) {
-		return true, nil
-	} else {
-		return false, nil
-	}
-}
-
 func (txToken TxTokenBase) IsSalaryTx() bool {
 	if txToken.GetType() != common.TxRewardType {
 		return false
