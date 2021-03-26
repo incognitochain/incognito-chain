@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"fmt"
 	ec "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -248,7 +249,7 @@ func AssertPaymentAddressAndTxVersion(paymentAddress interface{}, version int8) 
 			//try the string one
 			addrStr, ok := paymentAddress.(string)
 			if !ok {
-				return privacy.PaymentAddress{}, errors.New(fmt.Sprintf("cannot parse payment address - %v: Not a payment address or string address (txversion %v)", paymentAddress, version))
+				return privacy.PaymentAddress{}, fmt.Errorf("cannot parse payment address - %v: Not a payment address or string address (txversion %v)", paymentAddress, version)
 			}
 			keyWallet, err := wallet.Base58CheckDeserialize(addrStr)
 			if err != nil {

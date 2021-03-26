@@ -8,14 +8,10 @@ import (
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"github.com/incognitochain/incognito-chain/relaying/bnb"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"time"
 )
@@ -77,8 +73,6 @@ type ChainRetriever interface {
 	GetBTCHeaderChain() *btcrelaying.BlockChain
 	GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error)
 	IsAfterNewZKPCheckPoint(beaconHeight uint64) bool
-	GetSupportedCollateralTokenIDs(beaconHeight uint64) []string
-	GetPortalETHContractAddrStr() string
 	IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bool
 	GetPortalFeederAddress(beaconHeight uint64) string
 	IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool

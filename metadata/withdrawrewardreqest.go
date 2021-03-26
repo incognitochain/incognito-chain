@@ -15,24 +15,28 @@ import (
 type WithDrawRewardRequest struct {
 	MetadataBaseWithSignature
 	PaymentAddress privacy.PaymentAddress
-	TokenID common.Hash
-	Version int
+	TokenID        common.Hash
+	Version        int
 }
 
 func (withdrawRequestMetadata *WithDrawRewardRequest) UnmarshalJSON(data []byte) error {
-	tmp :=  &struct {MetadataBase
-					PaymentAddress privacy.PaymentAddress
-					TokenID common.Hash
-					Version int}{}
+	tmp := &struct {
+		MetadataBase
+		PaymentAddress privacy.PaymentAddress
+		TokenID        common.Hash
+		Version        int
+	}{}
 
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 	if tmp.PaymentAddress.Pk == nil && tmp.PaymentAddress.Tk == nil {
-		tmpOld :=  &struct {MetadataBase
-							privacy.PaymentAddress
-							TokenID common.Hash
-							Version int}{}
+		tmpOld := &struct {
+			MetadataBase
+			privacy.PaymentAddress
+			TokenID common.Hash
+			Version int
+		}{}
 		if err := json.Unmarshal(data, &tmpOld); err != nil {
 			return err
 		}
@@ -41,14 +45,12 @@ func (withdrawRequestMetadata *WithDrawRewardRequest) UnmarshalJSON(data []byte)
 		tmp.PaymentAddress.Pk = tmpOld.Pk
 	}
 
-
 	withdrawRequestMetadata.MetadataBase = tmp.MetadataBase
 	withdrawRequestMetadata.PaymentAddress = tmp.PaymentAddress
 	withdrawRequestMetadata.TokenID = tmp.TokenID
 	withdrawRequestMetadata.Version = tmp.Version
 	return nil
 }
-
 
 func (withDrawRewardRequest WithDrawRewardRequest) Hash() *common.Hash {
 	if withDrawRewardRequest.Version == 1 {
@@ -96,9 +98,9 @@ func NewWithDrawRewardRequest(tokenIDStr string, paymentAddStr string, version f
 
 	withdrawRewardRequest := &WithDrawRewardRequest{
 		MetadataBaseWithSignature: *metadataBase,
-		TokenID:  *tokenID,
-		PaymentAddress: paymentAddWallet.KeySet.PaymentAddress,
-		Version: int(version),
+		TokenID:                   *tokenID,
+		PaymentAddress:            paymentAddWallet.KeySet.PaymentAddress,
+		Version:                   int(version),
 	}
 	return withdrawRewardRequest, nil
 }
@@ -114,7 +116,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx T
 	}
 
 	//check token valid (!= PRV)
-	tokenIDReq :=  withDrawRewardRequest.TokenID
+	tokenIDReq := withDrawRewardRequest.TokenID
 	isTokenValid := false
 	if !tokenIDReq.IsEqual(&common.PRVCoinID) {
 		allTokenID, err := chainRetriever.ListPrivacyTokenAndBridgeTokenAndPRVByShardID(common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte()))
