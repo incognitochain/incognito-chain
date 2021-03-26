@@ -21,8 +21,4 @@ const (
 	PortalUnshieldReqProcessedStatus = 1
 	PortalUnshieldReqCompletedStatus = 2
 	PortalUnshieldReqRefundedStatus  = 3
-
-	// status of batching unshield processing by batchID - used to store db
-	PortalBatchUnshieldReqProcessedStatus = 0
-	PortalBatchUnshieldReqCompletedStatus = 1
 )

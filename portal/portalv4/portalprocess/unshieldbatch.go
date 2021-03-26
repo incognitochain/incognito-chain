@@ -46,6 +46,7 @@ func buildUnshieldBatchingInst(
 	unshieldIDs []string,
 	utxos map[string][]*statedb.UTXO,
 	networkFee map[uint64]uint,
+	beaconHeight uint64,
 	metaType int,
 	status string,
 ) []string {
@@ -56,6 +57,7 @@ func buildUnshieldBatchingInst(
 		UnshieldIDs:   unshieldIDs,
 		UTXOs:         utxos,
 		NetworkFee:    networkFee,
+		BeaconHeight:  beaconHeight,
 	}
 	unshieldBatchContentBytes, _ := json.Marshal(unshieldBatchContent)
 	return []string{
@@ -160,7 +162,7 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 
 			// build new instruction with new raw external tx
 			newInst := buildUnshieldBatchingInst(
-				batchID, hexRawExtTxStr, tokenID, bcTx.UnshieldIDs, chosenUTXOs, externalFees,
+				batchID, hexRawExtTxStr, tokenID, bcTx.UnshieldIDs, chosenUTXOs, externalFees, beaconHeight + 1,
 				metadata.PortalV4UnshieldBatchingMeta, portalcommonv4.PortalV4RequestAcceptedChainStatus)
 			newInsts = append(newInsts, newInst)
 		}
@@ -196,21 +198,10 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 	reqStatus := instructions[2]
 	if reqStatus == portalcommonv4.PortalV4RequestAcceptedChainStatus {
 		// store status of batch unshield by batchID
-		batchUnshieldRequestStatus := metadata.PortalUnshieldRequestBatchStatus{
-			BatchID:       actionData.BatchID,
-			RawExternalTx: actionData.RawExternalTx,
-			BeaconHeight:  beaconHeight + 1,
-			TokenID:       actionData.TokenID,
-			UnshieldIDs:   actionData.UnshieldIDs,
-			UTXOs:         actionData.UTXOs,
-			NetworkFee:    actionData.NetworkFee,
-			Status:        portalcommonv4.PortalBatchUnshieldReqProcessedStatus,
-		}
-		batchUnshieldRequestStatusBytes, _ := json.Marshal(batchUnshieldRequestStatus)
 		err := statedb.StorePortalBatchUnshieldRequestStatus(
 			stateDB,
 			actionData.BatchID,
-			batchUnshieldRequestStatusBytes)
+			[]byte(instructions[3]))
 		if err != nil {
 			Logger.log.Errorf("[processPortalBatchUnshieldRequest] Error when storing status of redeem request by redeemID: %v\n", err)
 			return nil
@@ -277,7 +268,7 @@ func (p *PortalFeeReplacementRequestProcessor) PrepareDataForBlockProducer(state
 		return nil, err
 	}
 
-	var processedUnshieldRequestBatch metadata.PortalUnshieldRequestBatchStatus
+	var processedUnshieldRequestBatch metadata.PortalUnshieldRequestBatchContent
 	err = json.Unmarshal(unshieldBatchBytes, &processedUnshieldRequestBatch)
 	if err != nil {
 		Logger.log.Errorf("Replace fee: an error occurred while unmarshal processedUnshieldRequestBatch status: %+v", err)
@@ -539,7 +530,7 @@ func (p *PortalSubmitConfirmedTxProcessor) PrepareDataForBlockProducer(stateDB *
 		return nil, err
 	}
 
-	var processedUnshieldRequestBatch metadata.PortalUnshieldRequestBatchStatus
+	var processedUnshieldRequestBatch metadata.PortalUnshieldRequestBatchContent
 	err = json.Unmarshal(unshieldBatchBytes, &processedUnshieldRequestBatch)
 	if err != nil {
 		Logger.log.Errorf("SubmitConfirmed request: an error occurred while unmarshal processedUnshieldRequestBatch status: %+v", err)
