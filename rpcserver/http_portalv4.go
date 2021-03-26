@@ -484,7 +484,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalReplaceUnshieldFee(para
 
 	byteArrays, err2 := json.Marshal(tx)
 	if err2 != nil {
-		Logger.log.Error(err1)
+		Logger.log.Error(err2)
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
 	}
 	result := jsonresult.CreateTransactionResult{

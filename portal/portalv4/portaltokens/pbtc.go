@@ -491,17 +491,19 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 		Logger.log.Errorf("Can not find the tx inputs in proof")
 		return false, nil, fmt.Errorf("Submit confirmed tx: no tx inputs in proof")
 	}
-	input := btcTxProof.BTCTx.TxIn[0]
 	isMatched := false
-	for _, v := range utxos {
-		if v.GetTxHash() == input.PreviousOutPoint.Hash.String() && v.GetOutputIndex() == input.PreviousOutPoint.Index {
-			isMatched = true
-			break
+	for _, input := range btcTxProof.BTCTx.TxIn {
+		for _, v := range utxos {
+			if v.GetTxHash() == input.PreviousOutPoint.Hash.String() && v.GetOutputIndex() == input.PreviousOutPoint.Index {
+				isMatched = true
+				break
+			}
 		}
-	}
-	if !isMatched {
-		Logger.log.Errorf("Submit confirmed: tx inputs from proof is diff utxos from unshield batch")
-		return false, nil, fmt.Errorf("Submit confirmed tx: tx inputs from proof is diff utxos from unshield batch")
+		if !isMatched {
+			Logger.log.Errorf("Submit confirmed: tx inputs from proof is diff utxos from unshield batch")
+			return false, nil, fmt.Errorf("Submit confirmed tx: tx inputs from proof is diff utxos from unshield batch")
+		}
+		isMatched = false
 	}
 
 	// check whether amount transfer in txBNB is equal porting amount or not

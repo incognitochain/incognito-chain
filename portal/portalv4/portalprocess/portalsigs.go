@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metadata"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"strconv"
@@ -41,7 +40,7 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 		case strconv.Itoa(metadata.PortalV4FeeReplacementRequestMeta):
 			{
 				reqStatus := inst[2]
-				if reqStatus == pCommon.PortalRequestRejectedChainStatus {
+				if reqStatus == portalcommonv4.PortalV4RequestRejectedChainStatus {
 					continue
 				}
 				// unmarshal instructions content
