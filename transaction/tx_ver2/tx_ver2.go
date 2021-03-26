@@ -528,7 +528,13 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 	return nil
 }
 
-// ValidateTxSalary verifies a transaction created by InitTxSalary
+//ValidateTxSalary checks the following conditions for salary transactions (s, rs):
+//	- the signature is valid
+//	- the number of output coins is 1
+//	- all fields of the output coins are valid
+//	- the ota has not existed
+//	- the commitment has been calculated correctly
+//	- if this is a rs transaction, check if the output value is 1750000000000
 func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	// verify signature
 	if valid, err := tx_generic.VerifySigNoPrivacy(tx.Sig, tx.SigPubKey, tx.Hash()[:]); !valid {
@@ -549,14 +555,20 @@ func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	if len(outputCoins) != 1 {
 		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("length outputCoins of proof is not 1"))
 	}
-	outputCoin := outputCoins[0].(*privacy.CoinV2)
-	cmpCommitment := privacy.PedCom.CommitAtIndex(outputCoin.GetAmount(), outputCoin.GetRandomness(), privacy.PedersenValueIndex)
-	if !privacy.IsPointEqual(cmpCommitment, outputCoin.GetCommitment()) {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("check output coin's coin commitment isn't calculated correctly"))
+	outCoin, ok := outputCoins[0].(*privacy.CoinV2)
+	if !ok {
+		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("outCoin must be of version 2, got %v", outputCoins[0].GetVersion()))
+	}
+	cmpCommitment := privacy.PedCom.CommitAtIndex(outCoin.GetAmount(), outCoin.GetRandomness(), privacy.PedersenValueIndex)
+	if !privacy.IsPointEqual(cmpCommitment, outCoin.GetCommitment()) {
+		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("output coin's commitment isn't calculated correctly"))
+	}
+	if tx.GetType() == common.TxReturnStakingType && outCoin.GetValue() != uint64(1750000000000) {
+		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("output of a rs transaction must be 1750000000000, got %v", outCoin.GetValue()))
 	}
 
 	// Check shardID
-	coinShardID, errShard := outputCoin.GetShardID()
+	coinShardID, errShard := outCoin.GetShardID()
 	if errShard != nil {
 		errStr := fmt.Sprintf("error when getting coin shardID, err: %v", errShard)
 		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
@@ -566,7 +578,7 @@ func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	}
 
 	// Check database for ota
-	found, err := statedb.HasOnetimeAddress(db, *tokenID, outputCoin.GetPublicKey().ToBytesS())
+	found, err := statedb.HasOnetimeAddress(db, *tokenID, outCoin.GetPublicKey().ToBytesS())
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
 		return false, err
@@ -670,7 +682,8 @@ func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB 
 		valid, err := tx.ValidateTxSalary(transactionStateDB)
 		return valid, nil, err
 	case common.TxReturnStakingType:
-		return tx.ValidateTxReturnStaking(transactionStateDB), nil, nil
+		valid, err := tx.ValidateTxSalary(transactionStateDB)
+		return valid, nil, err
 	case common.TxConversionType:
 		valid, err := validateConversionVer1ToVer2(&tx, transactionStateDB, shardID, tokenID)
 		return valid, nil ,err

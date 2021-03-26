@@ -570,8 +570,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	validFee := tp.checkFees(beaconView, tx, shardID, beaconHeight)
 	if !validFee {
 		return NewMempoolTxError(RejectInvalidFee,
-			fmt.Errorf("Transaction %+v has invalid fees.",
-				tx.Hash().String()))
+			fmt.Errorf("transaction %+v has invalid fees", tx.Hash().String()))
 	}
 	// Condition 5: check tx with all txs in current mempool
 	err = tx.ValidateTxWithCurrentMempool(tp)
