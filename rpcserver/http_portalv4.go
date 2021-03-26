@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/incognitochain/incognito-chain/common"
@@ -117,7 +118,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithShieldingReq(params interface
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}

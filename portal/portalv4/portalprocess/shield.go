@@ -260,10 +260,10 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 		}
 		updatingInfo, found := updatingInfoByTokenID[*incTokenID]
 		if found {
-			updatingInfo.CountUpAmt += shieldingAmount
+			updatingInfo.CountUpAmt += actionData.MintingAmount
 		} else {
 			updatingInfo = metadata.UpdatingInfo{
-				CountUpAmt:      shieldingAmount,
+				CountUpAmt:      actionData.MintingAmount,
 				DeductAmt:       0,
 				TokenID:         *incTokenID,
 				ExternalTokenID: nil,

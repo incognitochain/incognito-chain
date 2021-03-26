@@ -87,6 +87,12 @@ func (shieldingReq PortalShieldingRequest) ValidateSanityData(chainRetriever Cha
 	if len(incogAddr.Pk) == 0 {
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Requester incognito address is invalid"))
 	}
+
+	// check proof is not empty
+	if shieldingReq.ShieldingProof == "" {
+		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Shielding proof is empty"))
+	}
+
 	// let anyone can submit the proof
 	//if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
 	//	return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Requester incognito address is not signer"))
