@@ -97,7 +97,10 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetr
 		return false, false, errors.New("tx redeem request must be TxCustomTokenPrivacyType")
 	}
 	// validate redeem amount
-	minAmount := common.MinAmountPortalPToken[redeemReq.TokenID]
+	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight)
+	if err != nil {
+		return false, false, err
+	}
 	if redeemReq.RedeemAmount < minAmount {
 		return false, false, fmt.Errorf("redeem amount should be larger or equal to %v", minAmount)
 	}
@@ -112,7 +115,7 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetr
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
 	}
 	// check tokenId is portal token or not
-	if !IsPortalToken(redeemReq.TokenID) {
+	if !chainRetriever.IsPortalToken(beaconHeight, redeemReq.TokenID) {
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID is not in portal tokens list"))
 	}
 

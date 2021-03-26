@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -99,7 +100,7 @@ func (iRes PortalFeeRefundResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 			continue
 		}
 		status := inst[2]
-		if status != iRes.PortingRequestStatus || status != common.PortalPortingRequestRejectedChainStatus {
+		if status != iRes.PortingRequestStatus || status != pCommon.PortalRequestRejectedChainStatus {
 			continue
 		}
 

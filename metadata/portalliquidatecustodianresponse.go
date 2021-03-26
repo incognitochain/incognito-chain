@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
@@ -89,7 +90,7 @@ func (iRes PortalLiquidateCustodianResponse) VerifyMinerCreatedTxBeforeGettingIn
 		Logger.log.Infof("[VerifyMinerCreatedTxBeforeGettingInBlock] Verifying tx response for custodian liquidation instructions")
 
 		status := inst[2]
-		if status != common.PortalLiquidateCustodianSuccessChainStatus {
+		if status != pCommon.PortalProducerInstSuccessChainStatus {
 			continue
 		}
 

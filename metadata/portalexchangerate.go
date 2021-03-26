@@ -30,13 +30,13 @@ type ExchangeRateInfo struct {
 }
 
 type ExchangeRatesRequestStatus struct {
-	Status        byte
+	//Status        byte 		// dont need this field
 	SenderAddress string
 	Rates         []*ExchangeRateInfo
 }
 
-func NewExchangeRatesRequestStatus(status byte, senderAddress string, rates []*ExchangeRateInfo) *ExchangeRatesRequestStatus {
-	return &ExchangeRatesRequestStatus{Status: status, SenderAddress: senderAddress, Rates: rates}
+func NewExchangeRatesRequestStatus(senderAddress string, rates []*ExchangeRateInfo) *ExchangeRatesRequestStatus {
+	return &ExchangeRatesRequestStatus{SenderAddress: senderAddress, Rates: rates}
 }
 
 func NewPortalExchangeRates(metaType int, senderAddress string, currency []*ExchangeRateInfo) (*PortalExchangeRates, error) {
@@ -72,7 +72,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(
 }
 
 func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	feederAddress := chainRetriever.GetPortalFeederAddress()
+	feederAddress := chainRetriever.GetPortalFeederAddress(beaconHeight)
 	isEqual, err := wallet.ComparePaymentAddresses(portalExchangeRates.SenderAddress, feederAddress)
 	if err != nil {
 		return false, false, fmt.Errorf("cannot compare payment address %v and %v: %v", portalExchangeRates.SenderAddress, feederAddress, err)
@@ -99,7 +99,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever
 	}
 
 	for _, value := range portalExchangeRates.Rates {
-		if !IsPortalExchangeRateToken(value.PTokenID, chainRetriever, beaconHeight) {
+		if !chainRetriever.IsPortalExchangeRateToken(beaconHeight, value.PTokenID) {
 			return false, false, errors.New("Public token is not supported currently")
 		}
 

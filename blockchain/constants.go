@@ -81,7 +81,12 @@ const (
 	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
 	MainnetBNBFullNodeProtocol = "https"
 	MainnetBNBFullNodePort     = "443"
-	MainnetPortalFeeder        = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
+
+	MainnetPortalFeeder = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
+
+	// Enable Feature Flag
+	MainnetEnablePortalRelaying = 1
+	MainnetEnablePortalV3       = 0
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -142,6 +147,10 @@ const (
 	TestnetBNBFullNodeProtocol = "https"
 	TestnetBNBFullNodePort     = "443"
 	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+
+	// Enable Feature Flag
+	TestnetEnablePortalRelaying = 1
+	TestnetEnablePortalV3       = 0
 )
 
 // CONSTANT for network TESTNET-2
@@ -187,6 +196,10 @@ const (
 	Testnet2BNBFullNodeProtocol = "https"
 	Testnet2BNBFullNodePort     = "443"
 	Testnet2PortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+
+	// Enable Feature Flag
+	Testnet2EnablePortalRelaying = 1
+	Testnet2EnablePortalV3       = 0
 )
 
 // VARIABLE for testnet

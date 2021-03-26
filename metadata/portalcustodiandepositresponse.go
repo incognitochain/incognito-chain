@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
@@ -85,7 +86,7 @@ func (iRes PortalCustodianDepositResponse) VerifyMinerCreatedTxBeforeGettingInBl
 		}
 		instDepositStatus := inst[2]
 		if instDepositStatus != iRes.DepositStatus ||
-			(instDepositStatus != common.PortalCustodianDepositRefundChainStatus) {
+			(instDepositStatus != pCommon.PortalRequestRefundChainStatus) {
 			continue
 		}
 

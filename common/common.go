@@ -611,4 +611,6 @@ func DecodeETHAddr(addr string) ([]byte, error) {
 	return addrFixedLen[:], nil
 }
 
-
+func GetEpochFromBeaconHeight(beaconHeight uint64, epochNumBlocksPerEpoch uint64) uint64 {
+	return (beaconHeight - 1) / epochNumBlocksPerEpoch + 1
+}
