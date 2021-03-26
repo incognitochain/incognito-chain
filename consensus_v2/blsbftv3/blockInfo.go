@@ -6,12 +6,13 @@ import (
 )
 
 type ProposeBlockInfo struct {
-	block      types.BlockInterface
-	committees []incognitokey.CommitteePublicKey
-	votes      map[string]*BFTVote //pk->BFTVote
-	isValid    bool
-	hasNewVote bool
-	isVoted    bool
+	block       types.BlockInterface
+	committees  []incognitokey.CommitteePublicKey
+	votes       map[string]*BFTVote //pk->BFTVote
+	isValid     bool
+	hasNewVote  bool
+	isVoted     bool
+	isCommitted bool
 }
 
 //NewProposeBlockInfoValue : new propose block info

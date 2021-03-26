@@ -324,8 +324,9 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	}
 	//e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//already in chain
+	bestView := e.Chain.GetBestView()
 	view := e.Chain.GetViewByHash(*v.block.Hash())
-	if view != nil {
+	if view != nil && bestView.GetHash().String() != view.GetHash().String() {
 		//e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 		return
 	}
@@ -373,12 +374,16 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 			delete(v.votes, key)
 		}
 	}
-	if validVote > 2*len(v.committees)/3 {
-		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
-		if e.ChainID == BEACON_CHAIN_ID {
-			e.processWithEnoughVotesBeaconChain(v)
-		} else {
-			e.processWithEnoughVotesShardChain(v)
+
+	if !v.isCommitted {
+		if validVote > 2*len(v.committees)/3 {
+			v.isCommitted = true
+			e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
+			if e.ChainID == BEACON_CHAIN_ID {
+				e.processWithEnoughVotesBeaconChain(v)
+			} else {
+				e.processWithEnoughVotesShardChain(v)
+			}
 		}
 	}
 }
@@ -412,20 +417,18 @@ func (e *BLSBFT_V3) processWithEnoughVotesShardChain(
 	// validate and previous block
 	if previousProposeBlockInfo, ok := e.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
-		previousCommittees, err := e.getCommitteeForBlock(previousProposeBlockInfo.block)
-		if err != nil {
-			e.Logger.Error(err)
-			return
-		}
-		previousValidationData, err := createBLSAggregatedSignatures(previousCommittees, previousProposeBlockInfo.block.GetValidationField(), previousProposeBlockInfo.votes)
-		if err != nil {
-			e.Logger.Error(err)
-			return
-		}
-		previousProposeBlockInfo.block.(blockValidation).AddValidationField(previousValidationData) // Is this necessary?
+		previousValidationData, err := createBLSAggregatedSignatures(
+			previousProposeBlockInfo.committees,
+			previousProposeBlockInfo.block.GetValidationField(),
+			previousProposeBlockInfo.votes)
 
+		if err != nil {
+			e.Logger.Error(err)
+			return
+		}
+
+		previousProposeBlockInfo.block.(blockValidation).AddValidationField(previousValidationData)
 		go e.Chain.InsertAndBroadcastBlockWithPrevValidationData(v.block, previousValidationData)
-
 		delete(e.receiveBlockByHash, previousProposeBlockInfo.block.GetPrevHash().String())
 	} else {
 		go e.Chain.InsertAndBroadcastBlock(v.block)
