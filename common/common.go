@@ -497,15 +497,6 @@ func BytesSToUint16(b []byte) (uint16, error) {
 	return BytesToUint16(bytes), nil
 }
 
-func IsPortalToken(tokenIDStr string) bool {
-	isExisted, _ := SliceExists(PortalSupportedIncTokenIDs, tokenIDStr)
-	return isExisted
-}
-
-func IsPortalExchangeRateToken(tokenIDStr string) bool {
-	return IsPortalToken(tokenIDStr) || tokenIDStr == PRVIDStr
-}
-
 // CopyBytes returns an exact copy of the provided bytes.
 func CopyBytes(b []byte) (copiedBytes []byte) {
 	if b == nil {
