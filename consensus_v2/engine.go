@@ -224,7 +224,7 @@ func (engine *Engine) Start() error {
 			panic(err)
 		}
 		engine.validators = []*consensus.Validator{&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey}}
-		monitor.SetGlobalParam("MINING_PUBKEY", miningKey.GetPublicKeyBase58())
+		monitor.SetGlobalParam("MINING_PUBKEY", miningKey.GetPublicKey().GetMiningKeyBase58("bls"))
 	} else if engine.config.Node.GetMiningKeys() != "" {
 		keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
 		engine.validators = []*consensus.Validator{}
@@ -234,7 +234,7 @@ func (engine *Engine) Start() error {
 				panic(err)
 			}
 			engine.validators = append(engine.validators, &consensus.Validator{PrivateSeed: key, MiningKey: *miningKey})
-			monitor.SetGlobalParam("MINING_PUBKEY", miningKey.GetPublicKeyBase58())
+			monitor.SetGlobalParam("MINING_PUBKEY", miningKey.GetPublicKey().GetMiningKeyBase58("bls"))
 		}
 		engine.validators = engine.validators[:1] //allow only 1 key
 	}
