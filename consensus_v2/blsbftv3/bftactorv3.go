@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"reflect"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -314,8 +315,12 @@ func (e *BLSBFT_V3) run() error {
 					}
 
 					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
-					if proposeBlockInfo.block.GetHeight() != bestViewHeight+1 {
-						continue
+					if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
+						validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+					} else {
+						if proposeBlockInfo.block.Hash().String() == bestView.GetHash().String() {
+							validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+						}
 					}
 
 					//not validate if we do it recently
@@ -413,8 +418,9 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	}
 	e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//already in chain
+	bestView := e.Chain.GetBestView()
 	view := e.Chain.GetViewByHash(*v.block.Hash())
-	if view != nil {
+	if view != nil && bestView.GetHash().String() != view.GetHash().String() {
 		//e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 		return
 	}
@@ -466,12 +472,16 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 			delete(v.votes, key)
 		}
 	}
-	if validVote > 2*len(v.committees)/3 {
-		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
-		if e.ChainID == BEACON_CHAIN_ID {
-			e.processWithEnoughVotesBeaconChain(v)
-		} else {
-			e.processWithEnoughVotesShardChain(v)
+
+	if !v.isCommitted {
+		if validVote > 2*len(v.committees)/3 {
+			v.isCommitted = true
+			e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
+			if e.ChainID == BEACON_CHAIN_ID {
+				e.processWithEnoughVotesBeaconChain(v)
+			} else {
+				e.processWithEnoughVotesShardChain(v)
+			}
 		}
 	}
 }
@@ -505,20 +515,18 @@ func (e *BLSBFT_V3) processWithEnoughVotesShardChain(
 	// validate and previous block
 	if previousProposeBlockInfo, ok := e.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
 		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
-		previousCommittees, err := e.getCommitteeForBlock(previousProposeBlockInfo.block)
-		if err != nil {
-			e.Logger.Error(err)
-			return
-		}
-		previousValidationData, err := createBLSAggregatedSignatures(previousCommittees, previousProposeBlockInfo.block.GetValidationField(), previousProposeBlockInfo.votes)
-		if err != nil {
-			e.Logger.Error(err)
-			return
-		}
-		previousProposeBlockInfo.block.(blockValidation).AddValidationField(previousValidationData) // Is this necessary?
+		previousValidationData, err := createBLSAggregatedSignatures(
+			previousProposeBlockInfo.committees,
+			previousProposeBlockInfo.block.GetValidationField(),
+			previousProposeBlockInfo.votes)
 
+		if err != nil {
+			e.Logger.Error(err)
+			return
+		}
+
+		previousProposeBlockInfo.block.(blockValidation).AddValidationField(previousValidationData)
 		go e.Chain.InsertAndBroadcastBlockWithPrevValidationData(v.block, previousValidationData)
-
 		delete(e.receiveBlockByHash, previousProposeBlockInfo.block.GetPrevHash().String())
 	} else {
 		go e.Chain.InsertAndBroadcastBlock(v.block)
@@ -555,32 +563,32 @@ func (e *BLSBFT_V3) validateAndVote(
 		return nil
 	}
 
-	//not connected
-	e.Logger.Info("validateAndVote")
-	view := e.Chain.GetViewByHash(v.block.GetPrevHash())
-	if view == nil {
-		e.Logger.Info("view is null")
-		return errors.New("View not connect")
+	if v.isVoted {
+		return nil
 	}
 
-	//TODO: using context to validate block
-	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
+	if !v.isValid {
+		//not connected
+		view := e.Chain.GetViewByHash(v.block.GetPrevHash())
+		if view == nil {
+			e.Logger.Info("view is null")
+			return errors.New("View not connect")
+		}
 
-	committees, err := e.getCommitteeForBlock(v.block)
-	if err != nil {
-		e.Logger.Error(err)
-		return err
-	}
+		//TODO: using context to validate block
+		_, cancel := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
 
-	if err := e.Chain.ValidatePreSignBlock(v.block, v.committees); err != nil {
-		e.Logger.Error(err)
-		return err
+		if err := e.Chain.ValidatePreSignBlock(v.block, v.committees); err != nil {
+			e.Logger.Error(err)
+			return err
+		}
 	}
+	v.isValid = true
 
 	//if valid then vote
 	for _, userKey := range e.UserKeySet {
-		Vote, err := CreateVote(&userKey, v.block, committees)
+		Vote, err := CreateVote(&userKey, v.block, v.committees)
 		if err != nil {
 			e.Logger.Error(err)
 			return NewConsensusError(UnExpectedError, err)
@@ -592,7 +600,7 @@ func (e *BLSBFT_V3) validateAndVote(
 			return NewConsensusError(UnExpectedError, err)
 		}
 
-		v.isValid = true
+		v.isVoted = true
 		e.voteHistory[v.block.GetHeight()] = v.block
 		e.Logger.Info(e.ChainKey, "sending vote...")
 		go e.ProcessBFTMsg(msg.(*wire.MessageBFT))

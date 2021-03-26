@@ -1195,7 +1195,7 @@ func (blockchain *BlockChain) ReplacePreviousValidationData(blockHash common.Has
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
 		Logger.log.Infof("SHARD %+v | Replace Previous Validation Data of shard block height %+v, hash %+v,"+
-			"Old Validation Data %+v, New Validation Data %+v", shardBlock.Header.Height, blockHash, decodedOldValidationData, decodedNewValidationData)
+			"Old Validation Data %+v, New Validation Data %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash, decodedOldValidationData, decodedNewValidationData)
 	}
 	return nil
 }
