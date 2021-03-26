@@ -220,11 +220,6 @@ func (pc *PDECrossPoolTradeRequest) BuildReqActions(tx Transaction, chainRetriev
 		TxReqID: *tx.Hash(),
 		ShardID: shardID,
 	}
-	// for tx trade v1 compatibility
-	if len(actionContent.Meta.SubTraderAddressStr) == 0 {
-		actionContent.Meta.SubTraderAddressStr = actionContent.Meta.TraderAddressStr
-	}
-
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
 		return [][]string{}, err

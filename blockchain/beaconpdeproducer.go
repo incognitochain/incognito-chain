@@ -449,6 +449,15 @@ func (blockchain *BlockChain) buildInstsForSortedTradableActions(
 				},
 			}
 		}
+
+		//Work-around solution for the sake of syncing mainnet
+		//Todo: find better solution
+		if _, err := metadata.AssertPaymentAddressAndTxVersion(tradeAction.Meta.TraderAddressStr, 1); err == nil {
+			if len(tradeAction.Meta.SubTraderAddressStr) == 0 {
+				tradeAction.Meta.SubTraderAddressStr = tradeAction.Meta.TraderAddressStr
+			}
+		}
+
 		newInsts, err := blockchain.buildInstructionsForPDECrossPoolTrade(
 			sequentialTrades,
 			tradeMeta.MinAcceptableAmount,
@@ -480,6 +489,14 @@ func (blockchain *BlockChain) buildInstsForUntradableActions(
 ) [][]string {
 	untradableInsts := [][]string{}
 	for _, tradeAction := range untradableActions {
+		//Work-around solution for the sake of syncing mainnet
+		//Todo: find better solution
+		if _, err := metadata.AssertPaymentAddressAndTxVersion(tradeAction.Meta.TraderAddressStr, 1); err == nil {
+			if len(tradeAction.Meta.SubTraderAddressStr) == 0 {
+				tradeAction.Meta.SubTraderAddressStr = tradeAction.Meta.TraderAddressStr
+			}
+		}
+
 		refundTradingFeeInst := buildCrossPoolTradeRefundInst(
 			tradeAction.Meta.TraderAddressStr,
 			tradeAction.Meta.TxRandomStr,
