@@ -12,6 +12,8 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/portal"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 )
 
 type duplicateKeyStakeInstruction struct {
@@ -74,7 +76,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 
 	BLogger.log.Infof("Producing block: %d (epoch %d)", newBeaconBlock.Header.Height, newBeaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
-	portalParams := blockchain.GetPortalParams(newBeaconBlock.GetHeight())
+	portalParams := blockchain.GetPortalParams()
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
 
 
@@ -140,7 +142,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	newBeaconBlock *types.BeaconBlock,
 	curView *BeaconBestState,
-	portalParams PortalParams,
+	portalParams portal.PortalParams,
 	allShardBlocks map[byte][]*types.ShardBlock,
 ) ([][]string, map[byte][]types.ShardState, error) {
 	bridgeInstructions := [][]string{}
@@ -156,15 +158,16 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 
 	if blockchain.IsLastBeaconHeightInEpoch(curView.BeaconHeight) {
 		featureStateDB := curView.GetBeaconFeatureStateDB()
-		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
+		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {
-			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
+			return  nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
 
+		portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
 		isSplitRewardForCustodian := totalLockedCollateral > 0
-		percentCustodianRewards := portalParams.MaxPercentCustodianRewards
-		if totalLockedCollateral < portalParams.MinLockCollateralAmountInEpoch {
-			percentCustodianRewards = portalParams.MinPercentCustodianRewards
+		percentCustodianRewards := portalParamsV3.MaxPercentCustodianRewards
+		if totalLockedCollateral < portalParamsV3.MinLockCollateralAmountInEpoch {
+			percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
 		}
 		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
 			curView,

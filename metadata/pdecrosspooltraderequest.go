@@ -23,9 +23,9 @@ type PDECrossPoolTradeRequest struct {
 	MinAcceptableAmount uint64
 	TradingFee          uint64
 	TraderAddressStr    string
-	TxRandomStr         string
-	SubTraderAddressStr string
-	SubTxRandomStr		string
+	TxRandomStr         string `json:"TxRandomStr,omitempty"`
+	SubTraderAddressStr string `json:"SubTraderAddressStr,omitempty"`
+	SubTxRandomStr		string `json:"SubTxRandomStr,omitempty"`
 	MetadataBase
 }
 
@@ -37,7 +37,7 @@ type PDECrossPoolTradeRequestAction struct {
 
 type PDECrossPoolTradeAcceptedContent struct {
 	TraderAddressStr         string
-	TxRandomStr              string
+	TxRandomStr              string `json:"TxRandomStr,omitempty"`
 	TokenIDToBuyStr          string
 	ReceiveAmount            uint64
 	Token1IDStr              string
@@ -51,7 +51,7 @@ type PDECrossPoolTradeAcceptedContent struct {
 
 type PDERefundCrossPoolTrade struct {
 	TraderAddressStr string
-	TxRandomStr      string
+	TxRandomStr      string `json:"TxRandomStr,omitempty"`
 	TokenIDStr       string
 	Amount           uint64
 	ShardID          byte
@@ -220,11 +220,6 @@ func (pc *PDECrossPoolTradeRequest) BuildReqActions(tx Transaction, chainRetriev
 		TxReqID: *tx.Hash(),
 		ShardID: shardID,
 	}
-	// for tx trade v1 compatibility
-	if len(actionContent.Meta.SubTraderAddressStr) == 0 {
-		actionContent.Meta.SubTraderAddressStr = actionContent.Meta.TraderAddressStr
-	}
-
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
 		return [][]string{}, err

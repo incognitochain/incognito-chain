@@ -16,7 +16,7 @@ type PDEContributionResponse struct {
 	ContributionStatus string
 	RequestedTxID      common.Hash
 	TokenIDStr         string
-	SharedRandom       []byte
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPDEContributionResponse(

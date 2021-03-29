@@ -92,7 +92,7 @@ func (otaKey *OTAKey) SetPublicSpend(publicSpend []byte){
 type PaymentAddress struct {
 	Pk PublicKey       // 32 bytes, use to receive coin (CoinV1)
 	Tk TransmissionKey // 32 bytes, use to encrypt pointByte
-	OTAPublic PublicOTAKey //32 bytes, used to receive coin (CoinV2)
+	OTAPublic PublicOTAKey  `json:"OTAPublic,omitempty"`//32 bytes, used to receive coin (CoinV2)
 }
 
 // Bytes converts payment address to bytes array

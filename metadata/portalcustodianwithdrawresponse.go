@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
@@ -16,7 +17,7 @@ type PortalCustodianWithdrawResponse struct {
 	ReqTxID        common.Hash
 	PaymentAddress string
 	Amount         uint64
-	SharedRandom       []byte
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalCustodianWithdrawResponse(
@@ -86,7 +87,7 @@ func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGe
 
 		instDepositStatus := inst[2]
 		if instDepositStatus != responseMeta.RequestStatus ||
-			(instDepositStatus != common.PortalCustodianWithdrawRequestAcceptedChainStatus) {
+			(instDepositStatus != pCommon.PortalRequestAcceptedChainStatus) {
 			continue
 		}
 

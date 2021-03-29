@@ -13,7 +13,7 @@ func (blockchain *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 
 	mintData := new(metadata.MintData)
 	mintData.Txs = txs
-	mintData.TxsUsed =  make([]int, len(txs))
+	mintData.TxsUsed = make([]int, len(txs))
 	mintData.Insts = insts
 	mintData.InstsUsed = make([]int, len(insts))
 
@@ -21,6 +21,7 @@ func (blockchain *BlockChain) verifyMinerCreatedTxBeforeGettingInBlock(
 		UniqETHTxsUsed:   [][]byte{},
 		DBridgeTokenPair: map[string][]byte{},
 		CBridgeTokens:    []*common.Hash{},
+		InitTokens:       []*common.Hash{},
 	}
 
 	invalidTxs := []metadata.Transaction{}

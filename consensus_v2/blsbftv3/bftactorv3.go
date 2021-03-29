@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"reflect"
 	"sort"
 	"time"
@@ -95,6 +97,7 @@ func (e *BLSBFT_V3) run() error {
 		var err error
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
+		cleanMemTicker := time.Tick(5 * time.Minute)
 		e.Logger.Info("init bls-bftv3 consensus for chain", e.ChainKey)
 
 		for { //actor loop
@@ -128,13 +131,17 @@ func (e *BLSBFT_V3) run() error {
 				res, _ := incognitokey.CommitteeKeyListToString(committees)
 				e.Logger.Infof("######### Shard %+v, BlockHeight %+v, Committee %+v", e.Chain.GetShardID(), block.GetHeight(), res)
 
+				blkCPk := incognitokey.CommitteePublicKey{}
+				blkCPk.FromBase58(block.GetProducer())
+				proposerMiningKeyBas58 := blkCPk.GetMiningKeyBase58(e.GetConsensusName())
+
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
-					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, make(map[string]*BFTVote), false, false)
+					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, make(map[string]*BFTVote), false, proposerMiningKeyBas58)
 					e.receiveBlockByHash[blkHash] = proposeBlockInfo
 					e.Logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
 				} else {
-					e.receiveBlockByHash[blkHash].addBlockInfo(block, committees)
+					e.receiveBlockByHash[blkHash].addBlockInfo(block, committees, proposerMiningKeyBas58)
 				}
 
 				if block.GetHeight() <= e.Chain.GetBestViewHeight() {
@@ -153,16 +160,64 @@ func (e *BLSBFT_V3) run() error {
 				if b, ok := e.receiveBlockByHash[voteMsg.BlockHash]; ok { //if receiveblock is already initiated
 					if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
 						b.votes[voteMsg.Validator] = &voteMsg // store it
-						e.Logger.Infof("Receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
+						vid, v := getValidatorIndex(e.Chain.GetBestView(), voteMsg.Validator)
+						if v != nil {
+							vbase58, _ := v.ToBase58()
+							e.Logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, vbase58)
+						} else {
+							e.Logger.Infof("%v Receive vote (%d) for block from unknown validator", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
+						}
 						b.hasNewVote = true
+					}
+
+					if !b.proposerSendVote {
+						for _, userKey := range e.UserKeySet {
+							pubKey := userKey.GetPublicKey()
+							if b.block != nil && pubKey.GetMiningKeyBase58(e.GetConsensusName()) == b.proposerMiningKeyBase58 { // if this node is proposer and not sending vote
+								err := e.validateAndVote(b) //validate in case we get malicious block
+								if err == nil {
+									bestViewHeight := e.Chain.GetBestView().GetHeight()
+									if b.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
+										view := e.Chain.GetViewByHash(b.block.GetPrevHash())
+										err := e.sendVote(&userKey, b.block, view.GetCommittee()) // => send vote
+										if err != nil {
+											e.Logger.Error(err)
+										} else {
+											b.proposerSendVote = true
+											b.sendVote = true
+										}
+									}
+								}
+							}
+						}
 					}
 				} else {
 					e.receiveBlockByHash[voteMsg.BlockHash] = newBlockInfoForVoteMsg()
 					e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
-					e.Logger.Infof("[Monitor] receive vote for block %s (%d) from %v", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.Validator)
+					vid, v := getValidatorIndex(e.Chain.GetBestView(), voteMsg.Validator)
+					if v != nil {
+						vbase58, _ := v.ToBase58()
+						e.Logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, vbase58)
+					} else {
+						e.Logger.Infof("%v Receive vote (%d) for block from unknown validator", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
+					}
 				}
-				// e.Logger.Infof("receive vote for block %s (%d)", voteMsg.BlockHash, len(e.receiveBlockByHash[voteMsg.BlockHash].votes))
-
+			case <-cleanMemTicker:
+				for h, _ := range e.receiveBlockByHeight {
+					if h <= e.Chain.GetFinalView().GetHeight() {
+						delete(e.receiveBlockByHeight, h)
+					}
+				}
+				for h, _ := range e.voteHistory {
+					if h <= e.Chain.GetFinalView().GetHeight() {
+						delete(e.voteHistory, h)
+					}
+				}
+				for h, proposeBlk := range e.receiveBlockByHash {
+					if time.Now().Sub(proposeBlk.receiveTime) > time.Minute {
+						delete(e.receiveBlockByHash, h)
+					}
+				}
 			case <-ticker:
 				if !e.Chain.IsReady() {
 					continue
@@ -176,6 +231,11 @@ func (e *BLSBFT_V3) run() error {
 
 				e.currentTimeSlot = common.CalculateTimeSlot(e.currentTime)
 				bestView := e.Chain.GetBestView()
+
+				//set round for monitor
+				round := e.currentTimeSlot - common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
+
 				committeeViewHash := common.Hash{}
 				committees := []incognitokey.CommitteePublicKey{}
 				proposerPk := incognitokey.CommitteePublicKey{}
@@ -247,19 +307,33 @@ func (e *BLSBFT_V3) run() error {
 				//Check for valid block to vote
 				validProposeBlock := []*ProposeBlockInfo{}
 				//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
+				bestViewHeight := bestView.GetHeight()
 				for h, proposeBlockInfo := range e.receiveBlockByHash {
 					if proposeBlockInfo.block == nil {
 						continue
 					}
-					bestViewHeight := bestView.GetHeight()
+
 					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
-					if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
-						validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+					if proposeBlockInfo.block.GetHeight() != bestViewHeight+1 {
+						continue
 					}
+
+					//not validate if we do it recently
+					if time.Since(proposeBlockInfo.lastValidateTime).Seconds() < 1 {
+						continue
+					}
+
+					// check if propose block in within TS
+					if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != e.currentTimeSlot {
+						continue
+					}
+
+					validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 
 					if proposeBlockInfo.block.GetHeight() < e.Chain.GetFinalView().GetHeight() {
 						delete(e.receiveBlockByHash, h)
 					}
+
 				}
 				//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)
 				sort.Slice(validProposeBlock, func(i, j int) bool {
@@ -291,6 +365,15 @@ func (e *BLSBFT_V3) run() error {
 		}
 	}()
 	return nil
+}
+
+func getValidatorIndex(view multiview.View, validator string) (int, *incognitokey.CommitteePublicKey) {
+	for id, c := range view.GetCommittee() {
+		if validator == c.GetMiningKeyBase58(common.BlsConsensus) {
+			return id, &c
+		}
+	}
+	return -1, nil
 }
 
 func NewInstance(chain ChainInterface, committeeChain CommitteeChainHandler, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT_V3 {
@@ -332,40 +415,43 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	//already in chain
 	view := e.Chain.GetViewByHash(*v.block.Hash())
 	if view != nil {
-		e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
+		//e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 		return
 	}
 
 	//not connected previous block
 	view = e.Chain.GetViewByHash(v.block.GetPrevHash())
 	if view == nil {
-		e.Logger.Infof("Get Previous View By Hash Fail, %+v, %+v", v.block.GetPrevHash(), v.block.GetHeight()-1)
+		//e.Logger.Infof("Get Previous View By Hash Fail, %+v, %+v", v.block.GetPrevHash(), v.block.GetHeight()-1)
 		return
 	}
 
 	validVote := 0
 	errVote := 0
-	for _, vote := range v.votes {
+	for id, vote := range v.votes {
 		dsaKey := []byte{}
 		if vote.IsValid == 0 {
-			for _, c := range v.committees {
-				//e.Logger.Info(vote.Validator, c.GetMiningKeyBase58(common.BlsConsensus))
-				if vote.Validator == c.GetMiningKeyBase58(common.BlsConsensus) {
-					dsaKey = c.MiningPubKey[common.BridgeConsensus]
-				}
+			cid, committeePk := getValidatorIndex(view, vote.Validator)
+			if committeePk != nil {
+				dsaKey = committeePk.MiningPubKey[common.BridgeConsensus]
+			} else {
+				e.Logger.Error("Receive vote from nonCommittee member")
+				continue
 			}
 			if len(dsaKey) == 0 {
-				e.Logger.Error("canot find dsa key")
+				e.Logger.Error(fmt.Sprintf("Cannot find dsa key from vote of %d", cid))
+				continue
 			}
+
 			err := vote.validateVoteOwner(dsaKey)
 			if err != nil {
-				e.Logger.Error("")
 				e.Logger.Error(dsaKey)
 				e.Logger.Error(err)
-				vote.IsValid = -1
+				panic(1)
+				v.votes[id].IsValid = -1
 				errVote++
 			} else {
-				vote.IsValid = 1
+				v.votes[id].IsValid = 1
 				validVote++
 			}
 		} else {
@@ -374,6 +460,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	}
 	e.Logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
 	v.hasNewVote = false
+	// TODO: @tin/0xkumi check here again
 	for key, value := range v.votes {
 		if value.IsValid == -1 {
 			delete(v.votes, key)
@@ -464,7 +551,7 @@ func (e *BLSBFT_V3) validateAndVote(
 	v *ProposeBlockInfo,
 ) error {
 	//already vote for this proposed block
-	if v.isVoted {
+	if v.sendVote {
 		return nil
 	}
 
@@ -746,4 +833,22 @@ func ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, e
 		return nil, nil, NewConsensusError(UnExpectedError, err)
 	}
 	return valData.BridgeSig, valData.ValidatiorsIdx, nil
+}
+
+func (e *BLSBFT_V3) sendVote(userKey *signatureschemes2.MiningKey, block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
+	Vote, err := CreateVote(userKey, block, committees)
+	if err != nil {
+		e.Logger.Error(err)
+		return NewConsensusError(UnExpectedError, err)
+	}
+
+	msg, err := MakeBFTVoteMsg(Vote, e.ChainKey, e.currentTimeSlot, block.GetHeight())
+	if err != nil {
+		e.Logger.Error(err)
+		return NewConsensusError(UnExpectedError, err)
+	}
+	e.voteHistory[block.GetHeight()] = block
+	e.Logger.Info(e.ChainKey, "sending vote...")
+	go e.Node.PushMessageToChain(msg, e.Chain)
+	return nil
 }

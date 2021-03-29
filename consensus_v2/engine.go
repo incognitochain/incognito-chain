@@ -238,7 +238,7 @@ func (engine *Engine) updateVersion(chainID int) {
 		engine.version[chainID] = 2
 	}
 
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV3Height {
+	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.StakingFlowV2Height {
 		engine.version[chainID] = 3
 	}
 }

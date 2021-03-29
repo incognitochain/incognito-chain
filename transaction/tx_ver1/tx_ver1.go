@@ -57,15 +57,6 @@ func (tx *Tx) GetReceiverData() ([]privacy.Coin, error) {
 
 // ========== CHECK FUNCTION ===========
 
-func (tx *Tx) CheckAuthorizedSender(publicKey []byte) (bool, error) {
-	sigPubKey := tx.GetSigPubKey()
-	if bytes.Equal(sigPubKey, publicKey) {
-		return true, nil
-	} else {
-		return false, nil
-	}
-}
-
 // checkSNDerivatorExistence return true if snd exists in snDerivators list
 func checkSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, stateDB *statedb.StateDB) (bool, error) {
 	ok, err := statedb.HasSNDerivator(stateDB, *tokenID, snd.ToBytesS())

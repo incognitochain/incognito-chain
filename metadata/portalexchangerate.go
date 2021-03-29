@@ -12,7 +12,7 @@ import (
 )
 
 type PortalExchangeRates struct {
-	MetadataBase
+	MetadataBaseWithSignature
 	SenderAddress string
 	Rates         []*ExchangeRateInfo //amount * 10^6 (USDT)
 }
@@ -30,29 +30,27 @@ type ExchangeRateInfo struct {
 }
 
 type ExchangeRatesRequestStatus struct {
-	Status        byte
+	//Status        byte 		// dont need this field
 	SenderAddress string
 	Rates         []*ExchangeRateInfo
 }
 
-func NewExchangeRatesRequestStatus(status byte, senderAddress string, rates []*ExchangeRateInfo) *ExchangeRatesRequestStatus {
-	return &ExchangeRatesRequestStatus{Status: status, SenderAddress: senderAddress, Rates: rates}
+func NewExchangeRatesRequestStatus(senderAddress string, rates []*ExchangeRateInfo) *ExchangeRatesRequestStatus {
+	return &ExchangeRatesRequestStatus{SenderAddress: senderAddress, Rates: rates}
 }
 
 func NewPortalExchangeRates(metaType int, senderAddress string, currency []*ExchangeRateInfo) (*PortalExchangeRates, error) {
-	metadataBase := MetadataBase{Type: metaType, Sig: []byte{}}
+	metadataBase := NewMetadataBaseWithSignature(metaType)
 
 	portalExchangeRates := &PortalExchangeRates{
 		SenderAddress: senderAddress,
 		Rates:         currency,
 	}
 
-	portalExchangeRates.MetadataBase = metadataBase
+	portalExchangeRates.MetadataBaseWithSignature = *metadataBase
 
 	return portalExchangeRates, nil
 }
-
-func (*PortalExchangeRates) ShouldSignMetaData() bool { return true }
 
 type PortalExchangeRatesContent struct {
 	SenderAddress string
@@ -74,7 +72,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(
 }
 
 func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	feederAddress := chainRetriever.GetPortalFeederAddress()
+	feederAddress := chainRetriever.GetPortalFeederAddress(beaconHeight)
 	isEqual, err := wallet.ComparePaymentAddresses(portalExchangeRates.SenderAddress, feederAddress)
 	if err != nil {
 		return false, false, fmt.Errorf("cannot compare payment address %v and %v: %v", portalExchangeRates.SenderAddress, feederAddress, err)
@@ -92,7 +90,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever
 	if len(senderAddr.Pk) == 0 {
 		return false, false, errors.New("Sender address invalid, sender address must be incognito address")
 	}
-	if ok, err := txr.CheckAuthorizedSender(senderAddr.Pk); err != nil || !ok {
+	if ok, err := portalExchangeRates.MetadataBaseWithSignature.VerifyMetadataSignature(senderAddr.Pk, txr); err != nil || !ok {
 		return false, false, errors.New("Sender is unauthorized")
 	}
 
@@ -101,7 +99,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever
 	}
 
 	for _, value := range portalExchangeRates.Rates {
-		if !IsPortalExchangeRateToken(value.PTokenID, chainRetriever, beaconHeight) {
+		if !chainRetriever.IsPortalExchangeRateToken(beaconHeight, value.PTokenID) {
 			return false, false, errors.New("Public token is not supported currently")
 		}
 
@@ -118,7 +116,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateMetadataByItself() bool {
 }
 
 func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
-	record := portalExchangeRates.MetadataBase.Hash().String()
+	record := portalExchangeRates.MetadataBaseWithSignature.Hash().String()
 	record += portalExchangeRates.SenderAddress
 	for _, rateInfo := range portalExchangeRates.Rates {
 		record += rateInfo.PTokenID
@@ -133,7 +131,7 @@ func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
 }
 
 func (portalExchangeRates PortalExchangeRates) HashWithoutSig() *common.Hash {
-	record := portalExchangeRates.MetadataBase.Hash().String()
+	record := portalExchangeRates.MetadataBaseWithSignature.Hash().String()
 	record += portalExchangeRates.SenderAddress
 	for _, rateInfo := range portalExchangeRates.Rates {
 		record += rateInfo.PTokenID

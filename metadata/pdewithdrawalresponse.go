@@ -15,7 +15,7 @@ type PDEWithdrawalResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
 	TokenIDStr    string
-	SharedRandom       []byte
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPDEWithdrawalResponse(

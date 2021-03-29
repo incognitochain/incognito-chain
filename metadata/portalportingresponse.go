@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -15,7 +16,7 @@ type PortalFeeRefundResponse struct {
 	MetadataBase
 	PortingRequestStatus string
 	ReqTxID              common.Hash
-	SharedRandom       []byte
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalFeeRefundResponse(
@@ -99,7 +100,7 @@ func (iRes PortalFeeRefundResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 			continue
 		}
 		status := inst[2]
-		if status != iRes.PortingRequestStatus || status != common.PortalPortingRequestRejectedChainStatus {
+		if status != iRes.PortingRequestStatus || status != pCommon.PortalRequestRejectedChainStatus {
 			continue
 		}
 

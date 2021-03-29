@@ -73,6 +73,19 @@ func ParseETHIssuingInstContent(instContentStr string) (*IssuingETHReqAction, er
 	return &issuingETHReqAction, nil
 }
 
+func ParseETHIssuingInstAcceptedContent(instAcceptedContentStr string) (*IssuingETHAcceptedInst, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(instAcceptedContentStr)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingEthRequestDecodeInstructionError, err)
+	}
+	var issuingETHAcceptedInst IssuingETHAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingEthRequestUnmarshalJsonError, err)
+	}
+	return &issuingETHAcceptedInst, nil
+}
+
 func NewIssuingETHRequest(
 	blockHash rCommon.Hash,
 	txIndex uint,

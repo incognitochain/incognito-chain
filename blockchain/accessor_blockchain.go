@@ -13,7 +13,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
 //get beacon block hash by height, with current view
@@ -379,29 +378,12 @@ func (blockchain *BlockChain) GetBestStateBeaconFeatureStateDBByHeight(height ui
 	return statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(db))
 }
 
-func (blockchain *BlockChain) GetBNBChainID() string {
-	return blockchain.GetConfig().ChainParams.BNBRelayingHeaderChainID
-}
-
-func (blockchain *BlockChain) GetBTCChainID() string {
-	return blockchain.GetConfig().ChainParams.BTCRelayingHeaderChainID
-}
-
-func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
-	return blockchain.GetConfig().BTCChain
-}
-
-func (blockchain *BlockChain) GetPortalFeederAddress() string {
-	return blockchain.GetConfig().ChainParams.PortalFeederAddress
-}
-
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
 	bRH, e := blockchain.GetBeaconRootsHashFromBlockHeight(height)
 	if e != nil {
 		return common.Hash{}, e
 	}
 	return bRH.ConsensusStateDBRootHash, nil
-
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {

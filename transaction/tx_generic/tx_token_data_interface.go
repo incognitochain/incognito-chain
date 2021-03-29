@@ -57,12 +57,11 @@ type TransactionToken interface {
 	ListSerialNumbersHashH() []common.Hash
 	String() string
 	Hash() *common.Hash
+	HashWithoutMetadataSig() *common.Hash
 	CalculateTxValue() uint64
 
 	// =================== FUNCTION THAT CHECK STUFFS  ===================
 	CheckTxVersion(int8) bool
-	CheckAuthorizedSender([]byte) (bool, error)
-	ShouldSignMetaData() bool
 	IsSalaryTx() bool
 	IsPrivacy() bool
 	IsCoinsBurning(metadata.ChainRetriever, metadata.ShardViewRetriever, metadata.BeaconViewRetriever, uint64) bool

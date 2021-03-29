@@ -17,7 +17,7 @@ type PDEFeeWithdrawalRequest struct {
 	WithdrawalToken1IDStr string
 	WithdrawalToken2IDStr string
 	WithdrawalFeeAmt      uint64
-	MetadataBase
+	MetadataBaseWithSignature
 }
 
 type PDEFeeWithdrawalRequestAction struct {
@@ -33,20 +33,16 @@ func NewPDEFeeWithdrawalRequest(
 	withdrawalFeeAmt uint64,
 	metaType int,
 ) (*PDEFeeWithdrawalRequest, error) {
-	metadataBase := MetadataBase{
-		Type: metaType, Sig: []byte{},
-	}
+	metadataBase := NewMetadataBaseWithSignature(metaType)
 	pdeFeeWithdrawalRequest := &PDEFeeWithdrawalRequest{
 		WithdrawerAddressStr:  withdrawerAddressStr,
 		WithdrawalToken1IDStr: withdrawalToken1IDStr,
 		WithdrawalToken2IDStr: withdrawalToken2IDStr,
 		WithdrawalFeeAmt:      withdrawalFeeAmt,
 	}
-	pdeFeeWithdrawalRequest.MetadataBase = metadataBase
+	pdeFeeWithdrawalRequest.MetadataBaseWithSignature = *metadataBase
 	return pdeFeeWithdrawalRequest, nil
 }
-
-func (*PDEFeeWithdrawalRequest) ShouldSignMetaData() bool { return true }
 
 func (pc PDEFeeWithdrawalRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	// NOTE: verify supported tokens pair as needed
@@ -59,7 +55,7 @@ func (pc PDEFeeWithdrawalRequest) ValidateSanityData(chainRetriever ChainRetriev
 		return false, false, NewMetadataTxError(PDEFeeWithdrawalRequestFromMapError, errors.New("WithdrawerAddressStr incorrect"))
 	}
 
-	if ok, err := tx.CheckAuthorizedSender(addr.Pk); err != nil || !ok {
+	if ok, err := pc.MetadataBaseWithSignature.VerifyMetadataSignature(addr.Pk, tx); err != nil || !ok {
 		fmt.Println("Check authorized sender fail:", ok, err)
 		return false, false, errors.New("WithdrawerAddr unauthorized")
 	}

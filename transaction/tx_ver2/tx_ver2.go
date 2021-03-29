@@ -109,44 +109,6 @@ func (tx *Tx) GetReceiverData() ([]privacy.Coin, error) {
 	return nil, nil
 }
 
-// ========== CHECK FUNCTION ===========
-
-// CheckAuthorizedSender verifies that this publicKey matches the signature inside the metadata
-func (tx *Tx) CheckAuthorizedSender(publicKey []byte) (bool, error) {
-	if !tx.Metadata.ShouldSignMetaData() {
-		utils.Logger.Log.Error("Check authorized sender failed because tx.Metadata is not appropriate")
-		return false, errors.New("Check authorized sender failed because tx.Metadata is not appropriate")
-	}
-	//meta, ok := tx.Metadata.(*metadata.StopAutoStakingMetadata)
-	//if !ok {
-	//	utils.Logger.Log.Error("Check authorized sender failed because tx.Metadata is not correct type")
-	//	return false, errors.New("Check authorized sender failed because tx.Metadata is not correct type")
-	//}
-	metaSig := tx.Metadata.GetSig()
-	fmt.Println("Metadata Signature", metaSig)
-	if metaSig == nil || len(metaSig) == 0 {
-		utils.Logger.Log.Error("CheckAuthorizedSender: should have sig for metadata to verify")
-		return false, errors.New("CheckAuthorizedSender should have sig for metadata to verify")
-	}
-	/****** verify Schnorr signature *****/
-	verifyKey := new(privacy.SchnorrPublicKey)
-	metaSigPublicKey, err := new(privacy.Point).FromBytesS(publicKey)
-	if err != nil {
-		utils.Logger.Log.Error(err)
-		return false, utils.NewTransactionErr(utils.DecompressSigPubKeyError, err)
-	}
-	verifyKey.Set(metaSigPublicKey)
-
-	signature := new(privacy.SchnSignature)
-	if err := signature.SetBytes(metaSig); err != nil {
-		newErr := utils.NewTransactionErr(utils.InitTxSignatureFromBytesError, err)
-		utils.Logger.Log.Errorf("Metadata Signature Invalid - ", newErr)
-		return false, newErr
-	}
-	fmt.Println("[CheckAuthorizedSender] Metadata Signature - Validate OK")
-	return verifyKey.Verify(signature, tx.HashWithoutMetadataSig()[:]), nil
-}
-
 // ========== NORMAL INIT FUNCTIONS ==========
 
 func createPrivKeyMlsag(inputCoins []privacy.PlainCoin, outputCoins []*privacy.CoinV2, senderSK *privacy.PrivateKey, commitmentToZero *privacy.Point) ([]*privacy.Scalar, error) {
@@ -269,31 +231,6 @@ func (tx *Tx) signOnMessage(inp []privacy.PlainCoin, out []*privacy.CoinV2, para
 	return err
 }
 
-func (tx *Tx) signMetadata(privateKey *privacy.PrivateKey) error {
-	// signOnMessage meta data
-	metaSig := tx.Metadata.GetSig()
-	if metaSig != nil && len(metaSig) > 0 {
-		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("meta.Sig should be empty or nil"))
-	}
-
-	/****** using Schnorr signature *******/
-	sk := new(privacy.Scalar).FromBytesS(*privateKey)
-	r := new(privacy.Scalar).FromUint64(0)
-	sigKey := new(privacy.SchnorrPrivateKey)
-	sigKey.Set(sk, r)
-
-	// signing
-	signature, err := sigKey.Sign(tx.HashWithoutMetadataSig()[:])
-	if err != nil {
-		return err
-	}
-
-	// convert signature to byte array
-	tx.Metadata.SetSig(signature.Bytes())
-	fmt.Println("Signature Detail", tx.Metadata.GetSig())
-	return nil
-}
-
 func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
 	outputCoins, err := utils.NewCoinV2ArrayFromPaymentInfoArray(params.PaymentInfo, params.TokenID, params.StateDB)
 	if err != nil {
@@ -310,12 +247,13 @@ func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
 		return err
 	}
 
-	if tx.ShouldSignMetaData() {
-		if err := tx.signMetadata(params.SenderSK); err != nil {
+	if tx.GetMetadata() != nil {
+		if err := tx.GetMetadata().Sign(params.SenderSK, tx); err != nil {
 			utils.Logger.Log.Error("Cannot signOnMessage txMetadata in shouldSignMetadata")
-			return err
+				return err
 		}
 	}
+	
 	err = tx.signOnMessage(inputCoins, outputCoins, params, tx.Hash()[:])
 	return err
 }

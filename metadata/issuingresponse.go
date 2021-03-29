@@ -14,7 +14,7 @@ import (
 type IssuingResponse struct {
 	MetadataBase
 	RequestedTxID common.Hash
-	SharedRandom       []byte
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 type IssuingResAction struct {

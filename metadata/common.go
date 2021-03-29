@@ -43,6 +43,10 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 	theType := int(typeFloat)
 	switch theType {
+	case InitTokenRequestMeta:
+		md = &InitTokenRequest{}
+	case InitTokenResponseMeta:
+		md = &InitTokenResponse{}
 	case IssuingRequestMeta:
 		md = &IssuingRequest{}
 	case IssuingResponseMeta:
@@ -106,7 +110,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case PortalUserRequestPTokenResponseMeta:
 		md = &PortalRequestPTokensResponse{}
 	case PortalRedeemRequestMeta, PortalRedeemRequestMetaV3:
-		md = &PortalRedeemRequest{}
+		md = &PortalRedeemRequestV3{}
 	case PortalRedeemRequestResponseMeta:
 		md = &PortalRedeemRequestResponse{}
 	case PortalRequestUnlockCollateralMeta, PortalRequestUnlockCollateralMetaV3:
@@ -201,7 +205,7 @@ func HasBridgeInstructions(instructions [][]string) bool {
 }
 
 // TODO: add more meta data types
-var portalMetas = []string{
+var portalConfirmedMetas = []string{
 	strconv.Itoa(PortalCustodianWithdrawConfirmMetaV3),
 	strconv.Itoa(PortalRedeemFromLiquidationPoolConfirmMetaV3),
 	strconv.Itoa(PortalLiquidateRunAwayCustodianConfirmMetaV3),
@@ -209,7 +213,7 @@ var portalMetas = []string{
 
 func HasPortalInstructions(instructions [][]string) bool {
 	for _, inst := range instructions {
-		for _, meta := range portalMetas {
+		for _, meta := range portalConfirmedMetas {
 			if len(inst) > 0 && inst[0] == meta {
 				return true
 			}
@@ -227,24 +231,9 @@ func ValidatePortalExternalAddress(chainName string, tokenID string, address str
 	return true, nil
 }
 
-// Validate portal remote addresses for portal tokens (BTC, BNB)
-func ValidatePortalRemoteAddresses(remoteAddresses map[string]string, chainRetriever ChainRetriever) (bool, error) {
-	if len(remoteAddresses) == 0 {
-		return false, errors.New("remote addresses should be at least one address")
-	}
-	for tokenID, remoteAddr := range remoteAddresses {
-		if !IsPortalToken(tokenID) {
-			return false, errors.New("TokenID in remote address is invalid")
-		}
-		if len(remoteAddr) == 0 {
-			return false, errors.New("Remote address is invalid")
-		}
-		if !IsValidPortalRemoteAddress(chainRetriever, remoteAddr, tokenID) {
-			return false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", remoteAddr, tokenID)
-		}
-	}
-
-	return true, nil
+func IsPortalMetaTypeV3(metaType int) bool {
+	res, _ := common.SliceExists(portalMetaTypesV3, metaType)
+	return res
 }
 
 //Checks if a string payment address is supported by the underlying transaction.
@@ -260,7 +249,7 @@ func AssertPaymentAddressAndTxVersion(paymentAddress interface{}, version int8) 
 			//try the string one
 			addrStr, ok := paymentAddress.(string)
 			if !ok {
-				return privacy.PaymentAddress{}, errors.New(fmt.Sprintf("cannot parse payment address - %v: Not a payment address or string address (txversion %v)", paymentAddress, version))
+				return privacy.PaymentAddress{}, fmt.Errorf("cannot parse payment address - %v: Not a payment address or string address (txversion %v)", paymentAddress, version)
 			}
 			keyWallet, err := wallet.Base58CheckDeserialize(addrStr)
 			if err != nil {
@@ -285,4 +274,9 @@ func AssertPaymentAddressAndTxVersion(paymentAddress interface{}, version int8) 
 	}
 
 	return addr, nil
+}
+
+func IsPortalRelayingMetaType(metaType int) bool {
+	res, _ := common.SliceExists(portalRelayingMetaTypes, metaType)
+	return res
 }

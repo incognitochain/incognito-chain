@@ -46,9 +46,6 @@ func NewBurningRequest(
 	return burningReq, nil
 }
 
-
-func (bReq *BurningRequest) ShouldSignMetaData() bool { return true }
-
 func (bReq BurningRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), bReq.TokenID, false)
 	if err != nil {
@@ -69,9 +66,6 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
 		return false, false, err
 	}
-	if _, err := AssertPaymentAddressAndTxVersion(bReq.BurnerAddress, tx.GetVersion()); err != nil {
-		return false, false, err
-	}
 	if bReq.BurningAmount == 0 {
 		return false, false, errors.New("wrong request info's burned amount")
 	}
@@ -86,11 +80,6 @@ func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, sha
 	burnAmount := burnCoin.GetValue()
 	if burnAmount != bReq.BurningAmount || burnAmount == 0 {
 		return false, false, fmt.Errorf("burn amount is incorrect %v", burnAmount)
-	}
-
-	if ok, err := tx.CheckAuthorizedSender(bReq.BurnerAddress.Pk); err != nil || !ok {
-		fmt.Println("Check authorized sender fail:", ok, err)
-		return false, false, fmt.Errorf("burner address unauthorized. Error %v", err)
 	}
 
 	if shardViewRetriever.GetEpoch() >= chainRetriever.GetETHRemoveBridgeSigEpoch() && (bReq.Type == BurningRequestMeta || bReq.Type == BurningForDepositToSCRequestMeta) {
@@ -113,9 +102,6 @@ func (bReq BurningRequest) Hash() *common.Hash {
 	record += strconv.FormatUint(bReq.BurningAmount, 10)
 	record += bReq.TokenName
 	record += bReq.RemoteAddress
-	if bReq.Sig != nil && len(bReq.Sig) != 0 {
-		record += string(bReq.Sig)
-	}
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

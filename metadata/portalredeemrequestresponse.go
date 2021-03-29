@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -18,7 +19,7 @@ type PortalRedeemRequestResponse struct {
 	RequesterAddrStr string
 	Amount           uint64
 	IncTokenID       string
-	SharedRandom       []byte
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewPortalRedeemRequestResponse(
@@ -90,8 +91,8 @@ func (iRes PortalRedeemRequestResponse) VerifyMinerCreatedTxBeforeGettingInBlock
 		}
 		instReqStatus := inst[2]
 		if iRes.RequestStatus != "rejected" ||
-			(instReqStatus != common.PortalRedeemRequestRejectedChainStatus &&
-				instReqStatus != common.PortalRedeemReqCancelledByLiquidationChainStatus) {
+			(instReqStatus != pCommon.PortalRequestRejectedChainStatus &&
+				instReqStatus != pCommon.PortalRedeemReqCancelledByLiquidationChainStatus) {
 			continue
 		}
 

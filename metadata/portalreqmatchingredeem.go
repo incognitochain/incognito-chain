@@ -13,7 +13,7 @@ import (
 // PortalReqMatchingRedeem - portal custodian request matching redeem requests
 // metadata - request matching redeem requests - create normal tx with this metadata
 type PortalReqMatchingRedeem struct {
-	MetadataBase
+	MetadataBaseWithSignature
 	CustodianAddressStr string
 	RedeemID            string
 }
@@ -47,18 +47,14 @@ type PortalReqMatchingRedeemStatus struct {
 }
 
 func NewPortalReqMatchingRedeem(metaType int, custodianAddrStr string, redeemID string) (*PortalReqMatchingRedeem, error) {
-	metadataBase := MetadataBase{
-		Type: metaType, Sig: []byte{},
-	}
+	metadataBase := NewMetadataBaseWithSignature(metaType)
 	custodianDepositMeta := &PortalReqMatchingRedeem{
 		CustodianAddressStr: custodianAddrStr,
 		RedeemID:            redeemID,
 	}
-	custodianDepositMeta.MetadataBase = metadataBase
+	custodianDepositMeta.MetadataBaseWithSignature = *metadataBase
 	return custodianDepositMeta, nil
 }
-
-func (*PortalReqMatchingRedeem) ShouldSignMetaData() bool { return true }
 
 func (req PortalReqMatchingRedeem) ValidateTxWithBlockChain(
 	txr Transaction,
@@ -80,7 +76,7 @@ func (req PortalReqMatchingRedeem) ValidateSanityData(chainRetriever ChainRetrie
 		return false, false, errors.New("wrong custodian incognito address")
 	}
 
-	if ok, err := txr.CheckAuthorizedSender(incogAddr.Pk); err != nil || !ok {
+	if ok, err := req.MetadataBaseWithSignature.VerifyMetadataSignature(incogAddr.Pk, txr); err != nil || !ok {
 		return false, false, errors.New("Request matching redeem is unauthorized")
 	}
 
@@ -101,7 +97,7 @@ func (req PortalReqMatchingRedeem) ValidateMetadataByItself() bool {
 }
 
 func (req PortalReqMatchingRedeem) Hash() *common.Hash {
-	record := req.MetadataBase.Hash().String()
+	record := req.MetadataBaseWithSignature.Hash().String()
 	record += req.CustodianAddressStr
 	record += req.RedeemID
 	if req.Sig != nil && len(req.Sig) != 0 {
@@ -113,7 +109,7 @@ func (req PortalReqMatchingRedeem) Hash() *common.Hash {
 }
 
 func (req PortalReqMatchingRedeem) HashWithoutSig() *common.Hash {
-	record := req.MetadataBase.Hash().String()
+	record := req.MetadataBaseWithSignature.Hash().String()
 	record += req.CustodianAddressStr
 	record += req.RedeemID
 

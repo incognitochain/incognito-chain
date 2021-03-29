@@ -146,49 +146,65 @@ func (blockchain *BlockChain) GetTransactionHashByReceiverV2(
 
 func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *types.ShardBlock) error {
 	// filter double withdraw request
-	withdrawReqTable := make(map[string]privacy.PaymentAddress)
+	withdrawReqTable := make(map[string]*metadata.WithDrawRewardRequest)
 	for _, tx := range shardBlock.Body.Transactions {
-		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
-			metaRequest := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
-			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaRequest.PaymentAddress .Pk, common.Base58Version), metaRequest.TokenID.String())
-			if _, ok := withdrawReqTable[mapKey]; !ok {
-				withdrawReqTable[mapKey] = metaRequest.PaymentAddress
+		switch tx.GetMetadataType() {
+		case metadata.WithDrawRewardRequestMeta:
+			if tx.GetMetadata() == nil {
+				return fmt.Errorf("metadata is nil for type %v", tx.GetMetadataType())
+			}
+
+			md, ok := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			if !ok {
+				return fmt.Errorf("cannot parse withdraw request for tx %v", tx.Hash().String())
+			}
+			if _, ok = withdrawReqTable[tx.Hash().String()]; !ok {
+				withdrawReqTable[tx.Hash().String()] = md
 			}
 		}
 	}
+
 	// check tx withdraw response valid with the corresponding request
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
 			//check valid info with tx request
-			metaResponse := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
-			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaResponse.RewardPublicKey, common.Base58Version), metaResponse.TokenID.String())
-			rewardPaymentAddress, ok := withdrawReqTable[mapKey]
-			if !ok {
-				return errors.Errorf("[Mint Withdraw Reward] This response dont match with any request in this block - Reward Address: %v", mapKey)
-			} else {
-				delete(withdrawReqTable, mapKey)
+			if tx.GetMetadata() == nil {
+				return fmt.Errorf("metadata is nil for type %v", tx.GetMetadataType())
 			}
+
+			metaResponse, ok := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
+			if !ok {
+				return fmt.Errorf("cannot cast %v to a withdraw reward response", tx.GetMetadata())
+			}
+
+			metaRequest, ok := withdrawReqTable[metaResponse.TxRequest.String()]
+			if !ok {
+				return fmt.Errorf("cannot found tx request for tx withdraw reward response %v", tx.Hash().String())
+			} else {
+				delete(withdrawReqTable, metaResponse.TxRequest.String())
+			}
+			rewardPaymentAddress := metaRequest.PaymentAddress
+
 			isMinted, mintCoin, coinID, err := tx.GetTxMintData()
 			//check tx mint
 			if err != nil || !isMinted {
 				return errors.Errorf("[Mint Withdraw Reward] It is not tx mint with error: %v", err)
 			}
 			//check tokenID
-			if cmp, err := metaResponse.TokenID.Cmp(coinID); err != nil || cmp != 0 {
-				return errors.Errorf("[Mint Withdraw Reward] Token dont match: %v and %v", metaResponse.TokenID.String(), coinID.String())
+			if metaRequest.TokenID.String() != coinID.String() {
+				return fmt.Errorf("token in the request (%v) and the minted token mismatch (%v)", metaRequest.TokenID.String(), coinID.String())
 			}
 
 			//check amount & receiver
 			rewardAmount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB(),
-				base58.Base58Check{}.Encode(metaResponse.RewardPublicKey, common.Base58Version), *coinID)
+				base58.Base58Check{}.Encode(metaRequest.PaymentAddress.Pk, common.Base58Version), *coinID)
 			if err != nil {
 				return errors.Errorf("[Mint Withdraw Reward] Cannot get reward amount")
 			}
 			if ok := mintCoin.CheckCoinValid(rewardPaymentAddress, metaResponse.SharedRandom, rewardAmount); !ok {
-				Logger.log.Errorf("[Mint Withdraw Reward] CheckMintCoinValid: %v, %v, %v, %v, %v\n", mintCoin.GetVersion(), mintCoin.GetValue(), mintCoin.GetPublicKey(), rewardPaymentAddress, rewardPaymentAddress.GetPublicSpend().ToBytesS())
+				Logger.log.Errorf("[Mint Withdraw Reward] CheckMintCoinValid: %v, %v, %v, %v, %v, %v\n", mintCoin.GetVersion(), rewardAmount, mintCoin.GetValue(), mintCoin.GetPublicKey(), rewardPaymentAddress, rewardPaymentAddress.GetPublicSpend().String())
 				return errors.Errorf("[Mint Withdraw Reward] Mint Coin is invalid for receiver or amount")
 			}
-
 		}
 	}
 

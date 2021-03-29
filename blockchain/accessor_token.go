@@ -118,7 +118,16 @@ func (blockchain *BlockChain) GetAllBridgeTokens() ([]common.Hash, []*rawdbv2.Br
 	return bridgeTokenIDs, allBridgeTokens, nil
 }
 
-func (blockchain *BlockChain) PrivacyTokenIDExistedInAllShards(curView *BeaconBestState, tokenID common.Hash) (bool, error) {
+//PrivacyTokenIDExistedInNetwork checks if a token has existed in the network by
+//	1. Checking if it has existed in the beacon database
+//	2. Checking if it has existed in one of the shard databases
+func (blockchain *BlockChain) PrivacyTokenIDExistedInNetwork(curView *BeaconBestState, tokenID common.Hash) (bool, error) {
+	beaconDB := curView.featureStateDB
+	if existed := statedb.PrivacyTokenIDExisted(beaconDB, tokenID); existed {
+		Logger.log.Infof("TokenID %v existed in beaconDB\n", tokenID.String())
+		return false, nil
+	}
+
 	for shardID, shardHash := range curView.BestShardHash {
 		db := blockchain.GetShardChainDatabase(shardID)
 		shardRootHash, err := GetShardRootsHashByBlockHash(db, shardID, shardHash)

@@ -449,6 +449,15 @@ func (blockchain *BlockChain) buildInstsForSortedTradableActions(
 				},
 			}
 		}
+
+		//Work-around solution for the sake of syncing mainnet
+		//Todo: find better solution
+		if _, err := metadata.AssertPaymentAddressAndTxVersion(tradeAction.Meta.TraderAddressStr, 1); err == nil {
+			if len(tradeAction.Meta.SubTraderAddressStr) == 0 {
+				tradeAction.Meta.SubTraderAddressStr = tradeAction.Meta.TraderAddressStr
+			}
+		}
+
 		newInsts, err := blockchain.buildInstructionsForPDECrossPoolTrade(
 			sequentialTrades,
 			tradeMeta.MinAcceptableAmount,
@@ -480,9 +489,17 @@ func (blockchain *BlockChain) buildInstsForUntradableActions(
 ) [][]string {
 	untradableInsts := [][]string{}
 	for _, tradeAction := range untradableActions {
+		//Work-around solution for the sake of syncing mainnet
+		//Todo: find better solution
+		if _, err := metadata.AssertPaymentAddressAndTxVersion(tradeAction.Meta.TraderAddressStr, 1); err == nil {
+			if len(tradeAction.Meta.SubTraderAddressStr) == 0 {
+				tradeAction.Meta.SubTraderAddressStr = tradeAction.Meta.TraderAddressStr
+			}
+		}
+
 		refundTradingFeeInst := buildCrossPoolTradeRefundInst(
-			tradeAction.Meta.TraderAddressStr,
-			tradeAction.Meta.TxRandomStr,
+			tradeAction.Meta.SubTraderAddressStr,
+			tradeAction.Meta.SubTxRandomStr,
 			common.PRVCoinID.String(),
 			tradeAction.Meta.TradingFee,
 			metadata.PDECrossPoolTradeRequestMeta,
@@ -490,10 +507,13 @@ func (blockchain *BlockChain) buildInstsForUntradableActions(
 			tradeAction.ShardID,
 			tradeAction.TxReqID,
 		)
-		untradableInsts = append(untradableInsts, refundTradingFeeInst)
+		if len(refundTradingFeeInst) > 0 {
+			untradableInsts = append(untradableInsts, refundTradingFeeInst)
+		}
+
 		refundSellingTokenInst := buildCrossPoolTradeRefundInst(
-			tradeAction.Meta.SubTraderAddressStr,
-			tradeAction.Meta.SubTxRandomStr,
+			tradeAction.Meta.TraderAddressStr,
+			tradeAction.Meta.TxRandomStr,
 			tradeAction.Meta.TokenIDToSellStr,
 			tradeAction.Meta.SellAmount,
 			metadata.PDECrossPoolTradeRequestMeta,
@@ -501,7 +521,9 @@ func (blockchain *BlockChain) buildInstsForUntradableActions(
 			tradeAction.ShardID,
 			tradeAction.TxReqID,
 		)
-		untradableInsts = append(untradableInsts, refundSellingTokenInst)
+		if len(refundSellingTokenInst) > 0 {
+			untradableInsts = append(untradableInsts, refundSellingTokenInst)
+		}
 	}
 	return untradableInsts
 }
@@ -516,6 +538,9 @@ func buildCrossPoolTradeRefundInst(
 	shardID byte,
 	txReqID common.Hash,
 ) []string {
+	if amount == 0 {
+		return []string{}
+	}
 	refundCrossPoolTrade := metadata.PDERefundCrossPoolTrade{
 		TraderAddressStr: traderAddressStr,
 		TxRandomStr: txRandomStr,
@@ -531,6 +556,49 @@ func buildCrossPoolTradeRefundInst(
 		status,
 		string(refundCrossPoolTradeBytes),
 	}
+}
+
+// build refund instructions for an unsuccessful trade
+// note: only refund if amount > 0
+func refundForCrossPoolTrade(
+	sequentialTrades []*tradeInfo,
+	traderAddressStr string,
+	txRandomStr string,
+	subTraderAddressStr string,
+	subTxRandomStr string,
+	tradingFee uint64,
+	metaType int,
+	shardID byte,
+	txReqID common.Hash,
+) ([][]string, error) {
+	refundTradingFeeInst := buildCrossPoolTradeRefundInst(
+		subTraderAddressStr,
+		subTxRandomStr,
+		common.PRVIDStr,
+		tradingFee,
+		metaType,
+		common.PDECrossPoolTradeFeeRefundChainStatus,
+		shardID,
+		txReqID,
+	)
+	refundSellingTokenInst := buildCrossPoolTradeRefundInst(
+		traderAddressStr,
+		txRandomStr,
+		sequentialTrades[0].tokenIDToSellStr,
+		sequentialTrades[0].sellAmount,
+		metaType,
+		common.PDECrossPoolTradeSellingTokenRefundChainStatus,
+		shardID,
+		txReqID,
+	)
+	refundInsts := [][]string{}
+	if len(refundTradingFeeInst) > 0 {
+		refundInsts = append(refundInsts, refundTradingFeeInst)
+	}
+	if len(refundSellingTokenInst) > 0 {
+		refundInsts = append(refundInsts, refundSellingTokenInst)
+	}
+	return refundInsts, nil
 }
 
 func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
@@ -550,28 +618,17 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 ) ([][]string, error) {
 	if currentPDEState == nil ||
 		(currentPDEState.PDEPoolPairs == nil || len(currentPDEState.PDEPoolPairs) == 0) {
-
-		refundTradingFeeInst := buildCrossPoolTradeRefundInst(
+		return refundForCrossPoolTrade(
+			sequentialTrades,
 			traderAddressStr,
 			txRandomStr,
-			common.PRVCoinID.String(),
-			tradingFee,
-			metaType,
-			common.PDECrossPoolTradeFeeRefundChainStatus,
-			shardID,
-			txReqID,
-		)
-		refundSellingTokenInst := buildCrossPoolTradeRefundInst(
 			subTraderAddressStr,
 			subTxRandomStr,
-			sequentialTrades[0].tokenIDToSellStr,
-			sequentialTrades[0].sellAmount,
+			tradingFee,
 			metaType,
-			common.PDECrossPoolTradeSellingTokenRefundChainStatus,
 			shardID,
 			txReqID,
 		)
-		return [][]string{refundTradingFeeInst, refundSellingTokenInst}, nil
 	}
 
 	amt := sequentialTrades[0].sellAmount
@@ -588,18 +645,19 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 
 	if minAcceptableAmount > amt {
 		refundTradingFeeInst := buildCrossPoolTradeRefundInst(
-			traderAddressStr,
-			txRandomStr,
-			common.PRVCoinID.String(),
+			subTraderAddressStr,
+			subTxRandomStr,
+			common.PRVIDStr,
 			tradingFee,
 			metaType,
 			common.PDECrossPoolTradeFeeRefundChainStatus,
 			shardID,
 			txReqID,
 		)
+
 		refundSellingTokenInst := buildCrossPoolTradeRefundInst(
-			subTraderAddressStr,
-			subTxRandomStr,
+			traderAddressStr,
+			txRandomStr,
 			sequentialTrades[0].tokenIDToSellStr,
 			sequentialTrades[0].sellAmount,
 			metaType,
@@ -1054,8 +1112,10 @@ func (blockchain *BlockChain) buildInstForTradingFeesDist(
 			if idx == len(allSharesByPair)-1 {
 				feeForContributor.Sub(totalFees, accumFees)
 			} else {
-				feeForContributor.Mul(totalFees, new(big.Int).SetUint64(sInfo.shareAmt))
-				feeForContributor.Div(feeForContributor, totalSharesOfPair)
+				if totalSharesOfPair.Cmp(big.NewInt(0)) == 1 {
+					feeForContributor.Mul(totalFees, new(big.Int).SetUint64(sInfo.shareAmt))
+					feeForContributor.Div(feeForContributor, totalSharesOfPair)
+				}
 			}
 
 			parts := strings.Split(sInfo.shareKey, "-")

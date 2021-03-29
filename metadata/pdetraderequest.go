@@ -19,7 +19,7 @@ type PDETradeRequest struct {
 	MinAcceptableAmount uint64
 	TradingFee          uint64
 	TraderAddressStr    string
-	TxRandomStr         string
+	TxRandomStr         string `json:"TxRandomStr,omitempty"`
 	MetadataBase
 }
 
@@ -36,7 +36,7 @@ type TokenPoolValueOperation struct {
 
 type PDETradeAcceptedContent struct {
 	TraderAddressStr         string
-	TxRandomStr              string
+	TxRandomStr              string `json:"TxRandomStr,omitempty"`
 	TokenIDToBuyStr          string
 	ReceiveAmount            uint64
 	Token1IDStr              string
@@ -151,6 +151,9 @@ func (pc *PDETradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainR
 	if err != nil {
 		return [][]string{}, err
 	}
+
+	Logger.log.Infof("BUGLOG4 actionContent: %v\n", string(actionContentBytes))
+
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(PDETradeRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil

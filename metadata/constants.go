@@ -115,6 +115,9 @@ const (
 	BurningForDepositToSCRequestMetaV2 = 242
 	BurningConfirmForDepositToSCMeta   = 97
 	BurningConfirmForDepositToSCMetaV2 = 243
+
+	InitTokenRequestMeta  = 244
+	InitTokenResponseMeta = 245
 )
 
 var minerCreatedMetaTypes = []int{
@@ -141,6 +144,7 @@ var minerCreatedMetaTypes = []int{
 	PortalPortingResponseMeta,
 	PortalTopUpWaitingPortingResponseMeta,
 	PortalRedeemFromLiquidationPoolResponseMetaV3,
+	InitTokenResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -154,8 +158,8 @@ var (
 	// then using GETH_NAME env's value (aka geth container name)
 	// otherwise using localhost
 	//EthereumLightNodeHost     = common.GetENV("GETH_NAME", "127.0.0.1")
-	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "http")
-	EthereumLightNodePort     = common.GetENV("GETH_PORT", "8545")
+	//EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "http")
+	//EthereumLightNodePort     = common.GetENV("GETH_PORT", "8545")
 )
 
 // Kovan testnet
@@ -163,9 +167,9 @@ var (
 //	// if the blockchain is running in Docker container
 //	// then using GETH_NAME env's value (aka geth container name)
 //	// otherwise using localhost
-	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "kovan.infura.io/v3/93fe721349134964aa71071a713c5cef")
-//	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "https")
-//	EthereumLightNodePort     = common.GetENV("GETH_PORT", "")
+	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "https://mainnet.infura.io/v3/34918000975d4374a056ed78fe21c517")
+	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "")
+	EthereumLightNodePort     = common.GetENV("GETH_PORT", "")
 )
 
 //const (
@@ -178,3 +182,60 @@ const (
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}
+
+var portalMetaTypesV3 = []int{
+	PortalCustodianDepositMeta,
+	PortalRequestPortingMeta,
+	PortalUserRequestPTokenMeta,
+	PortalCustodianDepositResponseMeta,
+	PortalUserRequestPTokenResponseMeta,
+	PortalExchangeRatesMeta,
+	PortalRedeemRequestMeta,
+	PortalRedeemRequestResponseMeta,
+	PortalRequestUnlockCollateralMeta,
+	PortalCustodianWithdrawRequestMeta,
+	PortalCustodianWithdrawResponseMeta,
+	PortalLiquidateCustodianMeta,
+	PortalLiquidateCustodianResponseMeta,
+	PortalLiquidateTPExchangeRatesMeta,
+	PortalExpiredWaitingPortingReqMeta,
+	PortalRewardMeta,
+	PortalRequestWithdrawRewardMeta,
+	PortalRequestWithdrawRewardResponseMeta,
+	PortalRedeemFromLiquidationPoolMeta,
+	PortalRedeemFromLiquidationPoolResponseMeta,
+	PortalCustodianTopupMeta,
+	PortalCustodianTopupResponseMeta,
+	PortalTotalRewardCustodianMeta,
+	PortalPortingResponseMeta,
+	PortalReqMatchingRedeemMeta,
+	PortalPickMoreCustodianForRedeemMeta,
+	PortalCustodianTopupMetaV2,
+	PortalCustodianTopupResponseMetaV2,
+
+	// Portal v3
+	PortalCustodianDepositMetaV3,
+	PortalCustodianWithdrawRequestMetaV3,
+	PortalRewardMetaV3,
+	PortalRequestUnlockCollateralMetaV3,
+	PortalLiquidateCustodianMetaV3,
+	PortalLiquidateByRatesMetaV3,
+	PortalRedeemFromLiquidationPoolMetaV3,
+	PortalRedeemFromLiquidationPoolResponseMetaV3,
+	PortalCustodianTopupMetaV3,
+	PortalTopUpWaitingPortingRequestMetaV3,
+	PortalRequestPortingMetaV3,
+	PortalRedeemRequestMetaV3,
+	PortalCustodianWithdrawConfirmMetaV3,
+	PortalRedeemFromLiquidationPoolConfirmMetaV3,
+	PortalLiquidateRunAwayCustodianConfirmMetaV3,
+	PortalResetPortalDBMeta,
+
+	PortalTopUpWaitingPortingRequestMeta,
+	PortalTopUpWaitingPortingResponseMeta,
+}
+
+var portalRelayingMetaTypes = []int{
+	RelayingBNBHeaderMeta,
+	RelayingBTCHeaderMeta,
+}

@@ -12,7 +12,7 @@ type ReturnStakingMetadata struct {
 	MetadataBase
 	TxID          string
 	StakerAddress privacy.PaymentAddress
-	SharedRandom []byte
+	SharedRandom []byte `json:"SharedRandom,omitempty"`
 }
 
 func NewReturnStaking(txID string, producerAddress privacy.PaymentAddress, metaType int, ) *ReturnStakingMetadata {

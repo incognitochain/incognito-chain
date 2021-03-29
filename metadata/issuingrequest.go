@@ -19,7 +19,7 @@ type IssuingRequest struct {
 	DepositedAmount uint64
 	TokenID         common.Hash
 	TokenName       string
-	MetadataBase
+	MetadataBaseWithSignature
 }
 
 type IssuingReqAction struct {
@@ -49,6 +49,19 @@ func ParseIssuingInstContent(instContentStr string) (*IssuingReqAction, error) {
 	return &issuingReqAction, nil
 }
 
+func ParseIssuingInstAcceptedContent(instAcceptedContentStr string) (*IssuingAcceptedInst, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(instAcceptedContentStr)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingEthRequestDecodeInstructionError, err)
+	}
+	var issuingAcceptedInst IssuingAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingEthRequestUnmarshalJsonError, err)
+	}
+	return &issuingAcceptedInst, nil
+}
+
 func NewIssuingRequest(
 	receiverAddress privacy.PaymentAddress,
 	depositedAmount uint64,
@@ -56,16 +69,14 @@ func NewIssuingRequest(
 	tokenName string,
 	metaType int,
 ) (*IssuingRequest, error) {
-	metadataBase := MetadataBase{
-		Type: metaType, Sig: []byte{},
-	}
+	metadataBase := NewMetadataBaseWithSignature(metaType)
 	issuingReq := &IssuingRequest{
 		ReceiverAddress: receiverAddress,
 		DepositedAmount: depositedAmount,
 		TokenID:         tokenID,
 		TokenName:       tokenName,
 	}
-	issuingReq.MetadataBase = metadataBase
+	issuingReq.MetadataBaseWithSignature = *metadataBase
 	return issuingReq, nil
 }
 
@@ -139,7 +150,7 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriev
 	if err != nil {
 		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("cannot get centralized website payment address"))
 	}
-	if ok, err := tx.CheckAuthorizedSender(keySet.KeySet.PaymentAddress.Pk); err != nil || !ok {
+	if ok, err := iReq.MetadataBaseWithSignature.VerifyMetadataSignature(keySet.KeySet.PaymentAddress.Pk, tx); err != nil || !ok {
 		fmt.Println("Check authorized sender fail:", ok, err)
 		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("the issuance request must be called by centralized website"))
 	}
@@ -178,15 +189,13 @@ func (iReq IssuingRequest) ValidateMetadataByItself() bool {
 	return iReq.Type == IssuingRequestMeta
 }
 
-func (*IssuingRequest) ShouldSignMetaData() bool { return true }
-
 func (iReq IssuingRequest) Hash() *common.Hash {
 	record := iReq.ReceiverAddress.String()
 	record += iReq.TokenID.String()
 	// TODO: @hung change to record += fmt.Sprint(iReq.DepositedAmount)
 	record += string(iReq.DepositedAmount)
 	record += iReq.TokenName
-	record += iReq.MetadataBase.Hash().String()
+	record += iReq.MetadataBaseWithSignature.Hash().String()
 	if iReq.Sig != nil && len(iReq.Sig) != 0 {
 		record += string(iReq.Sig)
 	}
@@ -200,7 +209,7 @@ func (iReq IssuingRequest) HashWithoutSig() *common.Hash {
 	record += iReq.TokenID.String()
 	record += string(iReq.DepositedAmount)
 	record += iReq.TokenName
-	record += iReq.MetadataBase.Hash().String()
+	record += iReq.MetadataBaseWithSignature.Hash().String()
 
 	// final hash
 	hash := common.HashH([]byte(record))
