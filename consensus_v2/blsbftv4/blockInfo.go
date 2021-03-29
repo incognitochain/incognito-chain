@@ -15,6 +15,7 @@ type ProposeBlockInfo struct {
 	isValid          bool
 	hasNewVote       bool
 	isVoted          bool
+	isCommitted      bool
 	validVotes       int
 	errVotes         int
 }
@@ -26,7 +27,6 @@ func newProposeBlockForProposeMsg(
 	signingCommittes []incognitokey.CommitteePublicKey,
 	userKeySet []signatureschemes2.MiningKey,
 	votes map[string]*BFTVote,
-	isValid, hasNewVote bool,
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
 		block:            block,
@@ -34,8 +34,6 @@ func newProposeBlockForProposeMsg(
 		signingCommittes: incognitokey.DeepCopy(signingCommittes),
 		userKeySet:       signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
 		votes:            votes,
-		isValid:          isValid,
-		hasNewVote:       hasNewVote,
 	}
 }
 
