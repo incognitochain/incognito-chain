@@ -630,13 +630,13 @@ func (curView *BeaconBestState) countMissingSignature(
 		if shardState.Height == 1 {
 			continue
 		}
-		if beaconHeight <= bc.config.ChainParams.ConsensusV3Height {
+		if beaconHeight <= bc.config.ChainParams.StakingFlowV2Height {
 			err := curView.countMissingSignatureV1(bc, shardID, shardState)
 			if err != nil {
 				return err
 			}
 		}
-		if beaconHeight > bc.config.ChainParams.ConsensusV3Height {
+		if beaconHeight > bc.config.ChainParams.StakingFlowV2Height {
 			err := curView.countMissingSignatureV2(bc, shardID, shardState)
 			if err != nil {
 				return err
@@ -909,7 +909,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
+	if beaconBlock.Header.Height == blockchain.config.ChainParams.StakingFlowV2Height {
 		newBestState.upgradeCommitteeEngineV2(blockchain)
 	}
 
