@@ -49,7 +49,7 @@ type BLSBFT_V4 struct {
 	receiveBlockByHash   map[string]*ProposeBlockInfo    //blockHash -> blockInfo
 	voteHistory          map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 
-	bodyHash common.Hash // TODO: @tin use this property for optimizing producing block process
+	bodyHashes map[uint64]map[string]bool // TODO: @tin use this property for optimizing producing block process
 }
 
 func (e BLSBFT_V4) GetChainKey() string {
@@ -178,7 +178,7 @@ func (e *BLSBFT_V4) run() error {
 					e.Chain.GetShardID(), block.Hash().String(), block.GetHeight(), committeesStr, block.CommitteeFromBlock().String())
 
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
-					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, signingCommittees, userKeySet, make(map[string]*BFTVote), false, false)
+					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, signingCommittees, userKeySet, make(map[string]*BFTVote))
 					e.receiveBlockByHash[blkHash] = proposeBlockInfo
 					e.Logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
@@ -302,6 +302,7 @@ func (e *BLSBFT_V4) run() error {
 
 					if proposeBlockInfo.block.GetHeight() < e.Chain.GetFinalView().GetHeight() {
 						delete(e.receiveBlockByHash, h)
+						delete(e.bodyHashes, proposeBlockInfo.block.GetHeight())
 					}
 				}
 
@@ -351,6 +352,7 @@ func NewInstance(chain ChainInterface, committeeChain CommitteeChainHandler, cha
 	newInstance.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
 	newInstance.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
 	newInstance.voteHistory = make(map[uint64]types.BlockInterface)
+	newInstance.bodyHashes = make(map[uint64]map[string]bool)
 	newInstance.proposeHistory, err = lru.New(1000)
 	if err != nil {
 		panic(err) //must not error
@@ -428,8 +430,9 @@ func (e *BLSBFT_V4) processIfBlockGetEnoughVote(
 	}
 	//e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//already in chain
+	bestView := e.Chain.GetBestView()
 	view := e.Chain.GetViewByHash(*v.block.Hash())
-	if view != nil {
+	if view != nil && bestView.GetHash().String() != view.GetHash().String() {
 		//e.Logger.Infof("Get View By Hash Fail, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 		return
 	}
@@ -440,10 +443,10 @@ func (e *BLSBFT_V4) processIfBlockGetEnoughVote(
 		e.Logger.Infof("Get Previous View By Hash Fail, %+v, %+v", v.block.GetPrevHash(), v.block.GetHeight()-1)
 		return
 	}
-
 	v = e.validateVotes(v)
 
-	if v.validVotes > 2*len(v.signingCommittes)/3 {
+	if v.validVotes > 2*len(v.signingCommittes)/3 && !v.isCommitted {
+		v.isCommitted = true
 		e.Logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
 		if e.ChainID == BEACON_CHAIN_ID {
 			e.processWithEnoughVotesBeaconChain(v)
@@ -543,29 +546,33 @@ func (e *BLSBFT_V4) validateAndVote(
 	}
 
 	//already validate and vote for this proposed block
-	if v.isValid {
-		return nil
+	if !v.isValid {
+		//not connected
+		view := e.Chain.GetViewByHash(v.block.GetPrevHash())
+		if view == nil {
+			e.Logger.Info("view is null")
+			return errors.New("View not connect")
+		}
+
+		if _, ok := e.bodyHashes[v.block.GetHeight()][v.block.BodyHash().String()]; !ok {
+			//TODO: using context to validate block
+			_, cancel := context.WithTimeout(context.Background(), time.Second*10)
+			defer cancel()
+
+			e.Logger.Infof("validateAndVote for block: %+v \n", v.block.Hash().String())
+			if err := e.Chain.ValidatePreSignBlock(v.block, v.signingCommittes, v.committees); err != nil { //@tin fix here
+				e.Logger.Error(err)
+				return err
+			}
+
+			// Block is valid for commit
+			v.isValid = true
+			if len(e.bodyHashes[v.block.GetHeight()]) == 0 {
+				e.bodyHashes[v.block.GetHeight()] = make(map[string]bool)
+			}
+			e.bodyHashes[v.block.GetHeight()][v.block.BodyHash().String()] = true
+		}
 	}
-
-	//not connected
-	view := e.Chain.GetViewByHash(v.block.GetPrevHash())
-	if view == nil {
-		e.Logger.Info("view is null")
-		return errors.New("View not connect")
-	}
-
-	//TODO: using context to validate block
-	_, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-
-	e.Logger.Infof("validateAndVote for block: %+v \n", v.block.Hash().String())
-	if err := e.Chain.ValidatePreSignBlock(v.block, v.signingCommittes, v.committees); err != nil { //@tin fix here
-		e.Logger.Error("[dcs] err:", err)
-		return err
-	}
-
-	// Block is valid for commit
-	v.isValid = true
 
 	//if valid then vote
 	for _, userKey := range v.userKeySet {
@@ -728,14 +735,13 @@ func (e *BLSBFT_V4) proposeShardBlock(
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
-		e.Logger.Infof("[dcs] proposeShardBlock hash %+v height %+v Timestamp: %+v \n", newBlock.Hash().String(), newBlock.GetHeight(), newBlock.GetProduceTime())
+		e.Logger.Infof("proposeShardBlock hash %+v height %+v Timestamp: %+v \n", newBlock.Hash().String(), newBlock.GetHeight(), newBlock.GetProduceTime())
 	} else {
-		e.Logger.Infof("[dcs] 0 CreateNewBlockFromOldBlock, Block Height %+v Hash %+v Timestamp %+v", block.GetHeight(), block.Hash().String(), block.GetProduceTime())
 		newBlock, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
-		e.Logger.Infof("[dcs] 1 CreateNewBlockFromOldBlock, Block Height %+v Hash %+v Timestamp %+v", newBlock.GetHeight(), newBlock.Hash().String(), newBlock.GetProduceTime())
+		e.Logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v Hash %+v Timestamp %+v", newBlock.GetHeight(), newBlock.Hash().String(), newBlock.GetProduceTime())
 	}
 	return newBlock, err
 }
