@@ -208,6 +208,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 		}
 		outPoint := wire.NewOutPoint(utxoHash, in.GetOutputIndex())
 		txIn := wire.NewTxIn(outPoint, nil, nil)
+		txIn.Sequence = uint32(feePerOutput)
 		msgTx.AddTxIn(txIn)
 		totalInputAmount += in.GetOutputAmount()
 	}
