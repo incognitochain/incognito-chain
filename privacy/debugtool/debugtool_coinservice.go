@@ -51,7 +51,6 @@ var privJKeyList = [...]string{
 	"112t8rnf2a3ccCRcABxZceyc6y8fPRaAjXxvA9t7yJ1rhQtYLhVbo2fDHjuWAXLZbd4TDNwQXm7q2zk1q3PY3X1NRDuaSpGzGnJoVM6typHb",
 	"112t8rnf66LJGHv5tqi3coUChfTw4fH4JDcJoPxY6SQbTc3WoDFmekQcbcjT6VRaw7iuiN9RuQz9AVaJztwksvzkK3h5JciXtZEZBHx3YNYn",
 	"112t8rnYwrzsk7bQgYM6duFMfQsHDvoF3bLLEXQGSXayLzFhH2MDyHRFpYenM9qaPXRFcwVK2b7jFG8WHLgYamaqG8PzAJuC7sqhSw2RzaKx",
-	"112t8rneWAhErTC8YUFTnfcKHvB1x6uAVdehy1S8GP2psgqDxK3RHouUcd69fz88oAL9XuMyQ8mBY5FmmGJdcyrpwXjWBXRpoWwgJXjsxi4j",
 	"112t8rni5FF2cEVMZmmCzpnr4QuFnUvYymbkjk3LGp5GJs8c8wTMURmJbZGx8WgwkPodtwGr34Vu8KZat7gxZmSXu5h9LDuppnyzcEXSgKff",
 	"112t8rnqawFcfb4TCLwvSMgza64EuC4HMPUnwrqG1wn1UFpyyuCBcGPMcuT7vxfFCehzpj3jexavU33qUUJcdSyz321b27JFZFj6smyyQRza",
 	"112t8rnr8swHUPwFhhw8THdVtXLZqo1AqnoKrg1YFpTYr7k7xyKS46jiquN32nDFMNG85cEoew8eCpFNxUw4VB8ifQhFnZSvqpcyXS7jg3NP",
@@ -100,6 +99,7 @@ type OutCoinJSON struct {
 	Error interface{} `json:"Error"`
 }
 
+//var URL = "https://api-stg.coinservice.incognito.corncob.dev"
 var URL = "http://51.161.119.66:9001"
 var NoOfShard = 8
 
@@ -122,7 +122,7 @@ func SendPost(url, query string) ([]byte, error) {
 }
 
 func CheckCoinsSpent(shardID byte, listKeyImages []string, tokenID string) ([]bool, error) {
-	URL := "http://51.161.119.66:9001/checkkeyimages"
+	method := "checkkeyimages"
 	if len(listKeyImages) == 0 {
 		return nil, fmt.Errorf("no serial number provided to be checked")
 	}
@@ -143,7 +143,7 @@ func CheckCoinsSpent(shardID byte, listKeyImages []string, tokenID string) ([]bo
 
 
 	fmt.Println("=========")
-	b, err := SendPost(URL, query)
+	b, err := SendPost(fmt.Sprintf("%v/%v", URL, method), query)
 	if err != nil {
 		return []bool{}, err
 	}
@@ -168,6 +168,7 @@ func CheckCoinsSpent(shardID byte, listKeyImages []string, tokenID string) ([]bo
 
 func GetListToken(viewingKey string) (map[string]InfoJSON, error) {
 	method := "getkeyinfo"
+	fmt.Printf("%v/%v?key=%v\n", URL, method, viewingKey)
 	resp, err := http.Get(fmt.Sprintf("%v/%v?key=%v", URL, method, viewingKey))
 	if err != nil {
 		fmt.Println(fmt.Sprintf("cannot get list outcoin. Error %v", err))
