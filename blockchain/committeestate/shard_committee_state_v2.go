@@ -136,15 +136,17 @@ func (engine *ShardCommitteeEngineV2) Commit(hashes *ShardCommitteeStateHash) er
 	if err != nil {
 		return NewCommitteeStateError(ErrCommitShardCommitteeState, err)
 	}
-
 	if !comparedHashes.ShardCommitteeHash.IsEqual(&hashes.ShardCommitteeHash) {
 		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("Uncommitted ShardCommitteeHash want value %+v but have %+v",
 			comparedHashes.ShardCommitteeHash, hashes.ShardCommitteeHash))
 	}
-
 	if !comparedHashes.ShardSubstituteHash.IsEqual(&hashes.ShardSubstituteHash) {
 		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("Uncommitted ShardSubstituteHash want value %+v but have %+v",
 			comparedHashes.ShardSubstituteHash, hashes.ShardSubstituteHash))
+	}
+	if !comparedHashes.CommitteeFromBlock.IsEqual(&hashes.CommitteeFromBlock) {
+		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("Uncommitted committeeFromBlockHash want value %+v but have %+v",
+			comparedHashes.CommitteeFromBlock, hashes.CommitteeFromBlock))
 	}
 
 	engine.uncommittedShardCommitteeStateV2.clone(engine.shardCommitteeStateV2)

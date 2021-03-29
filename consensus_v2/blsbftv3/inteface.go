@@ -55,6 +55,7 @@ type ChainInterface interface {
 		oldBlock types.BlockInterface,
 		proposer string,
 		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, validationData string) error

@@ -612,7 +612,7 @@ func (e *BLSBFT_V3) proposeBeaconBlock(
 		}
 	} else {
 		e.Logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v")
-		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committeeViewHash)
+		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -652,7 +652,7 @@ func (e *BLSBFT_V3) proposeShardBlock(
 		}
 	} else {
 		e.Logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v")
-		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committeeViewHash)
+		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}

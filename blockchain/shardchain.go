@@ -181,6 +181,7 @@ func (chain *ShardChain) CreateNewBlock(
 func (chain *ShardChain) CreateNewBlockFromOldBlock(
 	oldBlock types.BlockInterface,
 	proposer string, startTime int64,
+	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.ShardBlock)
@@ -189,6 +190,16 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
 	newBlock.Header.CommitteeFromBlock = committeeViewHash
+	committeesStr, err := incognitokey.CommitteeKeyListToString(committees)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+
+	committeeHash, err := common.GenerateHashFromStringArray(committeesStr)
+	if err != nil {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	}
+	newBlock.Header.CommitteeRoot = committeeHash
 
 	return newBlock, nil
 }

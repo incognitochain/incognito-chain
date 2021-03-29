@@ -182,6 +182,7 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
 func (chain *BeaconChain) CreateNewBlockFromOldBlock(
 	oldBlock types.BlockInterface, proposer string,
 	startTime int64,
+	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash,
 ) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)

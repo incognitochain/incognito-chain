@@ -174,8 +174,8 @@ func (e *BLSBFT_V4) run() error {
 				}
 
 				committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
-				e.Logger.Infof("######### Shard %+v, BlockHeight %+v, committees %+v",
-					e.Chain.GetShardID(), block.GetHeight(), committeesStr)
+				e.Logger.Infof("######### Shard %+v, BlockHash %+v, BlockHeight %+v, committees %+v committeesFromBlock %+v",
+					e.Chain.GetShardID(), block.Hash().String(), block.GetHeight(), committeesStr, block.CommitteeFromBlock().String())
 
 				if _, ok := e.receiveBlockByHash[blkHash]; !ok {
 					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, signingCommittees, userKeySet, make(map[string]*BFTVote), false, false)
@@ -700,7 +700,7 @@ func (e *BLSBFT_V4) proposeBeaconBlock(
 		}
 	} else {
 		e.Logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v")
-		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committeeViewHash)
+		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -731,7 +731,7 @@ func (e *BLSBFT_V4) proposeShardBlock(
 		e.Logger.Infof("[dcs] proposeShardBlock hash %+v height %+v Timestamp: %+v \n", newBlock.Hash().String(), newBlock.GetHeight(), newBlock.GetProduceTime())
 	} else {
 		e.Logger.Infof("[dcs] 0 CreateNewBlockFromOldBlock, Block Height %+v Hash %+v Timestamp %+v", block.GetHeight(), block.Hash().String(), block.GetProduceTime())
-		newBlock, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committeeViewHash)
+		newBlock, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}

@@ -662,7 +662,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	committees, ok := cacheCommittees[beaconHashForCommittee]
 	if !ok {
 		var err error
-		committees, err = getOneShardCommitteeFromBeaconDB(bc.GetBeaconChainDatabase(), shardID, beaconHashForCommittee)
+		committees, _, err = bc.BeaconChain.CommitteesFromViewHashForShard(beaconHashForCommittee, shardID, committeestate.MaxSubsetCommittees)
 		if err != nil {
 			return err
 		}
