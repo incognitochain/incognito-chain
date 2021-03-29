@@ -6,7 +6,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 	"os"
-	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -36,7 +35,7 @@ type ShardSyncProcess struct {
 	beaconChain           Chain
 	shardPool             *BlkPool
 	actionCh              chan func()
-	lock                  *sync.RWMutex
+	lastInsert            string
 }
 
 func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain, beaconChain BeaconChainInterface, chain ShardChainInterface) *ShardSyncProcess {
@@ -67,6 +66,8 @@ func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain
 
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
+		lastHeight := s.Chain.GetBestViewHeight()
+
 		for {
 			if s.isCommittee {
 				s.crossShardSyncProcess.start()
@@ -93,6 +94,10 @@ func NewShardSyncProcess(shardID int, network Network, bc *blockchain.BlockChain
 					if ps.Timestamp < time.Now().Unix()-10 {
 						delete(s.shardPeerState, sender)
 					}
+				}
+				if lastHeight != s.Chain.GetBestViewHeight() {
+					s.lastInsert = time.Now().Format("2006-01-02T15:04:05-0700")
+					lastHeight = s.Chain.GetBestViewHeight()
 				}
 			}
 		}

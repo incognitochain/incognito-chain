@@ -277,6 +277,7 @@ const (
 	createAndSendBurningForDepositToSCRequest   = "createandsendburningfordeposittoscrequest"
 	createAndSendBurningForDepositToSCRequestV2 = "createandsendburningfordeposittoscrequestv2"
 
+	getSyncStats          = "getsyncstats"
 	getBeaconPoolInfo     = "getbeaconpoolinfo"
 	getShardPoolInfo      = "getshardpoolinfo"
 	getCrossShardPoolInfo = "getcrossshardpoolinfo"
