@@ -34,6 +34,7 @@ type BeaconSyncProcess struct {
 	beaconPool          *BlkPool
 	actionCh            chan func()
 	lastCrossShardState map[byte]map[byte]uint64
+	lastInsert          string
 }
 
 func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain BeaconChainInterface) *BeaconSyncProcess {
@@ -62,6 +63,7 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
+		lastHeight := s.chain.GetBestViewHeight()
 		for {
 			select {
 			case f := <-s.actionCh:
@@ -80,6 +82,11 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 						delete(s.beaconPeerStates, sender)
 					}
 				}
+				if lastHeight != s.chain.GetBestViewHeight() {
+					s.lastInsert = time.Now().Format("2006-01-02T15:04:05-0700")
+					lastHeight = s.chain.GetBestViewHeight()
+				}
+
 			}
 			if s.status != RUNNING_SYNC {
 				time.Sleep(time.Second)

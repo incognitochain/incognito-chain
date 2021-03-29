@@ -2,12 +2,17 @@ package rpcserver
 
 import (
 	"errors"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
+
+func (httpServer *HttpServer) hanldeGetSyncStats(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	stats := httpServer.synkerService.GetSyncStats()
+	result := jsonresult.NewSyncStats(stats)
+	return result, nil
+}
 
 func (httpServer *HttpServer) hanldeGetBeaconPoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("hanldeGetBeaconPoolInfo params: %+v", params)

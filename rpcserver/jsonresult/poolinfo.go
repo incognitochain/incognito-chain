@@ -1,6 +1,7 @@
 package jsonresult
 
 import (
+	"github.com/incognitochain/incognito-chain/syncker"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -8,6 +9,11 @@ import (
 
 type PoolInfo struct {
 	Info map[int][]BlockInfo `json:"Info"`
+}
+
+type SyncStats struct {
+	Beacon syncker.SyncInfo
+	Shard  map[int]*syncker.SyncInfo
 }
 
 type BlockInfo struct {
@@ -33,4 +39,11 @@ func NewPoolInfo(blks []common.BlockPoolInterface) *PoolInfo {
 		res.Info[k] = v
 	}
 	return res
+}
+
+func NewSyncStats(stats syncker.SynckerStats) *SyncStats {
+	return &SyncStats{
+		Beacon: stats.Beacon,
+		Shard:  stats.Shard,
+	}
 }
