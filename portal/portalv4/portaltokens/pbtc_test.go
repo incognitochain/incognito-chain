@@ -3,13 +3,14 @@ package portaltokens
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcutil/hdkeychain"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"math/rand"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -308,30 +309,27 @@ func TestGenerateMultiSigWalletFromSeeds(t *testing.T) {
 	fmt.Printf("err: %v\n", err)
 }
 
-func generateBTCPubKeyFromPrivateKey(privateKey []byte) []byte{
+func generateBTCPubKeyFromPrivateKey(privateKey []byte) []byte {
 	pkx, pky := btcec.S256().ScalarBaseMult(privateKey)
 	pubKey := btcec.PublicKey{Curve: btcec.S256(), X: pkx, Y: pky}
 	return pubKey.SerializeCompressed()
 }
 func TestMultiSigAddressDerivation(t *testing.T) {
 	tests := []struct {
-		//seed          string
 		name          string
 		net           *chaincfg.Params
 		incognitoAddr string
-		//masterPub     string
 	}{
 		{
-			//seed:          "000102030405060708090a0b0c0d0e0f",
 			name:          "test vector 1 master node private",
 			incognitoAddr: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
 			net:           &chaincfg.TestNet3Params,
-			//masterPub:     "tpubD6NzVbkrYhZ4YafwrX8Ctof2rpgZU2oLDSnUfwAemMrP8UCuXzJyiZbVnMaSrcpBjxkbmrYMjK5gLU59L2Wb9aMRwHyheKHXpWbu6fpoCgb",
 		},
 	}
 	for i, test := range tests {
-		parentFP := []byte{0x00, 0x00, 0x00, 0x00}
-		// generate chainCode from inc address
+		parentFP := []byte{}
+
+		// generate chainCode from shielding Inc address
 		incKey, err := wallet.Base58CheckDeserialize(test.incognitoAddr)
 		if err != nil {
 			t.Errorf("Deserialize incognitoAddr #%d (%s): unexpected error: %v",
@@ -342,18 +340,19 @@ func TestMultiSigAddressDerivation(t *testing.T) {
 
 		// generate BTC master account
 		BTCPrivateKeyMaster := chainhash.HashB([]byte("PrivateKeyMiningKey")) // private mining key => private key btc
-		BTCPublicKeyMaster := generateBTCPubKeyFromPrivateKey(BTCPrivateKeyMaster) //
-		// private
+		BTCPublicKeyMaster := generateBTCPubKeyFromPrivateKey(BTCPrivateKeyMaster)
+
+		// extended private key
 		extendedBTCPrivateKey := hdkeychain.NewExtendedKey(test.net.HDPrivateKeyID[:], BTCPrivateKeyMaster, chainCode, parentFP, 0, 0, true)
-		// public
+		// extended public key
 		extendedBTCPublicKey := hdkeychain.NewExtendedKey(test.net.HDPublicKeyID[:], BTCPublicKeyMaster, chainCode, parentFP, 0, 0, false)
 
 		// generate child account - it is multisig wallet corresponding user inc address
-		childPub, _ := extendedBTCPublicKey.Child(1)
+		childPub, _ := extendedBTCPublicKey.Child(0)
 		childPubKeyAddr, _ := childPub.Address(test.net)
 
 		// re-generate private key of child account - used to sign on spent uxto
-		childPrv, _ := extendedBTCPrivateKey.Child(1)
+		childPrv, _ := extendedBTCPrivateKey.Child(0)
 		childPrvAddrr, _ := childPrv.Address(test.net)
 
 		fmt.Println(childPubKeyAddr.String())
