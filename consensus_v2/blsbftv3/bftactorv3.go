@@ -478,44 +478,35 @@ func (e *BLSBFT_V3) validateAndVote(
 		_, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
 
-	if err := e.Chain.ValidatePreSignBlock(v.block, v.committees, v.committees); err != nil {
-		e.Logger.Error(err)
-		return err
-	}
-
-	//if valid then vote
-	for _, userKey := range e.UserKeySet {
-		Vote, err := CreateVote(&userKey, v.block, v.committees)
-		if err != nil {
+		if err := e.Chain.ValidatePreSignBlock(v.block, v.committees, v.committees); err != nil {
 			e.Logger.Error(err)
 			return err
 		}
-	}
-	v.isValid = true
+		v.isValid = true
 
-	if !v.isVoted {
-		//if valid then vote
-		for _, userKey := range e.UserKeySet {
-			Vote, err := CreateVote(&userKey, v.block, v.committees)
-			if err != nil {
-				e.Logger.Error(err)
-				return NewConsensusError(UnExpectedError, err)
+		if !v.isVoted {
+			//if valid then vote
+			for _, userKey := range e.UserKeySet {
+				Vote, err := CreateVote(&userKey, v.block, v.committees)
+				if err != nil {
+					e.Logger.Error(err)
+					return NewConsensusError(UnExpectedError, err)
+				}
+
+				msg, err := MakeBFTVoteMsg(Vote, e.ChainKey, e.currentTimeSlot, v.block.GetHeight())
+				if err != nil {
+					e.Logger.Error(err)
+					return NewConsensusError(UnExpectedError, err)
+				}
+
+				v.isVoted = true
+				e.voteHistory[v.block.GetHeight()] = v.block
+				e.Logger.Infof("e.ChainKey %+v sending vote for block hash %+v height %+v", e.ChainKey, v.block.Hash().String(), v.block.GetHeight())
+				go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
+				go e.Node.PushMessageToChain(msg, e.Chain)
 			}
-
-			msg, err := MakeBFTVoteMsg(Vote, e.ChainKey, e.currentTimeSlot, v.block.GetHeight())
-			if err != nil {
-				e.Logger.Error(err)
-				return NewConsensusError(UnExpectedError, err)
-			}
-
-			v.isVoted = true
-			e.voteHistory[v.block.GetHeight()] = v.block
-			e.Logger.Infof("e.ChainKey %+v sending vote for block hash %+v height %+v", e.ChainKey, v.block.Hash().String(), v.block.GetHeight())
-			go e.ProcessBFTMsg(msg.(*wire.MessageBFT))
-			go e.Node.PushMessageToChain(msg, e.Chain)
 		}
 	}
-
 	return nil
 }
 

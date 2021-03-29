@@ -424,7 +424,7 @@ func InitShardCommitteeStateV2(
 			panic(err)
 		}
 	}
-	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(shardCommittees, committeeFromBlockHash)
+	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(signingCommittes, committeeFromBlockHash)
 
 	return shardCommitteeState
 }
