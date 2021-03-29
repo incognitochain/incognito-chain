@@ -29,7 +29,7 @@ var privJKeyList = [...]string{
 	"112t8rnZqbTrW3BPYhCkw5FsFht9PwDBqJm3TogWjkQHr6WimG5v9g3eBPgKGm2yeuaLsn4eLPHvZGr8vBg7MLSWdU4tee1shqJ26sRSaSUo",
 	"112t8rnZywqj5s4nMRUp9NF9jX5ypZMxLStTvVweLowoF7Tpk8gwm6w1d9T2x2CQD1gbByKVBeUJsfB8eaJ7sVcxend1A7qjT2kdX6hH7uri",
 	"112t8rnb7Ld1PyzdMrcFnZhXiXfuDAj7KwyqQ3KyRAmpyeg8VUFmp6wZVUXE6A3YvwZZKPhnNMv62R14TJCCj91aEGuaLKW8bTs2FD83hTCG",
-	"112t8rndKzDh	NcapS29umfdLiTZULG7nbcAiTwGfpLfoh6yhsbS9uPkhxuAYCuPKVrptPPG5q9Yx5M9Yhn9X4QYWQN6nPXhkMkdZwpyRQShi",
+	"112t8rndKzDhNcapS29umfdLiTZULG7nbcAiTwGfpLfoh6yhsbS9uPkhxuAYCuPKVrptPPG5q9Yx5M9Yhn9X4QYWQN6nPXhkMkdZwpyRQShi",
 	"112t8rnZ5UZouZU9nFmYLfpHUp8NrvQkGLPD564mjzNDM8rMp9nc9sXZ6CFxCGEMuvHQpYN7af6KCPJnq9MfEnXQfntbM8hpy9LW8p4qzPxS",
 	"112t8rnan3pbXtdvfKSk3kti1tFcFpVSq5wp7c3hhLk7E4jQih2zsv8ynjpP1UQivExGwbMf9Ezp9qmKBJuHhNZPAzheqX4WTV8LfrdZY5Mh",
 	"112t8rncuhys7YDSqXfjVFjU52b6A9HHcUac2tLXSoqxduYSZHuQsZxybFtrhNqRqCKMMAzXTiJKE98vaXmzrqVQKT4kXUuRbuUAQyhUhuKK",
@@ -393,44 +393,46 @@ func TestGetBalance(t *testing.T) {
 
 
 	for index := range privJKeyList {
+		go func(index int) {
+			keyWallet, _ := wallet.Base58CheckDeserialize(privJKeyList[index])
+			keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+			shardID := byte(int(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]) % NoOfShard)
+			viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
+			paymentAddressStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+			paymentAddressStr, _ = wallet.GetPaymentAddressV1(paymentAddressStr, false)
 
-		keyWallet, _ := wallet.Base58CheckDeserialize(privJKeyList[index])
-		keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-		shardID := byte(int(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]) % NoOfShard)
-		viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
-		paymentAddressStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-		paymentAddressStr, _ = wallet.GetPaymentAddressV1(paymentAddressStr, false)
-
-		listTokens, err := GetListToken(viewingKeyStr)
-		if listTokens == nil && err != nil{
-			fmt.Println("Cannot get list token", viewingKeyStr, privJKeyList[index])
-			return
-		}
-		total1 := time.Duration(0) * time.Millisecond
-		total2 := time.Duration(0) * time.Millisecond
-		for tokenID, tokenDetail := range listTokens {
-			start := time.Now()
-			balance, err := GetBalanceFromCS(privJKeyList[index], viewingKeyStr, tokenID, tokenDetail.Total, shardID)
-			if err != nil {
-				fmt.Println("error ", err)
+			listTokens, err := GetListToken(viewingKeyStr)
+			if listTokens == nil && err != nil{
+				fmt.Println("Cannot get list token", viewingKeyStr, privJKeyList[index])
+				return
 			}
-			elapsed1 := time.Since(start)
-			total1 += elapsed1
+			total1 := time.Duration(0) * time.Millisecond
+			total2 := time.Duration(0) * time.Millisecond
+			for tokenID, tokenDetail := range listTokens {
+				go func(tokenID string, tokenDetail InfoJSON) {
+					start := time.Now()
+					balance, err := GetBalanceFromCS(privJKeyList[index], viewingKeyStr, tokenID, tokenDetail.Total, shardID)
+					if err != nil {
+						fmt.Println("error ", err)
+					}
+					elapsed1 := time.Since(start)
+					total1 += elapsed1
 
-			start = time.Now()
-			balancePrime, err := GetBalanceFromRPC(tool, privJKeyList[index], paymentAddressStr, viewingKeyStr, tokenID, shardID, 0)
-			if err != nil {
-				fmt.Println(err)
-			}
-			elapsed2 := time.Since(start)
-			total2 += elapsed2
+					start = time.Now()
+					balancePrime, err := GetBalanceFromRPC(tool, privJKeyList[index], paymentAddressStr, viewingKeyStr, tokenID, shardID, 0)
+					if err != nil {
+						fmt.Println(err)
+					}
+					elapsed2 := time.Since(start)
+					total2 += elapsed2
 
-			if balance != balancePrime {
-				panic(fmt.Sprintf("Balance %v %v- %v : key %v", tokenID, balance, balancePrime, privJKeyList[index] ))
+					if balance != balancePrime {
+						panic(fmt.Sprintf("Balance %v %v- %v : key %v", tokenID, balance, balancePrime, privJKeyList[index] ))
+					}
+					fmt.Printf("Balance token %v: %v (%v) - %v (%v)\n", tokenID, balance, elapsed1, balancePrime, elapsed2)
+				}(tokenID, tokenDetail)
 			}
-			fmt.Printf("Balance token %v: %v (%v) - %v (%v)\n", tokenID, balance, elapsed1, balancePrime, elapsed2)
-		}
-		fmt.Println("=======", total1, total2, "=======")
-		return
+			fmt.Println("=======", total1, total2, "=======")
+		}(index)
 	}
 }
