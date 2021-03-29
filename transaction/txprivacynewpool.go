@@ -64,6 +64,13 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 			return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", txType, metaType)
 		}
 	}
+	if tx.Metadata != nil {
+		metaType := tx.Metadata.GetType()
+		txType := tx.valEnv.TxType()
+		if !metadata.IsAvailableMetaInTxType(metaType, txType) {
+			return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", txType, metaType)
+		}
+	}
 
 	// check tx size
 	actualTxSize := tx.GetTxActualSize()
