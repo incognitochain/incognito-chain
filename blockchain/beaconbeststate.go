@@ -614,24 +614,6 @@ func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, err
 	return bridgeTokenIDs, nil
 }
 
-func (beaconBestState *BeaconBestState) IsSwapTime(beaconHeight uint64, chainParamEpoch uint64) bool {
-	if beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
-		if beaconHeight%chainParamEpoch == 0 {
-			return true
-		} else {
-			return false
-		}
-	}
-	if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
-		if beaconHeight%chainParamEpoch == 1 {
-			return true
-		} else {
-			return false
-		}
-	}
-	return false
-}
-
 func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithValue(
 	params *Params,
 	beaconInstructions [][]string,
