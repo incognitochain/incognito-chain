@@ -148,17 +148,22 @@ func (s *logKV) Write() {
 	//io.Copy(monitorFile, bytes.NewReader([]byte("\n")))
 
 	go func() {
-		req, err := http.NewRequest(http.MethodPost, "http://51.91.72.45:33333", bytes.NewBuffer(b))
-		req.Header.Set("Content-Type", "application/json")
-		if err != nil {
-			metrics.IncLogger.Log.Debug("Create Request failed with err: ", err)
-			return
+
+		monitorEP := os.Getenv("MONITOR")
+		if monitorEP != "" {
+			req, err := http.NewRequest(http.MethodPost, monitorEP, bytes.NewBuffer(b))
+			req.Header.Set("Content-Type", "application/json")
+			if err != nil {
+				metrics.IncLogger.Log.Debug("Create Request failed with err: ", err)
+				return
+			}
+			ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
+			defer cancel()
+			req = req.WithContext(ctx)
+			client := &http.Client{}
+			client.Do(req)
 		}
-		ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
-		defer cancel()
-		req = req.WithContext(ctx)
-		client := &http.Client{}
-		client.Do(req)
+
 	}()
 }
 
