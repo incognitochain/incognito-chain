@@ -271,19 +271,20 @@ func TestCreateAndSendBTCTxToCypher(t *testing.T) {
 	bc := getBlockCypherAPI("test3")
 
 	inAddr := "msTYtu7nsMiwFUtNgCSQBk26JeBf9q3GTM"
-	outAddr := "2MvpFqydTR43TT4emMD84Mzhgd8F6dCow1X"
-	amount := int(400)
+	outAddr := "2NGFTTKNj59NGmjQpajsEXGxwf9SP8gvJiv"
+	amount := int(8000)
 	trans := gobcy.TX{}
-	trans.Fees = int(5000)
+	trans.Fees = int(500)
 	trans.Inputs = make([]gobcy.TXInput, 1)
 	trans.Inputs[0].Addresses = make([]string, 1)
 	trans.Inputs[0].Addresses[0] = inAddr
 
 	trans.Outputs = make([]gobcy.TXOutput, 2)
 	trans.Outputs[0].ScriptType = "null-data"
-	uniquePortingID := "batch2"
+	uniquePortingID := "PS1-12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 	script := []byte{
 		txscript.OP_RETURN,
+		0x4c,
 		byte(len(uniquePortingID)),
 	}
 
