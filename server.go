@@ -1991,7 +1991,10 @@ func (s *Server) GetPubkeyMiningState(userPk *incognitokey.CommitteePublicKey) (
 	shardPendingCommiteeFromBeaconView := beaconFinalView.GetShardPendingValidator()
 	shardCommiteeFromBeaconView := beaconFinalView.GetShardCommittee()
 	shardCandidateFromBeaconView := beaconFinalView.GetShardCandidate()
-	shardSyncingValidatorsFromBeaconView := beaconFinalView.SyncingValidators()
+	shardSyncingValidatorsFromBeaconView := make(map[byte][]incognitokey.CommitteePublicKey)
+	if beaconFinalView.CommitteeStateVersion() == committeestate.DCS_VERSION {
+		shardSyncingValidatorsFromBeaconView = beaconFinalView.SyncingValidators()
+	}
 
 	//check if in committee of any shard
 	for _, chain := range s.blockChain.ShardChain {
@@ -2047,7 +2050,7 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 	beaconFinalView := s.blockChain.BeaconChain.FinalView().(*blockchain.BeaconBestState)
 	//For Shard
 	shardCandidateFromBeaconView := []incognitokey.CommitteePublicKey{}
-	if beaconFinalView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+	if beaconFinalView.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		//For Shard
 		shardPendingCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardPendingValidator()
 		shardCommiteeFromBeaconView := s.blockChain.GetBeaconBestState().GetShardCommittee()

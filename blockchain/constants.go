@@ -109,8 +109,8 @@ const (
 	TestnetName              = "testnet"
 	TestnetDefaultPort       = "9444"
 	TestnetGenesisBlockTime  = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch             = 5
-	TestnetRandomTime        = 3
+	TestnetEpoch             = 100
+	TestnetRandomTime        = 50
 	TestnetEpochV2BreakPoint = 1e9
 	TestnetEpochV2           = 100
 	TestnetRandomTimeV2      = 50
@@ -119,12 +119,12 @@ const (
 	TestnetAssignOffset      = 2
 
 	//Committee size
-	TestNetShardCommitteeSize     = 6
+	TestNetShardCommitteeSize     = 10
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
 	//
-	TestNetActiveShards       = 1
+	TestNetActiveShards       = 8
 	TestNetStakingAmountShard = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second

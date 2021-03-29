@@ -3,8 +3,31 @@ package committeestate
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
+
+//ShardCommitteeState :
+type ShardCommitteeState interface {
+	Version() int
+	Clone() ShardCommitteeState
+	GetShardCommittee() []incognitokey.CommitteePublicKey
+	GetShardSubstitute() []incognitokey.CommitteePublicKey
+	GetCommitteeFromBlock() common.Hash
+
+	UpdateCommitteeState(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash,
+		*CommitteeChange, error)
+
+	BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64
+}
+
+type SwapInstructionGenerator interface {
+	GenerateSwapInstructions(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error)
+}
+
+type AssignInstructionProcessor interface {
+	ProcessAssignInstructions(env ShardCommitteeStateEnvironment) []incognitokey.CommitteePublicKey
+}
 
 //ShardEnvBuilder : Interface for building shard environment
 type ShardEnvBuilder interface {
@@ -25,7 +48,7 @@ type ShardEnvBuilder interface {
 	BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder
 	BuildNumberOfFixedBlockValidators(int) ShardEnvBuilder
 	BuildCommitteesFromBlock(common.Hash) ShardEnvBuilder
-	BuildCommitteesFromBeaconView([]incognitokey.CommitteePublicKey) ShardEnvBuilder
+	BuildCommitteesFromBeaconView([]string) ShardEnvBuilder
 	Build() ShardCommitteeStateEnvironment
 }
 
@@ -53,7 +76,7 @@ type ShardCommitteeStateEnvironment interface {
 	StakingTx() map[string]string
 	CommitteesFromBlock() common.Hash
 	NumberOfFixedBlockValidators() int
-	CommitteesFromBeaconView() []incognitokey.CommitteePublicKey // This Field Is Only Use For Swap Committee
+	CommitteesFromBeaconView() []string // This Field Is Only Use For Swap Committee
 }
 
 //shardCommitteeStateEnvironment :
@@ -75,11 +98,11 @@ type shardCommitteeStateEnvironment struct {
 	stakingTx                    map[string]string
 	numberOfFixedBlockValidators int
 	committeesFromBlock          common.Hash
-	committeesFromBeaconView     []incognitokey.CommitteePublicKey
+	committeesFromBeaconView     []string
 }
 
 //BuildCommitteesFromBeacon :
-func (env *shardCommitteeStateEnvironment) BuildCommitteesFromBeaconView(committees []incognitokey.CommitteePublicKey) ShardEnvBuilder {
+func (env *shardCommitteeStateEnvironment) BuildCommitteesFromBeaconView(committees []string) ShardEnvBuilder {
 	env.committeesFromBeaconView = committees
 	return env
 }
@@ -272,7 +295,7 @@ func (env *shardCommitteeStateEnvironment) CommitteesFromBlock() common.Hash {
 	return env.committeesFromBlock
 }
 
-func (env *shardCommitteeStateEnvironment) CommitteesFromBeaconView() []incognitokey.CommitteePublicKey {
+func (env *shardCommitteeStateEnvironment) CommitteesFromBeaconView() []string {
 	return env.committeesFromBeaconView
 }
 

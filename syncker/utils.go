@@ -5,10 +5,9 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/instruction"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 const RUNNING_SYNC = "running_sync"
@@ -17,7 +16,6 @@ const STOP_SYNC = "stop_sync"
 func isNil(v interface{}) bool {
 	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }
-
 func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	sameCommitteeBlock := blocks
 

@@ -14,7 +14,7 @@ func NewSwapRuleV3() *swapRuleV3 {
 }
 
 //GenInstructions generate instructions for swap rule v3
-func (s *swapRuleV3) GenInstructions(
+func (s *swapRuleV3) Process(
 	shardID byte,
 	committees, substitutes []string,
 	minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators int,
@@ -47,7 +47,7 @@ func (s *swapRuleV3) GenInstructions(
 	return swapShardInstruction, newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees
 }
 
-func (s *swapRuleV3) AssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
+func (s *swapRuleV3) CalculateAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
 	assignOffset := lenCommittees / MAX_ASSIGN_PERCENT
 	if assignOffset == 0 && lenCommittees < MAX_ASSIGN_PERCENT {
 		assignOffset = 1
@@ -180,7 +180,7 @@ func (s *swapRuleV3) getSlashingOffset(
 	return offset
 }
 
-func (s *swapRuleV3) clone() SwapRule {
+func (s *swapRuleV3) clone() SwapRuleProcessor {
 	return &swapRuleV3{}
 }
 

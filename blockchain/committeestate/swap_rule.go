@@ -5,20 +5,20 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
-type SwapRule interface {
-	GenInstructions(
+type SwapRuleProcessor interface {
+	Process(
 		shardID byte,
 		committees, substitutes []string,
 		minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators int,
 		penalty map[string]signaturecounter.Penalty,
 	) (
 		*instruction.SwapShardInstruction, []string, []string, []string, []string) // instruction, newCommitteees, newSubstitutes, slashingCommittees, normalSwapCommittees
-	AssignOffset(lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int
+	CalculateAssignOffset(lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int
 	Version() int
 }
 
-func cloneSwapRuleByVersion(swapRule SwapRule) SwapRule {
-	var res SwapRule
+func cloneSwapRuleByVersion(swapRule SwapRuleProcessor) SwapRuleProcessor {
+	var res SwapRuleProcessor
 	if swapRule != nil {
 		switch swapRule.Version() {
 		case swapRuleSlashingVersion:
@@ -34,8 +34,8 @@ func cloneSwapRuleByVersion(swapRule SwapRule) SwapRule {
 	return res
 }
 
-func SwapRuleByEnv(env *BeaconCommitteeStateEnvironment) SwapRule {
-	var swapRule SwapRule
+func SwapRuleByEnv(env *BeaconCommitteeStateEnvironment) SwapRuleProcessor {
+	var swapRule SwapRuleProcessor
 	if env.BeaconHeight >= env.StakingV3Height {
 		swapRule = NewSwapRuleV3()
 	} else {

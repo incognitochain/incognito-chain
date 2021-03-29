@@ -15,7 +15,7 @@ type SwapRule struct {
 }
 
 // AssignOffset provides a mock function with given fields: lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize
-func (_m *SwapRule) AssignOffset(lenSubstitute int, lenCommittees int, numberOfFixedValidators int, minCommitteeSize int) int {
+func (_m *SwapRule) CalculateAssignOffset(lenSubstitute int, lenCommittees int, numberOfFixedValidators int, minCommitteeSize int) int {
 	ret := _m.Called(lenSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize)
 
 	var r0 int
@@ -29,7 +29,7 @@ func (_m *SwapRule) AssignOffset(lenSubstitute int, lenCommittees int, numberOfF
 }
 
 // GenInstructions provides a mock function with given fields: shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, penalty
-func (_m *SwapRule) GenInstructions(shardID byte, committees []string, substitutes []string, minCommitteeSize int, maxCommitteeSize int, typeIns int, numberOfFixedValidators int, penalty map[string]signaturecounter.Penalty) (*instruction.SwapShardInstruction, []string, []string, []string, []string) {
+func (_m *SwapRule) Process(shardID byte, committees []string, substitutes []string, minCommitteeSize int, maxCommitteeSize int, typeIns int, numberOfFixedValidators int, penalty map[string]signaturecounter.Penalty) (*instruction.SwapShardInstruction, []string, []string, []string, []string) {
 	ret := _m.Called(shardID, committees, substitutes, minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators, penalty)
 
 	var r0 *instruction.SwapShardInstruction

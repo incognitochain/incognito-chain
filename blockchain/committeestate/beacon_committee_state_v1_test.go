@@ -7,12 +7,12 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-func TestBeaconCommitteeEngineV1_SplitReward(t *testing.T) {
+func TestBeaconCommitteeStateV1_SplitReward(t *testing.T) {
 
 	initLog()
 
 	type args struct {
-		env *BeaconCommitteeStateEnvironment
+		env *SplitRewardEnvironment
 	}
 	totalRewardYear1 := make(map[common.Hash]uint64)
 	totalRewardYear1[common.PRVCoinID] = 8751970
@@ -45,7 +45,7 @@ func TestBeaconCommitteeEngineV1_SplitReward(t *testing.T) {
 		{
 			name: "year 1",
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                10,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -61,7 +61,7 @@ func TestBeaconCommitteeEngineV1_SplitReward(t *testing.T) {
 		{
 			name: "year 2",
 			args: args{
-				env: &BeaconCommitteeStateEnvironment{
+				env: &SplitRewardEnvironment{
 					DAOPercent:                9,
 					ActiveShards:              8,
 					IsSplitRewardForCustodian: false,
@@ -77,17 +77,12 @@ func TestBeaconCommitteeEngineV1_SplitReward(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := &BeaconCommitteeEngineV1{
-				beaconCommitteeEngineBase: beaconCommitteeEngineBase{
-					beaconHeight:     10,
-					beaconHash:       common.Hash{},
-					finalState:       &BeaconCommitteeStateV1{},
-					uncommittedState: &BeaconCommitteeStateV1{},
-				},
+			b := &BeaconCommitteeStateV1{
+				beaconCommitteeStateBase: beaconCommitteeStateBase{},
 			}
 			got, got1, got2, got3, err := b.SplitReward(tt.args.env)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("BeaconCommitteeEngineV1.SplitReward() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("BeaconCommitteeEngineV1.Process() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {

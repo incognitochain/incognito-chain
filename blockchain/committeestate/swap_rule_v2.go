@@ -19,7 +19,7 @@ func NewSwapRuleV2() *swapRuleV2 {
 }
 
 //genInstructions
-func (s *swapRuleV2) GenInstructions(
+func (s *swapRuleV2) Process(
 	shardID byte,
 	committees, substitutes []string,
 	minCommitteeSize, maxCommitteeSize, typeIns, numberOfFixedValidators int,
@@ -221,7 +221,7 @@ func getShardIDPositionFromArray(arr []byte) map[byte]byte {
 	return m
 }
 
-func (s *swapRuleV2) AssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
+func (s *swapRuleV2) CalculateAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
 	assignPerShard := s.getSwapOutOffset(
 		lenShardSubstitute,
 		lenCommittees,
@@ -235,7 +235,7 @@ func (s *swapRuleV2) AssignOffset(lenShardSubstitute, lenCommittees, numberOfFix
 	return assignPerShard
 }
 
-func (s *swapRuleV2) clone() SwapRule {
+func (s *swapRuleV2) clone() SwapRuleProcessor {
 	return &swapRuleV2{}
 }
 
