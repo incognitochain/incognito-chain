@@ -333,10 +333,12 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSi
 		signature.AddOp(txscript.OP_FALSE)
 
 		// generate btc private key from seed: private key of bridge consensus
-		btcPrivateKeyBytes, err := p.GeneratePrivateKeyFromSeed(seedKey)
-		if err != nil {
-			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when generate btc private key from seed: %v", err)
-		}
+		// todo:
+		//btcPrivateKeyBytes, err := p.GeneratePrivateKeyFromSeed(seedKey)
+		//if err != nil {
+		//	return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when generate btc private key from seed: %v", err)
+		//}
+		btcPrivateKeyBytes := []byte{}
 		btcPrivateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), btcPrivateKeyBytes)
 		sig, err := txscript.RawTxInSignature(msgTx, i, multiSigScript, txscript.SigHashAll, btcPrivateKey)
 		if err != nil {
