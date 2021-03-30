@@ -3,10 +3,11 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -652,6 +653,14 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	params *Params,
 ) *committeestate.BeaconCommitteeStateEnvironment {
+	slashingPenalty := make(map[string]signaturecounter.Penalty)
+	if beaconBestState.BeaconHeight != 1 &&
+		beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION &&
+		params.EnableSlashingStakingFlowV2 >= beaconBestState.BeaconHeight {
+		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
+	} else {
+		slashingPenalty = make(map[string]signaturecounter.Penalty)
+	}
 	return &committeestate.BeaconCommitteeStateEnvironment{
 		BeaconHeight:                      beaconBestState.BeaconHeight,
 		BeaconHash:                        beaconBestState.BestBlockHash,
@@ -664,7 +673,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		MaxShardCommitteeSize:             params.MaxShardCommitteeSize,
 		NumberOfFixedBeaconBlockValidator: NumberOfFixedBeaconBlockValidators,
 		NumberOfFixedShardBlockValidator:  NumberOfFixedShardBlockValidators,
-		MissingSignaturePenalty:           beaconBestState.missingSignatureCounter.GetAllSlashingPenalty(),
+		MissingSignaturePenalty:           slashingPenalty,
 	}
 }
 
