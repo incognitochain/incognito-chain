@@ -62,12 +62,14 @@ func (tx TxCustomTokenPrivacy) ValidateSanityDataByItSelf() (bool, error) {
 		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, errors.New("TokenID must not be equal PRVID"))
 	}
 
-	ok, err := tx.Tx.ValidateSanityDataByItSelf()
-	if !ok || err != nil {
-		return ok, err
+	if (tx.Tx.Proof != nil) && ((len(tx.Tx.Proof.GetInputCoins()) != 0) || (len(tx.Tx.Proof.GetOutputCoins()) != 0)) {
+		ok, err := tx.Tx.ValidateSanityDataByItSelf()
+		if !ok || err != nil {
+			return ok, err
+		}
 	}
 
-	ok, err = tx.TxPrivacyTokenData.TxNormal.ValidateSanityDataByItSelf()
+	ok, err := tx.TxPrivacyTokenData.TxNormal.ValidateSanityDataByItSelf()
 	if !ok || err != nil {
 		return ok, err
 	}
