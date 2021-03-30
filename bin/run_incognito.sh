@@ -19,7 +19,7 @@ if [ -z $BOOTNODE_IP ]; then
 fi
 
 if [ -z $MONITOR ]; then
-    MONITOR="http://51.91.72.45:33333";
+   export MONITOR="http://51.91.72.45:33333";
 fi
 
 if [ -z "$NODE_PORT" ]; then
