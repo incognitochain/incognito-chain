@@ -351,6 +351,39 @@ func buildMetaInfo() {
 		},
 	})
 
+	listRSNoIn := []int{
+		ReturnStakingMeta,
+	}
+
+	metaListNInfo = append(metaListNInfo, ListAndInfo{
+		list: listRSNoIn,
+		info: &MetaInfo{
+			HasInput:  false,
+			HasOutput: false,
+			TxType: map[string]interface{}{
+				common.TxReturnStakingType: nil,
+			},
+			MetaAction: NoAction,
+		},
+	})
+
+	listSNoIn := []int{
+		WithDrawRewardResponseMeta,
+		PDETradeResponseMeta,
+	}
+
+	metaListNInfo = append(metaListNInfo, ListAndInfo{
+		list: listSNoIn,
+		info: &MetaInfo{
+			HasInput:  false,
+			HasOutput: false,
+			TxType: map[string]interface{}{
+				common.TxRewardType: nil,
+			},
+			MetaAction: NoAction,
+		},
+	})
+
 	listRequestBeaconMintTxs := []int{
 		IssuingRequestMeta,
 		IssuingResponseMeta,
