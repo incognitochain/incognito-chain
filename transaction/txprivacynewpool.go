@@ -56,14 +56,14 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 	if len(tx.Info) > 512 {
 		return false, NewTransactionErr(RejectTxInfoSize, fmt.Errorf("wrong tx info length %d bytes, only support info with max length <= %d bytes", len(tx.Info), 512))
 	}
-	if tx.Metadata != nil {
-		metaType := tx.Metadata.GetType()
-		txType := tx.valEnv.TxType()
-		if ((metaType == metadata.ReturnStakingMeta) != (txType == common.TxReturnStakingType)) ||
-			(((metaType == metadata.WithDrawRewardResponseMeta) || (metaType == metadata.PDETradeResponseMeta)) != (txType == common.TxRewardType)) {
-			return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", txType, metaType)
-		}
-	}
+	// if tx.Metadata != nil {
+	// 	metaType := tx.Metadata.GetType()
+	// 	txType := tx.valEnv.TxType()
+	// 	if ((metaType == metadata.ReturnStakingMeta) != (txType == common.TxReturnStakingType)) ||
+	// 		(((metaType == metadata.WithDrawRewardResponseMeta) || (metaType == metadata.PDETradeResponseMeta)) != (txType == common.TxRewardType)) {
+	// 		return false, errors.Errorf("Not mismatch Type, txType: %v, metadataType %v", txType, metaType)
+	// 	}
+	// }
 	if tx.Metadata != nil {
 		metaType := tx.Metadata.GetType()
 		txType := tx.valEnv.TxType()

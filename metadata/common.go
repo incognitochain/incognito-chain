@@ -385,6 +385,8 @@ func buildMetaInfo() {
 	})
 
 	listRequestBeaconMintTxs := []int{
+		PDETradeRequestMeta,
+		// PDETradeResponseMeta,
 		IssuingRequestMeta,
 		IssuingResponseMeta,
 		IssuingETHRequestMeta,
