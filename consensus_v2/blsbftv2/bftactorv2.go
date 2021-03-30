@@ -28,17 +28,17 @@ type BLSBFT_V2 struct {
 	ChainID  int
 	PeerID   string
 
-	UserKeySet   []signatureschemes2.MiningKey
-	BFTMessageCh chan wire.MessageBFT
-	isStarted    bool
-	destroyCh    chan struct{}
-	Logger       common.Logger
-
-	currentTime      int64
-	currentTimeSlot  int64
-	proposeHistory   *lru.Cache
+	UserKeySet       []signatureschemes2.MiningKey
+	BFTMessageCh     chan wire.MessageBFT
 	ProposeMessageCh chan BFTPropose
 	VoteMessageCh    chan BFTVote
+	isStarted        bool
+	destroyCh        chan struct{}
+	Logger           common.Logger
+
+	currentTime     int64
+	currentTimeSlot int64
+	proposeHistory  *lru.Cache
 
 	receiveBlockByHeight map[uint64][]*ProposeBlockInfo  //blockHeight -> blockInfo
 	receiveBlockByHash   map[string]*ProposeBlockInfo    //blockHash -> blockInfo

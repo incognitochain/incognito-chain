@@ -2,13 +2,15 @@ package blsbft
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -21,13 +23,13 @@ func GetProposerIndexByRound(lastId, round, committeeSize int) int {
 	return 0
 }
 
-func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
-	return time.Since(time.Unix(int64(e.Chain.GetLastBlockTimeStamp()), 0))
+func (actorV1 *actorV1) getTimeSinceLastBlock() time.Duration {
+	return time.Since(time.Unix(int64(actorV1.chain.GetLastBlockTimeStamp()), 0))
 }
 
-func (e *BLSBFT) waitForNextRound() bool {
-	timeSinceLastBlk := e.getTimeSinceLastBlock()
-	if timeSinceLastBlk >= e.Chain.GetMinBlkInterval() {
+func (actorV1 *actorV1) waitForNextRound() bool {
+	timeSinceLastBlk := actorV1.getTimeSinceLastBlock()
+	if timeSinceLastBlk >= actorV1.chain.GetMinBlkInterval() {
 		return false
 	} else {
 		//fmt.Println("\n\nWait for", e.Chain.GetMinBlkInterval()-timeSinceLastBlk, "\n\n")
@@ -35,12 +37,12 @@ func (e *BLSBFT) waitForNextRound() bool {
 	}
 }
 
-func (e *BLSBFT) setState(state string) {
-	e.RoundData.State = state
+func (actorV1 *actorV1) setState(state string) {
+	actorV1.roundData.state = state
 }
 
-func (e *BLSBFT) getCurrentRound() int {
-	round := int((e.getTimeSinceLastBlock().Seconds() - float64(e.Chain.GetMinBlkInterval().Seconds())) / timeout.Seconds())
+func (actorV1 *actorV1) getCurrentRound() int {
+	round := int((actorV1.getTimeSinceLastBlock().Seconds() - float64(actorV1.chain.GetMinBlkInterval().Seconds())) / timeout.Seconds())
 	if round < 0 {
 		return 1
 	}
@@ -48,19 +50,19 @@ func (e *BLSBFT) getCurrentRound() int {
 	return round + 1
 }
 
-func (e *BLSBFT) isInTimeFrame() bool {
-	if e.Chain.CurrentHeight()+1 != e.RoundData.NextHeight {
+func (actorV1 *actorV1) isInTimeFrame() bool {
+	if actorV1.chain.CurrentHeight()+1 != actorV1.roundData.nextHeight {
 		return false
 	}
 
-	if e.getCurrentRound() != e.RoundData.Round {
+	if actorV1.getCurrentRound() != actorV1.roundData.round {
 		return false
 	}
 
 	return true
 }
 
-func (e *BLSBFT) isHasMajorityVotes() bool {
+func (actorV1 *actorV1) isHasMajorityVotes() bool {
 	// e.RoundData.lockVotes.Lock()
 	// defer e.RoundData.lockVotes.Unlock()
 	e.lockEarlyVotes.Lock()
@@ -129,37 +131,55 @@ func ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, e
 	return valData.BridgeSig, valData.ValidatiorsIdx, nil
 }
 
-func (e *BLSBFT) UpdateCommitteeBLSList() {
-	committee := e.Chain.GetCommittee()
-	if !reflect.DeepEqual(e.RoundData.Committee, committee) {
-		e.RoundData.Committee = committee
-		e.RoundData.CommitteeBLS.ByteList = []blsmultisig.PublicKey{}
-		e.RoundData.CommitteeBLS.StringList = []string{}
-		for _, member := range e.RoundData.Committee {
-			e.RoundData.CommitteeBLS.ByteList = append(e.RoundData.CommitteeBLS.ByteList, member.MiningPubKey[consensusName])
+func (actorV1 *actorV1) UpdateCommitteeBLSList() {
+	committee := actorV1.chain.GetCommittee()
+	if !reflect.DeepEqual(actorV1.roundData.committee, committee) {
+		actorV1.roundData.committee = committee
+		actorV1.roundData.committeeBLS.byteList = []blsmultisig.PublicKey{}
+		actorV1.roundData.committeeBLS.stringList = []string{}
+		for _, member := range actorV1.roundData.committee {
+			actorV1.roundData.committeeBLS.byteList = append(actorV1.roundData.committeeBLS.byteList, member.MiningPubKey[consensusName])
 		}
-		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(e.RoundData.Committee, consensusName)
+		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(actorV1.roundData.committee, consensusName)
 		if err != nil {
-			e.logger.Error(err)
+			actorV1.logger.Error(err)
 			return
 		}
-		e.RoundData.CommitteeBLS.StringList = committeeBLSString
+		actorV1.roundData.committeeBLS.stringList = committeeBLSString
 	}
 }
 
-func (e *BLSBFT) InitRoundData() {
-	roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
-	if _, ok := e.Blocks[roundKey]; ok {
-		delete(e.Blocks, roundKey)
+func (actorV1 *actorV1) initRoundData() {
+	roundKey := getRoundKey(actorV1.roundData.nextHeight, actorV1.roundData.round)
+	if _, ok := actorV1.blocks[roundKey]; ok {
+		delete(actorV1.blocks, roundKey)
 	}
-	e.RoundData.NextHeight = e.Chain.CurrentHeight() + 1
-	e.RoundData.Round = e.getCurrentRound()
-	e.RoundData.Votes = make(map[string]vote)
-	e.RoundData.Block = nil
-	e.RoundData.BlockHash = common.Hash{}
-	e.RoundData.NotYetSendVote = true
-	e.RoundData.TimeStart = time.Now()
-	e.RoundData.LastProposerIndex = e.Chain.GetLastProposerIndex()
-	e.UpdateCommitteeBLSList()
-	e.setState(newround)
+	actorV1.roundData.nextHeight = actorV1.chain.CurrentHeight() + 1
+	actorV1.roundData.round = actorV1.getCurrentRound()
+	actorV1.roundData.votes = make(map[string]vote)
+	actorV1.roundData.block = nil
+	actorV1.roundData.blockHash = common.Hash{}
+	actorV1.roundData.notYetSendVote = true
+	actorV1.roundData.timeStart = time.Now()
+	actorV1.roundData.lastProposerIndex = actorV1.chain.GetLastProposerIndex()
+	actorV1.UpdateCommitteeBLSList()
+	actorV1.setState(newround)
+}
+
+func NewActorWithValue(
+	chain blockchain.ChainInterface, version int,
+	chainID int, chainName string,
+	node NodeInterface, logger common.Logger,
+) Actor {
+	var res Actor
+	switch version {
+	case BftVersion:
+
+	case MultiViewsVersion:
+	case SlashingVersion:
+	case MultiSubsetsVersion:
+	default:
+		panic("Bft version is not valid")
+	}
+	return res
 }

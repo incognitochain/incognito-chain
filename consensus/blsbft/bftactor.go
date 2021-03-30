@@ -101,7 +101,7 @@ func (e *BLSBFT) Start() error {
 	e.Blocks = map[string]types.BlockInterface{}
 	e.ProposeMessageCh = make(chan BFTPropose)
 	e.VoteMessageCh = make(chan BFTVote)
-	e.InitRoundData()
+	e.initRoundData()
 
 	e.logger.Info("start bls-bft consensus for chain", e.ChainKey)
 
@@ -385,7 +385,7 @@ func (e *BLSBFT) enterNewRound() {
 		return
 	}
 	e.setState(newround)
-	e.InitRoundData()
+	e.initRoundData()
 	e.logger.Info("")
 	e.logger.Info("============================================")
 	e.logger.Info("")

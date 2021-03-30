@@ -21,94 +21,70 @@ import (
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
-type BLSBFT struct {
-	Chain    ChainInterface
-	Node     NodeInterface
-	ChainKey string
-	ChainID  int
-	PeerID   string
-
-	UserKeySet       []signatureschemes2.MiningKey
-	BFTMessageCh     chan wire.MessageBFT
-	ProposeMessageCh chan BFTPropose
-	VoteMessageCh    chan BFTVote
-
-	RoundData struct {
-		TimeStart         time.Time
-		Block             types.BlockInterface
-		BlockHash         common.Hash
-		BlockValidateData ValidationData
+type actorV1 struct {
+	actorBase
+	roundData struct {
+		timeStart         time.Time
+		block             types.BlockInterface
+		blockHash         common.Hash
+		blockValidateData ValidationData
 		lockVotes         sync.Mutex
-		Votes             map[string]vote
-		Round             int
-		NextHeight        uint64
-		State             string
-		NotYetSendVote    bool
-		Committee         []incognitokey.CommitteePublicKey
-		CommitteeBLS      struct {
-			StringList []string
-			ByteList   []blsmultisig.PublicKey
+		votes             map[string]vote
+		round             int
+		nextHeight        uint64
+		state             string
+		notYetSendVote    bool
+		committee         []incognitokey.CommitteePublicKey
+		committeeBLS      struct {
+			stringList []string
+			byteList   []blsmultisig.PublicKey
 		}
-		LastProposerIndex int
+		lastProposerIndex int
 	}
-	Blocks         map[string]types.BlockInterface
-	EarlyVotes     map[string]map[string]vote
+	blocks         map[string]types.BlockInterface
+	earlyVotes     map[string]map[string]vote
 	lockEarlyVotes sync.Mutex
 	isOngoing      bool
-	isStarted      bool
-	StopCh         chan struct{}
-	logger         common.Logger
+	stopCh         chan struct{}
 }
 
-func (e *BLSBFT) IsOngoing() bool {
-	return e.isOngoing
+func (actorV1 *actorV1) IsOngoing() bool {
+	return actorV1.isOngoing
 }
 
-func (e *BLSBFT) IsStarted() bool {
-	return e.isStarted
+func (actorV1 *actorV1) Destroy() {
+	actorV1.Stop()
 }
 
-func (e *BLSBFT) GetConsensusName() string {
-	return consensusName
-}
-
-func (e *BLSBFT) GetChainKey() string {
-	return e.ChainKey
-}
-func (e *BLSBFT) GetChainID() int {
-	return e.ChainID
-}
-
-func (e *BLSBFT) Destroy() {
-	e.Stop()
-}
-
-func (e *BLSBFT) Stop() error {
-	if e.isStarted {
-		e.logger.Info("stop bls-bft consensus for chain", e.ChainKey)
-		close(e.StopCh)
-		e.isStarted = false
-		e.isOngoing = false
+func (actorV1 *actorV1) Stop() error {
+	err := actorV1.actorBase.Stop()
+	if err != nil {
+		return NewConsensusError(ConsensusAlreadyStoppedError, err)
+	}
+	if actorV1.isStarted {
+		actorV1.logger.Info("stop bls-bft consensus for chain", actorV1.chainKey)
+		close(actorV1.stopCh)
+		actorV1.isOngoing = false
 		return nil
 	}
-	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(e.ChainKey))
+	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(actorV1.chainKey))
 }
 
-func (e *BLSBFT) Start() error {
-	if e.isStarted {
-		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(e.ChainKey))
+func (actorV1 *actorV1) Start() error {
+	if actorV1.isStarted {
+		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(actorV1.chainKey))
 	}
 
-	e.isStarted = true
-	e.isOngoing = false
-	e.StopCh = make(chan struct{})
-	e.EarlyVotes = make(map[string]map[string]vote)
-	e.Blocks = map[string]types.BlockInterface{}
-	e.ProposeMessageCh = make(chan BFTPropose)
-	e.VoteMessageCh = make(chan BFTVote)
-	e.InitRoundData()
+	actorV1.isStarted = true
+	actorV1.isOngoing = false
+	actorV1.stopCh = make(chan struct{})
+	actorV1.earlyVotes = make(map[string]map[string]vote)
+	actorV1.blocks = map[string]types.BlockInterface{}
+	actorV1.proposeMessageCh = make(chan BFTPropose)
+	actorV1.voteMessageCh = make(chan BFTVote)
+	actorV1.initRoundData()
 
-	e.logger.Info("start bls-bft consensus for chain", e.ChainKey)
+	actorV1.logger.Info("start bls-bft consensus for chain", actorV1.chainKey)
 
 	go func() {
 		ticker := time.NewTicker(500 * time.Millisecond)
@@ -116,205 +92,196 @@ func (e *BLSBFT) Start() error {
 
 		for { //actor loop
 			select {
-			case <-e.StopCh:
-				e.logger.Info("Exit BFT")
+			case <-actorV1.stopCh:
+				actorV1.logger.Info("Exit BFT")
 				return
-			case proposeMsg := <-e.ProposeMessageCh:
-				block, err := e.Chain.UnmarshalBlock(proposeMsg.Block)
+			case proposeMsg := <-actorV1.proposeMessageCh:
+				block, err := actorV1.chain.UnmarshalBlock(proposeMsg.Block)
 				if err != nil {
-					e.logger.Info(err)
+					actorV1.logger.Info(err)
 					continue
 				}
 				blockRoundKey := getRoundKey(block.GetHeight(), block.GetRound())
-				e.logger.Info("receive block", blockRoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
-				if block.GetHeight() == e.RoundData.NextHeight {
-					if e.RoundData.Round == block.GetRound() {
-						if e.RoundData.Block == nil {
-							e.Blocks[blockRoundKey] = block
+				actorV1.logger.Info("receive block", blockRoundKey, getRoundKey(actorV1.roundData.nextHeight, actorV1.roundData.round))
+				if block.GetHeight() == actorV1.roundData.nextHeight {
+					if actorV1.roundData.round == block.GetRound() {
+						if actorV1.roundData.block == nil {
+							actorV1.blocks[blockRoundKey] = block
 							continue
 						}
 					} else {
-						if e.RoundData.Round < block.GetRound() {
-							e.Blocks[blockRoundKey] = block
+						if actorV1.roundData.round < block.GetRound() {
+							actorV1.blocks[blockRoundKey] = block
 							continue
 						}
 					}
 					continue
 				}
-				if block.GetHeight() > e.RoundData.NextHeight {
-					e.Blocks[blockRoundKey] = block
+				if block.GetHeight() > actorV1.roundData.nextHeight {
+					actorV1.blocks[blockRoundKey] = block
 					continue
 				}
-			case msg := <-e.VoteMessageCh:
-				e.logger.Info("Receive vote for block", msg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
-				validatorIdx := common.IndexOfStr(msg.Validator, e.RoundData.CommitteeBLS.StringList)
+			case msg := <-actorV1.voteMessageCh:
+				actorV1.logger.Info("Receive vote for block", msg.RoundKey, getRoundKey(actorV1.roundData.nextHeight, actorV1.roundData.round))
+				validatorIdx := common.IndexOfStr(msg.Validator, actorV1.roundData.committeeBLS.stringList)
 				if validatorIdx == -1 {
 					continue
 				}
 				height, round := parseRoundKey(msg.RoundKey)
-				if height < e.RoundData.NextHeight {
+				if height < actorV1.roundData.nextHeight {
 					continue
 				}
-				if (height == e.RoundData.NextHeight) && (round < e.RoundData.Round) {
+				if (height == actorV1.roundData.nextHeight) && (round < actorV1.roundData.round) {
 					continue
 				}
-				// roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
-				if (height == e.RoundData.NextHeight) && (round == e.RoundData.Round) {
+				if (height == actorV1.roundData.nextHeight) && (round == actorV1.roundData.round) {
 					//validate single sig
-					if !(new(common.Hash).IsEqual(&e.RoundData.BlockHash)) {
-						e.RoundData.lockVotes.Lock()
-						if _, ok := e.RoundData.Votes[msg.Validator]; !ok {
+					if !(new(common.Hash).IsEqual(&actorV1.roundData.blockHash)) {
+						actorV1.roundData.lockVotes.Lock()
+						if _, ok := actorV1.roundData.votes[msg.Validator]; !ok {
 							// committeeArr := []incognitokey.CommitteePublicKey{}
-							// committeeArr = append(committeeArr, e.RoundData.Committee...)
-							e.RoundData.lockVotes.Unlock()
+							// committeeArr = append(committeeArr, actorV1.RoundData.Committee...)
+							actorV1.roundData.lockVotes.Unlock()
 							go func(voteMsg BFTVote, blockHash common.Hash, committee []incognitokey.CommitteePublicKey) {
-								if err := e.preValidateVote(blockHash.GetBytes(), &(voteMsg.Vote), committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
-									e.logger.Error(err)
+								if err := actorV1.preValidateVote(blockHash.GetBytes(), &(voteMsg.Vote), committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+									actorV1.logger.Error(err)
 									return
 								}
 								if len(voteMsg.Vote.BRI) != 0 {
 									if err := validateSingleBriSig(&blockHash, voteMsg.Vote.BRI, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
-										e.logger.Error(err)
+										actorV1.logger.Error(err)
 										return
 									}
 								}
 								go func() {
 									voteCtnBytes, err := json.Marshal(voteMsg)
 									if err != nil {
-										e.logger.Error(NewConsensusError(UnExpectedError, err))
+										actorV1.logger.Error(NewConsensusError(UnExpectedError, err))
 										return
 									}
 									msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
-									msg.(*wire.MessageBFT).ChainKey = e.ChainKey
+									msg.(*wire.MessageBFT).ChainKey = actorV1.ChainKey
 									msg.(*wire.MessageBFT).Content = voteCtnBytes
 									msg.(*wire.MessageBFT).Type = MSG_VOTE
 									// TODO uncomment here when switch to non-highway mode
 									// e.Node.PushMessageToChain(msg, e.Chain)
 								}()
-								e.addVote(voteMsg)
-							}(msg, e.RoundData.BlockHash, append([]incognitokey.CommitteePublicKey{}, e.RoundData.Committee...))
+								actorV1.addVote(voteMsg)
+							}(msg, actorV1.RoundData.BlockHash, append([]incognitokey.CommitteePublicKey{}, e.RoundData.Committee...))
 							continue
 						} else {
-							e.RoundData.lockVotes.Unlock()
+							actorV1.RoundData.lockVotes.Unlock()
 							continue
 						}
 					}
 				}
-				e.addEarlyVote(msg)
+				actorV1.addEarlyVote(msg)
 
 			case <-ticker.C:
-
-				monitor.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
-
+				monitor.SetGlobalParam("RoundKey", getRoundKey(actorV1.RoundData.NextHeight, actorV1.RoundData.Round), "Phase", actorV1.RoundData.State)
 				inCommitteeList := false
-				for _, userKey := range e.UserKeySet {
+				for _, userKey := range actorV1.UserKeySet {
 					pubKey := userKey.GetPublicKey()
-					if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) != -1 {
+					if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), actorV1.RoundData.CommitteeBLS.StringList) != -1 {
 						inCommitteeList = true
 						break
 					}
 				}
 
 				if !inCommitteeList {
-					e.enterNewRound()
+					actorV1.enterNewRound()
 					continue
 				}
 
-				if !e.Chain.IsReady() {
-					e.isOngoing = false
+				if !actorV1.Chain.IsReady() {
+					actorV1.isOngoing = false
 					//fmt.Println("CONSENSUS: ticker 1")
 					continue
 				}
 
-				if !e.isInTimeFrame() || e.RoundData.State == "" {
-					e.enterNewRound()
+				if !actorV1.isInTimeFrame() || actorV1.RoundData.State == "" {
+					actorV1.enterNewRound()
 				}
 
-				switch e.RoundData.State {
+				switch actorV1.RoundData.State {
 				case listenPhase:
-					// timeout or vote nil?
-					//fmt.Println("CONSENSUS: listen phase:", e.Chain.CurrentHeight(), e.RoundData.NextHeight)
-					if e.Chain.CurrentHeight() == e.RoundData.NextHeight {
-						e.enterNewRound()
+					if actorV1.Chain.CurrentHeight() == actorV1.RoundData.NextHeight {
+						actorV1.enterNewRound()
 						continue
 					}
-					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
+					roundKey := getRoundKey(actorV1.RoundData.NextHeight, actorV1.RoundData.Round)
 
-					if e.Blocks[roundKey] != nil {
-						monitor.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
-						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey], []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}); err != nil {
-							delete(e.Blocks, roundKey)
-							e.logger.Error(err)
+					if actorV1.Blocks[roundKey] != nil {
+						monitor.SetGlobalParam("ReceiveBlockTime", time.Since(actorV1.RoundData.TimeStart).Seconds())
+						if err := actorV1.Chain.ValidatePreSignBlock(actorV1.Blocks[roundKey], []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}); err != nil {
+							delete(actorV1.Blocks, roundKey)
+							actorV1.logger.Error(err)
 							continue
 						}
 
-						if e.RoundData.Block == nil {
-							// blockData, _ := json.Marshal(e.Blocks[roundKey])
-							// msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
-							// go e.Node.PushMessageToChain(msg, e.Chain)
-
-							e.RoundData.Block = e.Blocks[roundKey]
-							e.RoundData.BlockHash = *e.RoundData.Block.Hash()
-							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
+						if actorV1.RoundData.Block == nil {
+							actorV1.RoundData.Block = actorV1.Blocks[roundKey]
+							actorV1.RoundData.BlockHash = *actorV1.RoundData.Block.Hash()
+							valData, err := DecodeValidationData(actorV1.RoundData.Block.GetValidationField())
 							if err != nil {
-								e.logger.Error(err)
+								actorV1.logger.Error(err)
 								continue
 							}
-							e.RoundData.BlockValidateData = *valData
-							e.enterVotePhase()
+							actorV1.RoundData.BlockValidateData = *valData
+							actorV1.enterVotePhase()
 						}
 					}
 				case votePhase:
-					e.logger.Info("Case: In vote phase")
-					if e.RoundData.NotYetSendVote {
-						err := e.sendVote()
+					actorV1.logger.Info("Case: In vote phase")
+					if actorV1.RoundData.NotYetSendVote {
+						err := actorV1.sendVote()
 						if err != nil {
-							e.logger.Error(err)
+							actorV1.logger.Error(err)
 							continue
 						}
 					}
-					if !(new(common.Hash).IsEqual(&e.RoundData.BlockHash)) && e.isHasMajorityVotes() {
-						e.RoundData.lockVotes.Lock()
-						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, e.RoundData.CommitteeBLS.StringList)
-						e.RoundData.lockVotes.Unlock()
+					if !(new(common.Hash).IsEqual(&actorV1.RoundData.BlockHash)) && actorV1.isHasMajorityVotes() {
+						actorV1.RoundData.lockVotes.Lock()
+						aggSig, brigSigs, validatorIdx, err := combineVotes(actorV1.RoundData.Votes, actorV1.RoundData.CommitteeBLS.StringList)
+						actorV1.RoundData.lockVotes.Unlock()
 						if err != nil {
-							e.logger.Error(err)
+							actorV1.logger.Error(err)
 							continue
 						}
 
-						e.RoundData.BlockValidateData.AggSig = aggSig
-						e.RoundData.BlockValidateData.BridgeSig = brigSigs
-						e.RoundData.BlockValidateData.ValidatiorsIdx = validatorIdx
+						actorV1.RoundData.BlockValidateData.AggSig = aggSig
+						actorV1.RoundData.BlockValidateData.BridgeSig = brigSigs
+						actorV1.RoundData.BlockValidateData.ValidatiorsIdx = validatorIdx
 
-						validationDataString, _ := EncodeValidationData(e.RoundData.BlockValidateData)
-						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
+						validationDataString, _ := EncodeValidationData(actorV1.RoundData.BlockValidateData)
+						actorV1.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
 
 						//TODO: check issue invalid sig when swap
 						//TODO 0xakk0r0kamui trace who is malicious node if ValidateCommitteeSig return false
-						err = ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
+						err = ValidateCommitteeSig(actorV1.RoundData.Block, actorV1.RoundData.Committee)
 						if err != nil {
-							e.logger.Error(err)
-							e.logger.Errorf("e.RoundData.Block.GetValidationField()=%+v\n", e.RoundData.Block.GetValidationField())
-							e.logger.Errorf("e.RoundData.Committee=%+v\n", e.RoundData.Committee)
-							for _, member := range e.RoundData.Committee {
-								e.logger.Errorf("member.MiningPubKey[%+v] %+v\n", consensusName, base58.Base58Check{}.Encode(member.MiningPubKey[consensusName], common.Base58Version))
+							actorV1.logger.Error(err)
+							actorV1.logger.Errorf("actorV1.RoundData.Block.GetValidationField()=%+v\n", actorV1.RoundData.Block.GetValidationField())
+							actorV1.logger.Errorf("actorV1.RoundData.Committee=%+v\n", actorV1.RoundData.Committee)
+							for _, member := range actorV1.RoundData.Committee {
+								actorV1.logger.Errorf("member.MiningPubKey[%+v] %+v\n", consensusName, base58.Base58Check{}.Encode(member.MiningPubKey[consensusName], common.Base58Version))
 							}
 							continue
 						}
 
-						if err := e.Chain.InsertAndBroadcastBlock(e.RoundData.Block); err != nil {
-							e.logger.Error(err)
+						if err := actorV1.Chain.InsertAndBroadcastBlock(actorV1.RoundData.Block); err != nil {
+							actorV1.logger.Error(err)
 							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
-									e.logger.Error(err)
+									actorV1.logger.Error(err)
 								}
 							}
 							continue
 						}
 						monitor.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
 						// e.Node.PushMessageToAll()
-						e.logger.Infof("Commit block (%d votes) %+v hash=%+v \n Wait for next round", len(e.RoundData.Votes), e.RoundData.Block.GetHeight(), e.RoundData.Block.Hash().String())
-						e.enterNewRound()
+						actorV1.logger.Infof("Commit block (%d votes) %+v hash=%+v \n Wait for next round", len(e.RoundData.Votes), e.RoundData.Block.GetHeight(), e.RoundData.Block.Hash().String())
+						actorV1.enterNewRound()
 					}
 				}
 			}
@@ -323,129 +290,126 @@ func (e *BLSBFT) Start() error {
 	return nil
 }
 
-func (e *BLSBFT) enterProposePhase(keyset *signatureschemes2.MiningKey) {
-	if !e.isInTimeFrame() || e.RoundData.State == proposePhase {
+func (actorV1 *ActorV1) enterProposePhase(keyset *signatureschemes2.MiningKey) {
+	if !actorV1.isInTimeFrame() || actorV1.RoundData.State == proposePhase {
 		return
 	}
-	e.setState(proposePhase)
-	e.isOngoing = true
-	block, err := e.createNewBlock(keyset)
-	monitor.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
+	actorV1.setState(proposePhase)
+	actorV1.isOngoing = true
+	block, err := actorV1.createNewBlock(keyset)
+	monitor.SetGlobalParam("CreateTime", time.Since(actorV1.RoundData.TimeStart).Seconds())
 	if err != nil {
-		e.isOngoing = false
-		e.logger.Error("can't create block", err)
+		actorV1.isOngoing = false
+		actorV1.logger.Error("can't create block", err)
 		return
 	}
 
-	if e.Chain.CurrentHeight()+1 != block.GetHeight() {
+	if actorV1.Chain.CurrentHeight()+1 != block.GetHeight() {
 		return
 	}
 	var validationData ValidationData
 	validationData.ProducerBLSSig, _ = keyset.BriSignData(block.Hash().GetBytes())
 	validationDataString, err := EncodeValidationData(validationData)
 	if err != nil {
-		e.logger.Errorf("Encode validation data failed %+v", err)
+		actorV1.logger.Errorf("Encode validation data failed %+v", err)
 	}
 	block.(blockValidation).AddValidationField(validationDataString)
 
-	e.RoundData.Block = block
-	e.RoundData.BlockHash = *block.Hash()
-	e.RoundData.BlockValidateData = validationData
+	actorV1.RoundData.Block = block
+	actorV1.RoundData.BlockHash = *block.Hash()
+	actorV1.RoundData.BlockValidateData = validationData
 
-	blockData, _ := json.Marshal(e.RoundData.Block)
-	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, keyset)
-	// e.logger.Info("push block", time.Since(time1).Seconds())
-	go e.Node.PushMessageToChain(msg, e.Chain)
+	blockData, _ := json.Marshal(actorV1.RoundData.Block)
+	msg, _ := MakeBFTProposeMsg(blockData, actorV1.ChainKey, keyset)
+	go actorV1.Node.PushMessageToChain(msg, actorV1.Chain)
 }
 
-func (e *BLSBFT) enterListenPhase() {
-	if !e.isInTimeFrame() || e.RoundData.State == listenPhase {
+func (actorV1 *ActorV1) enterListenPhase() {
+	if !actorV1.isInTimeFrame() || actorV1.RoundData.State == listenPhase {
 		return
 	}
-	e.setState(listenPhase)
+	actorV1.setState(listenPhase)
 }
 
-func (e *BLSBFT) enterVotePhase() {
-	if !e.isInTimeFrame() || e.RoundData.State == votePhase || e.RoundData.Block == nil {
+func (actorV1 *ActorV1) enterVotePhase() {
+	if !actorV1.isInTimeFrame() || actorV1.RoundData.State == votePhase || actorV1.RoundData.Block == nil {
 		return
 	}
-	e.logger.Info("enter voting phase")
-	e.isOngoing = true
-	e.setState(votePhase)
-	err := e.sendVote()
+	actorV1.logger.Info("enter voting phase")
+	actorV1.isOngoing = true
+	actorV1.setState(votePhase)
+	err := actorV1.sendVote()
 	if err != nil {
-		e.logger.Error(err)
+		actorV1.logger.Error(err)
 		return
 	}
-	e.logger.Info(e.ChainKey, "sending vote...")
+	actorV1.logger.Info(actorV1.ChainKey, "sending vote...")
 }
 
-func (e *BLSBFT) enterNewRound() {
+func (actorV1 *ActorV1) enterNewRound() {
 	//if chain is not ready,  return
-	if !e.Chain.IsReady() {
-		e.RoundData.State = ""
+	if !actorV1.Chain.IsReady() {
+		actorV1.RoundData.State = ""
 		return
 	}
 	//if already running a round for current timeframe
-	if e.isInTimeFrame() && (e.RoundData.State != newround && e.RoundData.State != "") {
-		fmt.Println("CONSENSUS", e.isInTimeFrame(), e.getCurrentRound(), e.getTimeSinceLastBlock().Seconds(), e.RoundData.State)
+	if actorV1.isInTimeFrame() && (actorV1.RoundData.State != newround && actorV1.RoundData.State != "") {
+		fmt.Println("CONSENSUS", actorV1.isInTimeFrame(), actorV1.getCurrentRound(), actorV1.getTimeSinceLastBlock().Seconds(), actorV1.RoundData.State)
 		return
 	}
 
-	e.isOngoing = false
-	e.setState("")
-	if e.waitForNextRound() {
+	actorV1.isOngoing = false
+	actorV1.setState("")
+	if actorV1.waitForNextRound() {
 		return
 	}
-	e.setState(newround)
-	e.InitRoundData()
-	e.logger.Info("")
-	e.logger.Info("============================================")
-	e.logger.Info("")
+	actorV1.setState(newround)
+	actorV1.InitRoundData()
+	actorV1.logger.Info("")
+	actorV1.logger.Info("============================================")
+	actorV1.logger.Info("")
 
-	for _, userKey := range e.UserKeySet {
+	for _, userKey := range actorV1.UserKeySet {
 		pubKey := userKey.GetPublicKey()
-		if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == GetProposerIndexByRound(e.Chain.GetLastProposerIndex(), e.RoundData.Round, e.Chain.GetCommitteeSize()) {
-			// e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
-			e.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v", e.ChainKey, 0, e.RoundData.NextHeight, e.RoundData.Round)
-			e.enterProposePhase(&userKey)
-			e.enterVotePhase()
+		if actorV1.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == GetProposerIndexByRound(actorV1.Chain.GetLastProposerIndex(), actorV1.RoundData.Round, actorV1.Chain.GetCommitteeSize()) {
+			actorV1.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v", actorV1.ChainKey, 0, actorV1.RoundData.NextHeight, actorV1.RoundData.Round)
+			actorV1.enterProposePhase(&userKey)
+			actorV1.enterVotePhase()
 			return
 		}
 	}
 
 	//if not propose => check for listen
-	for _, userKey := range e.UserKeySet {
+	for _, userKey := range actorV1.UserKeySet {
 		pubKey := userKey.GetPublicKey()
-		if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) != -1 {
-			// e.logger.Info("BFT: new round => LISTEN", e.RoundData.NextHeight, e.RoundData.Round)
-			e.logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v", e.ChainKey, 0, e.RoundData.NextHeight, e.RoundData.Round)
-			e.enterListenPhase()
+		if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), actorV1.RoundData.CommitteeBLS.StringList) != -1 {
+			actorV1.logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v", actorV1.ChainKey, 0, actorV1.RoundData.NextHeight, actorV1.RoundData.Round)
+			actorV1.enterListenPhase()
 			break
 		}
 	}
 
 }
 
-func (e *BLSBFT) addVote(voteMsg BFTVote) {
-	e.RoundData.lockVotes.Lock()
-	defer e.RoundData.lockVotes.Unlock()
-	e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
-	e.logger.Warn("vote added...")
+func (actorV1 *ActorV1) addVote(voteMsg BFTVote) {
+	actorV1.RoundData.lockVotes.Lock()
+	defer actorV1.RoundData.lockVotes.Unlock()
+	actorV1.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
+	actorV1.logger.Warn("vote added...")
 	return
 }
 
-func (e *BLSBFT) addEarlyVote(voteMsg BFTVote) {
-	e.lockEarlyVotes.Lock()
-	defer e.lockEarlyVotes.Unlock()
-	if _, ok := e.EarlyVotes[voteMsg.RoundKey]; !ok {
-		e.EarlyVotes[voteMsg.RoundKey] = make(map[string]vote)
+func (actorV1 *ActorV1) addEarlyVote(voteMsg BFTVote) {
+	actorV1.lockEarlyVotes.Lock()
+	defer actorV1.lockEarlyVotes.Unlock()
+	if _, ok := actorV1.EarlyVotes[voteMsg.RoundKey]; !ok {
+		actorV1.EarlyVotes[voteMsg.RoundKey] = make(map[string]vote)
 	}
-	e.EarlyVotes[voteMsg.RoundKey][voteMsg.Validator] = voteMsg.Vote
+	actorV1.EarlyVotes[voteMsg.RoundKey][voteMsg.Validator] = voteMsg.Vote
 	return
 }
 
-func (e *BLSBFT) createNewBlock(userKey *signatureschemes2.MiningKey) (types.BlockInterface, error) {
+func (actorV1 *ActorV1) createNewBlock(userKey *signatureschemes2.MiningKey) (types.BlockInterface, error) {
 
 	var errCh chan error
 	var block types.BlockInterface = nil
@@ -455,20 +419,20 @@ func (e *BLSBFT) createNewBlock(userKey *signatureschemes2.MiningKey) (types.Blo
 	go func() {
 		time1 := time.Now()
 		var err error
-		commitee := e.Chain.GetCommittee()
+		commitee := actorV1.Chain.GetCommittee()
 		pk := userKey.GetPublicKey()
-		base58Str, err := commitee[e.Chain.GetPubKeyCommitteeIndex(pk.GetMiningKeyBase58(consensusName))].ToBase58()
+		base58Str, err := commitee[actorV1.Chain.GetPubKeyCommitteeIndex(pk.GetMiningKeyBase58(consensusName))].ToBase58()
 		if err != nil {
-			e.logger.Error("UserKeySet is wrong", err)
+			actorV1.logger.Error("UserKeySet is wrong", err)
 			errCh <- err
 			return
 		}
 
-		block, err = e.Chain.CreateNewBlock(1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix(), []incognitokey.CommitteePublicKey{}, common.Hash{})
+		block, err = actorV1.Chain.CreateNewBlock(1, base58Str, int(actorV1.RoundData.Round), actorV1.RoundData.TimeStart.Unix(), []incognitokey.CommitteePublicKey{}, common.Hash{})
 		if block != nil {
-			e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
+			actorV1.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
 		} else {
-			e.logger.Info("create block", time.Since(time1).Seconds())
+			actorV1.logger.Info("create block", time.Since(time1).Seconds())
 		}
 
 		time.AfterFunc(100*time.Millisecond, func() {
@@ -484,22 +448,22 @@ func (e *BLSBFT) createNewBlock(userKey *signatureschemes2.MiningKey) (types.Blo
 		return block, err
 	case <-timeout:
 		if block != nil {
-			e.logger.Info("Create block has something wrong ", block.GetHeight())
+			actorV1.logger.Info("Create block has something wrong ", block.GetHeight())
 		}
 		return nil, NewConsensusError(BlockCreationError, errors.New("block creation timeout"))
 	}
 }
 
-func NewInstance(chain ChainInterface, chainKey string, chainID int, node NodeInterface, logger common.Logger) *BLSBFT {
-	var newInstance BLSBFT
-	newInstance.Chain = chain
-	newInstance.ChainKey = chainKey
-	newInstance.ChainID = chainID
-	newInstance.Node = node
+func NewInstanceV1WithValue(
+	chain ChainInterface,
+	chainKey string, chainID int,
+	node NodeInterface, logger common.Logger,
+) *actorV1 {
+	var newInstance actorV1
+	newInstance.chain = chain
+	newInstance.chainKey = chainKey
+	newInstance.chainID = chainID
+	newInstance.node = node
 	newInstance.logger = logger
 	return &newInstance
 }
-
-//func init() {
-//	consensus.RegisterConsensus(common.BlsConsensus, &BLSBFT{})
-//}

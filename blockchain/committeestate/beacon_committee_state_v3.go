@@ -231,7 +231,6 @@ func (b *BeaconCommitteeStateV3) processUnstakeInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 	oldState BeaconCommitteeState,
-
 ) *CommitteeChange {
 	return b.turnOffAutoStake(env.newValidators, unstakeInstruction.CommitteePublicKeys, committeeChange, oldState)
 }

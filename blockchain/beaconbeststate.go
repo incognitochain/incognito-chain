@@ -140,6 +140,7 @@ func (bc *BlockChain) GetChain(cid int) ChainInterface {
 		return bc.ShardChain[cid]
 	}
 }
+
 func (beaconBestState *BeaconBestState) GetBeaconHeight() uint64 {
 	return beaconBestState.BeaconHeight
 }

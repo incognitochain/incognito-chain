@@ -19,7 +19,7 @@ import (
 )
 
 type Engine struct {
-	BFTProcess             map[int]ConsensusInterface    // chainID -> consensus
+	BFTProcess             map[int]blsbft.Actor          // chainID -> consensus
 	validators             []*consensus.Validator        // list of validator
 	syncingValidators      map[int][]consensus.Validator // syncing validators
 	syncingValidatorsIndex map[string]int                // syncing validators index
@@ -32,7 +32,7 @@ type Engine struct {
 	//legacy code -> single process
 	userMiningPublicKeys *incognitokey.CommitteePublicKey
 	userKeyListString    string
-	currentMiningProcess ConsensusInterface
+	currentMiningProcess blsbft.Actor
 }
 
 //just get role of first validator
@@ -104,38 +104,38 @@ func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Val
 	return chainValidator
 }
 
-func (s *Engine) WatchCommitteeChange() {
+func (engine *Engine) WatchCommitteeChange() {
 
 	defer func() {
-		time.AfterFunc(time.Second*3, s.WatchCommitteeChange)
+		time.AfterFunc(time.Second*3, engine.WatchCommitteeChange)
 	}()
 
 	//check if enable
-	if s.IsEnabled == 0 || s.config == nil {
+	if engine.IsEnabled == 0 || engine.config == nil {
 		return
 	}
 
 	ValidatorGroup := make(map[int][]consensus.Validator)
-	for _, validator := range s.validators {
-		s.userMiningPublicKeys = validator.MiningKey.GetPublicKey()
-		s.userKeyListString = validator.PrivateSeed
-		role, chainID := s.config.Node.GetPubkeyMiningState(validator.MiningKey.GetPublicKey())
+	for _, validator := range engine.validators {
+		engine.userMiningPublicKeys = validator.MiningKey.GetPublicKey()
+		engine.userKeyListString = validator.PrivateSeed
+		role, chainID := engine.config.Node.GetPubkeyMiningState(validator.MiningKey.GetPublicKey())
 		//Logger.Log.Info("validator key", validator.MiningKey.GetPublicKeyBase58())
 		if chainID == -1 {
 			validator.State = consensus.MiningState{role, "beacon", -1}
 		} else if chainID > -1 {
 			validator.State = consensus.MiningState{role, "shard", chainID}
 			if role == common.PendingRole {
-				if len(s.syncingValidators[chainID]) != 0 {
-					s.syncingValidators[chainID] = append(
-						s.syncingValidators[chainID][:s.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]],
-						s.syncingValidators[chainID][s.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]+1:]...)
+				if len(engine.syncingValidators[chainID]) != 0 {
+					engine.syncingValidators[chainID] = append(
+						engine.syncingValidators[chainID][:engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]],
+						engine.syncingValidators[chainID][engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]+1:]...)
 				}
 			}
 			if role == common.SyncingRole {
-				if _, ok := s.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]; !ok {
-					s.syncingValidators[chainID] = append(s.syncingValidators[chainID], *validator)
-					s.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()] = len(s.syncingValidators[chainID]) - 1
+				if _, ok := engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]; !ok {
+					engine.syncingValidators[chainID] = append(engine.syncingValidators[chainID], *validator)
+					engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()] = len(engine.syncingValidators[chainID]) - 1
 				}
 			}
 		} else {
@@ -153,38 +153,38 @@ func (s *Engine) WatchCommitteeChange() {
 		}
 	}
 
-	miningProc := ConsensusInterface(nil)
+	miningProc := blsbft.Processor(nil)
 	for chainID, validators := range ValidatorGroup {
 		chainName := "beacon"
 		if chainID >= 0 {
 			chainName = fmt.Sprintf("shard-%d", chainID)
 		}
-		s.updateVersion(chainID)
-		if _, ok := s.BFTProcess[chainID]; !ok {
-			s.initProcess(chainID, chainName)
+		engine.updateVersion(chainID)
+		if _, ok := engine.BFTProcess[chainID]; !ok {
+			engine.initProcess(chainID, chainName)
 		} else { //if not run correct version => stop and init
-			if s.version[chainID] == 1 {
-				if _, ok := s.BFTProcess[chainID].(*blsbft.BLSBFT); !ok {
-					s.BFTProcess[chainID].Destroy()
-					s.initProcess(chainID, chainName)
+			if engine.version[chainID] == 1 {
+				if _, ok := engine.BFTProcess[chainID].(*blsbft.BLSBFT); !ok {
+					engine.BFTProcess[chainID].Destroy()
+					engine.initProcess(chainID, chainName)
 				}
 			}
-			if s.version[chainID] == 2 {
-				if _, ok := s.BFTProcess[chainID].(*blsbft2.BLSBFT_V2); !ok {
-					s.BFTProcess[chainID].Destroy()
-					s.initProcess(chainID, chainName)
+			if engine.version[chainID] == 2 {
+				if _, ok := engine.BFTProcess[chainID].(*blsbft2.BLSBFT_V2); !ok {
+					engine.BFTProcess[chainID].Destroy()
+					engine.initProcess(chainID, chainName)
 				}
 			}
-			if s.version[chainID] == 3 {
-				if _, ok := s.BFTProcess[chainID].(*blsbft3.BLSBFT_V3); !ok {
-					s.BFTProcess[chainID].Destroy()
-					s.initProcess(chainID, chainName)
+			if engine.version[chainID] == 3 {
+				if _, ok := engine.BFTProcess[chainID].(*blsbft3.BLSBFT_V3); !ok {
+					engine.BFTProcess[chainID].Destroy()
+					engine.initProcess(chainID, chainName)
 				}
 			}
-			if s.version[chainID] == 4 {
-				if _, ok := s.BFTProcess[chainID].(*blsbft4.BLSBFT_V4); !ok {
-					s.BFTProcess[chainID].Destroy()
-					s.initProcess(chainID, chainName)
+			if engine.version[chainID] == 4 {
+				if _, ok := engine.BFTProcess[chainID].(*blsbft4.BLSBFT_V4); !ok {
+					engine.BFTProcess[chainID].Destroy()
+					engine.initProcess(chainID, chainName)
 				}
 			}
 		}
@@ -193,24 +193,24 @@ func (s *Engine) WatchCommitteeChange() {
 			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
 
-		s.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
-		s.BFTProcess[chainID].Start()
-		miningProc = s.BFTProcess[chainID]
+		engine.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
+		engine.BFTProcess[chainID].Start()
+		miningProc = engine.BFTProcess[chainID]
 	}
 
-	for chainID, proc := range s.BFTProcess {
+	for chainID, proc := range engine.BFTProcess {
 		if _, ok := ValidatorGroup[chainID]; !ok {
 			proc.Stop()
 		}
 	}
 
-	s.currentMiningProcess = miningProc
+	engine.currentMiningProcess = miningProc
 }
 
 func NewConsensusEngine() *Engine {
 	Logger.Log.Infof("CONSENSUS: NewConsensusEngine")
 	engine := &Engine{
-		BFTProcess:             make(map[int]ConsensusInterface),
+		BFTProcess:             make(map[int]blsbft.Actor),
 		syncingValidators:      make(map[int][]consensus.Validator),
 		syncingValidatorsIndex: make(map[string]int),
 		consensusName:          common.BlsConsensus,
@@ -220,54 +220,17 @@ func NewConsensusEngine() *Engine {
 }
 
 func (engine *Engine) initProcess(chainID int, chainName string) {
-	if engine.version[chainID] == 1 {
-		if chainID == -1 {
-			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
-		} else {
-			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
-		}
-	} else if engine.version[chainID] == 2 {
-		if chainID == -1 {
-			engine.BFTProcess[chainID] = blsbft2.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
-		} else {
-			engine.BFTProcess[chainID] = blsbft2.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
-		}
-	} else if engine.version[chainID] == 3 {
-		if chainID == -1 {
-			engine.BFTProcess[chainID] = blsbft3.NewInstance(
-				engine.config.Blockchain.BeaconChain,
-				engine.config.Blockchain.BeaconChain,
-				chainName, chainID,
-				engine.config.Node, Logger.Log)
-		} else {
-			engine.BFTProcess[chainID] = blsbft3.NewInstance(
-				engine.config.Blockchain.ShardChain[chainID],
-				engine.config.Blockchain.BeaconChain,
-				chainName, chainID,
-				engine.config.Node, Logger.Log)
-		}
-	} else if engine.version[chainID] == 4 {
-		if chainID == -1 {
-			engine.BFTProcess[chainID] = blsbft4.NewInstance(
-				engine.config.Blockchain.BeaconChain,
-				engine.config.Blockchain.BeaconChain,
-				chainName, chainID,
-				engine.config.Node, Logger.Log)
-		} else {
-			engine.BFTProcess[chainID] = blsbft4.NewInstance(
-				engine.config.Blockchain.ShardChain[chainID],
-				engine.config.Blockchain.BeaconChain,
-				chainName, chainID,
-				engine.config.Node, Logger.Log)
-		}
+	var bftActor blsbft.Actor
+	if chainID == -1 {
+		bftActor = blsbft.NewActorWithValue(
+			engine.config.Blockchain.BeaconChain, engine.version[chainID],
+			chainID, chainName, engine.config.Node, Logger.Log)
 	} else {
-		// Auto init version 1 if no suitable config is provided
-		if chainID == -1 {
-			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
-		} else {
-			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
-		}
+		bftActor = blsbft.NewActorWithValue(
+			engine.config.Blockchain.ShardChain[chainID], engine.version[chainID],
+			chainID, chainName, engine.config.Node, Logger.Log)
 	}
+	engine.BFTProcess[chainID] = bftActor
 }
 
 func (engine *Engine) updateVersion(chainID int) {
@@ -282,15 +245,15 @@ func (engine *Engine) updateVersion(chainID int) {
 	}
 
 	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
-		engine.version[chainID] = 2
+		engine.version[chainID] = blsbft.MultiViewsVersion
 	}
 
 	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV3Height {
-		engine.version[chainID] = 3
+		engine.version[chainID] = blsbft.SlashingVersion
 	}
 
 	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV4Height {
-		engine.version[chainID] = 4
+		engine.version[chainID] = blsbft.MultiSubsetsVersion
 	}
 }
 
