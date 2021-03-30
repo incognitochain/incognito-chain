@@ -456,7 +456,15 @@ func buildMetaInfo() {
 					info.MetaAction = value.info.MetaAction
 				}
 			} else {
-				metaInfoMap[metaType] = value.info
+				metaInfoMap[metaType] = &MetaInfo{
+					HasInput:   value.info.HasInput,
+					HasOutput:  value.info.HasOutput,
+					MetaAction: value.info.MetaAction,
+					TxType:     map[string]interface{}{},
+				}
+				for k := range value.info.TxType {
+					metaInfoMap[metaType].TxType[k] = nil
+				}
 			}
 		}
 	}
