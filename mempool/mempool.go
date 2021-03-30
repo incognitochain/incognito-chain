@@ -1175,11 +1175,17 @@ func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
 }
 
 func (tp TxPool) GetOTAHashH() map[common.Hash][]common.Hash{
+	declKey := common.Hash{}
 	res := make(map[common.Hash][]common.Hash)
+	res[declKey] = []common.Hash{}
 	for txHash, txDesc := range tp.pool {
 		res[txHash] = []common.Hash{}
 		for _, otaHash := range txDesc.Desc.Tx.ListOTAHashH() {
 			res[txHash] = append(res[txHash], otaHash)
+		}
+		for _, otaDecl := range transaction.GetOTADeclarationsFromTx(txDesc.Desc.Tx) {
+			h := common.HashH(otaDecl.PublicKey[:])
+			res[declKey] = append(res[txHash], h)
 		}
 	}
 	return res

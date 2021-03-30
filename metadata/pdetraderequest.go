@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"reflect"
 	"strconv"
 )
@@ -162,3 +163,17 @@ func (pc *PDETradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainR
 func (pc *PDETradeRequest) CalculateSize() uint64 {
 	return calculateSize(pc)
 }
+
+func (pc *PDETradeRequest) GetOTADeclarations() []OTADeclaration {
+	pk, _, err := coin.ParseOTAInfoFromString(pc.TraderAddressStr, pc.TxRandomStr)
+	if err != nil {
+		return []OTADeclaration{}
+	}
+	sellingToken := common.ConfidentialAssetID
+	if pc.TokenIDToSellStr == common.PRVIDStr {
+		sellingToken = common.PRVCoinID
+	}
+	result := OTADeclaration{PublicKey: pk.ToBytes(), TokenID: sellingToken}
+	return []OTADeclaration{result}
+}
+

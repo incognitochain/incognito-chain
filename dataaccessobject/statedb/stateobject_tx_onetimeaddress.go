@@ -8,10 +8,16 @@ import (
 	"reflect"
 )
 
+const (
+	OTA_STATUS_OCCUPIED = iota
+	OTA_STATUS_STORED
+)
+
 type OnetimeAddressState struct {
 	tokenID 	  common.Hash
 	publicKey     []byte
 	index 		  *big.Int
+	status 		  int
 }
 
 func (s OnetimeAddressState) Index() *big.Int {
@@ -38,15 +44,25 @@ func (s *OnetimeAddressState) SetTokenID(tokenID common.Hash) {
 	s.tokenID = tokenID
 }
 
+func (s OnetimeAddressState) Status() int {
+	return s.status
+}
+
+func (s *OnetimeAddressState) SetStatus(_status int) {
+	s.status = _status
+}
+
 func (s OnetimeAddressState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		TokenID common.Hash
 		PublicKey     []byte
 		Index 		  *big.Int
+		Status 		  int
 	}{
 		TokenID: 		s.tokenID,
 		PublicKey:      s.publicKey,
 		Index: 			s.index,
+		Status: 		s.status,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -59,6 +75,7 @@ func (s *OnetimeAddressState) UnmarshalJSON(data []byte) error {
 		TokenID 	common.Hash
 		PublicKey   []byte
 		Index 		*big.Int
+		Status 		int
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -67,6 +84,7 @@ func (s *OnetimeAddressState) UnmarshalJSON(data []byte) error {
 	s.tokenID = temp.TokenID
 	s.publicKey = temp.PublicKey
 	s.index = temp.Index
+	s.status = temp.Status
 	return nil
 }
 
@@ -75,7 +93,12 @@ func NewOnetimeAddressState() *OnetimeAddressState {
 }
 
 func NewOnetimeAddressStateWithValue(tokenID common.Hash, publicKey []byte, index *big.Int) *OnetimeAddressState {
-	return &OnetimeAddressState{tokenID: tokenID, publicKey: publicKey, index: index}
+	return &OnetimeAddressState{tokenID: tokenID, publicKey: publicKey, index: index, status: OTA_STATUS_STORED}
+}
+
+// for occupied coin state, we group all coins by the same token ID
+func NewOccupiedOnetimeAddressState(tokenID common.Hash, publicKey []byte) *OnetimeAddressState {
+	return &OnetimeAddressState{tokenID: tokenID, publicKey: publicKey, index: nil, status: OTA_STATUS_OCCUPIED}
 }
 
 type OnetimeAddressObject struct {
