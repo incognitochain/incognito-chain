@@ -8,9 +8,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-
 	lru "github.com/hashicorp/golang-lru"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
@@ -39,8 +39,9 @@ type BLSBFT_V4 struct {
 	destroyCh    chan struct{}
 	Logger       common.Logger
 
-	currentTime      int64
-	currentTimeSlot  int64
+	currentTime     int64
+	currentTimeSlot int64
+	// TODO: @hung shouldn't use cache for this, the rule for propose and re-propose must be follow strictly
 	proposeHistory   *lru.Cache
 	ProposeMessageCh chan BFTPropose
 	VoteMessageCh    chan BFTVote
@@ -95,11 +96,11 @@ func (e *BLSBFT_V4) Destroy() {
 func (e *BLSBFT_V4) getCommitteeForBlock(v types.BlockInterface) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	var err error = nil
 	var committees, signingCommittees []incognitokey.CommitteePublicKey
-	if !e.Chain.IsBeaconChain() {
-		signingCommittees, committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(e.Chain.GetShardID()), committeestate.MaxSubsetCommittees)
-	} else {
+	if e.Chain.IsBeaconChain() {
 		committees = e.Chain.GetBestView().GetCommittee()
 		signingCommittees = committees
+	} else {
+		signingCommittees, committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(e.Chain.GetShardID()), blockchain.MaxSubsetCommittees)
 	}
 	return signingCommittees, committees, err
 }
@@ -162,6 +163,11 @@ func (e *BLSBFT_V4) run() error {
 				block := blockIntf.(types.BlockInterface)
 				blkHash := block.Hash().String()
 
+				if block.GetHeight() <= e.Chain.GetFinalViewHeight() {
+					e.Logger.Debug("Receive block older than final view Height")
+					continue
+				}
+
 				signingCommittees, committees, err := e.getCommitteeForBlock(block)
 				if err != nil {
 					e.Logger.Error(err)
@@ -186,8 +192,8 @@ func (e *BLSBFT_V4) run() error {
 					e.receiveBlockByHash[blkHash].addBlockInfo(block, committees, signingCommittees, userKeySet, 0, 0)
 				}
 
-				if block.GetHeight() <= e.Chain.GetBestViewHeight() {
-					e.Logger.Info("Receive block create from old view. Rejected!")
+				if block.GetHeight() <= e.Chain.GetBestView().GetHeight() {
+					e.Logger.Infof("%v Receive block create from old view - height %v. Rejected! Expect: %v", e.ChainKey, block.GetHeight(), e.Chain.GetBestView().GetHeight())
 					continue
 				}
 
@@ -238,7 +244,8 @@ func (e *BLSBFT_V4) run() error {
 					userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 					if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk {
 						shouldListen = false
-						if common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()) != e.currentTimeSlot { // current timeslot is not add to view, and this user is proposer of this timeslot
+						// current timeslot is not add to view, and this user is proposer of this timeslot
+						if common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()) != e.currentTimeSlot {
 							//using block hash as key of best view -> check if this best view we propose or not
 							if _, ok := e.proposeHistory.Get(fmt.Sprintf("%s%d", e.currentTimeSlot)); !ok {
 								shouldPropose = true
@@ -827,7 +834,7 @@ func (e *BLSBFT_V4) getCommitteesAndCommitteeViewHash() (
 		committeeViewHash = *e.CommitteeChain.FinalView().GetHash()
 		signingCommittees, committees, err = e.
 			CommitteeChain.
-			CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID), committeestate.MaxSubsetCommittees)
+			CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID), blockchain.MaxSubsetCommittees)
 		if err != nil {
 			return signingCommittees, committees, proposerPk, committeeViewHash, err
 		}

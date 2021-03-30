@@ -182,7 +182,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 				return NewBlockChainError(WrongBlockHeightError, errors.New("Waiting For Beacon Produce Block"))
 			}
 		}
-		signingCommittees, committees, err = blockchain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID, committeestate.MaxSubsetCommittees)
+		signingCommittees, committees, err = blockchain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID, MaxSubsetCommittees)
 		if err != nil {
 			return err
 		}

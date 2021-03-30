@@ -191,7 +191,8 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 	oldBlock types.BlockInterface,
 	proposer string, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
-	committeeViewHash common.Hash) (types.BlockInterface, error) {
+	committeeViewHash common.Hash,
+) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.ShardBlock)
 	json.Unmarshal(b, &newBlock)
@@ -354,7 +355,7 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) (
 		committees = append(committees, chain.GetBestState().shardCommitteeState.GetShardCommittee()...)
 		signingCommittes = committees
 	} else {
-		signingCommittes, committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID), committeestate.MaxSubsetCommittees)
+		signingCommittes, committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID), MaxSubsetCommittees)
 		if err != nil {
 			return signingCommittes, committees, err
 		}

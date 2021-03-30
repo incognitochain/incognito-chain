@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
 
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -103,7 +102,7 @@ func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.O
 //- Agg Signature
 //- MerklePath
 func VerifyCrossShardBlock(crossShardBlock *types.CrossShardBlock, blockchain *BlockChain, committees []incognitokey.CommitteePublicKey) error {
-	committeesForSigning, err := blockchain.getCommitteesForSigning(committees, crossShardBlock, committeestate.MaxSubsetCommittees)
+	committeesForSigning, err := blockchain.getCommitteesForSigning(committees, crossShardBlock, MaxSubsetCommittees)
 	if err != nil {
 		return err
 	}
