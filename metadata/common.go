@@ -266,6 +266,13 @@ func AssertPaymentAddressAndTxVersion(paymentAddress interface{}, version int8) 
 		return privacy.PaymentAddress{}, errors.New("PublicSpend or PublicView not found")
 	}
 
+	//If tx is in version 1, PublicOTAKey must be nil
+	if version == 1 {
+		if addr.GetOTAPublicKey() != nil {
+			return privacy.PaymentAddress{}, errors.New("PublicOTAKey must be nil")
+		}
+	}
+
 	//If tx is in version 2, PublicOTAKey must not be nil
 	if version == 2 {
 		if addr.GetOTAPublicKey() == nil {

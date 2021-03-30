@@ -120,6 +120,9 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 	if err != nil {
 		return false, false, fmt.Errorf("trader address string or txrandom is not corrrect format")
 	}
+	if int8(ver) != tx.GetVersion() {
+		return false, false, fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
+	}
 	if ver == 2 {
 		_, errSub, verSub := checkTraderAddress(pc.SubTraderAddressStr, pc.SubTxRandomStr)
 		if errSub != nil || verSub == 1 {

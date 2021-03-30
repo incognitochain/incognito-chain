@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
@@ -84,8 +85,12 @@ func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shar
 		return true, true, nil
 	}
 
-	if _, err, _ := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr); err != nil {
+	_, err, ver := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr)
+	if err != nil {
 		return false, false, err
+	}
+	if int8(ver) != tx.GetVersion() {
+		return false, false, fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
 	}
 
 	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
