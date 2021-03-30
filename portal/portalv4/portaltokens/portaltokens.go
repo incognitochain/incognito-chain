@@ -17,9 +17,8 @@ type PortalTokenProcessor interface {
 	ConvertIncToExternalAmount(incAmt uint64) uint64
 
 	GetExpectedMemoForShielding(incAddress string) string
-	//GetExpectedMemoForUnshielding(redeemID string, custodianIncAddress string) string
 	ParseAndVerifyProof(
-		proof string, bc metadata.ChainRetriever, expectedMemo string, expectedMultisigAddress string) (bool, []*statedb.UTXO, error)
+		proof string, bc metadata.ChainRetriever, expectedMultisigAddress string) (bool, []*statedb.UTXO, error)
 	ParseAndVerifyUnshieldProof(
 		proof string, bc metadata.ChainRetriever, expectedMemo string, expectedMultisigAddress string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error)
 	GetExternalTxHashFromProof(proof string) (string, error)

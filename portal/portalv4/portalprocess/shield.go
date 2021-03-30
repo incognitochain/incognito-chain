@@ -164,10 +164,9 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	expectedMemo := portalTokenProcessor.GetExpectedMemoForShielding(meta.IncogAddressStr)
-	expectedMultisigAddress := portalParams.MultiSigAddresses[meta.TokenID]
-	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyProof(meta.ShieldingProof, bc, expectedMemo, expectedMultisigAddress)
-
+	// generate expected multisig address from master pubkeys and user payment address
+	_, expectedMultisigAddress, err := portalTokenProcessor.GenerateOTMultisigAddress(bc, portalParams.MasterPubKeys[meta.TokenID], int(portalParams.NumRequiredSigs), meta.IncogAddressStr)
+	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyProof(meta.ShieldingProof, bc, expectedMultisigAddress)
 	if !isValid || err != nil {
 		Logger.log.Error("Parse proof and verify shielding proof failed: %v", err)
 		return [][]string{rejectInst}, nil
