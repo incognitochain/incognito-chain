@@ -3,6 +3,7 @@ package portaltokens
 import (
 	"bytes"
 	"crypto/ed25519"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -18,9 +19,12 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	btcwire "github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+	"github.com/keyfuse/tokucore/network"
+	"github.com/keyfuse/tokucore/xcore"
 )
 
 type PortalBTCTokenProcessor struct {
@@ -143,52 +147,90 @@ func (p PortalBTCTokenProcessor) GetMinTokenAmount() uint64 {
 	return p.MinTokenAmount
 }
 
-// generate multisig wallet address from seeds (seed is mining key of beacon validator in byte array)
-func GenerateMultiSigWalletFromSeeds(chainParams *chaincfg.Params, seeds [][]byte, numSigsRequired int) ([]byte, []string, string, error) {
-	if len(seeds) < numSigsRequired || numSigsRequired < 0 {
-		return nil, nil, "", errors.New("Invalid signature requirment")
+func (p PortalBTCTokenProcessor) generatePublicKeyFromPrivateKey(privateKey []byte) []byte {
+	pkx, pky := btcec.S256().ScalarBaseMult(privateKey)
+	pubKey := btcec.PublicKey{Curve: btcec.S256(), X: pkx, Y: pky}
+	return pubKey.SerializeCompressed()
+}
+
+func (p PortalBTCTokenProcessor) generatePublicKeyFromSeed(seed []byte) []byte {
+	// generate BTC master account
+	BTCPrivateKeyMaster := chainhash.HashB(seed) // private mining key => private key btc
+	return p.generatePublicKeyFromPrivateKey(BTCPrivateKeyMaster)
+}
+
+func (p PortalBTCTokenProcessor) generateOTPrivateKey(chainParams *chaincfg.Params, seed []byte, incAddress string) ([]byte, error) {
+	BTCPrivateKeyMaster := chainhash.HashB(seed) // private mining key => private key btc
+
+	// this Incognito address is marked for the address that received change UTXOs
+	if incAddress == "" {
+		return BTCPrivateKeyMaster, nil
+	} else {
+		chainCode := chainhash.HashB([]byte(incAddress))
+		extendedBTCPrivateKey := hdkeychain.NewExtendedKey(chainParams.HDPrivateKeyID[:], BTCPrivateKeyMaster, chainCode, []byte{}, 0, 0, true)
+		extendedBTCChildPrivateKey, err := extendedBTCPrivateKey.Child(0)
+		if err != nil {
+			return []byte{}, fmt.Errorf("Could not generate child private key for incognito address: %v", incAddress)
+		}
+		btcChildPrivateKey, err := extendedBTCChildPrivateKey.ECPrivKey()
+		if err != nil {
+			return []byte{}, fmt.Errorf("Could not get private key from extended private key")
+		}
+		btcChildPrivateKeyBytes := btcChildPrivateKey.Serialize()
+		return btcChildPrivateKeyBytes, nil
 	}
-	bitcoinPrvKeys := make([]*btcec.PrivateKey, 0)
-	bitcoinPrvKeyStrs := make([]string, 0) // btc private key hex encoded
-	// create redeem script for 2 of 3 multi-sig
+}
+
+// Generate Bech32 P2WSH multisig address for each Incognito address
+// Return redeem script, OTMultisigAddress
+func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetriever, masterPubKeys [][]byte, numSigsRequired int, incAddress string) ([]byte, string, error) {
+	if len(masterPubKeys) < numSigsRequired || numSigsRequired < 0 {
+		return []byte{}, "", fmt.Errorf("Invalid signature requirment")
+	}
+
+	chainParams := bc.GetBTCChainParams()
+	pubKeys := [][]byte{}
+	// this Incognito address is marked for the address that received change UTXOs
+	if incAddress == "" {
+		pubKeys = masterPubKeys[:]
+	} else {
+		chainCode := chainhash.HashB([]byte(incAddress))
+		for idx, masterPubKey := range masterPubKeys {
+			// generate BTC child public key for this Incognito address
+			extendedBTCPublicKey := hdkeychain.NewExtendedKey(chainParams.HDPublicKeyID[:], masterPubKey, chainCode, []byte{}, 0, 0, false)
+			extendedBTCChildPubKey, _ := extendedBTCPublicKey.Child(0)
+			childPubKey, err := extendedBTCChildPubKey.ECPubKey()
+			if err != nil {
+				return []byte{}, "", fmt.Errorf("Master BTC Public Key #%v: %v is invalid", idx, masterPubKey)
+			}
+			pubKeys = append(pubKeys, childPubKey.SerializeCompressed())
+		}
+	}
+
+	// create redeem script for m of n multi-sig
 	builder := txscript.NewScriptBuilder()
 	// add the minimum number of needed signatures
 	builder.AddOp(byte(txscript.OP_1 - 1 + numSigsRequired))
-	for _, seed := range seeds {
-		BTCKeyBytes := genBTCPrivateKey(seed)
-		privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), BTCKeyBytes)
-		// add the public key to redeem script
-		builder.AddData(privKey.PubKey().SerializeCompressed())
-		bitcoinPrvKeys = append(bitcoinPrvKeys, privKey)
-		bitcoinPrvKeyStrs = append(bitcoinPrvKeyStrs, hex.EncodeToString(privKey.Serialize()))
+	// add the public key to redeem script
+	for _, pubKey := range pubKeys {
+		builder.AddData(pubKey)
 	}
 	// add the total number of public keys in the multi-sig script
-	builder.AddOp(byte(txscript.OP_1 - 1 + len(seeds)))
+	builder.AddOp(byte(txscript.OP_1 - 1 + len(masterPubKeys)))
 	// add the check-multi-sig op-code
 	builder.AddOp(txscript.OP_CHECKMULTISIG)
-	// redeem script is the script program in the format of []byte
+
 	redeemScript, err := builder.Script()
 	if err != nil {
-		return nil, nil, "", err
-	}
-	// generate multisig address
-	multiAddress := btcutil.Hash160(redeemScript)
-	addr, err := btcutil.NewAddressScriptHashFromHash(multiAddress, chainParams)
-
-	return redeemScript, bitcoinPrvKeyStrs, addr.String(), nil
-}
-
-// GeneratePartPrivateKeyFromSeed generate private key from seed
-// return the private key serialized in bytes array
-func (p PortalBTCTokenProcessor) GeneratePrivateKeyFromSeed(seed []byte) ([]byte, error) {
-	if len(seed) == 0 {
-		return nil, errors.New("Invalid seed")
+		return []byte{}, "", err
 	}
 
-	btcKeyBytes := genBTCPrivateKey(seed)
-	privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), btcKeyBytes)
+	// TODO: generate multisig address P2WSH Bech32
+	scriptHash := sha256.Sum256(redeemScript)
+	multi := xcore.NewPayToWitnessV0ScriptHashAddress(scriptHash[:])
+	addr := multi.ToString(network.TestNet)
 
-	return privKey.Serialize(), nil
+	return redeemScript, addr, nil
 }
 
 // CreateRawExternalTx creates raw btc transaction (not include signatures of beacon validator)
