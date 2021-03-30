@@ -263,6 +263,9 @@ func SetupParam() {
 			// todo: should update before deploying
 			PortalParamsV4: map[uint64]portalv4.PortalParams{
 				0: {
+					MasterPubKeys: map[string][][]byte{
+						portalcommonv4.PortalBTCIDStr: [][]byte{}, // 50000 nano pbtc = 5000 satoshi
+					},
 					NumRequiredSigs: 3,
 					MultiSigAddresses: map[string]string{
 						portalcommonv4.PortalBTCIDStr: "2NGFTTKNj59NGmjQpajsEXGxwf9SP8gvJiv",
@@ -301,6 +304,7 @@ func SetupParam() {
 			common.PortalRelayingFlag: TestnetEnablePortalRelaying,
 			common.PortalV4Flag:       TestnetEnablePortalV4,
 		},
+
 	}
 	// END TESTNET
 
@@ -391,6 +395,9 @@ func SetupParam() {
 			// todo: should update before deploying
 			PortalParamsV4: map[uint64]portalv4.PortalParams{
 				0: {
+					MasterPubKeys: map[string][][]byte{
+						portalcommonv4.PortalBTCIDStr: [][]byte{}, // 50000 nano pbtc = 5000 satoshi
+					},
 					NumRequiredSigs: 3,
 					MultiSigAddresses: map[string]string{
 						portalcommonv4.PortalBTCIDStr: "",
@@ -517,6 +524,9 @@ func SetupParam() {
 			// todo: should update before deploying
 			PortalParamsV4: map[uint64]portalv4.PortalParams{
 				0: {
+					MasterPubKeys: map[string][][]byte{
+						portalcommonv4.PortalBTCIDStr: [][]byte{}, // 50000 nano pbtc = 5000 satoshi
+					},
 					NumRequiredSigs: 3,
 					MultiSigAddresses: map[string]string{
 						portalcommonv4.PortalBTCIDStr: "",

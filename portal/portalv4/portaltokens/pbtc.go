@@ -49,7 +49,7 @@ func (p PortalBTCTokenProcessor) ConvertIncToExternalAmount(incAmt uint64) uint6
 }
 
 func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
-	proof string, btcChain *btcrelaying.BlockChain, expectedMemo string, expectedMultisigAddress string) (bool, []*statedb.UTXO, error) {
+	proof string, btcChain *btcrelaying.BlockChain, expectedMultisigAddress string) (bool, []*statedb.UTXO, error) {
 	if btcChain == nil {
 		Logger.log.Error("BTC relaying chain should not be null")
 		return false, nil, errors.New("BTC relaying chain should not be null")
@@ -68,16 +68,16 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 		return false, nil, fmt.Errorf("Verify btcTxProof failed %v", err)
 	}
 
-	// extract attached message from txOut's OP_RETURN
-	btcAttachedMsg, err := btcrelaying.ExtractAttachedMsgFromTx(btcTxProof.BTCTx)
-	if err != nil {
-		Logger.log.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
-		return false, nil, fmt.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
-	}
-	if btcAttachedMsg != expectedMemo {
-		Logger.log.Errorf("ShieldingIncAddress in the btc attached message is not matched with ShieldingIncAddress in metadata")
-		return false, nil, fmt.Errorf("ShieldingIncAddress in the btc attached message %v is not matched with ShieldingIncAddress in metadata %v", btcAttachedMsg, expectedMemo)
-	}
+	//// extract attached message from txOut's OP_RETURN
+	//btcAttachedMsg, err := btcrelaying.ExtractAttachedMsgFromTx(btcTxProof.BTCTx)
+	//if err != nil {
+	//	Logger.log.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
+	//	return false, nil, fmt.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
+	//}
+	//if btcAttachedMsg != expectedMemo {
+	//	Logger.log.Errorf("ShieldingIncAddress in the btc attached message is not matched with ShieldingIncAddress in metadata")
+	//	return false, nil, fmt.Errorf("ShieldingIncAddress in the btc attached message %v is not matched with ShieldingIncAddress in metadata %v", btcAttachedMsg, expectedMemo)
+	//}
 
 	// check whether amount transfer in txBNB is equal porting amount or not
 	// check receiver and amount in tx
@@ -115,9 +115,9 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyProof(
-	proof string, bc metadata.ChainRetriever, expectedMemo string, expectedMultisigAddress string) (bool, []*statedb.UTXO, error) {
+	proof string, bc metadata.ChainRetriever, expectedMultisigAddress string) (bool, []*statedb.UTXO, error) {
 	btcChain := bc.GetBTCHeaderChain()
-	return p.parseAndVerifyProofBTCChain(proof, btcChain, expectedMemo, expectedMultisigAddress)
+	return p.parseAndVerifyProofBTCChain(proof, btcChain, expectedMultisigAddress)
 }
 
 func (p PortalBTCTokenProcessor) GetExternalTxHashFromProof(proof string) (string, error) {

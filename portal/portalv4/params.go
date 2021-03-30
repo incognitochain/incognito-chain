@@ -9,6 +9,7 @@ import (
 )
 
 type PortalParams struct {
+	MasterPubKeys           map[string][][]byte
 	NumRequiredSigs         uint
 	MultiSigAddresses       map[string]string
 	MultiSigScriptHexEncode map[string]string
