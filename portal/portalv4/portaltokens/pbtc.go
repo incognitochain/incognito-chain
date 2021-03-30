@@ -317,6 +317,19 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	return hexRawTx, msgTx.TxHash().String(), nil
 }
 
+// GeneratePartPrivateKeyFromSeed generate private key from seed
+// return the private key serialized in bytes array
+func (p PortalBTCTokenProcessor) GeneratePrivateKeyFromSeed(seed []byte) ([]byte, error) {
+	if len(seed) == 0 {
+		return nil, errors.New("Invalid seed")
+	}
+
+	btcKeyBytes := genBTCPrivateKey(seed)
+	privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), btcKeyBytes)
+
+	return privKey.Serialize(), nil
+}
+
 func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSigScript []byte, rawTxBytes []byte) ([][]byte, string, error) {
 	// new MsgTx from rawTxBytes
 	msgTx := new(btcwire.MsgTx)
