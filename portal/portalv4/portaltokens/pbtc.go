@@ -23,8 +23,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"github.com/keyfuse/tokucore/network"
-	"github.com/keyfuse/tokucore/xcore"
 )
 
 type PortalBTCTokenProcessor struct {
@@ -227,10 +225,10 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetr
 
 	// TODO: generate multisig address P2WSH Bech32
 	scriptHash := sha256.Sum256(redeemScript)
-	multi := xcore.NewPayToWitnessV0ScriptHashAddress(scriptHash[:])
-	addr := multi.ToString(network.TestNet)
+	addr, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], chainParams)
+	addrStr := addr.EncodeAddress()
 
-	return redeemScript, addr, nil
+	return redeemScript, addrStr, nil
 }
 
 // CreateRawExternalTx creates raw btc transaction (not include signatures of beacon validator)
