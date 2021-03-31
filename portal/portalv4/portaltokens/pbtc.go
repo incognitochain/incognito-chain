@@ -199,7 +199,7 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetr
 			extendedBTCChildPubKey, _ := extendedBTCPublicKey.Child(0)
 			childPubKey, err := extendedBTCChildPubKey.ECPubKey()
 			if err != nil {
-				return []byte{}, "", fmt.Errorf("Master BTC Public Key #%v: %v is invalid", idx, masterPubKey)
+				return []byte{}, "", fmt.Errorf("Master BTC Public Key (#%v) %v is invalid - Error %v", idx, masterPubKey, err)
 			}
 			pubKeys = append(pubKeys, childPubKey.SerializeCompressed())
 		}
@@ -220,12 +220,15 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetr
 
 	redeemScript, err := builder.Script()
 	if err != nil {
-		return []byte{}, "", err
+		return []byte{}, "", fmt.Errorf("Could not build script - Error %v", err)
 	}
 
-	// TODO: generate multisig address P2WSH Bech32
+	// generate P2WSH address
 	scriptHash := sha256.Sum256(redeemScript)
 	addr, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], chainParams)
+	if err != nil {
+		return []byte{}, "", fmt.Errorf("Could not generate address from script - Error %v", err)
+	}
 	addrStr := addr.EncodeAddress()
 
 	return redeemScript, addrStr, nil
