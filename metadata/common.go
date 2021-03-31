@@ -370,6 +370,7 @@ func buildMetaInfo() {
 	listSNoIn := []int{
 		WithDrawRewardResponseMeta,
 		PDETradeResponseMeta,
+		PDEContributionResponseMeta,
 	}
 
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
