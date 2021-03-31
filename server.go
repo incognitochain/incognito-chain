@@ -1593,11 +1593,14 @@ func (serverObj *Server) PublishNodeState() error {
 		bBestState.Hash(),
 	}
 
+	beaconBestView := serverObj.blockChain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
+
 	for chainID, validator := range chainValidator {
 		currentMiningKey := validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 		msg.(*wire.MessagePeerState).SenderMiningPublicKey = currentMiningKey
 		msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
-		if chainID != -1 {
+
+		if chainID != -1 || beaconBestView.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
 			sBestState := serverObj.blockChain.GetBestStateShard(byte(chainID))
 			msg.(*wire.MessagePeerState).Shards[byte(chainID)] = wire.ChainState{
 				sBestState.BestBlock.Header.Timestamp,
