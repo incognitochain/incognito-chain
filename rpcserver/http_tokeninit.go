@@ -46,8 +46,7 @@ func (httpServer *HttpServer) handleCreateRawTokenInitTx(params interface{}, clo
 	}
 	senderAddr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 	pkBytes := keyWallet.KeySet.PaymentAddress.GetPublicSpend().ToBytesS()
-	shardID := common.GetShardIDFromLastByte(pkBytes[len(pkBytes) - 1])
-
+	shardID := common.GetShardIDFromLastByte(pkBytes[len(pkBytes)-1])
 
 	otaStr, txRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(senderAddr)
 	if err != nil {
@@ -72,16 +71,22 @@ func (httpServer *HttpServer) handleCreateRawTokenInitTx(params interface{}, clo
 		Info:                 []byte{},
 	}
 
-	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(rawTxParam, tokenInitMeta)
-	if err.(*rpcservice.RPCError) != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	txID, txBytes, txShardID, err1 := httpServer.txService.CreateRawTransaction(rawTxParam, tokenInitMeta)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err1)
 	}
 
-	Logger.log.Infof("creating staking transaction: txHash = %v, shardID = %v, stakingMeta = %v", txID.String(), txShardID, *tokenInitMeta)
-	result := jsonresult.CreateTransactionResult{
+	tokenID := metadata.GenTokenIDFromRequest(txID.String(), txShardID)
+
+	Logger.log.Infof("creating token init transaction: txHash = %v, shardID = %v, tokenID = %v\n", txID.String(), txShardID, tokenID.String())
+	//although the tx has type `n`, the returned result must include the generated tokenID. Therefore, we use CreateTransactionTokenResult here
+	result := jsonresult.CreateTransactionTokenResult{
 		TxID:            txID.String(),
-		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
 		ShardID:         txShardID,
+		TokenName:       tokenInitParam.TokenName,
+		TokenID:         tokenID.String(),
+		TokenAmount:     tokenInitParam.Amount,
+		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
 	}
 	return result, nil
 }
@@ -92,14 +97,53 @@ func (httpServer *HttpServer) handleCreateAndSendTokenInitTx(params interface{},
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
-	tx := data.(jsonresult.CreateTransactionResult)
+	tx := data.(jsonresult.CreateTransactionTokenResult)
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
-	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	_, err = httpServer.handleSendRawTransaction(newParam, closeChan)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.SendTxDataError, err)
 	}
-	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, tx.ShardID)
-	return result, nil
+
+	return data, nil
 }
+
+//func (httpServer *HttpServer) handleGetTokenInitStatus(params interface{}, _ <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+//	arrayParams := common.InterfaceSlice(params)
+//	data, ok := arrayParams[0].(map[string]interface{})
+//	if !ok {
+//		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("params are invalid: %v", arrayParams))
+//	}
+//	txReq, ok := data["TxRequestID"]
+//	if !ok {
+//		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("TxRequestID not found in %v", data))
+//	}
+//	txReqStr, ok := txReq.(string)
+//	if !ok {
+//		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse %v as a string", txReq))
+//	}
+//	txIDHash, err := common.Hash{}.NewHashFromStr(txReqStr)
+//	if err != nil {
+//		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("txHash %v is invalid: %v", txReqStr, err))
+//	}
+//
+//	tx, err := httpServer.txService.GetTransactionByHash(txReqStr)
+//	if err != nil {
+//		return nil, rpcservice.NewRPCError(0, fmt.Errorf("txHash %v not found in blocks or mempool", txReqStr))
+//	}
+//
+//	shardID := tx.ShardID
+//	record := tx.Hash
+//	record += strconv.FormatUint(uint64(shardID), 10)
+//
+//	tokenID := common.HashH([]byte(record))
+//
+//	if tx.IsInMempool {
+//		return TokenInitStatus{Status: 0, TokenID: tokenID.String()}, nil
+//	}
+//
+//	beaconFeatureDB := httpServer.blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+//
+//	return TokenInitStatus{Status: 1, TokenID: tokenID.String()}, nil
+//}

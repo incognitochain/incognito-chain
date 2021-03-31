@@ -154,7 +154,7 @@ func (iReq *InitTokenRequest) genTokenID(tx Transaction, shardID byte) *common.H
 
 //BuildReqActions builds an request action content from the shard chain to the beacon chain.
 func (iReq *InitTokenRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
-	tokenID := iReq.genTokenID(tx, shardID)
+	tokenID := GenTokenIDFromRequest(tx.Hash().String(), shardID)
 	txReqID := tx.Hash()
 	actionContent := map[string]interface{}{
 		"meta":    *iReq,
