@@ -515,6 +515,7 @@ func CreateVote(userKey *signatureschemes2.MiningKey, block common.BlockInterfac
 			return nil, NewConsensusError(UnExpectedError, err)
 		}
 	}
+
 	// check and sign on unshielding external tx for Portal v4
 	portalSigs, err := portalprocessv4.CheckAndSignPortalUnshieldExternalTx(userKey.PriKey[common.BridgeConsensus], block.GetInstructions(), portalParamsV4)
 	if err != nil {

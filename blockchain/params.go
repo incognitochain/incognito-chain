@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
@@ -156,10 +157,11 @@ func getSupportedPortalCollateralsTestnet2() []portalv3.PortalCollateral {
 func initPortalTokensV4ForTestNet() map[string]portaltokensv4.PortalTokenProcessor {
 	return map[string]portaltokensv4.PortalTokenProcessor{
 		portalcommonv4.PortalBTCIDStr: &portaltokensv4.PortalBTCTokenProcessor{
-			&portaltokensv4.PortalToken{
+			PortalToken: &portaltokensv4.PortalToken{
 				ChainID:        TestnetBTCChainID,
 				MinTokenAmount: 10,
 			},
+			ChainParam: &chaincfg.TestNet3Params,
 		},
 	}
 }
@@ -167,10 +169,11 @@ func initPortalTokensV4ForTestNet() map[string]portaltokensv4.PortalTokenProcess
 func initPortalTokensV4ForMainNet() map[string]portaltokensv4.PortalTokenProcessor {
 	return map[string]portaltokensv4.PortalTokenProcessor{
 		portalcommonv4.PortalBTCIDStr: &portaltokensv4.PortalBTCTokenProcessor{
-			&portaltokensv4.PortalToken{
+			PortalToken: &portaltokensv4.PortalToken{
 				ChainID:        MainnetBTCChainID,
 				MinTokenAmount: 10,
 			},
+			ChainParam: &chaincfg.MainNetParams,
 		},
 	}
 }
@@ -219,7 +222,7 @@ func SetupParam() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -304,7 +307,6 @@ func SetupParam() {
 			common.PortalRelayingFlag: TestnetEnablePortalRelaying,
 			common.PortalV4Flag:       TestnetEnablePortalV4,
 		},
-
 	}
 	// END TESTNET
 
@@ -351,7 +353,7 @@ func SetupParam() {
 		EthContractAddressStr:            Testnet2ETHContractAddressStr,
 		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -480,7 +482,7 @@ func SetupParam() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},

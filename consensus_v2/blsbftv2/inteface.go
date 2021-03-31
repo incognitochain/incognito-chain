@@ -1,6 +1,7 @@
 package blsbftv2
 
 import (
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
@@ -53,4 +54,5 @@ type ChainInterface interface {
 	GetViewByHash(hash common.Hash) multiview.View
 	// Portal v4
 	GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams
+	GetBTCChainParams() *chaincfg.Params
 }

@@ -637,13 +637,13 @@ func (p *PortalSubmitConfirmedTxProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	expectedMultisigAddress := portalParams.GeneralMultiSigAddresses[tokenIDStr]
+	expectedReceivedMultisigAddress := portalParams.GeneralMultiSigAddresses[tokenIDStr]
 	outputs := optionalData["outputs"].(map[string]uint64)
 	if len(unshieldBatch.GetUTXOs()) == 0 {
 		Logger.log.Errorf("UTXOs of unshield batchID %v is empty: ", meta.BatchID)
 		return [][]string{rejectInst}, nil
 	}
-	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyUnshieldProof(meta.UnshieldProof, bc, expectedMultisigAddress, outputs, unshieldBatch.GetUTXOs())
+	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyUnshieldProof(meta.UnshieldProof, bc, expectedReceivedMultisigAddress, "", outputs, unshieldBatch.GetUTXOs())
 	if !isValid || err != nil {
 		Logger.log.Errorf("Unshield Proof is invalid")
 		return [][]string{rejectInst}, nil

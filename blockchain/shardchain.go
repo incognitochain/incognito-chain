@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	"sync"
@@ -273,4 +274,8 @@ func (chain *ShardChain) GetAllView() []multiview.View {
 
 func (chain *ShardChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
 	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
+}
+
+func (chain *ShardChain) GetBTCChainParams() *chaincfg.Params {
+	return chain.Blockchain.GetBTCChainParams()
 }

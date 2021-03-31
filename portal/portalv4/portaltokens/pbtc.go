@@ -29,6 +29,7 @@ import (
 
 type PortalBTCTokenProcessor struct {
 	*PortalToken
+	ChainParam *chaincfg.Params
 }
 
 func genBTCPrivateKey(IncKeyBytes []byte) []byte {
@@ -118,7 +119,7 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyShieldProof(
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
-	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error) {
+	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, publicSeed string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error) {
 	btcChain := bc.GetBTCHeaderChain()
 	if btcChain == nil {
 		Logger.log.Error("BTC relaying chain should not be null")
@@ -197,7 +198,7 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 			btcTxProof.BTCTx.TxHash().String(),
 			uint32(idx),
 			uint64(out.Value),
-			"",
+			publicSeed,
 		))
 	}
 
@@ -414,9 +415,8 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSi
 		signature := txscript.NewScriptBuilder()
 		signature.AddOp(txscript.OP_FALSE)
 
-		// todo: BTCChainParam
 		// generate btc private key from seed: private key of bridge consensus
-		btcPrivateKeyBytes, err := p.generateOTPrivateKey(&chaincfg.TestNet3Params, seedKey, publicSeed[i])
+		btcPrivateKeyBytes, err := p.generateOTPrivateKey(p.ChainParam, seedKey, publicSeed[i])
 		if err != nil {
 			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when generate btc private key from seed: %v", err)
 		}
