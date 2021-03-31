@@ -265,7 +265,7 @@ func SetupParam() {
 				0: {
 					NumRequiredSigs: 3,
 					MultiSigAddresses: map[string]string{
-						portalcommonv4.PortalBTCIDStr: "2NGFTTKNj59NGmjQpajsEXGxwf9SP8gvJiv",
+						portalcommonv4.PortalBTCIDStr: "tb1qlj57lszz62wv3cprlxhdk268d0xmhagpz997x8dljcefg723z43stjlp7r",
 					},
 					MultiSigScriptHexEncode: map[string]string{
 						portalcommonv4.PortalBTCIDStr: "532102a88c36430d6df68ea7ee3964747cc47e04c052b4d0541012419ca47d371437f72103f27d6ec2dca8ec40845f4bb6e08b338e3aca96c9cc53dc9bd522ea467971cd0d2102ef026fabadcc103043839d1f37445935b579234d25fb301a37b20ca0c5bfa6c92102b9c395680961a714940f2cf58947184e698b9c7d280c996a84ca764215f9472354ae",
