@@ -75,15 +75,15 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 
 	if temp.Metadata == nil {
 		tx.SetMetadata(nil)
-		return nil
-	}
 
-	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
-	if parseErr != nil {
-		Logger.log.Error(parseErr)
-		return parseErr
+	} else {
+		meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+		if parseErr != nil {
+			Logger.log.Error(parseErr)
+			return parseErr
+		}
+		tx.SetMetadata(meta)
 	}
-	tx.SetMetadata(meta)
 	tx.initEnv()
 	return nil
 }
