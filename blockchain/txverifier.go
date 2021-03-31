@@ -42,6 +42,8 @@ func (v *TxsVerifier) LoadCommitment(
 	if shardViewRetriever != nil {
 		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
 	}
+	fmt.Printf("[debugtxs] %v %v %v\n", tx, tx.Hash().String(), sDB)
+	fmt.Printf("[debugtxs] %v\n", tx.GetValidationEnv().IsPrivacy())
 	err := tx.LoadCommitment(sDB.Copy())
 	if err != nil {
 		fmt.Printf("Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
