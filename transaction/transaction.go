@@ -529,23 +529,8 @@ func GetFullBurnData(tx metadata.Transaction) (bool, coin.Coin, coin.Coin, *comm
 
 type OTADeclaration = metadata.OTADeclaration
 
-type MintingMetadataRequest interface {
-	GetOTADeclarations() []metadata.OTADeclaration
-}
-
-// GetOTADeclarations can be called on TxVersion2 or TxTokenVersion2 to get the OTAs-to-mint from their metadata
 func GetOTADeclarationsFromTx(tx metadata.Transaction) []OTADeclaration {
-	blankResult := []OTADeclaration{}
-	md := tx.GetMetadata()
-	if md != nil {
-		mmr, ok := md.(MintingMetadataRequest)
-		if ok {
-			jsb, _ := json.Marshal(md)
-			Logger.Log.Warnf("Metadata might request minting some OTAs: %s", string(jsb))
-			return mmr.GetOTADeclarations()
-		}
-	}
-	return blankResult
+	return tx_generic.GetOTADeclarationsFromTx(tx)
 }
 
 // func (txToken *tx_generic.TxTokenBase) UnmarshalJSON(data []byte) error {
