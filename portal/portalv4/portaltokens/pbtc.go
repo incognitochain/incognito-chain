@@ -237,7 +237,7 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetr
 // inputs: UTXO state of beacon, unit of amount in btc
 // outputs: unit of amount in pbtc ~ unshielding amount
 // feePerOutput: unit in pbtc
-func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, feePerOutput uint64, memo string, bc metadata.ChainRetriever) (string, string, error) {
+func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, feePerOutput uint64, bc metadata.ChainRetriever) (string, string, error) {
 	msgTx := wire.NewMsgTx(wire.TxVersion)
 
 	// add TxIns into raw tx
@@ -284,7 +284,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	// calculate the change output
 	if totalInputAmount-totalOutputAmount > 0 {
 		// adding the output to tx
-		multiSigAddress := bc.GetPortalV4MultiSigAddress(common.PortalBTCIDStr, 0)
+		multiSigAddress := bc.GetPortalV4GeneralMultiSigAddress(common.PortalBTCIDStr, 0)
 		decodedAddr, err := btcutil.DecodeAddress(multiSigAddress, bc.GetBTCChainParams())
 		if err != nil {
 			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when decoding multisig address: %v", err)
@@ -300,11 +300,6 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 		redeemTxOut := wire.NewTxOut(int64(totalInputAmount-totalOutputAmount), destinationAddrByte)
 		msgTx.AddTxOut(redeemTxOut)
 	}
-
-	// add memo into raw tx
-	script := append([]byte{txscript.OP_RETURN}, byte(len([]byte(memo))))
-	script = append(script, []byte(memo)...)
-	msgTx.AddTxOut(wire.NewTxOut(0, script))
 
 	var rawTxBytes bytes.Buffer
 	err := msgTx.Serialize(&rawTxBytes)
@@ -513,7 +508,7 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
-	proof string, bc metadata.ChainRetriever, expectedMemo string, expectedMultisigAddress string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error) {
+	proof string, bc metadata.ChainRetriever, expectedMultisigAddress string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error) {
 	btcChain := bc.GetBTCHeaderChain()
 	if btcChain == nil {
 		Logger.log.Error("BTC relaying chain should not be null")
@@ -531,17 +526,6 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 	if !isValid || err != nil {
 		Logger.log.Errorf("Verify btcTxProof failed %v", err)
 		return false, nil, fmt.Errorf("Verify btcTxProof failed %v", err)
-	}
-
-	// extract attached message from txOut's OP_RETURN
-	btcAttachedMsg, err := btcrelaying.ExtractAttachedMsgFromTx(btcTxProof.BTCTx)
-	if err != nil {
-		Logger.log.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
-		return false, nil, fmt.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
-	}
-	if btcAttachedMsg != expectedMemo {
-		Logger.log.Errorf("ShieldingId in the btc attached message is not matched with portingID in metadata")
-		return false, nil, fmt.Errorf("ShieldingId in the btc attached message %v is not matched with portingID in metadata %v", btcAttachedMsg, expectedMemo)
 	}
 
 	// verify spent outputs

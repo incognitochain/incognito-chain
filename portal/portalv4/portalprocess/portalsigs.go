@@ -63,7 +63,7 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 		}
 
 		portalTokenProcessor := portalParam.PortalTokens[tokenID]
-		multiSigScript, _ := hex.DecodeString(portalParam.MultiSigScriptHexEncode[portalcommonv4.PortalBTCIDStr])
+		multiSigScript, _ := hex.DecodeString(portalParam.GeneralMultiSigScriptHexEncode[portalcommonv4.PortalBTCIDStr])
 		sigs, txHash, err := portalTokenProcessor.PartSignOnRawExternalTx(seedKey, multiSigScript, rawTxBytes)
 		if err != nil {
 			return nil, fmt.Errorf("[checkAndSignPortalV4] Error when signing raw tx bytes: %v", err)

@@ -7,7 +7,7 @@ type PortalUnshieldRequestBatchContent struct {
 	RawExternalTx string
 	TokenID       string
 	UnshieldIDs   []string
-	UTXOs         map[string][]*statedb.UTXO
+	UTXOs         []*statedb.UTXO
 	NetworkFee    map[uint64]uint
 	BeaconHeight  uint64
 }

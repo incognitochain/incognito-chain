@@ -82,7 +82,7 @@ type ChainRetriever interface {
 	ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64, version uint) (bool, error)
 	IsEnableFeature(featureFlag int, epoch uint64) bool
 	GetPortalV4MinUnshieldAmount(tokenIDStr string, beaconHeight uint64) uint64
-	GetPortalV4MultiSigAddress(tokenIDStr string, beaconHeight uint64) string
+	GetPortalV4GeneralMultiSigAddress(tokenIDStr string, beaconHeight uint64) string
 	GetPortalReplacementAddress(beaconHeight uint64) string
 	CheckBlockTimeIsReachedByBeaconHeight(recentBeaconHeight, beaconHeight uint64, duration time.Duration) bool
 }

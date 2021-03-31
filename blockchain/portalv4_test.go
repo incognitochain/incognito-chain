@@ -81,10 +81,10 @@ func (s *PortalTestSuiteV4) SetupTest() {
 	}
 	s.portalParams = portalv4.PortalParams{
 		NumRequiredSigs: 3,
-		MultiSigAddresses: map[string]string{
+		GeneralMultiSigAddresses: map[string]string{
 			portalcommonv4.PortalBTCIDStr: "2MvpFqydTR43TT4emMD84Mzhgd8F6dCow1X",
 		},
-		MultiSigScriptHexEncode: map[string]string{
+		GeneralMultiSigScriptHexEncode: map[string]string{
 			portalcommonv4.PortalBTCIDStr: "",
 		},
 		PortalTokens: map[string]portaltokensv4.PortalTokenProcessor{
@@ -1027,7 +1027,7 @@ func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
 	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
 	tokenID := portalcommonv4.PortalBTCIDStr
 	bcH := uint64(0)
-	bc.On("GetPortalV4MultiSigAddress", tokenID, bcH).Return(s.portalParams.MultiSigAddresses[portalcommonv4.PortalBTCIDStr])
+	bc.On("GetPortalV4GeneralMultiSigAddress", tokenID, bcH).Return(s.portalParams.GeneralMultiSigAddresses[portalcommonv4.PortalBTCIDStr])
 
 	pm := portal.NewPortalManager()
 	beaconHeight := uint64(45)
@@ -1107,7 +1107,7 @@ type ExpectedResultFeeReplacement struct {
 
 func (s *PortalTestSuiteV4) SetupTestFeeReplacement() {
 
-	btcMultiSigAddress := s.portalParams.MultiSigAddresses[portalcommonv4.PortalBTCIDStr]
+	btcMultiSigAddress := s.portalParams.GeneralMultiSigAddresses[portalcommonv4.PortalBTCIDStr]
 	processUnshield1 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID1,
 		[]string{"txid1", "txid2", "txid3"},
@@ -1291,7 +1291,7 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		},
 	}
 
-	btcMultiSigAddress := s.portalParams.MultiSigAddresses[portalcommonv4.PortalBTCIDStr]
+	btcMultiSigAddress := s.portalParams.GeneralMultiSigAddresses[portalcommonv4.PortalBTCIDStr]
 	processUnshield1 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID1,
 		[]string{"txid1", "txid2", "txid3"},
@@ -1453,7 +1453,7 @@ type ExpectedResultSubmitConfirmedTx struct {
 
 func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 
-	btcMultiSigAddress := s.portalParams.MultiSigAddresses[portalcommonv4.PortalBTCIDStr]
+	btcMultiSigAddress := s.portalParams.GeneralMultiSigAddresses[portalcommonv4.PortalBTCIDStr]
 	utxos := map[string]map[string]*statedb.UTXO{
 		portalcommonv4.PortalBTCIDStr: {
 			statedb.GenerateUTXOObjectKey(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 0).String(): statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 100000),
@@ -1602,7 +1602,7 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 		},
 	}
 
-	btcMultiSigAddress := s.portalParams.MultiSigAddresses[portalcommonv4.PortalBTCIDStr]
+	btcMultiSigAddress := s.portalParams.GeneralMultiSigAddresses[portalcommonv4.PortalBTCIDStr]
 	processUnshield2 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID2,
 		[]string{"txid4", "txid5"},

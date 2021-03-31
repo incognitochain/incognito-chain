@@ -399,7 +399,7 @@ func getRawSignedTxByHeight(
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Not found portal sigs for batchID"))
 	}
 
-	redeemScriptStr := httpServer.portal.BlockChain.GetPortalParamsV4(height).MultiSigScriptHexEncode[tokenID]
+	redeemScriptStr := httpServer.portal.BlockChain.GetPortalParamsV4(height).GeneralMultiSigScriptHexEncode[tokenID]
 	redeemScriptHex, err := hex.DecodeString(redeemScriptStr)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
