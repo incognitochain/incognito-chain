@@ -22,6 +22,7 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 	pSigs := []*PortalSig{}
 	var tokenID string
 	var hexRawExternalTx string
+	var publicSeeds []string
 	for _, inst := range insts {
 		metaType := inst[0]
 		switch metaType {
@@ -35,7 +36,9 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 				}
 				tokenID = actionData.TokenID
 				hexRawExternalTx = actionData.RawExternalTx
-
+				for _, u := range actionData.UTXOs {
+					publicSeeds = append(publicSeeds, u.GetPublicSeed())
+				}
 			}
 		case strconv.Itoa(metadata.PortalV4FeeReplacementRequestMeta):
 			{
@@ -51,6 +54,7 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 				}
 				tokenID = actionData.TokenID
 				hexRawExternalTx = actionData.ExternalRawTx
+				// todo: get public seed from instructions
 			}
 		// other cases
 		default:
@@ -64,7 +68,7 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 
 		portalTokenProcessor := portalParam.PortalTokens[tokenID]
 		multiSigScript, _ := hex.DecodeString(portalParam.GeneralMultiSigScriptHexEncode[portalcommonv4.PortalBTCIDStr])
-		sigs, txHash, err := portalTokenProcessor.PartSignOnRawExternalTx(seedKey, multiSigScript, rawTxBytes)
+		sigs, txHash, err := portalTokenProcessor.PartSignOnRawExternalTx(seedKey, multiSigScript, rawTxBytes, publicSeeds)
 		if err != nil {
 			return nil, fmt.Errorf("[checkAndSignPortalV4] Error when signing raw tx bytes: %v", err)
 		}

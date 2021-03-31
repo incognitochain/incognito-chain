@@ -195,8 +195,8 @@ func testProofFromHeight(proof string, height int, t *testing.T) {
 	networkName := "test3"
 	p := &PortalBTCTokenProcessor{}
 	p.PortalToken = &PortalToken{}
-	shieldingIncAddress := "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
-	expectedMemo := p.GetExpectedMemoForShielding(shieldingIncAddress)
+	//shieldingIncAddress := "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+	//expectedMemo := p.GetExpectedMemoForShielding(shieldingIncAddress)
 
 	genesisBlockHeight := height
 	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)

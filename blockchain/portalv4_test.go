@@ -1297,9 +1297,9 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		[]string{"txid1", "txid2", "txid3"},
 		map[string][]*statedb.UTXO{
 			btcMultiSigAddress: {
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 1000000),
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "49491148bd2f7b5432a26472af97724e114f22a74d9d2fb20c619b4f79f19fd9", 0, 2000000),
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "b751ff30df21ad84ce3f509ee3981c348143bd6a5aa30f4256ecb663fab14fd1", 1, 3000000),
+				statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 1000000, ""),
+				statedb.NewUTXOWithValue(btcMultiSigAddress, "49491148bd2f7b5432a26472af97724e114f22a74d9d2fb20c619b4f79f19fd9", 0, 2000000, ""),
+				statedb.NewUTXOWithValue(btcMultiSigAddress, "b751ff30df21ad84ce3f509ee3981c348143bd6a5aa30f4256ecb663fab14fd1", 1, 3000000, ""),
 			},
 		},
 		map[uint64]uint{
@@ -1311,10 +1311,8 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 	processUnshield2 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID2,
 		[]string{"txid4", "txid5"},
-		map[string][]*statedb.UTXO{
-			btcMultiSigAddress: {
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "163a6cc24df4efbd5c997aa623d4e319f1b7671be83a86bb0fa27bc701ae4a76", 1, 1000000),
-			},
+		[]*statedb.UTXO{
+			statedb.NewUTXOWithValue(btcMultiSigAddress, "163a6cc24df4efbd5c997aa623d4e319f1b7671be83a86bb0fa27bc701ae4a76", 1, 1000000, ""),
 		},
 		map[uint64]uint{
 			1000: 1000,
@@ -1606,10 +1604,8 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 	processUnshield2 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID2,
 		[]string{"txid4", "txid5"},
-		map[string][]*statedb.UTXO{
-			btcMultiSigAddress: {
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "d0450fc4ab5c1a0184c08b15b2b24852757d17a5e183c8e096ed1deb183dea28", 2, 201572),
-			},
+		[]*statedb.UTXO{
+			statedb.NewUTXOWithValue(btcMultiSigAddress, "d0450fc4ab5c1a0184c08b15b2b24852757d17a5e183c8e096ed1deb183dea28", 2, 201572, btcMultiSigAddress),
 		},
 		map[uint64]uint{
 			1000: 1000,
