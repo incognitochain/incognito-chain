@@ -492,13 +492,20 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 	if err := tokenID.SetBytes(common.PRVCoinID[:]); err != nil {
 		return utils.NewTransactionErr(utils.TokenIDInvalidError, err, tokenID.String())
 	}
-	if found, err := statedb.HasOnetimeAddress(stateDB, *tokenID, otaCoin.GetPublicKey().ToBytesS()); found || err != nil {
-		if found {
+	found, status, err := statedb.HasOnetimeAddress(stateDB, *tokenID, otaCoin.GetPublicKey().ToBytesS())	
+	if err != nil {
+		errStr := fmt.Sprintf("Checking onetimeaddress existence in database get error %v", err)
+		return errors.New(errStr)
+	}
+	if found {
+		switch status {
+		case statedb.OTA_STATUS_STORED:
+			utils.Logger.Log.Error("InitTxSalary got error: found onetimeaddress stored in database")
 			return errors.New("Cannot initTxSalary, onetimeaddress already exists in database")
-		}
-		if err != nil {
-			errStr := fmt.Sprintf("Checking onetimeaddress existence in database get error %v", err)
-			return errors.New(errStr)
+		case statedb.OTA_STATUS_OCCUPIED:
+			utils.Logger.Log.Warnf("Continue minting OTA %x since status is %d", otaCoin.GetPublicKey().ToBytesS(), status)
+		default:
+			return errors.New("invalid onetimeaddress status in database")
 		}
 	}
 
@@ -521,7 +528,6 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 	tx.SetPrivateKey(*privateKey)
 	tx.SetMetadata(metaData)
 
-	var err error
 	if tx.Sig, tx.SigPubKey, err = tx_generic.SignNoPrivacy(privateKey, tx.Hash()[:]); err != nil {
 		return utils.NewTransactionErr(utils.SignTxError, err)
 	}
@@ -578,14 +584,21 @@ func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	}
 
 	// Check database for ota
-	found, err := statedb.HasOnetimeAddress(db, *tokenID, outCoin.GetPublicKey().ToBytesS())
+	found, status, err := statedb.HasOnetimeAddress(db, *tokenID, outputCoin.GetPublicKey().ToBytesS())
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
 		return false, err
 	}
 	if found {
-		utils.Logger.Log.Error("ValidateTxSalary got error: found onetimeaddress in database")
-		return false, errors.New("found onetimeaddress in database")
+		switch status {
+		case statedb.OTA_STATUS_STORED:
+			utils.Logger.Log.Error("ValidateTxSalary got error: found onetimeaddress in database")
+			return false, errors.New("found onetimeaddress in database")
+		case statedb.OTA_STATUS_OCCUPIED:
+			utils.Logger.Log.Warnf("Verifier : Accept minted OTA %x since status is %d", outputCoin.GetPublicKey().ToBytesS(), status)
+		default:
+			return false, errors.New("invalid onetimeaddress status in database")
+		}
 	}
 	return true, nil
 }

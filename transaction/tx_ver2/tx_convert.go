@@ -240,7 +240,7 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 	outputCoins := proofConversion.GetOutputCoins()
 	mapOutputCoins := make(map[string]int)
 	for i := 0; i < len(outputCoins); i++ {
-		if ok, err := statedb.HasOnetimeAddress(db, *tokenID, outputCoins[i].GetPublicKey().ToBytesS()); ok || err != nil {
+		if ok, _, err := statedb.HasOnetimeAddress(db, *tokenID, outputCoins[i].GetPublicKey().ToBytesS()); ok || err != nil {
 			if err != nil {
 				errStr := fmt.Sprintf("TxConversion database onetimeAddress got error: %v", err)
 				return false, errors.New(errStr)

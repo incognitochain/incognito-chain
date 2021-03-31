@@ -280,3 +280,8 @@ func IsPortalRelayingMetaType(metaType int) bool {
 	res, _ := common.SliceExists(portalRelayingMetaTypes, metaType)
 	return res
 }
+
+type OTADeclaration struct {
+	PublicKey 	[32]byte
+	TokenID 	common.Hash
+}

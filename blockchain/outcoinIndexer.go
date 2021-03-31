@@ -136,7 +136,7 @@ func (ci *coinReindexer) GetReindexedOutcoin(viewKey privacy.OTAKey, tokenID *co
 		}
 		if filter(temp, params){
 			// eliminate forked coins
-			if dbHasOta, err := statedb.HasOnetimeAddress(txdb, *tokenID, temp.GetPublicKey().ToBytesS()); dbHasOta && err==nil{
+			if dbHasOta, _, err := statedb.HasOnetimeAddress(txdb, *tokenID, temp.GetPublicKey().ToBytesS()); dbHasOta && err==nil{
 				result = append(result, temp)
 			}
 		}

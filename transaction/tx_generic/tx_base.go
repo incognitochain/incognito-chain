@@ -580,12 +580,12 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 			continue
 		}
 
-		ok, err := statedb.HasOnetimeAddress(stateDB, *prvCoinID, otaPublicKey)
+		ok, status, err := statedb.HasOnetimeAddress(stateDB, *prvCoinID, otaPublicKey)
 		if err != nil {
 			return err
 		}
 		if ok {
-			return errors.New("OTA of output coin already in database")
+			return errors.New(fmt.Sprintf("OTA of output coin already in database with status %d", status))
 		}
 	}
 	return nil
