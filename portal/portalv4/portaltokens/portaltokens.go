@@ -25,7 +25,7 @@ type PortalTokenProcessor interface {
 	ChooseUnshieldIDsFromCandidates(utxos map[string]*statedb.UTXO, waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest, tinyAmount uint64) []*BroadcastTx
 
 	CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, networkFee uint64, memo string, bc metadata.ChainRetriever) (string, string, error)
-	PartSignOnRawExternalTx(seedKey []byte, multiSigScript []byte, rawTxBytes []byte) ([][]byte, string, error)
+	PartSignOnRawExternalTx(seedKey []byte, multiSigScript []byte, rawTxBytes []byte, inputs []*statedb.UTXO) ([][]byte, string, error)
 	GeneratePrivateKeyFromSeed(seed []byte) ([]byte, error)
 	//GenerateMultiSigWalletFromSeeds(bc metadata.ChainRetriever, seeds [][]byte, numSigsRequired int) ([]byte, []string, string, error)
 }

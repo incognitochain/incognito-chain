@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -368,26 +367,24 @@ func getRawSignedTxByHeight(
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	signatures := make([]*txscript.ScriptBuilder, len(redeemTx.TxIn))
-	for i := range signatures {
-		signature := txscript.NewScriptBuilder()
-		signature.AddOp(txscript.OP_FALSE)
-		signatures[i] = signature
-	}
-
 	redeemTxHash := redeemTx.TxHash().String()
 	var tokenID string
 	numSig := uint(0)
+	sigs := make([][][]byte, len(redeemTx.TxIn))
+	for i := range sigs {
+		sigs[i] = make([][]byte, 1)
+	}
+
 	for _, v := range portalV4Sig {
 		if v.RawTxHash == redeemTxHash {
 			if tokenID == "" {
 				tokenID = v.TokenID
 			}
 			for i, v2 := range v.Sigs {
-				if i >= len(signatures) {
+				if i >= len(sigs) {
 					return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Invalid length of portal sigs"))
 				}
-				signatures[i].AddData(v2)
+				sigs[i] = append(sigs[i], v2)
 			}
 			numSig++
 			if numSig == portalParamsv4.NumRequiredSigs {
@@ -405,13 +402,9 @@ func getRawSignedTxByHeight(
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 
-	for i, v := range signatures {
-		v.AddData(redeemScriptHex)
-		signatureScript, err := v.Script()
-		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		}
-		redeemTx.TxIn[i].SignatureScript = signatureScript
+	for i, v := range sigs {
+		v = append(v, redeemScriptHex)
+		redeemTx.TxIn[i].Witness = v
 	}
 
 	var signedTx bytes.Buffer

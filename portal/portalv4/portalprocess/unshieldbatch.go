@@ -303,6 +303,7 @@ func buildReplacementFeeRequestInst(
 	metaType int,
 	shardID byte,
 	externalRawTx string,
+	utxos []*statedb.UTXO,
 	txReqID common.Hash,
 	status string,
 ) []string {
@@ -312,6 +313,7 @@ func buildReplacementFeeRequestInst(
 		BatchID:       batchID,
 		TxReqID:       txReqID,
 		ExternalRawTx: externalRawTx,
+		UTXOs:         utxos,
 	}
 	replacementRequestContentBytes, _ := json.Marshal(replacementRequestContent)
 	return []string{
@@ -358,6 +360,7 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		"",
+		nil,
 		actionData.TxReqID,
 		portalcommonv4.PortalV4RequestRejectedChainStatus,
 	)
@@ -407,6 +410,7 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		hexRawExtTxStr,
+		unshieldBatch.GetUTXOs()[multisigAddress],
 		actionData.TxReqID,
 		portalcommonv4.PortalV4RequestAcceptedChainStatus,
 	)
