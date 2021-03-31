@@ -119,7 +119,7 @@ func (tx *TxCustomTokenPrivacy) LoadCommitment(
 	}
 	if normalTx.valEnv.IsPrivacy() {
 		tokenID := tx.GetTokenID()
-		prf := embededTx.Proof
+		prf := normalTx.Proof
 		if prf != nil {
 			err := prf.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
 			if err != nil {
