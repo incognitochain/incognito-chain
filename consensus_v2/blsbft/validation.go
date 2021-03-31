@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -101,25 +101,6 @@ func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.C
 	}
 
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
-		return NewConsensusError(UnExpectedError, err)
-	}
-	return nil
-}
-
-func (e BLSBFT) ValidateData(data []byte, sig string, publicKey string) error {
-	sigByte, _, err := base58.Base58Check{}.Decode(sig)
-	if err != nil {
-		return NewConsensusError(UnExpectedError, err)
-	}
-	publicKeyByte := []byte(publicKey)
-	// if err != nil {
-	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	// }
-	//fmt.Printf("ValidateData data %v, sig %v, publicKey %v\n", data, sig, publicKeyByte)
-	dataHash := new(common.Hash)
-	dataHash.NewHash(data)
-	_, err = bridgesig.Verify(publicKeyByte, dataHash.GetBytes(), sigByte) //blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
-	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	return nil
