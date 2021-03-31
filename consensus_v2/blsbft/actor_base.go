@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
@@ -16,7 +17,7 @@ import (
 )
 
 type actorBase struct {
-	chain    ChainInterface
+	chain    blockchain.Chain
 	node     NodeInterface
 	chainKey string
 	chainID  int
@@ -52,7 +53,7 @@ func (actorBase *actorBase) Destroy() {
 }
 
 func (actorBase *actorBase) IsOngoing() bool {
-	panic("Implement this function")
+	return actorBase.isStarted
 }
 
 func (actorBase *actorBase) Stop() error {

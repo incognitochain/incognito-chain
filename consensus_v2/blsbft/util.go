@@ -65,39 +65,35 @@ func (actorV1 *actorV1) isInTimeFrame() bool {
 func (actorV1 *actorV1) isHasMajorityVotes() bool {
 	// e.RoundData.lockVotes.Lock()
 	// defer e.RoundData.lockVotes.Unlock()
-	e.lockEarlyVotes.Lock()
-	defer e.lockEarlyVotes.Unlock()
-	roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
-	earlyVote, ok := e.EarlyVotes[roundKey]
-	committeeSize := len(e.RoundData.Committee)
+	actorV1.lockEarlyVotes.Lock()
+	defer actorV1.lockEarlyVotes.Unlock()
+	roundKey := getRoundKey(actorV1.roundData.nextHeight, actorV1.roundData.round)
+	earlyVote, ok := actorV1.earlyVotes[roundKey]
+	committeeSize := len(actorV1.roundData.committee)
 	if ok {
 		wg := sync.WaitGroup{}
-		blockHashBytes := e.RoundData.BlockHash.GetBytes()
+		blockHashBytes := actorV1.roundData.blockHash.GetBytes()
 		for k, v := range earlyVote {
 			wg.Add(1)
 			go func(validatorKey string, voteData vote) {
 				defer wg.Done()
-				validatorIdx := common.IndexOfStr(validatorKey, e.RoundData.CommitteeBLS.StringList)
-				if err := e.preValidateVote(blockHashBytes, &voteData, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err == nil {
-					// if err := validateSingleBLSSig(e.RoundData.Block.Hash(), vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
-					// 	e.logger.Error(err)
-					// 	continue
-					// }
-					e.RoundData.lockVotes.Lock()
-					e.RoundData.Votes[validatorKey] = voteData
-					e.RoundData.lockVotes.Unlock()
+				validatorIdx := common.IndexOfStr(validatorKey, actorV1.roundData.committeeBLS.stringList)
+				if err := actorV1.preValidateVote(blockHashBytes, &voteData, actorV1.roundData.committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err == nil {
+					actorV1.roundData.lockVotes.Lock()
+					actorV1.roundData.votes[validatorKey] = voteData
+					actorV1.roundData.lockVotes.Unlock()
 				} else {
-					e.logger.Error(err)
+					actorV1.logger.Error(err)
 				}
 			}(k, v)
 		}
 		wg.Wait()
-		if len(e.RoundData.Votes) > 2*committeeSize/3 {
-			delete(e.EarlyVotes, roundKey)
+		if len(actorV1.roundData.votes) > 2*committeeSize/3 {
+			delete(actorV1.earlyVotes, roundKey)
 		}
 	}
-	monitor.SetGlobalParam("NVote", len(e.RoundData.Votes))
-	if len(e.RoundData.Votes) > 2*committeeSize/3 {
+	monitor.SetGlobalParam("NVote", len(actorV1.roundData.votes))
+	if len(actorV1.roundData.votes) > 2*committeeSize/3 {
 		return true
 	}
 	return false
@@ -167,14 +163,14 @@ func (actorV1 *actorV1) initRoundData() {
 }
 
 func NewActorWithValue(
-	chain blockchain.ChainInterface, version int,
+	chain blockchain.Chain, version int,
 	chainID int, chainName string,
 	node NodeInterface, logger common.Logger,
 ) Actor {
 	var res Actor
 	switch version {
 	case BftVersion:
-
+		res = NewActorV1WithValue(chain, chainName, chainID, node, logger)
 	case MultiViewsVersion:
 	case SlashingVersion:
 	case MultiSubsetsVersion:

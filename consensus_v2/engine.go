@@ -10,9 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
-	blsbft2 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
-	blsbft3 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
-	blsbft4 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv4"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -160,34 +157,11 @@ func (engine *Engine) WatchCommitteeChange() {
 			chainName = fmt.Sprintf("shard-%d", chainID)
 		}
 		engine.updateVersion(chainID)
-		if _, ok := engine.BFTProcess[chainID]; !ok {
-			engine.initProcess(chainID, chainName)
-		} else { //if not run correct version => stop and init
-			if engine.version[chainID] == 1 {
-				if _, ok := engine.BFTProcess[chainID].(*blsbft.BLSBFT); !ok {
-					engine.BFTProcess[chainID].Destroy()
-					engine.initProcess(chainID, chainName)
-				}
-			}
-			if engine.version[chainID] == 2 {
-				if _, ok := engine.BFTProcess[chainID].(*blsbft2.BLSBFT_V2); !ok {
-					engine.BFTProcess[chainID].Destroy()
-					engine.initProcess(chainID, chainName)
-				}
-			}
-			if engine.version[chainID] == 3 {
-				if _, ok := engine.BFTProcess[chainID].(*blsbft3.BLSBFT_V3); !ok {
-					engine.BFTProcess[chainID].Destroy()
-					engine.initProcess(chainID, chainName)
-				}
-			}
-			if engine.version[chainID] == 4 {
-				if _, ok := engine.BFTProcess[chainID].(*blsbft4.BLSBFT_V4); !ok {
-					engine.BFTProcess[chainID].Destroy()
-					engine.initProcess(chainID, chainName)
-				}
-			}
+		if _, ok := engine.BFTProcess[chainID]; ok {
+			engine.BFTProcess[chainID].Destroy()
 		}
+		engine.initProcess(chainID, chainName)
+
 		validatorMiningKey := []signatureschemes2.MiningKey{}
 		for _, validator := range validators {
 			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)

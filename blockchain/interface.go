@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"context"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -51,7 +52,42 @@ type Pubsub interface {
 	PublishMessage(message *pubsub.Message)
 }
 
-type ChainInterface interface {
+type Chain interface {
+	GetEpoch() uint64
+	GetChainName() string
+	GetConsensusType() string
+	GetLastBlockTimeStamp() int64
+	GetMinBlkInterval() time.Duration
+	GetMaxBlkCreateTime() time.Duration
+	IsReady() bool
+	SetReady(bool)
+	GetActiveShardNumber() int
+	CurrentHeight() uint64
+	GetCommitteeSize() int
+	GetCommittee() []incognitokey.CommitteePublicKey
+	GetPendingCommittee() []incognitokey.CommitteePublicKey
+	GetPubKeyCommitteeIndex(string) int
+	GetLastProposerIndex() int
+	UnmarshalBlock(blockString []byte) (types.BlockInterface, error)
+
+	InsertAndBroadcastBlock(block types.BlockInterface) error
+	CreateNewBlock(
+		version int,
+		proposer string,
+		round int,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (types.BlockInterface, error)
+	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, signingCommittes, committees []incognitokey.CommitteePublicKey) error
+	GetShardID() int
+
+	//for new syncker
+	GetBestViewHeight() uint64
+	GetFinalViewHeight() uint64
+	GetBestViewHash() string
+	GetFinalViewHash() string
+
 	GetBestView() multiview.View
 	GetFinalView() multiview.View
 }
