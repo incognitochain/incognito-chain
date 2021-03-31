@@ -343,7 +343,7 @@ func StoreOccupiedOneTimeAddress(stateDB *StateDB, tokenID common.Hash, ota [32]
 	value := NewOccupiedOnetimeAddressState(tokenID, ota[:])
 	err := stateDB.SetStateObject(OnetimeAddressObjectType, key, value)
 	if err != nil {
-		return NewStatedbError(StoreOutputCoinError, err)
+		return NewStatedbError(StoreOnetimeAddressError, err)
 	}
 	return nil
 }

@@ -1185,7 +1185,7 @@ func (tp TxPool) GetOTAHashH() map[common.Hash][]common.Hash{
 		}
 		for _, otaDecl := range transaction.GetOTADeclarationsFromTx(txDesc.Desc.Tx) {
 			h := common.HashH(otaDecl.PublicKey[:])
-			res[declKey] = append(res[txHash], h)
+			res[declKey] = append(res[declKey], h)
 		}
 	}
 	return res
