@@ -6,6 +6,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -53,6 +54,9 @@ type Pubsub interface {
 }
 
 type Chain interface {
+	BestViewCommitteeFromBlock() common.Hash
+	GetFinalView() multiview.View
+	GetBestView() multiview.View
 	GetEpoch() uint64
 	GetChainName() string
 	GetConsensusType() string
@@ -64,13 +68,12 @@ type Chain interface {
 	GetActiveShardNumber() int
 	CurrentHeight() uint64
 	GetCommitteeSize() int
+	IsBeaconChain() bool
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetPendingCommittee() []incognitokey.CommitteePublicKey
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
 	UnmarshalBlock(blockString []byte) (types.BlockInterface, error)
-
-	InsertAndBroadcastBlock(block types.BlockInterface) error
 	CreateNewBlock(
 		version int,
 		proposer string,
@@ -78,16 +81,24 @@ type Chain interface {
 		startTime int64,
 		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
+	CreateNewBlockFromOldBlock(
+		oldBlock types.BlockInterface,
+		proposer string,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (types.BlockInterface, error)
+	InsertAndBroadcastBlock(block types.BlockInterface) error
+	InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, validationData string) error
 	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block types.BlockInterface, signingCommittes, committees []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error
 	GetShardID() int
+	GetChainDatabase() incdb.Database
 
 	//for new syncker
 	GetBestViewHeight() uint64
 	GetFinalViewHeight() uint64
 	GetBestViewHash() string
 	GetFinalViewHash() string
-
-	GetBestView() multiview.View
-	GetFinalView() multiview.View
+	GetViewByHash(hash common.Hash) multiview.View
+	CommitteeEngineVersion() uint
 }

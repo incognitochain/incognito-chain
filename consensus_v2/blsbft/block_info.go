@@ -1,6 +1,8 @@
 package blsbft
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -8,6 +10,7 @@ import (
 
 type ProposeBlockInfo struct {
 	block            types.BlockInterface
+	receiveTime      time.Time
 	committees       []incognitokey.CommitteePublicKey
 	signingCommittes []incognitokey.CommitteePublicKey
 	userKeySet       []signatureschemes2.MiningKey
