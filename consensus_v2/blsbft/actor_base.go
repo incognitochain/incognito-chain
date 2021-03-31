@@ -1,7 +1,9 @@
 package blsbft
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
@@ -55,4 +57,38 @@ func (actorBase *actorBase) Stop() error {
 		return nil
 	}
 	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(actorBase.chainKey))
+}
+
+func (actorBase *actorBase) ProcessBFTMsg(msg *wire.MessageBFT) {
+	switch msg.Type {
+	case MSG_PROPOSE:
+		var msgPropose BFTPropose
+		err := json.Unmarshal(msg.Content, &msgPropose)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		actorBase.proposeMessageCh <- msgPropose
+	case MSG_VOTE:
+		var msgVote BFTVote
+		err := json.Unmarshal(msg.Content, &msgVote)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		actorBase.voteMessageCh <- msgVote
+	default:
+		actorBase.logger.Critical("???")
+		return
+	}
+}
+
+func (actorBase *actorBase) preValidateVote(blockHash []byte, Vote *vote, candidate []byte) error {
+	data := []byte{}
+	data = append(data, blockHash...)
+	data = append(data, Vote.BLS...)
+	data = append(data, Vote.BRI...)
+	dataHash := common.HashH(data)
+	err := validateSingleBriSig(&dataHash, Vote.Confirmation, candidate)
+	return err
 }

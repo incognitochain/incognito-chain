@@ -600,16 +600,6 @@ func (e *BLSBFT_V2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 	}
 }
 
-func (e *BLSBFT_V2) preValidateVote(blockHash []byte, Vote *BFTVote, candidate []byte) error {
-	data := []byte{}
-	data = append(data, blockHash...)
-	data = append(data, Vote.BLS...)
-	data = append(data, Vote.BRI...)
-	dataHash := common.HashH(data)
-	err := validateSingleBriSig(&dataHash, Vote.Confirmation, candidate)
-	return err
-}
-
 func (s *BFTVote) signVote(key *signatureschemes2.MiningKey) error {
 	data := []byte{}
 	data = append(data, s.BlockHash...)

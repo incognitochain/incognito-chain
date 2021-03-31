@@ -153,7 +153,7 @@ func (engine *Engine) WatchCommitteeChange() {
 		}
 	}
 
-	miningProc := blsbft.Processor(nil)
+	miningProc := blsbft.Actor(nil)
 	for chainID, validators := range ValidatorGroup {
 		chainName := "beacon"
 		if chainID >= 0 {
