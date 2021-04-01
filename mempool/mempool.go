@@ -226,7 +226,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
 		err := NewMempoolTxError(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
-		Logger.log.Error(err)
+		Logger.log.Debug(err)
 		return &common.Hash{}, &TxDesc{}, err
 	}
 	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)

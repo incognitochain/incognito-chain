@@ -117,7 +117,7 @@ func (e *BLSBFT_V3) run() error {
 				//fmt.Println("debug receive propose message", string(proposeMsg.Block))
 				blockIntf, err := e.Chain.UnmarshalBlock(proposeMsg.Block)
 				if err != nil || blockIntf == nil {
-					e.Logger.Info(err)
+					e.Logger.Error(err)
 					continue
 				}
 				block := blockIntf.(types.BlockInterface)
@@ -125,12 +125,12 @@ func (e *BLSBFT_V3) run() error {
 
 				committees, err := e.getCommitteeForBlock(block)
 				if err != nil {
-					e.Logger.Debug(err)
+					e.Logger.Error(err)
 					continue
 				}
 
 				res, _ := incognitokey.CommitteeKeyListToString(committees)
-				e.Logger.Infof("######### Shard %+v, BlockHeight %+v, Committee %+v", e.Chain.GetShardID(), block.GetHeight(), res)
+				e.Logger.Infof("######### Shard %+v, Hash %+v, BlockHeight %+v, Committee %+v", e.Chain.GetShardID(), *block.Hash(), block.GetHeight(), res)
 
 				blkCPk := incognitokey.CommitteePublicKey{}
 				blkCPk.FromBase58(block.GetProducer())
@@ -416,7 +416,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	if v.block == nil {
 		return
 	}
-	e.Logger.Infof("Process Block With enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
+	e.Logger.Infof("Process Block IF enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//already in chain
 	bestView := e.Chain.GetBestView()
 	view := e.Chain.GetViewByHash(*v.block.Hash())
