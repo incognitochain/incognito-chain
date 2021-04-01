@@ -371,6 +371,7 @@ func buildMetaInfo() {
 		WithDrawRewardResponseMeta,
 		PDETradeResponseMeta,
 		PDEContributionResponseMeta,
+		PDECrossPoolTradeResponseMeta,
 	}
 
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
