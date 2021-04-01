@@ -46,24 +46,25 @@ func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan 
 func (httpServer *HttpServer) handleGetConsensusInfoV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	engine, ok := httpServer.config.ConsensusEngine.(*consensus_v2.Engine)
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("consensus engine not found"))
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("consensus engine not found, got "+reflect.TypeOf(httpServer.config.ConsensusEngine).String()))
 	}
-	arrayParams := common.InterfaceSlice(params)
-	chainID := int(arrayParams[0].(float64))
-	bftactor, ok := engine.BFTProcess[chainID]
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("bft process of chain id not found"))
+
+	arr := []interface{}{}
+	for chainID, bftactor := range engine.BFTProcess {
+		bftactorV3, ok := bftactor.(*blsbftv3.BLSBFT_V3)
+		if !ok {
+			continue
+		}
+		m := map[string]interface{}{
+			"ChainID":              chainID,
+			"VoteHistory":          bftactorV3.GetVoteHistory(),
+			"ReceiveBlockByHash":   bftactorV3.GetReceiveBlockByHash(),
+			"ReceiveBlockByHeight": bftactorV3.GetReceiveBlockByHeight(),
+		}
+		arr = append(arr, m)
 	}
-	bftactorV3, ok := bftactor.(*blsbftv3.BLSBFT_V3)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("expect type bftactorv3.BLSBFT_V3 but get "+reflect.TypeOf(bftactor).String()))
-	}
-	m := map[string]interface{}{
-		"VoteHistory":          bftactorV3.GetVoteHistory(),
-		"ReceiveBlockByHash":   bftactorV3.GetReceiveBlockByHash(),
-		"ReceiveBlockByHeight": bftactorV3.GetReceiveBlockByHeight(),
-	}
-	return m, nil
+
+	return arr, nil
 }
 
 func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
