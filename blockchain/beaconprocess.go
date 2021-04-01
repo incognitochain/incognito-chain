@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	"reflect"
 	"sort"
 	"strconv"
@@ -90,7 +91,7 @@ CONTINUE_VERIFY:
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, shouldValidate bool) error {
 	blockHash := beaconBlock.Hash().String()
 	preHash := beaconBlock.Header.PreviousBlockHash
-	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v \nPrev hash: %v", beaconBlock.Header.Height, blockHash, preHash)
+	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v Prev hash: %v", beaconBlock.Header.Height, blockHash, preHash)
 	// if beaconBlock.GetHeight() == 2 {
 	// 	bcTmp = 0
 	// 	bcStart = time.Now()
@@ -369,19 +370,20 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	statefulActionsByShardID := map[byte][][]string{}
 	rewardForCustodianByEpoch := map[common.Hash]uint64{}
 
-	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
+	portalParams := blockchain.GetPortalParams()
 
 	// Get Reward Instruction By Epoch
 	if beaconBlock.Header.Height%blockchain.config.ChainParams.Epoch == 1 {
 		featureStateDB := curView.GetBeaconFeatureStateDB()
-		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
+		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {
 			return NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
+		portalParamsv3 := portalParams.GetPortalParamsV3(beaconBlock.Header.Height)
 		isSplitRewardForCustodian := totalLockedCollateral > 0
-		percentCustodianRewards := portalParams.MaxPercentCustodianRewards
-		if totalLockedCollateral < portalParams.MinLockCollateralAmountInEpoch {
-			percentCustodianRewards = portalParams.MinPercentCustodianRewards
+		percentCustodianRewards := portalParamsv3.MaxPercentCustodianRewards
+		if totalLockedCollateral < portalParamsv3.MinLockCollateralAmountInEpoch {
+			percentCustodianRewards = portalParamsv3.MinPercentCustodianRewards
 		}
 
 		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(curView, beaconBlock.Header.Height, beaconBlock.Header.Epoch-1, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
@@ -1447,18 +1449,13 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	// execute, store Portal Instruction
+	// execute, store Ralaying Instruction
 	//if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
 	err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
 	//}
-
-	// execute, store Ralaying Instruction
-	err = blockchain.processRelayingInstructions(beaconBlock)
-	if err != nil {
-		return NewBlockChainError(ProcessPortalRelayingError, err)
-	}
 
 	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
 	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {

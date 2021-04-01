@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
 //get beacon block hash by height, with current view
@@ -273,7 +271,6 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 				Logger.log.Errorf("GetShardBlockByHeightV1 shard %+v, error  %+v", shardID, err)
 				break
 			}
-
 			//only get shard block within epoch
 			if lastEpoch == 0 {
 				lastEpoch = tempShardBlock.GetCurrentEpoch() //update epoch of first block
@@ -287,7 +284,20 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 				break
 			}
 			shardBlocks = append(shardBlocks, tempShardBlock)
+
+			containSwap := func(inst [][]string) bool {
+				for _, inst := range inst {
+					if inst[0] == SwapAction {
+						return true
+					}
+				}
+				return false
+			}
+			if containSwap(tempShardBlock.Body.Instructions) {
+				break
+			}
 		}
+
 		allShardBlocks[shardID] = shardBlocks
 	}
 	return allShardBlocks
@@ -317,6 +327,19 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 			}
 
 			shardBlocks = append(shardBlocks, shardBlock)
+
+			containSwap := func(inst [][]string) bool {
+				for _, inst := range inst {
+					if inst[0] == SwapAction {
+						return true
+					}
+				}
+				return false
+			}
+			if containSwap(shardBlock.Body.Instructions) {
+				break
+			}
+
 		}
 		allRequireShardBlocks[shardID] = shardBlocks
 	}
@@ -345,22 +368,6 @@ func (blockchain *BlockChain) GetBestStateBeaconFeatureStateDBByHeight(height ui
 		return nil, fmt.Errorf("Beacon Feature State DB not found, height %+v, error %+v", height, err)
 	}
 	return statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(db))
-}
-
-func (blockchain *BlockChain) GetBNBChainID() string {
-	return blockchain.GetConfig().ChainParams.BNBRelayingHeaderChainID
-}
-
-func (blockchain *BlockChain) GetBTCChainID() string {
-	return blockchain.GetConfig().ChainParams.BTCRelayingHeaderChainID
-}
-
-func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
-	return blockchain.GetConfig().BTCChain
-}
-
-func (blockchain *BlockChain) GetPortalFeederAddress() string {
-	return blockchain.GetConfig().ChainParams.PortalFeederAddress
 }
 
 func (blockchain *BlockChain) GetBeaconRootsHashFromBlockHeight(height uint64) (*BeaconRootHash, error) {

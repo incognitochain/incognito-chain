@@ -7,11 +7,14 @@ import (
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/relaying/bnb"
+
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
@@ -68,10 +71,19 @@ type ChainRetriever interface {
 	GetBNBChainID() string
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
-	GetPortalFeederAddress() string
+	GetPortalFeederAddress(beaconHeight uint64) string
 	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
-	GetSupportedCollateralTokenIDs(beaconHeight uint64) []string
-	GetPortalETHContractAddrStr() string
+	IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool
+	GetPortalETHContractAddrStr(beaconHeight uint64) string
+	GetLatestBNBBlkHeight() (int64, error)
+	GetBNBDataHash(blockHeight int64) ([]byte, error)
+	CheckBlockTimeIsReached(recentBeaconHeight, beaconHeight, recentShardHeight, shardHeight uint64, duration time.Duration) bool
+	IsPortalExchangeRateToken(beaconHeight uint64, tokenIDStr string) bool
+	GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error)
+	IsPortalToken(beaconHeight uint64, tokenIDStr string) bool
+	IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error)
+	ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64) (bool, error)
+	IsEnableFeature(featureFlag int, epoch uint64) bool
 }
 
 type BeaconViewRetriever interface {
@@ -285,35 +297,4 @@ func ConvertPrivacyTokenToNativeToken(
 		beaconHeight,
 		stateDB,
 	)
-}
-
-func IsValidPortalRemoteAddress(
-	bcr ChainRetriever,
-	remoteAddress string,
-	tokenID string,
-) bool {
-	if tokenID == common.PortalBNBIDStr {
-		return bnb.IsValidBNBAddress(remoteAddress, bcr.GetBNBChainID())
-	} else if tokenID == common.PortalBTCIDStr {
-		btcHeaderChain := bcr.GetBTCHeaderChain()
-		if btcHeaderChain == nil {
-			return false
-		}
-		return btcHeaderChain.IsBTCAddressValid(remoteAddress)
-	}
-	return false
-}
-
-func IsPortalToken(tokenIDStr string) bool {
-	isExisted, _ := common.SliceExists(common.PortalSupportedIncTokenIDs, tokenIDStr)
-	return isExisted
-}
-
-func IsSupportedTokenCollateralV3(bcr ChainRetriever, beaconHeight uint64, externalTokenID string) bool {
-	isSupported, _ := common.SliceExists(bcr.GetSupportedCollateralTokenIDs(beaconHeight), externalTokenID)
-	return isSupported
-}
-
-func IsPortalExchangeRateToken(tokenIDStr string, bcr ChainRetriever, beaconHeight uint64) bool {
-	return IsPortalToken(tokenIDStr) || tokenIDStr == common.PRVIDStr || IsSupportedTokenCollateralV3(bcr, beaconHeight, tokenIDStr)
 }

@@ -58,7 +58,6 @@ func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Val
 	role := ""
 	layer := ""
 	chainID := -2
-	pubkey := ""
 	if len(s.validators) > 0 {
 		for _, validator := range s.validators {
 			if validator.State.ChainID != -2 {
@@ -66,14 +65,12 @@ func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Val
 				if ok {
 					if validator.State.Role == common.CommitteeRole {
 						chainValidator[validator.State.ChainID] = validator
-						pubkey = validator.MiningKey.GetPublicKeyBase58()
 						role = validator.State.Role
 						chainID = validator.State.ChainID
 						layer = validator.State.Layer
 					}
 				} else {
 					chainValidator[validator.State.ChainID] = validator
-					pubkey = validator.MiningKey.GetPublicKeyBase58()
 					role = validator.State.Role
 					chainID = validator.State.ChainID
 					layer = validator.State.Layer
@@ -89,8 +86,6 @@ func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Val
 	monitor.SetGlobalParam("Role", role)
 	monitor.SetGlobalParam("Layer", layer)
 	monitor.SetGlobalParam("ShardID", chainID)
-	monitor.SetGlobalParam("MINING_PUBKEY", pubkey)
-	//fmt.Println("GetOneValidatorForEachConsensusProcess", chainValidator[1])
 	return chainValidator
 }
 
@@ -233,6 +228,7 @@ func (engine *Engine) Start() error {
 			panic(err)
 		}
 		engine.validators = []*consensus.Validator{&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey}}
+		monitor.SetGlobalParam("MINING_PUBKEY", miningKey.GetPublicKey().GetMiningKeyBase58("bls"))
 	} else if engine.config.Node.GetMiningKeys() != "" {
 		keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
 		engine.validators = []*consensus.Validator{}
@@ -242,6 +238,7 @@ func (engine *Engine) Start() error {
 				panic(err)
 			}
 			engine.validators = append(engine.validators, &consensus.Validator{PrivateSeed: key, MiningKey: *miningKey})
+			monitor.SetGlobalParam("MINING_PUBKEY", miningKey.GetPublicKey().GetMiningKeyBase58("bls"))
 		}
 		engine.validators = engine.validators[:1] //allow only 1 key
 	}

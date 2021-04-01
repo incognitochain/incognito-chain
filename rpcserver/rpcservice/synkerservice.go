@@ -28,3 +28,7 @@ func (s *SynkerService) GetAllViewShardByHash(bestHash string, sID int) []common
 func (s *SynkerService) GetAllViewBeaconByHash(bestHash string) []common.BlockPoolInterface {
 	return s.Synker.GetAllViewByHash(syncker.BeaconPoolType, bestHash, 0)
 }
+
+func (s *SynkerService) GetSyncStats() syncker.SynckerStats {
+	return s.Synker.GetSyncStats()
+}

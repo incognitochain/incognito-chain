@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -43,11 +44,14 @@ type ConsensusEngine interface {
 	ValidateProducerPosition(blk common.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error
 	ValidateProducerSig(block common.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	// GetCurrentMiningPublicKey() (string, string)
+	GetCurrentMiningPublicKey() (string, string)
 	// GetCurrentValidators() []*consensus.Validator
 	// GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
 	// GetMiningPublicKeyByConsensus(consensusName string) (string, error)
-	// GetUserRole() (string, string, int)
+	GetAllMiningPublicKeys() []string
+	ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
+	GetAllValidatorKeyState() map[string]consensus.MiningState
+	GetUserRole() (string, string, int)
 	// CommitteeChange(chainName string)
 }
 

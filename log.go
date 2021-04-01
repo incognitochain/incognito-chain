@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
+	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
 	"os"
 	"path/filepath"
 
@@ -66,6 +71,12 @@ var (
 	daov2Logger            = backendLog.Logger("DAO log", false)
 	btcRelayingLogger      = backendLog.Logger("BTC relaying log", false)
 	synckerLogger          = backendLog.Logger("Syncker log ", false)
+
+	portalLogger          = backendLog.Logger("Portal log ", false)
+	portalRelayingLogger  = backendLog.Logger("Portal relaying log ", false)
+	portalV3CommonLogger  = backendLog.Logger("Portal v3 common log ", false)
+	portalV3ProcessLogger = backendLog.Logger("Portal v3 process log ", false)
+	portalV3TokenLogger   = backendLog.Logger("Portal v3 token log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -109,6 +120,12 @@ func init() {
 	dataaccessobject.Logger.Init(daov2Logger)
 	btcRelaying.Logger.Init(btcRelayingLogger)
 	syncker.Logger.Init(synckerLogger)
+
+	portal.Logger.Init(portalLogger)
+	portalrelaying.Logger.Init(portalRelayingLogger)
+	portalcommonv3.Logger.Init(portalV3CommonLogger)
+	portalprocessv3.Logger.Init(portalV3ProcessLogger)
+	portaltokensv3.Logger.Init(portalV3TokenLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -138,6 +155,11 @@ var subsystemLoggers = map[string]common.Logger{
 	"DAO":               daov2Logger,
 	"BTCRELAYING":       btcRelayingLogger,
 	"SYNCKER":           synckerLogger,
+	"PORTAL":            portalLogger,
+	"PORTALRELAYING":    portalRelayingLogger,
+	"PORTALV3COMMON":    portalV3CommonLogger,
+	"PORTALV3PROCESS":   portalV3ProcessLogger,
+	"PORTALV3TOKENS":    portalV3TokenLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and
