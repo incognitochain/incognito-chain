@@ -397,7 +397,8 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	return hexRawTx, msgTx.TxHash().String(), nil
 }
 
-func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSigScript []byte, rawTxBytes []byte, publicSeed []string) ([][]byte, string, error) {
+
+func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSigScript []byte, rawTxBytes []byte, inputs []*statedb.UTXO) ([][]byte, string, error) {
 	// new MsgTx from rawTxBytes
 	msgTx := new(btcwire.MsgTx)
 	rawTxBuffer := bytes.NewBuffer(rawTxBytes)
@@ -405,10 +406,13 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSi
 	if err != nil {
 		return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when deserializing raw tx bytes: %v", err)
 	}
+	if len(inputs) != len(msgTx.TxIn) {
+		return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error inputs in metadata and in bitcoin raw tx not match: %v", err)
+	}
 
 	// sign on each TxIn
-	if len(publicSeed) != len(msgTx.TxIn) {
-		return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Len of Public seeds %v and len of TxIn %v are not correct", len(publicSeed), len(msgTx.TxIn))
+	if len(inputs) != len(msgTx.TxIn) {
+		return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Len of Public seeds %v and len of TxIn %v are not correct", len(inputs), len(msgTx.TxIn))
 	}
 	sigs := [][]byte{}
 	for i := range msgTx.TxIn {
@@ -416,14 +420,13 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSi
 		signature.AddOp(txscript.OP_FALSE)
 
 		// generate btc private key from seed: private key of bridge consensus
-		btcPrivateKeyBytes, err := p.generateOTPrivateKey(p.ChainParam, seedKey, publicSeed[i])
+		btcPrivateKeyBytes, err := p.generateOTPrivateKey(p.ChainParam, seedKey, inputs[i].GetPublicSeed())
 		if err != nil {
 			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when generate btc private key from seed: %v", err)
 		}
 		btcPrivateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), btcPrivateKeyBytes)
 
-		// todo: should to update sign on tx
-		sig, err := txscript.RawTxInSignature(msgTx, i, multiSigScript, txscript.SigHashAll, btcPrivateKey)
+		sig, err := txscript.RawTxInWitnessSignature(msgTx, txscript.NewTxSigHashes(msgTx), i, int64(inputs[i].GetOutputAmount()), multiSigScript, txscript.SigHashAll, btcPrivateKey)
 		if err != nil {
 			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when signing on raw btc tx: %v", err)
 		}
