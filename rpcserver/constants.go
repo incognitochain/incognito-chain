@@ -108,6 +108,7 @@ const (
 	getAndSendTxsFromFile      = "getandsendtxsfromfile"
 	getAndSendTxsFromFileV2    = "getandsendtxsfromfilev2"
 	unlockMempool              = "unlockmempool"
+	handleGetConsensusInfoV3   = "getconsensusinfov3"
 	getAutoStakingByHeight     = "getautostakingbyheight"
 	getCommitteeState          = "getcommitteestate"
 	getCommitteeStateByShard   = "getcommitteestatebyshard"
