@@ -776,17 +776,17 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 	utxoTxHash1 = "251f22409938485254c6c739b9f91cb7f0bce784b018de5b0bdb88d10f17e355"
 	utxoOutputIdx = 1
 	utxoAmount = 2 * 1e8
-	keyUtxo1, valueUtxo1 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, utxoTxHash1, utxoOutputIdx, utxoAmount)
+	keyUtxo1, valueUtxo1 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, utxoTxHash1, utxoOutputIdx, utxoAmount, PORTALV4_USER_INC_ADDRESS_1)
 
 	utxoTxHash1 = "b44f6c7c896757abe7afd6ac083c2930f1d0f57a356887e872f3b88bba5ea0b7"
 	utxoOutputIdx = 1
 	utxoAmount = 1 * 1e8
-	keyUtxo2, valueUtxo2 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, utxoTxHash1, utxoOutputIdx, utxoAmount)
+	keyUtxo2, valueUtxo2 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, utxoTxHash1, utxoOutputIdx, utxoAmount, PORTALV4_USER_INC_ADDRESS_2)
 
 	utxoTxHash1 = "93aaa4b3109815cc33273154732d033ddc959f2aad166a5dbeac1f72b3f5e5cd"
 	utxoOutputIdx = 1
 	utxoAmount = 0.1 * 1e8
-	keyUtxo3, valueUtxo3 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, utxoTxHash1, utxoOutputIdx, utxoAmount)
+	keyUtxo3, valueUtxo3 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, utxoTxHash1, utxoOutputIdx, utxoAmount, PORTALV4_USER_INC_ADDRESS_1)
 
 	// build test cases
 	testcases := []TestCaseBatchUnshieldProcess{
@@ -886,12 +886,12 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 	currentBeaconHeight := uint64(45)
 	var batchID string
 	var processedUnshieldIDs []string
-	var spendUtxos map[string][]*statedb.UTXO
+	var spendUtxos []*statedb.UTXO
 	var externalFee map[uint64]uint
 
 	processedUnshieldIDs = []string{unshieldId1}
 	batchID = portalprocessv4.GetBatchID(currentBeaconHeight, processedUnshieldIDs)
-	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo1}}
+	spendUtxos = []*statedb.UTXO{valueUtxo1}
 	externalFee = map[uint64]uint{
 		currentBeaconHeight: 100000,
 	}
@@ -901,7 +901,7 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 
 	processedUnshieldIDs = []string{unshieldId1}
 	batchID = portalprocessv4.GetBatchID(currentBeaconHeight, processedUnshieldIDs)
-	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo1, valueUtxo2}}
+	spendUtxos = []*statedb.UTXO{valueUtxo1, valueUtxo2}
 	externalFee = map[uint64]uint{
 		currentBeaconHeight: 100000,
 	}
@@ -911,7 +911,7 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 
 	processedUnshieldIDs = []string{unshieldId1, unshieldId2, unshieldId3}
 	batchID = portalprocessv4.GetBatchID(currentBeaconHeight, processedUnshieldIDs)
-	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo1, valueUtxo3}}
+	spendUtxos = []*statedb.UTXO{valueUtxo1, valueUtxo3}
 	externalFee = map[uint64]uint{
 		currentBeaconHeight: 100000,
 	}
@@ -921,7 +921,7 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 
 	processedUnshieldIDs = []string{unshieldId4}
 	batchID = portalprocessv4.GetBatchID(currentBeaconHeight, processedUnshieldIDs)
-	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo2}}
+	spendUtxos = []*statedb.UTXO{valueUtxo2}
 	externalFee = map[uint64]uint{
 		currentBeaconHeight: 100000,
 	}
@@ -931,7 +931,7 @@ func buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshie
 
 	processedUnshieldIDs = []string{unshieldId5, unshieldId1}
 	batchID = portalprocessv4.GetBatchID(currentBeaconHeight, processedUnshieldIDs)
-	spendUtxos = map[string][]*statedb.UTXO{walletAddress: {valueUtxo1, valueUtxo2}}
+	spendUtxos = []*statedb.UTXO{valueUtxo1, valueUtxo2}
 	externalFee = map[uint64]uint{
 		currentBeaconHeight: 100000,
 	}
@@ -1121,17 +1121,15 @@ type ExpectedResultFeeReplacement struct {
 }
 
 func (s *PortalTestSuiteV4) SetupTestFeeReplacement() {
-
 	btcMultiSigAddress := s.portalParams.GeneralMultiSigAddresses[portalcommonv4.PortalBTCIDStr]
 	processUnshield1 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID1,
 		[]string{"txid1", "txid2", "txid3"},
-		map[string][]*statedb.UTXO{
-			btcMultiSigAddress: {
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 1000000),
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "49491148bd2f7b5432a26472af97724e114f22a74d9d2fb20c619b4f79f19fd9", 0, 2000000),
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "b751ff30df21ad84ce3f509ee3981c348143bd6a5aa30f4256ecb663fab14fd1", 1, 3000000),
-			},
+		[]*statedb.UTXO{
+
+				statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 1000000, ""),
+				statedb.NewUTXOWithValue(btcMultiSigAddress, "49491148bd2f7b5432a26472af97724e114f22a74d9d2fb20c619b4f79f19fd9", 0, 2000000, ""),
+				statedb.NewUTXOWithValue(btcMultiSigAddress, "b751ff30df21ad84ce3f509ee3981c348143bd6a5aa30f4256ecb663fab14fd1", 1, 3000000, ""),
 		},
 		map[uint64]uint{
 			900: 900,
@@ -1141,10 +1139,8 @@ func (s *PortalTestSuiteV4) SetupTestFeeReplacement() {
 	processUnshield2 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID2,
 		[]string{"txid4", "txid5"},
-		map[string][]*statedb.UTXO{
-			btcMultiSigAddress: {
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "163a6cc24df4efbd5c997aa623d4e319f1b7671be83a86bb0fa27bc701ae4a76", 1, 1000000),
-			},
+		[]*statedb.UTXO{
+				statedb.NewUTXOWithValue(btcMultiSigAddress, "163a6cc24df4efbd5c997aa623d4e319f1b7671be83a86bb0fa27bc701ae4a76", 1, 1000000, ""),
 		},
 		map[uint64]uint{
 			1000: 1000,
@@ -1310,12 +1306,10 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 	processUnshield1 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID1,
 		[]string{"txid1", "txid2", "txid3"},
-		map[string][]*statedb.UTXO{
-			btcMultiSigAddress: {
+		[]*statedb.UTXO{
 				statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 1000000, ""),
 				statedb.NewUTXOWithValue(btcMultiSigAddress, "49491148bd2f7b5432a26472af97724e114f22a74d9d2fb20c619b4f79f19fd9", 0, 2000000, ""),
 				statedb.NewUTXOWithValue(btcMultiSigAddress, "b751ff30df21ad84ce3f509ee3981c348143bd6a5aa30f4256ecb663fab14fd1", 1, 3000000, ""),
-			},
 		},
 		map[uint64]uint{
 			900:  900,
@@ -1469,17 +1463,15 @@ func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 	btcMultiSigAddress := s.portalParams.GeneralMultiSigAddresses[portalcommonv4.PortalBTCIDStr]
 	utxos := map[string]map[string]*statedb.UTXO{
 		portalcommonv4.PortalBTCIDStr: {
-			statedb.GenerateUTXOObjectKey(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 0).String(): statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 100000),
+			statedb.GenerateUTXOObjectKey(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 0).String(): statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 100000, ""),
 		},
 	}
 
 	processUnshield1 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID1,
 		[]string{"txid1", "txid2", "txid3"},
-		map[string][]*statedb.UTXO{
-			btcMultiSigAddress: {
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "3c302a08da42a69d36f81f0ca0cd4f20e50e6e042292200f98a358c1f2536134", 2, 211872),
-			},
+		[]*statedb.UTXO{
+				statedb.NewUTXOWithValue(btcMultiSigAddress, "3c302a08da42a69d36f81f0ca0cd4f20e50e6e042292200f98a358c1f2536134", 2, 211872, ""),
 		},
 		map[uint64]uint{
 			900: 900,
@@ -1489,10 +1481,8 @@ func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 	processUnshield2 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID2,
 		[]string{"txid4", "txid5"},
-		map[string][]*statedb.UTXO{
-			btcMultiSigAddress: {
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "d0450fc4ab5c1a0184c08b15b2b24852757d17a5e183c8e096ed1deb183dea28", 2, 201572),
-			},
+		[]*statedb.UTXO{
+				statedb.NewUTXOWithValue(btcMultiSigAddress, "d0450fc4ab5c1a0184c08b15b2b24852757d17a5e183c8e096ed1deb183dea28", 2, 201572, ""),
 		},
 		map[uint64]uint{
 			1000: 1000,
@@ -1635,8 +1625,8 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 
 	utxos := map[string]map[string]*statedb.UTXO{
 		portalcommonv4.PortalBTCIDStr: {
-			statedb.GenerateUTXOObjectKey(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 0).String(): statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 100000),
-			statedb.GenerateUTXOObjectKey(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "d0450fc4ab5c1a0184c08b15b2b24852757d17a5e183c8e096ed1deb183dea28", 1).String(): statedb.NewUTXOWithValue(btcMultiSigAddress, "d0450fc4ab5c1a0184c08b15b2b24852757d17a5e183c8e096ed1deb183dea28", 1, 300),
+			statedb.GenerateUTXOObjectKey(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 0).String(): statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 100000, ""),
+			statedb.GenerateUTXOObjectKey(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "d0450fc4ab5c1a0184c08b15b2b24852757d17a5e183c8e096ed1deb183dea28", 1).String(): statedb.NewUTXOWithValue(btcMultiSigAddress, "d0450fc4ab5c1a0184c08b15b2b24852757d17a5e183c8e096ed1deb183dea28", 1, 300, ""),
 		},
 	}
 
@@ -1761,6 +1751,7 @@ func CloneUTXOs(utxos map[string]map[string]*statedb.UTXO) map[string]map[string
 				batch2.GetTxHash(),
 				batch2.GetOutputIndex(),
 				batch2.GetOutputAmount(),
+				batch2.GetPublicSeed(),
 			)
 		}
 		newReqs[key] = newBatch
