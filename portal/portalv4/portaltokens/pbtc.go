@@ -23,8 +23,6 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"github.com/keyfuse/tokucore/network"
-	"github.com/keyfuse/tokucore/xcore"
 )
 
 type PortalBTCTokenProcessor struct {
@@ -268,12 +266,11 @@ func (p PortalBTCTokenProcessor) generateOTPrivateKey(chainParams *chaincfg.Para
 
 // Generate Bech32 P2WSH multisig address for each Incognito address
 // Return redeem script, OTMultisigAddress
-func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetriever, masterPubKeys [][]byte, numSigsRequired int, publicSeed string) ([]byte, string, error) {
+func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(chainParams *chaincfg.Params, masterPubKeys [][]byte, numSigsRequired int, publicSeed string) ([]byte, string, error) {
 	if len(masterPubKeys) < numSigsRequired || numSigsRequired < 0 {
 		return []byte{}, "", fmt.Errorf("Invalid signature requirment")
 	}
 
-	chainParams := bc.GetBTCChainParams()
 	pubKeys := [][]byte{}
 	// this Incognito address is marked for the address that received change UTXOs
 	if publicSeed == "" {
@@ -301,7 +298,7 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetr
 		builder.AddData(pubKey)
 	}
 	// add the total number of public keys in the multi-sig script
-	builder.AddOp(byte(txscript.OP_1 - 1 + len(masterPubKeys)))
+	builder.AddOp(byte(txscript.OP_1 - 1 + len(pubKeys)))
 	// add the check-multi-sig op-code
 	builder.AddOp(txscript.OP_CHECKMULTISIG)
 
@@ -310,12 +307,13 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetr
 		return []byte{}, "", err
 	}
 
-	// TODO: generate multisig address P2WSH Bech32
 	scriptHash := sha256.Sum256(redeemScript)
-	multi := xcore.NewPayToWitnessV0ScriptHashAddress(scriptHash[:])
-	addr := multi.ToString(network.TestNet)
+	multi, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], chainParams)
+	if err != nil {
+		return []byte{}, "", err
+	}
 
-	return redeemScript, addr, nil
+	return redeemScript, multi.EncodeAddress(), nil
 }
 
 // CreateRawExternalTx creates raw btc transaction (not include signatures of beacon validator)
@@ -398,7 +396,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 }
 
 
-func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSigScript []byte, rawTxBytes []byte, inputs []*statedb.UTXO) ([][]byte, string, error) {
+func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, masterPubKeys [][]byte, numSigsRequired int, rawTxBytes []byte, inputs []*statedb.UTXO) ([][]byte, string, error) {
 	// new MsgTx from rawTxBytes
 	msgTx := new(btcwire.MsgTx)
 	rawTxBuffer := bytes.NewBuffer(rawTxBytes)
@@ -406,26 +404,19 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSi
 	if err != nil {
 		return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when deserializing raw tx bytes: %v", err)
 	}
-	if len(inputs) != len(msgTx.TxIn) {
-		return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error inputs in metadata and in bitcoin raw tx not match: %v", err)
-	}
-
 	// sign on each TxIn
 	if len(inputs) != len(msgTx.TxIn) {
 		return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Len of Public seeds %v and len of TxIn %v are not correct", len(inputs), len(msgTx.TxIn))
 	}
 	sigs := [][]byte{}
 	for i := range msgTx.TxIn {
-		signature := txscript.NewScriptBuilder()
-		signature.AddOp(txscript.OP_FALSE)
-
 		// generate btc private key from seed: private key of bridge consensus
 		btcPrivateKeyBytes, err := p.generateOTPrivateKey(p.ChainParam, seedKey, inputs[i].GetPublicSeed())
 		if err != nil {
 			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when generate btc private key from seed: %v", err)
 		}
 		btcPrivateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), btcPrivateKeyBytes)
-
+		multiSigScript, _, err := p.GenerateOTMultisigAddress(p.ChainParam, masterPubKeys, numSigsRequired, inputs[i].GetPublicSeed())
 		sig, err := txscript.RawTxInWitnessSignature(msgTx, txscript.NewTxSigHashes(msgTx), i, int64(inputs[i].GetOutputAmount()), multiSigScript, txscript.SigHashAll, btcPrivateKey)
 		if err != nil {
 			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when signing on raw btc tx: %v", err)

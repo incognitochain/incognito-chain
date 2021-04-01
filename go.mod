@@ -32,7 +32,6 @@ require (
 	github.com/jbenet/goprocess v0.1.4
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jrick/logrotate v1.0.0
-	github.com/keyfuse/tokucore v0.0.0-20190908151025-d2b8996b1e56
 	github.com/klauspost/compress v1.10.10
 	github.com/libp2p/go-libp2p v0.11.0
 	github.com/libp2p/go-libp2p-core v0.6.1
