@@ -85,12 +85,20 @@ func (s *PortalTestSuiteV4) SetupTest() {
 		ProcessedUnshieldRequests: map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{},
 	}
 	s.portalParams = portalv4.PortalParams{
+		MasterPubKeys: map[string][][]byte{
+			portalcommonv4.PortalBTCIDStr: [][]byte{
+				[]byte{0x3, 0xb2, 0xd3, 0x16, 0x7d, 0x94, 0x9c, 0x25, 0x3, 0xe6, 0x9c, 0x9f, 0x29, 0x78, 0x7d, 0x9c, 0x8, 0x8d, 0x39, 0x17, 0x8d, 0xb4, 0x75, 0x40, 0x35, 0xf5, 0xae, 0x6a, 0xf0, 0x17, 0x12, 0x11, 0x0},
+				[]byte{0x3, 0x98, 0x7a, 0x87, 0xd1, 0x99, 0x13, 0xbd, 0xe3, 0xef, 0xf0, 0x55, 0x79, 0x2, 0xb4, 0x90, 0x57, 0xed, 0x1c, 0x9c, 0x8b, 0x32, 0xf9, 0x2, 0xbb, 0xbb, 0x85, 0x71, 0x3a, 0x99, 0x1f, 0xdc, 0x41},
+				[]byte{0x3, 0x73, 0x23, 0x5e, 0xb1, 0xc8, 0xf1, 0x84, 0xe7, 0x59, 0x17, 0x6c, 0xe3, 0x87, 0x37, 0xb7, 0x91, 0x19, 0x47, 0x1b, 0xba, 0x63, 0x56, 0xbc, 0xab, 0x8d, 0xcc, 0x14, 0x4b, 0x42, 0x99, 0x86, 0x1},
+				[]byte{0x3, 0x29, 0xe7, 0x59, 0x31, 0x89, 0xca, 0x7a, 0xf6, 0x1, 0xb6, 0x35, 0x67, 0x3d, 0xb1, 0x53, 0xd4, 0x19, 0xd7, 0x6, 0x19, 0x3, 0x2a, 0x32, 0x94, 0x57, 0x76, 0xb2, 0xb3, 0x80, 0x65, 0xe1, 0x5d},
+			},
+		},
 		NumRequiredSigs: 3,
 		GeneralMultiSigAddresses: map[string]string{
-			portalcommonv4.PortalBTCIDStr: "2MvpFqydTR43TT4emMD84Mzhgd8F6dCow1X",
+			portalcommonv4.PortalBTCIDStr: "tb1qlj57lszz62wv3cprlxhdk268d0xmhagpz997x8dljcefg723z43stjlp7r",
 		},
 		GeneralMultiSigScriptHexEncode: map[string]string{
-			portalcommonv4.PortalBTCIDStr: "",
+			portalcommonv4.PortalBTCIDStr: "532102a88c36430d6df68ea7ee3964747cc47e04c052b4d0541012419ca47d371437f72103f27d6ec2dca8ec40845f4bb6e08b338e3aca96c9cc53dc9bd522ea467971cd0d2102ef026fabadcc103043839d1f37445935b579234d25fb301a37b20ca0c5bfa6c92102b9c395680961a714940f2cf58947184e698b9c7d280c996a84ca764215f9472354ae",
 		},
 		PortalTokens: map[string]portaltokensv4.PortalTokenProcessor{
 			portalcommonv4.PortalBTCIDStr: &portaltokensv4.PortalBTCTokenProcessor{
@@ -265,92 +273,98 @@ func generateUTXOKeyAndValue(tokenID string, walletAddress string, txHash string
 }
 
 //TODO: update shielding proof
-func buildTestCaseAndExpectedResultShieldingRequest() ([]TestCaseShieldingRequest, *ExpectedResultShieldingRequest) {
+func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultShieldingRequest() ([]TestCaseShieldingRequest, *ExpectedResultShieldingRequest) {
 	// build test cases
 	testcases := []TestCaseShieldingRequest{
 		// valid shielding request
 		{
 			tokenID:                  portalcommonv4.PortalBTCIDStr,
 			incAddressStr:            PORTALV4_USER_INC_ADDRESS_1,
-			shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzE2NSwxMzIsNTAsNTEsNzgsMzgsMTk4LDk3LDE0NSwxOTAsMTUzLDUwLDIzNCwxNDgsMTUzLDgsMjQwLDE1NywyLDIwLDg5LDExMCwxNTQsMTM0LDE1NSwyMzcsNDksMjM0LDIwNSwxMywyMzQsNzJdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEzNiw0MywyMjQsMSwxNzYsMTE0LDE0MSwyMTMsMzMsMTE3LDYwLDc2LDY3LDM4LDIwLDQ5LDExOCwxOTUsMjUzLDIzMiwxNTAsODIsMTQ5LDE2NSwxNjgsMTQyLDIwNywyNTUsMTYsNTQsNzIsNTBdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzE4MCwzNiwxOCw4MiwyMTMsMzksMTA5LDE3NSwyMDYsMTI4LDI1MCw2LDIzOCwzNiwxNjIsMjEwLDIzMiwxMzQsMTQ2LDEyNCw5LDU4LDEwNCwxMzUsMTQ4LDEyOSwxODgsMTQyLDIzOSwxOSwxODIsM10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbNjcsMTA1LDExNywyOCw4NywxMTgsMTEsMTQsMTc4LDExNCw5OCwxMTgsMTQ3LDEwNywxMDcsOTUsNDMsMjMxLDUxLDIxLDE2MCw0MCw5NSwxMCwyMjUsMjU1LDE0OSwyMzIsMjIxLDIzNSwyNDgsMzBdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMjQ4LDI0NCwxNzAsNDcsMzEsMTEyLDExOCwyNDEsNDgsMTkyLDMwLDE3NiwxNTEsOCw0OSw2LDQyLDExNCwxNTUsMTIyLDIxMCwyMTEsODUsMjE0LDg0LDQ4LDI0NCwxODAsODUsNjQsMjQsODNdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEyNywxMjQsOTMsMjIxLDI0OCwxNzMsMTk0LDE2LDE1Nyw1MCw2MCwxODAsMjQwLDEzMSw0MywxMTQsMTQ0LDEyOCwyMDEsNDUsMTYxLDIwLDIyMSw2Nyw4MCw5OCwxOCwxMTEsMjUyLDIxNywzMiw1NV0sIklzTGVmdCI6ZmFsc2V9XSwiQlRDVHgiOnsiVmVyc2lvbiI6MSwiVHhJbiI6W3siUHJldmlvdXNPdXRQb2ludCI6eyJIYXNoIjpbNTgsMTMyLDE1MSw4Nyw5OSw5LDI0OCw0OSwxOCw5NSw3OSw3MCwxMzcsNzYsNCwyMTUsMTgyLDUwLDQ5LDk0LDE2LDE4NCwxNzMsMzUsNDAsMTU4LDcwLDMwLDE3MywyMzEsMTc0LDEzNl0sIkluZGV4IjoyfSwiU2lnbmF0dXJlU2NyaXB0IjoiUnpCRUFpQmtiQmM1VThoRjdLelkxWWZaYXgvWDJBRHVDY3FreE1mczFkTmNoMDEybFFJZ1VKTHAvaUlPd0w5R0NnSk5wZE55d0UzajV6Wjg2ZkNINkt5WlkyNjFsNXdCSVFQUElCTlBWa2ppOXZGM3BsVXJKYnFYNUZzVWhVNVBFeXBLOFA1OXFUL0UvQT09IiwiV2l0bmVzcyI6bnVsbCwiU2VxdWVuY2UiOjQyOTQ5NjcyOTV9XSwiVHhPdXQiOlt7IlZhbHVlIjowLCJQa1NjcmlwdCI6ImFreHJVRk14TFRFeVV6Vk1jbk14V0dWUlRHSnhUalI1VTNsTGRHcEJhbVF5WkRkelFsQXlkR3BHYVdwNmJYQTJZWFp5Y210UlEwNUdUWEJyV0cwelJsQjZhakpYWTNVeVdrNXhTa1Z0YURsS2NtbFdkVkpGY2xaM2FIVlJia3h0VjFOaFoyZHZZa1ZYYzBKRlkyaz0ifSx7IlZhbHVlIjo0MDAsIlBrU2NyaXB0IjoicVJRbko2ZHY4dm81WGNVbFpLanJLcXVNL2xISWRvYz0ifSx7IlZhbHVlIjo4MjA3MiwiUGtTY3JpcHQiOiJkcWtVZ3Z5NmxRaStFaVF5OTd1UTJsOTBBVUNtVzRpSXJBPT0ifV0sIkxvY2tUaW1lIjowfSwiQmxvY2tIYXNoIjpbNjQsNjcsMjQzLDIyMiwyNDQsOSwxODMsMjM0LDIzOCwxNzAsMTY2LDIyNiwxMywyNTQsMzUsNzgsMjIyLDY5LDI0MSwyMjQsMTAzLDYzLDEyOSwyMDQsMTQsMCwwLDAsMCwwLDAsMF19",
+			shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzE2MiwzLDI0NSwyMDMsMTYsMTk2LDIzNCw5MSwyMDQsNzMsMTM2LDE1MCwxNTYsNjQsMzMsMjUyLDIxNSwyMTUsMTEwLDI0MSw5NCwxMiw3LDgxLDExLDIsOCwxOTMsOTQsMTg2LDEwMCwyMDNdLCJJc0xlZnQiOnRydWV9XSwiQlRDVHgiOnsiVmVyc2lvbiI6MiwiVHhJbiI6W3siUHJldmlvdXNPdXRQb2ludCI6eyJIYXNoIjpbNjgsMjM5LDk3LDE3OCwxMDYsMTY3LDIxMCw2MiwxOCwxMiwxODgsMjMwLDIyNCw2MiwxODMsMjMsMTQyLDEzNCwxNyw4OSwyMDYsNTQsNTUsMTczLDI1NSwyMjksNDgsMTAsMTQxLDExNCw3NiwyMDNdLCJJbmRleCI6MH0sIlNpZ25hdHVyZVNjcmlwdCI6IiIsIldpdG5lc3MiOlsiTUVRQ0lGNk16dVNGZkZXeXhrMWlNb3pZRUpIWmVnRmhBa3JabE1mWjFjNGVMVTU5QWlCajhBcDRUOVU4VVVwK1pOZExzcHhjdER0K3U0LzBaL3VFREkvWGVEbUVuUUU9IiwiQTA4a0VWSHoveVcydTUreGlYM2dwZkQrVDJKd3NEQWh1OEwrQ3NnMmhEeDUiXSwiU2VxdWVuY2UiOjQyOTQ5NjcyOTV9XSwiVHhPdXQiOlt7IlZhbHVlIjoxMDAwMDAwMDAwLCJQa1NjcmlwdCI6IkFDQXpZVmQzb1BDLy9UdEZMQlBSOWt6Y2NVMlU0QXJYYkRNSXpBenJQS2NvYlE9PSJ9LHsiVmFsdWUiOjk4OTk5MDAwMDAwLCJQa1NjcmlwdCI6IkFCU1dyYkhEdEVSeGtvdkloYkQvWlhFemxQeG1QQT09In1dLCJMb2NrVGltZSI6MH0sIkJsb2NrSGFzaCI6WzIyOCw0OSwxNywyNDIsOTEsMTU5LDEzNSwxNTEsMjIwLDQyLDU5LDE3MSwyNTIsMTksODcsMTQ2LDEwNiwyMDQsMTE0LDQxLDIsMTMxLDI1MCwyMzMsMjE2LDg5LDI0MCwxMDIsMTYzLDk4LDI0Nyw3OF19",
 			txID:                     common.HashH([]byte{1}).String(),
 			isExistsInPreviousBlocks: false,
 		},
-		// valid shielding request: different user incognito address
-		{
-			tokenID:                  portalcommonv4.PortalBTCIDStr,
-			incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
-			shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzIwOCw0Niw2OCwxOSw1NSwyMDksMjM1LDIyMCw0OSwxMTEsNjQsMjEsODEsMTA5LDI0NiwyMTAsMTUyLDEzMywxMDksNjgsNjMsMTU5LDI0MSwxNjUsMTk4LDE2LDUsMjYsMjA0LDIzNCw3NCwxODhdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMTM2LDQzLDIyNCwxLDE3NiwxMTQsMTQxLDIxMywzMywxMTcsNjAsNzYsNjcsMzgsMjAsNDksMTE4LDE5NSwyNTMsMjMyLDE1MCw4MiwxNDksMTY1LDE2OCwxNDIsMjA3LDI1NSwxNiw1NCw3Miw1MF0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTgwLDM2LDE4LDgyLDIxMywzOSwxMDksMTc1LDIwNiwxMjgsMjUwLDYsMjM4LDM2LDE2MiwyMTAsMjMyLDEzNCwxNDYsMTI0LDksNTgsMTA0LDEzNSwxNDgsMTI5LDE4OCwxNDIsMjM5LDE5LDE4MiwzXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOls2NywxMDUsMTE3LDI4LDg3LDExOCwxMSwxNCwxNzgsMTE0LDk4LDExOCwxNDcsMTA3LDEwNyw5NSw0MywyMzEsNTEsMjEsMTYwLDQwLDk1LDEwLDIyNSwyNTUsMTQ5LDIzMiwyMjEsMjM1LDI0OCwzMF0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOlsyNDgsMjQ0LDE3MCw0NywzMSwxMTIsMTE4LDI0MSw0OCwxOTIsMzAsMTc2LDE1MSw4LDQ5LDYsNDIsMTE0LDE1NSwxMjIsMjEwLDIxMSw4NSwyMTQsODQsNDgsMjQ0LDE4MCw4NSw2NCwyNCw4M10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTI3LDEyNCw5MywyMjEsMjQ4LDE3MywxOTQsMTYsMTU3LDUwLDYwLDE4MCwyNDAsMTMxLDQzLDExNCwxNDQsMTI4LDIwMSw0NSwxNjEsMjAsMjIxLDY3LDgwLDk4LDE4LDExMSwyNTIsMjE3LDMyLDU1XSwiSXNMZWZ0IjpmYWxzZX1dLCJCVENUeCI6eyJWZXJzaW9uIjoxLCJUeEluIjpbeyJQcmV2aW91c091dFBvaW50Ijp7Ikhhc2giOlsyMDgsNDYsNjgsMTksNTUsMjA5LDIzNSwyMjAsNDksMTExLDY0LDIxLDgxLDEwOSwyNDYsMjEwLDE1MiwxMzMsMTA5LDY4LDYzLDE1OSwyNDEsMTY1LDE5OCwxNiw1LDI2LDIwNCwyMzQsNzQsMTg4XSwiSW5kZXgiOjJ9LCJTaWduYXR1cmVTY3JpcHQiOiJTREJGQWlFQXhzOWRTMlE4YWVrMHkvRjJmOUdkejB5R0VFREVzWjNYQXpKZVFYamRiK1VDSUNlZmwwREZWV0tPZUk2Rm9FQzRsS01jWE5hRnFlL0o4ZFpTQnZNUnQyRkRBU0VEenlBVFQxWkk0dmJ4ZDZaVkt5VzZsK1JiRklWT1R4TXFTdkQrZmFrL3hQdz0iLCJXaXRuZXNzIjpudWxsLCJTZXF1ZW5jZSI6NDI5NDk2NzI5NX1dLCJUeE91dCI6W3siVmFsdWUiOjAsIlBrU2NyaXB0IjoiYWt4clVGTXhMVEV5VXpWTWNuTXhXR1ZSVEdKeFRqUjVVM2xMZEdwQmFtUXlaRGR6UWxBeWRHcEdhV3A2YlhBMllYWnljbXRSUTA1R1RYQnJXRzB6UmxCNmFqSlhZM1V5V2s1eFNrVnRhRGxLY21sV2RWSkZjbFozYUhWUmJreHRWMU5oWjJkdllrVlhjMEpGWTJrPSJ9LHsiVmFsdWUiOjgwMCwiUGtTY3JpcHQiOiJxUlFuSjZkdjh2bzVYY1VsWktqcktxdU0vbEhJZG9jPSJ9LHsiVmFsdWUiOjc2MjcyLCJQa1NjcmlwdCI6ImRxa1Vndnk2bFFpK0VpUXk5N3VRMmw5MEFVQ21XNGlJckE9PSJ9XSwiTG9ja1RpbWUiOjB9LCJCbG9ja0hhc2giOls2NCw2NywyNDMsMjIyLDI0NCw5LDE4MywyMzQsMjM4LDE3MCwxNjYsMjI2LDEzLDI1NCwzNSw3OCwyMjIsNjksMjQxLDIyNCwxMDMsNjMsMTI5LDIwNCwxNCwwLDAsMCwwLDAsMCwwXX0=",
-			txID:                     common.HashH([]byte{2}).String(),
-			isExistsInPreviousBlocks: false,
-		},
-		// valid shielding request: the same user incognito address
-		{
-			tokenID:                  portalcommonv4.PortalBTCIDStr,
-			incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
-			shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzIwOCw0Niw2OCwxOSw1NSwyMDksMjM1LDIyMCw0OSwxMTEsNjQsMjEsODEsMTA5LDI0NiwyMTAsMTUyLDEzMywxMDksNjgsNjMsMTU5LDI0MSwxNjUsMTk4LDE2LDUsMjYsMjA0LDIzNCw3NCwxODhdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMTM2LDQzLDIyNCwxLDE3NiwxMTQsMTQxLDIxMywzMywxMTcsNjAsNzYsNjcsMzgsMjAsNDksMTE4LDE5NSwyNTMsMjMyLDE1MCw4MiwxNDksMTY1LDE2OCwxNDIsMjA3LDI1NSwxNiw1NCw3Miw1MF0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTgwLDM2LDE4LDgyLDIxMywzOSwxMDksMTc1LDIwNiwxMjgsMjUwLDYsMjM4LDM2LDE2MiwyMTAsMjMyLDEzNCwxNDYsMTI0LDksNTgsMTA0LDEzNSwxNDgsMTI5LDE4OCwxNDIsMjM5LDE5LDE4MiwzXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOls2NywxMDUsMTE3LDI4LDg3LDExOCwxMSwxNCwxNzgsMTE0LDk4LDExOCwxNDcsMTA3LDEwNyw5NSw0MywyMzEsNTEsMjEsMTYwLDQwLDk1LDEwLDIyNSwyNTUsMTQ5LDIzMiwyMjEsMjM1LDI0OCwzMF0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOlsyNDgsMjQ0LDE3MCw0NywzMSwxMTIsMTE4LDI0MSw0OCwxOTIsMzAsMTc2LDE1MSw4LDQ5LDYsNDIsMTE0LDE1NSwxMjIsMjEwLDIxMSw4NSwyMTQsODQsNDgsMjQ0LDE4MCw4NSw2NCwyNCw4M10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTI3LDEyNCw5MywyMjEsMjQ4LDE3MywxOTQsMTYsMTU3LDUwLDYwLDE4MCwyNDAsMTMxLDQzLDExNCwxNDQsMTI4LDIwMSw0NSwxNjEsMjAsMjIxLDY3LDgwLDk4LDE4LDExMSwyNTIsMjE3LDMyLDU1XSwiSXNMZWZ0IjpmYWxzZX1dLCJCVENUeCI6eyJWZXJzaW9uIjoxLCJUeEluIjpbeyJQcmV2aW91c091dFBvaW50Ijp7Ikhhc2giOlsyMDgsNDYsNjgsMTksNTUsMjA5LDIzNSwyMjAsNDksMTExLDY0LDIxLDgxLDEwOSwyNDYsMjEwLDE1MiwxMzMsMTA5LDY4LDYzLDE1OSwyNDEsMTY1LDE5OCwxNiw1LDI2LDIwNCwyMzQsNzQsMTg4XSwiSW5kZXgiOjJ9LCJTaWduYXR1cmVTY3JpcHQiOiJTREJGQWlFQXhzOWRTMlE4YWVrMHkvRjJmOUdkejB5R0VFREVzWjNYQXpKZVFYamRiK1VDSUNlZmwwREZWV0tPZUk2Rm9FQzRsS01jWE5hRnFlL0o4ZFpTQnZNUnQyRkRBU0VEenlBVFQxWkk0dmJ4ZDZaVkt5VzZsK1JiRklWT1R4TXFTdkQrZmFrL3hQdz0iLCJXaXRuZXNzIjpudWxsLCJTZXF1ZW5jZSI6NDI5NDk2NzI5NX1dLCJUeE91dCI6W3siVmFsdWUiOjAsIlBrU2NyaXB0IjoiYWt4clVGTXhMVEV5VXpWTWNuTXhXR1ZSVEdKeFRqUjVVM2xMZEdwQmFtUXlaRGR6UWxBeWRHcEdhV3A2YlhBMllYWnljbXRSUTA1R1RYQnJXRzB6UmxCNmFqSlhZM1V5V2s1eFNrVnRhRGxLY21sV2RWSkZjbFozYUhWUmJreHRWMU5oWjJkdllrVlhjMEpGWTJrPSJ9LHsiVmFsdWUiOjgwMCwiUGtTY3JpcHQiOiJxUlFuSjZkdjh2bzVYY1VsWktqcktxdU0vbEhJZG9jPSJ9LHsiVmFsdWUiOjc2MjcyLCJQa1NjcmlwdCI6ImRxa1Vndnk2bFFpK0VpUXk5N3VRMmw5MEFVQ21XNGlJckE9PSJ9XSwiTG9ja1RpbWUiOjB9LCJCbG9ja0hhc2giOls2NCw2NywyNDMsMjIyLDI0NCw5LDE4MywyMzQsMjM4LDE3MCwxNjYsMjI2LDEzLDI1NCwzNSw3OCwyMjIsNjksMjQxLDIyNCwxMDMsNjMsMTI5LDIwNCwxNCwwLDAsMCwwLDAsMCwwXX0=",
-			txID:                     common.HashH([]byte{3}).String(),
-			isExistsInPreviousBlocks: false,
-		},
-		// invalid shielding request: duplicated shielding proof in previous blocks
-		{
-			tokenID:                  portalcommonv4.PortalBTCIDStr,
-			incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
-			shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzE2NSwxMzIsNTAsNTEsNzgsMzgsMTk4LDk3LDE0NSwxOTAsMTUzLDUwLDIzNCwxNDgsMTUzLDgsMjQwLDE1NywyLDIwLDg5LDExMCwxNTQsMTM0LDE1NSwyMzcsNDksMjM0LDIwNSwxMywyMzQsNzJdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEzNiw0MywyMjQsMSwxNzYsMTE0LDE0MSwyMTMsMzMsMTE3LDYwLDc2LDY3LDM4LDIwLDQ5LDExOCwxOTUsMjUzLDIzMiwxNTAsODIsMTQ5LDE2NSwxNjgsMTQyLDIwNywyNTUsMTYsNTQsNzIsNTBdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzE4MCwzNiwxOCw4MiwyMTMsMzksMTA5LDE3NSwyMDYsMTI4LDI1MCw2LDIzOCwzNiwxNjIsMjEwLDIzMiwxMzQsMTQ2LDEyNCw5LDU4LDEwNCwxMzUsMTQ4LDEyOSwxODgsMTQyLDIzOSwxOSwxODIsM10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbNjcsMTA1LDExNywyOCw4NywxMTgsMTEsMTQsMTc4LDExNCw5OCwxMTgsMTQ3LDEwNywxMDcsOTUsNDMsMjMxLDUxLDIxLDE2MCw0MCw5NSwxMCwyMjUsMjU1LDE0OSwyMzIsMjIxLDIzNSwyNDgsMzBdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMjQ4LDI0NCwxNzAsNDcsMzEsMTEyLDExOCwyNDEsNDgsMTkyLDMwLDE3NiwxNTEsOCw0OSw2LDQyLDExNCwxNTUsMTIyLDIxMCwyMTEsODUsMjE0LDg0LDQ4LDI0NCwxODAsODUsNjQsMjQsODNdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEyNywxMjQsOTMsMjIxLDI0OCwxNzMsMTk0LDE2LDE1Nyw1MCw2MCwxODAsMjQwLDEzMSw0MywxMTQsMTQ0LDEyOCwyMDEsNDUsMTYxLDIwLDIyMSw2Nyw4MCw5OCwxOCwxMTEsMjUyLDIxNywzMiw1NV0sIklzTGVmdCI6ZmFsc2V9XSwiQlRDVHgiOnsiVmVyc2lvbiI6MSwiVHhJbiI6W3siUHJldmlvdXNPdXRQb2ludCI6eyJIYXNoIjpbNTgsMTMyLDE1MSw4Nyw5OSw5LDI0OCw0OSwxOCw5NSw3OSw3MCwxMzcsNzYsNCwyMTUsMTgyLDUwLDQ5LDk0LDE2LDE4NCwxNzMsMzUsNDAsMTU4LDcwLDMwLDE3MywyMzEsMTc0LDEzNl0sIkluZGV4IjoyfSwiU2lnbmF0dXJlU2NyaXB0IjoiUnpCRUFpQmtiQmM1VThoRjdLelkxWWZaYXgvWDJBRHVDY3FreE1mczFkTmNoMDEybFFJZ1VKTHAvaUlPd0w5R0NnSk5wZE55d0UzajV6Wjg2ZkNINkt5WlkyNjFsNXdCSVFQUElCTlBWa2ppOXZGM3BsVXJKYnFYNUZzVWhVNVBFeXBLOFA1OXFUL0UvQT09IiwiV2l0bmVzcyI6bnVsbCwiU2VxdWVuY2UiOjQyOTQ5NjcyOTV9XSwiVHhPdXQiOlt7IlZhbHVlIjowLCJQa1NjcmlwdCI6ImFreHJVRk14TFRFeVV6Vk1jbk14V0dWUlRHSnhUalI1VTNsTGRHcEJhbVF5WkRkelFsQXlkR3BHYVdwNmJYQTJZWFp5Y210UlEwNUdUWEJyV0cwelJsQjZhakpYWTNVeVdrNXhTa1Z0YURsS2NtbFdkVkpGY2xaM2FIVlJia3h0VjFOaFoyZHZZa1ZYYzBKRlkyaz0ifSx7IlZhbHVlIjo0MDAsIlBrU2NyaXB0IjoicVJRbko2ZHY4dm81WGNVbFpLanJLcXVNL2xISWRvYz0ifSx7IlZhbHVlIjo4MjA3MiwiUGtTY3JpcHQiOiJkcWtVZ3Z5NmxRaStFaVF5OTd1UTJsOTBBVUNtVzRpSXJBPT0ifV0sIkxvY2tUaW1lIjowfSwiQmxvY2tIYXNoIjpbNjQsNjcsMjQzLDIyMiwyNDQsOSwxODMsMjM0LDIzOCwxNzAsMTY2LDIyNiwxMywyNTQsMzUsNzgsMjIyLDY5LDI0MSwyMjQsMTAzLDYzLDEyOSwyMDQsMTQsMCwwLDAsMCwwLDAsMF19",
-			txID:                     common.HashH([]byte{4}).String(),
-			isExistsInPreviousBlocks: true,
-		},
-		// invalid shielding request: duplicated shielding proof in the current block
-		{
-			tokenID:                  portalcommonv4.PortalBTCIDStr,
-			incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
-			shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzE2NSwxMzIsNTAsNTEsNzgsMzgsMTk4LDk3LDE0NSwxOTAsMTUzLDUwLDIzNCwxNDgsMTUzLDgsMjQwLDE1NywyLDIwLDg5LDExMCwxNTQsMTM0LDE1NSwyMzcsNDksMjM0LDIwNSwxMywyMzQsNzJdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEzNiw0MywyMjQsMSwxNzYsMTE0LDE0MSwyMTMsMzMsMTE3LDYwLDc2LDY3LDM4LDIwLDQ5LDExOCwxOTUsMjUzLDIzMiwxNTAsODIsMTQ5LDE2NSwxNjgsMTQyLDIwNywyNTUsMTYsNTQsNzIsNTBdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzE4MCwzNiwxOCw4MiwyMTMsMzksMTA5LDE3NSwyMDYsMTI4LDI1MCw2LDIzOCwzNiwxNjIsMjEwLDIzMiwxMzQsMTQ2LDEyNCw5LDU4LDEwNCwxMzUsMTQ4LDEyOSwxODgsMTQyLDIzOSwxOSwxODIsM10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbNjcsMTA1LDExNywyOCw4NywxMTgsMTEsMTQsMTc4LDExNCw5OCwxMTgsMTQ3LDEwNywxMDcsOTUsNDMsMjMxLDUxLDIxLDE2MCw0MCw5NSwxMCwyMjUsMjU1LDE0OSwyMzIsMjIxLDIzNSwyNDgsMzBdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMjQ4LDI0NCwxNzAsNDcsMzEsMTEyLDExOCwyNDEsNDgsMTkyLDMwLDE3NiwxNTEsOCw0OSw2LDQyLDExNCwxNTUsMTIyLDIxMCwyMTEsODUsMjE0LDg0LDQ4LDI0NCwxODAsODUsNjQsMjQsODNdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEyNywxMjQsOTMsMjIxLDI0OCwxNzMsMTk0LDE2LDE1Nyw1MCw2MCwxODAsMjQwLDEzMSw0MywxMTQsMTQ0LDEyOCwyMDEsNDUsMTYxLDIwLDIyMSw2Nyw4MCw5OCwxOCwxMTEsMjUyLDIxNywzMiw1NV0sIklzTGVmdCI6ZmFsc2V9XSwiQlRDVHgiOnsiVmVyc2lvbiI6MSwiVHhJbiI6W3siUHJldmlvdXNPdXRQb2ludCI6eyJIYXNoIjpbNTgsMTMyLDE1MSw4Nyw5OSw5LDI0OCw0OSwxOCw5NSw3OSw3MCwxMzcsNzYsNCwyMTUsMTgyLDUwLDQ5LDk0LDE2LDE4NCwxNzMsMzUsNDAsMTU4LDcwLDMwLDE3MywyMzEsMTc0LDEzNl0sIkluZGV4IjoyfSwiU2lnbmF0dXJlU2NyaXB0IjoiUnpCRUFpQmtiQmM1VThoRjdLelkxWWZaYXgvWDJBRHVDY3FreE1mczFkTmNoMDEybFFJZ1VKTHAvaUlPd0w5R0NnSk5wZE55d0UzajV6Wjg2ZkNINkt5WlkyNjFsNXdCSVFQUElCTlBWa2ppOXZGM3BsVXJKYnFYNUZzVWhVNVBFeXBLOFA1OXFUL0UvQT09IiwiV2l0bmVzcyI6bnVsbCwiU2VxdWVuY2UiOjQyOTQ5NjcyOTV9XSwiVHhPdXQiOlt7IlZhbHVlIjowLCJQa1NjcmlwdCI6ImFreHJVRk14TFRFeVV6Vk1jbk14V0dWUlRHSnhUalI1VTNsTGRHcEJhbVF5WkRkelFsQXlkR3BHYVdwNmJYQTJZWFp5Y210UlEwNUdUWEJyV0cwelJsQjZhakpYWTNVeVdrNXhTa1Z0YURsS2NtbFdkVkpGY2xaM2FIVlJia3h0VjFOaFoyZHZZa1ZYYzBKRlkyaz0ifSx7IlZhbHVlIjo0MDAsIlBrU2NyaXB0IjoicVJRbko2ZHY4dm81WGNVbFpLanJLcXVNL2xISWRvYz0ifSx7IlZhbHVlIjo4MjA3MiwiUGtTY3JpcHQiOiJkcWtVZ3Z5NmxRaStFaVF5OTd1UTJsOTBBVUNtVzRpSXJBPT0ifV0sIkxvY2tUaW1lIjowfSwiQmxvY2tIYXNoIjpbNjQsNjcsMjQzLDIyMiwyNDQsOSwxODMsMjM0LDIzOCwxNzAsMTY2LDIyNiwxMywyNTQsMzUsNzgsMjIyLDY5LDI0MSwyMjQsMTAzLDYzLDEyOSwyMDQsMTQsMCwwLDAsMCwwLDAsMF19",
-			txID:                     common.HashH([]byte{5}).String(),
-			isExistsInPreviousBlocks: false,
-		},
+		//// valid shielding request: different user incognito address
+		//{
+		//	tokenID:                  portalcommonv4.PortalBTCIDStr,
+		//	incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
+		//	shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzIwOCw0Niw2OCwxOSw1NSwyMDksMjM1LDIyMCw0OSwxMTEsNjQsMjEsODEsMTA5LDI0NiwyMTAsMTUyLDEzMywxMDksNjgsNjMsMTU5LDI0MSwxNjUsMTk4LDE2LDUsMjYsMjA0LDIzNCw3NCwxODhdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMTM2LDQzLDIyNCwxLDE3NiwxMTQsMTQxLDIxMywzMywxMTcsNjAsNzYsNjcsMzgsMjAsNDksMTE4LDE5NSwyNTMsMjMyLDE1MCw4MiwxNDksMTY1LDE2OCwxNDIsMjA3LDI1NSwxNiw1NCw3Miw1MF0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTgwLDM2LDE4LDgyLDIxMywzOSwxMDksMTc1LDIwNiwxMjgsMjUwLDYsMjM4LDM2LDE2MiwyMTAsMjMyLDEzNCwxNDYsMTI0LDksNTgsMTA0LDEzNSwxNDgsMTI5LDE4OCwxNDIsMjM5LDE5LDE4MiwzXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOls2NywxMDUsMTE3LDI4LDg3LDExOCwxMSwxNCwxNzgsMTE0LDk4LDExOCwxNDcsMTA3LDEwNyw5NSw0MywyMzEsNTEsMjEsMTYwLDQwLDk1LDEwLDIyNSwyNTUsMTQ5LDIzMiwyMjEsMjM1LDI0OCwzMF0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOlsyNDgsMjQ0LDE3MCw0NywzMSwxMTIsMTE4LDI0MSw0OCwxOTIsMzAsMTc2LDE1MSw4LDQ5LDYsNDIsMTE0LDE1NSwxMjIsMjEwLDIxMSw4NSwyMTQsODQsNDgsMjQ0LDE4MCw4NSw2NCwyNCw4M10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTI3LDEyNCw5MywyMjEsMjQ4LDE3MywxOTQsMTYsMTU3LDUwLDYwLDE4MCwyNDAsMTMxLDQzLDExNCwxNDQsMTI4LDIwMSw0NSwxNjEsMjAsMjIxLDY3LDgwLDk4LDE4LDExMSwyNTIsMjE3LDMyLDU1XSwiSXNMZWZ0IjpmYWxzZX1dLCJCVENUeCI6eyJWZXJzaW9uIjoxLCJUeEluIjpbeyJQcmV2aW91c091dFBvaW50Ijp7Ikhhc2giOlsyMDgsNDYsNjgsMTksNTUsMjA5LDIzNSwyMjAsNDksMTExLDY0LDIxLDgxLDEwOSwyNDYsMjEwLDE1MiwxMzMsMTA5LDY4LDYzLDE1OSwyNDEsMTY1LDE5OCwxNiw1LDI2LDIwNCwyMzQsNzQsMTg4XSwiSW5kZXgiOjJ9LCJTaWduYXR1cmVTY3JpcHQiOiJTREJGQWlFQXhzOWRTMlE4YWVrMHkvRjJmOUdkejB5R0VFREVzWjNYQXpKZVFYamRiK1VDSUNlZmwwREZWV0tPZUk2Rm9FQzRsS01jWE5hRnFlL0o4ZFpTQnZNUnQyRkRBU0VEenlBVFQxWkk0dmJ4ZDZaVkt5VzZsK1JiRklWT1R4TXFTdkQrZmFrL3hQdz0iLCJXaXRuZXNzIjpudWxsLCJTZXF1ZW5jZSI6NDI5NDk2NzI5NX1dLCJUeE91dCI6W3siVmFsdWUiOjAsIlBrU2NyaXB0IjoiYWt4clVGTXhMVEV5VXpWTWNuTXhXR1ZSVEdKeFRqUjVVM2xMZEdwQmFtUXlaRGR6UWxBeWRHcEdhV3A2YlhBMllYWnljbXRSUTA1R1RYQnJXRzB6UmxCNmFqSlhZM1V5V2s1eFNrVnRhRGxLY21sV2RWSkZjbFozYUhWUmJreHRWMU5oWjJkdllrVlhjMEpGWTJrPSJ9LHsiVmFsdWUiOjgwMCwiUGtTY3JpcHQiOiJxUlFuSjZkdjh2bzVYY1VsWktqcktxdU0vbEhJZG9jPSJ9LHsiVmFsdWUiOjc2MjcyLCJQa1NjcmlwdCI6ImRxa1Vndnk2bFFpK0VpUXk5N3VRMmw5MEFVQ21XNGlJckE9PSJ9XSwiTG9ja1RpbWUiOjB9LCJCbG9ja0hhc2giOls2NCw2NywyNDMsMjIyLDI0NCw5LDE4MywyMzQsMjM4LDE3MCwxNjYsMjI2LDEzLDI1NCwzNSw3OCwyMjIsNjksMjQxLDIyNCwxMDMsNjMsMTI5LDIwNCwxNCwwLDAsMCwwLDAsMCwwXX0=",
+		//	txID:                     common.HashH([]byte{2}).String(),
+		//	isExistsInPreviousBlocks: false,
+		//},
+		//// valid shielding request: the same user incognito address
+		//{
+		//	tokenID:                  portalcommonv4.PortalBTCIDStr,
+		//	incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
+		//	shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzIwOCw0Niw2OCwxOSw1NSwyMDksMjM1LDIyMCw0OSwxMTEsNjQsMjEsODEsMTA5LDI0NiwyMTAsMTUyLDEzMywxMDksNjgsNjMsMTU5LDI0MSwxNjUsMTk4LDE2LDUsMjYsMjA0LDIzNCw3NCwxODhdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMTM2LDQzLDIyNCwxLDE3NiwxMTQsMTQxLDIxMywzMywxMTcsNjAsNzYsNjcsMzgsMjAsNDksMTE4LDE5NSwyNTMsMjMyLDE1MCw4MiwxNDksMTY1LDE2OCwxNDIsMjA3LDI1NSwxNiw1NCw3Miw1MF0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTgwLDM2LDE4LDgyLDIxMywzOSwxMDksMTc1LDIwNiwxMjgsMjUwLDYsMjM4LDM2LDE2MiwyMTAsMjMyLDEzNCwxNDYsMTI0LDksNTgsMTA0LDEzNSwxNDgsMTI5LDE4OCwxNDIsMjM5LDE5LDE4MiwzXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOls2NywxMDUsMTE3LDI4LDg3LDExOCwxMSwxNCwxNzgsMTE0LDk4LDExOCwxNDcsMTA3LDEwNyw5NSw0MywyMzEsNTEsMjEsMTYwLDQwLDk1LDEwLDIyNSwyNTUsMTQ5LDIzMiwyMjEsMjM1LDI0OCwzMF0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOlsyNDgsMjQ0LDE3MCw0NywzMSwxMTIsMTE4LDI0MSw0OCwxOTIsMzAsMTc2LDE1MSw4LDQ5LDYsNDIsMTE0LDE1NSwxMjIsMjEwLDIxMSw4NSwyMTQsODQsNDgsMjQ0LDE4MCw4NSw2NCwyNCw4M10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTI3LDEyNCw5MywyMjEsMjQ4LDE3MywxOTQsMTYsMTU3LDUwLDYwLDE4MCwyNDAsMTMxLDQzLDExNCwxNDQsMTI4LDIwMSw0NSwxNjEsMjAsMjIxLDY3LDgwLDk4LDE4LDExMSwyNTIsMjE3LDMyLDU1XSwiSXNMZWZ0IjpmYWxzZX1dLCJCVENUeCI6eyJWZXJzaW9uIjoxLCJUeEluIjpbeyJQcmV2aW91c091dFBvaW50Ijp7Ikhhc2giOlsyMDgsNDYsNjgsMTksNTUsMjA5LDIzNSwyMjAsNDksMTExLDY0LDIxLDgxLDEwOSwyNDYsMjEwLDE1MiwxMzMsMTA5LDY4LDYzLDE1OSwyNDEsMTY1LDE5OCwxNiw1LDI2LDIwNCwyMzQsNzQsMTg4XSwiSW5kZXgiOjJ9LCJTaWduYXR1cmVTY3JpcHQiOiJTREJGQWlFQXhzOWRTMlE4YWVrMHkvRjJmOUdkejB5R0VFREVzWjNYQXpKZVFYamRiK1VDSUNlZmwwREZWV0tPZUk2Rm9FQzRsS01jWE5hRnFlL0o4ZFpTQnZNUnQyRkRBU0VEenlBVFQxWkk0dmJ4ZDZaVkt5VzZsK1JiRklWT1R4TXFTdkQrZmFrL3hQdz0iLCJXaXRuZXNzIjpudWxsLCJTZXF1ZW5jZSI6NDI5NDk2NzI5NX1dLCJUeE91dCI6W3siVmFsdWUiOjAsIlBrU2NyaXB0IjoiYWt4clVGTXhMVEV5VXpWTWNuTXhXR1ZSVEdKeFRqUjVVM2xMZEdwQmFtUXlaRGR6UWxBeWRHcEdhV3A2YlhBMllYWnljbXRSUTA1R1RYQnJXRzB6UmxCNmFqSlhZM1V5V2s1eFNrVnRhRGxLY21sV2RWSkZjbFozYUhWUmJreHRWMU5oWjJkdllrVlhjMEpGWTJrPSJ9LHsiVmFsdWUiOjgwMCwiUGtTY3JpcHQiOiJxUlFuSjZkdjh2bzVYY1VsWktqcktxdU0vbEhJZG9jPSJ9LHsiVmFsdWUiOjc2MjcyLCJQa1NjcmlwdCI6ImRxa1Vndnk2bFFpK0VpUXk5N3VRMmw5MEFVQ21XNGlJckE9PSJ9XSwiTG9ja1RpbWUiOjB9LCJCbG9ja0hhc2giOls2NCw2NywyNDMsMjIyLDI0NCw5LDE4MywyMzQsMjM4LDE3MCwxNjYsMjI2LDEzLDI1NCwzNSw3OCwyMjIsNjksMjQxLDIyNCwxMDMsNjMsMTI5LDIwNCwxNCwwLDAsMCwwLDAsMCwwXX0=",
+		//	txID:                     common.HashH([]byte{3}).String(),
+		//	isExistsInPreviousBlocks: false,
+		//},
+		//// invalid shielding request: duplicated shielding proof in previous blocks
+		//{
+		//	tokenID:                  portalcommonv4.PortalBTCIDStr,
+		//	incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
+		//	shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzE2NSwxMzIsNTAsNTEsNzgsMzgsMTk4LDk3LDE0NSwxOTAsMTUzLDUwLDIzNCwxNDgsMTUzLDgsMjQwLDE1NywyLDIwLDg5LDExMCwxNTQsMTM0LDE1NSwyMzcsNDksMjM0LDIwNSwxMywyMzQsNzJdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEzNiw0MywyMjQsMSwxNzYsMTE0LDE0MSwyMTMsMzMsMTE3LDYwLDc2LDY3LDM4LDIwLDQ5LDExOCwxOTUsMjUzLDIzMiwxNTAsODIsMTQ5LDE2NSwxNjgsMTQyLDIwNywyNTUsMTYsNTQsNzIsNTBdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzE4MCwzNiwxOCw4MiwyMTMsMzksMTA5LDE3NSwyMDYsMTI4LDI1MCw2LDIzOCwzNiwxNjIsMjEwLDIzMiwxMzQsMTQ2LDEyNCw5LDU4LDEwNCwxMzUsMTQ4LDEyOSwxODgsMTQyLDIzOSwxOSwxODIsM10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbNjcsMTA1LDExNywyOCw4NywxMTgsMTEsMTQsMTc4LDExNCw5OCwxMTgsMTQ3LDEwNywxMDcsOTUsNDMsMjMxLDUxLDIxLDE2MCw0MCw5NSwxMCwyMjUsMjU1LDE0OSwyMzIsMjIxLDIzNSwyNDgsMzBdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMjQ4LDI0NCwxNzAsNDcsMzEsMTEyLDExOCwyNDEsNDgsMTkyLDMwLDE3NiwxNTEsOCw0OSw2LDQyLDExNCwxNTUsMTIyLDIxMCwyMTEsODUsMjE0LDg0LDQ4LDI0NCwxODAsODUsNjQsMjQsODNdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEyNywxMjQsOTMsMjIxLDI0OCwxNzMsMTk0LDE2LDE1Nyw1MCw2MCwxODAsMjQwLDEzMSw0MywxMTQsMTQ0LDEyOCwyMDEsNDUsMTYxLDIwLDIyMSw2Nyw4MCw5OCwxOCwxMTEsMjUyLDIxNywzMiw1NV0sIklzTGVmdCI6ZmFsc2V9XSwiQlRDVHgiOnsiVmVyc2lvbiI6MSwiVHhJbiI6W3siUHJldmlvdXNPdXRQb2ludCI6eyJIYXNoIjpbNTgsMTMyLDE1MSw4Nyw5OSw5LDI0OCw0OSwxOCw5NSw3OSw3MCwxMzcsNzYsNCwyMTUsMTgyLDUwLDQ5LDk0LDE2LDE4NCwxNzMsMzUsNDAsMTU4LDcwLDMwLDE3MywyMzEsMTc0LDEzNl0sIkluZGV4IjoyfSwiU2lnbmF0dXJlU2NyaXB0IjoiUnpCRUFpQmtiQmM1VThoRjdLelkxWWZaYXgvWDJBRHVDY3FreE1mczFkTmNoMDEybFFJZ1VKTHAvaUlPd0w5R0NnSk5wZE55d0UzajV6Wjg2ZkNINkt5WlkyNjFsNXdCSVFQUElCTlBWa2ppOXZGM3BsVXJKYnFYNUZzVWhVNVBFeXBLOFA1OXFUL0UvQT09IiwiV2l0bmVzcyI6bnVsbCwiU2VxdWVuY2UiOjQyOTQ5NjcyOTV9XSwiVHhPdXQiOlt7IlZhbHVlIjowLCJQa1NjcmlwdCI6ImFreHJVRk14TFRFeVV6Vk1jbk14V0dWUlRHSnhUalI1VTNsTGRHcEJhbVF5WkRkelFsQXlkR3BHYVdwNmJYQTJZWFp5Y210UlEwNUdUWEJyV0cwelJsQjZhakpYWTNVeVdrNXhTa1Z0YURsS2NtbFdkVkpGY2xaM2FIVlJia3h0VjFOaFoyZHZZa1ZYYzBKRlkyaz0ifSx7IlZhbHVlIjo0MDAsIlBrU2NyaXB0IjoicVJRbko2ZHY4dm81WGNVbFpLanJLcXVNL2xISWRvYz0ifSx7IlZhbHVlIjo4MjA3MiwiUGtTY3JpcHQiOiJkcWtVZ3Z5NmxRaStFaVF5OTd1UTJsOTBBVUNtVzRpSXJBPT0ifV0sIkxvY2tUaW1lIjowfSwiQmxvY2tIYXNoIjpbNjQsNjcsMjQzLDIyMiwyNDQsOSwxODMsMjM0LDIzOCwxNzAsMTY2LDIyNiwxMywyNTQsMzUsNzgsMjIyLDY5LDI0MSwyMjQsMTAzLDYzLDEyOSwyMDQsMTQsMCwwLDAsMCwwLDAsMF19",
+		//	txID:                     common.HashH([]byte{4}).String(),
+		//	isExistsInPreviousBlocks: true,
+		//},
+		//// invalid shielding request: duplicated shielding proof in the current block
+		//{
+		//	tokenID:                  portalcommonv4.PortalBTCIDStr,
+		//	incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
+		//	shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzE2NSwxMzIsNTAsNTEsNzgsMzgsMTk4LDk3LDE0NSwxOTAsMTUzLDUwLDIzNCwxNDgsMTUzLDgsMjQwLDE1NywyLDIwLDg5LDExMCwxNTQsMTM0LDE1NSwyMzcsNDksMjM0LDIwNSwxMywyMzQsNzJdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEzNiw0MywyMjQsMSwxNzYsMTE0LDE0MSwyMTMsMzMsMTE3LDYwLDc2LDY3LDM4LDIwLDQ5LDExOCwxOTUsMjUzLDIzMiwxNTAsODIsMTQ5LDE2NSwxNjgsMTQyLDIwNywyNTUsMTYsNTQsNzIsNTBdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzE4MCwzNiwxOCw4MiwyMTMsMzksMTA5LDE3NSwyMDYsMTI4LDI1MCw2LDIzOCwzNiwxNjIsMjEwLDIzMiwxMzQsMTQ2LDEyNCw5LDU4LDEwNCwxMzUsMTQ4LDEyOSwxODgsMTQyLDIzOSwxOSwxODIsM10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbNjcsMTA1LDExNywyOCw4NywxMTgsMTEsMTQsMTc4LDExNCw5OCwxMTgsMTQ3LDEwNywxMDcsOTUsNDMsMjMxLDUxLDIxLDE2MCw0MCw5NSwxMCwyMjUsMjU1LDE0OSwyMzIsMjIxLDIzNSwyNDgsMzBdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMjQ4LDI0NCwxNzAsNDcsMzEsMTEyLDExOCwyNDEsNDgsMTkyLDMwLDE3NiwxNTEsOCw0OSw2LDQyLDExNCwxNTUsMTIyLDIxMCwyMTEsODUsMjE0LDg0LDQ4LDI0NCwxODAsODUsNjQsMjQsODNdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEyNywxMjQsOTMsMjIxLDI0OCwxNzMsMTk0LDE2LDE1Nyw1MCw2MCwxODAsMjQwLDEzMSw0MywxMTQsMTQ0LDEyOCwyMDEsNDUsMTYxLDIwLDIyMSw2Nyw4MCw5OCwxOCwxMTEsMjUyLDIxNywzMiw1NV0sIklzTGVmdCI6ZmFsc2V9XSwiQlRDVHgiOnsiVmVyc2lvbiI6MSwiVHhJbiI6W3siUHJldmlvdXNPdXRQb2ludCI6eyJIYXNoIjpbNTgsMTMyLDE1MSw4Nyw5OSw5LDI0OCw0OSwxOCw5NSw3OSw3MCwxMzcsNzYsNCwyMTUsMTgyLDUwLDQ5LDk0LDE2LDE4NCwxNzMsMzUsNDAsMTU4LDcwLDMwLDE3MywyMzEsMTc0LDEzNl0sIkluZGV4IjoyfSwiU2lnbmF0dXJlU2NyaXB0IjoiUnpCRUFpQmtiQmM1VThoRjdLelkxWWZaYXgvWDJBRHVDY3FreE1mczFkTmNoMDEybFFJZ1VKTHAvaUlPd0w5R0NnSk5wZE55d0UzajV6Wjg2ZkNINkt5WlkyNjFsNXdCSVFQUElCTlBWa2ppOXZGM3BsVXJKYnFYNUZzVWhVNVBFeXBLOFA1OXFUL0UvQT09IiwiV2l0bmVzcyI6bnVsbCwiU2VxdWVuY2UiOjQyOTQ5NjcyOTV9XSwiVHhPdXQiOlt7IlZhbHVlIjowLCJQa1NjcmlwdCI6ImFreHJVRk14TFRFeVV6Vk1jbk14V0dWUlRHSnhUalI1VTNsTGRHcEJhbVF5WkRkelFsQXlkR3BHYVdwNmJYQTJZWFp5Y210UlEwNUdUWEJyV0cwelJsQjZhakpYWTNVeVdrNXhTa1Z0YURsS2NtbFdkVkpGY2xaM2FIVlJia3h0VjFOaFoyZHZZa1ZYYzBKRlkyaz0ifSx7IlZhbHVlIjo0MDAsIlBrU2NyaXB0IjoicVJRbko2ZHY4dm81WGNVbFpLanJLcXVNL2xISWRvYz0ifSx7IlZhbHVlIjo4MjA3MiwiUGtTY3JpcHQiOiJkcWtVZ3Z5NmxRaStFaVF5OTd1UTJsOTBBVUNtVzRpSXJBPT0ifV0sIkxvY2tUaW1lIjowfSwiQmxvY2tIYXNoIjpbNjQsNjcsMjQzLDIyMiwyNDQsOSwxODMsMjM0LDIzOCwxNzAsMTY2LDIyNiwxMywyNTQsMzUsNzgsMjIyLDY5LDI0MSwyMjQsMTAzLDYzLDEyOSwyMDQsMTQsMCwwLDAsMCwwLDAsMF19",
+		//	txID:                     common.HashH([]byte{5}).String(),
+		//	isExistsInPreviousBlocks: false,
+		//},
 	}
 
-	walletAddress := "2MvpFqydTR43TT4emMD84Mzhgd8F6dCow1X"
+
+
+	//walletAddress := "2MvpFqydTR43TT4emMD84Mzhgd8F6dCow1X"
 
 	// build expected results
 	var txHash string
 	var outputIdx uint32
 	var outputAmount uint64
+	var otm string
 
 	//todo: update
-	txHash = "bc4aeacc1a0510c6a5f19f3f446d8598d2f66d5115406f31dcebd13713442ed0"
-	outputIdx = 1
-	outputAmount = 400
+	txHash = "8af8c622c1d8956b8f69430dde50b618cf4d71ca8690a6a893f0f9ffe2cb6ca3"
+	outputIdx = 0
+	outputAmount = 10*1e8
+	_, otm, _ = s.portalParams.PortalTokens[portalcommonv4.PortalBTCIDStr].GenerateOTMultisigAddress(
+		s.portalParams.MasterPubKeys[portalcommonv4.PortalBTCIDStr],
+		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_1)
 
-	key1, value1 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, txHash, outputIdx, outputAmount, USER_INC_ADDRESS_1)
+	key1, value1 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, otm, txHash, outputIdx, outputAmount, PORTALV4_USER_INC_ADDRESS_1)
 
-	txHash = "48ea0dcdea31ed9b869a6e5914029df0089994ea3299be9161c6264e333284a5"
-	outputIdx = 1
-	outputAmount = 800
-
-	key2, value2 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, txHash, outputIdx, outputAmount, USER_INC_ADDRESS_2)
-
-	txHash = "48ea0dcdea31ed9b869a6e5914029df0089994ea3299be9161c6264e333284a5"
-	outputIdx = 1
-	outputAmount = 800
-
-	key3, value3 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, txHash, outputIdx, outputAmount, USER_INC_ADDRESS_2)
+	//txHash = "48ea0dcdea31ed9b869a6e5914029df0089994ea3299be9161c6264e333284a5"
+	//outputIdx = 1
+	//outputAmount = 800
+	//
+	//key2, value2 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, txHash, outputIdx, outputAmount, USER_INC_ADDRESS_2)
+	//
+	//txHash = "48ea0dcdea31ed9b869a6e5914029df0089994ea3299be9161c6264e333284a5"
+	//outputIdx = 1
+	//outputAmount = 800
+	//
+	//key3, value3 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, txHash, outputIdx, outputAmount, USER_INC_ADDRESS_2)
 
 	expectedRes := &ExpectedResultShieldingRequest{
 		utxos: map[string]map[string]*statedb.UTXO{
 			portalcommonv4.PortalBTCIDStr: {
 				key1: value1,
-				key2: value2,
-				key3: value3,
+				//key2: value2,
+				//key3: value3,
 			},
 		},
-		numBeaconInsts: 5,
+		numBeaconInsts: 1,
 		statusInsts: []string{
 			portalcommonv4.PortalV4RequestAcceptedChainStatus,
-			portalcommonv4.PortalV4RequestAcceptedChainStatus,
-			portalcommonv4.PortalV4RequestAcceptedChainStatus,
-			portalcommonv4.PortalV4RequestRejectedChainStatus,
-			portalcommonv4.PortalV4RequestRejectedChainStatus,
+			//portalcommonv4.PortalV4RequestAcceptedChainStatus,
+			//portalcommonv4.PortalV4RequestAcceptedChainStatus,
+			//portalcommonv4.PortalV4RequestRejectedChainStatus,
+			//portalcommonv4.PortalV4RequestRejectedChainStatus,
 		},
 	}
 
@@ -448,36 +462,37 @@ func setGenesisBlockToChainParams(networkName string, genesisBlkHeight int) (*ch
 func (s *PortalTestSuiteV4) TestShieldingRequest() {
 	fmt.Println("Running TestShieldingRequest - beacon height 1003 ...")
 
-	networkName := "test3"
+	//networkName := "test3"
 	genesisBlockHeight := 1940329
-	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
+	//chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
+	chainParams := &chaincfg.RegressionNetParams
 	dbName := "btc-blocks-test"
 	btcChain, err := btcrelaying.GetChainV2(dbName, chainParams, int32(genesisBlockHeight))
 	defer os.RemoveAll(dbName)
 
-	if err != nil {
-		s.FailNow(fmt.Sprintf("Could not get chain instance with err: %v", err), nil)
-		return
-	}
-
-	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+10; i++ {
-		blk, err := buildBTCBlockFromCypher(networkName, i)
-		if err != nil {
-			s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)
-			return
-		}
-		isMainChain, isOrphan, err := btcChain.ProcessBlockV2(blk, 0)
-		if err != nil {
-			s.FailNow(fmt.Sprintf("ProcessBlock fail on block %v: %v\n", i, err))
-			return
-		}
-		if isOrphan {
-			s.FailNow(fmt.Sprintf("ProcessBlock incorrectly returned block %v is an orphan\n", i))
-			return
-		}
-		fmt.Printf("Block %s (%d) is on main chain: %t\n", blk.Hash(), blk.Height(), isMainChain)
-		time.Sleep(500 * time.Millisecond)
-	}
+	//if err != nil {
+	//	s.FailNow(fmt.Sprintf("Could not get chain instance with err: %v", err), nil)
+	//	return
+	//}
+	//
+	//for i := genesisBlockHeight + 1; i <= genesisBlockHeight+10; i++ {
+	//	blk, err := buildBTCBlockFromCypher(networkName, i)
+	//	if err != nil {
+	//		s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)
+	//		return
+	//	}
+	//	isMainChain, isOrphan, err := btcChain.ProcessBlockV2(blk, 0)
+	//	if err != nil {
+	//		s.FailNow(fmt.Sprintf("ProcessBlock fail on block %v: %v\n", i, err))
+	//		return
+	//	}
+	//	if isOrphan {
+	//		s.FailNow(fmt.Sprintf("ProcessBlock incorrectly returned block %v is an orphan\n", i))
+	//		return
+	//	}
+	//	fmt.Printf("Block %s (%d) is on main chain: %t\n", blk.Hash(), blk.Height(), isMainChain)
+	//	time.Sleep(500 * time.Millisecond)
+	//}
 
 	bc := new(mocks.ChainRetriever)
 	bc.On("GetBTCHeaderChain").Return(btcChain)
@@ -493,7 +508,7 @@ func (s *PortalTestSuiteV4) TestShieldingRequest() {
 	s.SetupTestShieldingRequest()
 
 	// build test cases
-	testcases, expectedResult := buildTestCaseAndExpectedResultShieldingRequest()
+	testcases, expectedResult := s.buildTestCaseAndExpectedResultShieldingRequest()
 
 	// build actions from testcases
 	instsForProducer := buildShieldingRequestActionsFromTcs(testcases, shardID, shardHeight)

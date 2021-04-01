@@ -3,7 +3,6 @@ package portaltokens
 import (
 	"encoding/base64"
 	"encoding/json"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -25,7 +24,7 @@ type PortalTokenProcessor interface {
 
 	CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, networkFee uint64, bc metadata.ChainRetriever) (string, string, error)
 	PartSignOnRawExternalTx(seedKey []byte, masterPubKeys [][]byte, numSigsRequired int, rawTxBytes []byte, inputs []*statedb.UTXO) ([][]byte, string, error)
-	GenerateOTMultisigAddress(chainParams *chaincfg.Params, masterPubKeys [][]byte, numSigsRequired int, publicSeed string) ([]byte, string, error)
+	GenerateOTMultisigAddress(masterPubKeys [][]byte, numSigsRequired int, publicSeed string) ([]byte, string, error)
 }
 
 // set MinTokenAmount to avoid attacking with amount is less than smallest unit of cryptocurrency

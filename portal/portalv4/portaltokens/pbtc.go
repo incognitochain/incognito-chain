@@ -266,7 +266,7 @@ func (p PortalBTCTokenProcessor) generateOTPrivateKey(chainParams *chaincfg.Para
 
 // Generate Bech32 P2WSH multisig address for each Incognito address
 // Return redeem script, OTMultisigAddress
-func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(chainParams *chaincfg.Params, masterPubKeys [][]byte, numSigsRequired int, publicSeed string) ([]byte, string, error) {
+func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byte, numSigsRequired int, publicSeed string) ([]byte, string, error) {
 	if len(masterPubKeys) < numSigsRequired || numSigsRequired < 0 {
 		return []byte{}, "", fmt.Errorf("Invalid signature requirment")
 	}
@@ -279,7 +279,7 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(chainParams *chaincfg
 		chainCode := chainhash.HashB([]byte(publicSeed))
 		for idx, masterPubKey := range masterPubKeys {
 			// generate BTC child public key for this Incognito address
-			extendedBTCPublicKey := hdkeychain.NewExtendedKey(chainParams.HDPublicKeyID[:], masterPubKey, chainCode, []byte{}, 0, 0, false)
+			extendedBTCPublicKey := hdkeychain.NewExtendedKey(p.ChainParam.HDPublicKeyID[:], masterPubKey, chainCode, []byte{}, 0, 0, false)
 			extendedBTCChildPubKey, _ := extendedBTCPublicKey.Child(0)
 			childPubKey, err := extendedBTCChildPubKey.ECPubKey()
 			if err != nil {
@@ -308,7 +308,7 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(chainParams *chaincfg
 	}
 
 	scriptHash := sha256.Sum256(redeemScript)
-	multi, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], chainParams)
+	multi, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], p.ChainParam)
 	if err != nil {
 		return []byte{}, "", err
 	}
@@ -416,7 +416,7 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, masterP
 			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when generate btc private key from seed: %v", err)
 		}
 		btcPrivateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), btcPrivateKeyBytes)
-		multiSigScript, _, err := p.GenerateOTMultisigAddress(p.ChainParam, masterPubKeys, numSigsRequired, inputs[i].GetPublicSeed())
+		multiSigScript, _, err := p.GenerateOTMultisigAddress(masterPubKeys, numSigsRequired, inputs[i].GetPublicSeed())
 		sig, err := txscript.RawTxInWitnessSignature(msgTx, txscript.NewTxSigHashes(msgTx), i, int64(inputs[i].GetOutputAmount()), multiSigScript, txscript.SigHashAll, btcPrivateKey)
 		if err != nil {
 			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when signing on raw btc tx: %v", err)
