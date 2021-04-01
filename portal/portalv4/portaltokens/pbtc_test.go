@@ -1,6 +1,7 @@
 package portaltokens
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"os"
@@ -15,7 +16,6 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/mocks"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -388,9 +388,9 @@ func TestMultiSigAddressDerivation(t *testing.T) {
 }
 
 func TestGenerateOTMultisigAddress(t *testing.T) {
-	p := &PortalBTCTokenProcessor{}
-	bc := new(mocks.ChainRetriever)
-	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
+	p := &PortalBTCTokenProcessor{
+		ChainParam: &chaincfg.TestNet3Params,
+	}
 
 	seeds := [][]byte{
 		[]byte{0xf1, 0x29, 0xb7, 0xa, 0x46, 0xac, 0x35, 0xc4, 0x17, 0x94, 0x10, 0xf3, 0x52, 0xd7, 0xf5, 0x5c, 0xc5, 0x47, 0xe1, 0xa9, 0x26, 0x1f, 0xe8, 0xed, 0xe7, 0x72, 0x34, 0x4, 0x71, 0xeb, 0xc6, 0x9},
@@ -403,11 +403,12 @@ func TestGenerateOTMultisigAddress(t *testing.T) {
 	for _, seed := range seeds {
 		masterPubKeys = append(masterPubKeys, p.generatePublicKeyFromSeed(seed))
 	}
-	incAddress := "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
-	_, address, err := p.GenerateOTMultisigAddress(bc.GetBTCChainParams(), masterPubKeys, 3, incAddress)
+	incAddress := ""
+	script, address, err := p.GenerateOTMultisigAddress(masterPubKeys, 3, incAddress)
 	if err != nil {
 		t.Logf("Error: %v\n", err)
 		t.FailNow()
 	}
 	t.Logf("P2WSH Bech32 address: %v\n", address)
+	t.Logf("P2WSH Bech32 hex encode: %v\n", hex.EncodeToString(script))
 }
