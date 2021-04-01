@@ -53,6 +53,18 @@ type BLSBFT_V3 struct {
 	voteHistory          map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 }
 
+func (e BLSBFT_V3) GetVoteHistory() map[uint64]types.BlockInterface {
+	return e.voteHistory
+}
+
+func (e BLSBFT_V3) GetReceiveBlockByHash() map[string]*ProposeBlockInfo {
+	return e.receiveBlockByHash
+}
+
+func (e BLSBFT_V3) GetReceiveBlockByHeight() map[uint64][]*ProposeBlockInfo {
+	return e.receiveBlockByHeight
+}
+
 func (e BLSBFT_V3) GetChainKey() string {
 	return e.ChainKey
 }

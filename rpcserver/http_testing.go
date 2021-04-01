@@ -3,7 +3,10 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus_v2"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
 	"io/ioutil"
+	"reflect"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -38,6 +41,29 @@ type CountResult struct {
 func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	httpServer.config.TxMemPool.SendTransactionToBlockGen()
 	return nil, nil
+}
+
+func (httpServer *HttpServer) handleGetConsensusInfoV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	engine, ok := httpServer.config.ConsensusEngine.(*consensus_v2.Engine)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("consensus engine not found"))
+	}
+	arrayParams := common.InterfaceSlice(params)
+	chainID := int(arrayParams[0].(float64))
+	bftactor, ok := engine.BFTProcess[chainID]
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("bft process of chain id not found"))
+	}
+	bftactorV3, ok := bftactor.(*blsbftv3.BLSBFT_V3)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("expect type bftactorv3.BLSBFT_V3 but get "+reflect.TypeOf(bftactor).String()))
+	}
+	m := map[string]interface{}{
+		"VoteHistory":          bftactorV3.GetVoteHistory(),
+		"ReceiveBlockByHash":   bftactorV3.GetReceiveBlockByHash(),
+		"ReceiveBlockByHeight": bftactorV3.GetReceiveBlockByHeight(),
+	}
+	return m, nil
 }
 
 func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

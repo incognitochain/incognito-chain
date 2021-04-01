@@ -91,6 +91,7 @@ var HttpHandler = map[string]httpHandler{
 	getAndSendTxsFromFile:      (*HttpServer).handleGetAndSendTxsFromFile,
 	getAndSendTxsFromFileV2:    (*HttpServer).handleGetAndSendTxsFromFileV2,
 	unlockMempool:              (*HttpServer).handleUnlockMempool,
+	handleGetConsensusInfoV3:   (*HttpServer).handleGetConsensusInfoV3,
 	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
 	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
 	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
