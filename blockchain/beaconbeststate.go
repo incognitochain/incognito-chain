@@ -624,7 +624,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	if beaconBestState.BeaconHeight != 1 &&
 		beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION &&
-		params.EnableSlashingStakingFlowV2 >= beaconBestState.BeaconHeight {
+		beaconBestState.BeaconHeight >= params.EnableSlashingStakingFlowV2 {
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
 	} else {
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
@@ -656,7 +656,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	if beaconBestState.BeaconHeight != 1 &&
 		beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION &&
-		params.EnableSlashingStakingFlowV2 >= beaconBestState.BeaconHeight {
+		beaconBestState.BeaconHeight >= params.EnableSlashingStakingFlowV2 {
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
 	} else {
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
