@@ -368,9 +368,6 @@ func buildMetaInfo() {
 	})
 
 	listSNoIn := []int{
-		WithDrawRewardResponseMeta,
-		PDETradeResponseMeta,
-		PDEContributionResponseMeta,
 		PDETradeResponseMeta,
 		PDEWithdrawalResponseMeta,
 		PDEContributionResponseMeta,
