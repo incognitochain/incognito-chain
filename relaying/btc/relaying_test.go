@@ -271,31 +271,19 @@ func TestCreateAndSendBTCTxToCypher(t *testing.T) {
 	bc := getBlockCypherAPI("test3")
 
 	inAddr := "msTYtu7nsMiwFUtNgCSQBk26JeBf9q3GTM"
-	outAddr := "2NGFTTKNj59NGmjQpajsEXGxwf9SP8gvJiv"
-	amount := int(8000)
+	outAddr := "tb1qxds4waaq7zll6w699sfarajvm3c5m98qpttkcvcgesxwk0989pks42hktr"
+	amount := int(12000)
 	trans := gobcy.TX{}
 	trans.Fees = int(500)
 	trans.Inputs = make([]gobcy.TXInput, 1)
 	trans.Inputs[0].Addresses = make([]string, 1)
 	trans.Inputs[0].Addresses[0] = inAddr
 
-	trans.Outputs = make([]gobcy.TXOutput, 2)
-	trans.Outputs[0].ScriptType = "null-data"
-	uniquePortingID := "PS1-12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
-	script := []byte{
-		txscript.OP_RETURN,
-		0x4c,
-		byte(len(uniquePortingID)),
-	}
+	trans.Outputs = make([]gobcy.TXOutput, 1)
 
-	//msg := HashAndEncodeBase58(uniquePortingID)
-	fmt.Println("memo: ", uniquePortingID)
-	script = append(script, []byte(uniquePortingID)...)
-	trans.Outputs[0].Script = hex.EncodeToString(script)
-
-	trans.Outputs[1].Addresses = make([]string, 1)
-	trans.Outputs[1].Addresses[0] = outAddr
-	trans.Outputs[1].Value = amount
+	trans.Outputs[0].Addresses = make([]string, 1)
+	trans.Outputs[0].Addresses[0] = outAddr
+	trans.Outputs[0].Value = amount
 
 	// bc := getBlockCypherAPI("test3")
 	skelTx, err := bc.NewTX(trans, false)
@@ -308,7 +296,10 @@ func TestCreateAndSendBTCTxToCypher(t *testing.T) {
 		t.Errorf("Could not decode wif - with err: %v", err)
 		return
 	}
-	privateKeys := []string{wifDecoded.PrivKey.D.Text(16)}
+	privateKeys := []string{}
+	for idx := 0; idx < len(skelTx.ToSign); idx++ {
+		privateKeys = append(privateKeys, wifDecoded.PrivKey.D.Text(16))
+	}
 	err = skelTx.Sign(privateKeys)
 	if err != nil {
 		t.Errorf("Could not sign btc tx by using cypher api - with err: %v", err)
