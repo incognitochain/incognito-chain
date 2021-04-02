@@ -14,6 +14,7 @@ type UTXO struct {
 	txHash        string
 	outputIdx     uint32
 	outputAmount  uint64
+	publicSeed    string // It's incognito address of user want to shield to Incognito
 }
 
 func NewUTXO() *UTXO {
@@ -25,12 +26,14 @@ func NewUTXOWithValue(
 	txHash string,
 	outputIdx uint32,
 	outputAmount uint64,
+	publicSeed    string,
 ) *UTXO {
 	return &UTXO{
 		walletAddress: walletAddress,
 		txHash:        txHash,
 		outputAmount:  outputAmount,
 		outputIdx:     outputIdx,
+		publicSeed : publicSeed,
 	}
 }
 
@@ -66,17 +69,27 @@ func (uo *UTXO) SetOutputIndex(index uint32) {
 	uo.outputIdx = index
 }
 
+func (uo *UTXO) GetPublicSeed() string {
+	return uo.publicSeed
+}
+
+func (uo *UTXO) SetPublicSeed(publicSeed string) {
+	uo.publicSeed = publicSeed
+}
+
 func (uo *UTXO) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		WalletAddress string
 		TxHash        string
 		OutputIdx     uint32
 		OutputAmount  uint64
+		PublicSeed string
 	}{
 		WalletAddress: uo.walletAddress,
 		TxHash:        uo.txHash,
 		OutputIdx:     uo.outputIdx,
 		OutputAmount:  uo.outputAmount,
+		PublicSeed: uo.publicSeed,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -90,6 +103,7 @@ func (uo *UTXO) UnmarshalJSON(data []byte) error {
 		TxHash        string
 		OutputIdx     uint32
 		OutputAmount  uint64
+		PublicSeed string
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -99,6 +113,7 @@ func (uo *UTXO) UnmarshalJSON(data []byte) error {
 	uo.txHash = temp.TxHash
 	uo.outputIdx = temp.OutputIdx
 	uo.outputAmount = temp.OutputAmount
+	uo.publicSeed = temp.PublicSeed
 	return nil
 }
 

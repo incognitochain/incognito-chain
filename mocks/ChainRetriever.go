@@ -317,8 +317,8 @@ func (_m *ChainRetriever) GetPortalV4MinUnshieldAmount(tokenIDStr string, beacon
 	return r0
 }
 
-// GetPortalV4MultiSigAddress provides a mock function with given fields: tokenIDStr, beaconHeight
-func (_m *ChainRetriever) GetPortalV4MultiSigAddress(tokenIDStr string, beaconHeight uint64) string {
+// GetPortalV4GeneralMultiSigAddress provides a mock function with given fields: tokenIDStr, beaconHeight
+func (_m *ChainRetriever) GetPortalV4GeneralMultiSigAddress(tokenIDStr string, beaconHeight uint64) string {
 	ret := _m.Called(tokenIDStr, beaconHeight)
 
 	var r0 string

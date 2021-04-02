@@ -29,6 +29,7 @@ type PortalReplacementFeeRequestContent struct {
 	BatchID       string
 	Fee           uint
 	ExternalRawTx string
+	UTXOs         []*statedb.UTXO
 	TxReqID       common.Hash
 	ShardID       byte
 }

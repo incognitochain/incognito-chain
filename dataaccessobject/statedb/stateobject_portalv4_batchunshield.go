@@ -11,15 +11,15 @@ import (
 type ProcessedUnshieldRequestBatch struct {
 	batchID      string
 	unshieldsID  []string
-	utxos        map[string][]*UTXO // map key (wallet address => list utxos)
+	utxos        []*UTXO // map key (wallet address => list utxos)
 	externalFees map[uint64]uint    // beaconHeight => fee
 }
 
-func (us *ProcessedUnshieldRequestBatch) GetUTXOs() map[string][]*UTXO {
+func (us *ProcessedUnshieldRequestBatch) GetUTXOs() []*UTXO {
 	return us.utxos
 }
 
-func (us *ProcessedUnshieldRequestBatch) SetUTXOs(newUTXOs map[string][]*UTXO) {
+func (us *ProcessedUnshieldRequestBatch) SetUTXOs(newUTXOs []*UTXO) {
 	us.utxos = newUTXOs
 }
 
@@ -51,7 +51,7 @@ func (rq ProcessedUnshieldRequestBatch) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		BatchID      string
 		UnshieldsID  []string
-		UTXOs        map[string][]*UTXO
+		UTXOs        []*UTXO
 		ExternalFees map[uint64]uint
 	}{
 		BatchID:      rq.batchID,
@@ -69,7 +69,7 @@ func (rq *ProcessedUnshieldRequestBatch) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		BatchID      string
 		UnshieldsID  []string
-		UTXOs        map[string][]*UTXO
+		UTXOs        []*UTXO
 		ExternalFees map[uint64]uint
 	}{}
 	err := json.Unmarshal(data, &temp)
@@ -86,7 +86,7 @@ func (rq *ProcessedUnshieldRequestBatch) UnmarshalJSON(data []byte) error {
 func NewProcessedUnshieldRequestBatchWithValue(
 	batchID string,
 	unshieldsIDInput []string,
-	utxosInput map[string][]*UTXO,
+	utxosInput []*UTXO,
 	externalFees map[uint64]uint) *ProcessedUnshieldRequestBatch {
 	return &ProcessedUnshieldRequestBatch{
 		batchID:      batchID,

@@ -9,11 +9,11 @@ import (
 )
 
 type PortalParams struct {
-	MasterPubKeys           map[string][][]byte
-	NumRequiredSigs         uint
-	MultiSigAddresses       map[string]string
-	MultiSigScriptHexEncode map[string]string
-	PortalTokens            map[string]portaltokensv4.PortalTokenProcessor
+	MasterPubKeys                  map[string][][]byte
+	NumRequiredSigs                uint
+	GeneralMultiSigAddresses       map[string]string   // used to received change output coins
+	GeneralMultiSigScriptHexEncode map[string]string
+	PortalTokens                   map[string]portaltokensv4.PortalTokenProcessor
 
 	// for unshielding
 	DefaultFeeUnshields        map[string]uint64 // in nano ptokens

@@ -43,7 +43,7 @@ func buildUnshieldBatchingInst(
 	rawExtTx string,
 	tokenID string,
 	unshieldIDs []string,
-	utxos map[string][]*statedb.UTXO,
+	utxos []*statedb.UTXO,
 	networkFee map[uint64]uint,
 	beaconHeight uint64,
 	metaType int,
@@ -137,11 +137,10 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 
 			// memo in tx: batchId: combine beacon height and list of unshieldIDs
 			batchID := GetBatchID(beaconHeight+1, bcTx.UnshieldIDs)
-			memo := batchID
 
 			// create raw tx
 			hexRawExtTxStr, _, err := portalTokenProcessor.CreateRawExternalTx(
-				bcTx.UTXOs, outputTxs, feeUnshield, memo, bc)
+				bcTx.UTXOs, outputTxs, feeUnshield, bc)
 			if err != nil {
 				Logger.log.Errorf("[Batch Unshield Request]: Error when creating raw external tx %v", err)
 				continue
@@ -150,9 +149,7 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 			externalFees := map[uint64]uint{
 				beaconHeight + 1: uint(feeUnshield),
 			}
-			chosenUTXOs := map[string][]*statedb.UTXO{
-				portalParams.MultiSigAddresses[tokenID]: bcTx.UTXOs,
-			}
+			chosenUTXOs := bcTx.UTXOs
 			// update current portal state
 			// remove chosen waiting unshield requests from waiting list
 			// remove utxos
@@ -303,6 +300,7 @@ func buildReplacementFeeRequestInst(
 	metaType int,
 	shardID byte,
 	externalRawTx string,
+	utxos []*statedb.UTXO,
 	txReqID common.Hash,
 	status string,
 ) []string {
@@ -312,6 +310,7 @@ func buildReplacementFeeRequestInst(
 		BatchID:       batchID,
 		TxReqID:       txReqID,
 		ExternalRawTx: externalRawTx,
+		UTXOs:         utxos,
 	}
 	replacementRequestContentBytes, _ := json.Marshal(replacementRequestContent)
 	return []string{
@@ -358,6 +357,7 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		"",
+		nil,
 		actionData.TxReqID,
 		portalcommonv4.PortalV4RequestRejectedChainStatus,
 	)
@@ -388,12 +388,11 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 	}
 
 	portalTokenProcessor := portalParams.PortalTokens[tokenIDStr]
-	multisigAddress := portalParams.MultiSigAddresses[tokenIDStr]
-	if unshieldBatch.GetUTXOs() == nil || unshieldBatch.GetUTXOs()[multisigAddress] == nil {
-		Logger.log.Errorf("Error: Can not get utxos from unshield batch with multisig address: %v", multisigAddress)
+	if len(unshieldBatch.GetUTXOs()) == 0 {
+		Logger.log.Errorf("UTXOs of unshield batchID %v is empty: ", meta.BatchID)
 		return [][]string{rejectInst}, nil
 	}
-	hexRawExtTxStr, _, err := portalTokenProcessor.CreateRawExternalTx(unshieldBatch.GetUTXOs()[multisigAddress], optionalData["outputs"].([]*portaltokens.OutputTx), uint64(meta.Fee), meta.BatchID, bc)
+	hexRawExtTxStr, _, err := portalTokenProcessor.CreateRawExternalTx(unshieldBatch.GetUTXOs(), optionalData["outputs"].([]*portaltokens.OutputTx), uint64(meta.Fee), bc)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured create new raw transaction portal replacement fee: %+v", err)
 		return nil, fmt.Errorf("ERROR: an error occured create new raw transaction portal replacement fee: %+v", err)
@@ -407,6 +406,7 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		hexRawExtTxStr,
+		unshieldBatch.GetUTXOs(),
 		actionData.TxReqID,
 		portalcommonv4.PortalV4RequestAcceptedChainStatus,
 	)
@@ -641,13 +641,13 @@ func (p *PortalSubmitConfirmedTxProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	expectedMultisigAddress := portalParams.MultiSigAddresses[tokenIDStr]
+	expectedReceivedMultisigAddress := portalParams.GeneralMultiSigAddresses[tokenIDStr]
 	outputs := optionalData["outputs"].(map[string]uint64)
-	if unshieldBatch.GetUTXOs() == nil || unshieldBatch.GetUTXOs()[expectedMultisigAddress] == nil {
-		Logger.log.Errorf("Error submit external confirmed tx: can not get utxos of wallet address: %v", expectedMultisigAddress)
+	if len(unshieldBatch.GetUTXOs()) == 0 {
+		Logger.log.Errorf("UTXOs of unshield batchID %v is empty: ", meta.BatchID)
 		return [][]string{rejectInst}, nil
 	}
-	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyUnshieldProof(meta.UnshieldProof, bc, batchIDStr, expectedMultisigAddress, outputs, unshieldBatch.GetUTXOs()[expectedMultisigAddress])
+	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyUnshieldProof(meta.UnshieldProof, bc, expectedReceivedMultisigAddress, "", outputs, unshieldBatch.GetUTXOs())
 	if !isValid || err != nil {
 		Logger.log.Errorf("Unshield Proof is invalid")
 		return [][]string{rejectInst}, nil

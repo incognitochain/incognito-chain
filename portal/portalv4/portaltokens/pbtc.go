@@ -27,15 +27,12 @@ import (
 
 type PortalBTCTokenProcessor struct {
 	*PortalToken
+	ChainParam *chaincfg.Params
 }
 
 func genBTCPrivateKey(IncKeyBytes []byte) []byte {
 	BTCKeyBytes := ed25519.NewKeyFromSeed(IncKeyBytes)[32:]
 	return BTCKeyBytes
-}
-
-func (p PortalBTCTokenProcessor) GetExpectedMemoForShielding(incAddress string) string {
-	return "PS1-" + incAddress
 }
 
 func (p PortalBTCTokenProcessor) ConvertExternalToIncAmount(externalAmt uint64) uint64 {
@@ -47,7 +44,7 @@ func (p PortalBTCTokenProcessor) ConvertIncToExternalAmount(incAmt uint64) uint6
 }
 
 func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
-	proof string, btcChain *btcrelaying.BlockChain, expectedMultisigAddress string) (bool, []*statedb.UTXO, error) {
+	proof string, btcChain *btcrelaying.BlockChain, expectedMultisigAddress string, publicSeed string) (bool, []*statedb.UTXO, error) {
 	if btcChain == nil {
 		Logger.log.Error("BTC relaying chain should not be null")
 		return false, nil, errors.New("BTC relaying chain should not be null")
@@ -101,6 +98,7 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 			btcTxProof.BTCTx.TxHash().String(),
 			uint32(idx),
 			uint64(out.Value),
+			publicSeed,
 		))
 	}
 
@@ -112,10 +110,97 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 	return true, listUTXO, nil
 }
 
-func (p PortalBTCTokenProcessor) ParseAndVerifyProof(
-	proof string, bc metadata.ChainRetriever, expectedMultisigAddress string) (bool, []*statedb.UTXO, error) {
+func (p PortalBTCTokenProcessor) ParseAndVerifyShieldProof(
+	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, publicSeed string) (bool, []*statedb.UTXO, error) {
 	btcChain := bc.GetBTCHeaderChain()
-	return p.parseAndVerifyProofBTCChain(proof, btcChain, expectedMultisigAddress)
+	return p.parseAndVerifyProofBTCChain(proof, btcChain, expectedReceivedMultisigAddress, publicSeed)
+}
+
+func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
+	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, publicSeed string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error) {
+	btcChain := bc.GetBTCHeaderChain()
+	if btcChain == nil {
+		Logger.log.Error("BTC relaying chain should not be null")
+		return false, nil, errors.New("BTC relaying chain should not be null")
+	}
+	// parse BTCProof in meta
+	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
+	if err != nil {
+		Logger.log.Errorf("ShieldingProof is invalid %v\n", err)
+		return false, nil, fmt.Errorf("ShieldingProof is invalid %v\n", err)
+	}
+
+	// verify tx with merkle proofs
+	isValid, err := btcChain.VerifyTxWithMerkleProofs(btcTxProof)
+	if !isValid || err != nil {
+		Logger.log.Errorf("Verify btcTxProof failed %v", err)
+		return false, nil, fmt.Errorf("Verify btcTxProof failed %v", err)
+	}
+
+	// verify spent outputs
+	if len(btcTxProof.BTCTx.TxIn) < 1 {
+		Logger.log.Errorf("Can not find the tx inputs in proof")
+		return false, nil, fmt.Errorf("Submit confirmed tx: no tx inputs in proof")
+	}
+	isMatched := false
+	for _, input := range btcTxProof.BTCTx.TxIn {
+		for _, v := range utxos {
+			if v.GetTxHash() == input.PreviousOutPoint.Hash.String() && v.GetOutputIndex() == input.PreviousOutPoint.Index {
+				isMatched = true
+				break
+			}
+		}
+		if !isMatched {
+			Logger.log.Errorf("Submit confirmed: tx inputs from proof is diff utxos from unshield batch")
+			return false, nil, fmt.Errorf("Submit confirmed tx: tx inputs from proof is diff utxos from unshield batch")
+		}
+		isMatched = false
+	}
+
+	// check whether amount transfer in txBNB is equal porting amount or not
+	// check receiver and amount in tx
+	outputs := btcTxProof.BTCTx.TxOut
+	for receiverAddress := range expectPaymentInfo {
+		isMatched = false
+		for _, out := range outputs {
+			addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
+			if err != nil {
+				Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
+				continue
+			}
+			if addrStr != receiverAddress {
+				continue
+			}
+			isMatched = true
+			break
+		}
+		if !isMatched {
+			Logger.log.Error("BTC-TxProof is invalid")
+			return false, nil, errors.New("BTC-TxProof is invalid")
+		}
+	}
+
+	// check the change output coin
+	listUTXO := []*statedb.UTXO{}
+	for idx, out := range outputs {
+		addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
+		if err != nil {
+			Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
+			continue
+		}
+		if addrStr != expectedReceivedMultisigAddress {
+			continue
+		}
+		listUTXO = append(listUTXO, statedb.NewUTXOWithValue(
+			addrStr,
+			btcTxProof.BTCTx.TxHash().String(),
+			uint32(idx),
+			uint64(out.Value),
+			publicSeed,
+		))
+	}
+
+	return true, listUTXO, nil
 }
 
 func (p PortalBTCTokenProcessor) GetExternalTxHashFromProof(proof string) (string, error) {
@@ -157,18 +242,18 @@ func (p PortalBTCTokenProcessor) generatePublicKeyFromSeed(seed []byte) []byte {
 	return p.generatePublicKeyFromPrivateKey(BTCPrivateKeyMaster)
 }
 
-func (p PortalBTCTokenProcessor) generateOTPrivateKey(chainParams *chaincfg.Params, seed []byte, incAddress string) ([]byte, error) {
+func (p PortalBTCTokenProcessor) generateOTPrivateKey(chainParams *chaincfg.Params, seed []byte, publicSeed string) ([]byte, error) {
 	BTCPrivateKeyMaster := chainhash.HashB(seed) // private mining key => private key btc
 
 	// this Incognito address is marked for the address that received change UTXOs
-	if incAddress == "" {
+	if publicSeed == "" {
 		return BTCPrivateKeyMaster, nil
 	} else {
-		chainCode := chainhash.HashB([]byte(incAddress))
+		chainCode := chainhash.HashB([]byte(publicSeed))
 		extendedBTCPrivateKey := hdkeychain.NewExtendedKey(chainParams.HDPrivateKeyID[:], BTCPrivateKeyMaster, chainCode, []byte{}, 0, 0, true)
 		extendedBTCChildPrivateKey, err := extendedBTCPrivateKey.Child(0)
 		if err != nil {
-			return []byte{}, fmt.Errorf("Could not generate child private key for incognito address: %v", incAddress)
+			return []byte{}, fmt.Errorf("Could not generate child private key for incognito address: %v", publicSeed)
 		}
 		btcChildPrivateKey, err := extendedBTCChildPrivateKey.ECPrivKey()
 		if err != nil {
@@ -181,21 +266,20 @@ func (p PortalBTCTokenProcessor) generateOTPrivateKey(chainParams *chaincfg.Para
 
 // Generate Bech32 P2WSH multisig address for each Incognito address
 // Return redeem script, OTMultisigAddress
-func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetriever, masterPubKeys [][]byte, numSigsRequired int, incAddress string) ([]byte, string, error) {
+func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byte, numSigsRequired int, publicSeed string) ([]byte, string, error) {
 	if len(masterPubKeys) < numSigsRequired || numSigsRequired < 0 {
 		return []byte{}, "", fmt.Errorf("Invalid signature requirment")
 	}
 
-	chainParams := bc.GetBTCChainParams()
 	pubKeys := [][]byte{}
 	// this Incognito address is marked for the address that received change UTXOs
-	if incAddress == "" {
+	if publicSeed == "" {
 		pubKeys = masterPubKeys[:]
 	} else {
-		chainCode := chainhash.HashB([]byte(incAddress))
+		chainCode := chainhash.HashB([]byte(publicSeed))
 		for idx, masterPubKey := range masterPubKeys {
 			// generate BTC child public key for this Incognito address
-			extendedBTCPublicKey := hdkeychain.NewExtendedKey(chainParams.HDPublicKeyID[:], masterPubKey, chainCode, []byte{}, 0, 0, false)
+			extendedBTCPublicKey := hdkeychain.NewExtendedKey(p.ChainParam.HDPublicKeyID[:], masterPubKey, chainCode, []byte{}, 0, 0, false)
 			extendedBTCChildPubKey, _ := extendedBTCPublicKey.Child(0)
 			childPubKey, err := extendedBTCChildPubKey.ECPubKey()
 			if err != nil {
@@ -214,7 +298,7 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetr
 		builder.AddData(pubKey)
 	}
 	// add the total number of public keys in the multi-sig script
-	builder.AddOp(byte(txscript.OP_1 - 1 + len(masterPubKeys)))
+	builder.AddOp(byte(txscript.OP_1 - 1 + len(pubKeys)))
 	// add the check-multi-sig op-code
 	builder.AddOp(txscript.OP_CHECKMULTISIG)
 
@@ -225,7 +309,7 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetr
 
 	// generate P2WSH address
 	scriptHash := sha256.Sum256(redeemScript)
-	addr, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], chainParams)
+	addr, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], p.ChainParam)
 	if err != nil {
 		return []byte{}, "", fmt.Errorf("Could not generate address from script - Error %v", err)
 	}
@@ -238,7 +322,7 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(bc metadata.ChainRetr
 // inputs: UTXO state of beacon, unit of amount in btc
 // outputs: unit of amount in pbtc ~ unshielding amount
 // feePerOutput: unit in pbtc
-func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, feePerOutput uint64, memo string, bc metadata.ChainRetriever) (string, string, error) {
+func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, feePerOutput uint64, bc metadata.ChainRetriever) (string, string, error) {
 	msgTx := wire.NewMsgTx(wire.TxVersion)
 
 	// add TxIns into raw tx
@@ -285,7 +369,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	// calculate the change output
 	if totalInputAmount-totalOutputAmount > 0 {
 		// adding the output to tx
-		multiSigAddress := bc.GetPortalV4MultiSigAddress(common.PortalBTCIDStr, 0)
+		multiSigAddress := bc.GetPortalV4GeneralMultiSigAddress(common.PortalBTCIDStr, 0)
 		decodedAddr, err := btcutil.DecodeAddress(multiSigAddress, bc.GetBTCChainParams())
 		if err != nil {
 			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when decoding multisig address: %v", err)
@@ -302,11 +386,6 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 		msgTx.AddTxOut(redeemTxOut)
 	}
 
-	// add memo into raw tx
-	script := append([]byte{txscript.OP_RETURN}, byte(len([]byte(memo))))
-	script = append(script, []byte(memo)...)
-	msgTx.AddTxOut(wire.NewTxOut(0, script))
-
 	var rawTxBytes bytes.Buffer
 	err := msgTx.Serialize(&rawTxBytes)
 	if err != nil {
@@ -318,7 +397,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	return hexRawTx, msgTx.TxHash().String(), nil
 }
 
-func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSigScript []byte, rawTxBytes []byte) ([][]byte, string, error) {
+func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, masterPubKeys [][]byte, numSigsRequired int, rawTxBytes []byte, inputs []*statedb.UTXO) ([][]byte, string, error) {
 	// new MsgTx from rawTxBytes
 	msgTx := new(btcwire.MsgTx)
 	rawTxBuffer := bytes.NewBuffer(rawTxBytes)
@@ -326,22 +405,20 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, multiSi
 	if err != nil {
 		return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when deserializing raw tx bytes: %v", err)
 	}
-
 	// sign on each TxIn
+	if len(inputs) != len(msgTx.TxIn) {
+		return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Len of Public seeds %v and len of TxIn %v are not correct", len(inputs), len(msgTx.TxIn))
+	}
 	sigs := [][]byte{}
 	for i := range msgTx.TxIn {
-		signature := txscript.NewScriptBuilder()
-		signature.AddOp(txscript.OP_FALSE)
-
 		// generate btc private key from seed: private key of bridge consensus
-		// todo:
-		//btcPrivateKeyBytes, err := p.GeneratePrivateKeyFromSeed(seedKey)
-		//if err != nil {
-		//	return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when generate btc private key from seed: %v", err)
-		//}
-		btcPrivateKeyBytes := []byte{}
+		btcPrivateKeyBytes, err := p.generateOTPrivateKey(p.ChainParam, seedKey, inputs[i].GetPublicSeed())
+		if err != nil {
+			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when generate btc private key from seed: %v", err)
+		}
 		btcPrivateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), btcPrivateKeyBytes)
-		sig, err := txscript.RawTxInSignature(msgTx, i, multiSigScript, txscript.SigHashAll, btcPrivateKey)
+		multiSigScript, _, err := p.GenerateOTMultisigAddress(masterPubKeys, numSigsRequired, inputs[i].GetPublicSeed())
+		sig, err := txscript.RawTxInWitnessSignature(msgTx, txscript.NewTxSigHashes(msgTx), i, int64(inputs[i].GetOutputAmount()), multiSigScript, txscript.SigHashAll, btcPrivateKey)
 		if err != nil {
 			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when signing on raw btc tx: %v", err)
 		}
@@ -498,100 +575,4 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 		})
 	}
 	return broadcastTxs
-}
-
-func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
-	proof string, bc metadata.ChainRetriever, expectedMemo string, expectedMultisigAddress string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error) {
-	btcChain := bc.GetBTCHeaderChain()
-	if btcChain == nil {
-		Logger.log.Error("BTC relaying chain should not be null")
-		return false, nil, errors.New("BTC relaying chain should not be null")
-	}
-	// parse BTCProof in meta
-	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
-	if err != nil {
-		Logger.log.Errorf("ShieldingProof is invalid %v\n", err)
-		return false, nil, fmt.Errorf("ShieldingProof is invalid %v\n", err)
-	}
-
-	// verify tx with merkle proofs
-	isValid, err := btcChain.VerifyTxWithMerkleProofs(btcTxProof)
-	if !isValid || err != nil {
-		Logger.log.Errorf("Verify btcTxProof failed %v", err)
-		return false, nil, fmt.Errorf("Verify btcTxProof failed %v", err)
-	}
-
-	// extract attached message from txOut's OP_RETURN
-	btcAttachedMsg, err := btcrelaying.ExtractAttachedMsgFromTx(btcTxProof.BTCTx)
-	if err != nil {
-		Logger.log.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
-		return false, nil, fmt.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
-	}
-	if btcAttachedMsg != expectedMemo {
-		Logger.log.Errorf("ShieldingId in the btc attached message is not matched with portingID in metadata")
-		return false, nil, fmt.Errorf("ShieldingId in the btc attached message %v is not matched with portingID in metadata %v", btcAttachedMsg, expectedMemo)
-	}
-
-	// verify spent outputs
-	if len(btcTxProof.BTCTx.TxIn) < 1 {
-		Logger.log.Errorf("Can not find the tx inputs in proof")
-		return false, nil, fmt.Errorf("Submit confirmed tx: no tx inputs in proof")
-	}
-	isMatched := false
-	for _, input := range btcTxProof.BTCTx.TxIn {
-		for _, v := range utxos {
-			if v.GetTxHash() == input.PreviousOutPoint.Hash.String() && v.GetOutputIndex() == input.PreviousOutPoint.Index {
-				isMatched = true
-				break
-			}
-		}
-		if !isMatched {
-			Logger.log.Errorf("Submit confirmed: tx inputs from proof is diff utxos from unshield batch")
-			return false, nil, fmt.Errorf("Submit confirmed tx: tx inputs from proof is diff utxos from unshield batch")
-		}
-		isMatched = false
-	}
-
-	// check whether amount transfer in txBNB is equal porting amount or not
-	// check receiver and amount in tx
-	outputs := btcTxProof.BTCTx.TxOut
-	for receiverAddress := range expectPaymentInfo {
-		isMatched = false
-		for _, out := range outputs {
-			addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
-			if err != nil {
-				Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
-				continue
-			}
-			if addrStr != receiverAddress {
-				continue
-			}
-			isMatched = true
-			break
-		}
-		if !isMatched {
-			Logger.log.Error("BTC-TxProof is invalid")
-			return false, nil, errors.New("BTC-TxProof is invalid")
-		}
-	}
-
-	listUTXO := []*statedb.UTXO{}
-	for idx, out := range outputs {
-		addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
-		if err != nil {
-			Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
-			continue
-		}
-		if addrStr != expectedMultisigAddress {
-			continue
-		}
-		listUTXO = append(listUTXO, statedb.NewUTXOWithValue(
-			addrStr,
-			btcTxProof.BTCTx.TxHash().String(),
-			uint32(idx),
-			uint64(out.Value),
-		))
-	}
-
-	return true, listUTXO, nil
 }

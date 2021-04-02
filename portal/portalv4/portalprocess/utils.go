@@ -98,7 +98,8 @@ func UpdatePortalStateUTXOs(CurrentPortalStateV4 *CurrentPortalStateV4, tokenID 
 		txHash := utxo.GetTxHash()
 		outputIdx := utxo.GetOutputIndex()
 		outputAmount := utxo.GetOutputAmount()
-		CurrentPortalStateV4.UTXOs[tokenID][statedb.GenerateUTXOObjectKey(tokenID, walletAddress, txHash, outputIdx).String()] = statedb.NewUTXOWithValue(walletAddress, txHash, outputIdx, outputAmount)
+		publicSeed := utxo.GetPublicSeed()
+		CurrentPortalStateV4.UTXOs[tokenID][statedb.GenerateUTXOObjectKey(tokenID, walletAddress, txHash, outputIdx).String()] = statedb.NewUTXOWithValue(walletAddress, txHash, outputIdx, outputAmount, publicSeed)
 	}
 }
 
@@ -152,7 +153,7 @@ func UpdatePortalStateAfterUnshieldRequest(
 
 func UpdatePortalStateAfterProcessBatchUnshieldRequest(
 	CurrentPortalStateV4 *CurrentPortalStateV4,
-	batchID string, utxos map[string][]*statedb.UTXO, externalFees map[uint64]uint, unshieldIDs []string, tokenID string) {
+	batchID string, utxos []*statedb.UTXO, externalFees map[uint64]uint, unshieldIDs []string, tokenID string) {
 	// remove unshieldIDs from WaitingUnshieldRequests
 	RemoveListWaitingUnshieldFromState(CurrentPortalStateV4, unshieldIDs, tokenID)
 
@@ -174,24 +175,20 @@ func UpdatePortalStateAfterProcessBatchUnshieldRequest(
 
 func RemoveListUtxoFromState(
 	CurrentPortalStateV4 *CurrentPortalStateV4,
-	utxos map[string][]*statedb.UTXO, tokenID string) {
+	utxos []*statedb.UTXO, tokenID string) {
 	// remove list utxos that spent
-	for walletAddr, listUtxos := range utxos {
-		for _, u := range listUtxos {
-			keyUtxo := statedb.GenerateUTXOObjectKey(tokenID, walletAddr, u.GetTxHash(), u.GetOutputIndex()).String()
-			delete(CurrentPortalStateV4.UTXOs[tokenID], keyUtxo)
-		}
+	for _, u := range utxos {
+		keyUtxo := statedb.GenerateUTXOObjectKey(tokenID, u.GetWalletAddress(), u.GetTxHash(), u.GetOutputIndex()).String()
+		delete(CurrentPortalStateV4.UTXOs[tokenID], keyUtxo)
 	}
 }
 
 func RemoveListUtxoFromDB(
 	stateDB *statedb.StateDB,
-	utxos map[string][]*statedb.UTXO, tokenID string) {
+	utxos []*statedb.UTXO, tokenID string) {
 	// remove list utxos that spent
-	for walletAddr, listUtxos := range utxos {
-		for _, u := range listUtxos {
-			statedb.DeleteUTXO(stateDB, tokenID, walletAddr, u.GetTxHash(), u.GetOutputIndex())
-		}
+	for _, u := range utxos {
+		statedb.DeleteUTXO(stateDB, tokenID, u.GetWalletAddress(), u.GetTxHash(), u.GetOutputIndex())
 	}
 }
 

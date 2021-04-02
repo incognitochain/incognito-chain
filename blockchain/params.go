@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
@@ -155,22 +156,24 @@ func getSupportedPortalCollateralsTestnet2() []portalv3.PortalCollateral {
 
 func initPortalTokensV4ForTestNet() map[string]portaltokensv4.PortalTokenProcessor {
 	return map[string]portaltokensv4.PortalTokenProcessor{
-		portalcommonv4.PortalBTCIDStr: &portaltokensv4.PortalBTCTokenProcessor{
-			&portaltokensv4.PortalToken{
+		portalcommonv4.PortalBTCIDStr: portaltokensv4.PortalBTCTokenProcessor{
+			PortalToken: &portaltokensv4.PortalToken{
 				ChainID:        TestnetBTCChainID,
 				MinTokenAmount: 10,
 			},
+			ChainParam: &chaincfg.TestNet3Params,
 		},
 	}
 }
 
 func initPortalTokensV4ForMainNet() map[string]portaltokensv4.PortalTokenProcessor {
 	return map[string]portaltokensv4.PortalTokenProcessor{
-		portalcommonv4.PortalBTCIDStr: &portaltokensv4.PortalBTCTokenProcessor{
-			&portaltokensv4.PortalToken{
+		portalcommonv4.PortalBTCIDStr: portaltokensv4.PortalBTCTokenProcessor{
+			PortalToken: &portaltokensv4.PortalToken{
 				ChainID:        MainnetBTCChainID,
 				MinTokenAmount: 10,
 			},
+			ChainParam: &chaincfg.MainNetParams,
 		},
 	}
 }
@@ -219,7 +222,7 @@ func SetupParam() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -264,14 +267,19 @@ func SetupParam() {
 			PortalParamsV4: map[uint64]portalv4.PortalParams{
 				0: {
 					MasterPubKeys: map[string][][]byte{
-						portalcommonv4.PortalBTCIDStr: [][]byte{}, // 50000 nano pbtc = 5000 satoshi
+						portalcommonv4.PortalBTCIDStr: [][]byte{
+							[]byte{0x3, 0xb2, 0xd3, 0x16, 0x7d, 0x94, 0x9c, 0x25, 0x3, 0xe6, 0x9c, 0x9f, 0x29, 0x78, 0x7d, 0x9c, 0x8, 0x8d, 0x39, 0x17, 0x8d, 0xb4, 0x75, 0x40, 0x35, 0xf5, 0xae, 0x6a, 0xf0, 0x17, 0x12, 0x11, 0x0},
+							[]byte{0x3, 0x98, 0x7a, 0x87, 0xd1, 0x99, 0x13, 0xbd, 0xe3, 0xef, 0xf0, 0x55, 0x79, 0x2, 0xb4, 0x90, 0x57, 0xed, 0x1c, 0x9c, 0x8b, 0x32, 0xf9, 0x2, 0xbb, 0xbb, 0x85, 0x71, 0x3a, 0x99, 0x1f, 0xdc, 0x41},
+							[]byte{0x3, 0x73, 0x23, 0x5e, 0xb1, 0xc8, 0xf1, 0x84, 0xe7, 0x59, 0x17, 0x6c, 0xe3, 0x87, 0x37, 0xb7, 0x91, 0x19, 0x47, 0x1b, 0xba, 0x63, 0x56, 0xbc, 0xab, 0x8d, 0xcc, 0x14, 0x4b, 0x42, 0x99, 0x86, 0x1},
+							[]byte{0x3, 0x29, 0xe7, 0x59, 0x31, 0x89, 0xca, 0x7a, 0xf6, 0x1, 0xb6, 0x35, 0x67, 0x3d, 0xb1, 0x53, 0xd4, 0x19, 0xd7, 0x6, 0x19, 0x3, 0x2a, 0x32, 0x94, 0x57, 0x76, 0xb2, 0xb3, 0x80, 0x65, 0xe1, 0x5d},
+						},
 					},
 					NumRequiredSigs: 3,
-					MultiSigAddresses: map[string]string{
-						portalcommonv4.PortalBTCIDStr: "2NGFTTKNj59NGmjQpajsEXGxwf9SP8gvJiv",
+					GeneralMultiSigAddresses: map[string]string{
+						portalcommonv4.PortalBTCIDStr: "tb1qfgzhddwenekk573slpmqdutrd568ej89k37lmjr43tm9nhhulu0scjyajz",
 					},
-					MultiSigScriptHexEncode: map[string]string{
-						portalcommonv4.PortalBTCIDStr: "532102a88c36430d6df68ea7ee3964747cc47e04c052b4d0541012419ca47d371437f72103f27d6ec2dca8ec40845f4bb6e08b338e3aca96c9cc53dc9bd522ea467971cd0d2102ef026fabadcc103043839d1f37445935b579234d25fb301a37b20ca0c5bfa6c92102b9c395680961a714940f2cf58947184e698b9c7d280c996a84ca764215f9472354ae",
+					GeneralMultiSigScriptHexEncode: map[string]string{
+						portalcommonv4.PortalBTCIDStr: "532103b2d3167d949c2503e69c9f29787d9c088d39178db4754035f5ae6af0171211002103987a87d19913bde3eff0557902b49057ed1c9c8b32f902bbbb85713a991fdc41210373235eb1c8f184e759176ce38737b79119471bba6356bcab8dcc144b42998601210329e7593189ca7af601b635673db153d419d70619032a32945776b2b38065e15d54ae",
 					},
 					PortalTokens: initPortalTokensV4ForTestNet(),
 					DefaultFeeUnshields: map[string]uint64{
@@ -304,7 +312,6 @@ func SetupParam() {
 			common.PortalRelayingFlag: TestnetEnablePortalRelaying,
 			common.PortalV4Flag:       TestnetEnablePortalV4,
 		},
-
 	}
 	// END TESTNET
 
@@ -351,7 +358,7 @@ func SetupParam() {
 		EthContractAddressStr:            Testnet2ETHContractAddressStr,
 		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -399,10 +406,10 @@ func SetupParam() {
 						portalcommonv4.PortalBTCIDStr: [][]byte{}, // 50000 nano pbtc = 5000 satoshi
 					},
 					NumRequiredSigs: 3,
-					MultiSigAddresses: map[string]string{
+					GeneralMultiSigAddresses: map[string]string{
 						portalcommonv4.PortalBTCIDStr: "",
 					},
-					MultiSigScriptHexEncode: map[string]string{
+					GeneralMultiSigScriptHexEncode: map[string]string{
 						portalcommonv4.PortalBTCIDStr: "",
 					},
 					PortalTokens: initPortalTokensV4ForTestNet(),
@@ -480,7 +487,7 @@ func SetupParam() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -528,10 +535,10 @@ func SetupParam() {
 						portalcommonv4.PortalBTCIDStr: [][]byte{}, // 50000 nano pbtc = 5000 satoshi
 					},
 					NumRequiredSigs: 3,
-					MultiSigAddresses: map[string]string{
+					GeneralMultiSigAddresses: map[string]string{
 						portalcommonv4.PortalBTCIDStr: "",
 					},
-					MultiSigScriptHexEncode: map[string]string{
+					GeneralMultiSigScriptHexEncode: map[string]string{
 						portalcommonv4.PortalBTCIDStr: "",
 					},
 					PortalTokens: initPortalTokensV4ForMainNet(),

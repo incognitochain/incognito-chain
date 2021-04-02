@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
@@ -22,6 +23,8 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 	pSigs := []*PortalSig{}
 	var tokenID string
 	var hexRawExternalTx string
+	var utxos []*statedb.UTXO
+
 	for _, inst := range insts {
 		metaType := inst[0]
 		switch metaType {
@@ -35,7 +38,7 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 				}
 				tokenID = actionData.TokenID
 				hexRawExternalTx = actionData.RawExternalTx
-
+				utxos = actionData.UTXOs
 			}
 		case strconv.Itoa(metadata.PortalV4FeeReplacementRequestMeta):
 			{
@@ -51,6 +54,7 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 				}
 				tokenID = actionData.TokenID
 				hexRawExternalTx = actionData.ExternalRawTx
+				utxos = actionData.UTXOs
 			}
 		// other cases
 		default:
@@ -63,8 +67,7 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 		}
 
 		portalTokenProcessor := portalParam.PortalTokens[tokenID]
-		multiSigScript, _ := hex.DecodeString(portalParam.MultiSigScriptHexEncode[portalcommonv4.PortalBTCIDStr])
-		sigs, txHash, err := portalTokenProcessor.PartSignOnRawExternalTx(seedKey, multiSigScript, rawTxBytes)
+		sigs, txHash, err := portalTokenProcessor.PartSignOnRawExternalTx(seedKey, portalParam.MasterPubKeys[tokenID], int(portalParam.NumRequiredSigs), rawTxBytes, utxos)
 		if err != nil {
 			return nil, fmt.Errorf("[checkAndSignPortalV4] Error when signing raw tx bytes: %v", err)
 		}

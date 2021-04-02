@@ -3,7 +3,6 @@ package portaltokens
 import (
 	"encoding/base64"
 	"encoding/json"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -16,17 +15,16 @@ type PortalTokenProcessor interface {
 	ConvertExternalToIncAmount(incAmt uint64) uint64
 	ConvertIncToExternalAmount(incAmt uint64) uint64
 
-	GetExpectedMemoForShielding(incAddress string) string
-	ParseAndVerifyProof(
-		proof string, bc metadata.ChainRetriever, expectedMultisigAddress string) (bool, []*statedb.UTXO, error)
+	ParseAndVerifyShieldProof(
+		proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, publicSeed string) (bool, []*statedb.UTXO, error)
 	ParseAndVerifyUnshieldProof(
-		proof string, bc metadata.ChainRetriever, expectedMemo string, expectedMultisigAddress string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error)
+		proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, publicSeed string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error)
 	GetExternalTxHashFromProof(proof string) (string, error)
 	ChooseUnshieldIDsFromCandidates(utxos map[string]*statedb.UTXO, waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest, tinyAmount uint64) []*BroadcastTx
 
-	CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, networkFee uint64, memo string, bc metadata.ChainRetriever) (string, string, error)
-	PartSignOnRawExternalTx(seedKey []byte, multiSigScript []byte, rawTxBytes []byte) ([][]byte, string, error)
-	GenerateOTMultisigAddress(bc metadata.ChainRetriever, masterPubKeys [][]byte, numSigsRequired int, incAddress string) ([]byte, string, error)
+	CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, networkFee uint64, bc metadata.ChainRetriever) (string, string, error)
+	PartSignOnRawExternalTx(seedKey []byte, masterPubKeys [][]byte, numSigsRequired int, rawTxBytes []byte, inputs []*statedb.UTXO) ([][]byte, string, error)
+	GenerateOTMultisigAddress(masterPubKeys [][]byte, numSigsRequired int, publicSeed string) ([]byte, string, error)
 }
 
 // set MinTokenAmount to avoid attacking with amount is less than smallest unit of cryptocurrency
