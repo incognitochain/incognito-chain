@@ -59,7 +59,6 @@ const PORTALV4_USER_INC_ADDRESS_2 = "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEn
 const PORTALV4_USER_INC_ADDRESS_3 = "12Rwz4HXkVABgRnSb5Gfu1FaJ7auo3fLNXVGFhxx1dSytxHpWhbkimT1Mv5Z2oCMsssSXTVsapY8QGBZd2J4mPiCTzJAtMyCzb4dDcy"
 const PORTALV4_USER_INC_ADDRESS_4 = "12S4NL3DZ1KoprFRy1k5DdYSXUq81NtxFKdvUTP3PLqQypWzceL5fBBwXooAsX5s23j7cpb1Za37ddmfSaMpEJDPsnJGZuyWTXJSZZ5"
 
-
 func (s *PortalTestSuiteV4) SetupTest() {
 	dbPath, err := ioutil.TempDir(os.TempDir(), "portal_test_statedb_")
 	if err != nil {
@@ -318,8 +317,6 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultShieldingRequest() ([]
 		//},
 	}
 
-
-
 	//walletAddress := "2MvpFqydTR43TT4emMD84Mzhgd8F6dCow1X"
 
 	// build expected results
@@ -331,7 +328,7 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultShieldingRequest() ([]
 	//todo: update
 	txHash = "8af8c622c1d8956b8f69430dde50b618cf4d71ca8690a6a893f0f9ffe2cb6ca3"
 	outputIdx = 0
-	outputAmount = 10*1e8
+	outputAmount = 10 * 1e8
 	_, otm, _ = s.portalParams.PortalTokens[portalcommonv4.PortalBTCIDStr].GenerateOTMultisigAddress(
 		s.portalParams.MasterPubKeys[portalcommonv4.PortalBTCIDStr],
 		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_1)
@@ -1136,18 +1133,32 @@ type ExpectedResultFeeReplacement struct {
 }
 
 func (s *PortalTestSuiteV4) SetupTestFeeReplacement() {
-	btcMultiSigAddress := s.portalParams.GeneralMultiSigAddresses[portalcommonv4.PortalBTCIDStr]
+	_, otm1, _ := s.portalParams.PortalTokens[portalcommonv4.PortalBTCIDStr].GenerateOTMultisigAddress(
+		s.portalParams.MasterPubKeys[portalcommonv4.PortalBTCIDStr],
+		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_1)
+
+	_, otm2, _ := s.portalParams.PortalTokens[portalcommonv4.PortalBTCIDStr].GenerateOTMultisigAddress(
+		s.portalParams.MasterPubKeys[portalcommonv4.PortalBTCIDStr],
+		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_2)
+
+	_, otm3, _ := s.portalParams.PortalTokens[portalcommonv4.PortalBTCIDStr].GenerateOTMultisigAddress(
+		s.portalParams.MasterPubKeys[portalcommonv4.PortalBTCIDStr],
+		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_3)
+
+	_, otm4, _ := s.portalParams.PortalTokens[portalcommonv4.PortalBTCIDStr].GenerateOTMultisigAddress(
+		s.portalParams.MasterPubKeys[portalcommonv4.PortalBTCIDStr],
+		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_4)
+
 	processUnshield1 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID1,
 		[]string{"txid1", "txid2", "txid3"},
 		[]*statedb.UTXO{
-
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 1000000, ""),
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "49491148bd2f7b5432a26472af97724e114f22a74d9d2fb20c619b4f79f19fd9", 0, 2000000, ""),
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "b751ff30df21ad84ce3f509ee3981c348143bd6a5aa30f4256ecb663fab14fd1", 1, 3000000, ""),
+			statedb.NewUTXOWithValue(otm1, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 1000000, PORTALV4_USER_INC_ADDRESS_1),
+			statedb.NewUTXOWithValue(otm2, "49491148bd2f7b5432a26472af97724e114f22a74d9d2fb20c619b4f79f19fd9", 0, 2000000, PORTALV4_USER_INC_ADDRESS_2),
+			statedb.NewUTXOWithValue(otm3, "b751ff30df21ad84ce3f509ee3981c348143bd6a5aa30f4256ecb663fab14fd1", 1, 3000000, PORTALV4_USER_INC_ADDRESS_3),
 		},
 		map[uint64]uint{
-			900: 900,
+			900: 100000,
 		},
 	)
 
@@ -1155,10 +1166,10 @@ func (s *PortalTestSuiteV4) SetupTestFeeReplacement() {
 		BatchID2,
 		[]string{"txid4", "txid5"},
 		[]*statedb.UTXO{
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "163a6cc24df4efbd5c997aa623d4e319f1b7671be83a86bb0fa27bc701ae4a76", 1, 1000000, ""),
+			statedb.NewUTXOWithValue(otm4, "163a6cc24df4efbd5c997aa623d4e319f1b7671be83a86bb0fa27bc701ae4a76", 1, 1000000, PORTALV4_USER_INC_ADDRESS_4),
 		},
 		map[uint64]uint{
-			1000: 1000,
+			1000: 100000,
 		},
 	)
 
@@ -1231,15 +1242,15 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		{
 			tokenID: portalcommonv4.PortalBTCIDStr,
 			batchID: BatchID1,
-			fee:     1500,
+			fee:     200000,
 			outputs: []OutPut{
 				{
 					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
-					amount:          100,
+					amount:          1000001,
 				},
 				{
 					externalAddress: "2ND6aMnSBt4jrMiGvaxKzW57rUEDihsQARK",
-					amount:          100,
+					amount:          1000002,
 				},
 			},
 		},
@@ -1247,15 +1258,15 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		{
 			tokenID: portalcommonv4.PortalBTCIDStr,
 			batchID: BatchID1,
-			fee:     800,
+			fee:     90000,
 			outputs: []OutPut{
 				{
 					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
-					amount:          100,
+					amount:          1000001,
 				},
 				{
 					externalAddress: "2ND6aMnSBt4jrMiGvaxKzW57rUEDihsQARK",
-					amount:          100,
+					amount:          1000002,
 				},
 			},
 		},
@@ -1263,15 +1274,15 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		{
 			tokenID: portalcommonv4.PortalBTCIDStr,
 			batchID: BatchID1,
-			fee:     1000,
+			fee:     102000,
 			outputs: []OutPut{
 				{
 					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
-					amount:          100,
+					amount:          1000001,
 				},
 				{
 					externalAddress: "2ND6aMnSBt4jrMiGvaxKzW57rUEDihsQARK",
-					amount:          100,
+					amount:          1000002,
 				},
 			},
 		},
@@ -1279,15 +1290,15 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		{
 			tokenID: portalcommonv4.PortalBTCIDStr,
 			batchID: BatchID1,
-			fee:     1100,
+			fee:     103000,
 			outputs: []OutPut{
 				{
 					externalAddress: "2N4PN5oRh5JdizoBvESPnV2yyPBGCfUNwAr",
-					amount:          100,
+					amount:          1000001,
 				},
 				{
 					externalAddress: "2ND6aMnSBt4jrMiGvaxKzW57rUEDihsQARK",
-					amount:          100,
+					amount:          1000002,
 				},
 			},
 		},
@@ -1295,11 +1306,11 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		{
 			tokenID: portalcommonv4.PortalBTCIDStr,
 			batchID: BatchID2,
-			fee:     1200,
+			fee:     110000,
 			outputs: []OutPut{
 				{
 					externalAddress: "2NBf3uA9wMJRT2eM7AyXkM6RXcPfDi24rPA",
-					amount:          200,
+					amount:          1000020,
 				},
 			},
 		},
@@ -1307,28 +1318,43 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		{
 			tokenID: portalcommonv4.PortalBTCIDStr,
 			batchID: BatchID3,
-			fee:     1000,
+			fee:     110000,
 			outputs: []OutPut{
 				{
 					externalAddress: "2N8mFbLG59ugUJM9ZBP292i6nXZHmfAw5Lk",
-					amount:          100,
+					amount:          1000050,
 				},
 			},
 		},
 	}
 
-	btcMultiSigAddress := s.portalParams.GeneralMultiSigAddresses[portalcommonv4.PortalBTCIDStr]
+	_, otm1, _ := s.portalParams.PortalTokens[portalcommonv4.PortalBTCIDStr].GenerateOTMultisigAddress(
+		s.portalParams.MasterPubKeys[portalcommonv4.PortalBTCIDStr],
+		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_1)
+
+	_, otm2, _ := s.portalParams.PortalTokens[portalcommonv4.PortalBTCIDStr].GenerateOTMultisigAddress(
+		s.portalParams.MasterPubKeys[portalcommonv4.PortalBTCIDStr],
+		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_2)
+
+	_, otm3, _ := s.portalParams.PortalTokens[portalcommonv4.PortalBTCIDStr].GenerateOTMultisigAddress(
+		s.portalParams.MasterPubKeys[portalcommonv4.PortalBTCIDStr],
+		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_3)
+
+	_, otm4, _ := s.portalParams.PortalTokens[portalcommonv4.PortalBTCIDStr].GenerateOTMultisigAddress(
+		s.portalParams.MasterPubKeys[portalcommonv4.PortalBTCIDStr],
+		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_4)
+
 	processUnshield1 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID1,
 		[]string{"txid1", "txid2", "txid3"},
 		[]*statedb.UTXO{
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 1000000, ""),
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "49491148bd2f7b5432a26472af97724e114f22a74d9d2fb20c619b4f79f19fd9", 0, 2000000, ""),
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "b751ff30df21ad84ce3f509ee3981c348143bd6a5aa30f4256ecb663fab14fd1", 1, 3000000, ""),
+			statedb.NewUTXOWithValue(otm1, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 1000000, PORTALV4_USER_INC_ADDRESS_1),
+			statedb.NewUTXOWithValue(otm2, "49491148bd2f7b5432a26472af97724e114f22a74d9d2fb20c619b4f79f19fd9", 0, 2000000, PORTALV4_USER_INC_ADDRESS_2),
+			statedb.NewUTXOWithValue(otm3, "b751ff30df21ad84ce3f509ee3981c348143bd6a5aa30f4256ecb663fab14fd1", 1, 3000000, PORTALV4_USER_INC_ADDRESS_3),
 		},
 		map[uint64]uint{
-			900:  900,
-			1500: 1000,
+			900:  100000,
+			1501: 102000,
 		},
 	)
 
@@ -1336,11 +1362,11 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		BatchID2,
 		[]string{"txid4", "txid5"},
 		[]*statedb.UTXO{
-			statedb.NewUTXOWithValue(btcMultiSigAddress, "163a6cc24df4efbd5c997aa623d4e319f1b7671be83a86bb0fa27bc701ae4a76", 1, 1000000, ""),
+			statedb.NewUTXOWithValue(otm4, "163a6cc24df4efbd5c997aa623d4e319f1b7671be83a86bb0fa27bc701ae4a76", 1, 1000000, PORTALV4_USER_INC_ADDRESS_4),
 		},
 		map[uint64]uint{
-			1000: 1000,
-			1500: 1200,
+			1000: 100000,
+			1501: 110000,
 		},
 	)
 
@@ -1382,7 +1408,7 @@ func (s *PortalTestSuiteV4) TestFeeReplacement() {
 		return
 	}
 
-	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+10; i++ {
+	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+1; i++ {
 		blk, err := buildBTCBlockFromCypher(networkName, i)
 		if err != nil {
 			s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)
@@ -1410,6 +1436,9 @@ func (s *PortalTestSuiteV4) TestFeeReplacement() {
 			}
 		})
 	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
+	tokenID := portalcommonv4.PortalBTCIDStr
+	bcH := uint64(0)
+	bc.On("GetPortalV4GeneralMultiSigAddress", tokenID, bcH).Return(s.portalParams.GeneralMultiSigAddresses[portalcommonv4.PortalBTCIDStr])
 
 	beaconHeight := uint64(1501)
 	shardHeights := map[byte]uint64{
@@ -1486,7 +1515,7 @@ func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 		BatchID1,
 		[]string{"txid1", "txid2", "txid3"},
 		[]*statedb.UTXO{
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "3c302a08da42a69d36f81f0ca0cd4f20e50e6e042292200f98a358c1f2536134", 2, 211872, ""),
+			statedb.NewUTXOWithValue(btcMultiSigAddress, "3c302a08da42a69d36f81f0ca0cd4f20e50e6e042292200f98a358c1f2536134", 2, 211872, ""),
 		},
 		map[uint64]uint{
 			900: 900,
@@ -1497,7 +1526,7 @@ func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 		BatchID2,
 		[]string{"txid4", "txid5"},
 		[]*statedb.UTXO{
-				statedb.NewUTXOWithValue(btcMultiSigAddress, "d0450fc4ab5c1a0184c08b15b2b24852757d17a5e183c8e096ed1deb183dea28", 2, 201572, ""),
+			statedb.NewUTXOWithValue(btcMultiSigAddress, "d0450fc4ab5c1a0184c08b15b2b24852757d17a5e183c8e096ed1deb183dea28", 2, 201572, ""),
 		},
 		map[uint64]uint{
 			1000: 1000,
