@@ -59,9 +59,8 @@ func (txMemPoolService *TxMemPoolService) RemoveTxInMempool(txIDString string) (
 	if err != nil {
 		return false, NewRPCError(GeTxFromPoolError, err)
 	}
-	txMemPoolService.TxMemPool.RemoveTx([]metadata.Transaction{tempTx}, false)
-	txMemPoolService.TxMemPool.TriggerCRemoveTxs(tempTx)
-
+	Logger.log.Infof("Removing a stuck tx with hash: %s", txIDString)
+	txMemPoolService.TxMemPool.RemoveStuckTx(*txID, tempTx)
 	return true, nil
 }
 

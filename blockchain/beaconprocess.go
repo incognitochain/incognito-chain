@@ -1525,6 +1525,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 
 	blockchain.BeaconChain.multiView.AddView(newBestState)
+	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
 	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
 
