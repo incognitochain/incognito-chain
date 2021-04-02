@@ -105,7 +105,7 @@ func (s *PortalTestSuiteV4) SetupTest() {
 					ChainID:        "Bitcoin-Testnet",
 					MinTokenAmount: 10,
 				},
-				ChainParam: &chaincfg.RegressionNetParams,
+				ChainParam: &chaincfg.TestNet3Params,
 			},
 		},
 		DefaultFeeUnshields: map[string]uint64{
@@ -253,10 +253,18 @@ type TestCaseShieldingRequest struct {
 	shieldingProof           string
 	txID                     string
 	isExistsInPreviousBlocks bool
+
+	shieldAmtInPubToken uint64
+	shieldAmtInPToken   uint64
+	externalTxID        string
+	txOutIndex          uint32
+
+	isValidRequest bool
 }
 
 type ExpectedResultShieldingRequest struct {
 	utxos          map[string]map[string]*statedb.UTXO
+	shieldRequests map[string][]*statedb.ShieldingRequest
 	numBeaconInsts uint
 	statusInsts    []string
 }
@@ -266,7 +274,7 @@ func (s *PortalTestSuiteV4) SetupTestShieldingRequest() {
 }
 
 func generateUTXOKeyAndValue(tokenID string, walletAddress string, txHash string, outputIdx uint32, outputAmount uint64, publicSeed string) (string, *statedb.UTXO) {
-	utxoKey := statedb.GenerateUTXOObjectKey(portalcommonv4.PortalBTCIDStr, walletAddress, txHash, outputIdx).String()
+	utxoKey := statedb.GenerateUTXOObjectKey(tokenID, walletAddress, txHash, outputIdx).String()
 	utxoValue := statedb.NewUTXOWithValue(walletAddress, txHash, outputIdx, outputAmount, publicSeed)
 	return utxoKey, utxoValue
 }
@@ -279,18 +287,32 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultShieldingRequest() ([]
 		{
 			tokenID:                  portalcommonv4.PortalBTCIDStr,
 			incAddressStr:            PORTALV4_USER_INC_ADDRESS_1,
-			shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzE2MiwzLDI0NSwyMDMsMTYsMTk2LDIzNCw5MSwyMDQsNzMsMTM2LDE1MCwxNTYsNjQsMzMsMjUyLDIxNSwyMTUsMTEwLDI0MSw5NCwxMiw3LDgxLDExLDIsOCwxOTMsOTQsMTg2LDEwMCwyMDNdLCJJc0xlZnQiOnRydWV9XSwiQlRDVHgiOnsiVmVyc2lvbiI6MiwiVHhJbiI6W3siUHJldmlvdXNPdXRQb2ludCI6eyJIYXNoIjpbNjgsMjM5LDk3LDE3OCwxMDYsMTY3LDIxMCw2MiwxOCwxMiwxODgsMjMwLDIyNCw2MiwxODMsMjMsMTQyLDEzNCwxNyw4OSwyMDYsNTQsNTUsMTczLDI1NSwyMjksNDgsMTAsMTQxLDExNCw3NiwyMDNdLCJJbmRleCI6MH0sIlNpZ25hdHVyZVNjcmlwdCI6IiIsIldpdG5lc3MiOlsiTUVRQ0lGNk16dVNGZkZXeXhrMWlNb3pZRUpIWmVnRmhBa3JabE1mWjFjNGVMVTU5QWlCajhBcDRUOVU4VVVwK1pOZExzcHhjdER0K3U0LzBaL3VFREkvWGVEbUVuUUU9IiwiQTA4a0VWSHoveVcydTUreGlYM2dwZkQrVDJKd3NEQWh1OEwrQ3NnMmhEeDUiXSwiU2VxdWVuY2UiOjQyOTQ5NjcyOTV9XSwiVHhPdXQiOlt7IlZhbHVlIjoxMDAwMDAwMDAwLCJQa1NjcmlwdCI6IkFDQXpZVmQzb1BDLy9UdEZMQlBSOWt6Y2NVMlU0QXJYYkRNSXpBenJQS2NvYlE9PSJ9LHsiVmFsdWUiOjk4OTk5MDAwMDAwLCJQa1NjcmlwdCI6IkFCU1dyYkhEdEVSeGtvdkloYkQvWlhFemxQeG1QQT09In1dLCJMb2NrVGltZSI6MH0sIkJsb2NrSGFzaCI6WzIyOCw0OSwxNywyNDIsOTEsMTU5LDEzNSwxNTEsMjIwLDQyLDU5LDE3MSwyNTIsMTksODcsMTQ2LDEwNiwyMDQsMTE0LDQxLDIsMTMxLDI1MCwyMzMsMjE2LDg5LDI0MCwxMDIsMTYzLDk4LDI0Nyw3OF19",
+			shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzM2LDMwLDE5MSw0MiwyMjAsNiw1NywxMjEsMjI2LDEsMTE2LDE4NSwyMDgsOCwyMTEsODMsMTkzLDE3LDE1LDEzLDEwOCw5LDIyNSwyMTAsMzQsMjQzLDIyMiw4NCwxMTMsMTIzLDQsNTRdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMTc4LDQ4LDE4MCw2LDI1MSwyNDgsMTU1LDE3NiwyMDEsNjYsMTg4LDEwNCw4MCw4MywxMTMsMTE1LDc3LDEyNiwxMDIsMTU3LDEyMyw0Niw0OCwyMTIsMTI1LDEwMiw3MiwxMDcsMTU2LDI1NSwxNzMsNDNdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMjE1LDU5LDM1LDE3OCw5NSwyNDQsMTg5LDc5LDE1MywxMzUsNjAsNzAsMTU3LDIyMSw2OCw0NiwxMjcsMTQ3LDE2MywxMTYsMTU0LDIxLDE5NCw4MSwyMzAsMTI0LDEzMSwyNTMsMTc5LDIxMCw5MywxNThdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMTEyLDc3LDI0MiwxODUsMjAzLDYwLDEwNCw4MSw1NiwxNzAsMTg4LDIzNCwxNjQsMTAsMjMwLDEyMiwxMyw4NywxMTcsNyw4LDIwOCwxODUsMTYwLDE4MywyMzMsNzYsMTg2LDI1MywxMzgsNzYsMThdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzE3NywxMCw4MywxMTcsNDgsNzEsMTAyLDg4LDEyMSwxODgsMzgsMTUsOTksMjMzLDI5LDE4NiwyNTQsODAsMTk2LDE1Miw0MywyMDQsNTgsNjcsMzQsMjU0LDE3NCw2NywxODMsMjM4LDEyOCw1Nl0sIklzTGVmdCI6ZmFsc2V9XSwiQlRDVHgiOnsiVmVyc2lvbiI6MiwiVHhJbiI6W3siUHJldmlvdXNPdXRQb2ludCI6eyJIYXNoIjpbMTEzLDE1OSw5OCwxMzQsMTkxLDM5LDg4LDU1LDIzMyw5OSwxNzIsOTIsMTQ1LDYsMTgwLDI2LDEwMiw3OSwxMTIsMTQ1LDIxMCwxOTUsOTgsODUsMTM3LDcyLDI0OCwxMywyMjYsMTIxLDE0NSwxMzRdLCJJbmRleCI6MH0sIlNpZ25hdHVyZVNjcmlwdCI6IiIsIldpdG5lc3MiOm51bGwsIlNlcXVlbmNlIjo0Mjk0OTY3MjkzfV0sIlR4T3V0IjpbeyJWYWx1ZSI6ODkyODE4NSwiUGtTY3JpcHQiOiJBQlFoeDN1b2xqTzBQdUIvdWhKeUxGU05aRE9GTWc9PSJ9LHsiVmFsdWUiOjEwMDAwMDAsIlBrU2NyaXB0IjoiQUNBellWZDNvUEMvL1R0RkxCUFI5a3pjY1UyVTRBclhiRE1JekF6clBLY29iUT09In1dLCJMb2NrVGltZSI6MTk2OTI0N30sIkJsb2NrSGFzaCI6WzExNSwxNzYsMTUwLDE0MCwxNTMsMjUsMjUzLDI1MCwxNjEsMzksMjAzLDMsMjUzLDE2MSwxODMsOTYsMzIsMjIzLDIwOCwyMzgsMSwyMjcsMjAsOTcsMTEsMCwwLDAsMCwwLDAsMF19",
 			txID:                     common.HashH([]byte{1}).String(),
 			isExistsInPreviousBlocks: false,
+
+			shieldAmtInPubToken: 0.01 * 1e8,
+			shieldAmtInPToken:   0.01 * 1e9,
+			externalTxID:        "098886e4f6d6f4a161249579843c5dc29a0fa532e4e0b65a1d9dedc5c6fd4729",
+			txOutIndex:          1,
+
+			isValidRequest: true,
 		},
-		//// valid shielding request: different user incognito address
-		//{
-		//	tokenID:                  portalcommonv4.PortalBTCIDStr,
-		//	incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
-		//	shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzIwOCw0Niw2OCwxOSw1NSwyMDksMjM1LDIyMCw0OSwxMTEsNjQsMjEsODEsMTA5LDI0NiwyMTAsMTUyLDEzMywxMDksNjgsNjMsMTU5LDI0MSwxNjUsMTk4LDE2LDUsMjYsMjA0LDIzNCw3NCwxODhdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMTM2LDQzLDIyNCwxLDE3NiwxMTQsMTQxLDIxMywzMywxMTcsNjAsNzYsNjcsMzgsMjAsNDksMTE4LDE5NSwyNTMsMjMyLDE1MCw4MiwxNDksMTY1LDE2OCwxNDIsMjA3LDI1NSwxNiw1NCw3Miw1MF0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTgwLDM2LDE4LDgyLDIxMywzOSwxMDksMTc1LDIwNiwxMjgsMjUwLDYsMjM4LDM2LDE2MiwyMTAsMjMyLDEzNCwxNDYsMTI0LDksNTgsMTA0LDEzNSwxNDgsMTI5LDE4OCwxNDIsMjM5LDE5LDE4MiwzXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOls2NywxMDUsMTE3LDI4LDg3LDExOCwxMSwxNCwxNzgsMTE0LDk4LDExOCwxNDcsMTA3LDEwNyw5NSw0MywyMzEsNTEsMjEsMTYwLDQwLDk1LDEwLDIyNSwyNTUsMTQ5LDIzMiwyMjEsMjM1LDI0OCwzMF0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOlsyNDgsMjQ0LDE3MCw0NywzMSwxMTIsMTE4LDI0MSw0OCwxOTIsMzAsMTc2LDE1MSw4LDQ5LDYsNDIsMTE0LDE1NSwxMjIsMjEwLDIxMSw4NSwyMTQsODQsNDgsMjQ0LDE4MCw4NSw2NCwyNCw4M10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTI3LDEyNCw5MywyMjEsMjQ4LDE3MywxOTQsMTYsMTU3LDUwLDYwLDE4MCwyNDAsMTMxLDQzLDExNCwxNDQsMTI4LDIwMSw0NSwxNjEsMjAsMjIxLDY3LDgwLDk4LDE4LDExMSwyNTIsMjE3LDMyLDU1XSwiSXNMZWZ0IjpmYWxzZX1dLCJCVENUeCI6eyJWZXJzaW9uIjoxLCJUeEluIjpbeyJQcmV2aW91c091dFBvaW50Ijp7Ikhhc2giOlsyMDgsNDYsNjgsMTksNTUsMjA5LDIzNSwyMjAsNDksMTExLDY0LDIxLDgxLDEwOSwyNDYsMjEwLDE1MiwxMzMsMTA5LDY4LDYzLDE1OSwyNDEsMTY1LDE5OCwxNiw1LDI2LDIwNCwyMzQsNzQsMTg4XSwiSW5kZXgiOjJ9LCJTaWduYXR1cmVTY3JpcHQiOiJTREJGQWlFQXhzOWRTMlE4YWVrMHkvRjJmOUdkejB5R0VFREVzWjNYQXpKZVFYamRiK1VDSUNlZmwwREZWV0tPZUk2Rm9FQzRsS01jWE5hRnFlL0o4ZFpTQnZNUnQyRkRBU0VEenlBVFQxWkk0dmJ4ZDZaVkt5VzZsK1JiRklWT1R4TXFTdkQrZmFrL3hQdz0iLCJXaXRuZXNzIjpudWxsLCJTZXF1ZW5jZSI6NDI5NDk2NzI5NX1dLCJUeE91dCI6W3siVmFsdWUiOjAsIlBrU2NyaXB0IjoiYWt4clVGTXhMVEV5VXpWTWNuTXhXR1ZSVEdKeFRqUjVVM2xMZEdwQmFtUXlaRGR6UWxBeWRHcEdhV3A2YlhBMllYWnljbXRSUTA1R1RYQnJXRzB6UmxCNmFqSlhZM1V5V2s1eFNrVnRhRGxLY21sV2RWSkZjbFozYUhWUmJreHRWMU5oWjJkdllrVlhjMEpGWTJrPSJ9LHsiVmFsdWUiOjgwMCwiUGtTY3JpcHQiOiJxUlFuSjZkdjh2bzVYY1VsWktqcktxdU0vbEhJZG9jPSJ9LHsiVmFsdWUiOjc2MjcyLCJQa1NjcmlwdCI6ImRxa1Vndnk2bFFpK0VpUXk5N3VRMmw5MEFVQ21XNGlJckE9PSJ9XSwiTG9ja1RpbWUiOjB9LCJCbG9ja0hhc2giOls2NCw2NywyNDMsMjIyLDI0NCw5LDE4MywyMzQsMjM4LDE3MCwxNjYsMjI2LDEzLDI1NCwzNSw3OCwyMjIsNjksMjQxLDIyNCwxMDMsNjMsMTI5LDIwNCwxNCwwLDAsMCwwLDAsMCwwXX0=",
-		//	txID:                     common.HashH([]byte{2}).String(),
-		//	isExistsInPreviousBlocks: false,
-		//},
+		// valid shielding request: different user incognito address
+		{
+			tokenID:                  portalcommonv4.PortalBTCIDStr,
+			incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
+			shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzEzNiwxODksMTYyLDE0NSwxMjEsMzMsMTg4LDYxLDIxNywxMzgsOTAsNDUsMjI3LDExNywyMiwyNTEsNTYsMTY4LDEwOSw5NiwyMTQsMTAzLDkzLDIzOSwyMDYsNDEsMTkyLDgxLDI0NCwzNCwyMTQsOTNdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzU3LDk5LDEyNCwxMTEsMTk2LDMwLDIyNSwxMTYsMTIsMTQ0LDE2NSwxNzYsMjQyLDQ1LDEyNCw3Nyw1MywyMzYsMTQ0LDEyMCwyMzAsMjA5LDIwOSw1MSwxMTAsMTI3LDIwMCw3OSw5MSwyNSwyMDcsNjBdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6Wzk1LDEwLDIyNiw3NiwyMzIsNDIsMTI4LDI1NSwxMzIsODcsMTk5LDIzMSw1OSw3NCwyMyw5OSwyMTEsMTU1LDk1LDE1NiwxMzEsNDYsMTU4LDEwMSwwLDE1MywzNSwyMzUsMjI1LDIwNyw2MSwxMThdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEwMSw4MSwyMDYsMzEsNDQsOSwyMzUsMjExLDIxNSwxMzQsMjE2LDIyLDEzOCw2MSw5NiwxODIsMTEzLDEsMjQxLDY5LDE2MiwxOTcsMTI2LDY1LDE5MCwyMDUsMzcsMTUsMTcwLDIzOSwxOTcsMTYyXSwiSXNMZWZ0Ijp0cnVlfSx7IlByb29mSGFzaCI6WzE3NywxMCw4MywxMTcsNDgsNzEsMTAyLDg4LDEyMSwxODgsMzgsMTUsOTksMjMzLDI5LDE4NiwyNTQsODAsMTk2LDE1Miw0MywyMDQsNTgsNjcsMzQsMjU0LDE3NCw2NywxODMsMjM4LDEyOCw1Nl0sIklzTGVmdCI6ZmFsc2V9XSwiQlRDVHgiOnsiVmVyc2lvbiI6MiwiVHhJbiI6W3siUHJldmlvdXNPdXRQb2ludCI6eyJIYXNoIjpbNjEsNTUsMjA3LDQ4LDE4OCwyMzcsNzcsMjksOTQsNTksMjMxLDIzLDE1NiwyMjEsMjMyLDE0OSwyNDYsNTYsMjI1LDEzNCwxMzUsOTIsNTAsMTg4LDE1NywxOTUsMTMzLDY5LDQ1LDIwNCwyNTMsMjM4XSwiSW5kZXgiOjF9LCJTaWduYXR1cmVTY3JpcHQiOiIiLCJXaXRuZXNzIjpudWxsLCJTZXF1ZW5jZSI6NDI5NDk2NzI5M31dLCJUeE91dCI6W3siVmFsdWUiOjU4MDA4NjM4LCJQa1NjcmlwdCI6IkFCUlkxaFBoa3BQWm95UW5sSGtydVlBNTd5akdBUT09In0seyJWYWx1ZSI6MjAwMDAwLCJQa1NjcmlwdCI6IkFDQ0dLYVlIY0tIeFRTR0NpTy9XQ0EraGoxQ2U5enY0ZjVNdFE5dzd5eVV6NWc9PSJ9XSwiTG9ja1RpbWUiOjE5NjkyNDd9LCJCbG9ja0hhc2giOlsxMTUsMTc2LDE1MCwxNDAsMTUzLDI1LDI1MywyNTAsMTYxLDM5LDIwMywzLDI1MywxNjEsMTgzLDk2LDMyLDIyMywyMDgsMjM4LDEsMjI3LDIwLDk3LDExLDAsMCwwLDAsMCwwLDBdfQ==",
+			txID:                     common.HashH([]byte{2}).String(),
+			isExistsInPreviousBlocks: false,
+
+			shieldAmtInPubToken: 0.002 * 1e8,
+			shieldAmtInPToken:   0.002 * 1e9,
+			externalTxID:        "e392c06d9b216877343d65a387add7aa636a87805549c7a9566374ca1ba7caed",
+			txOutIndex:          1,
+
+			isValidRequest: true,
+		},
 		//// valid shielding request: the same user incognito address
 		//{
 		//	tokenID:                  portalcommonv4.PortalBTCIDStr,
@@ -317,55 +339,44 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultShieldingRequest() ([]
 		//},
 	}
 
-	//walletAddress := "2MvpFqydTR43TT4emMD84Mzhgd8F6dCow1X"
+	return testcases, s.buildExpectedResultFromTestCases(testcases)
+}
 
-	// build expected results
-	var txHash string
-	var outputIdx uint32
-	var outputAmount uint64
-	var otm string
+func (s *PortalTestSuiteV4) buildExpectedResultFromTestCases(testcases []TestCaseShieldingRequest) *ExpectedResultShieldingRequest {
+	utxos := map[string]map[string]*statedb.UTXO{
+		portalcommonv4.PortalBTCIDStr: map[string]*statedb.UTXO{},
+	}
+	shieldRequests := map[string][]*statedb.ShieldingRequest{
+		portalcommonv4.PortalBTCIDStr: []*statedb.ShieldingRequest{},
+	}
+	numBeaconInsts := len(testcases)
+	statusInsts := []string{}
 
-	//todo: update
-	txHash = "8af8c622c1d8956b8f69430dde50b618cf4d71ca8690a6a893f0f9ffe2cb6ca3"
-	outputIdx = 0
-	outputAmount = 10 * 1e8
-	_, otm, _ = s.portalParams.PortalTokens[portalcommonv4.PortalBTCIDStr].GenerateOTMultisigAddress(
-		s.portalParams.MasterPubKeys[portalcommonv4.PortalBTCIDStr],
-		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_1)
+	for _, tc := range testcases {
+		portalToken := s.portalParams.PortalTokens[tc.tokenID]
+		if tc.isValidRequest {
+			// add utxos
+			_, otm, _ := portalToken.GenerateOTMultisigAddress(
+				s.portalParams.MasterPubKeys[tc.tokenID],
+				int(s.portalParams.NumRequiredSigs), tc.incAddressStr)
+			key, value := generateUTXOKeyAndValue(tc.tokenID, otm, tc.externalTxID, tc.txOutIndex, tc.shieldAmtInPubToken, tc.incAddressStr)
+			utxos[tc.tokenID][key] = value
 
-	key1, value1 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, otm, txHash, outputIdx, outputAmount, PORTALV4_USER_INC_ADDRESS_1)
-
-	//txHash = "48ea0dcdea31ed9b869a6e5914029df0089994ea3299be9161c6264e333284a5"
-	//outputIdx = 1
-	//outputAmount = 800
-	//
-	//key2, value2 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, txHash, outputIdx, outputAmount, USER_INC_ADDRESS_2)
-	//
-	//txHash = "48ea0dcdea31ed9b869a6e5914029df0089994ea3299be9161c6264e333284a5"
-	//outputIdx = 1
-	//outputAmount = 800
-	//
-	//key3, value3 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, walletAddress, txHash, outputIdx, outputAmount, USER_INC_ADDRESS_2)
-
-	expectedRes := &ExpectedResultShieldingRequest{
-		utxos: map[string]map[string]*statedb.UTXO{
-			portalcommonv4.PortalBTCIDStr: {
-				key1: value1,
-				//key2: value2,
-				//key3: value3,
-			},
-		},
-		numBeaconInsts: 1,
-		statusInsts: []string{
-			portalcommonv4.PortalV4RequestAcceptedChainStatus,
-			//portalcommonv4.PortalV4RequestAcceptedChainStatus,
-			//portalcommonv4.PortalV4RequestAcceptedChainStatus,
-			//portalcommonv4.PortalV4RequestRejectedChainStatus,
-			//portalcommonv4.PortalV4RequestRejectedChainStatus,
-		},
+			// add shield request
+			shieldRequests[tc.tokenID] = append(shieldRequests[tc.tokenID], statedb.NewShieldingRequestWithValue(tc.externalTxID, tc.incAddressStr, tc.shieldAmtInPToken))
+			statusInsts = append(statusInsts, portalcommonv4.PortalV4RequestAcceptedChainStatus)
+		} else {
+			statusInsts = append(statusInsts, portalcommonv4.PortalV4RequestRejectedChainStatus)
+		}
 	}
 
-	return testcases, expectedRes
+	res := &ExpectedResultShieldingRequest{
+		utxos:          utxos,
+		shieldRequests: shieldRequests,
+		numBeaconInsts: uint(numBeaconInsts),
+		statusInsts:    statusInsts,
+	}
+	return res
 }
 
 func buildPortalShieldingRequestAction(
@@ -459,37 +470,36 @@ func setGenesisBlockToChainParams(networkName string, genesisBlkHeight int) (*ch
 func (s *PortalTestSuiteV4) TestShieldingRequest() {
 	fmt.Println("Running TestShieldingRequest - beacon height 1003 ...")
 
-	//networkName := "test3"
-	genesisBlockHeight := 1940329
-	//chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
-	chainParams := &chaincfg.RegressionNetParams
+	networkName := "test3"
+	genesisBlockHeight := 1969248
+	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
 	dbName := "btc-blocks-test"
 	btcChain, err := btcrelaying.GetChainV2(dbName, chainParams, int32(genesisBlockHeight))
 	defer os.RemoveAll(dbName)
 
-	//if err != nil {
-	//	s.FailNow(fmt.Sprintf("Could not get chain instance with err: %v", err), nil)
-	//	return
-	//}
-	//
-	//for i := genesisBlockHeight + 1; i <= genesisBlockHeight+10; i++ {
-	//	blk, err := buildBTCBlockFromCypher(networkName, i)
-	//	if err != nil {
-	//		s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)
-	//		return
-	//	}
-	//	isMainChain, isOrphan, err := btcChain.ProcessBlockV2(blk, 0)
-	//	if err != nil {
-	//		s.FailNow(fmt.Sprintf("ProcessBlock fail on block %v: %v\n", i, err))
-	//		return
-	//	}
-	//	if isOrphan {
-	//		s.FailNow(fmt.Sprintf("ProcessBlock incorrectly returned block %v is an orphan\n", i))
-	//		return
-	//	}
-	//	fmt.Printf("Block %s (%d) is on main chain: %t\n", blk.Hash(), blk.Height(), isMainChain)
-	//	time.Sleep(500 * time.Millisecond)
-	//}
+	if err != nil {
+		s.FailNow(fmt.Sprintf("Could not get chain instance with err: %v", err), nil)
+		return
+	}
+
+	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+7; i++ {
+		blk, err := buildBTCBlockFromCypher(networkName, i)
+		if err != nil {
+			s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)
+			return
+		}
+		isMainChain, isOrphan, err := btcChain.ProcessBlockV2(blk, 0)
+		if err != nil {
+			s.FailNow(fmt.Sprintf("ProcessBlock fail on block %v: %v\n", i, err))
+			return
+		}
+		if isOrphan {
+			s.FailNow(fmt.Sprintf("ProcessBlock incorrectly returned block %v is an orphan\n", i))
+			return
+		}
+		fmt.Printf("Block %s (%d) is on main chain: %t\n", blk.Hash(), blk.Height(), isMainChain)
+		time.Sleep(500 * time.Millisecond)
+	}
 
 	bc := new(mocks.ChainRetriever)
 	bc.On("GetBTCHeaderChain").Return(btcChain)

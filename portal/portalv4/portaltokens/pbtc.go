@@ -63,17 +63,6 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 		return false, nil, fmt.Errorf("Verify btcTxProof failed %v", err)
 	}
 
-	//// extract attached message from txOut's OP_RETURN
-	//btcAttachedMsg, err := btcrelaying.ExtractAttachedMsgFromTx(btcTxProof.BTCTx)
-	//if err != nil {
-	//	Logger.log.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
-	//	return false, nil, fmt.Errorf("Could not extract attached message from BTC tx proof with err: %v", err)
-	//}
-	//if btcAttachedMsg != expectedMemo {
-	//	Logger.log.Errorf("ShieldingIncAddress in the btc attached message is not matched with ShieldingIncAddress in metadata")
-	//	return false, nil, fmt.Errorf("ShieldingIncAddress in the btc attached message %v is not matched with ShieldingIncAddress in metadata %v", btcAttachedMsg, expectedMemo)
-	//}
-
 	// check whether amount transfer in txBNB is equal porting amount or not
 	// check receiver and amount in tx
 	outputs := btcTxProof.BTCTx.TxOut
@@ -142,8 +131,9 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 		Logger.log.Errorf("Can not find the tx inputs in proof")
 		return false, nil, fmt.Errorf("Submit confirmed tx: no tx inputs in proof")
 	}
-	isMatched := false
+
 	for _, input := range btcTxProof.BTCTx.TxIn {
+		isMatched := false
 		for _, v := range utxos {
 			if v.GetTxHash() == input.PreviousOutPoint.Hash.String() && v.GetOutputIndex() == input.PreviousOutPoint.Index {
 				isMatched = true
@@ -154,14 +144,13 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 			Logger.log.Errorf("Submit confirmed: tx inputs from proof is diff utxos from unshield batch")
 			return false, nil, fmt.Errorf("Submit confirmed tx: tx inputs from proof is diff utxos from unshield batch")
 		}
-		isMatched = false
 	}
 
 	// check whether amount transfer in txBNB is equal porting amount or not
 	// check receiver and amount in tx
 	outputs := btcTxProof.BTCTx.TxOut
 	for receiverAddress := range expectPaymentInfo {
-		isMatched = false
+		isMatched := false
 		for _, out := range outputs {
 			addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
 			if err != nil {
@@ -283,7 +272,7 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byt
 			extendedBTCChildPubKey, _ := extendedBTCPublicKey.Child(0)
 			childPubKey, err := extendedBTCChildPubKey.ECPubKey()
 			if err != nil {
-				return []byte{}, "", fmt.Errorf("Master BTC Public Key #%v: %v is invalid", idx, masterPubKey)
+				return []byte{}, "", fmt.Errorf("Master BTC Public Key (#%v) %v is invalid - Error %v", idx, masterPubKey, err)
 			}
 			pubKeys = append(pubKeys, childPubKey.SerializeCompressed())
 		}
@@ -304,16 +293,18 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byt
 
 	redeemScript, err := builder.Script()
 	if err != nil {
-		return []byte{}, "", err
+		return []byte{}, "", fmt.Errorf("Could not build script - Error %v", err)
 	}
 
+	// generate P2WSH address
 	scriptHash := sha256.Sum256(redeemScript)
-	multi, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], p.ChainParam)
+	addr, err := btcutil.NewAddressWitnessScriptHash(scriptHash[:], p.ChainParam)
 	if err != nil {
-		return []byte{}, "", err
+		return []byte{}, "", fmt.Errorf("Could not generate address from script - Error %v", err)
 	}
+	addrStr := addr.EncodeAddress()
 
-	return redeemScript, multi.EncodeAddress(), nil
+	return redeemScript, addrStr, nil
 }
 
 // CreateRawExternalTx creates raw btc transaction (not include signatures of beacon validator)
@@ -394,7 +385,6 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	hexRawTx := hex.EncodeToString(rawTxBytes.Bytes())
 	return hexRawTx, msgTx.TxHash().String(), nil
 }
-
 
 func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, masterPubKeys [][]byte, numSigsRequired int, rawTxBytes []byte, inputs []*statedb.UTXO) ([][]byte, string, error) {
 	// new MsgTx from rawTxBytes
@@ -575,5 +565,3 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 	}
 	return broadcastTxs
 }
-
-
