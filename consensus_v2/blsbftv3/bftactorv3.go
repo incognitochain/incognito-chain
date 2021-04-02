@@ -190,8 +190,7 @@ func (e *BLSBFT_V3) run() error {
 								if err == nil {
 									bestViewHeight := e.Chain.GetBestView().GetHeight()
 									if b.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
-										view := e.Chain.GetViewByHash(b.block.GetPrevHash())
-										err := e.sendVote(&userKey, b.block, view.GetCommittee()) // => send vote
+										err := e.sendVote(&userKey, b.block, b.committees) // => send vote
 										if err != nil {
 											e.Logger.Error(err)
 										} else {
