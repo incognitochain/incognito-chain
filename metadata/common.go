@@ -371,6 +371,21 @@ func buildMetaInfo() {
 		WithDrawRewardResponseMeta,
 		PDETradeResponseMeta,
 		PDEContributionResponseMeta,
+		PDETradeResponseMeta,
+		PDEWithdrawalResponseMeta,
+		PDEContributionResponseMeta,
+		PDECrossPoolTradeResponseMeta,
+		PDEFeeWithdrawalResponseMeta,
+		PortalCustodianDepositResponseMeta,
+		PortalCustodianWithdrawResponseMeta,
+		PortalLiquidateCustodianResponseMeta,
+		PortalRequestWithdrawRewardResponseMeta,
+		PortalRedeemFromLiquidationPoolResponseMeta,
+		PortalCustodianTopupResponseMeta,
+		PortalPortingResponseMeta,
+		PortalCustodianTopupResponseMetaV2,
+		PortalRedeemFromLiquidationPoolResponseMetaV3,
+		PortalTopUpWaitingPortingResponseMeta,
 	}
 
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
