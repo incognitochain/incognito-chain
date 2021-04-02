@@ -11,7 +11,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	"github.com/incognitochain/incognito-chain/multiview"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -173,12 +172,12 @@ func (e *BLSBFT_V3) run() error {
 				if b, ok := e.receiveBlockByHash[voteMsg.BlockHash]; ok { //if receiveblock is already initiated
 					if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
 						b.votes[voteMsg.Validator] = &voteMsg // store it
-						vid, v := getValidatorIndex(e.Chain.GetBestView(), voteMsg.Validator)
+						vid, v := getValidatorIndex(b.committees, voteMsg.Validator)
 						if v != nil {
 							vbase58, _ := v.ToBase58()
 							e.Logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, vbase58)
 						} else {
-							e.Logger.Infof("%v Receive vote (%d) for block from unknown validator", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
+							e.Logger.Infof("%v Receive vote (%d) for block %v from unknown validator %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
 						}
 						b.hasNewVote = true
 					}
@@ -207,13 +206,7 @@ func (e *BLSBFT_V3) run() error {
 				} else {
 					e.receiveBlockByHash[voteMsg.BlockHash] = newBlockInfoForVoteMsg()
 					e.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
-					vid, v := getValidatorIndex(e.Chain.GetBestView(), voteMsg.Validator)
-					if v != nil {
-						vbase58, _ := v.ToBase58()
-						e.Logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, vbase58)
-					} else {
-						e.Logger.Infof("%v Receive vote (%d) for block from unknown validator", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
-					}
+					e.Logger.Infof("%v Receive vote (%d) for block %v from validator %v", e.ChainKey, len(e.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
 				}
 			case <-cleanMemTicker:
 				for h, _ := range e.receiveBlockByHeight {
@@ -384,8 +377,8 @@ func (e *BLSBFT_V3) run() error {
 	return nil
 }
 
-func getValidatorIndex(view multiview.View, validator string) (int, *incognitokey.CommitteePublicKey) {
-	for id, c := range view.GetCommittee() {
+func getValidatorIndex(committees []incognitokey.CommitteePublicKey, validator string) (int, *incognitokey.CommitteePublicKey) {
+	for id, c := range committees {
 		if validator == c.GetMiningKeyBase58(common.BlsConsensus) {
 			return id, &c
 		}
@@ -449,7 +442,7 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	for id, vote := range v.votes {
 		dsaKey := []byte{}
 		if vote.IsValid == 0 {
-			cid, committeePk := getValidatorIndex(view, vote.Validator)
+			cid, committeePk := getValidatorIndex(v.committees, vote.Validator)
 			if committeePk != nil {
 				dsaKey = committeePk.MiningPubKey[common.BridgeConsensus]
 			} else {
