@@ -65,6 +65,7 @@ const (
 	createAndSendPrivacyCustomTokenTransaction   = "createandsendprivacycustomtokentransaction"
 	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"
 	getMempoolInfo                               = "getmempoolinfo"
+	getMempoolInfoDetails                    		 = "getmempoolinfodetails"
 	getPendingTxsInBlockgen                      = "getpendingtxsinblockgen"
 	getCandidateList                             = "getcandidatelist"
 	getCommitteeList                             = "getcommitteelist"

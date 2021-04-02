@@ -30,12 +30,13 @@ var HttpHandler = map[string]httpHandler{
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
 
 	//tx pool
-	getRawMempool:           (*HttpServer).handleGetRawMempool,
-	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
-	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
-	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
-	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
-	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
+	getRawMempool:             (*HttpServer).handleGetRawMempool,
+	getNumberOfTxsInMempool:   (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:           (*HttpServer).handleMempoolEntry,
+	removeTxInMempool:         (*HttpServer).handleRemoveTxInMempool,
+	getMempoolInfo:            (*HttpServer).handleGetMempoolInfo,
+	getMempoolInfoDetails: 		 (*HttpServer).handleGetMempoolInfoDetails,
+	getPendingTxsInBlockgen:   (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
 	// getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
