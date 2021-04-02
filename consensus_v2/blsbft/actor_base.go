@@ -33,6 +33,27 @@ type actorBase struct {
 	logger    common.Logger
 }
 
+func NewActorBase() *actorBase {
+	return &actorBase{}
+}
+
+func NewActorBaseWithValue(
+	chain blockchain.Chain,
+	chainKey string, chainID int,
+	node NodeInterface, logger common.Logger,
+) *actorBase {
+	res := NewActorBase()
+	res.chain = chain
+	res.chainKey = chainKey
+	res.chainID = chainID
+	res.node = node
+	res.logger = logger
+	res.destroyCh = make(chan struct{})
+	res.proposeMessageCh = make(chan BFTPropose)
+	res.voteMessageCh = make(chan BFTVote)
+	return res
+}
+
 func (actorBase *actorBase) IsStarted() bool {
 	return actorBase.isStarted
 }
@@ -65,9 +86,9 @@ func (actorBase *actorBase) Stop() error {
 	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(actorBase.chainKey))
 }
 
-func (actorBase *actorBase) ProcessBFTMsg(msg *wire.MessageBFT) {
+func (actorBase *actorBase) processBFTMsg(msg *wire.MessageBFT) {
 	switch msg.Type {
-	case MSG_PROPOSE:
+	case MsgPropose:
 		var msgPropose BFTPropose
 		err := json.Unmarshal(msg.Content, &msgPropose)
 		if err != nil {
@@ -75,7 +96,7 @@ func (actorBase *actorBase) ProcessBFTMsg(msg *wire.MessageBFT) {
 			return
 		}
 		actorBase.proposeMessageCh <- msgPropose
-	case MSG_VOTE:
+	case MsgVote:
 		var msgVote BFTVote
 		err := json.Unmarshal(msg.Content, &msgVote)
 		if err != nil {

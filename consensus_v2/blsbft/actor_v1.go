@@ -140,12 +140,17 @@ func (actorV1 *actorV1) Start() error {
 							// committeeArr = append(committeeArr, actorV1.RoundData.Committee...)
 							actorV1.roundData.lockVotes.Unlock()
 							go func(voteMsg BFTVote, blockHash common.Hash, committee []incognitokey.CommitteePublicKey) {
-								if err := actorV1.preValidateVote(blockHash.GetBytes(), &(voteMsg.Vote), committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+								v := vote{
+									BLS:          voteMsg.Bls,
+									BRI:          voteMsg.Bri,
+									Confirmation: voteMsg.Confirmation,
+								}
+								if err := actorV1.preValidateVote(blockHash.GetBytes(), &v, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 									actorV1.logger.Error(err)
 									return
 								}
-								if len(voteMsg.Vote.BRI) != 0 {
-									if err := validateSingleBriSig(&blockHash, voteMsg.Vote.BRI, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+								if len(voteMsg.Bri) != 0 {
+									if err := validateSingleBriSig(&blockHash, voteMsg.Bri, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 										actorV1.logger.Error(err)
 										return
 									}
@@ -159,7 +164,7 @@ func (actorV1 *actorV1) Start() error {
 									msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
 									msg.(*wire.MessageBFT).ChainKey = actorV1.chainKey
 									msg.(*wire.MessageBFT).Content = voteCtnBytes
-									msg.(*wire.MessageBFT).Type = MSG_VOTE
+									msg.(*wire.MessageBFT).Type = MsgVote
 									// TODO uncomment here when switch to non-highway mode
 									// e.Node.PushMessageToChain(msg, e.Chain)
 								}()
@@ -316,7 +321,7 @@ func (actorV1 *actorV1) enterProposePhase(keyset *signatureschemes2.MiningKey) {
 	actorV1.roundData.blockValidateData = validationData
 
 	blockData, _ := json.Marshal(actorV1.roundData.block)
-	msg, _ := MakeBFTProposeMsg(blockData, actorV1.chainKey, keyset)
+	msg, _ := actorV1.makeBFTProposeMsg(blockData, actorV1.chainKey, keyset)
 	go actorV1.node.PushMessageToChain(msg, actorV1.chain)
 }
 
@@ -390,7 +395,12 @@ func (actorV1 *actorV1) enterNewRound() {
 func (actorV1 *actorV1) addVote(voteMsg BFTVote) {
 	actorV1.roundData.lockVotes.Lock()
 	defer actorV1.roundData.lockVotes.Unlock()
-	actorV1.roundData.votes[voteMsg.Validator] = voteMsg.Vote
+	v := vote{
+		BLS:          voteMsg.Bls,
+		BRI:          voteMsg.Bri,
+		Confirmation: voteMsg.Confirmation,
+	}
+	actorV1.roundData.votes[voteMsg.Validator] = v
 	actorV1.logger.Warn("vote added...")
 	return
 }
@@ -401,7 +411,12 @@ func (actorV1 *actorV1) addEarlyVote(voteMsg BFTVote) {
 	if _, ok := actorV1.earlyVotes[voteMsg.RoundKey]; !ok {
 		actorV1.earlyVotes[voteMsg.RoundKey] = make(map[string]vote)
 	}
-	actorV1.earlyVotes[voteMsg.RoundKey][voteMsg.Validator] = voteMsg.Vote
+	v := vote{
+		BLS:          voteMsg.Bls,
+		BRI:          voteMsg.Bri,
+		Confirmation: voteMsg.Confirmation,
+	}
+	actorV1.earlyVotes[voteMsg.RoundKey][voteMsg.Validator] = v
 	return
 }
 

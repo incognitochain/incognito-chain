@@ -9,18 +9,22 @@ import (
 )
 
 type ProposeBlockInfo struct {
-	block            types.BlockInterface
-	receiveTime      time.Time
-	committees       []incognitokey.CommitteePublicKey
-	signingCommittes []incognitokey.CommitteePublicKey
-	userKeySet       []signatureschemes2.MiningKey
-	votes            map[string]*BFTVote //pk->BFTVote
-	isValid          bool
-	hasNewVote       bool
-	isVoted          bool
-	isCommitted      bool
-	validVotes       int
-	errVotes         int
+	block                   types.BlockInterface
+	receiveTime             time.Time
+	committees              []incognitokey.CommitteePublicKey
+	signingCommittes        []incognitokey.CommitteePublicKey
+	userKeySet              []signatureschemes2.MiningKey
+	votes                   map[string]*BFTVote //pk->BFTVote
+	isValid                 bool
+	hasNewVote              bool
+	sendVote                bool
+	isVoted                 bool
+	isCommitted             bool
+	validVotes              int
+	errVotes                int
+	proposerSendVote        bool
+	proposerMiningKeyBase58 string
+	lastValidateTime        time.Time
 }
 
 //NewProposeBlockInfoValue : new propose block info
@@ -29,14 +33,15 @@ func newProposeBlockForProposeMsg(
 	committees []incognitokey.CommitteePublicKey,
 	signingCommittes []incognitokey.CommitteePublicKey,
 	userKeySet []signatureschemes2.MiningKey,
-	votes map[string]*BFTVote,
+	proposerMiningKeyBase58 string,
 ) *ProposeBlockInfo {
 	return &ProposeBlockInfo{
-		block:            block,
-		committees:       incognitokey.DeepCopy(committees),
-		signingCommittes: incognitokey.DeepCopy(signingCommittes),
-		userKeySet:       signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
-		votes:            votes,
+		block:                   block,
+		votes:                   make(map[string]*BFTVote),
+		committees:              incognitokey.DeepCopy(committees),
+		signingCommittes:        incognitokey.DeepCopy(signingCommittes),
+		userKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
+		proposerMiningKeyBase58: proposerMiningKeyBase58,
 	}
 }
 
@@ -45,6 +50,7 @@ func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
 	committees []incognitokey.CommitteePublicKey,
 	signingCommittes []incognitokey.CommitteePublicKey,
 	userKeySet []signatureschemes2.MiningKey,
+	proposerMiningKeyBase58 string,
 	validVotes, errVotes int,
 ) {
 	proposeBlockInfo.block = block

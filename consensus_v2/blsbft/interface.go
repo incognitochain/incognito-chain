@@ -5,6 +5,7 @@ import (
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 //Used interfaces
@@ -12,9 +13,12 @@ import (
 //NodeInterface
 type NodeInterface interface {
 	PushMessageToChain(msg wire.Message, chain common.ChainInterface) error
+	IsEnableMining() bool
 	GetMiningKeys() string
 	GetPrivateKey() string
 	GetUserMiningState() (role string, chainID int)
+	RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error)
+	GetSelfPeerID() peer.ID
 }
 
 ///

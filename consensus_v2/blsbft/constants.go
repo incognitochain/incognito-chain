@@ -26,3 +26,7 @@ const (
 	SlashingVersion
 	MultiSubsetsVersion
 )
+
+const (
+	BEACON_CHAIN_ID = -1
+)
