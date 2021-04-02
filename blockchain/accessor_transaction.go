@@ -325,7 +325,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 				// cache 1 day for result
 				cachedData, err = json.Marshal(outCointsInBytes)
 				if err == nil {
-					blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
+					blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 10*1000*time.Millisecond)
 				}
 			}
 		}
