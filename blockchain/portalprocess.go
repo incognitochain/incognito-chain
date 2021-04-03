@@ -2,13 +2,14 @@ package blockchain
 
 import (
 	"errors"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	bnbTypes "github.com/tendermint/tendermint/types"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 )
 
 // TODO: move to portalrelaying package
@@ -64,7 +65,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *types.BeaconBlock) error {
 	// Note: should comment this code if you need to create local chain.
 	isSkipPortalV3Ints := false
-	if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {
+	if (blockchain.config.ChainParams.Net == Testnet || blockchain.config.ChainParams.Net == Testnet2) && block.Header.Height < 1580600 {
 		isSkipPortalV3Ints = true
 	}
 	beaconHeight := block.Header.Height - 1
