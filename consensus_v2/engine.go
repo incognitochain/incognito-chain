@@ -195,39 +195,35 @@ func NewConsensusEngine() *Engine {
 
 func (engine *Engine) initProcess(chainID int, chainName string) {
 	var bftActor blsbft.Actor
+
 	if chainID == -1 {
 		bftActor = blsbft.NewActorWithValue(
-			engine.config.Blockchain.BeaconChain, engine.version[chainID],
+			engine.config.Blockchain.BeaconChain,
+			engine.config.Blockchain.BeaconChain,
+			engine.version[chainID], engine.BlockVersion(chainID),
 			chainID, chainName, engine.config.Node, Logger.Log)
+
 	} else {
 		bftActor = blsbft.NewActorWithValue(
-			engine.config.Blockchain.ShardChain[chainID], engine.version[chainID],
+			engine.config.Blockchain.ShardChain[chainID],
+			engine.config.Blockchain.BeaconChain,
+			engine.version[chainID], engine.BlockVersion(chainID),
 			chainID, chainName, engine.config.Node, Logger.Log)
 	}
 	engine.BFTProcess[chainID] = bftActor
+	engine.BFTProcess[chainID].Run()
 }
 
 func (engine *Engine) updateVersion(chainID int) {
 	chainEpoch := uint64(1)
-	chainHeight := uint64(1)
 	if chainID == -1 {
 		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
-		chainHeight = engine.config.Blockchain.BeaconChain.GetBestViewHeight()
 	} else {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
-		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
 	}
 
 	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
 		engine.version[chainID] = blsbft.MultiViewsVersion
-	}
-
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV3Height {
-		engine.version[chainID] = blsbft.SlashingVersion
-	}
-
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV4Height {
-		engine.version[chainID] = blsbft.MultiSubsetsVersion
 	}
 }
 
@@ -295,4 +291,30 @@ func (engine *Engine) IsCommitteeInShard(shardID byte) bool {
 		return shard.IsStarted()
 	}
 	return false
+}
+
+func (engine *Engine) BlockVersion(chainID int) int {
+	chainEpoch := uint64(1)
+	chainHeight := uint64(1)
+	if chainID == -1 {
+		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
+		chainHeight = engine.config.Blockchain.BeaconChain.GetBestViewHeight()
+	} else {
+		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
+		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
+	}
+
+	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
+		return blsbft.MultiViewsVersion
+	}
+
+	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV3Height {
+		return blsbft.SlashingVersion
+	}
+
+	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV4Height {
+		return blsbft.MultiSubsetsVersion
+	}
+
+	return blsbft.BftVersion
 }

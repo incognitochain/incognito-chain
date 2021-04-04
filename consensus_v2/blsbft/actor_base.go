@@ -178,3 +178,43 @@ func combineVotes(votes map[string]vote, committee []string) (aggSig []byte, bri
 	}
 	return
 }
+
+func (actorBase *actorBase) Start() error {
+	if !actorBase.isStarted {
+		actorBase.logger.Info("start bls-bft consensus for chain", actorBase.chainKey)
+	}
+	actorBase.isStarted = true
+	return nil
+}
+
+func (actorBase *actorBase) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
+	var blsSigList [][]byte
+	for validator, vote := range votes {
+		if vote.IsValid == 1 {
+			index := common.IndexOfStr(validator, committees)
+			if index != -1 {
+				validatorIdx = append(validatorIdx, index)
+			}
+		}
+	}
+
+	if len(validatorIdx) == 0 {
+		return nil, nil, nil, NewConsensusError(CombineSignatureError, errors.New("len(validatorIdx) == 0"))
+	}
+
+	sort.Ints(validatorIdx)
+	for _, idx := range validatorIdx {
+		blsSigList = append(blsSigList, votes[committees[idx]].Bls)
+		brigSigs = append(brigSigs, votes[committees[idx]].Bri)
+	}
+
+	aggSig, err = blsmultisig.Combine(blsSigList)
+	if err != nil {
+		return nil, nil, nil, NewConsensusError(CombineSignatureError, err)
+	}
+	return
+}
+
+func (actorBase *actorBase) Run() error {
+	panic("Imelement this function")
+}

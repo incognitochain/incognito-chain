@@ -34,10 +34,6 @@ type ConsensusEngine interface {
 	// CommitteeChange(chainName string)
 }
 
-type Server interface {
-	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error
-}
-
 type Highway interface {
 	BroadcastCommittee(uint64, []incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey)
 }
@@ -87,8 +83,7 @@ type Chain interface {
 		startTime int64,
 		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
-	InsertAndBroadcastBlock(block types.BlockInterface) error
-	InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, validationData string) error
+	InsertBlock(block types.BlockInterface, shouldValidate bool) error
 	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error
 	GetShardID() int
@@ -101,4 +96,7 @@ type Chain interface {
 	GetFinalViewHash() string
 	GetViewByHash(hash common.Hash) multiview.View
 	CommitteeEngineVersion() uint
+	ProposerByTimeSlot(shardID byte, ts int64, committees []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey
+	CommitteesFromViewHashForShard(hash common.Hash, shardID byte, threshold int) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
+	ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error
 }

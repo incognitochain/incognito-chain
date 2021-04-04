@@ -57,8 +57,7 @@ import (
 //	4. Update Cloned ShardBestState with New Shard Block
 //	5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
 func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
-	version int, proposer string,
-	round int, start int64,
+	version int, proposer string, round int, start int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeFinalViewHash common.Hash) (*types.ShardBlock, error) {
 	var (

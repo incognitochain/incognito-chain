@@ -161,8 +161,8 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.multiView.GetBestView().(*BeaconBestState).BeaconProposerIndex
 }
 
-func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
-	round int, startTime int64,
+func (chain *BeaconChain) CreateNewBlock(
+	version int, proposer string, round int, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash,
 ) (types.BlockInterface, error) {
@@ -206,16 +206,6 @@ func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
 	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *blkHash)
 	return err == nil
-}
-
-func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
-	go chain.Blockchain.config.Server.PushBlockToAll(block, "", true)
-	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), true); err != nil {
-		Logger.log.Info(err)
-		return err
-	}
-	return nil
-
 }
 
 func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {

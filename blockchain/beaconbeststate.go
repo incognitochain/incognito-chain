@@ -133,7 +133,7 @@ func (bc *BlockChain) GetBeaconBestState() *BeaconBestState {
 	return bc.BeaconChain.multiView.GetBestView().(*BeaconBestState)
 }
 
-func (bc *BlockChain) GetChain(cid int) ChainInterface {
+func (bc *BlockChain) GetChain(cid int) Chain {
 	if cid == -1 {
 		return bc.BeaconChain
 	} else {

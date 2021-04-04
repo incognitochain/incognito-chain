@@ -163,7 +163,8 @@ func (actorV1 *actorV1) initRoundData() {
 }
 
 func NewActorWithValue(
-	chain blockchain.Chain, version int,
+	chain, committeeChain blockchain.Chain,
+	version, blockVersion int,
 	chainID int, chainName string,
 	node NodeInterface, logger common.Logger,
 ) Actor {
@@ -172,6 +173,7 @@ func NewActorWithValue(
 	case BftVersion:
 		res = NewActorV1WithValue(chain, chainName, chainID, node, logger)
 	case MultiViewsVersion:
+		res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, node, logger)
 	case SlashingVersion:
 	case MultiSubsetsVersion:
 	default:

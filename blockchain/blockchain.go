@@ -61,7 +61,6 @@ type Config struct {
 	IsBlockGenStarted bool
 	PubSubManager     Pubsub
 	Syncker           Syncker
-	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
 

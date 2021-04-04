@@ -1,6 +1,7 @@
 package blsbft
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -13,6 +14,7 @@ import (
 //NodeInterface
 type NodeInterface interface {
 	PushMessageToChain(msg wire.Message, chain common.ChainInterface) error
+	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error
 	IsEnableMining() bool
 	GetMiningKeys() string
 	GetPrivateKey() string
@@ -49,6 +51,7 @@ type Actor interface {
 	ValidateData(data []byte, sig string, publicKey string) error
 	// SignData - sign data with this consensus signature scheme
 	SignData(data []byte) (string, error)
+	Run() error
 }
 
 ///

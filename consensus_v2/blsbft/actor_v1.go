@@ -270,7 +270,12 @@ func (actorV1 *actorV1) Start() error {
 							continue
 						}
 
-						if err := actorV1.chain.InsertAndBroadcastBlock(actorV1.roundData.block); err != nil {
+						isBeacon := false
+						if actorV1.chain.IsBeaconChain() {
+							isBeacon = true
+						}
+						go actorV1.node.PushBlockToAll(actorV1.roundData.block, "", isBeacon)
+						if err := actorV1.chain.InsertBlock(actorV1.roundData.block, false); err != nil {
 							actorV1.logger.Error(err)
 							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
@@ -278,6 +283,7 @@ func (actorV1 *actorV1) Start() error {
 								}
 							}
 							continue
+
 						}
 						monitor.SetGlobalParam("CommitTime", time.Since(time.Unix(actorV1.chain.GetLastBlockTimeStamp(), 0)).Seconds())
 						// e.Node.PushMessageToAll()
@@ -477,4 +483,8 @@ func NewActorV1WithValue(
 	newInstance.node = node
 	newInstance.logger = logger
 	return &newInstance
+}
+
+func (actorV1 *actorV1) Run() error {
+	return nil
 }

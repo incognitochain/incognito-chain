@@ -45,7 +45,9 @@ func (shardInstruction *shardInstruction) add(newShardInstruction *shardInstruct
 }
 
 // NewBlockBeacon create new beacon block
-func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version int, proposer string, round int, startTime int64) (*types.BeaconBlock, error) {
+func (blockchain *BlockChain) NewBlockBeacon(
+	curView *BeaconBestState,
+	version int, proposer string, round int, startTime int64) (*types.BeaconBlock, error) {
 	Logger.log.Infof("⛏ Creating Beacon Block %+v", curView.BeaconHeight+1)
 	var err error
 	var epoch uint64

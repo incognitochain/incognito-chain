@@ -155,8 +155,7 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 }
 
 func (chain *ShardChain) CreateNewBlock(
-	version int, proposer string,
-	round int, startTime int64,
+	version int, proposer string, round int, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash) (types.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
@@ -243,39 +242,11 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate 
 	return nil
 }
 
-func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
-
-	go chain.Blockchain.config.Server.PushBlockToAll(block, "", false)
-
-	if err := chain.InsertBlock(block, false); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
-
 	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, newValidationData); err != nil {
 		Logger.log.Error(err)
 		return err
 	}
-
-	return nil
-}
-
-func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
-
-	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
-
-	if err := chain.InsertBlock(block, false); err != nil {
-		return err
-	}
-
-	if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), newValidationData); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -369,4 +340,18 @@ func (chain *ShardChain) GetChainDatabase() incdb.Database {
 
 func (chain *ShardChain) CommitteeEngineVersion() uint {
 	return chain.multiView.GetBestView().CommitteeEngineVersion()
+}
+
+//ProposerByTimeSlot ...
+func (chain *ShardChain) ProposerByTimeSlot(
+	shardID byte, ts int64,
+	committees []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey {
+	proposerKey, _ := chain.GetBestView().(*ShardBestState).GetProposerByTimeSlot(ts, 1)
+	return proposerKey
+}
+
+func (chain *ShardChain) CommitteesFromViewHashForShard(
+	hash common.Hash, shardID byte, threshold int,
+) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+	return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
 }
