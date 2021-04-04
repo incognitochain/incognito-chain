@@ -18,6 +18,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -32,6 +33,7 @@ type actorV2 struct {
 	receiveBlockByHash   map[string]*ProposeBlockInfo    //blockHash -> blockInfo
 	voteHistory          map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 	bodyHashes           map[uint64]map[string]bool
+	blockVersion         int
 }
 
 func (actorV2 *actorV2) Destroy() {
@@ -46,7 +48,7 @@ func NewActorV2() *actorV2 {
 func NewActorV2WithValue(
 	chain blockchain.Chain,
 	committeeChain blockchain.Chain,
-	chainKey string, chainID int,
+	chainKey string, chainID, blockVersion int,
 	node NodeInterface, logger common.Logger,
 ) *actorV2 {
 	var err error
@@ -59,6 +61,7 @@ func NewActorV2WithValue(
 	res.voteHistory = make(map[uint64]types.BlockInterface)
 	res.bodyHashes = make(map[uint64]map[string]bool)
 	res.committeeChain = committeeChain
+	res.blockVersion = blockVersion
 	res.proposeHistory, err = lru.New(1000)
 	if err != nil {
 		panic(err) //must not error
@@ -84,92 +87,17 @@ func (actorV2 *actorV2) run() error {
 				actorV2.logger.Info("exit bls-bftv3 consensus for chain", actorV2.chainKey)
 				return
 			case proposeMsg := <-actorV2.proposeMessageCh:
-				blockIntf, err := actorV2.chain.UnmarshalBlock(proposeMsg.Block)
-				if err != nil || blockIntf == nil {
-					actorV2.logger.Info(err)
-					continue
-				}
-				block := blockIntf.(types.BlockInterface)
-				blkHash := block.Hash().String()
-
-				signingCommittees, committees, err := actorV2.getCommitteeForBlock(block)
+				err := actorV2.handleProposeMsg(proposeMsg)
 				if err != nil {
-					actorV2.logger.Error(err)
+					actorV2.logger.Debug(err)
 					continue
-				}
-
-				userKeySet := actorV2.getUserKeySetForSigning(signingCommittees, actorV2.userKeySet)
-				if len(userKeySet) == 0 {
-					actorV2.logger.Info("Not in round for voting")
-				}
-
-				committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
-				actorV2.logger.Infof("######### Shard %+v, BlockHash %+v, BlockHeight %+v, committees %+v committeesFromBlock %+v",
-					actorV2.chain.GetShardID(), block.Hash().String(), block.GetHeight(), committeesStr, block.CommitteeFromBlock().String())
-
-				blkCPk := incognitokey.CommitteePublicKey{}
-				blkCPk.FromBase58(block.GetProducer())
-				proposerMiningKeyBas58 := blkCPk.GetMiningKeyBase58(actorV2.GetConsensusName())
-
-				if v, ok := actorV2.receiveBlockByHash[blkHash]; !ok {
-					proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58) //@tin
-					actorV2.receiveBlockByHash[blkHash] = proposeBlockInfo
-					actorV2.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
-					actorV2.receiveBlockByHeight[block.GetHeight()] = append(actorV2.receiveBlockByHeight[block.GetHeight()], actorV2.receiveBlockByHash[blkHash])
-				} else {
-					actorV2.receiveBlockByHash[blkHash].addBlockInfo(block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58, v.validVotes, v.errVotes) //@tin
-				}
-
-				if block.GetHeight() <= actorV2.chain.GetBestViewHeight() {
-					actorV2.logger.Info("Receive block create from old view. Rejected!")
-					continue
-				}
-
-				proposeView := actorV2.chain.GetViewByHash(block.GetPrevHash())
-				if proposeView == nil {
-					actorV2.logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
-					actorV2.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, actorV2.chain.GetShardID(), actorV2.chain.GetChainName())
 				}
 
 			case voteMsg := <-actorV2.voteMessageCh:
-				voteMsg.IsValid = 0
-				if b, ok := actorV2.receiveBlockByHash[voteMsg.BlockHash]; ok { //if receiveblock is already initiated
-					if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
-						b.votes[voteMsg.Validator] = &voteMsg // store it
-						vid, v := actorV2.getValidatorIndex(b.signingCommittes, voteMsg.Validator)
-						if v != nil {
-							vbase58, _ := v.ToBase58()
-							actorV2.logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", actorV2.chainKey, len(actorV2.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, vbase58)
-						} else {
-							actorV2.logger.Infof("%v Receive vote (%d) for block %v from unknown validator %v", actorV2.chainKey, len(actorV2.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
-						}
-						b.hasNewVote = true
-					}
-
-					if !b.proposerSendVote {
-						for _, userKey := range actorV2.userKeySet {
-							pubKey := userKey.GetPublicKey()
-							if b.block != nil && pubKey.GetMiningKeyBase58(actorV2.GetConsensusName()) == b.proposerMiningKeyBase58 { // if this node is proposer and not sending vote
-								err := actorV2.validateAndVote(b) //validate in case we get malicious block
-								if err == nil {
-									bestViewHeight := actorV2.chain.GetBestView().GetHeight()
-									if b.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
-										err := actorV2.sendVote(&userKey, b.block, b.signingCommittes) // => send vote
-										if err != nil {
-											actorV2.logger.Error(err)
-										} else {
-											b.proposerSendVote = true
-											b.sendVote = true
-										}
-									}
-								}
-							}
-						}
-					}
-				} else {
-					actorV2.receiveBlockByHash[voteMsg.BlockHash] = newBlockInfoForVoteMsg()
-					actorV2.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
-					actorV2.logger.Infof("%v Receive vote (%d) for block %v from unknown validator %v", actorV2.chainKey, len(actorV2.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
+				err := actorV2.handleVoteMsg(voteMsg)
+				if err != nil {
+					actorV2.logger.Debug(err)
+					continue
 				}
 
 			case <-cleanMemTicker:
@@ -266,47 +194,8 @@ func (actorV2 *actorV2) run() error {
 					}
 				}
 
-				//Check for valid block to vote
-				validProposeBlock := []*ProposeBlockInfo{}
-				//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
-				bestViewHeight := bestView.GetHeight()
-				for h, proposeBlockInfo := range actorV2.receiveBlockByHash {
-					if proposeBlockInfo.block == nil {
-						continue
-					}
-
-					// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
-					if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
-						validProposeBlock = append(validProposeBlock, proposeBlockInfo)
-					} else {
-						if proposeBlockInfo.block.Hash().String() == bestView.GetHash().String() {
-							validProposeBlock = append(validProposeBlock, proposeBlockInfo)
-						}
-					}
-
-					//not validate if we do it recently
-					if time.Since(proposeBlockInfo.lastValidateTime).Seconds() < 1 {
-						continue
-					}
-
-					// check if propose block in within TS
-					if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != actorV2.currentTimeSlot {
-						continue
-					}
-
-					validProposeBlock = append(validProposeBlock, proposeBlockInfo)
-
-					if proposeBlockInfo.block.GetHeight() < actorV2.chain.GetFinalView().GetHeight() {
-						delete(actorV2.receiveBlockByHash, h)
-						delete(actorV2.bodyHashes, proposeBlockInfo.block.GetHeight())
-					}
-
-				}
-				//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)
-				sort.Slice(validProposeBlock, func(i, j int) bool {
-					return validProposeBlock[i].block.GetProduceTime() < validProposeBlock[j].block.GetProduceTime()
-				})
-				for _, v := range validProposeBlock {
+				validProposeBlocks := actorV2.getValidProposeBlocks(bestView)
+				for _, v := range validProposeBlocks {
 					blkCreateTimeSlot := common.CalculateTimeSlot(v.block.GetProduceTime())
 					bestViewHeight := bestView.GetHeight()
 
@@ -686,7 +575,7 @@ func (actorV2 *actorV2) proposeBeaconBlock(
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
 		actorV2.logger.Info("CreateNewBlock")
-		block, err = actorV2.chain.CreateNewBlock(2, b58Str, 1, actorV2.currentTime, committees, committeeViewHash) //@tin fix here
+		block, err = actorV2.chain.CreateNewBlock(actorV2.blockVersion, b58Str, 1, actorV2.currentTime, committees, committeeViewHash) //@tin fix here
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -717,7 +606,7 @@ func (actorV2 *actorV2) proposeShardBlock(
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
 		actorV2.logger.Info("CreateNewBlock")
-		newBlock, err = actorV2.chain.CreateNewBlock(2, b58Str, 1, actorV2.currentTime, committees, committeeViewHash)
+		newBlock, err = actorV2.chain.CreateNewBlock(actorV2.blockVersion, b58Str, 1, actorV2.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -823,4 +712,141 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 
 func (actorV2 *actorV2) Run() error {
 	return actorV2.run()
+}
+
+func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
+	blockIntf, err := actorV2.chain.UnmarshalBlock(proposeMsg.Block)
+	if err != nil || blockIntf == nil {
+		actorV2.logger.Debug(err)
+		return err
+	}
+	block := blockIntf.(types.BlockInterface)
+	blkHash := block.Hash().String()
+
+	signingCommittees, committees, err := actorV2.getCommitteeForBlock(block)
+	if err != nil {
+		actorV2.logger.Error(err)
+		return err
+	}
+
+	userKeySet := actorV2.getUserKeySetForSigning(signingCommittees, actorV2.userKeySet)
+	if len(userKeySet) == 0 {
+		actorV2.logger.Debug("Not in round for voting")
+	}
+
+	committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
+	actorV2.logger.Infof("######### Shard %+v, BlockHash %+v, BlockHeight %+v, committees %+v committeesFromBlock %+v",
+		actorV2.chain.GetShardID(), block.Hash().String(), block.GetHeight(), committeesStr, block.CommitteeFromBlock().String())
+
+	blkCPk := incognitokey.CommitteePublicKey{}
+	blkCPk.FromBase58(block.GetProducer())
+	proposerMiningKeyBas58 := blkCPk.GetMiningKeyBase58(actorV2.GetConsensusName())
+
+	if v, ok := actorV2.receiveBlockByHash[blkHash]; !ok {
+		proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58) //@tin
+		actorV2.receiveBlockByHash[blkHash] = proposeBlockInfo
+		actorV2.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
+		actorV2.receiveBlockByHeight[block.GetHeight()] = append(actorV2.receiveBlockByHeight[block.GetHeight()], actorV2.receiveBlockByHash[blkHash])
+	} else {
+		actorV2.receiveBlockByHash[blkHash].addBlockInfo(block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58, v.validVotes, v.errVotes) //@tin
+	}
+
+	if block.GetHeight() <= actorV2.chain.GetBestViewHeight() {
+		actorV2.logger.Debug("Receive block create from old view. Rejected!")
+		return err
+	}
+
+	proposeView := actorV2.chain.GetViewByHash(block.GetPrevHash())
+	if proposeView == nil {
+		actorV2.logger.Infof("Request sync block from node %s from %s to %s", proposeMsg.PeerID, block.GetPrevHash().String(), block.GetPrevHash().Bytes())
+		actorV2.node.RequestMissingViewViaStream(proposeMsg.PeerID, [][]byte{block.GetPrevHash().Bytes()}, actorV2.chain.GetShardID(), actorV2.chain.GetChainName())
+	}
+	return nil
+}
+
+func (actorV2 *actorV2) handleVoteMsg(voteMsg BFTVote) error {
+	voteMsg.IsValid = 0
+	if b, ok := actorV2.receiveBlockByHash[voteMsg.BlockHash]; ok { //if receiveblock is already initiated
+		if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
+			b.votes[voteMsg.Validator] = &voteMsg // store it
+			vid, v := actorV2.getValidatorIndex(b.signingCommittes, voteMsg.Validator)
+			if v != nil {
+				vbase58, _ := v.ToBase58()
+				actorV2.logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", actorV2.chainKey, len(actorV2.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, vbase58)
+			} else {
+				actorV2.logger.Infof("%v Receive vote (%d) for block %v from unknown validator %v", actorV2.chainKey, len(actorV2.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
+			}
+			b.hasNewVote = true
+		}
+
+		if !b.proposerSendVote {
+			for _, userKey := range actorV2.userKeySet {
+				pubKey := userKey.GetPublicKey()
+				if b.block != nil && pubKey.GetMiningKeyBase58(actorV2.GetConsensusName()) == b.proposerMiningKeyBase58 { // if this node is proposer and not sending vote
+					err := actorV2.validateAndVote(b) //validate in case we get malicious block
+					if err == nil {
+						bestViewHeight := actorV2.chain.GetBestView().GetHeight()
+						if b.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
+							err := actorV2.sendVote(&userKey, b.block, b.signingCommittes) // => send vote
+							if err != nil {
+								actorV2.logger.Error(err)
+							} else {
+								b.proposerSendVote = true
+								b.sendVote = true
+							}
+						}
+					}
+				}
+			}
+		}
+	} else {
+		actorV2.receiveBlockByHash[voteMsg.BlockHash] = newBlockInfoForVoteMsg()
+		actorV2.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
+		actorV2.logger.Infof("%v Receive vote (%d) for block %v from unknown validator %v", actorV2.chainKey, len(actorV2.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
+	}
+	return nil
+}
+
+func (actorV2 *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlockInfo {
+	//Check for valid block to vote
+	validProposeBlock := []*ProposeBlockInfo{}
+	//get all block that has height = bestview height  + 1(rule 2 & rule 3) (
+	bestViewHeight := bestView.GetHeight()
+	for h, proposeBlockInfo := range actorV2.receiveBlockByHash {
+		if proposeBlockInfo.block == nil {
+			continue
+		}
+
+		// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
+		if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
+			validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+		} else {
+			if proposeBlockInfo.block.Hash().String() == bestView.GetHash().String() {
+				validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+			}
+		}
+
+		//not validate if we do it recently
+		if time.Since(proposeBlockInfo.lastValidateTime).Seconds() < 1 {
+			continue
+		}
+
+		// check if propose block in within TS
+		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != actorV2.currentTimeSlot {
+			continue
+		}
+
+		validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+
+		if proposeBlockInfo.block.GetHeight() < actorV2.chain.GetFinalView().GetHeight() {
+			delete(actorV2.receiveBlockByHash, h)
+			delete(actorV2.bodyHashes, proposeBlockInfo.block.GetHeight())
+		}
+
+	}
+	//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)
+	sort.Slice(validProposeBlock, func(i, j int) bool {
+		return validProposeBlock[i].block.GetProduceTime() < validProposeBlock[j].block.GetProduceTime()
+	})
+	return validProposeBlock
 }

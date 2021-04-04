@@ -173,7 +173,7 @@ func NewActorWithValue(
 	case BftVersion:
 		res = NewActorV1WithValue(chain, chainName, chainID, node, logger)
 	case MultiViewsVersion:
-		res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, node, logger)
+		res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
 	case SlashingVersion:
 	case MultiSubsetsVersion:
 	default:
