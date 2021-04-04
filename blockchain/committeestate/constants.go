@@ -28,7 +28,7 @@ const (
 )
 
 const (
-	syncTerm            = 17280  //2 days with block time = 10s
-	committeeTerm       = 259200 //30 days with block time = 10s
-	MaxSubsetCommittees = 2
+	syncTerm      = 17280  //2 days with block time = 10s
+	committeeTerm = 259200 //30 days with block time = 10s
+
 )

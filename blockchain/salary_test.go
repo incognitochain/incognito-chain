@@ -1,12 +1,6 @@
 package blockchain
 
 import (
-	"io/ioutil"
-	"os"
-	"reflect"
-	"testing"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	mocks "github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -19,6 +13,10 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"os"
+	"reflect"
+	"testing"
 )
 
 var (
@@ -728,11 +726,7 @@ func TestBlockChain_buildInstRewardForShards(t *testing.T) {
 	}
 }
 
-func TestBeaconBestState_calculateReward(t *testing.T) {
-
-	initStateDB()
-	initPublicKey()
-
+func Test_calculateReward(t *testing.T) {
 	hash, _ := common.Hash{}.NewHashFromStr("123")
 
 	rewards := []uint64{1093995, 1093995}
@@ -740,98 +734,25 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 	shardReward := []uint64{933543, 787677}
 	daoReward := []uint64{109399, 109399}
 	sDBs := []*statedb.StateDB{}
-	committeeEngines := []*mocks.BeaconCommitteeEngine{}
+	splitRewardRuleProcessors := []*mocks.SplitRewardRuleProcessor{}
 	for i := 0; i < 2; i++ {
 		sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 		assert.Nil(t, err)
 		for j := 0; j < 8; j++ {
 			statedb.AddShardRewardRequest(
-				sDB, 1, byte(j), *hash, rewards[i],
+				sDB, 0, byte(j), *hash, rewards[i],
 			)
 		}
 		sDBs = append(sDBs, sDB)
-		committeeEngine := &mocks.BeaconCommitteeEngine{}
-		committeeEngine.On("ActiveShards").Return(8)
-		committeeEngine.On("GetBeaconCommittee").Return(
-			[]incognitokey.CommitteePublicKey{
-				*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
-			},
-		)
-		committeeEngine.On("GetShardCommittee").Return(
-			map[byte][]incognitokey.CommitteePublicKey{
-				0: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				1: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				2: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				3: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				4: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				5: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				6: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				7: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-			},
-		)
+		splitRewardRuleProcessor := &mocks.SplitRewardRuleProcessor{}
 		for j := 0; j < 8; j++ {
-			committeeEngine.On("SplitReward", &committeestate.BeaconCommitteeStateEnvironment{
+			splitRewardRuleProcessor.On("SplitReward", &committeestate.SplitRewardEnvironment{
 				ActiveShards:           8,
 				DAOPercent:             10,
 				PercentCustodianReward: 0,
 				ShardID:                byte(j),
 				TotalReward:            make(map[common.Hash]uint64),
+				BeaconHeight:           20,
 			}).Return(
 				map[common.Hash]uint64{
 					*hash: beaconReward[i],
@@ -846,47 +767,14 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 				nil,
 			)
 		}
-		committeeEngines = append(committeeEngines, committeeEngine)
+		splitRewardRuleProcessors = append(splitRewardRuleProcessors, splitRewardRuleProcessor)
 	}
 
-	type fields struct {
-		BestBlockHash            common.Hash
-		PreviousBestBlockHash    common.Hash
-		BestBlock                types.BeaconBlock
-		BestShardHash            map[byte]common.Hash
-		BestShardHeight          map[byte]uint64
-		Epoch                    uint64
-		BeaconHeight             uint64
-		BeaconProposerIndex      int
-		CurrentRandomNumber      int64
-		CurrentRandomTimeStamp   int64
-		IsGetRandomNumber        bool
-		Params                   map[string]string
-		MaxBeaconCommitteeSize   int
-		MinBeaconCommitteeSize   int
-		MaxShardCommitteeSize    int
-		MinShardCommitteeSize    int
-		ActiveShards             int
-		ConsensusAlgorithm       string
-		ShardConsensusAlgorithm  map[byte]string
-		beaconCommitteeEngine    committeestate.BeaconCommitteeEngine
-		LastCrossShardState      map[byte]map[byte]uint64
-		ShardHandle              map[byte]bool
-		NumOfBlocksByProducers   map[string]uint64
-		BlockInterval            time.Duration
-		BlockMaxCreateTime       time.Duration
-		consensusStateDB         *statedb.StateDB
-		ConsensusStateDBRootHash common.Hash
-		rewardStateDB            *statedb.StateDB
-		RewardStateDBRootHash    common.Hash
-		featureStateDB           *statedb.StateDB
-		FeatureStateDBRootHash   common.Hash
-		slashStateDB             *statedb.StateDB
-		SlashStateDBRootHash     common.Hash
-	}
 	type args struct {
-		blockchain                *BlockChain
-		blkHeight                 uint64
+		maxBeaconBlockCreation    uint64
+		splitRewardRuleProcessor  committeestate.SplitRewardRuleProcessor
+		numberOfActiveShards      int
+		beaconHeight              uint64
 		epoch                     uint64
 		rewardStateDB             *statedb.StateDB
 		isSplitRewardForCustodian bool
@@ -894,7 +782,6 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    map[common.Hash]uint64
 		want1   []map[common.Hash]uint64
@@ -904,20 +791,12 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 	}{
 		{
 			name: "Year 1 - V2",
-			fields: fields{
-				beaconCommitteeEngine: committeeEngines[0],
-			},
 			args: args{
-				blockchain: &BlockChain{
-					config: Config{
-						ChainParams: &Params{
-							MaxBeaconBlockCreation: TestNetMaxBeaconBlkCreation,
-						},
-					},
-				},
-				blkHeight:     20,
-				epoch:         1,
-				rewardStateDB: sDBs[0],
+				maxBeaconBlockCreation:   uint64(TestNetMaxBeaconBlkCreation.Seconds()),
+				splitRewardRuleProcessor: splitRewardRuleProcessors[0],
+				numberOfActiveShards:     8,
+				beaconHeight:             20,
+				rewardStateDB:            sDBs[0],
 			},
 			want: map[common.Hash]uint64{
 				*hash: 51054 * 8,
@@ -956,20 +835,12 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 		},
 		{
 			name: "Year 1 - V1",
-			fields: fields{
-				beaconCommitteeEngine: committeeEngines[1],
-			},
 			args: args{
-				blockchain: &BlockChain{
-					config: Config{
-						ChainParams: &Params{
-							MaxBeaconBlockCreation: TestNetMaxBeaconBlkCreation,
-						},
-					},
-				},
-				blkHeight:     20,
-				epoch:         1,
-				rewardStateDB: sDBs[1],
+				maxBeaconBlockCreation:   uint64(TestNetMaxBeaconBlkCreation.Seconds()),
+				splitRewardRuleProcessor: splitRewardRuleProcessors[1],
+				numberOfActiveShards:     8,
+				beaconHeight:             20,
+				rewardStateDB:            sDBs[0],
 			},
 			want: map[common.Hash]uint64{
 				*hash: 1575352,
@@ -1009,56 +880,22 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			beaconBestState := &BeaconBestState{
-				BestBlockHash:            tt.fields.BestBlockHash,
-				PreviousBestBlockHash:    tt.fields.PreviousBestBlockHash,
-				BestBlock:                tt.fields.BestBlock,
-				BestShardHash:            tt.fields.BestShardHash,
-				BestShardHeight:          tt.fields.BestShardHeight,
-				Epoch:                    tt.fields.Epoch,
-				BeaconHeight:             tt.fields.BeaconHeight,
-				BeaconProposerIndex:      tt.fields.BeaconProposerIndex,
-				CurrentRandomNumber:      tt.fields.CurrentRandomNumber,
-				CurrentRandomTimeStamp:   tt.fields.CurrentRandomTimeStamp,
-				IsGetRandomNumber:        tt.fields.IsGetRandomNumber,
-				Params:                   tt.fields.Params,
-				MaxBeaconCommitteeSize:   tt.fields.MaxBeaconCommitteeSize,
-				MinBeaconCommitteeSize:   tt.fields.MinBeaconCommitteeSize,
-				MaxShardCommitteeSize:    tt.fields.MaxShardCommitteeSize,
-				MinShardCommitteeSize:    tt.fields.MinShardCommitteeSize,
-				ActiveShards:             tt.fields.ActiveShards,
-				ConsensusAlgorithm:       tt.fields.ConsensusAlgorithm,
-				ShardConsensusAlgorithm:  tt.fields.ShardConsensusAlgorithm,
-				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
-				LastCrossShardState:      tt.fields.LastCrossShardState,
-				ShardHandle:              tt.fields.ShardHandle,
-				BlockInterval:            tt.fields.BlockInterval,
-				BlockMaxCreateTime:       tt.fields.BlockMaxCreateTime,
-				consensusStateDB:         tt.fields.consensusStateDB,
-				ConsensusStateDBRootHash: tt.fields.ConsensusStateDBRootHash,
-				rewardStateDB:            tt.fields.rewardStateDB,
-				RewardStateDBRootHash:    tt.fields.RewardStateDBRootHash,
-				featureStateDB:           tt.fields.featureStateDB,
-				FeatureStateDBRootHash:   tt.fields.FeatureStateDBRootHash,
-				slashStateDB:             tt.fields.slashStateDB,
-				SlashStateDBRootHash:     tt.fields.SlashStateDBRootHash,
-			}
-			got, got1, got2, got3, err := beaconBestState.calculateReward(tt.args.blockchain, tt.args.blkHeight, tt.args.epoch, tt.args.rewardStateDB, tt.args.isSplitRewardForCustodian, tt.args.percentCustodianRewards)
+			got, got1, got2, got3, err := calculateReward(tt.args.maxBeaconBlockCreation, tt.args.splitRewardRuleProcessor, tt.args.numberOfActiveShards, tt.args.beaconHeight, tt.args.epoch, tt.args.rewardStateDB, tt.args.isSplitRewardForCustodian, tt.args.percentCustodianRewards)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("BeaconBestState.calculateReward() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("calculateReward() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BeaconBestState.calculateReward() got = %v, want %v", got, tt.want)
+				t.Errorf("calculateReward() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("BeaconBestState.calculateReward() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("calculateReward() got1 = %v, want %v", got1, tt.want1)
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("BeaconBestState.calculateReward() got2 = %v, want %v", got2, tt.want2)
+				t.Errorf("calculateReward() got2 = %v, want %v", got2, tt.want2)
 			}
 			if !reflect.DeepEqual(got3, tt.want3) {
-				t.Errorf("BeaconBestState.calculateReward() got3 = %v, want %v", got3, tt.want3)
+				t.Errorf("calculateReward() got3 = %v, want %v", got3, tt.want3)
 			}
 		})
 	}

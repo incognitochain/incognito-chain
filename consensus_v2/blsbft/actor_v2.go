@@ -10,7 +10,6 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
@@ -748,7 +747,7 @@ func (actorV2 *actorV2) getCommitteeForBlock(v types.BlockInterface) ([]incognit
 	if !actorV2.chain.IsBeaconChain() {
 		signingCommittees, committees, err = actorV2.
 			committeeChain.
-			CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(actorV2.chain.GetShardID()), committeestate.MaxSubsetCommittees)
+			CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(actorV2.chain.GetShardID()), blockchain.MaxSubsetCommittees)
 	} else {
 		committees = actorV2.chain.GetBestView().GetCommittee()
 		signingCommittees = committees
@@ -813,7 +812,7 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 		committeeViewHash = *actorV2.committeeChain.GetFinalView().GetHash()
 		signingCommittees, committees, err = actorV2.
 			committeeChain.
-			CommitteesFromViewHashForShard(committeeViewHash, byte(actorV2.chainID), committeestate.MaxSubsetCommittees)
+			CommitteesFromViewHashForShard(committeeViewHash, byte(actorV2.chainID), blockchain.MaxSubsetCommittees)
 		if err != nil {
 			return signingCommittees, committees, proposerPk, committeeViewHash, err
 		}

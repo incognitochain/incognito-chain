@@ -119,7 +119,16 @@ func (chain *ShardChain) CurrentHeight() uint64 {
 
 func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
+	return append(result, chain.GetBestState().shardCommitteeState.GetShardCommittee()...)
+}
+
+func (chain *ShardChain) GetLastCommittee() []incognitokey.CommitteePublicKey {
+	v := chain.multiView.GetViewByHash(*chain.GetBestView().GetPreviousHash())
+	if v == nil {
+		return nil
+	}
+	result := []incognitokey.CommitteePublicKey{}
+	return append(result, v.GetCommittee()...)
 }
 
 func (chain *ShardChain) GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error) {
@@ -134,15 +143,15 @@ func (chain *ShardChain) GetCommitteeByHeight(h uint64) ([]incognitokey.Committe
 
 func (chain *ShardChain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, chain.GetBestState().shardCommitteeEngine.GetShardSubstitute()...)
+	return append(result, chain.GetBestState().shardCommitteeState.GetShardSubstitute()...)
 }
 
 func (chain *ShardChain) GetCommitteeSize() int {
-	return len(chain.GetBestState().shardCommitteeEngine.GetShardCommittee())
+	return len(chain.GetBestState().shardCommitteeState.GetShardCommittee())
 }
 
 func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	for index, key := range chain.GetBestState().shardCommitteeEngine.GetShardCommittee() {
+	for index, key := range chain.GetBestState().shardCommitteeState.GetShardCommittee() {
 		if key.GetMiningKeyBase58(chain.GetBestState().ConsensusAlgorithm) == pubkey {
 			return index
 		}
@@ -181,7 +190,8 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 	oldBlock types.BlockInterface,
 	proposer string, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
-	committeeViewHash common.Hash) (types.BlockInterface, error) {
+	committeeViewHash common.Hash,
+) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.ShardBlock)
 	json.Unmarshal(b, &newBlock)
@@ -247,12 +257,13 @@ func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.
 		Logger.log.Error(err)
 		return err
 	}
+
 	return nil
 }
 
 func (chain *ShardChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
-	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
+	_, err := rawdbv2.GetShardBlockByHash(chain.Blockchain.GetShardChainDatabase(byte(chain.shardID)), *blkHash)
 	return err == nil
 }
 
@@ -312,11 +323,11 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) (
 	if !isShardBlock {
 		return signingCommittes, committees, fmt.Errorf("Shard Chain NOT insert Shard Block Types")
 	}
-	if shardView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION || shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
-		committees = append(committees, chain.GetBestState().shardCommitteeEngine.GetShardCommittee()...)
+	if shardView.shardCommitteeState.Version() == committeestate.SELF_SWAP_SHARD_VERSION || shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
+		committees = append(committees, chain.GetBestState().shardCommitteeState.GetShardCommittee()...)
 		signingCommittes = committees
 	} else {
-		signingCommittes, committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID), committeestate.MaxSubsetCommittees)
+		signingCommittes, committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(block.CommitteeFromBlock(), byte(chain.shardID), MaxSubsetCommittees)
 		if err != nil {
 			return signingCommittes, committees, err
 		}
@@ -325,8 +336,8 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) (
 	return signingCommittes, committees, nil
 }
 
-func (chain *ShardChain) CommitteeStateVersion() uint {
-	return chain.GetBestState().shardCommitteeEngine.Version()
+func (chain *ShardChain) CommitteeStateVersion() int {
+	return chain.GetBestState().shardCommitteeState.Version()
 }
 
 //BestViewCommitteeFromBlock ...
@@ -338,8 +349,8 @@ func (chain *ShardChain) GetChainDatabase() incdb.Database {
 	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }
 
-func (chain *ShardChain) CommitteeEngineVersion() uint {
-	return chain.multiView.GetBestView().CommitteeEngineVersion()
+func (chain *ShardChain) CommitteeEngineVersion() int {
+	return chain.multiView.GetBestView().CommitteeStateVersion()
 }
 
 //ProposerByTimeSlot ...

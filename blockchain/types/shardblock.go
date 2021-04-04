@@ -475,7 +475,6 @@ func (shardBody ShardBody) ExtractOutgoingCrossShardMap() (map[byte][]common.Has
 
 func (block *ShardBlock) AddValidationField(validationData string) {
 	block.ValidationData = validationData
-	return
 }
 
 func (block ShardBlock) GetCurrentEpoch() uint64 {

@@ -76,10 +76,10 @@ type Params struct {
 	ChainVersion                     string
 	AssignOffset                     int
 	ConsensusV2Epoch                 uint64
-	ConsensusV3Height                uint64
+	StakingFlowV2                    uint64
+	EnableSlashingStakingFlowV2      uint64
 	ConsensusV4Height                uint64
-	StakingV3Height                  uint64
-	BeaconCommitteeStateV3Height     uint64
+	StakingFlowV3                    uint64
 	Timeslot                         uint64
 	BeaconHeightBreakPointBurnAddr   uint64
 	BNBRelayingHeaderChainID         string
@@ -238,11 +238,11 @@ func SetupParam() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		BeaconCommitteeStateV3Height:   1e9,
 		ConsensusV2Epoch:               16930,
-		ConsensusV3Height:              1,
+		StakingFlowV2:                  1,
+		EnableSlashingStakingFlowV2:    1,
 		ConsensusV4Height:              1e12,
-		StakingV3Height:                1,
+		StakingFlowV3:                  1e9,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		BNBRelayingHeaderChainID:       TestnetBNBChainID,
@@ -337,10 +337,10 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
-		BeaconCommitteeStateV3Height:   1e9,
-		ConsensusV3Height:              1e9,
+		StakingFlowV2:                  1e9,
+		EnableSlashingStakingFlowV2:    1e9,
 		ConsensusV4Height:              1e9,
-		StakingV3Height:                1e9,
+		StakingFlowV3:                  1e9,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
 		BNBRelayingHeaderChainID:       Testnet2BNBChainID,
@@ -432,10 +432,10 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-main.json",
 		ConsensusV2Epoch:               1e9,
-		ConsensusV3Height:              1e9,
+		StakingFlowV2:                  1e9,
+		EnableSlashingStakingFlowV2:    1e9,
 		ConsensusV4Height:              1e9,
-		StakingV3Height:                1e9,
-		BeaconCommitteeStateV3Height:   1e9,
+		StakingFlowV3:                  1e9,
 		Timeslot:                       40,
 		BeaconHeightBreakPointBurnAddr: 150500,
 		BNBRelayingHeaderChainID:       MainnetBNBChainID,

@@ -308,7 +308,7 @@ func (engine *Engine) BlockVersion(chainID int) int {
 		return blsbft.MultiViewsVersion
 	}
 
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV3Height {
+	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.StakingFlowV2 {
 		return blsbft.SlashingVersion
 	}
 
