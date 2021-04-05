@@ -100,13 +100,13 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyShieldProof(
-	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, publicSeed string) (bool, []*statedb.UTXO, error) {
+	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string) (bool, []*statedb.UTXO, error) {
 	btcChain := bc.GetBTCHeaderChain()
-	return p.parseAndVerifyProofBTCChain(proof, btcChain, expectedReceivedMultisigAddress, publicSeed)
+	return p.parseAndVerifyProofBTCChain(proof, btcChain, expectedReceivedMultisigAddress, chainCodeSeed)
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
-	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, publicSeed string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error) {
+	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error) {
 	btcChain := bc.GetBTCHeaderChain()
 	if btcChain == nil {
 		Logger.log.Error("BTC relaying chain should not be null")
@@ -185,7 +185,7 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 			btcTxProof.BTCTx.TxHash().String(),
 			uint32(idx),
 			uint64(out.Value),
-			publicSeed,
+			chainCodeSeed,
 		))
 	}
 
@@ -231,18 +231,18 @@ func (p PortalBTCTokenProcessor) generatePublicKeyFromSeed(seed []byte) []byte {
 	return p.generatePublicKeyFromPrivateKey(BTCPrivateKeyMaster)
 }
 
-func (p PortalBTCTokenProcessor) generateOTPrivateKey(chainParams *chaincfg.Params, seed []byte, publicSeed string) ([]byte, error) {
+func (p PortalBTCTokenProcessor) generateOTPrivateKey(seed []byte, chainCodeSeed string) ([]byte, error) {
 	BTCPrivateKeyMaster := chainhash.HashB(seed) // private mining key => private key btc
 
 	// this Incognito address is marked for the address that received change UTXOs
-	if publicSeed == "" {
+	if chainCodeSeed == "" {
 		return BTCPrivateKeyMaster, nil
 	} else {
-		chainCode := chainhash.HashB([]byte(publicSeed))
-		extendedBTCPrivateKey := hdkeychain.NewExtendedKey(chainParams.HDPrivateKeyID[:], BTCPrivateKeyMaster, chainCode, []byte{}, 0, 0, true)
+		chainCode := chainhash.HashB([]byte(chainCodeSeed))
+		extendedBTCPrivateKey := hdkeychain.NewExtendedKey(p.ChainParam.HDPrivateKeyID[:], BTCPrivateKeyMaster, chainCode, []byte{}, 0, 0, true)
 		extendedBTCChildPrivateKey, err := extendedBTCPrivateKey.Child(0)
 		if err != nil {
-			return []byte{}, fmt.Errorf("Could not generate child private key for incognito address: %v", publicSeed)
+			return []byte{}, fmt.Errorf("Could not generate child private key for incognito address: %v", chainCodeSeed)
 		}
 		btcChildPrivateKey, err := extendedBTCChildPrivateKey.ECPrivKey()
 		if err != nil {
@@ -255,17 +255,17 @@ func (p PortalBTCTokenProcessor) generateOTPrivateKey(chainParams *chaincfg.Para
 
 // Generate Bech32 P2WSH multisig address for each Incognito address
 // Return redeem script, OTMultisigAddress
-func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byte, numSigsRequired int, publicSeed string) ([]byte, string, error) {
+func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byte, numSigsRequired int, chainCodeSeed string) ([]byte, string, error) {
 	if len(masterPubKeys) < numSigsRequired || numSigsRequired < 0 {
 		return []byte{}, "", fmt.Errorf("Invalid signature requirment")
 	}
 
 	pubKeys := [][]byte{}
 	// this Incognito address is marked for the address that received change UTXOs
-	if publicSeed == "" {
+	if chainCodeSeed == "" {
 		pubKeys = masterPubKeys[:]
 	} else {
-		chainCode := chainhash.HashB([]byte(publicSeed))
+		chainCode := chainhash.HashB([]byte(chainCodeSeed))
 		for idx, masterPubKey := range masterPubKeys {
 			// generate BTC child public key for this Incognito address
 			extendedBTCPublicKey := hdkeychain.NewExtendedKey(p.ChainParam.HDPublicKeyID[:], masterPubKey, chainCode, []byte{}, 0, 0, false)
@@ -333,7 +333,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	totalOutputAmount := uint64(0)
 	for _, out := range outputs {
 		// adding the output to tx
-		decodedAddr, err := btcutil.DecodeAddress(out.ReceiverAddress, bc.GetBTCChainParams())
+		decodedAddr, err := btcutil.DecodeAddress(out.ReceiverAddress, p.ChainParam)
 		if err != nil {
 			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when decoding receiver address: %v", err)
 			return "", "", err
@@ -359,7 +359,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	if totalInputAmount-totalOutputAmount > 0 {
 		// adding the output to tx
 		multiSigAddress := bc.GetPortalV4GeneralMultiSigAddress(common.PortalBTCIDStr, 0)
-		decodedAddr, err := btcutil.DecodeAddress(multiSigAddress, bc.GetBTCChainParams())
+		decodedAddr, err := btcutil.DecodeAddress(multiSigAddress, p.ChainParam)
 		if err != nil {
 			Logger.log.Errorf("[CreateRawExternalTx-BTC] Error when decoding multisig address: %v", err)
 			return "", "", err
@@ -401,7 +401,7 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, masterP
 	sigs := [][]byte{}
 	for i := range msgTx.TxIn {
 		// generate btc private key from seed: private key of bridge consensus
-		btcPrivateKeyBytes, err := p.generateOTPrivateKey(p.ChainParam, seedKey, inputs[i].GetPublicSeed())
+		btcPrivateKeyBytes, err := p.generateOTPrivateKey(seedKey, inputs[i].GetPublicSeed())
 		if err != nil {
 			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when generate btc private key from seed: %v", err)
 		}
