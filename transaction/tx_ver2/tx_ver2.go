@@ -758,21 +758,26 @@ func (tx Tx) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map[common.Has
 	if tx.Proof == nil {
 		return nil
 	}
-	temp := make(map[common.Hash]interface{})
+	temp := make(map[common.Hash][32]byte)
 	for _, outputCoin := range tx.Proof.GetOutputCoins() {
 		//Skip coins sent to the burning address
 		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
-		temp[hash] = nil
+		temp[hash] = outputCoin.GetPublicKey().ToBytes()
+	}
+	decls := tx_generic.GetOTADeclarationsFromTx(tx)
+	for _, otaDeclaration := range decls {
+		otaPublicKey := otaDeclaration.PublicKey[:]
+		hash := common.HashH(otaPublicKey)
+		temp[hash] = otaDeclaration.PublicKey
 	}
 
 	for _, listOTAs := range poolOTAHashH {
 		for _, otaHash := range listOTAs {
-			if _, ok := temp[otaHash]; ok {
-				return fmt.Errorf("duplicate OTA with current mempool %v",
-					otaHash.String())
+			if pk, ok := temp[otaHash]; ok {
+				return fmt.Errorf("duplicate OTA %x with current mempool for TX %v", pk, tx.Hash().String())
 			}
 		}
 	}

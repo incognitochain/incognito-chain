@@ -1027,14 +1027,14 @@ func (txToken *TxToken) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map
 	if txToken.GetTxBase().GetProof() == nil {
 		return nil
 	}
-	temp := make(map[common.Hash]interface{})
+	temp := make(map[common.Hash][32]byte)
 	for _, outputCoin := range txToken.GetTxBase().GetProof().GetOutputCoins() {
 		//Skip coins sent to the burning address
 		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
-		temp[hash] = nil
+		temp[hash] = outputCoin.GetPublicKey().ToBytes()
 	}
 
 	if txToken.GetTxNormal().GetProof() == nil {
@@ -1047,14 +1047,20 @@ func (txToken *TxToken) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
-		temp[hash] = nil
+		temp[hash] = outputCoin.GetPublicKey().ToBytes()
+	}
+
+	decls := tx_generic.GetOTADeclarationsFromTx(txToken.Tx)
+	for _, otaDeclaration := range decls {
+		otaPublicKey := otaDeclaration.PublicKey[:]
+		hash := common.HashH(otaPublicKey)
+		temp[hash] = otaDeclaration.PublicKey
 	}
 
 	for _, listOTAs := range poolOTAHashH {
 		for _, otaHash := range listOTAs {
-			if _, ok := temp[otaHash]; ok {
-				return fmt.Errorf("duplicate OTA with current mempool %v",
-					otaHash.String())
+			if pk, ok := temp[otaHash]; ok {
+				return fmt.Errorf("duplicate OTA %x with current mempool for TX %v", pk, txToken.Hash().String())
 			}
 		}
 	}

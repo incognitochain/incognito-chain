@@ -585,7 +585,7 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 			return err
 		}
 		if ok {
-			return errors.New(fmt.Sprintf("OTA of output coin already in database with status %d", status))
+			return errors.New(fmt.Sprintf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status))
 		}
 	}
 
@@ -597,7 +597,7 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 			return err
 		}
 		if exists {
-			return errors.New(fmt.Sprintf("OTA in metadata already in database with status %d", status))
+			return errors.New(fmt.Sprintf("TX %s : OTA %x in metadata already in database with status %d", tx.Hash().String(), otaPublicKey, status))
 		}
 	}
 	return nil
