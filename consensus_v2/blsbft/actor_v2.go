@@ -74,7 +74,7 @@ func (actorV2 *actorV2) run() error {
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
 		cleanMemTicker := time.Tick(5 * time.Minute)
-		actorV2.logger.Info("init bls-bftv3 consensus for chain", actorV2.chainKey)
+		actorV2.logger.Info("init bls-bftv2 consensus for chain", actorV2.chainKey)
 
 		for { //actor loop
 			if !actorV2.isStarted { //sleep if this process is not start
@@ -83,7 +83,7 @@ func (actorV2 *actorV2) run() error {
 			}
 			select {
 			case <-actorV2.destroyCh:
-				actorV2.logger.Info("exit bls-bftv3 consensus for chain", actorV2.chainKey)
+				actorV2.logger.Info("exit bls-bftv2 consensus for chain", actorV2.chainKey)
 				return
 			case proposeMsg := <-actorV2.proposeMessageCh:
 				err := actorV2.handleProposeMsg(proposeMsg)
@@ -124,6 +124,7 @@ func (actorV2 *actorV2) run() error {
 
 				newTimeSlot := false
 				if actorV2.currentTimeSlot != common.CalculateTimeSlot(actorV2.currentTime) {
+					actorV2.logger.Info("[dcs] actorV2.currentTimeSlot:", actorV2.currentTimeSlot)
 					newTimeSlot = true
 				}
 
@@ -132,6 +133,7 @@ func (actorV2 *actorV2) run() error {
 
 				//set round for monitor
 				round := actorV2.currentTimeSlot - common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+
 				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
 				var userProposeKey signatureschemes2.MiningKey

@@ -16,7 +16,7 @@ import (
 )
 
 type Engine struct {
-	BFTProcess             map[int]blsbft.Actor          // chainID -> consensus
+	bftProcess             map[int]blsbft.Actor          // chainID -> consensus
 	validators             []*consensus.Validator        // list of validator
 	syncingValidators      map[int][]consensus.Validator // syncing validators
 	syncingValidatorsIndex map[string]int                // syncing validators index
@@ -156,9 +156,10 @@ func (engine *Engine) WatchCommitteeChange() {
 		if chainID >= 0 {
 			chainName = fmt.Sprintf("shard-%d", chainID)
 		}
+		//engine.closeBftProcess(chainID)
 		engine.updateVersion(chainID)
-		if _, ok := engine.BFTProcess[chainID]; ok {
-			engine.BFTProcess[chainID].Destroy()
+		if _, ok := engine.bftProcess[chainID]; ok {
+			engine.bftProcess[chainID].Destroy()
 		}
 		engine.initProcess(chainID, chainName)
 
@@ -167,12 +168,12 @@ func (engine *Engine) WatchCommitteeChange() {
 			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
 
-		engine.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
-		engine.BFTProcess[chainID].Start()
-		miningProc = engine.BFTProcess[chainID]
+		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
+		engine.bftProcess[chainID].Start()
+		miningProc = engine.bftProcess[chainID]
 	}
 
-	for chainID, proc := range engine.BFTProcess {
+	for chainID, proc := range engine.bftProcess {
 		if _, ok := ValidatorGroup[chainID]; !ok {
 			proc.Stop()
 		}
@@ -184,7 +185,7 @@ func (engine *Engine) WatchCommitteeChange() {
 func NewConsensusEngine() *Engine {
 	Logger.Log.Infof("CONSENSUS: NewConsensusEngine")
 	engine := &Engine{
-		BFTProcess:             make(map[int]blsbft.Actor),
+		bftProcess:             make(map[int]blsbft.Actor),
 		syncingValidators:      make(map[int][]consensus.Validator),
 		syncingValidatorsIndex: make(map[string]int),
 		consensusName:          common.BlsConsensus,
@@ -210,8 +211,8 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 			engine.version[chainID], engine.BlockVersion(chainID),
 			chainID, chainName, engine.config.Node, Logger.Log)
 	}
-	engine.BFTProcess[chainID] = bftActor
-	engine.BFTProcess[chainID].Run()
+	engine.bftProcess[chainID] = bftActor
+	engine.bftProcess[chainID].Run()
 }
 
 func (engine *Engine) updateVersion(chainID int) {
@@ -221,7 +222,7 @@ func (engine *Engine) updateVersion(chainID int) {
 	} else {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
 	}
-
+	engine.version[chainID] = blsbft.BftVersion
 	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
 		engine.version[chainID] = blsbft.MultiViewsVersion
 	}
@@ -263,7 +264,7 @@ func (engine *Engine) Start() error {
 
 func (engine *Engine) Stop() error {
 	Logger.Log.Infof("CONSENSUS: Stop")
-	for _, BFTProcess := range engine.BFTProcess {
+	for _, BFTProcess := range engine.bftProcess {
 		BFTProcess.Stop()
 	}
 	engine.IsEnabled = 0
@@ -271,7 +272,7 @@ func (engine *Engine) Stop() error {
 }
 
 func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {
-	for _, process := range engine.BFTProcess {
+	for _, process := range engine.bftProcess {
 		if process.IsStarted() && process.GetChainKey() == msg.ChainKey {
 			process.ProcessBFTMsg(msg)
 		}
@@ -287,7 +288,7 @@ func (engine *Engine) GetAllValidatorKeyState() map[string]consensus.MiningState
 }
 
 func (engine *Engine) IsCommitteeInShard(shardID byte) bool {
-	if shard, ok := engine.BFTProcess[int(shardID)]; ok {
+	if shard, ok := engine.bftProcess[int(shardID)]; ok {
 		return shard.IsStarted()
 	}
 	return false
@@ -317,4 +318,8 @@ func (engine *Engine) BlockVersion(chainID int) int {
 	}
 
 	return blsbft.BftVersion
+}
+
+func (engine *Engine) closeBftProcess(chainID int) {
+	engine.bftProcess[chainID].Destroy()
 }
