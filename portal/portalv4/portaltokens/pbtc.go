@@ -44,7 +44,7 @@ func (p PortalBTCTokenProcessor) ConvertIncToExternalAmount(incAmt uint64) uint6
 }
 
 func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
-	proof string, btcChain *btcrelaying.BlockChain, expectedMultisigAddress string, publicSeed string) (bool, []*statedb.UTXO, error) {
+	proof string, btcChain *btcrelaying.BlockChain, expectedMultisigAddress string, chainCodeSeed string) (bool, []*statedb.UTXO, error) {
 	if btcChain == nil {
 		Logger.log.Error("BTC relaying chain should not be null")
 		return false, nil, errors.New("BTC relaying chain should not be null")
@@ -87,7 +87,7 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 			btcTxProof.BTCTx.TxHash().String(),
 			uint32(idx),
 			uint64(out.Value),
-			publicSeed,
+			chainCodeSeed,
 		))
 	}
 
@@ -401,12 +401,12 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, masterP
 	sigs := [][]byte{}
 	for i := range msgTx.TxIn {
 		// generate btc private key from seed: private key of bridge consensus
-		btcPrivateKeyBytes, err := p.generateOTPrivateKey(seedKey, inputs[i].GetPublicSeed())
+		btcPrivateKeyBytes, err := p.generateOTPrivateKey(seedKey, inputs[i].GetChainCodeSeed())
 		if err != nil {
 			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when generate btc private key from seed: %v", err)
 		}
 		btcPrivateKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), btcPrivateKeyBytes)
-		multiSigScript, _, err := p.GenerateOTMultisigAddress(masterPubKeys, numSigsRequired, inputs[i].GetPublicSeed())
+		multiSigScript, _, err := p.GenerateOTMultisigAddress(masterPubKeys, numSigsRequired, inputs[i].GetChainCodeSeed())
 		sig, err := txscript.RawTxInWitnessSignature(msgTx, txscript.NewTxSigHashes(msgTx), i, int64(inputs[i].GetOutputAmount()), multiSigScript, txscript.SigHashAll, btcPrivateKey)
 		if err != nil {
 			return nil, "", fmt.Errorf("[PartSignOnRawExternalTx] Error when signing on raw btc tx: %v", err)
