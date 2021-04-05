@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -114,9 +115,9 @@ type TxToken struct {
 
 // Hash returns the hash of this object.
 // For TxToken, we just concatenate the hash of its fields, then hash that again.
-func (tx *TxToken) Hash() *common.Hash {
-	firstHash := tx.Tx.Hash()
-	secondHash, err := tx.TokenData.Hash()
+func (txToken *TxToken) Hash() *common.Hash {
+	firstHash := txToken.Tx.Hash()
+	secondHash, err := txToken.TokenData.Hash()
 	if err != nil {
 		return nil
 	}
@@ -155,38 +156,38 @@ func decomposeTokenData(td tx_generic.TxTokenData) (*TxTokenDataVersion2, *Tx, e
 }
 
 // GetTxBase returns the Tx field in this TxToken as a generic Transaction.
-func (tx *TxToken) GetTxBase() metadata.Transaction {
-	return &tx.Tx
+func (txToken *TxToken) GetTxBase() metadata.Transaction {
+	return &txToken.Tx
 }
 // SetTxBase tries to set the Tx field to inTx. It can fail when inTx has the wrong version.
-func (tx *TxToken) SetTxBase(inTx metadata.Transaction) error {
+func (txToken *TxToken) SetTxBase(inTx metadata.Transaction) error {
 	temp, ok := inTx.(*Tx)
 	if !ok {
 		return errors.New("Cannot set TxBase : wrong type")
 	}
-	tx.Tx = *temp
+	txToken.Tx = *temp
 	return nil
 }
 // GetTxNormal returns a Transaction describing the "token" part of this TxToken.
-func (tx *TxToken) GetTxNormal() metadata.Transaction {
-	if tx.cachedTxNormal != nil {
-		return tx.cachedTxNormal
+func (txToken *TxToken) GetTxNormal() metadata.Transaction {
+	if txToken.cachedTxNormal != nil {
+		return txToken.cachedTxNormal
 	}
-	result := makeTxToken(&tx.Tx, tx.TokenData.SigPubKey, tx.TokenData.Sig, tx.TokenData.Proof)
+	result := makeTxToken(&txToken.Tx, txToken.TokenData.SigPubKey, txToken.TokenData.Sig, txToken.TokenData.Proof)
 	// tx.cachedTxNormal = result
 	return result
 }
 // SetTxNormal extracts the data in inTx
 // & puts it in the TokenData of this TxToken
-func (tx *TxToken) SetTxNormal(inTx metadata.Transaction) error {
+func (txToken *TxToken) SetTxNormal(inTx metadata.Transaction) error {
 	temp, ok := inTx.(*Tx)
 	if !ok {
 		return utils.NewTransactionErr(utils.UnexpectedError, errors.New("Cannot set TxNormal : wrong type"))
 	}
-	tx.TokenData.SigPubKey = temp.SigPubKey
-	tx.TokenData.Sig = temp.Sig
-	tx.TokenData.Proof = temp.Proof
-	tx.cachedTxNormal = temp
+	txToken.TokenData.SigPubKey = temp.SigPubKey
+	txToken.TokenData.Sig = temp.Sig
+	txToken.TokenData.Proof = temp.Proof
+	txToken.cachedTxNormal = temp
 	return nil
 }
 
@@ -539,9 +540,72 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 	return nil
 }
 
-// ValidateTxSalary validates a minting pToken transaction
-func (tx *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
-	return false, nil
+//ValidateTxSalary checks the following conditions for minteable transactions:
+//	- the signature is valid
+//	- all fields of the output coins are valid: commitment, assetTag, etc,.
+//	- the shardID is valid
+//	- the commitment has been calculated correctly
+//	- the ota has not existed
+func (txToken *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
+	shardID := common.GetShardIDFromLastByte(txToken.GetSenderAddrLastByte())
+	tokenID := &txToken.TokenData.PropertyID
+
+	// Check signature
+	hashedMsg, err := txToken.TokenData.Hash()
+	if err != nil {
+		return false, utils.NewTransactionErr(utils.UnexpectedError, err)
+	}
+	isValid, err := tx_generic.VerifySigNoPrivacy(txToken.GetSig(), txToken.GetSigPubKey(), hashedMsg[:])
+	if !isValid {
+		if err != nil {
+			return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, fmt.Errorf("verify signature of tx %v (PRV) FAILED: %v", txToken.Hash().String(), err))
+		}
+	}
+
+	outputCoins := txToken.GetTxNormal().GetProof().GetOutputCoins()
+
+	// Check commitment
+	outCoin, ok := outputCoins[0].(*privacy.CoinV2)
+	if !ok {
+		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("outCoin must be of version 2, got %v", outputCoins[0].GetVersion()))
+	}
+	tmpAssetTag := operation.HashToPoint(tokenID[:])
+	outCoin.SetAssetTag(tmpAssetTag)
+	cmpCommitment, err := outCoin.ComputeCommitmentCA()
+	if err != nil {
+		return false, utils.NewTransactionErr(utils.CommitOutputCoinError, fmt.Errorf("cannot compute asset tag of the output coin: %v", err))
+	}
+	if !privacy.IsPointEqual(cmpCommitment, outCoin.GetCommitment()) {
+		return false, utils.NewTransactionErr(utils.CommitOutputCoinError, fmt.Errorf("output coin's commitment isn't calculated correctly"))
+	}
+
+	// Check shardID
+	coinShardID, errShard := outCoin.GetShardID()
+	if errShard != nil {
+		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("error when getting coin shardID, err: %v", errShard))
+	}
+	if coinShardID != shardID {
+		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf"output coin's shardID is different from tx pubkey last byte"))
+	}
+
+	// Check database for ota
+	found, status, err := statedb.HasOnetimeAddress(db, *tokenID, outCoin.GetPublicKey().ToBytesS())
+	if err != nil {
+		utils.Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
+		return false, utils.NewTransactionErr(utils.UnexpectedError, err)
+	}
+	if found {
+		switch status {
+		case statedb.OTA_STATUS_STORED:
+			utils.Logger.Log.Error("ValidateTxSalary got error: found onetimeaddress in database")
+			return false, utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New("found onetimeaddress in database"))
+		case statedb.OTA_STATUS_OCCUPIED:
+			utils.Logger.Log.Warnf("Verifier : Accept minted OTA %x since status is %d", outCoin.GetPublicKey().ToBytesS(), status)
+		default:
+			return false, utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New("invalid onetimeaddress status in database"))
+		}
+	}
+	return true, nil
 }
 
 func (txToken *TxToken) verifySig(transactionStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
@@ -648,13 +712,6 @@ func (txToken TxToken) ValidateTransaction(boolParams map[string]bool, transacti
 		// validate for pToken
 		tokenID := txToken.TokenData.PropertyID
 		switch txToken.TokenData.Type {
-		case utils.CustomTokenInit:
-			// handle PRV bullet proof ?
-			if txToken.TokenData.Mintable {
-				return true, nil, nil
-			} else {
-				return false, nil, fmt.Errorf("only shard committee is able to mint tokenV2")
-			}
 		case utils.CustomTokenTransfer:
 			if txToken.GetType() == common.TxTokenConversionType {
 				valid, err := validateConversionVer1ToVer2(txn, transactionStateDB, shardID, &tokenID)
@@ -737,106 +794,106 @@ func (txToken TxToken) GetTxActualSize() uint64 {
 }
 
 //-- OVERRIDE--
-func (tx TxToken) GetVersion() int8 { return tx.Tx.Version }
+func (txToken TxToken) GetVersion() int8 { return txToken.Tx.Version }
 
-func (tx *TxToken) SetVersion(version int8) { tx.Tx.Version = version }
+func (txToken *TxToken) SetVersion(version int8) { txToken.Tx.Version = version }
 
 // GetMetadataType returns the metadata type. A pToken transaction only has one metadata.
-func (tx TxToken) GetMetadataType() int {
-	if tx.Tx.Metadata != nil {
-		return tx.Tx.Metadata.GetType()
+func (txToken TxToken) GetMetadataType() int {
+	if txToken.Tx.Metadata != nil {
+		return txToken.Tx.Metadata.GetType()
 	}
 	return metadata.InvalidMeta
 }
 
 // GetType returns the transaction type. A pToken transaction only has one Type (TokenData's Type is a separate enum).
-func (tx TxToken) GetType() string { return tx.Tx.Type }
+func (txToken TxToken) GetType() string { return txToken.Tx.Type }
 
-func (tx *TxToken) SetType(t string) { tx.Tx.Type = t }
+func (txToken *TxToken) SetType(t string) { txToken.Tx.Type = t }
 
 // GetLockTime returns the transaction's time. A pToken transaction only has one LockTime.
-func (tx TxToken) GetLockTime() int64 { return tx.Tx.LockTime }
+func (txToken TxToken) GetLockTime() int64 { return txToken.Tx.LockTime }
 
-func (tx *TxToken) SetLockTime(locktime int64) { tx.Tx.LockTime = locktime }
+func (txToken *TxToken) SetLockTime(locktime int64) { txToken.Tx.LockTime = locktime }
 
 // GetSenderAddrLastByte returns the SHARD ID of this transaction sender.
 // It uses this legacy function name for compatibility purposes.
-func (tx TxToken) GetSenderAddrLastByte() byte { return tx.Tx.PubKeyLastByteSender }
+func (txToken TxToken) GetSenderAddrLastByte() byte { return txToken.Tx.PubKeyLastByteSender }
 
-func (tx *TxToken) SetGetSenderAddrLastByte(b byte) { tx.Tx.PubKeyLastByteSender = b }
+func (txToken *TxToken) SetGetSenderAddrLastByte(b byte) { txToken.Tx.PubKeyLastByteSender = b }
 
 // GetTxFee returns the fee of this TxToken (fee is in PRV). A pToken transaction only has one Fee.
-func (tx TxToken) GetTxFee() uint64 { return tx.Tx.Fee }
+func (txToken TxToken) GetTxFee() uint64 { return txToken.Tx.Fee }
 
-func (tx *TxToken) SetTxFee(fee uint64) { tx.Tx.Fee = fee }
+func (txToken *TxToken) SetTxFee(fee uint64) { txToken.Tx.Fee = fee }
 
 // GetTxFeeToken is a filler function to satisfy the interface.
 // It returns zero since paying fee in pToken is no longer supported.
-func (tx TxToken) GetTxFeeToken() uint64 { return uint64(0) }
+func (txToken TxToken) GetTxFeeToken() uint64 { return uint64(0) }
 
 // GetInfo returns the transaction's extra information. A pToken transaction only has one Info.
-func (tx TxToken) GetInfo() []byte { return tx.Tx.Info }
+func (txToken TxToken) GetInfo() []byte { return txToken.Tx.Info }
 
-func (tx *TxToken) SetInfo(info []byte) { tx.Tx.Info = info }
+func (txToken *TxToken) SetInfo(info []byte) { txToken.Tx.Info = info }
 
 // not supported
-func (tx TxToken) GetSigPubKey() []byte           { return []byte{} }
+func (txToken TxToken) GetSigPubKey() []byte { return []byte{} }
 // not supported
-func (tx *TxToken) SetSigPubKey(sigPubkey []byte) {}
+func (txToken *TxToken) SetSigPubKey(sigPubkey []byte) {}
 // not supported
-func (tx TxToken) GetSig() []byte                 { return []byte{} }
+func (txToken TxToken) GetSig() []byte { return []byte{} }
 // not supported
-func (tx *TxToken) SetSig(sig []byte)             {}
+func (txToken *TxToken) SetSig(sig []byte) {}
 // not supported
-func (tx TxToken) GetProof() privacy.Proof        { return tx.Tx.Proof }
+func (txToken TxToken) GetProof() privacy.Proof { return txToken.Tx.Proof }
 // not supported
-func (tx *TxToken) SetProof(proof privacy.Proof)  {}
+func (txToken *TxToken) SetProof(proof privacy.Proof) {}
 // not supported
-func (tx TxToken) GetCachedActualSize() *uint64 {
+func (txToken TxToken) GetCachedActualSize() *uint64 {
 	return nil
 }
-func (tx *TxToken) SetCachedActualSize(sz *uint64) {}
+func (txToken *TxToken) SetCachedActualSize(sz *uint64) {}
 // not supported
-func (tx TxToken) GetCachedHash() *common.Hash {
+func (txToken TxToken) GetCachedHash() *common.Hash {
 	return nil
 }
 // not supported
-func (tx *TxToken) SetCachedHash(h *common.Hash) {}
+func (txToken *TxToken) SetCachedHash(h *common.Hash) {}
 // Verify is the sub-function for ValidateTransaction. This is in the verification flow of most TXs (excluding some special types).
-func (tx *TxToken) Verify(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
+func (txToken *TxToken) Verify(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	return false, nil
 }
 
 // GetTokenID returns the token ID for this TxToken.
-func (tx TxToken) GetTokenID() *common.Hash { return &tx.TokenData.PropertyID }
+func (txToken TxToken) GetTokenID() *common.Hash { return &txToken.TokenData.PropertyID }
 
 // GetMetadataType returns the transaction's metadata. A pToken transaction only has one metadata.
-func (tx TxToken) GetMetadata() metadata.Metadata { return tx.Tx.Metadata }
+func (txToken TxToken) GetMetadata() metadata.Metadata { return txToken.Tx.Metadata }
 
-func (tx *TxToken) SetMetadata(meta metadata.Metadata) { tx.Tx.Metadata = meta }
+func (txToken *TxToken) SetMetadata(meta metadata.Metadata) { txToken.Tx.Metadata = meta }
 // GetPrivateKey returns the private key being used to sign this TxToken.
 // The private key is always cleared after signing.
-func (tx TxToken) GetPrivateKey() []byte {
-	return tx.Tx.GetPrivateKey()
+func (txToken TxToken) GetPrivateKey() []byte {
+	return txToken.Tx.GetPrivateKey()
 }
-func (tx *TxToken) SetPrivateKey(sk []byte) {
-	tx.Tx.SetPrivateKey(sk)
+func (txToken *TxToken) SetPrivateKey(sk []byte) {
+	txToken.Tx.SetPrivateKey(sk)
 }
 
-func (tx TxToken) GetReceivers() ([][]byte, []uint64) {
+func (txToken TxToken) GetReceivers() ([][]byte, []uint64) {
 	return nil, nil
 }
 
-func (tx TxToken) ListSerialNumbersHashH() []common.Hash {
+func (txToken TxToken) ListSerialNumbersHashH() []common.Hash {
 	result := []common.Hash{}
-	if tx.Tx.GetProof() != nil {
-		for _, d := range tx.Tx.GetProof().GetInputCoins() {
+	if txToken.Tx.GetProof() != nil {
+		for _, d := range txToken.Tx.GetProof().GetInputCoins() {
 			hash := common.HashH(d.GetKeyImage().ToBytesS())
 			result = append(result, hash)
 		}
 	}
-	if tx.GetTxNormal().GetProof() != nil {
-		for _, d := range tx.GetTxNormal().GetProof().GetInputCoins() {
+	if txToken.GetTxNormal().GetProof() != nil {
+		for _, d := range txToken.GetTxNormal().GetProof().GetInputCoins() {
 			hash := common.HashH(d.GetKeyImage().ToBytesS())
 			result = append(result, hash)
 		}
@@ -847,8 +904,8 @@ func (tx TxToken) ListSerialNumbersHashH() []common.Hash {
 	return result
 }
 
-func (tx TxToken) String() string {
-	jsb, err := json.Marshal(tx)
+func (txToken TxToken) String() string {
+	jsb, err := json.Marshal(txToken)
 	if err != nil {
 		return ""
 	}
@@ -865,8 +922,8 @@ func (tx TxToken) String() string {
 	// }
 	// return record
 }
-func (tx *TxToken) CalculateTxValue() uint64 {
-	proof := tx.GetTxNormal().GetProof()
+func (txToken *TxToken) CalculateTxValue() uint64 {
+	proof := txToken.GetTxNormal().GetProof()
 	if proof == nil {
 		return 0
 	}
@@ -881,7 +938,7 @@ func (tx *TxToken) CalculateTxValue() uint64 {
 		return txValue
 	}
 
-	if tx.GetTxNormal().IsPrivacy() {
+	if txToken.GetTxNormal().IsPrivacy() {
 		return 0
 	}
 
@@ -897,26 +954,41 @@ func (tx *TxToken) CalculateTxValue() uint64 {
 	return txValue
 }
 
-func (tx TxToken) CheckTxVersion(maxTxVersion int8) bool {
-	return !(tx.Tx.Version > maxTxVersion)
+func (txToken TxToken) CheckTxVersion(maxTxVersion int8) bool {
+	return !(txToken.Tx.Version > maxTxVersion)
 }
 
-func (tx TxToken) IsSalaryTx() bool {
-	if tx.Tx.GetType() != common.TxRewardType {
+//IsSalaryTx checks if the transaction is a token salary transaction. A token salary transaction is a transaction produced by shard committees which the following conditions:
+//
+// - mintable is true
+// - PRV proof is nil
+// - no input token
+// - only output token
+func (txToken TxToken) IsSalaryTx() bool {
+	if !txToken.TokenData.Mintable {
 		return false
 	}
-	if len(tx.TokenData.Proof.GetInputCoins()) > 0 {
+	if txToken.GetTxBase().GetProof() != nil {
 		return false
 	}
-	return true
+	if txToken.GetTxNormal().GetProof() == nil {
+		return false
+	}
+	if len(txToken.GetTxNormal().GetProof().GetInputCoins()) != 0 {
+		return false
+	}
+	if len(txToken.GetTxNormal().GetProof().GetOutputCoins()) != 1 {
+		return false
+	}
+	return false
 }
 
-func (tx TxToken) IsPrivacy() bool {
+func (txToken TxToken) IsPrivacy() bool {
 	// In the case of NonPrivacyNonInput, we do not have proof
-	if tx.Tx.Proof == nil {
+	if txToken.Tx.Proof == nil {
 		return false
 	}
-	return tx.Tx.Proof.IsPrivacy()
+	return txToken.Tx.Proof.IsPrivacy()
 }
 
 func (txToken *TxToken) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) bool {
@@ -928,9 +1000,9 @@ func (txToken *TxToken) IsCoinsBurning(bcr metadata.ChainRetriever, retriever me
 	return txToken.GetTxNormal().IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight)
 }
 
-func (tx *TxToken) GetReceiverData() ([]privacy.Coin, error) {
-	if tx.Tx.Proof != nil && len(tx.Tx.Proof.GetOutputCoins()) > 0 {
-		return tx.Tx.Proof.GetOutputCoins(), nil
+func (txToken *TxToken) GetReceiverData() ([]privacy.Coin, error) {
+	if txToken.Tx.Proof != nil && len(txToken.Tx.Proof.GetOutputCoins()) > 0 {
+		return txToken.Tx.Proof.GetOutputCoins(), nil
 	}
 	return nil, nil
 }
@@ -1111,7 +1183,7 @@ func (txToken *TxToken) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *
 	return isBurnPrv || isBurnToken, burnPrv, burnToken, burnedTokenID, nil
 }
 
-func (tx *TxToken) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *statedb.StateDB, tokenID *common.Hash) error {
+func (txToken *TxToken) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *statedb.StateDB, tokenID *common.Hash) error {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
@@ -1123,17 +1195,17 @@ func (tx *TxToken) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stat
 			return err
 		}
 	}
-	if tx.Tx.Proof == nil {
+	if txToken.Tx.Proof == nil {
 		return nil
 	}
-	err = tx.Tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
+	err = txToken.Tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 	if err != nil {
 		return err
 	}
-	if tx.GetTxNormal().GetProof() == nil {
+	if txToken.GetTxNormal().GetProof() == nil {
 		return nil
 	}
-	err = tx.GetTxNormal().ValidateDoubleSpendWithBlockchain(shardID, stateDB, prvCoinID)
+	err = txToken.GetTxNormal().ValidateDoubleSpendWithBlockchain(shardID, stateDB, prvCoinID)
 	return err
 }
 
@@ -1146,7 +1218,7 @@ func (txToken *TxToken) ValidateTxWithBlockChain(chainRetriever metadata.ChainRe
 	return err
 }
 
-func (tx *TxToken) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { return true }
+func (txToken *TxToken) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { return true }
 
 func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	var err error

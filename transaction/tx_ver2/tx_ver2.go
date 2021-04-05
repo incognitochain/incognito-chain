@@ -486,6 +486,25 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(mintdata *metadata.MintDat
 
 // ========== SALARY FUNCTIONS: INIT AND VALIDATE  ==========
 
+func (tx Tx) IsSalaryTx() bool {
+	if tx.GetType() != common.TxRewardType || tx.GetType() != common.TxReturnStakingType {
+		return false
+	}
+
+	proof := tx.GetProof()
+	if proof == nil {
+		return false
+	}
+	if len(proof.GetInputCoins()) != 0 {
+		return false
+	}
+	if len(proof.GetOutputCoins()) != 1{
+		return false
+	}
+
+	return true
+}
+
 // InitTxSalary is used to create a "mint" transaction of version 2. The minting rule is covered inside the metadata.
 func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateKey, stateDB *statedb.StateDB, metaData metadata.Metadata) error {
 	tokenID := &common.Hash{}
@@ -538,9 +557,8 @@ func (tx *Tx) InitTxSalary(otaCoin *privacy.CoinV2, privateKey *privacy.PrivateK
 //	- the signature is valid
 //	- the number of output coins is 1
 //	- all fields of the output coins are valid
-//	- the ota has not existed
 //	- the commitment has been calculated correctly
-//	- if this is a rs transaction, check if the output value is 1750000000000
+//  - the ota has not existed
 func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	// verify signature
 	if valid, err := tx_generic.VerifySigNoPrivacy(tx.Sig, tx.SigPubKey, tx.Hash()[:]); !valid {
@@ -550,6 +568,7 @@ func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 		}
 		return false, nil
 	}
+
 	// check whether output coin's input exists in input list or not
 	tokenID := &common.Hash{}
 	if err := tokenID.SetBytes(common.PRVCoinID[:]); err != nil {
@@ -563,14 +582,11 @@ func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	}
 	outCoin, ok := outputCoins[0].(*privacy.CoinV2)
 	if !ok {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("outCoin must be of version 2, got %v", outputCoins[0].GetVersion()))
+		return false, utils.NewTransactionErr(utils.CommitOutputCoinError, fmt.Errorf("outCoin must be of version 2, got %v", outputCoins[0].GetVersion()))
 	}
 	cmpCommitment := privacy.PedCom.CommitAtIndex(outCoin.GetAmount(), outCoin.GetRandomness(), privacy.PedersenValueIndex)
 	if !privacy.IsPointEqual(cmpCommitment, outCoin.GetCommitment()) {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("output coin's commitment isn't calculated correctly"))
-	}
-	if tx.GetType() == common.TxReturnStakingType && outCoin.GetValue() != uint64(1750000000000) {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("output of a rs transaction must be 1750000000000, got %v", outCoin.GetValue()))
+		return false, utils.NewTransactionErr(utils.CommitOutputCoinError, errors.New("output coin's commitment isn't calculated correctly"))
 	}
 
 	// Check shardID
@@ -584,39 +600,24 @@ func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	}
 
 	// Check database for ota
-	found, status, err := statedb.HasOnetimeAddress(db, *tokenID, outputCoin.GetPublicKey().ToBytesS())
+	found, status, err := statedb.HasOnetimeAddress(db, *tokenID, outCoin.GetPublicKey().ToBytesS())
 	if err != nil {
 		utils.Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
-		return false, err
+		return false, utils.NewTransactionErr(utils.UnexpectedError, err)
 	}
 	if found {
 		switch status {
 		case statedb.OTA_STATUS_STORED:
 			utils.Logger.Log.Error("ValidateTxSalary got error: found onetimeaddress in database")
-			return false, errors.New("found onetimeaddress in database")
+			return false, utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New("found onetimeaddress in database"))
 		case statedb.OTA_STATUS_OCCUPIED:
-			utils.Logger.Log.Warnf("Verifier : Accept minted OTA %x since status is %d", outputCoin.GetPublicKey().ToBytesS(), status)
+			utils.Logger.Log.Warnf("Verifier : Accept minted OTA %x since status is %d", outCoin.GetPublicKey().ToBytesS(), status)
 		default:
-			return false, errors.New("invalid onetimeaddress status in database")
+			return false, utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New("invalid onetimeaddress status in database"))
 		}
 	}
 	return true, nil
 }
-
-// func (tx Tx) StringWithoutMetadataSig() string {
-// 	record := strconv.Itoa(int(tx.Version))
-// 	record += strconv.FormatInt(tx.LockTime, 10)
-// 	record += strconv.FormatUint(tx.Fee, 10)
-// 	if tx.Proof != nil {
-// 		record += base64.StdEncoding.EncodeToString(tx.Proof.Bytes())
-// 	}
-// 	if tx.Metadata != nil {
-// 		metadataHash := tx.Metadata.HashWithoutSig()
-// 		record += metadataHash.String()
-// 	}
-// 	record += string(tx.Info)
-// 	return record
-// }
 
 // Hash returns the hash of this transaction.
 // All non-signature fields are marshalled into JSON before hashing
