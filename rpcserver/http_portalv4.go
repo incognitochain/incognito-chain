@@ -428,16 +428,6 @@ func getRawSignedTxByHeight(
 func (httpServer *HttpServer) handleCreateRawTxWithPortalReplaceUnshieldFee(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
-	if len(arrayParams) >= 7 {
-		hasPrivacyTokenParam, ok := arrayParams[6].(float64)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("HasPrivacyToken is invalid"))
-		}
-		hasPrivacyToken := int(hasPrivacyTokenParam) > 0
-		if hasPrivacyToken {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("The privacy mode must be disabled"))
-		}
-	}
 	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param metadata is invalid"))
@@ -531,16 +521,6 @@ func (httpServer *HttpServer) handleGetPortalReplacementFeeRequestStatus(params 
 func (httpServer *HttpServer) handleCreateRawTxWithPortalSubmitConfirmedTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
-	if len(arrayParams) >= 7 {
-		hasPrivacyTokenParam, ok := arrayParams[6].(float64)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("HasPrivacyToken is invalid"))
-		}
-		hasPrivacyToken := int(hasPrivacyTokenParam) > 0
-		if hasPrivacyToken {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("The privacy mode must be disabled"))
-		}
-	}
 	tokenParamsRaw, ok := arrayParams[4].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param metadata is invalid"))
@@ -590,7 +570,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalSubmitConfirmedTx(param
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateAndSendTxWithPortalPortalSubmitConfirmedTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateAndSendTxWithPortalSubmitConfirmedTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithPortalSubmitConfirmedTx(params, closeChan)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
