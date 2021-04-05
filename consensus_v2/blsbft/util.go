@@ -174,6 +174,7 @@ func NewActorWithValue(
 	case MultiViewsVersion:
 		res = NewActorV2WithValue(chain, committeeChain, chainName, version, chainID, node, logger)
 	case SlashingVersion:
+		res = NewActorV2WithValue(chain, committeeChain, chainName, version, chainID, node, logger)
 	case MultiSubsetsVersion:
 	default:
 		panic("Bft version is not valid")
