@@ -66,7 +66,6 @@ func NewActorV2WithValue(
 	if err != nil {
 		panic(err) //must not error
 	}
-	//run?
 	return res
 }
 
@@ -195,21 +194,10 @@ func (actorV2 *actorV2) run() error {
 				}
 
 				validProposeBlocks := actorV2.getValidProposeBlocks(bestView)
-				for _, v := range validProposeBlocks {
-					blkCreateTimeSlot := common.CalculateTimeSlot(v.block.GetProduceTime())
-					bestViewHeight := bestView.GetHeight()
-
-					if lastVotedBlk, ok := actorV2.voteHistory[bestViewHeight+1]; ok {
-						if blkCreateTimeSlot < common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) { //blkCreateTimeSlot is smaller than voted block => vote for this blk
-							actorV2.validateAndVote(v)
-						} else if blkCreateTimeSlot == common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) && common.CalculateTimeSlot(v.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlk.GetProposeTime()) { //blk is old block (same round), but new proposer(larger timeslot) => vote again
-							actorV2.validateAndVote(v)
-						} else if v.block.CommitteeFromBlock().String() != lastVotedBlk.CommitteeFromBlock().String() { //blkCreateTimeSlot is larger or equal than voted block
-							actorV2.validateAndVote(v)
-						} // if not swap committees => do nothing
-					} else { //there is no vote for this height yet
-						actorV2.validateAndVote(v)
-					}
+				err = actorV2.validateAndVoteForValidProposeBlocks(bestView, validProposeBlocks)
+				if err != nil {
+					actorV2.logger.Debug(err)
+					continue
 				}
 				/*
 					Check for 2/3 vote to commit
@@ -694,9 +682,11 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 	signingCommittees := []incognitokey.CommitteePublicKey{}
 	proposerPk := incognitokey.CommitteePublicKey{}
 	var err error
-	if actorV2.chainID == BEACON_CHAIN_ID {
+
+	if actorV2.blockVersion == MultiViewsVersion || actorV2.chain.IsBeaconChain() {
 		proposerPk, _ = actorV2.chain.GetBestView().GetProposerByTimeSlot(actorV2.currentTimeSlot, 2)
 		committees = actorV2.chain.GetBestView().GetCommittee()
+		signingCommittees = committees
 	} else {
 		committeeViewHash = *actorV2.committeeChain.GetFinalView().GetHash()
 		signingCommittees, committees, err = actorV2.
@@ -707,6 +697,7 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 		}
 		proposerPk = actorV2.committeeChain.ProposerByTimeSlot(byte(actorV2.chainID), actorV2.currentTimeSlot, committees)
 	}
+
 	return signingCommittees, committees, proposerPk, committeeViewHash, err
 }
 
@@ -849,4 +840,29 @@ func (actorV2 *actorV2) getValidProposeBlocks(bestView multiview.View) []*Propos
 		return validProposeBlock[i].block.GetProduceTime() < validProposeBlock[j].block.GetProduceTime()
 	})
 	return validProposeBlock
+}
+
+func (actorV2 *actorV2) validateAndVoteForValidProposeBlocks(bestView multiview.View, validProposeBlocks []*ProposeBlockInfo) error {
+	for _, v := range validProposeBlocks {
+		shouldVote := false
+		blkCreateTimeSlot := common.CalculateTimeSlot(v.block.GetProduceTime())
+		bestViewHeight := bestView.GetHeight()
+
+		if lastVotedBlk, ok := actorV2.voteHistory[bestViewHeight+1]; ok {
+			if blkCreateTimeSlot < common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) { //blkCreateTimeSlot is smaller than voted block => vote for this blk
+				shouldVote = true
+			} else if blkCreateTimeSlot == common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) && common.CalculateTimeSlot(v.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlk.GetProposeTime()) { //blk is old block (same round), but new proposer(larger timeslot) => vote again
+				shouldVote = true
+			} else if v.block.CommitteeFromBlock().String() != lastVotedBlk.CommitteeFromBlock().String() { //blkCreateTimeSlot is larger or equal than voted block
+				shouldVote = true
+			} // if not swap committees => do nothing
+		} else { //there is no vote for this height yet
+			shouldVote = true
+		}
+		if shouldVote {
+			actorV2.validateAndVote(v)
+		}
+	}
+
+	return nil
 }
