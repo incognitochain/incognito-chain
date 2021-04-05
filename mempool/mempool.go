@@ -322,6 +322,7 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 //	- Validate transaction by itself
 //	- Validate transaction with blockchain
 func (tp *TxPool) MaybeAcceptSalaryTransactionForBlockProducing(shardID byte, tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
+	Logger.log.Infof("Verifying tx salary %v\n", tx.Hash().String())
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	beaconView, ok := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
@@ -359,6 +360,7 @@ func (tp *TxPool) MaybeAcceptSalaryTransactionForBlockProducing(shardID byte, tx
 	if err != nil {
 		return nil, err
 	}
+	Logger.log.Infof("Finish verifying tx salary %v: %v\n", tx.Hash().String(), err)
 	return &txD.Desc, err
 }
 

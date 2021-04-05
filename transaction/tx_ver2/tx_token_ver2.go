@@ -555,7 +555,7 @@ func (txToken *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	if err != nil {
 		return false, utils.NewTransactionErr(utils.UnexpectedError, err)
 	}
-	isValid, err := tx_generic.VerifySigNoPrivacy(txToken.GetSig(), txToken.GetSigPubKey(), hashedMsg[:])
+	isValid, err := tx_generic.VerifySigNoPrivacy(txToken.GetTxBase().GetSig(), txToken.GetTxBase().GetSigPubKey(), hashedMsg[:])
 	if !isValid {
 		if err != nil {
 			return false, utils.NewTransactionErr(utils.VerifyTxSigFailError, fmt.Errorf("verify signature of tx %v (PRV) FAILED: %v", txToken.Hash().String(), err))
@@ -960,12 +960,12 @@ func (txToken TxToken) CheckTxVersion(maxTxVersion int8) bool {
 
 //IsSalaryTx checks if the transaction is a token salary transaction. A token salary transaction is a transaction produced by shard committees which the following conditions:
 //
-// - mintable is true
+// - mintable is true, tokenType is CustomTokenInit
 // - PRV proof is nil
 // - no input token
 // - only output token
 func (txToken TxToken) IsSalaryTx() bool {
-	if !txToken.TokenData.Mintable {
+	if !txToken.TokenData.Mintable || txToken.TokenData.Type != utils.CustomTokenInit{
 		return false
 	}
 	if txToken.GetTxBase().GetProof() != nil {
@@ -980,7 +980,7 @@ func (txToken TxToken) IsSalaryTx() bool {
 	if len(txToken.GetTxNormal().GetProof().GetOutputCoins()) != 1 {
 		return false
 	}
-	return false
+	return true
 }
 
 func (txToken TxToken) IsPrivacy() bool {
