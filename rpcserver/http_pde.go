@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
 	"sort"
 	"strconv"
@@ -126,6 +127,18 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interf
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
 
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDEContribution(
 		pdeContributionPairID,
 		contributorAddressStr,
@@ -136,6 +149,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interf
 
 	if version == 2 {
 		meta.Type = metadata.PDEPRVRequiredContributionRequestMeta
+	}
+	if txVersion == 1 {
+		tmpAddr := meta.ContributorAddressStr
+		meta.ContributorAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
 	}
 
 	// create new param to build raw tx from param interface
@@ -223,6 +243,19 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params int
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
+
+	var txVersion int8
+	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDEContribution(
 		pdeContributionPairID,
 		contributorAddressStr,
@@ -232,6 +265,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params int
 	)
 	if version == 2 {
 		meta.Type = metadata.PDEPRVRequiredContributionRequestMeta
+	}
+	if txVersion == 1 {
+		tmpAddr := meta.ContributorAddressStr
+		meta.ContributorAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
 	}
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
@@ -328,6 +368,18 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDETradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
@@ -338,6 +390,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 		traderOTAtxRandomStr,
 		metadata.PDETradeRequestMeta,
 	)
+	if txVersion == 1 {
+		tmpAddr := meta.TraderAddressStr
+		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -426,6 +485,18 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
+	var txVersion int8
+	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDETradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
@@ -436,6 +507,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 		traderOTAtxRandomStr,
 		metadata.PDETradeRequestMeta,
 	)
+	if txVersion == 1 {
+		tmpAddr := meta.TraderAddressStr
+		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
@@ -503,6 +581,18 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReq(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDEWithdrawalRequest(
 		withdrawerAddressStr,
 		withdrawalToken1IDStr,
@@ -510,6 +600,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReq(params interfac
 		withdrawalShareAmt,
 		metadata.PDEWithdrawalRequestMeta,
 	)
+	if txVersion == 1 {
+		tmpAddr := meta.WithdrawerAddressStr
+		meta.WithdrawerAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -1210,6 +1307,18 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVCrossPoolTradeReq(params i
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("txVersion must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDECrossPoolTradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
@@ -1222,6 +1331,14 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVCrossPoolTradeReq(params i
 		traderSubOTAtxRandomStr,
 		metadata.PDECrossPoolTradeRequestMeta,
 	)
+
+	if txVersion == 1 {
+		tmpAddr := meta.TraderAddressStr
+		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -1314,6 +1431,18 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenCrossPoolTradeReq(param
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
+	var txVersion int8
+	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("txVersion must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDECrossPoolTradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
@@ -1326,6 +1455,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenCrossPoolTradeReq(param
 		traderSubOTAtxRandomStr,
 		metadata.PDECrossPoolTradeRequestMeta,
 	)
+	if txVersion == 1 {
+		tmpAddr := meta.TraderAddressStr
+		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
@@ -1393,6 +1529,18 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDEFeeWithdrawalReq(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDEFeeWithdrawalRequest(
 		withdrawerAddressStr,
 		withdrawalToken1IDStr,
@@ -1400,6 +1548,14 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDEFeeWithdrawalReq(params in
 		withdrawalFeeAmt,
 		metadata.PDEFeeWithdrawalRequestMeta,
 	)
+	if txVersion == 1 {
+		tmpAddr := meta.WithdrawerAddressStr
+		meta.WithdrawerAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
+
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)

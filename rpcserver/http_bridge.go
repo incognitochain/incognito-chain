@@ -78,9 +78,24 @@ func (httpServer *HttpServer) handleCreateRawTxWithContractingReq(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token ID is invalid"))
 	}
 
+	var txVersion int8
+	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("txVersion must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, err := rpcservice.NewContractingRequestMetadata(senderPrivateKeyParam, tokenReceivers, tokenID)
 	if err != nil {
 		return nil, err
+	}
+	if txVersion == 1{
+		meta.BurnerAddress.OTAPublic = nil
 	}
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
@@ -323,6 +338,18 @@ func processBurningReq(
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("remote address is invalid"))
 	}
 
+	var txVersion int8
+	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("txVersion must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, err := rpcservice.NewBurningRequestMetadata(
 		senderPrivateKeyParam,
 		tokenReceivers,
@@ -331,7 +358,8 @@ func processBurningReq(
 		remoteAddress,
 		burningMetaType,
 		httpServer.GetBlockchain(),
-		httpServer.GetBlockchain().BeaconChain.CurrentHeight())
+		httpServer.GetBlockchain().BeaconChain.CurrentHeight(),
+		txVersion)
 	if err != nil {
 		return nil, err
 	}

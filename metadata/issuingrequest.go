@@ -105,13 +105,34 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ReceiveAddress incorrect"))
 	}
 
-	return NewIssuingRequest(
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("txVersion must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
+	md, err := NewIssuingRequest(
 		keyWallet.KeySet.PaymentAddress,
 		depositedAmt,
 		*tokenID,
 		tokenName,
 		IssuingRequestMeta,
 	)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, err)
+	}
+
+	if txVersion == 1 {
+		md.ReceiverAddress.OTAPublic = nil
+	}
+
+	return md, nil
 }
 
 func NewIssuingRequestFromMapV2(data map[string]interface{}) (Metadata, error) {
@@ -135,13 +156,34 @@ func NewIssuingRequestFromMapV2(data map[string]interface{}) (Metadata, error) {
 		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ReceiveAddress incorrect"))
 	}
 
-	return NewIssuingRequest(
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("txVersion must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
+	md, err := NewIssuingRequest(
 		keyWallet.KeySet.PaymentAddress,
 		depositedAmt,
 		*tokenID,
 		tokenName,
 		IssuingRequestMeta,
 	)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, err)
+	}
+
+	if txVersion == 1 {
+		md.ReceiverAddress.OTAPublic = nil
+	}
+
+	return md, nil
 }
 
 func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {

@@ -87,7 +87,7 @@ func (iReq InitTokenRequest) ValidateTxWithBlockChain(tx Transaction, chainRetri
 }
 
 //ValidateSanityData performs the following verifications:
-//	1. Check transaction type
+//	1. Check transaction type and tx version
 //	2. Check the addressV2 is valid
 //	3. Check if the amount is not 0
 //	4. Check tokenName and tokenSymbol
@@ -95,6 +95,9 @@ func (iReq InitTokenRequest) ValidateSanityData(chainRetriever ChainRetriever, s
 	//Step 1
 	if tx.GetType() != common.TxNormalType {
 		return false, false, NewMetadataTxError(InitTokenRequestValidateSanityDataError, fmt.Errorf("tx InitTokenRequest must have type `%v`", common.TxNormalType))
+	}
+	if tx.GetVersion() != 2 {
+		return false, false, NewMetadataTxError(InitTokenRequestValidateSanityDataError, fmt.Errorf("metadata %v only supports tx ver 2", InitTokenRequestMeta))
 	}
 
 	//Step 2

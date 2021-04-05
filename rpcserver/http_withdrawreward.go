@@ -26,7 +26,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("payment address string is invalid"))
 	}
-	version, ok := metaParam["Version"].(float64)
+	version, ok := metaParam["TxVersion"].(float64)
 	if !ok {
 		version = 0
 	}
@@ -38,6 +38,9 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 		)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+	if version == 1 {
+		meta.PaymentAddress.OTAPublic = nil
 	}
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)

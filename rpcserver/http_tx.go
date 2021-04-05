@@ -1076,6 +1076,19 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid auto restaking flag %+v", data["AutoReStaking"]))
 	}
 
+	//Get tx version
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	// Get candidate publickey
 	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
 	if err != nil || candidateWallet == nil {
@@ -1100,6 +1113,20 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	if txVersion == 1 {
+		tmpFunderAddr := stakingMetadata.FunderPaymentAddress
+		tmpRecvAddr := stakingMetadata.RewardReceiverPaymentAddress
+
+		stakingMetadata.FunderPaymentAddress, err = wallet.GetPaymentAddressV1(tmpFunderAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpFunderAddr))
+		}
+
+		stakingMetadata.RewardReceiverPaymentAddress, err = wallet.GetPaymentAddressV1(tmpRecvAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpRecvAddr))
+		}
 	}
 
 	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata)

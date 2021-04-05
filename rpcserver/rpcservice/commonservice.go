@@ -128,6 +128,7 @@ func NewBurningRequestMetadata(
 	burningMetaType int,
 	bcr metadata.ChainRetriever,
 	beaconHeight uint64,
+	version int8,
 ) (*metadata.BurningRequest, *RPCError) {
 	senderKey, err := wallet.Base58CheckDeserialize(senderPrivateKeyStr)
 	if err != nil {
@@ -158,6 +159,9 @@ func NewBurningRequestMetadata(
 	)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, err)
+	}
+	if version == 1 {
+		meta.BurnerAddress.OTAPublic = nil
 	}
 
 	return meta, nil
