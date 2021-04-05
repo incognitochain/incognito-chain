@@ -273,9 +273,9 @@ func (s *PortalTestSuiteV4) SetupTestShieldingRequest() {
 	// do nothing
 }
 
-func generateUTXOKeyAndValue(tokenID string, walletAddress string, txHash string, outputIdx uint32, outputAmount uint64, publicSeed string) (string, *statedb.UTXO) {
+func generateUTXOKeyAndValue(tokenID string, walletAddress string, txHash string, outputIdx uint32, outputAmount uint64, chainCodeSeed string) (string, *statedb.UTXO) {
 	utxoKey := statedb.GenerateUTXOObjectKey(tokenID, walletAddress, txHash, outputIdx).String()
-	utxoValue := statedb.NewUTXOWithValue(walletAddress, txHash, outputIdx, outputAmount, publicSeed)
+	utxoValue := statedb.NewUTXOWithValue(walletAddress, txHash, outputIdx, outputAmount, chainCodeSeed)
 	return utxoKey, utxoValue
 }
 
@@ -317,9 +317,16 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultShieldingRequest() ([]
 		//{
 		//	tokenID:                  portalcommonv4.PortalBTCIDStr,
 		//	incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
-		//	shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzIwOCw0Niw2OCwxOSw1NSwyMDksMjM1LDIyMCw0OSwxMTEsNjQsMjEsODEsMTA5LDI0NiwyMTAsMTUyLDEzMywxMDksNjgsNjMsMTU5LDI0MSwxNjUsMTk4LDE2LDUsMjYsMjA0LDIzNCw3NCwxODhdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMTM2LDQzLDIyNCwxLDE3NiwxMTQsMTQxLDIxMywzMywxMTcsNjAsNzYsNjcsMzgsMjAsNDksMTE4LDE5NSwyNTMsMjMyLDE1MCw4MiwxNDksMTY1LDE2OCwxNDIsMjA3LDI1NSwxNiw1NCw3Miw1MF0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTgwLDM2LDE4LDgyLDIxMywzOSwxMDksMTc1LDIwNiwxMjgsMjUwLDYsMjM4LDM2LDE2MiwyMTAsMjMyLDEzNCwxNDYsMTI0LDksNTgsMTA0LDEzNSwxNDgsMTI5LDE4OCwxNDIsMjM5LDE5LDE4MiwzXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOls2NywxMDUsMTE3LDI4LDg3LDExOCwxMSwxNCwxNzgsMTE0LDk4LDExOCwxNDcsMTA3LDEwNyw5NSw0MywyMzEsNTEsMjEsMTYwLDQwLDk1LDEwLDIyNSwyNTUsMTQ5LDIzMiwyMjEsMjM1LDI0OCwzMF0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOlsyNDgsMjQ0LDE3MCw0NywzMSwxMTIsMTE4LDI0MSw0OCwxOTIsMzAsMTc2LDE1MSw4LDQ5LDYsNDIsMTE0LDE1NSwxMjIsMjEwLDIxMSw4NSwyMTQsODQsNDgsMjQ0LDE4MCw4NSw2NCwyNCw4M10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTI3LDEyNCw5MywyMjEsMjQ4LDE3MywxOTQsMTYsMTU3LDUwLDYwLDE4MCwyNDAsMTMxLDQzLDExNCwxNDQsMTI4LDIwMSw0NSwxNjEsMjAsMjIxLDY3LDgwLDk4LDE4LDExMSwyNTIsMjE3LDMyLDU1XSwiSXNMZWZ0IjpmYWxzZX1dLCJCVENUeCI6eyJWZXJzaW9uIjoxLCJUeEluIjpbeyJQcmV2aW91c091dFBvaW50Ijp7Ikhhc2giOlsyMDgsNDYsNjgsMTksNTUsMjA5LDIzNSwyMjAsNDksMTExLDY0LDIxLDgxLDEwOSwyNDYsMjEwLDE1MiwxMzMsMTA5LDY4LDYzLDE1OSwyNDEsMTY1LDE5OCwxNiw1LDI2LDIwNCwyMzQsNzQsMTg4XSwiSW5kZXgiOjJ9LCJTaWduYXR1cmVTY3JpcHQiOiJTREJGQWlFQXhzOWRTMlE4YWVrMHkvRjJmOUdkejB5R0VFREVzWjNYQXpKZVFYamRiK1VDSUNlZmwwREZWV0tPZUk2Rm9FQzRsS01jWE5hRnFlL0o4ZFpTQnZNUnQyRkRBU0VEenlBVFQxWkk0dmJ4ZDZaVkt5VzZsK1JiRklWT1R4TXFTdkQrZmFrL3hQdz0iLCJXaXRuZXNzIjpudWxsLCJTZXF1ZW5jZSI6NDI5NDk2NzI5NX1dLCJUeE91dCI6W3siVmFsdWUiOjAsIlBrU2NyaXB0IjoiYWt4clVGTXhMVEV5VXpWTWNuTXhXR1ZSVEdKeFRqUjVVM2xMZEdwQmFtUXlaRGR6UWxBeWRHcEdhV3A2YlhBMllYWnljbXRSUTA1R1RYQnJXRzB6UmxCNmFqSlhZM1V5V2s1eFNrVnRhRGxLY21sV2RWSkZjbFozYUhWUmJreHRWMU5oWjJkdllrVlhjMEpGWTJrPSJ9LHsiVmFsdWUiOjgwMCwiUGtTY3JpcHQiOiJxUlFuSjZkdjh2bzVYY1VsWktqcktxdU0vbEhJZG9jPSJ9LHsiVmFsdWUiOjc2MjcyLCJQa1NjcmlwdCI6ImRxa1Vndnk2bFFpK0VpUXk5N3VRMmw5MEFVQ21XNGlJckE9PSJ9XSwiTG9ja1RpbWUiOjB9LCJCbG9ja0hhc2giOls2NCw2NywyNDMsMjIyLDI0NCw5LDE4MywyMzQsMjM4LDE3MCwxNjYsMjI2LDEzLDI1NCwzNSw3OCwyMjIsNjksMjQxLDIyNCwxMDMsNjMsMTI5LDIwNCwxNCwwLDAsMCwwLDAsMCwwXX0=",
+		//	shieldingProof:           "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzI1Myw2MSwxNiwzOCwxNTUsMTcyLDg1LDE2MywxNTUsMTYyLDEyMywxNCwyMzEsMTQ5LDE3NiwxMjYsMjQ0LDE0NCwxODgsMTQ2LDIzLDIwNywyLDI1MywxODYsMTcsMTgxLDcyLDExMCwxNDcsMjMsMTkzXSwiSXNMZWZ0Ijp0cnVlfSx7IlByb29mSGFzaCI6WzEwMSwxOTMsNjMsMTU1LDk3LDE3Miw1OCw5OCwxMTYsNzEsMjksMTIxLDczLDcyLDIyNyw3LDIwMCwyLDY2LDUyLDE0MywxMjQsMTEwLDU4LDExNywxMDMsMTg1LDE3MiwxNywxOTcsMCwxMTZdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzEsMTI4LDQsMjE1LDgxLDE1MCwxMjAsMTg1LDE0NywzNCwyNDUsMzcsNTIsMTkyLDU5LDE5NCwxMDksOTIsMTc3LDEwMiwyMTgsMTM0LDEzOSwxMTYsNDcsMTEzLDI5LDQsMTM2LDE3OCwyNDcsMjIzXSwiSXNMZWZ0Ijp0cnVlfSx7IlByb29mSGFzaCI6WzE3OCwyMzQsNzcsMjUzLDEzMSw4NywxNTgsNDgsMTI3LDU2LDE2NCwzNywxNTIsMjEyLDEzOCw2NiwxNDAsMjMyLDEwMywyMjMsMjAzLDI1MiwxODUsMCw5MywyMzgsMTUwLDE2LDUyLDIzOCwxOTksMTMyXSwiSXNMZWZ0IjpmYWxzZX1dLCJCVENUeCI6eyJWZXJzaW9uIjoyLCJUeEluIjpbeyJQcmV2aW91c091dFBvaW50Ijp7Ikhhc2giOls0MiwxNzAsMTY1LDE5MCwxMiwyMzMsMjA5LDEyOCwyNTUsMTYsMTgxLDIzMiwxNTUsNTQsMTk4LDI0MCwxMDEsMTkzLDc5LDI2LDg4LDIzOCw2OCwxNjEsODIsOTgsNywxODAsMjA2LDg1LDIyMywyNTRdLCJJbmRleCI6MX0sIlNpZ25hdHVyZVNjcmlwdCI6IiIsIldpdG5lc3MiOm51bGwsIlNlcXVlbmNlIjo0Mjk0OTY3MjkzfV0sIlR4T3V0IjpbeyJWYWx1ZSI6NzgyNDUxMywiUGtTY3JpcHQiOiJBQlFtZ2RBMGdaems0T053UEFmMlNQcngwRVNLNXc9PSJ9LHsiVmFsdWUiOjMwMDAwMCwiUGtTY3JpcHQiOiJBQ0F6WVZkM29QQy8vVHRGTEJQUjlremNjVTJVNEFyWGJETUl6QXpyUEtjb2JRPT0ifV0sIkxvY2tUaW1lIjoxOTY5OTUwfSwiQmxvY2tIYXNoIjpbMTAwLDQsMTQ2LDE2Myw1OCwxMzYsOTIsMTE4LDY0LDI0NSwxNjYsMjI2LDQyLDEwMSw3Nyw1MiwxOTUsNywxOTYsMTk2LDIzOSwxMTgsMTEsMTQsMTksMCwwLDAsMCwwLDAsMF19",
 		//	txID:                     common.HashH([]byte{3}).String(),
 		//	isExistsInPreviousBlocks: false,
+		//
+		//	shieldAmtInPubToken:      0.003 * 1e8,
+		//	shieldAmtInPToken:        0.003 * 1e9,
+		//	externalTxID:             "3ab13867ba5011ebc76f20f3675a62cb36868e674f3a2b0cf1c4432202a79845",
+		//	txOutIndex:               1,
+		//
+		//	isValidRequest:           true,
 		//},
 		// invalid shielding request: duplicated shielding proof in previous blocks
 		{
@@ -754,7 +761,7 @@ func (s *PortalTestSuiteV4) SetupTestBatchUnshieldProcess() {
 }
 
 func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultBatchUnshieldProcess() ([]TestCaseBatchUnshieldProcess, []ExpectedResultBatchUnshieldProcess) {
-	// waiting unshielding requests
+	// prepare waiting unshielding requests
 	unshieldReqsData := []struct {
 		tokenID       string
 		unshieldID    string
@@ -1797,7 +1804,7 @@ func CloneUTXOs(utxos map[string]map[string]*statedb.UTXO) map[string]map[string
 				batch2.GetTxHash(),
 				batch2.GetOutputIndex(),
 				batch2.GetOutputAmount(),
-				batch2.GetPublicSeed(),
+				batch2.GetChainCodeSeed(),
 			)
 		}
 		newReqs[key] = newBatch

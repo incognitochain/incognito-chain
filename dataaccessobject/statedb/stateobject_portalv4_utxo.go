@@ -14,7 +14,7 @@ type UTXO struct {
 	txHash        string
 	outputIdx     uint32
 	outputAmount  uint64
-	publicSeed    string // It's incognito address of user want to shield to Incognito
+	chainCodeSeed string // It's incognito address of user want to shield to Incognito
 }
 
 func NewUTXO() *UTXO {
@@ -26,14 +26,14 @@ func NewUTXOWithValue(
 	txHash string,
 	outputIdx uint32,
 	outputAmount uint64,
-	publicSeed    string,
+	chainCodeSeed string,
 ) *UTXO {
 	return &UTXO{
 		walletAddress: walletAddress,
 		txHash:        txHash,
 		outputAmount:  outputAmount,
 		outputIdx:     outputIdx,
-		publicSeed : publicSeed,
+		chainCodeSeed: chainCodeSeed,
 	}
 }
 
@@ -69,12 +69,12 @@ func (uo *UTXO) SetOutputIndex(index uint32) {
 	uo.outputIdx = index
 }
 
-func (uo *UTXO) GetPublicSeed() string {
-	return uo.publicSeed
+func (uo *UTXO) GetChainCodeSeed() string {
+	return uo.chainCodeSeed
 }
 
-func (uo *UTXO) SetPublicSeed(publicSeed string) {
-	uo.publicSeed = publicSeed
+func (uo *UTXO) SetChainCodeSeed(chainCodeSeed string) {
+	uo.chainCodeSeed = chainCodeSeed
 }
 
 func (uo *UTXO) MarshalJSON() ([]byte, error) {
@@ -83,13 +83,13 @@ func (uo *UTXO) MarshalJSON() ([]byte, error) {
 		TxHash        string
 		OutputIdx     uint32
 		OutputAmount  uint64
-		PublicSeed string
+		ChainCodeSeed string
 	}{
 		WalletAddress: uo.walletAddress,
 		TxHash:        uo.txHash,
 		OutputIdx:     uo.outputIdx,
 		OutputAmount:  uo.outputAmount,
-		PublicSeed: uo.publicSeed,
+		ChainCodeSeed: uo.chainCodeSeed,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -103,7 +103,7 @@ func (uo *UTXO) UnmarshalJSON(data []byte) error {
 		TxHash        string
 		OutputIdx     uint32
 		OutputAmount  uint64
-		PublicSeed string
+		ChainCodeSeed string
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -113,7 +113,7 @@ func (uo *UTXO) UnmarshalJSON(data []byte) error {
 	uo.txHash = temp.TxHash
 	uo.outputIdx = temp.OutputIdx
 	uo.outputAmount = temp.OutputAmount
-	uo.publicSeed = temp.PublicSeed
+	uo.chainCodeSeed = temp.ChainCodeSeed
 	return nil
 }
 

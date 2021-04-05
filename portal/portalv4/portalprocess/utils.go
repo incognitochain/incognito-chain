@@ -98,8 +98,8 @@ func UpdatePortalStateUTXOs(CurrentPortalStateV4 *CurrentPortalStateV4, tokenID 
 		txHash := utxo.GetTxHash()
 		outputIdx := utxo.GetOutputIndex()
 		outputAmount := utxo.GetOutputAmount()
-		publicSeed := utxo.GetPublicSeed()
-		CurrentPortalStateV4.UTXOs[tokenID][statedb.GenerateUTXOObjectKey(tokenID, walletAddress, txHash, outputIdx).String()] = statedb.NewUTXOWithValue(walletAddress, txHash, outputIdx, outputAmount, publicSeed)
+		chainCodeSeed := utxo.GetChainCodeSeed()
+		CurrentPortalStateV4.UTXOs[tokenID][statedb.GenerateUTXOObjectKey(tokenID, walletAddress, txHash, outputIdx).String()] = statedb.NewUTXOWithValue(walletAddress, txHash, outputIdx, outputAmount, chainCodeSeed)
 	}
 }
 
