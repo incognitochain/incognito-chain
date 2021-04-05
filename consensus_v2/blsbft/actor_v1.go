@@ -45,33 +45,20 @@ type actorV1 struct {
 	stopCh         chan struct{}
 }
 
-func (actorV1 *actorV1) IsOngoing() bool {
-	return actorV1.isOngoing
-}
-
-func (actorV1 *actorV1) Destroy() {
-	actorV1.Stop()
-}
-
 func (actorV1 *actorV1) Stop() error {
 	err := actorV1.actorBase.Stop()
 	if err != nil {
 		return NewConsensusError(ConsensusAlreadyStoppedError, err)
 	}
-	if actorV1.isStarted {
-		actorV1.logger.Info("stop bls-bft consensus for chain", actorV1.chainKey)
-		close(actorV1.stopCh)
-		actorV1.isOngoing = false
-		return nil
-	}
-	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(actorV1.chainKey))
+	actorV1.isOngoing = false
+	return nil
 }
 
-func (actorV1 *actorV1) Start() error {
+func (actorV1 *actorV1) Run() error {
 	if actorV1.isStarted {
 		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(actorV1.chainKey))
 	}
-
+	actorV1.destroyCh = make(chan struct{})
 	actorV1.isStarted = true
 	actorV1.isOngoing = false
 	actorV1.stopCh = make(chan struct{})
@@ -483,8 +470,4 @@ func NewActorV1WithValue(
 	newInstance.node = node
 	newInstance.logger = logger
 	return &newInstance
-}
-
-func (actorV1 *actorV1) Run() error {
-	return nil
 }

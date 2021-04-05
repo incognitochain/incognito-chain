@@ -158,7 +158,7 @@ func (engine *Engine) WatchCommitteeChange() {
 		}
 		engine.updateVersion(chainID)
 		if _, ok := engine.BFTProcess[chainID]; ok {
-			engine.BFTProcess[chainID].Destroy()
+			engine.BFTProcess[chainID].Stop()
 		}
 		engine.initProcess(chainID, chainName)
 
@@ -168,7 +168,7 @@ func (engine *Engine) WatchCommitteeChange() {
 		}
 
 		engine.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
-		engine.BFTProcess[chainID].Start()
+		engine.BFTProcess[chainID].Run()
 		miningProc = engine.BFTProcess[chainID]
 	}
 
@@ -200,31 +200,21 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 		bftActor = blsbft.NewActorWithValue(
 			engine.config.Blockchain.BeaconChain,
 			engine.config.Blockchain.BeaconChain,
-			engine.version[chainID], engine.BlockVersion(chainID),
+			engine.version[chainID],
 			chainID, chainName, engine.config.Node, Logger.Log)
 
 	} else {
 		bftActor = blsbft.NewActorWithValue(
 			engine.config.Blockchain.ShardChain[chainID],
 			engine.config.Blockchain.BeaconChain,
-			engine.version[chainID], engine.BlockVersion(chainID),
+			engine.version[chainID],
 			chainID, chainName, engine.config.Node, Logger.Log)
 	}
 	engine.BFTProcess[chainID] = bftActor
-	engine.BFTProcess[chainID].Run()
 }
 
 func (engine *Engine) updateVersion(chainID int) {
-	chainEpoch := uint64(1)
-	if chainID == -1 {
-		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
-	} else {
-		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
-	}
-
-	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
-		engine.version[chainID] = blsbft.MultiViewsVersion
-	}
+	engine.version[chainID] = engine.getVersion(chainID)
 }
 
 func (engine *Engine) Init(config *EngineConfig) {
@@ -293,7 +283,7 @@ func (engine *Engine) IsCommitteeInShard(shardID byte) bool {
 	return false
 }
 
-func (engine *Engine) BlockVersion(chainID int) int {
+func (engine *Engine) getVersion(chainID int) int {
 	chainEpoch := uint64(1)
 	chainHeight := uint64(1)
 	if chainID == -1 {

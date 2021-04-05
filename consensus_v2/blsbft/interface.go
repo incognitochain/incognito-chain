@@ -33,25 +33,20 @@ type Actor interface {
 	GetConsensusName() string
 	GetChainKey() string
 	GetChainID() int
+	// GetUserPublicKey - get user public key of loaded mining key
+	GetUserPublicKey() *incognitokey.CommitteePublicKey
 	// Start - start consensus
-	Start() error
+	Run() error
 	// Stop - stop consensus
 	Stop() error
-	Destroy()
 	// IsOngoing - check whether consensus is currently voting on a block
-	IsOngoing() bool
 	IsStarted() bool
 	// ProcessBFTMsg - process incoming BFT message
 	ProcessBFTMsg(msg *wire.MessageBFT)
 	// LoadUserKey - load user mining key
-	LoadUserKeys(miningKey []signatureschemes2.MiningKey) error
-	// GetUserPublicKey - get user public key of loaded mining key
-	GetUserPublicKey() *incognitokey.CommitteePublicKey
+	LoadUserKeys(miningKey []signatureschemes2.MiningKey)
 	// ValidateData - validate data with this consensus signature scheme
 	ValidateData(data []byte, sig string, publicKey string) error
 	// SignData - sign data with this consensus signature scheme
 	SignData(data []byte) (string, error)
-	Run() error
 }
-
-///

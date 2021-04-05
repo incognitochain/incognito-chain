@@ -36,11 +36,6 @@ type actorV2 struct {
 	blockVersion         int
 }
 
-func (actorV2 *actorV2) Destroy() {
-	actorV2.actorBase.Destroy()
-	close(actorV2.destroyCh)
-}
-
 func NewActorV2() *actorV2 {
 	return &actorV2{}
 }
@@ -69,7 +64,7 @@ func NewActorV2WithValue(
 	return res
 }
 
-func (actorV2 *actorV2) run() error {
+func (actorV2 *actorV2) Run() error {
 	go func() {
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
@@ -77,10 +72,6 @@ func (actorV2 *actorV2) run() error {
 		actorV2.logger.Info("init bls-bftv3 consensus for chain", actorV2.chainKey)
 
 		for { //actor loop
-			if !actorV2.isStarted { //sleep if this process is not start
-				time.Sleep(time.Second)
-				continue
-			}
 			select {
 			case <-actorV2.destroyCh:
 				actorV2.logger.Info("exit bls-bftv3 consensus for chain", actorV2.chainKey)
@@ -699,10 +690,6 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 	}
 
 	return signingCommittees, committees, proposerPk, committeeViewHash, err
-}
-
-func (actorV2 *actorV2) Run() error {
-	return actorV2.run()
 }
 
 func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
