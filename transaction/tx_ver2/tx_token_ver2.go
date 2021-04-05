@@ -585,7 +585,7 @@ func (txToken *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("error when getting coin shardID, err: %v", errShard))
 	}
 	if coinShardID != shardID {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf"output coin's shardID is different from tx pubkey last byte"))
+		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("output coin's shardID is different from tx pubkey last byte"))
 	}
 
 	// Check database for ota
