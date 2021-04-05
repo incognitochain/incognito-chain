@@ -168,6 +168,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 
 	if curView.shardCommitteeState.Version() == committeestate.SELF_SWAP_SHARD_VERSION || shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
 		committees = curView.GetShardCommittee()
+		signingCommittees = committees
 	} else {
 		beaconHeight := curView.BeaconHeight
 		for _, v := range beaconBlocks {

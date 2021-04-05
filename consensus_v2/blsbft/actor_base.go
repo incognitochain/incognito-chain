@@ -69,18 +69,11 @@ func (actorBase *actorBase) GetChainID() int {
 	return actorBase.chainID
 }
 
-func (actorBase *actorBase) Destroy() {
-	actorBase.Stop()
-}
-
-func (actorBase *actorBase) IsOngoing() bool {
-	return actorBase.isStarted
-}
-
 func (actorBase *actorBase) Stop() error {
 	if actorBase.isStarted {
 		actorBase.logger.Info("stop bls-bft consensus for chain", actorBase.chainKey)
 		actorBase.isStarted = false
+		close(actorBase.destroyCh)
 		return nil
 	}
 	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(actorBase.chainKey))
@@ -120,9 +113,9 @@ func (actorBase *actorBase) preValidateVote(blockHash []byte, Vote *vote, candid
 	return err
 }
 
-func (actorBase *actorBase) LoadUserKeys(miningKey []signatureschemes2.MiningKey) error {
+func (actorBase *actorBase) LoadUserKeys(miningKey []signatureschemes2.MiningKey) {
 	actorBase.userKeySet = miningKey
-	return nil
+	return
 }
 
 func (actorBase *actorBase) GetUserPublicKey() *incognitokey.CommitteePublicKey {
@@ -177,14 +170,6 @@ func combineVotes(votes map[string]vote, committee []string) (aggSig []byte, bri
 		return nil, nil, nil, NewConsensusError(CombineSignatureError, err)
 	}
 	return
-}
-
-func (actorBase *actorBase) Start() error {
-	if !actorBase.isStarted {
-		actorBase.logger.Info("start bls-bft consensus for chain", actorBase.chainKey)
-	}
-	actorBase.isStarted = true
-	return nil
 }
 
 func (actorBase *actorBase) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {

@@ -33,12 +33,8 @@ type actorV2 struct {
 	receiveBlockByHash   map[string]*ProposeBlockInfo    //blockHash -> blockInfo
 	voteHistory          map[uint64]types.BlockInterface // bestview height (previsous height )-> block
 	bodyHashes           map[uint64]map[string]bool
+	votedTimeslot        map[int64]bool
 	blockVersion         int
-}
-
-func (actorV2 *actorV2) Destroy() {
-	actorV2.actorBase.Destroy()
-	close(actorV2.destroyCh)
 }
 
 func NewActorV2() *actorV2 {
@@ -48,7 +44,7 @@ func NewActorV2() *actorV2 {
 func NewActorV2WithValue(
 	chain blockchain.Chain,
 	committeeChain blockchain.Chain,
-	chainKey string, chainID, blockVersion int,
+	chainKey string, blockVersion, chainID int,
 	node NodeInterface, logger common.Logger,
 ) *actorV2 {
 	var err error
@@ -60,6 +56,7 @@ func NewActorV2WithValue(
 	res.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
 	res.voteHistory = make(map[uint64]types.BlockInterface)
 	res.bodyHashes = make(map[uint64]map[string]bool)
+	res.votedTimeslot = make(map[int64]bool)
 	res.committeeChain = committeeChain
 	res.blockVersion = blockVersion
 	res.proposeHistory, err = lru.New(1000)
@@ -69,21 +66,18 @@ func NewActorV2WithValue(
 	return res
 }
 
-func (actorV2 *actorV2) run() error {
+func (actorV2 *actorV2) Run() error {
+	actorV2.isStarted = true
 	go func() {
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
 		cleanMemTicker := time.Tick(5 * time.Minute)
-		actorV2.logger.Info("init bls-bftv2 consensus for chain", actorV2.chainKey)
+		actorV2.logger.Infof("init bls-bft-%+v, consensus for chain %+v", actorV2.blockVersion, actorV2.chainKey)
 
 		for { //actor loop
-			if !actorV2.isStarted { //sleep if this process is not start
-				time.Sleep(time.Second)
-				continue
-			}
 			select {
 			case <-actorV2.destroyCh:
-				actorV2.logger.Info("exit bls-bftv2 consensus for chain", actorV2.chainKey)
+				actorV2.logger.Infof("exit bls-bft-%+v consensus for chain %+v", actorV2.blockVersion, actorV2.chainKey)
 				return
 			case proposeMsg := <-actorV2.proposeMessageCh:
 				err := actorV2.handleProposeMsg(proposeMsg)
@@ -121,18 +115,20 @@ func (actorV2 *actorV2) run() error {
 					continue
 				}
 				actorV2.currentTime = time.Now().Unix()
+				currentTimeSlot := common.CalculateTimeSlot(actorV2.currentTime)
 
 				newTimeSlot := false
-				if actorV2.currentTimeSlot != common.CalculateTimeSlot(actorV2.currentTime) {
-					actorV2.logger.Info("[dcs] actorV2.currentTimeSlot:", actorV2.currentTimeSlot)
+				//actorV2.logger.Infof("[dcs] currentTimeSlot %v actorV2.currentTimeSlot %v", currentTimeSlot, actorV2.currentTimeSlot)
+				if actorV2.currentTimeSlot != currentTimeSlot {
 					newTimeSlot = true
 				}
 
-				actorV2.currentTimeSlot = common.CalculateTimeSlot(actorV2.currentTime)
+				actorV2.currentTimeSlot = currentTimeSlot
 				bestView := actorV2.chain.GetBestView()
 
 				//set round for monitor
 				round := actorV2.currentTimeSlot - common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+				//actorV2.logger.Infof("[dcs] currentTimeSlot %v currentTime %v proposerTime %v round %v", actorV2.currentTimeSlot, actorV2.currentTime, bestView.GetBlock().GetProposeTime(), round)
 
 				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
@@ -140,7 +136,7 @@ func (actorV2 *actorV2) run() error {
 				shouldPropose := false
 				shouldListen := true
 
-				signingCommittees, _, proposerPk, committeeViewHash, err := actorV2.getCommitteesAndCommitteeViewHash()
+				signingCommittees, proposerPk, committeeViewHash, err := actorV2.getCommitteesAndCommitteeViewHash()
 				if err != nil {
 					actorV2.logger.Info(err)
 					continue
@@ -161,14 +157,15 @@ func (actorV2 *actorV2) run() error {
 				}
 
 				if newTimeSlot { //for logging
+					actorV2.logger.Info("[dcs] newTimeSlot")
 					actorV2.logger.Info("")
 					actorV2.logger.Info("======================================================")
 					actorV2.logger.Info("")
 					if shouldListen {
-						actorV2.logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v", actorV2.chainKey, common.CalculateTimeSlot(actorV2.currentTime), bestView.GetHeight()+1, actorV2.currentTimeSlot-common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()))
+						actorV2.logger.Infof("%v TS: %v, LISTEN BLOCK %v, Round %v", actorV2.chainKey, common.CalculateTimeSlot(actorV2.currentTime), bestView.GetHeight()+1, round)
 					}
 					if shouldPropose {
-						actorV2.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v", actorV2.chainKey, common.CalculateTimeSlot(actorV2.currentTime), bestView.GetHeight()+1, actorV2.currentTimeSlot-common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()))
+						actorV2.logger.Infof("%v TS: %v, PROPOSE BLOCK %v, Round %v", actorV2.chainKey, common.CalculateTimeSlot(actorV2.currentTime), bestView.GetHeight()+1, round)
 					}
 				}
 
@@ -325,6 +322,7 @@ func (actorV2 *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
 }
 
 func (actorV2 *actorV2) processWithEnoughVotes(v *ProposeBlockInfo) error {
+
 	validationData, err := actorV2.createBLSAggregatedSignatures(v.signingCommittes, v.block.GetValidationField(), v.votes)
 	if err != nil {
 		actorV2.logger.Error(err)
@@ -426,12 +424,12 @@ func (actorV2 *actorV2) validateAndVote(
 			}
 
 			// Block is valid for commit
-			v.isValid = true
 			if len(actorV2.bodyHashes[v.block.GetHeight()]) == 0 {
 				actorV2.bodyHashes[v.block.GetHeight()] = make(map[string]bool)
 			}
 			actorV2.bodyHashes[v.block.GetHeight()][v.block.BodyHash().String()] = true
 		}
+		v.isValid = true
 	}
 
 	//if valid then vote
@@ -450,6 +448,7 @@ func (actorV2 *actorV2) validateAndVote(
 
 		v.isVoted = true
 		actorV2.voteHistory[v.block.GetHeight()] = v.block
+		actorV2.votedTimeslot[common.CalculateTimeSlot(v.block.GetProposeTime())] = true
 		actorV2.logger.Info(actorV2.chainKey, "sending vote...")
 		go actorV2.processBFTMsg(msg.(*wire.MessageBFT))
 		go actorV2.node.PushMessageToChain(msg, actorV2.chain)
@@ -623,13 +622,14 @@ func (actorV2 *actorV2) preValidateVote(blockHash []byte, vote *BFTVote, candida
 func (actorV2 *actorV2) getCommitteeForBlock(v types.BlockInterface) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	var err error = nil
 	var committees, signingCommittees []incognitokey.CommitteePublicKey
-	if !actorV2.chain.IsBeaconChain() {
+
+	if actorV2.blockVersion == MultiViewsVersion || actorV2.chain.IsBeaconChain() {
+		committees = actorV2.chain.GetBestView().GetCommittee()
+		signingCommittees = committees
+	} else {
 		signingCommittees, committees, err = actorV2.
 			committeeChain.
 			CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(actorV2.chain.GetShardID()), blockchain.MaxSubsetCommittees)
-	} else {
-		committees = actorV2.chain.GetBestView().GetCommittee()
-		signingCommittees = committees
 	}
 	return signingCommittees, committees, err
 }
@@ -676,7 +676,6 @@ func (actorV2 *actorV2) getUserKeySetForSigning(
 
 func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 	[]incognitokey.CommitteePublicKey,
-	[]incognitokey.CommitteePublicKey,
 	incognitokey.CommitteePublicKey, common.Hash, error,
 ) {
 	committeeViewHash := common.Hash{}
@@ -695,16 +694,12 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 			committeeChain.
 			CommitteesFromViewHashForShard(committeeViewHash, byte(actorV2.chainID), blockchain.MaxSubsetCommittees)
 		if err != nil {
-			return signingCommittees, committees, proposerPk, committeeViewHash, err
+			return signingCommittees, proposerPk, committeeViewHash, err
 		}
 		proposerPk = actorV2.committeeChain.ProposerByTimeSlot(byte(actorV2.chainID), actorV2.currentTimeSlot, committees)
 	}
 
-	return signingCommittees, committees, proposerPk, committeeViewHash, err
-}
-
-func (actorV2 *actorV2) Run() error {
-	return actorV2.run()
+	return signingCommittees, proposerPk, committeeViewHash, err
 }
 
 func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
@@ -829,6 +824,16 @@ func (actorV2 *actorV2) getValidProposeBlocks(bestView multiview.View) []*Propos
 			continue
 		}
 
+		// check if producer time > proposer time
+		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime()) > actorV2.currentTimeSlot {
+			continue
+		}
+
+		// check if this time slot has been voted
+		if actorV2.votedTimeslot[common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
+			continue
+		}
+
 		validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 
 		if proposeBlockInfo.block.GetHeight() < actorV2.chain.GetFinalView().GetHeight() {
@@ -867,4 +872,8 @@ func (actorV2 *actorV2) validateAndVoteForValidProposeBlocks(bestView multiview.
 	}
 
 	return nil
+}
+
+func (actorV2 *actorV2) BlockVersion() int {
+	return actorV2.blockVersion
 }

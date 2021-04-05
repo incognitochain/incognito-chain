@@ -156,12 +156,22 @@ func (engine *Engine) WatchCommitteeChange() {
 		if chainID >= 0 {
 			chainName = fmt.Sprintf("shard-%d", chainID)
 		}
-		//engine.closeBftProcess(chainID)
-		engine.updateVersion(chainID)
-		if _, ok := engine.bftProcess[chainID]; ok {
-			engine.bftProcess[chainID].Destroy()
+
+		currActorVersion := 0
+		if engine.bftProcess[chainID] != nil {
+			currActorVersion = engine.version[chainID]
 		}
-		engine.initProcess(chainID, chainName)
+
+		engine.updateVersion(chainID)
+		if _, ok := engine.bftProcess[chainID]; !ok {
+			engine.initProcess(chainID, chainName)
+		} else {
+			if engine.version[chainID] != currActorVersion ||
+				engine.bftProcess[chainID].BlockVersion() != engine.getBlockVersion(chainID) {
+				engine.bftProcess[chainID].Stop()
+				engine.initProcess(chainID, chainName)
+			}
+		}
 
 		validatorMiningKey := []signatureschemes2.MiningKey{}
 		for _, validator := range validators {
@@ -169,7 +179,7 @@ func (engine *Engine) WatchCommitteeChange() {
 		}
 
 		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
-		engine.bftProcess[chainID].Start()
+		engine.bftProcess[chainID].Run()
 		miningProc = engine.bftProcess[chainID]
 	}
 
@@ -196,23 +206,22 @@ func NewConsensusEngine() *Engine {
 
 func (engine *Engine) initProcess(chainID int, chainName string) {
 	var bftActor blsbft.Actor
-
+	blockVersion := engine.getBlockVersion(chainID)
 	if chainID == -1 {
 		bftActor = blsbft.NewActorWithValue(
 			engine.config.Blockchain.BeaconChain,
 			engine.config.Blockchain.BeaconChain,
-			engine.version[chainID], engine.BlockVersion(chainID),
+			engine.version[chainID], blockVersion,
 			chainID, chainName, engine.config.Node, Logger.Log)
 
 	} else {
 		bftActor = blsbft.NewActorWithValue(
 			engine.config.Blockchain.ShardChain[chainID],
 			engine.config.Blockchain.BeaconChain,
-			engine.version[chainID], engine.BlockVersion(chainID),
+			engine.version[chainID], blockVersion,
 			chainID, chainName, engine.config.Node, Logger.Log)
 	}
 	engine.bftProcess[chainID] = bftActor
-	engine.bftProcess[chainID].Run()
 }
 
 func (engine *Engine) updateVersion(chainID int) {
@@ -294,7 +303,7 @@ func (engine *Engine) IsCommitteeInShard(shardID byte) bool {
 	return false
 }
 
-func (engine *Engine) BlockVersion(chainID int) int {
+func (engine *Engine) getBlockVersion(chainID int) int {
 	chainEpoch := uint64(1)
 	chainHeight := uint64(1)
 	if chainID == -1 {
@@ -305,21 +314,32 @@ func (engine *Engine) BlockVersion(chainID int) int {
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
 	}
 
-	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
-		return blsbft.MultiViewsVersion
+	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV4Height {
+		return blsbft.MultiSubsetsVersion
 	}
 
 	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.StakingFlowV2 {
 		return blsbft.SlashingVersion
 	}
 
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV4Height {
-		return blsbft.MultiSubsetsVersion
+	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
+		return blsbft.MultiViewsVersion
 	}
 
 	return blsbft.BftVersion
 }
 
-func (engine *Engine) closeBftProcess(chainID int) {
-	engine.bftProcess[chainID].Destroy()
+func (engine *Engine) getVersion(chainID int) int {
+	chainEpoch := uint64(1)
+	if chainID == -1 {
+		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
+	} else {
+		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
+	}
+
+	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
+		return blsbft.MultiViewsVersion
+	}
+
+	return blsbft.BftVersion
 }

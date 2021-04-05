@@ -163,9 +163,8 @@ func (actorV1 *actorV1) initRoundData() {
 }
 
 func NewActorWithValue(
-	chain, committeeChain blockchain.Chain,
-	version, blockVersion int,
-	chainID int, chainName string,
+	chain, committeeChain blockchain.Chain, version int,
+	chainID, blockVersion int, chainName string,
 	node NodeInterface, logger common.Logger,
 ) Actor {
 	var res Actor
