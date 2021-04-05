@@ -30,12 +30,13 @@ var HttpHandler = map[string]httpHandler{
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
 
 	//tx pool
-	getRawMempool:           (*HttpServer).handleGetRawMempool,
-	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
-	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
-	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
-	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
-	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
+	getRawMempool:             (*HttpServer).handleGetRawMempool,
+	getNumberOfTxsInMempool:   (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:           (*HttpServer).handleMempoolEntry,
+	removeTxInMempool:         (*HttpServer).handleRemoveTxInMempool,
+	getMempoolInfo:            (*HttpServer).handleGetMempoolInfo,
+	getMempoolInfoDetails: 		 (*HttpServer).handleGetMempoolInfoDetails,
+	getPendingTxsInBlockgen:   (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
 	// getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
@@ -80,7 +81,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendStopAutoStakingTransactionV2: (*HttpServer).handleCreateAndSendStopAutoStakingTransactionV2,
 	randomCommitments:                         (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                          (*HttpServer).handleHasSerialNumbers,
-	hasSerialNumbersInMempool:               	 (*HttpServer).handleHasSerialNumbersInMempool,
+	hasSerialNumbersInMempool:                 (*HttpServer).handleHasSerialNumbersInMempool,
 	hasSnDerivators:                           (*HttpServer).handleHasSnDerivators,
 	listSerialNumbers:                         (*HttpServer).handleListSerialNumbers,
 	listCommitments:                           (*HttpServer).handleListCommitments,
@@ -260,6 +261,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningForDepositToSCRequestV2: (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
 
 	//new pool info
+	getSyncStats:          (*HttpServer).hanldeGetSyncStats,
 	getBeaconPoolInfo:     (*HttpServer).hanldeGetBeaconPoolInfo,
 	getShardPoolInfo:      (*HttpServer).hanldeGetShardPoolInfo,
 	getCrossShardPoolInfo: (*HttpServer).hanldeGetCrossShardPoolInfo,

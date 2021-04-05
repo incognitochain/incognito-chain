@@ -3,14 +3,12 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
 //get beacon block hash by height, with current view
@@ -361,22 +359,6 @@ func (blockchain *BlockChain) GetBestStateBeaconFeatureStateDBByHeight(height ui
 		return nil, fmt.Errorf("Beacon Feature State DB not found, height %+v, error %+v", height, err)
 	}
 	return statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(db))
-}
-
-func (blockchain *BlockChain) GetBNBChainID() string {
-	return blockchain.GetConfig().ChainParams.BNBRelayingHeaderChainID
-}
-
-func (blockchain *BlockChain) GetBTCChainID() string {
-	return blockchain.GetConfig().ChainParams.BTCRelayingHeaderChainID
-}
-
-func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
-	return blockchain.GetConfig().BTCChain
-}
-
-func (blockchain *BlockChain) GetPortalFeederAddress() string {
-	return blockchain.GetConfig().ChainParams.PortalFeederAddress
 }
 
 func (blockchain *BlockChain) GetBeaconRootsHashFromBlockHeight(height uint64) (*BeaconRootHash, error) {

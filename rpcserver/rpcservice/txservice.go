@@ -40,6 +40,7 @@ type MempoolInterface interface {
 	GetClonedPoolCandidate() map[common.Hash]string
 	ListTxs() []string
 	RemoveTx(txs []metadata.Transaction, isInBlock bool)
+	RemoveStuckTx(txHash common.Hash, tx metadata.Transaction)
 	TriggerCRemoveTxs(tx metadata.Transaction)
 	MarkForwardedTransaction(txHash common.Hash)
 	MaxFee() uint64
@@ -2070,6 +2071,9 @@ func (txService TxService) GetTransactionByReceiverV2(
 		allTxHashs = append(allTxHashs, txHashs...)
 	}
 	totalTxHashs := len(allTxHashs)
+	if totalTxHashs == 0 {
+		return result, 0, nil
+	}
 
 	chunksNum := 32 // default number of concurrent goroutines
 
