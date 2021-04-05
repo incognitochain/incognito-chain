@@ -589,16 +589,6 @@ func (tx *Tx) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 		return false, utils.NewTransactionErr(utils.CommitOutputCoinError, errors.New("output coin's commitment isn't calculated correctly"))
 	}
 
-	// Check shardID
-	coinShardID, errShard := outCoin.GetShardID()
-	if errShard != nil {
-		errStr := fmt.Sprintf("error when getting coin shardID, err: %v", errShard)
-		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New(errStr))
-	}
-	if coinShardID != common.GetShardIDFromLastByte(tx.PubKeyLastByteSender) {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("output coin's shardID is different from tx pubkey last byte"))
-	}
-
 	// Check database for ota
 	found, status, err := statedb.HasOnetimeAddress(db, *tokenID, outCoin.GetPublicKey().ToBytesS())
 	if err != nil {

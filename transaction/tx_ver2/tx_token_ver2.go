@@ -543,11 +543,9 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 //ValidateTxSalary checks the following conditions for minteable transactions:
 //	- the signature is valid
 //	- all fields of the output coins are valid: commitment, assetTag, etc,.
-//	- the shardID is valid
 //	- the commitment has been calculated correctly
 //	- the ota has not existed
 func (txToken *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
-	shardID := common.GetShardIDFromLastByte(txToken.GetSenderAddrLastByte())
 	tokenID := &txToken.TokenData.PropertyID
 
 	// Check signature
@@ -577,15 +575,6 @@ func (txToken *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 	}
 	if !privacy.IsPointEqual(cmpCommitment, outCoin.GetCommitment()) {
 		return false, utils.NewTransactionErr(utils.CommitOutputCoinError, fmt.Errorf("output coin's commitment isn't calculated correctly"))
-	}
-
-	// Check shardID
-	coinShardID, errShard := outCoin.GetShardID()
-	if errShard != nil {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("error when getting coin shardID, err: %v", errShard))
-	}
-	if coinShardID != shardID {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("output coin's shardID is different from tx pubkey last byte"))
 	}
 
 	// Check database for ota

@@ -638,7 +638,6 @@ func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, 
 //	- all fields of the output coins are valid
 //	- the snd has not existed
 //	- the commitment has been calculated correctly
-//	- if this is a rs transaction, check if the output value is 1750000000000
 func (tx Tx) ValidateTxSalary(
 	db *statedb.StateDB,
 ) (bool, error) {
@@ -668,9 +667,6 @@ func (tx Tx) ValidateTxSalary(
 	}
 	if ok, err := checkSNDerivatorExistence(tokenID, outCoin.GetSNDerivator(), db); ok || err != nil {
 		return false, err
-	}
-	if tx.GetType() == common.TxReturnStakingType && outCoin.GetValue() != uint64(1750000000000) {
-		return false, utils.NewTransactionErr(utils.UnexpectedError, fmt.Errorf("output of a rs transaction must be 1750000000000, got %v", outCoin.GetValue()))
 	}
 
 	// check output outCoin's outCoin commitment is calculated correctly
