@@ -335,6 +335,9 @@ func buildMetaInfo() {
 		IssuingRequestMeta,
 		IssuingETHRequestMeta,
 		ContractingRequestMeta,
+
+		ShardStakingMeta,
+		BeaconStakingMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listNNormal,
@@ -349,6 +352,7 @@ func buildMetaInfo() {
 	})
 	listNNoInNoOut := []int{
 		WithDrawRewardRequestMeta,
+		StopAutoStakingMeta,
 	}
 
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
