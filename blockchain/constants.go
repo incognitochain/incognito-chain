@@ -103,8 +103,8 @@ const (
 	TestnetName             = "testnet"
 	TestnetDefaultPort      = "9444"
 	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch            = 100
-	TestnetRandomTime       = 50
+	TestnetEpoch            = 10
+	TestnetRandomTime       = 5
 	TestnetOffset           = 1
 	TestnetSwapOffset       = 1
 	TestnetAssignOffset     = 2
@@ -116,10 +116,10 @@ const (
 	TestNetActiveShards           = 8
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
-	TestNetMinBeaconBlkInterval = 10 * time.Second //second
-	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second
-	TestNetMinShardBlkInterval  = 10 * time.Second //second
-	TestNetMaxShardBlkCreation  = 6 * time.Second  //second
+	TestNetMinBeaconBlkInterval = 8 * time.Second //second
+	TestNetMaxBeaconBlkCreation = 6 * time.Second //second
+	TestNetMinShardBlkInterval  = 8 * time.Second //second
+	TestNetMaxShardBlkCreation  = 5 * time.Second //second
 
 	//board and proposal parameters
 	TestnetBasicReward                      = 400000000 //40 mili PRV
