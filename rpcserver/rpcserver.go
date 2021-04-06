@@ -1,7 +1,6 @@
 package rpcserver
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"net"
 	"net/http"
 	"sync"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/memcache"
@@ -87,13 +85,8 @@ type RpcServerConfig struct {
 		GetIncognitoPublicKeyRole(publicKey string) (int, bool, int)
 		GetMinerIncognitoPublickey(publicKey string, keyType string) []byte
 	}
-	ConsensusEngine interface {
-		GetUserRole() (string, string, int)
-		GetCurrentMiningPublicKey() (publickey string, keyType string)
-		GetAllMiningPublicKeys() []string
-		ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
-		GetAllValidatorKeyState() map[string]consensus.MiningState
-	}
+	ConsensusEngine blockchain.ConsensusEngine
+
 	TxMemPool                   rpcservice.MempoolInterface
 	RPCMaxClients               int
 	RPCMaxWSClients             int

@@ -124,7 +124,7 @@ func (bReq BurningRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (bReq *BurningRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (bReq *BurningRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := map[string]interface{}{
 		"meta":          *bReq,
 		"RequestedTxID": tx.Hash(),

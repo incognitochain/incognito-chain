@@ -303,9 +303,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
-
 	var err error
-	portalParams := blockchain.GetPortalParams(beaconBlock.GetHeight())
+	portalParams := blockchain.GetPortalParams()
+
+	// get shard to beacon blocks from pool
 	allRequiredShardBlockHeight := make(map[byte][]uint64)
 	for shardID, shardstates := range beaconBlock.Body.ShardState {
 		heights := []uint64{}
@@ -553,11 +554,12 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 	if committeeChange.IsShardCommitteeChange() && beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		beaconBestState.missingSignatureCounter.CommitteeChange(beaconBestState.getUncommittedShardCommitteeFlattenList())
 	}
-	err = beaconBestState.countMissingSignature(blockchain, beaconBlock.Body.ShardState)
-	if err != nil {
-		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+	for shardID, shardStates := range beaconBlock.Body.ShardState {
+		err = beaconBestState.countMissingSignature(blockchain, shardID, shardStates, beaconBlock.Header.Height)
+		if err != nil {
+			return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+		}
 	}
-
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 
 	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
@@ -620,25 +622,27 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	return nil
 }
 
-func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardStates map[byte][]types.ShardState) error {
-	for shardID, shardStates := range allShardStates {
-		cacheCommittees := make(map[common.Hash][]incognitokey.CommitteePublicKey)
-		for _, shardState := range shardStates {
-			// skip genesis block
-			if shardState.Height == 1 {
-				continue
+func (curView *BeaconBestState) countMissingSignature(
+	bc *BlockChain,
+	shardID byte,
+	shardStates []types.ShardState,
+	beaconHeight uint64,
+) error {
+	for _, shardState := range shardStates {
+		// skip genesis block
+		if shardState.Height == 1 {
+			continue
+		}
+		if beaconHeight <= bc.config.ChainParams.StakingFlowV2Height {
+			err := curView.countMissingSignatureV1(bc, shardID, shardState)
+			if err != nil {
+				return err
 			}
-			if curView.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
-				err := curView.countMissingSignatureV1(bc, shardID, shardState)
-				if err != nil {
-					return err
-				}
-			}
-			if curView.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
-				err := curView.countMissingSignatureV2(cacheCommittees, bc, shardID, shardState)
-				if err != nil {
-					return err
-				}
+		}
+		if beaconHeight > bc.config.ChainParams.StakingFlowV2Height {
+			err := curView.countMissingSignatureV2(bc, shardID, shardState)
+			if err != nil {
+				return err
 			}
 		}
 	}
@@ -646,7 +650,6 @@ func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardSt
 }
 
 func (curView *BeaconBestState) countMissingSignatureV2(
-	cacheCommittees map[common.Hash][]incognitokey.CommitteePublicKey,
 	bc *BlockChain,
 	shardID byte,
 	shardState types.ShardState,
@@ -660,20 +663,15 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 		return nil
 	}
 
-	committees, ok := cacheCommittees[beaconHashForCommittee]
-	if !ok {
-		var err error
-		committees, err = getOneShardCommitteeFromBeaconDB(bc.GetBeaconChainDatabase(), shardID, beaconHashForCommittee)
-		if err != nil {
-			return err
-		}
-		cacheCommittees[beaconHashForCommittee] = committees
+	committees, err := getOneShardCommitteeFromBeaconDB(bc.GetBeaconChainDatabase(), shardID, beaconHashForCommittee)
+	if err != nil {
+		return err
 	}
 
 	logCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
 	Logger.log.Infof("Add Missing Signature | Shard %+v, Validation Data: %+v, \n Committees: %+v", shardID, shardState.ValidationData, logCommittees)
 
-	err := curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
+	err = curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
 	if err != nil {
 		return err
 	}
@@ -841,18 +839,13 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 
 	// execute, store Portal Instruction
+	// execute, store Ralaying Instruction
 	//if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
 	err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
 	//}
-
-	// execute, store Ralaying Instruction
-	err = blockchain.processRelayingInstructions(beaconBlock)
-	if err != nil {
-		return NewBlockChainError(ProcessPortalRelayingError, err)
-	}
 
 	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
 	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
@@ -919,13 +912,14 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if beaconBlock.Header.Height == blockchain.config.ChainParams.ConsensusV3Height {
+	if beaconBlock.Header.Height == blockchain.config.ChainParams.StakingFlowV2Height {
 		newBestState.upgradeCommitteeEngineV2(blockchain)
 	}
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 
 	blockchain.BeaconChain.multiView.AddView(newBestState)
+	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
 	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
 

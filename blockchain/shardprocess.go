@@ -43,7 +43,8 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 			case <-ctx.Done():
 				return errors.New(fmt.Sprintf("ShardBlock %v link to wrong view (%s)", shardBlock.GetHeight(), preHash.String()))
 			default:
-				if blockchain.ShardChain[shardID].GetViewByHash(preHash) != nil {
+				view = blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
+				if view != nil {
 					return nil
 				}
 				time.Sleep(time.Second)
@@ -129,7 +130,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	preHash := shardBlock.Header.PreviousBlockHash
 	shouldValidate = true
 
-	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v \nPrev hash: %+v", shardID, blockHeight, blockHash, preHash)
+	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v Prev hash: %+v", shardID, blockHeight, blockHash, preHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
 
@@ -334,9 +335,10 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	if len(txMerkleTree) > 0 {
 		txRoot = txMerkleTree[len(txMerkleTree)-1]
 	}
-	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) && (blockchain.config.ChainParams.Net == Testnet && shardBlock.Header.Height != 487260 && shardBlock.Header.Height != 487261 && shardBlock.Header.Height != 494144) {
+	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) && (blockchain.config.ChainParams.Net != Testnet || (shardBlock.Header.Height != 487260 && shardBlock.Header.Height != 487261 && shardBlock.Header.Height != 494144)) {
 		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
 	}
+
 	// Verify ShardTx Root
 	_, shardTxMerkleData := CreateShardTxRoot(shardBlock.Body.Transactions)
 	shardTxRoot := shardTxMerkleData[len(shardTxMerkleData)-1]
@@ -348,7 +350,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(CrossShardTransactionRootHashError, fmt.Errorf("Expect cross shard transaction root hash %+v", shardBlock.Header.CrossTransactionRoot))
 	}
 	// Verify Action
-	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardID)
+	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height)
 	if err != nil {
 		Logger.log.Error(err)
 		return NewBlockChainError(ShardIntructionFromTransactionAndInstructionError, err)
@@ -1105,7 +1107,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if newShardState.BeaconHeight == blockchain.config.ChainParams.ConsensusV3Height {
+	if newShardState.BeaconHeight == blockchain.config.ChainParams.StakingFlowV2Height {
 		err := newShardState.upgradeCommitteeEngineV2(blockchain)
 		if err != nil {
 			panic(NewBlockChainError(-11111, fmt.Errorf("Upgrade Committe Engine Error, %+v", err)))
@@ -1195,7 +1197,7 @@ func (blockchain *BlockChain) ReplacePreviousValidationData(blockHash common.Has
 			return NewBlockChainError(StoreShardBlockError, err)
 		}
 		Logger.log.Infof("SHARD %+v | Replace Previous Validation Data of shard block height %+v, hash %+v,"+
-			"Old Validation Data %+v, New Validation Data %+v", shardBlock.Header.Height, blockHash, decodedOldValidationData, decodedNewValidationData)
+			"Old Validation Data %+v, New Validation Data %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash, decodedOldValidationData, decodedNewValidationData)
 	}
 	return nil
 }

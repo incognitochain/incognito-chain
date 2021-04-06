@@ -31,13 +31,13 @@ type ExchangeRateInfo struct {
 }
 
 type ExchangeRatesRequestStatus struct {
-	Status        byte
+	//Status        byte 		// dont need this field
 	SenderAddress string
 	Rates         []*ExchangeRateInfo
 }
 
-func NewExchangeRatesRequestStatus(status byte, senderAddress string, rates []*ExchangeRateInfo) *ExchangeRatesRequestStatus {
-	return &ExchangeRatesRequestStatus{Status: status, SenderAddress: senderAddress, Rates: rates}
+func NewExchangeRatesRequestStatus(senderAddress string, rates []*ExchangeRateInfo) *ExchangeRatesRequestStatus {
+	return &ExchangeRatesRequestStatus{SenderAddress: senderAddress, Rates: rates}
 }
 
 func NewPortalExchangeRates(metaType int, senderAddress string, currency []*ExchangeRateInfo) (*PortalExchangeRates, error) {
@@ -73,7 +73,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateTxWithBlockChain(
 }
 
 func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	feederAddress := chainRetriever.GetPortalFeederAddress()
+	feederAddress := chainRetriever.GetPortalFeederAddress(beaconHeight)
 	if portalExchangeRates.SenderAddress != feederAddress {
 		return false, false, fmt.Errorf("Sender must be feeder's address %v\n", feederAddress)
 	}
@@ -97,7 +97,7 @@ func (portalExchangeRates PortalExchangeRates) ValidateSanityData(chainRetriever
 	}
 
 	for _, value := range portalExchangeRates.Rates {
-		if !common.IsPortalExchangeRateToken(value.PTokenID) {
+		if !chainRetriever.IsPortalExchangeRateToken(beaconHeight, value.PTokenID) {
 			return false, false, errors.New("Public token is not supported currently")
 		}
 
@@ -126,7 +126,7 @@ func (portalExchangeRates PortalExchangeRates) Hash() *common.Hash {
 	return &hash
 }
 
-func (portalExchangeRates *PortalExchangeRates) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (portalExchangeRates *PortalExchangeRates) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalExchangeRatesAction{
 		Meta:     *portalExchangeRates,
 		TxReqID:  *tx.Hash(),

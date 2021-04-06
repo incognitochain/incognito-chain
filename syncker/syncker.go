@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"sync"
 	"time"
 
@@ -99,6 +100,9 @@ func (s *SynckerManager) InsertCrossShardBlock(blk *types.CrossShardBlock) {
 // periodically check user commmittee status, enable shard sync process if needed (beacon always start)
 func (synckerManager *SynckerManager) manageSyncProcess() {
 	defer time.AfterFunc(time.Second*5, synckerManager.manageSyncProcess)
+
+	syncStat := synckerManager.GetSyncStats()
+	monitor.SetGlobalParam("SYNC_STAT", syncStat)
 
 	//check if enable
 	if !synckerManager.isEnabled || synckerManager.config == nil {
@@ -463,48 +467,36 @@ func (synckerManager *SynckerManager) SyncMissingShardBlock(ctx context.Context,
 }
 
 //Get Status Function
-type syncInfo struct {
-	IsSync     bool
-	IsLatest   bool
-	PoolLength int
+type SyncInfo struct {
+	IsSync      bool
+	LastInsert  string
+	BlockHeight uint64
+	BlockTime   string
+	BlockHash   string
 }
 
-type SynckerStatusInfo struct {
-	Beacon     syncInfo
-	Shard      map[int]*syncInfo
-	Crossshard map[int]*syncInfo
+type SynckerStats struct {
+	Beacon SyncInfo
+	Shard  map[int]*SyncInfo
 }
 
-func (synckerManager *SynckerManager) GetSyncStatus(includePool bool) SynckerStatusInfo {
-	info := SynckerStatusInfo{}
-	info.Beacon = syncInfo{
-		IsSync:   synckerManager.BeaconSyncProcess.status == RUNNING_SYNC,
-		IsLatest: synckerManager.BeaconSyncProcess.isCatchUp,
+func (synckerManager *SynckerManager) GetSyncStats() SynckerStats {
+	info := SynckerStats{}
+	info.Beacon = SyncInfo{
+		IsSync:      synckerManager.BeaconSyncProcess.status == RUNNING_SYNC,
+		LastInsert:  synckerManager.BeaconSyncProcess.lastInsert,
+		BlockHeight: synckerManager.BeaconSyncProcess.chain.GetBestViewHeight(),
+		BlockHash:   synckerManager.BeaconSyncProcess.chain.GetBestViewHash(),
+		BlockTime:   time.Unix(synckerManager.config.Blockchain.GetBeaconBestState().GetBlockTime(), 0).Format("2006-01-02T15:04:05-0700"),
 	}
-
-	info.Shard = make(map[int]*syncInfo)
+	info.Shard = make(map[int]*SyncInfo)
 	for k, v := range synckerManager.ShardSyncProcess {
-		info.Shard[k] = &syncInfo{
-			IsSync:   v.status == RUNNING_SYNC,
-			IsLatest: v.isCatchUp,
-		}
-	}
-
-	info.Crossshard = make(map[int]*syncInfo)
-	for k, v := range synckerManager.CrossShardSyncProcess {
-		info.Crossshard[k] = &syncInfo{
-			IsSync:   v.status == RUNNING_SYNC,
-			IsLatest: false,
-		}
-	}
-
-	if includePool {
-		info.Beacon.PoolLength = synckerManager.beaconPool.GetPoolSize()
-		for k, _ := range synckerManager.ShardSyncProcess {
-			info.Shard[k].PoolLength = synckerManager.shardPool[k].GetPoolSize()
-		}
-		for k, _ := range synckerManager.CrossShardSyncProcess {
-			info.Crossshard[k].PoolLength = synckerManager.crossShardPool[k].GetPoolSize()
+		info.Shard[k] = &SyncInfo{
+			IsSync:      v.status == RUNNING_SYNC,
+			LastInsert:  v.lastInsert,
+			BlockHeight: v.Chain.GetBestViewHeight(),
+			BlockHash:   v.Chain.GetBestViewHash(),
+			BlockTime:   time.Unix(synckerManager.config.Blockchain.GetBestStateShard(byte(k)).GetBlockTime(), 0).Format("2006-01-02T15:04:05-0700"),
 		}
 	}
 	return info

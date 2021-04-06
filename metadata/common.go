@@ -2,6 +2,8 @@ package metadata
 
 import (
 	"encoding/json"
+	ec "github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/common"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -85,7 +87,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PDEContributionResponse{}
 	case PortalCustodianDepositMeta:
 		md = &PortalCustodianDeposit{}
-	case PortalUserRegisterMeta:
+	case PortalRequestPortingMeta, PortalRequestPortingMetaV3:
 		md = &PortalUserRegister{}
 	case PortalUserRequestPTokenMeta:
 		md = &PortalRequestPTokens{}
@@ -93,14 +95,16 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalCustodianDepositResponse{}
 	case PortalUserRequestPTokenResponseMeta:
 		md = &PortalRequestPTokensResponse{}
-	case PortalRedeemRequestMeta:
-		md = &PortalRedeemRequest{}
+	case PortalRedeemRequestMeta, PortalRedeemRequestMetaV3:
+		md = &PortalRedeemRequestV3{}
 	case PortalRedeemRequestResponseMeta:
 		md = &PortalRedeemRequestResponse{}
-	case PortalRequestUnlockCollateralMeta:
+	case PortalRequestUnlockCollateralMeta, PortalRequestUnlockCollateralMetaV3:
 		md = &PortalRequestUnlockCollateral{}
 	case PortalExchangeRatesMeta:
 		md = &PortalExchangeRates{}
+	case PortalUnlockOverRateCollateralsMeta:
+		md = &PortalUnlockOverRateCollaterals{}
 	case RelayingBNBHeaderMeta:
 		md = &RelayingHeader{}
 	case RelayingBTCHeaderMeta:
@@ -109,7 +113,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalCustodianWithdrawRequest{}
 	case PortalCustodianWithdrawResponseMeta:
 		md = &PortalCustodianWithdrawResponse{}
-	case PortalLiquidateCustodianMeta:
+	case PortalLiquidateCustodianMeta, PortalLiquidateCustodianMetaV3:
 		md = &PortalLiquidateCustodian{}
 	case PortalLiquidateCustodianResponseMeta:
 		md = &PortalLiquidateCustodianResponse{}
@@ -117,17 +121,17 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalRequestWithdrawReward{}
 	case PortalRequestWithdrawRewardResponseMeta:
 		md = &PortalWithdrawRewardResponse{}
-	case PortalRedeemLiquidateExchangeRatesMeta:
+	case PortalRedeemFromLiquidationPoolMeta:
 		md = &PortalRedeemLiquidateExchangeRates{}
-	case PortalRedeemLiquidateExchangeRatesResponseMeta:
+	case PortalRedeemFromLiquidationPoolResponseMeta:
 		md = &PortalRedeemLiquidateExchangeRatesResponse{}
-	case PortalLiquidationCustodianDepositMetaV2:
+	case PortalCustodianTopupMetaV2:
 		md = &PortalLiquidationCustodianDepositV2{}
-	case PortalLiquidationCustodianDepositResponseMetaV2:
+	case PortalCustodianTopupResponseMetaV2:
 		md = &PortalLiquidationCustodianDepositResponseV2{}
-	case PortalLiquidationCustodianDepositMeta:
+	case PortalCustodianTopupMeta:
 		md = &PortalLiquidationCustodianDeposit{}
-	case PortalLiquidationCustodianDepositResponseMeta:
+	case PortalCustodianTopupResponseMeta:
 		md = &PortalLiquidationCustodianDepositResponse{}
 	case BurningForDepositToSCRequestMeta:
 		md = &BurningRequest{}
@@ -141,6 +145,18 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalTopUpWaitingPortingRequest{}
 	case PortalTopUpWaitingPortingResponseMeta:
 		md = &PortalTopUpWaitingPortingResponse{}
+	case PortalCustodianDepositMetaV3:
+		md = &PortalCustodianDepositV3{}
+	case PortalCustodianWithdrawRequestMetaV3:
+		md = &PortalCustodianWithdrawRequestV3{}
+	case PortalRedeemFromLiquidationPoolMetaV3:
+		md = &PortalRedeemFromLiquidationPoolV3{}
+	case PortalRedeemFromLiquidationPoolResponseMetaV3:
+		md = &PortalRedeemFromLiquidationPoolResponseV3{}
+	case PortalCustodianTopupMetaV3:
+		md = &PortalLiquidationCustodianDepositV3{}
+	case PortalTopUpWaitingPortingRequestMetaV3:
+		md = &PortalTopUpWaitingPortingRequestV3{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
@@ -171,4 +187,41 @@ func HasBridgeInstructions(instructions [][]string) bool {
 		}
 	}
 	return false
+}
+
+// TODO: add more meta data types
+var portalConfirmedMetas = []string{
+	strconv.Itoa(PortalCustodianWithdrawConfirmMetaV3),
+	strconv.Itoa(PortalRedeemFromLiquidationPoolConfirmMetaV3),
+	strconv.Itoa(PortalLiquidateRunAwayCustodianConfirmMetaV3),
+}
+
+func HasPortalInstructions(instructions [][]string) bool {
+	for _, inst := range instructions {
+		for _, meta := range portalConfirmedMetas {
+			if len(inst) > 0 && inst[0] == meta {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Validate portal external addresses for collateral tokens (ETH/ERC20)
+func ValidatePortalExternalAddress(chainName string, tokenID string, address string) (bool, error) {
+	switch chainName {
+	case common.ETHChainName:
+		return ec.IsHexAddress(address), nil
+	}
+	return true, nil
+}
+
+func IsPortalMetaTypeV3(metaType int) bool {
+	res, _ := common.SliceExists(portalMetaTypesV3, metaType)
+	return res
+}
+
+func IsPortalRelayingMetaType(metaType int) bool {
+	res, _ := common.SliceExists(portalRelayingMetaTypes, metaType)
+	return res
 }

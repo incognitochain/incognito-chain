@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 )
@@ -95,7 +96,7 @@ func (responseMeta PortalCustodianWithdrawResponse) VerifyMinerCreatedTxBeforeGe
 
 		instDepositStatus := inst[2]
 		if instDepositStatus != responseMeta.RequestStatus ||
-			(instDepositStatus != common.PortalCustodianWithdrawRequestAcceptedStatus) {
+			(instDepositStatus != pCommon.PortalRequestAcceptedChainStatus) {
 			continue
 		}
 

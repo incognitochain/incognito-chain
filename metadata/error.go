@@ -60,6 +60,15 @@ const (
 	UnStakingRequestAlreadyStopError
 	UnStakingRequestInvalidFormatRequestKey
 	UnstakingRequestAlreadyUnstake
+
+	// eth utils
+	VerifyProofAndParseReceiptError
+
+	// portal v3
+	PortalCustodianDepositV3ValidateWithBCError
+	PortalCustodianDepositV3ValidateSanityDataError
+	NewPortalCustodianDepositV3MetaFromMapError
+	PortalUnlockOverRateCollateralsError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -120,6 +129,15 @@ var ErrCodeMessage = map[int]struct {
 	PortalRequestPTokenParamError:                {-7001, "Portal request ptoken param error"},
 	PortalRedeemRequestParamError:                {-7002, "Portal redeem request param error"},
 	PortalRedeemLiquidateExchangeRatesParamError: {-7003, "Portal redeem liquidate exchange rates param error"},
+
+	// eth utils
+	VerifyProofAndParseReceiptError: {-8001, "Verify proof and parse receipt eth error"},
+
+	// portal v3
+	PortalCustodianDepositV3ValidateWithBCError:     {-9001, "Validate with blockchain tx portal custodian deposit v3 error"},
+	PortalCustodianDepositV3ValidateSanityDataError: {-9002, "Validate sanity data tx portal custodian deposit v3 error"},
+	NewPortalCustodianDepositV3MetaFromMapError:     {-9003, "New portal custodian deposit v3 metadata from map error"},
+	PortalUnlockOverRateCollateralsError:            {-9004, "Validate with blockchain tx portal custodian unlock over rate v3 error"},
 }
 
 type MetadataTxError struct {

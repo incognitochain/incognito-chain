@@ -46,8 +46,8 @@ const (
 	MainnetEpoch             = 350
 	MainnetRandomTime        = 175
 	MainnetEpochV2BreakPoint = 10e9
-	MainnetEpochV2           = 2160
-	MainnetRandomTimeV2      = 1080
+	MainnetEpochV2           = 350
+	MainnetRandomTimeV2      = 175
 	MainnetOffset            = 4
 	MainnetSwapOffset        = 4
 	MainnetAssignOffset      = 8
@@ -84,7 +84,12 @@ const (
 	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
 	MainnetBNBFullNodeProtocol = "https"
 	MainnetBNBFullNodePort     = "443"
-	MainnetPortalFeeder        = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
+
+	MainnetPortalFeeder = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
+
+	// Enable Feature Flag
+	MainnetEnablePortalRelaying = 1
+	MainnetEnablePortalV3       = 0
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -138,13 +143,17 @@ const (
 	// relaying header chain
 	TestnetBNBChainID        = "Binance-Chain-Ganges"
 	TestnetBTCChainID        = "Bitcoin-Testnet"
-	TestnetBTCDataFolderName = "btcrelayingv13"
+	TestnetBTCDataFolderName = "btcrelayingv14"
 
 	// BNB fullnode
 	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
 	TestnetBNBFullNodeProtocol = "https"
 	TestnetBNBFullNodePort     = "443"
 	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+
+	// Enable Feature Flag
+	TestnetEnablePortalRelaying = 1
+	TestnetEnablePortalV3       = 0
 )
 
 // CONSTANT for network TESTNET-2
@@ -190,6 +199,10 @@ const (
 	Testnet2BNBFullNodeProtocol = "https"
 	Testnet2BNBFullNodePort     = "443"
 	Testnet2PortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+
+	// Enable Feature Flag
+	Testnet2EnablePortalRelaying = 1
+	Testnet2EnablePortalV3       = 0
 )
 
 // VARIABLE for testnet

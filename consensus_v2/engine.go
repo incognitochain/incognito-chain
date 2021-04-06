@@ -2,6 +2,7 @@ package consensus_v2
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"strings"
 	"time"
 
@@ -52,6 +53,9 @@ func (s *Engine) GetOneValidator() *consensus.Validator {
 
 func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator {
 	chainValidator := make(map[int]*consensus.Validator)
+	role := ""
+	layer := ""
+	chainID := -2
 	if len(s.validators) > 0 {
 		for _, validator := range s.validators {
 			if validator.State.ChainID != -2 {
@@ -59,15 +63,27 @@ func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Val
 				if ok {
 					if validator.State.Role == common.CommitteeRole {
 						chainValidator[validator.State.ChainID] = validator
+						role = validator.State.Role
+						chainID = validator.State.ChainID
+						layer = validator.State.Layer
 					}
 				} else {
 					chainValidator[validator.State.ChainID] = validator
+					role = validator.State.Role
+					chainID = validator.State.ChainID
+					layer = validator.State.Layer
+				}
+			} else {
+				if role == "" { //role not set, and userkey in waiting role
+					role = validator.State.Role
+					layer = validator.State.Layer
 				}
 			}
 		}
 	}
-
-	//fmt.Println("GetOneValidatorForEachConsensusProcess", chainValidator[1])
+	monitor.SetGlobalParam("Role", role)
+	monitor.SetGlobalParam("Layer", layer)
+	monitor.SetGlobalParam("ShardID", chainID)
 	return chainValidator
 }
 
@@ -119,19 +135,19 @@ func (s *Engine) WatchCommitteeChange() {
 		} else { //if not run correct version => stop and init
 			if s.version[chainID] == 1 {
 				if _, ok := s.BFTProcess[chainID].(*blsbft.BLSBFT); !ok {
-					s.BFTProcess[chainID].Stop()
+					s.BFTProcess[chainID].Destroy()
 					s.initProcess(chainID, chainName)
 				}
 			}
 			if s.version[chainID] == 2 {
 				if _, ok := s.BFTProcess[chainID].(*blsbft2.BLSBFT_V2); !ok {
-					s.BFTProcess[chainID].Stop()
+					s.BFTProcess[chainID].Destroy()
 					s.initProcess(chainID, chainName)
 				}
 			}
 			if s.version[chainID] == 3 {
 				if _, ok := s.BFTProcess[chainID].(*blsbft3.BLSBFT_V3); !ok {
-					s.BFTProcess[chainID].Stop()
+					s.BFTProcess[chainID].Destroy()
 					s.initProcess(chainID, chainName)
 				}
 			}
@@ -140,6 +156,7 @@ func (s *Engine) WatchCommitteeChange() {
 		for _, validator := range validators {
 			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
+
 		s.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
 		s.BFTProcess[chainID].Start()
 		miningProc = s.BFTProcess[chainID]
@@ -191,6 +208,13 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 				chainName, chainID,
 				engine.config.Node, Logger.Log)
 		}
+	} else {
+		// Auto init version 1 if no suitable config is provided
+		if chainID == -1 {
+			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
+		} else {
+			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
+		}
 	}
 }
 
@@ -209,7 +233,7 @@ func (engine *Engine) updateVersion(chainID int) {
 		engine.version[chainID] = 2
 	}
 
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV3Height {
+	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.StakingFlowV2Height {
 		engine.version[chainID] = 3
 	}
 }
@@ -243,6 +267,13 @@ func (engine *Engine) Start() error {
 			engine.validators = append(engine.validators, &consensus.Validator{PrivateSeed: key, MiningKey: *miningKey})
 		}
 		engine.validators = engine.validators[:1] //allow only 1 key
+
+		//set monitor pubkey
+		pubkeys := []string{}
+		for _, val := range engine.validators {
+			pubkeys = append(pubkeys, val.MiningKey.GetPublicKey().GetMiningKeyBase58("bls"))
+		}
+		monitor.SetGlobalParam("MINING_PUBKEY", strings.Join(pubkeys, ","))
 	}
 	engine.IsEnabled = 1
 	return nil

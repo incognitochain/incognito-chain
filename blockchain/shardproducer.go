@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"math/rand"
 	"reflect"
 	"strconv"
@@ -82,33 +83,27 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
 		return nil, err
 	}
+	BLogger.log.Infof("Producing block: %d", shardBestState.ShardHeight+1)
 	currentPendingValidators := shardBestState.GetShardPendingValidator()
 	beaconProcessView = blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
 	beaconProcessHeight := beaconProcessView.GetHeight()
+	if beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
+		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
+	}
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		currentCommitteePublicKeysStructs = shardBestState.GetShardCommittee()
-	} else {
+		if beaconProcessHeight > blockchain.config.ChainParams.StakingFlowV2Height {
+			beaconProcessHeight = blockchain.config.ChainParams.StakingFlowV2Height
+		}
+	} else if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
 		if beaconProcessHeight <= shardBestState.BeaconHeight {
 			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
 				beaconProcessHeight, shardBestState.BeaconHeight)
 			return nil, errors.New("Waiting For Beacon Produce Block")
 		}
 		currentCommitteePublicKeysStructs = committees
-	}
 
-	currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
-	if err != nil {
-		return nil, err
-	}
-
-	// Fetch Beacon Blocks
-	BLogger.log.Infof("Producing block: %d", shardBestState.ShardHeight+1)
-	if beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
-		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
-	}
-
-	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
 		if !shardBestState.CommitteeFromBlock().IsZeroValue() {
 			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
 			temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
@@ -134,7 +129,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 			committeeFromBlockHash = committeeFinalViewHash
 		}
 	}
-
+	currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
+	if err != nil {
+		return nil, err
+	}
+	// Fetch Beacon Blocks
 	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconProcessHeight)
 	if err != nil {
 		Logger.log.Errorf("Beacon block %+v not found", beaconProcessHeight)
@@ -267,7 +266,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID)
+	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height)
 	if err != nil {
 		return nil, err
 	}
@@ -415,57 +414,66 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					}
 				}
 			// portal
-			case metadata.PortalUserRegisterMeta:
-				if len(inst) >= 4 && inst[2] == common.PortalPortingRequestRejectedChainStatus {
+			case metadata.PortalRequestPortingMeta, metadata.PortalRequestPortingMetaV3:
+				if len(inst) >= 4 && inst[2] == pCommon.PortalRequestRejectedChainStatus {
 					newTx, err = curView.buildPortalRefundPortingFeeTx(inst[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalCustodianDepositMeta:
-				if len(inst) >= 4 && inst[2] == common.PortalCustodianDepositRefundChainStatus {
+				if len(inst) >= 4 && inst[2] == pCommon.PortalRequestRefundChainStatus {
 					newTx, err = curView.buildPortalRefundCustodianDepositTx(inst[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalUserRequestPTokenMeta:
-				if len(inst) >= 4 && inst[2] == common.PortalReqPTokensAcceptedChainStatus {
+				if len(inst) >= 4 && inst[2] == pCommon.PortalRequestAcceptedChainStatus {
 					newTx, err = curView.buildPortalAcceptedRequestPTokensTx(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
 				}
 				//custodian withdraw
 			case metadata.PortalCustodianWithdrawRequestMeta:
-				if len(inst) >= 4 && inst[2] == common.PortalCustodianWithdrawRequestAcceptedStatus {
+				if len(inst) >= 4 && inst[2] == pCommon.PortalRequestAcceptedChainStatus {
 					newTx, err = curView.buildPortalCustodianWithdrawRequest(inst[3], producerPrivateKey, shardID)
 				}
-			case metadata.PortalRedeemRequestMeta:
-				if len(inst) >= 4 && (inst[2] == common.PortalRedeemRequestRejectedChainStatus || inst[2] == common.PortalRedeemReqCancelledByLiquidationChainStatus) {
+			case metadata.PortalRedeemRequestMeta, metadata.PortalRedeemRequestMetaV3:
+				if len(inst) >= 4 && (inst[2] == pCommon.PortalRequestRejectedChainStatus || inst[2] == pCommon.PortalRedeemReqCancelledByLiquidationChainStatus) {
 					newTx, err = curView.buildPortalRejectedRedeemRequestTx(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
 				}
 				//liquidation: redeem ptoken
-			case metadata.PortalRedeemLiquidateExchangeRatesMeta:
+			case metadata.PortalRedeemFromLiquidationPoolMeta:
 				if len(inst) >= 4 {
-					if inst[2] == common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus {
+					if inst[2] == pCommon.PortalProducerInstSuccessChainStatus {
 						newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTx(inst[3], producerPrivateKey, shardID)
-					} else if inst[2] == common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus {
+					} else if inst[2] == pCommon.PortalRequestRejectedChainStatus {
 						newTx, err = curView.buildPortalRefundRedeemLiquidateExchangeRatesTx(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
 					}
 				}
-			case metadata.PortalLiquidateCustodianMeta:
-				if len(inst) >= 4 && inst[2] == common.PortalLiquidateCustodianSuccessChainStatus {
+			case metadata.PortalLiquidateCustodianMeta, metadata.PortalLiquidateCustodianMetaV3:
+				if len(inst) >= 4 && inst[2] == pCommon.PortalProducerInstSuccessChainStatus {
 					newTx, err = curView.buildPortalLiquidateCustodianResponseTx(inst[3], producerPrivateKey, shardID)
 				}
 			case metadata.PortalRequestWithdrawRewardMeta:
-				if len(inst) >= 4 && inst[2] == common.PortalReqWithdrawRewardAcceptedChainStatus {
+				if len(inst) >= 4 && inst[2] == pCommon.PortalRequestAcceptedChainStatus {
 					newTx, err = curView.buildPortalAcceptedWithdrawRewardTx(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
 				}
 				//liquidation: custodian deposit
-			case metadata.PortalLiquidationCustodianDepositMeta:
-				if len(inst) >= 4 && inst[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+			case metadata.PortalCustodianTopupMeta:
+				if len(inst) >= 4 && inst[2] == pCommon.PortalRequestRejectedChainStatus {
 					newTx, err = curView.buildPortalLiquidationCustodianDepositReject(inst[3], producerPrivateKey, shardID)
 				}
-			case metadata.PortalLiquidationCustodianDepositMetaV2:
-				if len(inst) >= 4 && inst[2] == common.PortalLiquidationCustodianDepositRejectedChainStatus {
+			case metadata.PortalCustodianTopupMetaV2:
+				if len(inst) >= 4 && inst[2] == pCommon.PortalRequestRejectedChainStatus {
 					newTx, err = curView.buildPortalLiquidationCustodianDepositRejectV2(inst[3], producerPrivateKey, shardID)
 				}
 			//
 			case metadata.PortalTopUpWaitingPortingRequestMeta:
-				if len(inst) >= 4 && inst[2] == common.PortalTopUpWaitingPortingRejectedChainStatus {
+				if len(inst) >= 4 && inst[2] == pCommon.PortalRequestRejectedChainStatus {
 					newTx, err = curView.buildPortalRejectedTopUpWaitingPortingTx(inst[3], producerPrivateKey, shardID)
+				}
+			//redeem from liquidation pool
+			case metadata.PortalRedeemFromLiquidationPoolMetaV3:
+				if len(inst) >= 4 {
+					if inst[2] == pCommon.PortalProducerInstSuccessChainStatus {
+						newTx, err = curView.buildPortalRedeemLiquidateExchangeRatesRequestTxV3(inst[3], producerPrivateKey, shardID)
+					} else if inst[2] == pCommon.PortalRequestRejectedChainStatus {
+						newTx, err = curView.buildPortalRefundRedeemLiquidateExchangeRatesTxV3(blockGenerator.chain.GetBeaconBestState(), inst[3], producerPrivateKey, shardID)
+					}
 				}
 			default:
 				continue
@@ -825,7 +833,7 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 
 // CreateShardInstructionsFromTransactionAndInstruction create inst from transactions in shard block
 func CreateShardInstructionsFromTransactionAndInstruction(
-	transactions []metadata.Transaction, bc *BlockChain, shardID byte) (instructions [][]string, err error) {
+	transactions []metadata.Transaction, bc *BlockChain, shardID byte, shardHeight uint64) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
 	stakeShardTxID := []string{}
@@ -837,7 +845,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
-			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID)
+			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 			Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
 			if err == nil {
 				instructions = append(instructions, actionPairs...)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
 
 //get beacon block hash by height, with current view
@@ -281,7 +281,6 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 				Logger.log.Errorf("GetShardBlockByHeightV1 shard %+v, error  %+v", shardID, err)
 				break
 			}
-
 			//only get shard block within epoch
 			if lastEpoch == 0 {
 				lastEpoch = tempShardBlock.GetCurrentEpoch() //update epoch of first block
@@ -292,9 +291,22 @@ func (blockchain *BlockChain) GetShardBlockForBeaconProducer(bestShardHeights ma
 			}
 
 			shardBlocks = append(shardBlocks, tempShardBlock)
+
+			containSwap := func(inst [][]string) bool {
+				for _, inst := range inst {
+					if inst[0] == instruction.SWAP_ACTION {
+						return true
+					}
+				}
+				return false
+			}
+			if containSwap(tempShardBlock.Body.Instructions) {
+				break
+			}
 		}
 		Logger.log.Info("[slashing] shardID:", shardID)
 		Logger.log.Info("[slashing] shardBlocks:", shardBlocks)
+
 		allShardBlocks[shardID] = shardBlocks
 	}
 	return allShardBlocks
@@ -320,6 +332,19 @@ func (blockchain *BlockChain) GetShardBlocksForBeaconValidator(allRequiredShardB
 			}
 
 			shardBlocks = append(shardBlocks, shardBlock)
+
+			containSwap := func(inst [][]string) bool {
+				for _, inst := range inst {
+					if inst[0] == instruction.SWAP_ACTION {
+						return true
+					}
+				}
+				return false
+			}
+			if containSwap(shardBlock.Body.Instructions) {
+				break
+			}
+
 		}
 		allRequireShardBlocks[shardID] = shardBlocks
 	}
@@ -350,29 +375,12 @@ func (blockchain *BlockChain) GetBestStateBeaconFeatureStateDBByHeight(height ui
 	return statedb.NewWithPrefixTrie(rootHash, statedb.NewDatabaseAccessWarper(db))
 }
 
-func (blockchain *BlockChain) GetBNBChainID() string {
-	return blockchain.GetConfig().ChainParams.BNBRelayingHeaderChainID
-}
-
-func (blockchain *BlockChain) GetBTCChainID() string {
-	return blockchain.GetConfig().ChainParams.BTCRelayingHeaderChainID
-}
-
-func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
-	return blockchain.GetConfig().BTCChain
-}
-
-func (blockchain *BlockChain) GetPortalFeederAddress() string {
-	return blockchain.GetConfig().ChainParams.PortalFeederAddress
-}
-
 func (blockchain *BlockChain) GetBeaconConsensusRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {
 	bRH, e := blockchain.GetBeaconRootsHashFromBlockHeight(height)
 	if e != nil {
 		return common.Hash{}, e
 	}
 	return bRH.ConsensusStateDBRootHash, nil
-
 }
 
 func (blockchain *BlockChain) GetBeaconFeatureRootHash(beaconbestState *BeaconBestState, height uint64) (common.Hash, error) {

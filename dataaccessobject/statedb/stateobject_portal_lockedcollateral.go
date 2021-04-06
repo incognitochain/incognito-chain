@@ -8,8 +8,8 @@ import (
 )
 
 type LockedCollateralState struct {
-	totalLockedCollateralForRewards uint64
-	lockedCollateralDetail          map[string]uint64 // custodianAddress : amount
+	totalLockedCollateralForRewards uint64            // amountInUSDT
+	lockedCollateralDetail          map[string]uint64 // custodianAddress : amountInUSDT
 }
 
 func (lcs LockedCollateralState) GetTotalLockedCollateralForRewards() uint64 {

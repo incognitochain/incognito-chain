@@ -719,6 +719,24 @@ func TestBlockChain_GetFirstBeaconHeightInEpoch(t *testing.T) {
 			want: 301,
 		},
 		{
+			name: "= break point 2",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             10,
+						EpochV2:           20,
+						EpochV2BreakPoint: 999,
+						RandomTime:        5,
+						RandomTimeV2:      10,
+					},
+				},
+			},
+			args: args{
+				epoch: 999,
+			},
+			want: 9981,
+		},
+		{
 			name: "> break point",
 			fields: fields{
 				config: Config{
@@ -1112,7 +1130,7 @@ func TestBlockChain_IsGreaterThanRandomTime(t *testing.T) {
 			args: args{
 				beaconHeight: 150,
 			},
-			want: true,
+			want: false,
 		},
 		{
 			name: "< break point 2",
@@ -1146,7 +1164,7 @@ func TestBlockChain_IsGreaterThanRandomTime(t *testing.T) {
 				},
 			},
 			args: args{
-				beaconHeight: 250,
+				beaconHeight: 151,
 			},
 			want: true,
 		},
@@ -1164,9 +1182,45 @@ func TestBlockChain_IsGreaterThanRandomTime(t *testing.T) {
 				},
 			},
 			args: args{
+				beaconHeight: 250,
+			},
+			want: false,
+		},
+		{
+			name: "< break point 5",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+						RandomTime:        50,
+						RandomTimeV2:      175,
+					},
+				},
+			},
+			args: args{
 				beaconHeight: 249,
 			},
 			want: false,
+		},
+		{
+			name: "< break point 6",
+			fields: fields{
+				config: Config{
+					ChainParams: &Params{
+						Epoch:             100,
+						EpochV2:           350,
+						EpochV2BreakPoint: 4,
+						RandomTime:        50,
+						RandomTimeV2:      175,
+					},
+				},
+			},
+			args: args{
+				beaconHeight: 251,
+			},
+			want: true,
 		},
 		{
 			name: "= break point 1",
@@ -1202,7 +1256,7 @@ func TestBlockChain_IsGreaterThanRandomTime(t *testing.T) {
 			args: args{
 				beaconHeight: 475,
 			},
-			want: true,
+			want: false,
 		},
 		{
 			name: "= break point 3",
@@ -1220,7 +1274,7 @@ func TestBlockChain_IsGreaterThanRandomTime(t *testing.T) {
 			args: args{
 				beaconHeight: 476,
 			},
-			want: false,
+			want: true,
 		},
 		{
 			name: "= break point 4",
@@ -1236,9 +1290,9 @@ func TestBlockChain_IsGreaterThanRandomTime(t *testing.T) {
 				},
 			},
 			args: args{
-				beaconHeight: 402,
+				beaconHeight: 477,
 			},
-			want: false,
+			want: true,
 		},
 		{
 			name: "> break point",
@@ -1274,7 +1328,7 @@ func TestBlockChain_IsGreaterThanRandomTime(t *testing.T) {
 			args: args{
 				beaconHeight: 888,
 			},
-			want: false,
+			want: true,
 		},
 	}
 	for _, tt := range tests {

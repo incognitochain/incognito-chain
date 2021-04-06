@@ -42,7 +42,7 @@ func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string) (*
 		blockchain.MainnetBTCChainID:  btcrelaying.GetMainNetParams(),
 	}
 	relayingChainGenesisBlkHeight := map[string]int32{
-		blockchain.TestnetBTCChainID:  int32(1861700),
+		blockchain.TestnetBTCChainID:  int32(1896910),
 		blockchain.Testnet2BTCChainID: int32(1863675),
 		blockchain.MainnetBTCChainID:  int32(634140),
 	}
@@ -84,6 +84,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 	cfg = tempConfig
 	common.MaxShardNumber = activeNetParams.ActiveShards
+	common.TIMESLOT = activeNetParams.Timeslot
 	activeNetParams.CreateGenesisBlocks()
 	// Get a channel that will be closed when a shutdown signal has been
 	// triggered either from an OS signal such as SIGINT (Ctrl+C) or from
@@ -142,8 +143,8 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 	// Create btcrelaying chain
 	btcChain, err := getBTCRelayingChain(
-		activeNetParams.Params.BTCRelayingHeaderChainID,
-		activeNetParams.Params.BTCDataFolderName,
+		activeNetParams.Params.PortalParams.RelayingParam.BTCRelayingHeaderChainID,
+		activeNetParams.Params.PortalParams.RelayingParam.BTCDataFolderName,
 	)
 	if err != nil {
 		Logger.log.Error("could not get or create btc relaying chain")
@@ -157,7 +158,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}()
 
 	// Create bnbrelaying chain state
-	bnbChainState, err := getBNBRelayingChainState(activeNetParams.Params.BNBRelayingHeaderChainID)
+	bnbChainState, err := getBNBRelayingChainState(activeNetParams.Params.PortalParams.RelayingParam.BNBRelayingHeaderChainID)
 	if err != nil {
 		Logger.log.Error("could not get or create bnb relaying chain state")
 		Logger.log.Error(err)

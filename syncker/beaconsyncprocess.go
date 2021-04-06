@@ -34,6 +34,7 @@ type BeaconSyncProcess struct {
 	beaconPool          *BlkPool
 	actionCh            chan func()
 	lastCrossShardState map[byte]map[byte]uint64
+	lastInsert          string
 }
 
 func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain BeaconChainInterface) *BeaconSyncProcess {
@@ -62,6 +63,7 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
+		lastHeight := s.chain.GetBestViewHeight()
 		for {
 			select {
 			case f := <-s.actionCh:
@@ -80,6 +82,11 @@ func NewBeaconSyncProcess(network Network, bc *blockchain.BlockChain, chain Beac
 						delete(s.beaconPeerStates, sender)
 					}
 				}
+				if lastHeight != s.chain.GetBestViewHeight() {
+					s.lastInsert = time.Now().Format("2006-01-02T15:04:05-0700")
+					lastHeight = s.chain.GetBestViewHeight()
+				}
+
 			}
 			if s.status != RUNNING_SYNC {
 				time.Sleep(time.Second)
@@ -297,27 +304,50 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 	//fullnode delay 1 block (make sure insert final block)
 	if os.Getenv("FULLNODE") != "" {
 		toHeight = toHeight - 1
+		if toHeight <= s.chain.GetBestViewHeight() {
+			return
+		}
 	}
 
-	if toHeight <= s.chain.GetBestViewHeight() {
+	//if is behind, and
+	//if peerstate show fork, sync that block
+	if pState.BestViewHeight < s.chain.GetBestViewHeight() || (pState.BestViewHeight == s.chain.GetBestViewHeight() && s.chain.GetBestViewHash() == pState.BestViewHash) {
 		return
 	}
 
+	if pState.BestViewHeight == s.chain.GetBestViewHeight() && s.chain.GetBestViewHash() != pState.BestViewHash {
+		for _, h := range s.chain.GetAllViewHash() { //check if block exist in multiview, then return
+			if h.String() == pState.BestViewHash {
+				return
+			}
+		}
+	}
+
+	if pState.BestViewHeight > s.chain.GetBestViewHeight() {
+		requestCnt++
+		peerID = ""
+	}
+
+	//incase, we have long multiview chain, just sync last 100 block (very low probability that we have fork more than 100 blocks)
+	fromHeight := s.chain.GetFinalViewHeight() + 1
+	if s.chain.GetBestViewHeight()-100 > fromHeight {
+		fromHeight = s.chain.GetBestViewHeight()
+	}
+
 	//stream
-	ch, err := s.network.RequestBeaconBlocksViaStream(ctx, "", s.chain.GetFinalViewHeight()+1, toHeight)
-	if err != nil {
+	ch, err := s.network.RequestBeaconBlocksViaStream(ctx, peerID, fromHeight, toHeight)
+	if err != nil || ch == nil {
 		fmt.Println("Syncker: create channel fail")
+		requestCnt = 0
 		return
 	}
 
 	//receive
-	requestCnt++
 	insertTime := time.Now()
 	for {
 		select {
 		case blk := <-ch:
 			if !isNil(blk) {
-				//Logger.Infof("Syncker beacon receive block %v", blk.GetHeight())
 				blockBuffer = append(blockBuffer, blk)
 			}
 

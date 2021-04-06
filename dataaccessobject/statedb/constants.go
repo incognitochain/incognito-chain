@@ -36,8 +36,6 @@ const (
 	PortalWaitingPortingRequestObjectType
 	//liquidation
 	PortalLiquidationPoolObjectType
-
-	//B
 	PortalStatusObjectType
 	CustodianStateObjectType
 	WaitingRedeemRequestObjectType
@@ -48,8 +46,12 @@ const (
 	// PDEX v2
 	PDETradingFeeObjectType
 
-	BlockHashObjectType
 	StakerObjectType
+
+	// Portal v3
+	PortalExternalTxObjectType
+	PortalConfirmProofObjectType
+	PortalUnlockOverRateCollaterals
 
 	SlashingCommitteeObjectType
 )

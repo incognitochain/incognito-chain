@@ -3,11 +3,15 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus_v2"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
+	"io/ioutil"
+	"reflect"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"io/ioutil"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -37,6 +41,30 @@ type CountResult struct {
 func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	httpServer.config.TxMemPool.SendTransactionToBlockGen()
 	return nil, nil
+}
+
+func (httpServer *HttpServer) handleGetConsensusInfoV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	engine, ok := httpServer.config.ConsensusEngine.(*consensus_v2.Engine)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("consensus engine not found, got "+reflect.TypeOf(httpServer.config.ConsensusEngine).String()))
+	}
+
+	arr := []interface{}{}
+	for chainID, bftactor := range engine.BFTProcess {
+		bftactorV3, ok := bftactor.(*blsbftv3.BLSBFT_V3)
+		if !ok {
+			continue
+		}
+		m := map[string]interface{}{
+			"ChainID":              chainID,
+			"VoteHistory":          bftactorV3.GetVoteHistory(),
+			"ReceiveBlockByHash":   bftactorV3.GetReceiveBlockByHash(),
+			"ReceiveBlockByHeight": bftactorV3.GetReceiveBlockByHeight(),
+		}
+		arr = append(arr, m)
+	}
+
+	return arr, nil
 }
 
 func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -124,6 +152,51 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		"rewardReceivers":  tempRewardReceiver,
 		"autoStaking":      autoStaking,
 		"stakingTx":        tempStakingTx,
+	}, nil
+}
+
+func (httpServer *HttpServer) handleGetCommitteeStateByShard(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	shardID := uint64(arrayParams[0].(float64))
+	tempHash := arrayParams[1].(string)
+
+	hash, err := common.Hash{}.NewHashFromStr(tempHash)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	shardRootHash, err := blockchain.GetShardRootsHashByBlockHash(
+		httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID)),
+		byte(shardID),
+		*hash,
+	)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	stateDB, err := statedb.NewWithPrefixTrie(shardRootHash.ConsensusStateDBRootHash,
+		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetShardChainDatabase(byte(shardID))))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	committees := statedb.GetOneShardCommittee(stateDB, byte(shardID))
+	resCommittees := make([]string, len(committees))
+	for i := 0; i < len(resCommittees); i++ {
+		key, _ := committees[i].ToBase58()
+		resCommittees[i] = key
+	}
+	substitutes := statedb.GetOneShardSubstituteValidator(stateDB, byte(shardID))
+	resSubstitutes := make([]string, len(substitutes))
+	for i := 0; i < len(resSubstitutes); i++ {
+		key, _ := substitutes[i].ToBase58()
+		resSubstitutes[i] = key
+	}
+
+	return map[string]interface{}{
+		"root":       shardRootHash.ConsensusStateDBRootHash,
+		"shardID":    shardID,
+		"committee":  resCommittees,
+		"substitute": resSubstitutes,
 	}, nil
 }
 

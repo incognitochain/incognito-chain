@@ -183,7 +183,7 @@ func (e *BLSBFT_V2) Start() error {
 				/*
 					Check for whether we should propose block
 				*/
-				proposerPk := bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
+				proposerPk, _ := bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
 				userPk := e.GetUserPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 
 				if newTimeSlot { //for logging
@@ -409,7 +409,7 @@ func (e *BLSBFT_V2) validateAndVote(v *ProposeBlockInfo) error {
 		return NewConsensusError(UnExpectedError, err)
 	}
 	bridgeSig := []byte{}
-	if metadata.HasBridgeInstructions(v.block.GetInstructions()) {
+	if metadata.HasBridgeInstructions(v.block.GetInstructions()) || metadata.HasPortalInstructions(v.block.GetInstructions()) {
 		bridgeSig, err = e.UserKeySet.BriSignData(v.block.Hash().GetBytes())
 		if err != nil {
 			e.Logger.Error(err)

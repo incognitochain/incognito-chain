@@ -14,6 +14,11 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
+func (httpServer *HttpServer) isPortalRelayingRPC(methodName string) bool {
+	result, _ := common.SliceExists(PortalRelayingRPCs, methodName)
+	return result
+}
+
 func (httpServer *HttpServer) handleCreateRawTxWithRelayingBTCHeader(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.handleCreateRawTxWithRelayingHeader(
 		metadata.RelayingBTCHeaderMeta,
@@ -68,7 +73,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithRelayingHeader(
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -183,7 +188,7 @@ func (httpServer *HttpServer) handleGetLatestBNBHeaderBlockHeight(params interfa
 	bc := httpServer.config.BlockChain
 	result, err := bc.GetLatestBNBBlockHeight()
 	if err != nil {
-		result, _ = bnbrelaying.GetGenesisBNBHeaderBlockHeight(bc.GetConfig().ChainParams.BNBRelayingHeaderChainID)
+		result, _ = bnbrelaying.GetGenesisBNBHeaderBlockHeight(bc.GetConfig().ChainParams.PortalParams.RelayingParam.BTCRelayingHeaderChainID)
 	}
 	return result, nil
 }

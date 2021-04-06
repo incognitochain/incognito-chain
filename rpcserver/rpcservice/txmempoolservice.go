@@ -1,7 +1,9 @@
 package rpcservice
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
@@ -57,8 +59,25 @@ func (txMemPoolService *TxMemPoolService) RemoveTxInMempool(txIDString string) (
 	if err != nil {
 		return false, NewRPCError(GeTxFromPoolError, err)
 	}
-	txMemPoolService.TxMemPool.RemoveTx([]metadata.Transaction{tempTx}, false)
-	txMemPoolService.TxMemPool.TriggerCRemoveTxs(tempTx)
-
+	Logger.log.Infof("Removing a stuck tx with hash: %s", txIDString)
+	txMemPoolService.TxMemPool.RemoveStuckTx(*txID, tempTx)
 	return true, nil
+}
+
+// CheckListSerialNumbersExistedInMempool checks list of serial numbers (base58 encoded) are existed in mempool or not
+func (txMemPoolService TxMemPoolService) CheckListSerialNumbersExistedInMempool(serialNumbers []interface{}) ([]bool, *RPCError) {
+	isExisteds := []bool{}
+	for _, item := range serialNumbers {
+		snStr, okParam := item.(string)
+		if !okParam {
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Serial number must be a string, %+v", item))
+		}
+		snBytes, version, err := base58.Base58Check{}.Decode(snStr)
+		if err != nil || version != common.ZeroByte || len(snBytes) == 0 {
+			return []bool{}, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Serial number %v is invalid format", snStr))
+		}
+		isExisted := txMemPoolService.TxMemPool.ValidateSerialNumberHashH(snBytes) != nil
+		isExisteds = append(isExisteds, isExisted)
+	}
+	return isExisteds, nil
 }

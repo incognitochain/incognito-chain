@@ -190,6 +190,6 @@ func (t PortalRewardInfoObject) IsDeleted() bool {
 
 // value is either default or nil
 func (t PortalRewardInfoObject) IsEmpty() bool {
-	temp := NewCustodianState()
+	temp := NewPortalRewardInfo()
 	return reflect.DeepEqual(temp, t.portalRewardInfo) || t.portalRewardInfo == nil
 }

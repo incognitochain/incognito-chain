@@ -17,6 +17,14 @@ func (httpServer *HttpServer) handleGetMempoolInfo(params interface{}, closeChan
 }
 
 /*
+handleGetMempoolInfoDetails - RPC to return all txs along with their detailed info from mempool
+*/
+func (httpServer *HttpServer) handleGetMempoolInfoDetails(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	result := jsonresult.GetTxDetailsFromMempool(httpServer.config.TxMemPool)
+	return result, nil
+}
+
+/*
 handleGetRawMempool - RPC returns all transaction ids in memory pool as a json array of string transaction ids
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
@@ -80,4 +88,20 @@ func (httpServer *HttpServer) handleRemoveTxInMempool(params interface{}, closeC
 		}
 	}
 	return result, nil
+}
+
+
+// handleHasSerialNumbersInMempool - check list serial numbers existed in mempool or not
+func (httpServer *HttpServer) handleHasSerialNumbersInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
+	//#0: list serialnumbers in base58check encode string
+	serialNumbersStr, ok := arrayParams[0].([]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("serialNumbers must be an array of string"))
+	}
+	return httpServer.txMemPoolService.CheckListSerialNumbersExistedInMempool(serialNumbersStr)
 }
