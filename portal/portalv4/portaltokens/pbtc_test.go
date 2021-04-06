@@ -397,7 +397,7 @@ func TestGenerateOTMultisigAddress(t *testing.T) {
 	for _, seed := range seeds {
 		masterPubKeys = append(masterPubKeys, p.generatePublicKeyFromSeed(seed))
 	}
-	incAddress := ""
+	incAddress := "12RuEdPjq4yxivzm8xPxRVHmkL74t4eAdUKPdKKhMEnpxPH3k8GEyULbwq4hjwHWmHQr7MmGBJsMpdCHsYAqNE18jipWQwciBf9yqvQ"
 	script, address, err := p.GenerateOTMultisigAddress(masterPubKeys, 3, incAddress)
 	if err != nil {
 		t.Logf("Error: %v\n", err)
