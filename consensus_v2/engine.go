@@ -162,30 +162,29 @@ func (engine *Engine) WatchCommitteeChange() {
 			currActorVersion = engine.version[chainID]
 		}
 
+		shouldRun := false
 		engine.updateVersion(chainID)
 		if _, ok := engine.bftProcess[chainID]; !ok {
 			engine.initProcess(chainID, chainName)
+			shouldRun = true
 		} else {
 			if engine.version[chainID] != currActorVersion ||
 				engine.bftProcess[chainID].BlockVersion() != engine.getBlockVersion(chainID) {
 				engine.bftProcess[chainID].Stop()
 				engine.initProcess(chainID, chainName)
+				shouldRun = true
 			}
 		}
 
-		validatorMiningKey := []signatureschemes2.MiningKey{}
-		for _, validator := range validators {
-			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
-		}
+		if shouldRun {
+			validatorMiningKey := []signatureschemes2.MiningKey{}
+			for _, validator := range validators {
+				validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
+			}
 
-		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
-		engine.bftProcess[chainID].Run()
-		miningProc = engine.bftProcess[chainID]
-	}
-
-	for chainID, proc := range engine.bftProcess {
-		if _, ok := ValidatorGroup[chainID]; !ok {
-			proc.Stop()
+			engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
+			engine.bftProcess[chainID].Run()
+			miningProc = engine.bftProcess[chainID]
 		}
 	}
 
