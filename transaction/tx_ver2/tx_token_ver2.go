@@ -577,23 +577,6 @@ func (txToken *TxToken) ValidateTxSalary(db *statedb.StateDB) (bool, error) {
 		return false, utils.NewTransactionErr(utils.CommitOutputCoinError, fmt.Errorf("output coin's commitment isn't calculated correctly"))
 	}
 
-	// Check database for ota
-	found, status, err := statedb.HasOnetimeAddress(db, *tokenID, outCoin.GetPublicKey().ToBytesS())
-	if err != nil {
-		utils.Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
-		return false, utils.NewTransactionErr(utils.UnexpectedError, err)
-	}
-	if found {
-		switch status {
-		case statedb.OTA_STATUS_STORED:
-			utils.Logger.Log.Error("ValidateTxSalary got error: found onetimeaddress in database")
-			return false, utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New("found onetimeaddress in database"))
-		case statedb.OTA_STATUS_OCCUPIED:
-			utils.Logger.Log.Warnf("Verifier : Accept minted OTA %x since status is %d", outCoin.GetPublicKey().ToBytesS(), status)
-		default:
-			return false, utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New("invalid onetimeaddress status in database"))
-		}
-	}
 	return true, nil
 }
 
@@ -1088,14 +1071,15 @@ func (txToken *TxToken) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map
 	if txToken.GetTxBase().GetProof() == nil {
 		return nil
 	}
-	temp := make(map[common.Hash][32]byte)
+	outCoinHash := make(map[common.Hash][32]byte)
+	declaredOTAHash := make(map[common.Hash][32]byte)
 	for _, outputCoin := range txToken.GetTxBase().GetProof().GetOutputCoins() {
 		//Skip coins sent to the burning address
 		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
-		temp[hash] = outputCoin.GetPublicKey().ToBytes()
+		outCoinHash[hash] = outputCoin.GetPublicKey().ToBytes()
 	}
 
 	if txToken.GetTxNormal().GetProof() == nil {
@@ -1108,19 +1092,27 @@ func (txToken *TxToken) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
-		temp[hash] = outputCoin.GetPublicKey().ToBytes()
+		outCoinHash[hash] = outputCoin.GetPublicKey().ToBytes()
 	}
 
 	decls := tx_generic.GetOTADeclarationsFromTx(txToken.Tx)
 	for _, otaDeclaration := range decls {
 		otaPublicKey := otaDeclaration.PublicKey[:]
 		hash := common.HashH(otaPublicKey)
-		temp[hash] = otaDeclaration.PublicKey
+		declaredOTAHash[hash] = otaDeclaration.PublicKey
 	}
 
-	for _, listOTAs := range poolOTAHashH {
+	for key, listOTAs := range poolOTAHashH {
 		for _, otaHash := range listOTAs {
-			if pk, ok := temp[otaHash]; ok {
+			if pk, exists := declaredOTAHash[otaHash]; exists {
+				return fmt.Errorf("duplicate OTA %x with current mempool for TX %v", pk, txToken.Hash().String())
+			}
+			if pk, exists := outCoinHash[otaHash]; exists {
+				declKey := common.Hash{}
+				if key == declKey && txToken.IsSalaryTx() {
+					// minting over requested OTA
+					continue
+				}
 				return fmt.Errorf("duplicate OTA %x with current mempool for TX %v", pk, txToken.Hash().String())
 			}
 		}

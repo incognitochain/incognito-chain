@@ -580,12 +580,26 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 			continue
 		}
 
-		ok, status, err := statedb.HasOnetimeAddress(stateDB, *prvCoinID, otaPublicKey)
+		exists, status, err := statedb.HasOnetimeAddress(stateDB, *prvCoinID, otaPublicKey)
 		if err != nil {
-			return err
+			utils.Logger.Log.Errorf("Cannot check public key existence in DB, error %v", err)
+			return utils.NewTransactionErr(utils.UnexpectedError, err)
 		}
-		if ok {
-			return errors.New(fmt.Sprintf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status))
+		if exists {
+			switch status {
+			case statedb.OTA_STATUS_STORED:
+				utils.Logger.Log.Error("ValidateTxSalary got error: found onetimeaddress in database")
+				return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New(fmt.Sprintf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status)))
+			case statedb.OTA_STATUS_OCCUPIED:
+				if tx.IsSalaryTx() {
+					utils.Logger.Log.Warnf("Verifier : Accept minted OTA %x since status is %d", otaPublicKey, status)
+				} else {
+					utils.Logger.Log.Error("TX %s rejected due to already existing OTA", tx.Hash().String())
+					return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New(fmt.Sprintf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status)))
+				}
+			default:
+				return  utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New("invalid onetimeaddress status in database"))
+			}
 		}
 	}
 

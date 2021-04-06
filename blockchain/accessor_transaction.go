@@ -720,6 +720,12 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 	}
 	sort.Strings(keys)
 
+	for _, decl := range view.otaDeclarations {
+		if err := statedb.StoreOccupiedOneTimeAddress(stateDB, decl.TokenID, decl.PublicKey); err != nil {
+			return err
+		}
+	}
+
 	// Start to store to db
 	for _, publicKey := range keys {
 		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
@@ -769,11 +775,6 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 		}
 	}
 
-	for _, decl := range view.otaDeclarations {
-		if err := statedb.StoreOccupiedOneTimeAddress(stateDB, decl.TokenID, decl.PublicKey); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
