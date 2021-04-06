@@ -230,6 +230,9 @@ func buildMetaInfo() {
 
 		WithDrawRewardResponseMeta,
 		ReturnStakingMeta,
+
+		IssuingETHResponseMeta,
+		IssuingResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listTpNoInput,
@@ -251,6 +254,11 @@ func buildMetaInfo() {
 		PortalRedeemFromLiquidationPoolMeta,
 		PortalRedeemFromLiquidationPoolMetaV3,
 		PortalRedeemRequestMetaV3,
+
+		BurningRequestMeta,
+		BurningRequestMetaV2,
+		BurningForDepositToSCRequestMeta,
+		BurningForDepositToSCRequestMetaV2,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listTpNormal,
@@ -323,6 +331,10 @@ func buildMetaInfo() {
 		RelayingBNBHeaderMeta,
 		RelayingBTCHeaderMeta,
 		PortalTopUpWaitingPortingRequestMeta,
+
+		IssuingRequestMeta,
+		IssuingETHRequestMeta,
+		ContractingRequestMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listNNormal,
