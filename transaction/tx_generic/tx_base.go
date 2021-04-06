@@ -585,10 +585,45 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 			return err
 		}
 		if ok {
-			return errors.New(fmt.Sprintf("OTA of output coin already in database with status %d", status))
+			return errors.New(fmt.Sprintf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status))
+		}
+	}
+
+	decls := GetOTADeclarationsFromTx(tx)
+	for _, otaDeclaration := range decls {
+		otaPublicKey := otaDeclaration.PublicKey[:]
+		exists, status, err := statedb.HasOnetimeAddress(stateDB, otaDeclaration.TokenID, otaPublicKey)
+		if err != nil {
+			return err
+		}
+		if exists {
+			return errors.New(fmt.Sprintf("TX %s : OTA %x in metadata already in database with status %d", tx.Hash().String(), otaPublicKey, status))
 		}
 	}
 	return nil
+}
+
+type metadataGetter interface {
+	GetMetadata() metadata.Metadata
+}
+
+type mintingMetadataRequest interface {
+	GetOTADeclarations() []metadata.OTADeclaration
+}
+
+// GetOTADeclarations can be called on TxVersion2 or TxTokenVersion2 to get the OTAs-to-mint from their metadata
+func GetOTADeclarationsFromTx(tx metadataGetter) []metadata.OTADeclaration {
+	blankResult := []metadata.OTADeclaration{}
+	md := tx.GetMetadata()
+	if md != nil {
+		mmr, ok := md.(mintingMetadataRequest)
+		if ok {
+			jsb, _ := json.Marshal(md)
+			utils.Logger.Log.Warnf("Metadata might request minting some OTAs: %s", string(jsb))
+			return mmr.GetOTADeclarations()
+		}
+	}
+	return blankResult
 }
 
 func (tx TxBase) ValidateType() bool {
