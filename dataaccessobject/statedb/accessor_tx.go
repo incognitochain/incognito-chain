@@ -338,16 +338,26 @@ func StoreOutputCoins(stateDB *StateDB, tokenID common.Hash, publicKey []byte, o
 	return nil
 }
 
-func HasOnetimeAddress(stateDB *StateDB, tokenID common.Hash, ota []byte) (bool, error) {
+func StoreOccupiedOneTimeAddress(stateDB *StateDB, tokenID common.Hash, ota [32]byte) error {
+	key := GenerateOnetimeAddressObjectKey(tokenID, ota[:])
+	value := NewOccupiedOnetimeAddressState(tokenID, ota[:])
+	err := stateDB.SetStateObject(OnetimeAddressObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreOnetimeAddressError, err)
+	}
+	return nil
+}
+
+func HasOnetimeAddress(stateDB *StateDB, tokenID common.Hash, ota []byte) (bool, int, error) {
 	key := GenerateOnetimeAddressObjectKey(tokenID, ota)
 	onetimeAddressState, has, err := stateDB.getOnetimeAddressState(key)
 	if err != nil {
-		return false, NewStatedbError(GetSNDerivatorError, err)
+		return false, -1, NewStatedbError(GetSNDerivatorError, err)
 	}
 	if has && bytes.Compare(onetimeAddressState.PublicKey(), ota) != 0 {
 		panic("same key wrong value")
 	}
-	return has, nil
+	return has, onetimeAddressState.Status(), nil
 }
 
 func GetOutcoinsByPubkey(stateDB *StateDB, tokenID common.Hash, publicKey []byte, shardID byte) ([][]byte, error) {

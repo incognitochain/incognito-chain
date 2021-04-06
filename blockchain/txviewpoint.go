@@ -27,6 +27,8 @@ type TxViewPoint struct {
 	mapSnD map[string][][]byte
 	// use to fetch commitment
 	mapCommitments map[string][][]byte //map[base58check.encode{pubkey}]([]([]byte-commitment))
+
+	otaDeclarations []transaction.OTADeclaration
 	// use to fetch output coin
 	mapOutputCoins map[string][]privacy.Coin
 
@@ -49,6 +51,7 @@ func NewTxViewPoint(shardID byte, height uint64) *TxViewPoint {
 		height:                      height,
 		listSerialNumbers:           make([][]byte, 0),
 		mapCommitments:              make(map[string][][]byte),
+		otaDeclarations: 			 []transaction.OTADeclaration{},
 		mapOutputCoins:              make(map[string][]coin.Coin),
 		mapSnD:                      make(map[string][][]byte),
 		tokenID:                     &common.Hash{},
@@ -163,6 +166,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]coin.Coin)
 	acceptedSnD := make(map[string][][]byte)
+	acceptedOTADeclarations := []transaction.OTADeclaration{}
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	for indexTx, tx := range transactions {
@@ -266,6 +270,9 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				return NewBlockChainError(UnExpectedError, errors.New("TxNormal type is invalid"))
 			}
 		}
+
+		decls := transaction.GetOTADeclarationsFromTx(tx)
+		acceptedOTADeclarations = append(acceptedOTADeclarations, decls...)
 	}
 
 	if len(acceptedSerialNumbers) > 0 {
@@ -279,6 +286,9 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 	}
 	if len(acceptedSnD) > 0 {
 		view.mapSnD = acceptedSnD
+	}
+	if len(acceptedOTADeclarations) > 0 {
+		view.otaDeclarations = acceptedOTADeclarations
 	}
 	return nil
 }

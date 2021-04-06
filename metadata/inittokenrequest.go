@@ -177,3 +177,12 @@ func (iReq *InitTokenRequest) BuildReqActions(tx Transaction, chainRetriever Cha
 func (iReq *InitTokenRequest) CalculateSize() uint64 {
 	return calculateSize(iReq)
 }
+
+func (iReq *InitTokenRequest) GetOTADeclarations() []OTADeclaration {
+	pk, _, err := coin.ParseOTAInfoFromString(iReq.OTAStr, iReq.TxRandomStr)
+	if err != nil {
+		return []OTADeclaration{}
+	}
+	result := OTADeclaration{PublicKey: pk.ToBytes(), TokenID: common.ConfidentialAssetID}
+	return []OTADeclaration{result}
+}

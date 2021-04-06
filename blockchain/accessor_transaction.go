@@ -768,6 +768,12 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 			}
 		}
 	}
+
+	for _, decl := range view.otaDeclarations {
+		if err := statedb.StoreOccupiedOneTimeAddress(stateDB, decl.TokenID, decl.PublicKey); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

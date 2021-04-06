@@ -632,6 +632,12 @@ func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, 
 	return nil
 }
 
+//ValidateTxSalary checks the following conditions for salary transactions (s, rs):
+//	- the signature is valid
+//	- the number of output coins is 1
+//	- all fields of the output coins are valid
+//	- the snd has not existed
+//	- the commitment has been calculated correctly
 func (tx Tx) ValidateTxSalary(
 	db *statedb.StateDB,
 ) (bool, error) {
@@ -645,7 +651,7 @@ func (tx Tx) ValidateTxSalary(
 		return false, nil
 	}
 
-	// check whether output coin's input exists in input list or not
+	// check whether output outCoin's input exists in input list or not
 	tokenID := &common.Hash{}
 	err = tokenID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
@@ -655,30 +661,30 @@ func (tx Tx) ValidateTxSalary(
 	if len(outputCoins) != 1 {
 		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("length outputCoins of proof is not 1"))
 	}
-	coin := outputCoins[0]
-	if coin.GetPublicKey()==nil || coin.GetSNDerivator()==nil || coin.GetRandomness()==nil || coin.GetCommitment()==nil{
-		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("output coin is corrupted"))
+	outCoin := outputCoins[0]
+	if outCoin.GetPublicKey()==nil || outCoin.GetSNDerivator()==nil || outCoin.GetRandomness()==nil || outCoin.GetCommitment()==nil{
+		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("outCoin is corrupted"))
 	}
-	if ok, err := checkSNDerivatorExistence(tokenID, coin.GetSNDerivator(), db); ok || err != nil {
+	if ok, err := checkSNDerivatorExistence(tokenID, outCoin.GetSNDerivator(), db); ok || err != nil {
 		return false, err
 	}
 
-	// check output coin's coin commitment is calculated correctly
-	shardID, err := coin.GetShardID()
+	// check output outCoin's outCoin commitment is calculated correctly
+	shardID, err := outCoin.GetShardID()
 	if err != nil {
-		utils.Logger.Log.Errorf("Cannot get shardID from coin %v", err)
+		utils.Logger.Log.Errorf("Cannot get shardID from outCoin %v", err)
 		return false, err
 	}
 
 	cmTmp2 := new(privacy.Point)
-	cmTmp2.Add(coin.GetPublicKey(), new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(coin.GetValue()))))
-	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], coin.GetSNDerivator()))
+	cmTmp2.Add(outCoin.GetPublicKey(), new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(outCoin.GetValue()))))
+	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], outCoin.GetSNDerivator()))
 	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenShardIDIndex], new(privacy.Scalar).FromUint64(uint64(shardID))))
-	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], coin.GetRandomness()))
+	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], outCoin.GetRandomness()))
 
-	ok := privacy.IsPointEqual(cmTmp2, coin.GetCommitment())
+	ok := privacy.IsPointEqual(cmTmp2, outCoin.GetCommitment())
 	if !ok {
-		return ok, utils.NewTransactionErr(utils.UnexpectedError, errors.New("check output coin's coin commitment isn't calculated correctly"))
+		return ok, utils.NewTransactionErr(utils.UnexpectedError, errors.New("output coin's outCoin commitment isn't calculated correctly"))
 	}
 	return ok, nil
 }
@@ -714,7 +720,8 @@ func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB 
 		valid, err := tx.ValidateTxSalary(transactionStateDB)
 		return valid, nil, err
 	case common.TxReturnStakingType:
-		return tx.ValidateTxReturnStaking(transactionStateDB), nil, nil
+		valid, err := tx.ValidateTxSalary(transactionStateDB)
+		return valid, nil, err
 	default:
 		valid, err := tx.Verify(boolParams, transactionStateDB, bridgeStateDB, shardID, tokenID)
 		resultProofs := []privacy.Proof{}

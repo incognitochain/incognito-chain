@@ -299,3 +299,8 @@ func GenTokenIDFromRequest(txHash string, shardID byte) *common.Hash {
 	tokenID := common.HashH([]byte(record))
 	return &tokenID
 }
+
+type OTADeclaration struct {
+	PublicKey 	[32]byte
+	TokenID 	common.Hash
+}

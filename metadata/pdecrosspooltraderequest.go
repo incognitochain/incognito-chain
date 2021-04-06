@@ -235,3 +235,21 @@ func (pc *PDECrossPoolTradeRequest) BuildReqActions(tx Transaction, chainRetriev
 func (pc *PDECrossPoolTradeRequest) CalculateSize() uint64 {
 	return calculateSize(pc)
 }
+
+func (pc *PDECrossPoolTradeRequest) GetOTADeclarations() []OTADeclaration {
+	result := []OTADeclaration{}
+	pk, _, err := coin.ParseOTAInfoFromString(pc.TraderAddressStr, pc.TxRandomStr)
+	sellingToken := common.ConfidentialAssetID
+	if pc.TokenIDToSellStr == common.PRVIDStr {
+		sellingToken = common.PRVCoinID
+	}
+	if err == nil {
+		result = append(result, OTADeclaration{PublicKey: pk.ToBytes(), TokenID: sellingToken})
+	}
+	pk, _, err = coin.ParseOTAInfoFromString(pc.SubTraderAddressStr, pc.SubTxRandomStr)
+	if err == nil {
+		result = append(result, OTADeclaration{PublicKey: pk.ToBytes(), TokenID: common.PRVCoinID})
+	}
+	return result
+}
+

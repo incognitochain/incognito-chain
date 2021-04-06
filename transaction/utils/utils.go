@@ -23,7 +23,7 @@ func NewCoinUniqueOTABasedOnPaymentInfo(paymentInfo *privacy.PaymentInfo, tokenI
 		}
 		// Onetimeaddress should be unique
 		publicKeyBytes := c.GetPublicKey().ToBytesS()
-		found, err := statedb.HasOnetimeAddress(stateDB, *tokenID, publicKeyBytes)
+		found, _, err := statedb.HasOnetimeAddress(stateDB, *tokenID, publicKeyBytes)
 		if err != nil {
 			Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
 			return nil, err

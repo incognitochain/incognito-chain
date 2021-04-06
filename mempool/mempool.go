@@ -315,24 +315,52 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	return txDesc, err
 }
 
+//MaybeAcceptSalaryTransactionForBlockProducing performs the following validations on minteable transactions
+//
+//	- Validate transaction sanity
+//	- Validate transaction with current mempool
+//	- Validate transaction by itself
+//	- Validate transaction with blockchain
 func (tp *TxPool) MaybeAcceptSalaryTransactionForBlockProducing(shardID byte, tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
+	Logger.log.Infof("Verifying tx salary %v\n", tx.Hash().String())
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
-	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
-	err := tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardView, beaconView, shardID, shardView.GetCopiedTransactionStateDB())
-	if err!=nil{
-		return nil, err
+	beaconView, ok := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
+	if !ok {
+		return nil, fmt.Errorf("cannot get beacon final view from shard view")
 	}
+
+	//Validate sanity
+	isValid, err := tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, 0)
+	if !isValid {
+		return nil, fmt.Errorf("validate sanity tx %v FAILED: %v", tx.Hash().String(), err)
+	}
+
+
+	//Validate with current mempool
 	err = tx.ValidateTxWithCurrentMempool(tp)
-	if err!=nil{
-		return nil, err
+	if err != nil{
+		return nil, fmt.Errorf("validate tx %v with current mempool FAILED: %v", tx.Hash().String(), err)
 	}
+
+	//Validate txSalary by itself
+	isValid, err = tx.ValidateTxSalary(shardView.GetCopiedTransactionStateDB())
+	if !isValid {
+		return nil, fmt.Errorf("validate tx %v FAILED: %v", tx.Hash().String(), err)
+	}
+
+	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardView, beaconView, shardID, shardView.GetCopiedTransactionStateDB())
+	if err != nil{
+		return nil, fmt.Errorf("validate tx %v with blockchain FAILED: %v", tx.Hash().String(), err)
+	}
+
 	bestHeight := tp.config.BlockChain.GetBestStateShard(byte(shardID)).BestBlock.Header.Height
 	txD := createTxDescMempool(tx, bestHeight, 0, 0)
 	err = tp.addTx(txD, false)
 	if err != nil {
 		return nil, err
 	}
+	Logger.log.Infof("Finish verifying tx salary %v: %v\n", tx.Hash().String(), err)
 	return &txD.Desc, err
 }
 
@@ -570,8 +598,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	validFee := tp.checkFees(beaconView, tx, shardID, beaconHeight)
 	if !validFee {
 		return NewMempoolTxError(RejectInvalidFee,
-			fmt.Errorf("Transaction %+v has invalid fees.",
-				tx.Hash().String()))
+			fmt.Errorf("transaction %+v has invalid fees", tx.Hash().String()))
 	}
 	// Condition 5: check tx with all txs in current mempool
 	err = tx.ValidateTxWithCurrentMempool(tp)
@@ -1175,11 +1202,17 @@ func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
 }
 
 func (tp TxPool) GetOTAHashH() map[common.Hash][]common.Hash{
+	declKey := common.Hash{}
 	res := make(map[common.Hash][]common.Hash)
+	res[declKey] = []common.Hash{}
 	for txHash, txDesc := range tp.pool {
 		res[txHash] = []common.Hash{}
 		for _, otaHash := range txDesc.Desc.Tx.ListOTAHashH() {
 			res[txHash] = append(res[txHash], otaHash)
+		}
+		for _, otaDecl := range transaction.GetOTADeclarationsFromTx(txDesc.Desc.Tx) {
+			h := common.HashH(otaDecl.PublicKey[:])
+			res[declKey] = append(res[declKey], h)
 		}
 	}
 	return res

@@ -438,7 +438,7 @@ func createUniqueOTACoinCA(paymentInfo *privacy.PaymentInfo, tokenID *common.Has
 		// Onetimeaddress should be unique
 		publicKeyBytes := c.GetPublicKey().ToBytesS()
 		// here tokenID should always be TokenConfidentialAssetID (for db storage)
-		found, err := statedb.HasOnetimeAddress(stateDB, common.ConfidentialAssetID, publicKeyBytes)
+		found, _, err := statedb.HasOnetimeAddress(stateDB, common.ConfidentialAssetID, publicKeyBytes)
 		if err != nil {
 			utils.Logger.Log.Errorf("Cannot check public key existence in DB, err %v", err)
 			return nil, nil, err
