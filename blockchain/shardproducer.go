@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"math/rand"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -130,10 +131,14 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 			committeeFromBlockHash = committeeFinalViewHash
 		}
 	}
-	currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
-	if err != nil {
-		return nil, err
+
+	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+		currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	// Fetch Beacon Blocks
 	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconProcessHeight)
 	if err != nil {
@@ -306,6 +311,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	newShardBlock.Header.PendingValidatorRoot = hashes.ShardSubstituteHash
 	newShardBlock.Header.StakingTxRoot = common.Hash{}
 	newShardBlock.Header.Timestamp = start
+	Logger.log.Info("[dcs] newShardBlock.Header.CommitteeFromBlock:", newShardBlock.Header.CommitteeFromBlock.String())
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 
 	return newShardBlock, nil
