@@ -42,12 +42,17 @@ type ShardHeader struct {
 	PendingValidatorRoot  common.Hash            `json:"PendingValidatorRoot"`  // hash from public key list of all pending validators designated to this ShardID
 	StakingTxRoot         common.Hash            `json:"StakingTxRoot"`         // hash from staking transaction map in shard best state
 	InstructionMerkleRoot common.Hash            `json:"InstructionMerkleRoot"` // Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
-	CommitteeFromBlock    common.Hash            `json:"CommitteeFromBlock"`    // Block Hash Of Swapped Committees Block
 	// This obsoletes InstructionMerkleRoot but for simplicity, we keep it for now
 
 	//for version 2
 	Proposer    string
 	ProposeTime int64
+
+	//for version 3
+	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"` // block hash of committees for this block
+
+	//for version 4
+	SubsetCommitteesFromBlock common.Hash `json:"SubsetCommitteesFromBlock"` // Block hash of list committees will sign for this block
 }
 
 type ShardBody struct {
@@ -135,7 +140,7 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 }
 
 func (crossShardBlock CrossShardBlock) CommitteeFromBlock() common.Hash {
-	return common.Hash{}
+	return crossShardBlock.Header.CommitteeFromBlock
 }
 
 func (crossShardBlock CrossShardBlock) GetProposer() string {
@@ -662,4 +667,12 @@ func (block ShardBlock) BodyHash() common.Hash {
 
 func (block CrossShardBlock) BodyHash() common.Hash {
 	return common.Hash{}
+}
+
+func (block ShardBlock) SubsetCommitteesFromBlock() common.Hash {
+	return block.Header.SubsetCommitteesFromBlock
+}
+
+func (block CrossShardBlock) SubsetCommitteesFromBlock() common.Hash {
+	return block.Header.SubsetCommitteesFromBlock
 }

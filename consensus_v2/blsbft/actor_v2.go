@@ -118,7 +118,6 @@ func (actorV2 *actorV2) Run() error {
 				currentTimeSlot := common.CalculateTimeSlot(actorV2.currentTime)
 
 				newTimeSlot := false
-				//actorV2.logger.Infof("[dcs] currentTimeSlot %v actorV2.currentTimeSlot %v", currentTimeSlot, actorV2.currentTimeSlot)
 				if actorV2.currentTimeSlot != currentTimeSlot {
 					newTimeSlot = true
 				}
@@ -128,7 +127,6 @@ func (actorV2 *actorV2) Run() error {
 
 				//set round for monitor
 				round := actorV2.currentTimeSlot - common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
-				//actorV2.logger.Infof("[dcs] currentTimeSlot %v currentTime %v proposerTime %v round %v", actorV2.currentTimeSlot, actorV2.currentTime, bestView.GetBlock().GetProposeTime(), round)
 
 				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
 
@@ -136,7 +134,7 @@ func (actorV2 *actorV2) Run() error {
 				shouldPropose := false
 				shouldListen := true
 
-				signingCommittees, proposerPk, committeeViewHash, err := actorV2.getCommitteesAndCommitteeViewHash()
+				signingCommittees, committees, proposerPk, committeeViewHash, err := actorV2.getCommitteesAndCommitteeViewHash()
 				if err != nil {
 					actorV2.logger.Info(err)
 					continue
@@ -157,7 +155,6 @@ func (actorV2 *actorV2) Run() error {
 				}
 
 				if newTimeSlot { //for logging
-					actorV2.logger.Info("[dcs] newTimeSlot")
 					actorV2.logger.Info("")
 					actorV2.logger.Info("======================================================")
 					actorV2.logger.Info("")
@@ -184,7 +181,7 @@ func (actorV2 *actorV2) Run() error {
 						}
 					}
 
-					if createdBlk, err := actorV2.proposeBlock(userProposeKey, proposerPk, proposeBlock, signingCommittees, committeeViewHash); err != nil {
+					if createdBlk, err := actorV2.proposeBlock(userProposeKey, proposerPk, proposeBlock, committees, committeeViewHash); err != nil {
 						actorV2.logger.Critical(UnExpectedError, errors.New("can't propose block"))
 						actorV2.logger.Critical(err)
 					} else {
@@ -341,7 +338,7 @@ func (actorV2 *actorV2) processWithEnoughVotes(v *ProposeBlockInfo) error {
 		if previousProposeBlockInfo, ok := actorV2.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
 			previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
 			previousValidationData, err := actorV2.createBLSAggregatedSignatures(
-				previousProposeBlockInfo.committees,
+				previousProposeBlockInfo.signingCommittes,
 				previousProposeBlockInfo.block.GetValidationField(),
 				previousProposeBlockInfo.votes)
 			if err != nil {
@@ -629,7 +626,12 @@ func (actorV2 *actorV2) getCommitteeForBlock(v types.BlockInterface) ([]incognit
 	} else {
 		signingCommittees, committees, err = actorV2.
 			committeeChain.
-			CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(actorV2.chain.GetShardID()), blockchain.MaxSubsetCommittees)
+			CommitteesFromViewHashForShard(
+				v.CommitteeFromBlock(),
+				v.SubsetCommitteesFromBlock(),
+				byte(actorV2.chain.GetShardID()),
+				blockchain.MaxSubsetCommittees,
+			)
 	}
 	return signingCommittees, committees, err
 }
@@ -676,6 +678,7 @@ func (actorV2 *actorV2) getUserKeySetForSigning(
 
 func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 	[]incognitokey.CommitteePublicKey,
+	[]incognitokey.CommitteePublicKey,
 	incognitokey.CommitteePublicKey, common.Hash, error,
 ) {
 	committeeViewHash := common.Hash{}
@@ -690,16 +693,17 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 		signingCommittees = committees
 	} else {
 		committeeViewHash = *actorV2.committeeChain.GetFinalView().GetHash()
+		subsetViewHash := committeeViewHash
 		signingCommittees, committees, err = actorV2.
 			committeeChain.
-			CommitteesFromViewHashForShard(committeeViewHash, byte(actorV2.chainID), blockchain.MaxSubsetCommittees)
+			CommitteesFromViewHashForShard(committeeViewHash, subsetViewHash, byte(actorV2.chainID), blockchain.MaxSubsetCommittees)
 		if err != nil {
-			return signingCommittees, proposerPk, committeeViewHash, err
+			return signingCommittees, committees, proposerPk, committeeViewHash, err
 		}
 		proposerPk = actorV2.committeeChain.ProposerByTimeSlot(byte(actorV2.chainID), actorV2.currentTimeSlot, committees)
 	}
 
-	return signingCommittees, proposerPk, committeeViewHash, err
+	return signingCommittees, committees, proposerPk, committeeViewHash, err
 }
 
 func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
@@ -721,10 +725,6 @@ func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	if len(userKeySet) == 0 {
 		actorV2.logger.Debug("Not in round for voting")
 	}
-
-	committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
-	actorV2.logger.Infof("######### Shard %+v, BlockHash %+v, BlockHeight %+v, committees %+v committeesFromBlock %+v",
-		actorV2.chain.GetShardID(), block.Hash().String(), block.GetHeight(), committeesStr, block.CommitteeFromBlock().String())
 
 	blkCPk := incognitokey.CommitteePublicKey{}
 	blkCPk.FromBase58(block.GetProducer())
@@ -865,6 +865,9 @@ func (actorV2 *actorV2) validateAndVoteForValidProposeBlocks(bestView multiview.
 			} // if not swap committees => do nothing
 		} else { //there is no vote for this height yet
 			shouldVote = true
+		}
+		if len(v.userKeySet) == 0 {
+			shouldVote = false
 		}
 		if shouldVote {
 			actorV2.validateAndVote(v)

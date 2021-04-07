@@ -277,6 +277,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	shardStates[shardID] = types.NewShardState(
 		shardBlock.ValidationData,
 		shardBlock.Header.CommitteeFromBlock,
+		shardBlock.Header.SubsetCommitteesFromBlock,
 		shardBlock.Header.Height,
 		shardBlock.Header.Hash(),
 		shardBlock.Header.CrossShardBitMap,

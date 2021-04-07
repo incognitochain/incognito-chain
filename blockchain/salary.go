@@ -2,8 +2,9 @@ package blockchain
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -34,14 +35,12 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 			if err != nil {
 				return err
 			}
-			if val, ok := acceptedBlkRewardInfo.TxsFee[common.PRVCoinID]; ok {
-				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = val + blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
-			} else {
-				if acceptedBlkRewardInfo.TxsFee == nil {
-					acceptedBlkRewardInfo.TxsFee = map[common.Hash]uint64{}
-				}
-				acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] = blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+
+			if acceptedBlkRewardInfo.TxsFee == nil {
+				acceptedBlkRewardInfo.TxsFee = map[common.Hash]uint64{}
 			}
+			acceptedBlkRewardInfo.TxsFee[common.PRVCoinID] += blockchain.getRewardAmount(acceptedBlkRewardInfo.ShardBlockHeight)
+
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
 				if value != 0 {
 					err = statedb.AddShardRewardRequest(rewardStateDB, beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)

@@ -648,6 +648,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	shardState types.ShardState,
 ) error {
 	beaconHashForCommittee := shardState.CommitteeFromBlock
+	subsetCommitteeHash := shardState.SubsetCommitteeFromBlock
 
 	Logger.log.Infof("Add Missing Signature | ShardState %+v", shardState)
 	Logger.log.Infof("Add Missing Signature | committee from block %+v", beaconHashForCommittee)
@@ -659,7 +660,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	committees, ok := cacheCommittees[beaconHashForCommittee]
 	if !ok {
 		var err error
-		committees, _, err = bc.BeaconChain.CommitteesFromViewHashForShard(beaconHashForCommittee, shardID, MaxSubsetCommittees)
+		committees, _, err = bc.BeaconChain.CommitteesFromViewHashForShard(beaconHashForCommittee, subsetCommitteeHash, shardID, MaxSubsetCommittees)
 		if err != nil {
 			return err
 		}

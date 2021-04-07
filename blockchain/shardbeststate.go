@@ -407,24 +407,31 @@ func InitShardCommitteeStateV2(
 	consensusStateDB *statedb.StateDB,
 	shardHeight uint64,
 	shardID byte,
-	shardHash common.Hash,
-	committeeFromBlockHash common.Hash,
+	block *types.ShardBlock,
 	bc *BlockChain) *committeestate.ShardCommitteeStateV2 {
 	Logger.log.Infof("SHARDID %+v | Shard Height %+v, Init Shard Committee Engine V2", shardID, shardHeight)
-	signingCommittes := []incognitokey.CommitteePublicKey{}
+	signingCommittees := []incognitokey.CommitteePublicKey{}
 	//committees := []incognitokey.CommitteePublicKey{}
-	var err error
 	if shardHeight == 1 {
-		signingCommittes = statedb.GetOneShardCommittee(consensusStateDB, shardID)
+		signingCommittees = statedb.GetOneShardCommittee(consensusStateDB, shardID)
 		//committees = signingCommittes
 	} else {
-		signingCommittes, _, err = bc.GetShardCommitteeFromBeaconHash(committeeFromBlockHash, shardID, MaxSubsetCommittees)
+		committees, err := bc.getShardCommitteeFromBeaconHash(block.Header.CommitteeFromBlock, shardID)
+		if err != nil {
+			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
+			panic(err)
+		}
+		signingCommittees, err = bc.getCommitteesForSigning(committees, block, MaxSubsetCommittees)
 		if err != nil {
 			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
 			panic(err)
 		}
 	}
-	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(signingCommittes, committeeFromBlockHash)
+	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(
+		signingCommittees,
+		block.Header.CommitteeFromBlock,
+		block.Header.SubsetCommitteesFromBlock,
+	)
 
 	return shardCommitteeState
 }
@@ -445,13 +452,22 @@ func (shardBestState *ShardBestState) upgradeCommitteeEngineV2(bc *BlockChain) e
 		return nil
 	}
 
-	signingCommittees, _, err := bc.GetShardCommitteeFromBeaconHash(shardBestState.BestBeaconHash, shardBestState.ShardID, MaxSubsetCommittees)
+	tempBlock := &types.ShardBlock{}
+	tempBlock.Header.CommitteeFromBlock = shardBestState.shardCommitteeState.GetCommitteeFromBlock()
+	tempBlock.Header.SubsetCommitteesFromBlock = shardBestState.shardCommitteeState.SubsetCommitteesFromBlock()
+	committees, err := bc.getShardCommitteeFromBeaconHash(tempBlock.Header.CommitteeFromBlock, shardBestState.ShardID)
 	if err != nil {
 		return err
 	}
+	signingCommittees, err := bc.getCommitteesForSigning(committees, tempBlock, MaxSubsetCommittees)
+	if err != nil {
+		Logger.log.Error(NewBlockChainError(InitShardStateError, err))
+		panic(err)
+	}
 	newShardCommitteeStateV2 := committeestate.NewShardCommitteeStateV2WithValue(
 		signingCommittees,
-		common.Hash{},
+		tempBlock.CommitteeFromBlock(),
+		tempBlock.SubsetCommitteesFromBlock(),
 	)
 
 	shardBestState.shardCommitteeState = newShardCommitteeStateV2

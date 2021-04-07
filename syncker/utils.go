@@ -3,6 +3,7 @@ package syncker
 import (
 	"reflect"
 
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -69,16 +70,20 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		}
 	}
 
-	signingCommittees := []incognitokey.CommitteePublicKey{}
+	committees := []incognitokey.CommitteePublicKey{}
 	var err error
 	if len(sameCommitteeBlock) != 0 {
-		signingCommittees, _, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
+		committees, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
 		if err != nil {
 			return 0, err
 		}
 	}
 
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
+		signingCommittees, err := chain.GetSigningCommittees(committees, sameCommitteeBlock[i], blockchain.MaxSubsetCommittees)
+		if err != nil {
+			return 0, err
+		}
 		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], signingCommittees); err != nil {
 			sameCommitteeBlock = sameCommitteeBlock[:i]
 		} else {
@@ -95,7 +100,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 				err = chain.InsertBlock(v, false)
 			}
 			if err != nil {
-				committeeStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
+				committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)
 				Logger.Errorf("Insert block %v hash %v got error %v, Committee of epoch %v", v.GetHeight(), *v.Hash(), err, committeeStr)
 				return 0, err
 			}
