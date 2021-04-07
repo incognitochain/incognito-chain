@@ -106,6 +106,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 		if !shardBestState.CommitteeFromBlock().IsZeroValue() {
 			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
+			currentCommitteePublicKeys, _ = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
 			temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
 			if len(temp) != 0 {
 				committeeFromBlockHash = committeeFinalViewHash
