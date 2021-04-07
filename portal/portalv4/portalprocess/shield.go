@@ -1,7 +1,6 @@
 package portalprocess
 
 import (
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -50,7 +49,7 @@ func (p *PortalShieldingRequestProcessor) PrepareDataForBlockProducer(stateDB *s
 		return nil, fmt.Errorf("Shielding request: an error occurred while unmarshal shielding request action: %+v", err)
 	}
 
-	proofHash := hashProof(actionData.Meta.ShieldingProof)
+	proofHash := hashProof(actionData.Meta.ShieldingProof, actionData.Meta.IncogAddressStr)
 
 	isExistProofTxHash, err := statedb.IsExistsShieldingRequest(stateDB, actionData.Meta.TokenID, proofHash)
 	if err != nil {
@@ -63,8 +62,19 @@ func (p *PortalShieldingRequestProcessor) PrepareDataForBlockProducer(stateDB *s
 	return optionalData, nil
 }
 
-func hashProof(proof string) string {
-	hash := sha256.Sum256([]byte(proof))
+// hashProof returns the hash of shielding proof (include tx proof and user inc address)
+func hashProof(proof string, incAddressStr string) string {
+	type shieldingProof struct {
+		Proof      string
+		IncAddress string
+	}
+
+	shieldProof := shieldingProof{
+		Proof:      proof,
+		IncAddress: incAddressStr,
+	}
+	shieldProofBytes, _ := json.Marshal(shieldProof)
+	hash := common.HashB(shieldProofBytes)
 	return fmt.Sprintf("%x", hash[:])
 }
 
@@ -156,7 +166,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	proofHash := hashProof(meta.ShieldingProof)
+	proofHash := hashProof(meta.ShieldingProof, meta.IncogAddressStr)
 
 	// check unique external proof from portal state
 	if IsExistsProofInPortalState(currentPortalState, meta.TokenID, proofHash) || isExistInStateDB {

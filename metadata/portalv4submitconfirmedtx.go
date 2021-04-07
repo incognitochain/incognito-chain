@@ -24,23 +24,23 @@ type PortalSubmitConfirmedTxAction struct {
 }
 
 type PortalSubmitConfirmedTxContent struct {
-	TokenID string
-	UTXOs   []*statedb.UTXO
-	BatchID string
-	TxReqID common.Hash
+	TokenID      string
+	UTXOs        []*statedb.UTXO
+	BatchID      string
+	TxReqID      common.Hash
 	ExternalTxID string
-	ExternalFee uint64
-	ShardID byte
+	ExternalFee  uint64
+	ShardID      byte
 }
 
 type PortalSubmitConfirmedTxStatus struct {
-	TokenID string
-	UTXOs   []*statedb.UTXO
-	BatchID string
-	TxHash  string
+	TokenID      string
+	UTXOs        []*statedb.UTXO
+	BatchID      string
+	TxHash       string
 	ExternalTxID string
-	ExternalFee uint64
-	Status  int
+	ExternalFee  uint64
+	Status       int
 }
 
 func NewPortalSubmitConfirmedTxStatus(tokenID, batchID, externalTxID, txID string, UTXOs []*statedb.UTXO, status int, externalFee uint64) *PortalSubmitConfirmedTxStatus {
