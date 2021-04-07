@@ -21,7 +21,7 @@ type WithDrawRewardRequest struct {
 
 func (withdrawRequestMetadata *WithDrawRewardRequest) UnmarshalJSON(data []byte) error {
 	tmp := &struct {
-		MetadataBase
+		MetadataBaseWithSignature
 		PaymentAddress privacy.PaymentAddress
 		TokenID        common.Hash
 		Version        int
@@ -32,7 +32,7 @@ func (withdrawRequestMetadata *WithDrawRewardRequest) UnmarshalJSON(data []byte)
 	}
 	if tmp.PaymentAddress.Pk == nil && tmp.PaymentAddress.Tk == nil {
 		tmpOld := &struct {
-			MetadataBase
+			MetadataBaseWithSignature
 			privacy.PaymentAddress
 			TokenID common.Hash
 			Version int
@@ -45,7 +45,7 @@ func (withdrawRequestMetadata *WithDrawRewardRequest) UnmarshalJSON(data []byte)
 		tmp.PaymentAddress.Pk = tmpOld.Pk
 	}
 
-	withdrawRequestMetadata.MetadataBase = tmp.MetadataBase
+	withdrawRequestMetadata.MetadataBaseWithSignature = tmp.MetadataBaseWithSignature
 	withdrawRequestMetadata.PaymentAddress = tmp.PaymentAddress
 	withdrawRequestMetadata.TokenID = tmp.TokenID
 	withdrawRequestMetadata.Version = tmp.Version
