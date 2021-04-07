@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
+	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
@@ -220,4 +222,67 @@ func initLog() {
 	initLogRotator("./committee-state.log")
 	committeeStateLogger := common.NewBackend(logWriter{}).Logger("Committee State log ", false)
 	Logger.Init(committeeStateLogger)
+}
+
+func TestInsertValueToSliceByIndex(t *testing.T) {
+	type args struct {
+		list  []string
+		value string
+		index int
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "empty list",
+			args: args{
+				list:  []string{},
+				value: "a",
+				index: 0,
+			},
+			want: []string{"a"},
+		},
+		{
+			name: "insert at the end of slice",
+			args: args{
+				list:  []string{"a", "b"},
+				value: "c",
+				index: 2,
+			},
+			want: []string{"a", "b", "c"},
+		},
+		{
+			name: "insert at the beginning of slice",
+			args: args{
+				list:  []string{"a", "b"},
+				value: "c",
+				index: 0,
+			},
+			want: []string{"c", "a", "b"},
+		},
+		{
+			name: "insert at the middle of slice",
+			args: args{
+				list:  []string{"a", "b", "c", "d"},
+				value: "e",
+				index: 2,
+			},
+			want: []string{"a", "b", "e", "c", "d"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := InsertValueToSliceByIndex(tt.args.list, tt.args.value, tt.args.index)
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Println("Recovered in f", r)
+				}
+			}()
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("InsertValueToSliceByIndex() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

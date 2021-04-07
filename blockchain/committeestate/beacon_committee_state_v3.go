@@ -183,12 +183,8 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			committeeChange, err = b.processFinishSyncInstruction(
+			committeeChange = b.processFinishSyncInstruction(
 				finishSyncInstruction, env, committeeChange)
-			if err != nil {
-				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-			}
-
 		}
 	}
 
@@ -219,18 +215,17 @@ func (b *BeaconCommitteeStateV3) assignToSync(
 // update beacon state and committeeChange
 // UPDATE PENDING LIST ONLY
 func (b *BeaconCommitteeStateV3) assignToPending(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
-	newCommitteeChange := committeeChange
 	for _, candidate := range candidates {
-		key := incognitokey.CommitteePublicKey{}
-		key.FromString(candidate)
-		newCommitteeChange.ShardSubstituteAdded[shardID] = append(newCommitteeChange.ShardSubstituteAdded[shardID], key)
+		committeeChange.AddShardSubstituteAdded(shardID, []string{candidate})
 		randomOffset := 0
 		if len(b.shardSubstitute[shardID]) != 0 {
-			randomOffset = calculateCandidatePosition(candidate, rand, len(b.shardSubstitute[shardID]))
+			randomOffset = calculateNewSubstitutePosition(candidate, rand, len(b.shardSubstitute[shardID]))
 		}
-		b.shardSubstitute[shardID] = common.InsertValueToSliceByIndex(b.shardSubstitute[shardID], candidate, randomOffset)
+		//TODO: @tin if shard substitute list order is change => HOW TO LOAD shard substitute list from database to memory
+		// current method use entertime to determine the order but now it's no longer true
+		b.shardSubstitute[shardID] = InsertValueToSliceByIndex(b.shardSubstitute[shardID], candidate, randomOffset)
 	}
-	return newCommitteeChange
+	return committeeChange
 }
 
 func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
@@ -307,6 +302,7 @@ func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []strin
 		finishedSyncValidators[v] = true
 	}
 	count := 0
+	// TODO: @tin re-write using for condition { //body}, using while loop will improve code explicit
 	for i := 0; i < len(b.syncPool[shardID]); i++ {
 		if count == len(validators) {
 			break
@@ -323,24 +319,18 @@ func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []strin
 func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	finishSyncInstruction *instruction.FinishSyncInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
-) (
-	*CommitteeChange, error) {
-	newCommitteeChange := committeeChange
-	newCommitteeChange.SyncingPoolRemoved[byte(finishSyncInstruction.ChainID)] =
-		append(newCommitteeChange.SyncingPoolRemoved[byte(finishSyncInstruction.ChainID)], finishSyncInstruction.PublicKeysStruct...)
-	newCommitteeChange.FinishedSyncValidators[byte(finishSyncInstruction.ChainID)] = append(
-		newCommitteeChange.FinishedSyncValidators[byte(finishSyncInstruction.ChainID)],
-		finishSyncInstruction.PublicKeys...,
-	)
+) *CommitteeChange {
+	committeeChange.AddSyncingPoolRemoved(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
+	committeeChange.AddFinishedSyncValidators(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
 	b.removeValidatorsFromSyncPool(finishSyncInstruction.PublicKeys, byte(finishSyncInstruction.ChainID))
 
 	committeeChange = b.assignToPending(
 		finishSyncInstruction.PublicKeys,
 		env.RandomNumber,
 		byte(finishSyncInstruction.ChainID),
-		newCommitteeChange)
+		committeeChange)
 
-	return newCommitteeChange, nil
+	return committeeChange
 }
 
 func (b *BeaconCommitteeStateV3) processUnstakeInstruction(

@@ -603,7 +603,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 
 		if beaconBestState.beaconCommitteeState.Version() != committeestate.SELF_SWAP_SHARD_VERSION &&
 			(len(stakeInstruction.PublicKeys) != len(tempStakePublicKey)) {
-			duplicateStakePublicKeys = common.DifferentElementStrings(stakeInstruction.PublicKeys, tempStakePublicKey)
+			duplicateStakePublicKeys = committeestate.DifferentElementStrings(stakeInstruction.PublicKeys, tempStakePublicKey)
 			if len(duplicateStakePublicKeys) > 0 {
 				stakingTxs := []string{}
 				autoStaking := []bool{}

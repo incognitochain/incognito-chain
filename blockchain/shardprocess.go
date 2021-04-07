@@ -190,7 +190,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		if !curView.CommitteeFromBlock().IsZeroValue() {
 			newCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(curView.GetCommittee())
-			temp := common.DifferentElementStrings(oldCommitteesPubKeys, newCommitteesPubKeys)
+			temp := committeestate.DifferentElementStrings(oldCommitteesPubKeys, newCommitteesPubKeys)
 			if len(temp) != 0 {
 				oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(curView.CommitteeFromBlock())
 				if err != nil {
@@ -682,7 +682,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 		if !shardBestState.CommitteeFromBlock().IsZeroValue() {
 			newCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
-			temp := common.DifferentElementStrings(oldCommitteesPubKeys, newCommitteesPubKeys)
+			temp := committeestate.DifferentElementStrings(oldCommitteesPubKeys, newCommitteesPubKeys)
 			if len(temp) != 0 {
 				oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
 				if err != nil {
