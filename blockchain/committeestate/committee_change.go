@@ -32,6 +32,30 @@ type CommitteeChange struct {
 	SlashingCommittee                  map[byte][]string
 }
 
+func (committeeChange *CommitteeChange) AddNextEpochShardCandidateRemoved(nextEpochShardCandidateRemoved []string) {
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(nextEpochShardCandidateRemoved)
+	committeeChange.NextEpochShardCandidateRemoved = append(committeeChange.NextEpochShardCandidateRemoved, temp...)
+}
+
+func (committeeChange *CommitteeChange) AddShardSubstituteAdded(shardID byte, shardSubstituteAdded []string) {
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstituteAdded)
+	committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], temp...)
+}
+
+func (committeeChange *CommitteeChange) AddSyncingPoolAdded(shardID byte, syncingPoolAdded []string) {
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(syncingPoolAdded)
+	committeeChange.SyncingPoolAdded[shardID] = append(committeeChange.SyncingPoolAdded[shardID], temp...)
+}
+
+func (committeeChange *CommitteeChange) AddSyncingPoolRemoved(shardID byte, syncingPoolRemoved []string) {
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(syncingPoolRemoved)
+	committeeChange.SyncingPoolRemoved[shardID] = append(committeeChange.SyncingPoolRemoved[shardID], temp...)
+}
+
+func (committeeChange *CommitteeChange) AddFinishedSyncValidators(shardID byte, finishedSyncValidators []string) {
+	committeeChange.FinishedSyncValidators[shardID] = append(committeeChange.FinishedSyncValidators[shardID], finishedSyncValidators...)
+}
+
 //GetStakerKeys ...
 func (committeeChange *CommitteeChange) StakerKeys() []incognitokey.CommitteePublicKey {
 	return committeeChange.NextEpochShardCandidateAdded

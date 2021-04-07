@@ -110,7 +110,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		if !shardBestState.CommitteeFromBlock().IsZeroValue() {
 			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
 			currentCommitteePublicKeys, _ = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
-			temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
+			temp := committeestate.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
 			if len(temp) != 0 {
 				oldCommitteeFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
 				if err != nil {
@@ -155,9 +155,11 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		}
 	}
 
-	currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
-	if err != nil {
-		return nil, err
+	if shardBestState.shardCommitteeState.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
+		currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconProcessHeight)

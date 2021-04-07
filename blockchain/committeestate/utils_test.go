@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
+	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
@@ -51,7 +53,7 @@ var (
 
 //initTestParams init incognito public key for testing by base 58 string
 func initTestParams() {
-	MAX_SWAP_OR_ASSIGN_PERCENT = 3
+	MAX_SWAP_OR_ASSIGN_PERCENT_V2 = 3
 	paymentAddreessKey0 = "12Rs8bHvYZELqHrv28bYezBQQpteZUEbYjUf2oqV9pJm6Gx4sD4n9mr4UgQe5cDeP9A2x1DsB4mbJ9LT8x2ShaY41cZJWrL7RpFpp2v"
 	incKey0 = new(incognitokey.CommitteePublicKey)
 	incKey = new(incognitokey.CommitteePublicKey)
@@ -220,4 +222,67 @@ func initLog() {
 	initLogRotator("./committee-state.log")
 	committeeStateLogger := common.NewBackend(logWriter{}).Logger("Committee State log ", false)
 	Logger.Init(committeeStateLogger)
+}
+
+func TestInsertValueToSliceByIndex(t *testing.T) {
+	type args struct {
+		list  []string
+		value string
+		index int
+	}
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{
+			name: "empty list",
+			args: args{
+				list:  []string{},
+				value: "a",
+				index: 0,
+			},
+			want: []string{"a"},
+		},
+		{
+			name: "insert at the end of slice",
+			args: args{
+				list:  []string{"a", "b"},
+				value: "c",
+				index: 2,
+			},
+			want: []string{"a", "b", "c"},
+		},
+		{
+			name: "insert at the beginning of slice",
+			args: args{
+				list:  []string{"a", "b"},
+				value: "c",
+				index: 0,
+			},
+			want: []string{"c", "a", "b"},
+		},
+		{
+			name: "insert at the middle of slice",
+			args: args{
+				list:  []string{"a", "b", "c", "d"},
+				value: "e",
+				index: 2,
+			},
+			want: []string{"a", "b", "e", "c", "d"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := InsertValueToSliceByIndex(tt.args.list, tt.args.value, tt.args.index)
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Println("Recovered in f", r)
+				}
+			}()
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("InsertValueToSliceByIndex() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

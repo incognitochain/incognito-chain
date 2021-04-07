@@ -474,3 +474,54 @@ func (shardBestState *ShardBestState) upgradeCommitteeEngineV2(bc *BlockChain) e
 	Logger.log.Infof("SHARDID %+v | Shard Height %+v, UPGRADE Shard Committee State from V1 to V2", shardBestState.ShardID, shardBestState.ShardHeight)
 	return nil
 }
+
+func (shardBestState *ShardBestState) verifyCommitteeFromBlock(
+	blockchain *BlockChain,
+	shardBlock *types.ShardBlock,
+	committees []incognitokey.CommitteePublicKey,
+) error {
+	committeeFinalViewBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.CommitteeFromBlock)
+	if err != nil {
+		return err
+	}
+	if !shardBestState.CommitteeFromBlock().IsZeroValue() {
+		newCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(committees)
+		oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
+		temp := committeestate.DifferentElementStrings(oldCommitteesPubKeys, newCommitteesPubKeys)
+		if len(temp) != 0 {
+			oldCommitteeFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
+			if err != nil {
+				return err
+			}
+
+			if oldCommitteeFromBlock.Header.Height >= committeeFinalViewBlock.Header.Height {
+				return NewBlockChainError(WrongBlockHeightError,
+					fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
+						committeeFinalViewBlock.Header.Hash(), oldCommitteeFromBlock.Header.Hash()))
+			}
+		}
+	}
+	if committeeFinalViewBlock.Header.Height >= blockchain.config.ChainParams.ConsensusV4Height {
+		if !shardBestState.shardCommitteeState.SubsetCommitteesFromBlock().IsZeroValue() {
+			oldSubsetCommitteeFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.shardCommitteeState.SubsetCommitteesFromBlock())
+			if err != nil {
+				return err
+			}
+			newSubsetCommitteeFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.SubsetCommitteesFromBlock)
+			if err != nil {
+				return err
+			}
+			if oldSubsetCommitteeFromBlock.Header.Height >= newSubsetCommitteeFromBlock.Header.Height {
+				return NewBlockChainError(WrongBlockHeightError,
+					fmt.Errorf("Height of New Shard Block's Subset Committee From Block %+v is smaller than current Subset Committee From Block View %+v",
+						newSubsetCommitteeFromBlock.Header.Hash(), oldSubsetCommitteeFromBlock.Header.Hash()))
+			}
+			if newSubsetCommitteeFromBlock.Header.Height < committeeFinalViewBlock.Header.Height {
+				return NewBlockChainError(WrongBlockHeightError,
+					fmt.Errorf("Height of New Shard Block's Subset Committee From Block %+v is smaller than new Committee From Block View %+v",
+						newSubsetCommitteeFromBlock.Header.Hash(), committeeFinalViewBlock.Header.Hash()))
+			}
+		}
+	}
+	return nil
+}

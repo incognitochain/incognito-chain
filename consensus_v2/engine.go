@@ -170,7 +170,11 @@ func (engine *Engine) WatchCommitteeChange() {
 		} else {
 			if engine.version[chainID] != currActorVersion ||
 				engine.bftProcess[chainID].BlockVersion() != engine.getBlockVersion(chainID) {
-				engine.bftProcess[chainID].Stop()
+				err := engine.bftProcess[chainID].Stop()
+				if err != nil {
+					Logger.Log.Error(err)
+					return
+				}
 				engine.initProcess(chainID, chainName)
 				shouldRun = true
 			}
@@ -183,7 +187,11 @@ func (engine *Engine) WatchCommitteeChange() {
 			}
 
 			engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
-			engine.bftProcess[chainID].Run()
+			err := engine.bftProcess[chainID].Run()
+			if err != nil {
+				Logger.Log.Error(err)
+				return
+			}
 			miningProc = engine.bftProcess[chainID]
 		}
 	}

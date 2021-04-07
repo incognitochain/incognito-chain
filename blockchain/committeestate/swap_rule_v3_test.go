@@ -646,3 +646,27 @@ func Test_swapRuleV3_getSlashingOffset(t *testing.T) {
 		})
 	}
 }
+
+func Test_calculateNewSubstitutePosition(t *testing.T) {
+	type args struct {
+		candidate string
+		rand      int64
+		total     int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantPos int
+	}{
+		// TODO: @hung
+		// testcase 1: this function must be deterministic with the same parameters
+		// testcase 2: make sure random offset is in valid range from 0 to len(substitute)
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if gotPos := calculateNewSubstitutePosition(tt.args.candidate, tt.args.rand, tt.args.total); gotPos != tt.wantPos {
+				t.Errorf("calculateNewSubstitutePosition() = %v, want %v", gotPos, tt.wantPos)
+			}
+		})
+	}
+}

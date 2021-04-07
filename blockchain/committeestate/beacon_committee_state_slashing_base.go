@@ -213,16 +213,14 @@ func (b *beaconCommitteeStateSlashingBase) processStakeInstruction(
 	return newCommitteeChange, err
 }
 
-func (b *beaconCommitteeStateSlashingBase) updateCandidatesByRandom(
+func (b *beaconCommitteeStateSlashingBase) getCandidatesForRandomAssignment(
 	committeeChange *CommitteeChange,
 ) (*CommitteeChange, []string) {
-	newCommitteeChange := committeeChange
-	candidateStructs := b.GetShardCommonPool()[:b.numberOfAssignedCandidates]
-	candidates, _ := incognitokey.CommitteeKeyListToString(candidateStructs)
-	newCommitteeChange.NextEpochShardCandidateRemoved = append(newCommitteeChange.NextEpochShardCandidateRemoved, candidateStructs...)
+	candidates := b.shardCommonPool[:b.numberOfAssignedCandidates]
+	committeeChange.AddNextEpochShardCandidateRemoved(candidates)
 	b.shardCommonPool = b.shardCommonPool[b.numberOfAssignedCandidates:]
 	b.numberOfAssignedCandidates = 0
-	return newCommitteeChange, candidates
+	return committeeChange, candidates
 }
 
 func (b *beaconCommitteeStateSlashingBase) processAssignWithRandomInstruction(
@@ -230,12 +228,12 @@ func (b *beaconCommitteeStateSlashingBase) processAssignWithRandomInstruction(
 	numberOfValidator []int,
 	committeeChange *CommitteeChange,
 ) *CommitteeChange {
-	newCommitteeChange, candidates := b.updateCandidatesByRandom(committeeChange)
+	newCommitteeChange, candidates := b.getCandidatesForRandomAssignment(committeeChange)
 	newCommitteeChange = b.assign(candidates, rand, numberOfValidator, newCommitteeChange)
 	return newCommitteeChange
 }
 
-func (b *beaconCommitteeStateSlashingBase) getAssignCandidates(
+func (b *beaconCommitteeStateSlashingBase) assignCandidates(
 	candidates []string,
 	rand int64,
 	numberOfValidator []int,
@@ -247,7 +245,7 @@ func (b *beaconCommitteeStateSlashingBase) getAssignCandidates(
 func (b *beaconCommitteeStateSlashingBase) assign(
 	candidates []string, rand int64, numberOfValidator []int, committeeChange *CommitteeChange,
 ) *CommitteeChange {
-	assignedCandidates := b.getAssignCandidates(candidates, rand, numberOfValidator)
+	assignedCandidates := b.assignCandidates(candidates, rand, numberOfValidator)
 	for shardID, tempCandidates := range assignedCandidates {
 		tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
 		committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)

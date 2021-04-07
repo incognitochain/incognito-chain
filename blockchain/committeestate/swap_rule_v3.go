@@ -1,8 +1,11 @@
 package committeestate
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"math/big"
 )
 
 //swapRuleV3 ...
@@ -22,16 +25,16 @@ func (s *swapRuleV3) Process(
 ) (*instruction.SwapShardInstruction, []string, []string, []string, []string) {
 
 	//get slashed nodes
-	newCommittees, slashingCommittees := s.slashingSwapOut(committees, penalty, numberOfFixedValidators, MAX_SLASH_PERCENT)
+	newCommittees, slashingCommittees := s.slashingSwapOut(committees, penalty, numberOfFixedValidators, MAX_SLASH_PERCENT_V3)
 	lenSlashedCommittees := len(slashingCommittees)
 	//get normal swap out nodes
 	newCommittees, normalSwapOutCommittees := s.normalSwapOut(
 		newCommittees, substitutes, len(committees), lenSlashedCommittees,
-		numberOfFixedValidators, minCommitteeSize, MAX_SWAP_OUT_PERCENT)
+		numberOfFixedValidators, minCommitteeSize, MAX_SWAP_OUT_PERCENT_V3)
 	swappedOutCommittees := append(slashingCommittees, normalSwapOutCommittees...)
 
 	newCommittees, newSubstitutes, swapInCommittees :=
-		s.swapInAfterSwapOut(newCommittees, substitutes, numberOfFixedValidators, maxCommitteeSize, MAX_SWAP_IN_PERCENT)
+		s.swapInAfterSwapOut(newCommittees, substitutes, numberOfFixedValidators, maxCommitteeSize, MAX_SWAP_IN_PERCENT_V3)
 
 	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
 		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees
@@ -48,8 +51,8 @@ func (s *swapRuleV3) Process(
 }
 
 func (s *swapRuleV3) CalculateAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
-	assignOffset := lenCommittees / MAX_ASSIGN_PERCENT
-	if assignOffset == 0 && lenCommittees < MAX_ASSIGN_PERCENT {
+	assignOffset := lenCommittees / MAX_ASSIGN_PERCENT_V3
+	if assignOffset == 0 && lenCommittees < MAX_ASSIGN_PERCENT_V3 {
 		assignOffset = 1
 	}
 	return assignOffset
@@ -178,6 +181,35 @@ func (s *swapRuleV3) getSlashingOffset(
 		offset = lenCommittees - numberOfFixedValidators
 	}
 	return offset
+}
+
+// calculateNewSubstitutePosition calculate reverse shardID for candidate
+func calculateNewSubstitutePosition(candidate string, rand int64, total int) (pos int) {
+	seed := candidate + fmt.Sprintf("%v", rand)
+	hash := common.HashB([]byte(seed))
+
+	// TODO: @tin don't change hash to int like this, because the maximum value is only 255*32
+	//for _, v := range hash {
+	//	data += int(v)
+	//}
+
+	// Using big.Int to convert a random Hash value to an integer
+	temp := new(big.Int)
+	temp.SetBytes(hash[:])
+	data := int(temp.Int64())
+	if data < 0 {
+		data *= -1
+	}
+
+	// TODO: @tin what if total == 0
+	// pos < total => never insert at the end of list?
+	pos = data % total
+	if pos == 0 {
+		// TODO: @tin why set pos = 1 when it's equal to 0, because total might equal to 0
+		pos = 1
+	}
+
+	return pos
 }
 
 func (s *swapRuleV3) clone() SwapRuleProcessor {
