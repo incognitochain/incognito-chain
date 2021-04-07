@@ -209,9 +209,9 @@ func SetupParam() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		ConsensusV2Epoch:               16930,
+		ConsensusV2Epoch:               1,
 		Timeslot:                       10,
-		BeaconHeightBreakPointBurnAddr: 250000,
+		BeaconHeightBreakPointBurnAddr: 1,
 		PortalParams: portal.PortalParams{
 			PortalParamsV3: map[uint64]portalv3.PortalParams{
 				0: {
