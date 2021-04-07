@@ -8,6 +8,8 @@ cd ./metadata/ && mockery --name=ChainRetriever && mockery --name=BeaconViewRetr
 echo "Start Unit-Test"
 echo "package committeestate"
 GO111MODULE=on go test -cover ./blockchain/committeestate/*.go
+echo "package finishsync"
+GO111MODULE=on go test -cover ./blockchain/committeestate/finishsync/*.go
 echo "package statedb"
 GO111MODULE=on go test -cover ./dataaccessobject/statedb/*.go
 echo "package instruction"

@@ -625,6 +625,13 @@ func TestBeaconCommitteeStateV3_assignToPending(t *testing.T) {
 		args               args
 		want               *CommitteeChange
 	}{
+		// TODO: @hung
+		// testcase 1: substitute list is empty
+		// testcase 2: add to the end of substitute list
+		// testcase 3: add to the beginning of substitute list
+		// testcase 4: add to the middle of substitute list
+		// testcase 5: mix testcases above
+		// testcase 6: substitute list is changed after each iteration
 		{
 			name: "Valid input",
 			fields: fields{
@@ -1767,6 +1774,77 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState_MultipleInstructions(t *tes
 			if !reflect.DeepEqual(gotCommitteeState, wantCommitteeState) {
 				t.Errorf("got = %v, want %v", gotCommitteeState, wantCommitteeState)
 			}
+		})
+	}
+}
+
+func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
+	type fields struct {
+		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
+		syncPool                         map[byte][]string
+	}
+	type args struct {
+		finishSyncInstruction *instruction.FinishSyncInstruction
+		env                   *BeaconCommitteeStateEnvironment
+		committeeChange       *CommitteeChange
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *CommitteeChange
+	}{
+		// TODO: @hung
+		// Testcase 1: remove one validator in sync pool, is not empty => assign to pending
+		// Testcase 2: remove one validator in sync pool, is empty => assign to pending
+		// Testcase 3: remove multiple validators in sync pool, sync pool is not empty => assign to pending
+		// Testcase 4: remove multiple validators in sync pool, sync pool is empty => assign to pending
+		// Testcase 5: remove multiple validators in sync pool, sync pool is not empty => assign to NOT EMPTY pending
+		// Testcase 6: remove multiple validators in sync pool, sync pool is not empty => assign to EMPTY pending
+		// Testcase 7: try to remove validators not in sync pool => no assign to pending
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
+				syncPool:                         tt.fields.syncPool,
+			}
+			if got := b.processFinishSyncInstruction(tt.args.finishSyncInstruction, tt.args.env, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("processFinishSyncInstruction() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
+	type fields struct {
+		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
+		syncPool                         map[byte][]string
+	}
+	type args struct {
+		validators []string
+		shardID    byte
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		// TODO: @hung
+		// testcase 1: all validators must be removed from syncPool
+		// testcase 2: 2 removed validators, 1 syncPool
+		// testcase 3: 1 removed validators, 2 syncPool
+		// testcase 4: 1 or some validators is not in sync pool
+		// testcase 5: 3 removed validators, 3 sync pool
+		// testcase 6: 3 removed validators, 5 sync pool
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
+				syncPool:                         tt.fields.syncPool,
+			}
+			b.removeValidatorsFromSyncPool(tt.args.validators, tt.args.shardID)
 		})
 	}
 }
