@@ -1607,7 +1607,7 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 			outputs: []OutPut{
 				{
 					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
-					amount:          100003,
+					amount:          1000139,
 				},
 			},
 		},
@@ -1619,7 +1619,7 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 			outputs: []OutPut{
 				{
 					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
-					amount:          100003,
+					amount:          1000139,
 				},
 			},
 		},
@@ -1631,7 +1631,7 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 			outputs: []OutPut{
 				{
 					externalAddress: "msTYtu7nsMiwFUtNgCSQBk26JeBf9q3GTM",
-					amount:          300000,
+					amount:          3000109,
 				},
 			},
 		},
@@ -1643,7 +1643,7 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 			outputs: []OutPut{
 				{
 					externalAddress: "tb1qv0k0gq5y65q867tjd8g8lmngzz9rf9nutmclqa",
-					amount:          100003,
+					amount:          1000139,
 				},
 			},
 		},
@@ -1655,7 +1655,7 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 			outputs: []OutPut{
 				{
 					externalAddress: "tb1qv0k0gq5y65q867tjd8g8lmngzz9rf9nutmclqa",
-					amount:          100003,
+					amount:          1000139,
 				},
 			},
 		},
