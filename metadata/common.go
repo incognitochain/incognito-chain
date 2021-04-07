@@ -229,6 +229,9 @@ func buildMetaInfo() {
 
 		WithDrawRewardResponseMeta,
 		ReturnStakingMeta,
+
+		IssuingETHResponseMeta,
+		IssuingResponseMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listTpNoInput,
@@ -250,6 +253,11 @@ func buildMetaInfo() {
 		PortalRedeemFromLiquidationPoolMeta,
 		PortalRedeemFromLiquidationPoolMetaV3,
 		PortalRedeemRequestMetaV3,
+
+		BurningRequestMeta,
+		BurningRequestMetaV2,
+		BurningForDepositToSCRequestMeta,
+		BurningForDepositToSCRequestMetaV2,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listTpNormal,
@@ -322,6 +330,13 @@ func buildMetaInfo() {
 		RelayingBNBHeaderMeta,
 		RelayingBTCHeaderMeta,
 		PortalTopUpWaitingPortingRequestMeta,
+
+		IssuingRequestMeta,
+		IssuingETHRequestMeta,
+		ContractingRequestMeta,
+
+		ShardStakingMeta,
+		BeaconStakingMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listNNormal,
@@ -336,6 +351,7 @@ func buildMetaInfo() {
 	})
 	listNNoInNoOut := []int{
 		WithDrawRewardRequestMeta,
+		StopAutoStakingMeta,
 	}
 
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
@@ -367,9 +383,21 @@ func buildMetaInfo() {
 	})
 
 	listSNoIn := []int{
-		WithDrawRewardResponseMeta,
 		PDETradeResponseMeta,
+		PDEWithdrawalResponseMeta,
 		PDEContributionResponseMeta,
+		PDECrossPoolTradeResponseMeta,
+		PDEFeeWithdrawalResponseMeta,
+		PortalCustodianDepositResponseMeta,
+		PortalCustodianWithdrawResponseMeta,
+		PortalLiquidateCustodianResponseMeta,
+		PortalRequestWithdrawRewardResponseMeta,
+		PortalRedeemFromLiquidationPoolResponseMeta,
+		PortalCustodianTopupResponseMeta,
+		PortalPortingResponseMeta,
+		PortalCustodianTopupResponseMetaV2,
+		PortalRedeemFromLiquidationPoolResponseMetaV3,
+		PortalTopUpWaitingPortingResponseMeta,
 	}
 
 	metaListNInfo = append(metaListNInfo, ListAndInfo{

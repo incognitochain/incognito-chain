@@ -260,7 +260,8 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64) {
-	// Logger.log.Infof("[testperformance] Handling new message tx")
+	txHash := msg.Transaction.Hash().String()
+	Logger.log.Infof("[testperformance] Handling new message tx %v", txHash)
 	// if !netSync.handleTxWithRole(msg.Transaction) {
 	// 	return
 	// }
@@ -275,6 +276,7 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64)
 				return
 			}
 			tp.GetInbox() <- tx
+			Logger.log.Infof("Sent transaction %+v to pool", txHash)
 			// Broadcast to network
 			/*go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 				metrics.Measurement:      metrics.TxEnterNetSyncSuccess,
@@ -291,12 +293,13 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64)
 			// }
 		}
 	}
-	Logger.log.Debug("Transaction %+v found in cache", *msg.Transaction.Hash())
+	Logger.log.Infof("Transaction %+v found in cache", txHash)
 }
 
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) handleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyToken, beaconHeight int64) {
-	Logger.log.Debug("Handling new message tx")
+	txHash := msg.Transaction.Hash().String()
+	Logger.log.Infof("[testperformance] Handling new message tx %v", txHash)
 	// if !netSync.handleTxWithRole(msg.Transaction) {
 	// 	return
 	// }
@@ -327,7 +330,7 @@ func (netSync *NetSync) handleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyTo
 			// }
 		}
 	}
-	Logger.log.Debug("Transaction %+v found in cache", *msg.Transaction.Hash())
+	Logger.log.Infof("Transaction %+v found in cache", txHash)
 }
 
 func (netSync *NetSync) handleMessageBFTMsg(msg *wire.MessageBFT) {
