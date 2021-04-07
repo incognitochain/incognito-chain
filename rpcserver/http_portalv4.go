@@ -328,7 +328,7 @@ func (httpServer *HttpServer) handleGetPortalSignedExtTxWithBatchID(
 	}
 
 	// get signed transaction
-	return getRawSignedTxByHeight(httpServer, unshieldBatch.BeaconHeight, unshieldBatch.RawExternalTx)
+	return getRawSignedTxByHeight(httpServer, unshieldBatch.BeaconHeight, unshieldBatch.RawExternalTx, unshieldBatch.UTXOs)
 }
 
 type getSignedTxResult struct {
@@ -341,6 +341,7 @@ func getRawSignedTxByHeight(
 	httpServer *HttpServer,
 	height uint64,
 	rawTx string,
+	utxos []*statedb.UTXO,
 ) (interface{}, *rpcservice.RPCError) {
 	// get portal params v4
 	portalParamsv4 := httpServer.config.BlockChain.GetPortalParamsV4(height)
@@ -396,13 +397,12 @@ func getRawSignedTxByHeight(
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Not found portal sigs for batchID"))
 	}
 
-	redeemScriptStr := httpServer.portal.BlockChain.GetPortalParamsV4(height).GeneralMultiSigScriptHexEncode[tokenID]
-	redeemScriptHex, err := hex.DecodeString(redeemScriptStr)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
+	portalParams := httpServer.blockService.BlockChain.GetPortalParamsV4(height)
 	for i, v := range sigs {
+		redeemScriptHex, _, err := portalParams.PortalTokens[tokenID].GenerateOTMultisigAddress(portalParams.MasterPubKeys[tokenID], int(portalParams.NumRequiredSigs), utxos[i].GetChainCodeSeed())
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
 		v = append(v, redeemScriptHex)
 		redeemTx.TxIn[i].Witness = v
 	}
@@ -630,6 +630,11 @@ func (httpServer *HttpServer) handleGetPortalTransactionSignedWithFeeReplacement
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Get portal btc signed tx error: %v", err))
 	}
 
+	unshieldBatch, err := httpServer.blockService.GetPortalBatchUnshieldingRequestStatus(replaceFeeStatus.BatchID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Get portal proof error: %v", err))
+	}
+
 	// get signed transaction
-	return getRawSignedTxByHeight(httpServer, replaceFeeStatus.BeaconHeight, replaceFeeStatus.ExternalRawTx)
+	return getRawSignedTxByHeight(httpServer, replaceFeeStatus.BeaconHeight, replaceFeeStatus.ExternalRawTx, unshieldBatch.UTXOs)
 }
