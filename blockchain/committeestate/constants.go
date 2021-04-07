@@ -1,11 +1,11 @@
 package committeestate
 
 var (
-	MAX_SWAP_OR_ASSIGN_PERCENT = 6
-	MAX_SLASH_PERCENT          = 3
-	MAX_SWAP_OUT_PERCENT       = 8
-	MAX_SWAP_IN_PERCENT        = 8
-	MAX_ASSIGN_PERCENT         = 8
+	MAX_SWAP_OR_ASSIGN_PERCENT_V2 = 6
+	MAX_SLASH_PERCENT_V3          = 3
+	MAX_SWAP_OUT_PERCENT_V3       = 8
+	MAX_SWAP_IN_PERCENT_V3        = 8
+	MAX_ASSIGN_PERCENT_V3         = 8
 )
 
 const (

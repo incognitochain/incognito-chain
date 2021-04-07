@@ -32,6 +32,16 @@ type CommitteeChange struct {
 	SlashingCommittee                  map[byte][]string
 }
 
+func (committeeChange *CommitteeChange) AddNextEpochShardCandidateRemoved(nextEpochShardCandidateRemoved []string) {
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(nextEpochShardCandidateRemoved)
+	committeeChange.NextEpochShardCandidateRemoved = append(committeeChange.NextEpochShardCandidateRemoved, temp...)
+}
+
+func (committeeChange *CommitteeChange) AddSyncingPoolAdded(shardID byte, syncingPoolAdded []string) {
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(syncingPoolAdded)
+	committeeChange.SyncingPoolAdded[shardID] = append(committeeChange.SyncingPoolAdded[shardID], temp...)
+}
+
 //GetStakerKeys ...
 func (committeeChange *CommitteeChange) StakerKeys() []incognitokey.CommitteePublicKey {
 	return committeeChange.NextEpochShardCandidateAdded

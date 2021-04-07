@@ -51,7 +51,7 @@ var (
 
 //initTestParams init incognito public key for testing by base 58 string
 func initTestParams() {
-	MAX_SWAP_OR_ASSIGN_PERCENT = 3
+	MAX_SWAP_OR_ASSIGN_PERCENT_V2 = 3
 	paymentAddreessKey0 = "12Rs8bHvYZELqHrv28bYezBQQpteZUEbYjUf2oqV9pJm6Gx4sD4n9mr4UgQe5cDeP9A2x1DsB4mbJ9LT8x2ShaY41cZJWrL7RpFpp2v"
 	incKey0 = new(incognitokey.CommitteePublicKey)
 	incKey = new(incognitokey.CommitteePublicKey)

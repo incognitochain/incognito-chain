@@ -57,7 +57,7 @@ func (s *swapRuleV2) Process(
 // #5 number of swap out nodes >= number of swap in nodes
 func (s *swapRuleV2) getSwapOutOffset(numberOfSubstitutes, numberOfCommittees, numberOfFixedValidator, minCommitteeSize int) int {
 
-	swapOffset := numberOfCommittees / MAX_SWAP_OR_ASSIGN_PERCENT
+	swapOffset := numberOfCommittees / MAX_SWAP_OR_ASSIGN_PERCENT_V2
 	if swapOffset == 0 {
 		return 0
 	}
@@ -229,7 +229,7 @@ func (s *swapRuleV2) CalculateAssignOffset(lenShardSubstitute, lenCommittees, nu
 		minCommitteeSize,
 	)
 
-	if assignPerShard == 0 && lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT {
+	if assignPerShard == 0 && lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT_V2 {
 		assignPerShard = 1
 	}
 	return assignPerShard

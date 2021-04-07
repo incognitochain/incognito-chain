@@ -22,16 +22,16 @@ func (s *swapRuleV3) Process(
 ) (*instruction.SwapShardInstruction, []string, []string, []string, []string) {
 
 	//get slashed nodes
-	newCommittees, slashingCommittees := s.slashingSwapOut(committees, penalty, numberOfFixedValidators, MAX_SLASH_PERCENT)
+	newCommittees, slashingCommittees := s.slashingSwapOut(committees, penalty, numberOfFixedValidators, MAX_SLASH_PERCENT_V3)
 	lenSlashedCommittees := len(slashingCommittees)
 	//get normal swap out nodes
 	newCommittees, normalSwapOutCommittees := s.normalSwapOut(
 		newCommittees, substitutes, len(committees), lenSlashedCommittees,
-		numberOfFixedValidators, minCommitteeSize, MAX_SWAP_OUT_PERCENT)
+		numberOfFixedValidators, minCommitteeSize, MAX_SWAP_OUT_PERCENT_V3)
 	swappedOutCommittees := append(slashingCommittees, normalSwapOutCommittees...)
 
 	newCommittees, newSubstitutes, swapInCommittees :=
-		s.swapInAfterSwapOut(newCommittees, substitutes, numberOfFixedValidators, maxCommitteeSize, MAX_SWAP_IN_PERCENT)
+		s.swapInAfterSwapOut(newCommittees, substitutes, numberOfFixedValidators, maxCommitteeSize, MAX_SWAP_IN_PERCENT_V3)
 
 	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
 		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees
@@ -48,8 +48,8 @@ func (s *swapRuleV3) Process(
 }
 
 func (s *swapRuleV3) CalculateAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators, minCommitteeSize int) int {
-	assignOffset := lenCommittees / MAX_ASSIGN_PERCENT
-	if assignOffset == 0 && lenCommittees < MAX_ASSIGN_PERCENT {
+	assignOffset := lenCommittees / MAX_ASSIGN_PERCENT_V3
+	if assignOffset == 0 && lenCommittees < MAX_ASSIGN_PERCENT_V3 {
 		assignOffset = 1
 	}
 	return assignOffset

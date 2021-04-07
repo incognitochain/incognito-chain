@@ -210,8 +210,7 @@ func (b *BeaconCommitteeStateV3) assignToSync(
 	candidates []string,
 	committeeChange *CommitteeChange,
 ) *CommitteeChange {
-	tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(candidates)
-	committeeChange.SyncingPoolAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
+	committeeChange.AddSyncingPoolAdded(shardID, candidates)
 	b.syncPool[shardID] = append(b.syncPool[shardID], candidates...)
 	return committeeChange
 }
@@ -257,8 +256,8 @@ func (b *BeaconCommitteeStateV3) processAssignWithRandomInstruction(
 	numberOfValidator []int,
 	committeeChange *CommitteeChange,
 ) *CommitteeChange {
-	newCommitteeChange, candidates := b.updateCandidatesByRandom(committeeChange)
-	assignedCandidates := b.getAssignCandidates(candidates, rand, numberOfValidator)
+	newCommitteeChange, candidates := b.getCandidatesForRandomAssignment(committeeChange)
+	assignedCandidates := b.assignCandidates(candidates, rand, numberOfValidator)
 	for shardID, candidates := range assignedCandidates {
 		newCommitteeChange = b.assignToSync(shardID, candidates, newCommitteeChange)
 	}
