@@ -106,30 +106,30 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyShieldProof(
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
-	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, error) {
+	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, string, uint64, error) {
 	btcChain := bc.GetBTCHeaderChain()
 	if btcChain == nil {
 		Logger.log.Error("BTC relaying chain should not be null")
-		return false, nil, errors.New("BTC relaying chain should not be null")
+		return false, nil, "", 0, errors.New("BTC relaying chain should not be null")
 	}
 	// parse BTCProof in meta
 	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
 	if err != nil {
 		Logger.log.Errorf("ShieldingProof is invalid %v\n", err)
-		return false, nil, fmt.Errorf("ShieldingProof is invalid %v\n", err)
+		return false, nil, "", 0, fmt.Errorf("ShieldingProof is invalid %v\n", err)
 	}
 
 	// verify tx with merkle proofs
 	isValid, err := btcChain.VerifyTxWithMerkleProofs(btcTxProof)
 	if !isValid || err != nil {
 		Logger.log.Errorf("Verify btcTxProof failed %v", err)
-		return false, nil, fmt.Errorf("Verify btcTxProof failed %v", err)
+		return false, nil, "", 0, fmt.Errorf("Verify btcTxProof failed %v", err)
 	}
 
 	// verify spent outputs
 	if len(btcTxProof.BTCTx.TxIn) < 1 {
 		Logger.log.Errorf("Can not find the tx inputs in proof")
-		return false, nil, fmt.Errorf("Submit confirmed tx: no tx inputs in proof")
+		return false, nil, "", 0, fmt.Errorf("Submit confirmed tx: no tx inputs in proof")
 	}
 
 	for _, input := range btcTxProof.BTCTx.TxIn {
@@ -142,14 +142,15 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 		}
 		if !isMatched {
 			Logger.log.Errorf("Submit confirmed: tx inputs from proof is diff utxos from unshield batch")
-			return false, nil, fmt.Errorf("Submit confirmed tx: tx inputs from proof is diff utxos from unshield batch")
+			return false, nil, "", 0, fmt.Errorf("Submit confirmed tx: tx inputs from proof is diff utxos from unshield batch")
 		}
 	}
 
 	// check whether amount transfer in txBNB is equal porting amount or not
 	// check receiver and amount in tx
+	externalFee := uint64(0)
 	outputs := btcTxProof.BTCTx.TxOut
-	for receiverAddress := range expectPaymentInfo {
+	for receiverAddress, unshieldAmt := range expectPaymentInfo {
 		isMatched := false
 		for _, out := range outputs {
 			addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
@@ -161,11 +162,19 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 				continue
 			}
 			isMatched = true
+			if externalFee == 0 {
+				tmp := p.ConvertExternalToIncAmount(uint64(out.Value))
+				if unshieldAmt <= tmp {
+					Logger.log.Errorf("[portal] Calculate external fee error")
+					return false, nil, "", 0, fmt.Errorf("[portal] Calculate external fee error")
+				}
+				externalFee = unshieldAmt - tmp
+			}
 			break
 		}
 		if !isMatched {
 			Logger.log.Error("BTC-TxProof is invalid")
-			return false, nil, errors.New("BTC-TxProof is invalid")
+			return false, nil, "", 0, errors.New("BTC-TxProof is invalid")
 		}
 	}
 
@@ -189,7 +198,7 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 		))
 	}
 
-	return true, listUTXO, nil
+	return true, listUTXO, btcTxProof.BTCTx.TxHash().String(), externalFee, nil
 }
 
 func (p PortalBTCTokenProcessor) GetExternalTxHashFromProof(proof string) (string, error) {

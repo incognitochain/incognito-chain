@@ -211,7 +211,7 @@ func RemoveListWaitingUnshieldFromDB(
 	}
 }
 
-func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, stateDB *statedb.StateDB) error {
+func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, externalTxID string, externalFee uint64, stateDB *statedb.StateDB) error {
 	// get unshield request by unshield ID
 	unshieldRequestBytes, err := statedb.GetPortalUnshieldRequestStatus(stateDB, unshieldID)
 	if err != nil {
@@ -223,6 +223,15 @@ func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, stateDB *s
 		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", unshieldRequestBytes, err)
 		return err
 	}
+	newExternalTxID := unshieldRequest.ExternalTxID
+	if externalTxID != "" {
+		newExternalTxID = externalTxID
+	}
+
+	newExternalFee := unshieldRequest.ExternalFee
+	if externalFee > 0 {
+		newExternalFee = externalFee
+	}
 
 	// update new status and store to db
 	unshieldRequestNewStatus := metadata.PortalUnshieldRequestStatus{
@@ -231,6 +240,8 @@ func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, stateDB *s
 		TokenID:        unshieldRequest.TokenID,
 		UnshieldAmount: unshieldRequest.UnshieldAmount,
 		UnshieldID:     unshieldRequest.UnshieldID,
+		ExternalTxID:   newExternalTxID,
+		ExternalFee:    newExternalFee,
 		Status:         newStatus,
 	}
 	unshieldRequestNewStatusBytes, _ := json.Marshal(unshieldRequestNewStatus)

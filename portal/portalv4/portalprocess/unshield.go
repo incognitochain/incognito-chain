@@ -229,6 +229,8 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 			TokenID:        actionData.TokenID,
 			UnshieldAmount: actionData.UnshieldAmount,
 			UnshieldID:     actionData.TxReqID.String(),
+			ExternalTxID:   "",
+			ExternalFee:    0,
 			Status:         portalcommonv4.PortalUnshieldReqWaitingStatus,
 		}
 		unshieldRequestStatusBytes, _ := json.Marshal(unshieldRequestStatus)
@@ -267,6 +269,8 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 			TokenID:        actionData.TokenID,
 			UnshieldAmount: actionData.UnshieldAmount,
 			UnshieldID:     actionData.TxReqID.String(),
+			ExternalTxID:   "",
+			ExternalFee:    0,
 			Status:         portalcommonv4.PortalUnshieldReqRefundedStatus,
 		}
 		unshieldRequestStatusBytes, _ := json.Marshal(unshieldRequestStatus)

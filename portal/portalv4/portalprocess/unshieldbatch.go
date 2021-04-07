@@ -212,7 +212,7 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 
 		for _, unshieldID := range actionData.UnshieldIDs {
 			// update status of unshield request that processed
-			err := UpdateNewStatusUnshieldRequest(unshieldID, portalcommonv4.PortalUnshieldReqProcessedStatus, stateDB)
+			err := UpdateNewStatusUnshieldRequest(unshieldID, portalcommonv4.PortalUnshieldReqProcessedStatus, "", 0, stateDB)
 			if err != nil {
 				Logger.log.Errorf("[processPortalBatchUnshieldRequest] Error when updating status of unshielding request with unshieldID %v: %v\n", unshieldID, err)
 				return nil
@@ -565,13 +565,18 @@ func buildSubmitConfirmedTxInst(
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
+	externalTxID string,
+	externalFee uint64,
 	status string,
 ) []string {
 	replacementRequestContent := metadata.PortalSubmitConfirmedTxContent{
-		TokenID: tokenID,
-		UTXOs:   utxos,
-		BatchID: batchID,
-		TxReqID: txReqID,
+		TokenID:      tokenID,
+		UTXOs:        utxos,
+		BatchID:      batchID,
+		TxReqID:      txReqID,
+		ExternalTxID: externalTxID,
+		ExternalFee:  externalFee,
+		ShardID:      shardID,
 	}
 	replacementRequestContentBytes, _ := json.Marshal(replacementRequestContent)
 	return []string{
@@ -619,6 +624,7 @@ func (p *PortalSubmitConfirmedTxProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
+		"", 0,
 		portalcommonv4.PortalV4RequestRejectedChainStatus,
 	)
 
@@ -647,7 +653,7 @@ func (p *PortalSubmitConfirmedTxProcessor) BuildNewInsts(
 		Logger.log.Errorf("UTXOs of unshield batchID %v is empty: ", meta.BatchID)
 		return [][]string{rejectInst}, nil
 	}
-	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyUnshieldProof(meta.UnshieldProof, bc, expectedReceivedMultisigAddress, "", outputs, unshieldBatch.GetUTXOs())
+	isValid, listUTXO, externalTxID, externalFee, err := portalTokenProcessor.ParseAndVerifyUnshieldProof(meta.UnshieldProof, bc, expectedReceivedMultisigAddress, "", outputs, unshieldBatch.GetUTXOs())
 	if !isValid || err != nil {
 		Logger.log.Errorf("Unshield Proof is invalid")
 		return [][]string{rejectInst}, nil
@@ -661,6 +667,8 @@ func (p *PortalSubmitConfirmedTxProcessor) BuildNewInsts(
 		meta.Type,
 		actionData.ShardID,
 		actionData.TxReqID,
+		externalTxID,
+		externalFee,
 		portalcommonv4.PortalV4RequestAcceptedChainStatus,
 	)
 
@@ -713,17 +721,19 @@ func (p *PortalSubmitConfirmedTxProcessor) ProcessInsts(
 		}
 		// track status of unshield batch request by batchID
 		portalSubmitConfirmedStatus = metadata.PortalSubmitConfirmedTxStatus{
-			TokenID: actionData.TokenID,
-			BatchID: actionData.BatchID,
-			UTXOs:   actionData.UTXOs,
-			TxHash:  actionData.TxReqID.String(),
-			Status:  portalcommonv4.PortalV4RequestAcceptedStatus,
+			TokenID:      actionData.TokenID,
+			UTXOs:        actionData.UTXOs,
+			BatchID:      actionData.BatchID,
+			TxHash:       actionData.TxReqID.String(),
+			ExternalTxID: actionData.ExternalTxID,
+			ExternalFee:  actionData.ExternalFee,
+			Status:       portalcommonv4.PortalV4RequestAcceptedStatus,
 		}
 
 		// update unshield list to completed
 		for _, unshieldID := range unshieldRequests {
 			// update status of unshield request that processed
-			err := UpdateNewStatusUnshieldRequest(unshieldID, portalcommonv4.PortalUnshieldReqCompletedStatus, stateDB)
+			err := UpdateNewStatusUnshieldRequest(unshieldID, portalcommonv4.PortalUnshieldReqCompletedStatus, actionData.ExternalTxID, actionData.ExternalFee, stateDB)
 			if err != nil {
 				Logger.log.Errorf("[PortalSubmitConfirmedTxProcessor] Error when updating status of unshielding request with unshieldID %v: %v\n", unshieldID, err)
 				return nil
@@ -731,11 +741,13 @@ func (p *PortalSubmitConfirmedTxProcessor) ProcessInsts(
 		}
 	} else if reqStatus == portalcommonv4.PortalV4RequestRejectedChainStatus {
 		portalSubmitConfirmedStatus = metadata.PortalSubmitConfirmedTxStatus{
-			TokenID: actionData.TokenID,
-			BatchID: actionData.BatchID,
-			UTXOs:   actionData.UTXOs,
-			TxHash:  actionData.TxReqID.String(),
-			Status:  portalcommonv4.PortalV4RequestRejectedStatus,
+			TokenID:      actionData.TokenID,
+			UTXOs:        actionData.UTXOs,
+			BatchID:      actionData.BatchID,
+			TxHash:       actionData.TxReqID.String(),
+			ExternalTxID: actionData.ExternalTxID,
+			ExternalFee:  actionData.ExternalFee,
+			Status:       portalcommonv4.PortalV4RequestRejectedStatus,
 		}
 	}
 	portalSubmitConfirmedStatusBytes, _ := json.Marshal(portalSubmitConfirmedStatus)

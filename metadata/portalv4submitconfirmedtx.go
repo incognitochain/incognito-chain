@@ -28,6 +28,8 @@ type PortalSubmitConfirmedTxContent struct {
 	UTXOs   []*statedb.UTXO
 	BatchID string
 	TxReqID common.Hash
+	ExternalTxID string
+	ExternalFee uint64
 	ShardID byte
 }
 
@@ -36,15 +38,20 @@ type PortalSubmitConfirmedTxStatus struct {
 	UTXOs   []*statedb.UTXO
 	BatchID string
 	TxHash  string
+	ExternalTxID string
+	ExternalFee uint64
 	Status  int
 }
 
-func NewPortalSubmitConfirmedTxStatus(tokenID, batchID string, UTXOs []*statedb.UTXO, status int) *PortalSubmitConfirmedTxStatus {
+func NewPortalSubmitConfirmedTxStatus(tokenID, batchID, externalTxID, txID string, UTXOs []*statedb.UTXO, status int, externalFee uint64) *PortalSubmitConfirmedTxStatus {
 	return &PortalSubmitConfirmedTxStatus{
-		TokenID: tokenID,
-		BatchID: batchID,
-		UTXOs:   UTXOs,
-		Status:  status,
+		TokenID:      tokenID,
+		UTXOs:        UTXOs,
+		BatchID:      batchID,
+		TxHash:       txID,
+		ExternalTxID: externalTxID,
+		ExternalFee:  externalFee,
+		Status:       status,
 	}
 }
 

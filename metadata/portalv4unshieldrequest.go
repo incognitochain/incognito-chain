@@ -42,16 +42,21 @@ type PortalUnshieldRequestStatus struct {
 	TokenID        string
 	UnshieldAmount uint64
 	UnshieldID     string
+	ExternalTxID   string
+	ExternalFee    uint64
 	Status         int
 }
 
-func NewPortalUnshieldRequestStatus(incAddressStr, tokenID, remoteAddress string, burnAmount uint64, status int) *PortalUnshieldRequestStatus {
+func NewPortalUnshieldRequestStatus(incAddressStr, tokenID, remoteAddress, unshieldID, externalTxID string, burnAmount, externalFee uint64, status int) *PortalUnshieldRequestStatus {
 	return &PortalUnshieldRequestStatus{
 		IncAddressStr:  incAddressStr,
-		UnshieldAmount: burnAmount,
-		Status:         status,
-		TokenID:        tokenID,
 		RemoteAddress:  remoteAddress,
+		TokenID:        tokenID,
+		UnshieldAmount: burnAmount,
+		UnshieldID:     unshieldID,
+		ExternalTxID:   externalTxID,
+		ExternalFee:    externalFee,
+		Status:         status,
 	}
 }
 
