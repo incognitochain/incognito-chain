@@ -2,6 +2,7 @@ package txpool
 
 import (
 	"fmt"
+	"log"
 	"runtime"
 	"time"
 
@@ -15,6 +16,12 @@ type TxInfo struct {
 	Fee   uint64
 	Size  uint64
 	VTime time.Duration
+}
+
+type validateResult struct {
+	err    error
+	result bool
+	cost   time.Duration
 }
 
 type TxInfoDetail struct {
@@ -125,16 +132,47 @@ func (tp *TxsPool) RemoveTxs(txHashes []string) {
 }
 
 func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Duration) {
+	txHash := tx.Hash().String()
 	start := time.Now()
-	if _, exist := tp.Cacher.Get(tx.Hash().String()); exist {
-		return false, nil, 0
+	log.Printf("[txTracing] Start validate tx %v at %v", txHash, start.UTC())
+	t := time.NewTimer(2 * time.Second)
+	defer t.Stop()
+	errChan := make(chan validateResult)
+	go func() {
+		if _, exist := tp.Cacher.Get(tx.Hash().String()); exist {
+			log.Printf("[txTracing] Not validate tx %v cuz it found in cache, cost %v", txHash, time.Since(start))
+			errChan <- validateResult{
+				err:    nil,
+				result: false,
+				cost:   0,
+			}
+			return
+		}
+		ok := tp.Verifier.LoadCommitment(tx, nil)
+		if !ok {
+			err := errors.Errorf("Can not load commitment for this tx %v", tx.Hash().String())
+			log.Printf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
+			errChan <- validateResult{
+				err:    err,
+				result: false,
+				cost:   time.Since(start),
+			}
+			return
+		}
+		ok, err := tp.Verifier.ValidateWithoutChainstate(tx)
+		errChan <- validateResult{
+			err:    err,
+			result: ok,
+			cost:   time.Since(start),
+		}
+	}()
+	select {
+	case <-t.C:
+		return false, errors.Errorf("[stream] Trying send to client but timeout"), 0
+	case err := <-errChan:
+		log.Printf("[txTracing] validate tx %v return %v, error %v, cost %v", txHash, err.result, err.err, err.cost)
+		return err.result, err.err, err.cost
 	}
-	ok := tp.Verifier.LoadCommitment(tx, nil)
-	if !ok {
-		return false, errors.Errorf("Can not load commitment for this tx %v", tx.Hash().String()), 0
-	}
-	ok, err := tp.Verifier.ValidateWithoutChainstate(tx)
-	return ok, err, time.Since(start)
 }
 
 func (tp *TxsPool) GetTxsTranferForNewBlock(
@@ -347,6 +385,9 @@ func (tp *TxsPool) getTxs(quit <-chan interface{}, cValidTxs chan txInfoTemp) {
 			return
 		default:
 			msg := <-tp.Inbox
+			txHah := msg.Hash().String()
+			workerID := len(nWorkers)
+			log.Printf("[txTracing] Received new tx %v, send to worker %v", txHah, workerID)
 			nWorkers <- 1
 			go func() {
 				isValid, err, vTime := tp.ValidateNewTx(msg)
