@@ -4,12 +4,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/blockcypher/gobcy"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -25,6 +26,7 @@ import (
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
+	"github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
 	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/stretchr/testify/suite"
@@ -1557,9 +1559,12 @@ func buildSubmitConfirmedTxActionsFromTcs(tcs []TestCaseSubmitConfirmedTx, shard
 			shardID,
 		)
 		optionalData := make(map[string]interface{})
-		outputs := make(map[string]uint64, 0)
+		outputs := []*portaltokens.OutputTx{}
 		for _, v := range tc.outputs {
-			outputs[v.externalAddress] += v.amount
+			outputs = append(outputs, &portaltokens.OutputTx{
+				ReceiverAddress: v.externalAddress,
+				Amount:          v.amount,
+			})
 		}
 		optionalData["outputs"] = outputs
 		insts = append(insts, portalV4InstForProducer{
