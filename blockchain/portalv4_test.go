@@ -321,12 +321,12 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultShieldingRequest() ([]
 			txID:                     common.HashH([]byte{3}).String(),
 			isExistsInPreviousBlocks: false,
 
-			shieldAmtInPubToken:      0.003 * 1e8,
-			shieldAmtInPToken:        0.003 * 1e9,
-			externalTxID:             "b515a6bf13c4f97b8c4683ea2d040443d1d83e1909d164a195de8b3b069e3b00",
-			txOutIndex:               0,
+			shieldAmtInPubToken: 0.003 * 1e8,
+			shieldAmtInPToken:   0.003 * 1e9,
+			externalTxID:        "b515a6bf13c4f97b8c4683ea2d040443d1d83e1909d164a195de8b3b069e3b00",
+			txOutIndex:          0,
 
-			isValidRequest:           true,
+			isValidRequest: true,
 		},
 		// invalid shielding request: duplicated shielding proof in previous blocks
 		{
@@ -1559,7 +1559,7 @@ func buildSubmitConfirmedTxActionsFromTcs(tcs []TestCaseSubmitConfirmedTx, shard
 		optionalData := make(map[string]interface{})
 		outputs := make(map[string]uint64, 0)
 		for _, v := range tc.outputs {
-			outputs[v.externalAddress] = v.amount
+			outputs[v.externalAddress] += v.amount
 		}
 		optionalData["outputs"] = outputs
 		insts = append(insts, portalV4InstForProducer{

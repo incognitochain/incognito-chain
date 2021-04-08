@@ -151,7 +151,8 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 	externalFee := uint64(0)
 	outputs := btcTxProof.BTCTx.TxOut
 	for receiverAddress, unshieldAmt := range expectPaymentInfo {
-		isMatched := false
+		n := uint64(0)
+		totalOut := int64(0)
 		for _, out := range outputs {
 			addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
 			if err != nil {
@@ -161,20 +162,20 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 			if addrStr != receiverAddress {
 				continue
 			}
-			isMatched = true
-			if externalFee == 0 {
-				tmp := p.ConvertExternalToIncAmount(uint64(out.Value))
-				if unshieldAmt <= tmp {
-					Logger.log.Errorf("[portal] Calculate external fee error")
-					return false, nil, "", 0, fmt.Errorf("[portal] Calculate external fee error")
-				}
-				externalFee = unshieldAmt - tmp
-			}
-			break
+			n += 1
+			totalOut += out.Value
 		}
-		if !isMatched {
+		if n == 0 {
 			Logger.log.Error("BTC-TxProof is invalid")
 			return false, nil, "", 0, errors.New("BTC-TxProof is invalid")
+		}
+		if externalFee == 0 {
+			tmp := p.ConvertExternalToIncAmount(uint64(totalOut))
+			if unshieldAmt <= tmp {
+				Logger.log.Errorf("[portal] Calculate external fee error")
+				return false, nil, "", 0, fmt.Errorf("[portal] Calculate external fee error")
+			}
+			externalFee = (unshieldAmt - tmp) / n
 		}
 	}
 

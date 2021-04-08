@@ -548,7 +548,7 @@ func (p *PortalSubmitConfirmedTxProcessor) PrepareDataForBlockProducer(stateDB *
 			Logger.log.Errorf("SubmitConfirmed: an error occurred while unmarshal PortalUnshieldRequestStatus: %+v", err)
 			return nil, fmt.Errorf("SubmitConfirmed: an error occurred while unmarshal PortalUnshieldRequestStatus: %+v", err)
 		}
-		outputs[portalUnshieldRequestStatus.RemoteAddress] = portalUnshieldRequestStatus.UnshieldAmount
+		outputs[portalUnshieldRequestStatus.RemoteAddress] += portalUnshieldRequestStatus.UnshieldAmount
 	}
 
 	optionalData := make(map[string]interface{})
