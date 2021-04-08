@@ -351,9 +351,9 @@ func (chain *BeaconChain) ProposerByTimeSlot(
 	return committees[id]
 }
 
-func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
 	committees := chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
-	return committees, committees, nil
+	return committees, nil
 }
 
 func (chain *BeaconChain) CommitteeStateVersion() int {
@@ -378,14 +378,14 @@ func (chain *BeaconChain) CommitteeEngineVersion() int {
 }
 
 func (chain *BeaconChain) CommitteesFromViewHashForShard(
-	hash common.Hash, shardID byte, threshold int,
+	committeeHash, subsetCommitteeHash common.Hash, shardID byte, threshold int,
 ) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
-	beaconBlock, _, err := chain.Blockchain.GetBeaconBlockByHash(hash)
+	_, _, err := chain.Blockchain.GetBeaconBlockByHash(committeeHash)
 	if err != nil {
 		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 	}
 
-	bRH, err := GetBeaconRootsHashByBlockHash(chain.Blockchain.GetBeaconChainDatabase(), hash)
+	bRH, err := GetBeaconRootsHashByBlockHash(chain.Blockchain.GetBeaconChainDatabase(), committeeHash)
 	if err != nil {
 		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 	}
@@ -398,8 +398,12 @@ func (chain *BeaconChain) CommitteesFromViewHashForShard(
 	committees := statedb.GetOneShardCommittee(stateDB, shardID)
 	res := []incognitokey.CommitteePublicKey{}
 	if chain.GetFinalView().GetHeight() >= chain.Blockchain.config.ChainParams.ConsensusV4Height {
+		subsetCommitteeBlock, _, err := chain.Blockchain.GetBeaconBlockByHash(subsetCommitteeHash)
+		if err != nil {
+			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+		}
 		for i, v := range committees {
-			if uint64(i%threshold) == beaconBlock.Header.Height%uint64(threshold) {
+			if uint64(i%threshold) == subsetCommitteeBlock.Header.Height%uint64(threshold) {
 				res = append(res, v)
 			}
 		}
@@ -407,4 +411,11 @@ func (chain *BeaconChain) CommitteesFromViewHashForShard(
 		res = committees
 	}
 	return res, committees, nil
+}
+
+func (chain *BeaconChain) GetSigningCommittees(
+	committees []incognitokey.CommitteePublicKey,
+	block types.BlockInterface, threshold int,
+) ([]incognitokey.CommitteePublicKey, error) {
+	return chain.Blockchain.getCommitteesForSigning(committees, block, threshold)
 }

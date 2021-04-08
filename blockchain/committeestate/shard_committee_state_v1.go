@@ -15,9 +15,10 @@ import (
 
 //ShardCommitteeStateHash
 type ShardCommitteeStateHash struct {
-	ShardCommitteeHash  common.Hash
-	ShardSubstituteHash common.Hash
-	CommitteeFromBlock  common.Hash
+	ShardCommitteeHash        common.Hash
+	ShardSubstituteHash       common.Hash
+	CommitteeFromBlock        common.Hash
+	SubsetCommitteesFromBlock common.Hash
 }
 
 //ShardCommitteeStateV1
@@ -81,6 +82,10 @@ func (s *ShardCommitteeStateV1) GetShardSubstitute() []incognitokey.CommitteePub
 }
 
 func (s *ShardCommitteeStateV1) GetCommitteeFromBlock() common.Hash {
+	return common.Hash{}
+}
+
+func (s *ShardCommitteeStateV1) SubsetCommitteesFromBlock() common.Hash {
 	return common.Hash{}
 }
 
