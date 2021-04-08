@@ -3,10 +3,11 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/incdb"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -614,24 +615,6 @@ func (beaconBestState *BeaconBestState) GetAllBridgeTokens() ([]common.Hash, err
 	return bridgeTokenIDs, nil
 }
 
-func (beaconBestState *BeaconBestState) IsSwapTime(beaconHeight uint64, chainParamEpoch uint64) bool {
-	if beaconBestState.CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
-		if beaconHeight%chainParamEpoch == 0 {
-			return true
-		} else {
-			return false
-		}
-	}
-	if beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
-		if beaconHeight%chainParamEpoch == 1 {
-			return true
-		} else {
-			return false
-		}
-	}
-	return false
-}
-
 func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithValue(
 	params *Params,
 	beaconInstructions [][]string,
@@ -641,7 +624,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	if beaconBestState.BeaconHeight != 1 &&
 		beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION &&
-		params.EnableSlashingStakingFlowV2 >= beaconBestState.BeaconHeight {
+		beaconBestState.BeaconHeight >= params.EnableSlashingStakingFlowV2 {
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
 	} else {
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
@@ -670,6 +653,14 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	params *Params,
 ) *committeestate.BeaconCommitteeStateEnvironment {
+	slashingPenalty := make(map[string]signaturecounter.Penalty)
+	if beaconBestState.BeaconHeight != 1 &&
+		beaconBestState.CommitteeEngineVersion() == committeestate.SLASHING_VERSION &&
+		beaconBestState.BeaconHeight >= params.EnableSlashingStakingFlowV2 {
+		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
+	} else {
+		slashingPenalty = make(map[string]signaturecounter.Penalty)
+	}
 	return &committeestate.BeaconCommitteeStateEnvironment{
 		BeaconHeight:                      beaconBestState.BeaconHeight,
 		BeaconHash:                        beaconBestState.BestBlockHash,
@@ -682,7 +673,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		MaxShardCommitteeSize:             params.MaxShardCommitteeSize,
 		NumberOfFixedBeaconBlockValidator: NumberOfFixedBeaconBlockValidators,
 		NumberOfFixedShardBlockValidator:  NumberOfFixedShardBlockValidators,
-		MissingSignaturePenalty:           beaconBestState.missingSignatureCounter.GetAllSlashingPenalty(),
+		MissingSignaturePenalty:           slashingPenalty,
 	}
 }
 

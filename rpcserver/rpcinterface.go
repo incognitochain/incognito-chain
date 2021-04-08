@@ -29,12 +29,13 @@ var HttpHandler = map[string]httpHandler{
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
 
 	//tx pool
-	getRawMempool:           (*HttpServer).handleGetRawMempool,
-	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
-	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
-	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
-	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
-	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
+	getRawMempool:             (*HttpServer).handleGetRawMempool,
+	getNumberOfTxsInMempool:   (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:           (*HttpServer).handleMempoolEntry,
+	removeTxInMempool:         (*HttpServer).handleRemoveTxInMempool,
+	getMempoolInfo:            (*HttpServer).handleGetMempoolInfo,
+	getMempoolInfoDetails: 		 (*HttpServer).handleGetMempoolInfoDetails,
+	getPendingTxsInBlockgen:   (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
 	// getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
@@ -92,15 +93,15 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTransactionV2:                (*HttpServer).handleCreateAndSendTxV2,
 	createAndSendStakingTransactionV2:         (*HttpServer).handleCreateAndSendStakingTxV2,
 	createAndSendStopAutoStakingTransactionV2: (*HttpServer).handleCreateAndSendStopAutoStakingTransactionV2,
-	hasSerialNumbersInMempool:               	(*HttpServer).handleHasSerialNumbersInMempool,
+	hasSerialNumbersInMempool:                 (*HttpServer).handleHasSerialNumbersInMempool,
 
 	//======Testing and Benchmark======
-	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
-	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
-	unlockMempool:           (*HttpServer).handleUnlockMempool,
-	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
-	getCommitteeState:       (*HttpServer).handleGetCommitteeState,
-	getRewardAmountByEpoch:  (*HttpServer).handleGetRewardAmountByEpoch,
+	getAndSendTxsFromFile:      (*HttpServer).handleGetAndSendTxsFromFile,
+	getAndSendTxsFromFileV2:    (*HttpServer).handleGetAndSendTxsFromFileV2,
+	unlockMempool:              (*HttpServer).handleUnlockMempool,
+	handleGetConsensusInfoV3:   (*HttpServer).handleGetConsensusInfoV3,
+	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
+	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
 	convertPaymentAddress:	 (*HttpServer).handleConvertPaymentAddress,
 	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
 	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
@@ -270,6 +271,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningForDepositToSCRequestV2: (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
 
 	//new pool info
+	getSyncStats:          (*HttpServer).hanldeGetSyncStats,
 	getBeaconPoolInfo:     (*HttpServer).hanldeGetBeaconPoolInfo,
 	getShardPoolInfo:      (*HttpServer).hanldeGetShardPoolInfo,
 	getCrossShardPoolInfo: (*HttpServer).hanldeGetCrossShardPoolInfo,

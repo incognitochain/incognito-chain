@@ -20,6 +20,10 @@ if [ -z $BOOTNODE_IP ]; then
     BOOTNODE_IP="testnet-bootnode.incognito.org:9330";
 fi
 
+if [ -z $MONITOR ]; then
+   export MONITOR="http://51.91.72.45:33333";
+fi
+
 if [ -z "$NODE_PORT" ]; then
     NODE_PORT=9433;
 fi
