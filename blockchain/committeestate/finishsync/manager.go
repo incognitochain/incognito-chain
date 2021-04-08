@@ -8,25 +8,30 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
-type Manager struct {
+//TODO: @tin please document a set function of FinishSyncManager object as well as their usage]
+// for each function, please inform which package or where this function will be called
+// Please remember to use mu.(R)lock and mu.(R)unlock on exported functions
+type FinishSyncManager struct {
 	validators map[byte][]incognitokey.CommitteePublicKey
 	mu         *sync.RWMutex
 }
 
-func NewManager() *Manager {
-	return &Manager{
+func NewManager() *FinishSyncManager {
+	return &FinishSyncManager{
 		mu: &sync.RWMutex{},
 	}
 }
 
-func NewManagerWithValue(validators map[byte][]incognitokey.CommitteePublicKey) *Manager {
-	return &Manager{
+func NewManagerWithValue(validators map[byte][]incognitokey.CommitteePublicKey) *FinishSyncManager {
+	return &FinishSyncManager{
 		validators: validators,
 		mu:         &sync.RWMutex{},
 	}
 }
 
-func (manager *Manager) Clone() *Manager {
+func (manager *FinishSyncManager) Clone() *FinishSyncManager {
+	manager.mu.RLock()
+	defer manager.mu.RUnlock()
 	res := NewManager()
 	res.validators = make(map[byte][]incognitokey.CommitteePublicKey)
 	for i, v := range manager.validators {
@@ -36,15 +41,13 @@ func (manager *Manager) Clone() *Manager {
 	return res
 }
 
-func (manager *Manager) AddFinishedSyncValidators(
+func (manager *FinishSyncManager) AddFinishedSyncValidators(
 	validators []string,
 	syncingValidators []incognitokey.CommitteePublicKey,
 	shardID byte,
 ) {
 	manager.mu.Lock()
-	defer func() {
-		manager.mu.Unlock()
-	}()
+	defer manager.mu.Unlock()
 	finishedSyncValidators := make(map[string]bool)
 	for _, v := range manager.validators[shardID] {
 		key, _ := v.ToBase58()
@@ -80,19 +83,16 @@ func (manager *Manager) AddFinishedSyncValidators(
 	manager.validators[shardID] = append(manager.validators[shardID], committeePublicKeys...)
 }
 
-func (manager *Manager) Validators(shardID byte) []incognitokey.CommitteePublicKey {
+func (manager *FinishSyncManager) Validators(shardID byte) []incognitokey.CommitteePublicKey {
 	manager.mu.RLock()
-	defer func() {
-		manager.mu.RUnlock()
-	}()
+	defer manager.mu.RUnlock()
+	//TODO: @tin before return, so any further modification on the return slice won't have side effect to manager.validators field
 	return manager.validators[shardID]
 }
 
-func (manager *Manager) RemoveValidators(validators []incognitokey.CommitteePublicKey, shardID byte) {
+func (manager *FinishSyncManager) RemoveValidators(validators []incognitokey.CommitteePublicKey, shardID byte) {
 	manager.mu.Lock()
-	defer func() {
-		manager.mu.Unlock()
-	}()
+	defer manager.mu.Unlock()
 	finishedSyncValidators := make(map[string]bool)
 	for _, v := range validators {
 		key, _ := v.ToBase58()
@@ -115,7 +115,9 @@ func (manager *Manager) RemoveValidators(validators []incognitokey.CommitteePubl
 }
 
 //Instructions ....
-func (manager *Manager) Instructions() []*instruction.FinishSyncInstruction {
+func (manager *FinishSyncManager) Instructions() []*instruction.FinishSyncInstruction {
+	manager.mu.RLock()
+	defer manager.mu.RUnlock()
 	res := []*instruction.FinishSyncInstruction{}
 	keys := []int{}
 	for i := 0; i < len(manager.validators); i++ {
