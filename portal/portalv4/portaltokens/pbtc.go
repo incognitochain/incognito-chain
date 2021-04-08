@@ -365,8 +365,14 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	}
 	totalOutputAmount = p.ConvertIncToExternalAmount(totalOutputAmount)
 
+	// check amount of input coins and output coins
+	if totalInputAmount < totalOutputAmount {
+		Logger.log.Errorf("[CreateRawExternalTx-BTC] Total input amount %v is less than total output amount %v", totalInputAmount, totalOutputAmount)
+		return "", "", fmt.Errorf("[CreateRawExternalTx-BTC] Total input amount %v is less than total output amount %v", totalInputAmount, totalOutputAmount)
+	}
+
 	// calculate the change output
-	if totalInputAmount-totalOutputAmount > 0 {
+	if totalInputAmount > totalOutputAmount {
 		// adding the output to tx
 		multiSigAddress := bc.GetPortalV4GeneralMultiSigAddress(common.PortalBTCIDStr, 0)
 		decodedAddr, err := btcutil.DecodeAddress(multiSigAddress, p.ChainParam)
