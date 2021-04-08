@@ -281,7 +281,6 @@ func generateUTXOKeyAndValue(tokenID string, walletAddress string, txHash string
 	return utxoKey, utxoValue
 }
 
-//TODO: update shielding proof
 func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultShieldingRequest() ([]TestCaseShieldingRequest, *ExpectedResultShieldingRequest) {
 	// build test cases
 	testcases := []TestCaseShieldingRequest{

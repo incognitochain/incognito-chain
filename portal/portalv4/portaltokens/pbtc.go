@@ -321,7 +321,11 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byt
 func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, feePerOutput uint64, bc metadata.ChainRetriever) (string, string, error) {
 	msgTx := wire.NewMsgTx(wire.TxVersion)
 
+	// convert feePerOutput from inc unit to external unit
+	feePerOutput = p.ConvertIncToExternalAmount(feePerOutput)
+
 	// add TxIns into raw tx
+	// totalInputAmount in external unit
 	totalInputAmount := uint64(0)
 	for _, in := range inputs {
 		utxoHash, err := chainhash.NewHashFromStr(in.GetTxHash())
@@ -337,6 +341,7 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	}
 
 	// add TxOuts into raw tx
+	// totalOutputAmount in external unit
 	totalOutputAmount := uint64(0)
 	for _, out := range outputs {
 		// adding the output to tx
@@ -352,15 +357,15 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 		}
 
 		// adding the destination address and the amount to the transaction
-		if out.Amount <= feePerOutput {
+		outAmountInExternal := p.ConvertIncToExternalAmount(out.Amount)
+		if outAmountInExternal <= feePerOutput {
 			Logger.log.Errorf("[CreateRawExternalTx-BTC] Output amount %v must greater than fee %v", out.Amount, feePerOutput)
 			return "", "", fmt.Errorf("[CreateRawExternalTx-BTC] Output amount %v must greater than fee %v", out.Amount, feePerOutput)
 		}
-		redeemTxOut := wire.NewTxOut(int64(p.ConvertIncToExternalAmount(out.Amount-feePerOutput)), destinationAddrByte)
+		redeemTxOut := wire.NewTxOut(int64(outAmountInExternal-feePerOutput), destinationAddrByte)
 		msgTx.AddTxOut(redeemTxOut)
-		totalOutputAmount += out.Amount
+		totalOutputAmount += outAmountInExternal
 	}
-	totalOutputAmount = p.ConvertIncToExternalAmount(totalOutputAmount)
 
 	// check amount of input coins and output coins
 	if totalInputAmount < totalOutputAmount {
