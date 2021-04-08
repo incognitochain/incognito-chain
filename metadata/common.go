@@ -286,9 +286,6 @@ func buildMetaInfo() {
 		PortalPortingResponseMeta,
 		PortalCustodianTopupResponseMetaV2,
 		PortalTopUpWaitingPortingResponseMeta,
-
-		WithDrawRewardResponseMeta,
-		ReturnStakingMeta,
 	}
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
 		list: listNNoInput,
@@ -398,6 +395,9 @@ func buildMetaInfo() {
 		PortalCustodianTopupResponseMetaV2,
 		PortalRedeemFromLiquidationPoolResponseMetaV3,
 		PortalTopUpWaitingPortingResponseMeta,
+
+		WithDrawRewardResponseMeta,
+		ReturnStakingMeta,
 	}
 
 	metaListNInfo = append(metaListNInfo, ListAndInfo{
