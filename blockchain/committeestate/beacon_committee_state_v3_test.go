@@ -86,6 +86,18 @@ func TestBeaconCommitteeStateV3_processSwapShardInstruction(t *testing.T) {
 		want1              *instruction.ReturnStakeInstruction
 		wantErr            bool
 	}{
+		//TODO: @hung add testcase
+		// Testcase 1: no swap out, only swap in
+		// Testcase 2: only swap out, no swap in
+		// Testcase 3: only slash, no swap in
+		// Testcase 4: only slash, swap in
+		// Testcase 5: only normal swap out, no swap in, mix stop auto stake = true && false
+		// Testcase 6: only normal swap out, swap in, mix stop auto stake = true && false
+		// Testcase 7: > 1 slash and > 1 normal swap out, swap in, mix stop auto stake = true && false
+		// Testcase 8: one slash and one normal swap out, swap in 1
+		// Testcase 9: normal swap out, swap in, one node, stop autostake = false
+		// Testcase 10: normal swap out, swap in, one node, stop autostake = true
+		// Testcase 11: > 1 slash and > 1 normal swap out, swap in > 1, mix stop auto stake = true && false
 		{
 			name: "[valid input]",
 			fields: fields{
