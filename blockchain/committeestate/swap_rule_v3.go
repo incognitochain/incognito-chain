@@ -58,23 +58,25 @@ func (s *swapRuleV3) CalculateAssignOffset(lenShardSubstitute, lenCommittees, nu
 	return assignOffset
 }
 
+//TODO: @hung remove unused parameter numberOfFixedValidators
 func (s *swapRuleV3) swapInAfterSwapOut(
 	committees, substitutes []string,
 	numberOfFixedValidators, maxCommitteeSize, maxSwapInPercent int,
 ) (
 	[]string, []string, []string,
 ) {
-	resCommittees := committees
-	resSubstitutes := substitutes
 	swapInOffset := s.getSwapInOffset(len(committees), len(substitutes), maxSwapInPercent, maxCommitteeSize)
 
-	resSwapInCommittees := substitutes[:swapInOffset]
-	resSubstitutes = resSubstitutes[swapInOffset:]
-	resCommittees = append(resCommittees, resSwapInCommittees...)
+	newCommittees := common.DeepCopyString(committees)
+	swapInCommittees := common.DeepCopyString(substitutes[:swapInOffset])
+	newSubstitutes := common.DeepCopyString(substitutes[swapInOffset:])
+	newCommittees = append(newCommittees, swapInCommittees...)
 
-	return resCommittees, resSubstitutes, resSwapInCommittees
+	return newCommittees, newSubstitutes, swapInCommittees
 }
 
+//TODO: @tin calculate based on lenCommitteesAfterSwapOut or lenCommitteesBeforeSwapOut?
+// In document, vacant_slot = min(8, 1/8*len(shardCommittee), but getSwapInOffset doesn't stick to this formula
 func (s *swapRuleV3) getSwapInOffset(
 	lenCommitteesAfterSwapOut, lenSubstitutes int,
 	maxSwapInPercent, maxCommitteeSize int,
@@ -87,6 +89,7 @@ func (s *swapRuleV3) getSwapInOffset(
 		offset = maxCommitteeSize - lenCommitteesAfterSwapOut
 	}
 	if offset == 0 && lenCommitteesAfterSwapOut < maxSwapInPercent && lenSubstitutes > 0 {
+		//TODO: @tin offset + currentCommitteeSize maybe > maxCommitteeSize
 		offset = 1
 	}
 	return offset
