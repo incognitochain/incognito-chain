@@ -4,13 +4,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
-	"strconv"
 )
 
 /* =======
@@ -535,7 +536,7 @@ func (p *PortalSubmitConfirmedTxProcessor) PrepareDataForBlockProducer(stateDB *
 		return nil, fmt.Errorf("SubmitConfirmed request: an error occurred while unmarshal processedUnshieldRequestBatch status: %+v", err)
 	}
 
-	outputs := make(map[string]uint64, 0)
+	outputs := []*portaltokens.OutputTx{}
 	for _, v := range processedUnshieldRequestBatch.UnshieldIDs {
 		unshieldBytes, err := statedb.GetPortalUnshieldRequestStatus(stateDB, v)
 		if err != nil {
@@ -548,7 +549,10 @@ func (p *PortalSubmitConfirmedTxProcessor) PrepareDataForBlockProducer(stateDB *
 			Logger.log.Errorf("SubmitConfirmed: an error occurred while unmarshal PortalUnshieldRequestStatus: %+v", err)
 			return nil, fmt.Errorf("SubmitConfirmed: an error occurred while unmarshal PortalUnshieldRequestStatus: %+v", err)
 		}
-		outputs[portalUnshieldRequestStatus.RemoteAddress] += portalUnshieldRequestStatus.UnshieldAmount
+		outputs = append(outputs, &portaltokens.OutputTx{
+			ReceiverAddress: portalUnshieldRequestStatus.RemoteAddress,
+			Amount:          portalUnshieldRequestStatus.UnshieldAmount,
+		})
 	}
 
 	optionalData := make(map[string]interface{})
@@ -648,7 +652,7 @@ func (p *PortalSubmitConfirmedTxProcessor) BuildNewInsts(
 	}
 
 	expectedReceivedMultisigAddress := portalParams.GeneralMultiSigAddresses[tokenIDStr]
-	outputs := optionalData["outputs"].(map[string]uint64)
+	outputs := optionalData["outputs"].([]*portaltokens.OutputTx)
 	if len(unshieldBatch.GetUTXOs()) == 0 {
 		Logger.log.Errorf("UTXOs of unshield batchID %v is empty: ", meta.BatchID)
 		return [][]string{rejectInst}, nil

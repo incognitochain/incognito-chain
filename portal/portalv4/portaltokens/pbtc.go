@@ -106,7 +106,7 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyShieldProof(
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
-	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string, expectPaymentInfo map[string]uint64, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, string, uint64, error) {
+	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string, expectPaymentInfo []*OutputTx, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, string, uint64, error) {
 	btcChain := bc.GetBTCHeaderChain()
 	if btcChain == nil {
 		Logger.log.Error("BTC relaying chain should not be null")
@@ -150,32 +150,29 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 	// check receiver and amount in tx
 	externalFee := uint64(0)
 	outputs := btcTxProof.BTCTx.TxOut
-	for receiverAddress, unshieldAmt := range expectPaymentInfo {
-		n := uint64(0)
-		totalOut := int64(0)
-		for _, out := range outputs {
-			addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(out.PkScript)
-			if err != nil {
-				Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
-				continue
-			}
-			if addrStr != receiverAddress {
-				continue
-			}
-			n += 1
-			totalOut += out.Value
+	for idx, value := range expectPaymentInfo {
+		receiverAddress := value.ReceiverAddress
+		unshieldAmt := value.Amount
+		if idx >= len(outputs) {
+			Logger.log.Error("BTC-TxProof is invalid")
+			return false, nil, "", 0, errors.New("BTC-TxProof is invalid")
 		}
-		if n == 0 {
+		addrStr, err := btcChain.ExtractPaymentAddrStrFromPkScript(outputs[idx].PkScript)
+		if err != nil {
+			Logger.log.Errorf("[portal] ExtractPaymentAddrStrFromPkScript: could not extract payment address string from pkscript with err: %v\n", err)
+			return false, nil, "", 0, errors.New("Could not extract address from proof")
+		}
+		if addrStr != receiverAddress {
 			Logger.log.Error("BTC-TxProof is invalid")
 			return false, nil, "", 0, errors.New("BTC-TxProof is invalid")
 		}
 		if externalFee == 0 {
-			tmp := p.ConvertExternalToIncAmount(uint64(totalOut))
+			tmp := p.ConvertExternalToIncAmount(uint64(outputs[idx].Value))
 			if unshieldAmt <= tmp {
 				Logger.log.Errorf("[portal] Calculate external fee error")
 				return false, nil, "", 0, fmt.Errorf("[portal] Calculate external fee error")
 			}
-			externalFee = (unshieldAmt - tmp) / n
+			externalFee = (unshieldAmt - tmp)
 		}
 	}
 
