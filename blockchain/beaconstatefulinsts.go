@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	"math/big"
@@ -25,7 +26,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 		if len(inst) < 2 {
 			continue
 		}
-		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction || inst[0] == AssignAction {
+		if instruction.IsConsensusInstruction(inst[0]) {
 			continue
 		}
 
