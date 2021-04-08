@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -11,7 +12,7 @@ import (
 
 type IncProofInterface interface {
 	FindConfirmInst(insts [][]string, txID *common.Hash) ([]string, int)
-	FindBeaconBlockWithConfirmInst(beaconBlocks []*BeaconBlock, inst []string) (*BeaconBlock, int)
+	FindBeaconBlockWithConfirmInst(beaconBlocks []*types.BeaconBlock, inst []string) (*types.BeaconBlock, int)
 	ConvertInstToBytes(inst []string) ([]byte, error)
 }
 
@@ -56,7 +57,7 @@ func (withdrawProof PortalWithdrawCollateralProof) FindConfirmInst(insts [][]str
 }
 
 // FindBeaconBlockWithConfirmInst finds a beacon block with a specific incognito instruction and the instruction's index; nil if not found
-func (withdrawProof PortalWithdrawCollateralProof) FindBeaconBlockWithConfirmInst(beaconBlocks []*BeaconBlock, inst []string) (*BeaconBlock, int) {
+func (withdrawProof PortalWithdrawCollateralProof) FindBeaconBlockWithConfirmInst(beaconBlocks []*types.BeaconBlock, inst []string) (*types.BeaconBlock, int) {
 	for _, b := range beaconBlocks {
 		for k, blkInst := range b.Body.Instructions {
 			diff := false

@@ -85,7 +85,8 @@ type RpcServerConfig struct {
 		GetIncognitoPublicKeyRole(publicKey string) (int, bool, int)
 		GetMinerIncognitoPublickey(publicKey string, keyType string) []byte
 	}
-	ConsensusEngine             blockchain.ConsensusEngine
+	ConsensusEngine blockchain.ConsensusEngine
+
 	TxMemPool                   rpcservice.MempoolInterface
 	RPCMaxClients               int
 	RPCMaxWSClients             int
