@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type PortalUnshieldRequest struct {
@@ -134,6 +136,11 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 	// check tokenId is portal token or not
 	if ok, err := chainRetriever.IsPortalToken(beaconHeight, uReq.TokenID, common.PortalVersion4); !ok || err != nil {
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID is not in portal tokens list v4"))
+	}
+
+	// validate amount of pToken is divisible by the decimal difference between nano pToken and nano Token
+	if uReq.TokenID == portalcommonv4.PortalBTCIDStr && uReq.UnshieldAmount%10 != 0 {
+		return false, false, errors.New("pBTC amount has to be divisible by 10")
 	}
 
 	// validate RemoteAddress
