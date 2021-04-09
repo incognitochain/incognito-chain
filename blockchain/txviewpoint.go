@@ -177,7 +177,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
-				Logger.log.Infof("BUGLOG4 Fetching view point of tx %v: type = %v, len(sn) = %v, len(cmt) = %v, len(outCoins) = %v, len(snd) = %v\n", tx.GetType(), tx.Hash().String(), len(serialNumbers), len(commitments), len(outCoins), len(snDs))
+				Logger.log.Infof("BUGLOG4 Fetching view point of tx %v: type = %v, len(sn) = %v, len(cmt) = %v, len(outCoins) = %v, len(snd) = %v\n", tx.Hash().String(), tx.GetType(), len(serialNumbers), len(commitments), len(outCoins), len(snDs))
 				acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
 				for pubkey, data := range commitments {
 					if acceptedCommitments[pubkey] == nil {
@@ -216,7 +216,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
-				Logger.log.Infof("BUGLOG4 Fetching view point of tx %v (PRV): type = %v, len(sn) = %v, len(cmt) = %v, len(outCoins) = %v\n", tx.GetType(), tx.Hash().String(), len(serialNumbers), len(commitments), len(outCoins))
+				Logger.log.Infof("BUGLOG4 Fetching view point of tx %v (PRV): type = %v, len(sn) = %v, len(cmt) = %v, len(outCoins) = %v\n", tx.Hash().String(), tx.GetType(), len(serialNumbers), len(commitments), len(outCoins))
 				acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
 				for pubkey, data := range commitments {
 					if acceptedCommitments[pubkey] == nil {
@@ -240,7 +240,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				if errP != nil {
 					return NewBlockChainError(UnExpectedError, errP)
 				}
-				Logger.log.Infof("BUGLOG4 Fetching view point of tx %v (token): type = %v, len(sn) = %v, len(cmt) = %v, len(outCoins) = %v, len(snd) = %v\n", tokenData.GetType(), tx.Hash().String(), len(serialNumbersP), len(commitmentsP), len(outCoinsP), len(snDsP))
+				Logger.log.Infof("BUGLOG4 Fetching view point of tx %v (token): type = %v, len(sn) = %v, len(cmt) = %v, len(outCoins) = %v, len(snd) = %v\n", tx.Hash().String(), tokenData.GetType(), len(serialNumbersP), len(commitmentsP), len(outCoinsP), len(snDsP))
 				subView.listSerialNumbers = serialNumbersP
 				for pubkey, data := range commitmentsP {
 					if subView.mapCommitments[pubkey] == nil {
