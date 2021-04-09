@@ -27,13 +27,12 @@ const (
 )
 
 type BLSBFT_V3 struct {
-	CommitteeChain   CommitteeChainHandler
-	cachedCommittees []incognitokey.CommitteePublicKey
-	Chain            ChainInterface
-	Node             NodeInterface
-	ChainKey         string
-	ChainID          int
-	PeerID           string
+	CommitteeChain CommitteeChainHandler
+	Chain          ChainInterface
+	Node           NodeInterface
+	ChainKey       string
+	ChainID        int
+	PeerID         string
 
 	UserKeySet   []signatureschemes2.MiningKey
 	BFTMessageCh chan wire.MessageBFT
@@ -250,15 +249,10 @@ func (e *BLSBFT_V3) run() error {
 					proposerPk, _ = bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
 					committees = e.Chain.GetBestView().GetCommittee()
 				} else {
-					if newTimeSlot {
-						committeeViewHash = *e.CommitteeChain.FinalView().GetHash()
-						committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID))
-						if err != nil {
-							e.Logger.Error(err)
-						}
-						e.cachedCommittees = committees
-					} else {
-						committees = e.cachedCommittees
+					committeeViewHash = *e.CommitteeChain.FinalView().GetHash()
+					committees, err = e.CommitteeChain.CommitteesFromViewHashForShard(committeeViewHash, byte(e.ChainID))
+					if err != nil {
+						e.Logger.Error(err)
 					}
 					proposerPk = e.CommitteeChain.ProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, committees)
 				}
