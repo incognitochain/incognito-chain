@@ -709,13 +709,7 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 		return nil, err1
 	}
 
-	bestBlockHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
-	_, _, err := httpServer.txMemPoolService.TxMemPool.MaybeAcceptTransaction(tx, int64(bestBlockHeight))
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
-	}
-
-	err = httpServer.config.Server.PushMessageToAll(txMsg)
+	err := httpServer.config.Server.PushMessageToAll(txMsg)
 	//Mark forwarded message
 	if err == nil {
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
