@@ -2,11 +2,12 @@ package committeestate
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"reflect"
 )
 
 type BeaconCommitteeStateV3 struct {
@@ -358,27 +359,32 @@ func (b *BeaconCommitteeStateV3) SplitReward(
 	map[common.Hash]uint64, map[common.Hash]uint64, error,
 ) {
 	devPercent := uint64(env.DAOPercent)
-	allCoinTotalReward := env.TotalReward
+	allCoinTotalReward := env.TotalReward // total reward for shard subset
 	rewardForBeacon := map[common.Hash]uint64{}
-	rewardForShard := map[common.Hash]uint64{}
+	rewardForShardSubset := map[common.Hash]uint64{}
 	rewardForIncDAO := map[common.Hash]uint64{}
 	rewardForCustodian := map[common.Hash]uint64{}
 	lenBeaconCommittees := uint64(len(b.getBeaconCommittee()))
-	lenShardCommittees := uint64(len(b.getShardCommittee()[env.ShardID]))
+	lenShardSubsetCommittees := uint64(len(b.getShardCommittee()[env.ShardID]) / int(env.MaxSubsetCommittees))
+	if len(b.getShardCommittee()[env.ShardID])%int(env.MaxSubsetCommittees) != 0 {
+		if (env.SubsetID % env.MaxSubsetCommittees) == 0 {
+			lenShardSubsetCommittees += uint64(len(b.getShardCommittee()[env.ShardID]) % int(env.MaxSubsetCommittees))
+		}
+	}
 
 	if len(allCoinTotalReward) == 0 {
 		Logger.log.Info("Beacon Height %+v, 😭 found NO reward", env.BeaconHeight)
-		return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
+		return rewardForBeacon, rewardForShardSubset, rewardForIncDAO, rewardForCustodian, nil
 	}
 
 	for key, totalReward := range allCoinTotalReward {
 		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
 		totalRewardForShardAndBeaconValidators := totalReward - totalRewardForDAOAndCustodians
-		shardWeight := float64(lenShardCommittees)
-		beaconWeight := 2 * float64(lenBeaconCommittees) / float64(len(b.getShardCommittee()))
+		shardWeight := float64(lenShardSubsetCommittees)
+		beaconWeight := float64(lenBeaconCommittees) / float64(lenShardSubsetCommittees)
 		totalValidatorWeight := shardWeight + beaconWeight
 
-		rewardForShard[key] = uint64(shardWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)
+		rewardForShardSubset[key] = uint64(shardWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)
 		Logger.log.Infof("totalRewardForDAOAndCustodians tokenID %v - %v\n", key.String(), totalRewardForDAOAndCustodians)
 
 		if env.IsSplitRewardForCustodian {
@@ -387,8 +393,8 @@ func (b *BeaconCommitteeStateV3) SplitReward(
 		} else {
 			rewardForIncDAO[key] += totalRewardForDAOAndCustodians
 		}
-		rewardForBeacon[key] += totalReward - (rewardForShard[key] + totalRewardForDAOAndCustodians)
+		rewardForBeacon[key] += totalReward - (rewardForShardSubset[key] + totalRewardForDAOAndCustodians)
 	}
 
-	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
+	return rewardForBeacon, rewardForShardSubset, rewardForIncDAO, rewardForCustodian, nil
 }

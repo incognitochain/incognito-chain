@@ -115,16 +115,34 @@ func NewBeaconCommitteeStateEnvironmentForUpgrading(currentHeight, stakingV3Heig
 
 type SplitRewardEnvironment struct {
 	ShardID                   byte
+	SubsetID                  byte
 	BeaconHeight              uint64
 	TotalReward               map[common.Hash]uint64
 	IsSplitRewardForCustodian bool
 	PercentCustodianReward    uint64
 	DAOPercent                int
 	ActiveShards              int
+	MaxSubsetCommittees       byte
 }
 
-func NewSplitRewardEnvironment(shardID byte, beaconHeight uint64, totalReward map[common.Hash]uint64, isSplitRewardForCustodian bool, percentCustodianReward uint64, DAOPercent int, activeShards int) *SplitRewardEnvironment {
-	return &SplitRewardEnvironment{ShardID: shardID, BeaconHeight: beaconHeight, TotalReward: totalReward, IsSplitRewardForCustodian: isSplitRewardForCustodian, PercentCustodianReward: percentCustodianReward, DAOPercent: DAOPercent, ActiveShards: activeShards}
+func NewSplitRewardEnvironment(
+	shardID, subsetID, maxSubsetsCommittee byte, beaconHeight uint64,
+	totalReward map[common.Hash]uint64,
+	isSplitRewardForCustodian bool,
+	percentCustodianReward uint64,
+	DAOPercent, activeShards int,
+) *SplitRewardEnvironment {
+	return &SplitRewardEnvironment{
+		ShardID:                   shardID,
+		SubsetID:                  subsetID,
+		BeaconHeight:              beaconHeight,
+		TotalReward:               totalReward,
+		IsSplitRewardForCustodian: isSplitRewardForCustodian,
+		PercentCustodianReward:    percentCustodianReward,
+		DAOPercent:                DAOPercent,
+		ActiveShards:              activeShards,
+		MaxSubsetCommittees:       maxSubsetsCommittee,
+	}
 }
 
 type BeaconCommitteeStateHash struct {
