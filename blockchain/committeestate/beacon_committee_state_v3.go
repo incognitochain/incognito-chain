@@ -269,7 +269,7 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	env.ShardID = shardID
 
 	// process normal swap out
-	newCommitteeChange, _, normalSwapOutCommittees, slashingCommittees, err := b.processNormalSwap(swapShardInstruction, env, committeeChange)
+	newCommitteeChange, _, normalSwapOutCommittees, slashingCommittees, err := b.processSwap(swapShardInstruction, env, committeeChange)
 
 	// process after swap for assign old committees to current shard pool
 	newCommitteeChange, returnStakingInstruction, err = b.processAfterNormalSwap(env,
@@ -302,7 +302,8 @@ func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []strin
 		finishedSyncValidators[v] = true
 	}
 	count := 0
-	// TODO: @tin re-write using for condition { //body}, using while loop will improve code explicit
+	//TODO: @tin re-write using for condition { //body}
+	// using while loop will improve code explicit
 	for i := 0; i < len(b.syncPool[shardID]); i++ {
 		if count == len(validators) {
 			break

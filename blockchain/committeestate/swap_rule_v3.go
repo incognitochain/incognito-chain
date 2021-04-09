@@ -58,23 +58,25 @@ func (s *swapRuleV3) CalculateAssignOffset(lenShardSubstitute, lenCommittees, nu
 	return assignOffset
 }
 
+//TODO: @hung remove unused parameter numberOfFixedValidators
 func (s *swapRuleV3) swapInAfterSwapOut(
 	committees, substitutes []string,
 	numberOfFixedValidators, maxCommitteeSize, maxSwapInPercent int,
 ) (
 	[]string, []string, []string,
 ) {
-	resCommittees := committees
-	resSubstitutes := substitutes
 	swapInOffset := s.getSwapInOffset(len(committees), len(substitutes), maxSwapInPercent, maxCommitteeSize)
 
-	resSwapInCommittees := substitutes[:swapInOffset]
-	resSubstitutes = resSubstitutes[swapInOffset:]
-	resCommittees = append(resCommittees, resSwapInCommittees...)
+	newCommittees := common.DeepCopyString(committees)
+	swapInCommittees := common.DeepCopyString(substitutes[:swapInOffset])
+	newSubstitutes := common.DeepCopyString(substitutes[swapInOffset:])
+	newCommittees = append(newCommittees, swapInCommittees...)
 
-	return resCommittees, resSubstitutes, resSwapInCommittees
+	return newCommittees, newSubstitutes, swapInCommittees
 }
 
+//TODO: @tin calculate based on lenCommitteesAfterSwapOut or lenCommitteesBeforeSwapOut?
+// In document, vacant_slot = min(8, 1/8*len(shardCommittee), but getSwapInOffset doesn't stick to this formula
 func (s *swapRuleV3) getSwapInOffset(
 	lenCommitteesAfterSwapOut, lenSubstitutes int,
 	maxSwapInPercent, maxCommitteeSize int,
@@ -87,6 +89,7 @@ func (s *swapRuleV3) getSwapInOffset(
 		offset = maxCommitteeSize - lenCommitteesAfterSwapOut
 	}
 	if offset == 0 && lenCommitteesAfterSwapOut < maxSwapInPercent && lenSubstitutes > 0 {
+		//TODO: @tin offset + currentCommitteeSize maybe > maxCommitteeSize
 		offset = 1
 	}
 	return offset
@@ -111,6 +114,9 @@ func (s *swapRuleV3) normalSwapOut(committees, substitutes []string,
 	return resCommittees, resNormalSwapOut
 }
 
+//TODO: @tin rewrite, stick to main flow in doc
+// Missing numberOfFixedValidators when calculating max_Normal_Swap_Out_offset
+// max_Normal_Swap_Out_offset = min(C/8, C - numberOfFixedValidators)
 func (s *swapRuleV3) getNormalSwapOutOffset(
 	lenCommitteesBeforeSlash, lenSubstitutes,
 	lenSlashedCommittees, maxSwapOutPercent, numberOfFixedValidators,
@@ -148,19 +154,17 @@ func (s *swapRuleV3) slashingSwapOut(
 	[]string,
 	[]string,
 ) {
-	fixedCommittees := make([]string, len(committees[:numberOfFixedValidators]))
-	copy(fixedCommittees, committees[:numberOfFixedValidators])
-	flexCommittees := make([]string, len(committees[numberOfFixedValidators:]))
-	copy(flexCommittees, committees[numberOfFixedValidators:])
+	fixedCommittees := common.DeepCopyString(committees[:numberOfFixedValidators])
+	flexCommittees := common.DeepCopyString(committees[numberOfFixedValidators:])
 	flexAfterSlashingCommittees := []string{}
 	slashingCommittees := []string{}
 
-	slashingOffset := s.getSlashingOffset(len(committees), numberOfFixedValidators, maxSlashOutPercent)
+	maxSlashingOffset := s.getMaxSlashingOffset(len(committees), numberOfFixedValidators, maxSlashOutPercent)
 
 	for _, flexCommittee := range flexCommittees {
-		if _, ok := penalty[flexCommittee]; ok && slashingOffset > 0 {
+		if _, ok := penalty[flexCommittee]; ok && maxSlashingOffset > 0 {
 			slashingCommittees = append(slashingCommittees, flexCommittee)
-			slashingOffset--
+			maxSlashingOffset--
 		} else {
 			flexAfterSlashingCommittees = append(flexAfterSlashingCommittees, flexCommittee)
 		}
@@ -170,14 +174,16 @@ func (s *swapRuleV3) slashingSwapOut(
 	return newCommittees, slashingCommittees
 }
 
-func (s *swapRuleV3) getSlashingOffset(
+// getMaxSlashingOffset calculate maximum slashing offset, fixed nodes must be spare
+// max_slashing_offset = 1/3 committee length
+func (s *swapRuleV3) getMaxSlashingOffset(
 	lenCommittees, numberOfFixedValidators, maxSlashOutPercent int,
 ) int {
 	if lenCommittees == numberOfFixedValidators {
 		return 0
 	}
 	offset := lenCommittees / maxSlashOutPercent
-	if numberOfFixedValidators+offset > lenCommittees {
+	if offset > lenCommittees-numberOfFixedValidators {
 		offset = lenCommittees - numberOfFixedValidators
 	}
 	return offset
@@ -188,7 +194,7 @@ func calculateNewSubstitutePosition(candidate string, rand int64, total int) (po
 	seed := candidate + fmt.Sprintf("%v", rand)
 	hash := common.HashB([]byte(seed))
 
-	// TODO: @tin don't change hash to int like this, because the maximum value is only 255*32
+	//TODO: @tin don't change hash to int like this, because the maximum value is only 255*32
 	//for _, v := range hash {
 	//	data += int(v)
 	//}
@@ -201,11 +207,11 @@ func calculateNewSubstitutePosition(candidate string, rand int64, total int) (po
 		data *= -1
 	}
 
-	// TODO: @tin what if total == 0
+	//TODO: @tin what if total == 0
 	// pos < total => never insert at the end of list?
 	pos = data % total
 	if pos == 0 {
-		// TODO: @tin why set pos = 1 when it's equal to 0, because total might equal to 0
+		//TODO: @tin why set pos = 1 when it's equal to 0, because total might equal to 0
 		pos = 1
 	}
 

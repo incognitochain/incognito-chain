@@ -254,7 +254,7 @@ func (b *beaconCommitteeStateSlashingBase) assign(
 	return committeeChange
 }
 
-func (b *beaconCommitteeStateSlashingBase) processNormalSwap(
+func (b *beaconCommitteeStateSlashingBase) processSwap(
 	swapShardInstruction *instruction.SwapShardInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
 ) (*CommitteeChange, []string, []string, []string, error) {
@@ -318,7 +318,7 @@ func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 	*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	shardID := byte(swapShardInstruction.ChainID)
 
-	newCommitteeChange, _, normalSwapOutCommittees, slashingCommittees, err := b.processNormalSwap(swapShardInstruction, env, committeeChange)
+	newCommitteeChange, _, normalSwapOutCommittees, slashingCommittees, err := b.processSwap(swapShardInstruction, env, committeeChange)
 	if err != nil {
 		return nil, returnStakingInstruction, err
 	}
@@ -404,11 +404,8 @@ func (b *beaconCommitteeStateSlashingBase) processAfterNormalSwap(
 	return committeeChange, returnStakingInstruction, nil
 }
 
-// processAfterNormalSwap process swapped out committee public key
-// if number of round is less than MAX_NUMBER_OF_ROUND go back to THAT shard pool, and increase number of round
-// if number of round is equal to or greater than MAX_NUMBER_OF_ROUND
-// - auto stake is false then remove completely out of any committee, candidate, substitute list
-// - auto stake is true then using assignment rule v2 to assign this committee public key
+// processSlashing process slashing committee public key
+// force unstake and return staking amount for slashed committee
 func (b *beaconCommitteeStateSlashingBase) processSlashing(
 	env *BeaconCommitteeStateEnvironment,
 	slashingPublicKeys []string,

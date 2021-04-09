@@ -9,7 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
-func Test_swapRuleV3_GenInstructions(t *testing.T) {
+func Test_swapRuleV3_Process(t *testing.T) {
 	initLog()
 	initTestParams()
 
@@ -33,6 +33,25 @@ func Test_swapRuleV3_GenInstructions(t *testing.T) {
 		want3 []string
 		want4 []string
 	}{
+		//TODO: @hung add testcase
+		// Testcase 1: SL = C/3 && NS = 0
+		// Testcase 2: SL = C/3 && NS = 0, NO SWAP_IN
+		// Testcase 3: SL = C/3 && NS = 0, SWAP_IN not full
+		// Testcase 4: SL = C/3 && NS = 0, SWAP_IN full
+		// Testcase 5: SL < C/3 && SL >= C/8 && NS = 0
+		// Testcase 6: SL < C/3 && SL = 0 && C < MAX_COMMITTEE_SIZE && NS = 0
+		// Testcase 7: SL < C/3 && SL = 0 && C >= MAX_COMMITTEE_SIZE && NS = C/8-SL && 0 < SUB < MAX_NS && NS = SUB
+		// Testcase 8: SL < C/3 && SL = 0 && C >= MAX_COMMITTEE_SIZE && NS = C - FixedValidator - SL && 0 < SUB < MAX_NS && NS = SUB
+		// Testcase 9: SL < C/3 && SL = 0 && C >= MAX_COMMITTEE_SIZE && SUB = 0 && NS = 0
+		// Testcase 10: SL < C/3 && SL = 0 && C >= MAX_COMMITTEE_SIZE && NS = C/8-SL && SUB > MAX_NS && NS = MAX_NS
+		// Testcase 11: SL < C/3 && SL = 0 && C >= MAX_COMMITTEE_SIZE && NS = C - FixedValidator - SL && SUB > MAX_NS && NS = MAX_NS
+		// Testcase 12: 0 < SL < C/3 && SL < C/8 && C < MAX_COMMITTEE_SIZE && NS = 0
+		// Testcase 13: 0 < SL < C/3 && SL < C/8 && C >= MAX_COMMITTEE_SIZE && SUB = 0 && NS = 0
+		// Testcase 14: 0 < SL < C/3 && SL < C/8 && C >= MAX_COMMITTEE_SIZE && NS = C/8-SL && 0 < SUB < MAX_NS && NS = SUB
+		// Testcase 15: 0 < SL < C/3 && SL < C/8 && C >= MAX_COMMITTEE_SIZE && NS = C - FixedValidator - SL && 0 < SUB < MAX_NS && NS = SUB
+		// Testcase 16: 0 < SL < C/3 && SL < C/8 && C >= MAX_COMMITTEE_SIZE && NS = C/8-SL && SUB > MAX_NS && NS = MAX_NS
+		// Testcase 17: 0 < SL < C/3 && SL < C/8 && C >= MAX_COMMITTEE_SIZE && NS = C - FixedValidator - SL && SUB > MAX_NS && NS = MAX_NS
+		// Add SI = min(8, C/8) at the testcase
 		{
 			name: "[valid input]",
 			s:    &swapRuleV3{},
@@ -167,6 +186,11 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 		want1 []string
 		want2 []string
 	}{
+		//TODO: @hung add testcase
+		// Testcase 1: Max_Swap_In = 8  && Max_Swap_In > SUB => SI = SUB
+		// Testcase 2: Max_Swap_In = 8  && Max_Swap_In < SUB => SI = Max_Swap_In
+		// Testcase 3: Max_Swap_In = C/8 && Max_Swap_In > SUB => SI = SUB
+		// Testcase 4: Max_Swap_In = C/8  && Max_Swap_In < SUB => SI = Max_Swap_In
 		{
 			name: "Valid input",
 			s:    &swapRuleV3{},
@@ -235,6 +259,11 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 		args args
 		want int
 	}{
+		//TODO: @hung add testcase
+		// Testcase 1: Max_Swap_In = 8  && Max_Swap_In > SUB => SI = SUB
+		// Testcase 2: Max_Swap_In = 8  && Max_Swap_In < SUB => SI = Max_Swap_In
+		// Testcase 3: Max_Swap_In = C/8 && Max_Swap_In > SUB => SI = SUB
+		// Testcase 4: Max_Swap_In = C/8  && Max_Swap_In < SUB => SI = Max_Swap_In
 		{
 			name: "substitutes < committees / 8 && committees + offset <= maxCommitteeSize",
 			s:    &swapRuleV3{},
@@ -307,6 +336,14 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 		want  []string
 		want1 []string
 	}{
+		//TODO: @hung add testcase
+		// Testcase 1: SL > C/3 => NS = 0
+		// Testcase 2: SL > C/8 => NS = 0
+		// Testcase 3: SL < C/8 && SUB = 0 => NS = 0
+		// Testcase 4: SL < C/8 && MAX_NS = C/8 - SL && SUB < MAX_NS => NS = SUB
+		// Testcase 5: SL < C/8 && MAX_NS = C - FixedValidator - SL && SUB < MAX_NS => NS = SUB
+		// Testcase 6: SL < C/8 && MAX_NS = C/8 - SL && SUB >= MAX_NS => NS = MAX_NS
+		// Testcase 7: SL < C/8 && MAX_NS = C - FixedValidator - SL && SUB >= MAX_NS => NS = MAX_NS
 		{
 			name: "[valid input]",
 			s:    &swapRuleV3{},
@@ -372,6 +409,14 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 		args args
 		want int
 	}{
+		//TODO: @hung add testcase
+		// Testcase 1: SL > C/3 => NS = 0
+		// Testcase 2: SL > C/8 => NS = 0
+		// Testcase 3: SL < C/8 && SUB = 0 => NS = 0
+		// Testcase 4: SL < C/8 && MAX_NS = C/8 - SL && SUB < MAX_NS => NS = SUB
+		// Testcase 5: SL < C/8 && MAX_NS = C - FixedValidator - SL && SUB < MAX_NS => NS = SUB
+		// Testcase 6: SL < C/8 && MAX_NS = C/8 - SL && SUB >= MAX_NS => NS = MAX_NS
+		// Testcase 7: SL < C/8 && MAX_NS = C - FixedValidator - SL && SUB >= MAX_NS => NS = MAX_NS
 		{
 			name: "slashed nodes >= committees / 3",
 			s:    &swapRuleV3{},
@@ -465,6 +510,11 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 		want  []string
 		want1 []string
 	}{
+		//TODO: @hung add testcase
+		// Testcase 1: NO SLASH: fixed validators = committees, penalty > 0
+		// Testcase 2: NO SLASH: fixed validators < committees, penalty = 0
+		// Testcase 2: fixed validators + max_slashing_offset > lenCommittees, penalty > 0
+		// Testcase 3: fixed validators + max_slashing_offset <= lenCommittees, penalty > 0
 		{
 			name: "slashingOffset = 0",
 			s:    &swapRuleV3{},
@@ -485,7 +535,7 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 			want1: []string{},
 		},
 		{
-			name: "slashingOffset <= len(committees) / 3 && len(committees) - slashingOffset - numberOfFixedValidators < 0",
+			name: "slashingOffset <= len(committees) / 3 && len(committees) > slashingOffset + numberOfFixedValidators",
 			s:    &swapRuleV3{},
 			args: args{
 				committees: []string{
@@ -509,7 +559,7 @@ func Test_swapRuleV3_slashingSwapOut(t *testing.T) {
 			},
 		},
 		{
-			name: "slashingOffset <= len(committees) / 3 && len(committees) - slashingOffset - numberOfFixedValidators >= 0",
+			name: "slashingOffset <= len(committees) / 3 && len(committees) < slashingOffset + numberOfFixedValidators ",
 			s:    &swapRuleV3{},
 			args: args{
 				committees: []string{
@@ -617,7 +667,7 @@ func Test_swapRuleV3_getSlashingOffset(t *testing.T) {
 			want: 0,
 		},
 		{
-			name: "fixed validators + lenCommittees / 3 > lenCommittees",
+			name: "fixed validators + max_slashing_offset > lenCommittees",
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommittees:           10,
@@ -627,7 +677,7 @@ func Test_swapRuleV3_getSlashingOffset(t *testing.T) {
 			want: 2,
 		},
 		{
-			name: "fixed validators + lenCommittees / 3 <= lenCommittees",
+			name: "fixed validators + max_slashing_offset <= lenCommittees",
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommittees:           15,
@@ -640,8 +690,8 @@ func Test_swapRuleV3_getSlashingOffset(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			if got := s.getSlashingOffset(tt.args.lenCommittees, tt.args.numberOfFixedValidators, tt.args.maxSlashOutPercent); got != tt.want {
-				t.Errorf("swapRuleV3.getSlashingOffset() = %v, want %v", got, tt.want)
+			if got := s.getMaxSlashingOffset(tt.args.lenCommittees, tt.args.numberOfFixedValidators, tt.args.maxSlashOutPercent); got != tt.want {
+				t.Errorf("swapRuleV3.getMaxSlashingOffset() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -658,7 +708,7 @@ func Test_calculateNewSubstitutePosition(t *testing.T) {
 		args    args
 		wantPos int
 	}{
-		// TODO: @hung
+		//TODO: @hung add testcase
 		// testcase 1: this function must be deterministic with the same parameters
 		// testcase 2: make sure random offset is in valid range from 0 to len(substitute)
 	}
