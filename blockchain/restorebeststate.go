@@ -3,7 +3,7 @@ package blockchain
 import "github.com/incognitochain/incognito-chain/blockchain/committeestate"
 
 //RestoreBeaconViewStateFromHash ...
-func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchain *BlockChain) error {
+func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchain *BlockChain, includeCommittee bool) error {
 	err := beaconBestState.InitStateRootHash(blockchain)
 	if err != nil {
 		return err
@@ -15,27 +15,31 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	}
 	beaconBestState.BestBlock = *block
 	beaconBestState.BeaconHeight = block.GetHeight()
-	var beaconCommitteeEngine committeestate.BeaconCommitteeEngine
-	if beaconBestState.BeaconHeight > blockchain.config.ChainParams.StakingFlowV2Height {
-		beaconCommitteeEngine = initBeaconCommitteeEngineV2(
-			beaconBestState,
-			blockchain.config.ChainParams,
-			blockchain,
-		)
-	} else {
-		beaconCommitteeEngine = initBeaconCommitteeEngineV1(
-			beaconBestState,
-		)
-	}
-	beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine
-	if beaconBestState.BeaconHeight == blockchain.config.ChainParams.StakingFlowV2Height {
-		beaconBestState.upgradeCommitteeEngineV2(blockchain)
-	}
-	if blockchain.BeaconChain.GetBestView() != nil {
-		err = initMissingSignatureCounter(blockchain, beaconBestState, block)
-		if err != nil {
-			return err
+
+	if includeCommittee {
+		var beaconCommitteeEngine committeestate.BeaconCommitteeEngine
+		if beaconBestState.BeaconHeight > blockchain.config.ChainParams.StakingFlowV2Height {
+			beaconCommitteeEngine = initBeaconCommitteeEngineV2(
+				beaconBestState,
+				blockchain.config.ChainParams,
+				blockchain,
+			)
+		} else {
+			beaconCommitteeEngine = initBeaconCommitteeEngineV1(
+				beaconBestState,
+			)
+		}
+		beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine
+		if beaconBestState.BeaconHeight == blockchain.config.ChainParams.StakingFlowV2Height {
+			beaconBestState.upgradeCommitteeEngineV2(blockchain)
+		}
+		if blockchain.BeaconChain.GetBestView() != nil {
+			err = initMissingSignatureCounter(blockchain, beaconBestState, block)
+			if err != nil {
+				return err
+			}
 		}
 	}
+
 	return nil
 }
