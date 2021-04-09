@@ -275,9 +275,11 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 
 func hasCommitteeRelatedTx(txs ...metadata.Transaction) bool {
 	for _, tx := range txs {
-		switch tx.GetMetadata().GetType() {
-		case metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
-			return true
+		if tx.GetMetadata() != nil {
+			switch tx.GetMetadata().GetType() {
+			case metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
+				return true
+			}
 		}
 	}
 	return false
