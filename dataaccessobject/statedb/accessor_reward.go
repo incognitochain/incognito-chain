@@ -7,7 +7,30 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
-//@tin use this function for add reward
+//AddShardRewardRequestV2
+func AddShardRewardRequestV2(
+	stateDB *StateDB,
+	epoch uint64,
+	shardID, subsetID byte,
+	tokenID common.Hash,
+	rewardAmount uint64,
+) error {
+	key := generateRewardRequestObjectKeyV2(epoch, shardID, subsetID, tokenID)
+	r, has, err := stateDB.getRewardRequestState(key)
+	if err != nil {
+		return NewStatedbError(StoreRewardRequestError, err)
+	}
+	if has {
+		rewardAmount += r.Amount()
+	}
+	value := NewRewardRequestStateV2WithValue(epoch, shardID, subsetID, tokenID, rewardAmount)
+	err = stateDB.SetStateObject(RewardRequestV2ObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StoreRewardRequestError, err)
+	}
+	return nil
+}
+
 // Reward in Beacon
 func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash, rewardAmount uint64) error {
 	key := GenerateRewardRequestObjectKey(epoch, shardID, tokenID)
@@ -24,6 +47,23 @@ func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID
 		return NewStatedbError(StoreRewardRequestError, err)
 	}
 	return nil
+}
+
+func GetRewardOfShardByEpochV2(
+	stateDB *StateDB,
+	epoch uint64,
+	shardID, subsetID byte,
+	tokenID common.Hash,
+) (uint64, error) {
+	key := generateRewardRequestObjectKeyV2(epoch, shardID, subsetID, tokenID)
+	amount, has, err := stateDB.getRewardRequestAmountV2(key)
+	if err != nil {
+		return 0, NewStatedbError(GetRewardRequestError, err)
+	}
+	if !has {
+		return 0, nil
+	}
+	return amount, nil
 }
 
 func GetRewardOfShardByEpoch(stateDB *StateDB, epoch uint64, shardID byte, tokenID common.Hash) (uint64, error) {

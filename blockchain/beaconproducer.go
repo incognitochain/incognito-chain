@@ -194,8 +194,11 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		shardBlocks := allShardBlocks[shardID]
 		for _, shardBlock := range shardBlocks {
 			shardState, newShardInstruction, newDuplicateKeyStakeInstruction,
-				bridgeInstruction, acceptedRewardInstruction, statefulActions := blockchain.GetShardStateFromBlock(
+				bridgeInstruction, acceptedRewardInstruction, statefulActions, err := blockchain.GetShardStateFromBlock(
 				curView, curView.BeaconHeight+1, shardBlock, shardID, validUnstakePublicKeys, validStakePublicKeys)
+			if err != nil {
+				return [][]string{}, shardStates, err
+			}
 			shardStates[shardID] = append(shardStates[shardID], shardState[shardID])
 			duplicateKeyStakeInstructions.add(newDuplicateKeyStakeInstruction)
 			shardInstruction.add(newShardInstruction)
@@ -261,18 +264,36 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	shardID byte,
 	validUnstakePublicKeys map[string]bool,
 	validStakePublicKeys []string,
-) (map[byte]types.ShardState, *shardInstruction, *duplicateKeyStakeInstruction,
-	[][]string, []string, [][]string) {
+) (
+	map[byte]types.ShardState, *shardInstruction, *duplicateKeyStakeInstruction,
+	[][]string, []string, [][]string, error) {
 	//Variable Declaration
 	shardStates := make(map[byte]types.ShardState)
 	duplicateKeyStakeInstruction := &duplicateKeyStakeInstruction{}
 	bridgeInstructions := [][]string{}
-	acceptedBlockRewardInfo := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
-	acceptedRewardInstructions, err := acceptedBlockRewardInfo.GetStringFormat()
-	if err != nil {
-		// if err then ignore accepted reward instruction
-		acceptedRewardInstructions = []string{}
+
+	acceptedRewardInstructions := []string{}
+
+	if !shardBlock.Header.SubsetCommitteesFromBlock.IsZeroValue() {
+		subsetCommitteesFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.SubsetCommitteesFromBlock)
+		if err != nil {
+			return map[byte]types.ShardState{}, &shardInstruction{}, duplicateKeyStakeInstruction, [][]string{}, []string{}, [][]string{}, err
+		}
+		subsetID := subsetCommitteesFromBlock.Header.Height % MaxSubsetCommittees
+		accepteRewardInstruction := instruction.NewAcceptBlockRewardWithValue(
+			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height,
+		)
+		acceptedRewardInstructions = accepteRewardInstruction.ToString()
+	} else {
+		var err error
+		acceptedBlockRewardInfo := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
+		acceptedRewardInstructions, err = acceptedBlockRewardInfo.GetStringFormat()
+		if err != nil {
+			// if err then ignore accepted reward instruction
+			acceptedRewardInstructions = []string{}
+		}
 	}
+
 	//Get Shard State from Block
 	shardStates[shardID] = types.NewShardState(
 		shardBlock.ValidationData,
@@ -324,7 +345,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	statefulActions := blockchain.collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 
-	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstructions, statefulActions
+	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstructions, statefulActions, nil
 }
 
 //GenerateInstruction generate instruction for new beacon block

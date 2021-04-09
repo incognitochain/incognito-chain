@@ -25,6 +25,29 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 		if inst[0] == instruction.SET_ACTION || inst[0] == instruction.STAKE_ACTION || inst[0] == instruction.RANDOM_ACTION || inst[0] == instruction.SWAP_ACTION || inst[0] == instruction.ASSIGN_ACTION {
 			continue
 		}
+		if inst[0] == instruction.ACCEPT_BLOCK_REWARD_ACTION {
+			acceptBlockRewardIns, err := instruction.ValidateAndImportAcceptBlockRewardInstructionFromString(inst)
+			if err != nil {
+				return err
+			}
+			acceptBlockRewardIns.TxsFee()[common.PRVCoinID] += blockchain.getRewardAmount(acceptBlockRewardIns.ShardBlockHeight())
+
+			for key, value := range acceptBlockRewardIns.TxsFee() {
+				if value != 0 {
+					err = statedb.AddShardRewardRequestV2(
+						rewardStateDB,
+						beaconBlock.Header.Epoch,
+						acceptBlockRewardIns.ShardID(),
+						acceptBlockRewardIns.SubsetID(),
+						key, value)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			continue
+		}
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
 			continue

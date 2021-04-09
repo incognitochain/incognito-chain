@@ -11,6 +11,7 @@ const (
 	CommitteeObjectType
 	CommitteeRewardObjectType
 	RewardRequestObjectType
+	RewardRequestV2ObjectType
 	BlackListProducerObjectType
 	SerialNumberObjectType
 	CommitmentObjectType

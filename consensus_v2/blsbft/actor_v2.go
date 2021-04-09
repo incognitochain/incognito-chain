@@ -415,7 +415,7 @@ func (actorV2 *actorV2) validateAndVote(
 			defer cancel()
 
 			actorV2.logger.Infof("validateAndVote for block: %+v \n", v.block.Hash().String())
-			if err := actorV2.chain.ValidatePreSignBlock(v.block, v.signingCommittes, v.committees); err != nil { //@tin fix here
+			if err := actorV2.chain.ValidatePreSignBlock(v.block, v.signingCommittes, v.committees); err != nil {
 				actorV2.logger.Error(err)
 				return err
 			}
@@ -561,13 +561,13 @@ func (actorV2 *actorV2) proposeBeaconBlock(
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
 		actorV2.logger.Info("CreateNewBlock")
-		block, err = actorV2.chain.CreateNewBlock(actorV2.blockVersion, b58Str, 1, actorV2.currentTime, committees, committeeViewHash) //@tin fix here
+		block, err = actorV2.chain.CreateNewBlock(actorV2.blockVersion, b58Str, 1, actorV2.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
 	} else {
 		actorV2.logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v")
-		block, err = actorV2.chain.CreateNewBlockFromOldBlock(block, b58Str, actorV2.currentTime, committees, committeeViewHash) //@tin
+		block, err = actorV2.chain.CreateNewBlockFromOldBlock(block, b58Str, actorV2.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -731,12 +731,12 @@ func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	proposerMiningKeyBas58 := blkCPk.GetMiningKeyBase58(actorV2.GetConsensusName())
 
 	if v, ok := actorV2.receiveBlockByHash[blkHash]; !ok {
-		proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58) //@tin
+		proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58)
 		actorV2.receiveBlockByHash[blkHash] = proposeBlockInfo
 		actorV2.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 		actorV2.receiveBlockByHeight[block.GetHeight()] = append(actorV2.receiveBlockByHeight[block.GetHeight()], actorV2.receiveBlockByHash[blkHash])
 	} else {
-		actorV2.receiveBlockByHash[blkHash].addBlockInfo(block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58, v.validVotes, v.errVotes) //@tin
+		actorV2.receiveBlockByHash[blkHash].addBlockInfo(block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58, v.validVotes, v.errVotes)
 	}
 
 	if block.GetHeight() <= actorV2.chain.GetBestViewHeight() {
