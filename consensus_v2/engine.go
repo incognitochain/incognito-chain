@@ -136,12 +136,10 @@ func (s *Engine) WatchCommitteeChange() {
 			currActorVersion = s.version[chainID]
 		}
 
-		shouldRun := false
 		s.updateVersion(chainID)
 
 		if _, ok := s.BFTProcess[chainID]; !ok {
 			s.initProcess(chainID, chainName)
-			shouldRun = true
 		} else { //if not run correct version => stop and init
 			if s.version[chainID] != currActorVersion {
 				shouldUpdate := false
@@ -166,20 +164,16 @@ func (s *Engine) WatchCommitteeChange() {
 					s.BFTProcess[chainID].Destroy()
 					s.BFTProcess[chainID].Stop()
 					s.initProcess(chainID, chainName)
-					shouldRun = true
 				}
 			}
 		}
-
-		if shouldRun {
-			validatorMiningKey := []signatureschemes2.MiningKey{}
-			for _, validator := range validators {
-				validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
-			}
-			s.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
-			s.BFTProcess[chainID].Start()
-			miningProc = s.BFTProcess[chainID]
+		validatorMiningKey := []signatureschemes2.MiningKey{}
+		for _, validator := range validators {
+			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
+		s.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
+		s.BFTProcess[chainID].Start()
+		miningProc = s.BFTProcess[chainID]
 	}
 	s.currentMiningProcess = miningProc
 }
@@ -195,7 +189,6 @@ func NewConsensusEngine() *Engine {
 }
 
 func (engine *Engine) initProcess(chainID int, chainName string) {
-	Logger.Log.Info("[dcs] initProcess")
 	if engine.version[chainID] == 1 {
 		if chainID == -1 {
 			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
