@@ -101,7 +101,7 @@ func (e *BLSBFT_V3) Start() error {
 }
 
 func (e *BLSBFT_V3) Destroy() {
-	close(e.destroyCh)
+	e.destroyCh <- struct{}{}
 }
 
 func (e *BLSBFT_V3) run() error {
@@ -123,6 +123,7 @@ func (e *BLSBFT_V3) run() error {
 			select {
 			case <-e.destroyCh:
 				e.Logger.Info("exit bls-bftv3 consensus for chain", e.ChainKey)
+				close(e.destroyCh)
 				return
 			case proposeMsg := <-e.ProposeMessageCh:
 				//fmt.Println("debug receive propose message", string(proposeMsg.Block))
