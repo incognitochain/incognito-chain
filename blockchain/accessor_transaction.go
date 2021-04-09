@@ -814,6 +814,8 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 				return err
 			}
 
+			Logger.log.Infof("BUGLOG4 finished storing %v cmts of pk %v\n", publicKey, len(commitmentsArray))
+
 			// clear cached data
 			if blockchain.config.MemCache != nil {
 				cachedKey := memcache.GetListOutputcoinCachedKey(publicKeyBytes, view.tokenID, publicKeyShardID)

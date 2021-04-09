@@ -367,7 +367,7 @@ func SetupParam() {
 		RandomTimeV2:                Testnet2RandomTimeV2,
 		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46",   // todo: update sc address
 		BCHeightBreakPointPortalV3:  8974, // todo: should update before deploying
-		BCHeightBreakPointPrivacyV2:  2000000, //TODO: change this value when deployed testnet2
+		BCHeightBreakPointPrivacyV2:  2500000, //TODO: change this value when deployed testnet2
 		EnableFeatureFlags: map[int]uint64{
 			common.PortalV3Flag:       Testnet2EnablePortalV3,
 			common.PortalRelayingFlag: Testnet2EnablePortalRelaying,

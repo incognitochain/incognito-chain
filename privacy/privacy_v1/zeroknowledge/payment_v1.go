@@ -805,8 +805,9 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, sha
 			if !valid {
 				valid, err = proof.oneOfManyProof[i].Verify()
 				if !valid{
-					Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
-					return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, err)
+					errMsg := fmt.Sprintf("VERIFICATION PAYMENT PROOF: One out of many failed (old & new)")
+					Logger.Log.Errorf("%v\n", errMsg)
+					return false, errhandler.NewPrivacyErr(errhandler.VerifyOneOutOfManyProofFailedErr, fmt.Errorf("%v: %v", errMsg, err))
 				}
 			}
 			// Verify for the Proof that input coins' serial number is derived from the committed derivator
@@ -814,8 +815,9 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey key.PublicKey, fee uint64, sha
 			if !valid {
 				valid, err = proof.serialNumberProof[i].Verify(nil)
 				if !valid{
-					Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
-					return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberPrivacyProofFailedErr, err)
+					errMsg := fmt.Sprintf("VERIFICATION PAYMENT PROOF: Serial number privacy failed (old & new)")
+					Logger.Log.Errorf("%v\n", errMsg)
+					return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("%v: %v", errMsg, err))
 				}
 			}
 		}

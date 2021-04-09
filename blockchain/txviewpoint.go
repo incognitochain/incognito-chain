@@ -177,6 +177,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
+				Logger.log.Infof("BUGLOG4 Fetching view point of tx %v: type = %v, len(sn) = %v, len(cmt) = %v, len(outCoins) = %v, len(snd) = %v\n", tx.GetType(), tx.Hash().String(), len(serialNumbers), len(commitments), len(outCoins), len(snDs))
 				acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
 				for pubkey, data := range commitments {
 					if acceptedCommitments[pubkey] == nil {
@@ -185,6 +186,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
 					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
 				}
+				Logger.log.Infof("BUGLOG4 acceptedCmts of tx %v: %v\n", tx.Hash().String(), acceptedCommitments)
 				for pubkey, data := range outCoins {
 					if acceptedOutputcoins[pubkey] == nil {
 						acceptedOutputcoins[pubkey] = make([]coin.Coin, 0)
@@ -214,6 +216,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
+				Logger.log.Infof("BUGLOG4 Fetching view point of tx %v (PRV): type = %v, len(sn) = %v, len(cmt) = %v, len(outCoins) = %v\n", tx.GetType(), tx.Hash().String(), len(serialNumbers), len(commitments), len(outCoins))
 				acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
 				for pubkey, data := range commitments {
 					if acceptedCommitments[pubkey] == nil {
@@ -222,6 +225,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
 					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
 				}
+				Logger.log.Infof("BUGLOG4 acceptedCmts of tx %v: %v\n", tx.Hash().String(), acceptedCommitments)
 				for pubkey, data := range outCoins {
 					if acceptedOutputcoins[pubkey] == nil {
 						acceptedOutputcoins[pubkey] = make([]coin.Coin, 0)
@@ -236,6 +240,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 				if errP != nil {
 					return NewBlockChainError(UnExpectedError, errP)
 				}
+				Logger.log.Infof("BUGLOG4 Fetching view point of tx %v (token): type = %v, len(sn) = %v, len(cmt) = %v, len(outCoins) = %v, len(snd) = %v\n", tokenData.GetType(), tx.Hash().String(), len(serialNumbersP), len(commitmentsP), len(outCoinsP), len(snDsP))
 				subView.listSerialNumbers = serialNumbersP
 				for pubkey, data := range commitmentsP {
 					if subView.mapCommitments[pubkey] == nil {
@@ -244,6 +249,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(stateDB *statedb.StateDB, blo
 					subView.mapCommitments[pubkey] = append(subView.mapCommitments[pubkey], data...)
 					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
 				}
+				Logger.log.Infof("BUGLOG4 subViewAcceptedCmts of tx %v: %v\n", tx.Hash().String(), subView.mapCommitments)
 				for pubkey, data := range outCoinsP {
 					if subView.mapOutputCoins[pubkey] == nil {
 						subView.mapOutputCoins[pubkey] = make([]coin.Coin, 0)
