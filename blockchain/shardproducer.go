@@ -311,7 +311,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	newShardBlock.Header.PendingValidatorRoot = hashes.ShardSubstituteHash
 	newShardBlock.Header.StakingTxRoot = common.Hash{}
 	newShardBlock.Header.Timestamp = start
-	Logger.log.Info("[dcs] newShardBlock.Header.CommitteeFromBlock:", newShardBlock.Header.CommitteeFromBlock.String())
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
 
 	return newShardBlock, nil

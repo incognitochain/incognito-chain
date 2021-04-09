@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	"github.com/incognitochain/incognito-chain/multiview"
 	"sort"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/multiview"
+
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
@@ -94,7 +94,7 @@ func (e *BLSBFT_V2) Start() error {
 }
 
 func (e *BLSBFT_V2) Destroy() {
-	close(e.destroyCh)
+	e.destroyCh <- struct{}{}
 }
 
 //only run when init process
@@ -106,12 +106,6 @@ func (e *BLSBFT_V2) run() error {
 		e.Logger.Info("init bls-bftv2 consensus for chain", e.ChainKey)
 
 		for { //actor loop
-			if e.Chain.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
-				e.Logger.Infof("CHAIN ID %+v |Require BFTACTOR V2 FOR Committee Engine V1, current Committee Engine %+v ", e.Chain.GetShardID(), e.Chain.CommitteeEngineVersion())
-				e.Logger.Info("stop bls-bft2 consensus for chain", e.ChainKey)
-				time.Sleep(time.Second)
-				continue
-			}
 			if !e.isStarted { //sleep if this process is not start
 				time.Sleep(time.Second)
 				continue
@@ -119,6 +113,7 @@ func (e *BLSBFT_V2) run() error {
 			select {
 			case <-e.destroyCh:
 				e.Logger.Info("exit bls-bftv2 consensus for chain", e.ChainKey)
+				close(e.destroyCh)
 				return
 			case proposeMsg := <-e.ProposeMessageCh:
 				//fmt.Println("debug receive propose message", string(proposeMsg.Block))
