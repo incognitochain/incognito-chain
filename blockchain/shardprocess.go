@@ -921,6 +921,7 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 //	10. Check duplicate staker public key in block
 //	11. Check duplicate Init Custom Token in block
 func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHeight int64, curView *ShardBestState) error {
+	Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, block height %+v with hash %+v", shardID, len(txs), beaconHeight)
 	if len(txs) == 0 {
 		return nil
 	}

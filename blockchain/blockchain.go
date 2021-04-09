@@ -682,7 +682,6 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	for i := 0; i < blockchain.config.ChainParams.ActiveShards; i++ {
 		sID = append(sID, i)
 	}
-	blockchain.beaconViewCache.Add(blockHash, beaconView)
 	return beaconView, err
 }
 
