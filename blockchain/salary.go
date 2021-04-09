@@ -199,6 +199,7 @@ func calculateReward(
 	rewardStateDB *statedb.StateDB,
 	isSplitRewardForCustodian bool,
 	percentCustodianRewards uint64,
+	version int,
 ) (map[common.Hash]uint64,
 	[]map[common.Hash]uint64,
 	map[common.Hash]uint64,
@@ -223,7 +224,17 @@ func calculateReward(
 		}
 
 		for _, coinID := range allCoinID {
-			totalRewards[id][coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(id), coinID)
+			switch version {
+			case 1:
+				totalRewards[id][coinID], err = statedb.GetRewardOfShardByEpoch(rewardStateDB, epoch, byte(id), coinID)
+			case 2:
+				for subsetID := 0; subsetID < MaxSubsetCommittees; subsetID++ {
+					totalRewards[id][coinID], err = statedb.GetRewardOfShardByEpochV2(
+						rewardStateDB, epoch,
+						byte(id), byte(subsetID), coinID,
+					)
+				}
+			}
 			if err != nil {
 				return nil, nil, nil, nil, err
 			}
@@ -269,6 +280,8 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
 
+	version := 1
+
 	totalRewardForBeacon,
 		totalRewardForShard,
 		totalRewardForIncDAO,
@@ -277,7 +290,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 		curView.beaconCommitteeState.(committeestate.SplitRewardRuleProcessor),
 		curView.ActiveShards, blkHeight, epoch,
 		curView.GetBeaconRewardStateDB(),
-		isSplitRewardForCustodian, percentCustodianRewards,
+		isSplitRewardForCustodian, percentCustodianRewards, version,
 	)
 	if err != nil {
 		return nil, nil, err

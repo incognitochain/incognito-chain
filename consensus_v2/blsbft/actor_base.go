@@ -73,7 +73,7 @@ func (actorBase *actorBase) Stop() error {
 	if actorBase.isStarted {
 		actorBase.logger.Info("stop bls-bft consensus for chain", actorBase.chainKey)
 		actorBase.isStarted = false
-		close(actorBase.destroyCh)
+		actorBase.destroyCh <- struct{}{}
 		return nil
 	}
 	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(actorBase.chainKey))
