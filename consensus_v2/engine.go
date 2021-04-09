@@ -136,12 +136,10 @@ func (s *Engine) WatchCommitteeChange() {
 			currActorVersion = s.version[chainID]
 		}
 
-		shouldRun := false
 		s.updateVersion(chainID)
 
 		if _, ok := s.BFTProcess[chainID]; !ok {
 			s.initProcess(chainID, chainName)
-			shouldRun = true
 		} else { //if not run correct version => stop and init
 			if s.version[chainID] != currActorVersion {
 				shouldUpdate := false
@@ -166,20 +164,16 @@ func (s *Engine) WatchCommitteeChange() {
 					s.BFTProcess[chainID].Destroy()
 					s.BFTProcess[chainID].Stop()
 					s.initProcess(chainID, chainName)
-					shouldRun = true
 				}
 			}
 		}
-
-		if shouldRun {
-			validatorMiningKey := []signatureschemes2.MiningKey{}
-			for _, validator := range validators {
-				validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
-			}
-			s.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
-			s.BFTProcess[chainID].Start()
-			miningProc = s.BFTProcess[chainID]
+		validatorMiningKey := []signatureschemes2.MiningKey{}
+		for _, validator := range validators {
+			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
+		s.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
+		s.BFTProcess[chainID].Start()
+		miningProc = s.BFTProcess[chainID]
 	}
 	s.currentMiningProcess = miningProc
 }
