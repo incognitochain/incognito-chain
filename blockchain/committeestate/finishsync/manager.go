@@ -41,6 +41,7 @@ func (manager *FinishSyncManager) Clone() *FinishSyncManager {
 	return res
 }
 
+//AddFinishedSyncValidators only add validators in valid syncing list and not duplicate in FinishSyncManager.validator list
 func (manager *FinishSyncManager) AddFinishedSyncValidators(
 	validators []string,
 	syncingValidators []incognitokey.CommitteePublicKey,
@@ -90,6 +91,8 @@ func (manager *FinishSyncManager) Validators(shardID byte) []incognitokey.Commit
 	return manager.validators[shardID]
 }
 
+//RemoveValidators only remove FinishSyncManager.validator list ONCE
+// ignore validators not in FinishSyncManager.validators list
 func (manager *FinishSyncManager) RemoveValidators(validators []incognitokey.CommitteePublicKey, shardID byte) {
 	manager.mu.Lock()
 	defer manager.mu.Unlock()

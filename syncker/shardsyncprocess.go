@@ -236,7 +236,6 @@ func (s *ShardSyncProcess) syncShardProcess() {
 			time.Sleep(time.Second * 5)
 		}
 	}
-
 }
 
 func (s *ShardSyncProcess) streamFromPeer(peerID string, pState ShardPeerState) (requestCnt int) {

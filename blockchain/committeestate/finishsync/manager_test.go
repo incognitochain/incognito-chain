@@ -244,8 +244,8 @@ func TestManager_RemoveValidators(t *testing.T) {
 		// Testcase 2: remove > 1 validator 1 shard
 		// Testcase 3: remove 1 validator > 1 shard
 		// Testcase 4: remove > 1 validator > 1 shard
-		// Testcase 5: remove duplicate validator
-		// Testcase 6: remove NOT FOUND validator
+		// Testcase 5: remove duplicate validator (not allow)
+		// Testcase 6: remove NOT FOUND validator (allow)
 		{
 			name: "Valid Input",
 			fields: fields{

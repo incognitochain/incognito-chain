@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"log"
 	"net"
@@ -955,10 +956,15 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 	return config
 }
 
+var finishSyncMessageHistory = metrics.NewRegisteredCounter("message/finish-sync", nil)
+
 //OnFinishSync ...
 func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishSync) {
+	finishSyncMessageHistory.Inc(1)
 	Logger.log.Debug("Receive a MsgFinishSync")
 	beaconBestView := serverObj.blockChain.GetBeaconBestState()
+	//TODO: @tin only add to best beacon view?
+	// what if current best beacon view is steal view at later time => lost finish sync data
 	syncingValidators := beaconBestView.SyncingValidators()[msg.ShardID]
 	finishedSyncValidators := make(map[string]bool)
 	for _, v := range msg.CommitteePublicKey {
