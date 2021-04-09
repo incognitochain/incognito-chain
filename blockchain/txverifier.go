@@ -76,14 +76,14 @@ func (v *TxsVerifier) ValidateTxsSig(
 	doneCh chan interface{},
 ) {
 	for _, tx := range txs {
-		go func() {
+		go func(tx metadata.Transaction) {
 			ok, err := tx.VerifySigTx()
 			if !ok || err != nil {
 				errCh <- errors.Errorf("Signature of tx %v is not valid, result %v, error %v", tx.Hash().String(), ok, err)
 			} else {
 				doneCh <- nil
 			}
-		}()
+		}(tx)
 	}
 }
 

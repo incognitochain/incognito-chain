@@ -173,8 +173,8 @@ func (httpServer *HttpServer) handleGetTransactionHashByReceiverV2(params interf
 		txHashs = append(txHashs, txHashsByShard...)
 	}
 	result := struct {
-		Skip uint
-		Limit uint
+		Skip    uint
+		Limit   uint
 		TxHashs []common.Hash
 	}{
 		uint(skip),
@@ -274,9 +274,9 @@ func (httpServer *HttpServer) handleGetTransactionByReceiverV2(params interface{
 		return nil, err
 	}
 	result := struct {
-		Total uint
-		Skip uint
-		Limit uint
+		Total                uint
+		Skip                 uint
+		Limit                uint
 		ReceivedTransactions []jsonresult.ReceivedTransactionV2
 	}{
 		total,
@@ -709,7 +709,13 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 		return nil, err1
 	}
 
-	err := httpServer.config.Server.PushMessageToAll(txMsg)
+	bestBlockHeight := httpServer.config.BlockChain.GetBeaconBestState().BeaconHeight
+	_, _, err := httpServer.txMemPoolService.TxMemPool.MaybeAcceptTransaction(tx, int64(bestBlockHeight))
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+
+	err = httpServer.config.Server.PushMessageToAll(txMsg)
 	//Mark forwarded message
 	if err == nil {
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
@@ -786,7 +792,6 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransactionV2
 	}
 	return tx, nil
 }
-
 
 // handleCreateRawStakingTransaction handles create staking
 func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

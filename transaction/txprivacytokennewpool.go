@@ -51,7 +51,9 @@ func (tx TxCustomTokenPrivacy) ValidateSanityDataByItSelf() (bool, error) {
 	meta := tx.Tx.Metadata
 	if meta != nil {
 		if !metadata.IsAvailableMetaInTxType(meta.GetType(), tx.GetType()) {
-			return false, nil
+			err := errors.Errorf("Not mismatch type, txtype %v, metadatatype %v", tx.GetType(), meta.GetType())
+			Logger.log.Errorf("Validate tx %v return %v, error %v", tx.Hash().String(), err)
+			return false, err
 		}
 	}
 

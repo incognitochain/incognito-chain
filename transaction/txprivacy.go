@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"math/big"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -477,8 +478,12 @@ func (tx *Tx) VerifySigTx() (bool, error) {
 	}
 	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
 	res = verifyKey.Verify(signature, tx.Hash()[:])
+	if !res {
+		err = errors.Errorf("Verify signature of tx %v failed", tx.Hash().String())
+		Logger.log.Error(err)
+	}
 
-	return res, nil
+	return res, err
 }
 
 // ValidateTransaction returns true if transaction is valid:
