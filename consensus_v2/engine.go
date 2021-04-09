@@ -195,7 +195,6 @@ func NewConsensusEngine() *Engine {
 }
 
 func (engine *Engine) initProcess(chainID int, chainName string) {
-	Logger.Log.Info("[dcs] initProcess")
 	if engine.version[chainID] == 1 {
 		if chainID == -1 {
 			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
