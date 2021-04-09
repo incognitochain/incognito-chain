@@ -461,6 +461,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 	}
 
 	// Finish Sync Instructions
+	//TODO: @tin proposer and validator might not have the same list
 	for _, finishSyncInstruction := range curView.finishSyncManager.Instructions() {
 		if !finishSyncInstruction.IsEmpty() {
 			instructions = append(instructions, finishSyncInstruction.ToString())
