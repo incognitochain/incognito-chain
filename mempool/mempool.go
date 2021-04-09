@@ -277,7 +277,7 @@ func hasCommitteeRelatedTx(txs ...metadata.Transaction) bool {
 	for _, tx := range txs {
 		if tx.GetMetadata() != nil {
 			switch tx.GetMetadata().GetType() {
-			case metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
+			case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
 				return true
 			}
 		}
