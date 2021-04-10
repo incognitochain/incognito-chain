@@ -281,7 +281,6 @@ func generateUTXOKeyAndValue(tokenID string, walletAddress string, txHash string
 	return utxoKey, utxoValue
 }
 
-//TODO: update shielding proof
 func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultShieldingRequest() ([]TestCaseShieldingRequest, *ExpectedResultShieldingRequest) {
 	// build test cases
 	testcases := []TestCaseShieldingRequest{
@@ -301,6 +300,7 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultShieldingRequest() ([]
 			isValidRequest: true,
 		},
 		// valid shielding request: different user incognito address
+		// multisig address: tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe
 		{
 			tokenID:                  portalcommonv4.PortalBTCIDStr,
 			incAddressStr:            PORTALV4_USER_INC_ADDRESS_2,
