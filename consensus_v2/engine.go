@@ -180,19 +180,21 @@ func (engine *Engine) WatchCommitteeChange() {
 			}
 		}
 
-		if shouldRun {
-			validatorMiningKey := []signatureschemes2.MiningKey{}
-			for _, validator := range validators {
-				validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
-			}
+		validatorMiningKey := []signatureschemes2.MiningKey{}
+		for _, validator := range validators {
+			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
+		}
 
-			engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
+		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
+
+		miningProc = engine.bftProcess[chainID]
+
+		if shouldRun {
 			err := engine.bftProcess[chainID].Run()
 			if err != nil {
 				Logger.Log.Error(err)
 				return
 			}
-			miningProc = engine.bftProcess[chainID]
 		}
 	}
 

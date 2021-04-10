@@ -218,7 +218,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		} else {
 			if len(s.shardPeerState) > 0 {
 				s.isCatchUp = true
-				committeeView := s.blockchain.BeaconChain.FinalView().(*blockchain.BeaconBestState)
+				committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
 				if s.finalBeaconBlockHeight < committeeView.BeaconHeight {
 					s.finalBeaconBlockHeight = committeeView.BeaconHeight
 					if committeeView.CommitteeStateVersion() == committeestate.DCS_VERSION {

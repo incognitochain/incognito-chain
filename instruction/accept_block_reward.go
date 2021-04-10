@@ -60,7 +60,7 @@ func (a *AcceptBlockReward) GetType() string {
 	return ACCEPT_BLOCK_REWARD_ACTION
 }
 
-func (a *AcceptBlockReward) ToString() []string {
+func (a *AcceptBlockReward) StringArr() []string {
 	acceptBlockRewardStr := []string{ACCEPT_BLOCK_REWARD_ACTION}
 	acceptBlockRewardStr = append(acceptBlockRewardStr, strconv.Itoa(int(a.shardID)))
 	acceptBlockRewardStr = append(acceptBlockRewardStr, strconv.Itoa(int(a.subsetID)))
@@ -127,7 +127,7 @@ func ValidateAcceptBlockRewardInstructionSanity(instruction []string) error {
 		return err
 	}
 
-	if subsetID < 0 || subsetID > 9 {
+	if subsetID < 0 || subsetID > 2 {
 		return errors.New("subsetID is out of range for byte")
 	}
 

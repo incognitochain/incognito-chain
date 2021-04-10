@@ -283,7 +283,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		accepteRewardInstruction := instruction.NewAcceptBlockRewardWithValue(
 			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height,
 		)
-		acceptedRewardInstructions = accepteRewardInstruction.ToString()
+		acceptedRewardInstructions = accepteRewardInstruction.StringArr()
 	} else {
 		var err error
 		acceptedBlockRewardInfo := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)

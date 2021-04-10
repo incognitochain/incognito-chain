@@ -18,6 +18,7 @@ const (
 	FALSE                      = "false"
 	FINISH_SYNC_ACTION         = "finish_sync"
 	ACCEPT_BLOCK_REWARD_ACTION = "accept_block_reward"
+	SHARD_SUBSET_REWARD_ACTION = "shard_subset_reward"
 )
 
 const (
