@@ -141,7 +141,7 @@ func newRewardRequestV2Object(db *StateDB, hash common.Hash) *RewardRequestObjec
 		db:                  db,
 		rewardRequestHash:   hash,
 		rewardReceiverState: NewRewardRequestStateV2(),
-		objectType:          RewardRequestObjectType,
+		objectType:          RewardRequestV2ObjectType,
 		deleted:             false,
 	}
 }
@@ -166,7 +166,7 @@ func newRewardRequestV2ObjectWithValue(db *StateDB, key common.Hash, data interf
 		rewardRequestHash:   key,
 		rewardReceiverState: newRewardRequestState,
 		db:                  db,
-		objectType:          RewardRequestObjectType,
+		objectType:          RewardRequestV2ObjectType,
 		deleted:             false,
 	}, nil
 }

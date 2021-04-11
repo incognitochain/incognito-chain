@@ -1000,6 +1000,17 @@ func (stateDB *StateDB) getRewardRequestState(key common.Hash) (*RewardRequestSt
 	return NewRewardRequestState(), false, nil
 }
 
+func (stateDB *StateDB) getRewardRequestStateV2(key common.Hash) (*RewardRequestStateV2, bool, error) {
+	rewardRequestState, err := stateDB.getStateObject(RewardRequestV2ObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if rewardRequestState != nil {
+		return rewardRequestState.GetValue().(*RewardRequestStateV2), true, nil
+	}
+	return NewRewardRequestStateV2(), false, nil
+}
+
 func (stateDB *StateDB) getRewardRequestAmountV2(key common.Hash) (uint64, bool, error) {
 	amount := uint64(0)
 	rewardRequestObject, err := stateDB.getStateObject(RewardRequestV2ObjectType, key)

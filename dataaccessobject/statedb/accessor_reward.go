@@ -16,7 +16,7 @@ func AddShardRewardRequestV2(
 	rewardAmount uint64,
 ) error {
 	key := generateRewardRequestObjectKeyV2(epoch, shardID, subsetID, tokenID)
-	r, has, err := stateDB.getRewardRequestState(key)
+	r, has, err := stateDB.getRewardRequestStateV2(key)
 	if err != nil {
 		return NewStatedbError(StoreRewardRequestError, err)
 	}

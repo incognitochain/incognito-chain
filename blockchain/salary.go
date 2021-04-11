@@ -22,7 +22,18 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 		if len(inst) <= 2 {
 			continue
 		}
-		if inst[0] == instruction.SET_ACTION || inst[0] == instruction.STAKE_ACTION || inst[0] == instruction.RANDOM_ACTION || inst[0] == instruction.SWAP_ACTION || inst[0] == instruction.ASSIGN_ACTION {
+		switch inst[0] {
+		case instruction.SET_ACTION:
+			continue
+		case instruction.STAKE_ACTION:
+			continue
+		case instruction.RANDOM_ACTION:
+			continue
+		case instruction.SWAP_ACTION:
+			continue
+		case instruction.ASSIGN_ACTION:
+			continue
+		case instruction.SHARD_SUBSET_REWARD_ACTION:
 			continue
 		}
 		if inst[0] == instruction.ACCEPT_BLOCK_REWARD_ACTION {
@@ -84,7 +95,14 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 	epoch := uint64(0)
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
-			if l[0] == instruction.STAKE_ACTION || l[0] == instruction.RANDOM_ACTION || l[0] == instruction.FINISH_SYNC_ACTION {
+			switch l[0] {
+			case instruction.STAKE_ACTION:
+				continue
+			case instruction.RANDOM_ACTION:
+				continue
+			case instruction.FINISH_SYNC_ACTION:
+				continue
+			case instruction.ACCEPT_BLOCK_REWARD_ACTION:
 				continue
 			}
 			if l[0] == instruction.SHARD_SUBSET_REWARD_ACTION {
@@ -249,6 +267,7 @@ func calculateRewardV2(
 
 	for shardID := 0; shardID < numberOfActiveShards; shardID++ {
 		totalRewardForShardSubset[shardID] = make([]map[common.Hash]uint64, maxSubsetsCommittee)
+		totalRewards[shardID] = make([]map[common.Hash]uint64, maxSubsetsCommittee)
 		for subsetID := 0; subsetID < maxSubsetsCommittee; subsetID++ {
 			if totalRewards[shardID][subsetID] == nil {
 				totalRewards[shardID][subsetID] = map[common.Hash]uint64{}
