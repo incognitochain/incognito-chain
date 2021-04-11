@@ -1544,7 +1544,7 @@ func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 		[]string{"txid5", "txid6", "txid7", "txid8"},
 		[]*statedb.UTXO{
 			statedb.NewUTXOWithValue(otm1, "bdcbea41251172638f32226bcca1da1985297843d6279cb580d537aff6ae0fe8", 0, 1000000, PORTALV4_USER_INC_ADDRESS_1),
-			statedb.NewUTXOWithValue(otm2, "48b68d4d874803b159aaa1cb82b17a0bb904593073e96e623eb747b0efe7fffc", 1, 1000000, PORTALV4_USER_INC_ADDRESS_2),
+			statedb.NewUTXOWithValue(otm2, "48b68d4d874803b159aaa1cb82b17a0bb904593073e96e623eb747b0efe7fffc", 0, 1000000, PORTALV4_USER_INC_ADDRESS_2),
 		},
 		map[uint64]uint{
 			900: 100000,
@@ -1744,7 +1744,7 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 	keyUTXO1, utxo1 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, otm1, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 100000, PORTALV4_USER_INC_ADDRESS_1)
 	keyUTXO2, utxo2 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "c45f4286489c1e5557f9b570d07d10248aea220ae550b05ad41b25e48220c044", 1, 898970, "")
 	keyUTXO3, utxo3 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "b545f9b26f5f4f1e519dad5c8f3025b0d9794d616022eaff4aaa7144f65aeb62", 3, 698940, "")
-	keyUTXO4, utxo4 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "f03e36236a6fd9714d8f85f1091dea632aa4a5abb562f43bc7f04bdf9f0bf928", 3, 798930, "")
+	keyUTXO4, utxo4 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "f03e36236a6fd9714d8f85f1091dea632aa4a5abb562f43bc7f04bdf9f0bf928", 4, 798930, "")
 	utxos := map[string]map[string]*statedb.UTXO{
 		portalcommonv4.PortalBTCIDStr: {
 			keyUTXO1: utxo1,
