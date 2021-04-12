@@ -33,6 +33,9 @@ type PortalToken struct {
 	ChainID             string
 	MinTokenAmount      uint64 // set MinTokenAmount to avoid attacking with amount is less than smallest unit of cryptocurrency, such as satoshi in BTC
 	MultipleTokenAmount uint64 // amount token must be a multiple of this param in order to avoid not consistent when converting between public token and private token
+	ExternalInputSize   uint   // they are used to estimate size of external txs (in byte)
+	ExternalOutputSize  uint
+	ExternalTxMaxSize   uint
 }
 
 type BroadcastTx struct {
