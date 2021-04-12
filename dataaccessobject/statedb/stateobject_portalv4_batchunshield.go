@@ -11,8 +11,8 @@ import (
 type ProcessedUnshieldRequestBatch struct {
 	batchID      string
 	unshieldsID  []string
-	utxos        []*UTXO // map key (wallet address => list utxos)
-	externalFees map[uint64]uint    // beaconHeight => fee
+	utxos        []*UTXO
+	externalFees map[uint64]uint // beaconHeight => fee
 }
 
 func (us *ProcessedUnshieldRequestBatch) GetUTXOs() []*UTXO {
