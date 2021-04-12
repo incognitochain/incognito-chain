@@ -2,9 +2,10 @@ package consensus_v2
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/consensus"
@@ -129,25 +130,39 @@ func (s *Engine) WatchCommitteeChange() {
 		if chainID >= 0 {
 			chainName = fmt.Sprintf("shard-%d", chainID)
 		}
+
+		currActorVersion := 0
+		if s.BFTProcess[chainID] != nil {
+			currActorVersion = s.version[chainID]
+		}
+
 		s.updateVersion(chainID)
+
 		if _, ok := s.BFTProcess[chainID]; !ok {
 			s.initProcess(chainID, chainName)
 		} else { //if not run correct version => stop and init
-			if s.version[chainID] == 1 {
-				if _, ok := s.BFTProcess[chainID].(*blsbft.BLSBFT); !ok {
-					s.BFTProcess[chainID].Destroy()
-					s.initProcess(chainID, chainName)
+			if s.version[chainID] != currActorVersion {
+				shouldUpdate := false
+				if s.version[chainID] == 1 {
+					if _, ok := s.BFTProcess[chainID].(*blsbft.BLSBFT); !ok {
+						shouldUpdate = true
+
+					}
 				}
-			}
-			if s.version[chainID] == 2 {
-				if _, ok := s.BFTProcess[chainID].(*blsbft2.BLSBFT_V2); !ok {
-					s.BFTProcess[chainID].Destroy()
-					s.initProcess(chainID, chainName)
+				if s.version[chainID] == 2 {
+					if _, ok := s.BFTProcess[chainID].(*blsbft2.BLSBFT_V2); !ok {
+						shouldUpdate = true
+					}
 				}
-			}
-			if s.version[chainID] == 3 {
-				if _, ok := s.BFTProcess[chainID].(*blsbft3.BLSBFT_V3); !ok {
+				if s.version[chainID] == 3 {
+					if _, ok := s.BFTProcess[chainID].(*blsbft3.BLSBFT_V3); !ok {
+						Logger.Log.Info("init version 3")
+						shouldUpdate = true
+					}
+				}
+				if shouldUpdate {
 					s.BFTProcess[chainID].Destroy()
+					s.BFTProcess[chainID].Stop()
 					s.initProcess(chainID, chainName)
 				}
 			}
@@ -156,18 +171,10 @@ func (s *Engine) WatchCommitteeChange() {
 		for _, validator := range validators {
 			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
-
 		s.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
 		s.BFTProcess[chainID].Start()
 		miningProc = s.BFTProcess[chainID]
 	}
-
-	for chainID, proc := range s.BFTProcess {
-		if _, ok := ValidatorGroup[chainID]; !ok {
-			proc.Stop()
-		}
-	}
-
 	s.currentMiningProcess = miningProc
 }
 

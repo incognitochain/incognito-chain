@@ -111,6 +111,7 @@ func (blockchain *BlockChain) InitChainState() error {
 	blockchain.BeaconChain = NewBeaconChain(multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
 	var err error
 	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
+	blockchain.BeaconChain.committeeCache, err = lru.New(1000)
 	if err != nil {
 		return err
 	}
