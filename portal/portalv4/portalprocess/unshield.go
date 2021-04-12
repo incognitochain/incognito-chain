@@ -175,7 +175,7 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 		return [][]string{refundInst}, nil
 	}
 
-	if meta.TokenID == portalcommonv4.PortalBTCIDStr && meta.UnshieldAmount%10 != 0 {
+	if meta.UnshieldAmount % portalParams.PortalTokens[meta.TokenID].GetMultipleTokenAmount() != 0 {
 		Logger.log.Errorf("[Unshield Request] Unshield amount %v is not divisible by 10", meta.UnshieldAmount)
 		return [][]string{refundInst}, nil
 	}

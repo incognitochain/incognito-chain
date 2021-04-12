@@ -276,3 +276,7 @@ func (blockchain *BlockChain) GetPortalReplacementAddress(beaconHeight uint64) s
 func (blockchain *BlockChain) GetPortalV4GeneralMultiSigAddress(tokenIDStr string, beaconHeight uint64) string {
 	return blockchain.GetPortalParamsV4(beaconHeight).GeneralMultiSigAddresses[tokenIDStr]
 }
+
+func (blockchain *BlockChain) GetPortalV4MultipleTokenAmount(tokenIDStr string, beaconHeight uint64) uint64 {
+	return blockchain.GetPortalParamsV4(beaconHeight).PortalTokens[tokenIDStr].GetMinTokenAmount()
+}

@@ -226,6 +226,10 @@ func (p PortalBTCTokenProcessor) GetMinTokenAmount() uint64 {
 	return p.MinTokenAmount
 }
 
+func (p PortalBTCTokenProcessor) GetMultipleTokenAmount() uint64 {
+	return p.MultipleTokenAmount
+}
+
 func (p PortalBTCTokenProcessor) generatePublicKeyFromPrivateKey(privateKey []byte) []byte {
 	pkx, pky := btcec.S256().ScalarBaseMult(privateKey)
 	pubKey := btcec.PublicKey{Curve: btcec.S256(), X: pkx, Y: pky}

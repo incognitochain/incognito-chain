@@ -13,6 +13,7 @@ type PortalTokenProcessor interface {
 	IsValidRemoteAddress(address string, bcr metadata.ChainRetriever) (bool, error)
 	GetChainID() string
 	GetMinTokenAmount() uint64
+	GetMultipleTokenAmount() uint64
 	ConvertExternalToIncAmount(incAmt uint64) uint64
 	ConvertIncToExternalAmount(incAmt uint64) uint64
 
@@ -28,11 +29,10 @@ type PortalTokenProcessor interface {
 	GenerateOTMultisigAddress(masterPubKeys [][]byte, numSigsRequired int, chainCodeSeed string) ([]byte, string, error)
 }
 
-// set MinTokenAmount to avoid attacking with amount is less than smallest unit of cryptocurrency
-// such as satoshi in BTC
 type PortalToken struct {
-	ChainID        string
-	MinTokenAmount uint64 // minimum amount for shielding/redeem
+	ChainID             string
+	MinTokenAmount      uint64 // set MinTokenAmount to avoid attacking with amount is less than smallest unit of cryptocurrency, such as satoshi in BTC
+	MultipleTokenAmount uint64 // amount token must be a multiple of this param in order to avoid not consistent when converting between public token and private token
 }
 
 type BroadcastTx struct {

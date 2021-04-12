@@ -158,8 +158,9 @@ func initPortalTokensV4ForTestNet() map[string]portaltokensv4.PortalTokenProcess
 	return map[string]portaltokensv4.PortalTokenProcessor{
 		portalcommonv4.PortalBTCIDStr: portaltokensv4.PortalBTCTokenProcessor{
 			PortalToken: &portaltokensv4.PortalToken{
-				ChainID:        TestnetBTCChainID,
-				MinTokenAmount: 10,
+				ChainID:             TestnetBTCChainID,
+				MinTokenAmount:      10,
+				MultipleTokenAmount: 10,
 			},
 			ChainParam: &chaincfg.TestNet3Params,
 		},
@@ -170,8 +171,9 @@ func initPortalTokensV4ForMainNet() map[string]portaltokensv4.PortalTokenProcess
 	return map[string]portaltokensv4.PortalTokenProcessor{
 		portalcommonv4.PortalBTCIDStr: portaltokensv4.PortalBTCTokenProcessor{
 			PortalToken: &portaltokensv4.PortalToken{
-				ChainID:        MainnetBTCChainID,
-				MinTokenAmount: 10,
+				ChainID:             MainnetBTCChainID,
+				MinTokenAmount:      10,
+				MultipleTokenAmount: 10,
 			},
 			ChainParam: &chaincfg.MainNetParams,
 		},

@@ -11,7 +11,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -139,7 +138,7 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 	}
 
 	// validate amount of pToken is divisible by the decimal difference between nano pToken and nano Token
-	if uReq.TokenID == portalcommonv4.PortalBTCIDStr && uReq.UnshieldAmount%10 != 0 {
+	if uReq.UnshieldAmount % chainRetriever.GetPortalV4MultipleTokenAmount(uReq.TokenID, beaconHeight) != 0 {
 		return false, false, errors.New("pBTC amount has to be divisible by 10")
 	}
 

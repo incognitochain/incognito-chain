@@ -387,7 +387,7 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		Logger.log.Errorf("Error: Replace unshield batch with invalid fee: %v", meta.Fee)
 		return [][]string{rejectInst}, nil
 	}
-	if meta.TokenID == portalcommonv4.PortalBTCIDStr && meta.Fee%10 != 0 {
+	if uint64(meta.Fee) % portalParams.PortalTokens[meta.TokenID].GetMultipleTokenAmount() != 0 {
 		Logger.log.Errorf("Error: Replace fee has to be divisible by 10: %v", meta.Fee)
 		return [][]string{rejectInst}, nil
 	}

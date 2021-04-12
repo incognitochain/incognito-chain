@@ -104,8 +104,9 @@ func (s *PortalTestSuiteV4) SetupTest() {
 		PortalTokens: map[string]portaltokensv4.PortalTokenProcessor{
 			portalcommonv4.PortalBTCIDStr: &portaltokensv4.PortalBTCTokenProcessor{
 				PortalToken: &portaltokensv4.PortalToken{
-					ChainID:        "Bitcoin-Testnet",
-					MinTokenAmount: 10,
+					ChainID:             "Bitcoin-Testnet",
+					MinTokenAmount:      10,
+					MultipleTokenAmount: 10,
 				},
 				ChainParam: &chaincfg.TestNet3Params,
 			},

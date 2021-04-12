@@ -312,8 +312,9 @@ func TestGenerateMasterPubKeysFromSeeds(t *testing.T) {
 
 	btcToken := PortalBTCTokenProcessor{
 		PortalToken: &PortalToken{
-			ChainID:        "",
-			MinTokenAmount: 0,
+			ChainID:             "",
+			MinTokenAmount:      0,
+			MultipleTokenAmount: 10,
 		},
 		ChainParam: &chaincfg.TestNet3Params,
 	}
