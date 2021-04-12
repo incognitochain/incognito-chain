@@ -4,8 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/metadata"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -171,6 +172,11 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	// validate unshield amount
 	if meta.UnshieldAmount < portalParams.MinUnshieldAmts[meta.TokenID] {
 		Logger.log.Errorf("[Unshield Request] Unshield amount %v is less than min amount %v", meta.UnshieldAmount, portalParams.MinUnshieldAmts[meta.TokenID])
+		return [][]string{refundInst}, nil
+	}
+
+	if meta.TokenID == portalcommonv4.PortalBTCIDStr && meta.UnshieldAmount%10 != 0 {
+		Logger.log.Errorf("[Unshield Request] Unshield amount %v is not divisible by 10", meta.UnshieldAmount)
 		return [][]string{refundInst}, nil
 	}
 

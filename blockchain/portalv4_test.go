@@ -114,10 +114,10 @@ func (s *PortalTestSuiteV4) SetupTest() {
 			portalcommonv4.PortalBTCIDStr: 100000, // in nano pBTC - 10000 satoshi
 		},
 		MinUnshieldAmts: map[string]uint64{
-			portalcommonv4.PortalBTCIDStr: 1000000, // in nano pBTC - 1000000 satoshi
+			portalcommonv4.PortalBTCIDStr: 1000000, // in nano pBTC - 100000 satoshi
 		},
 		TinyUTXOAmount: map[string]uint64{
-			portalcommonv4.PortalBTCIDStr: 1e9, // in nano pBTC - 100000 satoshi
+			portalcommonv4.PortalBTCIDStr: 1e9, // in nano pBTC - 1e8 satoshi
 		},
 		BatchNumBlks:                45,
 		MinConfirmationIncBlockNum:  3,
@@ -1099,6 +1099,7 @@ func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
 const BatchID1 = "batch1"
 const BatchID2 = "batch2"
 const BatchID3 = "batch3"
+const BatchID4 = "batch4"
 const keyBatchShield1 = "9da36f3e18071935a3d812f47e2cb86f48f49260d89b62fbf8b8c9bdc1cceb5a"
 const keyBatchShield2 = "b83ad865d55f3e5399e455ad5c561ecc9b31f8cbd89b62fbf8b8c9bdc1cceb5a"
 const keyBatchShield3 = "8da36f3e18071935a3d812f47e2cb86f48f49260681df4129d4538f9bfcd4cad"
@@ -1473,14 +1474,18 @@ func (s *PortalTestSuiteV4) TestFeeReplacement() {
 /*
 	Feature 8: submit confirmed external transaction
 */
-// btctx: c66376a2d10d874da600e1d72ea3c7d4bae068d43f15bd7be13c8b005b1ee0da
-const confirmedTxProof1 = "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzUxLDIwNyw0MywzMSw1OCwyMjIsMjE1LDIzLDYzLDEwNyw3NiwxNTUsMjM2LDIxMCw3NCwyMjUsMjIzLDAsMTc5LDE5NSw1NywxNCwxNjYsMjA4LDMxLDE0MywyMDMsNjYsMjgsMTIyLDE5LDIyXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOlsxNDcsMjAyLDI0OCwyMjUsMjE5LDQ4LDY4LDEwNiwzMyw3NCwxMzYsMTgyLDIzMCw1MywyMzcsMiwxNjUsNiw5MiwxNzAsMTQ3LDIzOCwzNywxNjMsNjUsMTAzLDc1LDE1MCw5NSwyNDAsMTc5LDI0Ml0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOlsxMjUsMTMwLDUsMTg5LDQzLDE0OCwzMiwzNiwzNCwxMjgsMTUzLDI0MCwyMTIsMTEwLDExOSwxMTcsODUsMTQ0LDc4LDIxNiw4LDEwOSw4LDg1LDczLDEwMSwxNTQsNDQsMTI3LDEzNSw5OSw4NF0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTIsMTI0LDkwLDI0MiwxNzMsMjQ0LDg0LDUzLDE4OSwxODIsNjAsMTU3LDgzLDE3LDI0OSwyNDgsMzIsMTMsMTg1LDU5LDYzLDEsMTMyLDExLDEyMSwyMjEsMjE2LDIwNywzOCw0MiwyNTQsNzldLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzE0NCw2MywxNzMsNjYsNDAsNTYsMTg2LDIxMiwyMzYsMTg4LDUxLDEzNyw4LDI1Myw1OSwxMzEsMTIxLDM5LDE0OCw1NSwyMiwxNzQsOTMsMTY0LDE2NCw5NCw5MSwyMzMsMTc1LDcyLDE1MCwxOTNdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMTgsMTAxLDEsMTY1LDIyNCwxNTUsMjUzLDIzOSwxMjAsMjA5LDIwNiwxMCwyMDMsMjAwLDE3Niw1LDIyNiw0NCw2MSw1MCwxODAsMTQ3LDcwLDExMywxOTYsMTkxLDQ0LDQwLDU2LDEzNiwxOTMsNDldLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzMyLDEzOSw1NSw5Myw4MiwxNSwxMzAsNjksMTMxLDQ5LDEwNSwxNDIsOTcsMjE1LDI2LDIxOSw2Miw5MCw4OSwyMDUsNjEsMTM4LDIzLDI5LDE4Miw0NCw2NCw3Miw5NywxOTAsMTE4LDU3XSwiSXNMZWZ0IjpmYWxzZX1dLCJCVENUeCI6eyJWZXJzaW9uIjoxLCJUeEluIjpbeyJQcmV2aW91c091dFBvaW50Ijp7Ikhhc2giOls0MiwxNzAsMTY1LDE5MCwxMiwyMzMsMjA5LDEyOCwyNTUsMTYsMTgxLDIzMiwxNTUsNTQsMTk4LDI0MCwxMDEsMTkzLDc5LDI2LDg4LDIzOCw2OCwxNjEsODIsOTgsNywxODAsMjA2LDg1LDIyMywyNTRdLCJJbmRleCI6MH0sIlNpZ25hdHVyZVNjcmlwdCI6IiIsIldpdG5lc3MiOm51bGwsIlNlcXVlbmNlIjo0Mjk0OTY3Mjk1fV0sIlR4T3V0IjpbeyJWYWx1ZSI6MTAwMDAzLCJQa1NjcmlwdCI6IkFDQ0dLYVlIY0tIeFRTR0NpTy9XQ0EraGoxQ2U5enY0ZjVNdFE5dzd5eVV6NWc9PSJ9LHsiVmFsdWUiOjk4OTk3LCJQa1NjcmlwdCI6IkFDQktCWGExMlo1dGFub3crSFlHOFdOdE5Iekk1YlI5L2NoMWl2WlozdnovSHc9PSJ9XSwiTG9ja1RpbWUiOjB9LCJCbG9ja0hhc2giOlszNiwyMzIsMjAwLDc2LDE0NCwxMDMsMjUxLDE3NywyNCw3NywyMjgsMzEsMTkyLDE3OSwxOTUsNSwxNzEsNjQsMjEzLDE1OSwyMjIsODIsODksMTI1LDEyNywxOTksMjQsMTIwLDAsMCwwLDBdfQ=="
+// btctx: c45f4286489c1e5557f9b570d07d10248aea220ae550b05ad41b25e48220c044
+const confirmedTxProof1 = "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6Wzk4LDIzNSw5MCwyNDYsNjgsMTEzLDE3MCw3NCwyNTUsMjM0LDM0LDk2LDk3LDc3LDEyMSwyMTcsMTc2LDM3LDQ4LDE0Myw5MiwxNzMsMTU3LDgxLDMwLDc5LDk1LDExMSwxNzgsMjQ5LDY5LDE4MV0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbODcsMTg5LDEwNCw4OCw2OCwyOCwyOSwxODAsNjAsNjUsMTY3LDIxMiwxNTAsMTkzLDE1OSwxOTEsMTM1LDcxLDE0MCw5OCwyNDYsNzksMjQ4LDE5MywxNDAsNDksOTcsMTA5LDIyNSw4NSwyNCw3MV0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbODYsMTcyLDY4LDE0MSwxMjYsMTg4LDI1MSwyMTAsMTMyLDQxLDcwLDIwOCwxMzQsMTYsMjgsNjEsMjMxLDE4NSwxNzUsNzAsMTU3LDE0OCw1OSwxMzcsMTg5LDQsMjEyLDE5MywxODgsMzAsNDgsOF0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOlsyNDksMTc5LDI1MSwyNTIsMjA1LDE4NiwxNjUsMTIsMTQ2LDY3LDE3OCwxMTMsNCw2NSw3OSwxMzksMTU3LDIzMiwyMDAsMTMsMTY3LDY4LDE2MSwxMTAsMTk5LDE0NSwyMTIsMTc0LDE3NiwyMjMsMTUyLDI0MV0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbNDIsNzksMTg5LDUzLDE3NiwyNDIsMTk0LDg5LDExLDE1MCwxNSwxNDUsNjMsMTk1LDcyLDg4LDQ3LDI3LDY3LDY4LDE3OCwxMDIsMTAxLDE4NywyNDAsMjE0LDE3Myw2LDE2MiwxNzksMTIsMjUxXSwiSXNMZWZ0Ijp0cnVlfSx7IlByb29mSGFzaCI6WzIzLDExMywxNTMsMTU3LDY2LDE5MywxNjcsMTU4LDk5LDExOSwyMDIsMjE1LDIwMiwyMTQsNDAsOCwyNDAsMjEwLDE3NywyMDAsMTQzLDk3LDE3MSw3OCwxMTEsMjExLDc0LDI0MiwxNTQsMTcsMTY1LDE3XSwiSXNMZWZ0Ijp0cnVlfSx7IlByb29mSGFzaCI6WzIyLDE2LDE4MSw0MywyNiwxNTYsMjA4LDg1LDIxNSwxMSwyMDgsNjgsMjI1LDYsOTIsMjQ5LDE4NiwxNzgsMTAsMywxMzQsMTM3LDE4NiwxMDYsMjA0LDE3OCwyMDgsOCwxNTIsODQsMTQ5LDI0Nl0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbNjgsMzUsMjU1LDEyNCw5Myw4OSw5MywxNjcsMTIsOCwyNTAsMTk2LDE5NiwxODUsMTE0LDI1NSw4MCwxNjcsMTEwLDM1LDIzNiw3LDM4LDIwOCwxMzEsMjIyLDczLDQ0LDE3NywyMDYsOTksMTExXSwiSXNMZWZ0IjpmYWxzZX1dLCJCVENUeCI6eyJWZXJzaW9uIjoxLCJUeEluIjpbeyJQcmV2aW91c091dFBvaW50Ijp7Ikhhc2giOlsxOTMsMTE0LDg1LDExMSwyOCwyMDAsMjQ0LDQ3LDk3LDI0Myw5NywyMDEsNjgsOTAsMTcsMTkyLDIzNiw2Niw1NSwzNywyNDEsMTA0LDIwNiw1NiwxMDIsMTIwLDI0MiwxNzIsMTgyLDI1MiwxNjYsMjM0XSwiSW5kZXgiOjB9LCJTaWduYXR1cmVTY3JpcHQiOiIiLCJXaXRuZXNzIjpudWxsLCJTZXF1ZW5jZSI6NDI5NDk2NzI5NX1dLCJUeE91dCI6W3siVmFsdWUiOjEwMDAzMCwiUGtTY3JpcHQiOiJBQ0NHS2FZSGNLSHhUU0dDaU8vV0NBK2hqMUNlOXp2NGY1TXRROXc3eXlVejVnPT0ifSx7IlZhbHVlIjo4OTg5NzAsIlBrU2NyaXB0IjoiQUNCS0JYYTEyWjV0YW5vdytIWUc4V050Tkh6STViUjkvY2gxaXZaWjN2ei9Idz09In1dLCJMb2NrVGltZSI6MH0sIkJsb2NrSGFzaCI6WzIyOCwxMDAsMzYsMTEzLDUyLDExMCwxMjMsNTAsMTQ3LDIzMiw4NywzMiwyMDUsMjA3LDY0LDMsMTc4LDcwLDE3OSwxNzEsNzgsNDYsOTksMTE4LDE1NiwxOCwxNzYsMCwwLDAsMCwwXX0="
 
-// btctx: 3295983444a18fe0fd913e35099441dafd53ccb4b5866e5f8a425c5167067c31
-const confirmedTxProof2 = "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzIzNSw5MCwwLDE2OSwxNTYsMTk2LDIzMywxMDIsMTU1LDEyNiwxMDMsMTk4LDIzNCwyMjEsODgsMjM3LDkwLDIyNiw0NSwyMDEsMTksNiw4MywyMjksMTc0LDkyLDEzNywxNTUsMzMsMTcsNTUsMTAxXSwiSXNMZWZ0Ijp0cnVlfSx7IlByb29mSGFzaCI6WzgxLDk3LDE3OCwxMzMsMTI0LDQ2LDIxLDE5OCwxMjgsMTM1LDY3LDE5LDM2LDcsMjE2LDc0LDI2LDk1LDE5LDE5MCwxMiwzOSwyNTAsMTYwLDE0NCwzNywxNTYsMjQxLDEyMSwyNDIsMTUxLDE2OV0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOlsxNCwxMzksMjA0LDQsOTgsMTY0LDksODgsMTI2LDI0Nyw0NCw3OCwxNDYsMTk5LDE0NywxMjEsMTE4LDI0MiwyMzMsMTU0LDE1NCwyMzksMzAsMTYsMTIzLDEzMiwxMjMsMTg2LDEyNCwyNDUsMTA3LDIyN10sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMTgxLDE4NiwwLDk3LDI0NiwyMjQsMTM3LDIzMiw2MywyNywyMzgsMyw2NywxMjQsMjE4LDg2LDMwLDk3LDIzMiw5LDk2LDIxMiwyMDMsMTY4LDU0LDIwNywxMzEsMTQsMzQsMzMsNTgsMTQxXSwiSXNMZWZ0Ijp0cnVlfSx7IlByb29mSGFzaCI6WzE5MCwxMjksMTUyLDE4MSw5MiwxNTMsMjA4LDI5LDY0LDEwNiwyMDMsNTUsMjQyLDEyLDAsNzcsMTg1LDY1LDEwOSwxODQsMzIsMjQxLDE3NSw0MSwyMDIsODksNjcsMzIsMTQzLDI0LDIwMyw4N10sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOlsyMjMsMjUxLDI2LDQ2LDEyMCw2OSw5OSwyNDQsMzMsNiwxMDcsMTk1LDExNSwxNDgsMTI1LDY0LDIwMSw4MSw5OSwxOTMsMjIyLDE3OSwyMjYsMjIwLDIzOCwxODksMTQ5LDE3NywxNTksMjAyLDEzOSwzNl0sIklzTGVmdCI6ZmFsc2V9LHsiUHJvb2ZIYXNoIjpbMjE3LDEsMTIsMTgyLDEyOSwyMSwxMDIsNDgsNTIsMTU3LDE5NSwxNzYsMTk5LDEzNCwxOTQsNTQsNzEsMjAxLDM2LDE0NCw4Myw1OSw4MiwyNDYsOCw3MiwxNywxNjYsOTMsNTYsNjQsMjNdLCJJc0xlZnQiOmZhbHNlfV0sIkJUQ1R4Ijp7IlZlcnNpb24iOjEsIlR4SW4iOlt7IlByZXZpb3VzT3V0UG9pbnQiOnsiSGFzaCI6WzIsMTE0LDE0OSwyMjEsMzcsMjAyLDIzOCwwLDQwLDI2LDE5MCwxNzYsMTgwLDUxLDM1LDE5MCwxMSwyMTMsMjYsMTIyLDEzMSwzNCw1NSwyNTIsMzgsMTk5LDEzNSwxNDgsMTMxLDIwLDExMSwxNzJdLCJJbmRleCI6MH0sIlNpZ25hdHVyZVNjcmlwdCI6IiIsIldpdG5lc3MiOm51bGwsIlNlcXVlbmNlIjo0Mjk0OTY3Mjk1fSx7IlByZXZpb3VzT3V0UG9pbnQiOnsiSGFzaCI6WzIzNywyMDIsMTY3LDI3LDIwMiwxMTYsOTksODYsMTY5LDE5OSw3Myw4NSwxMjgsMTM1LDEwNiw5OSwxNzAsMjE1LDE3MywxMzUsMTYzLDEwMSw2MSw1MiwxMTksMTA0LDMzLDE1NSwxMDksMTkyLDE0NiwyMjddLCJJbmRleCI6MX0sIlNpZ25hdHVyZVNjcmlwdCI6IiIsIldpdG5lc3MiOm51bGwsIlNlcXVlbmNlIjo0Mjk0OTY3Mjk1fV0sIlR4T3V0IjpbeyJWYWx1ZSI6MTAwMDAzLCJQa1NjcmlwdCI6IkFCUmo3UFFDaE5VQWZYbHlhZEIvN21nUWlqU1dmQT09In0seyJWYWx1ZSI6MTEwOTk3LCJQa1NjcmlwdCI6IkFDQktCWGExMlo1dGFub3crSFlHOFdOdE5Iekk1YlI5L2NoMWl2WlozdnovSHc9PSJ9XSwiTG9ja1RpbWUiOjB9LCJCbG9ja0hhc2giOlsxOTcsNjEsODIsOCw4MywxNzcsMTYsMSwxNjIsNDYsMTQyLDI0OSwxMiwxODcsMjE2LDExNCwxODksMTM2LDIzNywyMjIsMjExLDE4LDIwNywyMzEsMTIsMCwwLDAsMCwwLDAsMF19"
+// btctx: b545f9b26f5f4f1e519dad5c8f3025b0d9794d616022eaff4aaa7144f65aeb62
+const confirmedTxProof2 = "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzY4LDE5MiwzMiwxMzAsMjI4LDM3LDI3LDIxMiw5MCwxNzYsODAsMjI5LDEwLDM0LDIzNCwxMzgsMzYsMTYsMTI1LDIwOCwxMTIsMTgxLDI0OSw4Nyw4NSwzMCwxNTYsNzIsMTM0LDY2LDk1LDE5Nl0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOls4NywxODksMTA0LDg4LDY4LDI4LDI5LDE4MCw2MCw2NSwxNjcsMjEyLDE1MCwxOTMsMTU5LDE5MSwxMzUsNzEsMTQwLDk4LDI0Niw3OSwyNDgsMTkzLDE0MCw0OSw5NywxMDksMjI1LDg1LDI0LDcxXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOls4NiwxNzIsNjgsMTQxLDEyNiwxODgsMjUxLDIxMCwxMzIsNDEsNzAsMjA4LDEzNCwxNiwyOCw2MSwyMzEsMTg1LDE3NSw3MCwxNTcsMTQ4LDU5LDEzNywxODksNCwyMTIsMTkzLDE4OCwzMCw0OCw4XSwiSXNMZWZ0Ijp0cnVlfSx7IlByb29mSGFzaCI6WzI0OSwxNzksMjUxLDI1MiwyMDUsMTg2LDE2NSwxMiwxNDYsNjcsMTc4LDExMyw0LDY1LDc5LDEzOSwxNTcsMjMyLDIwMCwxMywxNjcsNjgsMTYxLDExMCwxOTksMTQ1LDIxMiwxNzQsMTc2LDIyMywxNTIsMjQxXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOls0Miw3OSwxODksNTMsMTc2LDI0MiwxOTQsODksMTEsMTUwLDE1LDE0NSw2MywxOTUsNzIsODgsNDcsMjcsNjcsNjgsMTc4LDEwMiwxMDEsMTg3LDI0MCwyMTQsMTczLDYsMTYyLDE3OSwxMiwyNTFdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMjMsMTEzLDE1MywxNTcsNjYsMTkzLDE2NywxNTgsOTksMTE5LDIwMiwyMTUsMjAyLDIxNCw0MCw4LDI0MCwyMTAsMTc3LDIwMCwxNDMsOTcsMTcxLDc4LDExMSwyMTEsNzQsMjQyLDE1NCwxNywxNjUsMTddLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMjIsMTYsMTgxLDQzLDI2LDE1NiwyMDgsODUsMjE1LDExLDIwOCw2OCwyMjUsNiw5MiwyNDksMTg2LDE3OCwxMCwzLDEzNCwxMzcsMTg2LDEwNiwyMDQsMTc4LDIwOCw4LDE1Miw4NCwxNDksMjQ2XSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOls2OCwzNSwyNTUsMTI0LDkzLDg5LDkzLDE2NywxMiw4LDI1MCwxOTYsMTk2LDE4NSwxMTQsMjU1LDgwLDE2NywxMTAsMzUsMjM2LDcsMzgsMjA4LDEzMSwyMjIsNzMsNDQsMTc3LDIwNiw5OSwxMTFdLCJJc0xlZnQiOmZhbHNlfV0sIkJUQ1R4Ijp7IlZlcnNpb24iOjEsIlR4SW4iOlt7IlByZXZpb3VzT3V0UG9pbnQiOnsiSGFzaCI6WzE0OSwxNDMsMjI2LDE0NiwyMTksNDIsMTg2LDExMiwyNDUsMTE3LDI1MSwxMDUsMTM2LDE4NiwyNDQsMjE4LDE3MCwyMDksNzQsNzQsMjM5LDUzLDIwMywyOCwyMTYsOTksMzIsNzgsMTkyLDIzMCwyNTEsNTldLCJJbmRleCI6MX0sIlNpZ25hdHVyZVNjcmlwdCI6IiIsIldpdG5lc3MiOm51bGwsIlNlcXVlbmNlIjo0Mjk0OTY3Mjk1fV0sIlR4T3V0IjpbeyJWYWx1ZSI6MTAwMDMwLCJQa1NjcmlwdCI6IkFDQ0dLYVlIY0tIeFRTR0NpTy9XQ0EraGoxQ2U5enY0ZjVNdFE5dzd5eVV6NWc9PSJ9LHsiVmFsdWUiOjEwMDAyMCwiUGtTY3JpcHQiOiJxUlFtamxCdTRya0VVUXpJK0NHemF1QTRpeThvVFljPSJ9LHsiVmFsdWUiOjEwMDAxMCwiUGtTY3JpcHQiOiJBQ0NHS2FZSGNLSHhUU0dDaU8vV0NBK2hqMUNlOXp2NGY1TXRROXc3eXlVejVnPT0ifSx7IlZhbHVlIjo2OTg5NDAsIlBrU2NyaXB0IjoiQUNCS0JYYTEyWjV0YW5vdytIWUc4V050Tkh6STViUjkvY2gxaXZaWjN2ei9Idz09In1dLCJMb2NrVGltZSI6MH0sIkJsb2NrSGFzaCI6WzIyOCwxMDAsMzYsMTEzLDUyLDExMCwxMjMsNTAsMTQ3LDIzMiw4NywzMiwyMDUsMjA3LDY0LDMsMTc4LDcwLDE3OSwxNzEsNzgsNDYsOTksMTE4LDE1NiwxOCwxNzYsMCwwLDAsMCwwXX0="
 
 // invalid proof
 const confirmedTxProof3 = "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzE0MywyMTEsMjI2LDExNiwyNTMsNjksMjQ2LDIyNCwxMTAsMTg0LDMwLDE1Nyw4NCwyMDcsMTQyLDI1MywxMjIsNTAsMTk0LDgsMjAzLDExOSw3NSwxODMsMjUsNjUsMTU1LDIxMywxODYsMTg0LDEyNSwxMF0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOls0OCwxODIsMTE2LDI1MCwzOSwxMDgsMTk1LDE0NCwyMSw3OSwyMjIsNzQsMTk3LDE2MSwxMDcsMTYwLDIxLDMwLDIwNiwyNDksMTc5LDExMSwyMjMsMzIsNDcsMTM5LDE1MywyOCwxOTIsMjIwLDE0NiwyNV0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOlsxMzgsNSwzOSw3NCwyNCw3NSw4MSw2MCwxNjcsNDYsMTg2LDEwNiwxNTAsNDQsMjAwLDIxLDIzOCw0MSwyMzQsMzksMjI1LDkyLDExLDIzNCwxNDAsMTA3LDI0OCwyNDQsMTQ0LDExNiwyMTksMTM2XSwiSXNMZWZ0Ijp0cnVlfSx7IlByb29mSGFzaCI6WzE4MiwxMDYsOTEsMTYxLDE0NSwxMzMsMjQ2LDc1LDIwOSw3NCwxODEsMTgyLDkyLDI1NCw0OSwxOTMsNTEsMjMzLDE1NywxODUsNTQsNzMsNTAsMjQ0LDEwNywzMiwzMSwxODksNDMsNCwxMTIsMTI4XSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOlsxMiwzNSwxODIsMTk3LDE5NiwxODYsMTQzLDE1MSw0MywxMDMsMjU1LDE2LDE2MSwyNDAsMTM5LDE2OCwxNzEsOTgsODYsMTA3LDk3LDIxMiw5MCwxNjUsMTQ5LDYyLDMwLDY1LDc1LDIyOCw2NywxODFdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbNDcsMTY0LDYwLDcsODAsMTQsNzQsMTY1LDE5NSwxODYsMTE2LDY0LDExOCwxMDIsMTk1LDEsMTMxLDQ0LDU5LDE3MSwyMDEsMTU3LDc2LDUzLDgyLDksMTM4LDE3OSw5MSw2LDQsNDRdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzIzNSwyNDEsMTY4LDM0LDE4MywxNzgsNDEsMjUzLDEwMiwxMzYsMTg2LDg3LDE4OCwyMzQsMzgsMTU4LDExMSwyMjUsMTIyLDIzMCwyMjksNDgsMTgyLDEwNiwyNyw2NSwyMTQsNDIsMTUzLDQyLDMwLDkwXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOls2LDE4NCwyOCwyNDgsMTcyLDM0LDE0MywyNTEsMTcwLDEzLDIxNyw3OSwyMjcsMTA2LDIxMiw1NSw5MSwyMDMsMTAzLDkwLDkwLDIyLDI0Niw2NSw0OCwyMTMsMjU1LDE5OSwzOCwxMTMsMTkxLDIxXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOlsyOCwxOTQsMTQyLDMzLDQzLDg3LDIxLDIzNCwxOSwxOTEsMTYzLDIxMiwyMTcsMjUsNDksMTk5LDIwMywxNzIsMjUsNywxNjEsMTM2LDE2MywzMyw3OSwxODcsNDQsNzEsMTAxLDI5LDE4NSwyNTNdLCJJc0xlZnQiOmZhbHNlfV0sIkJUQ1R4Ijp7IlZlcnNpb24iOjEsIlR4SW4iOlt7IlByZXZpb3VzT3V0UG9pbnQiOnsiSGFzaCI6WzE0MywyMTEsMjI2LDExNiwyNTMsNjksMjQ2LDIyNCwxMTAsMTg0LDMwLDE1Nyw4NCwyMDcsMTQyLDI1MywxMjIsNTAsMTk0LDgsMjAzLDExOSw3NSwxODMsMjUsNjUsMTU1LDIxMywxODYsMTg0LDEyNSwxMF0sIkluZGV4IjoyfSwiU2lnbmF0dXJlU2NyaXB0IjoiU0RCRkFpRUE5WS9XeDZvMDh4QjAzZkdya3EyVGQ5NXV5akxiK0ZTRk13cHpWcHdkZTFNQ0lGcWJzdWlWeis5Wnhka05YWmZXQ1p5WHZMdUJrK3Y1KzZzYk1kbGUwSVkvQVNFRHp5QVRUMVpJNHZieGQ2WlZLeVc2bCtSYkZJVk9UeE1xU3ZEK2Zhay94UHc9IiwiV2l0bmVzcyI6bnVsbCwiU2VxdWVuY2UiOjQyOTQ5NjcyOTV9XSwiVHhPdXQiOlt7IlZhbHVlIjowLCJQa1NjcmlwdCI6ImFpeFNUVXBQYkN0b00wNUZibEkwTm5SaE5GSkVkQ3QwVEhObVdIRktiamswYUVaSWVDOWtUbloyU1ZCUlBRPT0ifSx7IlZhbHVlIjo2MDAsIlBrU2NyaXB0IjoicVJRbko2ZHY4dm81WGNVbFpLanJLcXVNL2xISWRvYz0ifSx7IlZhbHVlIjoyMjQzNzIsIlBrU2NyaXB0IjoiZHFrVWd2eTZsUWkrRWlReTk3dVEybDkwQVVDbVc0aUlyQT09In1dLCJMb2NrVGltZSI6MH0sIkJsb2NrSGFzaCI6WzE3MiwyMzYsMTY4LDEwNSwxMzQsMzMsMTM1LDEzMiwxMiwyMjUsMTIzLDIxMiwzOSwyNDUsMTUsMTkzLDE0NiwxMjMsMTA1LDExMiwzNiwxODAsMTgyLDEwNSw0MiwyMDcsMTE1LDIxOCwwLDAsMCwwXX0="
+
+// multi sender to multi receiver
+// btctx: f03e36236a6fd9714d8f85f1091dea632aa4a5abb562f43bc7f04bdf9f0bf928
+const confirmedTxProof4 = "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzYsMywyMDUsMjAzLDIzMCwxMTgsMTc2LDE1Miw1MywzNCwxNywyNCw4NCwxNTMsMjQ2LDM4LDEwNSwzNCw2OCwxNzksMTQwLDY2LDczLDE4MiwyMjMsMTMzLDE0OSwyMTYsMTMzLDE2MiwxMzksNDBdLCJJc0xlZnQiOmZhbHNlfSx7IlByb29mSGFzaCI6WzExOCwyNDUsMTksMTczLDE4MSwxNTUsNzgsMTg4LDQ2LDIyMCwxNzMsNDMsMjM4LDEzLDE1Nyw0OCwyLDE4NCw0NCwxMDksNTQsNTUsNDgsMzQsNSw2Myw2NSw1NSw3MSwyNTUsMTE0LDYzXSwiSXNMZWZ0Ijp0cnVlfSx7IlByb29mSGFzaCI6WzE0LDcyLDIyOSw5OSw1NCwxNjksMTM2LDQ0LDIyMSwxMyw4MiwxNjIsMTY1LDIwMSwxMjUsMTIzLDIyNSw3OSw0MiwxNjUsMjA3LDIwOCwxODMsMTQxLDExMiwxNTksMjQzLDIyMCwxNTUsMTQ1LDQzLDcyXSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOlszNiwyMjIsMTIzLDI1MiwxMzEsNjIsMTEsNywzMiwxNTQsOTQsMTU1LDIxLDEyMCwxODAsMTU3LDcsNzEsMTEyLDE1LDEyOCwxOSwyMjIsMTQ1LDE1MywxMDQsMTk3LDcxLDE4NCwxMTUsNDIsNF0sIklzTGVmdCI6dHJ1ZX0seyJQcm9vZkhhc2giOls0Miw3OSwxODksNTMsMTc2LDI0MiwxOTQsODksMTEsMTUwLDE1LDE0NSw2MywxOTUsNzIsODgsNDcsMjcsNjcsNjgsMTc4LDEwMiwxMDEsMTg3LDI0MCwyMTQsMTczLDYsMTYyLDE3OSwxMiwyNTFdLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMjMsMTEzLDE1MywxNTcsNjYsMTkzLDE2NywxNTgsOTksMTE5LDIwMiwyMTUsMjAyLDIxNCw0MCw4LDI0MCwyMTAsMTc3LDIwMCwxNDMsOTcsMTcxLDc4LDExMSwyMTEsNzQsMjQyLDE1NCwxNywxNjUsMTddLCJJc0xlZnQiOnRydWV9LHsiUHJvb2ZIYXNoIjpbMjIsMTYsMTgxLDQzLDI2LDE1NiwyMDgsODUsMjE1LDExLDIwOCw2OCwyMjUsNiw5MiwyNDksMTg2LDE3OCwxMCwzLDEzNCwxMzcsMTg2LDEwNiwyMDQsMTc4LDIwOCw4LDE1Miw4NCwxNDksMjQ2XSwiSXNMZWZ0IjpmYWxzZX0seyJQcm9vZkhhc2giOls2OCwzNSwyNTUsMTI0LDkzLDg5LDkzLDE2NywxMiw4LDI1MCwxOTYsMTk2LDE4NSwxMTQsMjU1LDgwLDE2NywxMTAsMzUsMjM2LDcsMzgsMjA4LDEzMSwyMjIsNzMsNDQsMTc3LDIwNiw5OSwxMTFdLCJJc0xlZnQiOmZhbHNlfV0sIkJUQ1R4Ijp7IlZlcnNpb24iOjEsIlR4SW4iOlt7IlByZXZpb3VzT3V0UG9pbnQiOnsiSGFzaCI6WzIzMiwxNSwxNzQsMjQ2LDE3NSw1NSwyMTMsMTI4LDE4MSwxNTYsMzksMjE0LDY3LDEyMCw0MSwxMzMsMjUsMjE4LDE2MSwyMDQsMTA3LDM0LDUwLDE0Myw5OSwxMTQsMTcsMzcsNjUsMjM0LDIwMywxODldLCJJbmRleCI6MH0sIlNpZ25hdHVyZVNjcmlwdCI6IiIsIldpdG5lc3MiOm51bGwsIlNlcXVlbmNlIjo0Mjk0OTY3Mjk1fSx7IlByZXZpb3VzT3V0UG9pbnQiOnsiSGFzaCI6WzI1MiwyNTUsMjMxLDIzOSwxNzYsNzEsMTgzLDYyLDk4LDExMCwyMzMsMTE1LDQ4LDg5LDQsMTg1LDExLDEyMiwxNzcsMTMwLDIwMywxNjEsMTcwLDg5LDE3NywzLDcyLDEzNSw3NywxNDEsMTgyLDcyXSwiSW5kZXgiOjB9LCJTaWduYXR1cmVTY3JpcHQiOiIiLCJXaXRuZXNzIjpudWxsLCJTZXF1ZW5jZSI6NDI5NDk2NzI5NX1dLCJUeE91dCI6W3siVmFsdWUiOjMwMDAzMCwiUGtTY3JpcHQiOiJBQ0NHS2FZSGNLSHhUU0dDaU8vV0NBK2hqMUNlOXp2NGY1TXRROXc3eXlVejVnPT0ifSx7IlZhbHVlIjo1MDAwMjAsIlBrU2NyaXB0IjoicVJRbWpsQnU0cmtFVVF6SStDR3phdUE0aXk4b1RZYz0ifSx7IlZhbHVlIjoxMDAwMTAsIlBrU2NyaXB0IjoiQUNDR0thWUhjS0h4VFNHQ2lPL1dDQStoajFDZTl6djRmNU10UTl3N3l5VXo1Zz09In0seyJWYWx1ZSI6MzAwMDEwLCJQa1NjcmlwdCI6IkFCVFAwS1BGSGhLQkdPb2trTWNvakVWR0pDaEJHQT09In0seyJWYWx1ZSI6Nzk4OTMwLCJQa1NjcmlwdCI6IkFDQktCWGExMlo1dGFub3crSFlHOFdOdE5Iekk1YlI5L2NoMWl2WlozdnovSHc9PSJ9XSwiTG9ja1RpbWUiOjB9LCJCbG9ja0hhc2giOlsyMjgsMTAwLDM2LDExMyw1MiwxMTAsMTIzLDUwLDE0NywyMzIsODcsMzIsMjA1LDIwNyw2NCwzLDE3OCw3MCwxNzksMTcxLDc4LDQ2LDk5LDExOCwxNTYsMTgsMTc2LDAsMCwwLDAsMF19"
 
 type TestCaseSubmitConfirmedTx struct {
 	confirmedTxProof string
@@ -1516,7 +1521,7 @@ func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 		BatchID1,
 		[]string{"txid1"},
 		[]*statedb.UTXO{
-			statedb.NewUTXOWithValue(otm1, "fedf55ceb4076252a144ee581a4fc165f0c6369be8b510ff80d1e90cbea5aa2a", 0, 200000, PORTALV4_USER_INC_ADDRESS_1),
+			statedb.NewUTXOWithValue(otm1, "eaa6fcb6acf2786638ce68f1253742ecc0115a44c961f3612ff4c81c6f5572c1", 0, 200000, PORTALV4_USER_INC_ADDRESS_1),
 		},
 		map[uint64]uint{
 			900: 100000,
@@ -1525,10 +1530,21 @@ func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 
 	processUnshield2 := statedb.NewProcessedUnshieldRequestBatchWithValue(
 		BatchID2,
-		[]string{"txid2"},
+		[]string{"txid2", "txid3", "txid4"},
 		[]*statedb.UTXO{
-			statedb.NewUTXOWithValue(otm1, "ac6f14839487c726fc3722837a1ad50bbe2333b4b0be1a2800eeca25dd957202", 0, 12000, PORTALV4_USER_INC_ADDRESS_1),
-			statedb.NewUTXOWithValue(otm2, "e392c06d9b216877343d65a387add7aa636a87805549c7a9566374ca1ba7caed", 1, 200000, PORTALV4_USER_INC_ADDRESS_2),
+			statedb.NewUTXOWithValue(otm1, "3bfbe6c04e2063d81ccb35ef4a4ad1aadaf4ba8869fb75f570ba2adb92e28f95", 1, 1000000, PORTALV4_USER_INC_ADDRESS_1),
+		},
+		map[uint64]uint{
+			900: 100000,
+		},
+	)
+
+	processUnshield3 := statedb.NewProcessedUnshieldRequestBatchWithValue(
+		BatchID3,
+		[]string{"txid5", "txid6", "txid7", "txid8"},
+		[]*statedb.UTXO{
+			statedb.NewUTXOWithValue(otm1, "bdcbea41251172638f32226bcca1da1985297843d6279cb580d537aff6ae0fe8", 0, 1000000, PORTALV4_USER_INC_ADDRESS_1),
+			statedb.NewUTXOWithValue(otm2, "48b68d4d874803b159aaa1cb82b17a0bb904593073e96e623eb747b0efe7fffc", 0, 1000000, PORTALV4_USER_INC_ADDRESS_2),
 		},
 		map[uint64]uint{
 			900: 100000,
@@ -1539,6 +1555,7 @@ func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 		portalcommonv4.PortalBTCIDStr: {
 			statedb.GenerateProcessedUnshieldRequestBatchObjectKey(portalcommonv4.PortalBTCIDStr, BatchID1).String(): processUnshield1,
 			statedb.GenerateProcessedUnshieldRequestBatchObjectKey(portalcommonv4.PortalBTCIDStr, BatchID2).String(): processUnshield2,
+			statedb.GenerateProcessedUnshieldRequestBatchObjectKey(portalcommonv4.PortalBTCIDStr, BatchID3).String(): processUnshield3,
 		},
 	}
 
@@ -1604,7 +1621,7 @@ func buildPortalSubmitConfirmedTxAction(
 func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmitConfirmedTx, *ExpectedResultSubmitConfirmedTx) {
 
 	testcases := []TestCaseSubmitConfirmedTx{
-		// request submit external confirmed tx
+		// request submit external confirmed tx 1 - 1
 		{
 			batchID:          BatchID1,
 			confirmedTxProof: confirmedTxProof1,
@@ -1612,7 +1629,7 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 			outputs: []OutPut{
 				{
 					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
-					amount:          1000139,
+					amount:          1001300,
 				},
 			},
 		},
@@ -1624,19 +1641,27 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 			outputs: []OutPut{
 				{
 					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
-					amount:          1000139,
+					amount:          1001300,
 				},
 			},
 		},
 		// request submit proof with non-exist batchID
 		{
-			batchID:          BatchID3,
+			batchID:          BatchID4,
 			confirmedTxProof: confirmedTxProof2,
 			tokenID:          portalcommonv4.PortalBTCIDStr,
 			outputs: []OutPut{
 				{
-					externalAddress: "msTYtu7nsMiwFUtNgCSQBk26JeBf9q3GTM",
-					amount:          3000109,
+					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
+					amount:          1001300,
+				},
+				{
+					externalAddress: "2Mvm69jhFFBRBL5mHsb8TNjMfCpStoVAqWD",
+					amount:          1001200,
+				},
+				{
+					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
+					amount:          1001100,
 				},
 			},
 		},
@@ -1647,20 +1672,60 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 			tokenID:          portalcommonv4.PortalBTCIDStr,
 			outputs: []OutPut{
 				{
-					externalAddress: "tb1qv0k0gq5y65q867tjd8g8lmngzz9rf9nutmclqa",
-					amount:          1000139,
+					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
+					amount:          1001300,
+				},
+				{
+					externalAddress: "2Mvm69jhFFBRBL5mHsb8TNjMfCpStoVAqWD",
+					amount:          1001200,
+				},
+				{
+					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
+					amount:          1001100,
 				},
 			},
 		},
-		// request submit multi sender proof
+		// request submit 1 - n proof
 		{
 			batchID:          BatchID2,
 			confirmedTxProof: confirmedTxProof2,
 			tokenID:          portalcommonv4.PortalBTCIDStr,
 			outputs: []OutPut{
 				{
-					externalAddress: "tb1qv0k0gq5y65q867tjd8g8lmngzz9rf9nutmclqa",
-					amount:          1000139,
+					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
+					amount:          1001300,
+				},
+				{
+					externalAddress: "2Mvm69jhFFBRBL5mHsb8TNjMfCpStoVAqWD",
+					amount:          1001200,
+				},
+				{
+					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
+					amount:          1001100,
+				},
+			},
+		},
+		// request submit n - n proof
+		{
+			batchID:          BatchID3,
+			confirmedTxProof: confirmedTxProof4,
+			tokenID:          portalcommonv4.PortalBTCIDStr,
+			outputs: []OutPut{
+				{
+					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
+					amount:          3001300,
+				},
+				{
+					externalAddress: "2Mvm69jhFFBRBL5mHsb8TNjMfCpStoVAqWD",
+					amount:          5001200,
+				},
+				{
+					externalAddress: "tb1qsc56vpms58c56gvz3rhavzq05x84p8hh80u8lyedg0wrhje9x0nqd2q0qe",
+					amount:          1001100,
+				},
+				{
+					externalAddress: "tb1qelg283g7z2q3363yjrrj3rz9gcjzssgcx0yhfa",
+					amount:          3001100,
 				},
 			},
 		},
@@ -1677,25 +1742,28 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 		int(s.portalParams.NumRequiredSigs), PORTALV4_USER_INC_ADDRESS_1)
 
 	keyUTXO1, utxo1 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, otm1, "7a4734c33040cc93794722b29c75020a9a8364cb294a525704f33712acbb41aa", 1, 100000, PORTALV4_USER_INC_ADDRESS_1)
-	keyUTXO2, utxo2 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "3295983444a18fe0fd913e35099441dafd53ccb4b5866e5f8a425c5167067c31", 1, 110997, "")
-	keyUTXO3, utxo3 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "c66376a2d10d874da600e1d72ea3c7d4bae068d43f15bd7be13c8b005b1ee0da", 1, 98997, "")
+	keyUTXO2, utxo2 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "c45f4286489c1e5557f9b570d07d10248aea220ae550b05ad41b25e48220c044", 1, 898970, "")
+	keyUTXO3, utxo3 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "b545f9b26f5f4f1e519dad5c8f3025b0d9794d616022eaff4aaa7144f65aeb62", 3, 698940, "")
+	keyUTXO4, utxo4 := generateUTXOKeyAndValue(portalcommonv4.PortalBTCIDStr, btcMultiSigAddress, "f03e36236a6fd9714d8f85f1091dea632aa4a5abb562f43bc7f04bdf9f0bf928", 4, 798930, "")
 	utxos := map[string]map[string]*statedb.UTXO{
 		portalcommonv4.PortalBTCIDStr: {
 			keyUTXO1: utxo1,
 			keyUTXO2: utxo2,
 			keyUTXO3: utxo3,
+			keyUTXO4: utxo4,
 		},
 	}
 
 	// build expected results
 	expectedRes := &ExpectedResultSubmitConfirmedTx{
 		processedUnshieldRequests: processedUnshieldRequests,
-		numBeaconInsts:            5,
+		numBeaconInsts:            6,
 		statusInsts: []string{
 			portalcommonv4.PortalV4RequestAcceptedChainStatus,
 			portalcommonv4.PortalV4RequestRejectedChainStatus,
 			portalcommonv4.PortalV4RequestRejectedChainStatus,
 			portalcommonv4.PortalV4RequestRejectedChainStatus,
+			portalcommonv4.PortalV4RequestAcceptedChainStatus,
 			portalcommonv4.PortalV4RequestAcceptedChainStatus,
 		},
 		utxos: utxos,
@@ -1707,7 +1775,7 @@ func buildExpectedResultSubmitConfirmedTx(s *PortalTestSuiteV4) ([]TestCaseSubmi
 func (s *PortalTestSuiteV4) TestSubmitConfirmedTx() {
 	fmt.Println("Running TestSubmitConfirmedTx - beacon height 1501 ...")
 	networkName := "test3"
-	genesisBlockHeight := 1970054
+	genesisBlockHeight := 1970927
 	chainParams, err := setGenesisBlockToChainParams(networkName, genesisBlockHeight)
 	dbName := "btc-blocks-test"
 	btcChain, err := btcrelaying.GetChainV2(dbName, chainParams, int32(genesisBlockHeight))
@@ -1718,7 +1786,7 @@ func (s *PortalTestSuiteV4) TestSubmitConfirmedTx() {
 		return
 	}
 
-	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+14; i++ {
+	for i := genesisBlockHeight + 1; i <= genesisBlockHeight+9; i++ {
 		blk, err := buildBTCBlockFromCypher(networkName, i)
 		if err != nil {
 			s.FailNow(fmt.Sprintf("buildBTCBlockFromCypher fail on block %v: %v\n", i, err), nil)

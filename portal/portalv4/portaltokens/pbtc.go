@@ -437,9 +437,9 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, masterP
 
 func (p PortalBTCTokenProcessor) IsAcceptableTxSize(num_utxos int, num_unshield_id int) bool {
 	// TODO: do experiments depend on external chain miner's habit
-	A := 1 // input size (include sig size) in byte
-	B := 1 // output size in byte
-	C := 6 // max transaction size in byte ~ 10 KB
+	A := 1 // vsize = 192.25 for input-UTXO P2WSH 5-7
+	B := 1 // max_vsize = 43 for UTXOs send to P2WSH address
+	C := 6 // max_vsize of a transaction in byte ~ 10 KB
 	return A*num_utxos+B*num_unshield_id <= C
 }
 

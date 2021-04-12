@@ -5,10 +5,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 )
 
 type PortalReplacementFeeRequest struct {
@@ -105,6 +107,11 @@ func (repl PortalReplacementFeeRequest) ValidateSanityData(chainRetriever ChainR
 	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, repl.TokenID, common.PortalVersion4)
 	if !isPortalToken || err != nil {
 		return false, false, errors.New("TokenID is not supported currently on Portal v4")
+	}
+
+	// validate amount of pToken is divisible by the decimal difference between nano pToken and nano Token
+	if repl.TokenID == portalcommonv4.PortalBTCIDStr && repl.Fee%10 != 0 {
+		return false, false, errors.New("pBTC amount has to be divisible by 10")
 	}
 
 	if repl.BatchID == "" || repl.Fee < 1 {
