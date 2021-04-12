@@ -854,7 +854,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(sh
 		tokenID := *privacyCustomTokenSubView.tokenID
 		existed := statedb.PrivacyTokenIDExisted(transactionStateRoot, tokenID)
 		if !existed {
-			Logger.log.Info("Store custom token when it is issued ", tokenID, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol, privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount, privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable)
+			Logger.log.Info("Cross-shard tx: store custom token when it is issued ", tokenID, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol, privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount, privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable)
 			name := privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName
 			symbol := privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol
 			mintable := privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable

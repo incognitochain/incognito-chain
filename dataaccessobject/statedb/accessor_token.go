@@ -31,7 +31,7 @@ func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Ha
 		return NewStatedbError(GetPrivacyTokenError, err)
 	}
 	if !has {
-		err := StorePrivacyToken(stateDB, tokenID, "", "", UnknownToken, false, 0, []byte{}, common.Hash{})
+		err := StorePrivacyToken(stateDB, tokenID, "", "", UnknownToken, false, 0, []byte{}, txHash)
 		if err != nil {
 			return err
 		}

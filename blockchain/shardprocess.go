@@ -1009,9 +1009,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
 
-	err := blockchain.storeTokenInitInstructions(newShardState.transactionStateDB, beaconBlocks)
-	if err != nil {
-		return NewBlockChainError(StoreShardBlockError, fmt.Errorf("storeTokenInitInstructions error: %v", err))
+	if blockchain.IsAfterPrivacyV2CheckPoint(0) {
+		err := blockchain.storeTokenInitInstructions(newShardState.transactionStateDB, beaconBlocks)
+		if err != nil {
+			return NewBlockChainError(StoreShardBlockError, fmt.Errorf("storeTokenInitInstructions error: %v", err))
+		}
 	}
 
 	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, blockHeight, *shardBlock.Hash())
