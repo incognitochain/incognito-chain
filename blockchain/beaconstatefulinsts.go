@@ -100,7 +100,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	beaconHeight uint64,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams portal.PortalParams) [][]string {
-	currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconHeight-1)
+
+	currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconBestState.pdeState, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -598,4 +599,3 @@ func (blockchain *BlockChain) handlePDEInsts(
 	}
 	return instructions, nil
 }
-

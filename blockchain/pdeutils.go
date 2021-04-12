@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -52,10 +53,52 @@ type DeductingAmountsByWithdrawalWithPRVFee struct {
 	FeeAmount     uint64
 }
 
+func (lastState *CurrentPDEState) transformKeyWithNewBeaconHeight(beaconHeight uint64) *CurrentPDEState {
+	sameHeight := false
+	//transform pdex key prefix-<beaconheight>-id1-id2 (if same height, no transform)
+	transformKey := func(key string, beaconHeight uint64) string {
+		if sameHeight {
+			return key
+		}
+		keySplit := strings.Split(key, "-")
+		keySplit[1] = strconv.Itoa(int(beaconHeight))
+		if keySplit[1] == strconv.Itoa(int(beaconHeight)) {
+			sameHeight = true
+		}
+		return strings.Join(keySplit, "-")
+	}
+
+	newState := &CurrentPDEState{}
+	for k, v := range lastState.WaitingPDEContributions {
+		newState.WaitingPDEContributions[transformKey(k, beaconHeight)] = v
+		if sameHeight {
+			return lastState
+		}
+	}
+	for k, v := range lastState.DeletedWaitingPDEContributions {
+		newState.DeletedWaitingPDEContributions[transformKey(k, beaconHeight)] = v
+	}
+	for k, v := range lastState.PDEPoolPairs {
+		newState.PDEPoolPairs[transformKey(k, beaconHeight)] = v
+	}
+	for k, v := range lastState.PDEShares {
+		newState.PDEShares[transformKey(k, beaconHeight)] = v
+	}
+	for k, v := range lastState.PDETradingFees {
+		newState.PDETradingFees[transformKey(k, beaconHeight)] = v
+	}
+	return newState
+}
+
 func InitCurrentPDEStateFromDB(
 	stateDB *statedb.StateDB,
+	lastState *CurrentPDEState,
 	beaconHeight uint64,
 ) (*CurrentPDEState, error) {
+	if lastState != nil {
+		lastState.transformKeyWithNewBeaconHeight(beaconHeight)
+		return lastState, nil
+	}
 	waitingPDEContributions, err := statedb.GetWaitingPDEContributions(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
@@ -72,6 +115,7 @@ func InitCurrentPDEStateFromDB(
 	if err != nil {
 		return nil, err
 	}
+
 	return &CurrentPDEState{
 		WaitingPDEContributions:        waitingPDEContributions,
 		PDEPoolPairs:                   pdePoolPairs,

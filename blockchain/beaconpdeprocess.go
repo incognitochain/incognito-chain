@@ -13,12 +13,18 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateDB, beaconBlock *types.BeaconBlock) error {
+func (blockchain *BlockChain) processPDEInstructions(beaconView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
 	if !hasPDEInstruction(beaconBlock.Body.Instructions) {
 		return nil
 	}
+	var err error
+	pdexStateDB := beaconView.featureStateDB
 	beaconHeight := beaconBlock.Header.Height - 1
-	currentPDEState, err := InitCurrentPDEStateFromDB(pdexStateDB, beaconHeight)
+	currentPDEState := beaconView.pdeState
+	if currentPDEState == nil {
+		currentPDEState, err = InitCurrentPDEStateFromDB(beaconView.featureStateDB, beaconView.pdeState, beaconHeight)
+	}
+
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
