@@ -1357,11 +1357,10 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 						return err
 					}
 
-					Logger.log.Infof("process storing tokenInit: %v\n", *acceptedContent)
-
 					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.TokenID); existed {
-						Logger.log.Infof("token %v existed\n", acceptedContent.TokenID.String())
-						continue
+						msgStr := fmt.Sprintf("init token %v existed, something might be wrong", acceptedContent.TokenID.String())
+						Logger.log.Infof(msgStr + "\n")
+						return fmt.Errorf(msgStr)
 					}
 
 					err = statedb.StorePrivacyToken(stateDB, acceptedContent.TokenID, acceptedContent.TokenName,
@@ -1372,7 +1371,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 						return err
 					}
 
-					Logger.log.Infof("store token %v succeeded\n", acceptedContent.TokenID.String())
+					Logger.log.Infof("store init token %v succeeded\n", acceptedContent.TokenID.String())
 				}
 
 			case metadata.IssuingETHRequestMeta:
@@ -1384,7 +1383,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 					}
 
 					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.IncTokenID); existed {
-						Logger.log.Infof("token %v existed\n", acceptedContent.IncTokenID.String())
+						Logger.log.Infof("eth-issued token %v existed, skip storing this token\n", acceptedContent.IncTokenID.String())
 						continue
 					}
 
@@ -1396,7 +1395,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 						return err
 					}
 
-					Logger.log.Infof("store token %v succeeded\n", acceptedContent.IncTokenID.String())
+					Logger.log.Infof("store eth-isssued token %v succeeded\n", acceptedContent.IncTokenID.String())
 				}
 
 			case metadata.IssuingRequestMeta:
@@ -1408,7 +1407,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 					}
 
 					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.IncTokenID); existed {
-						Logger.log.Infof("token %v existed\n", acceptedContent.IncTokenID.String())
+						Logger.log.Infof("issued token %v existed, skip storing this token\n", acceptedContent.IncTokenID.String())
 						continue
 					}
 
@@ -1420,7 +1419,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 						return err
 					}
 
-					Logger.log.Infof("store token %v succeeded\n", acceptedContent.IncTokenID.String())
+					Logger.log.Infof("store issued token %v succeeded\n", acceptedContent.IncTokenID.String())
 				}
 			}
 		}
