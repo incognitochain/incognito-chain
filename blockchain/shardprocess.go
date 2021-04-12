@@ -203,7 +203,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 
-	//only validate all tx if we have env variable TX_VALIDATION = 1
+	//only validate all tx if we have env variable FULL_VALIDATION = 1
 	if fullValidation == "1" {
 		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(curView.BeaconHeight), curView); err != nil {
 			return NewBlockChainError(TransactionFromNewBlockError, err)
