@@ -14,7 +14,7 @@ import (
 
 func (blockchain *BlockChain) processPDEInstructions(beaconView *BeaconBestState, beaconBlock *types.BeaconBlock) (*CurrentPDEState, error) {
 	if !hasPDEInstruction(beaconBlock.Body.Instructions) {
-		return nil, nil
+		return beaconView.pdeState, nil
 	}
 	pdexStateDB := beaconView.featureStateDB
 	beaconHeight := beaconBlock.Header.Height - 1
@@ -53,7 +53,15 @@ func (blockchain *BlockChain) processPDEInstructions(beaconView *BeaconBestState
 	return currentPDEState, nil
 }
 
-func getDiffPDEState(previous *CurrentPDEState, current *CurrentPDEState) (diffState CurrentPDEState) {
+func getDiffPDEState(previous *CurrentPDEState, current *CurrentPDEState) (diffState *CurrentPDEState) {
+	if current == nil {
+		return nil
+	}
+	if previous == nil {
+		return current
+	}
+
+	diffState = new(CurrentPDEState)
 	diffState.WaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
 	diffState.DeletedWaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
 	diffState.PDEPoolPairs = make(map[string]*rawdbv2.PDEPoolForPair)

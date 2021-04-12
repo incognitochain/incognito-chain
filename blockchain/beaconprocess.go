@@ -823,24 +823,19 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
 	// execute, store PDE instruction
-	time1 := time.Now()
-	pdeState, err := blockchain.processPDEInstructions(newBestState, beaconBlock)
-	if pdeState != nil {
-		newBestState.pdeState = pdeState
-	}
-
+	newBestState.pdeState, err = blockchain.processPDEInstructions(newBestState, beaconBlock)
 	if newBestState.pdeState != nil {
-		if reflect.DeepEqual(curView.pdeState, newBestState.pdeState) {
+		if !reflect.DeepEqual(curView.pdeState, newBestState.pdeState) {
 			//check updated field in currentPDEState and store these field into statedb
 			diffState := getDiffPDEState(curView.pdeState, newBestState.pdeState)
-			err = storePDEStateToDB(newBestState.featureStateDB, &diffState)
+			err = storePDEStateToDB(newBestState.featureStateDB, diffState)
 			if err != nil {
 				Logger.log.Error(err)
 			}
 		}
+		//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
 		newBestState.pdeState = newBestState.pdeState.transformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
 	}
-	fmt.Println("processPDEInstructions", time.Since(time1).Seconds())
 
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
@@ -862,7 +857,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
 	//}
-	fmt.Println("processPortalInstructions", time.Since(time1).Seconds())
+
 	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
 	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
 	//	return err
