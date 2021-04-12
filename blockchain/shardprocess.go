@@ -936,6 +936,9 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 	listTxs := []metadata.Transaction{}
 
 	for _, tx := range txs {
+		if tx.GetTokenID().String() == "0000000000000000000000000000000000000000000000000000000000000100" {
+			Logger.log.Infof("BUGLOG4 token 0000000000000000000000000000000000000000000000000000000000000100, tx %v\n", tx.Hash().String())
+		}
 		if tx.IsSalaryTx() {
 			_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, beaconHeight, curView)
 			if err!=nil{
