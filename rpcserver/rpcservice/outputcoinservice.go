@@ -9,8 +9,9 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	txutils "github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -18,7 +19,7 @@ type CoinService struct {
 	BlockChain *blockchain.BlockChain
 }
 
-func (coinService CoinService) ListDecryptedOutputCoinsByKeySet(keySet *incognitokey.KeySet, shardID byte, shardHeight uint64) ([]coin.PlainCoin, uint64, error) {
+func (coinService CoinService) ListDecryptedOutputCoinsByKeySet(keySet *incognitokey.KeySet, shardID byte, shardHeight uint64) ([]privacy.PlainCoin, uint64, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
@@ -83,7 +84,7 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 			db := coinService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 
 			if outCoin.GetVersion() == 2{
-				tmpCoin, ok := outCoin.(*coin.CoinV2)
+				tmpCoin, ok := outCoin.(*privacy.CoinV2)
 				if !ok{
 					continue
 				}
@@ -182,6 +183,28 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 		}
+
+		// if this is a submitted OTA key and indexing is enabled, "cache" the coins
+		if coinIndexer := blockchain.GetCoinIndexer(); coinIndexer != nil  && keySet.OTAKey.GetOTASecretKey() != nil {
+			var coinsToStore []privacy.Coin
+			if hasKey, _ := coinIndexer.HasOTAKey(txutils.OTAKeyToRaw(keySet.OTAKey)); hasKey {
+				for _, c := range outputCoins {
+					//indexer supports v2 only
+					if c.GetVersion() == 2 {
+						coinsToStore = append(coinsToStore, c)
+					}
+				}
+				for _, c := range plainOutputCoins {
+					if c.GetVersion() == 2 {
+						coinAsV2, ok := c.(*privacy.CoinV2)
+						if ok {
+							coinsToStore = append(coinsToStore, coinAsV2)
+						}
+					}
+				}
+				coinIndexer.StoreReindexedOutputCoins(keySet.OTAKey, coinsToStore, shardIDSender)
+			}
+		}
 		result.ToHeight = toHeight
 		result.FromHeight = fromHeight
 		item := make([]jsonresult.OutCoin, 0)
@@ -193,7 +216,7 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 				db := coinService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
 
 				if outCoin.GetVersion() == 2{
-					tmpCoin, ok := outCoin.(*coin.CoinV2)
+					tmpCoin, ok := outCoin.(*privacy.CoinV2)
 					if !ok{
 						continue
 					}
@@ -224,7 +247,7 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 				db := coinService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
 
 				if outCoin.GetVersion() == 2{
-					tmpCoin, ok := outCoin.(*coin.CoinV2)
+					tmpCoin, ok := outCoin.(*privacy.CoinV2)
 					if !ok{
 						continue
 					}
@@ -332,7 +355,7 @@ func (coinService CoinService) ListCachedOutputCoinsByKey(listKeyParams []interf
 			db := coinService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
 
 			if outCoin.GetVersion() == 2{
-				tmpCoin, ok := outCoin.(*coin.CoinV2)
+				tmpCoin, ok := outCoin.(*privacy.CoinV2)
 				if !ok{
 					continue
 				}
@@ -363,7 +386,7 @@ func (coinService CoinService) ListCachedOutputCoinsByKey(listKeyParams []interf
 			db := coinService.BlockChain.GetBestStateShard(shardIDSender).GetCopiedTransactionStateDB()
 
 			if outCoin.GetVersion() == 2{
-				tmpCoin, ok := outCoin.(*coin.CoinV2)
+				tmpCoin, ok := outCoin.(*privacy.CoinV2)
 				if !ok{
 					continue
 				}
@@ -447,7 +470,7 @@ func (coinService CoinService) ListUnspentOutputTokensByKey(listKeyParams []inte
 			db := coinService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
 
 			if outCoin.GetVersion() == 2{
-				tmpCoin, ok := outCoin.(*coin.CoinV2)
+				tmpCoin, ok := outCoin.(*privacy.CoinV2)
 				if !ok{
 					continue
 				}

@@ -27,6 +27,7 @@ import (
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
+	txutils "github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
 type BlockChain struct {
@@ -104,7 +105,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb!=nil)
 	if EnableIndexingCoinByOTAKey{
 		var err error
-		outcoinReindexer, err = NewOutcoinReindexer(OutcoinReindexerRoutines, *config.OutcoinByOTAKeyDb)
+		outcoinIndexer, err = txutils.NewOutcoinReindexer(*config.OutcoinByOTAKeyDb)
 		return err
 	}
 	return nil
