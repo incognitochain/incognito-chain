@@ -95,6 +95,24 @@ func NewBeaconCommitteeStateV1() *BeaconCommitteeStateV1 {
 	}
 }
 
+func NewBeaconCommitteeStateV1WithMu(mu *sync.RWMutex) *BeaconCommitteeStateV1 {
+	return &BeaconCommitteeStateV1{
+		shardCommittee:  make(map[byte][]incognitokey.CommitteePublicKey),
+		shardSubstitute: make(map[byte][]incognitokey.CommitteePublicKey),
+		autoStake:       make(map[string]bool),
+		rewardReceiver:  make(map[string]privacy.PaymentAddress),
+		stakingTx:       make(map[string]common.Hash),
+		mu:              mu,
+	}
+}
+
+//softCopy maintain dst mutex value
+func (b *BeaconCommitteeStateV1) softCopy(newB *BeaconCommitteeStateV1) {
+	tempMu := newB.mu
+	newB = b
+	newB.mu = tempMu
+}
+
 func (b BeaconCommitteeStateV1) clone(newB *BeaconCommitteeStateV1) {
 	newB.reset()
 	newB.beaconCommittee = b.beaconCommittee
@@ -274,36 +292,14 @@ func (engine *BeaconCommitteeEngineV1) GetAllCandidateSubstituteCommittee() []st
 	return engine.beaconCommitteeStateV1.getAllCandidateSubstituteCommittee()
 }
 
-//Commit :
-func (engine *BeaconCommitteeEngineV1) Commit(hashes *BeaconCommitteeStateHash) error {
-	if reflect.DeepEqual(engine.uncommittedBeaconCommitteeStateV1, NewBeaconCommitteeStateV1()) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("%+v", engine.uncommittedBeaconCommitteeStateV1))
-	}
+//Commit is deprecate
+func (engine *BeaconCommitteeEngineV1) Commit(hashes *BeaconCommitteeStateHash, change *CommitteeChange) error {
 	engine.uncommittedBeaconCommitteeStateV1.mu.Lock()
 	defer engine.uncommittedBeaconCommitteeStateV1.mu.Unlock()
 	engine.beaconCommitteeStateV1.mu.Lock()
 	defer engine.beaconCommitteeStateV1.mu.Unlock()
-	comparedHashes, err := engine.generateUncommittedCommitteeHashes()
-	if err != nil {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, err)
-	}
-	if !comparedHashes.BeaconCommitteeAndValidatorHash.IsEqual(&hashes.BeaconCommitteeAndValidatorHash) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("Uncommitted BeaconCommitteeAndValidatorHash want value %+v but have %+v", comparedHashes.BeaconCommitteeAndValidatorHash, hashes.BeaconCommitteeAndValidatorHash))
-	}
-	if !comparedHashes.BeaconCandidateHash.IsEqual(&hashes.BeaconCandidateHash) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("Uncommitted BeaconCandidateHash want value %+v but have %+v", comparedHashes.BeaconCandidateHash, hashes.BeaconCandidateHash))
-	}
-	if !comparedHashes.ShardCandidateHash.IsEqual(&hashes.ShardCandidateHash) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("Uncommitted ShardCandidateHash want value %+v but have %+v", comparedHashes.ShardCandidateHash, hashes.ShardCandidateHash))
-	}
-	if !comparedHashes.ShardCommitteeAndValidatorHash.IsEqual(&hashes.ShardCommitteeAndValidatorHash) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("Uncommitted ShardCommitteeAndValidatorHash want value %+v but have %+v", comparedHashes.ShardCommitteeAndValidatorHash, hashes.ShardCommitteeAndValidatorHash))
-	}
-	if !comparedHashes.AutoStakeHash.IsEqual(&hashes.AutoStakeHash) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("Uncommitted AutoStakingHash want value %+v but have %+v", comparedHashes.AutoStakeHash, hashes.AutoStakeHash))
-	}
-	engine.uncommittedBeaconCommitteeStateV1.clone(engine.beaconCommitteeStateV1)
-	engine.uncommittedBeaconCommitteeStateV1.reset()
+	engine.uncommittedBeaconCommitteeStateV1.softCopy(engine.beaconCommitteeStateV1)
+	engine.uncommittedBeaconCommitteeStateV1 = NewBeaconCommitteeStateV1WithMu(engine.uncommittedBeaconCommitteeStateV1.mu)
 	return nil
 }
 
