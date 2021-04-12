@@ -936,9 +936,6 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 	listTxs := []metadata.Transaction{}
 
 	for _, tx := range txs {
-		if tx.GetTokenID().String() == "0000000000000000000000000000000000000000000000000000000000000100" {
-			Logger.log.Infof("BUGLOG4 token 0000000000000000000000000000000000000000000000000000000000000100, tx %v\n", tx.Hash().String())
-		}
 		if tx.IsSalaryTx() {
 			_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, beaconHeight, curView)
 			if err!=nil{
@@ -1009,11 +1006,9 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
 
-	if blockchain.IsAfterPrivacyV2CheckPoint(0) {
-		err := blockchain.storeTokenInitInstructions(newShardState.transactionStateDB, beaconBlocks)
-		if err != nil {
-			return NewBlockChainError(StoreShardBlockError, fmt.Errorf("storeTokenInitInstructions error: %v", err))
-		}
+	err := blockchain.storeTokenInitInstructions(newShardState.transactionStateDB, beaconBlocks)
+	if err != nil {
+		return NewBlockChainError(StoreShardBlockError, fmt.Errorf("storeTokenInitInstructions error: %v", err))
 	}
 
 	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, blockHeight, *shardBlock.Hash())
