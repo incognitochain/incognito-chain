@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -54,6 +55,7 @@ type DeductingAmountsByWithdrawalWithPRVFee struct {
 }
 
 func (lastState *CurrentPDEState) transformKeyWithNewBeaconHeight(beaconHeight uint64) *CurrentPDEState {
+	time1 := time.Now()
 	sameHeight := false
 	//transform pdex key prefix-<beaconheight>-id1-id2 (if same height, no transform)
 	transformKey := func(key string, beaconHeight uint64) string {
@@ -61,14 +63,20 @@ func (lastState *CurrentPDEState) transformKeyWithNewBeaconHeight(beaconHeight u
 			return key
 		}
 		keySplit := strings.Split(key, "-")
-		keySplit[1] = strconv.Itoa(int(beaconHeight))
 		if keySplit[1] == strconv.Itoa(int(beaconHeight)) {
 			sameHeight = true
 		}
+		keySplit[1] = strconv.Itoa(int(beaconHeight))
 		return strings.Join(keySplit, "-")
 	}
 
 	newState := &CurrentPDEState{}
+	newState.WaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
+	newState.DeletedWaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
+	newState.PDEPoolPairs = make(map[string]*rawdbv2.PDEPoolForPair)
+	newState.PDEShares = make(map[string]uint64)
+	newState.PDETradingFees = make(map[string]uint64)
+
 	for k, v := range lastState.WaitingPDEContributions {
 		newState.WaitingPDEContributions[transformKey(k, beaconHeight)] = v
 		if sameHeight {
@@ -87,6 +95,7 @@ func (lastState *CurrentPDEState) transformKeyWithNewBeaconHeight(beaconHeight u
 	for k, v := range lastState.PDETradingFees {
 		newState.PDETradingFees[transformKey(k, beaconHeight)] = v
 	}
+	fmt.Println("transform key", time.Since(time1).Seconds())
 	return newState
 }
 

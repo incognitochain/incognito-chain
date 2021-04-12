@@ -4,40 +4,26 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"reflect"
-	"strconv"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"reflect"
+	"strconv"
 )
 
-func (blockchain *BlockChain) processPDEInstructions(beaconView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
+func (blockchain *BlockChain) processPDEInstructions(beaconView *BeaconBestState, beaconBlock *types.BeaconBlock) (*CurrentPDEState, error) {
 	if !hasPDEInstruction(beaconBlock.Body.Instructions) {
-		return nil
+		return nil, nil
 	}
-	var err error
 	pdexStateDB := beaconView.featureStateDB
 	beaconHeight := beaconBlock.Header.Height - 1
-	currentPDEState := beaconView.pdeState
-	if currentPDEState == nil {
-		currentPDEState, err = InitCurrentPDEStateFromDB(beaconView.featureStateDB, beaconView.pdeState, beaconHeight)
-	}
-
+	currentPDEState, err := InitCurrentPDEStateFromDB(beaconView.featureStateDB, beaconView.pdeState, beaconHeight)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil
+		return nil, err
 	}
-	backUpCurrentPDEState := new(CurrentPDEState)
-	temp, err := json.Marshal(currentPDEState)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(temp, backUpCurrentPDEState)
-	if err != nil {
-		return err
-	}
+
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) < 2 {
 			continue // Not error, just not PDE instruction
@@ -61,23 +47,19 @@ func (blockchain *BlockChain) processPDEInstructions(beaconView *BeaconBestState
 		}
 		if err != nil {
 			Logger.log.Error(err)
-			return nil
+			return nil, err
 		}
 	}
-	if reflect.DeepEqual(backUpCurrentPDEState, currentPDEState) {
-		return nil
-	}
-
-	//check updated field in currentPDEState and store these field into statedb
-	diffState := getDiffPDEState(backUpCurrentPDEState, currentPDEState)
-	err = storePDEStateToDB(pdexStateDB, &diffState)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	return nil
+	return currentPDEState, nil
 }
 
 func getDiffPDEState(previous *CurrentPDEState, current *CurrentPDEState) (diffState CurrentPDEState) {
+	diffState.WaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
+	diffState.DeletedWaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
+	diffState.PDEPoolPairs = make(map[string]*rawdbv2.PDEPoolForPair)
+	diffState.PDEShares = make(map[string]uint64)
+	diffState.PDETradingFees = make(map[string]uint64)
+
 	for k, v := range current.WaitingPDEContributions {
 		if m, ok := previous.WaitingPDEContributions[k]; !ok || !reflect.DeepEqual(m, v) {
 			diffState.WaitingPDEContributions[k] = v

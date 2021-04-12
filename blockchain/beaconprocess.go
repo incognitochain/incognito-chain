@@ -183,7 +183,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange); err2 != nil {
+	if err2 := blockchain.processStoreBeaconBlock(curView, newBestState, beaconBlock, committeeChange); err2 != nil {
 		return err2
 	}
 
@@ -710,6 +710,7 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 }
 
 func (blockchain *BlockChain) processStoreBeaconBlock(
+	curView *BeaconBestState,
 	newBestState *BeaconBestState,
 	beaconBlock *types.BeaconBlock,
 	committeeChange *committeestate.CommitteeChange,
@@ -822,7 +823,25 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
 	// execute, store PDE instruction
-	err = blockchain.processPDEInstructions(newBestState, beaconBlock)
+	time1 := time.Now()
+	pdeState, err := blockchain.processPDEInstructions(newBestState, beaconBlock)
+	if pdeState != nil {
+		newBestState.pdeState = pdeState
+	}
+
+	if newBestState.pdeState != nil {
+		if reflect.DeepEqual(curView.pdeState, newBestState.pdeState) {
+			//check updated field in currentPDEState and store these field into statedb
+			diffState := getDiffPDEState(curView.pdeState, newBestState.pdeState)
+			err = storePDEStateToDB(newBestState.featureStateDB, &diffState)
+			if err != nil {
+				Logger.log.Error(err)
+			}
+		}
+		newBestState.pdeState = newBestState.pdeState.transformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
+	}
+	fmt.Println("processPDEInstructions", time.Since(time1).Seconds())
+
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
@@ -843,7 +862,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
 	//}
-
+	fmt.Println("processPortalInstructions", time.Since(time1).Seconds())
 	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
 	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {
 	//	return err
