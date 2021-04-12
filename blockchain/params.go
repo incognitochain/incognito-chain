@@ -320,7 +320,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               15290,
 		StakingFlowV2Height:            2051863,
-		EnableSlashingStakingFlowV2:    1e12,
+		EnableSlashingStakingFlowV2:    2087789,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
 		PortalParams: portal.PortalParams{
