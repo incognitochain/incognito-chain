@@ -824,6 +824,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	// execute, store PDE instruction
 	newBestState.pdeState, err = blockchain.processPDEInstructions(newBestState, beaconBlock)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
 	if newBestState.pdeState != nil {
 		if !reflect.DeepEqual(curView.pdeState, newBestState.pdeState) {
 			//check updated field in currentPDEState and store these field into statedb
@@ -831,6 +835,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 			err = storePDEStateToDB(newBestState.featureStateDB, diffState)
 			if err != nil {
 				Logger.log.Error(err)
+				return err
 			}
 		}
 		//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2

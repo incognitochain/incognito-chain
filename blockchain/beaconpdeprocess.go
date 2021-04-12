@@ -20,7 +20,6 @@ func (blockchain *BlockChain) processPDEInstructions(beaconView *BeaconBestState
 	beaconHeight := beaconBlock.Header.Height - 1
 	currentPDEState, err := InitCurrentPDEStateFromDB(beaconView.featureStateDB, beaconView.pdeState, beaconHeight)
 	if err != nil {
-		Logger.log.Error(err)
 		return nil, err
 	}
 
@@ -46,7 +45,6 @@ func (blockchain *BlockChain) processPDEInstructions(beaconView *BeaconBestState
 			err = blockchain.processPDETradingFeesDistribution(pdexStateDB, beaconHeight, inst, currentPDEState)
 		}
 		if err != nil {
-			Logger.log.Error(err)
 			return nil, err
 		}
 	}
