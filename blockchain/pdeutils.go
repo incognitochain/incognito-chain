@@ -83,24 +83,23 @@ func InitCurrentPDEStateFromDB(
 
 func storePDEStateToDB(
 	stateDB *statedb.StateDB,
-	beaconHeight uint64,
 	currentPDEState *CurrentPDEState,
 ) error {
 	var err error
 	statedb.DeleteWaitingPDEContributions(stateDB, currentPDEState.DeletedWaitingPDEContributions)
-	err = statedb.StoreWaitingPDEContributions(stateDB, beaconHeight, currentPDEState.WaitingPDEContributions)
+	err = statedb.StoreWaitingPDEContributions(stateDB, currentPDEState.WaitingPDEContributions)
 	if err != nil {
 		return err
 	}
-	err = statedb.StorePDEPoolPairs(stateDB, beaconHeight, currentPDEState.PDEPoolPairs)
+	err = statedb.StorePDEPoolPairs(stateDB, currentPDEState.PDEPoolPairs)
 	if err != nil {
 		return err
 	}
-	err = statedb.StorePDEShares(stateDB, beaconHeight, currentPDEState.PDEShares)
+	err = statedb.StorePDEShares(stateDB, currentPDEState.PDEShares)
 	if err != nil {
 		return err
 	}
-	err = statedb.StorePDETradingFees(stateDB, beaconHeight, currentPDEState.PDETradingFees)
+	err = statedb.StorePDETradingFees(stateDB, currentPDEState.PDETradingFees)
 	if err != nil {
 		return err
 	}

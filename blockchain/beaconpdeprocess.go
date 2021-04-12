@@ -61,12 +61,43 @@ func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateD
 	if reflect.DeepEqual(backUpCurrentPDEState, currentPDEState) {
 		return nil
 	}
-	// store updated currentPDEState to leveldb with new beacon height
-	err = storePDEStateToDB(pdexStateDB, beaconHeight+1, currentPDEState)
+
+	//check updated field in currentPDEState and store these field into statedb
+	diffState := getDiffPDEState(backUpCurrentPDEState, currentPDEState)
+	err = storePDEStateToDB(pdexStateDB, &diffState)
 	if err != nil {
 		Logger.log.Error(err)
 	}
 	return nil
+}
+
+func getDiffPDEState(previous *CurrentPDEState, current *CurrentPDEState) (diffState CurrentPDEState) {
+	for k, v := range current.WaitingPDEContributions {
+		if m, ok := previous.WaitingPDEContributions[k]; !ok || !reflect.DeepEqual(m, v) {
+			diffState.WaitingPDEContributions[k] = v
+		}
+	}
+	for k, v := range current.DeletedWaitingPDEContributions {
+		if m, ok := previous.DeletedWaitingPDEContributions[k]; !ok || !reflect.DeepEqual(m, v) {
+			diffState.DeletedWaitingPDEContributions[k] = v
+		}
+	}
+	for k, v := range current.PDEPoolPairs {
+		if m, ok := previous.PDEPoolPairs[k]; !ok || !reflect.DeepEqual(m, v) {
+			diffState.PDEPoolPairs[k] = v
+		}
+	}
+	for k, v := range current.PDEShares {
+		if m, ok := previous.PDEShares[k]; !ok || !reflect.DeepEqual(m, v) {
+			diffState.PDEShares[k] = v
+		}
+	}
+	for k, v := range current.PDETradingFees {
+		if m, ok := previous.PDETradingFees[k]; !ok || !reflect.DeepEqual(m, v) {
+			diffState.PDETradingFees[k] = v
+		}
+	}
+	return diffState
 }
 
 func hasPDEInstruction(instructions [][]string) bool {
