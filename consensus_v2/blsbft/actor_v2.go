@@ -817,7 +817,6 @@ func (actorV2 *actorV2) getValidProposeBlocks(bestView multiview.View) []*Propos
 			delete(actorV2.receiveBlockByHash, h)
 			delete(actorV2.bodyHashes, proposeBlockInfo.block.GetHeight())
 		}
-
 	}
 	//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)
 	sort.Slice(validProposeBlock, func(i, j int) bool {

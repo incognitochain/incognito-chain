@@ -332,9 +332,14 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 				proposeHistory:       &lru.Cache{},
 				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
 				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
+				blockVersion:         1,
 			},
-			args: args{},
-			want: []*ProposeBlockInfo{},
+			args: args{
+				bestView: &blockchain.BeaconBestState{},
+			},
+			want: []*ProposeBlockInfo{
+				&ProposeBlockInfo{},
+			},
 		},
 	}
 	for _, tt := range tests {
