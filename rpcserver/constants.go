@@ -25,6 +25,7 @@ const (
 
 	getMiningInfo                 = "getmininginfo"
 	getRawMempool                 = "getrawmempool"
+	getMempoolInfoDetails         = "getmempoolinfodetails"
 	getNumberOfTxsInMempool       = "getnumberoftxsinmempool"
 	getMempoolEntry               = "getmempoolentry"
 	removeTxInMempool             = "removetxinmempool"
@@ -54,7 +55,7 @@ const (
 
 	listOutputCoins                            = "listoutputcoins"
 	listOutputCoinsFromCache                   = "listoutputcoinsfromcache"
-	listOutputTokens                            = "listoutputtokens"
+	listOutputTokens                           = "listoutputtokens"
 	createRawTransaction                       = "createtransaction"
 	sendRawTransaction                         = "sendtransaction"
 	createAndSendTransaction                   = "createandsendtransaction"
@@ -86,7 +87,7 @@ const (
 	getPrivacyCustomToken                      = "getprivacycustomtoken"
 	listPrivacyCustomTokenByShard              = "listprivacycustomtokenbyshard"
 	getBalancePrivacyCustomToken               = "getbalanceprivacycustomtoken"
-	listUnspentOutputTokens					   = "listunspentoutputtokens"
+	listUnspentOutputTokens                    = "listunspentoutputtokens"
 	customTokenTxs                             = "customtoken"
 	listCustomTokenHolders                     = "customtokenholder"
 	privacyCustomTokenTxs                      = "privacycustomtoken"
@@ -104,27 +105,24 @@ const (
 	listCommitmentIndices                      = "listcommitmentindices"
 	createAndSendStakingTransaction            = "createandsendstakingtransaction"
 	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
-	createAndSendTokenInitTransaction    	   = "createandsendtokeninittransaction"
+	createAndSendTokenInitTransaction          = "createandsendtokeninittransaction"
 	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
-	randomCommitmentsAndPublicKeys			   = "randomcommitmentsandpublickeys"
-
-
+	randomCommitmentsAndPublicKeys             = "randomcommitmentsandpublickeys"
 
 	createAndSendTransactionV2                   = "createandsendtransactionv2"
 	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"
-
 	hasSerialNumbersInMempool                    = "hasserialnumbersinmempool"
 	createAndSendStakingTransactionV2            = "createandsendstakingtransactionv2"
 	createAndSendStopAutoStakingTransactionV2    = "createandsendstopautostakingtransactionv2"
 
 	//===========For Testing and Benchmark==============
-	getAndSendTxsFromFile   = "getandsendtxsfromfile"
-	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
-	unlockMempool           = "unlockmempool"
-	getAutoStakingByHeight  = "getautostakingbyheight"
-	getCommitteeState       = "getcommitteestate"
-	getRewardAmountByEpoch  = "getrewardamountbyepoch"
-	convertPaymentAddress  = "convertpaymentaddress"
+	getAndSendTxsFromFile      = "getandsendtxsfromfile"
+	getAndSendTxsFromFileV2    = "getandsendtxsfromfilev2"
+	unlockMempool              = "unlockmempool"
+	handleGetConsensusInfoV3   = "getconsensusinfov3"
+	getAutoStakingByHeight     = "getautostakingbyheight"
+	getCommitteeState          = "getcommitteestate"
+	convertPaymentAddress      = "convertpaymentaddress"
 	getCommitteeStateByShard   = "getcommitteestatebyshard"
 	getSlashingCommittee       = "getslashingcommittee"
 	getSlashingCommitteeDetail = "getslashingcommitteedetail"
@@ -149,7 +147,7 @@ const (
 	getBalanceByPaymentAddress = "getbalancebypaymentaddress"
 	getReceivedByAccount       = "getreceivedbyaccount"
 	setTxFee                   = "settxfee"
-	submitKey 				   = "submitkey"
+	submitKey                  = "submitkey"
 
 	// walletsta
 	getPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
@@ -292,6 +290,7 @@ const (
 	createAndSendBurningForDepositToSCRequest   = "createandsendburningfordeposittoscrequest"
 	createAndSendBurningForDepositToSCRequestV2 = "createandsendburningfordeposittoscrequestv2"
 
+	getSyncStats          = "getsyncstats"
 	getBeaconPoolInfo     = "getbeaconpoolinfo"
 	getShardPoolInfo      = "getshardpoolinfo"
 	getCrossShardPoolInfo = "getcrossshardpoolinfo"

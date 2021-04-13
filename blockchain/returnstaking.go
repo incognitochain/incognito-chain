@@ -2,8 +2,9 @@ package blockchain
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/incognitokey"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -292,7 +293,7 @@ func (blockchain *BlockChain)  getReturnStakingInfoFromBeaconInstructions(
 					txHash := returnStakingIns.StakingTxHashes[i]
 					blockHash, index, err := rawdbv2.GetTransactionByHash(blockchain.GetShardChainDatabase(shardID), txHash)
 					if err != nil {
-						Logger.log.Error("Can't get transaction hash %v from database error %v", txHash.String(), err)
+						Logger.log.Debugf("Can't get transaction hash %v from database error %v", txHash.String(), err)
 						continue
 					}
 					shardBlock, _, err := blockchain.GetShardBlockByHash(blockHash)

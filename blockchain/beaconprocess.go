@@ -402,9 +402,9 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 				return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError, fmt.Errorf("Shard %+v best height not found in beacon best state", shardID))
 			}
 		} else {
-			if bestShardHeight == 0 {
-				bestShardHeight = 1
-			}
+			//if bestShardHeight == 0 {
+			//	bestShardHeight = 1
+			//}
 			if len(shardStates) > 0 {
 				if bestShardHeight > shardStates[0].Height {
 					return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError, fmt.Errorf("Expect Shard %+v has state greater than to %+v but get %+v", shardID, bestShardHeight, shardStates[0].Height))
@@ -921,6 +921,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 
 	blockchain.BeaconChain.multiView.AddView(newBestState)
+	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
 	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
 

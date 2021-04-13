@@ -226,7 +226,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
 		err := NewMempoolTxError(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
-		Logger.log.Error(err)
+		Logger.log.Debug(err)
 		return &common.Hash{}, &TxDesc{}, err
 	}
 	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
@@ -862,6 +862,44 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 		tp.TriggerCRemoveTxs(tx)
 	}
 	return
+}
+
+// RemoveStuckTx is to remove a stuck tx from mempool by passing tx hash (not by a hash built from tx object)
+func (tp *TxPool) RemoveStuckTx(txHash common.Hash, tx metadata.Transaction) {
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
+
+	if tp.config.PersistMempool {
+		err := tp.removeTransactionFromDatabaseMP(&txHash)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+	}
+
+	// remove tx by hash from mempool
+	if _, exists := tp.pool[txHash]; exists {
+		delete(tp.pool, txHash)
+		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+	}
+	if _, exists := tp.poolSerialNumbersHashList[txHash]; exists {
+		delete(tp.poolSerialNumbersHashList, txHash)
+	}
+	serialNumberHashList := tx.ListSerialNumbersHashH()
+	hash := common.HashArrayOfHashArray(serialNumberHashList)
+	if _, exists := tp.poolSerialNumberHash[hash]; exists {
+		delete(tp.poolSerialNumberHash, hash)
+		// Using the same list serial number to delete new transaction out of pool
+		// this new transaction maybe not exist
+		if _, exists := tp.pool[hash]; exists {
+			delete(tp.pool, hash)
+			atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+		}
+		if _, exists := tp.poolSerialNumbersHashList[hash]; exists {
+			delete(tp.poolSerialNumbersHashList, hash)
+		}
+	}
+	tp.removeRequestStopStakingByTxHash(txHash)
+	tp.TriggerCRemoveTxs(tx)
 }
 
 /*

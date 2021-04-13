@@ -1,9 +1,10 @@
 package blsbftv3
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"time"
 )
 
 type ProposeBlockInfo struct {
@@ -17,6 +18,8 @@ type ProposeBlockInfo struct {
 	proposerSendVote        bool
 	proposerMiningKeyBase58 string
 	lastValidateTime        time.Time
+	isVoted                 bool
+	isCommitted             bool
 }
 
 //NewProposeBlockInfoValue : new propose block info

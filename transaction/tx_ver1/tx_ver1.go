@@ -512,7 +512,7 @@ func (tx *Tx) Verify(boolParams map[string]bool, transactionStateDB *statedb.Sta
 		// Check input coins' commitment is exists in cm list (Database)
 		for i := 0; i < len(inputCoins); i++ {
 			if inputCoins[i].GetCommitment()==nil{
-				return false, utils.NewTransactionErr(utils.InputCommitmentIsNotExistedError, err)
+				return false, utils.NewTransactionErr(utils.InputCommitmentIsNotExistedError, fmt.Errorf("inputCoin %v does not have commitment", i))
 			}
 			ok, err := statedb.HasCommitment(transactionStateDB, *tokenID, inputCoins[i].GetCommitment().ToBytesS(), shardID)
 			if !ok || err != nil {

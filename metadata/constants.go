@@ -167,7 +167,7 @@ var (
 //	// if the blockchain is running in Docker container
 //	// then using GETH_NAME env's value (aka geth container name)
 //	// otherwise using localhost
-	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "https://mainnet.infura.io/v3/34918000975d4374a056ed78fe21c517")
+	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "https://kovan.infura.io/v3/155e4050bb3b49448145a4daffa8bd7c")
 	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "")
 	EthereumLightNodePort     = common.GetENV("GETH_PORT", "")
 )
