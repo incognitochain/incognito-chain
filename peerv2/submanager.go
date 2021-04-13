@@ -373,6 +373,7 @@ func getMessagesForLayer(layer, role string, shardID []byte) []string {
 				wire.CmdTx,
 				wire.CmdPrivacyCustomToken,
 			}
+
 		case common.PendingRole:
 			msgs = []string{
 				wire.CmdBlockBeacon,

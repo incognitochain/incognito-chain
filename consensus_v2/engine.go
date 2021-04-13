@@ -53,21 +53,22 @@ func (s *Engine) SyncingValidatorsByShardID(shardID int) []string {
 	return res
 }
 
-func (s *Engine) GetOneValidator() *consensus.Validator {
-	if len(s.validators) > 0 {
-		return s.validators[0]
+func (engine *Engine) GetOneValidator() *consensus.Validator {
+	if len(engine.validators) > 0 {
+		return engine.validators[0]
 	}
 	return nil
 }
 
-func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator {
+func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator {
 	chainValidator := make(map[int]*consensus.Validator)
+	syncingValidators := make(map[int]*consensus.Validator)
 	role := ""
 	layer := ""
 	chainID := -2
 	pubkey := ""
-	if len(s.validators) > 0 {
-		for _, validator := range s.validators {
+	if len(engine.validators) > 0 {
+		for _, validator := range engine.validators {
 			if validator.State.ChainID != -2 {
 				_, ok := chainValidator[validator.State.ChainID]
 				if ok {
@@ -84,6 +85,16 @@ func (s *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Val
 					role = validator.State.Role
 					chainID = validator.State.ChainID
 					layer = validator.State.Layer
+				}
+
+				if _, ok = syncingValidators[validator.State.ChainID]; !ok {
+					if validator.State.Role == common.SyncingRole {
+						chainValidator[validator.State.ChainID] = validator
+						pubkey = validator.MiningKey.GetPublicKeyBase58()
+						role = validator.State.Role
+						chainID = validator.State.ChainID
+						layer = validator.State.Layer
+					}
 				}
 			} else {
 				if role == "" { //role not set, and userkey in waiting role
@@ -263,7 +274,9 @@ func (engine *Engine) Start() error {
 		if err != nil {
 			panic(err)
 		}
-		engine.validators = []*consensus.Validator{&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey}}
+		engine.validators = []*consensus.Validator{
+			&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey},
+		}
 	} else if engine.config.Node.GetMiningKeys() != "" {
 		keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
 		engine.validators = []*consensus.Validator{}
@@ -272,7 +285,9 @@ func (engine *Engine) Start() error {
 			if err != nil {
 				panic(err)
 			}
-			engine.validators = append(engine.validators, &consensus.Validator{PrivateSeed: key, MiningKey: *miningKey})
+			engine.validators = append(engine.validators, &consensus.Validator{
+				PrivateSeed: key, MiningKey: *miningKey,
+			})
 		}
 		engine.validators = engine.validators[:1] //allow only 1 key
 	}

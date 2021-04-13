@@ -139,6 +139,7 @@ func (actorV2 *actorV2) Run() error {
 					actorV2.logger.Info(err)
 					continue
 				}
+
 				userKeySet := actorV2.getUserKeySetForSigning(signingCommittees, actorV2.userKeySet)
 				for _, userKey := range userKeySet {
 					userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
@@ -190,11 +191,15 @@ func (actorV2 *actorV2) Run() error {
 				}
 
 				validProposeBlocks := actorV2.getValidProposeBlocks(bestView)
-				err = actorV2.validateAndVoteForValidProposeBlocks(bestView, validProposeBlocks)
-				if err != nil {
-					actorV2.logger.Debug(err)
-					continue
+				for _, v := range validProposeBlocks {
+					if err := actorV2.validateBlock(bestView, v); err == nil {
+						err = actorV2.voteForBlock(v)
+						if err != nil {
+							actorV2.logger.Debug(err)
+						}
+					}
 				}
+
 				/*
 					Check for 2/3 vote to commit
 				*/
@@ -389,47 +394,9 @@ func (actorV2 *actorV2) createBLSAggregatedSignatures(committees []incognitokey.
 	return validationData, err
 }
 
-func (actorV2 *actorV2) validateAndVote(
+func (actorV2 *actorV2) voteForBlock(
 	v *ProposeBlockInfo,
 ) error {
-	//already vote for this proposed block
-	if v.sendVote {
-		return nil
-	}
-
-	if v.isVoted {
-		return nil
-	}
-
-	//already validate and vote for this proposed block
-	if !v.isValid {
-		//not connected
-		view := actorV2.chain.GetViewByHash(v.block.GetPrevHash())
-		if view == nil {
-			actorV2.logger.Info("view is null")
-			return errors.New("View not connect")
-		}
-
-		if _, ok := actorV2.bodyHashes[v.block.GetHeight()][v.block.BodyHash().String()]; !ok {
-			_, cancel := context.WithTimeout(context.Background(), time.Second*10)
-			defer cancel()
-
-			actorV2.logger.Infof("validateAndVote for block: %+v \n", v.block.Hash().String())
-			if err := actorV2.chain.ValidatePreSignBlock(v.block, v.signingCommittes, v.committees); err != nil {
-				actorV2.logger.Error(err)
-				return err
-			}
-
-			// Block is valid for commit
-			if len(actorV2.bodyHashes[v.block.GetHeight()]) == 0 {
-				actorV2.bodyHashes[v.block.GetHeight()] = make(map[string]bool)
-			}
-			actorV2.bodyHashes[v.block.GetHeight()][v.block.BodyHash().String()] = true
-		}
-		v.isValid = true
-	}
-
-	//if valid then vote
 	for _, userKey := range actorV2.userKeySet {
 		Vote, err := actorV2.createVote(&userKey, v.block, v.signingCommittes)
 		if err != nil {
@@ -731,12 +698,14 @@ func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	proposerMiningKeyBas58 := blkCPk.GetMiningKeyBase58(actorV2.GetConsensusName())
 
 	if v, ok := actorV2.receiveBlockByHash[blkHash]; !ok {
-		proposeBlockInfo := newProposeBlockForProposeMsg(block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58)
+		proposeBlockInfo := newProposeBlockForProposeMsg(
+			block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58)
 		actorV2.receiveBlockByHash[blkHash] = proposeBlockInfo
 		actorV2.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 		actorV2.receiveBlockByHeight[block.GetHeight()] = append(actorV2.receiveBlockByHeight[block.GetHeight()], actorV2.receiveBlockByHash[blkHash])
 	} else {
-		actorV2.receiveBlockByHash[blkHash].addBlockInfo(block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58, v.validVotes, v.errVotes)
+		actorV2.receiveBlockByHash[blkHash].addBlockInfo(
+			block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58, v.validVotes, v.errVotes)
 	}
 
 	if block.GetHeight() <= actorV2.chain.GetBestViewHeight() {
@@ -771,7 +740,15 @@ func (actorV2 *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 			for _, userKey := range actorV2.userKeySet {
 				pubKey := userKey.GetPublicKey()
 				if b.block != nil && pubKey.GetMiningKeyBase58(actorV2.GetConsensusName()) == b.proposerMiningKeyBase58 { // if this node is proposer and not sending vote
-					err := actorV2.validateAndVote(b) //validate in case we get malicious block
+					var err error
+					if err = actorV2.validateBlock(actorV2.chain.GetBestView(), b); err != nil {
+						err = actorV2.voteForBlock(b)
+						if err != nil {
+							actorV2.logger.Debug(err)
+						}
+					} else {
+						actorV2.logger.Debug(err)
+					}
 					if err == nil {
 						bestViewHeight := actorV2.chain.GetBestView().GetHeight()
 						if b.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
@@ -849,29 +826,63 @@ func (actorV2 *actorV2) getValidProposeBlocks(bestView multiview.View) []*Propos
 	return validProposeBlock
 }
 
-func (actorV2 *actorV2) validateAndVoteForValidProposeBlocks(bestView multiview.View, validProposeBlocks []*ProposeBlockInfo) error {
-	for _, v := range validProposeBlocks {
-		shouldVote := false
-		blkCreateTimeSlot := common.CalculateTimeSlot(v.block.GetProduceTime())
-		bestViewHeight := bestView.GetHeight()
+func (actorV2 *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *ProposeBlockInfo) error {
+	blkCreateTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
+	bestViewHeight := bestView.GetHeight()
+	shouldVote := false
 
-		if lastVotedBlk, ok := actorV2.voteHistory[bestViewHeight+1]; ok {
-			if blkCreateTimeSlot < common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) { //blkCreateTimeSlot is smaller than voted block => vote for this blk
-				shouldVote = true
-			} else if blkCreateTimeSlot == common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) && common.CalculateTimeSlot(v.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlk.GetProposeTime()) { //blk is old block (same round), but new proposer(larger timeslot) => vote again
-				shouldVote = true
-			} else if v.block.CommitteeFromBlock().String() != lastVotedBlk.CommitteeFromBlock().String() { //blkCreateTimeSlot is larger or equal than voted block
-				shouldVote = true
-			} // if not swap committees => do nothing
-		} else { //there is no vote for this height yet
+	if lastVotedBlk, ok := actorV2.voteHistory[bestViewHeight+1]; ok {
+		if blkCreateTimeSlot < common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) { //blkCreateTimeSlot is smaller than voted block => vote for this blk
 			shouldVote = true
+		} else if blkCreateTimeSlot == common.CalculateTimeSlot(lastVotedBlk.GetProduceTime()) && common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) > common.CalculateTimeSlot(lastVotedBlk.GetProposeTime()) { //blk is old block (same round), but new proposer(larger timeslot) => vote again
+			shouldVote = true
+		} else if proposeBlockInfo.block.CommitteeFromBlock().String() != lastVotedBlk.CommitteeFromBlock().String() { //blkCreateTimeSlot is larger or equal than voted block
+			shouldVote = true
+		} // if not swap committees => do nothing
+	} else { //there is no vote for this height yet
+		shouldVote = true
+	}
+
+	if !shouldVote {
+		actorV2.logger.Debug("Can't vote for this block")
+		return errors.New("Can't vote for this block")
+	}
+
+	//already vote for this proposed block
+	if proposeBlockInfo.sendVote {
+		return errors.New("Already vote for this block")
+	}
+
+	if proposeBlockInfo.isVoted {
+		return errors.New("Already vote for this block")
+	}
+
+	//already validate and vote for this proposed block
+	if !proposeBlockInfo.isValid {
+		//not connected
+		view := actorV2.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
+		if view == nil {
+			actorV2.logger.Debug("view is null")
+			return errors.New("View not connect")
 		}
-		if len(v.userKeySet) == 0 {
-			shouldVote = false
+
+		if _, ok := actorV2.bodyHashes[proposeBlockInfo.block.GetHeight()][proposeBlockInfo.block.BodyHash().String()]; !ok {
+			_, cancel := context.WithTimeout(context.Background(), time.Second*10)
+			defer cancel()
+
+			actorV2.logger.Infof("validate block: %+v \n", proposeBlockInfo.block.Hash().String())
+			if err := actorV2.chain.ValidatePreSignBlock(proposeBlockInfo.block, proposeBlockInfo.signingCommittes, proposeBlockInfo.committees); err != nil {
+				actorV2.logger.Error(err)
+				return err
+			}
+
+			// Block is valid for commit
+			if len(actorV2.bodyHashes[proposeBlockInfo.block.GetHeight()]) == 0 {
+				actorV2.bodyHashes[proposeBlockInfo.block.GetHeight()] = make(map[string]bool)
+			}
+			actorV2.bodyHashes[proposeBlockInfo.block.GetHeight()][proposeBlockInfo.block.BodyHash().String()] = true
 		}
-		if shouldVote {
-			actorV2.validateAndVote(v)
-		}
+		proposeBlockInfo.isValid = true
 	}
 
 	return nil

@@ -353,7 +353,8 @@ func (chain *ShardChain) CommitteeEngineVersion() int {
 func (chain *ShardChain) ProposerByTimeSlot(
 	shardID byte, ts int64,
 	committees []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey {
-	proposerKey, _ := chain.GetBestView().(*ShardBestState).GetProposerByTimeSlot(ts, 1)
+	id := GetProposerByTimeSlot(ts, chain.Blockchain.config.ChainParams.NumberOfFixedBlockValidators)
+	proposerKey := committees[id]
 	return proposerKey
 }
 
