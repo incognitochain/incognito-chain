@@ -26,8 +26,13 @@ type BeaconCommitteeStateV1 struct {
 	autoStake                   map[string]bool                   // committee public key => reward receiver payment address
 	rewardReceiver              map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
 	stakingTx                   map[string]common.Hash            // committee public key => reward receiver payment address
+	hashes                      *BeaconCommitteeStateHash
 
 	mu *sync.RWMutex
+}
+
+func (b *BeaconCommitteeStateV1) setHashes(hashes *BeaconCommitteeStateHash) {
+	b.hashes = hashes
 }
 
 type BeaconCommitteeEngineV1 struct {
@@ -108,9 +113,17 @@ func NewBeaconCommitteeStateV1WithMu(mu *sync.RWMutex) *BeaconCommitteeStateV1 {
 
 //softCopy maintain dst mutex value
 func (b *BeaconCommitteeStateV1) softCopy(newB *BeaconCommitteeStateV1) {
-	tempMu := newB.mu
-	newB = b
-	newB.mu = tempMu
+	newB.beaconCommittee = b.beaconCommittee
+	newB.beaconSubstitute = b.beaconSubstitute
+	newB.nextEpochShardCandidate = b.nextEpochShardCandidate
+	newB.currentEpochShardCandidate = b.currentEpochShardCandidate
+	newB.nextEpochBeaconCandidate = b.nextEpochBeaconCandidate
+	newB.currentEpochBeaconCandidate = b.currentEpochBeaconCandidate
+	newB.shardCommittee = b.shardCommittee
+	newB.shardSubstitute = b.shardSubstitute
+	newB.autoStake = b.autoStake
+	newB.rewardReceiver = b.rewardReceiver
+	newB.stakingTx = b.stakingTx
 }
 
 func (b BeaconCommitteeStateV1) clone(newB *BeaconCommitteeStateV1) {
@@ -348,6 +361,7 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 	committeeChange := NewCommitteeChange()
 	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
 	newShardCandidates := []incognitokey.CommitteePublicKey{}
+	newB.setHashes(env.PreviousBlockHashes)
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
 			continue
@@ -450,7 +464,7 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 	if err != nil {
 		return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-	hashes, err := engine.generateUncommittedCommitteeHashes()
+	hashes, err := engine.generateUncommittedCommitteeHashes(committeeChange)
 	if err != nil {
 		return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
@@ -731,69 +745,100 @@ func (b *BeaconCommitteeStateV1) processReplaceInstruction(
 	return err
 }
 
-func (engine BeaconCommitteeEngineV1) generateUncommittedCommitteeHashes() (*BeaconCommitteeStateHash, error) {
+func (engine BeaconCommitteeEngineV1) generateUncommittedCommitteeHashes(committeeChange *CommitteeChange) (*BeaconCommitteeStateHash, error) {
 	if reflect.DeepEqual(engine.uncommittedBeaconCommitteeStateV1, NewBeaconCommitteeStateV1()) {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
 	}
 	newB := engine.uncommittedBeaconCommitteeStateV1
-	// beacon committee
-	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(newB.beaconCommittee)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	var tempBeaconCommitteeAndValidatorHash common.Hash
+	var tempBeaconCandidateHash common.Hash
+	var tempShardCandidateHash common.Hash
+	var tempShardCommitteeAndValidatorHash common.Hash
+	var tempAutoStakingHash common.Hash
+	var err error
+	if !isNilOrBeaconCommitteeAndValidatorHash(newB.hashes) &&
+		len(committeeChange.BeaconCommitteeReplaced[0]) == 0 && len(committeeChange.BeaconCommitteeReplaced[1]) == 0 {
+		tempBeaconCommitteeAndValidatorHash = newB.hashes.BeaconCommitteeAndValidatorHash
+	} else {
+		beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(newB.beaconCommittee)
+		if err != nil {
+			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+		}
+		validatorArr := append([]string{}, beaconCommitteeStr...)
+		beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(newB.beaconSubstitute)
+		if err != nil {
+			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+		}
+		validatorArr = append(validatorArr, beaconPendingValidatorStr...)
+		tempBeaconCommitteeAndValidatorHash, err = common.GenerateHashFromStringArray(validatorArr)
 	}
-	validatorArr := append([]string{}, beaconCommitteeStr...)
 
-	beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(newB.beaconSubstitute)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-	validatorArr = append(validatorArr, beaconPendingValidatorStr...)
-	tempBeaconCommitteeAndValidatorHash, err := common.GenerateHashFromStringArray(validatorArr)
-	// beacon candidate: current candidate + next candidate
-	// BeaconCandidate root: beacon current candidate + beacon next candidate
-	beaconCandidateArr := append(newB.currentEpochBeaconCandidate, newB.nextEpochBeaconCandidate...)
-	beaconCandidateArrStr, err := incognitokey.CommitteeKeyListToString(beaconCandidateArr)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-	tempBeaconCandidateHash, err := common.GenerateHashFromStringArray(beaconCandidateArrStr)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-	// Shard candidate root: shard current candidate + shard next candidate
-	shardCandidateArr := append(newB.currentEpochShardCandidate, newB.nextEpochShardCandidate...)
-	shardCandidateArrStr, err := incognitokey.CommitteeKeyListToString(shardCandidateArr)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-	tempShardCandidateHash, err := common.GenerateHashFromStringArray(shardCandidateArrStr)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-	// Shard Validator root
-	shardPendingValidator := make(map[byte][]string)
-	for shardID, keys := range newB.shardSubstitute {
-		keysStr, err := incognitokey.CommitteeKeyListToString(keys)
+	if !isNilOrBeaconCandidateHash(newB.hashes) &&
+		len(committeeChange.NextEpochBeaconCandidateRemoved) == 0 && len(committeeChange.NextEpochBeaconCandidateAdded) == 0 {
+		tempBeaconCandidateHash = newB.hashes.BeaconCandidateHash
+	} else {
+		beaconCandidateArr := append(newB.currentEpochBeaconCandidate, newB.nextEpochBeaconCandidate...)
+		beaconCandidateArrStr, err := incognitokey.CommitteeKeyListToString(beaconCandidateArr)
 		if err != nil {
 			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
 		}
-		shardPendingValidator[shardID] = keysStr
-	}
-	shardCommittee := make(map[byte][]string)
-	for shardID, keys := range newB.shardCommittee {
-		keysStr, err := incognitokey.CommitteeKeyListToString(keys)
+		tempBeaconCandidateHash, err = common.GenerateHashFromStringArray(beaconCandidateArrStr)
 		if err != nil {
 			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
 		}
-		shardCommittee[shardID] = keysStr
 	}
-	tempShardCommitteeAndValidatorHash, err := common.GenerateHashFromMapByteString(shardPendingValidator, shardCommittee)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+
+	if !isNilOrShardCandidateHash(newB.hashes) &&
+		len(committeeChange.NextEpochShardCandidateRemoved) == 0 && len(committeeChange.NextEpochShardCandidateAdded) == 0 {
+		tempShardCandidateHash = newB.hashes.ShardCandidateHash
+	} else {
+		shardCandidateArr := append(newB.currentEpochShardCandidate, newB.nextEpochShardCandidate...)
+		shardCandidateArrStr, err := incognitokey.CommitteeKeyListToString(shardCandidateArr)
+		if err != nil {
+			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+		}
+		tempShardCandidateHash, err = common.GenerateHashFromStringArray(shardCandidateArrStr)
+		if err != nil {
+			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+		}
 	}
-	tempAutoStakingHash, err := common.GenerateHashFromMapStringBool(newB.autoStake)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+
+	if !isNilOrShardCommitteeAndValidatorHash(newB.hashes) &&
+		len(committeeChange.ShardSubstituteAdded) == 0 && len(committeeChange.ShardSubstituteRemoved) == 0 &&
+		len(committeeChange.ShardCommitteeAdded) == 0 && len(committeeChange.ShardCommitteeRemoved) == 0 &&
+		len(committeeChange.ShardCommitteeReplaced) == 0 {
+		tempShardCommitteeAndValidatorHash = newB.hashes.ShardCommitteeAndValidatorHash
+	} else {
+		shardPendingValidator := make(map[byte][]string)
+		for shardID, keys := range newB.shardSubstitute {
+			keysStr, err := incognitokey.CommitteeKeyListToString(keys)
+			if err != nil {
+				return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+			}
+			shardPendingValidator[shardID] = keysStr
+		}
+		shardCommittee := make(map[byte][]string)
+		for shardID, keys := range newB.shardCommittee {
+			keysStr, err := incognitokey.CommitteeKeyListToString(keys)
+			if err != nil {
+				return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+			}
+			shardCommittee[shardID] = keysStr
+		}
+		tempShardCommitteeAndValidatorHash, err = common.GenerateHashFromMapByteString(shardPendingValidator, shardCommittee)
+		if err != nil {
+			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+		}
+	}
+
+	if !isNilOrAutoStakeHash(newB.hashes) &&
+		len(committeeChange.StopAutoStake) == 0 {
+		tempAutoStakingHash = newB.hashes.AutoStakeHash
+	} else {
+		tempAutoStakingHash, err = common.GenerateHashFromMapStringBool(newB.autoStake)
+		if err != nil {
+			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+		}
 	}
 	hashes := &BeaconCommitteeStateHash{
 		BeaconCommitteeAndValidatorHash: tempBeaconCommitteeAndValidatorHash,
