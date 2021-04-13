@@ -34,7 +34,7 @@ func (s *swapRuleV3) Process(
 	swappedOutCommittees := append(slashingCommittees, normalSwapOutCommittees...)
 
 	newCommittees, newSubstitutes, swapInCommittees :=
-		s.swapInAfterSwapOut(newCommittees, substitutes, numberOfFixedValidators, maxCommitteeSize, MAX_SWAP_IN_PERCENT_V3)
+		s.swapInAfterSwapOut(newCommittees, substitutes, maxCommitteeSize, MAX_SWAP_IN_PERCENT_V3, len(slashingCommittees), len(committees))
 
 	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
 		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees
@@ -60,12 +60,14 @@ func (s *swapRuleV3) CalculateAssignOffset(lenShardSubstitute, lenCommittees, nu
 
 //TODO: @hung remove unused parameter numberOfFixedValidators
 func (s *swapRuleV3) swapInAfterSwapOut(
-	committees, substitutes []string,
-	numberOfFixedValidators, maxCommitteeSize, maxSwapInPercent int,
-) (
-	[]string, []string, []string,
-) {
-	swapInOffset := s.getSwapInOffset(len(committees), len(substitutes), maxSwapInPercent, maxCommitteeSize)
+	committees []string,
+	substitutes []string,
+	maxCommitteeSize int,
+	maxSwapInPercent int,
+	numberOfSlashingValidators int,
+	numberOfOldCommittees int,
+) ([]string, []string, []string) {
+	swapInOffset := s.getSwapInOffset(len(committees), len(substitutes), maxSwapInPercent, maxCommitteeSize, numberOfSlashingValidators, numberOfOldCommittees)
 
 	newCommittees := common.DeepCopyString(committees)
 	swapInCommittees := common.DeepCopyString(substitutes[:swapInOffset])
@@ -76,22 +78,38 @@ func (s *swapRuleV3) swapInAfterSwapOut(
 }
 
 //TODO: @tin calculate based on lenCommitteesAfterSwapOut or lenCommitteesBeforeSwapOut?
-// In document, vacant_slot = min(8, 1/8*len(shardCommittee), but getSwapInOffset doesn't stick to this formula
+// In document, vacant_slot = min(max_committee_size/8, 1/8*len(shardCommittee), but getSwapInOffset doesn't stick to this formula
 func (s *swapRuleV3) getSwapInOffset(
-	lenCommitteesAfterSwapOut, lenSubstitutes int,
-	maxSwapInPercent, maxCommitteeSize int,
+	lenCommitteesAfterSwapOut,
+	lenSubstitutes,
+	maxSwapInPercent,
+	maxCommitteeSize,
+	numberOfSlashingValidators,
+	numberOfOldCommittees int,
 ) int {
-	offset := lenCommitteesAfterSwapOut / maxSwapInPercent
+	var offset int
+	// special case: no slashing node && committee reach max committee size => normal swap out == swap in
+	if numberOfSlashingValidators == 0 && numberOfOldCommittees == maxCommitteeSize {
+		offset = maxCommitteeSize / maxSwapInPercent
+	} else {
+		// normal case
+		offset = lenCommitteesAfterSwapOut / maxSwapInPercent
+	}
+
 	if lenSubstitutes < offset {
 		offset = lenSubstitutes
 	}
+
+	// hack case: many fixed nodes in committee
 	if lenCommitteesAfterSwapOut+offset > maxCommitteeSize {
 		offset = maxCommitteeSize - lenCommitteesAfterSwapOut
 	}
+
 	if offset == 0 && lenCommitteesAfterSwapOut < maxSwapInPercent && lenSubstitutes > 0 {
 		//TODO: @tin offset + currentCommitteeSize maybe > maxCommitteeSize
 		offset = 1
 	}
+
 	return offset
 }
 
@@ -146,6 +164,7 @@ func (s *swapRuleV3) getNormalSwapOutOffset(
 	return offset
 }
 
+//slashingSwapOut only consider all penalties type as one type
 func (s *swapRuleV3) slashingSwapOut(
 	committees []string,
 	penalty map[string]signaturecounter.Penalty,
