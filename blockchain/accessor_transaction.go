@@ -380,7 +380,7 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 	return blockchain.getOutputCoins(keyset, shardID, tokenID, shardHeight, map[int]bool{1:true, 2:true})
 }
 
-func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, syncNeeded bool, heightToSyncFrom uint64) error{
+func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey) error{
 	if !EnableIndexingCoinByOTAKey{
 		return errors.New("OTA key submission not supported by this node configuration")
 	}
