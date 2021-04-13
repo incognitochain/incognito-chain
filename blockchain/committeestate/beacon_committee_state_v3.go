@@ -303,9 +303,8 @@ func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []strin
 		finishedSyncValidators[v] = true
 	}
 	count := 0
-	//TODO: @tin re-write using for condition { //body}
-	// using while loop will improve code explicit
-	for i := 0; i < len(b.syncPool[shardID]); i++ {
+	i := 0
+	for i < len(b.syncPool[shardID]) {
 		if count == len(validators) {
 			break
 		}
@@ -315,6 +314,7 @@ func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []strin
 			i--
 			count++
 		}
+		i++
 	}
 }
 
