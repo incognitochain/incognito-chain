@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
@@ -24,14 +23,14 @@ func Test_swapRuleV3_Process(t *testing.T) {
 		penalty                 map[string]signaturecounter.Penalty
 	}
 	tests := []struct {
-		name  string
-		s     *swapRuleV3
-		args  args
-		want  *instruction.SwapShardInstruction
-		want1 []string
-		want2 []string
-		want3 []string
-		want4 []string
+		name                    string
+		s                       *swapRuleV3
+		args                    args
+		want                    *instruction.SwapShardInstruction
+		newCommittees           []string
+		newSubstitutes          []string
+		slashingCommittees      []string
+		normalSwapOutCommittees []string
 	}{
 		//TODO: @hung add testcase
 		// Testcase 1: SL = C/3 && NS = 0
@@ -73,36 +72,68 @@ func Test_swapRuleV3_Process(t *testing.T) {
 					key12: signaturecounter.Penalty{},
 				},
 			},
-			want: &instruction.SwapShardInstruction{
-				InPublicKeys: []string{
-					key0, key,
-				},
-				InPublicKeyStructs: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey,
-				},
-				OutPublicKeyStructs: []incognitokey.CommitteePublicKey{
-					*incKey12, *incKey8,
-				},
-				OutPublicKeys: []string{
-					key12, key8,
-				},
-				ChainID: 1,
-				Type:    instruction.SWAP_BY_END_EPOCH,
-			},
-			want1: []string{
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{key0, key},
+				[]string{key12, key8},
+				1,
+				instruction.SWAP_BY_END_EPOCH,
+			),
+			newCommittees: []string{
 				key0, key, key2, key3, key4, key5, key6, key7,
 				key9, key10, key11, key13, key14, key15, key16, key17, key18, key19,
 				key0, key,
 			},
-			want2: []string{
+			newSubstitutes: []string{
 				key2, key3, key4, key5, key6, key7, key8, key9,
 			},
-			want3: []string{
+			slashingCommittees: []string{
 				key12,
 			},
-			want4: []string{
+			normalSwapOutCommittees: []string{
 				key8,
 			},
+		},
+		{
+			name: "SL = C/3 && NS = 0 && SWAP_IN = 0",
+			s:    &swapRuleV3{},
+			args: args{
+				shardID: 1,
+				committees: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				},
+				substitutes:             []string{},
+				minCommitteeSize:        8,
+				maxCommitteeSize:        20,
+				typeIns:                 instruction.SWAP_BY_END_EPOCH,
+				numberOfFixedValidators: 8,
+				penalty: map[string]signaturecounter.Penalty{
+					key2:  signaturecounter.Penalty{},
+					key3:  signaturecounter.Penalty{},
+					key4:  signaturecounter.Penalty{},
+					key10: signaturecounter.Penalty{},
+					key12: signaturecounter.Penalty{},
+					key14: signaturecounter.Penalty{},
+					key8:  signaturecounter.Penalty{},
+					key16: signaturecounter.Penalty{},
+					key18: signaturecounter.Penalty{},
+				},
+			},
+			want: instruction.NewSwapShardInstructionWithValue(
+				[]string{},
+				[]string{key8, key10, key12, key14, key16, key18},
+				1,
+				instruction.SWAP_BY_END_EPOCH,
+			),
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7,
+				key9, key11, key13, key15, key17, key19,
+			},
+			newSubstitutes: []string{},
+			slashingCommittees: []string{
+				key8, key10, key12, key14, key16, key18,
+			},
+			normalSwapOutCommittees: []string{},
 		},
 	}
 	for _, tt := range tests {
@@ -112,17 +143,17 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("swapRuleV3.Process() got = %v, want %v", got, tt.want)
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("swapRuleV3.Process() got1 = %v, want %v", got1, tt.want1)
+			if !reflect.DeepEqual(got1, tt.newCommittees) {
+				t.Errorf("swapRuleV3.Process() got1 = %v, want %v", got1, tt.newCommittees)
 			}
-			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("swapRuleV3.Process() got2 = %v, want %v", got2, tt.want2)
+			if !reflect.DeepEqual(got2, tt.newSubstitutes) {
+				t.Errorf("swapRuleV3.Process() got2 = %v, want %v", got2, tt.newSubstitutes)
 			}
-			if !reflect.DeepEqual(got3, tt.want3) {
-				t.Errorf("swapRuleV3.Process() got3 = %v, want %v", got3, tt.want3)
+			if !reflect.DeepEqual(got3, tt.slashingCommittees) {
+				t.Errorf("swapRuleV3.Process() got3 = %v, want %v", got3, tt.slashingCommittees)
 			}
-			if !reflect.DeepEqual(got4, tt.want4) {
-				t.Errorf("swapRuleV3.Process() got4 = %v, want %v", got4, tt.want4)
+			if !reflect.DeepEqual(got4, tt.normalSwapOutCommittees) {
+				t.Errorf("swapRuleV3.Process() got4 = %v, want %v", got4, tt.normalSwapOutCommittees)
 			}
 		})
 	}
