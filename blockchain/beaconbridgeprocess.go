@@ -119,6 +119,8 @@ func (blockchain *BlockChain) processIssuingETHReq(bridgeStateDB *statedb.StateD
 		}
 	}
 	updatingInfoByTokenID[issuingETHAcceptedInst.IncTokenID] = updatingInfo
+	tmpBytes, _ := json.Marshal(updatingInfo)
+	Logger.log.Infof("updatingIssuedETHInfo[%v]: %v\n", issuingETHAcceptedInst.IncTokenID.String(), string(tmpBytes))
 	return updatingInfoByTokenID, nil
 }
 
@@ -162,6 +164,8 @@ func (blockchain *BlockChain) processIssuingReq(bridgeStateDB *statedb.StateDB, 
 		}
 	}
 	updatingInfoByTokenID[issuingAcceptedInst.IncTokenID] = updatingInfo
+	tmpBytes, _ := json.Marshal(updatingInfo)
+	Logger.log.Infof("updatingIssuedInfo[%v]: %v\n", issuingAcceptedInst.IncTokenID.String(), string(tmpBytes))
 	return updatingInfoByTokenID, nil
 }
 
@@ -211,6 +215,8 @@ func (blockchain *BlockChain) processContractingReq(
 		}
 	}
 	updatingInfoByTokenID[md.TokenID] = updatingInfo
+	tmpBytes, _ := json.Marshal(updatingInfo)
+	Logger.log.Infof("updatingContractInfo[%v]: %v\n", md.TokenID.String(), string(tmpBytes))
 	return updatingInfoByTokenID, nil
 }
 
@@ -264,6 +270,8 @@ func (blockchain *BlockChain) processBurningReq(
 		}
 	}
 	updatingInfoByTokenID[*incTokenID] = updatingInfo
+	tmpBytes, _ := json.Marshal(updatingInfo)
+	Logger.log.Infof("updatingBurnedInfo[%v]: %v\n", incTokenID.String(), string(tmpBytes))
 	return updatingInfoByTokenID, nil
 }
 
