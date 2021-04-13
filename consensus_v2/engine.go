@@ -6,6 +6,10 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/pubsub"
+
+	"github.com/incognitochain/incognito-chain/common/consensus"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/consensus"
@@ -173,8 +177,17 @@ func (s *Engine) WatchCommitteeChange() {
 		}
 		s.BFTProcess[chainID].LoadUserKeys(validatorMiningKey)
 		s.BFTProcess[chainID].Start()
+		s.NotifyNewRole(chainID, common.CommitteeRole)
 		miningProc = s.BFTProcess[chainID]
 	}
+
+	for chainID, proc := range s.BFTProcess {
+		if _, ok := ValidatorGroup[chainID]; !ok {
+			proc.Stop()
+			s.NotifyNewRole(chainID, common.WaitingRole)
+		}
+	}
+
 	s.currentMiningProcess = miningProc
 }
 
@@ -316,4 +329,13 @@ func (engine *Engine) IsCommitteeInShard(shardID byte) bool {
 		return shard.IsStarted()
 	}
 	return false
+}
+
+func (engine *Engine) NotifyNewRole(newCID int, newRole string) {
+	engine.config.PubSubManager.PublishMessage(
+		pubsub.NewMessage(pubsub.NodeRoleDetailTopic, &pubsub.NodeRole{
+			CID:  newCID,
+			Role: newRole,
+		}),
+	)
 }
