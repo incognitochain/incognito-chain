@@ -146,7 +146,7 @@ const (
 	// Enable Feature Flag
 	TestnetEnablePortalRelaying = 1
 	TestnetEnablePortalV3       = 0
-	TestnetEnablePortalV4       = 1
+	TestnetEnablePortalV4       = 0
 )
 
 // CONSTANT for network TESTNET-2
@@ -193,7 +193,7 @@ const (
 	// Enable Feature Flag
 	Testnet2EnablePortalRelaying = 1
 	Testnet2EnablePortalV3       = 0
-	Testnet2EnablePortalV4       = 1
+	Testnet2EnablePortalV4       = 0
 )
 
 // VARIABLE for testnet
