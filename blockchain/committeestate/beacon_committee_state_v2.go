@@ -103,9 +103,15 @@ func NewBeaconCommitteeStateV2WithValue(
 
 //softCopy maintain destination mutex value
 func (b *BeaconCommitteeStateV2) softCopy(newB *BeaconCommitteeStateV2) {
-	tempMu := newB.mu
-	newB = b
-	newB.mu = tempMu
+	newB.beaconCommittee = b.beaconCommittee
+	newB.shardCommittee = b.shardCommittee
+	newB.shardSubstitute = b.shardSubstitute
+	newB.shardCommonPool = b.shardCommonPool
+	newB.numberOfAssignedCandidates = b.numberOfAssignedCandidates
+	newB.autoStake = b.autoStake
+	newB.rewardReceiver = b.rewardReceiver
+	newB.stakingTx = b.stakingTx
+	newB.hashes = b.hashes
 }
 
 func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {

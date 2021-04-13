@@ -1067,7 +1067,7 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
 		)
 		if err != nil {
-			return err
+			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
 	}
 
