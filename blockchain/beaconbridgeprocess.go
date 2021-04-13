@@ -81,29 +81,29 @@ func (blockchain *BlockChain) processIssuingETHReq(bridgeStateDB *statedb.StateD
 	if instruction[2] == "rejected" {
 		txReqID, err := common.Hash{}.NewHashFromStr(instruction[3])
 		if err != nil {
-			Logger.log.Warn("WARNING: an error occured while building tx request id in bytes from string: ", err)
+			Logger.log.Warn("WARNING: an error occurred while building tx request id in bytes from string: ", err)
 			return updatingInfoByTokenID, nil
 		}
 		err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, *txReqID, common.BridgeRequestRejectedStatus)
 		if err != nil {
-			Logger.log.Warn("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
+			Logger.log.Warn("WARNING: an error occurred while tracking bridge request with rejected status to leveldb: ", err)
 		}
 		return updatingInfoByTokenID, nil
 	}
 	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
+		Logger.log.Warn("WARNING: an error occurred while decoding content string of accepted issuance instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
 	var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+		Logger.log.Warn("WARNING: an error occurred while unmarshaling accepted issuance instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
 	err = statedb.InsertETHTxHashIssued(bridgeStateDB, issuingETHAcceptedInst.UniqETHTx)
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while inserting ETH tx hash issued to leveldb: ", err)
+		Logger.log.Warn("WARNING: an error occurred while inserting ETH tx hash issued to leveldb: ", err)
 		return updatingInfoByTokenID, nil
 	}
 	updatingInfo, found := updatingInfoByTokenID[issuingETHAcceptedInst.IncTokenID]
@@ -130,24 +130,24 @@ func (blockchain *BlockChain) processIssuingReq(bridgeStateDB *statedb.StateDB, 
 	if instruction[2] == "rejected" {
 		txReqID, err := common.Hash{}.NewHashFromStr(instruction[3])
 		if err != nil {
-			Logger.log.Warn("WARNING: an error occured while building tx request id in bytes from string: ", err)
+			Logger.log.Warn("WARNING: an error occurred while building tx request id in bytes from string: ", err)
 			return updatingInfoByTokenID, nil
 		}
 		err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, *txReqID, common.BridgeRequestRejectedStatus)
 		if err != nil {
-			Logger.log.Warn("WARNING: an error occured while tracking bridge request with rejected status to leveldb: ", err)
+			Logger.log.Warn("WARNING: an error occurred while tracking bridge request with rejected status to leveldb: ", err)
 		}
 		return updatingInfoByTokenID, nil
 	}
 	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
+		Logger.log.Warn("WARNING: an error occurred while decoding content string of accepted issuance instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
 	var issuingAcceptedInst metadata.IssuingAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+		Logger.log.Warn("WARNING: an error occurred while unmarshaling accepted issuance instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
 	updatingInfo, found := updatingInfoByTokenID[issuingAcceptedInst.IncTokenID]
@@ -178,20 +178,20 @@ func (blockchain *BlockChain) processContractingReq(
 	}
 	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while decoding content string of accepted contracting instruction: ", err)
+		Logger.log.Warn("WARNING: an error occurred while decoding content string of accepted contracting instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
 	var contractingReqAction metadata.ContractingReqAction
 	err = json.Unmarshal(contentBytes, &contractingReqAction)
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted contracting instruction: ", err)
+		Logger.log.Warn("WARNING: an error occurred while unmarshaling accepted contracting instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
 	md := contractingReqAction.Meta
 
 	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(bridgeStateDB, md.TokenID, true)
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while checking whether token (%s) existed in centralized bridge token list: %+v", md.TokenID.String(), err)
+		Logger.log.Errorf("ERROR: an error occurred while checking whether token (%s) existed in centralized bridge token list: %+v", md.TokenID.String(), err)
 		return updatingInfoByTokenID, nil
 	}
 	if !bridgeTokenExisted {
@@ -243,7 +243,7 @@ func (blockchain *BlockChain) processBurningReq(
 
 	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(bridgeStateDB, *incTokenID, false)
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while checking whether token (%s) existed in decentralized bridge token list: %+v", incTokenID.String(), err)
+		Logger.log.Errorf("ERROR: an error occurred while checking whether token (%s) existed in decentralized bridge token list: %+v", incTokenID.String(), err)
 		return updatingInfoByTokenID, nil
 	}
 	if !bridgeTokenExisted {

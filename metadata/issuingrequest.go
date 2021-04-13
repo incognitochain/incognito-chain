@@ -204,7 +204,7 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriev
 			if err != nil {
 				return false, NewMetadataTxError(InvalidMeta, err)
 			} else {
-				return false, NewMetadataTxError(InvalidMeta, errors.New("token is invalid"))
+				return false, NewMetadataTxError(InvalidMeta, fmt.Errorf("token %v is not a bridge token", iReq.TokenID.String()))
 			}
 		}
 	}
