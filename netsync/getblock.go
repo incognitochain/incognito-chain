@@ -1,9 +1,9 @@
 package netsync
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sort"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
@@ -32,7 +32,7 @@ func (netSync *NetSync) GetBlockByHeight(
 		if err != nil {
 			return nil, err
 		}
-		return blockchain.CreateCrossShardBlock(blk, tocID)
+		return types.CreateCrossShardBlock(blk, tocID)
 	default:
 		return nil, errors.Errorf("Invalid block type")
 	}
@@ -66,7 +66,7 @@ func (netSync *NetSync) GetBlockByHash(
 		if err != nil {
 			return nil, err
 		}
-		return blockchain.CreateCrossShardBlock(blk, tocID)
+		return types.CreateCrossShardBlock(blk, tocID)
 	default:
 		return nil, errors.Errorf("Invalid block type")
 	}
@@ -292,7 +292,7 @@ func (netSync *NetSync) createBlockShardMsgByType(block *types.ShardBlock, blkTy
 		}
 		blkMsg.(*wire.MessageBlockShard).Block = block
 	case crossShard:
-		blkToSend, err := blockchain.CreateCrossShardBlock(block, crossShardID)
+		blkToSend, err := types.CreateCrossShardBlock(block, crossShardID)
 		if err != nil {
 			Logger.log.Error(err)
 			return nil, err

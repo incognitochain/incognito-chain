@@ -126,7 +126,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	newBeaconBlock.Header.AddBeaconHeaderHash(
 		instructionHash,
 		shardStatesHash,
-		GetKeccak256MerkleRoot(flattenInsts),
+		types.GetKeccak256MerkleRoot(flattenInsts),
 		hashes.BeaconCommitteeAndValidatorHash,
 		hashes.BeaconCandidateHash,
 		hashes.ShardCandidateHash,
@@ -159,7 +159,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		featureStateDB := curView.GetBeaconFeatureStateDB()
 		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {
-			return  nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
+			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
 
 		portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
