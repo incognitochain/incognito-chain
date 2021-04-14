@@ -114,7 +114,7 @@ func (iRes PortalShieldingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		var shieldingReqContent PortalShieldingRequestContent
 		err := json.Unmarshal(contentBytes, &shieldingReqContent)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal request ptokens content: ", err)
+			Logger.log.Error("WARNING - VALIDATION: an error occurred while parsing portal request ptokens content: ", err)
 			continue
 		}
 		shardIDFromInst = shieldingReqContent.ShardID
@@ -129,7 +129,7 @@ func (iRes PortalShieldingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		}
 		key, err := wallet.Base58CheckDeserialize(requesterAddrStrFromInst)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
+			Logger.log.Info("WARNING - VALIDATION: an error occurred while deserializing receiver address string: ", err)
 			continue
 		}
 
@@ -143,7 +143,7 @@ func (iRes PortalShieldingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf(fmt.Sprintf("no PortalReqPtokens instruction found for PortalReqPtokensResponse tx %s", tx.Hash().String()))
+		return false, fmt.Errorf(fmt.Sprintf("no PortalShieldingRequest instruction found for PortalShieldingResponse tx %s", tx.Hash().String()))
 	}
 	instUsed[idx] = 1
 	return true, nil

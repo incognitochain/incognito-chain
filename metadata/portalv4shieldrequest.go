@@ -93,11 +93,6 @@ func (shieldingReq PortalShieldingRequest) ValidateSanityData(chainRetriever Cha
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Shielding proof is empty"))
 	}
 
-	// let anyone can submit the proof
-	//if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-	//	return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Requester incognito address is not signer"))
-	//}
-
 	// check tx type
 	if txr.GetType() != common.TxNormalType {
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")

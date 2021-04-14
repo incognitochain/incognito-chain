@@ -140,8 +140,7 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 		}
 	}
 
-	// check whether amount transfer in txBNB is equal porting amount or not
-	// check receiver and amount in tx
+	// verify outputs of the tx
 	externalFee := uint64(0)
 	outputs := btcTxProof.BTCTx.TxOut
 	for idx, value := range expectPaymentInfo {
@@ -542,7 +541,7 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 			}
 		}
 
-		// use a tiny UTXO
+		// use a dust UTXO
 		if utxoIdx < len(utxos)-dustUTXOUsed && utxosArr[len(utxos)-dustUTXOUsed-1].value.GetOutputAmount() <= dustValueThreshold {
 			dustUTXOUsed += 1
 			chosenUTXOs = append(chosenUTXOs, utxosArr[len(utxos)-dustUTXOUsed].value)
