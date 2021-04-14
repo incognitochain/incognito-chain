@@ -24,6 +24,10 @@ func (s *swapRuleV3) Process(
 	penalty map[string]signaturecounter.Penalty,
 ) (*instruction.SwapShardInstruction, []string, []string, []string, []string) {
 
+	// @NOTICE: hack code to reduce code complexity
+	// All running network need to maintain numberOfFixedValidators equal to minCommitteeSize
+	// if numberOfFixedValidators = 0, code execution may go wrong
+	minCommitteeSize = numberOfFixedValidators
 	//get slashed nodes
 	newCommittees, slashingCommittees := s.slashingSwapOut(committees, penalty, numberOfFixedValidators)
 	lenSlashedCommittees := len(slashingCommittees)
@@ -35,7 +39,7 @@ func (s *swapRuleV3) Process(
 		s.swapInAfterSwapOut(newCommittees, substitutes, maxCommitteeSize, MAX_SWAP_IN_PERCENT_V3, len(slashingCommittees), len(committees))
 
 	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
-		return instruction.NewSwapShardInstruction(), newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees
+		return instruction.NewSwapShardInstructionWithShardID(int(shardID)), newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees
 	}
 
 	swapShardInstruction := instruction.NewSwapShardInstructionWithValue(
@@ -56,7 +60,6 @@ func (s *swapRuleV3) CalculateAssignOffset(lenShardSubstitute, lenCommittees, nu
 	return assignOffset
 }
 
-//TODO: @hung remove unused parameter numberOfFixedValidators
 func (s *swapRuleV3) swapInAfterSwapOut(
 	committees []string,
 	substitutes []string,
@@ -117,7 +120,7 @@ func (s *swapRuleV3) normalSwapOut(committees, substitutes []string, lenBeforeSl
 	tempCommittees := make([]string, len(committees))
 	copy(tempCommittees, committees)
 
-	normalSwapOutOffset := s.getNormalSwapOutOffset(lenBeforeSlashedCommittees, len(substitutes), lenSlashedCommittees, numberOfFixedValidators, minCommitteeSize, maxCommitteeSize)
+	normalSwapOutOffset := s.getNormalSwapOutOffset(lenBeforeSlashedCommittees, len(substitutes), lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize)
 
 	resCommittees := append(tempCommittees[:numberOfFixedValidators], tempCommittees[(numberOfFixedValidators+normalSwapOutOffset):]...)
 	resNormalSwapOut = committees[numberOfFixedValidators : numberOfFixedValidators+normalSwapOutOffset]
@@ -126,35 +129,40 @@ func (s *swapRuleV3) normalSwapOut(committees, substitutes []string, lenBeforeSl
 }
 
 //getNormalSwapOutOffset calculate normal swapout offset
-// max_Normal_Swap_Out_offset = min(C/8 - SL, C - numberOfFixedValidators - SL)
-func (s *swapRuleV3) getNormalSwapOutOffset(lenCommitteesBeforeSlash, lenSubstitutes, lenSlashedCommittees, numberOfFixedValidators, minCommitteeSize, maxCommitteeSize int) int {
+func (s *swapRuleV3) getNormalSwapOutOffset(lenCommitteesBeforeSlash, lenSubstitutes, lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize int) int {
 	if lenSubstitutes == 0 {
 		return 0
 	}
 
-	if lenCommitteesBeforeSlash < maxCommitteeSize {
+	if maxCommitteeSize != lenCommitteesBeforeSlash {
 		return 0
 	}
 
-	offset := lenCommitteesBeforeSlash / MAX_SWAP_OUT_PERCENT_V3
-	if lenSlashedCommittees >= offset {
-		if lenSlashedCommittees == offset {
-			if offset == 0 {
-				if lenCommitteesBeforeSlash < MAX_SWAP_OUT_PERCENT_V3 && lenSubstitutes > 0 {
-					return 1
-				}
-			}
-		}
-		return 0
-	}
-	if lenCommitteesBeforeSlash < minCommitteeSize {
+	maxSlashingOffset := s.getMaxSlashingOffset(lenCommitteesBeforeSlash, numberOfFixedValidators)
+	if lenSlashedCommittees == maxSlashingOffset {
 		return 0
 	}
 
-	offset = offset - lenSlashedCommittees
+	maxNormalSwapOutOffset := lenCommitteesBeforeSlash / MAX_SWAP_OUT_PERCENT_V3
+	if maxNormalSwapOutOffset > lenCommitteesBeforeSlash-numberOfFixedValidators {
+		maxNormalSwapOutOffset = lenCommitteesBeforeSlash - numberOfFixedValidators
+	}
+
+	if lenSlashedCommittees >= maxNormalSwapOutOffset {
+		return 0
+	}
+
+	offset := maxNormalSwapOutOffset - lenSlashedCommittees
+
 	if offset > lenSubstitutes {
 		offset = lenSubstitutes
 	}
+
+	lenCommitteesAfterSlash := lenCommitteesBeforeSlash - lenSlashedCommittees
+	if offset > lenCommitteesAfterSlash-numberOfFixedValidators {
+		offset = lenCommitteesAfterSlash - numberOfFixedValidators
+	}
+
 	return offset
 }
 
@@ -186,10 +194,12 @@ func (s *swapRuleV3) getMaxSlashingOffset(lenCommittees, numberOfFixedValidators
 	if lenCommittees == numberOfFixedValidators {
 		return 0
 	}
+
 	offset := lenCommittees / MAX_SLASH_PERCENT_V3
 	if offset > lenCommittees-numberOfFixedValidators {
 		offset = lenCommittees - numberOfFixedValidators
 	}
+
 	return offset
 }
 
