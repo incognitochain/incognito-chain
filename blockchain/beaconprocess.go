@@ -162,28 +162,20 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	// Update best state with new beaconBlock
 	newBestState, hashes, committeeChange, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
-		curView.beaconCommitteeEngine.AbortUncommittedBeaconState()
 		return err
 	}
 
-	var err2 error
-	defer func() {
-		if err2 != nil {
-			newBestState.beaconCommitteeEngine.AbortUncommittedBeaconState()
-		}
-	}()
-
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-		if err2 = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, hashes); err2 != nil {
-			return err2
+		if err = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, hashes); err != nil {
+			return err
 		}
 	} else {
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err2 := newBestState.beaconCommitteeEngine.Commit(hashes); err2 != nil {
+	if err2 := newBestState.beaconCommitteeEngine.Commit(hashes, committeeChange); err2 != nil {
 		return err2
 	}
 
@@ -1080,7 +1072,7 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
 		)
 		if err != nil {
-			return err
+			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
 	}
 
