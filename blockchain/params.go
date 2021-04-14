@@ -75,6 +75,7 @@ type Params struct {
 	BCHeightBreakPointPortalV3       uint64
 	BCHeightBreakPointPrivacyV2      uint64
 	EnableFeatureFlags               map[int]uint64 // featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature
+	WhiteListTxs					 map[string]bool
 }
 
 type GenesisParams struct {
@@ -266,6 +267,7 @@ func SetupParam() {
 			common.PortalV3Flag:       TestnetEnablePortalV3,
 			common.PortalRelayingFlag: TestnetEnablePortalRelaying,
 		},
+		WhiteListTxs: map[string]bool{},
 	}
 	// END TESTNET
 
@@ -372,6 +374,7 @@ func SetupParam() {
 			common.PortalV3Flag:       Testnet2EnablePortalV3,
 			common.PortalRelayingFlag: Testnet2EnablePortalRelaying,
 		},
+		WhiteListTxs: Testnet2WhiteListTxs,
 	}
 	// END TESTNET-2
 
@@ -476,6 +479,7 @@ func SetupParam() {
 			common.PortalV3Flag:       MainnetEnablePortalV3,
 			common.PortalRelayingFlag: MainnetEnablePortalRelaying,
 		},
+		WhiteListTxs: map[string]bool{},
 	}
 	if IsTestNet {
 		if !IsTestNet2 {
