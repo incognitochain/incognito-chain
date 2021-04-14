@@ -38,23 +38,23 @@ func (p *PortalShieldingRequestProcessor) PutAction(action []string, shardID byt
 func (p *PortalShieldingRequestProcessor) PrepareDataForBlockProducer(stateDB *statedb.StateDB, contentStr string) (map[string]interface{}, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		Logger.log.Errorf("Shielding request: an error occurred while decoding content string of pToken request action: %+v", err)
-		return nil, fmt.Errorf("Shielding request: an error occurred while decoding content string of pToken request action: %+v", err)
+		Logger.log.Errorf("Shielding request: an error occurred while decoding content string of pToken request action - Error: %v", err)
+		return nil, fmt.Errorf("Shielding request: an error occurred while decoding content string of pToken request action - Error: %v", err)
 	}
 
 	var actionData metadata.PortalShieldingRequestAction
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
-		Logger.log.Errorf("Shielding request: an error occurred while unmarshal shielding request action: %+v", err)
-		return nil, fmt.Errorf("Shielding request: an error occurred while unmarshal shielding request action: %+v", err)
+		Logger.log.Errorf("Shielding request: an error occurred while unmarshal shielding request action - Error: %v", err)
+		return nil, fmt.Errorf("Shielding request: an error occurred while unmarshal shielding request action - Error: %v", err)
 	}
 
 	proofHash := hashProof(actionData.Meta.ShieldingProof, actionData.Meta.IncogAddressStr)
 
 	isExistProofTxHash, err := statedb.IsExistsShieldingRequest(stateDB, actionData.Meta.TokenID, proofHash)
 	if err != nil {
-		Logger.log.Errorf("Shielding request: an error occurred while get pToken request proof from DB: %+v", err)
-		return nil, fmt.Errorf("Shielding request: an error occurred while get pToken request proof from DB: %+v", err)
+		Logger.log.Errorf("Shielding request: an error occurred while get pToken request proof from DB - Error: %v", err)
+		return nil, fmt.Errorf("Shielding request: an error occurred while get pToken request proof from DB - Error: %v", err)
 	}
 
 	optionalData := make(map[string]interface{})
@@ -121,13 +121,13 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while decoding content string of portal shielding request action: %+v", err)
+		Logger.log.Errorf("Shielding request: an error occurred while decoding content string of portal shielding request action - Error: %v", err)
 		return [][]string{}, nil
 	}
 	var actionData metadata.PortalShieldingRequestAction
 	err = json.Unmarshal(actionContentBytes, &actionData)
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while unmarshal portal shielding request action: %+v", err)
+		Logger.log.Errorf("Shielding request: an error occurred while unmarshal portal shielding request action - Error: %v", err)
 		return [][]string{}, nil
 	}
 	meta := actionData.Meta
@@ -151,7 +151,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 
 	portalTokenProcessor := portalParams.PortalTokens[meta.TokenID]
 	if portalTokenProcessor == nil {
-		Logger.log.Errorf("TokenID is not supported currently on Portal")
+		Logger.log.Errorf("Shielding Request: TokenID is not supported currently on Portal")
 		return [][]string{rejectInst}, nil
 	}
 
@@ -178,10 +178,9 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 	_, expectedReceivedMultisigAddress, err := portalTokenProcessor.GenerateOTMultisigAddress(portalParams.MasterPubKeys[meta.TokenID], int(portalParams.NumRequiredSigs), meta.IncogAddressStr)
 	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyShieldProof(meta.ShieldingProof, bc, expectedReceivedMultisigAddress, meta.IncogAddressStr)
 	if !isValid || err != nil {
-		Logger.log.Error("Parse proof and verify shielding proof failed: %v", err)
+		Logger.log.Error("Shielding Request: Parse proof and verify shielding proof failed: %v", err)
 		return [][]string{rejectInst}, nil
 	}
-
 
 	UpdatePortalStateUTXOs(currentPortalState, meta.TokenID, listUTXO)
 	shieldingAmount := uint64(0)
@@ -215,11 +214,12 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 ) error {
 	if currentPortalState == nil {
-		Logger.log.Errorf("current portal state is nil")
+		Logger.log.Errorf("Shielding Request: Current Portal state is nil")
 		return nil
 	}
 
 	if len(instructions) != 4 {
+		Logger.log.Errorf("Shielding Request: Instructions are in wrong format")
 		return nil // skip the instruction
 	}
 
@@ -227,7 +227,7 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 	var actionData metadata.PortalShieldingRequestContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
-		Logger.log.Errorf("Can not unmarshal instruction content %v - Error: %v\n", instructions[3], err)
+		Logger.log.Errorf("Shielding Request: Could not unmarshal instruction content %v - Error: %v\n", instructions[3], err)
 		return nil
 	}
 
@@ -258,14 +258,14 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 			shieldingReqTrackDataBytes,
 		)
 		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while tracking shielding request by TxReqID: %+v", err)
+			Logger.log.Errorf("Shielding Request: An error occurred while tracking shielding request by TxReqID - Error: %+v", err)
 			return nil
 		}
 
 		// update bridge/portal token info
 		incTokenID, err := common.Hash{}.NewHashFromStr(actionData.TokenID)
 		if err != nil {
-			Logger.log.Errorf("ERROR: Can not new hash from shielding incTokenID: %+v", err)
+			Logger.log.Errorf("Shielding Request: Could not new hash from shielding incTokenID - Error: %v", err)
 			return nil
 		}
 		updatingInfo, found := updatingInfoByTokenID[*incTokenID]
@@ -299,7 +299,7 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 			shieldingReqTrackDataBytes,
 		)
 		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while tracking shielding request tx: %+v", err)
+			Logger.log.Errorf("Shielding Request: An error occurred while tracking shielding request tx - Error: %v", err)
 			return nil
 		}
 	}
