@@ -164,8 +164,7 @@ func ProcessPortalInstsV4(
 			continue
 		}
 	}
-	//todo: need to be reviewed
-	// update info of bridge portal token
+
 	for _, updatingInfo := range updatingInfoByTokenID {
 		var updatingAmt uint64
 		var updatingType string

@@ -136,19 +136,19 @@ func GetMaxKeyValue(input map[uint64]uint) (max uint64) {
 }
 
 func UpdatePortalStateAfterUnshieldRequest(
-	CurrentPortalStateV4 *CurrentPortalStateV4,
+	currentPortalStateV4 *CurrentPortalStateV4,
 	unshieldID string, tokenID string, remoteAddress string, unshieldAmt uint64, beaconHeight uint64) {
 
-	if CurrentPortalStateV4.WaitingUnshieldRequests == nil {
-		CurrentPortalStateV4.WaitingUnshieldRequests = map[string]map[string]*statedb.WaitingUnshieldRequest{}
+	if currentPortalStateV4.WaitingUnshieldRequests == nil {
+		currentPortalStateV4.WaitingUnshieldRequests = map[string]map[string]*statedb.WaitingUnshieldRequest{}
 	}
-	if CurrentPortalStateV4.WaitingUnshieldRequests[tokenID] == nil {
-		CurrentPortalStateV4.WaitingUnshieldRequests[tokenID] = map[string]*statedb.WaitingUnshieldRequest{}
+	if currentPortalStateV4.WaitingUnshieldRequests[tokenID] == nil {
+		currentPortalStateV4.WaitingUnshieldRequests[tokenID] = map[string]*statedb.WaitingUnshieldRequest{}
 	}
 
 	keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID).String()
 	waitingUnshieldRequest := statedb.NewWaitingUnshieldRequestStateWithValue(remoteAddress, unshieldAmt, unshieldID, beaconHeight)
-	CurrentPortalStateV4.WaitingUnshieldRequests[tokenID][keyWaitingUnshieldRequest] = waitingUnshieldRequest
+	currentPortalStateV4.WaitingUnshieldRequests[tokenID][keyWaitingUnshieldRequest] = waitingUnshieldRequest
 }
 
 func UpdatePortalStateAfterProcessBatchUnshieldRequest(

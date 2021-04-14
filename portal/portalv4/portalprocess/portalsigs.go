@@ -18,9 +18,9 @@ type PortalSig struct {
 	Sigs      [][]byte // array of sigs for all TxIn
 }
 
-//todo: update for other case need beacon sign on
+// CheckAndSignPortalUnshieldExternalTx checks portal instructions need beacons sign on
 func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, portalParam portalv4.PortalParams) ([]*PortalSig, error) {
-	pSigs := []*PortalSig{}
+	var pSigs []*PortalSig
 	var tokenID string
 	var hexRawExternalTx string
 	var utxos []*statedb.UTXO
@@ -67,6 +67,9 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 		}
 
 		portalTokenProcessor := portalParam.PortalTokens[tokenID]
+		if portalTokenProcessor == nil {
+			return nil, fmt.Errorf("[checkAndSignPortalV4] portalTokenProcessor is nil")
+		}
 		sigs, txHash, err := portalTokenProcessor.PartSignOnRawExternalTx(seedKey, portalParam.MasterPubKeys[tokenID], int(portalParam.NumRequiredSigs), rawTxBytes, utxos)
 		if err != nil {
 			return nil, fmt.Errorf("[checkAndSignPortalV4] Error when signing raw tx bytes: %v", err)

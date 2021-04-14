@@ -266,25 +266,12 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 			return nil
 		}
 
-		// update bridge/portal token info
-		incTokenID, err := common.Hash{}.NewHashFromStr(actionData.TokenID)
+		// update bridge token info
+		err := metadata.UpdateBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.MintingAmount, false)
 		if err != nil {
-			Logger.log.Errorf("Shielding Request: Could not new hash from shielding incTokenID - Error: %v", err)
+			Logger.log.Errorf("Shielding Request: Update Portal token info for UnshieldID - Error %v\n", actionData.TxReqID.String(), err)
 			return nil
 		}
-		updatingInfo, found := updatingInfoByTokenID[*incTokenID]
-		if found {
-			updatingInfo.CountUpAmt += actionData.MintingAmount
-		} else {
-			updatingInfo = metadata.UpdatingInfo{
-				CountUpAmt:      actionData.MintingAmount,
-				DeductAmt:       0,
-				TokenID:         *incTokenID,
-				ExternalTokenID: nil,
-				IsCentralized:   false,
-			}
-		}
-		updatingInfoByTokenID[*incTokenID] = updatingInfo
 
 	} else if reqStatus == portalcommonv4.PortalV4RequestRejectedChainStatus {
 		shieldingReqTrackData := metadata.PortalShieldingRequestStatus{

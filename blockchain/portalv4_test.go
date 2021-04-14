@@ -98,9 +98,6 @@ func (s *PortalTestSuiteV4) SetupTest() {
 		GeneralMultiSigAddresses: map[string]string{
 			portalcommonv4.PortalBTCIDStr: "tb1qfgzhddwenekk573slpmqdutrd568ej89k37lmjr43tm9nhhulu0scjyajz",
 		},
-		GeneralMultiSigScriptHexEncode: map[string]string{
-			portalcommonv4.PortalBTCIDStr: "532103b2d3167d949c2503e69c9f29787d9c088d39178db4754035f5ae6af0171211002103987a87d19913bde3eff0557902b49057ed1c9c8b32f902bbbb85713a991fdc41210373235eb1c8f184e759176ce38737b79119471bba6356bcab8dcc144b42998601210329e7593189ca7af601b635673db153d419d70619032a32945776b2b38065e15d54ae",
-		},
 		PortalTokens: map[string]portaltokensv4.PortalTokenProcessor{
 			portalcommonv4.PortalBTCIDStr: &portaltokensv4.PortalBTCTokenProcessor{
 				PortalToken: &portaltokensv4.PortalToken{

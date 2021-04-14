@@ -188,9 +188,6 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRe
 	}
 
 	//validate RemoteAddress
-	if len(redeemReq.RemoteAddress) == 0 {
-		return false, false, NewMetadataTxError(PortalRedeemRequestParamError, errors.New("Remote address is invalid"))
-	}
 	isValidRemoteAddress, err := chainRetriever.IsValidPortalRemoteAddress(redeemReq.TokenID, redeemReq.RemoteAddress, beaconHeight, common.PortalVersion3)
 	if err != nil || !isValidRemoteAddress {
 		return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v - Error %v", redeemReq.RemoteAddress, redeemReq.TokenID, err)

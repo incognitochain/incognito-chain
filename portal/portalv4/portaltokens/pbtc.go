@@ -2,7 +2,6 @@ package portaltokens
 
 import (
 	"bytes"
-	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -28,11 +27,6 @@ import (
 type PortalBTCTokenProcessor struct {
 	*PortalToken
 	ChainParam *chaincfg.Params
-}
-
-func genBTCPrivateKey(IncKeyBytes []byte) []byte {
-	BTCKeyBytes := ed25519.NewKeyFromSeed(IncKeyBytes)[32:]
-	return BTCKeyBytes
 }
 
 func (p PortalBTCTokenProcessor) ConvertExternalToIncAmount(externalAmt uint64) uint64 {

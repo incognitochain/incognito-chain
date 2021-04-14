@@ -521,7 +521,6 @@ func CreateVote(userKey *signatureschemes2.MiningKey, block common.BlockInterfac
 	if err != nil {
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
-	fmt.Println("[BEACON VALIDATOR] Portal sigs : ", portalSigs)
 
 	Vote.BLS = blsSig
 	Vote.BRI = bridgeSig

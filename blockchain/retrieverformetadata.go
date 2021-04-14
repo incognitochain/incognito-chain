@@ -96,6 +96,10 @@ func (blockchain *BlockChain) IsPortalToken(beaconHeight uint64, tokenIDStr stri
 }
 
 func (blockchain *BlockChain) IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64, version uint) (bool, error) {
+	if len(remoteAddr) == 0 {
+		return false, errors.New("Remote address is empty string")
+	}
+
 	switch version {
 	case common.PortalVersion3:
 		{

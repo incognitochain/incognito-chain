@@ -12,7 +12,6 @@ type PortalParams struct {
 	MasterPubKeys                  map[string][][]byte
 	NumRequiredSigs                uint
 	GeneralMultiSigAddresses       map[string]string   // used to received change output coins
-	GeneralMultiSigScriptHexEncode map[string]string
 	PortalTokens                   map[string]portaltokensv4.PortalTokenProcessor
 
 	// for unshielding
