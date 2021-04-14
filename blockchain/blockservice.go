@@ -3,6 +3,7 @@ package blockchain
 import (
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/metadata"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -29,7 +30,7 @@ func (bc *BlockChain) GetBlockByHeight(
 		if err != nil {
 			return nil, err
 		}
-		return blk.CreateCrossShardBlock(tocID)
+		return CreateCrossShardBlock(blk, tocID)
 	default:
 		return nil, errors.Errorf("Invalid block type")
 	}
@@ -62,7 +63,7 @@ func (bc *BlockChain) GetBlockByHash(
 		if err != nil {
 			return nil, err
 		}
-		return blk.CreateCrossShardBlock(tocID)
+		return CreateCrossShardBlock(blk, tocID)
 	default:
 		return nil, errors.Errorf("Invalid block type")
 	}
@@ -144,7 +145,7 @@ func (bc *BlockChain) streamBlkByHash(
 func checkLimitTxAction(
 	forBeacon bool,
 	remining map[int]int,
-	blk *ShardBlock,
+	blk *types.ShardBlock,
 ) bool {
 	txs := blk.Body.Transactions
 	count := map[int]int{}

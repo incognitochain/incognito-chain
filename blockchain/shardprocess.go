@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"sort"
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
-	"github.com/incognitochain/incognito-chain/transaction"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -142,33 +142,33 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
 	//TODO
-	for _, tx := range shardBlock.Body.Transactions {
-		valEnv := transaction.DefaultValEnv()
-		if tx.IsPrivacy() {
-			valEnv = transaction.WithPrivacy(valEnv)
-		} else {
-			valEnv = transaction.WithNoPrivacy(valEnv)
-		}
-		valEnv = transaction.WithType(valEnv, tx.GetType())
-		valEnv = transaction.
-			WithConfirmedTime(
-				transaction.WithBeaconHeight(
-					transaction.WithShardHeight(
-						transaction.WithShardID(
-							valEnv,
-							shardBlock.GetShardID(),
-						),
-						shardBlock.GetHeight(),
-					),
-					shardBlock.Header.BeaconHeight,
-				),
-				shardBlock.GetProduceTime(),
-			)
-		tx.SetValidationEnv(valEnv)
-		// fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
-	}
+	// for _, tx := range shardBlock.Body.Transactions {
+	// 	valEnv := transaction.DefaultValEnv()
+	// 	if tx.IsPrivacy() {
+	// 		valEnv = transaction.WithPrivacy(valEnv)
+	// 	} else {
+	// 		valEnv = transaction.WithNoPrivacy(valEnv)
+	// 	}
+	// 	valEnv = transaction.WithType(valEnv, tx.GetType())
+	// 	valEnv = transaction.
+	// 		WithConfirmedTime(
+	// 			transaction.WithBeaconHeight(
+	// 				transaction.WithShardHeight(
+	// 					transaction.WithShardID(
+	// 						valEnv,
+	// 						shardBlock.GetShardID(),
+	// 					),
+	// 					shardBlock.GetHeight(),
+	// 				),
+	// 				shardBlock.Header.BeaconHeight,
+	// 			),
+	// 			shardBlock.GetProduceTime(),
+	// 		)
+	// 	tx.SetValidationEnv(valEnv)
+	// 	// fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
+	// }
 	//startTimeInsertShardBlock := time.Now()
-	committeeChange := newCommitteeChange()
+	// committeeChange := newCommitteeChange()
 
 	//check if view is committed
 	checkView := blockchain.ShardChain[int(shardID)].GetViewByHash(blockHash)
@@ -509,7 +509,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	// if !ok {
 	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
 	// }
-	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.BeaconHash)
+	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.BeaconHash, true)
 	if err != nil {
 		return NewBlockChainError(CloneBeaconBestStateError, err)
 	}

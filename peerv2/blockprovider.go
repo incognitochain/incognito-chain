@@ -6,6 +6,7 @@ import (
 
 	p2pgrpc "github.com/incognitochain/go-libp2p-grpc"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peerv2/proto"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
@@ -147,10 +148,10 @@ type BlockProvider struct {
 type BlockGetter interface {
 	StreamBlockByHeight(fromPool bool, req *proto.BlockByHeightRequest) chan interface{}
 	StreamBlockByHash(fromPool bool, req *proto.BlockByHashRequest) chan interface{}
-	GetShardBlockByHeight(height uint64, shardID byte) (map[common.Hash]*blockchain.ShardBlock, error)
-	GetShardBlockByHash(hash common.Hash) (*blockchain.ShardBlock, uint64, error)
-	GetBeaconBlockByHeight(height uint64) ([]*blockchain.BeaconBlock, error)
-	GetBeaconBlockByHash(beaconBlockHash common.Hash) (*blockchain.BeaconBlock, uint64, error)
+	GetShardBlockByHeight(height uint64, shardID byte) (map[common.Hash]*types.ShardBlock, error)
+	GetShardBlockByHash(hash common.Hash) (*types.ShardBlock, uint64, error)
+	GetBeaconBlockByHeight(height uint64) ([]*types.BeaconBlock, error)
+	GetBeaconBlockByHash(beaconBlockHash common.Hash) (*types.BeaconBlock, uint64, error)
 }
 
 func (bp *BlockProvider) getBlockShardByHash(blkHashes []common.Hash) []wire.Message {
@@ -309,7 +310,7 @@ func (bp *BlockProvider) GetBlockBeaconByHeight(
 // 1: crossShard
 // 2: shardToBeacon
 func (bp *BlockProvider) createBlockShardMsgByType(
-	block *blockchain.ShardBlock,
+	block *types.ShardBlock,
 	blkType byte,
 	crossShardID byte,
 ) (
@@ -329,7 +330,7 @@ func (bp *BlockProvider) createBlockShardMsgByType(
 		}
 		blkMsg.(*wire.MessageBlockShard).Block = block
 	case crossShard:
-		blkToSend, err := block.CreateCrossShardBlock(crossShardID)
+		blkToSend, err := blockchain.CreateCrossShardBlock(block, crossShardID)
 		if err != nil {
 			Logger.Error(err)
 			return nil, err

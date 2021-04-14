@@ -174,14 +174,14 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
-	blockCreationLeftOver := curView.BlockMaxCreateTime - time.Since(time1)
+	blockCreationLeftOver := curView.BlockMaxCreateTime - time.Since(newShardBlockBeginTime)
 	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(
 		curView,
 		&tempPrivateKey,
 		shardID,
 		beaconBlocks,
 		blockCreationLeftOver,
-		beaconHeight,
+		beaconProcessHeight,
 	)
 	if err != nil {
 		return nil, err
@@ -333,7 +333,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	curView *ShardBestState,
 	privatekey *privacy.PrivateKey,
 	shardID byte,
-	beaconBlocks []*BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	blockCreationLeftOver time.Duration,
 	beaconHeight uint64,
 ) (
@@ -352,9 +352,9 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	}
 	bView := &BeaconBestState{}
 	if len(beaconBlocks) == 0 {
-		bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash)
+		bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true)
 	} else {
-		bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(*beaconBlocks[len(beaconBlocks)-1].Hash())
+		bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(*beaconBlocks[len(beaconBlocks)-1].Hash(), true)
 	}
 	if err != nil {
 		return nil, NewBlockChainError(CloneBeaconBestStateError, err)

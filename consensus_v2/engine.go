@@ -9,10 +9,8 @@ import (
 	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/common/consensus"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	blsbft2 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
 	blsbft3 "github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
