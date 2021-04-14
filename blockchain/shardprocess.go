@@ -1340,7 +1340,8 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 			}
 			switch l[0] {
 			case instruction.SWAP_SHARD_ACTION, instruction.SWAP_ACTION, instruction.RANDOM_ACTION, instruction.STAKE_ACTION,
-				instruction.ASSIGN_ACTION, instruction.STOP_AUTO_STAKE_ACTION, instruction.SET_ACTION:
+				instruction.ASSIGN_ACTION, instruction.STOP_AUTO_STAKE_ACTION, instruction.SET_ACTION, instruction.RETURN_ACTION,
+				instruction.UNSTAKE_ACTION, instruction.SHARD_INST, instruction.BEACON_INST:
 				continue
 			}
 
