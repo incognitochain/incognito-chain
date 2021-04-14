@@ -759,7 +759,6 @@ type ExpectedResultBatchUnshieldProcess struct {
 	batchUnshieldProcesses map[string]map[string]*statedb.ProcessedUnshieldRequestBatch
 	utxos                  map[string]map[string]*statedb.UTXO
 	numBeaconInsts         uint
-	statusInsts            []string
 }
 
 func (s *PortalTestSuiteV4) SetupTestBatchUnshieldProcess() {
@@ -1062,7 +1061,7 @@ func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
 	// build test cases and expected results
 	testcases, expectedResults := s.buildTestCaseAndExpectedResultBatchUnshieldProcess()
 	if len(testcases) != len(expectedResults) {
-		fmt.Errorf("Testcases and expected results is invalid")
+		fmt.Printf("Testcases and expected results is invalid")
 		return
 	}
 

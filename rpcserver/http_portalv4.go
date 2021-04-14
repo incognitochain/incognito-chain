@@ -423,7 +423,7 @@ func getRawSignedTxByHeight(
 }
 
 /*
- ====== Replacement fee
+ ====== Replace-By-Fee for Unshield Requests
 */
 func (httpServer *HttpServer) handleCreateRawTxWithPortalReplaceUnshieldFee(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
