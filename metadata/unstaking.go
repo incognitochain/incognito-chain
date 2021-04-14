@@ -105,6 +105,7 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 		return false, err
 	}
 	index := common.IndexOfStr(requestedPublicKey, waitingValidatorsList)
+	Logger.log.Infof("BUGLOG5 pk: %v, waitingList: %v\n", requestedPublicKey, waitingValidatorsList)
 	if index == -1 {
 		if !stakerInfo.AutoStaking() {
 			return false, NewMetadataTxError(UnstakingRequestAlreadyUnstake, errors.New("Public Key Has Already Been Unstaked"))
