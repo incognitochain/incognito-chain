@@ -502,7 +502,7 @@ func Test_swapRuleV3_Process(t *testing.T) {
 			},
 		},
 		{
-			//TODO: @tin fix get normal offset to pass this testcase
+			//TODO: fix get normal offset to pass this testcase
 			name: "0 < SL < C/8 && C = MAX_COMMITTEE_SIZE && NS = C - FixedValidator - SL && 0 < SUB < MAX_NS && NS = SUB",
 			s:    &swapRuleV3{},
 			args: args{
