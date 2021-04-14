@@ -128,7 +128,7 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 
 		// choose waiting unshield IDs to process with current UTXOs
 		utxos := currentPortalStateV4.UTXOs[tokenID]
-		tinyAmount := portalTokenProcessor.ConvertIncToExternalAmount(portalParams.TinyUTXOAmount[tokenID])
+		tinyAmount := portalTokenProcessor.ConvertIncToExternalAmount(portalParams.DustValueThreshold[tokenID])
 		broadCastTxs := portalTokenProcessor.ChooseUnshieldIDsFromCandidates(utxos, wReqForProcess, tinyAmount)
 
 		// create raw external txs
@@ -395,7 +395,7 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		Logger.log.Errorf("Error: Replace unshield batch with invalid fee: %v", meta.Fee)
 		return [][]string{rejectInst}, nil
 	}
-	if uint64(meta.Fee) % portalParams.PortalTokens[meta.TokenID].GetMultipleTokenAmount() != 0 {
+	if uint64(meta.Fee)%portalParams.PortalTokens[meta.TokenID].GetMultipleTokenAmount() != 0 {
 		Logger.log.Errorf("Error: Replace fee has to be divisible by 10: %v", meta.Fee)
 		return [][]string{rejectInst}, nil
 	}

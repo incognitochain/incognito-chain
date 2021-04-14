@@ -140,8 +140,7 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 		}
 	}
 
-	// check whether amount transfer in txBNB is equal porting amount or not
-	// check receiver and amount in tx
+	// verify outputs of the tx
 	externalFee := uint64(0)
 	outputs := btcTxProof.BTCTx.TxOut
 	for idx, value := range expectPaymentInfo {
@@ -433,7 +432,7 @@ func (p PortalBTCTokenProcessor) IsAcceptableTxSize(numInputs int, numOutputs in
 func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 	utxos map[string]*statedb.UTXO,
 	waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest,
-	tinyAmount uint64) []*BroadcastTx {
+	dustValueThreshold uint64) []*BroadcastTx {
 	if len(utxos) == 0 || len(waitingUnshieldReqs) == 0 {
 		return []*BroadcastTx{}
 	}
@@ -491,8 +490,8 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 	broadcastTxs := []*BroadcastTx{}
 	utxoIdx := 0
 	unshieldIdx := 0
-	tinyUTXOUsed := 0
-	for utxoIdx < len(utxos)-tinyUTXOUsed && unshieldIdx < len(wReqsArr) {
+	dustUTXOUsed := 0
+	for utxoIdx < len(utxos)-dustUTXOUsed && unshieldIdx < len(wReqsArr) {
 		// utxoIdx always increases at least 1 in this scope
 
 		chosenUTXOs := []*statedb.UTXO{}
@@ -501,7 +500,7 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 		curSumAmount := uint64(0)
 		cnt := 0
 		if utxosArr[utxoIdx].value.GetOutputAmount() >= wReqsArr[unshieldIdx].value.GetAmount() {
-			// find the last unshield idx that the cummulative sum of unshield amount <= current utxo amount
+			// find the last unshield idx that the cumulative sum of unshield amount <= current utxo amount
 			for unshieldIdx < len(wReqsArr) && curSumAmount+wReqsArr[unshieldIdx].value.GetAmount() <= utxosArr[utxoIdx].value.GetOutputAmount() && p.IsAcceptableTxSize(1, cnt+1) {
 				curSumAmount += wReqsArr[unshieldIdx].value.GetAmount()
 				chosenUnshieldIDs = append(chosenUnshieldIDs, wReqsArr[unshieldIdx].value.GetUnshieldID())
@@ -511,14 +510,14 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 			chosenUTXOs = append(chosenUTXOs, utxosArr[utxoIdx].value)
 			utxoIdx += 1 // utxoIdx increases
 		} else {
-			// find the first utxo idx that the cummulative sum of utxo amount >= current unshield amount
-			for utxoIdx < len(utxos)-tinyUTXOUsed && curSumAmount+utxosArr[utxoIdx].value.GetOutputAmount() < wReqsArr[unshieldIdx].value.GetAmount() {
+			// find the first utxo idx that the cumulative sum of utxo amount >= current unshield amount
+			for utxoIdx < len(utxos)-dustUTXOUsed && curSumAmount+utxosArr[utxoIdx].value.GetOutputAmount() < wReqsArr[unshieldIdx].value.GetAmount() {
 				curSumAmount += utxosArr[utxoIdx].value.GetOutputAmount()
 				chosenUTXOs = append(chosenUTXOs, utxosArr[utxoIdx].value)
 				utxoIdx += 1 // utxoIdx increases
 				cnt += 1
 			}
-			if utxoIdx < len(utxos)-tinyUTXOUsed && p.IsAcceptableTxSize(cnt+1, 1) {
+			if utxoIdx < len(utxos)-dustUTXOUsed && p.IsAcceptableTxSize(cnt+1, 1) {
 				curSumAmount += utxosArr[utxoIdx].value.GetOutputAmount()
 				chosenUTXOs = append(chosenUTXOs, utxosArr[utxoIdx].value)
 				utxoIdx += 1
@@ -542,10 +541,10 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 			}
 		}
 
-		// use a tiny UTXO
-		if utxoIdx < len(utxos)-tinyUTXOUsed && utxosArr[len(utxos)-tinyUTXOUsed-1].value.GetOutputAmount() <= tinyAmount {
-			tinyUTXOUsed += 1
-			chosenUTXOs = append(chosenUTXOs, utxosArr[len(utxos)-tinyUTXOUsed].value)
+		// use a dust UTXO
+		if utxoIdx < len(utxos)-dustUTXOUsed && utxosArr[len(utxos)-dustUTXOUsed-1].value.GetOutputAmount() <= dustValueThreshold {
+			dustUTXOUsed += 1
+			chosenUTXOs = append(chosenUTXOs, utxosArr[len(utxos)-dustUTXOUsed].value)
 		}
 
 		// merge small batches
