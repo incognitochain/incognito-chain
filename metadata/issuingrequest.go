@@ -197,17 +197,6 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriev
 		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("the issuance request must be called by centralized website"))
 	}
 
-	//// check this is a normal pToken
-	//if statedb.PrivacyTokenIDExisted(transactionStateDB, iReq.TokenID) {
-	//	isBridgeToken, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), iReq.TokenID, true)
-	//	if !isBridgeToken {
-	//		if err != nil {
-	//			return false, NewMetadataTxError(InvalidMeta, err)
-	//		} else {
-	//			return false, NewMetadataTxError(InvalidMeta, fmt.Errorf("token %v is not a bridge token", iReq.TokenID.String()))
-	//		}
-	//	}
-	//}
 	return true, nil
 }
 

@@ -47,13 +47,13 @@ func NewBurningRequest(
 }
 
 func (bReq BurningRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	//bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), bReq.TokenID, false)
-	//if err != nil {
-	//	return false, err
-	//}
-	//if !bridgeTokenExisted {
-	//	return false, errors.New("the burning token is not existed in bridge tokens")
-	//}
+	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), bReq.TokenID, false)
+	if err != nil {
+		return false, err
+	}
+	if !bridgeTokenExisted {
+		return false, errors.New("the burning token is not existed in bridge tokens")
+	}
 	return true, nil
 }
 
