@@ -938,10 +938,10 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 	for _, tx := range txs {
 		if tx.IsSalaryTx() {
 			_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, beaconHeight, curView)
-			if err!=nil{
+			if err != nil {
 				return err
 			}
-		}else{
+		} else {
 			listTxs = append(listTxs, tx)
 		}
 	}
@@ -967,10 +967,10 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 	for _, tx := range txs {
 		if tx.IsSalaryTx() {
 			_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, beaconHeight, curView)
-			if err!=nil{
+			if err != nil {
 				return err
 			}
-		}else{
+		} else {
 			listTxs = append(listTxs, tx)
 		}
 	}
@@ -1339,8 +1339,8 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 				continue
 			}
 			switch l[0] {
-			case instruction.SET_ACTION, instruction.STAKE_ACTION, instruction.RANDOM_ACTION,
-			instruction.ASSIGN_ACTION, instruction.SWAP_ACTION, instruction.STOP_AUTO_STAKE_ACTION:
+			case instruction.SWAP_SHARD_ACTION, instruction.SWAP_ACTION, instruction.RANDOM_ACTION, instruction.STAKE_ACTION,
+				instruction.ASSIGN_ACTION, instruction.STOP_AUTO_STAKE_ACTION, instruction.SET_ACTION:
 				continue
 			}
 
