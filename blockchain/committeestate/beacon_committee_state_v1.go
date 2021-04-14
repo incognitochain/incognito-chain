@@ -123,12 +123,23 @@ func (b *BeaconCommitteeStateV1) shallowCopy(newB *BeaconCommitteeStateV1) {
 
 func (b BeaconCommitteeStateV1) clone(newB *BeaconCommitteeStateV1) {
 	newB.reset()
-	newB.beaconCommittee = b.beaconCommittee
-	newB.beaconSubstitute = b.beaconSubstitute
-	newB.currentEpochShardCandidate = b.currentEpochShardCandidate
-	newB.currentEpochBeaconCandidate = b.currentEpochBeaconCandidate
-	newB.nextEpochShardCandidate = b.nextEpochShardCandidate
-	newB.nextEpochBeaconCandidate = b.nextEpochBeaconCandidate
+	newB.beaconCommittee = make([]incognitokey.CommitteePublicKey, len(b.beaconCommittee))
+	copy(newB.beaconCommittee, b.beaconCommittee)
+
+	newB.beaconSubstitute = make([]incognitokey.CommitteePublicKey, len(b.beaconSubstitute))
+	copy(newB.beaconSubstitute, b.beaconSubstitute)
+
+	newB.currentEpochShardCandidate = make([]incognitokey.CommitteePublicKey, len(b.currentEpochShardCandidate))
+	copy(newB.currentEpochShardCandidate, b.currentEpochShardCandidate)
+
+	newB.currentEpochBeaconCandidate = make([]incognitokey.CommitteePublicKey, len(b.currentEpochBeaconCandidate))
+	copy(newB.currentEpochBeaconCandidate, b.currentEpochBeaconCandidate)
+
+	newB.nextEpochShardCandidate = make([]incognitokey.CommitteePublicKey, len(b.nextEpochShardCandidate))
+	copy(newB.nextEpochShardCandidate, b.nextEpochShardCandidate)
+
+	newB.nextEpochBeaconCandidate = make([]incognitokey.CommitteePublicKey, len(b.nextEpochBeaconCandidate))
+	copy(newB.nextEpochBeaconCandidate, b.nextEpochBeaconCandidate)
 	for k, v := range b.shardCommittee {
 		newB.shardCommittee[k] = v
 	}
