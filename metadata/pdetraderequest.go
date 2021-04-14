@@ -158,7 +158,7 @@ func (pc *PDETradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainR
 		return [][]string{}, err
 	}
 
-	Logger.log.Infof("BUGLOG4 actionContent: %v\n", string(actionContentBytes))
+	//Logger.log.Infof("BUGLOG4 actionContent: %v\n", string(actionContentBytes))
 
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(PDETradeRequestMeta), actionContentBase64Str}

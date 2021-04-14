@@ -892,9 +892,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 			}
 			if len(stopAutoStakingMetadata.CommitteePublicKey) != 0 {
 				stopAutoStaking = append(stopAutoStaking, stopAutoStakingMetadata.CommitteePublicKey)
-			} else {
-				Logger.log.Errorf("BUGLOG4 committeePublicKey is empty: %v\n", *stopAutoStakingMetadata)
-		}
+			}
 		case metadata.UnStakingMeta:
 			unstakingMetadata, ok := tx.GetMetadata().(*metadata.UnStakingMetadata)
 			if !ok {

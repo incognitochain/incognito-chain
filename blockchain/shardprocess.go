@@ -251,7 +251,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, newBestState))
-	Logger.log.Infof("BUGLOG2 SHARD %+v | Finish Insert new block %d, with hash %+v 🔗, "+
+	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v 🔗, "+
 		"Found 🔎 %+v transactions, "+
 		"%+v cross shard transactions, "+
 		"%+v instruction",
@@ -336,17 +336,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(shardBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
 	}
 
-	fmt.Printf("BUGLOG4 txRoot %v, shardTxRoot %v\n", shardBlock.Header.TxRoot.String(), shardBlock.Header.ShardTxRoot.String())
-	for _, tx := range shardBlock.Body.Transactions {
-		fmt.Printf("BUGLOG4 block %v, shard %v, tx %v\n", shardBlock.Hash().String(), shardID, tx.Hash().String())
-	}
 	// Verify transaction root
 	txMerkleTree := Merkle{}.BuildMerkleTreeStore(shardBlock.Body.Transactions)
 	txRoot := &common.Hash{}
 	if len(txMerkleTree) > 0 {
 		txRoot = txMerkleTree[len(txMerkleTree)-1]
 	}
-	fmt.Printf("BUGLOG4 txRoot rebuilt %v\n", txRoot.String())
 
 	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) && (blockchain.config.ChainParams.Net != Testnet || (shardBlock.Header.Height != 487260 && shardBlock.Header.Height != 487261 && shardBlock.Header.Height != 494144)) {
 		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
@@ -355,7 +350,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	// Verify ShardTx Root
 	_, shardTxMerkleData := CreateShardTxRoot(shardBlock.Body.Transactions)
 	shardTxRoot := shardTxMerkleData[len(shardTxMerkleData)-1]
-	fmt.Printf("BUGLOG4 shardTxRoot rebuilt %v\n", shardTxRoot.String())
 	if !bytes.Equal(shardBlock.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) {
 		return NewBlockChainError(ShardTransactionRootHashError, fmt.Errorf("Expect shard transaction root hash %+v but get %+v", shardBlock.Header.ShardTxRoot, shardTxRoot))
 	}

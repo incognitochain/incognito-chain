@@ -154,7 +154,6 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever C
 
 	// validate metadata type
 	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() && portalUserRegister.Type != PortalRequestPortingMetaV3 {
-		Logger.log.Errorf("BUGLOG4 PortalReqPorting beaconHeight %v, breakPoint %v, type %v\n", beaconHeight, chainRetriever.GetBCHeightBreakPointPortalV3(), portalUserRegister.Type)
 		return false, false, fmt.Errorf("Metadata type should be %v", PortalRequestPortingMetaV3)
 	}
 

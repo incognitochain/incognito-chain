@@ -8,7 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/operation/curve25519"
-	utils "github.com/incognitochain/incognito-chain/privacy/privacy_util"
 )
 
 var CurveOrder = new(operation.Scalar).SetKeyUnsafe(&C25519.L)
@@ -310,7 +309,6 @@ func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, er
 	if len(R.keys) != len(sig.r){
 		return false, errors.New("MLSAG Error : Malformed Ring")
 	}
-	utils.Logger.Log.Infof("BUGLOG3 cBefore = %v\n", c.String(), cBefore.String())
 	for i := 0; i < len(sig.r); i += 1 {
 		nextC, err := calculateNextC(
 			message,
@@ -321,7 +319,6 @@ func verifyRing(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, er
 		if err != nil {
 			return false, err
 		}
-		utils.Logger.Log.Infof("BUGLOG3 c[%] = %v\n", i + 1, nextC.String())
 		c = *nextC
 	}
 	return bytes.Equal(c.ToBytesS(), cBefore.ToBytesS()), nil
