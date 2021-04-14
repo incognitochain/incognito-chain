@@ -21,7 +21,6 @@ type PortalTokenProcessor interface {
 		proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string) (bool, []*statedb.UTXO, error)
 	ParseAndVerifyUnshieldProof(
 		proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string, expectPaymentInfo []*OutputTx, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, string, uint64, error)
-	GetExternalTxHashFromProof(proof string) (string, error)
 	ChooseUnshieldIDsFromCandidates(utxos map[string]*statedb.UTXO, waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest, tinyAmount uint64) []*BroadcastTx
 
 	CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, networkFee uint64, bc metadata.ChainRetriever) (string, string, error)

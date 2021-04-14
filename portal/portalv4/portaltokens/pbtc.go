@@ -199,17 +199,6 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 	return true, listUTXO, btcTxProof.BTCTx.TxHash().String(), externalFee, nil
 }
 
-func (p PortalBTCTokenProcessor) GetExternalTxHashFromProof(proof string) (string, error) {
-	// parse BTCProof in meta
-	btcTxProof, err := btcrelaying.ParseBTCProofFromB64EncodeStr(proof)
-	if err != nil {
-		Logger.log.Errorf("ShieldingProof is invalid %v\n", err)
-		return "", fmt.Errorf("ShieldingProof is invalid %v\n", err)
-	}
-
-	return btcTxProof.BTCTx.TxHash().String(), nil
-}
-
 func (p PortalBTCTokenProcessor) IsValidRemoteAddress(address string, bcr metadata.ChainRetriever) (bool, error) {
 	btcHeaderChain := bcr.GetBTCHeaderChain()
 	if btcHeaderChain == nil {
@@ -268,7 +257,7 @@ func (p PortalBTCTokenProcessor) generateOTPrivateKey(seed []byte, chainCodeSeed
 // Return redeem script, OTMultisigAddress
 func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byte, numSigsRequired int, chainCodeSeed string) ([]byte, string, error) {
 	if len(masterPubKeys) < numSigsRequired || numSigsRequired < 0 {
-		return []byte{}, "", fmt.Errorf("Invalid signature requirment")
+		return []byte{}, "", fmt.Errorf("Invalid signature requirement")
 	}
 
 	pubKeys := [][]byte{}
@@ -443,7 +432,7 @@ func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, masterP
 }
 
 func (p PortalBTCTokenProcessor) IsAcceptableTxSize(numInputs int, numOutputs int) bool {
-	return p.ExternalInputSize*uint(numInputs) + p.ExternalOutputSize*uint(numOutputs) <= p.ExternalTxMaxSize
+	return p.ExternalInputSize*uint(numInputs)+p.ExternalOutputSize*uint(numOutputs) <= p.ExternalTxMaxSize
 }
 
 // Choose list of pairs (UTXOs and unshield IDs) for broadcast external transactions
