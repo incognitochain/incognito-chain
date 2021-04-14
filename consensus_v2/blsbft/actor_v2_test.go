@@ -3,14 +3,19 @@ package blsbft
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	mockchain "github.com/incognitochain/incognito-chain/blockchain/mocks"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	mocktypes "github.com/incognitochain/incognito-chain/blockchain/types/mocks"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
+	mockmultiview "github.com/incognitochain/incognito-chain/multiview/mocks"
 )
 
 func Test_actorV2_handleProposeMsg(t *testing.T) {
@@ -300,6 +305,20 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 }
 
 func Test_actorV2_getValidProposeBlocks(t *testing.T) {
+	tempHash, _ := common.Hash{}.NewHashFromStr("123456")
+	tempView := mockmultiview.View{}
+	tempView.On("GetHash").Return(tempHash)
+	tempView.On("GetHeight").Return(5)
+
+	hash, _ := common.Hash{}.NewHashFromStr("123")
+	tempBlock := mocktypes.BlockInterface{}
+	tempBlock.On("Hash").Return(hash)
+	tempBlock.On("GetHeight").Return(6)
+	tempBlock.On("GetProposeTime").Return()
+	tempBlock.On("GetProduceTime").Return()
+
+	tempChain := mockchain.Chain{}
+
 	type fields struct {
 		actorBase            actorBase
 		committeeChain       blockchain.Chain
@@ -313,9 +332,11 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 		votedTimeslot        map[int64]bool
 		blockVersion         int
 	}
+
 	type args struct {
 		bestView multiview.View
 	}
+
 	tests := []struct {
 		name   string
 		fields fields
@@ -326,19 +347,53 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 			name: "",
 			fields: fields{
 				actorBase:            actorBase{},
-				committeeChain:       &blockchain.BeaconChain{},
+				committeeChain:       &tempChain,
 				currentTime:          1,
 				currentTimeSlot:      1,
 				proposeHistory:       &lru.Cache{},
 				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
-				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
-				blockVersion:         1,
+				receiveBlockByHash: map[string]*ProposeBlockInfo{
+					tempHash.String(): &ProposeBlockInfo{
+						block:            &tempBlock,
+						receiveTime:      time.Now(),
+						committees:       []incognitokey.CommitteePublicKey{},
+						signingCommittes: []incognitokey.CommitteePublicKey{},
+						userKeySet:       []signatureschemes.MiningKey{},
+						votes:            map[string]*BFTVote{},
+						isValid:          false,
+						hasNewVote:       false,
+						sendVote:         false,
+						isVoted:          false,
+						isCommitted:      false,
+						errVotes:         2,
+						validVotes:       5,
+						proposerSendVote: false,
+						lastValidateTime: time.Now().Add(time.Second * 3),
+					},
+				},
+				blockVersion: 1,
 			},
 			args: args{
-				bestView: &blockchain.BeaconBestState{},
+				bestView: &tempView,
 			},
 			want: []*ProposeBlockInfo{
-				&ProposeBlockInfo{},
+				&ProposeBlockInfo{
+					block:            &tempBlock,
+					receiveTime:      time.Now(),
+					committees:       []incognitokey.CommitteePublicKey{},
+					signingCommittes: []incognitokey.CommitteePublicKey{},
+					userKeySet:       []signatureschemes.MiningKey{},
+					votes:            map[string]*BFTVote{},
+					isValid:          false,
+					hasNewVote:       false,
+					sendVote:         false,
+					isVoted:          false,
+					isCommitted:      false,
+					errVotes:         2,
+					validVotes:       5,
+					proposerSendVote: false,
+					lastValidateTime: time.Now().Add(time.Second * 3),
+				},
 			},
 		},
 	}
