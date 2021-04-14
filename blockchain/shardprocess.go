@@ -1012,8 +1012,9 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err != nil {
 		return NewBlockChainError(UpdateBridgeIssuanceStatusError, err)
 	}
-	// call FeeEstimator for processing
-	if feeEstimator, ok := blockchain.config.FeeEstimator[shardBlock.Header.ShardID]; ok {
+
+	// call FeeEstimator for processing recent blocks
+	if feeEstimator, ok := blockchain.config.FeeEstimator[shardBlock.Header.ShardID]; ok && time.Since(time.Unix(shardBlock.GetProduceTime(), 0)).Seconds() < 15*60 {
 		err := feeEstimator.RegisterBlock(shardBlock)
 		if err != nil {
 			Logger.log.Debug(NewBlockChainError(RegisterEstimatorFeeError, err))
