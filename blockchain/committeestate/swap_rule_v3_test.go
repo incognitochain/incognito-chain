@@ -827,7 +827,7 @@ func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			got, got1 := s.normalSwapOut(tt.args.committees, tt.args.substitutes, tt.args.lenBeforeSlashedCommittees, tt.args.lenSlashedCommittees, tt.args.numberOfFixedValidators, tt.args.minCommitteeSize, tt.args.maxSwapOutPercent)
+			got, got1 := s.normalSwapOut(tt.args.committees, tt.args.substitutes, tt.args.lenBeforeSlashedCommittees, tt.args.lenSlashedCommittees, tt.args.numberOfFixedValidators, tt.args.minCommitteeSize, tt.args.maxSwapOutPercent, 0)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("swapRuleV3.normalSwapOut() got = %v, want %v", got, tt.want)
 			}
@@ -933,7 +933,7 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			if got := s.getNormalSwapOutOffset(tt.args.lenCommitteesBeforeSlash, tt.args.lenSubstitutes, tt.args.lenSlashedCommittees, tt.args.maxSwapOutPercent, tt.args.numberOfFixedValidators, tt.args.minCommitteeSize); got != tt.want {
+			if got := s.getNormalSwapOutOffset(tt.args.lenCommitteesBeforeSlash, tt.args.lenSubstitutes, tt.args.lenSlashedCommittees, tt.args.maxSwapOutPercent, tt.args.numberOfFixedValidators, tt.args.minCommitteeSize, 0); got != tt.want {
 				t.Errorf("swapRuleV3.getNormalSwapOutOffset() = %v, want %v", got, tt.want)
 			}
 		})
