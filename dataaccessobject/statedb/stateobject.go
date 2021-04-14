@@ -99,6 +99,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newWaitingUnshieldObjectWithValue(db, hash, value)
 	case PortalProcessedUnshieldRequestBatchObjectType:
 		return newProcessUnshieldRequestBatchObjectWithValue(db, hash, value)
+	case SlashingCommitteeObjectType:
+		return newSlashingCommitteeObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -178,6 +180,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newWaitingUnshieldObject(db, hash)
 	case PortalProcessedUnshieldRequestBatchObjectType:
 		return newProcessUnshieldRequestBatchObject(db, hash)
+	case SlashingCommitteeObjectType:
+		return newSlashingCommitteeObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

@@ -68,6 +68,7 @@ type ChainRetriever interface {
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
 	GetBTCChainParams() *chaincfg.Params
+	GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error)
 	GetPortalFeederAddress(beaconHeight uint64) string
 	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
 	IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool
@@ -96,11 +97,15 @@ type BeaconViewRetriever interface {
 	GetBeaconFeatureStateDB() *statedb.StateDB
 	GetBeaconRewardStateDB() *statedb.StateDB
 	GetBeaconSlashStateDB() *statedb.StateDB
+	GetStakerInfo(string) (*statedb.StakerInfo, bool, error)
+	GetBeaconConsensusStateDB() *statedb.StateDB
+	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 }
 
 type ShardViewRetriever interface {
 	GetEpoch() uint64
 	GetBeaconHeight() uint64
+	GetShardID() byte
 	GetStakingTx() map[string]string
 	ListShardPrivacyTokenAndPRV() []common.Hash
 	GetShardRewardStateDB() *statedb.StateDB

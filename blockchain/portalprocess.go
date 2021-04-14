@@ -2,13 +2,15 @@ package blockchain
 
 import (
 	"errors"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
-	"github.com/tendermint/tendermint/types"
+	bnbTypes "github.com/tendermint/tendermint/types"
 )
 
 // TODO: move to portalrelaying package
@@ -22,7 +24,7 @@ func (bc *BlockChain) InitRelayingHeaderChainStateFromDB() (*portalrelaying.Rela
 }
 
 // GetBNBBlockByHeight gets bnb header by height
-func (bc *BlockChain) GetBNBBlockByHeight(blockHeight int64) (*types.Block, error) {
+func (bc *BlockChain) GetBNBBlockByHeight(blockHeight int64) (*bnbTypes.Block, error) {
 	bnbChainState := bc.config.BNBChainState
 	return bnbChainState.GetBNBBlockByHeight(blockHeight)
 }
@@ -62,7 +64,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 }
 
 // Beacon process for portal protocol
-func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *BeaconBlock) error {
+func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *types.BeaconBlock) error {
 	// Note: should comment this code if you need to create local chain.
 	isSkipPortalV3Ints := false
 	if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {

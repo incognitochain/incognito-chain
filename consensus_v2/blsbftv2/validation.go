@@ -6,6 +6,7 @@ import (
 	"fmt"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
@@ -14,8 +15,8 @@ import (
 )
 
 type blockValidation interface {
-	common.BlockInterface
-	AddValidationField(validationData string) error
+	types.BlockInterface
+	AddValidationField(validationData string)
 }
 
 type ValidationData struct {
@@ -44,7 +45,7 @@ func EncodeValidationData(validationData ValidationData) (string, error) {
 	return string(result), nil
 }
 
-func ValidateProducerSig(block common.BlockInterface) error {
+func ValidateProducerSig(block types.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
@@ -79,7 +80,7 @@ func CheckValidationDataWithCommittee(valData *ValidationData, committee []incog
 	return true
 }
 
-func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
@@ -93,8 +94,6 @@ func ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.
 		committeeBLSKeys = append(committeeBLSKeys, member.MiningPubKey[common.BlsConsensus])
 	}
 	if err := validateBLSSig(block.Hash(), valData.AggSig, valData.ValidatiorsIdx, committeeBLSKeys); err != nil {
-		committeeStr, _ := incognitokey.CommitteeKeyListToString(committee)
-		fmt.Printf("[ValidateBLS] Validate BLS sig of block %v return error %v; Validators index %v; Signature %v; committee %v\n", block.Hash().String(), err, valData.ValidatiorsIdx, valData.AggSig, committeeStr)
 		return NewConsensusError(UnExpectedError, err)
 	}
 	return nil
@@ -169,7 +168,7 @@ func validateBLSSig(
 	return nil
 }
 
-func (e BLSBFT_V2) ValidateBlockWithConsensus(block common.BlockInterface) error {
+func (e BLSBFT_V2) ValidateBlockWithConsensus(block types.BlockInterface) error {
 
 	return nil
 }

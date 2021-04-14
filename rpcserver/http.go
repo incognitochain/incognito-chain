@@ -195,17 +195,6 @@ handles reading and responding to RPC messages.
 */
 
 func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.Request, isLimitedUser bool) {
-	defer func() {
-		if r.Method == getShardBestState {
-			return
-		}
-		err := recover()
-		if err != nil {
-			errMsg := fmt.Sprintf("%v", err)
-			Logger.log.Error(errMsg)
-		}
-	}()
-
 	if atomic.LoadInt32(&httpServer.shutdown) != 0 {
 		return
 	}
@@ -259,8 +248,19 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 	var result interface{}
 	var request *JsonRequest
 	request, jsonErr = parseJsonRequest(body, r.Method)
-
 	if jsonErr == nil {
+		defer func(req *JsonRequest) {
+			if req.Method == getShardBestState {
+				return
+			}
+			err := recover()
+			if err != nil {
+				errMsg := fmt.Sprintf("Recovery error message: %v", err)
+				Logger.log.Error(errMsg)
+				httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusInternalServerError, buf)
+			}
+		}(request)
+
 		if request.Id == nil && !(httpServer.config.RPCQuirks && request.Jsonrpc == "") {
 			return
 		}

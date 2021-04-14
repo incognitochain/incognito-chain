@@ -3,16 +3,18 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
+	"sort"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
-	"math/big"
-	"sort"
-	"strconv"
 )
 
 // build instructions at beacon chain before syncing to shards
@@ -25,7 +27,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 		if len(inst) < 2 {
 			continue
 		}
-		if inst[0] == SetAction || inst[0] == StakeAction || inst[0] == SwapAction || inst[0] == RandomAction || inst[0] == AssignAction {
+		if instruction.IsConsensusInstruction(inst[0]) {
 			continue
 		}
 

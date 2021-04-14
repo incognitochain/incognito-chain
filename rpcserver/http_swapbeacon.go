@@ -3,17 +3,16 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
-	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/incdb"
-
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
 
@@ -29,8 +28,8 @@ type swapProof struct {
 }
 
 type ConsensusEngine interface {
-	ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
-	ExtractPortalV4ValidationData(block common.BlockInterface) ([]*portalprocessv4.PortalSig, error)
+	ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
+	ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error)
 }
 
 // handleGetLatestBeaconSwapProof returns the latest proof of a change in bridge's committee
@@ -81,7 +80,7 @@ func getSwapProofOnBeacon(
 	bc *blockchain.BlockChain,
 	ce ConsensusEngine,
 	meta int,
-) (*swapProof, *blockchain.BeaconBlock, *rpcservice.RPCError) {
+) (*swapProof, *types.BeaconBlock, *rpcservice.RPCError) {
 	// Get beacon block
 	beaconBlocks, err := blockchain.FetchBeaconBlockFromHeight(bc, height, height)
 	if len(beaconBlocks) == 0 {
@@ -109,7 +108,7 @@ func getSwapProofOnBeacon(
 func getShardAndBeaconBlocks(
 	height uint64,
 	bc *blockchain.BlockChain,
-) (*blockchain.ShardBlock, []*blockchain.BeaconBlock, error) {
+) (*types.ShardBlock, []*types.BeaconBlock, error) {
 	bridgeID := byte(common.BridgeShardID)
 	bridgeBlocks, err := bc.GetShardBlockByHeight(height, bridgeID)
 	if err != nil {
@@ -118,7 +117,7 @@ func getShardAndBeaconBlocks(
 	if len(bridgeBlocks) == 0 {
 		return nil, nil, fmt.Errorf("shard block bridgeID %+v, height %+v not found", bridgeID, height)
 	}
-	var bridgeBlock *blockchain.ShardBlock
+	var bridgeBlock *types.ShardBlock
 	for _, temp := range bridgeBlocks {
 		bridgeBlock = temp
 	}
@@ -141,7 +140,7 @@ func getShardAndBeaconBlocks(
 }
 
 type block interface {
-	common.BlockInterface // to be able to get ValidationData from ConsensusEngine
+	types.BlockInterface // to be able to get ValidationData from ConsensusEngine
 
 	InstructionMerkleRoot() []byte
 	MetaHash() []byte
@@ -188,7 +187,7 @@ func buildProofForBlock(
 // getBeaconSwapProofOnBeacon finds in given beacon blocks a beacon committee swap instruction and returns its proof
 func getBeaconSwapProofOnBeacon(
 	inst []string,
-	beaconBlocks []*blockchain.BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	db incdb.Database,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
@@ -209,12 +208,12 @@ func getIncludedBeaconBlocks(
 	beaconHeight uint64,
 	shardID byte,
 	bc *blockchain.BlockChain,
-) ([]*blockchain.BeaconBlock, error) {
+) ([]*types.BeaconBlock, error) {
 	prevShardBlocks, err := bc.GetShardBlockByHeight(shardHeight-1, shardID)
 	if err != nil {
 		return nil, err
 	}
-	var previousShardBlock *blockchain.ShardBlock
+	var previousShardBlock *types.ShardBlock
 	for _, temp := range prevShardBlocks {
 		previousShardBlock = temp
 	}
@@ -231,7 +230,7 @@ func getIncludedBeaconBlocks(
 
 // extractInstsFromShardBlock returns all instructions in a shard block as a slice of []string
 func extractInstsFromShardBlock(
-	shardBlock *blockchain.ShardBlock,
+	shardBlock *types.ShardBlock,
 	//beaconBlocks []*blockchain.BeaconBlock,
 	bc *blockchain.BlockChain,
 ) ([][]string, error) {
@@ -240,10 +239,6 @@ func extractInstsFromShardBlock(
 		bc,
 		shardBlock.Header.ShardID,
 		shardBlock.Header.Height,
-		//	&shardBlock.Header.ProducerAddress,
-		//	shardBlock.Header.Height,
-		//	beaconBlocks,
-		//	shardBlock.Header.BeaconHeight,
 	)
 	if err != nil {
 		return nil, err
@@ -303,7 +298,7 @@ func buildInstProof(insts [][]string, id int) *keccak256MerkleProof {
 }
 
 type beaconBlock struct {
-	*blockchain.BeaconBlock
+	*types.BeaconBlock
 }
 
 func (bb *beaconBlock) InstructionMerkleRoot() []byte {
@@ -324,7 +319,7 @@ func (bb *beaconBlock) PortalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.Port
 }
 
 type shardBlock struct {
-	*blockchain.ShardBlock
+	*types.ShardBlock
 }
 
 func (sb *shardBlock) InstructionMerkleRoot() []byte {
@@ -345,7 +340,7 @@ func (sb *shardBlock) PortalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.Porta
 }
 
 // findBeaconBlockWithInst finds a beacon block with a specific instruction and the instruction's index; nil if not found
-func findBeaconBlockWithInst(beaconBlocks []*blockchain.BeaconBlock, inst []string) (*blockchain.BeaconBlock, int) {
+func findBeaconBlockWithInst(beaconBlocks []*types.BeaconBlock, inst []string) (*types.BeaconBlock, int) {
 	for _, b := range beaconBlocks {
 		for k, blkInst := range b.Body.Instructions {
 			diff := false
