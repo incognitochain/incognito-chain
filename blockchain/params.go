@@ -1,13 +1,14 @@
 package blockchain
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -216,8 +217,8 @@ func SetupParam() {
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
 		ConsensusV2Epoch:               16930,
-		StakingFlowV2Height:            3466950,
-		EnableSlashingStakingFlowV2:    3468950,
+		StakingFlowV2Height:            3016278,
+		EnableSlashingStakingFlowV2:    3016778,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 250000,
 		PortalParams: portal.PortalParams{

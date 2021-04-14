@@ -196,7 +196,6 @@ func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriev
 		fmt.Println("Check authorized sender fail:", ok, err)
 		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("the issuance request must be called by centralized website"))
 	}
-
 	return true, nil
 }
 

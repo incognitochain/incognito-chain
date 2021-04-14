@@ -2,6 +2,7 @@
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -24,7 +25,8 @@ type BeaconChain struct {
 	ChainName   string
 	Ready       bool //when has peerstate
 
-	insertLock sync.Mutex
+	committeeCache *lru.Cache
+	insertLock     sync.Mutex
 }
 
 func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
@@ -348,7 +350,23 @@ func (chain *BeaconChain) GetAllView() []multiview.View {
 
 //CommitteesByShardID ...
 func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
-	return chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
+	var committees []incognitokey.CommitteePublicKey
+	var err error
+	res, has := chain.committeeCache.Get(getCommitteeCacheKey(hash, shardID))
+	if !has {
+		committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
+		if err != nil {
+			return committees, err
+		}
+		chain.committeeCache.Add(getCommitteeCacheKey(hash, shardID), committees)
+	} else {
+		committees = res.([]incognitokey.CommitteePublicKey)
+	}
+	return committees, nil
+}
+
+func getCommitteeCacheKey(hash common.Hash, shardID byte) string {
+	return fmt.Sprintf("%s-%d", hash.String(), shardID)
 }
 
 //ProposerByTimeSlot ...

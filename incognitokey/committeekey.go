@@ -21,9 +21,7 @@ type CommitteePublicKey struct {
 }
 
 func (pubKey *CommitteePublicKey) IsEqualMiningPubKey(consensusName string, k *CommitteePublicKey) bool {
-	u, _ := pubKey.GetMiningKey(consensusName)
-	b, _ := k.GetMiningKey(consensusName)
-	return reflect.DeepEqual(u, b)
+	return reflect.DeepEqual(pubKey.MiningPubKey, k.MiningPubKey)
 }
 
 func NewCommitteePublicKey() *CommitteePublicKey {

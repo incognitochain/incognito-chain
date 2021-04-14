@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -317,6 +317,9 @@ func (httpServer *HttpServer) handleSetTxFee(params interface{}, closeChan <-cha
 	return err == nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 }
 
+//for fast retrieve token detail
+var PrivacyCustomTokenCache, _ = lru.New(5000)
+
 func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	getCountTxs := false
@@ -348,6 +351,11 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 	}
 	for _, bridgeToken := range allBridgeTokens {
 		if _, ok := listPrivacyToken[*bridgeToken.TokenID]; ok {
+			continue
+		}
+		value, exists := PrivacyCustomTokenCache.Get(bridgeToken.TokenID.String())
+		if exists {
+			result.ListCustomToken = append(result.ListCustomToken, value.(jsonresult.CustomToken))
 			continue
 		}
 		item := jsonresult.CustomToken{
@@ -388,8 +396,10 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 				}
 			}
 		}
+		PrivacyCustomTokenCache.Add(bridgeToken.TokenID.String(), item)
 		result.ListCustomToken = append(result.ListCustomToken, item)
 	}
+
 	for index, _ := range result.ListCustomToken {
 		if !getCountTxs {
 			result.ListCustomToken[index].ListTxs = []string{}

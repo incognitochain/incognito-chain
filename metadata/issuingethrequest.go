@@ -140,7 +140,6 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(tx Transaction, chainRetr
 	if ethReceipt == nil {
 		return false, errors.Errorf("The eth proof's receipt could not be null.")
 	}
-
 	return true, nil
 }
 
