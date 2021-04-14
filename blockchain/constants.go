@@ -26,8 +26,8 @@ const (
 	TransactionBatchSize               = 30
 	SpareTime                          = 1000             // in mili-second
 	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
-	NumberOfFixedBeaconBlockValidators = 4
-	NumberOfFixedShardBlockValidators  = 4
+	NumberOfFixedBeaconBlockValidators = 7
+	NumberOfFixedShardBlockValidators  = 22
 )
 
 // burning addresses
@@ -218,7 +218,7 @@ var SelectShardNodeTestnetSerializedPubkeyV2 = make(map[uint64][]string)
 var SelectShardNodeTestnetSerializedPaymentAddressV2 = make(map[uint64][]string)
 var TestnetReplaceCommitteeEpoch = []uint64{}
 
-var IsTestNet = true
+var IsTestNet = false
 var IsTestNet2 = false
 
 func ReadKey(v1, v2 []byte) {
