@@ -96,7 +96,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	if err != nil {
 		return nil, err
 	}
-	copiedCurView.beaconCommitteeEngine.AbortUncommittedBeaconState()
 
 	instructions = append(instructions, incurredInstructions...)
 	newBeaconBlock.Body.SetInstructions(instructions)
@@ -159,7 +158,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		featureStateDB := curView.GetBeaconFeatureStateDB()
 		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {
-			return  nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
+			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
 
 		portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
