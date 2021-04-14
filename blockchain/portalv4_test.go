@@ -120,7 +120,7 @@ func (s *PortalTestSuiteV4) SetupTest() {
 		MinUnshieldAmts: map[string]uint64{
 			portalcommonv4.PortalBTCIDStr: 1000000, // in nano pBTC - 100000 satoshi
 		},
-		TinyUTXOAmount: map[string]uint64{
+		DustValueThreshold: map[string]uint64{
 			portalcommonv4.PortalBTCIDStr: 1e9, // in nano pBTC - 1e8 satoshi
 		},
 		BatchNumBlks:                45,

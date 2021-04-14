@@ -2,16 +2,17 @@ package portalv4
 
 import (
 	"errors"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
-	"time"
 )
 
 type PortalParams struct {
 	MasterPubKeys                  map[string][][]byte
 	NumRequiredSigs                uint
-	GeneralMultiSigAddresses       map[string]string   // used to received change output coins
+	GeneralMultiSigAddresses       map[string]string // used to received change output coins
 	GeneralMultiSigScriptHexEncode map[string]string
 	PortalTokens                   map[string]portaltokensv4.PortalTokenProcessor
 
@@ -20,7 +21,7 @@ type PortalParams struct {
 	MinUnshieldAmts            map[string]uint64 // in nano ptokens
 	BatchNumBlks               uint
 	MinConfirmationIncBlockNum uint
-	TinyUTXOAmount             map[string]uint64 // in nano ptokens
+	DustValueThreshold         map[string]uint64 // in nano ptokens
 
 	// for replacement
 	PortalReplacementAddress    string
