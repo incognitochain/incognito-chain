@@ -17,13 +17,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/syncker"
 	"github.com/incognitochain/incognito-chain/txpool"
-
-	"github.com/incognitochain/incognito-chain/peerv2"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"cloud.google.com/go/storage"
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
@@ -41,17 +39,12 @@ import (
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
-	"github.com/incognitochain/incognito-chain/syncker"
-	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"google.golang.org/api/option"
@@ -1152,37 +1145,6 @@ func (serverObj *Server) OnAddr(peerConn *peer.PeerConn, msg *wire.MessageAddr) 
 
 func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 	Logger.log.Debug("Receive a BFTMsg START")
-	var txProcessed chan struct{}
-	isRelayNodeForConsensus := cfg.Accelerator
-	if isRelayNodeForConsensus {
-		senderPublicKey, _ := p.GetRemotePeer().GetPublicKey()
-		// panic(senderPublicKey)
-		// fmt.Println("eiiiiiiiiiiiii")
-		// os.Exit(0)
-		//TODO hy check here
-		bestState := serverObj.blockChain.GetBeaconBestState()
-		beaconCommitteeList, err := incognitokey.CommitteeKeyListToString(bestState.GetBeaconCommittee())
-		if err != nil {
-			panic(err)
-		}
-		isInBeaconCommittee := common.IndexOfStr(senderPublicKey, beaconCommitteeList) != -1
-		if isInBeaconCommittee {
-			serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{p.GetRemotePeerID(): true})
-		}
-		shardCommitteeList := make(map[byte][]string)
-		for shardID, committee := range bestState.GetShardCommittee() {
-			shardCommitteeList[shardID], err = incognitokey.CommitteeKeyListToString(committee)
-			if err != nil {
-				panic(err)
-			}
-		}
-		for shardID, committees := range shardCommitteeList {
-			isInShardCommitee := common.IndexOfStr(senderPublicKey, committees) != -1
-			if isInShardCommitee {
-				serverObj.PushMessageToShard(msg, shardID, map[libp2p.ID]bool{p.GetRemotePeerID(): true})
-				break
-			}
-		}
 	if err := msg.VerifyMsgSanity(); err != nil {
 		Logger.log.Error(err)
 		return
