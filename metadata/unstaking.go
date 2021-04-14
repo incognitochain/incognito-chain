@@ -106,6 +106,8 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 	}
 	index := common.IndexOfStr(requestedPublicKey, waitingValidatorsList)
 	Logger.log.Infof("BUGLOG5 pk: %v, waitingList: %v\n", requestedPublicKey, waitingValidatorsList)
+	currentShardWaiting, _ := incognitokey.CommitteeKeyListToString(beaconViewRetriever.GetCandidateShardWaitingForCurrentRandom())
+	Logger.log.Infof("BUGLOG5 shardWaiting: %v\n", currentShardWaiting)
 	if index == -1 {
 		if !stakerInfo.AutoStaking() {
 			return false, NewMetadataTxError(UnstakingRequestAlreadyUnstake, errors.New("Public Key Has Already Been Unstaked"))
