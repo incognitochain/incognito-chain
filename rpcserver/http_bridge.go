@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -252,6 +253,26 @@ func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, close
 
 func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return allBridgeTokens, nil
+}
+
+func (httpServer *HttpServer) handleGetAllBridgeTokensByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+	if len(arrayParams) == 0 {
+		return httpServer.handleGetAllBridgeTokens(params, closeChan)
+	}
+	height, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse height param, must be a float"))
+	}
+
+	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokensByHeight(uint64(height))
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}

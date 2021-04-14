@@ -251,7 +251,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, newBestState))
-	Logger.log.Infof("BUGLOG2 SHARD %+v | Finish Insert new block %d, with hash %+v 🔗, "+
+	Logger.log.Infof("SHARD %+v | Finish Insert new block %d, with hash %+v 🔗, "+
 		"Found 🔎 %+v transactions, "+
 		"%+v cross shard transactions, "+
 		"%+v instruction",
@@ -336,17 +336,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(shardBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
 	}
 
-	fmt.Printf("BUGLOG4 txRoot %v, shardTxRoot %v\n", shardBlock.Header.TxRoot.String(), shardBlock.Header.ShardTxRoot.String())
-	for _, tx := range shardBlock.Body.Transactions {
-		fmt.Printf("BUGLOG4 block %v, shard %v, tx %v\n", shardBlock.Hash().String(), shardID, tx.Hash().String())
-	}
 	// Verify transaction root
 	txMerkleTree := Merkle{}.BuildMerkleTreeStore(shardBlock.Body.Transactions)
 	txRoot := &common.Hash{}
 	if len(txMerkleTree) > 0 {
 		txRoot = txMerkleTree[len(txMerkleTree)-1]
 	}
-	fmt.Printf("BUGLOG4 txRoot rebuilt %v\n", txRoot.String())
 
 	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) && (blockchain.config.ChainParams.Net != Testnet || (shardBlock.Header.Height != 487260 && shardBlock.Header.Height != 487261 && shardBlock.Header.Height != 494144)) {
 		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
@@ -355,7 +350,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	// Verify ShardTx Root
 	_, shardTxMerkleData := CreateShardTxRoot(shardBlock.Body.Transactions)
 	shardTxRoot := shardTxMerkleData[len(shardTxMerkleData)-1]
-	fmt.Printf("BUGLOG4 shardTxRoot rebuilt %v\n", shardTxRoot.String())
 	if !bytes.Equal(shardBlock.Header.ShardTxRoot.GetBytes(), shardTxRoot.GetBytes()) {
 		return NewBlockChainError(ShardTransactionRootHashError, fmt.Errorf("Expect shard transaction root hash %+v but get %+v", shardBlock.Header.ShardTxRoot, shardTxRoot))
 	}
@@ -938,10 +932,10 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 	for _, tx := range txs {
 		if tx.IsSalaryTx() {
 			_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, beaconHeight, curView)
-			if err!=nil{
+			if err != nil {
 				return err
 			}
-		}else{
+		} else {
 			listTxs = append(listTxs, tx)
 		}
 	}
@@ -967,10 +961,10 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 	for _, tx := range txs {
 		if tx.IsSalaryTx() {
 			_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, beaconHeight, curView)
-			if err!=nil{
+			if err != nil {
 				return err
 			}
-		}else{
+		} else {
 			listTxs = append(listTxs, tx)
 		}
 	}
@@ -1016,11 +1010,16 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		Logger.log.Critical("processStoreShardBlock/CrossTransactions	", shardBlock.Body.CrossTransactions)
 	}
 
+	if blockHeight == 1 {
+		Logger.log.Infof("Genesis block of shard %v: %v, #txs: %v\n", shardID, blockHash.String(), len(shardBlock.Body.Transactions))
+	}
+
 	if err := blockchain.CreateAndSaveTxViewPointFromBlock(shardBlock, newShardState.transactionStateDB); err != nil {
 		return NewBlockChainError(FetchAndStoreTransactionError, err)
 	}
 
 	for index, tx := range shardBlock.Body.Transactions {
+		Logger.log.Infof("Process storing tx %v, index %x, shard %v, height %v, blockHash %v\n", tx.Hash().String(), index, shardID, blockHeight, blockHash.String())
 		if err := rawdbv2.StoreTransactionIndex(blockchain.GetShardChainDatabase(shardID), *tx.Hash(), shardBlock.Header.Hash(), index); err != nil {
 			return NewBlockChainError(FetchAndStoreTransactionError, err)
 		}
@@ -1334,8 +1333,9 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 				continue
 			}
 			switch l[0] {
-			case instruction.SET_ACTION, instruction.STAKE_ACTION, instruction.RANDOM_ACTION,
-			instruction.ASSIGN_ACTION, instruction.SWAP_ACTION, instruction.STOP_AUTO_STAKE_ACTION:
+			case instruction.SWAP_SHARD_ACTION, instruction.SWAP_ACTION, instruction.RANDOM_ACTION, instruction.STAKE_ACTION,
+				instruction.ASSIGN_ACTION, instruction.STOP_AUTO_STAKE_ACTION, instruction.SET_ACTION, instruction.RETURN_ACTION,
+				instruction.UNSTAKE_ACTION, instruction.SHARD_INST, instruction.BEACON_INST:
 				continue
 			}
 
@@ -1352,11 +1352,10 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 						return err
 					}
 
-					Logger.log.Infof("process storing tokenInit: %v\n", *acceptedContent)
-
 					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.TokenID); existed {
-						Logger.log.Infof("token %v existed\n", acceptedContent.TokenID.String())
-						continue
+						msgStr := fmt.Sprintf("init token %v existed, something might be wrong", acceptedContent.TokenID.String())
+						Logger.log.Infof(msgStr + "\n")
+						return fmt.Errorf(msgStr)
 					}
 
 					err = statedb.StorePrivacyToken(stateDB, acceptedContent.TokenID, acceptedContent.TokenName,
@@ -1367,7 +1366,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 						return err
 					}
 
-					Logger.log.Infof("store token %v succeeded\n", acceptedContent.TokenID.String())
+					Logger.log.Infof("store init token %v succeeded\n", acceptedContent.TokenID.String())
 				}
 
 			case metadata.IssuingETHRequestMeta:
@@ -1379,7 +1378,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 					}
 
 					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.IncTokenID); existed {
-						Logger.log.Infof("token %v existed\n", acceptedContent.IncTokenID.String())
+						Logger.log.Infof("eth-issued token %v existed, skip storing this token\n", acceptedContent.IncTokenID.String())
 						continue
 					}
 
@@ -1391,7 +1390,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 						return err
 					}
 
-					Logger.log.Infof("store token %v succeeded\n", acceptedContent.IncTokenID.String())
+					Logger.log.Infof("store eth-isssued token %v succeeded\n", acceptedContent.IncTokenID.String())
 				}
 
 			case metadata.IssuingRequestMeta:
@@ -1403,7 +1402,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 					}
 
 					if existed := statedb.PrivacyTokenIDExisted(stateDB, acceptedContent.IncTokenID); existed {
-						Logger.log.Infof("token %v existed\n", acceptedContent.IncTokenID.String())
+						Logger.log.Infof("issued token %v existed, skip storing this token\n", acceptedContent.IncTokenID.String())
 						continue
 					}
 
@@ -1415,7 +1414,7 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 						return err
 					}
 
-					Logger.log.Infof("store token %v succeeded\n", acceptedContent.IncTokenID.String())
+					Logger.log.Infof("store issued token %v succeeded\n", acceptedContent.IncTokenID.String())
 				}
 			}
 		}

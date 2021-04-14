@@ -861,6 +861,13 @@ func (blockService BlockService) GetAllBridgeTokens() ([]*rawdbv2.BridgeTokenInf
 	return bridgeTokenInfos, err
 }
 
+func (blockService BlockService) GetAllBridgeTokensByHeight(height uint64) ([]*rawdbv2.BridgeTokenInfo, error) {
+	_, bridgeTokenInfos, err := blockService.BlockChain.GetAllBridgeTokensByHeight(height)
+	return bridgeTokenInfos, err
+}
+
+
+
 func (blockService BlockService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {
 	blockHashParam, ok := data["BlockHash"].(string)
 	if !ok {

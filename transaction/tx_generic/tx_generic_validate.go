@@ -58,15 +58,13 @@ func VerifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData
 func GetTxMintData(tx metadata.Transaction, tokenID *common.Hash) (bool, privacy.Coin, *common.Hash, error) {
 	outputCoins, err := tx.GetReceiverData()
 	if err != nil {
-		utils.Logger.Log.Error("GetTxMintData: Cannot get receiver data")
-		return false, nil, nil, err
+		return false, nil, nil, fmt.Errorf("GetTxMintData: cannot get recevier data")
 	}
 	if len(outputCoins) != 1 {
-		utils.Logger.Log.Error("GetTxMintData : Should only have one receiver")
-		return false, nil, nil, errors.New("Error Tx mint has more than one receiver")
+		return false, nil, nil, fmt.Errorf("GetTxMintData: should only have 1 receiver, got %v", len(outputCoins))
 	}
 	if inputCoins := tx.GetProof().GetInputCoins(); len(inputCoins) > 0 {
-		return false, nil, nil, errors.New("Error this is not Tx mint")
+		return false, nil, nil, fmt.Errorf("GetTxMintData: not a mint transaction, got %v input(s)", len(inputCoins))
 	}
 	return true, outputCoins[0], tokenID, nil
 }

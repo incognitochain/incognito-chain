@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -104,6 +105,32 @@ func (blockchain *BlockChain) GetAllBridgeTokens() ([]common.Hash, []*rawdbv2.Br
 	bridgeTokenIDs := []common.Hash{}
 	allBridgeTokens := []*rawdbv2.BridgeTokenInfo{}
 	bridgeStateDB := blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
+	if err != nil {
+		return bridgeTokenIDs, allBridgeTokens, err
+	}
+	err = json.Unmarshal(allBridgeTokensBytes, &allBridgeTokens)
+	if err != nil {
+		return bridgeTokenIDs, allBridgeTokens, err
+	}
+	for _, bridgeTokenInfo := range allBridgeTokens {
+		bridgeTokenIDs = append(bridgeTokenIDs, *bridgeTokenInfo.TokenID)
+	}
+	return bridgeTokenIDs, allBridgeTokens, nil
+}
+
+func (blockchain *BlockChain) GetAllBridgeTokensByHeight(height uint64) ([]common.Hash, []*rawdbv2.BridgeTokenInfo, error) {
+	bridgeTokenIDs := []common.Hash{}
+	allBridgeTokens := []*rawdbv2.BridgeTokenInfo{}
+
+	if height > blockchain.GetBeaconBestState().BeaconHeight {
+		return bridgeTokenIDs, allBridgeTokens, fmt.Errorf("height too large")
+	}
+
+	bridgeStateDB, err := blockchain.GetBestStateBeaconFeatureStateDBByHeight(height, blockchain.GetBeaconChainDatabase())
+	if err != nil {
+		return bridgeTokenIDs, allBridgeTokens, err
+	}
 	allBridgeTokensBytes, err := statedb.GetAllBridgeTokens(bridgeStateDB)
 	if err != nil {
 		return bridgeTokenIDs, allBridgeTokens, err

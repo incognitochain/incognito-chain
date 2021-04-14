@@ -760,6 +760,10 @@ func (blockchain *BlockChain) IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bo
 	return beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointPrivacyV2
 }
 
+func (blockchain *BlockChain) GetWhiteListTxs() map[string]bool {
+	return blockchain.config.ChainParams.WhiteListTxs
+}
+
 func (s *BlockChain) GetChainParams() *Params {
 	return s.config.ChainParams
 }

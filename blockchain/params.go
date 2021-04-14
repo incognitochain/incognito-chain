@@ -76,6 +76,7 @@ type Params struct {
 	BCHeightBreakPointPrivacyV2      uint64
 	EnableFeatureFlags               map[int]uint64 // featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature
 	CoinVersion2LowestHeight 		 uint64
+	WhiteListTxs					 map[string]bool
 }
 
 type GenesisParams struct {
@@ -268,6 +269,7 @@ func SetupParam() {
 			common.PortalV3Flag:       TestnetEnablePortalV3,
 			common.PortalRelayingFlag: TestnetEnablePortalRelaying,
 		},
+		WhiteListTxs: map[string]bool{},
 	}
 	// END TESTNET
 
@@ -282,8 +284,8 @@ func SetupParam() {
 		SelectShardNodeSerializedPubkeyV2:           SelectShardNodeTestnetSerializedPubkeyV2,
 		SelectShardNodeSerializedPaymentAddressV2:   SelectShardNodeTestnetSerializedPaymentAddressV2,
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
-		InitialIncognito: IntegrationTestInitPRV,
-		//InitialIncognito:   TestnetInitPRV,
+		//InitialIncognito: IntegrationTestInitPRV,
+		InitialIncognito:   TestnetInitPRV,
 		ConsensusAlgorithm: common.BlsConsensus,
 	}
 	ChainTest2Param = Params{
@@ -323,7 +325,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
 		StakingFlowV2Height:            2051863,
-		EnableSlashingStakingFlowV2:    1e12,
+		EnableSlashingStakingFlowV2:    2087789,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
 		PortalParams: portal.PortalParams{
@@ -375,6 +377,7 @@ func SetupParam() {
 			common.PortalV3Flag:       Testnet2EnablePortalV3,
 			common.PortalRelayingFlag: Testnet2EnablePortalRelaying,
 		},
+		WhiteListTxs: Testnet2WhiteListTxs,
 	}
 	// END TESTNET-2
 
@@ -480,6 +483,7 @@ func SetupParam() {
 			common.PortalV3Flag:       MainnetEnablePortalV3,
 			common.PortalRelayingFlag: MainnetEnablePortalRelaying,
 		},
+		WhiteListTxs: map[string]bool{},
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

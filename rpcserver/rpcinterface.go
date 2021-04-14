@@ -144,6 +144,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendContractingRequestV2: (*HttpServer).handleCreateAndSendContractingRequestV2,
 	checkETHHashIssued:                (*HttpServer).handleCheckETHHashIssued,
 	getAllBridgeTokens:                (*HttpServer).handleGetAllBridgeTokens,
+	getAllBridgeTokensByHeight:        (*HttpServer).handleGetAllBridgeTokensByHeight,
 	getETHHeaderByHash:                (*HttpServer).handleGetETHHeaderByHash,
 	getBridgeReqWithStatus:            (*HttpServer).handleGetBridgeReqWithStatus,
 	generateTokenID:                   (*HttpServer).handleGenerateTokenID,

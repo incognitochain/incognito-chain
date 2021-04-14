@@ -717,6 +717,8 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 				return err
 			}
 
+			//Logger.log.Infof("BUGLOG4 finished storing %v cmts of pk %v\n", len(commitmentsArray), publicKey)
+
 			// clear cached data
 			if blockchain.config.MemCache != nil {
 				cachedKey := memcache.GetListOutputcoinCachedKey(publicKeyBytes, view.tokenID, publicKeyShardID)
@@ -755,7 +757,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(sh
 		tokenID := *privacyCustomTokenSubView.tokenID
 		existed := statedb.PrivacyTokenIDExisted(transactionStateRoot, tokenID)
 		if !existed {
-			Logger.log.Info("Store custom token when it is issued ", tokenID, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol, privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount, privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable)
+			Logger.log.Info("Cross-shard tx: store custom token when it is issued ", tokenID, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol, privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount, privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable)
 			name := privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName
 			symbol := privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol
 			mintable := privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable

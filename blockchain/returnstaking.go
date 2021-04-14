@@ -151,7 +151,6 @@ func (blockchain *BlockChain) buildReturnStakingAmountTx(
 	error,
 ) {
 	txStakingHash := info.StakingTx.Hash().String()
-	Logger.log.Infof("BUGLOG Return Staking Amount public key %+v, staking transaction hash %+v, shardID %+v", info.SwapoutPubKey, txStakingHash, shardID)
 	returnStakingMeta := metadata.NewReturnStaking(
 		txStakingHash,
 		info.FunderAddress,

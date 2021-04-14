@@ -46,13 +46,13 @@ func NewContractingRequest(
 }
 
 func (cReq ContractingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), cReq.TokenID, true)
-	if err != nil {
-		return false, err
-	}
-	if !bridgeTokenExisted {
-		return false, errors.New("the burning token is not existed in bridge tokens")
-	}
+	//bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), cReq.TokenID, true)
+	//if err != nil {
+	//	return false, err
+	//}
+	//if !bridgeTokenExisted {
+	//	return false, errors.New("the burning token is not existed in bridge tokens")
+	//}
 	return true, nil
 }
 

@@ -174,6 +174,7 @@ const (
 	createAndSendTxWithIssuingETHReqV2 = "createandsendtxwithissuingethreqv2"
 	checkETHHashIssued                 = "checkethhashissued"
 	getAllBridgeTokens                 = "getallbridgetokens"
+	getAllBridgeTokensByHeight         = "getallbridgetokensbyheight"
 	getETHHeaderByHash                 = "getethheaderbyhash"
 	getBridgeReqWithStatus             = "getbridgereqwithstatus"
 
