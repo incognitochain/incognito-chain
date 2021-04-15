@@ -4,19 +4,22 @@ import (
 	"encoding/json"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 // buildPortalAcceptedShieldingRequestTx builds response tx for the shielding request tx with status "accepted"
 // mints pToken to return to user
-func (curView *ShardBestState) buildPortalAcceptedShieldingRequestTx(
-	beaconState *BeaconBestState,
+func (blockGenerator *BlockGenerator) buildPortalAcceptedShieldingRequestTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
+	shardView *ShardBestState,
+	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Errorf("[Shard buildPortalAcceptedShieldingRequestTx] Starting...")
 	contentBytes := []byte(contentStr)
@@ -45,52 +48,27 @@ func (curView *ShardBestState) buildPortalAcceptedShieldingRequestTx(
 		Logger.log.Errorf("ERROR: an error occured while deserializing custodian address string: %+v", err)
 		return nil, nil
 	}
-	receiverAddr := keyWallet.KeySet.PaymentAddress
-	receiveAmt := acceptedShieldingReq.MintingAmount
-	tokenID, _ := new(common.Hash).NewHashFromStr(acceptedShieldingReq.TokenID)
-
 	// in case the returned currency is privacy custom token
 	receiver := &privacy.PaymentInfo{
-		Amount:         receiveAmt,
-		PaymentAddress: receiverAddr,
+		Amount:         acceptedShieldingReq.MintingAmount,
+		PaymentAddress: keyWallet.KeySet.PaymentAddress,
 	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], tokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID: propID.String(),
-		// PropertyName:   issuingAcceptedInst.IncTokenName,
-		// PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:      receiveAmt,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
+
+	tokenIDPointer, _ := new(common.Hash).NewHashFromStr(acceptedShieldingReq.TokenID)
+	tokenID := *tokenIDPointer
+	if tokenID == common.PRVCoinID {
+		Logger.log.Errorf("cannot minting PRV in shield request")
+		return nil, errors.New("cannot mint PRV in shield request")
 	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	txStateDB := curView.GetCopiedTransactionStateDB()
-	featureStateDB := beaconState.GetBeaconFeatureStateDB()
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			txStateDB,
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			featureStateDB,
-		),
-	)
-	if initErr != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing shielding response tx: %+v", initErr)
-		return nil, nil
+
+	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
+	makeMD := func(c privacy.Coin) metadata.Metadata {
+		if c != nil && c.GetSharedRandom() != nil {
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	return resTx, nil
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 // buildPortalAcceptedShieldingRequestTx builds response tx for the shielding request tx with status "accepted"

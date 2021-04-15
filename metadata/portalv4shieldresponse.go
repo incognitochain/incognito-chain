@@ -19,6 +19,7 @@ type PortalShieldingResponse struct {
 	RequesterAddrStr string
 	MintingAmount    uint64
 	IncTokenID       string
+	SharedRandom     []byte
 }
 
 func NewPortalShieldingResponse(
@@ -78,10 +79,7 @@ func (iRes *PortalShieldingResponse) CalculateSize() uint64 {
 }
 
 func (iRes PortalShieldingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instUsed []int,
+	mintData *MintData,
 	shardID byte,
 	tx Transaction,
 	chainRetriever ChainRetriever,
@@ -90,61 +88,62 @@ func (iRes PortalShieldingResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 	beaconViewRetriever BeaconViewRetriever,
 ) (bool, error) {
 	idx := -1
-	for i, inst := range insts {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PortalShieldingRequest response instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(PortalV4ShieldingRequestMeta) {
 			continue
 		}
-		instDepositStatus := inst[2]
-		if instDepositStatus != iRes.RequestStatus ||
-			(instDepositStatus != portalcommonv4.PortalV4RequestAcceptedChainStatus) {
-			continue
-		}
-
-		var shardIDFromInst byte
-		var txReqIDFromInst common.Hash
-		var requesterAddrStrFromInst string
-		var tokenIDStrFromInst string
 
 		contentBytes := []byte(inst[3])
 		var shieldingReqContent PortalShieldingRequestContent
 		err := json.Unmarshal(contentBytes, &shieldingReqContent)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occurred while parsing portal request ptokens content: ", err)
+			Logger.log.Error("WARNING - VALIDATION: an error occurred while parsing portal request shielding content: ", err)
 			continue
 		}
-		shardIDFromInst = shieldingReqContent.ShardID
-		txReqIDFromInst = shieldingReqContent.TxReqID
-		requesterAddrStrFromInst = shieldingReqContent.IncogAddressStr
-		tokenIDStrFromInst = shieldingReqContent.TokenID
-		mintingAmount := shieldingReqContent.MintingAmount
 
-		if !bytes.Equal(iRes.ReqTxID[:], txReqIDFromInst[:]) ||
-			shardID != shardIDFromInst {
+		instShieldingStatus := inst[2]
+		if instShieldingStatus != iRes.RequestStatus ||
+			(instShieldingStatus != portalcommonv4.PortalV4RequestAcceptedChainStatus) {
 			continue
 		}
-		key, err := wallet.Base58CheckDeserialize(requesterAddrStrFromInst)
+
+		if !bytes.Equal(iRes.ReqTxID[:], shieldingReqContent.TxReqID[:]) ||
+			shardID != shieldingReqContent.ShardID {
+			continue
+		}
+
+		tokenIDPointer, _ := new(common.Hash).NewHashFromStr(shieldingReqContent.TokenID)
+		tokenID := *tokenIDPointer
+		keyWallet, err := wallet.Base58CheckDeserialize(shieldingReqContent.IncogAddressStr)
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occurred while deserializing receiver address string: ", err)
+			continue
+		}
+		paymentAddress := keyWallet.KeySet.PaymentAddress
+
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || coinID.String() != tokenID.String() {
 			continue
 		}
 
-		_, pk, paidAmount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			mintingAmount != paidAmount ||
-			tokenIDStrFromInst != assetID.String() {
+		if ok := mintCoin.CheckCoinValid(paymentAddress, iRes.SharedRandom, shieldingReqContent.MintingAmount); !ok {
 			continue
 		}
+
 		idx = i
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, fmt.Errorf(fmt.Sprintf("no PortalShieldingRequest instruction found for PortalShieldingResponse tx %s", tx.Hash().String()))
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *PortalShieldingResponse) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }
