@@ -262,12 +262,12 @@ func (tx *Tx) ValidateTxCorrectness(
 					// 	return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
 					// } else {
 					// for old txs which be get from sync block or validate new block
-					if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
-						// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
-						return true, nil
-					} else {
-						return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-					}
+					// if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
+					// 	// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
+					// 	return true, nil
+					// } else {
+					return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+					// }
 					// }
 				}
 			}

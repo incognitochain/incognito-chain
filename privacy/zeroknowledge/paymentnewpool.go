@@ -221,25 +221,29 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
 
 		if isNewZKP {
-			valid, err := proof.oneOfManyProof[i].Verify()
-			if !valid {
-				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
-				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+			if IsNewOneOfManyProof(vEnv.ConfimedTime()) {
+				valid, err := proof.oneOfManyProof[i].Verify()
+				if !valid {
+					privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
+					return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+				}
 			}
 			// Verify for the Proof that input coins' serial number is derived from the committed derivator
-			valid, err = proof.serialNumberProof[i].Verify(nil)
+			valid, err := proof.serialNumberProof[i].Verify(nil)
 			if !valid {
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
 				return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
 			}
 		} else {
-			valid, err := proof.oneOfManyProof[i].VerifyOld()
-			if !valid {
-				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
-				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+			if IsNewOneOfManyProof(vEnv.ConfimedTime()) {
+				valid, err := proof.oneOfManyProof[i].VerifyOld()
+				if !valid {
+					privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
+					return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+				}
 			}
 			// Verify for the Proof that input coins' serial number is derived from the committed derivator
-			valid, err = proof.serialNumberProof[i].VerifyOld(nil)
+			valid, err := proof.serialNumberProof[i].VerifyOld(nil)
 			if !valid {
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
 				return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
