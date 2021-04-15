@@ -122,14 +122,14 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 				}
 			}
 		}
-		if len(proof.GetOutputCoins()) == 0 {
-			if metaData != nil {
-				metaType := metaData.GetType()
-				if !metadata.HasInputNoOutput(metaType) {
-					return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
-				}
-			}
-		}
+		// if len(proof.GetOutputCoins()) == 0 {
+		// 	if metaData != nil {
+		// 		metaType := metaData.GetType()
+		// 		if !metadata.HasInputNoOutput(metaType) {
+		// 			return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
+		// 		}
+		// 	}
+		// }
 		// check sanity of Proof
 		validateSanityOfProof, err := tx.validateSanityDataOfProofV2()
 		if err != nil || !validateSanityOfProof {
