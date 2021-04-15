@@ -32,7 +32,7 @@ func (s *swapRuleV3) Process(
 	newCommittees, slashingCommittees := s.slashingSwapOut(committees, penalty, numberOfFixedValidators)
 	lenSlashedCommittees := len(slashingCommittees)
 	//get normal swap out nodes
-	newCommittees, normalSwapOutCommittees := s.normalSwapOut(newCommittees, substitutes, len(committees), lenSlashedCommittees, numberOfFixedValidators, minCommitteeSize, maxCommitteeSize)
+	newCommittees, normalSwapOutCommittees := s.normalSwapOut(newCommittees, substitutes, len(committees), lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize)
 	swappedOutCommittees := append(slashingCommittees, normalSwapOutCommittees...)
 
 	newCommittees, newSubstitutes, swapInCommittees :=
@@ -114,13 +114,13 @@ func (s *swapRuleV3) getSwapInOffset(
 	return offset
 }
 
-func (s *swapRuleV3) normalSwapOut(committees, substitutes []string, lenBeforeSlashedCommittees, lenSlashedCommittees, numberOfFixedValidators, minCommitteeSize, maxCommitteeSize int) ([]string, []string) {
+func (s *swapRuleV3) normalSwapOut(committees, substitutes []string, lenCommitteesBeforeSlash, lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize int) ([]string, []string) {
 
 	resNormalSwapOut := []string{}
 	tempCommittees := make([]string, len(committees))
 	copy(tempCommittees, committees)
 
-	normalSwapOutOffset := s.getNormalSwapOutOffset(lenBeforeSlashedCommittees, len(substitutes), lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize)
+	normalSwapOutOffset := s.getNormalSwapOutOffset(lenCommitteesBeforeSlash, len(substitutes), lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize)
 
 	resCommittees := append(tempCommittees[:numberOfFixedValidators], tempCommittees[(numberOfFixedValidators+normalSwapOutOffset):]...)
 	resNormalSwapOut = committees[numberOfFixedValidators : numberOfFixedValidators+normalSwapOutOffset]
