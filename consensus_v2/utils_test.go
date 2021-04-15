@@ -1,4 +1,4 @@
-package blsbft
+package consensus_v2
 
 import (
 	"github.com/incognitochain/incognito-chain/incognitokey"

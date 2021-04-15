@@ -890,75 +890,385 @@ func Test_swapRuleV3_AssignOffset(t *testing.T) {
 
 func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 	type args struct {
-		committees              []string
-		substitutes             []string
-		numberOfFixedValidators int
-		maxCommitteeSize        int
-		maxSwapInPercent        int
+		lenCommitteesAfterSwapOut  []string
+		substitutes                []string
+		maxCommitteeSize           int
+		numberOfSlashingValidators int
+		lenCommitteesBeforeSwapOut int
 	}
 	tests := []struct {
-		name  string
-		s     *swapRuleV3
-		args  args
-		want  []string
-		want1 []string
-		want2 []string
+		name             string
+		s                *swapRuleV3
+		args             args
+		newCommittees    []string
+		newSubstitutes   []string
+		swapInCommittees []string
 	}{
-		//TODO: @hung add testcase
-		// Testcase 1: Max_Swap_In = 8  && Max_Swap_In > SUB => SI = SUB
-		// Testcase 2: Max_Swap_In = 8  && Max_Swap_In < SUB => SI = Max_Swap_In
-		// Testcase 3: Max_Swap_In = C/8 && Max_Swap_In > SUB => SI = SUB
-		// Testcase 4: Max_Swap_In = C/8  && Max_Swap_In < SUB => SI = Max_Swap_In
 		{
-			name: "Valid input",
+			name: "C_old < MaxCommitteeSize && SL > C/8 && SI < SUB",
 			s:    &swapRuleV3{},
 			args: args{
-				committees: []string{
+				lenCommitteesAfterSwapOut: []string{
 					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
-					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
-					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61,
 				},
 				substitutes: []string{
+					key70, key71, key72, key73,
+				},
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 10,
+				lenCommitteesBeforeSwapOut: 62,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+				key60, key61, key70, key71, key72, key73,
+			},
+			newSubstitutes: []string{},
+			swapInCommittees: []string{
+				key70, key71, key72, key73,
+			},
+		},
+		{
+			name: "C_old < MaxCommitteeSize && SL > C/8 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: []string{
 					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61,
 				},
-				maxCommitteeSize:        64,
-				maxSwapInPercent:        8,
-				numberOfFixedValidators: 8,
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 10,
+				lenCommitteesBeforeSwapOut: 62,
 			},
-			want: []string{
+			newCommittees: []string{
 				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+				key60, key61, key70, key71, key72, key73, key74, key75,
+			},
+			newSubstitutes: []string{
+				key76, key77, key78, key79,
+				key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+			},
+			swapInCommittees: []string{
+				key70, key71, key72, key73, key74, key75,
+			},
+		},
+		{
+			name: "C_old < MaxCommitteeSize && SL < C/8 && SI > SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55,
+				},
+				substitutes: []string{
+					key70, key71, key72,
+				},
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 4,
+				lenCommitteesBeforeSwapOut: 60,
+			},
+			newCommittees: []string{
 				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key70, key71, key72,
+			},
+			newSubstitutes: []string{},
+			swapInCommittees: []string{
+				key70, key71, key72,
+			},
+		},
+		{
+			name: "C_old < MaxCommitteeSize && SL < C/8 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key46, key47, key48, key49,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 4,
+				lenCommitteesBeforeSwapOut: 50,
+			},
+			newCommittees: []string{
 				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
-				key0, key, key2, key3,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key46, key47, key48, key49, key70, key71, key72, key73, key74,
 			},
-			want1: []string{
-				key4, key5, key6, key7, key8, key9,
+			newSubstitutes: []string{
+				key75, key76, key77, key78, key79,
+				key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+			},
+			swapInCommittees: []string{
+				key70, key71, key72, key73, key74,
+			},
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL > 0 && SL >= C/8 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key56, key57, key58, key59,
+					key60, key61, key62, key63,
+				},
+				substitutes: []string{
+					key70, key71, key72,
+				},
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 16,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key56, key57, key58, key59,
+				key60, key61, key62, key63,
+				key70, key71, key72,
 			},
-			want2: []string{
-				key0, key, key2, key3,
+			newSubstitutes: []string{},
+			swapInCommittees: []string{
+				key70, key71, key72,
+			},
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL > 0 && SL > C/8 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key56, key57, key58, key59,
+					key60, key61, key62, key63,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 16,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key56, key57, key58, key59,
+				key60, key61, key62, key63,
+				key70, key71, key72, key73, key74, key75,
+			},
+			newSubstitutes: []string{
+				key76, key77, key78, key79,
+				key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+			},
+			swapInCommittees: []string{
+				key70, key71, key72, key73, key74, key75,
+			},
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL > 0 && SL < C/8 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key57, key58, key59,
+					key60, key61, key62, key63,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73,
+				},
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 4,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key57, key58, key59,
+				key60, key61, key62, key63,
+				key70, key71, key72, key73,
+			},
+			newSubstitutes: []string{},
+			swapInCommittees: []string{
+				key70, key71, key72, key73,
+			},
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL > 0 && SL < C/8 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key57, key58, key59,
+					key60, key61, key62, key63,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 4,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key57, key58, key59,
+				key60, key61, key62, key63,
+				key70, key71, key72, key73, key74, key75, key76,
+			},
+			newSubstitutes: []string{
+				key77, key78, key79,
+				key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+			},
+			swapInCommittees: []string{
+				key70, key71, key72, key73, key74, key75, key76,
+			},
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL = 0 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61, key62, key63,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73,
+				},
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 0,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+				key60, key61, key62, key63,
+				key70, key71, key72, key73,
+			},
+			newSubstitutes: []string{},
+			swapInCommittees: []string{
+				key70, key71, key72, key73,
+			},
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL = 0 && SI > SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61, key62, key63,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 0,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+				key60, key61, key62, key63,
+				key70, key71, key72, key73, key74, key75, key76, key77,
+			},
+			newSubstitutes: []string{
+				key78, key79,
+				key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+			},
+			swapInCommittees: []string{
+				key70, key71, key72, key73, key74, key75, key76, key77,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			got, got1, got2 := s.swapInAfterSwapOut(tt.args.committees, tt.args.substitutes, tt.args.maxCommitteeSize, tt.args.maxSwapInPercent, 0, 0)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("swapRuleV3.swapInAfterSwapOut() got = %v, want %v", got, tt.want)
+			got, got1, got2 := s.swapInAfterSwapOut(tt.args.lenCommitteesAfterSwapOut, tt.args.substitutes, tt.args.maxCommitteeSize, tt.args.numberOfSlashingValidators, tt.args.lenCommitteesBeforeSwapOut)
+			if !reflect.DeepEqual(got, tt.newCommittees) {
+				t.Errorf("swapRuleV3.swapInAfterSwapOut() got = %v, want %v", got, tt.newCommittees)
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("swapRuleV3.swapInAfterSwapOut() got1 = %v, want %v", got1, tt.want1)
+			if !reflect.DeepEqual(got1, tt.newSubstitutes) {
+				t.Errorf("swapRuleV3.swapInAfterSwapOut() got1 = %v, want %v", got1, tt.newSubstitutes)
 			}
-			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("swapRuleV3.swapInAfterSwapOut() got2 = %v, want %v", got2, tt.want2)
+			if !reflect.DeepEqual(got2, tt.swapInCommittees) {
+				t.Errorf("swapRuleV3.swapInAfterSwapOut() got2 = %v, want %v", got2, tt.swapInCommittees)
 			}
 		})
 	}
@@ -966,72 +1276,144 @@ func Test_swapRuleV3_swapInAfterSwapOut(t *testing.T) {
 
 func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 	type args struct {
-		lenCommitteesAfterSwapOut int
-		lenSubstitutes            int
-		maxSwapInPercent          int
-		maxCommitteeSize          int
+		lenCommitteesAfterSwapOut  int
+		lenSubstitutes             int
+		maxCommitteeSize           int
+		numberOfSlashingValidators int
+		lenCommitteesBeforeSwapOut int
 	}
 	tests := []struct {
-		name string
-		s    *swapRuleV3
-		args args
-		want int
+		name             string
+		s                *swapRuleV3
+		args             args
+		wantSwapInOffSet int
 	}{
-		//TODO: @hung add testcase
-		// Testcase 1: Max_Swap_In = 8  && Max_Swap_In > SUB => SI = SUB
-		// Testcase 2: Max_Swap_In = 8  && Max_Swap_In < SUB => SI = Max_Swap_In
-		// Testcase 3: Max_Swap_In = C/8 && Max_Swap_In > SUB => SI = SUB
-		// Testcase 4: Max_Swap_In = C/8  && Max_Swap_In < SUB => SI = Max_Swap_In
 		{
-			name: "substitutes < committees / 8 && committees + offset <= maxCommitteeSize",
+			name: "C_old < MaxCommitteeSize && SL > C/8 && SI < SUB",
 			s:    &swapRuleV3{},
 			args: args{
-				lenCommitteesAfterSwapOut: 25,
-				lenSubstitutes:            2,
-				maxSwapInPercent:          8,
-				maxCommitteeSize:          64,
+				lenCommitteesAfterSwapOut:  52,
+				lenSubstitutes:             4,
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 10,
+				lenCommitteesBeforeSwapOut: 62,
 			},
-			want: 2,
+			wantSwapInOffSet: 4,
 		},
 		{
-			name: "substitutes < committees / 8 && committees + offset > maxCommitteeSize",
+			name: "C_old < MaxCommitteeSize && SL > C/8 && SI < SUB",
 			s:    &swapRuleV3{},
 			args: args{
-				lenCommitteesAfterSwapOut: 60,
-				lenSubstitutes:            5,
-				maxSwapInPercent:          8,
-				maxCommitteeSize:          64,
+				lenCommitteesAfterSwapOut:  52,
+				lenSubstitutes:             20,
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 10,
+				lenCommitteesBeforeSwapOut: 62,
 			},
-			want: 4,
+			wantSwapInOffSet: 6,
 		},
 		{
-			name: "substitutes >= committees / 8 && committees + offset <= maxCommitteeSize",
+			name: "C_old < MaxCommitteeSize && SL < C/8 && SI > SUB",
 			s:    &swapRuleV3{},
 			args: args{
-				lenCommitteesAfterSwapOut: 25,
-				lenSubstitutes:            5,
-				maxSwapInPercent:          8,
-				maxCommitteeSize:          64,
+				lenCommitteesAfterSwapOut:  56,
+				lenSubstitutes:             3,
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 4,
+				lenCommitteesBeforeSwapOut: 60,
 			},
-			want: 3,
+			wantSwapInOffSet: 3,
 		},
 		{
-			name: "substitutes >= committees / 8 && committees + offset > maxCommitteeSize",
+			name: "C_old < MaxCommitteeSize && SL < C/8 && SI < SUB",
 			s:    &swapRuleV3{},
 			args: args{
-				lenCommitteesAfterSwapOut: 60,
-				lenSubstitutes:            20,
-				maxSwapInPercent:          8,
-				maxCommitteeSize:          64,
+				lenCommitteesAfterSwapOut:  46,
+				lenSubstitutes:             20,
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 4,
+				lenCommitteesBeforeSwapOut: 50,
 			},
-			want: 4,
+			wantSwapInOffSet: 5,
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL > 0 && SL >= C/8 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut:  48,
+				lenSubstitutes:             3,
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 16,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			wantSwapInOffSet: 3,
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL > 0 && SL > C/8 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut:  48,
+				lenSubstitutes:             20,
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 16,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			wantSwapInOffSet: 6,
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL > 0 && SL < C/8 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut:  60,
+				lenSubstitutes:             4,
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 4,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			wantSwapInOffSet: 4,
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL > 0 && SL < C/8 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut:  56,
+				lenSubstitutes:             20,
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 4,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			wantSwapInOffSet: 7,
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL = 0 && SI < SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut:  60,
+				lenSubstitutes:             4,
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 0,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			wantSwapInOffSet: 4,
+		},
+		{
+			name: "C_old = MaxCommitteeSize && SL = 0 && SI > SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommitteesAfterSwapOut:  56,
+				lenSubstitutes:             20,
+				maxCommitteeSize:           64,
+				numberOfSlashingValidators: 0,
+				lenCommitteesBeforeSwapOut: 64,
+			},
+			wantSwapInOffSet: 8,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			if got := s.getSwapInOffset(tt.args.lenCommitteesAfterSwapOut, tt.args.lenSubstitutes, tt.args.maxSwapInPercent, tt.args.maxCommitteeSize, 0, 0); got != tt.want {
-				t.Errorf("swapRuleV3.getSwapInOffset() = %v, want %v", got, tt.want)
+			if got := s.getSwapInOffset(tt.args.lenCommitteesAfterSwapOut, tt.args.lenSubstitutes, tt.args.maxCommitteeSize, tt.args.numberOfSlashingValidators, tt.args.lenCommitteesBeforeSwapOut); got != tt.wantSwapInOffSet {
+				t.Errorf("swapRuleV3.getSwapInOffset() = %v, want %v", got, tt.wantSwapInOffSet)
 			}
 		})
 	}
@@ -1039,73 +1421,518 @@ func Test_swapRuleV3_getSwapInOffset(t *testing.T) {
 
 func Test_swapRuleV3_normalSwapOut(t *testing.T) {
 	type args struct {
-		committees                 []string
-		substitutes                []string
-		lenBeforeSlashedCommittees int
-		lenSlashedCommittees       int
-		numberOfFixedValidators    int
-		maxSwapOutPercent          int
-		maxCommitteeSize           int
+		committeesAfterSlashing  []string
+		substitutes              []string
+		lenCommitteesBeforeSlash int
+		lenSlashedCommittees     int
+		numberOfFixedValidators  int
+		maxCommitteeSize         int
 	}
 	tests := []struct {
-		name  string
-		s     *swapRuleV3
-		args  args
-		want  []string
-		want1 []string
+		name                    string
+		s                       *swapRuleV3
+		args                    args
+		newCommittees           []string
+		normalSwapOutCommittees []string
 	}{
-		//TODO: @hung add testcase
-		// Testcase 1: SL > C/3 => NS = 0
-		// Testcase 2: SL > C/8 => NS = 0
-		// Testcase 3: SL < C/8 && SUB = 0 => NS = 0
-		// Testcase 4: SL < C/8 && MAX_NS = C/8 - SL && SUB < MAX_NS => NS = SUB
-		// Testcase 5: SL < C/8 && MAX_NS = C - FixedValidator - SL && SUB < MAX_NS => NS = SUB
-		// Testcase 6: SL < C/8 && MAX_NS = C/8 - SL && SUB >= MAX_NS => NS = MAX_NS
-		// Testcase 7: SL < C/8 && MAX_NS = C - FixedValidator - SL && SUB >= MAX_NS => NS = MAX_NS
 		{
-			name: "[valid input]",
+			name: "SL > C/3 => NS = 0",
 			s:    &swapRuleV3{},
 			args: args{
-				committees: []string{
+				committeesAfterSlashing: []string{
 					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
-					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
-					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
-					key0,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42,
 				},
 				substitutes: []string{
-					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
 				},
-				lenBeforeSlashedCommittees: 64,
-				lenSlashedCommittees:       3,
-				maxSwapOutPercent:          8,
-				numberOfFixedValidators:    8,
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     21,
+				numberOfFixedValidators:  21,
+				maxCommitteeSize:         64,
 			},
-			want: []string{
-				key0, key, key2, key3, key4, key5, key6, key7,
-				key13, key14, key15, key16, key17, key18, key19,
+			newCommittees: []string{
 				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42,
+			},
+			normalSwapOutCommittees: []string{},
+		},
+		{
+			name: "SL > C/8 => NS = 0",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     8,
+				numberOfFixedValidators:  21,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
 				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
 				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
-				key0,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54,
 			},
-			want1: []string{
-				key8, key9, key10, key11, key12,
+			normalSwapOutCommittees: []string{},
+		},
+		{
+			name: "SL < C/8 && SUB = 0 => NS = 0",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57,
+				},
+				substitutes:              []string{},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     6,
+				numberOfFixedValidators:  21,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57,
+			},
+			normalSwapOutCommittees: []string{},
+		},
+		{
+			name: "SL < C/8 && SUB > 0 && C_old < MaxCommitteeSize => NS = 0",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				lenCommitteesBeforeSlash: 63,
+				lenSlashedCommittees:     6,
+				numberOfFixedValidators:  21,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56,
+			},
+			normalSwapOutCommittees: []string{},
+		},
+		{
+			name: "SL < C/8 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C/8 - SL && MAX_NS > SUB => NS = SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57,
+				},
+				substitutes: []string{
+					key70,
+				},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     6,
+				numberOfFixedValidators:  21,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57,
+			},
+			normalSwapOutCommittees: []string{
+				key21,
+			},
+		},
+		{
+			name: "SL < C/8 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C/8 - SL && MAX_NS > SUB => NS = SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61, key62,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73,
+				},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     1,
+				numberOfFixedValidators:  21,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+				key60, key61, key62,
+			},
+			normalSwapOutCommittees: []string{
+				key21, key22, key23, key24,
+			},
+		},
+		{
+			name: "SL < C/8 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C/8 - SL && MAX_NS < SUB => NS = MAX_NS",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     4,
+				numberOfFixedValidators:  21,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+			},
+			normalSwapOutCommittees: []string{
+				key21, key22, key23, key24,
+			},
+		},
+		{
+			name: "SL < C/8 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C - FixedValidator - SL && SUB < MAX_NS => NS = SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61,
+				},
+				substitutes: []string{
+					key70, key71, key72,
+				},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     2,
+				numberOfFixedValidators:  58,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57,
+				key61,
+			},
+			normalSwapOutCommittees: []string{
+				key58, key59,
+				key60,
+			},
+		},
+		{
+			name: "SL < C/8 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C - FixedValidator - SL && SUB > MAX_NS => NS = MAX_NS",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     2,
+				numberOfFixedValidators:  58,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57,
+			},
+			normalSwapOutCommittees: []string{
+				key58, key59, key60, key61,
+			},
+		},
+		{
+			name: "SL = 0 && SUB = 0 => NS = 0",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61, key62, key63,
+				},
+				substitutes:              []string{},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     0,
+				numberOfFixedValidators:  21,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+				key60, key61, key62, key63,
+			},
+			normalSwapOutCommittees: []string{},
+		},
+		{
+			name: "SL = 0 && SUB > 0 && C_old < MaxCommitteeSize => NS = 0",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61, key62,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				lenCommitteesBeforeSlash: 63,
+				lenSlashedCommittees:     0,
+				numberOfFixedValidators:  21,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+				key60, key61, key62,
+			},
+			normalSwapOutCommittees: []string{},
+		},
+		{
+			name: "SL = 0 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C_old/8 && MAX_NS > SUB => NS = SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61, key62, key63,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76,
+				},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     0,
+				numberOfFixedValidators:  21,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+				key60, key61, key62, key63,
+			},
+			normalSwapOutCommittees: []string{
+				key21, key22, key23, key24, key25, key26, key27,
+			},
+		},
+		{
+			name: "SL = 0 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C_old/8 && MAX_NS < SUB => NS = MAX_NS",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61, key62, key63,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     0,
+				numberOfFixedValidators:  21,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+				key60, key61, key62, key63,
+			},
+			normalSwapOutCommittees: []string{
+				key21, key22, key23, key24, key25, key26, key27, key28,
+			},
+		},
+		{
+			name: "SL = 0 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C_old/8 - FixedValidator && MAX_NS < SUB => NS = MAX_NS",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61, key62, key63,
+				},
+				substitutes: []string{
+					key70, key71, key72, key73, key74, key75, key76, key77, key78, key79,
+					key80, key81, key82, key83, key84, key85, key86, key87, key88, key89,
+				},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     0,
+				numberOfFixedValidators:  58,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57,
+			},
+			normalSwapOutCommittees: []string{
+				key58, key59,
+				key60, key61, key62, key63,
+			},
+		},
+		{
+			name: "SL = 0 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C_old/8 - FixedValidator && MAX_NS > SUB => NS = SUB",
+			s:    &swapRuleV3{},
+			args: args{
+				committeesAfterSlashing: []string{
+					key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+					key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+					key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+					key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+					key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+					key50, key51, key52, key53, key54, key55, key56, key57, key58, key59,
+					key60, key61, key62, key63,
+				},
+				substitutes: []string{
+					key70, key71,
+				},
+				lenCommitteesBeforeSlash: 64,
+				lenSlashedCommittees:     0,
+				numberOfFixedValidators:  58,
+				maxCommitteeSize:         64,
+			},
+			newCommittees: []string{
+				key0, key, key2, key3, key4, key5, key6, key7, key8, key9,
+				key10, key11, key12, key13, key14, key15, key16, key17, key18, key19,
+				key20, key21, key22, key23, key24, key25, key26, key27, key28, key29,
+				key30, key31, key32, key33, key34, key35, key36, key37, key38, key39,
+				key40, key41, key42, key43, key44, key45, key46, key47, key48, key49,
+				key50, key51, key52, key53, key54, key55, key56, key57,
+				key60, key61, key62, key63,
+			},
+			normalSwapOutCommittees: []string{
+				key58, key59,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &swapRuleV3{}
-			got, got1 := s.normalSwapOut(tt.args.committees, tt.args.substitutes, tt.args.lenBeforeSlashedCommittees, tt.args.lenSlashedCommittees, tt.args.numberOfFixedValidators, tt.args.maxCommitteeSize)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("swapRuleV3.normalSwapOut() got = %v, want %v", got, tt.want)
+			got, got1 := s.normalSwapOut(tt.args.committeesAfterSlashing, tt.args.substitutes, tt.args.lenCommitteesBeforeSlash, tt.args.lenSlashedCommittees, tt.args.numberOfFixedValidators, tt.args.maxCommitteeSize)
+			if !reflect.DeepEqual(got, tt.newCommittees) {
+				t.Errorf("swapRuleV3.normalSwapOut() got = %v, want %v", got, tt.newCommittees)
 			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("swapRuleV3.normalSwapOut() got1 = %v, want %v", got1, tt.want1)
+			if !reflect.DeepEqual(got1, tt.normalSwapOutCommittees) {
+				t.Errorf("swapRuleV3.normalSwapOut() got1 = %v, want %v", got1, tt.normalSwapOutCommittees)
 			}
 		})
 	}
@@ -1294,7 +2121,7 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 			want: 6,
 		},
 		{
-			name: "SL = 0 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C_old/8 && MAX_NS < SUB => NS = MAX_NS",
+			name: "SL = 0 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C_old/8 - FixedValidator && MAX_NS < SUB => NS = MAX_NS",
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesBeforeSlash: 64,
@@ -1306,7 +2133,7 @@ func Test_swapRuleV3_getNormalSwapOutOffset(t *testing.T) {
 			want: 6,
 		},
 		{
-			name: "SL = 0 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C_old/8 && MAX_NS < SUB => NS = MAX_NS",
+			name: "SL = 0 && SUB > 0 && C_old = MaxCommitteeSize && MAX_NS = C_old/8 - FixedValidator && MAX_NS > SUB => NS = SUB",
 			s:    &swapRuleV3{},
 			args: args{
 				lenCommitteesBeforeSlash: 64,
