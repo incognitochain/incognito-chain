@@ -305,19 +305,46 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 }
 
 func Test_actorV2_getValidProposeBlocks(t *testing.T) {
+	common.TIMESLOT = 1
 	tempHash, _ := common.Hash{}.NewHashFromStr("123456")
 	tempView := mockmultiview.View{}
 	tempView.On("GetHash").Return(tempHash)
-	tempView.On("GetHeight").Return(5)
+	tempView.On("GetHeight").Return(uint64(5))
 
 	hash, _ := common.Hash{}.NewHashFromStr("123")
-	tempBlock := mocktypes.BlockInterface{}
-	tempBlock.On("Hash").Return(hash)
-	tempBlock.On("GetHeight").Return(6)
-	tempBlock.On("GetProposeTime").Return()
-	tempBlock.On("GetProduceTime").Return()
+	blockHeightGreaterThanValidView := mocktypes.BlockInterface{}
+	blockHeightGreaterThanValidView.On("Hash").Return(hash)
+	blockHashDifFromCurHash := blockHeightGreaterThanValidView
 
+	blockHeightGreaterThanValidView.On("GetHeight").Return(uint64(7))
+
+	blockHashDifFromCurHash.On("GetHeight").Return(uint64(5))
+
+	validBlock := mocktypes.BlockInterface{}
+	validBlock.On("Hash").Return(hash)
+	validBlock.On("GetHeight").Return(uint64(6))
+
+	blockOutOfValidateTime := validBlock
+	validBlock.On("GetProposeTime").Return(int64(3))
+	blockProposerTimeDifCurrTimeSlot := validBlock
+	validBlock.On("GetProduceTime").Return(int64(2))
+
+	blockProposeTimeSmallerProduceTime := mocktypes.BlockInterface{}
+	blockProposeTimeSmallerProduceTime.On("Hash").Return(hash)
+	blockProposeTimeSmallerProduceTime.On("GetProposeTime").Return(int64(3))
+	blockProposeTimeSmallerProduceTime.On("GetHeight").Return(uint64(6))
+	blockProposeTimeSmallerProduceTime.On("GetProduceTime").Return(int64(4))
+
+	blockTimeSlotHasBeenVoted := mocktypes.BlockInterface{}
+	blockTimeSlotHasBeenVoted.On("Hash").Return(hash)
+	blockTimeSlotHasBeenVoted.On("GetProposeTime").Return(int64(3))
+	blockTimeSlotHasBeenVoted.On("GetHeight").Return(uint64(6))
+	blockTimeSlotHasBeenVoted.On("GetProduceTime").Return(int64(2))
+
+	tempView1 := mockmultiview.View{}
+	tempView1.On("GetHeight").Return(uint64(4))
 	tempChain := mockchain.Chain{}
+	tempChain.On("GetFinalView").Return(&tempView1)
 
 	type fields struct {
 		actorBase            actorBase
@@ -344,17 +371,17 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 		want   []*ProposeBlockInfo
 	}{
 		{
-			name: "",
+			name: "Block is nil",
 			fields: fields{
 				actorBase:            actorBase{},
-				committeeChain:       &tempChain,
+				committeeChain:       nil,
 				currentTime:          1,
 				currentTimeSlot:      1,
 				proposeHistory:       &lru.Cache{},
 				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
 				receiveBlockByHash: map[string]*ProposeBlockInfo{
-					tempHash.String(): &ProposeBlockInfo{
-						block:            &tempBlock,
+					"hash": &ProposeBlockInfo{
+						block:            nil,
 						receiveTime:      time.Now(),
 						committees:       []incognitokey.CommitteePublicKey{},
 						signingCommittes: []incognitokey.CommitteePublicKey{},
@@ -376,9 +403,259 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 			args: args{
 				bestView: &tempView,
 			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "blockHeight is larger than validViewHeight",
+			fields: fields{
+				actorBase:            actorBase{},
+				committeeChain:       nil,
+				currentTime:          1,
+				currentTimeSlot:      1,
+				proposeHistory:       &lru.Cache{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+				receiveBlockByHash: map[string]*ProposeBlockInfo{
+					"hash": &ProposeBlockInfo{
+						block:            &blockHeightGreaterThanValidView,
+						receiveTime:      time.Now(),
+						committees:       []incognitokey.CommitteePublicKey{},
+						signingCommittes: []incognitokey.CommitteePublicKey{},
+						userKeySet:       []signatureschemes.MiningKey{},
+						votes:            map[string]*BFTVote{},
+						isValid:          false,
+						hasNewVote:       false,
+						sendVote:         false,
+						isVoted:          false,
+						isCommitted:      false,
+						errVotes:         2,
+						validVotes:       5,
+						proposerSendVote: false,
+						lastValidateTime: time.Now().Add(time.Second * 3),
+					},
+				},
+				blockVersion: 1,
+			},
+			args: args{
+				bestView: &tempView,
+			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "blockHeight == currentBestViewHeight && blockHash != currentBestViewHash",
+			fields: fields{
+				actorBase:            actorBase{},
+				committeeChain:       nil,
+				currentTime:          1,
+				currentTimeSlot:      1,
+				proposeHistory:       &lru.Cache{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+				receiveBlockByHash: map[string]*ProposeBlockInfo{
+					"hash": &ProposeBlockInfo{
+						block:            &blockHashDifFromCurHash,
+						receiveTime:      time.Now(),
+						committees:       []incognitokey.CommitteePublicKey{},
+						signingCommittes: []incognitokey.CommitteePublicKey{},
+						userKeySet:       []signatureschemes.MiningKey{},
+						votes:            map[string]*BFTVote{},
+						isValid:          false,
+						hasNewVote:       false,
+						sendVote:         false,
+						isVoted:          false,
+						isCommitted:      false,
+						errVotes:         2,
+						validVotes:       5,
+						proposerSendVote: false,
+						lastValidateTime: time.Now().Add(time.Second * 3),
+					},
+				},
+				blockVersion: 1,
+			},
+			args: args{
+				bestView: &tempView,
+			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "block is out of validate time",
+			fields: fields{
+				actorBase:            actorBase{},
+				committeeChain:       nil,
+				currentTime:          1,
+				currentTimeSlot:      1,
+				proposeHistory:       &lru.Cache{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+				receiveBlockByHash: map[string]*ProposeBlockInfo{
+					"hash": &ProposeBlockInfo{
+						block:            &blockOutOfValidateTime,
+						receiveTime:      time.Now(),
+						committees:       []incognitokey.CommitteePublicKey{},
+						signingCommittes: []incognitokey.CommitteePublicKey{},
+						userKeySet:       []signatureschemes.MiningKey{},
+						votes:            map[string]*BFTVote{},
+						isValid:          false,
+						hasNewVote:       false,
+						sendVote:         false,
+						isVoted:          false,
+						isCommitted:      false,
+						errVotes:         2,
+						validVotes:       5,
+						proposerSendVote: false,
+						lastValidateTime: time.Now(),
+					},
+				},
+				blockVersion: 1,
+			},
+			args: args{
+				bestView: &tempView,
+			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "block proposer time is different from current time slot",
+			fields: fields{
+				actorBase:            actorBase{},
+				committeeChain:       nil,
+				currentTime:          1,
+				currentTimeSlot:      4,
+				proposeHistory:       &lru.Cache{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+				receiveBlockByHash: map[string]*ProposeBlockInfo{
+					"hash": &ProposeBlockInfo{
+						block:            &blockProposerTimeDifCurrTimeSlot,
+						receiveTime:      time.Now().Add(-time.Second * 3),
+						committees:       []incognitokey.CommitteePublicKey{},
+						signingCommittes: []incognitokey.CommitteePublicKey{},
+						userKeySet:       []signatureschemes.MiningKey{},
+						votes:            map[string]*BFTVote{},
+						isValid:          false,
+						hasNewVote:       false,
+						sendVote:         false,
+						isVoted:          false,
+						isCommitted:      false,
+						errVotes:         2,
+						validVotes:       5,
+						proposerSendVote: false,
+						lastValidateTime: time.Now().Add(-time.Second * 2),
+					},
+				},
+				blockVersion: 1,
+			},
+			args: args{
+				bestView: &tempView,
+			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "Block propose time is smaller than produce time",
+			fields: fields{
+				actorBase:            actorBase{},
+				committeeChain:       nil,
+				currentTime:          1,
+				currentTimeSlot:      3,
+				proposeHistory:       &lru.Cache{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+				receiveBlockByHash: map[string]*ProposeBlockInfo{
+					"hash": &ProposeBlockInfo{
+						block:            &blockProposeTimeSmallerProduceTime,
+						receiveTime:      time.Now().Add(-time.Second * 3),
+						committees:       []incognitokey.CommitteePublicKey{},
+						signingCommittes: []incognitokey.CommitteePublicKey{},
+						userKeySet:       []signatureschemes.MiningKey{},
+						votes:            map[string]*BFTVote{},
+						isValid:          false,
+						hasNewVote:       false,
+						sendVote:         false,
+						isVoted:          false,
+						isCommitted:      false,
+						errVotes:         2,
+						validVotes:       5,
+						proposerSendVote: false,
+						lastValidateTime: time.Now().Add(-time.Second * 2),
+					},
+				},
+				blockVersion: 1,
+			},
+			args: args{
+				bestView: &tempView,
+			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "Block Time Slot Has Been Voted",
+			fields: fields{
+				actorBase: actorBase{
+					chain: &tempChain,
+				},
+				committeeChain:       nil,
+				currentTime:          1,
+				currentTimeSlot:      3,
+				proposeHistory:       &lru.Cache{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+				receiveBlockByHash: map[string]*ProposeBlockInfo{
+					"hash": &ProposeBlockInfo{
+						block:            &blockTimeSlotHasBeenVoted,
+						receiveTime:      time.Now().Add(-time.Second * 3),
+						committees:       []incognitokey.CommitteePublicKey{},
+						signingCommittes: []incognitokey.CommitteePublicKey{},
+						userKeySet:       []signatureschemes.MiningKey{},
+						votes:            map[string]*BFTVote{},
+						isValid:          false,
+						hasNewVote:       false,
+						sendVote:         false,
+						isVoted:          false,
+						isCommitted:      false,
+						errVotes:         2,
+						validVotes:       5,
+						proposerSendVote: false,
+						lastValidateTime: time.Now().Add(-time.Second * 2),
+					},
+				},
+				votedTimeslot: map[int64]bool{},
+				blockVersion:  1,
+			},
+			args: args{
+				bestView: &tempView,
+			},
+			want: []*ProposeBlockInfo{},
+		},
+		{
+			name: "Valid Block",
+			fields: fields{
+				actorBase: actorBase{
+					chain: &tempChain,
+				},
+				committeeChain:       nil,
+				currentTime:          1,
+				currentTimeSlot:      3,
+				proposeHistory:       &lru.Cache{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+				receiveBlockByHash: map[string]*ProposeBlockInfo{
+					"hash": &ProposeBlockInfo{
+						block:            &validBlock,
+						receiveTime:      time.Now().Add(-time.Second * 3),
+						committees:       []incognitokey.CommitteePublicKey{},
+						signingCommittes: []incognitokey.CommitteePublicKey{},
+						userKeySet:       []signatureschemes.MiningKey{},
+						votes:            map[string]*BFTVote{},
+						isValid:          false,
+						hasNewVote:       false,
+						sendVote:         false,
+						isVoted:          false,
+						isCommitted:      false,
+						errVotes:         2,
+						validVotes:       5,
+						proposerSendVote: false,
+						lastValidateTime: time.Now().Add(-time.Second * 2),
+					},
+				},
+				blockVersion: 1,
+			},
+			args: args{
+				bestView: &tempView,
+			},
 			want: []*ProposeBlockInfo{
 				&ProposeBlockInfo{
-					block:            &tempBlock,
+					block:            &validBlock,
 					receiveTime:      time.Now(),
 					committees:       []incognitokey.CommitteePublicKey{},
 					signingCommittes: []incognitokey.CommitteePublicKey{},
@@ -392,7 +669,7 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 					errVotes:         2,
 					validVotes:       5,
 					proposerSendVote: false,
-					lastValidateTime: time.Now().Add(time.Second * 3),
+					lastValidateTime: time.Now(),
 				},
 			},
 		},
@@ -412,8 +689,12 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 				votedTimeslot:        tt.fields.votedTimeslot,
 				blockVersion:         tt.fields.blockVersion,
 			}
-			if got := actorV2.getValidProposeBlocks(tt.args.bestView); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("actorV2.getValidProposeBlocks() = %v, want %v", got, tt.want)
+			got := actorV2.getValidProposeBlocks(tt.args.bestView)
+			for i, v := range got {
+				if !reflect.DeepEqual(*v, *tt.want[i]) {
+					t.Errorf("actorV2.getValidProposeBlocks() = %v, want %v", got, tt.want)
+					return
+				}
 			}
 		})
 	}
