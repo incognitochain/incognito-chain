@@ -843,7 +843,8 @@ func (actorV2 *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo 
 	}
 
 	if !shouldVote {
-		actorV2.logger.Debug("Can't vote for this block")
+		actorV2.logger.Infof("Can't vote for this block %v height %v timeslot %v",
+			proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetHeight(), blkCreateTimeSlot)
 		return errors.New("Can't vote for this block")
 	}
 
@@ -861,7 +862,8 @@ func (actorV2 *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo 
 		//not connected
 		view := actorV2.chain.GetViewByHash(proposeBlockInfo.block.GetPrevHash())
 		if view == nil {
-			actorV2.logger.Debug("view is null")
+			actorV2.logger.Infof("previous view for this block %v height %v timeslot %v is null",
+				proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetHeight(), blkCreateTimeSlot)
 			return errors.New("View not connect")
 		}
 

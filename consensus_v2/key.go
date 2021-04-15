@@ -2,7 +2,6 @@ package consensus_v2
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -16,6 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/pkg/errors"
 )
 
 func GetMiningKeyFromPrivateSeed(privateSeed string) (*signatureschemes2.MiningKey, error) {
