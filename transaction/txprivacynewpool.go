@@ -253,24 +253,24 @@ func (tx *Tx) ValidateTxCorrectness(
 			if err != nil {
 				Logger.log.Error(err)
 			}
-			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			err1, ok := err.(*privacy.PrivacyError)
-			if ok {
-				// parse error detail
-				if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
-					// if isNewTransaction {
-					// 	return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-					// } else {
-					// for old txs which be get from sync block or validate new block
-					// if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
-					// 	// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
-					// 	return true, nil
-					// } else {
-					return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-					// }
-					// }
-				}
-			}
+			// Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
+			// err1, ok := err.(*privacy.PrivacyError)
+			// if ok {
+			// 	// parse error detail
+			// 	if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
+			// 		// if isNewTransaction {
+			// 		// 	return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+			// 		// } else {
+			// 		// for old txs which be get from sync block or validate new block
+			// 		// if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
+			// 		// 	// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
+			// 		// 	return true, nil
+			// 		// } else {
+			// 		return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+			// 		// }
+			// 		// }
+			// 	}
+			// }
 			return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 		} else {
 			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
