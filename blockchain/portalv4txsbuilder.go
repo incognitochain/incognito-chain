@@ -2,12 +2,11 @@ package blockchain
 
 import (
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
@@ -15,23 +14,23 @@ import (
 
 // buildPortalAcceptedShieldingRequestTx builds response tx for the shielding request tx with status "accepted"
 // mints pToken to return to user
-func (blockGenerator *BlockGenerator) buildPortalAcceptedShieldingRequestTx(
+func (curView *ShardBestState) buildPortalAcceptedShieldingRequestTx(
+	beaconState *BeaconBestState,
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
-	shardView *ShardBestState,
-	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
-	Logger.log.Errorf("[Shard buildPortalAcceptedShieldingRequestTx] Starting...")
+	Logger.log.Errorf("[buildPortalAcceptedShieldingRequestTx] Starting...")
+
 	contentBytes := []byte(contentStr)
 	var acceptedShieldingReq metadata.PortalShieldingRequestContent
 	err := json.Unmarshal(contentBytes, &acceptedShieldingReq)
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal custodian deposit content: %+v", err)
+		Logger.log.Errorf("[buildPortalAcceptedShieldingRequestTx]: an error occured while unmarshaling portal custodian deposit content: %+v", err)
 		return nil, nil
 	}
 	if acceptedShieldingReq.ShardID != shardID {
-		Logger.log.Errorf("ERROR: ShardID unexpected expect %v, but got %+v", shardID, acceptedShieldingReq.ShardID)
+		Logger.log.Errorf("[buildPortalAcceptedShieldingRequestTx]: ShardID unexpected expect %v, but got %+v", shardID, acceptedShieldingReq.ShardID)
 		return nil, nil
 	}
 
@@ -46,7 +45,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedShieldingRequestTx(
 
 	keyWallet, err := wallet.Base58CheckDeserialize(acceptedShieldingReq.IncogAddressStr)
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while deserializing custodian address string: %+v", err)
+		Logger.log.Errorf("[buildPortalAcceptedShieldingRequestTx]: an error occured while deserializing custodian address string: %+v", err)
 		return nil, nil
 	}
 	// in case the returned currency is privacy custom token
@@ -58,8 +57,8 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedShieldingRequestTx(
 	tokenIDPointer, _ := new(common.Hash).NewHashFromStr(acceptedShieldingReq.TokenID)
 	tokenID := *tokenIDPointer
 	if tokenID == common.PRVCoinID {
-		Logger.log.Errorf("cannot minting PRV in shield request")
-		return nil, errors.New("cannot mint PRV in shield request")
+		Logger.log.Errorf("[buildPortalAcceptedShieldingRequestTx]: cannot minting PRV in shield request")
+		return nil, errors.New("[buildPortalAcceptedShieldingRequestTx]: cannot mint PRV in shield request")
 	}
 
 	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
@@ -69,7 +68,7 @@ func (blockGenerator *BlockGenerator) buildPortalAcceptedShieldingRequestTx(
 		}
 		return meta
 	}
-	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
+	return txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 // buildPortalAcceptedShieldingRequestTx builds response tx for the shielding request tx with status "accepted"
