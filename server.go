@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/syncker"
 	"github.com/incognitochain/incognito-chain/txpool"
@@ -400,6 +401,7 @@ func (serverObj *Server) NewServer(
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
+	zkp.InitCheckpoint(serverObj.chainParams.BCHeightBreakPointNewZKP)
 	serverObj.memPool.InitChannelMempool(cPendingTxs, cRemovedTxs)
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}

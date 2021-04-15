@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -42,11 +41,11 @@ func (v *TxsVerifier) LoadCommitment(
 	if shardViewRetriever != nil {
 		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
 	}
-	fmt.Printf("[debugtxs] %v %v %v\n", tx, tx.Hash().String(), sDB)
-	fmt.Printf("[debugtxs] %v\n", tx.GetValidationEnv().IsPrivacy())
+	Logger.log.Infof("[debugtxs] %v %v %v\n", tx, tx.Hash().String(), sDB)
+	Logger.log.Infof("[debugtxs] %v\n", tx.GetValidationEnv().IsPrivacy())
 	err := tx.LoadCommitment(sDB.Copy())
 	if err != nil {
-		fmt.Printf("Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
+		Logger.log.Errorf("Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
 		return false
 	}
 	return true
@@ -63,7 +62,7 @@ func (v *TxsVerifier) LoadCommitmentForTxs(
 	for _, tx := range txs {
 		err := tx.LoadCommitment(sDB.Copy())
 		if err != nil {
-			fmt.Printf("[testNewPool] Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
+			Logger.log.Errorf("[testNewPool] Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
 			return false
 		}
 	}
@@ -120,7 +119,7 @@ func (v *TxsVerifier) ValidateBlockTransactions(
 	beaconViewRetriever metadata.BeaconViewRetriever,
 	txs []metadata.Transaction,
 ) (bool, error) {
-	fmt.Printf("[testNewPool] Total txs %v\n", len(txs))
+	Logger.log.Infof("[testNewPool] Total txs %v\n", len(txs))
 	if len(txs) == 0 {
 		return true, nil
 	}
@@ -152,7 +151,7 @@ func (v *TxsVerifier) ValidateBlockTransactions(
 		errCh,
 		doneCh,
 	)
-	fmt.Println("[testNewPool] wait!")
+	// fmt.Println("[testNewPool] wait!")
 	for {
 		select {
 		case err := <-errCh:
@@ -160,9 +159,8 @@ func (v *TxsVerifier) ValidateBlockTransactions(
 			return false, err
 		case <-doneCh:
 			numOfValidTxs++
-			fmt.Printf("[testNewPool] %v %v\n", numOfValidTxs, len(txs))
+			Logger.log.Infof("[testNewPool] %v %v\n", numOfValidTxs, len(txs))
 			if numOfValidTxs == len(txs) {
-				fmt.Println("[testNewPool] wait!")
 				ok, err := v.checkDoubleSpendInListTxs(txs)
 				if (!ok) || (err != nil) {
 					Logger.log.Error(err)
@@ -186,14 +184,13 @@ func (v *TxsVerifier) validateTxsWithoutChainstate(
 		go func() {
 			ok, err := v.ValidateWithoutChainstate(tx)
 			if !ok || err != nil {
-				errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, err)
-			}
-			if err != nil {
-				fmt.Printf("[testNewPool] Validate tx %v return error %v:\n", tx.Hash().String(), err)
+				if errCh != nil {
+					errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, err)
+				}
 			} else {
-				fmt.Printf("[testNewPool] Validate tx %v\n", tx.Hash().String())
-				doneCh <- nil
-
+				if doneCh != nil {
+					doneCh <- nil
+				}
 			}
 		}()
 	}
@@ -223,13 +220,13 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 				sView.GetBeaconHeight(),
 			)
 			if !ok || err != nil {
-				errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, err)
-				if err != nil {
-					fmt.Printf("[testNewPool] Validate tx %v return error %v:\n", tx.Hash().String(), err)
+				if errCh != nil {
+					errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, err)
 				}
 			} else {
-				fmt.Printf("[testNewPool] Validate tx %v\n", tx.Hash().String())
-				doneCh <- nil
+				if doneCh != nil {
+					doneCh <- nil
+				}
 			}
 			// <-nWorkers
 		}()
