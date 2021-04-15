@@ -11,25 +11,25 @@ func TestGetBalance(t *testing.T) {
 	tool := new(DebugTool)
 	tool.SetNetwork("http://51.161.119.66:9334")
 
-	for index := range privJKeyList {
+	for index := range tmpPrivKeyLists {
 
-		keyWallet, _ := wallet.Base58CheckDeserialize(privJKeyList[index])
+		keyWallet, _ := wallet.Base58CheckDeserialize(tmpPrivKeyLists[index])
 		keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 		shardID := byte(int(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]) % NoOfShard)
 		viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
 		paymentAddressStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
 		paymentAddressStr, _ = wallet.GetPaymentAddressV1(paymentAddressStr, false)
 
-		listTokens, err := GetListToken(viewingKeyStr)
+		listTokens, err := GetListToken(viewingKeyStr, 1)
 		if listTokens == nil && err != nil{
-			fmt.Println("Cannot get list token", viewingKeyStr, privJKeyList[index])
+			fmt.Println("Cannot get list token", viewingKeyStr, tmpPrivKeyLists[index])
 			return
 		}
 		total1 := time.Duration(0) * time.Millisecond
 		total2 := time.Duration(0) * time.Millisecond
 		for tokenID, tokenDetail := range listTokens {
 			start := time.Now()
-			balance, err := GetBalanceFromCS(privJKeyList[index], viewingKeyStr, tokenID, tokenDetail.Total, shardID)
+			balance, err := GetBalanceFromCS(tmpPrivKeyLists[index], viewingKeyStr, tokenID, tokenDetail.Total, shardID)
 			if err != nil {
 				fmt.Println("error ", err)
 			}
@@ -37,7 +37,7 @@ func TestGetBalance(t *testing.T) {
 			total1 += elapsed1
 
 			start = time.Now()
-			balancePrime, err := GetBalanceFromRPC(tool, privJKeyList[index], paymentAddressStr, viewingKeyStr, tokenID, shardID, 0)
+			balancePrime, err := GetBalanceFromRPC(tool, tmpPrivKeyLists[index], paymentAddressStr, viewingKeyStr, tokenID, shardID, 0)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -60,7 +60,7 @@ func BenchmarkCheckKeyImageFromCS(b *testing.B) {
 	tool.SetNetwork("http://51.161.119.66:9334")
 
 	index := 0
-	keyWallet, _ := wallet.Base58CheckDeserialize(privJKeyList[index])
+	keyWallet, _ := wallet.Base58CheckDeserialize(tmpPrivKeyLists[index])
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	shardID := byte(int(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]) % NoOfShard)
 	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
@@ -73,7 +73,7 @@ func BenchmarkCheckKeyImageFromCS(b *testing.B) {
 		fmt.Printf("cannot get list output coins from CS. Error %v", err)
 		return
 	}
-	_, listKeyImages, err := GetListDecryptedCoins(privJKeyList[index], listOutputCoins, true)
+	_, listKeyImages, err := GetListDecryptedCoins(tmpPrivKeyLists[index], listOutputCoins, true)
 	if err != nil {
 		fmt.Printf("cannot get plain coins from CS. Error %v", err)
 	}
@@ -90,7 +90,7 @@ func BenchmarkCheckKeyImageFromRPC(b *testing.B) {
 	tool.SetNetwork("http://51.161.119.66:9334")
 
 	index := 0
-	keyWallet, _ := wallet.Base58CheckDeserialize(privJKeyList[index])
+	keyWallet, _ := wallet.Base58CheckDeserialize(tmpPrivKeyLists[index])
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	//shardID := byte(int(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]) % NoOfShard)
 	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
@@ -103,7 +103,7 @@ func BenchmarkCheckKeyImageFromRPC(b *testing.B) {
 		fmt.Printf("cannot get list output coins from CS. Error %v", err)
 		return
 	}
-	_, listKeyImages, err := GetListDecryptedCoins(privJKeyList[index], listOutputCoins, true)
+	_, listKeyImages, err := GetListDecryptedCoins(tmpPrivKeyLists[index], listOutputCoins, true)
 	if err != nil {
 		fmt.Printf("cannot get plain coins from CS. Error %v", err)
 	}
@@ -120,7 +120,7 @@ func BenchmarkGetCoinFromCS(b *testing.B) {
 	tool.SetNetwork("http://51.161.119.66:9334")
 
 	index := 0
-	keyWallet, _ := wallet.Base58CheckDeserialize(privJKeyList[index])
+	keyWallet, _ := wallet.Base58CheckDeserialize(tmpPrivKeyLists[index])
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	//shardID := byte(int(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]) % NoOfShard)
 	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
@@ -141,7 +141,7 @@ func BenchmarkGetCoinFromRPC(b *testing.B) {
 	tool.SetNetwork("http://51.161.119.66:9334")
 
 	index := 0
-	keyWallet, _ := wallet.Base58CheckDeserialize(privJKeyList[index])
+	keyWallet, _ := wallet.Base58CheckDeserialize(tmpPrivKeyLists[index])
 	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
 	//shardID := byte(int(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]) % NoOfShard)
 	viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)

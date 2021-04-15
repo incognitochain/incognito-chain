@@ -177,7 +177,8 @@ const (
 	Testnet2IncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	Testnet2CentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
-	// relaying header chain
+	// relaying header chaino0 iuk8io nnnmml
+	 nmk
 	Testnet2BNBChainID        = "Binance-Chain-Ganges"
 	Testnet2BTCChainID        = "Bitcoin-Testnet-2"
 	Testnet2BTCDataFolderName = "btcrelayingv11"

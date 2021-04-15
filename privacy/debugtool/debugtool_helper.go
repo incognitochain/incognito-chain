@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func EncodeBase58Check(data []byte) string {
@@ -49,4 +50,20 @@ func CreateJsonRequest(jsonRPC, method string, params []interface{}, id interfac
 	request.Params = params
 
 	return request
+}
+
+func PrivateKeyToPaymentAddress(privkey string, keyType int) string {
+	keyWallet, _ := wallet.Base58CheckDeserialize(privkey)
+	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+	switch  keyType {
+	case 0: //Old address, old encoding
+		addr, _ := wallet.GetPaymentAddressV1(paymentAddStr, false)
+		return addr
+	case 1:
+		addr, _ := wallet.GetPaymentAddressV1(paymentAddStr, true)
+		return addr
+	default:
+		return paymentAddStr
+	}
 }

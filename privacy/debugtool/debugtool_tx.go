@@ -475,6 +475,7 @@ func (tool *DebugTool) CreateRawTx(privateKey, paymentString string, amount uint
 	return bytearrays, nil
 }
 
+
 // func (this *DebugTool) CreateDoubleSpend(privKeyA string, privKeyB string, amount string, isPrivacy bool) ([]byte, error) {
 // 	amountI,_ := strconv.Atoi(amount)
 // 	keyWallet, _ := wallet.Base58CheckDeserialize(privKeyB)

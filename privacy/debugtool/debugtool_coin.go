@@ -16,9 +16,14 @@ func (tool *DebugTool) GetOutputCoins(outCoinKey *OutCoinKey, tokenID string, he
 	if err != nil {
 		return nil, nil, err
 	}
+	return ParseCoinFromJsonResponse(b)
+}
 
-	fmt.Println(string(b))
-
+func (tool *DebugTool) GetOutputCoinsFromCache(privKey string, tokenID string, height uint64) ([]jsonresult.ICoinInfo, []*big.Int, error) {
+	b, err := tool.GetListOutputCoinsCachedByRPC(privKey, tokenID, height)
+	if err != nil {
+		return nil, nil, err
+	}
 	return ParseCoinFromJsonResponse(b)
 }
 
@@ -30,7 +35,7 @@ func (tool *DebugTool) CheckCoinsSpent(shardID byte, tokenID string, snList []st
 	if err != nil {
 		return []bool{}, err
 	}
-	fmt.Print(string(b))
+
 	response, err := ParseResponse(b)
 	if err != nil {
 		return []bool{}, err
@@ -50,7 +55,7 @@ func (tool *DebugTool) CheckCoinsSpent(shardID byte, tokenID string, snList []st
 }
 
 //GetUnspentOutputCoins retrieves all unspent coins of a private key, without sending the private key to the remote full node.
-func (tool *DebugTool) GetUnspentOutputCoins(privateKey, tokenID string, height uint64) ([]coin.PlainCoin, []*big.Int, error) {
+func (tool *DebugTool) GetUnspentOutputCoins(privateKey, tokenID string, height uint64, isCached bool) ([]coin.PlainCoin, []*big.Int, error) {
 	keyWallet, err := wallet.Base58CheckDeserialize(privateKey)
 	if err != nil {
 		return nil, nil, err
@@ -61,9 +66,17 @@ func (tool *DebugTool) GetUnspentOutputCoins(privateKey, tokenID string, height 
 	}
 	outCoinKey.SetReadonlyKey("") // call this if you do not want the remote full node to decrypt your coin
 
-	listOutputCoins, _, err := tool.GetOutputCoins(outCoinKey, tokenID, height)
-	if err != nil {
-		return nil, nil, err
+	listOutputCoins := make([]jsonresult.ICoinInfo, 0)
+	if !isCached {
+		listOutputCoins, _, err = tool.GetOutputCoins(outCoinKey, tokenID, height)
+		if err != nil {
+			return nil, nil, err
+		}
+	} else {
+		listOutputCoins, _, err = tool.GetOutputCoinsFromCache(privateKey, tokenID, height)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	if len(listOutputCoins) == 0 {
@@ -92,8 +105,8 @@ func (tool *DebugTool) GetUnspentOutputCoins(privateKey, tokenID string, height 
 }
 
 //GetBalance retrieves balance of a private key without sending this private key to the remote full node.
-func (tool *DebugTool) GetBalance(privateKey, tokenID string) (uint64, error) {
-	unspentCoins, _, err := tool.GetUnspentOutputCoins(privateKey, tokenID, 0)
+func (tool *DebugTool) GetBalance(privateKey, tokenID string, isCached bool) (uint64, error) {
+	unspentCoins, _, err := tool.GetUnspentOutputCoins(privateKey, tokenID, 0, isCached)
 	if err != nil {
 		return 0, err
 	}

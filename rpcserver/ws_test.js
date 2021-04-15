@@ -10,7 +10,7 @@ const data = {
             "params": [0],
             "id": 1
         },
-    "subcription": "11",
+    "subscription": "11",
     "type": 0,
 }
 

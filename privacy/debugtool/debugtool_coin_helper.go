@@ -151,7 +151,7 @@ func GetListDecryptedCoins(privateKey string, listOutputCoins []jsonresult.ICoin
 
 				listDecyptedOutCoins = append(listDecyptedOutCoins, tmpPlainCoinV1)
 			}
-		}else if outCoin.GetVersion() == 2 {
+		} else if outCoin.GetVersion() == 2 {
 			tmpCoinV2, ok := outCoin.(*coin.CoinV2)
 			if !ok {
 				return nil, nil, errors.New("invalid CoinV2")
@@ -163,7 +163,7 @@ func GetListDecryptedCoins(privateKey string, listOutputCoins []jsonresult.ICoin
 
 			keyImage := decryptedCoin.GetKeyImage()
 			if encode == false {
-				listKeyImages = append(listKeyImages,base64.RawStdEncoding.EncodeToString(keyImage.ToBytesS()))
+				listKeyImages = append(listKeyImages,base64.StdEncoding.EncodeToString(keyImage.ToBytesS()))
 			} else {
 				listKeyImages = append(listKeyImages,base58.Base58Check{}.Encode(keyImage.ToBytesS(), common.ZeroByte))
 			}

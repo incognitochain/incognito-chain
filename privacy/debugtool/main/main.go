@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
 	//"os"
 	//"strconv"
 
@@ -67,9 +66,9 @@ func GetOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string, h
 	//fmt.Println("========== END OUTPUT TOKEN ==========")
 }
 
-func GetUnspentOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string, height uint64) {
+func GetUnspentOutputToken(tool *debugtool.DebugTool, privKey string, tokenID string, height uint64, isCached bool) {
 	fmt.Println("========== GET UNSPENT OUTPUT TOKEN ==========")
-	listUnspentCoins, _, err := tool.GetUnspentOutputCoins(privKey, tokenID, height)
+	listUnspentCoins, _, err := tool.GetUnspentOutputCoins(privKey, tokenID, height, isCached)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -96,21 +95,7 @@ func GetBalanceToken(tool *debugtool.DebugTool, privkey, tokenID string) {
 	fmt.Println("========== END GET TOKEN BALANCE ==========")
 }
 
-func privateKeyToPaymentAddress(privkey string, keyType int) string {
-	keyWallet, _ := wallet.Base58CheckDeserialize(privkey)
-	keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	paymentAddStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-	switch  keyType {
-	case 0: //Old address, old encoding
-		addr, _ := wallet.GetPaymentAddressV1(paymentAddStr, false)
-		return addr
-	case 1:
-		addr, _ := wallet.GetPaymentAddressV1(paymentAddStr, true)
-		return addr
-	default:
-		return paymentAddStr
-	}
-}
+
 
 func privateKeyToReadonlyKey(privkey string) string {
 	keyWallet, err := wallet.Base58CheckDeserialize(privkey)
@@ -342,7 +327,7 @@ func main() {
 		"1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88",
 		"1mYRSzV7yigD7qNpuQwnyKeVMQcnenjSxAB1L8MEpDuT3RRbZc",
 		"12MZ4QiFoETNbdLKgRQWPMQMqsceWPKo71Jma9NzwvLTabpcDhn",
-			"1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88",
+		"1G5Q9uGSxekPSgC1w1ZFaDJ8RxeYrekk2FtFLF33QCKNbg2V88",
 		"1cQCTV1m33LxBKpNW2SisbuJfp5VcBSEau7PE5aD16gGLAN7eq",
 		"1DRtHReKFQqPQzd689EsjivNgUScPBUwvbw8azgxaLRUBtmFL2",
 		"12YCyPu6KyBToSaaQkw7hzbWkJnUi78DLkfvWokgi4dCtkbVusC",
@@ -448,13 +433,38 @@ func main() {
 				privateKey = args[1]
 			}
 
-			balance, err := tool.GetBalance(privateKey, common.PRVIDStr)
+			balance, err := tool.GetBalance(privateKey, common.PRVIDStr, false)
 			if err != nil{
 				fmt.Println(err)
 				continue
 			}
 			fmt.Println("Balance =", balance)
 		}
+		if args[0] == "balancecache" {
+			var privateKey string
+			if len(args[1]) < 3 {
+				index, err := strconv.ParseInt(args[1], 10, 32)
+				if err != nil {
+					fmt.Println(err)
+					panic(err)
+				}
+				if index >= int64(len(privateKeys)) {
+					fmt.Println("Cannot find the private key")
+					continue
+				}
+				privateKey = privateKeys[index]
+			} else {
+				privateKey = args[1]
+			}
+
+			balance, err := tool.GetBalance(privateKey, common.PRVIDStr, true)
+			if err != nil{
+				fmt.Println(err)
+				continue
+			}
+			fmt.Println("Balance =", balance)
+		}
+
 		if args[0] == "mempool" {
 			GetRawMempool(tool)
 		}
@@ -515,7 +525,7 @@ func main() {
 					fmt.Println("Cannot find the private key")
 					continue
 				}
-				paymentAddress = privateKeyToPaymentAddress(privateKeys[index], -1)
+				paymentAddress = debugtool.PrivateKeyToPaymentAddress(privateKeys[index], -1)
 			} else {
 				paymentAddress = args[2]
 			}
@@ -551,7 +561,7 @@ func main() {
 					continue
 				}
 			}
-			fmt.Println("Payment Address", privateKeyToPaymentAddress(privateKey, int(keyType)))
+			fmt.Println("Payment Address", debugtool.PrivateKeyToPaymentAddress(privateKey, int(keyType)))
 		}
 		if args[0] == "public" {
 			fmt.Println("Public Key", privateKeyToPublicKey(args[1]))
@@ -632,7 +642,7 @@ func main() {
 					fmt.Println("Cannot find the private key")
 					continue
 				}
-				paymentAddress = privateKeyToPaymentAddress(privateKeys[index], -1)
+				paymentAddress = debugtool.PrivateKeyToPaymentAddress(privateKeys[index], -1)
 			}
 
 			tokenID := args[3]
@@ -751,7 +761,7 @@ func main() {
 				}
 			}
 
-			GetUnspentOutputToken(tool, privateKey, tokenID, bi.Uint64())
+			GetUnspentOutputToken(tool, privateKey, tokenID, bi.Uint64(), true)
 		}
 		// PDE
 		if args[0] == "pdecontributeprv" {
@@ -980,5 +990,19 @@ func main() {
 		if args[0] == "testbl" {
 			debugtool.TestGetBalance(new(testing.T))
 		}
+
+
+		if args[0] == "csv2sendtx" {
+			debugtool.TestCoinServiceV2(new(testing.T))
+		}
+
+		if args[0] == "csv2testbl" {
+			debugtool.TestBalanceV2(new(testing.T))
+		}
+
+		if args[0] == "submitotakey" {
+			debugtool.TestSubmitOTAKey(new(testing.T))
+		}
 	}
 }
+

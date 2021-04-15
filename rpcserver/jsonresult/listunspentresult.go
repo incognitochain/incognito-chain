@@ -53,6 +53,7 @@ type OutCoin struct {
 	TxRandom	         string	`json:"TxRandom"`
 	CoinDetailsEncrypted string `json:"CoinDetailsEncrypted"`
 	AssetTag			 string `json:"AssetTag"`
+	TokenID				 string `json:"TokenID"`
 }
 
 func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
@@ -142,7 +143,7 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 
 	value, ok := math.ParseUint64(jsonOutCoin.Value)
 	if !ok {
-		return nil, nil, errors.New("Cannot parse value")
+		return nil, nil, errors.New("cannot parse value")
 	}
 
 	if len(jsonOutCoin.KeyImage) == 0 {

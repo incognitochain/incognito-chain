@@ -2,21 +2,28 @@ package debugtool
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 )
 
-var privJKeyList = [...]string{
-	"112t8rneWAhErTC8YUFTnfcKHvB1x6uAVdehy1S8GP2psgqDxK3RHouUcd69fz88oAL9XuMyQ8mBY5FmmGJdcyrpwXjWBXRpoWwgJXjsxi4j",
+var tmpPrivKeyLists = [...]string{
+	"112t8rnfSkqPibUF3CWWZAECvGdVfRGSeVgn5k6KumohCPuiewYRGkABGx3ascvT99rddmN4NhY7paKdU4c86egrkJ3hzevovW8rBt4pNp9g",
+	"112t8rnZDRztVgPjbYQiXS7mJgaTzn66NvHD7Vus2SrhSAY611AzADsPFzKjKQCKWTgbkgYrCPo9atvSMoCf9KT23Sc7Js9RKhzbNJkxpJU6",
+	"112t8rnX5E2Mkqywuid4r4Nb2XTeLu3NJda43cuUM1ck2brpHrufi4Vi42EGybFhzfmouNbej81YJVoWewJqbR4rPhq2H945BXCLS2aDLBTA",
 	"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or",
+	"112t8rneWAhErTC8YUFTnfcKHvB1x6uAVdehy1S8GP2psgqDxK3RHouUcd69fz88oAL9XuMyQ8mBY5FmmGJdcyrpwXjWBXRpoWwgJXjsxi4j",
 	"113hagqt552h92LXY6dWPdBGS8pPdLQX5eFBLgsnzbEoU1nUTLGJkkyrTnWCz7XuURtSKzkUKFfKrMPmoNVPAbmryRbMxvNTst9cY5xqiPNN",
 	"112t8rnXKfvZc5iAqrGtKT7kfMnbnrMLRfTTu5xfjgGYssEMdaSBC6NuPDqq8Z4QZAWhnBu1mccsJ2dU7S9f45zGyX1qw4DCRBe6Hjkhhvx7",
 	"112t8rnjzNW1iKLjpNW9oJoD38pnVVgCiZWRuqGmMvcEgZEHjtg4tLRTAcfTCxNXrdzKcEmY9JVfX2Wb3JLaCjfRDEyGhXGK67VB297mZuwH",
@@ -60,7 +67,6 @@ var privJKeyList = [...]string{
 	"112t8rnaPYWa3YFQ1GXC6XHJawYQKbsHs5GShFtxtwRtUaGkyiWkrtPNv5gdbHPEgubuZQbZrh4Sbj3jb94BSZtsUVEeg97xZ67sibxKEwcb",
 	"112t8rnbhcH4FBtrkR9qNLGHUMdM4Z8Sau1hpXif6xATpGWiMLUB1TYfbLkpdgoJ8sRKDDeyy7rPta8wVWySAGqH6SDrLi88NLgGw4Ca571c",
 	"112t8rneQvmymBMxTEs1LzpfN7n122hmwjoZ2NZWtruHUE82bRN14xHSvdWc1Wu3wAoczMMowRC2iifXbZRgiu9GuJLYvRJr7VLuoBfhfF8h",
-	"112t8rnfSkqPibUF3CWWZAECvGdVfRGSeVgn5k6KumohCPuiewYRGkABGx3ascvT99rddmN4NhY7paKdU4c86egrkJ3hzevovW8rBt4pNp9g",
 	"112t8rnfuHwKo5fmeJ1U7gTUVJyXYZ8APAwY86HFvSTV5BaqEXRWhmaNAqMqVkc9ehF95JmE8XBv3XGfPr3r6ooEtWntJrAv9SzybqbQwtoX",
 	"112t8rniPgJuKm4ifQwmF9qyCKbR6m7ZmWDHVHCCK8nU1dmm5rQut2LQm2q1A4WvsR136gyRLFYXcAmZoTSGuDp3z4CXyFHbihWxTAxg3Bd7",
 	"112t8rnYTc4aAM4wy5h7oWKs1RAusVHmVG9M2tFKYWhjLndnfHnKDd193sjkiiR2aN5NWc1XM1ryxFv67NjAdRHHEnAosPy2UY8NepVMbHHB",
@@ -71,11 +77,23 @@ var privJKeyList = [...]string{
 	"112t8rniZP5hk9X3RjCFx9CXyoxmJFcqM6sNM7Yknng6D4jS3vwTxcQ6hPZ3h3mZHx2JDNxfGxmwjiHN3A34gktcMhgXUwh8EXpo7NCxiuxJ",
 	"112t8rniqSuDK8vdvHXGzkDzthVG6tsNtvZpvJEvZc5fUg1ts3GDPLWMZWFNbVEpNHeGx8vPLLoyaJRCUikMDqPFY1VzyRbLmLyWi4YDrS7h",
 }
+var sourcePrivKeyLists = []string{
+	"112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or",
+	"112t8rnZDRztVgPjbYQiXS7mJgaTzn66NvHD7Vus2SrhSAY611AzADsPFzKjKQCKWTgbkgYrCPo9atvSMoCf9KT23Sc7Js9RKhzbNJkxpJU6",
+	"112t8rne7fpTVvSgZcSgyFV23FYEv3sbRRJZzPscRcTo8DsdZwstgn6UyHbnKHmyLJrSkvF13fzkZ4e8YD5A2wg8jzUZx6Yscdr4NuUUQDAt",
+	"112t8rnXoBXrThDTACHx2rbEq7nBgrzcZhVZV4fvNEcGJetQ13spZRMuW5ncvsKA1KvtkauZuK2jV8pxEZLpiuHtKX3FkKv2uC5ZeRC8L6we",
+	"112t8rnbcZ92v5omVfbXf1gu7j7S1xxr2eppxitbHfjAMHWdLLBjBcQSv1X1cKjarJLffrPGwBhqZzBvEeA9PhtKeM8ALWiWjhUzN5Fi6WVC",
+	"112t8rnZUQXxcbayAZvyyZyKDhwVJBLkHuTKMhrS51nQZcXKYXGopUTj22JtZ8KxYQcak54KUQLhimv1GLLPFk1cc8JCHZ2JwxCRXGsg4gXU",
+	"112t8rnXDS4cAjFVgCDEw4sWGdaqQSbKLRH1Hu4nUPBFPJdn29YgUei2KXNEtC8mhi1sEZb1V3gnXdAXjmCuxPa49rbHcH9uNaf85cnF3tMw",
+	"112t8rnYoioTRNsM8gnUYt54ThWWrRnG4e1nRX147MWGbEazYP7RWrEUB58JLnBjKhh49FMS5o5ttypZucfw5dFYMAsgDUsHPa9BAasY8U1i",
+	"112t8rnzyZWHhboZMZYMmeMGj1nDuVNkXB3FzwpPbhnNbWcSrbytAeYjDdNLfLSJhauvzYLWM2DQkWW2hJ14BGvmFfH1iDFAxgc4ywU6qMqW",
+}
 
 type InfoJSON struct{
 	Start int `json:"Start"`
 	Total int `json:"Total"`
 	End   int `json:"End"`
+	LastScanned int `json:"LastScanned"`
 }
 
 type KeyInfoJSON struct {
@@ -85,8 +103,7 @@ type KeyInfoJSON struct {
 		UpdatedAt    time.Time      `json:"updated_at"`
 		Pubkey       string         `json:"pubkey"`
 		Otakey       string         `json:"otakey"`
-		V1Startindex map[string]InfoJSON `json:"v1startindex"`
-		V2Startindex map[string]InfoJSON `json:"v2startindex"`
+		CoinIndex map[string]InfoJSON `json:"coinindex"`
 	} `json:"Result"`
 	Error interface{} `json:"Error"`
 }
@@ -99,9 +116,9 @@ type OutCoinJSON struct {
 	Error interface{} `json:"Error"`
 }
 
-//var URL = "https://api-stg.coinservice.incognito.corncob.dev"
-var URL = "http://51.161.119.66:9001"
-var NoOfShard = 8
+//var URL = "https://api-coinservice-staging.incognito.org"
+var URL = "http://51.161.119.66:9009"
+var NoOfShard = 2
 
 func SendPost(url, query string) ([]byte, error) {
 	var jsonStr = []byte(query)
@@ -137,12 +154,8 @@ func CheckCoinsSpent(shardID byte, listKeyImages []string, tokenID string) ([]bo
 		"ShardID":%v
 	}`, strings.Join(snQueryList, ","), shardID)
 
-	fmt.Println()
 	err := ioutil.WriteFile(fmt.Sprintf("query_%v.info", tokenID), []byte(query), 0644)
-	fmt.Println(err)
 
-
-	fmt.Println("=========")
 	b, err := SendPost(fmt.Sprintf("%v/%v", URL, method), query)
 	if err != nil {
 		return []bool{}, err
@@ -166,10 +179,16 @@ func CheckCoinsSpent(shardID byte, listKeyImages []string, tokenID string) ([]bo
 	return tmp, nil
 }
 
-func GetListToken(viewingKey string) (map[string]InfoJSON, error) {
+func GetListToken(key string, version int) (map[string]InfoJSON, error) {
 	method := "getkeyinfo"
-	fmt.Printf("%v/%v?key=%v\n", URL, method, viewingKey)
-	resp, err := http.Get(fmt.Sprintf("%v/%v?key=%v", URL, method, viewingKey))
+	url := ""
+	if version == 2 {
+		url = fmt.Sprintf("%v/%v?key=%v&version=2", URL, method, key)
+	} else {
+		url = fmt.Sprintf("%v/%v?key=%v", URL, method, key)
+	}
+	fmt.Println("Get Key Info URL:", url)
+	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("cannot get list outcoin. Error %v", err))
 		return nil, err
@@ -187,19 +206,30 @@ func GetListToken(viewingKey string) (map[string]InfoJSON, error) {
 		return nil, err
 	}
 
-	listToken := tmp.Result.V1Startindex
+	listToken := tmp.Result.CoinIndex
 	return listToken, nil
 }
 
-func GetOutputCoins(viewingKey, tokenID string) ([]jsonresult.ICoinInfo, int, error) {
+func GetOutputCoins(key, tokenID string, version int) ([]jsonresult.ICoinInfo, int, error) {
 	method := "getcoins"
-	query := fmt.Sprintf("%v/%v?viewkey=%v&offset=%v&limit=%v&tokenid=%v",
-		URL,
-		method,
-		viewingKey,
-		0,
-		1000000,
-		tokenID)
+	query := ""
+	if version == 1 {
+		query = fmt.Sprintf("%v/%v?viewkey=%v&offset=%v&limit=%v&tokenid=%v",
+			URL,
+			method,
+			key,
+			0,
+			1000000,
+			tokenID)
+	} else {
+		query = fmt.Sprintf("%v/%v?otakey=%v&offset=%v&limit=%v&tokenid=%v&version=2",
+			URL,
+			method,
+			key,
+			0,
+			1000000,
+			tokenID)
+	}
 
 	resp, err := http.Get(query)
 	if err != nil {
@@ -242,7 +272,6 @@ func GetOutputCoins(viewingKey, tokenID string) ([]jsonresult.ICoinInfo, int, er
 }
 
 func GetUTXO(listPlainCoins []coin.PlainCoin, listKeyImages []string, shardID byte, tokenID string) ([]coin.PlainCoin, error) {
-
 	checkSpentList, err := CheckCoinsSpent(shardID, listKeyImages, tokenID)
 	if err != nil {
 		return nil, err
@@ -292,7 +321,6 @@ func CheckCoinSpentFromRPC(tool *DebugTool, listSN []string, paymentAddress, tok
 	return result, nil
 }
 
-
 func GetOutputCoinsFromRPC(tool *DebugTool, paymentAddress, readOnlyKey string, height int, tokenID string) ([]jsonresult.ICoinInfo, error) {
 	query := fmt.Sprintf(`{
 		"jsonrpc": "1.0",
@@ -321,8 +349,6 @@ func GetOutputCoinsFromRPC(tool *DebugTool, paymentAddress, readOnlyKey string, 
 	return outputCoins, err
 }
 
-
-
 func GetBalanceFromRPC(tool *DebugTool, privateKey, paymentAddressStr, readOnlyKey, tokenID string, shardID byte, height uint64) (uint64, error) {
 	listOutputCoins, err := GetOutputCoinsFromRPC(tool, paymentAddressStr, readOnlyKey, 0, tokenID)
 	if err != nil {
@@ -349,15 +375,13 @@ func GetBalanceFromRPC(tool *DebugTool, privateKey, paymentAddressStr, readOnlyK
 	return balance, nil
 }
 
-
-func GetBalanceFromCS(privateKey, viewingKeyStr, tokenID string, totalCoin int,  shardID byte) (uint64, error){
-	listOutputCoins, _, err :=GetOutputCoins(viewingKeyStr, tokenID)
+func GetBalanceFromCS(privateKey, key, tokenID string, totalCoin int,  shardID byte, version int) (uint64, error){
+	listOutputCoins, _, err := GetOutputCoins(key, tokenID,  version)
 	if err != nil {
 		return 0, fmt.Errorf("cannot get list output coins from CS. Error %v", err)
 	}
 	fmt.Printf("Len of outcoins %v: %v\n", tokenID, len(listOutputCoins))
-
-	if totalCoin != len(listOutputCoins) {
+		if totalCoin != len(listOutputCoins) {
 		fmt.Println("Wrong total coin")
 		return 0, fmt.Errorf("wrong total coin")
 	}
@@ -375,64 +399,276 @@ func GetBalanceFromCS(privateKey, viewingKeyStr, tokenID string, totalCoin int, 
 	return balance, err
 }
 
+func GetBlanacePlainTokenFromCS(privateKey string, listOutputCoins []jsonresult.ICoinInfo, tokenID string, shardID byte ) (uint64, error){
+	listPlainCoins, listKeyImages, err := GetListDecryptedCoins(privateKey, listOutputCoins, false)
+	if err != nil {
+		return 0, fmt.Errorf("cannot get plain coins from CS. Error %v", err)
+	}
+
+	utxos, err := GetUTXO(listPlainCoins, listKeyImages, shardID, tokenID)
+	fmt.Printf("Len of utxo %v: %v\n", tokenID, len(utxos))
+	balance := uint64(0)
+	for _, coin := range utxos {
+		balance += coin.GetValue()
+	}
+	return balance, err
+}
+
+func ParseAssetTag(otaPrivKey string, otaTxRandoms, assetTags []string) ([]string, error) {
+	method := "parsetokenid"
+	if len(otaTxRandoms) == 0  || len(assetTags) == 0 {
+		return nil, fmt.Errorf("no data  provided to be checked")
+	}
+
+	otaTxRandomsStr, _ := json.Marshal(otaTxRandoms)
+	assetTagsStr, _ := json.Marshal(assetTags)
+
+	query := fmt.Sprintf(`{
+		"OTARandoms":%v,
+		"AssetTags":%v,
+		"OTAKey":"%v"
+	}`, string(otaTxRandomsStr), string(assetTagsStr), otaPrivKey)
+
+	err := ioutil.WriteFile(fmt.Sprintf("query_parse_token.info"), []byte(query), 0644)
+
+	b, err := SendPost(fmt.Sprintf("%v/%v", URL, method), query)
+	if err != nil {
+		fmt.Println("error cannot send parse token request", err)
+		return nil, err
+	}
+
+	response, err := ParseResponse(b)
+	if err != nil {
+		fmt.Println("error cannot parse response", err)
+		return nil, err
+	}
+
+	var tmp []string
+	err = json.Unmarshal(response.Result, &tmp)
+	if err != nil {
+		return nil, err
+	}
+	if len(tmp) != len(otaTxRandoms) || len(tmp) != len(assetTags) {
+		return nil, fmt.Errorf("length does not match")
+	}
+	return tmp, nil
+}
+
+
+func SubmitOTAKey(otaKey string, height int) error {
+	method := "submitotakey"
+	query := fmt.Sprintf(`{
+		"OTAKey":"%v",
+		"BeaconHeight":%v
+	}`, otaKey, height)
+	fmt.Println(query)
+
+	b, err := SendPost(fmt.Sprintf("%v/%v", URL, method), query)
+	if err != nil {
+		fmt.Println("error cannot send parse token request", err)
+		return err
+	}
+
+	response, err := ParseResponse(b)
+	if err != nil {
+		fmt.Println("error cannot parse response", err)
+		return err
+	}
+
+	return response.Error
+}
+
+func TestCoinServiceV2(t *testing.T) {
+	tool := new(DebugTool)
+	tool.InitDevNet()
+	sourceIndex := 0
+	transferToken := true
+	tokenID := "f57462cf446c68c35da3de2450c36bb1d850bcc6ce08ba107647d6f301d5315e"
+	for j:= 0; j < 10; j++ {
+		for i := range tmpPrivKeyLists {
+			sourceIndex = (sourceIndex + 1) % 2
+			tmpAccPaymentAdd := PrivateKeyToPaymentAddress(tmpPrivKeyLists[i], -1)
+			amount := rand.Intn(100)
+			var err error
+			if transferToken == false {
+				_, err = tool.CreateAndSendTransactionFromAToB(sourcePrivKeyLists[sourceIndex+1], tmpAccPaymentAdd, strconv.Itoa(amount))
+			} else {
+				_, err = tool.TransferPrivacyCustomToken(sourcePrivKeyLists[sourceIndex+1], tmpAccPaymentAdd, tokenID, strconv.Itoa(amount))
+			}
+
+			if err == nil {
+				fmt.Printf("Send from acc %v to tmp address %v amount %v\n", sourceIndex+1, i, amount)
+			} else {
+				fmt.Println("Error ", err)
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}
+}
+
+
+func TestSubmitOTAKey(t *testing.T) {
+	tool := new(DebugTool)
+	tool.InitDevNet()
+	for index := range tmpPrivKeyLists {
+		keyWallet, _ := wallet.Base58CheckDeserialize(tmpPrivKeyLists[index])
+		keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+
+		otaKeyStr := keyWallet.Base58CheckSerialize(wallet.OTAKeyType)
+		err := SubmitOTAKey(otaKeyStr, 0)
+		if err != nil {
+			fmt.Println("error cannot submit ota secret key", err)
+		} else {
+			fmt.Println("OK")
+		}
+
+		queryFN := fmt.Sprintf(`{
+		   "jsonrpc":"1.0",
+		   "method":"submitkey",
+		   "params":["%s"],
+		   "id":1
+		}`, otaKeyStr)
+
+		_, err = tool.SendPostRequestWithQuery(queryFN)
+		if err != nil {
+			fmt.Println("error cannot submit ota secret key to Fullnode", err)
+		}
+
+	}
+}
+
+func TestBalanceV2(t *testing.T) {
+	tool := new(DebugTool)
+	tool.InitDevNet()
+	for index := range tmpPrivKeyLists {
+		keyWallet, _ := wallet.Base58CheckDeserialize(tmpPrivKeyLists[index])
+		keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		shardID := byte(int(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]) % NoOfShard)
+		viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
+		otaKeyStr := keyWallet.Base58CheckSerialize(wallet.OTAKeyType)
+		paymentAddressStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+		paymentAddressStr, _ = wallet.GetPaymentAddressV1(paymentAddressStr, false)
+
+		version := 2
+		listTokens, err := GetListToken(otaKeyStr, 2)
+		if listTokens == nil && err != nil{
+			fmt.Println("Cannot get list token", viewingKeyStr, tmpPrivKeyLists[index])
+			return
+		}
+
+		for tokenID, tokenDetail := range listTokens {
+			if tokenID == common.PRVIDStr {
+				balance, err := GetBalanceFromCS(tmpPrivKeyLists[index], otaKeyStr, tokenID, tokenDetail.Total, shardID, version)
+				if err != nil {
+					fmt.Println("error ", err)
+				}
+				balanceFN, err := tool.GetBalance(tmpPrivKeyLists[index], common.PRVIDStr, true)
+				if err != nil{
+					fmt.Println(err)
+					continue
+				}
+				if balance != balanceFN {
+					fmt.Printf("ERROR Balance diff %v (CS)- %v (FN)\n", balance, balanceFN)
+					fmt.Printf("ERROR Private key %v\n", tmpPrivKeyLists[index])
+				} else {
+					fmt.Printf("Balance token %v: %v (CS) - %v (FN)\n", common.PRVIDStr, balance, balanceFN)
+				}
+			} else {
+				listOutputCoins, _, err := GetOutputCoins(otaKeyStr, "0000000000000000000000000000000000000000000000000000000000000005",  version)
+				if err != nil {
+					fmt.Println("error ", err)
+				}
+				listOTARandomCoin := make([]string, 0)
+				listAssetTag := make([]string, 0)
+				for _, coin := range listOutputCoins {
+					otaRandom, err := coin.GetTxRandom().GetTxOTARandomPoint()
+					if err != nil {
+						fmt.Println("error cannot get otaRandom", err)
+					}
+					listOTARandomCoin = append(listOTARandomCoin, hex.EncodeToString(otaRandom.ToBytesS()))
+					listAssetTag = append(listAssetTag, hex.EncodeToString(coin.GetAssetTag().ToBytesS()))
+				}
+				listTokenIDs, err := ParseAssetTag(otaKeyStr, listOTARandomCoin, listAssetTag)
+				if err != nil {
+					fmt.Println("error cannot parse token id", err)
+				}
+
+				mapTokenCoins := make(map[string][]jsonresult.ICoinInfo)
+				for index := range listOutputCoins {
+					if _, ok := mapTokenCoins[listTokenIDs[index]]; !ok {
+						mapTokenCoins[listTokenIDs[index]] = make([]jsonresult.ICoinInfo, 0)
+					}
+					mapTokenCoins[listTokenIDs[index]] = append(mapTokenCoins[listTokenIDs[index]], listOutputCoins[index])
+				}
+				for key, value := range mapTokenCoins {
+					balance, err := GetBlanacePlainTokenFromCS(tmpPrivKeyLists[index], value, key, shardID)
+					if err != nil {
+						fmt.Println("error ", err)
+					}
+					balanceFN, err := tool.GetBalance(tmpPrivKeyLists[index], key,true)
+					if err != nil{
+						fmt.Println(err)
+						continue
+					}
+					if balance != balanceFN {
+						fmt.Printf("ERROR Balance diff %v (CS)- %v (FN)\n", balance, balanceFN)
+						fmt.Printf("ERROR Private key %v\n", tmpPrivKeyLists[index])
+					} else {
+						fmt.Printf("Balance token %v: %v (CS) - %v (FN)\n", key, balance, balanceFN)
+					}
+				}
+
+			}
+		}
+		fmt.Println("==============")
+	}
+
+}
 
 func TestGetBalance(t *testing.T) {
 	tool := new(DebugTool)
 	tool.SetNetwork("http://51.161.119.66:9334")
+	version := 1
+	for index := range tmpPrivKeyLists {
+		keyWallet, _ := wallet.Base58CheckDeserialize(tmpPrivKeyLists[index])
+		keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
+		shardID := byte(int(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]) % NoOfShard)
+		viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
+		paymentAddressStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+		paymentAddressStr, _ = wallet.GetPaymentAddressV1(paymentAddressStr, false)
 
-	//str := "dD/+QCWcmaKjatBNsoVY0LleZYUcmSMcDCVB5eme1/KExtkk+/nVI23RIz8u2CM4M+rPhGDmhwxS54TC9zTHTMhSjXYnPGI5yLqiu6fOnP+3i41x3JfLZXBsJeZI9H4ZL+ctXcUaVAg9DtSESpnDnqFaRZTSk3phAEdHc9bK+xf5LfXX5iIffrwjDiGmv3SKLEY2FrmYMUmDdNr046vSDTgLeDbjIUH9A6HUCwY7xw8tGQpge5gxTx24NTSVaZ+I5qSInc5w3WJHfTDTuoPKCjUafr1reFxGzo0q3Cb0v4RmdDdoIZN4KHaCEwRTWRYidwq+dZvUJX+XIHm+L3VRfCztzEqcU6YxIckcyopKvmcv38yjqf4F9esfNA2/XCzCAAYwJnom3RUSnc0XrN0HdM3JE7DfmdXMJPHFbQ9+4p678A6zffHTZNoh65cdQX19O59I9PNVWDngbQbIlP1QlrCVnnRCGJOBqUM7BspJIDIn3wQ1yN572tDO7Tdi2qJ0CMEqRfiVrUegHg4uY66fUvQzQgSG6y3vJlegKHzb6TCf0LkYF7Trs4CRhWSLhklWyA5CYiKWgd3hFICe14kTvTlCUvpj6REh07WvnqkrwZs2KsrxawsYAWqV2iug7kNh9fmRfsT8My0ZIFxQK02GWLVvDk3a+H4GQTKCzfNeJOyoe4z+a3l7e2wib+NsUCB+sRsyU/U25ooyI8+UL1DsPd0+lUxO7Jojjs/zornUC6KVAPmk98lDnnk3akrVdBDklhlCJwl7L5aeYtE84/70FDNo8V/exw+Zqr/ty5NpyLURiyk427jgPR/vPXu/DxhlMHj3FGWTZYsJwlk7DyqNZrVFPsblvhDDf85zgDdLgOK6yuJFVO6/IuHeX56zFe9gQfNmiJi6yJYGvKlPyiSJP57UU9sI/Z19RVxwtMNv3KQ="
-	//
-	//decodeStr, err := base64.StdEncoding.DecodeString(str)
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//fmt.Println(string(decodeStr))
-	//fmt.Println()
-	//
-	//return
+		listTokens, err := GetListToken(viewingKeyStr, 1)
+		if listTokens == nil && err != nil{
+			fmt.Println("Cannot get list token", viewingKeyStr, tmpPrivKeyLists[index])
+			return
+		}
 
-
-	for index := range privJKeyList {
-		go func(index int) {
-			keyWallet, _ := wallet.Base58CheckDeserialize(privJKeyList[index])
-			keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-			shardID := byte(int(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk)-1]) % NoOfShard)
-			viewingKeyStr := keyWallet.Base58CheckSerialize(wallet.ReadonlyKeyType)
-			paymentAddressStr := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
-			paymentAddressStr, _ = wallet.GetPaymentAddressV1(paymentAddressStr, false)
-
-			listTokens, err := GetListToken(viewingKeyStr)
-			if listTokens == nil && err != nil{
-				fmt.Println("Cannot get list token", viewingKeyStr, privJKeyList[index])
-				return
+		total1 := time.Duration(0) * time.Millisecond
+		total2 := time.Duration(0) * time.Millisecond
+		for tokenID, tokenDetail := range listTokens {
+			start := time.Now()
+			balance, err := GetBalanceFromCS(tmpPrivKeyLists[index], viewingKeyStr, tokenID, tokenDetail.Total, shardID, version)
+			if err != nil {
+				fmt.Println("error ", err)
 			}
-			total1 := time.Duration(0) * time.Millisecond
-			total2 := time.Duration(0) * time.Millisecond
-			for tokenID, tokenDetail := range listTokens {
-				go func(tokenID string, tokenDetail InfoJSON) {
-					start := time.Now()
-					balance, err := GetBalanceFromCS(privJKeyList[index], viewingKeyStr, tokenID, tokenDetail.Total, shardID)
-					if err != nil {
-						fmt.Println("error ", err)
-					}
-					elapsed1 := time.Since(start)
-					total1 += elapsed1
+			elapsed1 := time.Since(start)
+			total1 += elapsed1
 
-					start = time.Now()
-					balancePrime, err := GetBalanceFromRPC(tool, privJKeyList[index], paymentAddressStr, viewingKeyStr, tokenID, shardID, 0)
-					if err != nil {
-						fmt.Println(err)
-					}
-					elapsed2 := time.Since(start)
-					total2 += elapsed2
-
-					if balance != balancePrime {
-						panic(fmt.Sprintf("Balance %v %v- %v : key %v", tokenID, balance, balancePrime, privJKeyList[index] ))
-					}
-					fmt.Printf("Balance token %v: %v (%v) - %v (%v)\n", tokenID, balance, elapsed1, balancePrime, elapsed2)
-				}(tokenID, tokenDetail)
+			start = time.Now()
+			balancePrime, err := GetBalanceFromRPC(tool, tmpPrivKeyLists[index], paymentAddressStr, viewingKeyStr, tokenID, shardID, 0)
+			if err != nil {
+				fmt.Println(err)
 			}
-			fmt.Println("=======", total1, total2, "=======")
-		}(index)
+			elapsed2 := time.Since(start)
+			total2 += elapsed2
+
+			if balance != balancePrime {
+				panic(fmt.Sprintf("Balance %v %v- %v : key %v", tokenID, balance, balancePrime, tmpPrivKeyLists[index] ))
+			}
+			fmt.Printf("Balance token %v: %v (%v) - %v (%v)\n", tokenID, balance, elapsed1, balancePrime, elapsed2)
+		}
+		fmt.Println("=======", total1, total2, "=======")
+		fmt.Println()
+		return
 	}
 }
