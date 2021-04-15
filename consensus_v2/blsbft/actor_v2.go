@@ -94,18 +94,28 @@ func (actorV2 *actorV2) Run() error {
 				}
 
 			case <-cleanMemTicker:
+
+				for h, _ := range actorV2.receiveBlockByHeight {
+					if h <= actorV2.chain.GetFinalView().GetHeight() {
+						delete(actorV2.bodyHashes, h)
+					}
+				}
+
 				for h, _ := range actorV2.receiveBlockByHeight {
 					if h <= actorV2.chain.GetFinalView().GetHeight() {
 						delete(actorV2.receiveBlockByHeight, h)
 					}
 				}
+
 				for h, _ := range actorV2.voteHistory {
 					if h <= actorV2.chain.GetFinalView().GetHeight() {
 						delete(actorV2.voteHistory, h)
 					}
 				}
+
 				for h, proposeBlk := range actorV2.receiveBlockByHash {
 					if time.Now().Sub(proposeBlk.receiveTime) > time.Minute {
+						delete(actorV2.votedTimeslot, proposeBlk.block.GetProposeTime())
 						delete(actorV2.receiveBlockByHash, h)
 					}
 				}
@@ -814,8 +824,8 @@ func (actorV2 *actorV2) getValidProposeBlocks(bestView multiview.View) []*Propos
 		validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 
 		if proposeBlockInfo.block.GetHeight() < actorV2.chain.GetFinalView().GetHeight() {
+			delete(actorV2.votedTimeslot, proposeBlockInfo.block.GetProposeTime())
 			delete(actorV2.receiveBlockByHash, h)
-			delete(actorV2.bodyHashes, proposeBlockInfo.block.GetHeight())
 		}
 	}
 	//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)
