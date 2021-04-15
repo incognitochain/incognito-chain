@@ -157,7 +157,7 @@ func (actorV2 *actorV2) Run() error {
 						shouldListen = false
 						if common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()) != actorV2.currentTimeSlot { // current timeslot is not add to view, and this user is proposer of this timeslot
 							//using block hash as key of best view -> check if this best view we propose or not
-							if _, ok := actorV2.proposeHistory.Get(fmt.Sprintf("%s%d", actorV2.currentTimeSlot)); !ok {
+							if _, ok := actorV2.proposeHistory.Get(fmt.Sprintf("%d", actorV2.currentTimeSlot)); !ok {
 								shouldPropose = true
 								userProposeKey = userKey
 							}
@@ -178,7 +178,7 @@ func (actorV2 *actorV2) Run() error {
 				}
 
 				if shouldPropose {
-					actorV2.proposeHistory.Add(fmt.Sprintf("%s%d", actorV2.currentTimeSlot), 1)
+					actorV2.proposeHistory.Add(fmt.Sprintf("%d", actorV2.currentTimeSlot), 1)
 					//Proposer Rule: check propose block connected to bestview(longest chain rule 1) and re-propose valid block with smallest timestamp (including already propose in the past) (rule 2)
 					sort.Slice(actorV2.receiveBlockByHeight[bestView.GetHeight()+1], func(i, j int) bool {
 						return actorV2.receiveBlockByHeight[bestView.GetHeight()+1][i].block.GetProduceTime() < actorV2.receiveBlockByHeight[bestView.GetHeight()+1][j].block.GetProduceTime()
@@ -792,12 +792,12 @@ func (actorV2 *actorV2) getValidProposeBlocks(bestView multiview.View) []*Propos
 			continue
 		}
 
-		// e.Logger.Infof("[Monitor] bestview height %v, finalview height %v, block height %v %v", bestViewHeight, e.Chain.GetFinalView().GetHeight(), proposeBlockInfo.block.GetHeight(), proposeBlockInfo.block.GetProduceTime())
-		if proposeBlockInfo.block.GetHeight() == bestViewHeight+1 {
-			validProposeBlock = append(validProposeBlock, proposeBlockInfo)
-		} else {
-			if proposeBlockInfo.block.Hash().String() == bestView.GetHash().String() {
-				validProposeBlock = append(validProposeBlock, proposeBlockInfo)
+		if proposeBlockInfo.block.GetHeight() != bestViewHeight+1 {
+			if proposeBlockInfo.block.GetHeight() != bestViewHeight {
+				continue
+			}
+			if proposeBlockInfo.block.Hash().String() != bestView.GetHash().String() {
+				continue
 			}
 		}
 
@@ -818,15 +818,17 @@ func (actorV2 *actorV2) getValidProposeBlocks(bestView multiview.View) []*Propos
 
 		// check if this time slot has been voted
 		if actorV2.votedTimeslot[common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
+			fmt.Println(6)
 			continue
 		}
-
-		validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 
 		if proposeBlockInfo.block.GetHeight() < actorV2.chain.GetFinalView().GetHeight() {
 			delete(actorV2.votedTimeslot, proposeBlockInfo.block.GetProposeTime())
 			delete(actorV2.receiveBlockByHash, h)
 		}
+
+		fmt.Println(7)
+		validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 	}
 	//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)
 	sort.Slice(validProposeBlock, func(i, j int) bool {
