@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"reflect"
 	"strconv"
 	"strings"

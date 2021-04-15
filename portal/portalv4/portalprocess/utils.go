@@ -235,7 +235,8 @@ func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, externalTx
 
 	// update new status and store to db
 	unshieldRequestNewStatus := metadata.PortalUnshieldRequestStatus{
-		IncAddressStr:  unshieldRequest.IncAddressStr,
+		OTAPubKeyStr:   unshieldRequest.OTAPubKeyStr,
+		TxRandomStr: unshieldRequest.TxRandomStr,
 		RemoteAddress:  unshieldRequest.RemoteAddress,
 		TokenID:        unshieldRequest.TokenID,
 		UnshieldAmount: unshieldRequest.UnshieldAmount,

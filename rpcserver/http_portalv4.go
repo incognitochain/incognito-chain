@@ -213,10 +213,14 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalV4UnshieldRequest(param
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
+	// payment address v2
 	incAddressStr, ok := tokenParamsRaw["IncAddressStr"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("IncAddressStr is invalid"))
 	}
+
+	// generate ota corresponding the payment address
+	otaPublicKeyStr, otaTxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(incAddressStr)
 
 	remoteAddress, ok := tokenParamsRaw["RemoteAddress"].(string)
 	if !ok {
@@ -224,7 +228,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalV4UnshieldRequest(param
 	}
 
 	meta, err := metadata.NewPortalUnshieldRequest(metadata.PortalV4UnshieldingRequestMeta,
-		incAddressStr, portalTokenID, remoteAddress, unshieldAmount)
+		otaPublicKeyStr, otaTxRandomStr, portalTokenID, remoteAddress, unshieldAmount)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
