@@ -77,31 +77,34 @@ func (shieldingReq PortalShieldingRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (shieldingReq PortalShieldingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
+func (shieldingReq PortalShieldingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(shieldingReq.IncogAddressStr)
 	if err != nil {
-		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Requester incognito address is invalid"))
+		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 	incogAddr := keyWallet.KeySet.PaymentAddress
-	if len(incogAddr.Pk) == 0 {
-		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Requester incognito address is invalid"))
+	if _, err := AssertPaymentAddressAndTxVersion(incogAddr, tx.GetVersion()); err != nil {
+		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Requester incognito address is invalid"))
 	}
 
 	// check proof is not empty
 	if shieldingReq.ShieldingProof == "" {
-		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Shielding proof is empty"))
+		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Shielding proof is empty"))
 	}
 
-	// check tx type
-	if txr.GetType() != common.TxNormalType {
-		return false, false, errors.New("tx custodian deposit must be TxNormalType")
+	// check tx version and type
+	if tx.GetVersion() != 2 {
+		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Tx shielding request be version 2"))
+	}
+	if tx.GetType() != common.TxNormalType {
+		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Tx shielding request must be TxNormalType"))
 	}
 
 	// validate tokenID and shielding proof
 	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, shieldingReq.TokenID, common.PortalVersion4)
 	if !isPortalToken || err != nil {
-		return false, false, errors.New("TokenID is not supported currently on Portal v4")
+		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("TokenID is not supported currently on Portal v4"))
 	}
 
 	return true, true, nil
