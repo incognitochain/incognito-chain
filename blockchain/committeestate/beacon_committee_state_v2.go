@@ -74,18 +74,6 @@ func NewBeaconCommitteeStateV2WithMu(mu *sync.RWMutex) *BeaconCommitteeStateV2 {
 	}
 }
 
-func NewBeaconCommitteeStateV2WithMu(mu *sync.RWMutex) *BeaconCommitteeStateV2 {
-	return &BeaconCommitteeStateV2{
-		shardCommittee:  make(map[byte][]incognitokey.CommitteePublicKey),
-		shardSubstitute: make(map[byte][]incognitokey.CommitteePublicKey),
-		autoStake:       make(map[string]bool),
-		rewardReceiver:  make(map[string]privacy.PaymentAddress),
-		stakingTx:       make(map[string]common.Hash),
-		hashes:          NewBeaconCommitteeStateHash(),
-		mu:              mu,
-	}
-}
-
 func NewBeaconCommitteeStateV2WithValue(
 	beaconCommittee []incognitokey.CommitteePublicKey,
 	shardCommittee map[byte][]incognitokey.CommitteePublicKey,
