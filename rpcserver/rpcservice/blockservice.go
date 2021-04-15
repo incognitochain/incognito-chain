@@ -20,7 +20,6 @@ import (
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 type BlockService struct {
@@ -183,14 +182,13 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			transactionResult := jsonresult.GetBlockTxResult{}
 			transactionResult.Hash = tx.Hash().String()
 			switch tx.GetType() {
-			case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
-				txN := tx.(*transaction.Tx)
-				data, err := json.Marshal(txN)
+			case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
+				data, err := json.Marshal(tx)
 				if err != nil {
 					return nil, NewRPCError(JsonError, err)
 				}
 				transactionResult.HexData = hex.EncodeToString(data)
-				transactionResult.Locktime = txN.LockTime
+				transactionResult.Locktime = tx.GetLockTime()
 			}
 			result.Txs = append(result.Txs, transactionResult)
 		}
@@ -306,14 +304,13 @@ func (blockService BlockService) RetrieveShardBlockByHeight(blockHeight uint64, 
 				transactionT := jsonresult.GetBlockTxResult{}
 				transactionT.Hash = tx.Hash().String()
 				switch tx.GetType() {
-				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
-					txN := tx.(*transaction.Tx)
-					data, err := json.Marshal(txN)
+				case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
+					data, err := json.Marshal(tx)
 					if err != nil {
 						return nil, NewRPCError(JsonError, err)
 					}
 					transactionT.HexData = hex.EncodeToString(data)
-					transactionT.Locktime = txN.LockTime
+					transactionT.Locktime = tx.GetLockTime()
 				}
 				res.Txs = append(res.Txs, transactionT)
 			}
@@ -569,8 +566,8 @@ func (blockService BlockService) ListPrivacyCustomTokenWithPRVByShardID(shardID 
 }
 
 // TODO: 0xmerman update to DBV2 later
-//func (blockService BlockService) ListPrivacyCustomTokenCached() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error) {
-//	listTxInitPrivacyToken := make(map[common.Hash]transaction.TxCustomTokenPrivacy)
+//func (blockService BlockService) ListPrivacyCustomTokenCached() (map[common.Hash]transaction.TxTokenBase, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error) {
+//	listTxInitPrivacyToken := make(map[common.Hash]transaction.TxTokenBase)
 //	listTxInitPrivacyTokenCrossShard := make(map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData)
 //
 //	cachedKeyPrivacyToken := memcache.GetListPrivacyTokenCachedKey()
@@ -597,7 +594,7 @@ func (blockService BlockService) ListPrivacyCustomTokenWithPRVByShardID(shardID 
 //		for k, v := range listTxInitPrivacyToken {
 //			temp := v
 //			temp.Tx = transaction.Tx{Info: v.Info}
-//			temp.TxPrivacyTokenData.TxNormal = transaction.Tx{Info: v.TxPrivacyTokenData.TxNormal.Info}
+//			temp.TxPrivacyTokenDataVersion1.TxNormal = transaction.Tx{Info: v.TxPrivacyTokenDataVersion1.TxNormal.Info}
 //			listTxInitPrivacyToken[k] = temp
 //		}
 //		cachedValuePrivacyToken, err = json.Marshal(listTxInitPrivacyToken)
@@ -863,6 +860,13 @@ func (blockService BlockService) GetAllBridgeTokens() ([]*rawdbv2.BridgeTokenInf
 	_, bridgeTokenInfos, err := blockService.BlockChain.GetAllBridgeTokens()
 	return bridgeTokenInfos, err
 }
+
+func (blockService BlockService) GetAllBridgeTokensByHeight(height uint64) ([]*rawdbv2.BridgeTokenInfo, error) {
+	_, bridgeTokenInfos, err := blockService.BlockChain.GetAllBridgeTokensByHeight(height)
+	return bridgeTokenInfos, err
+}
+
+
 
 func (blockService BlockService) CheckETHHashIssued(data map[string]interface{}) (bool, error) {
 	blockHashParam, ok := data["BlockHash"].(string)

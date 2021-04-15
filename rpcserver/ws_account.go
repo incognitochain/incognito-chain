@@ -2,6 +2,8 @@ package rpcserver
 
 import (
 	"errors"
+	"reflect"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -9,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
 )
 
 var (
@@ -60,18 +61,20 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 				for senderShardID, crossTransactions := range shardBlock.Body.CrossTransactions {
 					for _, crossTransaction := range crossTransactions {
 						for _, crossOutputCoin := range crossTransaction.OutputCoin {
-							processedOutputCoin := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.GetBestStateShard(shardBlock.Header.ShardID).GetCopiedTransactionStateDB(), &crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
+							processedOutputCoin, err := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.GetBestStateShard(shardBlock.Header.ShardID).GetCopiedTransactionStateDB(), crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
+							if err != nil {
+								Logger.log.Errorf("Err %v", err)
+								continue
+							}
 							if processedOutputCoin == nil {
 								Logger.log.Errorf("processedOutputCoin is nil!")
 								continue
 							}
 							if value, ok := m[senderShardID]; ok {
-								value += processedOutputCoin.CoinDetails.GetValue()
+								value += processedOutputCoin.GetValue()
 								m[senderShardID] = value
 							} else {
-								if processedOutputCoin.CoinDetails != nil {
-									m[senderShardID] = processedOutputCoin.CoinDetails.GetValue()
-								}
+								m[senderShardID] = processedOutputCoin.GetValue()
 							}
 						}
 					}
@@ -148,16 +151,20 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 					for _, crossTransaction := range crossTransactions {
 						for _, crossTokenPrivacyData := range crossTransaction.TokenPrivacyData {
 							for _, crossOutputCoin := range crossTokenPrivacyData.OutputCoin {
-								processedOutputCoin := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.GetBestStateShard(shardBlock.Header.ShardID).GetCopiedTransactionStateDB(), &crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
+								processedOutputCoin, err := blockchain.DecryptOutputCoinByKey(wsServer.config.BlockChain.GetBestStateShard(shardBlock.Header.ShardID).GetCopiedTransactionStateDB(), crossOutputCoin, &keyWallet.KeySet, &common.PRVCoinID, senderShardID)
+								if err != nil {
+									Logger.log.Errorf("Err %v", err)
+									continue
+								}
 								if processedOutputCoin != nil {
 									if m[senderShardID] == nil {
 										m[senderShardID] = make(map[common.Hash]uint64)
 									}
 									if value, ok := m[senderShardID][crossTokenPrivacyData.PropertyID]; ok {
-										value += processedOutputCoin.CoinDetails.GetValue()
+										value += processedOutputCoin.GetValue()
 										m[senderShardID][crossTokenPrivacyData.PropertyID] = value
 									} else {
-										m[senderShardID][crossTokenPrivacyData.PropertyID] = processedOutputCoin.CoinDetails.GetValue()
+										m[senderShardID][crossTokenPrivacyData.PropertyID] = processedOutputCoin.GetValue()
 									}
 								}
 							}

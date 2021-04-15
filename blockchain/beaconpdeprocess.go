@@ -529,7 +529,12 @@ func deductSharesForWithdrawal(
 	amt uint64,
 	currentPDEState *CurrentPDEState,
 ) {
-	pdeShareKey := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, withdrawerAddressStr))
+	pdeShareKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, withdrawerAddressStr)
+	if err != nil {
+		Logger.log.Errorf("cannot find pdeShareKey for address: %v. Error: %v\n", withdrawerAddressStr, err)
+		return
+	}
+	pdeShareKey := string(pdeShareKeyBytes)
 	adjustingAmt := uint64(0)
 	currentAmt, found := currentPDEState.PDEShares[pdeShareKey]
 	if found && amt <= currentAmt {
@@ -556,12 +561,18 @@ func (blockchain *BlockChain) processPDETradingFeesDistribution(
 
 	pdeTradingFees := currentPDEState.PDETradingFees
 	for _, item := range feesForContributorsByPair {
-		tradingFeeKey := string(rawdbv2.BuildPDETradingFeeKey(
+		tradingFeeKeyBytes, err := rawdbv2.BuildPDETradingFeeKey(
 			beaconHeight,
 			item.Token1IDStr,
 			item.Token2IDStr,
 			item.ContributorAddressStr,
-		))
+		)
+		if err != nil {
+			Logger.log.Errorf("cannot build PDETradingFeeKey for address: %v. Error: %v\n", item.ContributorAddressStr, err)
+			return err
+		}
+
+		tradingFeeKey := string(tradingFeeKeyBytes)
 		pdeTradingFees[tradingFeeKey] += item.FeeAmt
 	}
 	return nil
@@ -604,12 +615,18 @@ func (blockchain *BlockChain) processPDEFeeWithdrawal(
 	// fee withdrawal accepted
 	wdMeta := pdeFeeWithdrawalRequestAction.Meta
 	pdeTradingFees := currentPDEState.PDETradingFees
-	tradingFeeKey := string(rawdbv2.BuildPDETradingFeeKey(
+	tradingFeeKeyBytes, err := rawdbv2.BuildPDETradingFeeKey(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr,
 		wdMeta.WithdrawalToken2IDStr,
 		wdMeta.WithdrawerAddressStr,
-	))
+	)
+	if err != nil {
+		Logger.log.Errorf("cannot build PDETradingFeeKey for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
+		return err
+	}
+
+	tradingFeeKey := string(tradingFeeKeyBytes)
 	withdrawableFee, found := pdeTradingFees[tradingFeeKey]
 	if !found || withdrawableFee < wdMeta.WithdrawalFeeAmt {
 		Logger.log.Warnf("WARN: Could not withdraw trading fee due to insufficient amount or not existed trading fee key (%s)", tradingFeeKey)

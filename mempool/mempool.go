@@ -246,12 +246,20 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	if tx.GetType() == common.TxReturnStakingType {
 		return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", tx.Hash().String()))
 	}
-	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		tempTx, ok := tx.(*transaction.TxCustomTokenPrivacy)
+	if tx.GetType() == common.TxCustomTokenPrivacyType{
+		tempTx, ok := tx.(*transaction.TxTokenVersion1)
 		if !ok {
-			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("cannot detect transaction type for tx %+v", tx.Hash().String()))
-		}
-		if tempTx.TxPrivacyTokenData.Mintable {
+			tempTxToken2, ok := tx.(*transaction.TxTokenVersion2)
+			if !ok{
+				return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("cannot detect transaction type for tx %+v", tx.Hash().String()))
+			}
+			if tempTxToken2.TokenData.Mintable{
+				return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
+			}
+			if tempTxToken2.TokenData.Type == transaction.CustomTokenInit {
+				return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("tx %v used a deprecated method for initialize a token, consider use a metadata tx instead", tx.Hash().String()))
+			}
+		}else if tempTx.TxTokenData.Mintable{
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
 		}
 	}
@@ -319,6 +327,55 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	return txDesc, err
 }
 
+//MaybeAcceptSalaryTransactionForBlockProducing performs the following validations on minteable transactions
+//
+//	- Validate transaction sanity
+//	- Validate transaction with current mempool
+//	- Validate transaction by itself
+//	- Validate transaction with blockchain
+func (tp *TxPool) MaybeAcceptSalaryTransactionForBlockProducing(shardID byte, tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
+	Logger.log.Infof("Verifying tx salary %v\n", tx.Hash().String())
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
+	beaconView, ok := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
+	if !ok {
+		return nil, fmt.Errorf("cannot get beacon final view from shard view")
+	}
+
+	//Validate sanity
+	isValid, err := tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, 0)
+	if !isValid {
+		return nil, fmt.Errorf("validate sanity tx %v FAILED: %v", tx.Hash().String(), err)
+	}
+
+
+	//Validate with current mempool
+	err = tx.ValidateTxWithCurrentMempool(tp)
+	if err != nil{
+		return nil, fmt.Errorf("validate tx %v with current mempool FAILED: %v", tx.Hash().String(), err)
+	}
+
+	//Validate txSalary by itself
+	isValid, err = tx.ValidateTxSalary(shardView.GetCopiedTransactionStateDB())
+	if !isValid {
+		return nil, fmt.Errorf("validate tx %v FAILED: %v", tx.Hash().String(), err)
+	}
+
+	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardView, beaconView, shardID, shardView.GetCopiedTransactionStateDB())
+	if err != nil{
+		return nil, fmt.Errorf("validate tx %v with blockchain FAILED: %v", tx.Hash().String(), err)
+	}
+
+	bestHeight := tp.config.BlockChain.GetBestStateShard(byte(shardID)).BestBlock.Header.Height
+	txD := createTxDescMempool(tx, bestHeight, 0, 0)
+	err = tp.addTx(txD, false)
+	if err != nil {
+		return nil, err
+	}
+	Logger.log.Infof("Finish verifying tx salary %v: %v\n", tx.Hash().String(), err)
+	return &txD.Desc, err
+}
+
 func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestState, beaconView *blockchain.BeaconBestState, shardID byte, txs []metadata.Transaction, beaconHeight int64) ([]common.Hash, []*metadata.TxDesc, error) {
 	txDescs := []*metadata.TxDesc{}
 	txHashes := []common.Hash{}
@@ -328,6 +385,7 @@ func (tp *TxPool) maybeAcceptBatchTransaction(shardView *blockchain.ShardBestSta
 	boolParams["isNewTransaction"] = false
 	boolParams["isBatch"] = true
 	boolParams["isNewZKP"] = tp.config.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
+	boolParams["v2Only"] = tp.config.BlockChain.IsAfterPrivacyV2CheckPoint(uint64(beaconHeight))
 
 	ok, err, _ := batch.Validate(shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), boolParams)
 	if err != nil {
@@ -405,9 +463,9 @@ func (tp *TxPool) checkFees(
 	shardID byte,
 	beaconHeight int64,
 ) bool {
-	Logger.log.Info("Beacon heigh for checkFees: ", beaconHeight, tx.Hash().String())
+	Logger.log.Info("Beacon height for checkFees: ", beaconHeight, tx.Hash().String())
 	txType := tx.GetType()
-	if txType == common.TxCustomTokenPrivacyType {
+	if txType == common.TxCustomTokenPrivacyType || txType == common.TxTokenConversionType {
 		limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
 		beaconStateDB, err := tp.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), tp.config.DataBase[common.BeaconChainDataBaseID])
 		if err != nil {
@@ -509,6 +567,10 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	validated := false
 	if !isNewTransaction {
 		// need to use beacon height from
+		whiteListTxs := tp.config.BlockChain.GetWhiteListTxs()
+		if ok := whiteListTxs[tx.Hash().String()]; ok {
+			return nil
+		}
 		validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, uint64(beaconHeight))
 	} else {
 		validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, 0)
@@ -549,8 +611,7 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	validFee := tp.checkFees(beaconView, tx, shardID, beaconHeight)
 	if !validFee {
 		return NewMempoolTxError(RejectInvalidFee,
-			fmt.Errorf("Transaction %+v has invalid fees.",
-				tx.Hash().String()))
+			fmt.Errorf("transaction %+v has invalid fees", tx.Hash().String()))
 	}
 	// Condition 5: check tx with all txs in current mempool
 	err = tx.ValidateTxWithCurrentMempool(tp)
@@ -568,13 +629,12 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	}
 	// Condition 6: ValidateTransaction tx by it self
 	if !isBatch {
-		isNewZKP := tp.config.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
-
 		boolParams := make(map[string]bool)
+		boolParams["isBatch"] = false
 		boolParams["hasPrivacy"] = tx.IsPrivacy()
 		boolParams["isNewTransaction"] = isNewTransaction
-		boolParams["isNewZKP"] = isNewZKP
-
+		boolParams["isNewZKP"] = tp.config.BlockChain.IsAfterNewZKPCheckPoint(uint64(beaconHeight))
+		boolParams["v2Only"] = tp.config.BlockChain.IsAfterPrivacyV2CheckPoint(uint64(beaconHeight))
 		validated, errValidateTxByItself := tx.ValidateTxByItself(boolParams, shardView.GetCopiedTransactionStateDB(), beaconView.GetBeaconFeatureStateDB(), tp.config.BlockChain, shardID, nil, nil)
 		if !validated {
 			return NewMempoolTxError(RejectInvalidTx, errValidateTxByItself)
@@ -741,21 +801,8 @@ func (tp *TxPool) addTx(txD *TxDesc, isStore bool) error {
 	atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
 	// Record this tx for fee estimation if enabled, apply for normal tx and privacy token tx
 	if tp.config.FeeEstimator != nil {
-		var shardID byte
-		flag := false
-		switch tx.GetType() {
-		case common.TxNormalType:
-			{
-				shardID = common.GetShardIDFromLastByte(tx.(*transaction.Tx).PubKeyLastByteSender)
-				flag = true
-			}
-		case common.TxCustomTokenPrivacyType:
-			{
-				shardID = common.GetShardIDFromLastByte(tx.(*transaction.TxCustomTokenPrivacy).PubKeyLastByteSender)
-				flag = true
-			}
-		}
-		if flag {
+		if tx.GetType() == common.TxNormalType || tx.GetType() == common.TxConversionType || tx.GetType() == common.TxCustomTokenPrivacyType || tx.GetType() == common.TxTokenConversionType {
+			shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 			if temp, ok := tp.config.FeeEstimator[shardID]; ok {
 				temp.ObserveTransaction(txD)
 			}
@@ -1198,19 +1245,6 @@ func (tp TxPool) GetSerialNumbersHashH() map[common.Hash][]common.Hash {
 	return m
 }
 
-func (tp TxPool) GetSNDOutputsHashH() map[common.Hash][]common.Hash {
-	//tp.mtx.RLock()
-	//defer tp.mtx.RUnlock()
-	res := make(map[common.Hash][]common.Hash)
-	for txHash, txDesc := range tp.pool {
-		res[txHash] = []common.Hash{}
-		for _, sndHash := range txDesc.Desc.Tx.ListSNDOutputsHashH() {
-			res[txHash] = append(res[txHash], sndHash)
-		}
-	}
-	return res
-}
-
 func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
 	//tp.mtx.RLock()
 	//defer tp.mtx.RUnlock()
@@ -1219,6 +1253,23 @@ func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
 		txsInMem[hash] = txDesc.Desc
 	}
 	return txsInMem
+}
+
+func (tp TxPool) GetOTAHashH() map[common.Hash][]common.Hash{
+	declKey := common.Hash{}
+	res := make(map[common.Hash][]common.Hash)
+	res[declKey] = []common.Hash{}
+	for txHash, txDesc := range tp.pool {
+		res[txHash] = []common.Hash{}
+		for _, otaHash := range txDesc.Desc.Tx.ListOTAHashH() {
+			res[txHash] = append(res[txHash], otaHash)
+		}
+		for _, otaDecl := range transaction.GetOTADeclarationsFromTx(txDesc.Desc.Tx) {
+			h := common.HashH(otaDecl.PublicKey[:])
+			res[declKey] = append(res[declKey], h)
+		}
+	}
+	return res
 }
 
 // ----------- end of transaction.MempoolRetriever's implementation -----------------

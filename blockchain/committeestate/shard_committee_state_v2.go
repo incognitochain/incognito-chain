@@ -338,9 +338,9 @@ func (ShardCommitteeEngineV2 ShardCommitteeEngineV2) BuildTotalTxsFeeFromTxs(txs
 			totalTxsFee[common.PRVCoinID] += tx.GetTxFee()
 		case common.TxCustomTokenPrivacyType:
 			totalTxsFee[common.PRVCoinID] += tx.GetTxFee()
-			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
-			totalTxsFee[*txCustomPrivacy.GetTokenID()] += txCustomPrivacy.GetTxFeeToken()
-			Logger.log.Info("[slashing] totalTxsFee[*txCustomPrivacy.GetTokenID()] :", totalTxsFee[*txCustomPrivacy.GetTokenID()])
+			txTokenData := transaction.GetTxTokenDataFromTransaction(tx)
+			totalTxsFee[txTokenData.PropertyID] += txTokenData.TxNormal.GetTxFee()
+			Logger.log.Info("[slashing] totalTxsFee[*txCustomPrivacy.GetTokenID()] :", totalTxsFee[txTokenData.PropertyID])
 		default:
 			Logger.log.Infof("[reward] Skip building reward for transaction %s \n", tx.Hash().String())
 		}

@@ -515,8 +515,8 @@ func (ShardCommitteeEngineV1 ShardCommitteeEngineV1) BuildTotalTxsFeeFromTxs(txs
 	for _, tx := range txs {
 		totalTxsFee[*tx.GetTokenID()] += tx.GetTxFee()
 		if tx.GetType() == common.TxCustomTokenPrivacyType {
-			txCustomPrivacy := tx.(*transaction.TxCustomTokenPrivacy)
-			totalTxsFee[*txCustomPrivacy.GetTokenID()] = txCustomPrivacy.GetTxFeeToken()
+			txTokenData := transaction.GetTxTokenDataFromTransaction(tx)
+			totalTxsFee[txTokenData.PropertyID] = txTokenData.TxNormal.GetTxFee()
 		}
 	}
 	return totalTxsFee

@@ -18,7 +18,6 @@ import (
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/transaction"
 )
 
 const (
@@ -190,8 +189,8 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 		size := t.Desc.Tx.GetTxActualSize()
 
 		feeRateForToken := make(map[common.Hash]CoinPerKilobyte)
-		if t.Desc.Tx.GetType() == common.TxCustomTokenPrivacyType {
-			tokenID := t.Desc.Tx.(*transaction.TxCustomTokenPrivacy).GetTokenID()
+		if t.Desc.Tx.GetType() == common.TxCustomTokenPrivacyType || t.Desc.Tx.GetType() == common.TxCustomTokenPrivacyType {
+			tokenID := t.Desc.Tx.GetTokenID()
 			tokenFee := t.Desc.FeeToken
 			feeRateForToken[*tokenID] = NewCoinPerKilobyte(tokenFee, size)
 		}
@@ -230,16 +229,7 @@ func (ef *FeeEstimator) RegisterBlock(block *types.ShardBlock) error {
 	// Randomly order txs in block.
 	transactions := make(map[*common.Hash]bool)
 	for _, t := range block.Body.Transactions {
-		switch t.GetType() {
-		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
-			{
-				transactions[t.(*transaction.Tx).Hash()] = true
-			}
-		case common.TxCustomTokenPrivacyType:
-			{
-				transactions[t.(*transaction.TxCustomTokenPrivacy).Hash()] = true
-			}
-		}
+		transactions[t.Hash()] = true
 	}
 
 	// Count the number of replacements we make per bin so that we don't

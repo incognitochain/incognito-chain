@@ -21,19 +21,16 @@ const (
 	MAX_BEACON_BLOCK                   = 20
 	LowerBoundPercentForIncDAO         = 3
 	UpperBoundPercentForIncDAO         = 10
-	TestRandom                         = true
+	TestRandom                         = false
 	ValidateTimeForSpamRequestTxs      = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize               = 30
 	SpareTime                          = 1000             // in mili-second
 	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
 	NumberOfFixedBeaconBlockValidators = 4
 	NumberOfFixedShardBlockValidators  = 4
-)
-
-// burning addresses
-const (
-	burningAddress  = "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"
-	burningAddress2 = "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
+	MaxOutcoinQueryInterval 	  = 8640 // 1 day worth of blocks
+	OutcoinReindexerTimeout 	  = 90	 // seconds
+	OutcoinReindexerRoutines 	  = 2
 )
 
 // CONSTANT for network MAINNET
@@ -222,7 +219,7 @@ var SelectShardNodeTestnetSerializedPaymentAddressV2 = make(map[uint64][]string)
 var TestnetReplaceCommitteeEpoch = []uint64{}
 
 var IsTestNet = true
-var IsTestNet2 = false
+var IsTestNet2 = true
 
 func ReadKey(v1, v2 []byte) {
 

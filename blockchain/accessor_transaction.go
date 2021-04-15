@@ -2,15 +2,8 @@ package blockchain
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -21,45 +14,49 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
+	txutils "github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/pkg/errors"
+	"sort"
+	"strconv"
+	"strings"
 )
+
+var(
+	EnableIndexingCoinByOTAKey bool
+	outcoinIndexer *txutils.CoinIndexer
+)
+
+func GetCoinIndexer() *txutils.CoinIndexer {
+	return outcoinIndexer
+}
 
 // DecryptOutputCoinByKey process outputcoin to get outputcoin data which relate to keyset
 // Param keyset: (private key, payment address, read only key)
 // in case private key: return unspent outputcoin tx
 // in case read only key: return all outputcoin tx with amount value
 // in case payment address: return all outputcoin tx with no amount value
-func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoinTemp *privacy.OutputCoin, keySet *incognitokey.KeySet, tokenID *common.Hash, shardID byte) *privacy.OutputCoin {
-	pubkeyCompress := outCoinTemp.CoinDetails.GetPublicKey().ToBytesS()
-	if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
-		result := &privacy.OutputCoin{
-			CoinDetails:          outCoinTemp.CoinDetails,
-			CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
-		}
-		if result.CoinDetailsEncrypted != nil && !result.CoinDetailsEncrypted.IsNil() {
-			if len(keySet.ReadonlyKey.Rk) > 0 {
-				// try to decrypt to get more data
-				err := result.Decrypt(keySet.ReadonlyKey)
-				if err != nil {
-					return nil
-				}
-			}
-		}
-		if len(keySet.PrivateKey) > 0 {
-			// check spent with private key
-			result.CoinDetails.SetSerialNumber(
-				new(privacy.Point).Derive(
-					privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
-					new(privacy.Scalar).FromBytesS(keySet.PrivateKey),
-					result.CoinDetails.GetSNDerivator()))
-			ok, err := statedb.HasSerialNumber(transactionStateDB, *tokenID, result.CoinDetails.GetSerialNumber().ToBytesS(), shardID)
-			if ok || err != nil {
-				return nil
-			}
-		}
-		return result
+func DecryptOutputCoinByKey(transactionStateDB *statedb.StateDB, outCoin privacy.Coin, keySet *incognitokey.KeySet, tokenID *common.Hash, shardID byte) (privacy.PlainCoin, error) {
+	if tokenID==nil{
+		clonedTokenID := common.PRVCoinID
+		tokenID = &clonedTokenID
 	}
-	return nil
+	result, err := outCoin.Decrypt(keySet)
+	if err != nil {
+		Logger.log.Errorf("Cannot decrypt output coin by key %v", err)
+		return nil, err
+	}
+	keyImage := result.GetKeyImage()
+	if keyImage != nil {
+		ok, err := statedb.HasSerialNumber(transactionStateDB, *tokenID, keyImage.ToBytesS(), shardID)
+		if err != nil {
+			Logger.log.Errorf("There is something wrong when check key image %v", err)
+			return nil, err
+		} else if ok {
+			// The KeyImage is valid but already spent
+			return nil, nil
+		}
+	}
+	return result, nil
 }
 
 func storePRV(transactionStateRoot *statedb.StateDB) error {
@@ -151,52 +148,70 @@ func (blockchain *BlockChain) GetTransactionHashByReceiverV2(
 	return result, nil
 }
 
-func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *types.ShardBlock, shardView *ShardBestState) error {
-	txRequestTable := reqTableFromReqTxs(shardBlock.Body.Transactions)
-	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
-		txsSpamRemoved := filterReqTxs(shardBlock.Body.Transactions, txRequestTable)
-		if len(shardBlock.Body.Transactions) != len(txsSpamRemoved) {
-			return errors.Errorf("This block contains txs spam request reward. Number of spam: %v", len(shardBlock.Body.Transactions)-len(txsSpamRemoved))
-		}
-	}
+func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *types.ShardBlock) error {
+	// filter double withdraw request
+	withdrawReqTable := make(map[string]*metadata.WithDrawRewardRequest)
 	for _, tx := range shardBlock.Body.Transactions {
 		switch tx.GetMetadataType() {
-		case metadata.WithDrawRewardResponseMeta:
-			_, requesterRes, amountRes, coinID := tx.GetTransferData()
-			requester := getRequesterFromPKnCoinID(requesterRes, *coinID)
-			txReq, isExist := txRequestTable[requester]
-			if !isExist {
-				return errors.New("This response dont match with any request")
+		case metadata.WithDrawRewardRequestMeta:
+			if tx.GetMetadata() == nil {
+				return fmt.Errorf("metadata is nil for type %v", tx.GetMetadataType())
 			}
-			requestMeta := txReq.GetMetadata().(*metadata.WithDrawRewardRequest)
-			responseMeta := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
-			if res, err := coinID.Cmp(&requestMeta.TokenID); err != nil || res != 0 {
-				return errors.Errorf("Invalid token ID when check metadata of tx response. Got %v, want %v, error %v", coinID, requestMeta.TokenID, err)
+
+			md, ok := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			if !ok {
+				return fmt.Errorf("cannot parse withdraw request for tx %v", tx.Hash().String())
 			}
-			if cmp, err := responseMeta.TxRequest.Cmp(txReq.Hash()); (cmp != 0) || (err != nil) {
-				Logger.log.Errorf("Response does not match with request, response link to txID %v, request txID %v, error %v", responseMeta.TxRequest.String(), txReq.Hash().String(), err)
+			if _, ok = withdrawReqTable[tx.Hash().String()]; !ok {
+				withdrawReqTable[tx.Hash().String()] = md
 			}
-			tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
-			Logger.log.Infof("Token ID %+v", requestMeta.TokenID)
-			Logger.log.Infof("Coin ID %+v", *coinID)
-			Logger.log.Infof("Amount Request %+v", amountRes)
-			Logger.log.Infof("Temp Public Key %+v", tempPublicKey)
-			amount, err := statedb.GetCommitteeReward(shardView.GetShardRewardStateDB(), tempPublicKey, requestMeta.TokenID)
-			if (amount == 0) || (err != nil) {
-				return errors.Errorf("Invalid request %v, amount from db %v, error %v", requester, amount, err)
-			}
-			if amount != amountRes {
-				return errors.Errorf("Wrong amount for token %v, get from db %v, response amount %v", requestMeta.TokenID, amount, amountRes)
-			}
-			delete(txRequestTable, requester)
-			continue
 		}
 	}
-	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
-		if len(txRequestTable) > 0 {
-			return errors.Errorf("Not match request and response, num of unresponse request: %v", len(txRequestTable))
+
+	// check tx withdraw response valid with the corresponding request
+	for _, tx := range shardBlock.Body.Transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardResponseMeta {
+			//check valid info with tx request
+			if tx.GetMetadata() == nil {
+				return fmt.Errorf("metadata is nil for type %v", tx.GetMetadataType())
+			}
+
+			metaResponse, ok := tx.GetMetadata().(*metadata.WithDrawRewardResponse)
+			if !ok {
+				return fmt.Errorf("cannot cast %v to a withdraw reward response", tx.GetMetadata())
+			}
+
+			metaRequest, ok := withdrawReqTable[metaResponse.TxRequest.String()]
+			if !ok {
+				return fmt.Errorf("cannot found tx request for tx withdraw reward response %v", tx.Hash().String())
+			} else {
+				delete(withdrawReqTable, metaResponse.TxRequest.String())
+			}
+			rewardPaymentAddress := metaRequest.PaymentAddress
+
+			isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+			//check tx mint
+			if err != nil || !isMinted {
+				return errors.Errorf("[Mint Withdraw Reward] It is not tx mint with error: %v", err)
+			}
+			//check tokenID
+			if metaRequest.TokenID.String() != coinID.String() {
+				return fmt.Errorf("token in the request (%v) and the minted token mismatch (%v)", metaRequest.TokenID.String(), coinID.String())
+			}
+
+			//check amount & receiver
+			rewardAmount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB(),
+				base58.Base58Check{}.Encode(metaRequest.PaymentAddress.Pk, common.Base58Version), *coinID)
+			if err != nil {
+				return errors.Errorf("[Mint Withdraw Reward] Cannot get reward amount")
+			}
+			if ok := mintCoin.CheckCoinValid(rewardPaymentAddress, metaResponse.SharedRandom, rewardAmount); !ok {
+				Logger.log.Errorf("[Mint Withdraw Reward] CheckMintCoinValid: %v, %v, %v, %v, %v, %v\n", mintCoin.GetVersion(), rewardAmount, mintCoin.GetValue(), mintCoin.GetPublicKey(), rewardPaymentAddress, rewardPaymentAddress.GetPublicSpend().String())
+				return errors.Errorf("[Mint Withdraw Reward] Mint Coin is invalid for receiver or amount")
+			}
 		}
 	}
+
 	return nil
 }
 
@@ -224,7 +239,7 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 	payByPrivateKey *privacy.PrivateKey,
 	transactionStateDB *statedb.StateDB,
 	bridgeStateDB *statedb.StateDB,
-	meta metadata.Metadata,
+	meta *metadata.WithDrawRewardResponse,
 	coinID common.Hash,
 	shardID byte,
 ) (metadata.Transaction, error) {
@@ -263,88 +278,160 @@ func (blockchain *BlockChain) InitTxSalaryByCoinID(
 
 // @Notice: change from body.Transaction -> transactions
 func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *ShardBestState, transactions []metadata.Transaction, blkProducerPrivateKey *privacy.PrivateKey, shardID byte) ([]metadata.Transaction, error) {
-	txRequestTable := reqTableFromReqTxs(transactions)
-	txsResponse := []metadata.Transaction{}
-	for key, value := range txRequestTable {
-		txRes, err := blockchain.buildWithDrawTransactionResponse(view, &value, blkProducerPrivateKey, shardID)
-		if err != nil {
-			Logger.log.Errorf("Build Withdraw transactions response for tx %v return errors %v", value, err)
-			delete(txRequestTable, key)
-			continue
-		} else {
-			Logger.log.Infof("[Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", value, txRes)
+	withdrawReqTable := make(map[string]metadata.Transaction)
+	for _, tx := range transactions {
+		if tx.GetMetadataType() == metadata.WithDrawRewardRequestMeta {
+			metaReq := tx.GetMetadata().(*metadata.WithDrawRewardRequest)
+			mapKey := fmt.Sprintf("%s-%s", base58.Base58Check{}.Encode(metaReq.PaymentAddress.Pk, common.Base58Version), metaReq.TokenID.String())
+			if _, ok := withdrawReqTable[mapKey]; !ok {
+				withdrawReqTable[mapKey] = tx
+			}
 		}
-		txsResponse = append(txsResponse, txRes)
 	}
-	txsSpamRemoved := filterReqTxs(transactions, txRequestTable)
-	Logger.log.Infof("Number of metadata txs: %v; number of tx request %v; number of tx spam %v; number of tx response %v",
-		len(transactions),
-		len(txRequestTable),
-		len(transactions)-len(txsSpamRemoved),
-		len(txsResponse))
-	txsSpamRemoved = append(txsSpamRemoved, txsResponse...)
-	return txsSpamRemoved, nil
+	txsResponse := []metadata.Transaction{}
+	for _, txRequest := range withdrawReqTable {
+		txResponse, err := blockchain.buildWithDrawTransactionResponse(view, &txRequest, blkProducerPrivateKey, shardID)
+		if err != nil {
+			Logger.log.Errorf("[Withdraw Reward] Build transactions response for tx %v return errors %v", txRequest, err)
+			continue
+		}
+		txsResponse = append(txsResponse, txResponse)
+		Logger.log.Infof("[Withdraw Reward] - BuildWithDrawTransactionResponse for tx %+v, ok: %+v\n", txRequest, txResponse)
+	}
+	return append(transactions, txsResponse...), nil
 }
 
-//GetListOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
+//Return all coins belonging to the provided keyset
+//
+//If there is a ReadonlyKey, return decrypted coins; otherwise, just return raw coins
+func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, upToHeight uint64, versionsIncluded map[int]bool) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
+	var outCoins []privacy.Coin
+	var lowestHeightForV2 uint64 = blockchain.GetConfig().ChainParams.CoinVersion2LowestHeight
+	var fromHeight uint64
+	if keyset == nil {
+		return nil, nil, 0, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
+	}
+	bss := blockchain.GetBestStateShard(shardID)
+	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
+
+	if versionsIncluded[1]{
+		results, err := txutils.QueryDbCoinVer1(keyset.PaymentAddress.Pk, shardID, tokenID, transactionStateDB)
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		outCoins = append(outCoins, results...)
+	}
+	if versionsIncluded[2]{
+		if keyset.OTAKey.GetOTASecretKey() == nil || keyset.OTAKey.GetPublicSpend() == nil {
+			return nil, nil, 0, errors.New("OTA secretKey is needed when retrieving coinV2")
+		}
+		if keyset.PaymentAddress.GetOTAPublicKey() == nil {
+			return nil, nil, 0, errors.New("OTA publicKey is needed when retrieving coinV2")
+		}
+		latest := bss.ShardHeight
+		if upToHeight > latest || upToHeight==0{
+			upToHeight = latest
+		}
+		fromHeight = txutils.GetNextLowerHeight(upToHeight, lowestHeightForV2)
+		results, err := txutils.QueryDbCoinVer2(keyset.OTAKey, shardID, tokenID, fromHeight, upToHeight, transactionStateDB, txutils.GetCoinFilterByOTAKeyAndToken())
+		if err != nil {
+			return nil, nil, 0, err
+		}
+		outCoins = append(outCoins, results...)
+	}
+
+	//If ReadonlyKey found, return decrypted coins
+	if keyset.ReadonlyKey.GetPrivateView() != nil && keyset.ReadonlyKey.GetPublicSpend() != nil{
+		resultPlainCoins := make([]privacy.PlainCoin, 0)
+		for _, outCoin := range outCoins {
+			decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+			if decryptedOut != nil {
+				resultPlainCoins = append(resultPlainCoins, decryptedOut)
+			}
+		}
+
+		return resultPlainCoins, nil, fromHeight, nil
+	}else{//Just return the raw coins
+		return nil, outCoins, fromHeight, nil
+	}
+
+}
+
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer2ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, startHeight uint64) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
+	return blockchain.getOutputCoins(keyset, shardID, tokenID, startHeight, map[int]bool{2:true})
+}
+
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsVer1ByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]privacy.PlainCoin, []privacy.Coin, error) {
+	resPlainCoins, resCoins, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
+	return resPlainCoins, resCoins, err
+}
+
+//GetListDecryptedOutputCoinsByKeyset - Read all blocks to get txs(not action tx) which can be decrypt by readonly secret key.
 //With private-key, we can check unspent tx by check serialNumber from database
 //- Param #1: keyset - (priv-key, payment-address, readonlykey)
 //in case priv-key: return unspent outputcoin tx
 //in case readonly-key: return all outputcoin tx with amount value
 //in case payment-address: return all outputcoin tx with no amount value
 //- Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
-func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
-	var outCointsInBytes [][]byte
-	var err error
-	transactionStateDB := blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
-	if keyset == nil {
-		return nil, NewBlockChainError(GetListOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))
+func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, shardHeight uint64) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
+	if keyset.OTAKey.GetPublicSpend() == nil || keyset.OTAKey.GetOTASecretKey() == nil || keyset.PaymentAddress.GetOTAPublicKey() == nil{
+		return blockchain.getOutputCoins(keyset, shardID, tokenID, shardHeight, map[int]bool{1:true})
 	}
-	if blockchain.config.MemCache != nil {
-		// get from cache
-		cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
-		cachedData, _ := blockchain.config.MemCache.Get(cachedKey)
-		if cachedData != nil && len(cachedData) > 0 {
-			// try to parsing on outCointsInBytes
-			_ = json.Unmarshal(cachedData, &outCointsInBytes)
-		}
-		if len(outCointsInBytes) == 0 {
-			// cached data is nil or fail -> get from database
-			outCointsInBytes, err = statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
-			if len(outCointsInBytes) > 0 {
-				// cache 1 day for result
-				cachedData, err = json.Marshal(outCointsInBytes)
-				if err == nil {
-					blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 10*1000*time.Millisecond)
-				}
+	return blockchain.getOutputCoins(keyset, shardID, tokenID, shardHeight, map[int]bool{1:true, 2:true})
+}
+
+func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey) error{
+	if !EnableIndexingCoinByOTAKey{
+		return errors.New("OTA key submission not supported by this node configuration")
+	}
+	Logger.log.Infof("OTA Key Submission %v", theKey)
+	return outcoinIndexer.AddOTAKey(theKey)
+}
+
+// any coins that failed to decrypt are returned as privacy.Coin
+func (blockchain *BlockChain) GetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin, []privacy.Coin,  error) {
+	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
+
+	if !EnableIndexingCoinByOTAKey{
+		return nil, nil, errors.New("Getting all coins not supported by this node configuration")
+		// results, _, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, bss.ShardHeight, map[int]bool{1:withVersion1, 2:true})
+		// return results, err
+	}
+	outCoins, state, err := outcoinIndexer.GetReindexedOutcoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
+	switch state{
+	case 2:
+		var decryptedResults []privacy.PlainCoin
+		var otherResults []privacy.Coin
+		if withVersion1{
+			decryptedResults, otherResults, _, err = blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
+			if err!=nil{
+				return nil, nil, err
 			}
 		}
-	}
-	if len(outCointsInBytes) == 0 {
-		outCointsInBytes, err = statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
-		if err != nil {
-			return nil, err
+		for _, outCoin := range outCoins {
+			decryptedOut, _ := DecryptOutputCoinByKey(transactionStateDB, outCoin, keyset, tokenID, shardID)
+			if decryptedOut != nil {
+				decryptedResults = append(decryptedResults, decryptedOut)
+			} else {
+				otherResults = append(otherResults, outCoin)
+			}
 		}
+		Logger.log.Infof("Retrieved output coins ver2 for view key %v", keyset.OTAKey.GetOTASecretKey())
+		return decryptedResults, otherResults, nil
+	case 1:
+		return nil, nil, err
+	case 0:
+		// err := blockchain.SubmitOTAKey(keyset.OTAKey)
+		return nil, nil, err
+	default:
+		return nil, nil, errors.New("OTA Key indexing state is corrupted")
 	}
-	// convert from []byte to object
-	outCoins := make([]*privacy.OutputCoin, 0)
-	for _, item := range outCointsInBytes {
-		outcoin := &privacy.OutputCoin{}
-		outcoin.Init()
-		outcoin.SetBytes(item)
-		outCoins = append(outCoins, outcoin)
-	}
-	// loop on all outputcoin to decrypt data
-	results := make([]*privacy.OutputCoin, 0)
-	for _, out := range outCoins {
-		decryptedOut := DecryptOutputCoinByKey(transactionStateDB, out, keyset, tokenID, shardID)
-		if decryptedOut == nil {
-			continue
-		} else {
-			results = append(results, decryptedOut)
-		}
-	}
-	return results, nil
+}
+
+// any coins that failed to decrypt are skipped
+func (blockchain *BlockChain) TryGetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin,  error) {
+	res, _, err := blockchain.GetAllOutputCoinsByKeyset(keyset, shardID, tokenID, withVersion1)
+	return res, err
 }
 
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
@@ -359,13 +446,11 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 		}
 	}
 	var err error
-	bridgeStateDB := blockchain.GetBeaconBestState().GetBeaconFeatureStateDB()
-	// if err != nil {
-	// 	return err
-	// }
-
-	// Call for get DB here
-	view := NewTxViewPoint(shardBlock.Header.ShardID)
+	_, allBridgeTokens, err := blockchain.GetAllBridgeTokens()
+	if err != nil {
+		return err
+	}
+	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.Height)
 	err = view.fetchTxViewPointFromBlock(transactionStateRoot, shardBlock)
 	if err != nil {
 		return err
@@ -380,29 +465,32 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 	for _, indexTx := range indices {
 		privacyCustomTokenSubView := view.privacyCustomTokenViewPoint[int32(indexTx)]
 		privacyCustomTokenTx := view.privacyCustomTokenTxs[int32(indexTx)]
-		isBridgeToken, err := statedb.IsBridgeToken(bridgeStateDB, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID)
-		if err != nil {
-			return err
+		tokenData := privacyCustomTokenTx.GetTxTokenData()
+		isBridgeToken := false
+		for _, tempBridgeToken := range allBridgeTokens {
+			if tempBridgeToken.TokenID != nil && bytes.Equal(tokenData.PropertyID[:], tempBridgeToken.TokenID[:]) {
+				isBridgeToken = true
+			}
 		}
-		switch privacyCustomTokenTx.TxPrivacyTokenData.Type {
+		switch tokenData.Type {
 		case transaction.CustomTokenInit:
 			{
-				tokenID := privacyCustomTokenTx.TxPrivacyTokenData.PropertyID
+				tokenID := tokenData.PropertyID
 				existed := statedb.PrivacyTokenIDExisted(transactionStateRoot, tokenID)
 				if !existed {
 					// check is bridge token
-					tokenID := privacyCustomTokenTx.TxPrivacyTokenData.PropertyID
-					name := privacyCustomTokenTx.TxPrivacyTokenData.PropertyName
-					symbol := privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol
-					mintable := privacyCustomTokenTx.TxPrivacyTokenData.Mintable
-					amount := privacyCustomTokenTx.TxPrivacyTokenData.Amount
-					info := privacyCustomTokenTx.Tx.Info
+					tokenID := tokenData.PropertyID
+					name := tokenData.PropertyName
+					symbol := tokenData.PropertySymbol
+					mintable := tokenData.Mintable
+					amount := tokenData.Amount
+					info := privacyCustomTokenTx.GetInfo()
 					txHash := *privacyCustomTokenTx.Hash()
 					tokenType := statedb.InitToken
 					if isBridgeToken {
 						tokenType = statedb.BridgeToken
 					}
-					Logger.log.Info("Store custom token when it is issued", privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, privacyCustomTokenTx.TxPrivacyTokenData.PropertySymbol, privacyCustomTokenTx.TxPrivacyTokenData.PropertyName)
+					Logger.log.Info("Store custom token when it is issued", tokenData.PropertyID, tokenData.PropertySymbol, tokenData.PropertyName)
 					err := statedb.StorePrivacyToken(transactionStateRoot, tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
 					if err != nil {
 						return err
@@ -414,7 +502,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 				Logger.log.Infof("Transfer custom token %+v", privacyCustomTokenTx)
 			}
 		}
-		err = statedb.StorePrivacyTokenTx(transactionStateRoot, privacyCustomTokenTx.TxPrivacyTokenData.PropertyID, *privacyCustomTokenTx.Hash())
+		err = statedb.StorePrivacyTokenTx(transactionStateRoot, tokenData.PropertyID, *privacyCustomTokenTx.Hash())
 		if err != nil {
 			return err
 		}
@@ -425,6 +513,11 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 		}
 
 		err = blockchain.StoreCommitmentsFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
+		if err != nil {
+			return err
+		}
+
+		err = blockchain.StoreOnetimeAddressesFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
 		if err != nil {
 			return err
 		}
@@ -448,12 +541,22 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *type
 		return err
 	}
 
+	err = blockchain.StoreOnetimeAddressesFromTxViewPoint(transactionStateRoot, *view, shardBlock.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
 	err = blockchain.StoreSNDerivatorsFromTxViewPoint(transactionStateRoot, *view)
 	if err != nil {
 		return err
 	}
 
 	err = blockchain.StoreTxByPublicKey(blockchain.GetShardChainDatabase(shardBlock.Header.ShardID), view)
+	if err != nil {
+		return err
+	}
+
+	err = blockchain.StoreTxBySerialNumber(shardBlock.Body.Transactions, shardBlock.Header.ShardID)
 	if err != nil {
 		return err
 	}
@@ -512,6 +615,72 @@ func (blockchain *BlockChain) StoreTxByPublicKey(db incdb.Database, view *TxView
 	return nil
 }
 
+func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *statedb.StateDB, view TxViewPoint, shardID byte) error {
+	// commitment and output are the same key in map
+	keys := make([]string, 0, len(view.mapCommitments))
+	for k := range view.mapCommitments {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, decl := range view.otaDeclarations {
+		if err := statedb.StoreOccupiedOneTimeAddress(stateDB, decl.TokenID, decl.PublicKey); err != nil {
+			return err
+		}
+	}
+
+	// Start to store to db
+	for _, publicKey := range keys {
+		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
+		if err != nil {
+			return err
+		}
+		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
+		if publicKeyShardID == shardID {
+			// outputs
+			outputCoinArray := view.mapOutputCoins[publicKey]
+			otaCoinArray := make([][]byte, 0)
+			onetimeAddressArray := make([][]byte, 0)
+			for _, outputCoin := range outputCoinArray {
+				if outputCoin.GetVersion() != 2 {
+					continue
+				}
+				if EnableIndexingCoinByOTAKey{
+					handler := func(k, v interface{}) bool{
+						vkArr, ok := k.([64]byte)
+						if !ok{
+							return false
+						}
+						processing, ok := v.(int)
+						if !ok{
+							return false
+						}
+						if processing!=1 && processing!=2{
+							return false
+						}
+						otaKey := txutils.OTAKeyFromRaw(vkArr)
+						ks := &incognitokey.KeySet{}
+						ks.OTAKey = otaKey
+						belongs, _ := outputCoin.DoesCoinBelongToKeySet(ks)
+						if belongs{
+							outcoinIndexer.StoreReindexedOutputCoins(otaKey, []privacy.Coin{outputCoin}, shardID)
+						}
+						return true
+					}
+					outcoinIndexer.ManagedOTAKeys.Range(handler)
+				}
+				otaCoinArray = append(otaCoinArray, outputCoin.Bytes())
+				onetimeAddressArray = append(onetimeAddressArray, outputCoin.GetPublicKey().ToBytesS())
+			}
+			if err = statedb.StoreOTACoinsAndOnetimeAddresses(stateDB, *view.tokenID, view.height, otaCoinArray, onetimeAddressArray, publicKeyShardID); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.StateDB, view TxViewPoint, shardID byte) error {
 	// commitment and output are the same key in map
 	keys := make([]string, 0, len(view.mapCommitments))
@@ -519,28 +688,37 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	for _, k := range keys {
-		publicKey := k
+
+	// Start to store to db
+	for _, publicKey := range keys {
 		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
 		if err != nil {
 			return err
 		}
-		lastByte := publicKeyBytes[len(publicKeyBytes)-1]
-		publicKeyShardID := common.GetShardIDFromLastByte(lastByte)
+		publicKeyShardID := common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes)-1])
 		if publicKeyShardID == shardID {
-			// commitment
-			commitmentsArray := view.mapCommitments[k]
-			err = statedb.StoreCommitments(stateDB, *view.tokenID, publicKeyBytes, commitmentsArray, view.shardID)
+			// outputs
+			outputCoinArray := view.mapOutputCoins[publicKey]
+			outputCoinBytesArray := make([][]byte, 0)
+			for _, outputCoin := range outputCoinArray {
+				if outputCoin.GetVersion() == 1 {
+					outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
+				}
+			}
+			err = statedb.StoreOutputCoins(stateDB, *view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
 			if err != nil {
 				return err
 			}
-			// outputs
-			outputCoinArray := view.mapOutputCoins[k]
-			outputCoinBytesArray := make([][]byte, 0)
-			for _, outputCoin := range outputCoinArray {
-				outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
+
+			// commitment
+			commitmentsArray := view.mapCommitments[publicKey]
+			err = statedb.StoreCommitments(stateDB, *view.tokenID, commitmentsArray, view.shardID)
+			if err != nil {
+				return err
 			}
-			err = statedb.StoreOutputCoins(stateDB, *view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
+
+			//Logger.log.Infof("BUGLOG4 finished storing %v cmts of pk %v\n", len(commitmentsArray), publicKey)
+
 			// clear cached data
 			if blockchain.config.MemCache != nil {
 				cachedKey := memcache.GetListOutputcoinCachedKey(publicKeyBytes, view.tokenID, publicKeyShardID)
@@ -551,9 +729,6 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 					}
 				}
 			}
-			if err != nil {
-				return err
-			}
 		}
 	}
 	return nil
@@ -562,7 +737,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock *types.ShardBlock, transactionStateRoot *statedb.StateDB) error {
 	Logger.log.Critical("Fetch Cross transaction", shardBlock.Body.CrossTransactions)
 	// Fetch data from block into tx View point
-	view := NewTxViewPoint(shardBlock.Header.ShardID)
+	view := NewTxViewPoint(shardBlock.Header.ShardID, shardBlock.Header.Height)
 	err := view.fetchCrossTransactionViewPointFromBlock(transactionStateRoot, shardBlock)
 	if err != nil {
 		Logger.log.Error("CreateAndSaveCrossTransactionCoinViewPointFromBlock ", err)
@@ -582,7 +757,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(sh
 		tokenID := *privacyCustomTokenSubView.tokenID
 		existed := statedb.PrivacyTokenIDExisted(transactionStateRoot, tokenID)
 		if !existed {
-			Logger.log.Info("Store custom token when it is issued ", tokenID, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol, privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount, privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable)
+			Logger.log.Info("Cross-shard tx: store custom token when it is issued ", tokenID, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName, privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol, privacyCustomTokenSubView.privacyCustomTokenMetadata.Amount, privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable)
 			name := privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertyName
 			symbol := privacyCustomTokenSubView.privacyCustomTokenMetadata.PropertySymbol
 			mintable := privacyCustomTokenSubView.privacyCustomTokenMetadata.Mintable
@@ -597,6 +772,12 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(sh
 		if err != nil {
 			return err
 		}
+
+		err = blockchain.StoreOnetimeAddressesFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView, shardBlock.Header.ShardID)
+		if err != nil {
+			return err
+		}
+
 		// store snd
 		err = blockchain.StoreSNDerivatorsFromTxViewPoint(transactionStateRoot, *privacyCustomTokenSubView)
 		if err != nil {
@@ -608,10 +789,85 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(sh
 	if err != nil {
 		return err
 	}
+
+	// store otas
+	err = blockchain.StoreOnetimeAddressesFromTxViewPoint(transactionStateRoot, *view, shardBlock.Header.ShardID)
+	if err != nil {
+		return err
+	}
+
 	// store snd
 	err = blockchain.StoreSNDerivatorsFromTxViewPoint(transactionStateRoot, *view)
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (blockchain *BlockChain) StoreTxBySerialNumber(txList []metadata.Transaction, shardID byte) error {
+	var err error
+	db := blockchain.GetShardChainDatabase(shardID)
+
+	for _, tx := range txList {
+		if tx.GetVersion() < 2 {//Only process txver2
+			continue
+		}
+		txHash := *tx.Hash()
+		tokenID := *tx.GetTokenID()
+		Logger.log.Infof("Process StoreTxBySerialNumber for tx %v, tokenID %v\n", txHash.String(), tokenID.String())
+
+		if tokenID.String() != common.PRVIDStr {
+			txToken, ok := tx.(transaction.TransactionToken)
+			if !ok {
+				return fmt.Errorf("cannot parse tx %v to transactionToken", txHash.String())
+			}
+
+			txFee := txToken.GetTxBase()
+			txNormal := txToken.GetTxNormal()
+			//Process storing serialNumber for PRV
+			if txFee.GetProof() != nil {
+				for _, inputCoin := range txFee.GetProof().GetInputCoins() {
+					serialNumber := inputCoin.GetKeyImage().ToBytesS()
+					err = rawdbv2.StoreTxBySerialNumber(db, serialNumber, common.PRVCoinID, shardID, txHash)
+					if err != nil {
+						Logger.log.Errorf("StoreTxBySerialNumber with serialNumber %v, tokenID %v, shardID %v, txHash %v returns an error: %v\n", serialNumber, common.PRVCoinID.String(), shardID, txHash.String())
+						return err
+					}
+				}
+			} else {
+				Logger.log.Infof("txFee of %v has no proof\n", txHash.String())
+			}
+
+			//Process storing serialNumber for token
+			if txNormal.GetProof() != nil {
+				for _, inputCoin := range txNormal.GetProof().GetInputCoins() {
+					serialNumber := inputCoin.GetKeyImage().ToBytesS()
+					err = rawdbv2.StoreTxBySerialNumber(db, serialNumber, tokenID, shardID, txHash)
+					if err != nil {
+						Logger.log.Errorf("StoreTxBySerialNumber with serialNumber %v, tokenID %v, shardID %v, txHash %v returns an error: %v\n", serialNumber, tokenID.String(), shardID, txHash.String())
+						return err
+					}
+				}
+			} else {
+				Logger.log.Infof("txToken of %v has no proof\n", txHash.String())
+			}
+		} else {
+			if tx.GetProof() != nil {
+				for _, inputCoin := range tx.GetProof().GetInputCoins() {
+					serialNumber := inputCoin.GetKeyImage().ToBytesS()
+					err = rawdbv2.StoreTxBySerialNumber(db, serialNumber, tokenID, shardID, txHash)
+					if err != nil {
+						Logger.log.Errorf("StoreTxBySerialNumber with serialNumber %v, tokenID %v, shardID %v, txHash %v returns an error: %v\n", serialNumber, tokenID.String(), shardID, txHash.String())
+						return err
+					}
+				}
+			} else {
+				Logger.log.Infof("tx %v has no proof\n", txHash.String())
+			}
+		}
+	}
+
+	Logger.log.Infof("Finish StoreTxBySerialNumber, #txs: %v!!!\n", len(txList))
+
 	return nil
 }

@@ -12,8 +12,8 @@ import (
 //component:
 //Parameter #1—the minimum number of confirmations an output must have
 //Parameter #2—the maximum number of confirmations an output may have
-//Parameter #3—the list priv-key which be used to view utxo
-//
+//Parameter #3—the list priv-key which be used to view utxo which also includes the fromHeight of each key
+//From height is used to efficiently fetch onetimeaddress outputCoins
 func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 
 	// get component
@@ -22,14 +22,14 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
 	}
 
-	var min int
-	var max int
+	var min, max uint64
+
 	if paramsArray[0] != nil {
 		minParam, ok := paramsArray[0].(float64)
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min param is invalid"))
 		}
-		min = int(minParam)
+		min = uint64(minParam)
 	}
 
 	if paramsArray[1] != nil {
@@ -37,10 +37,10 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("max param is invalid"))
 		}
-		max = int(maxParam)
+		max = uint64(maxParam)
 	}
 	_ = min
-	_ = max
+	// _ = max
 
 	listKeyParams := common.InterfaceSlice(paramsArray[2])
 	if listKeyParams == nil {
@@ -66,7 +66,7 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 		}
 	}
 
-	result, err := httpServer.outputCoinService.ListUnspentOutputCoinsByKey(listKeyParams, tokenID)
+	result, err := httpServer.outputCoinService.ListUnspentOutputCoinsByKey(listKeyParams, tokenID, max)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +82,60 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 //Parameter #3—the list paymentaddress-readonlykey which be used to view list outputcoin
 //Parameter #4 - optional - token id - default prv coin
 func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	// get component
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 3 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
+	}
+
+	minTemp, ok := paramsArray[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min param is invalid"))
+	}
+	min := uint64(minTemp)
+
+	maxTemp, ok := paramsArray[1].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("max param is invalid"))
+	}
+	max := uint64(maxTemp)
+
+	_ = min
+	// _ = max
+
+	//#3: list key component
+	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	if listKeyParams == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("list key is invalid"))
+	}
+
+	//#4: optional token type - default prv coin
+	tokenID := &common.Hash{}
+	err := tokenID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err)
+	}
+	if len(paramsArray) > 3 {
+		var err1 error
+		tokenIdParam, ok := paramsArray[3].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
+		}
+
+		tokenID, err1 = common.Hash{}.NewHashFromStr(tokenIdParam)
+		if err1 != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err1)
+		}
+	}
+	result, err1 := httpServer.outputCoinService.ListOutputCoinsByKey(listKeyParams, *tokenID, max)
+	if err1 != nil {
+		return nil, err1
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleListOutputCoinsFromCache(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 
 	// get component
 	paramsArray := common.InterfaceSlice(params)
@@ -128,9 +182,11 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 			return nil, rpcservice.NewRPCError(rpcservice.ListTokenNotFoundError, err1)
 		}
 	}
-	result, err1 := httpServer.outputCoinService.ListOutputCoinsByKey(listKeyParams, *tokenID)
+	result, err1 := httpServer.outputCoinService.ListCachedOutputCoinsByKey(listKeyParams, *tokenID)
 	if err1 != nil {
 		return nil, err1
 	}
 	return result, nil
 }
+
+

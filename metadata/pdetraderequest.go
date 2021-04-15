@@ -5,12 +5,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"reflect"
 	"strconv"
-
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // PDETradeRequest - privacy dex trade
@@ -21,6 +21,7 @@ type PDETradeRequest struct {
 	MinAcceptableAmount uint64
 	TradingFee          uint64
 	TraderAddressStr    string
+	TxRandomStr         string `json:"TxRandomStr,omitempty"`
 	MetadataBase
 }
 
@@ -37,6 +38,7 @@ type TokenPoolValueOperation struct {
 
 type PDETradeAcceptedContent struct {
 	TraderAddressStr         string
+	TxRandomStr              string `json:"TxRandomStr,omitempty"`
 	TokenIDToBuyStr          string
 	ReceiveAmount            uint64
 	Token1IDStr              string
@@ -54,6 +56,7 @@ func NewPDETradeRequest(
 	minAcceptableAmount uint64,
 	tradingFee uint64,
 	traderAddressStr string,
+	txRandomStr string,
 	metaType int,
 ) (*PDETradeRequest, error) {
 	metadataBase := MetadataBase{
@@ -66,6 +69,7 @@ func NewPDETradeRequest(
 		MinAcceptableAmount: minAcceptableAmount,
 		TradingFee:          tradingFee,
 		TraderAddressStr:    traderAddressStr,
+		TxRandomStr:         txRandomStr,
 	}
 	pdeTradeRequest.MetadataBase = metadataBase
 	return pdeTradeRequest, nil
@@ -82,40 +86,33 @@ func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shar
 		return true, true, nil
 	}
 
-	keyWallet, err := wallet.Base58CheckDeserialize(pc.TraderAddressStr)
+	_, err, ver := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr)
 	if err != nil {
-		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TraderAddressStr incorrect"))
+		return false, false, err
 	}
-	traderAddr := keyWallet.KeySet.PaymentAddress
+	if int8(ver) != tx.GetVersion() {
+		return false, false, fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
+	}
 
-	if len(traderAddr.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's trader address")
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
+	if err != nil {
+		return false, false, err
 	}
-	if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-		return false, false, errors.New("Must send coin to burning address")
+	if !isBurned {
+		return false, false, errors.New("Error This is not Tx Burn")
 	}
-	txValue := tx.CalculateTxValue()
-	if pc.SellAmount > txValue || pc.TradingFee > txValue {
+	if (pc.SellAmount + pc.TradingFee) != burnCoin.GetValue() {
+		return false, false, errors.New("Error Selling amount should be equal to the burned amount")
+	}
+	if pc.SellAmount > burnCoin.GetValue() || pc.TradingFee > burnCoin.GetValue() {
 		return false, false, errors.New("Neither selling amount nor trading fee allows to be larger than the tx value")
-	}
-	if (pc.SellAmount + pc.TradingFee) != txValue {
-		return false, false, errors.New("Total of selling amount and trading fee should be equal to the tx value")
-	}
-	if !bytes.Equal(tx.GetSigPubKey()[:], traderAddr.Pk[:]) {
-		return false, false, errors.New("TraderAddress incorrect")
-	}
-
-	_, err = common.Hash{}.NewHashFromStr(pc.TokenIDToBuyStr)
-	if err != nil {
-		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenIDToBuyStr incorrect"))
 	}
 
 	tokenIDToSell, err := common.Hash{}.NewHashFromStr(pc.TokenIDToSellStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenIDToSellStr incorrect"))
 	}
-
-	if !bytes.Equal(tx.GetTokenID()[:], tokenIDToSell[:]) {
+	if !bytes.Equal(burnedTokenID[:], tokenIDToSell[:]) {
 		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
 	}
 
@@ -139,6 +136,9 @@ func (pc PDETradeRequest) Hash() *common.Hash {
 	record += pc.TokenIDToBuyStr
 	record += pc.TokenIDToSellStr
 	record += pc.TraderAddressStr
+	if len(pc.TxRandomStr) > 0 {
+		record += pc.TxRandomStr
+	}
 	record += strconv.FormatUint(pc.SellAmount, 10)
 	record += strconv.FormatUint(pc.MinAcceptableAmount, 10)
 	record += strconv.FormatUint(pc.TradingFee, 10)
@@ -157,6 +157,9 @@ func (pc *PDETradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainR
 	if err != nil {
 		return [][]string{}, err
 	}
+
+	//Logger.log.Infof("BUGLOG4 actionContent: %v\n", string(actionContentBytes))
+
 	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
 	action := []string{strconv.Itoa(PDETradeRequestMeta), actionContentBase64Str}
 	return [][]string{action}, nil
@@ -165,3 +168,17 @@ func (pc *PDETradeRequest) BuildReqActions(tx Transaction, chainRetriever ChainR
 func (pc *PDETradeRequest) CalculateSize() uint64 {
 	return calculateSize(pc)
 }
+
+func (pc *PDETradeRequest) GetOTADeclarations() []OTADeclaration {
+	pk, _, err := coin.ParseOTAInfoFromString(pc.TraderAddressStr, pc.TxRandomStr)
+	if err != nil {
+		return []OTADeclaration{}
+	}
+	sellingToken := common.ConfidentialAssetID
+	if pc.TokenIDToSellStr == common.PRVIDStr {
+		sellingToken = common.PRVCoinID
+	}
+	result := OTADeclaration{PublicKey: pk.ToBytes(), TokenID: sellingToken}
+	return []OTADeclaration{result}
+}
+

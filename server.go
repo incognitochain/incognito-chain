@@ -42,7 +42,6 @@ import (
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/syncker"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
@@ -194,6 +193,7 @@ func (serverObj *Server) NewServer(
 	listenAddrs string,
 	db map[int]incdb.Database,
 	dbmp databasemp.DatabaseInterface,
+	dboc *incdb.Database,
 	chainParams *blockchain.Params,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
@@ -315,6 +315,7 @@ func (serverObj *Server) NewServer(
 		ConsensusEngine: serverObj.consensusEngine,
 		Highway:         serverObj.highway,
 		GenesisParams:   blockchain.GenesisParam,
+		OutcoinByOTAKeyDb: dboc,
 	})
 	if err != nil {
 		return err
@@ -757,27 +758,25 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 			if !txDesc.IsFowardMessage {
 				tx := txDesc.Desc.Tx
 				switch tx.GetType() {
-				case common.TxNormalType:
+				case common.TxNormalType, common.TxConversionType:
 					{
 						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 						if err != nil {
 							continue
 						}
-						normalTx := tx.(*transaction.Tx)
-						txMsg.(*wire.MessageTx).Transaction = normalTx
+						txMsg.(*wire.MessageTx).Transaction = tx
 						err = serverObj.PushMessageToAll(txMsg)
 						if err == nil {
 							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
 						}
 					}
-				case common.TxCustomTokenPrivacyType:
+				case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 					{
 						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
 						if err != nil {
 							continue
 						}
-						customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
+						txMsg.(*wire.MessageTxPrivacyToken).Transaction = tx
 						err = serverObj.PushMessageToAll(txMsg)
 						if err == nil {
 							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())

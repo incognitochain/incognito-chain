@@ -3,6 +3,8 @@ package metadata
 import (
 	"bytes"
 	"errors"
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -105,21 +107,17 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 	if tx.IsPrivacy() {
 		return false, false, errors.New("staking Transaction Is No Privacy Transaction")
 	}
-	onlyOne, pubkey, amount := tx.GetUniqueReceiver()
-	if !onlyOne {
-		return false, false, errors.New("staking Transaction Should Have 1 Output Amount crossponding to 1 Receiver")
-	}
-
-	// get burning address
-	burningAddress := chainRetriever.GetBurningAddress(beaconHeight)
-	keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(burningAddress)
+	isBurned, burnCoin, tokenID, err := tx.GetTxBurnData()
 	if err != nil {
-		return false, false, errors.New("burning address is invalid")
+		return false, false, errors.New("Error Cannot get burn data from tx")
 	}
-	if !bytes.Equal(pubkey, keyWalletBurningAdd.KeySet.PaymentAddress.Pk) {
-		return false, false, errors.New("receiver Should be Burning Address")
+	if !isBurned {
+		return false, false, errors.New("Error Staking tx should be a burn tx")
 	}
-
+	if !bytes.Equal(tokenID[:], common.PRVCoinID[:]) {
+		return false, false, errors.New("Error Staking tx should transfer PRV only")
+	}
+	amount := burnCoin.GetValue()
 	if stakingMetadata.Type == ShardStakingMeta && amount != chainRetriever.GetStakingAmountShard() {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
@@ -127,19 +125,12 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 
-	rewardReceiverPaymentAddress := stakingMetadata.RewardReceiverPaymentAddress
-	rewardReceiverWallet, err := wallet.Base58CheckDeserialize(rewardReceiverPaymentAddress)
-	if err != nil || rewardReceiverWallet == nil {
-		return false, false, errors.New("Invalid Candidate Payment Address, Failed to Deserialized Into Key Wallet")
-	}
-	if len(rewardReceiverWallet.KeySet.PaymentAddress.Pk) != common.PublicKeySize {
-		return false, false, errors.New("Invalid Public Key of Candidate Payment Address")
+	if _, err := AssertPaymentAddressAndTxVersion(stakingMetadata.FunderPaymentAddress, tx.GetVersion()); err != nil {
+		return false, false, errors.New(fmt.Sprintf("invalid funder address: %v", err))
 	}
 
-	funderPaymentAddress := stakingMetadata.FunderPaymentAddress
-	funderWallet, err := wallet.Base58CheckDeserialize(funderPaymentAddress)
-	if err != nil || funderWallet == nil {
-		return false, false, errors.New("Invalid Funder Payment Address, Failed to Deserialized Into Key Wallet")
+	if _, err := AssertPaymentAddressAndTxVersion(stakingMetadata.RewardReceiverPaymentAddress, tx.GetVersion()); err != nil {
+		return false, false, errors.New(fmt.Sprintf("invalid reward receiver address: %v", err))
 	}
 
 	CommitteePublicKey := new(incognitokey.CommitteePublicKey)
@@ -150,6 +141,7 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 	if !CommitteePublicKey.CheckSanityData() {
 		return false, false, errors.New("Invalid Commitee Public Key of Candidate who join consensus")
 	}
+
 	return true, true, nil
 }
 func (stakingMetadata StakingMetadata) GetType() int {

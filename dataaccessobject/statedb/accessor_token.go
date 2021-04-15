@@ -6,13 +6,14 @@ import (
 )
 
 func StorePrivacyToken(stateDB *StateDB, tokenID common.Hash, name string, symbol string, tokenType int, mintable bool, amount uint64, info []byte, txHash common.Hash) error {
-	dataaccessobject.Logger.Log.Infof("Store Privacy Token %+v", tokenID)
+	dataaccessobject.Logger.Log.Infof("Store Privacy Token %+v, txHash %+v\n", tokenID, txHash.String())
 	key := GenerateTokenObjectKey(tokenID)
 	_, has, err := stateDB.getTokenState(key)
 	if err != nil {
 		return NewStatedbError(StorePrivacyTokenError, err)
 	}
 	if has {
+		dataaccessobject.Logger.Log.Infof("Token %v already existed\n", tokenID.String())
 		return nil
 	}
 	value := NewTokenStateWithValue(tokenID, name, symbol, tokenType, mintable, amount, info, txHash)
@@ -30,7 +31,7 @@ func StorePrivacyTokenTx(stateDB *StateDB, tokenID common.Hash, txHash common.Ha
 		return NewStatedbError(GetPrivacyTokenError, err)
 	}
 	if !has {
-		err := StorePrivacyToken(stateDB, tokenID, "", "", UnknownToken, false, 0, []byte{}, common.Hash{})
+		err := StorePrivacyToken(stateDB, tokenID, "", "", UnknownToken, false, 0, []byte{}, txHash)
 		if err != nil {
 			return err
 		}

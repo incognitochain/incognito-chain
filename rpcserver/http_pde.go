@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"math/big"
 	"sort"
 	"strconv"
@@ -101,7 +102,7 @@ type ConvertedPrice struct {
 	Price          uint64
 }
 
-func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interface{}, closeChan <-chan struct{}, version int) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	// get meta data from params
@@ -117,15 +118,27 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interf
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	contributedAmountData, ok := data["ContributedAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	contributedAmount, err := common.AssertAndConvertNumber(data["ContributedAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	contributedAmount := uint64(contributedAmountData)
 	tokenIDStr, ok := data["TokenIDStr"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
+
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDEContribution(
 		pdeContributionPairID,
 		contributorAddressStr,
@@ -133,6 +146,17 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interf
 		tokenIDStr,
 		metadata.PDEContributionMeta,
 	)
+
+	if version == 2 {
+		meta.Type = metadata.PDEPRVRequiredContributionRequestMeta
+	}
+	if txVersion == 1 {
+		tmpAddr := meta.ContributorAddressStr
+		meta.ContributorAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -159,7 +183,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVContribution(params interf
 }
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithPRVContribution(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithPRVContribution(params, closeChan)
+	data, err := httpServer.handleCreateRawTxWithPRVContribution(params, closeChan, 1)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -175,7 +199,24 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPRVContribution(params in
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+func (httpServer *HttpServer) handleCreateAndSendTxWithPRVContributionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithPRVContribution(params, closeChan, 2)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params interface{}, closeChan <-chan struct{}, version int) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
 	if len(arrayParams) >= 7 {
@@ -194,15 +235,27 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params int
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	contributedAmountData, ok := tokenParamsRaw["ContributedAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	contributedAmount, err := common.AssertAndConvertNumber(tokenParamsRaw["ContributedAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	contributedAmount := uint64(contributedAmountData)
 	tokenIDStr := tokenParamsRaw["TokenIDStr"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
+
+	var txVersion int8
+	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDEContribution(
 		pdeContributionPairID,
 		contributorAddressStr,
@@ -210,6 +263,16 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params int
 		tokenIDStr,
 		metadata.PDEContributionMeta,
 	)
+	if version == 2 {
+		meta.Type = metadata.PDEPRVRequiredContributionRequestMeta
+	}
+	if txVersion == 1 {
+		tmpAddr := meta.ContributorAddressStr
+		meta.ContributorAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
@@ -230,7 +293,26 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenContribution(params int
 }
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithPTokenContribution(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithPTokenContribution(params, closeChan)
+	data, err := httpServer.handleCreateRawTxWithPTokenContribution(params, closeChan, 1)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	// sendResult, err1 := httpServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithPTokenContributionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithPTokenContribution(params, closeChan, 2)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -264,30 +346,57 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	sellAmount := uint64(data["SellAmount"].(float64))
+	sellAmount, err := common.AssertAndConvertNumber(data["SellAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
 	traderAddressStr, ok := data["TraderAddressStr"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	minAcceptableAmountData, ok := data["MinAcceptableAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	minAcceptableAmount, err := common.AssertAndConvertNumber(data["MinAcceptableAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	minAcceptableAmount := uint64(minAcceptableAmountData)
-	tradingFeeData, ok := data["TradingFee"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	tradingFee, err := common.AssertAndConvertNumber(data["TradingFee"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	tradingFee := uint64(tradingFeeData)
+
+	traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDETradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
 		sellAmount,
 		minAcceptableAmount,
 		tradingFee,
-		traderAddressStr,
+		traderOTAPublicKeyStr,
+		traderOTAtxRandomStr,
 		metadata.PDETradeRequestMeta,
 	)
+	if txVersion == 1 {
+		tmpAddr := meta.TraderAddressStr
+		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -351,28 +460,42 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
 
-	sellAmountData, ok := tokenParamsRaw["SellAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	sellAmount, err := common.AssertAndConvertNumber(tokenParamsRaw["SellAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	sellAmount := uint64(sellAmountData)
 
 	traderAddressStr, ok := tokenParamsRaw["TraderAddressStr"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
 
-	minAcceptableAmountData, ok := tokenParamsRaw["MinAcceptableAmount"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	minAcceptableAmount, err := common.AssertAndConvertNumber(tokenParamsRaw["MinAcceptableAmount"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	minAcceptableAmount := uint64(minAcceptableAmountData)
 
-	tradingFeeData, ok := tokenParamsRaw["TradingFee"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	tradingFee, err := common.AssertAndConvertNumber(tokenParamsRaw["TradingFee"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	tradingFee := uint64(tradingFeeData)
+
+	traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	var txVersion int8
+	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
 
 	meta, _ := metadata.NewPDETradeRequest(
 		tokenIDToBuyStr,
@@ -380,9 +503,17 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 		sellAmount,
 		minAcceptableAmount,
 		tradingFee,
-		traderAddressStr,
+		traderOTAPublicKeyStr,
+		traderOTAtxRandomStr,
 		metadata.PDETradeRequestMeta,
 	)
+	if txVersion == 1 {
+		tmpAddr := meta.TraderAddressStr
+		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
@@ -445,11 +576,22 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReq(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
 
-	withdrawalShareAmtData, ok := data["WithdrawalShareAmt"].(float64)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	withdrawalShareAmt, err := common.AssertAndConvertNumber(data["WithdrawalShareAmt"])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	withdrawalShareAmt := uint64(withdrawalShareAmtData)
+
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
 
 	meta, _ := metadata.NewPDEWithdrawalRequest(
 		withdrawerAddressStr,
@@ -458,6 +600,13 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReq(params interfac
 		withdrawalShareAmt,
 		metadata.PDEWithdrawalRequestMeta,
 	)
+	if txVersion == 1 {
+		tmpAddr := meta.WithdrawerAddressStr
+		meta.WithdrawerAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
 
 	// create new param to build raw tx from param interface
 	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
@@ -498,6 +647,10 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithWithdrawalReq(params inte
 	}
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
 	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithWithdrawalReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return httpServer.handleCreateAndSendTxWithWithdrawalReq(params, closeChan)
 }
 
 func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -1113,151 +1266,6 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	return results, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawTxWithPRVContributionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-
-	// get meta data from params
-	data, ok := arrayParams[4].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-	pdeContributionPairID, ok := data["PDEContributionPairID"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-	contributorAddressStr, ok := data["ContributorAddressStr"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-	contributedAmount, err := common.AssertAndConvertStrToNumber(data["ContributedAmount"])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-	tokenIDStr, ok := data["TokenIDStr"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-	meta, _ := metadata.NewPDEContribution(
-		pdeContributionPairID,
-		contributorAddressStr,
-		contributedAmount,
-		tokenIDStr,
-		metadata.PDEPRVRequiredContributionRequestMeta,
-	)
-
-	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
-
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
-	}
-
-	byteArrays, err2 := json.Marshal(tx)
-	if err2 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleCreateAndSendTxWithPRVContributionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithPRVContributionV2(params, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleCreateRawTxWithPTokenContributionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-
-	if len(arrayParams) >= 7 {
-		hasPrivacyToken := int(arrayParams[6].(float64)) > 0
-		if hasPrivacyToken {
-			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("The privacy mode must be disabled"))
-		}
-	}
-	tokenParamsRaw := arrayParams[4].(map[string]interface{})
-
-	pdeContributionPairID, ok := tokenParamsRaw["PDEContributionPairID"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-	contributorAddressStr, ok := tokenParamsRaw["ContributorAddressStr"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-	contributedAmount, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["ContributedAmount"])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-	tokenIDStr := tokenParamsRaw["TokenIDStr"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-	meta, _ := metadata.NewPDEContribution(
-		pdeContributionPairID,
-		contributorAddressStr,
-		contributedAmount,
-		tokenIDStr,
-		metadata.PDEPRVRequiredContributionRequestMeta,
-	)
-
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
-	if rpcErr != nil {
-		Logger.log.Error(rpcErr)
-		return nil, rpcErr
-	}
-
-	byteArrays, err2 := json.Marshal(customTokenTx)
-	if err2 != nil {
-		Logger.log.Error(err2)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            customTokenTx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleCreateAndSendTxWithPTokenContributionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithPTokenContributionV2(params, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	// sendResult, err1 := httpServer.handleSendRawCustomTokenTransaction(newParam, closeChan)
-	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
-	if err1 != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
-	}
-
-	return sendResult, nil
-}
-
 func (httpServer *HttpServer) handleCreateRawTxWithPRVCrossPoolTradeReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
@@ -1274,7 +1282,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVCrossPoolTradeReq(params i
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	sellAmount, err := common.AssertAndConvertStrToNumber(data["SellAmount"])
+	sellAmount, err := common.AssertAndConvertNumber(data["SellAmount"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -1282,26 +1290,58 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVCrossPoolTradeReq(params i
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	minAcceptableAmount, err := common.AssertAndConvertStrToNumber(data["MinAcceptableAmount"])
+	minAcceptableAmount, err := common.AssertAndConvertNumber(data["MinAcceptableAmount"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	tradingFee, err := common.AssertAndConvertStrToNumber(data["TradingFee"])
+	tradingFee, err := common.AssertAndConvertNumber(data["TradingFee"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
+	traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	traderSubOTAPublicKeyStr, traderSubOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("txVersion must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
 	meta, _ := metadata.NewPDECrossPoolTradeRequest(
 		tokenIDToBuyStr,
 		tokenIDToSellStr,
 		sellAmount,
 		minAcceptableAmount,
 		tradingFee,
-		traderAddressStr,
+		traderOTAPublicKeyStr,
+		traderOTAtxRandomStr,
+		traderSubOTAPublicKeyStr,
+		traderSubOTAtxRandomStr,
 		metadata.PDECrossPoolTradeRequestMeta,
 	)
 
+	if txVersion == 1 {
+		tmpAddr := meta.TraderAddressStr
+		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
+
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -1362,7 +1402,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenCrossPoolTradeReq(param
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
 
-	sellAmount, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["SellAmount"])
+	sellAmount, err := common.AssertAndConvertNumber(tokenParamsRaw["SellAmount"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
@@ -1372,14 +1412,35 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenCrossPoolTradeReq(param
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
 
-	minAcceptableAmount, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["MinAcceptableAmount"])
+	minAcceptableAmount, err := common.AssertAndConvertNumber(tokenParamsRaw["MinAcceptableAmount"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	tradingFee, err := common.AssertAndConvertStrToNumber(tokenParamsRaw["TradingFee"])
+	tradingFee, err := common.AssertAndConvertNumber(tokenParamsRaw["TradingFee"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+	traderSubOTAPublicKeyStr, traderSubOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	var txVersion int8
+	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("txVersion must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
 	}
 
 	meta, _ := metadata.NewPDECrossPoolTradeRequest(
@@ -1388,11 +1449,21 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenCrossPoolTradeReq(param
 		sellAmount,
 		minAcceptableAmount,
 		tradingFee,
-		traderAddressStr,
+		traderOTAPublicKeyStr,
+		traderOTAtxRandomStr,
+		traderSubOTAPublicKeyStr,
+		traderSubOTAtxRandomStr,
 		metadata.PDECrossPoolTradeRequestMeta,
 	)
+	if txVersion == 1 {
+		tmpAddr := meta.TraderAddressStr
+		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -1429,84 +1500,6 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPTokenCrossPoolTradeReq(p
 	return sendResult, nil
 }
 
-func (httpServer *HttpServer) handleCreateRawTxWithWithdrawalReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-
-	// get meta data from params
-	data, ok := arrayParams[4].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-
-	withdrawerAddressStr, ok := data["WithdrawerAddressStr"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-
-	withdrawalToken1IDStr, ok := data["WithdrawalToken1IDStr"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-
-	withdrawalToken2IDStr, ok := data["WithdrawalToken2IDStr"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-
-	withdrawalShareAmt, err := common.AssertAndConvertStrToNumber(data["WithdrawalShareAmt"])
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-
-	meta, _ := metadata.NewPDEWithdrawalRequest(
-		withdrawerAddressStr,
-		withdrawalToken1IDStr,
-		withdrawalToken2IDStr,
-		withdrawalShareAmt,
-		metadata.PDEWithdrawalRequestMeta,
-	)
-
-	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
-
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
-	}
-
-	byteArrays, err2 := json.Marshal(tx)
-	if err2 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
-}
-
-func (httpServer *HttpServer) handleCreateAndSendTxWithWithdrawalReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	data, err := httpServer.handleCreateRawTxWithWithdrawalReqV2(params, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	tx := data.(jsonresult.CreateTransactionResult)
-	base58CheckData := tx.Base58CheckData
-	newParam := make([]interface{}, 0)
-	newParam = append(newParam, base58CheckData)
-	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-	}
-	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
-	return result, nil
-}
-
 func (httpServer *HttpServer) handleCreateRawTxWithPDEFeeWithdrawalReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 
@@ -1531,9 +1524,21 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDEFeeWithdrawalReq(params in
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
 
-	withdrawalFeeAmt, err := common.AssertAndConvertStrToNumber(data["WithdrawalFeeAmt"])
+	withdrawalFeeAmt, err := common.AssertAndConvertNumber(data["WithdrawalFeeAmt"])
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("version must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
 	}
 
 	meta, _ := metadata.NewPDEFeeWithdrawalRequest(
@@ -1543,9 +1548,17 @@ func (httpServer *HttpServer) handleCreateRawTxWithPDEFeeWithdrawalReq(params in
 		withdrawalFeeAmt,
 		metadata.PDEFeeWithdrawalRequestMeta,
 	)
+	if txVersion == 1 {
+		tmpAddr := meta.WithdrawerAddressStr
+		meta.WithdrawerAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+		}
+	}
+
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}

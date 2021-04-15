@@ -76,7 +76,10 @@ type Params struct {
 	MissingSignaturePenalty          []signaturecounter.Penalty
 	PortalETHContractAddressStr      string // smart contract of ETH for portal
 	BCHeightBreakPointPortalV3       uint64
+	BCHeightBreakPointPrivacyV2      uint64
 	EnableFeatureFlags               map[int]uint64 // featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature
+	CoinVersion2LowestHeight 		 uint64
+	WhiteListTxs					 map[string]bool
 }
 
 type GenesisParams struct {
@@ -327,11 +330,14 @@ func SetupParam() {
 		RandomTimeV2:                TestnetRandomTimeV2,
 		PortalETHContractAddressStr: "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address
 		BCHeightBreakPointPortalV3:  30158,
+		BCHeightBreakPointPrivacyV2:  30, //TODO: change this value when deployed testnet
+		CoinVersion2LowestHeight: 10,
 		EnableFeatureFlags: map[int]uint64{
 			common.PortalV3Flag:       TestnetEnablePortalV3,
 			common.PortalRelayingFlag: TestnetEnablePortalRelaying,
 			common.PortalV4Flag:       TestnetEnablePortalV4,
 		},
+		WhiteListTxs: map[string]bool{},
 	}
 	// END TESTNET
 
@@ -387,7 +393,7 @@ func SetupParam() {
 		ChainVersion:                   "version-chain-test-2.json",
 		ConsensusV2Epoch:               1e9,
 		StakingFlowV2Height:            2051863,
-		EnableSlashingStakingFlowV2:    1e12,
+		EnableSlashingStakingFlowV2:    2087789,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
 		PortalParams: portal.PortalParams{
@@ -458,13 +464,16 @@ func SetupParam() {
 		EpochV2:                     Testnet2EpochV2,
 		EpochV2BreakPoint:           Testnet2EpochV2BreakPoint,
 		RandomTimeV2:                Testnet2RandomTimeV2,
-		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46", // todo: update sc address
-		BCHeightBreakPointPortalV3:  1328816,
+		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46",   // todo: update sc address
+		BCHeightBreakPointPortalV3:  8974, // todo: should update before deploying
+		BCHeightBreakPointPrivacyV2:  30, //TODO: change this value when deployed testnet2
+		CoinVersion2LowestHeight: 10,
 		EnableFeatureFlags: map[int]uint64{
 			common.PortalV3Flag:       Testnet2EnablePortalV3,
 			common.PortalRelayingFlag: Testnet2EnablePortalRelaying,
 			common.PortalV4Flag:       Testnet2EnablePortalV4,
 		},
+		WhiteListTxs: Testnet2WhiteListTxs,
 	}
 	// END TESTNET-2
 
@@ -588,11 +597,14 @@ func SetupParam() {
 		RandomTimeV2:                MainnetRandomTimeV2,
 		PortalETHContractAddressStr: "", // todo: update sc address
 		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
+		BCHeightBreakPointPrivacyV2:  1500000, //TODO: change this value when deployed mainnet
+		CoinVersion2LowestHeight: 900000, //TODO
 		EnableFeatureFlags: map[int]uint64{
 			common.PortalV3Flag:       MainnetEnablePortalV3,
 			common.PortalRelayingFlag: MainnetEnablePortalRelaying,
 			common.PortalV4Flag:       MainnetEnablePortalV4,
 		},
+		WhiteListTxs: map[string]bool{},
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

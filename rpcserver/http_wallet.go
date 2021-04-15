@@ -30,6 +30,30 @@ func (httpServer *HttpServer) handleListAccounts(params interface{}, closeChan <
 }
 
 /*
+this submits a chain-facing `OTA key` to view its balances later
+
+Parameter #1—the OTA key that will be submitted
+Result—success or error
+
+*/
+func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams==nil || len(arrayParams)!=1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array with 1 element"))
+	}
+	key, ok := arrayParams[0].(string)
+	if !ok{
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OTA key is invalid"))
+	}
+	result, err := httpServer.walletService.SubmitKey(key)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+/*
 getaccount RPC returns the name of the account associated with the given address.
 - Param #1: address
 */
@@ -553,7 +577,7 @@ func (httpServer *HttpServer) handleDefragmentAccountV2(params interface{}, clos
 */
 func (httpServer *HttpServer) createRawDefragmentAccountTransactionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
-	tx, err := httpServer.txService.BuildRawDefragmentAccountTransactionV2(params, nil)
+	tx, err := httpServer.txService.BuildRawDefragmentAccountTransaction(params, nil)
 	if err.(*rpcservice.RPCError) != nil {
 		Logger.log.Critical(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
@@ -608,12 +632,13 @@ func (httpServer *HttpServer) createRawDefragmentAccountTokenTransaction(params 
 		Logger.log.Error(err)
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
+
 	result := jsonresult.CreateTransactionTokenResult{
-		ShardID:         common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
+		ShardID:         common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte()),
 		TxID:            tx.Hash().String(),
-		TokenID:         tx.TxPrivacyTokenData.PropertyID.String(),
-		TokenName:       tx.TxPrivacyTokenData.PropertyName,
-		TokenAmount:     tx.TxPrivacyTokenData.Amount,
+		TokenID:         tx.GetTxTokenData().PropertyID.String(),
+		TokenName:       tx.GetTxTokenData().PropertyName,
+		TokenAmount:     tx.GetTxTokenData().Amount,
 		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
@@ -622,7 +647,7 @@ func (httpServer *HttpServer) createRawDefragmentAccountTokenTransaction(params 
 // defragment for token
 func (httpServer *HttpServer) handleDefragmentAccountTokenV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	var err error
-	data, err := httpServer.createRawDefragmentAccountTokenTransactionV2(params, closeChan)
+	data, err := httpServer.createRawDefragmentAccountTokenTransaction(params, closeChan)
 	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
@@ -637,31 +662,6 @@ func (httpServer *HttpServer) handleDefragmentAccountTokenV2(params interface{},
 	result := jsonresult.CreateTransactionResult{
 		TxID:    sendResult.(jsonresult.CreateTransactionTokenResult).TxID,
 		ShardID: tx.ShardID,
-	}
-	return result, nil
-}
-
-// createRawDefragmentAccountTokenTransaction
-func (httpServer *HttpServer) createRawDefragmentAccountTokenTransactionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	var err error
-	tx, err := httpServer.txService.BuildRawDefragmentPrivacyCustomTokenTransactionV2(params, nil)
-	if err.(*rpcservice.RPCError) != nil {
-		Logger.log.Error(err)
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
-	}
-
-	byteArrays, err := json.Marshal(tx)
-	if err != nil {
-		Logger.log.Error(err)
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
-	}
-	result := jsonresult.CreateTransactionTokenResult{
-		ShardID:         common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
-		TxID:            tx.Hash().String(),
-		TokenID:         tx.TxPrivacyTokenData.PropertyID.String(),
-		TokenName:       tx.TxPrivacyTokenData.PropertyName,
-		TokenAmount:     tx.TxPrivacyTokenData.Amount,
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
 	}
 	return result, nil
 }

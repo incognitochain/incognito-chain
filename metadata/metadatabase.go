@@ -1,16 +1,89 @@
 package metadata
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type MetadataBase struct {
 	Type int
+}
+
+func (mb *MetadataBase) Sign(privateKey *privacy.PrivateKey, tx Transaction) error {
+	return nil
+}
+func (mb *MetadataBase) VerifyMetadataSignature(publicKey []byte, tx Transaction) (bool, error) {
+	return true, nil
+}
+
+type MetadataBaseWithSignature struct {
+	MetadataBase
+	Sig []byte 		`json:"Sig,omitempty"`
+}
+
+func NewMetadataBaseWithSignature(thisType int) *MetadataBaseWithSignature {
+	return &MetadataBaseWithSignature{MetadataBase: MetadataBase{Type: thisType}, Sig: []byte{}}
+}
+
+func (mbs *MetadataBaseWithSignature) Sign(privateKey *privacy.PrivateKey, tx Transaction) error {
+	hashForMd := tx.HashWithoutMetadataSig()
+	if hashForMd == nil {
+		// the metadata type does not need signing
+		return nil
+	}
+	if len(mbs.Sig) > 0 {
+		return errors.New("Cannot overwrite metadata signature")
+	}
+
+	/****** using Schnorr signature *******/
+	sk := new(privacy.Scalar).FromBytesS(*privateKey)
+	r := new(privacy.Scalar).FromUint64(0)
+	sigKey := new(privacy.SchnorrPrivateKey)
+	sigKey.Set(sk, r)
+
+	// signing
+	signature, err := sigKey.Sign(hashForMd[:])
+	if err != nil {
+		return err
+	}
+
+	// convert signature to byte array
+	mbs.Sig = signature.Bytes()
+	return nil
+}
+
+func (mbs *MetadataBaseWithSignature) VerifyMetadataSignature(publicKey []byte, tx Transaction) (bool, error) {
+	hashForMd := tx.HashWithoutMetadataSig()
+	if len(mbs.Sig) == 0 {
+		if hashForMd == nil {
+			// the metadata type does not need signing
+			sigPubKey := tx.GetSigPubKey()
+			return bytes.Equal(sigPubKey, publicKey), nil
+		} else {
+			Logger.log.Error("CheckAuthorizedSender: should have sig for metadata to verify")
+			return false, errors.New("CheckAuthorizedSender should have sig for metadata to verify")
+		}
+	}
+	verifyKey := new(privacy.SchnorrPublicKey)
+	metaSigPublicKey, err := new(privacy.Point).FromBytesS(publicKey)
+	if err != nil {
+		Logger.log.Error(err)
+		return false, err
+	}
+	verifyKey.Set(metaSigPublicKey)
+	signature := new(privacy.SchnSignature)
+	if err := signature.SetBytes(mbs.Sig); err != nil {
+		Logger.log.Errorf("Invalid signature %v", err)
+		return false, err
+	}
+	return verifyKey.Verify(signature, hashForMd[:]), nil
 }
 
 func NewMetadataBase(thisType int) *MetadataBase {
@@ -50,8 +123,12 @@ func (mb MetadataBase) Hash() *common.Hash {
 	return &hash
 }
 
+func (mb MetadataBase) HashWithoutSig() *common.Hash {
+	return mb.Hash()
+}
+
 func (mb MetadataBase) CheckTransactionFee(tx Transaction, minFeePerKbTx uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
-	if tx.GetType() == common.TxCustomTokenPrivacyType {
+	if tx.GetType() == common.TxCustomTokenPrivacyType || tx.GetType() == common.TxTokenConversionType {
 		feeNativeToken := tx.GetTxFee()
 		feePToken := tx.GetTxFeeToken()
 		if feePToken > 0 {
@@ -86,6 +163,6 @@ func (mb *MetadataBase) BuildReqActions(tx Transaction, chainRetriever ChainRetr
 	return [][]string{}, nil
 }
 
-func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (mb MetadataBase) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	return true, nil
 }

@@ -124,6 +124,9 @@ const (
 	PortalV4UnshieldBatchingMeta      = 254
 	PortalV4FeeReplacementRequestMeta = 255
 	PortalV4SubmitConfirmedTxMeta     = 256
+
+	InitTokenRequestMeta  = 244
+	InitTokenResponseMeta = 245
 )
 
 var minerCreatedMetaTypes = []int{
@@ -152,6 +155,7 @@ var minerCreatedMetaTypes = []int{
 	PortalRedeemFromLiquidationPoolResponseMetaV3,
 	PortalV4ShieldingResponseMeta,
 	PortalV4UnshieldingResponseMeta,
+	InitTokenResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -164,20 +168,20 @@ var (
 	// if the blockchain is running in Docker container
 	// then using GETH_NAME env's value (aka geth container name)
 	// otherwise using localhost
-	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "127.0.0.1")
-	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "http")
-	EthereumLightNodePort     = common.GetENV("GETH_PORT", "8545")
+	//EthereumLightNodeHost     = common.GetENV("GETH_NAME", "127.0.0.1")
+	//EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "http")
+	//EthereumLightNodePort     = common.GetENV("GETH_PORT", "8545")
 )
 
 // Kovan testnet
-//var (
+var (
 //	// if the blockchain is running in Docker container
 //	// then using GETH_NAME env's value (aka geth container name)
 //	// otherwise using localhost
-//	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "kovan.infura.io/v3/93fe721349134964aa71071a713c5cef")
-//	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "https")
-//	EthereumLightNodePort     = common.GetENV("GETH_PORT", "")
-//)
+	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "https://kovan.infura.io/v3/155e4050bb3b49448145a4daffa8bd7c")
+	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "")
+	EthereumLightNodePort     = common.GetENV("GETH_PORT", "")
+)
 
 //const (
 //	EthereumLightNodeProtocol = "http"
