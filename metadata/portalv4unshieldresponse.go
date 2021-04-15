@@ -5,26 +5,28 @@ import (
 	"encoding/json"
 	"fmt"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type PortalUnshieldResponse struct {
 	MetadataBase
-	RequestStatus    string
-	ReqTxID          common.Hash
-	RequesterAddrStr string
-	UnshieldAmount   uint64
-	IncTokenID       string
+	RequestStatus  string
+	ReqTxID        common.Hash
+	OTAPubKeyStr   string
+	TxRandomStr    string
+	UnshieldAmount uint64
+	IncTokenID     string
 }
 
 func NewPortalV4UnshieldResponse(
 	requestStatus string,
 	reqTxID common.Hash,
 	requesterAddressStr string,
+	txRandomStr string,
 	amount uint64,
 	tokenID string,
 	metaType int,
@@ -33,12 +35,13 @@ func NewPortalV4UnshieldResponse(
 		Type: metaType,
 	}
 	return &PortalUnshieldResponse{
-		RequestStatus:    requestStatus,
-		ReqTxID:          reqTxID,
-		MetadataBase:     metadataBase,
-		RequesterAddrStr: requesterAddressStr,
-		UnshieldAmount:   amount,
-		IncTokenID:       tokenID,
+		RequestStatus:  requestStatus,
+		ReqTxID:        reqTxID,
+		MetadataBase:   metadataBase,
+		OTAPubKeyStr:   requesterAddressStr,
+		TxRandomStr: txRandomStr,
+		UnshieldAmount: amount,
+		IncTokenID:     tokenID,
 	}
 }
 
@@ -65,7 +68,8 @@ func (iRes PortalUnshieldResponse) Hash() *common.Hash {
 	record := iRes.MetadataBase.Hash().String()
 	record += iRes.RequestStatus
 	record += iRes.ReqTxID.String()
-	record += iRes.RequesterAddrStr
+	record += iRes.OTAPubKeyStr
+	record += iRes.TxRandomStr
 	record += strconv.FormatUint(iRes.UnshieldAmount, 10)
 	record += iRes.IncTokenID
 	// final hash
@@ -78,24 +82,20 @@ func (iRes *PortalUnshieldResponse) CalculateSize() uint64 {
 }
 
 func (iRes PortalUnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
-	txsInBlock []Transaction,
-	txsUsed []int,
-	insts [][]string,
-	instUsed []int,
-	shardID byte,
-	tx Transaction,
+	mintData *MintData,
+	shardID byte, tx Transaction,
 	chainRetriever ChainRetriever,
 	ac *AccumulatedValues,
 	shardViewRetriever ShardViewRetriever,
 	beaconViewRetriever BeaconViewRetriever,
 ) (bool, error) {
 	idx := -1
-	for i, inst := range insts {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not PortalUnshieldResponse instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 || (instMetaType != strconv.Itoa(PortalV4UnshieldingRequestMeta)) {
+		if mintData.InstsUsed[i] > 0 || (instMetaType != strconv.Itoa(PortalV4UnshieldingRequestMeta)) {
 			continue
 		}
 		instReqStatus := inst[2]
@@ -106,7 +106,8 @@ func (iRes PortalUnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 
 		var shardIDFromInst byte
 		var txReqIDFromInst common.Hash
-		var requesterAddrStrFromInst string
+		var receiverOTAPubKeyFromInst string
+		var receiverTxRandomFromInst string
 		var unshieldAmountFromInst uint64
 		var tokenIDStrFromInst string
 
@@ -114,12 +115,13 @@ func (iRes PortalUnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		var unshieldReqContent PortalUnshieldRequestContent
 		err := json.Unmarshal(contentBytes, &unshieldReqContent)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing portal v4 unshield request content: ", err)
+			Logger.log.Error("[VerifyUnshieldResponse] WARNING - VALIDATION: an error occured while parsing portal v4 unshield request content: ", err)
 			continue
 		}
 		shardIDFromInst = unshieldReqContent.ShardID
 		txReqIDFromInst = unshieldReqContent.TxReqID
-		requesterAddrStrFromInst = unshieldReqContent.IncAddressStr
+		receiverOTAPubKeyFromInst = unshieldReqContent.OTAPubKeyStr
+		receiverTxRandomFromInst = unshieldReqContent.TxRandomStr
 		unshieldAmountFromInst = unshieldReqContent.UnshieldAmount
 		tokenIDStrFromInst = unshieldReqContent.TokenID
 
@@ -127,25 +129,29 @@ func (iRes PortalUnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 			shardID != shardIDFromInst {
 			continue
 		}
-		if requesterAddrStrFromInst != iRes.RequesterAddrStr {
-			Logger.log.Errorf("Error - VALIDATION: Requester address %v is not matching to Requester address in instruction %v", iRes.RequesterAddrStr, requesterAddrStrFromInst)
-			continue
-		}
 
-		if unshieldAmountFromInst != iRes.UnshieldAmount {
-			Logger.log.Errorf("Error - VALIDATION: Unshield amount %v is not matching to unshield amount in instruction %v", iRes.UnshieldAmount, unshieldAmountFromInst)
-			continue
-		}
-
-		key, err := wallet.Base58CheckDeserialize(requesterAddrStrFromInst)
+		isMinted, mintCoin, assetID, err := tx.GetTxMintData()
 		if err != nil {
-			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing requester address string: ", err)
+			Logger.log.Error("[VerifyUnshieldResponse] ERROR - VALIDATION: an error occured while get tx mint data: ", err)
+			continue
+		}
+		if !isMinted {
+			Logger.log.Info("[VerifyUnshieldResponse] WARNING - VALIDATION: this is not Tx Mint: ")
+			continue
+		}
+		pk := mintCoin.GetPublicKey().ToBytesS()
+		paidAmount := mintCoin.GetValue()
+
+		publicKey, txRandom, err := coin.ParseOTAInfoFromString(receiverOTAPubKeyFromInst, receiverTxRandomFromInst)
+		if err != nil {
+			Logger.log.Errorf("[VerifyUnshieldResponse] Wrong request info's txRandom - Cannot set txRandom from bytes: %+v", err)
 			continue
 		}
 
-		_, pk, paidAmount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
+		txR := mintCoin.(*coin.CoinV2).GetTxRandom()
+		if !bytes.Equal(publicKey.ToBytesS(), pk[:]) ||
 			unshieldAmountFromInst != paidAmount ||
+			!bytes.Equal(txR[:], txRandom[:]) ||
 			tokenIDStrFromInst != assetID.String() {
 			continue
 		}
@@ -153,8 +159,8 @@ func (iRes PortalUnshieldResponse) VerifyMinerCreatedTxBeforeGettingInBlock(
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
-		return false, fmt.Errorf(fmt.Sprintf("no PortalV4UnshieldRequest instruction found for PortalUnshieldResponse tx %s", tx.Hash().String()))
+		return false, fmt.Errorf(fmt.Sprintf("[VerifyUnshieldResponse] no PortalV4UnshieldRequest instruction found for PortalUnshieldResponse tx %s", tx.Hash().String()))
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
 }

@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -79,77 +80,55 @@ func (curView *ShardBestState) buildPortalRefundedUnshieldingRequestTx(
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 ) (metadata.Transaction, error) {
-	Logger.log.Errorf("[Shard buildPortalRefundedUnshieldingRequestTx] Starting...")
+	Logger.log.Infof("[buildPortalRefundedUnshieldingRequestTx] Starting...")
+
+	// parse instruction content
 	contentBytes := []byte(contentStr)
-	var rejectedUnshieldingReq metadata.PortalUnshieldRequestContent
-	err := json.Unmarshal(contentBytes, &rejectedUnshieldingReq)
+	var unshieldRequest metadata.PortalUnshieldRequestContent
+	err := json.Unmarshal(contentBytes, &unshieldRequest)
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal v4 unshield request content: %+v", err)
-		return nil, nil
-	}
-	if rejectedUnshieldingReq.ShardID != shardID {
-		Logger.log.Errorf("ERROR: ShardID unexpected expect %v, but got %+v", shardID, rejectedUnshieldingReq.ShardID)
+		Logger.log.Errorf("[buildPortalRefundedUnshieldingRequestTx]: an error occured while unmarshaling portal v4 unshield request content: %+v", err)
 		return nil, nil
 	}
 
+	// check shardID
+	if unshieldRequest.ShardID != shardID {
+		Logger.log.Errorf("[buildPortalRefundedUnshieldingRequestTx]: ShardID unexpected expect %v, but got %+v", shardID, unshieldRequest.ShardID)
+		return nil, nil
+	}
+
+	// create metadata UnshieldResponse
 	meta := metadata.NewPortalV4UnshieldResponse(
 		"refunded",
-		rejectedUnshieldingReq.TxReqID,
-		rejectedUnshieldingReq.IncAddressStr,
-		rejectedUnshieldingReq.UnshieldAmount,
-		rejectedUnshieldingReq.TokenID,
+		unshieldRequest.TxReqID,
+		unshieldRequest.OTAPubKeyStr,
+		unshieldRequest.TxRandomStr,
+		unshieldRequest.UnshieldAmount,
+		unshieldRequest.TokenID,
 		metadata.PortalV4UnshieldingResponseMeta,
 	)
 
-	keyWallet, err := wallet.Base58CheckDeserialize(rejectedUnshieldingReq.IncAddressStr)
+	// init salary tx
+	tokenID, err := common.Hash{}.NewHashFromStr(unshieldRequest.TokenID)
 	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while deserializing custodian address string: %+v", err)
-		return nil, nil
+		Logger.log.Errorf("[buildPortalRefundedUnshieldingRequestTx]: an error occured while converting tokenid to hash: %+v", err)
+		return nil, err
 	}
-	receiverAddr := keyWallet.KeySet.PaymentAddress
-	receiveAmt := rejectedUnshieldingReq.UnshieldAmount
-	tokenID, _ := new(common.Hash).NewHashFromStr(rejectedUnshieldingReq.TokenID)
+	publicKey, txRandom, err := coin.ParseOTAInfoFromString(unshieldRequest.OTAPubKeyStr, unshieldRequest.TxRandomStr)
+	if err != nil {
+		Logger.log.Errorf("[buildPortalRefundedUnshieldingRequestTx]: an error occured while parse ota address: %+v", err)
+		return nil, err
+	}
+	var txParam transaction.TxSalaryOutputParams
+	txParam = transaction.TxSalaryOutputParams{Amount: unshieldRequest.UnshieldAmount, ReceiverAddress: nil, PublicKey: publicKey, TxRandom: txRandom, TokenID: tokenID, Info: []byte{}}
 
-	// in case the returned currency is privacy custom token
-	receiver := &privacy.PaymentInfo{
-		Amount:         receiveAmt,
-		PaymentAddress: receiverAddr,
-	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], tokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID: propID.String(),
-		// PropertyName:   issuingAcceptedInst.IncTokenName,
-		// PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:      receiveAmt,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
-	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	txStateDB := curView.GetCopiedTransactionStateDB()
-	featureStateDB := beaconState.GetBeaconFeatureStateDB()
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			txStateDB,
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			featureStateDB,
-		),
-	)
-	if initErr != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing shielding response tx: %+v", initErr)
+	resTx, err := txParam.BuildTxSalary(producerPrivateKey, curView.GetCopiedTransactionStateDB(), func(c privacy.Coin) metadata.Metadata {
+		return meta
+	})
+	if err != nil {
+		Logger.log.Errorf("[buildPortalRefundedUnshieldingRequestTx]: an error occured while initializing refund unshielding response tx: %+v", err)
 		return nil, nil
 	}
+	Logger.log.Info("[buildPortalRefundedUnshieldingRequestTx] Create response tx successfully.")
 	return resTx, nil
 }

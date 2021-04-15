@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"reflect"
 	"strconv"
 
@@ -15,7 +14,7 @@ import (
 
 type PortalUnshieldRequest struct {
 	MetadataBase
-	IncAddressStr  string // OTA
+	OTAPubKeyStr   string // OTA
 	TxRandomStr    string
 	RemoteAddress  string
 	TokenID        string
@@ -29,7 +28,8 @@ type PortalUnshieldRequestAction struct {
 }
 
 type PortalUnshieldRequestContent struct {
-	IncAddressStr  string
+	OTAPubKeyStr   string
+	TxRandomStr    string
 	RemoteAddress  string
 	TokenID        string
 	UnshieldAmount uint64
@@ -38,7 +38,8 @@ type PortalUnshieldRequestContent struct {
 }
 
 type PortalUnshieldRequestStatus struct {
-	IncAddressStr  string
+	OTAPubKeyStr   string
+	TxRandomStr    string
 	RemoteAddress  string
 	TokenID        string
 	UnshieldAmount uint64
@@ -48,9 +49,10 @@ type PortalUnshieldRequestStatus struct {
 	Status         int
 }
 
-func NewPortalUnshieldRequestStatus(incAddressStr, tokenID, remoteAddress, unshieldID, externalTxID string, burnAmount, externalFee uint64, status int) *PortalUnshieldRequestStatus {
+func NewPortalUnshieldRequestStatus(otaPubKeyStr, txRandomStr, tokenID, remoteAddress, unshieldID, externalTxID string, burnAmount, externalFee uint64, status int) *PortalUnshieldRequestStatus {
 	return &PortalUnshieldRequestStatus{
-		IncAddressStr:  incAddressStr,
+		OTAPubKeyStr:   otaPubKeyStr,
+		TxRandomStr:    txRandomStr,
 		RemoteAddress:  remoteAddress,
 		TokenID:        tokenID,
 		UnshieldAmount: burnAmount,
@@ -61,20 +63,18 @@ func NewPortalUnshieldRequestStatus(incAddressStr, tokenID, remoteAddress, unshi
 	}
 }
 
-func NewPortalUnshieldRequest(metaType int, incAddressStr, txRandomStr string, tokenID, remoteAddress string, burnAmount uint64) (*PortalUnshieldRequest, error) {
-	metadataBase := MetadataBase{
-		Type: metaType,
-	}
-
+func NewPortalUnshieldRequest(metaType int, otaPubKeyStr, txRandomStr string, tokenID, remoteAddress string, burnAmount uint64) (*PortalUnshieldRequest, error) {
 	portalUnshieldReq := &PortalUnshieldRequest{
-		IncAddressStr:  incAddressStr,
+		OTAPubKeyStr:   otaPubKeyStr,
 		TxRandomStr:    txRandomStr,
 		UnshieldAmount: burnAmount,
 		RemoteAddress:  remoteAddress,
 		TokenID:        tokenID,
 	}
 
-	portalUnshieldReq.MetadataBase = metadataBase
+	portalUnshieldReq.MetadataBase = MetadataBase{
+		Type: metaType,
+	}
 
 	return portalUnshieldReq, nil
 }
@@ -101,14 +101,15 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("tx burn ptoken must be TxCustomTokenPrivacyType"))
 	}
 
+	//todo:
 	// check tx version
-	if tx.GetVersion() != transaction.CurrentTxVersion {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError,
-			fmt.Errorf("tx version (%v) is not the current transaction version (%v)", tx.GetVersion(), transaction.CurrentTxVersion))
-	}
+	//if tx.GetVersion() != transaction.CurrentTxVersion {
+	//	return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError,
+	//		fmt.Errorf("tx version (%v) is not the current transaction version (%v)", tx.GetVersion(), transaction.CurrentTxVersion))
+	//}
 
 	// check ota address string and tx random is valid
-	_, err, ver := checkIncognitoAddress(uReq.IncAddressStr, uReq.TxRandomStr)
+	_, err, ver := checkIncognitoAddress(uReq.OTAPubKeyStr, uReq.TxRandomStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError,
 			fmt.Errorf("payment address string or txrandom is not corrrect format %v", err))
@@ -169,7 +170,7 @@ func (uReq PortalUnshieldRequest) ValidateMetadataByItself() bool {
 
 func (uReq PortalUnshieldRequest) Hash() *common.Hash {
 	record := uReq.MetadataBase.Hash().String()
-	record += uReq.IncAddressStr
+	record += uReq.OTAPubKeyStr
 	record += uReq.TxRandomStr
 	record += uReq.RemoteAddress
 	record += strconv.FormatUint(uReq.UnshieldAmount, 10)

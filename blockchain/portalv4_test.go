@@ -670,7 +670,7 @@ func buildPortalUnshieldRequestAction(
 		MetadataBase: metadata.MetadataBase{
 			Type: metadata.PortalV4UnshieldingRequestMeta,
 		},
-		IncAddressStr:  incAddressStr,
+		OTAPubKeyStr:   incAddressStr,
 		RemoteAddress:  remoteAddress,
 		TokenID:        tokenID,
 		UnshieldAmount: unshieldAmount,

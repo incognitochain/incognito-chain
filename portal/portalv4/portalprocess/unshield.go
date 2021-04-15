@@ -64,7 +64,8 @@ func (p *PortalUnshieldRequestProcessor) PrepareDataForBlockProducer(stateDB *st
 func buildUnshieldRequestInst(
 	tokenID string,
 	redeemAmount uint64,
-	incAddressStr string,
+	otaPubKeyStr string,
+	txRandomStr string,
 	remoteAddress string,
 	metaType int,
 	shardID byte,
@@ -74,7 +75,8 @@ func buildUnshieldRequestInst(
 	unshieldRequestContent := metadata.PortalUnshieldRequestContent{
 		TokenID:        tokenID,
 		UnshieldAmount: redeemAmount,
-		IncAddressStr:  incAddressStr,
+		OTAPubKeyStr:   otaPubKeyStr,
+		TxRandomStr:    txRandomStr,
 		RemoteAddress:  remoteAddress,
 		TxReqID:        txReqID,
 		ShardID:        shardID,
@@ -120,7 +122,8 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	rejectInst := buildUnshieldRequestInst(
 		meta.TokenID,
 		meta.UnshieldAmount,
-		meta.IncAddressStr,
+		meta.OTAPubKeyStr,
+		meta.TxRandomStr,
 		meta.RemoteAddress,
 		meta.Type,
 		actionData.ShardID,
@@ -130,7 +133,8 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	refundInst := buildUnshieldRequestInst(
 		meta.TokenID,
 		meta.UnshieldAmount,
-		meta.IncAddressStr,
+		meta.OTAPubKeyStr,
+		meta.TxRandomStr,
 		meta.RemoteAddress,
 		meta.Type,
 		actionData.ShardID,
@@ -185,7 +189,8 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	newInst := buildUnshieldRequestInst(
 		meta.TokenID,
 		meta.UnshieldAmount,
-		meta.IncAddressStr,
+		meta.OTAPubKeyStr,
+		meta.TxRandomStr,
 		meta.RemoteAddress,
 		meta.Type,
 		actionData.ShardID,
@@ -245,7 +250,8 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 
 	// store status of unshield request by unshieldID (txID)
 	unshieldRequestStatus := metadata.PortalUnshieldRequestStatus{
-		IncAddressStr:  actionData.IncAddressStr,
+		OTAPubKeyStr:   actionData.OTAPubKeyStr,
+		TxRandomStr: actionData.TxRandomStr,
 		RemoteAddress:  actionData.RemoteAddress,
 		TokenID:        actionData.TokenID,
 		UnshieldAmount: actionData.UnshieldAmount,
