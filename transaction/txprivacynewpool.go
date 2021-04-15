@@ -123,9 +123,7 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 			}
 		}
 		if len(proof.GetOutputCoins()) == 0 {
-			if metaData == nil {
-				return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no input, but metadata is nil", tx.Hash().String()))
-			} else {
+			if metaData != nil {
 				metaType := metaData.GetType()
 				if !metadata.HasInputNoOutput(metaType) {
 					return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))

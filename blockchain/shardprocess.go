@@ -509,7 +509,17 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	// if !ok {
 	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
 	// }
-	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.BeaconHash, true)
+	isRelatedCommittee := false
+	for _, tx := range shardBlock.Body.Transactions {
+		if tx.GetMetadata() != nil {
+			switch tx.GetMetadata().GetType() {
+			case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
+				isRelatedCommittee = true
+				break
+			}
+		}
+	}
+	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.BeaconHash, isRelatedCommittee)
 	if err != nil {
 		return NewBlockChainError(CloneBeaconBestStateError, err)
 	}
