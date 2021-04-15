@@ -6,6 +6,7 @@ import (
 	ec "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"strconv"
 
@@ -319,4 +320,20 @@ func GenTokenIDFromRequest(txHash string, shardID byte) *common.Hash {
 type OTADeclaration struct {
 	PublicKey 	[32]byte
 	TokenID 	common.Hash
+}
+
+func checkIncognitoAddress(address, txRandom string) (bool, error, int){
+	version := 0
+	if len(txRandom) > 0 {
+		version = 2
+		_, _, err := coin.ParseOTAInfoFromString(address, txRandom)
+		if err != nil {
+			return false, err, version
+		}
+	} else {
+		version = 1
+		_, err := AssertPaymentAddressAndTxVersion(address, 1)
+		return err == nil, err, version
+	}
+	return true, nil, version
 }
