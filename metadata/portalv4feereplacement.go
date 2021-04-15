@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -13,7 +12,7 @@ import (
 )
 
 type PortalReplacementFeeRequest struct {
-	MetadataBase
+	MetadataBaseWithSignature
 	TokenID string
 	BatchID string
 	Fee     uint
@@ -93,8 +92,8 @@ func (repl PortalReplacementFeeRequest) ValidateSanityData(chainRetriever ChainR
 		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError, errors.New("Requester incognito address is invalid"))
 	}
 
-	if !bytes.Equal(tx.GetSigPubKey()[:], incAddr.Pk[:]) {
-		return false, false, NewMetadataTxError(PortalV4FeeReplacementRequestMetaError, errors.New("Requester incognito address is not replace fee feeder"))
+	if ok, err := repl.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {
+		return false, false, errors.New("Sender is unauthorized")
 	}
 
 	// check tx type
@@ -109,7 +108,7 @@ func (repl PortalReplacementFeeRequest) ValidateSanityData(chainRetriever ChainR
 	}
 
 	// validate amount of pToken is divisible by the decimal difference between nano pToken and nano Token
-	if uint64(repl.Fee) % chainRetriever.GetPortalV4MultipleTokenAmount(repl.TokenID, beaconHeight) != 0 {
+	if uint64(repl.Fee)%chainRetriever.GetPortalV4MultipleTokenAmount(repl.TokenID, beaconHeight) != 0 {
 		return false, false, errors.New("pBTC amount has to be divisible by 10")
 	}
 
@@ -130,6 +129,19 @@ func (repl PortalReplacementFeeRequest) Hash() *common.Hash {
 	record += repl.BatchID
 	record += strconv.FormatUint(uint64(repl.Fee), 10)
 
+	if repl.Sig != nil && len(repl.Sig) != 0 {
+		record += string(repl.Sig)
+	}
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (repl PortalReplacementFeeRequest) HashWithoutSig() *common.Hash {
+	record := repl.MetadataBaseWithSignature.Hash().String()
+	record += repl.TokenID
+	record += repl.BatchID
+	record += strconv.FormatUint(uint64(repl.Fee), 10)
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
