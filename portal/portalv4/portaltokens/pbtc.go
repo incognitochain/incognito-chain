@@ -542,7 +542,9 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 		}
 
 		// use a dust UTXO
-		if utxoIdx < len(utxos)-dustUTXOUsed && utxosArr[len(utxos)-dustUTXOUsed-1].value.GetOutputAmount() <= dustValueThreshold {
+		if utxoIdx < len(utxos)-dustUTXOUsed &&
+			utxosArr[len(utxos)-dustUTXOUsed-1].value.GetOutputAmount() <= dustValueThreshold &&
+			p.IsAcceptableTxSize(len(chosenUTXOs) + 1, len(chosenUnshieldIDs)) {
 			dustUTXOUsed += 1
 			chosenUTXOs = append(chosenUTXOs, utxosArr[len(utxos)-dustUTXOUsed].value)
 		}
