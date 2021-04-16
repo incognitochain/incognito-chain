@@ -212,10 +212,10 @@ func (b *BeaconCommitteeStateV3) assignToSync(
 	return committeeChange
 }
 
-//assignToPending assign candidates to pending list
+//assignRandomlyToSubstituteList assign candidates to pending list
 // update beacon state and committeeChange
 // UPDATE PENDING LIST ONLY
-func (b *BeaconCommitteeStateV3) assignToPending(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
+func (b *BeaconCommitteeStateV3) assignRandomlyToSubstituteList(candidates []string, rand int64, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
 	for _, candidate := range candidates {
 		committeeChange.AddShardSubstituteAdded(shardID, []string{candidate})
 		randomOffset := 0
@@ -223,6 +223,17 @@ func (b *BeaconCommitteeStateV3) assignToPending(candidates []string, rand int64
 			randomOffset = calculateNewSubstitutePosition(candidate, rand, len(b.shardSubstitute[shardID]))
 		}
 		b.shardSubstitute[shardID] = InsertValueToSliceByIndex(b.shardSubstitute[shardID], candidate, randomOffset)
+	}
+	return committeeChange
+}
+
+//assignToPending assign candidates to pending list
+// update beacon state and committeeChange
+// UPDATE PENDING LIST ONLY
+func (b *BeaconCommitteeStateV3) assignBackToSubstituteList(candidates []string, shardID byte, committeeChange *CommitteeChange) *CommitteeChange {
+	for _, candidate := range candidates {
+		committeeChange.AddShardSubstituteAdded(shardID, []string{candidate})
+		b.shardSubstitute[shardID] = append(b.shardSubstitute[shardID], candidate)
 	}
 	return committeeChange
 }
@@ -239,7 +250,7 @@ func (b *BeaconCommitteeStateV3) processAfterNormalSwap(
 		return newCommitteeChange, returnStakingInstruction, err
 	}
 	newReturnStakingInstruction := returnStakingInstruction
-	newCommitteeChange = b.assignToPending(candidates, env.RandomNumber, env.ShardID, newCommitteeChange)
+	newCommitteeChange = b.assignBackToSubstituteList(candidates, env.ShardID, newCommitteeChange)
 	return newCommitteeChange, newReturnStakingInstruction, nil
 }
 
@@ -324,7 +335,7 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	committeeChange.AddFinishedSyncValidators(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
 	b.removeValidatorsFromSyncPool(finishSyncInstruction.PublicKeys, byte(finishSyncInstruction.ChainID))
 
-	committeeChange = b.assignToPending(
+	committeeChange = b.assignRandomlyToSubstituteList(
 		finishSyncInstruction.PublicKeys,
 		env.RandomNumber,
 		byte(finishSyncInstruction.ChainID),

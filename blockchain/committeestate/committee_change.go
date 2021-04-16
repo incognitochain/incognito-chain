@@ -32,28 +32,33 @@ type CommitteeChange struct {
 	SlashingCommittee                  map[byte][]string
 }
 
-func (committeeChange *CommitteeChange) AddNextEpochShardCandidateRemoved(nextEpochShardCandidateRemoved []string) {
+func (committeeChange *CommitteeChange) AddNextEpochShardCandidateRemoved(nextEpochShardCandidateRemoved []string) *CommitteeChange {
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(nextEpochShardCandidateRemoved)
 	committeeChange.NextEpochShardCandidateRemoved = append(committeeChange.NextEpochShardCandidateRemoved, temp...)
+	return committeeChange
 }
 
-func (committeeChange *CommitteeChange) AddShardSubstituteAdded(shardID byte, shardSubstituteAdded []string) {
+func (committeeChange *CommitteeChange) AddShardSubstituteAdded(shardID byte, shardSubstituteAdded []string) *CommitteeChange {
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstituteAdded)
 	committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], temp...)
+	return committeeChange
 }
 
-func (committeeChange *CommitteeChange) AddSyncingPoolAdded(shardID byte, syncingPoolAdded []string) {
+func (committeeChange *CommitteeChange) AddSyncingPoolAdded(shardID byte, syncingPoolAdded []string) *CommitteeChange {
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(syncingPoolAdded)
 	committeeChange.SyncingPoolAdded[shardID] = append(committeeChange.SyncingPoolAdded[shardID], temp...)
+	return committeeChange
 }
 
-func (committeeChange *CommitteeChange) AddSyncingPoolRemoved(shardID byte, syncingPoolRemoved []string) {
+func (committeeChange *CommitteeChange) AddSyncingPoolRemoved(shardID byte, syncingPoolRemoved []string) *CommitteeChange {
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(syncingPoolRemoved)
 	committeeChange.SyncingPoolRemoved[shardID] = append(committeeChange.SyncingPoolRemoved[shardID], temp...)
+	return committeeChange
 }
 
-func (committeeChange *CommitteeChange) AddFinishedSyncValidators(shardID byte, finishedSyncValidators []string) {
+func (committeeChange *CommitteeChange) AddFinishedSyncValidators(shardID byte, finishedSyncValidators []string) *CommitteeChange {
 	committeeChange.FinishedSyncValidators[shardID] = append(committeeChange.FinishedSyncValidators[shardID], finishedSyncValidators...)
+	return committeeChange
 }
 
 //GetStakerKeys ...
