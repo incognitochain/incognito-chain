@@ -707,8 +707,31 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 
 func Test_actorV2_validateBlock(t *testing.T) {
 
-	//block := &mocktypes.BlockInterface{}
-	//view := &mockmultiview.View{}
+	common.TIMESLOT = 1
+
+	hash1, _ := common.Hash{}.NewHashFromStr("123")
+	hash2, _ := common.Hash{}.NewHashFromStr("456")
+
+	lastVotedBlk := &mocktypes.BlockInterface{}
+	lastVotedBlk.On("GetProduceTime").Return(int64(3))
+	lastVotedBlk.On("GetProposeTime").Return(int64(3))
+	lastVotedBlk.On("CommitteeFromBlock").Return(hash1)
+
+	view := &mockmultiview.View{}
+	view.On("GetHeight").Return(uint64(5))
+
+	//valid blocks
+	blkProducerTimeSmallerThanVotedLastBlk := &mocktypes.BlockInterface{}
+	blkProducerTimeSmallerThanVotedLastBlk.On("GetProduceTime").Return(int64(2))
+
+	blkReproposeWithLargerTimeslot := &mocktypes.BlockInterface{}
+	blkReproposeWithLargerTimeslot.On("GetProduceTime").Return(3)
+	blkReproposeWithLargerTimeslot.On("GetProposeTime").Return(4)
+
+	blkWithDifCommittees := &mocktypes.BlockInterface{}
+	blkWithDifCommittees.On("GetProduceTime").Return(4)
+	blkWithDifCommittees.On("GetProposeTime").Return(4)
+	blkWithDifCommittees.On("CommitteeFromBlock").Return(hash2)
 
 	type fields struct {
 		actorBase            actorBase
