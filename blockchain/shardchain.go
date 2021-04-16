@@ -199,20 +199,6 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
 
-	if oldBlock.GetVersion() >= 3 {
-		newBlock.Header.CommitteeFromBlock = committeeViewHash
-		committeesStr, err := incognitokey.CommitteeKeyListToString(committees)
-		if err != nil {
-			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-		}
-
-		committeeHash, err := common.GenerateHashFromStringArray(committeesStr)
-		if err != nil {
-			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-		}
-		newBlock.Header.CommitteeRoot = committeeHash
-	}
-
 	return newBlock, nil
 }
 
