@@ -715,7 +715,7 @@ func (e *BLSBFT_V3) proposeBeaconBlock(
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
 		e.Logger.Info("CreateNewBlock")
-		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime, committees, committeeViewHash)
+		block, err = e.Chain.CreateNewBlock(3, b58Str, 1, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
@@ -755,7 +755,7 @@ func (e *BLSBFT_V3) proposeShardBlock(
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
 		e.Logger.Info("CreateNewBlock")
-		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime, committees, committeeViewHash)
+		block, err = e.Chain.CreateNewBlock(3, b58Str, 1, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
