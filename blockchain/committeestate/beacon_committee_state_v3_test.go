@@ -691,7 +691,7 @@ func TestBeaconCommitteeStateV3_assignToPending(t *testing.T) {
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
 			}
-			if got := b.assignToPending(tt.args.candidates, tt.args.rand, tt.args.shardID, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
+			if got := b.assignRandomlyToSubstituteList(tt.args.candidates, tt.args.rand, tt.args.shardID, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("BeaconCommitteeStateV3.assignToPending() = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(b.shardSubstitute, tt.fieldsAfterProcess.beaconCommitteeStateSlashingBase.shardSubstitute) {
@@ -1857,6 +1857,136 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 				syncPool:                         tt.fields.syncPool,
 			}
 			b.removeValidatorsFromSyncPool(tt.args.validators, tt.args.shardID)
+		})
+	}
+}
+
+func TestBeaconCommitteeStateV3_processAfterNormalSwap(t *testing.T) {
+	type fields struct {
+		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
+		syncPool                         map[byte][]string
+	}
+	type args struct {
+		env                      *BeaconCommitteeStateEnvironment
+		outPublicKeys            []string
+		committeeChange          *CommitteeChange
+		returnStakingInstruction *instruction.ReturnStakeInstruction
+	}
+	tests := []struct {
+		name                        string
+		fields                      fields
+		args                        args
+		wantCommitteeChange         *CommitteeChange
+		want1ReturnStakeInstruction *instruction.ReturnStakeInstruction
+		wantErr                     bool
+	}{
+		// TODO: Add test cases.
+		// 1 stop auto stake = false, has return inst, no assign back
+		// 1 stop auto stake = true, no return inst, has assign back
+		// 2 stop auto stake, 1 = true, 2 = false, 1 assign back, 2 return inst
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
+				syncPool:                         tt.fields.syncPool,
+			}
+			got, got1, err := b.processAfterNormalSwap(tt.args.env, tt.args.outPublicKeys, tt.args.committeeChange, tt.args.returnStakingInstruction)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("processAfterNormalSwap() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.wantCommitteeChange) {
+				t.Errorf("processAfterNormalSwap() got = %v, want %v", got, tt.wantCommitteeChange)
+			}
+			if !reflect.DeepEqual(got1, tt.want1ReturnStakeInstruction) {
+				t.Errorf("processAfterNormalSwap() got1 = %v, want %v", got1, tt.want1ReturnStakeInstruction)
+			}
+		})
+	}
+}
+
+func TestBeaconCommitteeStateV3_assignBackToSubstituteList(t *testing.T) {
+	testcase3CommitteeChange := NewCommitteeChange().AddShardSubstituteAdded(0, []string{key0, key})
+	type fields struct {
+		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
+		syncPool                         map[byte][]string
+	}
+	type args struct {
+		candidates      []string
+		shardID         byte
+		committeeChange *CommitteeChange
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *CommitteeChange
+	}{
+		{
+			name: "one candidate, empty committee change",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: make(map[byte][]string),
+					},
+				},
+			},
+			args: args{
+				candidates: []string{
+					key0,
+				},
+				shardID:         0,
+				committeeChange: NewCommitteeChange(),
+			},
+			want: NewCommitteeChange().AddShardSubstituteAdded(0, []string{key0}),
+		},
+		{
+			name: "two candidate, empty committee change",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: make(map[byte][]string),
+					},
+				},
+			},
+			args: args{
+				candidates: []string{
+					key0, key,
+				},
+				shardID:         0,
+				committeeChange: NewCommitteeChange(),
+			},
+			want: NewCommitteeChange().AddShardSubstituteAdded(0, []string{key0, key}),
+		},
+		{
+			name: "two candidate, not empty committee change",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: make(map[byte][]string),
+					},
+				},
+			},
+			args: args{
+				candidates: []string{
+					key5, key6,
+				},
+				shardID:         0,
+				committeeChange: testcase3CommitteeChange,
+			},
+			want: testcase3CommitteeChange.AddShardSubstituteAdded(0, []string{key5, key6}),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
+				syncPool:                         tt.fields.syncPool,
+			}
+			if got := b.assignBackToSubstituteList(tt.args.candidates, tt.args.shardID, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("assignBackToSubstituteList() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }
