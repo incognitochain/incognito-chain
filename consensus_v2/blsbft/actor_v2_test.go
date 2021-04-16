@@ -725,13 +725,18 @@ func Test_actorV2_validateBlock(t *testing.T) {
 	blkProducerTimeSmallerThanVotedLastBlk.On("GetProduceTime").Return(int64(2))
 
 	blkReproposeWithLargerTimeslot := &mocktypes.BlockInterface{}
-	blkReproposeWithLargerTimeslot.On("GetProduceTime").Return(3)
-	blkReproposeWithLargerTimeslot.On("GetProposeTime").Return(4)
+	blkReproposeWithLargerTimeslot.On("GetProduceTime").Return(int64(3))
+	blkReproposeWithLargerTimeslot.On("GetProposeTime").Return(int64(4))
 
 	blkWithDifCommittees := &mocktypes.BlockInterface{}
-	blkWithDifCommittees.On("GetProduceTime").Return(4)
-	blkWithDifCommittees.On("GetProposeTime").Return(4)
+	blkWithDifCommittees.On("GetProduceTime").Return(int64(4))
+	blkWithDifCommittees.On("GetProposeTime").Return(int64(4))
 	blkWithDifCommittees.On("CommitteeFromBlock").Return(hash2)
+	//
+	inValidBlock := &mocktypes.BlockInterface{}
+	inValidBlock.On("GetProduceTime").Return(int64(4))
+	inValidBlock.On("GetProposeTime").Return(int64(4))
+	inValidBlock.On("CommitteeFromBlock").Return(common.Hash{})
 
 	type fields struct {
 		actorBase            actorBase
@@ -757,10 +762,17 @@ func Test_actorV2_validateBlock(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "",
-			fields:  fields{},
-			args:    args{},
-			wantErr: false,
+			name: "Proposetime and Producetime is not valid for voting",
+			fields: fields{
+				voteHistory: map[uint64]types.BlockInterface{},
+			},
+			args: args{
+				bestView: view,
+				proposeBlockInfo: &ProposeBlockInfo{
+					block: inValidBlock,
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
