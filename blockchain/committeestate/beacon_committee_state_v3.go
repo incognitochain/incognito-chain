@@ -222,8 +222,6 @@ func (b *BeaconCommitteeStateV3) assignToPending(candidates []string, rand int64
 		if len(b.shardSubstitute[shardID]) != 0 {
 			randomOffset = calculateNewSubstitutePosition(candidate, rand, len(b.shardSubstitute[shardID]))
 		}
-		//TODO: @tin if shard substitute list order is change => HOW TO LOAD shard substitute list from database to memory
-		// current method use entertime to determine the order but now it's no longer true
 		b.shardSubstitute[shardID] = InsertValueToSliceByIndex(b.shardSubstitute[shardID], candidate, randomOffset)
 	}
 	return committeeChange

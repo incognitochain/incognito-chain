@@ -29,17 +29,15 @@ func DifferentElementStrings(src1, src2 []string) []string {
 
 // InsertValueToSliceByIndex insert a value into list, shift current right current value of that index
 func InsertValueToSliceByIndex(list []string, value string, index int) []string {
-	// TODO: @tin what if index > len(list) or index < 0 (maybe bug in calling function)
-	if len(list) < index || index < 0 {
+	if index > len(list) || index < 0 {
 		msg := fmt.Sprintf("try to insert at index %+v but list length is %+v", index, len(list))
 		panic(msg)
 	}
-	if len(list) == index { // nil or empty slice or after last element
+
+	// nil or empty slice or after last element
+	if len(list) == index {
 		return append(list, value)
 	}
-	// TODO: @tin should make a new slice instead of using append
-	//list = append(list[:index+1], list[index:]...) // index < len(a)
-	//list[index] = value
 
 	newList := make([]string, 0, 0)
 	newList = append(newList, list[:index]...)

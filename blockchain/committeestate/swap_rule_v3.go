@@ -29,14 +29,16 @@ func (s *swapRuleV3) Process(
 	// if numberOfFixedValidators = 0, code execution may go wrong
 	minCommitteeSize = numberOfFixedValidators
 	//get slashed nodes
-	newCommittees, slashingCommittees := s.slashingSwapOut(committees, penalty, numberOfFixedValidators)
+	newCommittees, slashingCommittees :=
+		s.slashingSwapOut(committees, penalty, numberOfFixedValidators)
 	lenSlashedCommittees := len(slashingCommittees)
 	//get normal swap out nodes
-	newCommittees, normalSwapOutCommittees := s.normalSwapOut(newCommittees, substitutes, len(committees), lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize)
+	newCommittees, normalSwapOutCommittees :=
+		s.normalSwapOut(newCommittees, substitutes, len(committees), lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize)
 	swappedOutCommittees := append(slashingCommittees, normalSwapOutCommittees...)
 
 	newCommittees, newSubstitutes, swapInCommittees :=
-		s.swapInAfterSwapOut(newCommittees, substitutes, maxCommitteeSize, MAX_SWAP_IN_PERCENT_V3, len(slashingCommittees), len(committees))
+		s.swapInAfterSwapOut(newCommittees, substitutes, maxCommitteeSize, len(slashingCommittees), len(committees))
 
 	if len(swapInCommittees) == 0 && len(swappedOutCommittees) == 0 {
 		return instruction.NewSwapShardInstructionWithShardID(int(shardID)), newCommittees, newSubstitutes, slashingCommittees, normalSwapOutCommittees
@@ -60,17 +62,10 @@ func (s *swapRuleV3) CalculateAssignOffset(lenShardSubstitute, lenCommittees, nu
 	return assignOffset
 }
 
-func (s *swapRuleV3) swapInAfterSwapOut(
-	committees []string,
-	substitutes []string,
-	maxCommitteeSize int,
-	maxSwapInPercent int,
-	numberOfSlashingValidators int,
-	numberOfOldCommittees int,
-) ([]string, []string, []string) {
-	swapInOffset := s.getSwapInOffset(len(committees), len(substitutes), maxSwapInPercent, maxCommitteeSize, numberOfSlashingValidators, numberOfOldCommittees)
+func (s *swapRuleV3) swapInAfterSwapOut(lenCommitteesAfterSwapOut []string, substitutes []string, maxCommitteeSize int, numberOfSlashingValidators int, lenCommitteesBeforeSwapOut int) ([]string, []string, []string) {
+	swapInOffset := s.getSwapInOffset(len(lenCommitteesAfterSwapOut), len(substitutes), maxCommitteeSize, numberOfSlashingValidators, lenCommitteesBeforeSwapOut)
 
-	newCommittees := common.DeepCopyString(committees)
+	newCommittees := common.DeepCopyString(lenCommitteesAfterSwapOut)
 	swapInCommittees := common.DeepCopyString(substitutes[:swapInOffset])
 	newSubstitutes := common.DeepCopyString(substitutes[swapInOffset:])
 	newCommittees = append(newCommittees, swapInCommittees...)
@@ -78,52 +73,46 @@ func (s *swapRuleV3) swapInAfterSwapOut(
 	return newCommittees, newSubstitutes, swapInCommittees
 }
 
-//TODO: @tin calculate based on lenCommitteesAfterSwapOut or lenCommitteesBeforeSwapOut?
-// In document, vacant_slot = min(max_committee_size/8, 1/8*len(shardCommittee), but getSwapInOffset doesn't stick to this formula
-func (s *swapRuleV3) getSwapInOffset(
-	lenCommitteesAfterSwapOut,
-	lenSubstitutes,
-	maxSwapInPercent,
-	maxCommitteeSize,
-	numberOfSlashingValidators,
-	numberOfOldCommittees int,
-) int {
+//getSwapInOffset calculate based on lenCommitteesAfterSwapOut
+// swap_in = min(lenSubstitute, lenCommitteesAfterSwapOut/8) but no more than maxCommitteeSize
+// Special case: when committees size reach max and no slashing, swap in equal to normal swap out
+func (s *swapRuleV3) getSwapInOffset(lenCommitteesAfterSwapOut, lenSubstitutes, maxCommitteeSize, numberOfSlashingValidators, lenCommitteesBeforeSwapOut int) int {
 	var offset int
 	// special case: no slashing node && committee reach max committee size => normal swap out == swap in
-	if numberOfSlashingValidators == 0 && numberOfOldCommittees == maxCommitteeSize {
-		offset = maxCommitteeSize / maxSwapInPercent
+	if numberOfSlashingValidators == 0 && lenCommitteesBeforeSwapOut == maxCommitteeSize {
+		offset = lenCommitteesBeforeSwapOut / MAX_SWAP_IN_PERCENT_V3
 	} else {
 		// normal case
-		offset = lenCommitteesAfterSwapOut / maxSwapInPercent
+		offset = lenCommitteesAfterSwapOut / MAX_SWAP_IN_PERCENT_V3
+	}
+
+	// if committee size after swap out below than maxSwapInPercent => no swap in
+	// try to swap in at least one
+	if offset == 0 && lenCommitteesAfterSwapOut < MAX_SWAP_IN_PERCENT_V3 {
+		offset = 1
 	}
 
 	if lenSubstitutes < offset {
 		offset = lenSubstitutes
 	}
 
-	// hack case: many fixed nodes in committee
 	if lenCommitteesAfterSwapOut+offset > maxCommitteeSize {
 		offset = maxCommitteeSize - lenCommitteesAfterSwapOut
-	}
-
-	if offset == 0 && lenCommitteesAfterSwapOut < maxSwapInPercent && lenSubstitutes > 0 {
-		//TODO: @tin offset + currentCommitteeSize maybe > maxCommitteeSize
-		offset = 1
 	}
 
 	return offset
 }
 
-func (s *swapRuleV3) normalSwapOut(committees, substitutes []string, lenCommitteesBeforeSlash, lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize int) ([]string, []string) {
+func (s *swapRuleV3) normalSwapOut(committeesAfterSlashing, substitutes []string, lenCommitteesBeforeSlash, lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize int) ([]string, []string) {
 
 	resNormalSwapOut := []string{}
-	tempCommittees := make([]string, len(committees))
-	copy(tempCommittees, committees)
+	tempCommittees := make([]string, len(committeesAfterSlashing))
+	copy(tempCommittees, committeesAfterSlashing)
 
 	normalSwapOutOffset := s.getNormalSwapOutOffset(lenCommitteesBeforeSlash, len(substitutes), lenSlashedCommittees, numberOfFixedValidators, maxCommitteeSize)
 
 	resCommittees := append(tempCommittees[:numberOfFixedValidators], tempCommittees[(numberOfFixedValidators+normalSwapOutOffset):]...)
-	resNormalSwapOut = committees[numberOfFixedValidators : numberOfFixedValidators+normalSwapOutOffset]
+	resNormalSwapOut = committeesAfterSlashing[numberOfFixedValidators : numberOfFixedValidators+normalSwapOutOffset]
 
 	return resCommittees, resNormalSwapOut
 }
@@ -205,13 +194,9 @@ func (s *swapRuleV3) getMaxSlashingOffset(lenCommittees, numberOfFixedValidators
 
 // calculateNewSubstitutePosition calculate reverse shardID for candidate
 func calculateNewSubstitutePosition(candidate string, rand int64, total int) (pos int) {
+
 	seed := candidate + fmt.Sprintf("%v", rand)
 	hash := common.HashB([]byte(seed))
-
-	//TODO: @tin don't change hash to int like this, because the maximum value is only 255*32
-	//for _, v := range hash {
-	//	data += int(v)
-	//}
 
 	// Using big.Int to convert a random Hash value to an integer
 	temp := new(big.Int)
@@ -221,13 +206,7 @@ func calculateNewSubstitutePosition(candidate string, rand int64, total int) (po
 		data *= -1
 	}
 
-	//TODO: @tin what if total == 0
-	// pos < total => never insert at the end of list?
 	pos = data % total
-	if pos == 0 {
-		//TODO: @tin why set pos = 1 when it's equal to 0, because total might equal to 0
-		pos = 1
-	}
 
 	return pos
 }
