@@ -863,8 +863,7 @@ func Test_swapRuleV3_AssignOffset(t *testing.T) {
 			name: "lenCommittees < max assign percent",
 			s:    &swapRuleV3{},
 			args: args{
-				lenCommittees:           4,
-				numberOfFixedValidators: 4,
+				lenCommittees: 4,
 			},
 			want: 1,
 		},
@@ -872,10 +871,17 @@ func Test_swapRuleV3_AssignOffset(t *testing.T) {
 			name: "lenCommittees >= max assign percent",
 			s:    &swapRuleV3{},
 			args: args{
-				lenCommittees:           10,
-				numberOfFixedValidators: 8,
+				lenCommittees: 10,
 			},
 			want: 1,
+		},
+		{
+			name: "lenCommittees >= max assign percent",
+			s:    &swapRuleV3{},
+			args: args{
+				lenCommittees: 16,
+			},
+			want: 2,
 		},
 	}
 	for _, tt := range tests {
@@ -2446,9 +2452,33 @@ func Test_calculateNewSubstitutePosition(t *testing.T) {
 		args    args
 		wantPos int
 	}{
-		//TODO: @hung add testcase
-		// testcase 1: this function must be deterministic with the same parameters
-		// testcase 2: make sure random offset is in valid range from 0 to len(substitute)
+		{
+			name: "calculateNewSubstitutePosition testcase 1",
+			args: args{
+				candidate: key,
+				rand:      1000,
+				total:     10,
+			},
+			wantPos: 3,
+		},
+		{
+			name: "calculateNewSubstitutePosition testcase 1",
+			args: args{
+				candidate: key,
+				rand:      1001,
+				total:     10,
+			},
+			wantPos: 4,
+		},
+		{
+			name: "calculateNewSubstitutePosition testcase 1",
+			args: args{
+				candidate: key,
+				rand:      1002,
+				total:     10,
+			},
+			wantPos: 1,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

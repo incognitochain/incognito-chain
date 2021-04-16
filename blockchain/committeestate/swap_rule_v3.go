@@ -194,13 +194,9 @@ func (s *swapRuleV3) getMaxSlashingOffset(lenCommittees, numberOfFixedValidators
 
 // calculateNewSubstitutePosition calculate reverse shardID for candidate
 func calculateNewSubstitutePosition(candidate string, rand int64, total int) (pos int) {
+
 	seed := candidate + fmt.Sprintf("%v", rand)
 	hash := common.HashB([]byte(seed))
-
-	//TODO: @tin don't change hash to int like this, because the maximum value is only 255*32
-	//for _, v := range hash {
-	//	data += int(v)
-	//}
 
 	// Using big.Int to convert a random Hash value to an integer
 	temp := new(big.Int)
@@ -210,13 +206,7 @@ func calculateNewSubstitutePosition(candidate string, rand int64, total int) (po
 		data *= -1
 	}
 
-	//TODO: @tin what if total == 0
-	// pos < total => never insert at the end of list?
 	pos = data % total
-	if pos == 0 {
-		//TODO: @tin why set pos = 1 when it's equal to 0, because total might equal to 0
-		pos = 1
-	}
 
 	return pos
 }
