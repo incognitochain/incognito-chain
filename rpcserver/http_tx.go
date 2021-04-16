@@ -270,7 +270,13 @@ func (httpServer *HttpServer) handleGetTransactionByReceiverV2(params interface{
 	if !ok || limit < 0 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("limit"))
 	}
-	receivedTxsList, total, err := httpServer.txService.GetTransactionByReceiverV2(keySet, uint(skip), uint(limit), *tokenIDHash)
+
+	isBase64EncodeSN := false
+	isBase64EncodeSNParam, ok := keys["IsBase64EncodeSN"].(float64)
+	if ok && isBase64EncodeSNParam > 0 {
+		isBase64EncodeSN = true
+	}
+	receivedTxsList, total, err := httpServer.txService.GetTransactionByReceiverV2(keySet, uint(skip), uint(limit), *tokenIDHash, isBase64EncodeSN)
 	if err != nil {
 		return nil, err
 	}
