@@ -818,7 +818,6 @@ func (actorV2 *actorV2) getValidProposeBlocks(bestView multiview.View) []*Propos
 
 		// check if this time slot has been voted
 		if actorV2.votedTimeslot[common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
-			fmt.Println(6)
 			continue
 		}
 
@@ -827,7 +826,6 @@ func (actorV2 *actorV2) getValidProposeBlocks(bestView multiview.View) []*Propos
 			delete(actorV2.receiveBlockByHash, h)
 		}
 
-		fmt.Println(7)
 		validProposeBlock = append(validProposeBlock, proposeBlockInfo)
 	}
 	//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)

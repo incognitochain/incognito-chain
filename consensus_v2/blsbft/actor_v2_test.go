@@ -346,6 +346,9 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 	tempChain := mockchain.Chain{}
 	tempChain.On("GetFinalView").Return(&tempView1)
 
+	receiveTime := time.Now().Add(-time.Second * 3)
+	lastValidateTime := time.Now().Add(-time.Second * 2)
+
 	type fields struct {
 		actorBase            actorBase
 		committeeChain       blockchain.Chain
@@ -610,8 +613,10 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 						lastValidateTime: time.Now().Add(-time.Second * 2),
 					},
 				},
-				votedTimeslot: map[int64]bool{},
-				blockVersion:  1,
+				votedTimeslot: map[int64]bool{
+					3: true,
+				},
+				blockVersion: 1,
 			},
 			args: args{
 				bestView: &tempView,
@@ -632,7 +637,7 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 				receiveBlockByHash: map[string]*ProposeBlockInfo{
 					"hash": &ProposeBlockInfo{
 						block:            &validBlock,
-						receiveTime:      time.Now().Add(-time.Second * 3),
+						receiveTime:      receiveTime,
 						committees:       []incognitokey.CommitteePublicKey{},
 						signingCommittes: []incognitokey.CommitteePublicKey{},
 						userKeySet:       []signatureschemes.MiningKey{},
@@ -645,7 +650,7 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 						errVotes:         2,
 						validVotes:       5,
 						proposerSendVote: false,
-						lastValidateTime: time.Now().Add(-time.Second * 2),
+						lastValidateTime: lastValidateTime,
 					},
 				},
 				blockVersion: 1,
@@ -656,7 +661,7 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 			want: []*ProposeBlockInfo{
 				&ProposeBlockInfo{
 					block:            &validBlock,
-					receiveTime:      time.Now(),
+					receiveTime:      receiveTime,
 					committees:       []incognitokey.CommitteePublicKey{},
 					signingCommittes: []incognitokey.CommitteePublicKey{},
 					userKeySet:       []signatureschemes.MiningKey{},
@@ -669,7 +674,7 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 					errVotes:         2,
 					validVotes:       5,
 					proposerSendVote: false,
-					lastValidateTime: time.Now(),
+					lastValidateTime: lastValidateTime,
 				},
 			},
 		},
@@ -692,7 +697,7 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 			got := actorV2.getValidProposeBlocks(tt.args.bestView)
 			for i, v := range got {
 				if !reflect.DeepEqual(*v, *tt.want[i]) {
-					t.Errorf("actorV2.getValidProposeBlocks() = %v, want %v", got, tt.want)
+					t.Errorf("actorV2.getValidProposeBlocks() = %v, want %v", *v, *tt.want[i])
 					return
 				}
 			}
@@ -701,6 +706,10 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 }
 
 func Test_actorV2_validateBlock(t *testing.T) {
+
+	//block := &mocktypes.BlockInterface{}
+	//view := &mockmultiview.View{}
+
 	type fields struct {
 		actorBase            actorBase
 		committeeChain       blockchain.Chain
@@ -724,7 +733,12 @@ func Test_actorV2_validateBlock(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "",
+			fields:  fields{},
+			args:    args{},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
