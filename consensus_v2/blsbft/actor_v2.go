@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"sort"
 	"time"
 
@@ -504,7 +505,7 @@ func (actorV2 *actorV2) proposeBlock(
 	}
 
 	if block != nil {
-		actorV2.logger.Infof("create block %v hash %v, propose time %v, produce time %v", block.GetHeight(), block.Hash().String(), block.(types.BlockInterface).GetProposeTime(), block.(types.BlockInterface).GetProduceTime())
+		actorV2.logger.Infof("[dcs] create block %v hash %v, propose time %v, produce time %v", block.GetHeight(), block.Hash().String(), block.(types.BlockInterface).GetProposeTime(), block.(types.BlockInterface).GetProduceTime())
 	} else {
 		actorV2.logger.Infof("create block fail, time: %v", time.Since(time1).Seconds())
 		return nil, NewConsensusError(BlockCreationError, errors.New("block is nil"))
@@ -561,10 +562,20 @@ func (actorV2 *actorV2) proposeShardBlock(
 	var err error
 	var newBlock types.BlockInterface
 
+	var committeesFromBeaconHash []incognitokey.CommitteePublicKey
+
+	if block != nil {
+		_, committeesFromBeaconHash, err = actorV2.getCommitteeForBlock(block)
+		if err != nil {
+			return block, NewConsensusError(BlockCreationError, err)
+		}
+	}
+
 	// propose new block when
 	// no previous proposed block
 	// or previous proposed block has different committee with new committees
-	if block == nil {
+	if block == nil ||
+		(block != nil && !reflect.DeepEqual(committeesFromBeaconHash, committees)) {
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
@@ -574,7 +585,7 @@ func (actorV2 *actorV2) proposeShardBlock(
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
 	} else {
-		actorV2.logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v")
+		actorV2.logger.Infof("[dcs] CreateNewBlockFromOldBlock, Block Height %+v hash %+v", block.GetHeight(), block.Hash())
 		newBlock, err = actorV2.chain.CreateNewBlockFromOldBlock(block, b58Str, actorV2.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)

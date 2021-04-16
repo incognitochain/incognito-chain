@@ -89,6 +89,13 @@ func (blockchain *BlockChain) NewBlockBeacon(
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
 
+	// Finish Sync Instructions
+	for _, finishSyncInstruction := range copiedCurView.finishSyncManager.Instructions() {
+		if !finishSyncInstruction.IsEmpty() {
+			instructions = append(instructions, finishSyncInstruction.ToString())
+		}
+	}
+
 	newBeaconBlock.Body = types.NewBeaconBody(shardStates, instructions)
 
 	// Process new block with new view
@@ -463,14 +470,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 	// Unstake
 	for _, unstakeInstruction := range shardInstruction.unstakeInstructions {
 		instructions = append(instructions, unstakeInstruction.ToString())
-	}
-
-	// Finish Sync Instructions
-	//TODO: @tin proposer and validator might not have the same list
-	for _, finishSyncInstruction := range curView.finishSyncManager.Instructions() {
-		if !finishSyncInstruction.IsEmpty() {
-			instructions = append(instructions, finishSyncInstruction.ToString())
-		}
 	}
 
 	return instructions, nil

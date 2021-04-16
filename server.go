@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"log"
 	"net"
@@ -17,6 +16,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 
 	"cloud.google.com/go/storage"
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
@@ -963,8 +964,6 @@ func (serverObj *Server) OnFinishSync(p *peer.PeerConn, msg *wire.MessageFinishS
 	finishSyncMessageHistory.Inc(1)
 	Logger.log.Debug("Receive a MsgFinishSync")
 	beaconBestView := serverObj.blockChain.GetBeaconBestState()
-	//TODO: @tin only add to best beacon view?
-	// what if current best beacon view is steal view at later time => lost finish sync data
 	syncingValidators := beaconBestView.SyncingValidators()[msg.ShardID]
 	finishedSyncValidators := make(map[string]bool)
 	for _, v := range msg.CommitteePublicKey {

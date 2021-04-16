@@ -177,7 +177,7 @@ func (chain *ShardChain) CreateNewBlock(
 		Logger.log.Error(err)
 		return nil, err
 	}
-	if version != 1 {
+	if version >= 2 {
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
@@ -198,17 +198,7 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
-	newBlock.Header.CommitteeFromBlock = committeeViewHash
-	committeesStr, err := incognitokey.CommitteeKeyListToString(committees)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-
-	committeeHash, err := common.GenerateHashFromStringArray(committeesStr)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-	newBlock.Header.CommitteeRoot = committeeHash
+	newBlock.Header.SubsetCommitteesFromBlock = committeeViewHash
 
 	return newBlock, nil
 }
