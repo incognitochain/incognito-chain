@@ -736,7 +736,7 @@ func Test_actorV2_validateBlock(t *testing.T) {
 	inValidBlock := &mocktypes.BlockInterface{}
 	inValidBlock.On("GetProduceTime").Return(int64(4))
 	inValidBlock.On("GetProposeTime").Return(int64(4))
-	inValidBlock.On("CommitteeFromBlock").Return(common.Hash{})
+	inValidBlock.On("CommitteeFromBlock").Return(hash1)
 
 	type fields struct {
 		actorBase            actorBase
