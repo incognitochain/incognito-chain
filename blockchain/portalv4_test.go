@@ -1208,8 +1208,11 @@ func buildPortalFeeReplacementAction(
 	shardID byte,
 ) []string {
 	data := metadata.PortalReplacementFeeRequest{
-		MetadataBase: metadata.MetadataBase{
-			Type: metadata.PortalV4FeeReplacementRequestMeta,
+		MetadataBaseWithSignature: metadata.MetadataBaseWithSignature{
+			MetadataBase: metadata.MetadataBase{
+				Type: metadata.PortalV4FeeReplacementRequestMeta,
+			},
+			Sig: []byte{},
 		},
 		TokenID: tokenID,
 		BatchID: batchID,
