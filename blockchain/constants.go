@@ -21,7 +21,7 @@ const (
 	MAX_BEACON_BLOCK                   = 5
 	LowerBoundPercentForIncDAO         = 3
 	UpperBoundPercentForIncDAO         = 10
-	TestRandom                         = false
+	TestRandom                         = true
 	ValidateTimeForSpamRequestTxs      = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
 	TransactionBatchSize               = 30
 	SpareTime                          = 1000             // in mili-second
@@ -112,7 +112,7 @@ const (
 	TestnetGenesisBlockTime  = "2019-11-29T00:00:00.000Z"
 	TestnetEpoch             = 100
 	TestnetRandomTime        = 50
-	TestnetEpochV2BreakPoint = 1e9
+	TestnetEpochV2BreakPoint = 10e9
 	TestnetEpochV2           = 100
 	TestnetRandomTimeV2      = 50
 	TestnetOffset            = 1
