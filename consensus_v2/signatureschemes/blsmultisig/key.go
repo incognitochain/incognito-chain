@@ -1,6 +1,7 @@
 package blsmultisig
 
 import (
+	"log"
 	"math/big"
 	"sync"
 
@@ -35,11 +36,18 @@ func PKGen(sk *big.Int) *bn256.G2 {
 }
 
 // AKGen take a seed and return BLS secret key
-func AKGen(idxPKByte []byte, combinedPKBytes []byte) (*bn256.G2, *big.Int) {
+func AKGen(idxPKByte []byte, combinedPKBytes []byte) *bn256.G2 {
 	// cal akByte
 	akByte := []byte{}
 	akByte = append(akByte, idxPKByte...)
 	akByte = append(akByte, combinedPKBytes...)
+	if res, exist := cacher.Get(string(akByte)); exist {
+		if result, ok := res.(*bn256.G2); ok {
+			return result
+		} else {
+			log.Printf("[debugcache] Cacher return value %v but can not cast to G2 pointer\n", res)
+		}
+	}
 	akByte = Hash4Bls(akByte)
 
 	// cal akBInt
@@ -51,7 +59,7 @@ func AKGen(idxPKByte []byte, combinedPKBytes []byte) (*bn256.G2, *big.Int) {
 	result := new(bn256.G2)
 	result.ScalarMult(pkPn, akBInt)
 
-	return result, akBInt
+	return result
 }
 
 // ListAKGen take a seed and return BLS secret key
@@ -94,7 +102,7 @@ func APKGen(committee []PublicKey, idx []int) *bn256.G2 {
 		committeeByte := committee[idx[i]]
 		go func(index int, committeeByte []byte, combinedCommittee []byte, wg *sync.WaitGroup) {
 			defer wg.Done()
-			apkTmpList[index], _ = AKGen(committeeByte, combinedCommittee)
+			apkTmpList[index] = AKGen(committeeByte, combinedCommittee)
 		}(i, committeeByte, combinedCommittee, &wg)
 	}
 	wg.Wait()
