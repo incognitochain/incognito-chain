@@ -2,6 +2,7 @@ package blsmultisig
 
 import (
 	"errors"
+	"log"
 	"math/big"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
@@ -44,6 +45,13 @@ func DecmprG1(bytes []byte) (*bn256.G1, error) {
 
 // DecmprG2 is
 func DecmprG2(bytes []byte) (*bn256.G2, error) {
+	if res, exist := cacher.Get(string(bytes)); exist {
+		if result, ok := res.(*bn256.G2); ok {
+			return result, nil
+		} else {
+			log.Printf("[debugcache] Cacher return value %v but can not cast to G2 pointer\n", res)
+		}
+	}
 	pn := new(bn256.G2)
 	_, err := pn.Unmarshal(bytes)
 	if err != nil {
