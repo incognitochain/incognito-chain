@@ -49,10 +49,10 @@ func AKGen(idxPKByte []byte, combinedPKBytes []byte) *bn256.G2 {
 			log.Printf("[debugcache] Cacher return value %v but can not cast to G2 pointer\n", res)
 		}
 	}
-	akByte = Hash4Bls(akByte)
+	akByteHash := Hash4Bls(akByte)
 
 	// cal akBInt
-	akBInt := B2I(akByte)
+	akBInt := B2I(akByteHash)
 
 	var pkPn *bn256.G2
 	pkPn, _ = DecmprG2(idxPKByte)
