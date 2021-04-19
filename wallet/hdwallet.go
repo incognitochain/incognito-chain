@@ -187,7 +187,7 @@ func deserialize(data []byte) (*KeyWallet, error) {
 	} else if keyType == PaymentAddressType {
 		if !bytes.Equal(burnAddress1BytesDecode, data) {
 			if len(data) != paymentAddrSerializedBytesLen && len(data) != paymentAddrSerializedBytesLen+1+operation.Ed25519KeySize {
-				return nil, NewWalletError(InvalidSeserializedKey, errors.New("length ota public key not valid: "+string(len(data))))
+				return nil, NewWalletError(InvalidSeserializedKey, fmt.Errorf("length of payment address is not valid: %v", len(data)))
 			}
 		}
 		apkKeyLength := int(data[1])
@@ -200,7 +200,7 @@ func deserialize(data []byte) (*KeyWallet, error) {
 		if len(data) > paymentAddrSerializedBytesLen {
 			otapkLength := int(data[apkKeyLength+pkencKeyLength+3])
 			if otapkLength != operation.Ed25519KeySize {
-				return nil, NewWalletError(InvalidSeserializedKey, errors.New("length ota public key not valid: "+string(otapkLength)))
+				return nil, NewWalletError(InvalidSeserializedKey, fmt.Errorf("length of ota public key is not valid: %v", otapkLength))
 			}
 			key.KeySet.PaymentAddress.OTAPublic = append([]byte{}, data[apkKeyLength+pkencKeyLength+4:apkKeyLength+pkencKeyLength+otapkLength+4]...)
 		}

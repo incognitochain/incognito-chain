@@ -371,6 +371,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 		}
 	}
 
+
 	// Random number for Assign Instruction
 	if blockchain.IsGreaterThanRandomTime(newBeaconHeight) && !curView.IsGetRandomNumber {
 		randomInstruction, randomNumber := curView.generateRandomInstruction()
