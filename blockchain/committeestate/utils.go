@@ -27,8 +27,8 @@ func DifferentElementStrings(src1, src2 []string) []string {
 	return res
 }
 
-// InsertValueToSliceByIndex insert a value into list, shift current right current value of that index
-func InsertValueToSliceByIndex(list []string, value string, index int) []string {
+// insertValueToSliceByIndex insert a value into list, shift current right current value of that index
+func insertValueToSliceByIndex(list []string, value string, index int) []string {
 	if index > len(list) || index < 0 {
 		msg := fmt.Sprintf("try to insert at index %+v but list length is %+v", index, len(list))
 		panic(msg)

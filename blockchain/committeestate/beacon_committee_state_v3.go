@@ -222,7 +222,7 @@ func (b *BeaconCommitteeStateV3) assignRandomlyToSubstituteList(candidates []str
 		if len(b.shardSubstitute[shardID]) != 0 {
 			randomOffset = calculateNewSubstitutePosition(candidate, rand, len(b.shardSubstitute[shardID]))
 		}
-		b.shardSubstitute[shardID] = InsertValueToSliceByIndex(b.shardSubstitute[shardID], candidate, randomOffset)
+		b.shardSubstitute[shardID] = insertValueToSliceByIndex(b.shardSubstitute[shardID], candidate, randomOffset)
 	}
 	return committeeChange
 }
@@ -306,27 +306,29 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	return newCommitteeChange, returnStakingInstruction, nil
 }
 
+// removeValidatorsFromSyncPool remove validator in sync pool regardless input ordered or sync pool ordered
 func (b *BeaconCommitteeStateV3) removeValidatorsFromSyncPool(validators []string, shardID byte) {
 	finishedSyncValidators := make(map[string]bool)
 	for _, v := range validators {
 		finishedSyncValidators[v] = true
 	}
-	count := 0
-	i := 0
-	for i < len(b.syncPool[shardID]) {
-		if count == len(validators) {
+	originSyncPoolLength := 0
+	for i := 0; i < len(b.syncPool[shardID]); {
+		if originSyncPoolLength == len(validators) {
 			break
 		}
 		key := b.syncPool[shardID][i]
 		if finishedSyncValidators[key] {
 			b.syncPool[shardID] = append(b.syncPool[shardID][:i], b.syncPool[shardID][i+1:]...)
 			i--
-			count++
+			originSyncPoolLength++
 		}
 		i++
 	}
 }
 
+//processFinishSyncInstruction move validators from pending to sync pool
+// validators MUST in sync pool
 func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	finishSyncInstruction *instruction.FinishSyncInstruction,
 	env *BeaconCommitteeStateEnvironment, committeeChange *CommitteeChange,
