@@ -484,7 +484,7 @@ func (engine *beaconCommitteeStateSlashingBase) SplitReward(
 		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
 		totalRewardForShardAndBeaconValidators := totalReward - totalRewardForDAOAndCustodians
 		shardWeight := float64(lenShardCommittees)
-		beaconWeight := 2 * float64(lenBeaconCommittees) / float64(env.ActiveShards)
+		beaconWeight := 2 * float64(lenBeaconCommittees) / float64(len(engine.shardCommittee))
 		totalValidatorWeight := shardWeight + beaconWeight
 
 		rewardForShard[key] = uint64(shardWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)
