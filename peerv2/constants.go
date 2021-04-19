@@ -21,7 +21,7 @@ var (
 	DialTimeout               = 5 * time.Second  // Timeout for dialing's context
 	RequesterKeepaliveTime    = 10 * time.Minute
 	RequesterKeepaliveTimeout = 30 * time.Second
-	defaultMaxBlkReqPerPeer   = 900
+	defaultMaxBlkReqPerPeer   = 350
 	defaultMaxBlkReqPerTime   = 900
 
 	IgnoreRPCDuration = 60 * time.Minute  // Ignore an address after a failed RPC
