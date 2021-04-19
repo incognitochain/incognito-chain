@@ -38,12 +38,14 @@ func PKGen(sk *big.Int) *bn256.G2 {
 
 // AKGen take a seed and return BLS secret key
 func AKGen(idxPKByte []byte, combinedPKBytes []byte) *bn256.G2 {
+	totalCall++
 	// cal akByte
 	akByte := []byte{}
 	akByte = append(akByte, idxPKByte...)
 	akByte = append(akByte, combinedPKBytes...)
 	if res, exist := cacher.Get(string(akByte)); exist {
 		if result, ok := res.(*bn256.G2); ok {
+			totalHitCache++
 			return result
 		} else {
 			log.Printf("[debugcache] Cacher return value %v but can not cast to G2 pointer\n", res)

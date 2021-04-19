@@ -46,8 +46,10 @@ func DecmprG1(bytes []byte) (*bn256.G1, error) {
 
 // DecmprG2 is
 func DecmprG2(bytes []byte) (*bn256.G2, error) {
+	totalCallG2++
 	if res, exist := cacher.Get(string(bytes)); exist {
 		if result, ok := res.(*bn256.G2); ok {
+			totalHitCacheG2++
 			return result, nil
 		} else {
 			log.Printf("[debugcache] Cacher return value %v but can not cast to G2 pointer\n", res)
