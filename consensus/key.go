@@ -139,7 +139,7 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 
 func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error {
 
-	if blk.GetVersion() == 1 {
+	if blk.GetVersion() == types.BFT_VERSION {
 		//check producer,proposer,agg sig with this version
 		producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
 		tempProducer, err := committee[producerPosition].ToBase58()
@@ -175,18 +175,18 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 }
 
 func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusType string) error {
-	if block.GetVersion() == 1 {
+	if block.GetVersion() == types.BFT_VERSION {
 		return blsbft.ValidateProducerSig(block)
-	} else if block.GetVersion() == 2 {
+	} else if block.GetVersion() == types.MULTI_VIEW_VERSION {
 		return blsbftv2.ValidateProducerSig(block)
 	}
 	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
 }
 
 func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
-	if block.GetVersion() == 1 {
+	if block.GetVersion() == types.BFT_VERSION {
 		return blsbft.ValidateCommitteeSig(block, committee)
-	} else if block.GetVersion() == 2 {
+	} else if block.GetVersion() == types.MULTI_VIEW_VERSION {
 		return blsbftv2.ValidateCommitteeSig(block, committee)
 	}
 	return fmt.Errorf("Wrong block version: %v", block.GetVersion())
@@ -209,9 +209,9 @@ func (engine *Engine) GenMiningKeyFromPrivateKey(privateKey string) (string, err
 }
 
 func (engine *Engine) ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error) {
-	if block.GetVersion() == 1 {
+	if block.GetVersion() == types.BFT_VERSION {
 		return blsbft.ExtractBridgeValidationData(block)
-	} else if block.GetVersion() == 2 {
+	} else if block.GetVersion() == types.MULTI_VIEW_VERSION {
 		return blsbftv2.ExtractBridgeValidationData(block)
 	}
 	return nil, nil, blsbft.NewConsensusError(blsbft.ConsensusTypeNotExistError, errors.New(block.GetConsensusType()))

@@ -30,12 +30,14 @@ type ShardHeader struct {
 	PendingValidatorRoot  common.Hash            `json:"PendingValidatorRoot"`  // hash from public key list of all pending validators designated to this ShardID
 	StakingTxRoot         common.Hash            `json:"StakingTxRoot"`         // hash from staking transaction map in shard best state
 	InstructionMerkleRoot common.Hash            `json:"InstructionMerkleRoot"` // Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
-	CommitteeFromBlock    common.Hash            `json:"CommitteeFromBlock"`    // Block Hash Of Swapped Committees Block
 	// This obsoletes InstructionMerkleRoot but for simplicity, we keep it for now
 
 	//for version 2
 	Proposer    string
 	ProposeTime int64
+
+	//for version 3
+	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"` // Block Hash Of Swapped Committees Block
 }
 
 func (shardHeader *ShardHeader) MetaHash() common.Hash {
@@ -85,9 +87,14 @@ func (shardHeader *ShardHeader) String() string {
 		res += string(value)
 	}
 
-	if shardHeader.Version == 2 {
+	if shardHeader.Version >= MULTI_VIEW_VERSION {
 		res += shardHeader.Proposer
 		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
+
+	if shardHeader.Version >= DCS_SLASHING_V2_VERSION {
+		res += shardHeader.CommitteeFromBlock.String()
+	}
+
 	return res
 }

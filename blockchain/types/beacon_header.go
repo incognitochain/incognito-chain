@@ -65,7 +65,7 @@ func (header *BeaconHeader) toString() string {
 	res += header.ShardStateHash.String()
 	res += header.InstructionHash.String()
 
-	if header.Version == 2 {
+	if header.Version == MULTI_VIEW_VERSION {
 		res += header.Proposer
 		res += fmt.Sprintf("%v", header.ProposeTime)
 	}

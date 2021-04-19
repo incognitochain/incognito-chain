@@ -96,8 +96,8 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if int(shardBlock.Header.ShardID) < 0 || int(shardBlock.Header.ShardID) > 256 {
 		return false, fmt.Errorf("Expect Shard Block ShardID in range 0 - 255 but get %+v ", shardBlock.Header.ShardID)
 	}
-	if shardBlock.Header.Version < SHARD_BLOCK_VERSION {
-		return false, fmt.Errorf("Expect Shard Block Version greater or equal than %+v but get %+v ", SHARD_BLOCK_VERSION, shardBlock.Header.Version)
+	if shardBlock.Header.Version < BFT_VERSION {
+		return false, fmt.Errorf("Expect Shard Block Version greater or equal than %+v but get %+v ", BFT_VERSION, shardBlock.Header.Version)
 	}
 	if len(shardBlock.Header.PreviousBlockHash[:]) != common.HashSize {
 		return false, fmt.Errorf("Expect Shard Block Previous Hash in the right format")
