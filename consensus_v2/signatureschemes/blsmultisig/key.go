@@ -4,6 +4,7 @@ import (
 	"log"
 	"math/big"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
@@ -38,14 +39,14 @@ func PKGen(sk *big.Int) *bn256.G2 {
 
 // AKGen take a seed and return BLS secret key
 func AKGen(idxPKByte []byte, combinedPKBytes []byte) *bn256.G2 {
-	totalCall++
+	atomic.AddUint64(&totalCall, 1)
 	// cal akByte
 	akByte := []byte{}
 	akByte = append(akByte, idxPKByte...)
 	akByte = append(akByte, combinedPKBytes...)
 	if res, exist := cacher.Get(string(akByte)); exist {
 		if result, ok := res.(*bn256.G2); ok {
-			totalHitCache++
+			atomic.AddUint64(&totalHitCache, 1)
 			return result
 		} else {
 			log.Printf("[debugcache] Cacher return value %v but can not cast to G2 pointer\n", res)
