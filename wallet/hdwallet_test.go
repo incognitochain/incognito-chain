@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -322,6 +323,7 @@ func TestHDWalletBase58CheckDeserializeWithInvalidData(t *testing.T) {
 func TestPrivateKeyToPaymentAddress(t *testing.T) {
 	//Todo: need to fill private key
 	privateKeyStrs := []string{
+		"",
 	}
 
 	for _, privateKeyStr := range privateKeyStrs {
@@ -335,9 +337,15 @@ func TestPrivateKeyToPaymentAddress(t *testing.T) {
 		fmt.Printf("paymentAddStr: %v\n", paymentAddStr)
 		fmt.Printf("viewingKeyStr: %v\n", viewingKeyStr)
 		fmt.Printf("otaPrivateKey: %v\n", otaPrivateKey)
+
+		publickey, txRandom, _ := coin.NewOTAFromReceiver(KeyWallet.KeySet.PaymentAddress)
+		fmt.Printf("OTAPubKeyStr: %v\n", base58.Base58Check{}.Encode(publickey.ToBytesS(), common.ZeroByte))
+		fmt.Printf("TxRandomStr: %v\n", base58.Base58Check{}.Encode(txRandom.Bytes(), common.ZeroByte))
 		fmt.Println("==============================================")
 	}
 }
+
+
 
 func TestNewCommitteeKeyFromIncognitoPrivateKey(t *testing.T) {
 	tests := []string{

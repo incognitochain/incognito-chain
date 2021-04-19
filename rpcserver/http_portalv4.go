@@ -221,6 +221,14 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalV4UnshieldRequest(param
 
 	// generate ota corresponding the payment address
 	otaPublicKeyStr, otaTxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(incAddressStr)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	// TODO: remove after testing
+	// hard code the fixed ota for testing
+	//otaPublicKeyStr = "1297N3bbmtDQVEX5mxVm7efobwQxT8XyL4xFrkqMN2dfhKCzHk6"
+	//otaTxRandomStr = "1crTvXc9VtocvtFwD4HoD4Fs7GejVhnWnKXF6GyL1i1x5cMpPXjjvBa8ZxvRpfQ7RrLyBdk4eMHAiyoJsBfFK4YmDfkgkb9awg7"
 
 	remoteAddress, ok := tokenParamsRaw["RemoteAddress"].(string)
 	if !ok {
