@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -100,10 +101,14 @@ CONTINUE_VERIFY:
 // var bcAllTime time.Duration
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
+	fullValidation := os.Getenv("FULL_VALIDATION")
+
 	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
-	shouldValidate = true
-	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash.String())
+	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+	if fullValidation == "1" {
+		shouldValidate = true
+	}
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
 	startTimeStoreBeaconBlock := time.Now()
@@ -157,21 +162,13 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	// Update best state with new beaconBlock
 	newBestState, hashes, committeeChange, _, err := curView.updateBeaconBestState(beaconBlock, blockchain)
 	if err != nil {
-		curView.beaconCommitteeEngine.AbortUncommittedBeaconState()
 		return err
 	}
 
-	var err2 error
-	defer func() {
-		if err2 != nil {
-			newBestState.beaconCommitteeEngine.AbortUncommittedBeaconState()
-		}
-	}()
-
 	if shouldValidate {
 		Logger.log.Debugf("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-		if err2 = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, hashes); err2 != nil {
-			return err2
+		if err = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, hashes); err != nil {
+			return err
 		}
 	} else {
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)

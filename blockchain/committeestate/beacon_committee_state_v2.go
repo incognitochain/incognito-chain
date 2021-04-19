@@ -62,6 +62,16 @@ func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
 		mu:              new(sync.RWMutex),
 	}
 }
+func NewBeaconCommitteeStateV2WithMu(mu *sync.RWMutex) *BeaconCommitteeStateV2 {
+	return &BeaconCommitteeStateV2{
+		shardCommittee:  make(map[byte][]incognitokey.CommitteePublicKey),
+		shardSubstitute: make(map[byte][]incognitokey.CommitteePublicKey),
+		autoStake:       make(map[string]bool),
+		rewardReceiver:  make(map[string]privacy.PaymentAddress),
+		stakingTx:       make(map[string]common.Hash),
+		mu:              mu,
+	}
+}
 
 func NewBeaconCommitteeStateV2WithValue(
 	beaconCommittee []incognitokey.CommitteePublicKey,
@@ -84,6 +94,18 @@ func NewBeaconCommitteeStateV2WithValue(
 		stakingTx:                  stakingTx,
 		mu:                         new(sync.RWMutex),
 	}
+}
+
+//shallowCopy maintain dst mutex value
+func (b *BeaconCommitteeStateV2) shallowCopy(newB *BeaconCommitteeStateV2) {
+	newB.beaconCommittee = b.beaconCommittee
+	newB.shardCommittee = b.shardCommittee
+	newB.shardSubstitute = b.shardSubstitute
+	newB.shardCommonPool = b.shardCommonPool
+	newB.numberOfAssignedCandidates = b.numberOfAssignedCandidates
+	newB.autoStake = b.autoStake
+	newB.rewardReceiver = b.rewardReceiver
+	newB.stakingTx = b.stakingTx
 }
 
 func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
@@ -298,23 +320,12 @@ func (engine *BeaconCommitteeEngineV2) compareHashes(hash1, hash2 *BeaconCommitt
 }
 
 func (engine *BeaconCommitteeEngineV2) Commit(hashes *BeaconCommitteeStateHash) error {
-	if reflect.DeepEqual(engine.uncommittedBeaconCommitteeStateV2, NewBeaconCommitteeStateV2()) {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, fmt.Errorf("%+v", engine.uncommittedBeaconCommitteeStateV2))
-	}
 	engine.uncommittedBeaconCommitteeStateV2.mu.Lock()
 	defer engine.uncommittedBeaconCommitteeStateV2.mu.Unlock()
 	engine.finalBeaconCommitteeStateV2.mu.Lock()
 	defer engine.finalBeaconCommitteeStateV2.mu.Unlock()
-	comparedHashes, err := engine.generateCommitteeHashes(engine.uncommittedBeaconCommitteeStateV2)
-	if err != nil {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, err)
-	}
-	err = engine.compareHashes(comparedHashes, hashes)
-	if err != nil {
-		return NewCommitteeStateError(ErrCommitBeaconCommitteeState, err)
-	}
-	engine.uncommittedBeaconCommitteeStateV2.clone(engine.finalBeaconCommitteeStateV2)
-	engine.uncommittedBeaconCommitteeStateV2.reset()
+	engine.uncommittedBeaconCommitteeStateV2.shallowCopy(engine.finalBeaconCommitteeStateV2)
+	engine.uncommittedBeaconCommitteeStateV2 = NewBeaconCommitteeStateV2WithMu(engine.uncommittedBeaconCommitteeStateV2.mu)
 	return nil
 }
 
