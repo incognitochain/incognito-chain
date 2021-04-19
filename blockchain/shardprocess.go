@@ -141,34 +141,6 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v Prev hash: %+v", shardID, blockHeight, blockHash, preHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
 	defer blockchain.ShardChain[int(shardID)].insertLock.Unlock()
-	//TODO
-	// for _, tx := range shardBlock.Body.Transactions {
-	// 	valEnv := transaction.DefaultValEnv()
-	// 	if tx.IsPrivacy() {
-	// 		valEnv = transaction.WithPrivacy(valEnv)
-	// 	} else {
-	// 		valEnv = transaction.WithNoPrivacy(valEnv)
-	// 	}
-	// 	valEnv = transaction.WithType(valEnv, tx.GetType())
-	// 	valEnv = transaction.
-	// 		WithConfirmedTime(
-	// 			transaction.WithBeaconHeight(
-	// 				transaction.WithShardHeight(
-	// 					transaction.WithShardID(
-	// 						valEnv,
-	// 						shardBlock.GetShardID(),
-	// 					),
-	// 					shardBlock.GetHeight(),
-	// 				),
-	// 				shardBlock.Header.BeaconHeight,
-	// 			),
-	// 			shardBlock.GetProduceTime(),
-	// 		)
-	// 	tx.SetValidationEnv(valEnv)
-	// 	// fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
-	// }
-	//startTimeInsertShardBlock := time.Now()
-	// committeeChange := newCommitteeChange()
 
 	//check if view is committed
 	checkView := blockchain.ShardChain[int(shardID)].GetViewByHash(blockHash)

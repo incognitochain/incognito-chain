@@ -78,9 +78,13 @@ func (v *TxsVerifier) ValidateTxsSig(
 		go func(tx metadata.Transaction) {
 			ok, err := tx.VerifySigTx()
 			if !ok || err != nil {
-				errCh <- errors.Errorf("Signature of tx %v is not valid, result %v, error %v", tx.Hash().String(), ok, err)
+				if errCh != nil {
+					errCh <- errors.Errorf("Signature of tx %v is not valid, result %v, error %v", tx.Hash().String(), ok, err)
+				}
 			} else {
-				doneCh <- nil
+				if doneCh != nil {
+					doneCh <- nil
+				}
 			}
 		}(tx)
 	}
@@ -127,7 +131,8 @@ func (v *TxsVerifier) ValidateBlockTransactions(
 	// fmt.Println("Is Validated")
 	errCh := make(chan error)
 	doneCh := make(chan interface{}, len(txs)+2*len(newTxs))
-	numOfValidTxs := 0
+	numOfValidGoroutine := 0
+	totalMsgDone := 0
 	timeout := time.After(10 * time.Second)
 	v.LoadCommitmentForTxs(
 		txs,
@@ -138,11 +143,13 @@ func (v *TxsVerifier) ValidateBlockTransactions(
 		errCh,
 		doneCh,
 	)
+	totalMsgDone += len(newTxs)
 	v.validateTxsWithoutChainstate(
 		newTxs,
 		errCh,
 		doneCh,
 	)
+	totalMsgDone += len(newTxs)
 	v.validateTxsWithChainstate(
 		txs,
 		chainRetriever,
@@ -151,6 +158,7 @@ func (v *TxsVerifier) ValidateBlockTransactions(
 		errCh,
 		doneCh,
 	)
+	totalMsgDone += len(txs)
 	// fmt.Println("[testNewPool] wait!")
 	for {
 		select {
@@ -158,9 +166,9 @@ func (v *TxsVerifier) ValidateBlockTransactions(
 			Logger.log.Error(err)
 			return false, err
 		case <-doneCh:
-			numOfValidTxs++
-			Logger.log.Infof("[testNewPool] %v %v\n", numOfValidTxs, len(txs))
-			if numOfValidTxs == len(txs) {
+			numOfValidGoroutine++
+			Logger.log.Infof("[testNewPool] %v %v\n", numOfValidGoroutine, len(txs))
+			if numOfValidGoroutine == totalMsgDone {
 				ok, err := v.checkDoubleSpendInListTxs(txs)
 				if (!ok) || (err != nil) {
 					Logger.log.Error(err)
