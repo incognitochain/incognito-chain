@@ -712,7 +712,9 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 
 func (tx Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, []privacy.Proof, error) {
 	isMint, _, _, _ := tx.GetTxMintData()
-	if afterUpgrade, ok := boolParams["v2Only"]; ok && afterUpgrade && !isMint {
+	isEmpty := tx.GetProof() == nil
+	if afterUpgrade, ok := boolParams["v2Only"]; ok && afterUpgrade && (!isMint || !isEmpty) {
+		utils.Logger.Log.Infof("isMint: %v, isEmpty: %v\n", isMint, isEmpty)
 		return false, nil, utils.NewTransactionErr(utils.RejectTxVersion, errors.New("old version is no longer supported"))
 	}
 
