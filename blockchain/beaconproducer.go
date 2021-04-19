@@ -371,8 +371,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 		}
 	}
 
-	randomTime := blockchain.config.ChainParams.RandomTime
-	Logger.log.Infof("BUGLOG5 beforeRandomTime: bHeight = %v, isGet = %v, isGreater = %v, randomTime = %v\n", newBeaconHeight, curView.IsGetRandomNumber, blockchain.IsGreaterThanRandomTime(newBeaconHeight), randomTime)
 
 	// Random number for Assign Instruction
 	if blockchain.IsGreaterThanRandomTime(newBeaconHeight) && !curView.IsGetRandomNumber {
