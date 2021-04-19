@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/hex"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"math/big"
 	"strconv"
 
@@ -177,7 +178,7 @@ func pickInstructionWithType(
 }
 
 // pickInstructionFromBeaconBlocks extracts all instructions of a specific type
-func pickInstructionFromBeaconBlocks(beaconBlocks []*BeaconBlock, instType string) [][]string {
+func pickInstructionFromBeaconBlocks(beaconBlocks []*types.BeaconBlock, instType string) [][]string {
 	insts := [][]string{}
 	for _, block := range beaconBlocks {
 		found := pickInstructionWithType(block.Body.Instructions, instType)
@@ -190,7 +191,7 @@ func pickInstructionFromBeaconBlocks(beaconBlocks []*BeaconBlock, instType strin
 
 // pickBurningConfirmInstruction finds all BurningConfirmMeta instructions
 func pickBurningConfirmInstructionV1(
-	beaconBlocks []*BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	height uint64,
 ) [][]string {
 	metas := []string{

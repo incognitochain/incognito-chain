@@ -91,36 +91,6 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
-	// case CmdBFTReq:
-	// 	msg = &MessageBFTReq{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTReady:
-	// 	msg = &MessageBFTReady{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTPropose:
-	// 	msg = &MessageBFTProposeV2{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTPrepare:
-	// 	msg = &MessageBFTPrepareV2{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTAgree:
-	// 	msg = &MessageBFTAgree{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTCommit:
-	// 	msg = &MessageBFTCommit{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
 	case CmdPeerState:
 		msg = &MessagePeerState{
 			Timestamp:      time.Now().Unix(),

@@ -2,6 +2,8 @@ package rpcserver
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -76,7 +78,7 @@ func (httpServer *HttpServer) hanldeGetAllView(params interface{}, closeChan <-c
 		return nil, err
 	}
 	res := []jsonresult.GetViewResult{}
-	blksPool := []common.BlockPoolInterface{}
+	blksPool := []types.BlockPoolInterface{}
 	if shardID == -1 {
 		blks := blkOnChain.([]jsonresult.GetBeaconBlockResult)
 		if len(blks) == 0 {

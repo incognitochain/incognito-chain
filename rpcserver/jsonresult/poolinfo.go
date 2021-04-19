@@ -1,10 +1,9 @@
 package jsonresult
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/syncker"
 	"sort"
-
-	"github.com/incognitochain/incognito-chain/common"
 )
 
 type PoolInfo struct {
@@ -22,7 +21,7 @@ type BlockInfo struct {
 	PreHash string `json:"PreHash"`
 }
 
-func NewPoolInfo(blks []common.BlockPoolInterface) *PoolInfo {
+func NewPoolInfo(blks []types.BlockPoolInterface) *PoolInfo {
 	res := &PoolInfo{}
 	res.Info = map[int][]BlockInfo{}
 	for _, blk := range blks {
