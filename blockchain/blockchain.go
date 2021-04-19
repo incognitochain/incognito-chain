@@ -870,11 +870,13 @@ func (bc *BlockChain) getEpochAndIsFistHeightInEpoch(beaconHeight uint64) (uint6
 
 func (bc *BlockChain) IsFirstBeaconHeightInEpoch(beaconHeight uint64) bool {
 	_, ok := bc.getEpochAndIsFistHeightInEpoch(beaconHeight)
+	Logger.log.Infof("BUGLOG5 isFirstBlock at block %v: %v\n", beaconHeight, ok)
 	return ok
 }
 
 func (bc *BlockChain) IsLastBeaconHeightInEpoch(beaconHeight uint64) bool {
 	_, ok := bc.getEpochAndIsFistHeightInEpoch(beaconHeight + 1)
+	Logger.log.Infof("BUGLOG5 isLastBlock at block %v: %v\n", beaconHeight, ok)
 	return ok
 }
 
@@ -929,6 +931,8 @@ func (bc *BlockChain) GetBeaconBlockOrderInEpoch(beaconHeight uint64) (uint64, u
 func (bc *BlockChain) IsGreaterThanRandomTime(beaconHeight uint64) bool {
 	params := bc.config.ChainParams
 	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	Logger.log.Infof("BUGLOG5 IsGreaterThanRandomTime: total = %v, bHeight = %v, epoch = (%v, %v), breakPoint = %v, randTime = (%v, %v)\n",
+		totalBlockBeforeBreakPoint, beaconHeight, params.Epoch, params.EpochV2, params.EpochV2BreakPoint, params.RandomTime, params.RandomTimeV2)
 	if beaconHeight < totalBlockBeforeBreakPoint {
 		return beaconHeight%params.Epoch > params.RandomTime
 	} else {
