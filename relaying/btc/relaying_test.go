@@ -271,7 +271,7 @@ func TestCreateAndSendBTCTxToCypher(t *testing.T) {
 	bc := getBlockCypherAPI("test3")
 
 	inAddr := "msTYtu7nsMiwFUtNgCSQBk26JeBf9q3GTM"
-	outAddr := "tb1qxds4waaq7zll6w699sfarajvm3c5m98qpttkcvcgesxwk0989pks42hktr"
+	outAddr := "tb1qg24nv270gyaurnwcfcdjw55jm94ws70as2ffzlr9nxww77tgu4lstcgqdh"
 	amount := int(12000)
 	trans := gobcy.TX{}
 	trans.Fees = int(500)
