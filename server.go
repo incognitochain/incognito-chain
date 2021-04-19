@@ -1005,26 +1005,26 @@ func (serverObj *Server) OnGetCrossShard(_ *peer.PeerConn, msg *wire.MessageGetC
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
 func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
-	Logger.log.Infof("Receive a new transaction START")
-	var txProcessed chan struct{}
-	// txBytes, _ := json.Marshal(msg.Transaction)
-	// err := json.Unmarshal(txBytes, msg.Transaction)
-	// if err != nil {
-	// 	panic("dd")
-	// }
-	serverObj.netSync.QueueTx(nil, msg, txProcessed)
-	//<-txProcessed
+	// Logger.log.Infof("Receive a new transaction START")
+	// var txProcessed chan struct{}
+	// // txBytes, _ := json.Marshal(msg.Transaction)
+	// // err := json.Unmarshal(txBytes, msg.Transaction)
+	// // if err != nil {
+	// // 	panic("dd")
+	// // }
+	// serverObj.netSync.QueueTx(nil, msg, txProcessed)
+	// //<-txProcessed
 
-	Logger.log.Infof("Receive a new transaction END")
+	// Logger.log.Infof("Receive a new transaction END")
 }
 
 func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {
-	Logger.log.Debug("Receive a new transaction(privacy token) START")
-	var txProcessed chan struct{}
-	serverObj.netSync.QueueTxPrivacyToken(nil, msg, txProcessed)
-	//<-txProcessed
+	// Logger.log.Debug("Receive a new transaction(privacy token) START")
+	// var txProcessed chan struct{}
+	// serverObj.netSync.QueueTxPrivacyToken(nil, msg, txProcessed)
+	// //<-txProcessed
 
-	Logger.log.Debug("Receive a new transaction(privacy token) END")
+	// Logger.log.Debug("Receive a new transaction(privacy token) END")
 }
 
 /*
