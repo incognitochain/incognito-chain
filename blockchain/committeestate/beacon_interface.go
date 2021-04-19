@@ -130,7 +130,7 @@ func NewSplitRewardEnvironment(
 	totalReward map[common.Hash]uint64,
 	isSplitRewardForCustodian bool,
 	percentCustodianReward uint64,
-	DAOPercent, activeShards int,
+	DAOPercent int,
 ) *SplitRewardEnvironment {
 	return &SplitRewardEnvironment{
 		ShardID:                   shardID,
@@ -140,7 +140,6 @@ func NewSplitRewardEnvironment(
 		IsSplitRewardForCustodian: isSplitRewardForCustodian,
 		PercentCustodianReward:    percentCustodianReward,
 		DAOPercent:                DAOPercent,
-		ActiveShards:              activeShards,
 		MaxSubsetCommittees:       maxSubsetsCommittee,
 	}
 }

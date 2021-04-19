@@ -297,15 +297,15 @@ func calculateRewardV2(
 				isSplitRewardForCustodian,
 				percentCustodianRewards,
 				percentForIncognitoDAO,
-				numberOfActiveShards,
 			)
-			rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
+
+			rewardForBeacon, rewardForShardSubset, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 			if err != nil {
 				return nil, nil, nil, nil, err
 			}
 
 			plusMap(rewardForBeacon, totalRewardForBeacon)
-			plusMap(rewardForShard, totalRewardForShardSubset[shardID][subsetID])
+			plusMap(rewardForShardSubset, totalRewardForShardSubset[shardID][subsetID])
 			plusMap(rewardForDAO, totalRewardForIncDAO)
 			plusMap(rewardForCustodian, totalRewardForCustodian)
 		}
@@ -365,7 +365,6 @@ func calculateReward(
 			isSplitRewardForCustodian,
 			percentCustodianRewards,
 			percentForIncognitoDAO,
-			numberOfActiveShards,
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 		if err != nil {

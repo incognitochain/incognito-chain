@@ -1990,3 +1990,112 @@ func TestBeaconCommitteeStateV3_assignBackToSubstituteList(t *testing.T) {
 		})
 	}
 }
+
+func TestBeaconCommitteeStateV3_SplitReward(t *testing.T) {
+
+	initLog()
+	initTestParams()
+
+	type fields struct {
+		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
+		syncPool                         map[byte][]string
+	}
+	type args struct {
+		env *SplitRewardEnvironment
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    map[common.Hash]uint64
+		want1   map[common.Hash]uint64
+		want2   map[common.Hash]uint64
+		want3   map[common.Hash]uint64
+		wantErr bool
+	}{
+		{
+			name: "Year 1",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
+						},
+						shardCommittee: map[byte][]string{
+							0: []string{},
+							1: []string{
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3,
+							},
+							2: []string{},
+							3: []string{},
+							4: []string{},
+							5: []string{},
+							6: []string{},
+							7: []string{},
+						},
+						mu: &sync.RWMutex{},
+					},
+				},
+			},
+			args: args{
+				env: &SplitRewardEnvironment{
+					DAOPercent:                10,
+					ShardID:                   1,
+					IsSplitRewardForCustodian: false,
+					PercentCustodianReward:    0,
+					TotalReward: map[common.Hash]uint64{
+						common.PRVCoinID: 546998,
+					},
+					MaxSubsetCommittees: 2,
+					SubsetID:            1,
+				},
+			},
+			want: map[common.Hash]uint64{
+				common.PRVCoinID: 13104,
+			},
+			want1: map[common.Hash]uint64{
+				common.PRVCoinID: 479195,
+			},
+			want2: map[common.Hash]uint64{
+				common.PRVCoinID: 54699,
+			},
+			want3:   map[common.Hash]uint64{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
+				syncPool:                         tt.fields.syncPool,
+			}
+			got, got1, got2, got3, err := b.SplitReward(tt.args.env)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("BeaconCommitteeStateV3.SplitReward() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("BeaconCommitteeStateV3.SplitReward() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("BeaconCommitteeStateV3.SplitReward() got1 = %v, want %v", got1, tt.want1)
+			}
+			if !reflect.DeepEqual(got2, tt.want2) {
+				t.Errorf("BeaconCommitteeStateV3.SplitReward() got2 = %v, want %v", got2, tt.want2)
+			}
+			if !reflect.DeepEqual(got3, tt.want3) {
+				t.Errorf("BeaconCommitteeStateV3.SplitReward() got3 = %v, want %v", got3, tt.want3)
+			}
+		})
+	}
+}

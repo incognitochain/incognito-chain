@@ -389,11 +389,11 @@ func (b *BeaconCommitteeStateV3) SplitReward(
 	for key, totalReward := range allCoinTotalReward {
 		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
 		totalRewardForShardAndBeaconValidators := totalReward - totalRewardForDAOAndCustodians
-		shardWeight := float64(lenShardSubsetCommittees)
-		beaconWeight := float64(lenBeaconCommittees) / float64(lenShardSubsetCommittees)
-		totalValidatorWeight := shardWeight + beaconWeight
+		shardSubsetWeight := float64(lenShardSubsetCommittees)
+		beaconWeight := float64(lenBeaconCommittees) / float64(len(b.shardCommittee))
+		totalValidatorWeight := shardSubsetWeight + beaconWeight
 
-		rewardForShardSubset[key] = uint64(shardWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)
+		rewardForShardSubset[key] = uint64(shardSubsetWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)
 		Logger.log.Infof("totalRewardForDAOAndCustodians tokenID %v - %v\n", key.String(), totalRewardForDAOAndCustodians)
 
 		if env.IsSplitRewardForCustodian {
@@ -404,6 +404,5 @@ func (b *BeaconCommitteeStateV3) SplitReward(
 		}
 		rewardForBeacon[key] += totalReward - (rewardForShardSubset[key] + totalRewardForDAOAndCustodians)
 	}
-
 	return rewardForBeacon, rewardForShardSubset, rewardForIncDAO, rewardForCustodian, nil
 }

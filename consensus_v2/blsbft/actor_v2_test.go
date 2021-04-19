@@ -1008,69 +1008,6 @@ func Test_actorV2_validateBlock(t *testing.T) {
 	}
 }
 
-/*func Test_actorV2_voteForBlock(t *testing.T) {*/
-//initTestParams()
-//block := &mocktypes.BlockInterface{}
-//block.On("GetHeight").Return(uint64(12))
-
-//logger := initLog()
-//type fields struct {
-//actorBase            actorBase
-//committeeChain       blockchain.Chain
-//currentTime          int64
-//currentTimeSlot      int64
-//proposeHistory       *lru.Cache
-//receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-//receiveBlockByHash   map[string]*ProposeBlockInfo
-//voteHistory          map[uint64]types.BlockInterface
-//bodyHashes           map[uint64]map[string]bool
-//votedTimeslot        map[int64]bool
-//blockVersion         int
-//}
-//type args struct {
-//v *ProposeBlockInfo
-//}
-//tests := []struct {
-//name    string
-//fields  fields
-//args    args
-//wantErr bool
-//}{
-//{
-//name: "Valid Input",
-//fields: fields{
-//actorBase: actorBase{
-//logger: logger,
-//},
-//},
-//args: args{
-//v: &ProposeBlockInfo{},
-//},
-//wantErr: false,
-//},
-//}
-//for _, tt := range tests {
-//t.Run(tt.name, func(t *testing.T) {
-//actorV2 := &actorV2{
-//actorBase:            tt.fields.actorBase,
-//committeeChain:       tt.fields.committeeChain,
-//currentTime:          tt.fields.currentTime,
-//currentTimeSlot:      tt.fields.currentTimeSlot,
-//proposeHistory:       tt.fields.proposeHistory,
-//receiveBlockByHeight: tt.fields.receiveBlockByHeight,
-//receiveBlockByHash:   tt.fields.receiveBlockByHash,
-//voteHistory:          tt.fields.voteHistory,
-//bodyHashes:           tt.fields.bodyHashes,
-//votedTimeslot:        tt.fields.votedTimeslot,
-//blockVersion:         tt.fields.blockVersion,
-//}
-//if err := actorV2.voteForBlock(tt.args.v); (err != nil) != tt.wantErr {
-//t.Errorf("actorV2.voteForBlock() error = %v, wantErr %v", err, tt.wantErr)
-//}
-//})
-//}
-/*}*/
-
 func Test_actorV2_processIfBlockGetEnoughVote(t *testing.T) {
 	type fields struct {
 		actorBase            actorBase
