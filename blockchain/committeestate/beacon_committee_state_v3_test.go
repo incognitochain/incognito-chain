@@ -637,7 +637,7 @@ func TestBeaconCommitteeStateV3_assignToPending(t *testing.T) {
 		args               args
 		want               *CommitteeChange
 	}{
-		// TODO: @hung
+		//TODO: @hung
 		// testcase 1: substitute list is empty
 		// testcase 2: add to the end of substitute list
 		// testcase 3: add to the beginning of substitute list
@@ -1801,19 +1801,229 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 		committeeChange       *CommitteeChange
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *CommitteeChange
+		name               string
+		fields             fields
+		fieldsAfterProcess *BeaconCommitteeStateV3
+		args               args
+		want               *CommitteeChange
 	}{
-		// TODO: @hung
-		// Testcase 1: remove one validator in sync pool, is not empty => assign to pending
-		// Testcase 2: remove one validator in sync pool, is empty => assign to pending
-		// Testcase 3: remove multiple validators in sync pool, sync pool is not empty => assign to pending
-		// Testcase 4: remove multiple validators in sync pool, sync pool is empty => assign to pending
-		// Testcase 5: remove multiple validators in sync pool, sync pool is not empty => assign to NOT EMPTY pending
-		// Testcase 6: remove multiple validators in sync pool, sync pool is not empty => assign to EMPTY pending
-		// Testcase 7: try to remove validators not in sync pool => no assign to pending
+		{
+			name: "remove one validator, sync pool not empty => assign to pending",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key0, key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{
+					0: []string{key3, key4},
+				},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key0, key4, key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{
+					0: []string{key3},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					RandomNumber: 1001,
+				},
+				committeeChange:       NewCommitteeChange(),
+				finishSyncInstruction: instruction.NewFinishSyncInstructionWithValue(0, []string{key4}),
+			},
+			want: NewCommitteeChange().
+				AddSyncingPoolRemoved(0, []string{key4}).
+				AddFinishedSyncValidators(0, []string{key4}).
+				AddShardSubstituteAdded(0, []string{key4}),
+		},
+		{
+			name: "remove one validator, sync pool is empty => assign to pending",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key0, key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{
+					0: []string{key4},
+				},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key0, key4, key},
+						},
+					},
+				},
+				syncPool: map[byte][]string{
+					0: []string{},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					RandomNumber: 1001,
+				},
+				committeeChange:       NewCommitteeChange(),
+				finishSyncInstruction: instruction.NewFinishSyncInstructionWithValue(0, []string{key4}),
+			},
+			want: NewCommitteeChange().
+				AddSyncingPoolRemoved(0, []string{key4}).
+				AddFinishedSyncValidators(0, []string{key4}).
+				AddShardSubstituteAdded(0, []string{key4}),
+		},
+		{
+			name: "remove multiple validator, sync pool is empty => assign to pending",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key0, key},
+							1: []string{key10, key11},
+						},
+					},
+				},
+				syncPool: map[byte][]string{
+					0: []string{key3, key4, key5},
+					1: []string{key13, key14},
+				},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key3, key0, key4, key5, key},
+							1: []string{key10, key11},
+						},
+					},
+				},
+				syncPool: map[byte][]string{
+					0: []string{},
+					1: []string{key13, key14},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					RandomNumber: 1001,
+				},
+				committeeChange:       NewCommitteeChange(),
+				finishSyncInstruction: instruction.NewFinishSyncInstructionWithValue(0, []string{key4, key3, key5}),
+			},
+			want: NewCommitteeChange().
+				AddSyncingPoolRemoved(0, []string{key4}).
+				AddSyncingPoolRemoved(0, []string{key3}).
+				AddSyncingPoolRemoved(0, []string{key5}).
+				AddFinishedSyncValidators(0, []string{key4}).
+				AddFinishedSyncValidators(0, []string{key3}).
+				AddFinishedSyncValidators(0, []string{key5}).
+				AddShardSubstituteAdded(0, []string{key4}).
+				AddShardSubstituteAdded(0, []string{key3}).
+				AddShardSubstituteAdded(0, []string{key5}),
+		},
+		{
+			name: "remove multiple validator, sync pool not empty => assign to pending",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key0, key},
+							1: []string{key10, key11},
+						},
+					},
+				},
+				syncPool: map[byte][]string{
+					0: []string{key3, key4, key5},
+					1: []string{key13, key14},
+				},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key3, key0, key4, key},
+							1: []string{key10, key11},
+						},
+					},
+				},
+				syncPool: map[byte][]string{
+					0: []string{key5},
+					1: []string{key13, key14},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					RandomNumber: 1001,
+				},
+				committeeChange:       NewCommitteeChange(),
+				finishSyncInstruction: instruction.NewFinishSyncInstructionWithValue(0, []string{key4, key3}),
+			},
+			want: NewCommitteeChange().
+				AddSyncingPoolRemoved(0, []string{key4}).
+				AddSyncingPoolRemoved(0, []string{key3}).
+				AddFinishedSyncValidators(0, []string{key4}).
+				AddFinishedSyncValidators(0, []string{key3}).
+				AddShardSubstituteAdded(0, []string{key4}).
+				AddShardSubstituteAdded(0, []string{key3}),
+		},
+		{
+			name: "remove multiple validator, sync pool not empty => pending is empty before assign",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{},
+							1: []string{key10, key11},
+						},
+					},
+				},
+				syncPool: map[byte][]string{
+					0: []string{key3, key4, key5},
+					1: []string{key13, key14},
+				},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key3, key5, key4},
+							1: []string{key10, key11},
+						},
+					},
+				},
+				syncPool: map[byte][]string{
+					0: []string{},
+					1: []string{key13, key14},
+				},
+			},
+			args: args{
+				env: &BeaconCommitteeStateEnvironment{
+					RandomNumber: 1001,
+				},
+				committeeChange:       NewCommitteeChange(),
+				finishSyncInstruction: instruction.NewFinishSyncInstructionWithValue(0, []string{key4, key3, key5}),
+			},
+			want: NewCommitteeChange().
+				AddSyncingPoolRemoved(0, []string{key4}).
+				AddSyncingPoolRemoved(0, []string{key3}).
+				AddSyncingPoolRemoved(0, []string{key5}).
+				AddFinishedSyncValidators(0, []string{key4}).
+				AddFinishedSyncValidators(0, []string{key3}).
+				AddFinishedSyncValidators(0, []string{key5}).
+				AddShardSubstituteAdded(0, []string{key4}).
+				AddShardSubstituteAdded(0, []string{key3}).
+				AddShardSubstituteAdded(0, []string{key5}),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1823,6 +2033,9 @@ func TestBeaconCommitteeStateV3_processFinishSyncInstruction(t *testing.T) {
 			}
 			if got := b.processFinishSyncInstruction(tt.args.finishSyncInstruction, tt.args.env, tt.args.committeeChange); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("processFinishSyncInstruction() = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(b, tt.fieldsAfterProcess) {
+				t.Errorf("processFinishSyncInstruction() fieldsAfterProcess got = %v, want %v", b, tt.fieldsAfterProcess)
 			}
 		})
 	}
@@ -1838,17 +2051,106 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 		shardID    byte
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name               string
+		fields             fields
+		fieldsAfterProcess *BeaconCommitteeStateV3
+		args               args
 	}{
-		// TODO: @hung
-		// testcase 1: all validators must be removed from syncPool
-		// testcase 2: 2 removed validators, 1 syncPool
-		// testcase 3: 1 removed validators, 2 syncPool
-		// testcase 4: 1 or some validators is not in sync pool
-		// testcase 5: 3 removed validators, 3 sync pool
-		// testcase 6: 3 removed validators, 5 sync pool
+		{
+			name: "remove 2 validators, 1 syncPool",
+			fields: fields{
+				syncPool: map[byte][]string{
+					0: []string{key0},
+					1: []string{key10, key11, key12},
+				},
+			},
+			args: args{
+				shardID:    0,
+				validators: []string{key5, key0},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				syncPool: map[byte][]string{
+					0: []string{},
+					1: []string{key10, key11, key12},
+				},
+			},
+		},
+		{
+			name: "remove 1 validators, 2 syncPool",
+			fields: fields{
+				syncPool: map[byte][]string{
+					0: []string{key0, key5},
+					1: []string{key10, key11, key12},
+				},
+			},
+			args: args{
+				shardID:    0,
+				validators: []string{key0},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				syncPool: map[byte][]string{
+					0: []string{key5},
+					1: []string{key10, key11, key12},
+				},
+			},
+		},
+		{
+			name: "remove validators not in syncPool",
+			fields: fields{
+				syncPool: map[byte][]string{
+					0: []string{key0, key5},
+					1: []string{key10, key11, key12},
+				},
+			},
+			args: args{
+				shardID:    0,
+				validators: []string{key6},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				syncPool: map[byte][]string{
+					0: []string{key0, key5},
+					1: []string{key10, key11, key12},
+				},
+			},
+		},
+		{
+			name: "remove all validators must be removed from syncPool",
+			fields: fields{
+				syncPool: map[byte][]string{
+					0: []string{key0, key, key3, key2, key5},
+					1: []string{key10, key11, key12},
+				},
+			},
+			args: args{
+				shardID:    0,
+				validators: []string{key5, key0, key2, key, key3},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				syncPool: map[byte][]string{
+					0: []string{},
+					1: []string{key10, key11, key12},
+				},
+			},
+		},
+		{
+			name: "remove 3 validators, 5 sync pool",
+			fields: fields{
+				syncPool: map[byte][]string{
+					0: []string{key0, key, key3, key2, key5},
+					1: []string{key10, key11, key12},
+				},
+			},
+			args: args{
+				shardID:    0,
+				validators: []string{key5, key0, key3},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				syncPool: map[byte][]string{
+					0: []string{key, key2},
+					1: []string{key10, key11, key12},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1857,11 +2159,57 @@ func TestBeaconCommitteeStateV3_removeValidatorsFromSyncPool(t *testing.T) {
 				syncPool:                         tt.fields.syncPool,
 			}
 			b.removeValidatorsFromSyncPool(tt.args.validators, tt.args.shardID)
+			if !reflect.DeepEqual(b, tt.fieldsAfterProcess) {
+				t.Errorf("removeValidatorsFromSyncPool() got %+v, want %+v", b, tt.fieldsAfterProcess)
+			}
 		})
 	}
 }
 
 func TestBeaconCommitteeStateV3_processAfterNormalSwap(t *testing.T) {
+
+	initLog()
+	initTestParams()
+
+	paymentAddress := privacy.GeneratePaymentAddress([]byte{1})
+	sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
+	assert.Nil(t, err)
+
+	hash, err := common.Hash{}.NewHashFromStr("123")
+	statedb.StoreStakerInfo(
+		sDB,
+		[]incognitokey.CommitteePublicKey{
+			*incKey0, *incKey2, *incKey4, *incKey6, *incKey8, *incKey10, *incKey12,
+		},
+		map[string]privacy.PaymentAddress{
+			incKey0.GetIncKeyBase58():  paymentAddress,
+			incKey2.GetIncKeyBase58():  paymentAddress,
+			incKey4.GetIncKeyBase58():  paymentAddress,
+			incKey6.GetIncKeyBase58():  paymentAddress,
+			incKey8.GetIncKeyBase58():  paymentAddress,
+			incKey10.GetIncKeyBase58(): paymentAddress,
+			incKey12.GetIncKeyBase58(): paymentAddress,
+		},
+		map[string]bool{
+			key0:  true,
+			key2:  true,
+			key4:  true,
+			key6:  false,
+			key8:  false,
+			key10: false,
+			key12: false,
+		},
+		map[string]common.Hash{
+			key0:  *hash,
+			key2:  *hash,
+			key4:  *hash,
+			key6:  *hash,
+			key8:  *hash,
+			key10: *hash,
+			key12: *hash,
+		},
+	)
+
 	type fields struct {
 		beaconCommitteeStateSlashingBase beaconCommitteeStateSlashingBase
 		syncPool                         map[byte][]string
@@ -1875,15 +2223,181 @@ func TestBeaconCommitteeStateV3_processAfterNormalSwap(t *testing.T) {
 	tests := []struct {
 		name                        string
 		fields                      fields
+		fieldsAfterProcess          *BeaconCommitteeStateV3
 		args                        args
 		wantCommitteeChange         *CommitteeChange
 		want1ReturnStakeInstruction *instruction.ReturnStakeInstruction
 		wantErr                     bool
 	}{
-		// TODO: Add test cases.
-		// 1 stop auto stake = false, has return inst, no assign back
-		// 1 stop auto stake = true, no return inst, has assign back
-		// 2 stop auto stake, 1 = true, 2 = false, 1 assign back, 2 return inst
+		{
+			name: "1 stop auto stake = false, 1 return stake, no assign back",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						stakingTx: map[string]common.Hash{
+							key6: *hash,
+						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey6.GetIncKeyBase58(): paymentAddress,
+						},
+						autoStake: map[string]bool{
+							key6: false,
+						},
+					},
+				},
+				syncPool: make(map[byte][]string),
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						stakingTx:      map[string]common.Hash{},
+						rewardReceiver: map[string]privacy.PaymentAddress{},
+						autoStake:      map[string]bool{},
+					},
+				},
+				syncPool: make(map[byte][]string),
+			},
+			args: args{
+				committeeChange: NewCommitteeChange(),
+				env: &BeaconCommitteeStateEnvironment{
+					ShardID:          0,
+					ConsensusStateDB: sDB,
+				},
+				outPublicKeys:            []string{key6},
+				returnStakingInstruction: instruction.NewReturnStakeIns(),
+			},
+			wantCommitteeChange: NewCommitteeChange().
+				AddRemovedStaker(key6),
+			want1ReturnStakeInstruction: instruction.NewReturnStakeInsWithValue([]string{key6}, []string{hash.String()}),
+			wantErr:                     false,
+		},
+		{
+			name: "stop auto stake = true, no return stake, assign back",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key},
+							1: []string{key3},
+						},
+						stakingTx: map[string]common.Hash{
+							key2: *hash,
+						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey2.GetIncKeyBase58(): paymentAddress,
+						},
+						autoStake: map[string]bool{
+							key2: true,
+						},
+					},
+				},
+				syncPool: make(map[byte][]string),
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key, key2},
+							1: []string{key3},
+						},
+						stakingTx: map[string]common.Hash{
+							key2: *hash,
+						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey2.GetIncKeyBase58(): paymentAddress,
+						},
+						autoStake: map[string]bool{
+							key2: true,
+						},
+					},
+				},
+				syncPool: make(map[byte][]string),
+			},
+			args: args{
+				committeeChange: NewCommitteeChange(),
+				env: &BeaconCommitteeStateEnvironment{
+					ShardID:          0,
+					ConsensusStateDB: sDB,
+				},
+				outPublicKeys:            []string{key2},
+				returnStakingInstruction: instruction.NewReturnStakeIns(),
+			},
+			wantCommitteeChange: NewCommitteeChange().
+				AddShardSubstituteAdded(0, []string{key2}),
+			want1ReturnStakeInstruction: instruction.NewReturnStakeIns(),
+			wantErr:                     false,
+		},
+		{
+			name: "both stop auto stake = true, false, has assign back and return inst",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key},
+							1: []string{key3},
+						},
+						stakingTx: map[string]common.Hash{
+							key0: *hash,
+							key2: *hash,
+							key6: *hash,
+							key8: *hash,
+						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey0.GetIncKeyBase58(): paymentAddress,
+							incKey2.GetIncKeyBase58(): paymentAddress,
+							incKey6.GetIncKeyBase58(): paymentAddress,
+							incKey8.GetIncKeyBase58(): paymentAddress,
+						},
+						autoStake: map[string]bool{
+							key0: true,
+							key2: true,
+							key6: false,
+							key8: false,
+						},
+					},
+				},
+				syncPool: make(map[byte][]string),
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						shardSubstitute: map[byte][]string{
+							0: []string{key, key2, key0},
+							1: []string{key3},
+						},
+						stakingTx: map[string]common.Hash{
+							key0: *hash,
+							key2: *hash,
+						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey0.GetIncKeyBase58(): paymentAddress,
+							incKey2.GetIncKeyBase58(): paymentAddress,
+						},
+						autoStake: map[string]bool{
+							key0: true,
+							key2: true,
+						},
+					},
+				},
+				syncPool: make(map[byte][]string),
+			},
+			args: args{
+				committeeChange: NewCommitteeChange(),
+				env: &BeaconCommitteeStateEnvironment{
+					ShardID:          0,
+					ConsensusStateDB: sDB,
+				},
+				outPublicKeys:            []string{key2, key0, key6, key8},
+				returnStakingInstruction: instruction.NewReturnStakeIns(),
+			},
+			wantCommitteeChange: NewCommitteeChange().
+				AddShardSubstituteAdded(0, []string{key2}).
+				AddShardSubstituteAdded(0, []string{key0}).
+				AddRemovedStaker(key6).
+				AddRemovedStaker(key8),
+			want1ReturnStakeInstruction: instruction.NewReturnStakeInsWithValue([]string{key6, key8}, []string{hash.String(), hash.String()}),
+			wantErr:                     false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1898,6 +2412,9 @@ func TestBeaconCommitteeStateV3_processAfterNormalSwap(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.wantCommitteeChange) {
 				t.Errorf("processAfterNormalSwap() got = %v, want %v", got, tt.wantCommitteeChange)
+			}
+			if !reflect.DeepEqual(b, tt.fieldsAfterProcess) {
+				t.Errorf("processAfterNormalSwap() fieldsAfterProcess got = %v, want %v", b, tt.fieldsAfterProcess)
 			}
 			if !reflect.DeepEqual(got1, tt.want1ReturnStakeInstruction) {
 				t.Errorf("processAfterNormalSwap() got1 = %v, want %v", got1, tt.want1ReturnStakeInstruction)

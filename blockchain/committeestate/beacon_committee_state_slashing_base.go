@@ -199,7 +199,7 @@ func (b *beaconCommitteeStateSlashingBase) removeFromState(
 	delete(b.rewardReceiver, committeePublicKeyStruct.GetIncKeyBase58())
 	delete(b.autoStake, committeePublicKey)
 	delete(b.stakingTx, committeePublicKey)
-	committeeChange.RemovedStaker = append(committeeChange.RemovedStaker, committeePublicKey)
+	committeeChange.AddRemovedStaker(committeePublicKey)
 
 	return committeeChange, nil
 }

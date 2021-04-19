@@ -876,14 +876,14 @@ func TestInsertValueToSliceByIndex(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := InsertValueToSliceByIndex(tt.args.list, tt.args.value, tt.args.index)
+			got := insertValueToSliceByIndex(tt.args.list, tt.args.value, tt.args.index)
 			defer func() {
 				if r := recover(); r != nil {
 					fmt.Println("Recovered in f", r)
 				}
 			}()
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("InsertValueToSliceByIndex() = %v, want %v", got, tt.want)
+				t.Errorf("insertValueToSliceByIndex() = %v, want %v", got, tt.want)
 			}
 		})
 	}

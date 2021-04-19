@@ -61,6 +61,11 @@ func (committeeChange *CommitteeChange) AddFinishedSyncValidators(shardID byte, 
 	return committeeChange
 }
 
+func (committeeChange *CommitteeChange) AddRemovedStaker(removedStaker string) *CommitteeChange {
+	committeeChange.RemovedStaker = append(committeeChange.RemovedStaker, removedStaker)
+	return committeeChange
+}
+
 //GetStakerKeys ...
 func (committeeChange *CommitteeChange) StakerKeys() []incognitokey.CommitteePublicKey {
 	return committeeChange.NextEpochShardCandidateAdded
