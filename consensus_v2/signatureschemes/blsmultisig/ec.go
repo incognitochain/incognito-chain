@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"math/big"
+	"time"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 )
@@ -57,6 +58,7 @@ func DecmprG2(bytes []byte) (*bn256.G2, error) {
 	if err != nil {
 		return nil, NewBLSSignatureError(DecompressFromByteErr, nil)
 	}
+	cacher.Add(string(bytes), pn, 4*time.Hour)
 	return pn, nil
 }
 

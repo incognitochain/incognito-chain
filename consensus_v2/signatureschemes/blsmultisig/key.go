@@ -4,6 +4,7 @@ import (
 	"log"
 	"math/big"
 	"sync"
+	"time"
 
 	bn256 "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare"
 	"github.com/incognitochain/incognito-chain/common"
@@ -58,7 +59,7 @@ func AKGen(idxPKByte []byte, combinedPKBytes []byte) *bn256.G2 {
 
 	result := new(bn256.G2)
 	result.ScalarMult(pkPn, akBInt)
-
+	cacher.Add(string(akByte), result, 4*time.Hour)
 	return result
 }
 
