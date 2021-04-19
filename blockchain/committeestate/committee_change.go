@@ -44,6 +44,24 @@ func (committeeChange *CommitteeChange) AddShardSubstituteAdded(shardID byte, sh
 	return committeeChange
 }
 
+func (committeeChange *CommitteeChange) AddShardSubstituteRemoved(shardID byte, shardSubstituteRemoved []string) *CommitteeChange {
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstituteRemoved)
+	committeeChange.ShardSubstituteRemoved[shardID] = append(committeeChange.ShardSubstituteRemoved[shardID], temp...)
+	return committeeChange
+}
+
+func (committeeChange *CommitteeChange) AddShardCommitteeAdded(shardID byte, shardCommitteeAdded []string) *CommitteeChange {
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardCommitteeAdded)
+	committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], temp...)
+	return committeeChange
+}
+
+func (committeeChange *CommitteeChange) AddShardCommitteeRemoved(shardID byte, ShardCommitteeRemoved []string) *CommitteeChange {
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(ShardCommitteeRemoved)
+	committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID], temp...)
+	return committeeChange
+}
+
 func (committeeChange *CommitteeChange) AddSyncingPoolAdded(shardID byte, syncingPoolAdded []string) *CommitteeChange {
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(syncingPoolAdded)
 	committeeChange.SyncingPoolAdded[shardID] = append(committeeChange.SyncingPoolAdded[shardID], temp...)
@@ -61,8 +79,18 @@ func (committeeChange *CommitteeChange) AddFinishedSyncValidators(shardID byte, 
 	return committeeChange
 }
 
+func (committeeChange *CommitteeChange) AddSlashingCommittees(shardID byte, slashingVaidators []string) *CommitteeChange {
+	committeeChange.SlashingCommittee[shardID] = append(committeeChange.SlashingCommittee[shardID], slashingVaidators...)
+	return committeeChange
+}
+
 func (committeeChange *CommitteeChange) AddRemovedStaker(removedStaker string) *CommitteeChange {
 	committeeChange.RemovedStaker = append(committeeChange.RemovedStaker, removedStaker)
+	return committeeChange
+}
+
+func (committeeChange *CommitteeChange) AddRemovedStakers(removedStakers []string) *CommitteeChange {
+	committeeChange.RemovedStaker = append(committeeChange.RemovedStaker, removedStakers...)
 	return committeeChange
 }
 
