@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"reflect"
 	"strconv"
 
@@ -135,10 +136,10 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 	}
 
 	// check unshielding amount is not less then minimum unshielding amount
-	minUnshieldAmount := chainRetriever.GetPortalV4MinUnshieldAmount(uReq.TokenID, beaconHeight)
-	if uReq.UnshieldAmount < minUnshieldAmount {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("unshielding amount should be larger or equal to %v", minUnshieldAmount))
-	}
+	//minUnshieldAmount := chainRetriever.GetPortalV4MinUnshieldAmount(uReq.TokenID, beaconHeight)
+	//if uReq.UnshieldAmount < minUnshieldAmount {
+	//	return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("unshielding amount should be larger or equal to %v", minUnshieldAmount))
+	//}
 
 	// check unshielding amount of pToken is divisible by the decimal difference between nano pToken and nano Token
 	multipleTokenAmount := chainRetriever.GetPortalV4MultipleTokenAmount(uReq.TokenID, beaconHeight)
@@ -198,4 +199,14 @@ func (uReq *PortalUnshieldRequest) BuildReqActions(tx Transaction, chainRetrieve
 
 func (uReq *PortalUnshieldRequest) CalculateSize() uint64 {
 	return calculateSize(uReq)
+}
+
+func (uReq *PortalUnshieldRequest) GetOTADeclarations() []OTADeclaration {
+	result := []OTADeclaration{}
+	pk, _, err := coin.ParseOTAInfoFromString(uReq.OTAPubKeyStr, uReq.TxRandomStr)
+	tokenID := common.ConfidentialAssetID
+	if err == nil {
+		result = append(result, OTADeclaration{PublicKey: pk.ToBytes(), TokenID: tokenID})
+	}
+	return result
 }
