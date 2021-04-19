@@ -343,19 +343,10 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
 	var err error
 	newCommitteeChange := committeeChange
+	isCommitteeChange := false
+	shardPendingValidator := []string{}
+	shardCommittee := []string{}
 	shardID := env.ShardID()
-	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(committeeState.shardPendingValidator)
-	if err != nil {
-		return nil, err
-	}
-	shardCommittee, err := incognitokey.CommitteeKeyListToString(committeeState.shardCommittee)
-	if err != nil {
-		return nil, err
-	}
-	fixedProducerShardValidators := shardCommittee[:env.NumberOfFixedBlockValidators()]
-	shardCommittee = shardCommittee[env.NumberOfFixedBlockValidators():]
-	shardSwappedCommittees := []string{}
-	shardNewCommittees := []string{}
 	if len(env.ShardInstructions()) != 0 {
 		Logger.log.Debugf("Shard Process/processShardBlockInstruction: Shard Instruction %+v", env.ShardInstructions())
 	}
@@ -363,6 +354,18 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	for _, ins := range env.ShardInstructions() {
 		swapInstruction, err := instruction.ValidateAndImportSwapInstructionFromString(ins)
 		if err == nil {
+			isCommitteeChange = true
+			shardPendingValidator, err = incognitokey.CommitteeKeyListToString(committeeState.shardPendingValidator)
+			if err != nil {
+				return nil, err
+			}
+			shardCommittee, err := incognitokey.CommitteeKeyListToString(committeeState.shardCommittee[env.NumberOfFixedBlockValidators():])
+			if err != nil {
+				return nil, err
+			}
+			shardSwappedCommittees := []string{}
+			shardNewCommittees := []string{}
+
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
 			maxShardCommitteeSize := env.MaxShardCommitteeSize() - env.NumberOfFixedBlockValidators()
 			var minShardCommitteeSize int
@@ -442,15 +445,16 @@ func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 			Logger.log.Infof("SHARD %+v | Swap: In committee %+v", shardID, shardNewCommittees)
 		}
 	}
-
-	committeeState.shardPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
-	if err != nil {
-		return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
-	}
-
-	committeeState.shardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(append(fixedProducerShardValidators, shardCommittee...))
-	if err != nil {
-		return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+	if isCommitteeChange {
+		committeeState.shardPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
+		if err != nil {
+			return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		}
+		newShardCommittee, err := incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
+		if err != nil {
+			return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+		}
+		committeeState.shardCommittee = append(committeeState.shardCommittee[:env.NumberOfFixedBlockValidators()], newShardCommittee...)
 	}
 
 	return newCommitteeChange, nil
