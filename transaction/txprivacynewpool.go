@@ -103,12 +103,12 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 	if (proof == nil) || ((len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) == 0)) {
 		if metaData == nil {
 			if tx.Hash().String() != "5600597f96237ce76ff478dd98f54ce5900b2022fcb691ac209fcad7b875d636" {
-				return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is nil", tx.Hash().String()))
+				Logger.log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is nil", tx.Hash().String())
 			}
 		} else {
 			metaType := metaData.GetType()
 			if !metadata.NoInputNoOutput(metaType) {
-				return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
+				Logger.log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType)
 			}
 		}
 	} else {
