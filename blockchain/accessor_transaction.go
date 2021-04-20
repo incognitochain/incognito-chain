@@ -337,6 +337,17 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 		if err != nil {
 			return nil, nil, 0, err
 		}
+		// if this is a submitted OTA key and indexing is enabled, "cache" the coins
+		if coinIndexer := GetCoinIndexer(); coinIndexer != nil  && keyset.OTAKey.GetOTASecretKey() != nil {
+			var coinsToStore []privacy.Coin
+			if hasKey, _ := coinIndexer.HasOTAKey(txutils.OTAKeyToRaw(keyset.OTAKey)); hasKey {
+				for _, c := range results {
+					//indexer supports v2 only
+					coinsToStore = append(coinsToStore, c)
+				}
+				coinIndexer.StoreReindexedOutputCoins(keyset.OTAKey, coinsToStore, shardID)
+			}
+		}
 		outCoins = append(outCoins, results...)
 	}
 
