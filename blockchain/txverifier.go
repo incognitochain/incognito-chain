@@ -75,11 +75,11 @@ func (v *TxsVerifier) ValidateTxsSig(
 	doneCh chan interface{},
 ) {
 	for _, tx := range txs {
-		go func(tx metadata.Transaction) {
-			ok, err := tx.VerifySigTx()
+		go func(target metadata.Transaction) {
+			ok, err := target.VerifySigTx()
 			if !ok || err != nil {
 				if errCh != nil {
-					errCh <- errors.Errorf("Signature of tx %v is not valid, result %v, error %v", tx.Hash().String(), ok, err)
+					errCh <- errors.Errorf("Signature of tx %v is not valid, result %v, error %v", target.Hash().String(), ok, err)
 				}
 			} else {
 				if doneCh != nil {
@@ -189,18 +189,18 @@ func (v *TxsVerifier) validateTxsWithoutChainstate(
 	doneCh chan interface{},
 ) {
 	for _, tx := range txs {
-		go func() {
-			ok, err := v.ValidateWithoutChainstate(tx)
+		go func(target metadata.Transaction) {
+			ok, err := v.ValidateWithoutChainstate(target)
 			if !ok || err != nil {
 				if errCh != nil {
-					errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, err)
+					errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
 				}
 			} else {
 				if doneCh != nil {
 					doneCh <- nil
 				}
 			}
-		}()
+		}(tx)
 	}
 }
 
@@ -215,13 +215,13 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 	// MAX := runtime.NumCPU() - 1
 	// nWorkers := make(chan int, MAX)
 	for _, tx := range txs {
-		if tx.Hash().String() == "9d0e017131c8d28d66c190484b4ea804859da1f8346280a0f279119670c0307d" {
+		if tx.Hash().String() == "9d0e017131c8d28d66c190484b4ea804859da1f8346280a0f279119670c0307d" { //Mainnet whitelist
 			continue
 		}
 		// nWorkers <- 1
-		go func() {
+		go func(target metadata.Transaction) {
 			ok, err := v.ValidateWithChainState(
-				tx,
+				target,
 				cView,
 				sView,
 				bcView,
@@ -229,7 +229,7 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 			)
 			if !ok || err != nil {
 				if errCh != nil {
-					errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, err)
+					errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
 				}
 			} else {
 				if doneCh != nil {
@@ -237,7 +237,7 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 				}
 			}
 			// <-nWorkers
-		}()
+		}(tx)
 	}
 }
 
