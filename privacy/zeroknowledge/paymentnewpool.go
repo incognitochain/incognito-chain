@@ -131,8 +131,6 @@ func (proof PaymentProof) verifyNoPrivacyV2(
 					privacy.Logger.Log.Error(err3)
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err3)
 				}
-				privacy.Logger.Log.Errorf("Verify serial number no privacy proof failed")
-				return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err)
 			}
 		}
 
