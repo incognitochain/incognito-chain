@@ -26,20 +26,20 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("payment address string is invalid"))
 	}
-	version, ok := metaParam["TxVersion"].(float64)
+	txVersion, ok := metaParam["TxVersion"].(float64)
 	if !ok {
-		version = 0
+		txVersion = 0
 	}
 	meta, err := metadata.NewWithDrawRewardRequest(
 		tokenIDStr,
 		paymentAddStr,
-		version,
+		1,
 		metadata.WithDrawRewardRequestMeta,
 		)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	if version == 1 {
+	if txVersion == 1 {
 		meta.PaymentAddress.OTAPublic = nil
 	}
 	// create new param to build raw tx from param interface
