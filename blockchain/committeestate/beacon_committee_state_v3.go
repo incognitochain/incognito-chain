@@ -301,7 +301,7 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	if err != nil {
 		return nil, returnStakingInstruction, err
 	}
-	newCommitteeChange.SlashingCommittee[shardID] = append(committeeChange.SlashingCommittee[shardID], slashingCommittees...)
+	newCommitteeChange.AddSlashingCommittees(shardID, slashingCommittees)
 
 	return newCommitteeChange, returnStakingInstruction, nil
 }

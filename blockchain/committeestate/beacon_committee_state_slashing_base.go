@@ -163,23 +163,15 @@ func (b *beaconCommitteeStateSlashingBase) GenerateSwapShardInstructions(
 	return swapShardInstructions, nil
 }
 
-func (b *beaconCommitteeStateSlashingBase) buildReturnStakingInstructionAndDeleteStakerInfo(
-	returnStakingInstruction *instruction.ReturnStakeInstruction,
-	committeePublicKeyStruct incognitokey.CommitteePublicKey,
-	publicKey string,
-	stakerInfo *statedb.StakerInfo,
-	committeeChange *CommitteeChange,
-) (*instruction.ReturnStakeInstruction, *CommitteeChange, error) {
+func (b *beaconCommitteeStateSlashingBase) buildReturnStakingInstructionAndDeleteStakerInfo(returnStakingInstruction *instruction.ReturnStakeInstruction, committeePublicKeyStruct incognitokey.CommitteePublicKey, publicKey string, stakerInfo *statedb.StakerInfo, committeeChange *CommitteeChange) (*instruction.ReturnStakeInstruction, *CommitteeChange) {
 	returnStakingInstruction = buildReturnStakingInstruction(
 		returnStakingInstruction,
 		publicKey,
 		stakerInfo.TxStakingID().String(),
 	)
-	committeeChange, err := b.removeFromState(committeePublicKeyStruct, publicKey, committeeChange)
-	if err != nil {
-		return returnStakingInstruction, committeeChange, err
-	}
-	return returnStakingInstruction, committeeChange, nil
+	committeeChange = b.removeFromState(committeePublicKeyStruct, publicKey, committeeChange)
+
+	return returnStakingInstruction, committeeChange
 }
 
 func buildReturnStakingInstruction(
@@ -191,17 +183,13 @@ func buildReturnStakingInstruction(
 	return returnStakingInstruction
 }
 
-func (b *beaconCommitteeStateSlashingBase) removeFromState(
-	committeePublicKeyStruct incognitokey.CommitteePublicKey,
-	committeePublicKey string,
-	committeeChange *CommitteeChange,
-) (*CommitteeChange, error) {
+func (b *beaconCommitteeStateSlashingBase) removeFromState(committeePublicKeyStruct incognitokey.CommitteePublicKey, committeePublicKey string, committeeChange *CommitteeChange) *CommitteeChange {
 	delete(b.rewardReceiver, committeePublicKeyStruct.GetIncKeyBase58())
 	delete(b.autoStake, committeePublicKey)
 	delete(b.stakingTx, committeePublicKey)
 	committeeChange.AddRemovedStaker(committeePublicKey)
 
-	return committeeChange, nil
+	return committeeChange
 }
 
 func (b *beaconCommitteeStateSlashingBase) processStakeInstruction(
@@ -297,12 +285,9 @@ func (b *beaconCommitteeStateSlashingBase) processSwap(
 	b.shardCommittee[shardID] = common.DeepCopyString(newCommittees)
 	b.shardSubstitute[shardID] = b.shardSubstitute[shardID][len(swapShardInstruction.InPublicKeys):]
 
-	newCommitteeChange.ShardCommitteeRemoved[shardID] = append(newCommitteeChange.ShardCommitteeRemoved[shardID],
-		incognitokey.DeepCopy(swapShardInstruction.OutPublicKeyStructs)...)
-	newCommitteeChange.ShardSubstituteRemoved[shardID] = append(newCommitteeChange.ShardSubstituteRemoved[shardID],
-		incognitokey.DeepCopy(swapShardInstruction.InPublicKeyStructs)...)
-	newCommitteeChange.ShardCommitteeAdded[shardID] = append(newCommitteeChange.ShardCommitteeAdded[shardID],
-		incognitokey.DeepCopy(swapShardInstruction.InPublicKeyStructs)...)
+	newCommitteeChange.AddShardCommitteeRemoved(shardID, swapShardInstruction.OutPublicKeys)
+	newCommitteeChange.AddShardSubstituteRemoved(shardID, swapShardInstruction.InPublicKeys)
+	newCommitteeChange.AddShardCommitteeAdded(shardID, swapShardInstruction.InPublicKeys)
 
 	return newCommitteeChange, swapShardInstruction.InPublicKeys, normalSwapOutCommittees, slashingCommittees, nil
 }
@@ -369,16 +354,13 @@ func (b *beaconCommitteeStateSlashingBase) getValidatorsByAutoStake(
 		if stakerInfo.AutoStaking() {
 			candidates = append(candidates, outPublicKey)
 		} else {
-			returnStakingInstruction, committeeChange, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
+			returnStakingInstruction, committeeChange = b.buildReturnStakingInstructionAndDeleteStakerInfo(
 				returnStakingInstruction,
 				outPublicKeyStructs[index],
 				outPublicKey,
 				stakerInfo,
 				committeeChange,
 			)
-			if err != nil {
-				return candidates, committeeChange, returnStakingInstruction, err
-			}
 		}
 	}
 
@@ -421,16 +403,13 @@ func (b *beaconCommitteeStateSlashingBase) processSlashing(
 		if !has {
 			return returnStakingInstruction, committeeChange, fmt.Errorf("Can not found info of this public key %v", outPublicKey)
 		}
-		returnStakingInstruction, committeeChange, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
+		returnStakingInstruction, committeeChange = b.buildReturnStakingInstructionAndDeleteStakerInfo(
 			returnStakingInstruction,
 			slashingPublicKeyStructs[index],
 			outPublicKey,
 			stakerInfo,
 			committeeChange,
 		)
-		if err != nil {
-			return returnStakingInstruction, committeeChange, err
-		}
 	}
 
 	return returnStakingInstruction, committeeChange, nil
@@ -468,17 +447,13 @@ func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 			committeeChange.NextEpochShardCandidateRemoved =
 				append(committeeChange.NextEpochShardCandidateRemoved, unstakeInstruction.CommitteePublicKeysStruct[index])
 
-			returnStakingInstruction, committeeChange, err = b.buildReturnStakingInstructionAndDeleteStakerInfo(
+			returnStakingInstruction, committeeChange = b.buildReturnStakingInstructionAndDeleteStakerInfo(
 				returnStakingInstruction,
 				unstakeInstruction.CommitteePublicKeysStruct[index],
 				publicKey,
 				stakerInfo,
 				committeeChange,
 			)
-
-			if err != nil {
-				return committeeChange, returnStakingInstruction, errors.New("Can't find staker info")
-			}
 		}
 	}
 
