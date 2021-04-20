@@ -253,7 +253,7 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 			// Verify for the Proof that input coins' serial number is derived from the committed derivator
 			valid, err := proof.serialNumberProof[i].VerifyOld(nil)
 			if !valid {
-				valid2, err2 := proof.serialNumberNoPrivacyProof[i].Verify(nil)
+				valid2, err2 := proof.serialNumberProof[i].Verify(nil)
 				if !valid2 {
 					err3 := errors.Errorf("Verify Old and New serial number no privacy proof failed, error %v %v", err, err2)
 					privacy.Logger.Log.Error(err3)
