@@ -125,6 +125,12 @@ func (proof PaymentProof) verifyNoPrivacyV2(
 			// Check input coins' Serial number is created from input coins' input and sender's spending key
 			valid, err := proof.serialNumberNoPrivacyProof[i].VerifyOld(nil)
 			if !valid {
+				valid2, err2 := proof.serialNumberNoPrivacyProof[i].Verify(nil)
+				if !valid2 {
+					err3 := errors.Errorf("Verify Old and New serial number no privacy proof failed, error %v %v", err, err2)
+					privacy.Logger.Log.Error(err3)
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err3)
+				}
 				privacy.Logger.Log.Errorf("Verify serial number no privacy proof failed")
 				return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err)
 			}
@@ -238,15 +244,23 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 			if IsNewOneOfManyProof(vEnv.ConfimedTime()) {
 				valid, err := proof.oneOfManyProof[i].VerifyOld()
 				if !valid {
-					privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
-					return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
+					valid2, err2 := proof.oneOfManyProof[i].Verify()
+					if !valid2 {
+						err3 := errors.Errorf("VERIFICATION PAYMENT PROOF Old and New: One out of many failed, error %v %v", err, err2)
+						privacy.Logger.Log.Error(err3)
+						return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err3)
+					}
 				}
 			}
 			// Verify for the Proof that input coins' serial number is derived from the committed derivator
 			valid, err := proof.serialNumberProof[i].VerifyOld(nil)
 			if !valid {
-				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
-				return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
+				valid2, err2 := proof.serialNumberNoPrivacyProof[i].Verify(nil)
+				if !valid2 {
+					err3 := errors.Errorf("Verify Old and New serial number no privacy proof failed, error %v %v", err, err2)
+					privacy.Logger.Log.Error(err3)
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err3)
+				}
 			}
 		}
 	}
@@ -274,8 +288,12 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 	} else {
 		valid, err := proof.aggregatedRangeProof.VerifyOld()
 		if !valid {
-			privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Multi-range failed")
-			return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, err)
+			valid2, err2 := proof.aggregatedRangeProof.Verify()
+			if !valid2 {
+				err3 := errors.Errorf("VERIFICATION PAYMENT PROOF Old and New: Multi-range failed, error %v %v", err, err2)
+				privacy.Logger.Log.Error(err3)
+				return false, privacy.NewPrivacyErr(privacy.VerifyAggregatedProofFailedErr, err3)
+			}
 		}
 	}
 	// }
