@@ -11,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
-	txutils "github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -184,27 +183,6 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 			return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
 		}
 
-		// if this is a submitted OTA key and indexing is enabled, "cache" the coins
-		if coinIndexer := blockchain.GetCoinIndexer(); coinIndexer != nil  && keySet.OTAKey.GetOTASecretKey() != nil {
-			var coinsToStore []privacy.Coin
-			if hasKey, _ := coinIndexer.HasOTAKey(txutils.OTAKeyToRaw(keySet.OTAKey)); hasKey {
-				for _, c := range outputCoins {
-					//indexer supports v2 only
-					if c.GetVersion() == 2 {
-						coinsToStore = append(coinsToStore, c)
-					}
-				}
-				for _, c := range plainOutputCoins {
-					if c.GetVersion() == 2 {
-						coinAsV2, ok := c.(*privacy.CoinV2)
-						if ok {
-							coinsToStore = append(coinsToStore, coinAsV2)
-						}
-					}
-				}
-				coinIndexer.StoreReindexedOutputCoins(keySet.OTAKey, coinsToStore, shardIDSender)
-			}
-		}
 		result.ToHeight = toHeight
 		result.FromHeight = fromHeight
 		item := make([]jsonresult.OutCoin, 0)
