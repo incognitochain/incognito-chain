@@ -401,17 +401,17 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 			}
 			newB.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
 		}
+
 		if len(tempNewBeaconCandidates) > 0 {
-			newBeaconCandidates = append(newBeaconCandidates, tempNewBeaconCandidates...)
+			newB.nextEpochBeaconCandidate = append(newB.nextEpochBeaconCandidate, tempNewBeaconCandidates...)
+			committeeChange.NextEpochBeaconCandidateAdded = append(committeeChange.NextEpochBeaconCandidateAdded, newBeaconCandidates...)
 		}
 		if len(tempNewShardCandidates) > 0 {
-			newShardCandidates = append(newShardCandidates, tempNewShardCandidates...)
+			newB.nextEpochShardCandidate = append(newB.nextEpochShardCandidate, newShardCandidates...)
+			committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, newShardCandidates...)
 		}
+
 	}
-	newB.nextEpochBeaconCandidate = append(newB.nextEpochBeaconCandidate, newBeaconCandidates...)
-	committeeChange.NextEpochBeaconCandidateAdded = append(committeeChange.NextEpochBeaconCandidateAdded, newBeaconCandidates...)
-	newB.nextEpochShardCandidate = append(newB.nextEpochShardCandidate, newShardCandidates...)
-	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, newShardCandidates...)
 	if env.IsBeaconRandomTime {
 		committeeChange.CurrentEpochShardCandidateAdded = newB.nextEpochShardCandidate
 		newB.currentEpochShardCandidate = newB.nextEpochShardCandidate
