@@ -272,8 +272,12 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 		}
 		if tx.GetType() == common.TxCustomTokenPrivacyType {
 			txNormal := tx.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
-			iCoins := txNormal.GetProof().GetInputCoins()
-			oCoins := txNormal.GetProof().GetOutputCoins()
+			normalPrf := txNormal.GetProof()
+			if normalPrf == nil {
+				continue
+			}
+			iCoins := normalPrf.GetInputCoins()
+			oCoins := normalPrf.GetOutputCoins()
 			for _, iCoin := range iCoins {
 				if _, ok := mapForChkDbSpend[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
 					return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
