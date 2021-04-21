@@ -6,6 +6,10 @@ import (
 	"path/filepath"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/jrick/logrotate/rotator"
 )
@@ -36,6 +40,11 @@ var (
 	incKey9, incKey10, incKey11, incKey12      *incognitokey.CommitteePublicKey
 	incKey13, incKey14, incKey15, incKey16     *incognitokey.CommitteePublicKey
 	incKey17, incKey18, incKey19               *incognitokey.CommitteePublicKey
+
+	privateSeed0 = "1TKSgtfoh5CTuk3pf7EzNKVb8njfzr1LtGZLQ5pV8cJnoZWotZ"
+	privateSeed1 = "14gXDfATixteDC4GG1cxB9CKWRNwdeXwS2wDq5TURruJTQJcNB"
+	privateSeed2 = "12Wpve8fJEJZpZca8d1UgCcHstuyYwuamMXUCPCvANuGv2AkkKM"
+	privateSeed3 = "1EdLkW77qvS6eP6p2o4gMJLUikxWkJjT1eQBehNbF2orw8rqia"
 
 	paymentAddreessKey0 string
 )
@@ -212,4 +221,21 @@ func initLog() common.Logger {
 	initLogRotator("./blsbft.log")
 	blsbftLogger := common.NewBackend(logWriter{}).Logger("BlsBft log ", false)
 	return blsbftLogger
+}
+
+func getMiningKeyFromPrivateSeed(privateSeed string) (*signatureschemes.MiningKey, error) {
+	var miningKey signatureschemes.MiningKey
+	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
+	if err != nil {
+		return nil, NewConsensusError(LoadKeyError, err)
+	}
+	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)
+	miningKey.PriKey = map[string][]byte{}
+	miningKey.PubKey = map[string][]byte{}
+	miningKey.PriKey[common.BlsConsensus] = blsmultisig.SKBytes(blsPriKey)
+	miningKey.PubKey[common.BlsConsensus] = blsmultisig.PKBytes(blsPubKey)
+	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateSeedBytes)
+	miningKey.PriKey[common.BridgeConsensus] = bridgesig.SKBytes(&bridgePriKey)
+	miningKey.PubKey[common.BridgeConsensus] = bridgesig.PKBytes(&bridgePubKey)
+	return &miningKey, nil
 }

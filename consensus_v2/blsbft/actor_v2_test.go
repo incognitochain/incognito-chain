@@ -1,6 +1,7 @@
 package blsbft
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"testing"
@@ -12,14 +13,78 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	mocktypes "github.com/incognitochain/incognito-chain/blockchain/types/mocks"
 	"github.com/incognitochain/incognito-chain/common"
+	mockblsbft "github.com/incognitochain/incognito-chain/consensus_v2/blsbft/mocks"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
-	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
 	mockmultiview "github.com/incognitochain/incognito-chain/multiview/mocks"
+	"github.com/stretchr/testify/mock"
 )
 
 func Test_actorV2_handleProposeMsg(t *testing.T) {
+
+	initTestParams()
+	common.TIMESLOT = 1
+	hash1, _ := common.Hash{}.NewHashFromStr("123")
+	hash2, _ := common.Hash{}.NewHashFromStr("456")
+	logger := initLog()
+
+	shardBlock := &types.ShardBlock{
+		Header: types.ShardHeader{
+			Height:                    10,
+			CommitteeFromBlock:        *hash1,
+			SubsetCommitteesFromBlock: *hash2,
+			Producer:                  key0,
+			ProposeTime:               10,
+			Version:                   4,
+			PreviousBlockHash:         *hash1,
+		},
+	}
+	shardBlockData, _ := json.Marshal(shardBlock)
+
+	errorUnmarshalChain := &mockchain.Chain{}
+	errorUnmarshalChain.On("UnmarshalBlock", shardBlockData).Return(nil, errors.New("Errror"))
+
+	errorCommitteeChain := &mockchain.Chain{}
+	errorCommitteeChain.On("CommitteesFromViewHashForShard", *hash1, *hash2, byte(1), 2).
+		Return([]incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, errors.New("Errror"))
+
+	errorGetBestViewHeight := &mockchain.Chain{}
+	errorGetBestViewHeight.On("UnmarshalBlock", shardBlockData).Return(shardBlock, nil)
+	errorGetBestViewHeight.On("GetBestViewHeight").Return(uint64(11))
+	errorGetBestViewHeight.On("IsBeaconChain").Return(false)
+	errorGetBestViewHeight.On("GetShardID").Return(1)
+
+	validCommitteeChain := &mockchain.Chain{}
+	validCommitteeChain.On("CommitteesFromViewHashForShard", *hash1, *hash2, byte(1), 2).
+		Return(
+			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			nil,
+		)
+
+	node := &mockblsbft.NodeInterface{}
+	node.On("RequestMissingViewViaStream",
+		"1", mock.AnythingOfType("[][]uint8"), mock.AnythingOfType("int"), mock.AnythingOfType("string")).
+		Return(nil)
+
+	syncProposeViewChain := &mockchain.Chain{}
+	syncProposeViewChain.On("UnmarshalBlock", shardBlockData).Return(shardBlock, nil)
+	syncProposeViewChain.On("GetBestViewHeight").Return(uint64(9))
+	syncProposeViewChain.On("IsBeaconChain").Return(false)
+	syncProposeViewChain.On("GetShardID").Return(1)
+	syncProposeViewChain.On("GetChainName").Return("shard")
+	syncProposeViewChain.On("GetViewByHash", *hash1).Return(nil)
+
+	shardBestState := &blockchain.ShardBestState{}
+
+	normalChain := &mockchain.Chain{}
+	normalChain.On("UnmarshalBlock", shardBlockData).Return(shardBlock, nil)
+	normalChain.On("GetBestViewHeight").Return(uint64(9))
+	normalChain.On("IsBeaconChain").Return(false)
+	normalChain.On("GetShardID").Return(1)
+	normalChain.On("GetViewByHash", *hash1).Return(shardBestState)
+
 	type fields struct {
 		actorBase            actorBase
 		committeeChain       blockchain.Chain
@@ -43,28 +108,100 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "",
-			fields: fields{},
+			name: "Block is nil",
+			fields: fields{
+				actorBase: actorBase{
+					logger: logger,
+					chain:  errorUnmarshalChain,
+				},
+			},
 			args: args{
 				proposeMsg: BFTPropose{
-					PeerID:   "",
-					Block:    nil,
-					TimeSlot: 19,
+					PeerID:   "1",
+					Block:    shardBlockData,
+					TimeSlot: 10,
 				},
 			},
 			wantErr: true,
 		},
 		{
-			name:   "",
-			fields: fields{},
+			name: "Can not get committees from block",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  errorGetBestViewHeight,
+					logger: logger,
+				},
+				committeeChain: errorCommitteeChain,
+			},
 			args: args{
 				proposeMsg: BFTPropose{
-					PeerID:   "",
-					Block:    nil,
-					TimeSlot: 19,
+					PeerID:   "1",
+					Block:    shardBlockData,
+					TimeSlot: 10,
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "Receive block from old view",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  errorGetBestViewHeight,
+					logger: logger,
+				},
+				committeeChain:       validCommitteeChain,
+				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+			},
+			args: args{
+				proposeMsg: BFTPropose{
+					PeerID:   "1",
+					Block:    shardBlockData,
+					TimeSlot: 10,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Sync blocks to current proposed block",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  syncProposeViewChain,
+					logger: logger,
+					node:   node,
+				},
+				committeeChain:       validCommitteeChain,
+				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+			},
+			args: args{
+				proposeMsg: BFTPropose{
+					PeerID:   "1",
+					Block:    shardBlockData,
+					TimeSlot: 10,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Normal Work",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  normalChain,
+					logger: logger,
+				},
+				committeeChain:       validCommitteeChain,
+				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+			},
+			args: args{
+				proposeMsg: BFTPropose{
+					PeerID:   "1",
+					Block:    shardBlockData,
+					TimeSlot: 10,
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -136,64 +273,50 @@ func Test_actorV2_handleVoteMsg(t *testing.T) {
 	}
 }
 
-func Test_actorV2_proposeBlock(t *testing.T) {
-	type fields struct {
-		actorBase            actorBase
-		committeeChain       blockchain.Chain
-		currentTime          int64
-		currentTimeSlot      int64
-		proposeHistory       *lru.Cache
-		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
-		receiveBlockByHash   map[string]*ProposeBlockInfo
-		voteHistory          map[uint64]types.BlockInterface
-		bodyHashes           map[uint64]map[string]bool
-		votedTimeslot        map[int64]bool
-		blockVersion         int
-	}
-	type args struct {
-		userMiningKey     signatureschemes2.MiningKey
-		proposerPk        incognitokey.CommitteePublicKey
-		block             types.BlockInterface
-		committees        []incognitokey.CommitteePublicKey
-		committeeViewHash common.Hash
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    types.BlockInterface
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			actorV2 := &actorV2{
-				actorBase:            tt.fields.actorBase,
-				committeeChain:       tt.fields.committeeChain,
-				currentTime:          tt.fields.currentTime,
-				currentTimeSlot:      tt.fields.currentTimeSlot,
-				proposeHistory:       tt.fields.proposeHistory,
-				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
-				receiveBlockByHash:   tt.fields.receiveBlockByHash,
-				voteHistory:          tt.fields.voteHistory,
-				bodyHashes:           tt.fields.bodyHashes,
-				votedTimeslot:        tt.fields.votedTimeslot,
-				blockVersion:         tt.fields.blockVersion,
-			}
-			got, err := actorV2.proposeBlock(tt.args.userMiningKey, tt.args.proposerPk, tt.args.block, tt.args.committees, tt.args.committeeViewHash)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("actorV2.proposeBlock() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("actorV2.proposeBlock() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func Test_actorV2_proposeBeaconBlock(t *testing.T) {
+	initTestParams()
+	logger := initLog()
+	hash, _ := common.Hash{}.NewHashFromStr("123456")
+	block := &types.BeaconBlock{}
+
+	invalidChain := &mockchain.Chain{}
+	invalidChain.On(
+		"CreateNewBlock",
+		4, key0, 1, int64(10),
+		[]incognitokey.CommitteePublicKey{
+			*incKey0, *incKey, *incKey2, *incKey3,
+		},
+		*hash,
+	).Return(nil, errors.New("Error"))
+
+	invalidChain.On(
+		"CreateNewBlockFromOldBlock",
+		block, key0, int64(10),
+		[]incognitokey.CommitteePublicKey{
+			*incKey0, *incKey, *incKey2, *incKey3,
+		},
+		*hash,
+	).Return(nil, errors.New("Error"))
+
+	validChain := &mockchain.Chain{}
+	validChain.On(
+		"CreateNewBlock",
+		4, key0, 1, int64(10),
+		[]incognitokey.CommitteePublicKey{
+			*incKey0, *incKey, *incKey2, *incKey3,
+		},
+		*hash,
+	).Return(block, nil)
+
+	validChain.On(
+		"CreateNewBlockFromOldBlock",
+		block, key0, int64(10),
+		[]incognitokey.CommitteePublicKey{
+			*incKey0, *incKey, *incKey2, *incKey3,
+		},
+		*hash,
+	).Return(block, nil)
+
 	type fields struct {
 		actorBase            actorBase
 		committeeChain       blockchain.Chain
@@ -220,7 +343,87 @@ func Test_actorV2_proposeBeaconBlock(t *testing.T) {
 		want    types.BlockInterface
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Invalid Create New block",
+			fields: fields{
+				blockVersion: 4,
+				actorBase: actorBase{
+					logger: logger,
+					chain:  invalidChain,
+				},
+				currentTime: 10,
+			},
+			args: args{
+				b58Str: key0,
+				committees: []incognitokey.CommitteePublicKey{
+					*incKey0, *incKey, *incKey2, *incKey3,
+				},
+				committeeViewHash: *hash,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Invalid Create New Block From Old Block",
+			fields: fields{
+				actorBase: actorBase{
+					logger: logger,
+					chain:  invalidChain,
+				},
+				currentTime: 10,
+			},
+			args: args{
+				block:  block,
+				b58Str: key0,
+				committees: []incognitokey.CommitteePublicKey{
+					*incKey0, *incKey, *incKey2, *incKey3,
+				},
+				committeeViewHash: *hash,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Create new valid block",
+			fields: fields{
+				actorBase: actorBase{
+					logger: logger,
+					chain:  validChain,
+				},
+				currentTime:  10,
+				blockVersion: 4,
+			},
+			args: args{
+				b58Str: key0,
+				committees: []incognitokey.CommitteePublicKey{
+					*incKey0, *incKey, *incKey2, *incKey3,
+				},
+				committeeViewHash: *hash,
+			},
+			want:    block,
+			wantErr: false,
+		},
+		{
+			name: "Create new valid block from old block",
+			fields: fields{
+				actorBase: actorBase{
+					logger: logger,
+					chain:  validChain,
+				},
+				currentTime:  10,
+				blockVersion: 4,
+			},
+			args: args{
+				block:  block,
+				b58Str: key0,
+				committees: []incognitokey.CommitteePublicKey{
+					*incKey0, *incKey, *incKey2, *incKey3,
+				},
+				committeeViewHash: *hash,
+			},
+			want:    block,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -250,6 +453,74 @@ func Test_actorV2_proposeBeaconBlock(t *testing.T) {
 }
 
 func Test_actorV2_proposeShardBlock(t *testing.T) {
+
+	initTestParams()
+	logger := initLog()
+	hash, _ := common.Hash{}.NewHashFromStr("123456")
+	block := &types.ShardBlock{
+		Header: types.ShardHeader{
+			CommitteeFromBlock:        *hash,
+			SubsetCommitteesFromBlock: *hash,
+		},
+	}
+
+	invalidChain := &mockchain.Chain{}
+	invalidChain.On(
+		"CreateNewBlock",
+		4, key0, 1, int64(10),
+		[]incognitokey.CommitteePublicKey{
+			*incKey0, *incKey, *incKey2, *incKey3,
+		},
+		*hash,
+	).Return(nil, errors.New("Error"))
+
+	invalidChain.On(
+		"CreateNewBlockFromOldBlock",
+		block, key0, int64(10),
+		[]incognitokey.CommitteePublicKey{
+			*incKey0, *incKey, *incKey2, *incKey3,
+		},
+		*hash,
+	).Return(nil, errors.New("Error"))
+	invalidChain.On("GetShardID").Return(1)
+
+	validChain := &mockchain.Chain{}
+	validChain.On(
+		"CreateNewBlock",
+		4, key0, 1, int64(10),
+		[]incognitokey.CommitteePublicKey{
+			*incKey0, *incKey, *incKey2, *incKey3,
+		},
+		*hash,
+	).Return(block, nil)
+
+	validChain.On(
+		"CreateNewBlockFromOldBlock",
+		block, key0, int64(10),
+		[]incognitokey.CommitteePublicKey{
+			*incKey0, *incKey, *incKey2, *incKey3,
+		},
+		*hash,
+	).Return(block, nil)
+
+	invalidCommitteeChain := &mockchain.Chain{}
+	invalidCommitteeChain.On("CommitteesFromViewHashForShard", *hash, *hash, byte(1), 2).Return(
+		[]incognitokey.CommitteePublicKey{},
+		[]incognitokey.CommitteePublicKey{},
+		errors.New("Error"),
+	)
+
+	validCommitteeChain := &mockchain.Chain{}
+	validCommitteeChain.On("CommitteesFromViewHashForShard", *hash, *hash, byte(1), 2).Return(
+		[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+		[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+		nil,
+	)
+	validChain.On("GetShardID").Return(1)
+
+	invalidChain.On("IsBeaconChain").Return(false)
+	validChain.On("IsBeaconChain").Return(false)
+
 	type fields struct {
 		actorBase            actorBase
 		committeeChain       blockchain.Chain
@@ -276,7 +547,104 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 		want    types.BlockInterface
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Can't get committees for current block",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  invalidChain,
+					logger: logger,
+				},
+				committeeChain: invalidCommitteeChain,
+			},
+			args: args{
+				b58Str:            key0,
+				block:             block,
+				committees:        []incognitokey.CommitteePublicKey{},
+				committeeViewHash: *hash,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "CreateNewBlock invalid",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  invalidChain,
+					logger: logger,
+				},
+				currentTime:    10,
+				committeeChain: validCommitteeChain,
+				blockVersion:   4,
+			},
+			args: args{
+				b58Str:            key0,
+				block:             nil,
+				committees:        []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+				committeeViewHash: *hash,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "CreateNewBlockFromOldBlock invalid",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  invalidChain,
+					logger: logger,
+				},
+				committeeChain: validCommitteeChain,
+				currentTime:    10,
+				blockVersion:   4,
+			},
+			args: args{
+				b58Str:            key0,
+				block:             block,
+				committees:        []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+				committeeViewHash: *hash,
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "CreateNewBlock valid",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  validChain,
+					logger: logger,
+				},
+				committeeChain: validCommitteeChain,
+				currentTime:    10,
+				blockVersion:   4,
+			},
+			args: args{
+				b58Str:            key0,
+				block:             nil,
+				committees:        []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+				committeeViewHash: *hash,
+			},
+			want:    block,
+			wantErr: false,
+		},
+		{
+			name: "CreateNewBlockFromOldBlock valid",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  validChain,
+					logger: logger,
+				},
+				committeeChain: validCommitteeChain,
+				currentTime:    10,
+				blockVersion:   4,
+			},
+			args: args{
+				b58Str:            key0,
+				block:             block,
+				committees:        []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+				committeeViewHash: *hash,
+			},
+			want:    block,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

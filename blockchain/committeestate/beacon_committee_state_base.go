@@ -2,16 +2,29 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"reflect"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
+
+type beaconCommitteeStateBase struct {
+	beaconCommittee []string
+	shardCommittee  map[byte][]string
+	shardSubstitute map[byte][]string
+
+	autoStake      map[string]bool                   // committee public key => true or false
+	rewardReceiver map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
+	stakingTx      map[string]common.Hash            // committee public key => reward receiver payment address
+
+	mu *sync.RWMutex // beware of this, any class extend this class need to use this mutex carefully
+}
 
 //NewBeaconCommitteeState constructor for BeaconCommitteeState by version
 func NewBeaconCommitteeState(
@@ -96,18 +109,6 @@ func VersionByBeaconHeight(beaconHeight, consensusV3Height, stakingV3Height uint
 		return SLASHING_VERSION
 	}
 	return SELF_SWAP_SHARD_VERSION
-}
-
-type beaconCommitteeStateBase struct {
-	beaconCommittee []string
-	shardCommittee  map[byte][]string
-	shardSubstitute map[byte][]string
-
-	autoStake      map[string]bool                   // committee public key => true or false
-	rewardReceiver map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
-	stakingTx      map[string]common.Hash            // committee public key => reward receiver payment address
-
-	mu *sync.RWMutex // beware of this, any class extend this class need to use this mutex carefully
 }
 
 func newBeaconCommitteeStateBase() *beaconCommitteeStateBase {

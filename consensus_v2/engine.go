@@ -277,6 +277,7 @@ func (engine *Engine) Start() error {
 		engine.validators = []*consensus.Validator{
 			&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey},
 		}
+
 	} else if engine.config.Node.GetMiningKeys() != "" {
 		keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
 		engine.validators = []*consensus.Validator{}

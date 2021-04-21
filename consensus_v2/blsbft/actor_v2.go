@@ -561,13 +561,11 @@ func (actorV2 *actorV2) proposeShardBlock(
 ) (types.BlockInterface, error) {
 	var err error
 	var newBlock types.BlockInterface
-
 	var committeesFromBeaconHash []incognitokey.CommitteePublicKey
-
 	if block != nil {
 		_, committeesFromBeaconHash, err = actorV2.getCommitteeForBlock(block)
 		if err != nil {
-			return block, NewConsensusError(BlockCreationError, err)
+			return nil, NewConsensusError(BlockCreationError, err)
 		}
 	}
 
@@ -585,7 +583,7 @@ func (actorV2 *actorV2) proposeShardBlock(
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
 	} else {
-		actorV2.logger.Infof("[dcs] CreateNewBlockFromOldBlock, Block Height %+v hash %+v", block.GetHeight(), block.Hash())
+		actorV2.logger.Infof("[dcs] CreateNewBlockFromOldBlock, Block Height %+v hash %+v", block.GetHeight(), block.Hash().String())
 		newBlock, err = actorV2.chain.CreateNewBlockFromOldBlock(block, b58Str, actorV2.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
@@ -605,7 +603,7 @@ func (actorV2 *actorV2) preValidateVote(blockHash []byte, vote *BFTVote, candida
 }
 
 func (actorV2 *actorV2) getCommitteeForBlock(v types.BlockInterface) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
-	var err error = nil
+	var err error
 	var committees, signingCommittees []incognitokey.CommitteePublicKey
 
 	if actorV2.blockVersion == MultiViewsVersion || actorV2.chain.IsBeaconChain() {
@@ -731,7 +729,7 @@ func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	if block.GetHeight() <= actorV2.chain.GetBestViewHeight() {
 		actorV2.logger.Debug("Receive block create from old view. Rejected!")
-		return err
+		return errors.New("Receive block create from old view. Rejected!")
 	}
 
 	proposeView := actorV2.chain.GetViewByHash(block.GetPrevHash())
