@@ -1,6 +1,7 @@
 package blsbft
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"testing"
@@ -12,21 +13,77 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	mocktypes "github.com/incognitochain/incognito-chain/blockchain/types/mocks"
 	"github.com/incognitochain/incognito-chain/common"
+	mockblsbft "github.com/incognitochain/incognito-chain/consensus_v2/blsbft/mocks"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
 	mockmultiview "github.com/incognitochain/incognito-chain/multiview/mocks"
+	"github.com/stretchr/testify/mock"
 )
 
 func Test_actorV2_handleProposeMsg(t *testing.T) {
 
-	/*shardBlock := &types.ShardBlock{}*/
-	//dataShardBlock
-	//var validationData consensustypes.ValidationData
-	//validationData.ProducerBLSSig, _ = userMiningKey.BriSignData(block.Hash().GetBytes())
-	//validationDataString, _ := consensustypes.EncodeValidationData(validationData)
-	//block.(blockValidation).AddValidationField(validationDataString)
-	/*blockData, _ := json.Marshal(block)*/
+	initTestParams()
+	common.TIMESLOT = 1
+	hash1, _ := common.Hash{}.NewHashFromStr("123")
+	hash2, _ := common.Hash{}.NewHashFromStr("456")
+	logger := initLog()
+
+	shardBlock := &types.ShardBlock{
+		Header: types.ShardHeader{
+			Height:                    10,
+			CommitteeFromBlock:        *hash1,
+			SubsetCommitteesFromBlock: *hash2,
+			Producer:                  key0,
+			ProposeTime:               10,
+			Version:                   4,
+			PreviousBlockHash:         *hash1,
+		},
+	}
+	shardBlockData, _ := json.Marshal(shardBlock)
+
+	errorUnmarshalChain := &mockchain.Chain{}
+	errorUnmarshalChain.On("UnmarshalBlock", shardBlockData).Return(nil, errors.New("Errror"))
+
+	errorCommitteeChain := &mockchain.Chain{}
+	errorCommitteeChain.On("CommitteesFromViewHashForShard", *hash1, *hash2, byte(1), 2).
+		Return([]incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, errors.New("Errror"))
+
+	errorGetBestViewHeight := &mockchain.Chain{}
+	errorGetBestViewHeight.On("UnmarshalBlock", shardBlockData).Return(shardBlock, nil)
+	errorGetBestViewHeight.On("GetBestViewHeight").Return(uint64(11))
+	errorGetBestViewHeight.On("IsBeaconChain").Return(false)
+	errorGetBestViewHeight.On("GetShardID").Return(1)
+
+	validCommitteeChain := &mockchain.Chain{}
+	validCommitteeChain.On("CommitteesFromViewHashForShard", *hash1, *hash2, byte(1), 2).
+		Return(
+			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			nil,
+		)
+
+	node := &mockblsbft.NodeInterface{}
+	node.On("RequestMissingViewViaStream",
+		"1", mock.AnythingOfType("[][]uint8"), mock.AnythingOfType("int"), mock.AnythingOfType("string")).
+		Return(nil)
+
+	syncProposeViewChain := &mockchain.Chain{}
+	syncProposeViewChain.On("UnmarshalBlock", shardBlockData).Return(shardBlock, nil)
+	syncProposeViewChain.On("GetBestViewHeight").Return(uint64(9))
+	syncProposeViewChain.On("IsBeaconChain").Return(false)
+	syncProposeViewChain.On("GetShardID").Return(1)
+	syncProposeViewChain.On("GetChainName").Return("shard")
+	syncProposeViewChain.On("GetViewByHash", *hash1).Return(nil)
+
+	shardBestState := &blockchain.ShardBestState{}
+
+	normalChain := &mockchain.Chain{}
+	normalChain.On("UnmarshalBlock", shardBlockData).Return(shardBlock, nil)
+	normalChain.On("GetBestViewHeight").Return(uint64(9))
+	normalChain.On("IsBeaconChain").Return(false)
+	normalChain.On("GetShardID").Return(1)
+	normalChain.On("GetViewByHash", *hash1).Return(shardBestState)
 
 	type fields struct {
 		actorBase            actorBase
@@ -51,28 +108,100 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "",
-			fields: fields{},
+			name: "Block is nil",
+			fields: fields{
+				actorBase: actorBase{
+					logger: logger,
+					chain:  errorUnmarshalChain,
+				},
+			},
 			args: args{
 				proposeMsg: BFTPropose{
-					PeerID: "1",
-					//Block:    shardBlock,
-					TimeSlot: 19,
+					PeerID:   "1",
+					Block:    shardBlockData,
+					TimeSlot: 10,
 				},
 			},
 			wantErr: true,
 		},
 		{
-			name:   "",
-			fields: fields{},
+			name: "Can not get committees from block",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  errorGetBestViewHeight,
+					logger: logger,
+				},
+				committeeChain: errorCommitteeChain,
+			},
 			args: args{
 				proposeMsg: BFTPropose{
-					PeerID:   "",
-					Block:    nil,
-					TimeSlot: 19,
+					PeerID:   "1",
+					Block:    shardBlockData,
+					TimeSlot: 10,
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "Receive block from old view",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  errorGetBestViewHeight,
+					logger: logger,
+				},
+				committeeChain:       validCommitteeChain,
+				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+			},
+			args: args{
+				proposeMsg: BFTPropose{
+					PeerID:   "1",
+					Block:    shardBlockData,
+					TimeSlot: 10,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Sync blocks to current proposed block",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  syncProposeViewChain,
+					logger: logger,
+					node:   node,
+				},
+				committeeChain:       validCommitteeChain,
+				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+			},
+			args: args{
+				proposeMsg: BFTPropose{
+					PeerID:   "1",
+					Block:    shardBlockData,
+					TimeSlot: 10,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Normal Work",
+			fields: fields{
+				actorBase: actorBase{
+					chain:  normalChain,
+					logger: logger,
+				},
+				committeeChain:       validCommitteeChain,
+				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
+				receiveBlockByHeight: map[uint64][]*ProposeBlockInfo{},
+			},
+			args: args{
+				proposeMsg: BFTPropose{
+					PeerID:   "1",
+					Block:    shardBlockData,
+					TimeSlot: 10,
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

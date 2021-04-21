@@ -729,7 +729,7 @@ func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	if block.GetHeight() <= actorV2.chain.GetBestViewHeight() {
 		actorV2.logger.Debug("Receive block create from old view. Rejected!")
-		return err
+		return errors.New("Receive block create from old view. Rejected!")
 	}
 
 	proposeView := actorV2.chain.GetViewByHash(block.GetPrevHash())
