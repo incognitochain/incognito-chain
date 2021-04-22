@@ -457,11 +457,9 @@ func (curView *BeaconBestState) GenerateInstruction(
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())
 	}
 
-	if curView.CommitteeStateVersion() == committeestate.SLASHING_VERSION {
-		// Unstake
-		for _, unstakeInstruction := range shardInstruction.unstakeInstructions {
-			instructions = append(instructions, unstakeInstruction.ToString())
-		}
+	// Unstake
+	for _, unstakeInstruction := range shardInstruction.unstakeInstructions {
+		instructions = append(instructions, unstakeInstruction.ToString())
 	}
 
 	// Finish Sync Instructions
