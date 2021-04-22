@@ -357,6 +357,29 @@ func (b *BeaconCommitteeStateV3) processUnstakeInstruction(
 	return b.turnOffAutoStake(env.newValidators, unstakeInstruction.CommitteePublicKeys, committeeChange)
 }
 
+func (b *BeaconCommitteeStateV3) addData(env *BeaconCommitteeStateEnvironment) {
+	env.newUnassignedCommonPool = common.DeepCopyString(b.shardCommonPool[b.numberOfAssignedCandidates:])
+	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
+	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
+	for _, syncPoolValidators := range b.syncPool {
+		env.newValidators = append(env.newValidators, syncPoolValidators...)
+	}
+	env.shardCommittee = make(map[byte][]string)
+	for shardID, committees := range b.shardCommittee {
+		env.shardCommittee[shardID] = common.DeepCopyString(committees)
+	}
+	env.shardSubstitute = make(map[byte][]string)
+	for shardID, substitutes := range b.shardSubstitute {
+		env.shardSubstitute[shardID] = common.DeepCopyString(substitutes)
+	}
+	env.numberOfValidator = make([]int, env.ActiveShards)
+	for i := 0; i < env.ActiveShards; i++ {
+		env.numberOfValidator[i] += len(b.shardCommittee[byte(i)])
+		env.numberOfValidator[i] += len(b.shardSubstitute[byte(i)])
+	}
+
+}
+
 func (b *BeaconCommitteeStateV3) AllSyncingValidators() []string {
 	res := []string{}
 	for _, syncingValidators := range b.syncPool {

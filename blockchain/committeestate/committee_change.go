@@ -105,6 +105,11 @@ func (committeeChange *CommitteeChange) AddStopAutoStake(stopAutoStake string) *
 	return committeeChange
 }
 
+func (committeeChange *CommitteeChange) AddStopAutoStakes(stopAutoStakes []string) *CommitteeChange {
+	committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, stopAutoStakes...)
+	return committeeChange
+}
+
 //GetStakerKeys ...
 func (committeeChange *CommitteeChange) StakerKeys() []incognitokey.CommitteePublicKey {
 	return committeeChange.NextEpochShardCandidateAdded
