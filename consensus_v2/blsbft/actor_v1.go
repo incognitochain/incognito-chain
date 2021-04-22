@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -24,7 +25,7 @@ type actorV1 struct {
 		timeStart         time.Time
 		block             types.BlockInterface
 		blockHash         common.Hash
-		blockValidateData ValidationData
+		blockValidateData consensustypes.ValidationData
 		lockVotes         sync.Mutex
 		votes             map[string]vote
 		round             int
@@ -210,7 +211,7 @@ func (actorV1 *actorV1) Run() error {
 						if actorV1.roundData.block == nil {
 							actorV1.roundData.block = actorV1.blocks[roundKey]
 							actorV1.roundData.blockHash = *actorV1.roundData.block.Hash()
-							valData, err := DecodeValidationData(actorV1.roundData.block.GetValidationField())
+							valData, err := consensustypes.DecodeValidationData(actorV1.roundData.block.GetValidationField())
 							if err != nil {
 								actorV1.logger.Error(err)
 								continue
@@ -241,7 +242,7 @@ func (actorV1 *actorV1) Run() error {
 						actorV1.roundData.blockValidateData.BridgeSig = brigSigs
 						actorV1.roundData.blockValidateData.ValidatiorsIdx = validatorIdx
 
-						validationDataString, _ := EncodeValidationData(actorV1.roundData.blockValidateData)
+						validationDataString, _ := consensustypes.EncodeValidationData(actorV1.roundData.blockValidateData)
 						actorV1.roundData.block.(blockValidation).AddValidationField(validationDataString)
 
 						//TODO: check issue invalid sig when swap
@@ -301,9 +302,9 @@ func (actorV1 *actorV1) enterProposePhase(keyset *signatureschemes2.MiningKey) {
 	if actorV1.chain.CurrentHeight()+1 != block.GetHeight() {
 		return
 	}
-	var validationData ValidationData
+	var validationData consensustypes.ValidationData
 	validationData.ProducerBLSSig, _ = keyset.BriSignData(block.Hash().GetBytes())
-	validationDataString, err := EncodeValidationData(validationData)
+	validationDataString, err := consensustypes.EncodeValidationData(validationData)
 	if err != nil {
 		actorV1.logger.Errorf("Encode validation data failed %+v", err)
 	}

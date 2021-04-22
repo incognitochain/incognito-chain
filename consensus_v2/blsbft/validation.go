@@ -1,12 +1,12 @@
 package blsbft
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -23,33 +23,8 @@ type blockValidation interface {
 	AddValidationField(validationData string)
 }
 
-type ValidationData struct {
-	ProducerBLSSig []byte
-	ProducerBriSig []byte
-	ValidatiorsIdx []int
-	AggSig         []byte
-	BridgeSig      [][]byte
-}
-
-func DecodeValidationData(data string) (*ValidationData, error) {
-	var valData ValidationData
-	err := json.Unmarshal([]byte(data), &valData)
-	if err != nil {
-		return nil, NewConsensusError(DecodeValidationDataError, err)
-	}
-	return &valData, nil
-}
-
-func EncodeValidationData(validationData ValidationData) (string, error) {
-	result, err := json.Marshal(validationData)
-	if err != nil {
-		return "", NewConsensusError(EncodeValidationDataError, err)
-	}
-	return string(result), nil
-}
-
 func ValidateProducerSig(block types.BlockInterface) error {
-	valData, err := DecodeValidationData(block.GetValidationField())
+	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
@@ -71,7 +46,7 @@ func ValidateProducerSig(block types.BlockInterface) error {
 	return nil
 }
 
-func CheckValidationDataWithCommittee(valData *ValidationData, committee []incognitokey.CommitteePublicKey) bool {
+func CheckValidationDataWithCommittee(valData *consensustypes.ValidationData, committee []incognitokey.CommitteePublicKey) bool {
 	if len(committee) < 1 {
 		return false
 	}
@@ -87,7 +62,7 @@ func CheckValidationDataWithCommittee(valData *ValidationData, committee []incog
 }
 
 func ValidateCommitteeSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
-	valData, err := DecodeValidationData(block.GetValidationField())
+	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}
