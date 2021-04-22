@@ -1707,18 +1707,31 @@ func Test_createVote(t *testing.T) {
 }
 
 func Test_actorV2_createBLSAggregatedSignatures(t *testing.T) {
-
+	logger := initLog()
+	common.TIMESLOT = 1
 	initTestParams()
-
 	prevHash, _ := common.Hash{}.NewHashFromStr("12345")
-	validationData := ValidationData{}
+	validationData := consensustypes.ValidationData{
+		ValidatiorsIdx: []int{1, 2, 3, 4},
+	}
 	validationDataStr, _ := consensustypes.EncodeValidationData(validationData)
-
 	shardBlock := &types.ShardBlock{
 		Header: types.ShardHeader{
 			PreviousBlockHash: *prevHash,
 		},
 		ValidationData: validationDataStr,
+	}
+
+	wantValidationData := consensustypes.ValidationData{
+		ProducerBLSSig: nil,
+		ProducerBriSig: nil,
+		ValidatiorsIdx: []int{0},
+		AggSig:         []byte{134, 242, 97, 208, 116, 253, 189, 250, 248, 188, 242, 62, 204, 133, 185, 97, 233, 3, 20, 1, 164, 67, 220, 253, 146, 24, 43, 245, 156, 53, 123, 236},
+		BridgeSig:      [][]byte{[]byte{}},
+	}
+	wantValidationDataBytes, err := json.Marshal(wantValidationData)
+	if err != nil {
+		panic(err)
 	}
 
 	type fields struct {
@@ -1747,17 +1760,21 @@ func Test_actorV2_createBLSAggregatedSignatures(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:   "Valid Input",
-			fields: fields{},
+			name: "Valid Input",
+			fields: fields{
+				actorBase: actorBase{
+					logger: logger,
+				},
+			},
 			args: args{
 				votes: map[string]*BFTVote{
-					key0: &BFTVote{
+					incKey0.GetMiningKeyBase58(common.BlsConsensus): &BFTVote{
 						RoundKey:      "",
 						PrevBlockHash: prevHash.String(),
 						BlockHash:     shardBlock.Hash().String(),
 						Validator:     miningKey0.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus),
-						IsValid:       0,
-						TimeSlot:      0,
+						IsValid:       1,
+						TimeSlot:      10,
 						Bls: []byte{
 							134, 242, 97, 208, 116, 253, 189, 250, 248, 188, 242, 62, 204, 133, 185, 97, 233, 3, 20, 1, 164, 67, 220, 253, 146, 24, 43, 245, 156, 53, 123, 236,
 						},
@@ -1768,9 +1785,9 @@ func Test_actorV2_createBLSAggregatedSignatures(t *testing.T) {
 					},
 				},
 				committees:         []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
-				tempValidationData: "",
+				tempValidationData: validationDataStr,
 			},
-			want:    "",
+			want:    string(wantValidationDataBytes),
 			wantErr: false,
 		},
 	}

@@ -387,7 +387,6 @@ func (actorV2 *actorV2) createBLSAggregatedSignatures(
 	tempValidationData string,
 	votes map[string]*BFTVote,
 ) (string, error) {
-
 	committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(committees, common.BlsConsensus)
 	if err != nil {
 		return "", err
