@@ -142,14 +142,7 @@ func Test_beaconCommitteeStateSlashingBase_processSwap(t *testing.T) {
 		want3   []string
 		wantErr bool
 	}{
-		//TODO: @hung add testcase
-		// Testcase 1: no swap out, only swap in
-		// Testcase 2: only swap out, no swap in
-		// Testcase 3: only slash, no swap in
-		// Testcase 4: only slash, swap in
-		// Testcase 5: only normal swap out, no swap in
-		// Testcase 6: only normal swap out, swap in
-		// Testcase 7: both slash and normal swap out, swap in
+		// this function is covered in processSwapShard unit-test
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
