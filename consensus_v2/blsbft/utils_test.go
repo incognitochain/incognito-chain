@@ -46,6 +46,8 @@ var (
 	privateSeed2 = "12Wpve8fJEJZpZca8d1UgCcHstuyYwuamMXUCPCvANuGv2AkkKM"
 	privateSeed3 = "1EdLkW77qvS6eP6p2o4gMJLUikxWkJjT1eQBehNbF2orw8rqia"
 
+	miningKey0, miningKey1, miningKey2, miningKey3 *signatureschemes.MiningKey
+
 	paymentAddreessKey0 string
 )
 
@@ -168,6 +170,26 @@ func initTestParams() {
 	}
 
 	err = incKey0.FromBase58(key0)
+	if err != nil {
+		panic(err)
+	}
+
+	miningKey0, err = getMiningKeyFromPrivateSeed(privateSeed0)
+	if err != nil {
+		panic(err)
+	}
+
+	miningKey1, err = getMiningKeyFromPrivateSeed(privateSeed1)
+	if err != nil {
+		panic(err)
+	}
+
+	miningKey2, err = getMiningKeyFromPrivateSeed(privateSeed2)
+	if err != nil {
+		panic(err)
+	}
+
+	miningKey3, err = getMiningKeyFromPrivateSeed(privateSeed3)
 	if err != nil {
 		panic(err)
 	}

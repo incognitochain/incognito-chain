@@ -14,7 +14,9 @@ import (
 	mocktypes "github.com/incognitochain/incognito-chain/blockchain/types/mocks"
 	"github.com/incognitochain/incognito-chain/common"
 	mockblsbft "github.com/incognitochain/incognito-chain/consensus_v2/blsbft/mocks"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
 	mockmultiview "github.com/incognitochain/incognito-chain/multiview/mocks"
@@ -227,6 +229,12 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 }
 
 func Test_actorV2_handleVoteMsg(t *testing.T) {
+
+	logger := initLog()
+	initTestParams()
+
+	blockHash, _ := common.Hash{}.NewHashFromStr("123456")
+
 	type fields struct {
 		actorBase            actorBase
 		committeeChain       blockchain.Chain
@@ -244,12 +252,77 @@ func Test_actorV2_handleVoteMsg(t *testing.T) {
 		voteMsg BFTVote
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name           string
+		fields         fields
+		args           args
+		wantTotalVotes int
+		wantErr        bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "Receive vote before receive block",
+			fields: fields{
+				actorBase: actorBase{
+					logger: logger,
+				},
+				receiveBlockByHash: map[string]*ProposeBlockInfo{},
+			},
+			args: args{
+				voteMsg: BFTVote{
+					Validator: key0,
+					BlockHash: blockHash.String(),
+				},
+			},
+			wantErr:        false,
+			wantTotalVotes: 1,
+		},
+		{
+			name: "Receive wrong vote after receive block",
+			fields: fields{
+				actorBase: actorBase{
+					logger: logger,
+				},
+				receiveBlockByHash: map[string]*ProposeBlockInfo{
+					blockHash.String(): &ProposeBlockInfo{
+						votes: map[string]*BFTVote{},
+						signingCommittes: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3,
+						},
+					},
+				},
+			},
+			args: args{
+				voteMsg: BFTVote{
+					Validator: key4,
+					BlockHash: blockHash.String(),
+				},
+			},
+			wantErr:        false,
+			wantTotalVotes: 1,
+		},
+		{
+			name: "Receive right vote after block and this node is proposer and not send vote",
+			fields: fields{
+				actorBase: actorBase{
+					logger: logger,
+				},
+				receiveBlockByHash: map[string]*ProposeBlockInfo{
+					blockHash.String(): &ProposeBlockInfo{
+						votes: map[string]*BFTVote{},
+						signingCommittes: []incognitokey.CommitteePublicKey{
+							*incKey0, *incKey, *incKey2, *incKey3,
+						},
+					},
+				},
+			},
+			args: args{
+				voteMsg: BFTVote{
+					Validator: key0,
+					BlockHash: blockHash.String(),
+				},
+			},
+			wantErr:        false,
+			wantTotalVotes: 1,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -266,8 +339,15 @@ func Test_actorV2_handleVoteMsg(t *testing.T) {
 				votedTimeslot:        tt.fields.votedTimeslot,
 				blockVersion:         tt.fields.blockVersion,
 			}
-			if err := actorV2.handleVoteMsg(tt.args.voteMsg); (err != nil) != tt.wantErr {
+			err := actorV2.handleVoteMsg(tt.args.voteMsg)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("actorV2.handleVoteMsg() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr {
+				if len(actorV2.receiveBlockByHash[tt.args.voteMsg.BlockHash].votes) != tt.wantTotalVotes {
+					t.Errorf("actorV2.handleVoteMsg() totalVotes = %v, wantTotalVotes %v",
+						len(actorV2.receiveBlockByHash[tt.args.voteMsg.BlockHash].votes), tt.wantTotalVotes)
+				}
 			}
 		})
 	}
@@ -1444,7 +1524,12 @@ func Test_actorV2_processWithEnoughVotes(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "",
+			fields:  fields{},
+			args:    args{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1463,6 +1548,254 @@ func Test_actorV2_processWithEnoughVotes(t *testing.T) {
 			}
 			if err := actorV2.processWithEnoughVotes(tt.args.v); (err != nil) != tt.wantErr {
 				t.Errorf("actorV2.processWithEnoughVotes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_actorV2_sendVote(t *testing.T) {
+
+	common.TIMESLOT = 1
+
+	initTestParams()
+	logger := initLog()
+
+	hash, _ := common.Hash{}.NewHashFromStr("123456")
+	prevHash, _ := common.Hash{}.NewHashFromStr("12345")
+
+	block := &mocktypes.BlockInterface{}
+	block.On("Hash").Return(hash)
+	block.On("GetPrevHash").Return(*prevHash)
+	block.On("GetInstructions").Return([][]string{})
+	block.On("GetHeight").Return(uint64(11))
+
+	node := &mockblsbft.NodeInterface{}
+	node.On("PushMessageToChain",
+		mock.AnythingOfType("wire.Message"), mock.AnythingOfType("common.ChainInterface")).
+		Return(nil)
+
+	committees := []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3}
+
+	type fields struct {
+		actorBase            actorBase
+		committeeChain       blockchain.Chain
+		currentTime          int64
+		currentTimeSlot      int64
+		proposeHistory       *lru.Cache
+		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
+		receiveBlockByHash   map[string]*ProposeBlockInfo
+		voteHistory          map[uint64]types.BlockInterface
+		bodyHashes           map[uint64]map[string]bool
+		votedTimeslot        map[int64]bool
+		blockVersion         int
+	}
+	type args struct {
+		userKey    *signatureschemes2.MiningKey
+		block      types.BlockInterface
+		committees []incognitokey.CommitteePublicKey
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Valid Input",
+			fields: fields{
+				actorBase: actorBase{
+					logger:   logger,
+					node:     node,
+					chainKey: "shard",
+				},
+				voteHistory:     map[uint64]types.BlockInterface{},
+				currentTime:     10,
+				currentTimeSlot: 10,
+			},
+			args: args{
+				userKey:    miningKey0,
+				block:      block,
+				committees: committees,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actorV2 := &actorV2{
+				actorBase:            tt.fields.actorBase,
+				committeeChain:       tt.fields.committeeChain,
+				currentTime:          tt.fields.currentTime,
+				currentTimeSlot:      tt.fields.currentTimeSlot,
+				proposeHistory:       tt.fields.proposeHistory,
+				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
+				receiveBlockByHash:   tt.fields.receiveBlockByHash,
+				voteHistory:          tt.fields.voteHistory,
+				bodyHashes:           tt.fields.bodyHashes,
+				votedTimeslot:        tt.fields.votedTimeslot,
+				blockVersion:         tt.fields.blockVersion,
+			}
+			if err := actorV2.sendVote(tt.args.userKey, tt.args.block, tt.args.committees); (err != nil) != tt.wantErr {
+				t.Errorf("actorV2.sendVote() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_createVote(t *testing.T) {
+
+	initTestParams()
+
+	hash, _ := common.Hash{}.NewHashFromStr("123456")
+	prevHash, _ := common.Hash{}.NewHashFromStr("12345")
+
+	block := &mocktypes.BlockInterface{}
+	block.On("Hash").Return(hash)
+	block.On("GetPrevHash").Return(*prevHash)
+	block.On("GetInstructions").Return([][]string{})
+
+	committees := []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3}
+
+	type args struct {
+		userKey    *signatureschemes2.MiningKey
+		block      types.BlockInterface
+		committees []incognitokey.CommitteePublicKey
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *BFTVote
+		wantErr bool
+	}{
+		{
+			name: "Valid Input",
+			args: args{
+				userKey:    miningKey0,
+				block:      block,
+				committees: committees,
+			},
+			want: &BFTVote{
+				RoundKey:      "",
+				PrevBlockHash: prevHash.String(),
+				BlockHash:     hash.String(),
+				Validator:     miningKey0.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus),
+				IsValid:       0,
+				TimeSlot:      0,
+				Bls: []byte{
+					134, 242, 97, 208, 116, 253, 189, 250, 248, 188, 242, 62, 204, 133, 185, 97, 233, 3, 20, 1, 164, 67, 220, 253, 146, 24, 43, 245, 156, 53, 123, 236,
+				},
+				Bri: []byte{},
+				Confirmation: []byte{
+					81, 158, 170, 152, 127, 70, 139, 153, 9, 176, 2, 160, 33, 213, 231, 172, 246, 175, 86, 131, 10, 112, 252, 42, 188, 15, 53, 38, 253, 157, 51, 173, 57, 174, 39, 68, 118, 23, 7, 51, 174, 111, 181, 209, 115, 20, 53, 105, 99, 29, 138, 202, 29, 70, 174, 86, 130, 178, 22, 247, 216, 9, 143, 94, 1,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := createVote(tt.args.userKey, tt.args.block, tt.args.committees)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("createVote() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("createVote() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_actorV2_createBLSAggregatedSignatures(t *testing.T) {
+
+	initTestParams()
+
+	prevHash, _ := common.Hash{}.NewHashFromStr("12345")
+	validationData := ValidationData{}
+	validationDataStr, _ := consensustypes.EncodeValidationData(validationData)
+
+	shardBlock := &types.ShardBlock{
+		Header: types.ShardHeader{
+			PreviousBlockHash: *prevHash,
+		},
+		ValidationData: validationDataStr,
+	}
+
+	type fields struct {
+		actorBase            actorBase
+		committeeChain       blockchain.Chain
+		currentTime          int64
+		currentTimeSlot      int64
+		proposeHistory       *lru.Cache
+		receiveBlockByHeight map[uint64][]*ProposeBlockInfo
+		receiveBlockByHash   map[string]*ProposeBlockInfo
+		voteHistory          map[uint64]types.BlockInterface
+		bodyHashes           map[uint64]map[string]bool
+		votedTimeslot        map[int64]bool
+		blockVersion         int
+	}
+	type args struct {
+		committees         []incognitokey.CommitteePublicKey
+		tempValidationData string
+		votes              map[string]*BFTVote
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name:   "Valid Input",
+			fields: fields{},
+			args: args{
+				votes: map[string]*BFTVote{
+					key0: &BFTVote{
+						RoundKey:      "",
+						PrevBlockHash: prevHash.String(),
+						BlockHash:     shardBlock.Hash().String(),
+						Validator:     miningKey0.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus),
+						IsValid:       0,
+						TimeSlot:      0,
+						Bls: []byte{
+							134, 242, 97, 208, 116, 253, 189, 250, 248, 188, 242, 62, 204, 133, 185, 97, 233, 3, 20, 1, 164, 67, 220, 253, 146, 24, 43, 245, 156, 53, 123, 236,
+						},
+						Bri: []byte{},
+						Confirmation: []byte{
+							81, 158, 170, 152, 127, 70, 139, 153, 9, 176, 2, 160, 33, 213, 231, 172, 246, 175, 86, 131, 10, 112, 252, 42, 188, 15, 53, 38, 253, 157, 51, 173, 57, 174, 39, 68, 118, 23, 7, 51, 174, 111, 181, 209, 115, 20, 53, 105, 99, 29, 138, 202, 29, 70, 174, 86, 130, 178, 22, 247, 216, 9, 143, 94, 1,
+						},
+					},
+				},
+				committees:         []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+				tempValidationData: "",
+			},
+			want:    "",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actorV2 := &actorV2{
+				actorBase:            tt.fields.actorBase,
+				committeeChain:       tt.fields.committeeChain,
+				currentTime:          tt.fields.currentTime,
+				currentTimeSlot:      tt.fields.currentTimeSlot,
+				proposeHistory:       tt.fields.proposeHistory,
+				receiveBlockByHeight: tt.fields.receiveBlockByHeight,
+				receiveBlockByHash:   tt.fields.receiveBlockByHash,
+				voteHistory:          tt.fields.voteHistory,
+				bodyHashes:           tt.fields.bodyHashes,
+				votedTimeslot:        tt.fields.votedTimeslot,
+				blockVersion:         tt.fields.blockVersion,
+			}
+			got, err := actorV2.createBLSAggregatedSignatures(tt.args.committees, tt.args.tempValidationData, tt.args.votes)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("actorV2.createBLSAggregatedSignatures() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("actorV2.createBLSAggregatedSignatures() = %v, want %v", got, tt.want)
 			}
 		})
 	}
