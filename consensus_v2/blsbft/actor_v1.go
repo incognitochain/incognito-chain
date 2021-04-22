@@ -230,7 +230,7 @@ func (actorV1 *actorV1) Run() error {
 					}
 					if !(new(common.Hash).IsEqual(&actorV1.roundData.blockHash)) && actorV1.isHasMajorityVotes() {
 						actorV1.roundData.lockVotes.Lock()
-						aggSig, brigSigs, validatorIdx, err := combineVotes(actorV1.roundData.votes, actorV1.roundData.committeeBLS.stringList)
+						aggSig, brigSigs, validatorIdx, err := actorV1.combineVotes(actorV1.roundData.votes, actorV1.roundData.committeeBLS.stringList)
 						actorV1.roundData.lockVotes.Unlock()
 						if err != nil {
 							actorV1.logger.Error(err)

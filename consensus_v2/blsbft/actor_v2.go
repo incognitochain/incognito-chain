@@ -335,7 +335,6 @@ func (actorV2 *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
 }
 
 func (actorV2 *actorV2) processWithEnoughVotes(v *ProposeBlockInfo) error {
-
 	validationData, err := actorV2.createBLSAggregatedSignatures(v.signingCommittes, v.block.GetValidationField(), v.votes)
 	if err != nil {
 		actorV2.logger.Error(err)
@@ -383,11 +382,17 @@ func (actorV2 *actorV2) processWithEnoughVotes(v *ProposeBlockInfo) error {
 	return nil
 }
 
-func (actorV2 *actorV2) createBLSAggregatedSignatures(committees []incognitokey.CommitteePublicKey, tempValidationData string, votes map[string]*BFTVote) (string, error) {
+func (actorV2 *actorV2) createBLSAggregatedSignatures(
+	committees []incognitokey.CommitteePublicKey,
+	tempValidationData string,
+	votes map[string]*BFTVote,
+) (string, error) {
+
 	committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(committees, common.BlsConsensus)
 	if err != nil {
 		return "", err
 	}
+
 	aggSig, brigSigs, validatorIdx, err := actorV2.combineVotes(votes, committeeBLSString)
 	if err != nil {
 		return "", err
@@ -409,7 +414,7 @@ func (actorV2 *actorV2) voteForBlock(
 	v *ProposeBlockInfo,
 ) error {
 	for _, userKey := range actorV2.userKeySet {
-		Vote, err := actorV2.createVote(&userKey, v.block, v.signingCommittes)
+		Vote, err := createVote(&userKey, v.block, v.signingCommittes)
 		if err != nil {
 			actorV2.logger.Error(err)
 			return NewConsensusError(UnExpectedError, err)
@@ -432,7 +437,7 @@ func (actorV2 *actorV2) voteForBlock(
 	return nil
 }
 
-func (actorV2 *actorV2) createVote(
+func createVote(
 	userKey *signatureschemes2.MiningKey,
 	block types.BlockInterface,
 	committees []incognitokey.CommitteePublicKey) (*BFTVote, error) {
@@ -449,7 +454,6 @@ func (actorV2 *actorV2) createVote(
 
 	blsSig, err := userKey.BLSSignData(block.Hash().GetBytes(), selfIdx, bytelist)
 	if err != nil {
-
 		return nil, NewConsensusError(UnExpectedError, err)
 	}
 	bridgeSig := []byte{}
@@ -459,12 +463,11 @@ func (actorV2 *actorV2) createVote(
 			return nil, NewConsensusError(UnExpectedError, err)
 		}
 	}
+
 	vote.Bls = blsSig
 	vote.Bri = bridgeSig
 	vote.BlockHash = block.Hash().String()
-
-	userPk := userKey.GetPublicKey()
-	vote.Validator = userPk.GetMiningKeyBase58(common.BlsConsensus)
+	vote.Validator = userBLSPk
 	vote.PrevBlockHash = block.GetPrevHash().String()
 	err = vote.signVote(userKey)
 	if err != nil {
@@ -623,7 +626,7 @@ func (actorV2 *actorV2) getCommitteeForBlock(v types.BlockInterface) ([]incognit
 }
 
 func (actorV2 *actorV2) sendVote(userKey *signatureschemes2.MiningKey, block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
-	Vote, err := actorV2.createVote(userKey, block, committees)
+	Vote, err := createVote(userKey, block, committees)
 	if err != nil {
 		actorV2.logger.Error(err)
 		return NewConsensusError(UnExpectedError, err)
@@ -786,7 +789,7 @@ func (actorV2 *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 	} else {
 		actorV2.receiveBlockByHash[voteMsg.BlockHash] = newBlockInfoForVoteMsg()
 		actorV2.receiveBlockByHash[voteMsg.BlockHash].votes[voteMsg.Validator] = &voteMsg
-		actorV2.logger.Infof("%v Receive vote (%d) for block %v from unknown validator %v", actorV2.chainKey, len(actorV2.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
+		actorV2.logger.Infof("%v Receive vote (%d) for block %v from validator %v", actorV2.chainKey, len(actorV2.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, voteMsg.Validator)
 	}
 	return nil
 }
@@ -910,4 +913,33 @@ func (actorV2 *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo 
 
 func (actorV2 *actorV2) BlockVersion() int {
 	return actorV2.blockVersion
+}
+
+func (actorV2 *actorV2) combineVotes(votes map[string]*BFTVote, committees []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
+	var blsSigList [][]byte
+	for validator, vote := range votes {
+		if vote.IsValid == 1 {
+			index := common.IndexOfStr(validator, committees)
+			if index != -1 {
+				validatorIdx = append(validatorIdx, index)
+			}
+		}
+	}
+
+	if len(validatorIdx) == 0 {
+		return nil, nil, nil, NewConsensusError(CombineSignatureError, errors.New("len(validatorIdx) == 0"))
+	}
+
+	sort.Ints(validatorIdx)
+	for _, idx := range validatorIdx {
+		blsSigList = append(blsSigList, votes[committees[idx]].Bls)
+		brigSigs = append(brigSigs, votes[committees[idx]].Bri)
+	}
+
+	aggSig, err = blsmultisig.Combine(blsSigList)
+	if err != nil {
+		return nil, nil, nil, NewConsensusError(CombineSignatureError, err)
+	}
+
+	return
 }
