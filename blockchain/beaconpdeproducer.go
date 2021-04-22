@@ -665,7 +665,16 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 			shardID,
 			txReqID,
 		)
-		return [][]string{refundTradingFeeInst, refundSellingTokenInst}, nil
+
+		untradableInsts := make([][]string, 0)
+		if len(refundTradingFeeInst) > 0 {
+			untradableInsts = append(untradableInsts, refundTradingFeeInst)
+		}
+		if len(refundSellingTokenInst) > 0 {
+			untradableInsts = append(untradableInsts, refundSellingTokenInst)
+		}
+
+		return untradableInsts, nil
 	}
 
 	tradeAcceptedContents := []metadata.PDECrossPoolTradeAcceptedContent{}
