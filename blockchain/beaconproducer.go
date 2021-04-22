@@ -680,7 +680,7 @@ func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
 
 	for _, unstakeInstruction := range shardInstructions.unstakeInstructions {
 		for _, tempUnstakePublicKey := range unstakeInstruction.CommitteePublicKeys {
-			// TODO: @hung check why only one transaction but it saied duplciate unstake instruction
+			// TODO: @hung check why only one transaction but it said duplicate unstake instruction
 			if _, ok := validUnstakePublicKeys[tempUnstakePublicKey]; ok {
 				Logger.log.Errorf("SHARD %v | UNSTAKE duplicated unstake instruction %+v ", shardID, tempUnstakePublicKey)
 				continue

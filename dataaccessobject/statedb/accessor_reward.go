@@ -7,24 +7,24 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 )
 
-//AddShardRewardRequestV2
-func AddShardRewardRequestV2(
+//AddShardRewardRequestV3
+func AddShardRewardRequestV3(
 	stateDB *StateDB,
 	epoch uint64,
 	shardID, subsetID byte,
 	tokenID common.Hash,
 	rewardAmount uint64,
 ) error {
-	key := generateRewardRequestObjectKeyV2(epoch, shardID, subsetID, tokenID)
-	r, has, err := stateDB.getRewardRequestStateV2(key)
+	key := generateRewardRequestObjectKeyV3(epoch, shardID, subsetID, tokenID)
+	r, has, err := stateDB.getRewardRequestStateV3(key)
 	if err != nil {
 		return NewStatedbError(StoreRewardRequestError, err)
 	}
 	if has {
 		rewardAmount += r.Amount()
 	}
-	value := NewRewardRequestStateV2WithValue(epoch, shardID, subsetID, tokenID, rewardAmount)
-	err = stateDB.SetStateObject(RewardRequestV2ObjectType, key, value)
+	value := NewRewardRequestStateV3WithValue(epoch, shardID, subsetID, tokenID, rewardAmount)
+	err = stateDB.SetStateObject(RewardRequestV3ObjectType, key, value)
 	if err != nil {
 		return NewStatedbError(StoreRewardRequestError, err)
 	}
@@ -49,14 +49,14 @@ func AddShardRewardRequest(stateDB *StateDB, epoch uint64, shardID byte, tokenID
 	return nil
 }
 
-func GetRewardOfShardByEpochV2(
+func GetRewardOfShardByEpochV3(
 	stateDB *StateDB,
 	epoch uint64,
 	shardID, subsetID byte,
 	tokenID common.Hash,
 ) (uint64, error) {
-	key := generateRewardRequestObjectKeyV2(epoch, shardID, subsetID, tokenID)
-	amount, has, err := stateDB.getRewardRequestAmountV2(key)
+	key := generateRewardRequestObjectKeyV3(epoch, shardID, subsetID, tokenID)
+	amount, has, err := stateDB.getRewardRequestAmountV3(key)
 	if err != nil {
 		return 0, NewStatedbError(GetRewardRequestError, err)
 	}

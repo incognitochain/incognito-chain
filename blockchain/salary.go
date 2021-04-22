@@ -45,7 +45,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 
 			for key, value := range acceptBlockRewardIns.TxsFee() {
 				if value != 0 {
-					err = statedb.AddShardRewardRequestV2(
+					err = statedb.AddShardRewardRequestV3(
 						rewardStateDB,
 						beaconBlock.Header.Epoch,
 						acceptBlockRewardIns.ShardID(),
@@ -241,7 +241,7 @@ func (blockchain *BlockChain) addShardCommitteeRewardV2(
 	return nil
 }
 
-func calculateRewardV2(
+func calculateRewardV3(
 	maxBeaconBlockCreation uint64,
 	splitRewardRuleProcessor committeestate.SplitRewardRuleProcessor,
 	numberOfActiveShards, maxSubsetsCommittee int,
@@ -277,7 +277,7 @@ func calculateRewardV2(
 			}
 
 			for _, coinID := range allCoinID {
-				totalRewards[shardID][subsetID][coinID], err = statedb.GetRewardOfShardByEpochV2(
+				totalRewards[shardID][subsetID][coinID], err = statedb.GetRewardOfShardByEpochV3(
 					rewardStateDB, epoch,
 					byte(shardID), byte(subsetID), coinID)
 				if err != nil {
@@ -407,7 +407,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			totalRewardForShardSubset,
 			totalRewardForIncDAO,
 			totalRewardForCustodian,
-			err = calculateRewardV2(
+			err = calculateRewardV3(
 			uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()),
 			curView.beaconCommitteeState.(committeestate.SplitRewardRuleProcessor),
 			curView.ActiveShards,
@@ -417,7 +417,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			isSplitRewardForCustodian, percentCustodianRewards,
 		)
 
-		instRewardForShards, err = blockchain.buildInstRewardForShardsV2(epoch, totalRewardForShardSubset)
+		instRewardForShards, err = blockchain.buildInstRewardForShardsV3(epoch, totalRewardForShardSubset)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -491,7 +491,7 @@ func (blockchain *BlockChain) buildInstRewardForIncDAO(epoch uint64, totalReward
 	return resInst, nil
 }
 
-func (blockchain *BlockChain) buildInstRewardForShardsV2(epoch uint64, totalRewards [][]map[common.Hash]uint64) ([][]string, error) {
+func (blockchain *BlockChain) buildInstRewardForShardsV3(epoch uint64, totalRewards [][]map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 
 	for shardID, v := range totalRewards {

@@ -29,8 +29,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newCommitteeRewardObjectWithValue(db, hash, value)
 	case RewardRequestObjectType:
 		return newRewardRequestObjectWithValue(db, hash, value)
-	case RewardRequestV2ObjectType:
-		return newRewardRequestV2ObjectWithValue(db, hash, value)
+	case RewardRequestV3ObjectType:
+		return newRewardRequestV3ObjectWithValue(db, hash, value)
 	case BlackListProducerObjectType:
 		return newBlackListProducerObjectWithValue(db, hash, value)
 	case TokenObjectType:
@@ -110,8 +110,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newCommitteeRewardObject(db, hash)
 	case RewardRequestObjectType:
 		return newRewardRequestObject(db, hash)
-	case RewardRequestV2ObjectType:
-		return newRewardRequestV2Object(db, hash)
+	case RewardRequestV3ObjectType:
+		return newRewardRequestV3Object(db, hash)
 	case BlackListProducerObjectType:
 		return newBlackListProducerObject(db, hash)
 	case SerialNumberObjectType:
