@@ -118,7 +118,7 @@ func ValidateAcceptBlockRewardInstructionSanity(instruction []string) error {
 		return err
 	}
 
-	if shardID < 0 || shardID > 9 {
+	if shardID < 0 || shardID > common.MaxShardNumber {
 		return errors.New("shardID is out of range for byte")
 	}
 

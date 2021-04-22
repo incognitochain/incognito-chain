@@ -22,17 +22,10 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 		if len(inst) <= 2 {
 			continue
 		}
+		if instruction.IsConsensusInstruction(inst[0]) {
+			continue
+		}
 		switch inst[0] {
-		case instruction.SET_ACTION:
-			continue
-		case instruction.STAKE_ACTION:
-			continue
-		case instruction.RANDOM_ACTION:
-			continue
-		case instruction.SWAP_ACTION:
-			continue
-		case instruction.ASSIGN_ACTION:
-			continue
 		case instruction.SHARD_SUBSET_REWARD_ACTION:
 			continue
 		}
@@ -132,7 +125,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 						}
 					}
 				}
-				err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardSubsetRewardInst.Reward(), shardSubsetStakerInfo)
+				err = blockchain.addShardCommitteeRewardV3(rewardStateDB, shardID, shardSubsetRewardInst.Reward(), shardSubsetStakerInfo)
 				if err != nil {
 					return err
 				}
@@ -205,7 +198,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					}
 					cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
 				}
-				err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo.ShardReward, cInfos[int(shardToProcess)])
+				err = blockchain.addShardCommitteeRewardV3(rewardStateDB, shardID, shardRewardInfo.ShardReward, cInfos[int(shardToProcess)])
 				if err != nil {
 					return err
 				}
@@ -217,7 +210,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 	return nil
 }
 
-func (blockchain *BlockChain) addShardCommitteeRewardV2(
+func (blockchain *BlockChain) addShardCommitteeRewardV3(
 	rewardStateDB *statedb.StateDB,
 	shardID byte,
 	reward map[common.Hash]uint64,
