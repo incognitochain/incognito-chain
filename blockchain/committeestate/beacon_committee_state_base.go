@@ -405,7 +405,7 @@ func (b *beaconCommitteeStateBase) UpdateCommitteeState(env *BeaconCommitteeStat
 
 func (b *beaconCommitteeStateBase) turnOffStopAutoStake(publicKey string, committeeChange *CommitteeChange) *CommitteeChange {
 	b.autoStake[publicKey] = false
-	committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, publicKey)
+	committeeChange.AddStopAutoStake(publicKey)
 	return committeeChange
 }
 

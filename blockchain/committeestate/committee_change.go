@@ -38,6 +38,12 @@ func (committeeChange *CommitteeChange) AddNextEpochShardCandidateRemoved(nextEp
 	return committeeChange
 }
 
+func (committeeChange *CommitteeChange) AddNextEpochShardCandidateAdded(nextEpochShardCandidateAdded []string) *CommitteeChange {
+	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(nextEpochShardCandidateAdded)
+	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, temp...)
+	return committeeChange
+}
+
 func (committeeChange *CommitteeChange) AddShardSubstituteAdded(shardID byte, shardSubstituteAdded []string) *CommitteeChange {
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstituteAdded)
 	committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], temp...)
@@ -91,6 +97,11 @@ func (committeeChange *CommitteeChange) AddRemovedStaker(removedStaker string) *
 
 func (committeeChange *CommitteeChange) AddRemovedStakers(removedStakers []string) *CommitteeChange {
 	committeeChange.RemovedStaker = append(committeeChange.RemovedStaker, removedStakers...)
+	return committeeChange
+}
+
+func (committeeChange *CommitteeChange) AddStopAutoStake(stopAutoStake string) *CommitteeChange {
+	committeeChange.StopAutoStake = append(committeeChange.StopAutoStake, stopAutoStake)
 	return committeeChange
 }
 

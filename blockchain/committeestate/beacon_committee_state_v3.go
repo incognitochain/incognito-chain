@@ -186,6 +186,8 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			}
 			committeeChange = b.processFinishSyncInstruction(
 				finishSyncInstruction, env, committeeChange)
+		case instruction.UNSTAKE_ACTION:
+			return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, fmt.Errorf("Instruction %+v not allow", instruction.UNSTAKE_ACTION))
 		}
 	}
 

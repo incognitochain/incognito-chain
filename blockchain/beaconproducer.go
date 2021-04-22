@@ -2,16 +2,13 @@ package blockchain
 
 import (
 	"fmt"
-	"math/big"
-	"sort"
-	"strconv"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"sort"
 )
 
 type duplicateKeyStakeInstruction struct {
@@ -87,13 +84,6 @@ func (blockchain *BlockChain) NewBlockBeacon(
 	)
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
-	}
-
-	// Finish Sync Instructions
-	for _, finishSyncInstruction := range copiedCurView.finishSyncManager.Instructions() {
-		if !finishSyncInstruction.IsEmpty() {
-			instructions = append(instructions, finishSyncInstruction.ToString())
-		}
 	}
 
 	newBeaconBlock.Body = types.NewBeaconBody(shardStates, instructions)
@@ -467,31 +457,21 @@ func (curView *BeaconBestState) GenerateInstruction(
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())
 	}
 
-	// Unstake
-	for _, unstakeInstruction := range shardInstruction.unstakeInstructions {
-		instructions = append(instructions, unstakeInstruction.ToString())
+	if curView.CommitteeStateVersion() == committeestate.SLASHING_VERSION {
+		// Unstake
+		for _, unstakeInstruction := range shardInstruction.unstakeInstructions {
+			instructions = append(instructions, unstakeInstruction.ToString())
+		}
+	}
+
+	// Finish Sync Instructions
+	for _, finishSyncInstruction := range curView.finishSyncManager.Instructions() {
+		if !finishSyncInstruction.IsEmpty() {
+			instructions = append(instructions, finishSyncInstruction.ToString())
+		}
 	}
 
 	return instructions, nil
-}
-
-// ["random" "{nonce}" "{blockheight}" "{timestamp}" "{bitcoinTimestamp}"]
-func (curView *BeaconBestState) generateRandomInstruction() ([]string, int64) {
-	res := []byte{}
-	bestBeaconBlockHash := curView.BestBlockHash
-	res = append(res, bestBeaconBlockHash.Bytes()...)
-	for i := 0; i < curView.ActiveShards; i++ {
-		shardID := byte(i)
-		bestShardBlockHash := curView.BestShardHash[shardID]
-		res = append(res, bestShardBlockHash.Bytes()...)
-	}
-
-	bigInt := new(big.Int)
-	bigInt = bigInt.SetBytes(res)
-	randomNumber := int64(bigInt.Uint64())
-	randomInstruction := []string{instruction.RANDOM_ACTION, strconv.FormatInt(randomNumber, 10), "", "", ""}
-
-	return randomInstruction, randomNumber
 }
 
 func CreateBeaconSwapActionForKeyListV2(
