@@ -37,7 +37,6 @@ type BeaconCommitteeStateEnvironment struct {
 	IsSplitRewardForCustodian          bool
 	PercentCustodianReward             uint64
 	DAOPercent                         int
-	NumberOfFixedBeaconBlockValidator  uint64
 	NumberOfFixedShardBlockValidator   int
 	MissingSignaturePenalty            map[string]signaturecounter.Penalty
 }
