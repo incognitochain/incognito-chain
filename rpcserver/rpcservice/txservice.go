@@ -2,6 +2,7 @@ package rpcservice
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1796,9 +1797,18 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 	return result, nil
 }
 
+func encodeBytes(data []byte, isBase64Encode bool) string {
+	if isBase64Encode {
+		return base64.StdEncoding.EncodeToString(data)
+	} else {
+		return base58.Base58Check{}.Encode(data, common.ZeroByte)
+	}
+}
+
 func (txService TxService) buildTxDetails(
 	txInfos []TxInfo,
 	keySet incognitokey.KeySet,
+	isBase64EncodeSN bool,
 ) []jsonresult.ReceivedTransactionV2 {
 	txDetails := []jsonresult.ReceivedTransactionV2{}
 	for _, txInfo := range txInfos {
@@ -1838,7 +1848,7 @@ func (txService TxService) buildTxDetails(
 						inputCoins := proof.GetInputCoins()
 						for _, in := range inputCoins {
 							item.InputSerialNumbers[common.PRVCoinID] = append(item.InputSerialNumbers[common.PRVCoinID],
-								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+								encodeBytes(in.CoinDetails.GetSerialNumber().ToBytesS(), isBase64EncodeSN))
 						}
 
 						outputs := proof.GetOutputCoins()
@@ -1899,7 +1909,7 @@ func (txService TxService) buildTxDetails(
 						nativeInputCoins := proof.GetInputCoins()
 						for _, in := range nativeInputCoins {
 							item.InputSerialNumbers[common.PRVCoinID] = append(item.InputSerialNumbers[common.PRVCoinID],
-								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+								encodeBytes(in.CoinDetails.GetSerialNumber().ToBytesS(), isBase64EncodeSN))
 						}
 
 						outputs := proof.GetOutputCoins()
@@ -1939,7 +1949,7 @@ func (txService TxService) buildTxDetails(
 						ptokenInputCoins := proof.GetInputCoins()
 						for _, in := range ptokenInputCoins {
 							item.InputSerialNumbers[privacyTokenTx.TxPrivacyTokenData.PropertyID] = append(item.InputSerialNumbers[privacyTokenTx.TxPrivacyTokenData.PropertyID],
-								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+								encodeBytes(in.CoinDetails.GetSerialNumber().ToBytesS(), isBase64EncodeSN))
 						}
 
 						outputs := proof.GetOutputCoins()
@@ -2055,6 +2065,7 @@ func (txService TxService) GetTransactionByReceiverV2(
 	keySet incognitokey.KeySet,
 	skip, limit uint,
 	tokenIDHash common.Hash,
+	isBase64EncodeSN bool,
 ) (*jsonresult.ListReceivedTransactionV2, uint, *RPCError) {
 	result := &jsonresult.ListReceivedTransactionV2{
 		ReceivedTransactions: []jsonresult.ReceivedTransactionV2{},
@@ -2123,7 +2134,7 @@ func (txService TxService) GetTransactionByReceiverV2(
 		limit = txNum
 	}
 	pagingTxInfos := txInfos[skip:limit]
-	txDetails := txService.buildTxDetails(pagingTxInfos, keySet)
+	txDetails := txService.buildTxDetails(pagingTxInfos, keySet, isBase64EncodeSN)
 	result.ReceivedTransactions = txDetails
 	return result, txNum, nil
 }

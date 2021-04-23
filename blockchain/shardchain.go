@@ -185,8 +185,7 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 }
 
 func (chain *ShardChain) CreateNewBlock(
-	version int, proposer string,
-	round int, startTime int64,
+	version int, proposer string, round int, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash) (types.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
@@ -199,7 +198,7 @@ func (chain *ShardChain) CreateNewBlock(
 		Logger.log.Error(err)
 		return nil, err
 	}
-	if version == 2 {
+	if version >= 2 {
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
@@ -212,10 +211,12 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 	oldBlock types.BlockInterface,
 	proposer string, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
-	committeeViewHash common.Hash) (types.BlockInterface, error) {
+	committeeViewHash common.Hash,
+) (types.BlockInterface, error) {
 	b, _ := json.Marshal(oldBlock)
 	newBlock := new(types.ShardBlock)
 	json.Unmarshal(b, &newBlock)
+
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
 
