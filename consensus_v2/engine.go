@@ -197,7 +197,6 @@ func (engine *Engine) WatchCommitteeChange() {
 		}
 
 		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
-
 		miningProc = engine.bftProcess[chainID]
 
 		if shouldRun {
@@ -337,10 +336,6 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 	} else {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
-	}
-
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV4Height {
-		return blsbft.MultiSubsetsVersion
 	}
 
 	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.StakingFlowV2 {

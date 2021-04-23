@@ -14,7 +14,6 @@ type ShardCommitteeState interface {
 	GetShardCommittee() []incognitokey.CommitteePublicKey
 	GetShardSubstitute() []incognitokey.CommitteePublicKey
 	GetCommitteeFromBlock() common.Hash
-	SubsetCommitteesFromBlock() common.Hash
 
 	UpdateCommitteeState(env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash,
 		*CommitteeChange, error)
@@ -49,7 +48,6 @@ type ShardEnvBuilder interface {
 	BuildStakingTx(stakingTx map[string]string) ShardEnvBuilder
 	BuildNumberOfFixedBlockValidators(int) ShardEnvBuilder
 	BuildCommitteesFromBlock(common.Hash) ShardEnvBuilder
-	BuildSubsetsCommitteesFromBlock(common.Hash) ShardEnvBuilder
 	BuildCommitteesFromBeaconView([]string) ShardEnvBuilder
 	Build() ShardCommitteeStateEnvironment
 }
@@ -77,7 +75,6 @@ type ShardCommitteeStateEnvironment interface {
 	SwapOffset() int
 	StakingTx() map[string]string
 	CommitteesFromBlock() common.Hash
-	SubsetCommitteesFromBlock() common.Hash
 	NumberOfFixedBlockValidators() int
 	CommitteesFromBeaconView() []string // This Field Is Only Use For Swap Committee
 }
@@ -101,7 +98,6 @@ type shardCommitteeStateEnvironment struct {
 	stakingTx                    map[string]string
 	numberOfFixedBlockValidators int
 	committeesFromBlock          common.Hash
-	subsetCommitteesFromBlock    common.Hash
 	committeesFromBeaconView     []string
 }
 
@@ -114,12 +110,6 @@ func (env *shardCommitteeStateEnvironment) BuildCommitteesFromBeaconView(committ
 //BuildCommitteeFromBlock :
 func (env *shardCommitteeStateEnvironment) BuildCommitteesFromBlock(hash common.Hash) ShardEnvBuilder {
 	env.committeesFromBlock = hash
-	return env
-}
-
-//BuildSubsetsCommitteesFromBlock :
-func (env *shardCommitteeStateEnvironment) BuildSubsetsCommitteesFromBlock(hash common.Hash) ShardEnvBuilder {
-	env.subsetCommitteesFromBlock = hash
 	return env
 }
 
@@ -303,10 +293,6 @@ func (env *shardCommitteeStateEnvironment) NumberOfFixedBlockValidators() int {
 
 func (env *shardCommitteeStateEnvironment) CommitteesFromBlock() common.Hash {
 	return env.committeesFromBlock
-}
-
-func (env *shardCommitteeStateEnvironment) SubsetCommitteesFromBlock() common.Hash {
-	return env.subsetCommitteesFromBlock
 }
 
 func (env *shardCommitteeStateEnvironment) CommitteesFromBeaconView() []string {

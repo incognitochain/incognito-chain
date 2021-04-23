@@ -24,7 +24,6 @@ const (
 	BftVersion = iota + 1
 	MultiViewsVersion
 	SlashingVersion
-	MultiSubsetsVersion
 )
 
 const (

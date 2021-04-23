@@ -198,7 +198,6 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 
 	newBlock.Header.Proposer = proposer
 	newBlock.Header.ProposeTime = startTime
-	newBlock.Header.SubsetCommitteesFromBlock = committeeViewHash
 
 	return newBlock, nil
 }
@@ -340,23 +339,44 @@ func (chain *ShardChain) CommitteeEngineVersion() int {
 }
 
 //ProposerByTimeSlot ...
-func (chain *ShardChain) ProposerByTimeSlot(
+func (chain *ShardChain) GetProposerByTimeSlot(
 	shardID byte, ts int64,
-	committees []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey {
-	id := GetProposerByTimeSlot(ts, chain.Blockchain.config.ChainParams.NumberOfFixedBlockValidators)
-	proposerKey := committees[id]
-	return proposerKey
+	committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int) {
+	lenProposers := 0
+	if chain.Blockchain.BeaconChain.GetFinalView().GetHeight() >= chain.Blockchain.config.ChainParams.ConsensusV4Height {
+		lenProposers = chain.Blockchain.config.ChainParams.NumberOfShardFixedBlockValidators
+	} else {
+		lenProposers = chain.Blockchain.GetBestStateShard(shardID).MinShardCommitteeSize
+	}
+	id := GetProposerByTimeSlot(ts, lenProposers)
+	return committees[id], id
+}
+
+func (chain *ShardChain) SigningCommittees(
+	proposerPk int, committees []incognitokey.CommitteePublicKey,
+) []incognitokey.CommitteePublicKey {
+	res := []incognitokey.CommitteePublicKey{}
+	if chain.Blockchain.BeaconChain.GetFinalView().GetHeight() >= chain.Blockchain.config.ChainParams.ConsensusV4Height {
+		for i, v := range committees {
+			if (i % MaxSubsetCommittees) == (proposerPk % MaxSubsetCommittees) {
+				res = append(res, v)
+			}
+		}
+	} else {
+		res = committees
+	}
+	return res
 }
 
 func (chain *ShardChain) CommitteesFromViewHashForShard(
-	committeeHash, subsetHash common.Hash, shardID byte, threshold int,
-) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
-	return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
+	committeeHash common.Hash, shardID byte,
+) ([]incognitokey.CommitteePublicKey, error) {
+	return []incognitokey.CommitteePublicKey{}, nil
 }
 
 func (chain *ShardChain) GetSigningCommittees(
 	committees []incognitokey.CommitteePublicKey,
-	block types.BlockInterface, threshold int,
+	block types.BlockInterface,
 ) ([]incognitokey.CommitteePublicKey, error) {
-	return chain.Blockchain.getCommitteesForSigning(committees, block, threshold)
+	return chain.Blockchain.getCommitteesForSigning(committees, block)
 }

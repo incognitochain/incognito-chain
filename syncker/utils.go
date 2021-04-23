@@ -3,7 +3,6 @@ package syncker
 import (
 	"reflect"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -80,7 +79,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	}
 
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
-		signingCommittees, err := chain.GetSigningCommittees(committees, sameCommitteeBlock[i], blockchain.MaxSubsetCommittees)
+		signingCommittees, err := chain.GetSigningCommittees(committees, sameCommitteeBlock[i])
 		if err != nil {
 			return 0, err
 		}

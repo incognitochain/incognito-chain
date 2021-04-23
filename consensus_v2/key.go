@@ -118,8 +118,12 @@ func (engine *Engine) VerifyData(data []byte, sig string, publicKey string, cons
 	return engine.currentMiningProcess.ValidateData(data, sig, string(mapPublicKey[common.BridgeConsensus]))
 }
 
-func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error {
-
+func (engine *Engine) ValidateProducerPosition(
+	blk types.BlockInterface,
+	lastProposerIdx int,
+	committee []incognitokey.CommitteePublicKey,
+	lenProposers int,
+) error {
 	//check producer,proposer,agg sig with this version
 	producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
 	if blk.GetVersion() == 1 {
@@ -134,7 +138,7 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 		//validate producer
 		producer := blk.GetProducer()
 		produceTime := blk.GetProduceTime()
-		tempProducerID := blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), minCommitteeSize)
+		tempProducerID := blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), lenProposers)
 		tempProducer := committee[tempProducerID]
 		b58Str, _ := tempProducer.ToBase58()
 		if strings.Compare(b58Str, producer) != 0 {
@@ -144,7 +148,7 @@ func (engine *Engine) ValidateProducerPosition(blk types.BlockInterface, lastPro
 		//validate proposer
 		proposer := blk.GetProposer()
 		proposeTime := blk.GetProposeTime()
-		tempProducerID = blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(proposeTime), minCommitteeSize)
+		tempProducerID = blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(proposeTime), lenProposers)
 		tempProducer = committee[tempProducerID]
 		b58Str, _ = tempProducer.ToBase58()
 		if strings.Compare(b58Str, proposer) != 0 {

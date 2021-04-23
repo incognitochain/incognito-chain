@@ -356,6 +356,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchain *BlockChain, beaconBlock *types.BeaconBlock, isVerifySig bool) error {
 	//verify producer via index
 	startTimeVerifyWithBestState := time.Now()
+
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(beaconBlock, beaconBestState.BeaconProposerIndex, beaconBestState.GetBeaconCommittee(), beaconBestState.MinBeaconCommitteeSize); err != nil {
 		return err
 	}
@@ -648,7 +649,6 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	shardState types.ShardState,
 ) error {
 	beaconHashForCommittee := shardState.CommitteeFromBlock
-	subsetCommitteeHash := shardState.SubsetCommitteeFromBlock
 
 	Logger.log.Infof("Add Missing Signature | ShardState %+v", shardState)
 	Logger.log.Infof("Add Missing Signature | committee from block %+v", beaconHashForCommittee)
@@ -660,9 +660,13 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	committees, ok := cacheCommittees[beaconHashForCommittee]
 	if !ok {
 		var err error
-		committees, _, err = bc.BeaconChain.CommitteesFromViewHashForShard(beaconHashForCommittee, subsetCommitteeHash, shardID, MaxSubsetCommittees)
+		committees, err = bc.BeaconChain.CommitteesFromViewHashForShard(beaconHashForCommittee, shardID)
 		if err != nil {
 			return err
+		}
+		//TODO: @tin recalculate committees list
+		if curView.BeaconHeight >= bc.config.ChainParams.ConsensusV4Height {
+
 		}
 		cacheCommittees[beaconHashForCommittee] = committees
 	}

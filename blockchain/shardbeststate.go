@@ -421,7 +421,7 @@ func InitShardCommitteeStateV2(
 			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
 			panic(err)
 		}
-		signingCommittees, err = bc.getCommitteesForSigning(committees, block, MaxSubsetCommittees)
+		signingCommittees, err = bc.getCommitteesForSigning(committees, block)
 		if err != nil {
 			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
 			panic(err)
@@ -430,7 +430,6 @@ func InitShardCommitteeStateV2(
 	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(
 		signingCommittees,
 		block.Header.CommitteeFromBlock,
-		block.Header.SubsetCommitteesFromBlock,
 	)
 
 	return shardCommitteeState
@@ -454,12 +453,11 @@ func (shardBestState *ShardBestState) upgradeCommitteeEngineV2(bc *BlockChain) e
 
 	tempBlock := &types.ShardBlock{}
 	tempBlock.Header.CommitteeFromBlock = shardBestState.shardCommitteeState.GetCommitteeFromBlock()
-	tempBlock.Header.SubsetCommitteesFromBlock = shardBestState.shardCommitteeState.SubsetCommitteesFromBlock()
 	committees, err := bc.getShardCommitteeFromBeaconHash(tempBlock.Header.CommitteeFromBlock, shardBestState.ShardID)
 	if err != nil {
 		return err
 	}
-	signingCommittees, err := bc.getCommitteesForSigning(committees, tempBlock, MaxSubsetCommittees)
+	signingCommittees, err := bc.getCommitteesForSigning(committees, tempBlock)
 	if err != nil {
 		Logger.log.Error(NewBlockChainError(InitShardStateError, err))
 		panic(err)
@@ -467,7 +465,6 @@ func (shardBestState *ShardBestState) upgradeCommitteeEngineV2(bc *BlockChain) e
 	newShardCommitteeStateV2 := committeestate.NewShardCommitteeStateV2WithValue(
 		signingCommittees,
 		tempBlock.CommitteeFromBlock(),
-		tempBlock.SubsetCommitteesFromBlock(),
 	)
 
 	shardBestState.shardCommitteeState = newShardCommitteeStateV2
@@ -498,28 +495,6 @@ func (shardBestState *ShardBestState) verifyCommitteeFromBlock(
 				return NewBlockChainError(WrongBlockHeightError,
 					fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
 						committeeFinalViewBlock.Header.Hash(), oldCommitteeFromBlock.Header.Hash()))
-			}
-		}
-	}
-	if committeeFinalViewBlock.Header.Height >= blockchain.config.ChainParams.ConsensusV4Height {
-		if !shardBestState.shardCommitteeState.SubsetCommitteesFromBlock().IsZeroValue() {
-			oldSubsetCommitteeFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.shardCommitteeState.SubsetCommitteesFromBlock())
-			if err != nil {
-				return err
-			}
-			newSubsetCommitteeFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.SubsetCommitteesFromBlock)
-			if err != nil {
-				return err
-			}
-			if oldSubsetCommitteeFromBlock.Header.Height >= newSubsetCommitteeFromBlock.Header.Height {
-				return NewBlockChainError(WrongBlockHeightError,
-					fmt.Errorf("Height of New Shard Block's Subset Committee From Block %+v is smaller than current Subset Committee From Block View %+v",
-						newSubsetCommitteeFromBlock.Header.Hash(), oldSubsetCommitteeFromBlock.Header.Hash()))
-			}
-			if newSubsetCommitteeFromBlock.Header.Height < committeeFinalViewBlock.Header.Height {
-				return NewBlockChainError(WrongBlockHeightError,
-					fmt.Errorf("Height of New Shard Block's Subset Committee From Block %+v is smaller than new Committee From Block View %+v",
-						newSubsetCommitteeFromBlock.Header.Hash(), committeeFinalViewBlock.Header.Hash()))
 			}
 		}
 	}
