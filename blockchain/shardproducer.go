@@ -200,7 +200,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		NewShardEnvBuilder().
 		BuildBeaconInstructions(beaconInstructions).
 		BuildShardID(shardBestState.ShardID).
-		BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
+		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfFixedBlockValidators).
 		BuildShardHeight(shardBestState.ShardHeight).
 		Build()
 
@@ -539,19 +539,20 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 		Logger.log.Info("ShardID", shardID)
 
-		maxShardCommitteeSize := view.MaxShardCommitteeSize - NumberOfFixedShardBlockValidators
+		numberOfFixedShardBlockValidators := blockchain.config.ChainParams.NumberOfFixedBlockValidators
+		maxShardCommitteeSize := view.MaxShardCommitteeSize - numberOfFixedShardBlockValidators
 		var minShardCommitteeSize int
-		if view.MinShardCommitteeSize-NumberOfFixedShardBlockValidators < 0 {
+		if view.MinShardCommitteeSize-numberOfFixedShardBlockValidators < 0 {
 			minShardCommitteeSize = 0
 		} else {
-			minShardCommitteeSize = view.MinShardCommitteeSize - NumberOfFixedShardBlockValidators
+			minShardCommitteeSize = view.MinShardCommitteeSize - numberOfFixedShardBlockValidators
 		}
 		epoch := blockchain.GetEpochByHeight(beaconHeight)
 		if common.IndexOfUint64(epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 			swapOrConfirmShardSwapInstruction, shardCommittees = createShardSwapActionForKeyListV2(
 				blockchain.config.GenesisParams,
 				shardCommittees,
-				NumberOfFixedShardBlockValidators,
+				numberOfFixedShardBlockValidators,
 				blockchain.config.ChainParams.ActiveShards,
 				shardID,
 				epoch,
@@ -565,7 +566,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 				BuildShardHeight(view.ShardHeight).
 				BuildOffset(blockchain.config.ChainParams.Offset).
 				BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
-				BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
+				BuildNumberOfFixedBlockValidators(numberOfFixedShardBlockValidators).
 				Build()
 			tempSwapInstruction, shardPendingValidators, shardCommittees, err = view.shardCommitteeEngine.GenerateSwapInstruction(env)
 			if err != nil {
