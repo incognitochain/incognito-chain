@@ -10,24 +10,24 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-//AcceptBlockReward store block reward for one subset of committees in shard
-type AcceptBlockReward struct {
+//AcceptBlockRewardV3 store block reward for one subset of committees in shard
+type AcceptBlockRewardV3 struct {
 	subsetID         byte
 	shardID          byte
 	txsFee           map[common.Hash]uint64
 	shardBlockHeight uint64
 }
 
-func NewAcceptBlockReward() *AcceptBlockReward {
-	return &AcceptBlockReward{}
+func NewAcceptBlockRewardV3() *AcceptBlockRewardV3 {
+	return &AcceptBlockRewardV3{}
 }
 
-func NewAcceptBlockRewardWithValue(
+func NewAcceptBlockRewardV3WithValue(
 	subsetID, shardID byte,
 	txsFee map[common.Hash]uint64,
 	shardBlockHeight uint64,
-) *AcceptBlockReward {
-	return &AcceptBlockReward{
+) *AcceptBlockRewardV3 {
+	return &AcceptBlockRewardV3{
 		subsetID:         subsetID,
 		shardID:          shardID,
 		txsFee:           txsFee,
@@ -35,33 +35,33 @@ func NewAcceptBlockRewardWithValue(
 	}
 }
 
-func (a *AcceptBlockReward) SubsetID() byte {
+func (a *AcceptBlockRewardV3) SubsetID() byte {
 	return a.subsetID
 }
 
-func (a *AcceptBlockReward) ShardID() byte {
+func (a *AcceptBlockRewardV3) ShardID() byte {
 	return a.shardID
 }
 
 //read only function
-func (a *AcceptBlockReward) TxsFee() map[common.Hash]uint64 {
+func (a *AcceptBlockRewardV3) TxsFee() map[common.Hash]uint64 {
 	return a.txsFee
 }
 
-func (a *AcceptBlockReward) ShardBlockHeight() uint64 {
+func (a *AcceptBlockRewardV3) ShardBlockHeight() uint64 {
 	return a.shardBlockHeight
 }
 
-func (a *AcceptBlockReward) IsEmpty() bool {
-	return reflect.DeepEqual(a, NewAcceptBlockReward())
+func (a *AcceptBlockRewardV3) IsEmpty() bool {
+	return reflect.DeepEqual(a, NewAcceptBlockRewardV3())
 }
 
-func (a *AcceptBlockReward) GetType() string {
-	return ACCEPT_BLOCK_REWARD_ACTION
+func (a *AcceptBlockRewardV3) GetType() string {
+	return ACCEPT_BLOCK_REWARD_ACTION_V3
 }
 
-func (a *AcceptBlockReward) StringArr() []string {
-	acceptBlockRewardStr := []string{ACCEPT_BLOCK_REWARD_ACTION}
+func (a *AcceptBlockRewardV3) StringArr() []string {
+	acceptBlockRewardStr := []string{ACCEPT_BLOCK_REWARD_ACTION_V3}
 	acceptBlockRewardStr = append(acceptBlockRewardStr, strconv.Itoa(int(a.shardID)))
 	acceptBlockRewardStr = append(acceptBlockRewardStr, strconv.Itoa(int(a.subsetID)))
 	content, _ := json.Marshal(a.txsFee)
@@ -70,15 +70,15 @@ func (a *AcceptBlockReward) StringArr() []string {
 	return acceptBlockRewardStr
 }
 
-func ValidateAndImportAcceptBlockRewardInstructionFromString(instruction []string) (*AcceptBlockReward, error) {
+func ValidateAndImportAcceptBlockRewardInstructionFromString(instruction []string) (*AcceptBlockRewardV3, error) {
 	if err := ValidateAcceptBlockRewardInstructionSanity(instruction); err != nil {
 		return nil, err
 	}
 	return ImportAcceptBlockRewardInstructionFromString(instruction)
 }
 
-func ImportAcceptBlockRewardInstructionFromString(instruction []string) (*AcceptBlockReward, error) {
-	acceptBlockRewardIns := NewAcceptBlockReward()
+func ImportAcceptBlockRewardInstructionFromString(instruction []string) (*AcceptBlockRewardV3, error) {
+	acceptBlockRewardIns := NewAcceptBlockRewardV3()
 	shardID, err := strconv.Atoi(instruction[1])
 	if err != nil {
 		return acceptBlockRewardIns, err
@@ -110,7 +110,7 @@ func ValidateAcceptBlockRewardInstructionSanity(instruction []string) error {
 	if len(instruction) != 5 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
-	if instruction[0] != ACCEPT_BLOCK_REWARD_ACTION {
+	if instruction[0] != ACCEPT_BLOCK_REWARD_ACTION_V3 {
 		return fmt.Errorf("invalid accept block reward action, %+v", instruction)
 	}
 	shardID, err := strconv.Atoi(instruction[1])
@@ -118,7 +118,7 @@ func ValidateAcceptBlockRewardInstructionSanity(instruction []string) error {
 		return err
 	}
 
-	if shardID < 0 || shardID > 9 {
+	if shardID < 0 || shardID > common.MaxShardNumber {
 		return errors.New("shardID is out of range for byte")
 	}
 

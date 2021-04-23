@@ -1,7 +1,8 @@
-package metadata
+package instruction
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"strconv"
 
 	// "errors"
@@ -9,16 +10,12 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-const (
-	SHARD_REWARD_INST = "shardRewardInst"
-)
-
 type ShardBlockRewardInfo struct {
 	ShardReward map[common.Hash]uint64
 	Epoch       uint64
 }
 
-type AcceptedBlockRewardInfo struct {
+type AcceptBlockRewardV1 struct {
 	ShardID          byte
 	TxsFee           map[common.Hash]uint64
 	ShardBlockHeight uint64
@@ -37,7 +34,7 @@ func BuildInstForShardReward(reward map[common.Hash]uint64, epoch uint64, shardI
 	}
 
 	returnedInst := []string{
-		strconv.Itoa(ShardBlockRewardRequestMeta),
+		strconv.Itoa(ACCEPT_BLOCK_REWARD_ACTION_V1),
 		strconv.Itoa(int(shardID)),
 		SHARD_REWARD_INST,
 		string(contentStr),
@@ -55,22 +52,22 @@ func NewShardBlockRewardInfoFromString(inst string) (*ShardBlockRewardInfo, erro
 	return Ins, nil
 }
 
-func NewAcceptedBlockRewardInfo(
+func NewAcceptBlockRewardV1WithValue(
 	shardID byte,
 	txsFee map[common.Hash]uint64,
 	shardBlockHeight uint64,
-) *AcceptedBlockRewardInfo {
-	return &AcceptedBlockRewardInfo{
+) *AcceptBlockRewardV1 {
+	return &AcceptBlockRewardV1{
 		ShardID:          shardID,
 		TxsFee:           txsFee,
 		ShardBlockHeight: shardBlockHeight,
 	}
 }
 
-func NewAcceptedBlockRewardInfoFromStr(
+func NewAcceptedBlockRewardV1FromString(
 	inst string,
-) (*AcceptedBlockRewardInfo, error) {
-	Ins := &AcceptedBlockRewardInfo{}
+) (*AcceptBlockRewardV1, error) {
+	Ins := &AcceptBlockRewardV1{}
 	err := json.Unmarshal([]byte(inst), Ins)
 	if err != nil {
 		return nil, err
@@ -78,14 +75,14 @@ func NewAcceptedBlockRewardInfoFromStr(
 	return Ins, nil
 }
 
-func (blockRewardInfo *AcceptedBlockRewardInfo) GetStringFormat() ([]string, error) {
+func (blockRewardInfo *AcceptBlockRewardV1) GetStringFormat() ([]string, error) {
 	content, err := json.Marshal(blockRewardInfo)
 	if err != nil {
 		return nil, err
 	}
 	return []string{
-		strconv.Itoa(AcceptedBlockRewardInfoMeta),
-		strconv.Itoa(BeaconOnly),
+		strconv.Itoa(metadata.AcceptedBlockRewardInfoMeta),
+		strconv.Itoa(metadata.BeaconOnly),
 		string(content),
 	}, nil
 }

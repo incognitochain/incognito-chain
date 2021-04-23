@@ -9,7 +9,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 type duplicateKeyStakeInstruction struct {
@@ -272,16 +271,17 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 
 	acceptedRewardInstructions := []string{}
 
-	if curView.BeaconHeight >= blockchain.config.ChainParams.ConsensusV4Height {
+	if shardBlock.Header.BeaconHeight >= blockchain.config.ChainParams.ConsensusV4Height {
 		proposerIndex := GetProposerByTimeSlot(common.CalculateTimeSlot(shardBlock.GetProposeTime()), blockchain.config.ChainParams.NumberOfShardFixedBlockValidators)
 		subsetID := proposerIndex % MaxSubsetCommittees
-		accepteRewardInstruction := instruction.NewAcceptBlockRewardWithValue(
+		accepteRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(
 			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height,
 		)
 		acceptedRewardInstructions = accepteRewardInstruction.StringArr()
 	} else {
 		var err error
-		acceptedBlockRewardInfo := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
+		acceptedBlockRewardInfo := instruction.NewAcceptBlockRewardV1WithValue(
+			shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
 		acceptedRewardInstructions, err = acceptedBlockRewardInfo.GetStringFormat()
 		if err != nil {
 			// if err then ignore accepted reward instruction
@@ -677,7 +677,7 @@ func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
 
 	for _, unstakeInstruction := range shardInstructions.unstakeInstructions {
 		for _, tempUnstakePublicKey := range unstakeInstruction.CommitteePublicKeys {
-			// TODO: @hung check why only one transaction but it saied duplciate unstake instruction
+			// TODO: @hung check why only one transaction but it said duplicate unstake instruction
 			if _, ok := validUnstakePublicKeys[tempUnstakePublicKey]; ok {
 				Logger.log.Errorf("SHARD %v | UNSTAKE duplicated unstake instruction %+v ", shardID, tempUnstakePublicKey)
 				continue
