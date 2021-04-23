@@ -62,7 +62,7 @@ type BlockTxsVerifier interface {
 		sView interface{},
 		bcView interface{},
 		txs []metadata.Transaction,
-	) bool
+	) (bool, error)
 	ValidateBatchRangeProof([]metadata.Transaction) (bool, error)
 }
 
@@ -80,7 +80,7 @@ type TxVerifier interface {
 		shardViewRetriever metadata.ShardViewRetriever,
 		beaconViewRetriever metadata.BeaconViewRetriever,
 		txs []metadata.Transaction,
-	) bool
+	) (bool, error)
 	LoadCommitment(
 		tx metadata.Transaction,
 		shardViewRetriever metadata.ShardViewRetriever,

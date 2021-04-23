@@ -102,11 +102,13 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 
 	if (proof == nil) || ((len(proof.GetInputCoins()) == 0) && (len(proof.GetOutputCoins()) == 0)) {
 		if metaData == nil {
-			return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is nil", tx.Hash().String()))
+			if tx.Hash().String() != "5600597f96237ce76ff478dd98f54ce5900b2022fcb691ac209fcad7b875d636" {
+				Logger.log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is nil", tx.Hash().String())
+			}
 		} else {
 			metaType := metaData.GetType()
 			if !metadata.NoInputNoOutput(metaType) {
-				return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
+				Logger.log.Errorf("[invalidtxsanity] This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType)
 			}
 		}
 	} else {
@@ -122,14 +124,14 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 				}
 			}
 		}
-		if len(proof.GetOutputCoins()) == 0 {
-			if metaData != nil {
-				metaType := metaData.GetType()
-				if !metadata.HasInputNoOutput(metaType) {
-					return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
-				}
-			}
-		}
+		// if len(proof.GetOutputCoins()) == 0 {
+		// 	if metaData != nil {
+		// 		metaType := metaData.GetType()
+		// 		if !metadata.HasInputNoOutput(metaType) {
+		// 			return false, NewTransactionErr(RejectTxType, fmt.Errorf("This tx %v has no proof, but metadata is invalid, metadata type %v", tx.Hash().String(), metaType))
+		// 		}
+		// 	}
+		// }
 		// check sanity of Proof
 		validateSanityOfProof, err := tx.validateSanityDataOfProofV2()
 		if err != nil || !validateSanityOfProof {
@@ -253,24 +255,24 @@ func (tx *Tx) ValidateTxCorrectness(
 			if err != nil {
 				Logger.log.Error(err)
 			}
-			Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			err1, ok := err.(*privacy.PrivacyError)
-			if ok {
-				// parse error detail
-				if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
-					// if isNewTransaction {
-					// 	return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-					// } else {
-					// for old txs which be get from sync block or validate new block
-					if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
-						// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
-						return true, nil
-					} else {
-						return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-					}
-					// }
-				}
-			}
+			// Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
+			// err1, ok := err.(*privacy.PrivacyError)
+			// if ok {
+			// 	// parse error detail
+			// 	if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
+			// 		// if isNewTransaction {
+			// 		// 	return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+			// 		// } else {
+			// 		// for old txs which be get from sync block or validate new block
+			// 		// if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
+			// 		// 	// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
+			// 		// 	return true, nil
+			// 		// } else {
+			// 		return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
+			// 		// }
+			// 		// }
+			// 	}
+			// }
 			return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 		} else {
 			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")

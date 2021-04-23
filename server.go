@@ -17,9 +17,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/txpool"
-
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/peerv2"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	"github.com/incognitochain/incognito-chain/syncker"
+	"github.com/incognitochain/incognito-chain/txpool"
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"cloud.google.com/go/storage"
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
@@ -37,15 +41,11 @@ import (
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
-	"github.com/incognitochain/incognito-chain/syncker"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"google.golang.org/api/option"
@@ -401,6 +401,7 @@ func (serverObj *Server) NewServer(
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
+	zkp.InitCheckpoint(serverObj.chainParams.BCHeightBreakPointNewZKP)
 	serverObj.memPool.InitChannelMempool(cPendingTxs, cRemovedTxs)
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
