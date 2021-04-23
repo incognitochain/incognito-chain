@@ -7,7 +7,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"sort"
 )
 
@@ -271,19 +270,20 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 
 	acceptedRewardInstructions := []string{}
 
-	if !shardBlock.Header.SubsetCommitteesFromBlock.IsZeroValue() {
+	if shardBlock.Header.BeaconHeight >= blockchain.config.ChainParams.ConsensusV4Height &&
+		!shardBlock.Header.SubsetCommitteesFromBlock.IsZeroValue() {
 		subsetCommitteesFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.SubsetCommitteesFromBlock)
 		if err != nil {
 			return map[byte]types.ShardState{}, &shardInstruction{}, duplicateKeyStakeInstruction, [][]string{}, []string{}, [][]string{}, err
 		}
 		subsetID := subsetCommitteesFromBlock.Header.Height % MaxSubsetCommittees
-		accepteRewardInstruction := instruction.NewAcceptBlockRewardWithValue(
-			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height,
-		)
+		accepteRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(
+			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
 		acceptedRewardInstructions = accepteRewardInstruction.StringArr()
 	} else {
 		var err error
-		acceptedBlockRewardInfo := metadata.NewAcceptedBlockRewardInfo(shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
+		acceptedBlockRewardInfo := instruction.NewAcceptBlockRewardV1WithValue(
+			shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
 		acceptedRewardInstructions, err = acceptedBlockRewardInfo.GetStringFormat()
 		if err != nil {
 			// if err then ignore accepted reward instruction

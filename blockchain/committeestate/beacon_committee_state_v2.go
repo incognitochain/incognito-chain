@@ -218,3 +218,65 @@ func (b *BeaconCommitteeStateV2) getDataForUpgrading(env *BeaconCommitteeStateEn
 	return beaconCommittee, shardCommittee, shardSubstitute, shardCommonPool, numberOfAssignedCandidates,
 		autoStake, rewardReceiver, stakingTx, swapRule
 }
+
+//SplitReward ...
+func (engine *BeaconCommitteeStateV2) SplitReward(
+	env *SplitRewardEnvironment) (
+	map[common.Hash]uint64, map[common.Hash]uint64,
+	map[common.Hash]uint64, map[common.Hash]uint64, error,
+) {
+	devPercent := uint64(env.DAOPercent)
+	allCoinTotalReward := env.TotalReward
+	rewardForBeacon := map[common.Hash]uint64{}
+	rewardForShard := map[common.Hash]uint64{}
+	rewardForIncDAO := map[common.Hash]uint64{}
+	rewardForCustodian := map[common.Hash]uint64{}
+	lenBeaconCommittees := uint64(len(engine.getBeaconCommittee()))
+	lenShardCommittees := uint64(len(engine.getShardCommittee()[env.ShardID]))
+
+	if len(allCoinTotalReward) == 0 {
+		Logger.log.Info("Beacon Height %+v, 😭 found NO reward", env.BeaconHeight)
+		return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
+	}
+
+	for key, totalReward := range allCoinTotalReward {
+		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
+		totalRewardForShardAndBeaconValidators := totalReward - totalRewardForDAOAndCustodians
+		shardWeight := float64(lenShardCommittees)
+		beaconWeight := 2 * float64(lenBeaconCommittees) / float64(len(engine.shardCommittee))
+		totalValidatorWeight := shardWeight + beaconWeight
+
+		rewardForShard[key] = uint64(shardWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)
+		Logger.log.Infof("[test-salary] totalRewardForDAOAndCustodians tokenID %v - %v\n",
+			key.String(), totalRewardForDAOAndCustodians)
+
+		if env.IsSplitRewardForCustodian {
+			rewardForCustodian[key] += env.PercentCustodianReward * totalRewardForDAOAndCustodians / 100
+			rewardForIncDAO[key] += totalRewardForDAOAndCustodians - rewardForCustodian[key]
+		} else {
+			rewardForIncDAO[key] += totalRewardForDAOAndCustodians
+		}
+		rewardForBeacon[key] += totalReward - (rewardForShard[key] + totalRewardForDAOAndCustodians)
+	}
+
+	return rewardForBeacon, rewardForShard, rewardForIncDAO, rewardForCustodian, nil
+}
+
+func (b *beaconCommitteeStateSlashingBase) addData(env *BeaconCommitteeStateEnvironment) {
+	env.newUnassignedCommonPool = common.DeepCopyString(b.shardCommonPool[b.numberOfAssignedCandidates:])
+	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
+	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
+	env.shardCommittee = make(map[byte][]string)
+	for shardID, committees := range b.shardCommittee {
+		env.shardCommittee[shardID] = common.DeepCopyString(committees)
+	}
+	env.shardSubstitute = make(map[byte][]string)
+	for shardID, substitutes := range b.shardSubstitute {
+		env.shardSubstitute[shardID] = common.DeepCopyString(substitutes)
+	}
+	env.numberOfValidator = make([]int, env.ActiveShards)
+	for i := 0; i < env.ActiveShards; i++ {
+		env.numberOfValidator[i] += len(b.shardCommittee[byte(i)])
+		env.numberOfValidator[i] += len(b.shardSubstitute[byte(i)])
+	}
+}

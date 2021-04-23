@@ -29,7 +29,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 		case instruction.SHARD_SUBSET_REWARD_ACTION:
 			continue
 		}
-		if inst[0] == instruction.ACCEPT_BLOCK_REWARD_ACTION {
+		if inst[0] == instruction.ACCEPT_BLOCK_REWARD_ACTION_V3 {
 			acceptBlockRewardIns, err := instruction.ValidateAndImportAcceptBlockRewardInstructionFromString(inst)
 			if err != nil {
 				return err
@@ -58,7 +58,7 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 		}
 		switch metaType {
 		case metadata.AcceptedBlockRewardInfoMeta:
-			acceptedBlkRewardInfo, err := metadata.NewAcceptedBlockRewardInfoFromStr(inst[2])
+			acceptedBlkRewardInfo, err := instruction.NewAcceptedBlockRewardV1FromString(inst[2])
 			if err != nil {
 				return err
 			}
@@ -95,7 +95,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				continue
 			case instruction.FINISH_SYNC_ACTION:
 				continue
-			case instruction.ACCEPT_BLOCK_REWARD_ACTION:
+			case instruction.ACCEPT_BLOCK_REWARD_ACTION_V3:
 				continue
 			}
 			if l[0] == instruction.SHARD_SUBSET_REWARD_ACTION {
@@ -179,8 +179,8 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				}
 			}
 			switch metaType {
-			case metadata.ShardBlockRewardRequestMeta:
-				shardRewardInfo, err := metadata.NewShardBlockRewardInfoFromString(l[3])
+			case instruction.ACCEPT_BLOCK_REWARD_ACTION_V1:
+				shardRewardInfo, err := instruction.NewShardBlockRewardInfoFromString(l[3])
 				if err != nil {
 					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
@@ -281,7 +281,7 @@ func calculateRewardV3(
 				}
 			}
 
-			env := committeestate.NewSplitRewardEnvironment(
+			env := committeestate.NewSplitRewardEnvironmentV3(
 				byte(shardID),
 				byte(subsetID),
 				byte(maxSubsetsCommittee),
@@ -349,15 +349,14 @@ func calculateReward(
 			}
 		}
 
-		env := committeestate.NewSplitRewardEnvironment(
+		env := committeestate.NewSplitRewardEnvironmentV1(
 			byte(id),
-			0, // temp input,
-			0, // temp input,
 			beaconHeight,
 			totalRewards[id],
 			isSplitRewardForCustodian,
 			percentCustodianRewards,
 			percentForIncognitoDAO,
+			numberOfActiveShards,
 		)
 		rewardForBeacon, rewardForShard, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 		if err != nil {
@@ -395,7 +394,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForCustodian := make(map[common.Hash]uint64)
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 
-	if beaconBestView.BeaconHeight >= blockchain.config.ChainParams.ConsensusV4Height {
+	if curView.BeaconHeight >= blockchain.config.ChainParams.ConsensusV4Height {
 		totalRewardForBeacon,
 			totalRewardForShardSubset,
 			totalRewardForIncDAO,
@@ -504,7 +503,7 @@ func (blockchain *BlockChain) buildInstRewardForShards(epoch uint64, totalReward
 	resInst := [][]string{}
 	for i, reward := range totalRewards {
 		if len(reward) > 0 {
-			shardRewardInst, err := metadata.BuildInstForShardReward(reward, epoch, byte(i))
+			shardRewardInst, err := instruction.BuildInstForShardReward(reward, epoch, byte(i))
 			if err != nil {
 				Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
 				return nil, err

@@ -10,6 +10,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/stretchr/testify/assert"
@@ -501,12 +502,12 @@ func TestBlockChain_addShardRewardRequestToBeacon(t *testing.T) {
 	config := Config{}
 	config.ChainParams = &ChainMainParam
 	sDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, wrarperDB)
-	acceptedBlockRewardInfoBase := metadata.NewAcceptedBlockRewardInfo(0, make(map[common.Hash]uint64), 2)
+	acceptedBlockRewardInfoBase := instruction.NewAcceptBlockRewardV1WithValue(0, make(map[common.Hash]uint64), 2)
 	acceptedBlockRewardInfoBaseInst, _ := acceptedBlockRewardInfoBase.GetStringFormat()
 	txFee := make(map[common.Hash]uint64)
 	txFee1 := uint64(10000)
 	txFee[common.PRVCoinID] = txFee1
-	acceptedBlockRewardInfo1 := metadata.NewAcceptedBlockRewardInfo(0, txFee, 2)
+	acceptedBlockRewardInfo1 := instruction.NewAcceptBlockRewardV1WithValue(0, txFee, 2)
 	acceptedBlockRewardInfo1Inst, _ := acceptedBlockRewardInfo1.GetStringFormat()
 	type fields struct {
 		config Config
@@ -693,8 +694,8 @@ func TestBlockChain_buildInstRewardForShards(t *testing.T) {
 	totalRewardShard0_1[common.PRVCoinID] = 1000
 	totalRewardShard1_1 := make(map[common.Hash]uint64)
 	totalRewardShard1_1[common.PRVCoinID] = 1123
-	rewardInstShard0_1, _ := metadata.BuildInstForShardReward(totalRewardShard0_1, 1, 0)
-	rewardInstShard1_1, _ := metadata.BuildInstForShardReward(totalRewardShard1_1, 1, 1)
+	rewardInstShard0_1, _ := instruction.BuildInstForShardReward(totalRewardShard0_1, 1, 0)
+	rewardInstShard1_1, _ := instruction.BuildInstForShardReward(totalRewardShard1_1, 1, 1)
 	tests := []struct {
 		name    string
 		args    args
