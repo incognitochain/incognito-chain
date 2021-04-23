@@ -60,7 +60,7 @@ func (a *AcceptBlockRewardV3) GetType() string {
 	return ACCEPT_BLOCK_REWARD_ACTION_V3
 }
 
-func (a *AcceptBlockRewardV3) StringArr() []string {
+func (a *AcceptBlockRewardV3) String() []string {
 	acceptBlockRewardStr := []string{ACCEPT_BLOCK_REWARD_ACTION_V3}
 	acceptBlockRewardStr = append(acceptBlockRewardStr, strconv.Itoa(int(a.shardID)))
 	acceptBlockRewardStr = append(acceptBlockRewardStr, strconv.Itoa(int(a.subsetID)))

@@ -503,12 +503,12 @@ func TestBlockChain_addShardRewardRequestToBeacon(t *testing.T) {
 	config.ChainParams = &ChainMainParam
 	sDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, wrarperDB)
 	acceptedBlockRewardInfoBase := instruction.NewAcceptBlockRewardV1WithValue(0, make(map[common.Hash]uint64), 2)
-	acceptedBlockRewardInfoBaseInst, _ := acceptedBlockRewardInfoBase.GetStringFormat()
+	acceptedBlockRewardInfoBaseInst, _ := acceptedBlockRewardInfoBase.String()
 	txFee := make(map[common.Hash]uint64)
 	txFee1 := uint64(10000)
 	txFee[common.PRVCoinID] = txFee1
 	acceptedBlockRewardInfo1 := instruction.NewAcceptBlockRewardV1WithValue(0, txFee, 2)
-	acceptedBlockRewardInfo1Inst, _ := acceptedBlockRewardInfo1.GetStringFormat()
+	acceptedBlockRewardInfo1Inst, _ := acceptedBlockRewardInfo1.String()
 	type fields struct {
 		config Config
 	}

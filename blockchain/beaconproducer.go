@@ -268,29 +268,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	duplicateKeyStakeInstruction := &duplicateKeyStakeInstruction{}
 	bridgeInstructions := [][]string{}
 
-	acceptedRewardInstructions := []string{}
-
-	if shardBlock.Header.BeaconHeight >= blockchain.config.ChainParams.ConsensusV4Height &&
-		!shardBlock.Header.SubsetCommitteesFromBlock.IsZeroValue() {
-		subsetCommitteesFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.SubsetCommitteesFromBlock)
-		if err != nil {
-			return map[byte]types.ShardState{}, &shardInstruction{}, duplicateKeyStakeInstruction, [][]string{}, []string{}, [][]string{}, err
-		}
-		subsetID := subsetCommitteesFromBlock.Header.Height % MaxSubsetCommittees
-		accepteRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(
-			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
-		acceptedRewardInstructions = accepteRewardInstruction.StringArr()
-	} else {
-		var err error
-		acceptedBlockRewardInfo := instruction.NewAcceptBlockRewardV1WithValue(
-			shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
-		acceptedRewardInstructions, err = acceptedBlockRewardInfo.GetStringFormat()
-		if err != nil {
-			// if err then ignore accepted reward instruction
-			acceptedRewardInstructions = []string{}
-		}
-	}
-
+	acceptedRewardInstruction := curView.getAcceptBlockRewardInstruction(shardID, shardBlock, blockchain)
 	//Get Shard State from Block
 	shardStates[shardID] = types.NewShardState(
 		shardBlock.ValidationData,
@@ -342,7 +320,39 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	statefulActions := blockchain.collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 
-	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstructions, statefulActions, nil
+	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstruction, statefulActions, nil
+}
+
+func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
+	shardID byte,
+	shardBlock *types.ShardBlock,
+	blockchain *BlockChain,
+) []string {
+
+	if shardBlock.Header.BeaconHeight >= blockchain.config.ChainParams.ConsensusV4Height &&
+		!shardBlock.Header.SubsetCommitteesFromBlock.IsZeroValue() {
+
+		subsetCommitteesFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.SubsetCommitteesFromBlock)
+		if err != nil {
+			return []string{}
+		}
+		subsetID := subsetCommitteesFromBlock.Header.Height % MaxSubsetCommittees
+		accepteRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(
+			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
+
+		return accepteRewardInstruction.String()
+	} else {
+
+		acceptedBlockRewardInfo := instruction.NewAcceptBlockRewardV1WithValue(
+			shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
+		acceptedRewardInstructions, err := acceptedBlockRewardInfo.String()
+		if err != nil {
+			// if err then ignore accepted reward instruction
+			return []string{}
+		}
+
+		return acceptedRewardInstructions
+	}
 }
 
 //GenerateInstruction generate instruction for new beacon block

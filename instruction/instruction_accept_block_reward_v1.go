@@ -75,7 +75,7 @@ func NewAcceptedBlockRewardV1FromString(
 	return Ins, nil
 }
 
-func (blockRewardInfo *AcceptBlockRewardV1) GetStringFormat() ([]string, error) {
+func (blockRewardInfo *AcceptBlockRewardV1) String() ([]string, error) {
 	content, err := json.Marshal(blockRewardInfo)
 	if err != nil {
 		return nil, err
