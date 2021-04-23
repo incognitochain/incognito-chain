@@ -1502,6 +1502,26 @@ func Test_actorV2_processIfBlockGetEnoughVote(t *testing.T) {
 }
 
 func Test_actorV2_processWithEnoughVotes(t *testing.T) {
+
+	logger := initLog()
+	common.TIMESLOT = 1
+	initTestParams()
+	prevHash, _ := common.Hash{}.NewHashFromStr("12345")
+	validationData := consensustypes.ValidationData{
+		ValidatiorsIdx: []int{1, 2, 3, 4},
+	}
+	validationDataStr, _ := consensustypes.EncodeValidationData(validationData)
+
+	errShardBlock := &types.ShardBlock{
+		Header: types.ShardHeader{
+			PreviousBlockHash: *prevHash,
+		},
+		ValidationData: validationDataStr,
+	}
+
+	errReplaceValidationDataShardChain := &mockchain.Chain{}
+	//errReplaceValidationDataShardChain.On("ReplacePreviousValidationData", *prevHash, )
+
 	type fields struct {
 		actorBase            actorBase
 		committeeChain       blockchain.Chain
@@ -1524,12 +1544,41 @@ func Test_actorV2_processWithEnoughVotes(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
+
 		{
-			name:    "",
-			fields:  fields{},
-			args:    args{},
+			name: "Fail to insert shard block",
+			fields: fields{
+				actorBase: actorBase{
+					logger: logger,
+				},
+			},
+			args: args{
+				v: &ProposeBlockInfo{
+					block: errShardBlock,
+				},
+			},
 			wantErr: true,
 		},
+		{
+			name: "Fail to insert shard block",
+			fields: fields{
+				actorBase: actorBase{
+					logger: logger,
+				},
+			},
+			args: args{
+				v: &ProposeBlockInfo{
+					block: errShardBlock,
+				},
+			},
+			wantErr: true,
+		},
+		/*{*/
+		//name:    "Valid Input beacon block",
+		//fields:  fields{},
+		//args:    args{},
+		//wantErr: true,
+		/*},*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

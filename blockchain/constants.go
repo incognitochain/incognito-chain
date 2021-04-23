@@ -26,8 +26,6 @@ const (
 	TransactionBatchSize               = 30
 	SpareTime                          = 1000             // in mili-second
 	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
-	NumberOfFixedBeaconBlockValidators = 4
-	NumberOfFixedShardBlockValidators  = 4
 	divideShardCommitteesPartThreshold = 2
 	Duration                           = 1000000
 	MaxSubsetCommittees                = 2

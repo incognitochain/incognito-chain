@@ -42,64 +42,64 @@ to differentiate network as well as addresses and keys for one network
 from those intended for use on another network
 */
 type Params struct {
-	Name                             string // Name defines a human-readable identifier for the network.
-	Net                              uint32 // Net defines the magic bytes used to identify the network.
-	DefaultPort                      string // DefaultPort defines the default peer-to-peer port for the network.
-	GenesisParams                    *GenesisParams
-	MaxShardCommitteeSize            int
-	MinShardCommitteeSize            int
-	MaxBeaconCommitteeSize           int
-	MinBeaconCommitteeSize           int
-	MinShardBlockInterval            time.Duration
-	MaxShardBlockCreation            time.Duration
-	MinBeaconBlockInterval           time.Duration
-	MaxBeaconBlockCreation           time.Duration
-	NumberOfFixedBlockValidators     int
-	StakingAmountShard               uint64
-	ActiveShards                     int
-	GenesisBeaconBlock               *types.BeaconBlock // GenesisBlock defines the first block of the chain.
-	GenesisShardBlock                *types.ShardBlock  // GenesisBlock defines the first block of the chain.
-	BasicReward                      uint64
-	Epoch                            uint64
-	EpochV2                          uint64
-	EpochV2BreakPoint                uint64
-	RandomTime                       uint64
-	RandomTimeV2                     uint64
-	SlashLevels                      []SlashLevel
-	EthContractAddressStr            string // smart contract of ETH for bridge
-	Offset                           int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
-	SwapOffset                       int    // is used for case that good producers length is equal to max committee size
-	MaxSwapOrAssign                  int
-	IncognitoDAOAddress              string
-	CentralizedWebsitePaymentAddress string //centralized website's pubkey
-	CheckForce                       bool   // true on testnet and false on mainnet
-	ChainVersion                     string
-	AssignOffset                     int
-	ConsensusV2Epoch                 uint64
-	StakingFlowV2                    uint64
-	EnableSlashingStakingFlowV2      uint64
-	ConsensusV4Height                uint64
-	StakingFlowV3                    uint64
-	Timeslot                         uint64
-	BeaconHeightBreakPointBurnAddr   uint64
-	BNBRelayingHeaderChainID         string
-	BTCRelayingHeaderChainID         string
-	BTCDataFolderName                string
-	BNBFullNodeProtocol              string
-	BNBFullNodeHost                  string
-	BNBFullNodePort                  string
-	PortalParams                     map[uint64]PortalParams
-	PortalTokens                     map[string]PortalTokenProcessor
-	PortalFeederAddress              string
-	EpochBreakPointSwapNewKey        []uint64
-	IsBackup                         bool
-	PreloadAddress                   string
-	ReplaceStakingTxHeight           uint64
-	ETHRemoveBridgeSigEpoch          uint64
-	BCHeightBreakPointNewZKP         uint64
-	MissingSignaturePenalty          []signaturecounter.Penalty
-	PortalETHContractAddressStr      string // smart contract of ETH for portal
-	BCHeightBreakPointPortalV3       uint64
+	Name                              string // Name defines a human-readable identifier for the network.
+	Net                               uint32 // Net defines the magic bytes used to identify the network.
+	DefaultPort                       string // DefaultPort defines the default peer-to-peer port for the network.
+	GenesisParams                     *GenesisParams
+	MaxShardCommitteeSize             int
+	MinShardCommitteeSize             int
+	MaxBeaconCommitteeSize            int
+	MinBeaconCommitteeSize            int
+	MinShardBlockInterval             time.Duration
+	MaxShardBlockCreation             time.Duration
+	MinBeaconBlockInterval            time.Duration
+	MaxBeaconBlockCreation            time.Duration
+	NumberOfShardFixedBlockValidators int
+	StakingAmountShard                uint64
+	ActiveShards                      int
+	GenesisBeaconBlock                *types.BeaconBlock // GenesisBlock defines the first block of the chain.
+	GenesisShardBlock                 *types.ShardBlock  // GenesisBlock defines the first block of the chain.
+	BasicReward                       uint64
+	Epoch                             uint64
+	EpochV2                           uint64
+	EpochV2BreakPoint                 uint64
+	RandomTime                        uint64
+	RandomTimeV2                      uint64
+	SlashLevels                       []SlashLevel
+	EthContractAddressStr             string // smart contract of ETH for bridge
+	Offset                            int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
+	SwapOffset                        int    // is used for case that good producers length is equal to max committee size
+	MaxSwapOrAssign                   int
+	IncognitoDAOAddress               string
+	CentralizedWebsitePaymentAddress  string //centralized website's pubkey
+	CheckForce                        bool   // true on testnet and false on mainnet
+	ChainVersion                      string
+	AssignOffset                      int
+	ConsensusV2Epoch                  uint64
+	StakingFlowV2                     uint64
+	EnableSlashingStakingFlowV2       uint64
+	ConsensusV4Height                 uint64
+	StakingFlowV3                     uint64
+	Timeslot                          uint64
+	BeaconHeightBreakPointBurnAddr    uint64
+	BNBRelayingHeaderChainID          string
+	BTCRelayingHeaderChainID          string
+	BTCDataFolderName                 string
+	BNBFullNodeProtocol               string
+	BNBFullNodeHost                   string
+	BNBFullNodePort                   string
+	PortalParams                      map[uint64]PortalParams
+	PortalTokens                      map[string]PortalTokenProcessor
+	PortalFeederAddress               string
+	EpochBreakPointSwapNewKey         []uint64
+	IsBackup                          bool
+	PreloadAddress                    string
+	ReplaceStakingTxHeight            uint64
+	ETHRemoveBridgeSigEpoch           uint64
+	BCHeightBreakPointNewZKP          uint64
+	MissingSignaturePenalty           []signaturecounter.Penalty
+	PortalETHContractAddressStr       string // smart contract of ETH for portal
+	BCHeightBreakPointPortalV3        uint64
 }
 
 type GenesisParams struct {
@@ -217,21 +217,21 @@ func SetupParam() {
 		// blockChain parameters
 		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
 		// GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
-		MinShardBlockInterval:            TestNetMinShardBlkInterval,
-		MaxShardBlockCreation:            TestNetMaxShardBlkCreation,
-		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
-		MaxBeaconBlockCreation:           TestNetMaxBeaconBlkCreation,
-		NumberOfFixedBlockValidators:     4,
-		BasicReward:                      TestnetBasicReward,
-		Epoch:                            TestnetEpoch,
-		RandomTime:                       TestnetRandomTime,
-		Offset:                           TestnetOffset,
-		AssignOffset:                     TestnetAssignOffset,
-		SwapOffset:                       TestnetSwapOffset,
-		EthContractAddressStr:            TestnetETHContractAddressStr,
-		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
-		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		MinShardBlockInterval:             TestNetMinShardBlkInterval,
+		MaxShardBlockCreation:             TestNetMaxShardBlkCreation,
+		MinBeaconBlockInterval:            TestNetMinBeaconBlkInterval,
+		MaxBeaconBlockCreation:            TestNetMaxBeaconBlkCreation,
+		NumberOfShardFixedBlockValidators: 4,
+		BasicReward:                       TestnetBasicReward,
+		Epoch:                             TestnetEpoch,
+		RandomTime:                        TestnetRandomTime,
+		Offset:                            TestnetOffset,
+		AssignOffset:                      TestnetAssignOffset,
+		SwapOffset:                        TestnetSwapOffset,
+		EthContractAddressStr:             TestnetETHContractAddressStr,
+		IncognitoDAOAddress:               TestnetIncognitoDAOAddress,
+		CentralizedWebsitePaymentAddress:  TestnetCentralizedWebsitePaymentAddress,
+		SlashLevels:                       []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -315,21 +315,21 @@ func SetupParam() {
 		// blockChain parameters
 		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
 		// GenesisShardBlock:                CreateGenesisShardBlock(1, Testnet2, Testnet2GenesisBlockTime, genesisParamsTestnet2New),
-		MinShardBlockInterval:            TestNet2MinShardBlkInterval,
-		MaxShardBlockCreation:            TestNet2MaxShardBlkCreation,
-		MinBeaconBlockInterval:           TestNet2MinBeaconBlkInterval,
-		MaxBeaconBlockCreation:           TestNet2MaxBeaconBlkCreation,
-		NumberOfFixedBlockValidators:     4,
-		BasicReward:                      Testnet2BasicReward,
-		Epoch:                            Testnet2Epoch,
-		RandomTime:                       Testnet2RandomTime,
-		Offset:                           Testnet2Offset,
-		AssignOffset:                     Testnet2AssignOffset,
-		SwapOffset:                       Testnet2SwapOffset,
-		EthContractAddressStr:            Testnet2ETHContractAddressStr,
-		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
-		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		MinShardBlockInterval:             TestNet2MinShardBlkInterval,
+		MaxShardBlockCreation:             TestNet2MaxShardBlkCreation,
+		MinBeaconBlockInterval:            TestNet2MinBeaconBlkInterval,
+		MaxBeaconBlockCreation:            TestNet2MaxBeaconBlkCreation,
+		NumberOfShardFixedBlockValidators: 4,
+		BasicReward:                       Testnet2BasicReward,
+		Epoch:                             Testnet2Epoch,
+		RandomTime:                        Testnet2RandomTime,
+		Offset:                            Testnet2Offset,
+		AssignOffset:                      Testnet2AssignOffset,
+		SwapOffset:                        Testnet2SwapOffset,
+		EthContractAddressStr:             Testnet2ETHContractAddressStr,
+		IncognitoDAOAddress:               Testnet2IncognitoDAOAddress,
+		CentralizedWebsitePaymentAddress:  Testnet2CentralizedWebsitePaymentAddress,
+		SlashLevels:                       []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
@@ -410,21 +410,21 @@ func SetupParam() {
 		// blockChain parameters
 		// GenesisBeaconBlock:               CreateGenesisBeaconBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
 		// GenesisShardBlock:                CreateGenesisShardBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
-		MinShardBlockInterval:            MainnetMinShardBlkInterval,
-		MaxShardBlockCreation:            MainnetMaxShardBlkCreation,
-		MinBeaconBlockInterval:           MainnetMinBeaconBlkInterval,
-		MaxBeaconBlockCreation:           MainnetMaxBeaconBlkCreation,
-		NumberOfFixedBlockValidators:     22,
-		BasicReward:                      MainnetBasicReward,
-		Epoch:                            MainnetEpoch,
-		RandomTime:                       MainnetRandomTime,
-		Offset:                           MainnetOffset,
-		SwapOffset:                       MainnetSwapOffset,
-		AssignOffset:                     MainnetAssignOffset,
-		EthContractAddressStr:            MainETHContractAddressStr,
-		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
-		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
+		MinShardBlockInterval:             MainnetMinShardBlkInterval,
+		MaxShardBlockCreation:             MainnetMaxShardBlkCreation,
+		MinBeaconBlockInterval:            MainnetMinBeaconBlkInterval,
+		MaxBeaconBlockCreation:            MainnetMaxBeaconBlkCreation,
+		NumberOfShardFixedBlockValidators: 22,
+		BasicReward:                       MainnetBasicReward,
+		Epoch:                             MainnetEpoch,
+		RandomTime:                        MainnetRandomTime,
+		Offset:                            MainnetOffset,
+		SwapOffset:                        MainnetSwapOffset,
+		AssignOffset:                      MainnetAssignOffset,
+		EthContractAddressStr:             MainETHContractAddressStr,
+		IncognitoDAOAddress:               MainnetIncognitoDAOAddress,
+		CentralizedWebsitePaymentAddress:  MainnetCentralizedWebsitePaymentAddress,
+		SlashLevels:                       []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
 			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
 			//SlashLevel{MinRange: 75, PunishedEpoches: 3},

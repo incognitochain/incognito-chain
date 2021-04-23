@@ -70,7 +70,6 @@ func (s *BeaconChain) GetShardBestViewHeight() map[byte]uint64 {
 }
 
 func (s *BeaconChain) GetCurrentCrossShardHeightToShard(sid byte) map[byte]uint64 {
-
 	res := make(map[byte]uint64)
 	for fromShard, toShardStatus := range s.GetBestView().(*BeaconBestState).LastCrossShardState {
 		for toShard, currentHeight := range toShardStatus {
@@ -336,19 +335,19 @@ func (chain *BeaconChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
 }
 
-//ProposerByTimeSlot ...
-func (chain *BeaconChain) ProposerByTimeSlot(
+func (chain *BeaconChain) GetProposerByTimeSlot(
 	shardID byte, ts int64,
-	committees []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey {
-	lenCommittees := 0
-	if chain.GetFinalView().GetHeight() >= chain.Blockchain.config.ChainParams.ConsensusV4Height {
-		lenCommittees = len(committees)
-	} else {
-		lenCommittees = chain.Blockchain.GetBestStateShard(shardID).MinShardCommitteeSize
-	}
-	id := GetProposerByTimeSlot(ts, lenCommittees)
+	committees []incognitokey.CommitteePublicKey,
+) (incognitokey.CommitteePublicKey, int) {
+	id := GetProposerByTimeSlot(ts, chain.GetBestView().(*BeaconBestState).MinBeaconCommitteeSize)
+	return committees[id], id
+}
 
-	return committees[id]
+func (chain *BeaconChain) SigningCommittees(
+	proposerIndex int,
+	committees []incognitokey.CommitteePublicKey,
+) []incognitokey.CommitteePublicKey {
+	return committees
 }
 
 func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
@@ -378,44 +377,29 @@ func (chain *BeaconChain) CommitteeEngineVersion() int {
 }
 
 func (chain *BeaconChain) CommitteesFromViewHashForShard(
-	committeeHash, subsetCommitteeHash common.Hash, shardID byte, threshold int,
-) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+	committeeHash common.Hash, shardID byte,
+) ([]incognitokey.CommitteePublicKey, error) {
 	_, _, err := chain.Blockchain.GetBeaconBlockByHash(committeeHash)
 	if err != nil {
-		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+		return []incognitokey.CommitteePublicKey{}, err
 	}
 
 	bRH, err := GetBeaconRootsHashByBlockHash(chain.Blockchain.GetBeaconChainDatabase(), committeeHash)
 	if err != nil {
-		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+		return []incognitokey.CommitteePublicKey{}, err
 	}
 
 	stateDB, err := statedb.NewWithPrefixTrie(
 		bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(chain.Blockchain.GetBeaconChainDatabase()))
 	if err != nil {
-		return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+		return []incognitokey.CommitteePublicKey{}, err
 	}
 	committees := statedb.GetOneShardCommittee(stateDB, shardID)
-	res := []incognitokey.CommitteePublicKey{}
-	if chain.GetFinalView().GetHeight() >= chain.Blockchain.config.ChainParams.ConsensusV4Height {
-		subsetCommitteeBlock, _, err := chain.Blockchain.GetBeaconBlockByHash(subsetCommitteeHash)
-		if err != nil {
-			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
-		}
-		for i, v := range committees {
-			if uint64(i%threshold) == subsetCommitteeBlock.Header.Height%uint64(threshold) {
-				res = append(res, v)
-			}
-		}
-	} else {
-		res = committees
-	}
-	return res, committees, nil
+	return committees, nil
 }
 
 func (chain *BeaconChain) GetSigningCommittees(
-	committees []incognitokey.CommitteePublicKey,
-	block types.BlockInterface, threshold int,
+	committees []incognitokey.CommitteePublicKey, block types.BlockInterface,
 ) ([]incognitokey.CommitteePublicKey, error) {
-	return chain.Blockchain.getCommitteesForSigning(committees, block, threshold)
+	return chain.Blockchain.getCommitteesForSigning(committees, block)
 }

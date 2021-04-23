@@ -72,7 +72,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		currentCommitteePublicKeys        = []string{}
 		currentCommitteePublicKeysStructs = []incognitokey.CommitteePublicKey{}
 		committeeFromBlockHash            = common.Hash{}
-		subsetCommitteesFromBlockHash     = common.Hash{}
 		beaconProcessView                 *BeaconBestState
 		err                               error
 	)
@@ -127,31 +126,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 			}
 		} else {
 			committeeFromBlockHash = committeeFinalViewHash
-		}
-
-		if committeeFinalViewBlock.Header.Height >= blockchain.config.ChainParams.ConsensusV4Height {
-			subsetCommitteesFromBlockHash = committeeFinalViewHash
-			subsetCommitteesFromBlock := committeeFinalViewBlock
-			if !shardBestState.shardCommitteeState.SubsetCommitteesFromBlock().IsZeroValue() {
-				oldSubsetCommitteeFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.shardCommitteeState.SubsetCommitteesFromBlock())
-				if err != nil {
-					return nil, err
-				}
-				if oldSubsetCommitteeFromBlock.Header.Height >= subsetCommitteesFromBlock.Header.Height {
-					return nil, NewBlockChainError(WrongBlockHeightError,
-						fmt.Errorf("Height of New Shard Block's Subset Committee From Block %+v is smaller than current Subset Committee From Block View %+v",
-							subsetCommitteesFromBlock.Hash(), oldSubsetCommitteeFromBlock.Hash()))
-				}
-			}
-			committeesFromBlock, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlockHash)
-			if err != nil {
-				return nil, err
-			}
-			if committeesFromBlock.Header.Height > subsetCommitteesFromBlock.Header.Height {
-				return nil, NewBlockChainError(WrongBlockHeightError,
-					fmt.Errorf("Height of New Shard Block's Subset Committee From Block %+v is not greater than Committee From Block View %+v",
-						subsetCommitteesFromBlockHash.String(), committeeFromBlockHash.String()))
-			}
 		}
 	}
 
@@ -256,21 +230,20 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	totalTxsFee := shardBestState.shardCommitteeState.BuildTotalTxsFeeFromTxs(newShardBlock.Body.Transactions)
 
 	newShardBlock.Header = types.ShardHeader{
-		Producer:                  producerKey, //committeeMiningKeys[producerPosition],
-		ProducerPubKeyStr:         producerPubKeyStr,
-		ShardID:                   shardID,
-		Version:                   version,
-		PreviousBlockHash:         shardBestState.BestBlockHash,
-		Height:                    shardBestState.ShardHeight + 1,
-		Round:                     round,
-		Epoch:                     epoch,
-		CrossShardBitMap:          CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
-		BeaconHeight:              beaconProcessHeight,
-		BeaconHash:                *beaconHash,
-		TotalTxsFee:               totalTxsFee,
-		ConsensusType:             shardBestState.ConsensusAlgorithm,
-		CommitteeFromBlock:        committeeFromBlockHash,
-		SubsetCommitteesFromBlock: subsetCommitteesFromBlockHash,
+		Producer:           producerKey, //committeeMiningKeys[producerPosition],
+		ProducerPubKeyStr:  producerPubKeyStr,
+		ShardID:            shardID,
+		Version:            version,
+		PreviousBlockHash:  shardBestState.BestBlockHash,
+		Height:             shardBestState.ShardHeight + 1,
+		Round:              round,
+		Epoch:              epoch,
+		CrossShardBitMap:   CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
+		BeaconHeight:       beaconProcessHeight,
+		BeaconHash:         *beaconHash,
+		TotalTxsFee:        totalTxsFee,
+		ConsensusType:      shardBestState.ConsensusAlgorithm,
+		CommitteeFromBlock: committeeFromBlockHash,
 	}
 	//============Update Shard BestState=============
 	// startStep = time.Now()
@@ -558,19 +531,21 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 			Logger.log.Info("ShardID", shardID)
 
-			maxShardCommitteeSize := view.MaxShardCommitteeSize - NumberOfFixedShardBlockValidators
+			numberOfFixedShardBlockValidators := blockchain.config.ChainParams.NumberOfShardFixedBlockValidators
+
+			maxShardCommitteeSize := view.MaxShardCommitteeSize - numberOfFixedShardBlockValidators
 			var minShardCommitteeSize int
-			if view.MinShardCommitteeSize-NumberOfFixedShardBlockValidators < 0 {
+			if view.MinShardCommitteeSize-numberOfFixedShardBlockValidators < 0 {
 				minShardCommitteeSize = 0
 			} else {
-				minShardCommitteeSize = view.MinShardCommitteeSize - NumberOfFixedShardBlockValidators
+				minShardCommitteeSize = view.MinShardCommitteeSize - numberOfFixedShardBlockValidators
 			}
 			epoch := blockchain.GetEpochByHeight(beaconHeight)
 			if common.IndexOfUint64(epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 				swapOrConfirmShardSwapInstruction, shardCommittees = createShardSwapActionForKeyListV2(
 					blockchain.config.GenesisParams,
 					shardCommittees,
-					NumberOfFixedShardBlockValidators,
+					numberOfFixedShardBlockValidators,
 					blockchain.config.ChainParams.ActiveShards,
 					shardID,
 					epoch,
@@ -584,7 +559,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 					BuildShardHeight(view.ShardHeight).
 					BuildOffset(blockchain.config.ChainParams.Offset).
 					BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
-					BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
+					BuildNumberOfFixedBlockValidators(numberOfFixedShardBlockValidators).
 					Build()
 				swapInstructionGenerator := view.shardCommitteeState.(committeestate.SwapInstructionGenerator)
 				tempSwapInstruction, shardPendingValidators, shardCommittees, err =

@@ -2,13 +2,14 @@ package blockchain
 
 import (
 	"fmt"
+	"sort"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"sort"
 )
 
 type duplicateKeyStakeInstruction struct {
@@ -271,12 +272,9 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 
 	acceptedRewardInstructions := []string{}
 
-	if !shardBlock.Header.SubsetCommitteesFromBlock.IsZeroValue() {
-		subsetCommitteesFromBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.SubsetCommitteesFromBlock)
-		if err != nil {
-			return map[byte]types.ShardState{}, &shardInstruction{}, duplicateKeyStakeInstruction, [][]string{}, []string{}, [][]string{}, err
-		}
-		subsetID := subsetCommitteesFromBlock.Header.Height % MaxSubsetCommittees
+	if curView.BeaconHeight >= blockchain.config.ChainParams.ConsensusV4Height {
+		proposerIndex := GetProposerByTimeSlot(common.CalculateTimeSlot(shardBlock.GetProposeTime()), blockchain.config.ChainParams.NumberOfShardFixedBlockValidators)
+		subsetID := proposerIndex % MaxSubsetCommittees
 		accepteRewardInstruction := instruction.NewAcceptBlockRewardWithValue(
 			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height,
 		)
@@ -295,7 +293,6 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	shardStates[shardID] = types.NewShardState(
 		shardBlock.ValidationData,
 		shardBlock.Header.CommitteeFromBlock,
-		shardBlock.Header.SubsetCommitteesFromBlock,
 		shardBlock.Header.Height,
 		shardBlock.Header.Hash(),
 		shardBlock.Header.CrossShardBitMap,

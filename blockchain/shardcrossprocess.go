@@ -102,7 +102,7 @@ func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]privacy.O
 //- Agg Signature
 //- MerklePath
 func VerifyCrossShardBlock(crossShardBlock *types.CrossShardBlock, blockchain *BlockChain, committees []incognitokey.CommitteePublicKey) error {
-	committeesForSigning, err := blockchain.getCommitteesForSigning(committees, crossShardBlock, MaxSubsetCommittees)
+	committeesForSigning, err := blockchain.getCommitteesForSigning(committees, crossShardBlock)
 	if err != nil {
 		return err
 	}

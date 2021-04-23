@@ -50,9 +50,6 @@ type ShardHeader struct {
 
 	//for version 3
 	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"` // block hash of committees for this block
-
-	//for version 4
-	SubsetCommitteesFromBlock common.Hash `json:"SubsetCommitteesFromBlock"` // Block hash of list committees will sign for this block
 }
 
 type ShardBody struct {
@@ -667,12 +664,4 @@ func (block ShardBlock) BodyHash() common.Hash {
 
 func (block CrossShardBlock) BodyHash() common.Hash {
 	return common.Hash{}
-}
-
-func (block ShardBlock) SubsetCommitteesFromBlock() common.Hash {
-	return block.Header.SubsetCommitteesFromBlock
-}
-
-func (block CrossShardBlock) SubsetCommitteesFromBlock() common.Hash {
-	return block.Header.SubsetCommitteesFromBlock
 }

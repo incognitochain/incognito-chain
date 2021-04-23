@@ -28,6 +28,5 @@ type BlockInterface interface {
 	GetProposer() string
 	Type() string
 	CommitteeFromBlock() common.Hash
-	SubsetCommitteesFromBlock() common.Hash
 	BodyHash() common.Hash
 }

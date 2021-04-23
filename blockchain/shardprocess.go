@@ -187,7 +187,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		if err != nil {
 			return err
 		}
-		signingCommittees, err = blockchain.getCommitteesForSigning(committees, shardBlock, MaxSubsetCommittees)
+		signingCommittees, err = blockchain.getCommitteesForSigning(committees, shardBlock)
 		if err != nil {
 			return err
 		}
@@ -657,8 +657,15 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 		minShardCommitteeSize = shardBestState.MinShardCommitteeSize
 	}
 
+	lenProducer := 0
+	if blockchain.BeaconChain.GetFinalView().GetHeight() >= blockchain.config.ChainParams.ConsensusV4Height {
+		lenProducer = blockchain.config.ChainParams.NumberOfShardFixedBlockValidators
+	} else {
+		lenProducer = minShardCommitteeSize
+	}
+
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
-		shardBestState.ShardProposerIdx, committees, minShardCommitteeSize); err != nil {
+		shardBestState.ShardProposerIdx, committees, lenProducer); err != nil {
 		return err
 	}
 	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(shardBlock, common.BlsConsensus); err != nil {
@@ -759,7 +766,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(beaconInstructions).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
-		BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
+		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfShardFixedBlockValidators).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
 		BuildOffset(blockchain.config.ChainParams.Offset).
 		BuildShardBlockHash(shardBestState.BestBlockHash).
@@ -770,7 +777,6 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildTxs(shardBlock.Body.Transactions).
 		BuildShardInstructions(shardBlock.Body.Instructions).
 		BuildCommitteesFromBlock(shardBlock.Header.CommitteeFromBlock).
-		BuildSubsetsCommitteesFromBlock(shardBlock.Header.SubsetCommitteesFromBlock).
 		BuildCommitteesFromBeaconView(tempCommittees).
 		BuildShardHeight(shardBlock.Header.Height).
 		Build()
@@ -813,7 +819,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		BuildEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(instructions).
-		BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
+		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfShardFixedBlockValidators).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
 		BuildOffset(blockchain.config.ChainParams.Offset).

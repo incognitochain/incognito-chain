@@ -14,9 +14,8 @@ import (
 
 //ShardCommitteeStateV2
 type ShardCommitteeStateV2 struct {
-	shardCommittee            []string
-	committeeFromBlock        common.Hash //Committees From Beacon Block Hash
-	subsetCommitteesFromBlock common.Hash //Subset committees from beacon block hash
+	shardCommittee     []string
+	committeeFromBlock common.Hash //Committees From Beacon Block Hash
 
 	mu *sync.RWMutex
 }
@@ -33,14 +32,13 @@ func NewShardCommitteeStateV2() *ShardCommitteeStateV2 {
 //Output: pointer of ShardCommitteeStateV2 struct with value
 func NewShardCommitteeStateV2WithValue(
 	shardCommittee []incognitokey.CommitteePublicKey,
-	committeeFromBlockHash, subsetCommitteesFromBlock common.Hash,
+	committeeFromBlockHash common.Hash,
 ) *ShardCommitteeStateV2 {
 	res, _ := incognitokey.CommitteeKeyListToString(shardCommittee)
 	return &ShardCommitteeStateV2{
-		shardCommittee:            res,
-		committeeFromBlock:        committeeFromBlockHash,
-		subsetCommitteesFromBlock: subsetCommitteesFromBlock,
-		mu:                        new(sync.RWMutex),
+		shardCommittee:     res,
+		committeeFromBlock: committeeFromBlockHash,
+		mu:                 new(sync.RWMutex),
 	}
 }
 
@@ -55,7 +53,6 @@ func (s *ShardCommitteeStateV2) Clone() ShardCommitteeState {
 func (s ShardCommitteeStateV2) clone(newCommitteeState *ShardCommitteeStateV2) {
 	newCommitteeState.shardCommittee = common.DeepCopyString(s.shardCommittee)
 	newCommitteeState.committeeFromBlock = s.committeeFromBlock
-	newCommitteeState.subsetCommitteesFromBlock = s.subsetCommitteesFromBlock
 }
 
 //Version ...
@@ -76,10 +73,6 @@ func (s *ShardCommitteeStateV2) GetShardSubstitute() []incognitokey.CommitteePub
 
 func (s *ShardCommitteeStateV2) GetCommitteeFromBlock() common.Hash {
 	return s.committeeFromBlock
-}
-
-func (s *ShardCommitteeStateV2) SubsetCommitteesFromBlock() common.Hash {
-	return s.subsetCommitteesFromBlock
 }
 
 //InitGenesisShardCommitteeStateV2 init committee state at genesis block or anytime restore program
@@ -170,7 +163,6 @@ func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 
 	s.shardCommittee = common.DeepCopyString(env.CommitteesFromBeaconView())
 	s.committeeFromBlock = env.CommitteesFromBlock()
-	s.subsetCommitteesFromBlock = env.SubsetCommitteesFromBlock()
 	return committeeChange, nil
 }
 
@@ -194,10 +186,9 @@ func (s ShardCommitteeStateV2) hash() (*ShardCommitteeStateHash, error) {
 	}
 
 	return &ShardCommitteeStateHash{
-		ShardCommitteeHash:        committeeHash,
-		ShardSubstituteHash:       substituteHash,
-		CommitteeFromBlock:        s.committeeFromBlock,
-		SubsetCommitteesFromBlock: s.subsetCommitteesFromBlock,
+		ShardCommitteeHash:  committeeHash,
+		ShardSubstituteHash: substituteHash,
+		CommitteeFromBlock:  s.committeeFromBlock,
 	}, nil
 }
 

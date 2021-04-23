@@ -375,6 +375,7 @@ func (actorV2 *actorV2) processWithEnoughVotes(v *ProposeBlockInfo) error {
 	if len(v.userKeySet) != 0 {
 		go actorV2.node.PushBlockToAll(v.block, newPreviousValidationData, isBeacon)
 	}
+
 	if err := actorV2.chain.InsertBlock(v.block, false); err != nil {
 		return err
 	}
@@ -604,23 +605,10 @@ func (actorV2 *actorV2) preValidateVote(blockHash []byte, vote *BFTVote, candida
 	return err
 }
 
-func (actorV2 *actorV2) getCommitteeForBlock(v types.BlockInterface) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
-	var err error
-	var committees, signingCommittees []incognitokey.CommitteePublicKey
-
-	if actorV2.blockVersion == MultiViewsVersion || actorV2.chain.IsBeaconChain() {
-		committees = actorV2.chain.GetBestView().GetCommittee()
-		signingCommittees = committees
-	} else {
-		signingCommittees, committees, err = actorV2.
-			committeeChain.
-			CommitteesFromViewHashForShard(
-				v.CommitteeFromBlock(),
-				v.SubsetCommitteesFromBlock(),
-				byte(actorV2.chain.GetShardID()),
-				blockchain.MaxSubsetCommittees,
-			)
-	}
+func (actorV2 *actorV2) getCommitteeForBlock(
+	v types.BlockInterface,
+) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+	signingCommittees, committees, _, err := actorV2.getCommitteesForSigning(v.CommitteeFromBlock())
 	return signingCommittees, committees, err
 }
 
@@ -664,33 +652,43 @@ func (actorV2 *actorV2) getUserKeySetForSigning(
 	return res
 }
 
+func (actorV2 *actorV2) getCommitteesForSigning(
+	committeeViewHash common.Hash,
+) (
+	[]incognitokey.CommitteePublicKey,
+	[]incognitokey.CommitteePublicKey,
+	incognitokey.CommitteePublicKey, error,
+) {
+	committees := []incognitokey.CommitteePublicKey{}
+	signingCommittees := []incognitokey.CommitteePublicKey{}
+	var err error
+
+	if actorV2.blockVersion == MultiViewsVersion || actorV2.chain.IsBeaconChain() {
+		committees = actorV2.chain.GetBestView().GetCommittee()
+	} else {
+		committees, err = actorV2.
+			committeeChain.
+			CommitteesFromViewHashForShard(committeeViewHash, byte(actorV2.chainID))
+		if err != nil {
+			return signingCommittees, committees, incognitokey.CommitteePublicKey{}, err
+		}
+	}
+	proposerPk, proposerIndex := actorV2.chain.GetProposerByTimeSlot(byte(actorV2.chainID), actorV2.currentTimeSlot, committees)
+	signingCommittees = actorV2.chain.SigningCommittees(proposerIndex, committees)
+
+	return signingCommittees, committees, proposerPk, err
+}
+
 func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 	[]incognitokey.CommitteePublicKey,
 	[]incognitokey.CommitteePublicKey,
 	incognitokey.CommitteePublicKey, common.Hash, error,
 ) {
 	committeeViewHash := common.Hash{}
-	committees := []incognitokey.CommitteePublicKey{}
-	signingCommittees := []incognitokey.CommitteePublicKey{}
-	proposerPk := incognitokey.CommitteePublicKey{}
-	var err error
-
-	if actorV2.blockVersion == MultiViewsVersion || actorV2.chain.IsBeaconChain() {
-		proposerPk, _ = actorV2.chain.GetBestView().GetProposerByTimeSlot(actorV2.currentTimeSlot, 2)
-		committees = actorV2.chain.GetBestView().GetCommittee()
-		signingCommittees = committees
-	} else {
+	if actorV2.blockVersion != MultiViewsVersion && !actorV2.chain.IsBeaconChain() {
 		committeeViewHash = *actorV2.committeeChain.GetFinalView().GetHash()
-		subsetViewHash := committeeViewHash
-		signingCommittees, committees, err = actorV2.
-			committeeChain.
-			CommitteesFromViewHashForShard(committeeViewHash, subsetViewHash, byte(actorV2.chainID), blockchain.MaxSubsetCommittees)
-		if err != nil {
-			return signingCommittees, committees, proposerPk, committeeViewHash, err
-		}
-		proposerPk = actorV2.committeeChain.ProposerByTimeSlot(byte(actorV2.chainID), actorV2.currentTimeSlot, committees)
 	}
-
+	signingCommittees, committees, proposerPk, err := actorV2.getCommitteesForSigning(committeeViewHash)
 	return signingCommittees, committees, proposerPk, committeeViewHash, err
 }
 

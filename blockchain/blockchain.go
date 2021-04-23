@@ -919,22 +919,18 @@ func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
 }
 
 func (blockchain *BlockChain) getCommitteesForSigning(
-	committees []incognitokey.CommitteePublicKey, block types.BlockInterface, threshold int,
+	committees []incognitokey.CommitteePublicKey, block types.BlockInterface,
 ) ([]incognitokey.CommitteePublicKey, error) {
 	res := []incognitokey.CommitteePublicKey{}
-	beaconFinalView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
-	if beaconFinalView.beaconCommitteeState.Version() == committeestate.DCS_VERSION {
+	if blockchain.BeaconChain.GetFinalView().GetHeight() >= blockchain.config.ChainParams.ConsensusV4Height {
 		switch block.Type() {
 		case common.BeaconChainKey:
 			res = committees
 		case common.ShardChainKey:
 			if blockchain.BeaconChain.GetFinalView().GetHeight() >= blockchain.config.ChainParams.ConsensusV4Height {
-				beaconBlock, _, err := blockchain.GetBeaconBlockByHash(block.SubsetCommitteesFromBlock())
-				if err != nil {
-					return committees, err
-				}
+				proposerIndex := GetProposerByTimeSlot(common.CalculateTimeSlot(block.GetProposeTime()), blockchain.config.ChainParams.NumberOfShardFixedBlockValidators)
 				for i, v := range committees {
-					if uint64(i%threshold) == beaconBlock.Header.Height%uint64(threshold) {
+					if (i % MaxSubsetCommittees) == (proposerIndex % MaxSubsetCommittees) {
 						res = append(res, v)
 					}
 				}
