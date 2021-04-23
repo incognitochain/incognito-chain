@@ -57,11 +57,11 @@ func (a *AcceptBlockRewardV3) IsEmpty() bool {
 }
 
 func (a *AcceptBlockRewardV3) GetType() string {
-	return ACCEPT_BLOCK_REWARD_ACTION_V3
+	return ACCEPT_BLOCK_REWARD_V3_ACTION
 }
 
 func (a *AcceptBlockRewardV3) String() []string {
-	acceptBlockRewardStr := []string{ACCEPT_BLOCK_REWARD_ACTION_V3}
+	acceptBlockRewardStr := []string{ACCEPT_BLOCK_REWARD_V3_ACTION}
 	acceptBlockRewardStr = append(acceptBlockRewardStr, strconv.Itoa(int(a.shardID)))
 	acceptBlockRewardStr = append(acceptBlockRewardStr, strconv.Itoa(int(a.subsetID)))
 	content, _ := json.Marshal(a.txsFee)
@@ -70,7 +70,7 @@ func (a *AcceptBlockRewardV3) String() []string {
 	return acceptBlockRewardStr
 }
 
-func ValidateAndImportAcceptBlockRewardInstructionFromString(instruction []string) (*AcceptBlockRewardV3, error) {
+func ValidateAndImportAcceptBlockRewardV3InstructionFromString(instruction []string) (*AcceptBlockRewardV3, error) {
 	if err := ValidateAcceptBlockRewardInstructionSanity(instruction); err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func ValidateAcceptBlockRewardInstructionSanity(instruction []string) error {
 	if len(instruction) != 5 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
-	if instruction[0] != ACCEPT_BLOCK_REWARD_ACTION_V3 {
+	if instruction[0] != ACCEPT_BLOCK_REWARD_V3_ACTION {
 		return fmt.Errorf("invalid accept block reward action, %+v", instruction)
 	}
 	shardID, err := strconv.Atoi(instruction[1])

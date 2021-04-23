@@ -278,6 +278,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		shardBlock.Header.Hash(),
 		shardBlock.Header.CrossShardBitMap,
 	)
+
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(
 		shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
@@ -337,21 +338,21 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 			return []string{}
 		}
 		subsetID := subsetCommitteesFromBlock.Header.Height % MaxSubsetCommittees
-		accepteRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(
+		acceptedRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(
 			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
 
-		return accepteRewardInstruction.String()
+		return acceptedRewardInstruction.String()
 	} else {
 
 		acceptedBlockRewardInfo := instruction.NewAcceptBlockRewardV1WithValue(
 			shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
-		acceptedRewardInstructions, err := acceptedBlockRewardInfo.String()
+		acceptedRewardInstruction, err := acceptedBlockRewardInfo.String()
 		if err != nil {
 			// if err then ignore accepted reward instruction
 			return []string{}
 		}
 
-		return acceptedRewardInstructions
+		return acceptedRewardInstruction
 	}
 }
 

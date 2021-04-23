@@ -55,11 +55,11 @@ func (shardSubsetReward *ShardSubsetReward) IsEmpty() bool {
 }
 
 func (shardSubsetReward *ShardSubsetReward) GetType() string {
-	return SHARD_SUBSET_REWARD_ACTION
+	return SHARD_RECEIVE_REWARD_V3_ACTION
 }
 
-func (shardSubsetReward *ShardSubsetReward) StringArr() []string {
-	shardSubsetRewardStr := []string{SHARD_SUBSET_REWARD_ACTION}
+func (shardSubsetReward *ShardSubsetReward) String() []string {
+	shardSubsetRewardStr := []string{SHARD_RECEIVE_REWARD_V3_ACTION}
 	shardSubsetRewardStr = append(shardSubsetRewardStr, strconv.Itoa(int(shardSubsetReward.shardID)))
 	shardSubsetRewardStr = append(shardSubsetRewardStr, strconv.Itoa(int(shardSubsetReward.subsetID)))
 	content, _ := json.Marshal(shardSubsetReward.reward)
@@ -108,7 +108,7 @@ func ValidateShardSubsetRewardInstructionSanity(instruction []string) error {
 	if len(instruction) != 5 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}
-	if instruction[0] != SHARD_SUBSET_REWARD_ACTION {
+	if instruction[0] != SHARD_RECEIVE_REWARD_V3_ACTION {
 		return fmt.Errorf("invalid shard subset reward action, %+v", instruction)
 	}
 	shardID, err := strconv.Atoi(instruction[1])

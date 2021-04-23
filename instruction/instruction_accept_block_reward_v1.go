@@ -34,7 +34,7 @@ func BuildInstForShardReward(reward map[common.Hash]uint64, epoch uint64, shardI
 	}
 
 	returnedInst := []string{
-		strconv.Itoa(ACCEPT_BLOCK_REWARD_ACTION_V1),
+		strconv.Itoa(SHARD_RECEIVE_REWARD_V1_ACTION),
 		strconv.Itoa(int(shardID)),
 		SHARD_REWARD_INST,
 		string(contentStr),
@@ -81,7 +81,7 @@ func (blockRewardInfo *AcceptBlockRewardV1) String() ([]string, error) {
 		return nil, err
 	}
 	return []string{
-		strconv.Itoa(metadata.AcceptedBlockRewardInfoMeta),
+		strconv.Itoa(ACCEPT_BLOCK_REWARD_V1_ACTION),
 		strconv.Itoa(metadata.BeaconOnly),
 		string(content),
 	}, nil

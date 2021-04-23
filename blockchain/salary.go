@@ -22,15 +22,11 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 		if len(inst) <= 2 {
 			continue
 		}
-		if instruction.IsConsensusInstruction(inst[0]) {
+		if instruction.IsConsensusInstruction(inst[0]) || inst[0] == instruction.SHARD_RECEIVE_REWARD_V3_ACTION {
 			continue
 		}
-		switch inst[0] {
-		case instruction.SHARD_SUBSET_REWARD_ACTION:
-			continue
-		}
-		if inst[0] == instruction.ACCEPT_BLOCK_REWARD_ACTION_V3 {
-			acceptBlockRewardIns, err := instruction.ValidateAndImportAcceptBlockRewardInstructionFromString(inst)
+		if inst[0] == instruction.ACCEPT_BLOCK_REWARD_V3_ACTION {
+			acceptBlockRewardIns, err := instruction.ValidateAndImportAcceptBlockRewardV3InstructionFromString(inst)
 			if err != nil {
 				return err
 			}
@@ -49,15 +45,13 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 					}
 				}
 			}
-
 			continue
 		}
 		metaType, err := strconv.Atoi(inst[0])
 		if err != nil {
 			continue
 		}
-		switch metaType {
-		case metadata.AcceptedBlockRewardInfoMeta:
+		if metaType == instruction.ACCEPT_BLOCK_REWARD_V1_ACTION {
 			acceptedBlkRewardInfo, err := instruction.NewAcceptedBlockRewardV1FromString(inst[2])
 			if err != nil {
 				return err
@@ -70,13 +64,16 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 
 			for key, value := range acceptedBlkRewardInfo.TxsFee {
 				if value != 0 {
-					err = statedb.AddShardRewardRequest(rewardStateDB, beaconBlock.Header.Epoch, acceptedBlkRewardInfo.ShardID, key, value)
+					err = statedb.AddShardRewardRequest(
+						rewardStateDB,
+						beaconBlock.Header.Epoch,
+						acceptedBlkRewardInfo.ShardID,
+						key, value)
 					if err != nil {
 						return err
 					}
 				}
 			}
-			continue
 		}
 	}
 	return nil
@@ -88,17 +85,13 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 	epoch := uint64(0)
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
-			switch l[0] {
-			case instruction.STAKE_ACTION:
-				continue
-			case instruction.RANDOM_ACTION:
-				continue
-			case instruction.FINISH_SYNC_ACTION:
-				continue
-			case instruction.ACCEPT_BLOCK_REWARD_ACTION_V3:
+			if len(l) <= 2 {
 				continue
 			}
-			if l[0] == instruction.SHARD_SUBSET_REWARD_ACTION {
+			if instruction.IsConsensusInstruction(l[0]) {
+				continue
+			}
+			if l[0] == instruction.SHARD_RECEIVE_REWARD_V3_ACTION {
 				shardSubsetRewardInst, err := instruction.ValidateAndImportShardSubsetRewardInstructionFromString(l)
 				if err != nil {
 					Logger.log.Debug(err)
@@ -131,19 +124,16 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				}
 				continue
 			}
-			if len(l) <= 2 {
-				continue
-			}
 			shardToProcess, err := strconv.Atoi(l[1])
 			if err != nil {
 				continue
 			}
-			metaType, err := strconv.Atoi(l[0])
+			instType, err := strconv.Atoi(l[0])
 			if err != nil {
 				return NewBlockChainError(ProcessSalaryInstructionsError, err)
 			}
 			if shardToProcess == int(shardID) {
-				switch metaType {
+				switch instType {
 				case metadata.BeaconRewardRequestMeta:
 					beaconBlkRewardInfo, err := metadata.NewBeaconBlockRewardInfoFromStr(l[3])
 					if err != nil {
@@ -178,8 +168,8 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					continue
 				}
 			}
-			switch metaType {
-			case instruction.ACCEPT_BLOCK_REWARD_ACTION_V1:
+			switch instType {
+			case instruction.SHARD_RECEIVE_REWARD_V1_ACTION:
 				shardRewardInfo, err := instruction.NewShardBlockRewardInfoFromString(l[3])
 				if err != nil {
 					return NewBlockChainError(ProcessSalaryInstructionsError, err)
@@ -431,9 +421,6 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			return nil, nil, err
 		}
 	}
-	if err != nil {
-		return nil, nil, err
-	}
 
 	if len(totalRewardForBeacon) > 0 {
 		instRewardForBeacons, err = curView.buildInstRewardForBeacons(epoch, totalRewardForBeacon)
@@ -490,7 +477,7 @@ func (blockchain *BlockChain) buildInstRewardForShardsV3(epoch uint64, totalRewa
 		for subsetID, reward := range v {
 			if len(reward) > 0 {
 				shardSubsetReward := instruction.NewShardSubsetRewardWithValue(reward, epoch, byte(shardID), byte(subsetID))
-				shardSubsetRewardInst := shardSubsetReward.StringArr()
+				shardSubsetRewardInst := shardSubsetReward.String()
 				resInst = append(resInst, shardSubsetRewardInst)
 			}
 		}
