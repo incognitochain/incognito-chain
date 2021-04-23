@@ -225,7 +225,7 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 	}
 
 	if len(jsonOutCoin.SharedConcealRandom) == 0 {
-		sharedRandom = nil
+		sharedConcealRandom = nil
 	}else{
 		sharedConcealRandomInBytes, _, err := base58.Base58Check{}.Decode(jsonOutCoin.SharedConcealRandom)
 		if err != nil {
@@ -235,7 +235,7 @@ func NewCoinFromJsonOutCoin(jsonOutCoin OutCoin) (ICoinInfo, *big.Int, error) {
 	}
 
 	if len(jsonOutCoin.TxRandom) == 0 {
-		sharedRandom = nil
+		txRandom = nil
 	}else{
 		txRandomInBytes, _, err := base58.Base58Check{}.Decode(jsonOutCoin.TxRandom)
 		if err != nil {

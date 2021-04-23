@@ -380,11 +380,11 @@ func GetBalanceFromCS(privateKey, key, tokenID string, totalCoin int,  shardID b
 	if err != nil {
 		return 0, fmt.Errorf("cannot get list output coins from CS. Error %v", err)
 	}
-	fmt.Printf("Len of outcoins %v: %v\n", tokenID, len(listOutputCoins))
-		if totalCoin != len(listOutputCoins) {
-		fmt.Println("Wrong total coin")
-		return 0, fmt.Errorf("wrong total coin")
-	}
+	//fmt.Printf("Len of outcoins %v: %v\n", tokenID, len(listOutputCoins))
+	//	if totalCoin != len(listOutputCoins) {
+	//	fmt.Println("Wrong total coin")
+	//	return 0, fmt.Errorf("wrong total coin")
+	//}
 	listPlainCoins, listKeyImages, err := GetListDecryptedCoins(privateKey, listOutputCoins, false)
 	if err != nil {
 		return 0, fmt.Errorf("cannot get plain coins from CS. Error %v", err)
@@ -483,7 +483,7 @@ func TestCoinServiceV2(t *testing.T) {
 	tool.InitDevNet()
 	sourceIndex := 0
 	transferToken := true
-	tokenID := "f57462cf446c68c35da3de2450c36bb1d850bcc6ce08ba107647d6f301d5315e"
+	tokenID := "2e52935d79487f4f700a6e0f99f105d01119882412888f7b30391e6f9010395d"
 	for j:= 0; j < 10; j++ {
 		for i := range tmpPrivKeyLists {
 			sourceIndex = (sourceIndex + 1) % 2
@@ -501,7 +501,7 @@ func TestCoinServiceV2(t *testing.T) {
 			} else {
 				fmt.Println("Error ", err)
 			}
-			time.Sleep(10 * time.Second)
+			time.Sleep(6 * time.Second)
 		}
 	}
 }
@@ -558,7 +558,11 @@ func TestBalanceV2(t *testing.T) {
 
 		for tokenID, tokenDetail := range listTokens {
 			if tokenID == common.PRVIDStr {
-				balance, err := GetBalanceFromCS(tmpPrivKeyLists[index], otaKeyStr, tokenID, tokenDetail.Total, shardID, version)
+				balance1, err := GetBalanceFromCS(tmpPrivKeyLists[index], otaKeyStr, tokenID, tokenDetail.Total, shardID, 2)
+				if err != nil {
+					fmt.Println("error ", err)
+				}
+				balance2, err := GetBalanceFromCS(tmpPrivKeyLists[index], viewingKeyStr, tokenID, tokenDetail.Total, shardID, 1)
 				if err != nil {
 					fmt.Println("error ", err)
 				}
@@ -567,11 +571,11 @@ func TestBalanceV2(t *testing.T) {
 					fmt.Println(err)
 					continue
 				}
-				if balance != balanceFN {
-					fmt.Printf("ERROR Balance diff %v (CS)- %v (FN)\n", balance, balanceFN)
+				if balance1 + balance2 != balanceFN {
+					fmt.Printf("ERROR Balance diff %v (CS)- %v (FN)\n", balance1 + balance2, balanceFN)
 					fmt.Printf("ERROR Private key %v\n", tmpPrivKeyLists[index])
 				} else {
-					fmt.Printf("Balance token %v: %v (CS) - %v (FN)\n", common.PRVIDStr, balance, balanceFN)
+					fmt.Printf("Balance token %v: %v (CS) - %v (FN)\n", common.PRVIDStr, balance1 + balance2, balanceFN)
 				}
 			} else {
 				listOutputCoins, _, err := GetOutputCoins(otaKeyStr, "0000000000000000000000000000000000000000000000000000000000000005",  version)
@@ -592,7 +596,6 @@ func TestBalanceV2(t *testing.T) {
 				if err != nil {
 					fmt.Println("error cannot parse token id", err)
 				}
-
 				mapTokenCoins := make(map[string][]jsonresult.ICoinInfo)
 				for index := range listOutputCoins {
 					if _, ok := mapTokenCoins[listTokenIDs[index]]; !ok {
@@ -601,7 +604,11 @@ func TestBalanceV2(t *testing.T) {
 					mapTokenCoins[listTokenIDs[index]] = append(mapTokenCoins[listTokenIDs[index]], listOutputCoins[index])
 				}
 				for key, value := range mapTokenCoins {
-					balance, err := GetBlanacePlainTokenFromCS(tmpPrivKeyLists[index], value, key, shardID)
+					balance1, err := GetBlanacePlainTokenFromCS(tmpPrivKeyLists[index], value, key, shardID)
+					if err != nil {
+						fmt.Println("error ", err)
+					}
+					balance2, err := GetBalanceFromCS(tmpPrivKeyLists[index], viewingKeyStr, key, 0, shardID, 1)
 					if err != nil {
 						fmt.Println("error ", err)
 					}
@@ -610,11 +617,11 @@ func TestBalanceV2(t *testing.T) {
 						fmt.Println(err)
 						continue
 					}
-					if balance != balanceFN {
-						fmt.Printf("ERROR Balance diff %v (CS)- %v (FN)\n", balance, balanceFN)
+					if balance1 + balance2 != balanceFN {
+						fmt.Printf("ERROR Balance diff %v (CS)- %v (FN)\n", balance1 + balance2, balanceFN)
 						fmt.Printf("ERROR Private key %v\n", tmpPrivKeyLists[index])
 					} else {
-						fmt.Printf("Balance token %v: %v (CS) - %v (FN)\n", key, balance, balanceFN)
+						fmt.Printf("Balance token %v: %v (CS) - %v (FN)\n", key, balance1 + balance2, balanceFN)
 					}
 				}
 
@@ -671,4 +678,8 @@ func TestGetBalance(t *testing.T) {
 		fmt.Println()
 		return
 	}
+}
+
+func DetectMissingOutput(viewingKeyStr string) {
+
 }
