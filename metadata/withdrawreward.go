@@ -181,10 +181,10 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	if !unique {
 		return false, errors.New("Just one receiver")
 	}
-	cmp, err := withDrawRewardResponse.TokenID.Cmp(coinID)
-	if (cmp != 0) || (err != nil) {
-		return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
-	}
+	//cmp, err := withDrawRewardResponse.TokenID.Cmp(coinID)
+	//if (cmp != 0) || (err != nil) {
+	//	return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
+	//}
 	tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
 	value, err := statedb.GetCommitteeReward(shardViewRetriever.GetShardRewardStateDB(), tempPublicKey, *coinID)
 	if (err != nil) || (value == 0) {

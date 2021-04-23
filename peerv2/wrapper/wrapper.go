@@ -11,7 +11,7 @@ var compresser *zstd.Encoder
 var decompresser *zstd.Decoder
 
 func init() {
-	compresser, _ = zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	compresser, _ = zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedDefault))
 	decompresser, _ = zstd.NewReader(nil, zstd.WithDecoderConcurrency(runtime.NumCPU()))
 }
 

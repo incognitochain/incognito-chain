@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -41,7 +42,7 @@ func getIncProofByHeightV2(
 	}
 
 	// Get proof of instruction on beacon
-	beaconInstProof, err := getIncProofOnBeacon(incProof, inst, []*blockchain.BeaconBlock{beaconBlock}, httpServer.config.ConsensusEngine)
+	beaconInstProof, err := getIncProofOnBeacon(incProof, inst, []*types.BeaconBlock{beaconBlock}, httpServer.config.ConsensusEngine)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -88,7 +89,7 @@ func getIncProofByHeight(
 func getIncProofOnBridge(
 	incProof blockchain.IncProofInterface,
 	txID *common.Hash,
-	bridgeBlock *blockchain.ShardBlock,
+	bridgeBlock *types.ShardBlock,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	insts := bridgeBlock.Body.Instructions
@@ -109,7 +110,7 @@ func getIncProofOnBridge(
 func getIncProofOnBeacon(
 	incProof blockchain.IncProofInterface,
 	inst []string,
-	beaconBlocks []*blockchain.BeaconBlock,
+	beaconBlocks []*types.BeaconBlock,
 	ce ConsensusEngine,
 ) (*swapProof, error) {
 	// Get beacon block and check if it contains beacon swap instruction

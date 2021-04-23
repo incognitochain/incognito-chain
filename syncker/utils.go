@@ -1,11 +1,13 @@
 package syncker
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 const RUNNING_SYNC = "running_sync"
@@ -15,37 +17,46 @@ func isNil(v interface{}) bool {
 	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }
 
-func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) {
+func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	sameCommitteeBlock := blocks
 
 	containSwap := func(inst [][]string) bool {
 		for _, inst := range inst {
-			if inst[0] == blockchain.SwapAction {
+			if inst[0] == instruction.SWAP_ACTION {
 				return true
 			}
 		}
 		return false
 	}
 
-	//loop through block, to get same committee
 	for i, v := range blocks {
-		shouldBreak := false
-		switch v.(type) {
-		case *blockchain.BeaconBlock:
-			// do nothing, beacon committee assume not change
-			//if v.GetCurrentEpoch() == curEpoch+1 {
-			//	sameCommitteeBlock = blocks[:i+1]
-			//	break
-			//}
-		case *blockchain.ShardBlock:
-			//if block contain swap inst,
-			if containSwap(v.(*blockchain.ShardBlock).Body.Instructions) {
-				sameCommitteeBlock = blocks[:i+1]
-				shouldBreak = true
+		if chain.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+			shouldBreak := false
+			switch v.(type) {
+			case *types.BeaconBlock:
+				// do nothing, beacon committee assume not change
+				//if v.GetCurrentEpoch() == curEpoch+1 {
+				//	sameCommitteeBlock = blocks[:i+1]
+				//	break
+				//}
+			case *types.ShardBlock:
+				//if block contain swap inst,
+				if containSwap(v.(*types.ShardBlock).Body.Instructions) {
+					sameCommitteeBlock = blocks[:i+1]
+					shouldBreak = true
+				}
 			}
-		}
-		if shouldBreak {
-			break
+			if shouldBreak {
+				break
+			}
+		} else {
+			//TODO: Checking committees for beacon when release beacon
+			if i != len(blocks)-1 {
+				if v.CommitteeFromBlock().String() != blocks[i+1].CommitteeFromBlock().String() {
+					sameCommitteeBlock = blocks[:i+1]
+					break
+				}
+			}
 		}
 	}
 
@@ -80,13 +91,13 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 		if !chain.CheckExistedBlk(v) {
 			var err error
 			if i == 0 {
-				err = chain.InsertBlk(v, true)
+				err = chain.InsertBlock(v, true)
 			} else {
-				err = chain.InsertBlk(v, batchingValidate == false)
+				err = chain.InsertBlock(v, batchingValidate == false)
 			}
 			if err != nil {
 				committeeStr, _ := incognitokey.CommitteeKeyListToString(epochCommittee)
-				Logger.Errorf("Insert block %v hash %v got error %v, Committee of epoch %v", v.GetHeight(), v.Hash(), err, committeeStr)
+				Logger.Errorf("Insert block %v hash %v got error %v, Committee of epoch %v", v.GetHeight(), *v.Hash(), err, committeeStr)
 				return 0, err
 			}
 		}
@@ -95,8 +106,8 @@ func InsertBatchBlock(chain Chain, blocks []common.BlockInterface) (int, error) 
 }
 
 //final block
-func GetFinalBlockFromBlockHash_v1(currentFinalHash string, byHash map[string]common.BlockPoolInterface, byPrevHash map[string][]string) (res []common.BlockPoolInterface) {
-	var finalBlock common.BlockPoolInterface = nil
+func GetFinalBlockFromBlockHash_v1(currentFinalHash string, byHash map[string]types.BlockPoolInterface, byPrevHash map[string][]string) (res []types.BlockPoolInterface) {
+	var finalBlock types.BlockPoolInterface = nil
 	var traverse func(currentHash string)
 	traverse = func(currentHash string) {
 		if byPrevHash[currentHash] == nil {
@@ -122,7 +133,7 @@ func GetFinalBlockFromBlockHash_v1(currentFinalHash string, byHash map[string]co
 		if currentFinalHash == finalBlock.Hash().String() {
 			return
 		}
-		res = append([]common.BlockPoolInterface{byHash[finalBlock.Hash().String()]}, res...)
+		res = append([]types.BlockPoolInterface{byHash[finalBlock.Hash().String()]}, res...)
 		finalBlock = byHash[finalBlock.GetPrevHash().String()]
 		if finalBlock == nil || finalBlock.Hash().String() == currentFinalHash {
 			break
@@ -131,8 +142,8 @@ func GetFinalBlockFromBlockHash_v1(currentFinalHash string, byHash map[string]co
 	return res
 }
 
-func GetLongestChain(currentFinalHash string, byHash map[string]common.BlockPoolInterface, byPrevHash map[string][]string) (res []common.BlockPoolInterface) {
-	var finalBlock common.BlockPoolInterface = nil
+func GetLongestChain(currentFinalHash string, byHash map[string]types.BlockPoolInterface, byPrevHash map[string][]string) (res []types.BlockPoolInterface) {
+	var finalBlock types.BlockPoolInterface = nil
 	var traverse func(currentHash string)
 	traverse = func(currentHash string) {
 		if byPrevHash[currentHash] == nil {
@@ -156,7 +167,7 @@ func GetLongestChain(currentFinalHash string, byHash map[string]common.BlockPool
 	}
 
 	for {
-		res = append([]common.BlockPoolInterface{byHash[finalBlock.Hash().String()]}, res...)
+		res = append([]types.BlockPoolInterface{byHash[finalBlock.Hash().String()]}, res...)
 		finalBlock = byHash[finalBlock.GetPrevHash().String()]
 		if finalBlock == nil {
 			break
@@ -165,7 +176,7 @@ func GetLongestChain(currentFinalHash string, byHash map[string]common.BlockPool
 	return res
 }
 
-func GetPoolInfo(byHash map[string]common.BlockPoolInterface) (res []common.BlockPoolInterface) {
+func GetPoolInfo(byHash map[string]types.BlockPoolInterface) (res []types.BlockPoolInterface) {
 	for _, v := range byHash {
 		res = append(res, v)
 	}
@@ -177,7 +188,7 @@ func compareLists(poolList map[byte][]interface{}, hashList map[byte][]common.Ha
 	poolListsHash := make(map[byte][]common.Hash)
 	for shardID, blkList := range poolList {
 		for _, blk := range blkList {
-			blkHash := blk.(common.BlockPoolInterface).Hash()
+			blkHash := blk.(types.BlockPoolInterface).Hash()
 			poolListsHash[shardID] = append(poolListsHash[shardID], *blkHash)
 		}
 	}
@@ -201,7 +212,7 @@ func compareListsByHeight(poolList map[byte][]interface{}, heightList map[byte][
 	poolListsHeight := make(map[byte][]uint64)
 	for shardID, blkList := range poolList {
 		for _, blk := range blkList {
-			blkHeight := blk.(common.BlockPoolInterface).GetHeight()
+			blkHeight := blk.(types.BlockPoolInterface).GetHeight()
 			poolListsHeight[shardID] = append(poolListsHeight[shardID], blkHeight)
 		}
 	}
@@ -222,10 +233,10 @@ func compareListsByHeight(poolList map[byte][]interface{}, heightList map[byte][
 
 func GetBlksByPrevHash(
 	prevHash string,
-	byHash map[string]common.BlockPoolInterface,
+	byHash map[string]types.BlockPoolInterface,
 	byPrevHash map[string][]string,
 ) (
-	res []common.BlockPoolInterface,
+	res []types.BlockPoolInterface,
 ) {
 	if hashes, ok := byPrevHash[prevHash]; ok {
 		for _, hash := range hashes {
@@ -239,10 +250,10 @@ func GetBlksByPrevHash(
 
 func GetAllViewFromHash(
 	rHash string,
-	byHash map[string]common.BlockPoolInterface,
+	byHash map[string]types.BlockPoolInterface,
 	byPrevHash map[string][]string,
 ) (
-	res []common.BlockPoolInterface,
+	res []types.BlockPoolInterface,
 ) {
 	hashes := []string{rHash}
 	for {
