@@ -17,6 +17,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	"github.com/incognitochain/incognito-chain/syncker"
+	"github.com/incognitochain/incognito-chain/txpool"
+
+	"github.com/incognitochain/incognito-chain/peerv2"
+
 	"cloud.google.com/go/storage"
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/addrmanager"
@@ -295,7 +303,10 @@ func (serverObj *Server) NewServer(
 		"",
 		relayShards,
 	)
-
+	poolManager, _ := txpool.NewPoolManager(
+		common.MaxShardNumber,
+		serverObj.pusubManager,
+	)
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		BTCChain:      btcChain,
 		BNBChainState: bnbChainState,
@@ -315,6 +326,7 @@ func (serverObj *Server) NewServer(
 		ConsensusEngine: serverObj.consensusEngine,
 		Highway:         serverObj.highway,
 		GenesisParams:   blockchain.GenesisParam,
+		PoolManager:     poolManager,
 	})
 	if err != nil {
 		return err
@@ -323,6 +335,7 @@ func (serverObj *Server) NewServer(
 	if err != nil {
 		return err
 	}
+	go poolManager.Start()
 
 	//set bc obj for monitor
 	monitor.SetBlockChainObj(serverObj.blockChain)
@@ -693,7 +706,7 @@ func (serverObj Server) Start() {
 
 	serverObj.netSync.Start()
 
-	go serverObj.highway.Start(serverObj.netSync)
+	go serverObj.highway.Start(serverObj.blockChain)
 
 	if !cfg.DisableRPC && serverObj.rpcServer != nil {
 		serverObj.waitGroup.Add(1)
@@ -719,7 +732,7 @@ func (serverObj Server) Start() {
 		if err != nil {
 			Logger.log.Error(err)
 		}
-		go serverObj.TransactionPoolBroadcastLoop()
+		// go serverObj.TransactionPoolBroadcastLoop()
 		go serverObj.memPool.Start(serverObj.cQuit)
 		go serverObj.memPool.MonitorPool()
 	}
@@ -747,46 +760,46 @@ func (serverObj *Server) GetActiveShardNumber() int {
 // }
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
-	ticker := time.NewTicker(serverObj.memPool.ScanTime)
-	defer ticker.Stop()
-	for _ = range ticker.C {
-		txDescs := serverObj.memPool.GetPool()
+	// ticker := time.NewTicker(serverObj.memPool.ScanTime)
+	// defer ticker.Stop()
+	// for _ = range ticker.C {
+	// 	txDescs := serverObj.memPool.GetPool()
 
-		for _, txDesc := range txDescs {
-			time.Sleep(50 * time.Millisecond)
-			if !txDesc.IsFowardMessage {
-				tx := txDesc.Desc.Tx
-				switch tx.GetType() {
-				case common.TxNormalType:
-					{
-						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-						if err != nil {
-							continue
-						}
-						normalTx := tx.(*transaction.Tx)
-						txMsg.(*wire.MessageTx).Transaction = normalTx
-						err = serverObj.PushMessageToAll(txMsg)
-						if err == nil {
-							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
-						}
-					}
-				case common.TxCustomTokenPrivacyType:
-					{
-						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
-						if err != nil {
-							continue
-						}
-						customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
-						err = serverObj.PushMessageToAll(txMsg)
-						if err == nil {
-							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
-						}
-					}
-				}
-			}
-		}
-	}
+	// 	for _, txDesc := range txDescs {
+	// 		time.Sleep(50 * time.Millisecond)
+	// 		if !txDesc.IsFowardMessage {
+	// 			tx := txDesc.Desc.Tx
+	// 			switch tx.GetType() {
+	// 			case common.TxNormalType:
+	// 				{
+	// 					txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+	// 					if err != nil {
+	// 						continue
+	// 					}
+	// 					normalTx := tx.(*transaction.Tx)
+	// 					txMsg.(*wire.MessageTx).Transaction = normalTx
+	// 					err = serverObj.PushMessageToAll(txMsg)
+	// 					if err == nil {
+	// 						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+	// 					}
+	// 				}
+	// 			case common.TxCustomTokenPrivacyType:
+	// 				{
+	// 					txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
+	// 					if err != nil {
+	// 						continue
+	// 					}
+	// 					customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+	// 					txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
+	// 					err = serverObj.PushMessageToAll(txMsg)
+	// 					if err == nil {
+	// 						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 }
 
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal
@@ -997,12 +1010,17 @@ func (serverObj *Server) OnGetCrossShard(_ *peer.PeerConn, msg *wire.MessageGetC
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
 func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
-	Logger.log.Debug("Receive a new transaction START")
+	Logger.log.Infof("Receive a new transaction START")
 	var txProcessed chan struct{}
+	// txBytes, _ := json.Marshal(msg.Transaction)
+	// err := json.Unmarshal(txBytes, msg.Transaction)
+	// if err != nil {
+	// 	panic("dd")
+	// }
 	serverObj.netSync.QueueTx(nil, msg, txProcessed)
 	//<-txProcessed
 
-	Logger.log.Debug("Receive a new transaction END")
+	Logger.log.Infof("Receive a new transaction END")
 }
 
 func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {
@@ -1095,39 +1113,6 @@ func (serverObj *Server) OnVerAck(peerConn *peer.PeerConn, msg *wire.MessageVerA
 		if peerConn.GetIsOutbound() {
 			serverObj.addrManager.Good(peerConn.GetRemotePeer())
 		}
-
-		// send message for get addr
-		//msgSG, err := wire.MakeEmptyMessage(wire.CmdGetAddr)
-		//if err != nil {
-		//	return
-		//}
-		//var dc chan<- struct{}
-		//peerConn.QueueMessageWithEncoding(msgSG, dc, peer.MessageToPeer, nil)
-
-		//	broadcast addr to all peer
-		//listen := serverObj.connManager.GetListeningPeer()
-		//msgSA, err := wire.MakeEmptyMessage(wire.CmdAddr)
-		//if err != nil {
-		//	return
-		//}
-		//
-		//rawPeers := []wire.RawPeer{}
-		//peers := serverObj.addrManager.AddressCache()
-		//for _, peer := range peers {
-		//	getPeerId, _ := serverObj.connManager.GetPeerId(peer.GetRawAddress())
-		//	if peerConn.GetRemotePeerID().Pretty() != getPeerId {
-		//		pk, pkT := peer.GetPublicKey()
-		//		rawPeers = append(rawPeers, wire.RawPeer{peer.GetRawAddress(), pkT, pk})
-		//	}
-		//}
-		//msgSA.(*wire.MessageAddr).RawPeers = rawPeers
-		//var doneChan chan<- struct{}
-		//listen.GetPeerConnsMtx().Lock()
-		//for _, peerConn := range listen.GetPeerConns() {
-		//	Logger.log.Debug("QueueMessageWithEncoding", peerConn)
-		//	peerConn.QueueMessageWithEncoding(msgSA, doneChan, peer.MessageToPeer, nil)
-		//}
-		//listen.GetPeerConnsMtx().Unlock()
 	} else {
 		peerConn.SetVerValid(false)
 	}
@@ -1198,8 +1183,17 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 				break
 			}
 		}
+	if err := msg.VerifyMsgSanity(); err != nil {
+		Logger.log.Error(err)
+		return
 	}
-	serverObj.netSync.QueueMessage(nil, msg, txProcessed)
+	msgBFT, ok := msg.(*wire.MessageBFT)
+	if !ok {
+		Logger.log.Errorf("On BFT msg receive invalid msg %v", msg)
+	} else {
+		serverObj.consensusEngine.OnBFTMsg(msgBFT)
+	}
+	// serverObj.netSync.QueueMessage(nil, msg, txProcessed)
 	Logger.log.Debug("Receive a BFTMsg END")
 }
 
@@ -1305,7 +1299,7 @@ func (serverObj *Server) PushMessageToPbk(msg wire.Message, pbk string) error {
 /*
 PushMessageToPeer push msg to pbk
 */
-func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte, exclusivePeerIDs map[libp2p.ID]bool) error {
+func (serverObj *Server) PushMessageToShard(msg wire.Message, shard byte) error {
 	Logger.log.Debugf("Push msg to shard %d", shard)
 
 	// Publish message to highway
@@ -1566,7 +1560,7 @@ func (serverObj *Server) PushMessageGetBlockCrossShardByHash(fromShard byte, toS
 	msg.SetSenderID(listener.GetPeerID())
 	Logger.log.Debugf("Send a GetCrossShard from %s", listener.GetRawAddress())
 	if peerID == "" {
-		return serverObj.PushMessageToShard(msg, fromShard, map[libp2p.ID]bool{})
+		return serverObj.PushMessageToShard(msg, fromShard)
 	}
 	return serverObj.PushMessageToPeer(msg, peerID)
 
@@ -1622,7 +1616,7 @@ func (serverObj *Server) PublishNodeState() error {
 		if validator.State.ChainID == -1 {
 			serverObj.PushMessageToBeacon(msg, nil)
 		} else {
-			serverObj.PushMessageToShard(msg, byte(validator.State.ChainID), nil)
+			serverObj.PushMessageToShard(msg, byte(validator.State.ChainID))
 		}
 	}
 
@@ -1719,7 +1713,7 @@ func (serverObj *Server) PushMessageToChain(msg wire.Message, chain common.Chain
 	if chainID == -1 {
 		serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{})
 	} else {
-		serverObj.PushMessageToShard(msg, byte(chainID), map[libp2p.ID]bool{})
+		serverObj.PushMessageToShard(msg, byte(chainID))
 	}
 	return nil
 }
@@ -1750,7 +1744,7 @@ func (serverObj *Server) PushBlockToAll(block types.BlockInterface, previousVali
 		}
 		msgShard.(*wire.MessageBlockShard).Block = shardBlock
 		msgShard.(*wire.MessageBlockShard).PreviousValidationData = previousValidationData
-		serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID, map[libp2p.ID]bool{})
+		serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID)
 
 		crossShardBlks := blockchain.CreateAllCrossShardBlock(shardBlock, serverObj.blockChain.GetBeaconBestState().ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
@@ -1760,7 +1754,7 @@ func (serverObj *Server) PushBlockToAll(block types.BlockInterface, previousVali
 				return err
 			}
 			msgCrossShardShard.(*wire.MessageCrossShard).Block = crossShardBlk
-			serverObj.PushMessageToShard(msgCrossShardShard, shardID, map[libp2p.ID]bool{})
+			serverObj.PushMessageToShard(msgCrossShardShard, shardID)
 		}
 	}
 	return nil

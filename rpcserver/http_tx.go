@@ -174,8 +174,8 @@ func (httpServer *HttpServer) handleGetTransactionHashByReceiverV2(params interf
 		txHashs = append(txHashs, txHashsByShard...)
 	}
 	result := struct {
-		Skip uint
-		Limit uint
+		Skip    uint
+		Limit   uint
 		TxHashs []common.Hash
 	}{
 		uint(skip),
@@ -281,9 +281,9 @@ func (httpServer *HttpServer) handleGetTransactionByReceiverV2(params interface{
 		return nil, err
 	}
 	result := struct {
-		Total uint
-		Skip uint
-		Limit uint
+		Total                uint
+		Skip                 uint
+		Limit                uint
 		ReceivedTransactions []jsonresult.ReceivedTransactionV2
 	}{
 		total,
@@ -793,7 +793,6 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransactionV2
 	}
 	return tx, nil
 }
-
 
 // handleCreateRawStakingTransaction handles create staking
 func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

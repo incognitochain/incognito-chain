@@ -4,14 +4,14 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/portal"
-	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	"io"
 	"strconv"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -27,6 +27,8 @@ import (
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/txpool"
+	"github.com/pkg/errors"
 )
 
 type BlockChain struct {
@@ -62,6 +64,7 @@ type Config struct {
 	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
+	PoolManager       *txpool.PoolManager
 
 	relayShardLck sync.Mutex
 }
@@ -131,7 +134,16 @@ func (blockchain *BlockChain) InitChainState() error {
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
 	for shard := 1; shard <= blockchain.GetBeaconBestState().ActiveShards; shard++ {
 		shardID := byte(shard - 1)
-		blockchain.ShardChain[shardID] = NewShardChain(shard-1, multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID))
+		tp, err := blockchain.config.PoolManager.GetShardTxsPool(shardID)
+		if err != nil {
+			return err
+		}
+		tv := NewTxsVerifier(
+			nil,
+			tp,
+		)
+		tp.UpdateTxVerifier(tv)
+		blockchain.ShardChain[shardID] = NewShardChain(shard-1, multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID), tp, tv)
 		blockchain.ShardChain[shardID].hashHistory, err = lru.New(1000)
 		if err != nil {
 			return err
@@ -144,6 +156,11 @@ func (blockchain *BlockChain) InitChainState() error {
 				return err
 			}
 		}
+		sBestState := blockchain.ShardChain[shardID].GetBestState()
+		txDB := sBestState.GetCopiedTransactionStateDB()
+		// Logger.log.Infof("[testperformance] SHARD %v | Init txDB from block %v, txdb roothash %v\n", shardID, sBestState.BestBlock.Header.Height, txDB)
+
+		blockchain.ShardChain[shardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
 	}
 

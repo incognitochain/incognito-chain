@@ -2,6 +2,8 @@ package blockchain
 
 import (
 	"context"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -53,6 +55,13 @@ type Syncker interface {
 	GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error)
 	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
+}
+
+type TxsCrawler interface {
+	// RemoveTx remove tx from tx resource
+	RemoveTxs(txs []metadata.Transaction)
+	GetTxsTranferForNewBlock(sView interface{}, bcView interface{}, maxSize uint64, maxTime time.Duration) []metadata.Transaction
+	CheckValidatedTxs(txs []metadata.Transaction) (valid []metadata.Transaction, needValidate []metadata.Transaction)
 }
 
 type Pubsub interface {

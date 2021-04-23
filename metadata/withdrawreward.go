@@ -58,10 +58,11 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 		Version:        1,
 	}
 
-	versionInt, ok := data["Version"].(int)
-	if ok {
-		result.Version = versionInt
-	}
+	// versionFloat, ok := data["Version"].(float64)
+	// if ok {
+	// 	version := int(versionFloat)
+	// 	result.Version = version
+	// }
 	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, result.Version); !ok || err != nil {
 		return nil, errors.Errorf("Invalid version %d", result.Version)
 	}

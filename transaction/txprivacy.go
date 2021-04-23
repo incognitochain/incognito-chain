@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"math/big"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -22,6 +23,7 @@ import (
 )
 
 type Tx struct {
+	valEnv *ValidationEnv
 	// Basic data, required
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
@@ -41,6 +43,23 @@ type Tx struct {
 	cachedActualSize *uint64      // cached actualsize data for tx
 }
 
+func (tx *Tx) initEnv() metadata.ValidationEnviroment {
+	valEnv := DefaultValEnv()
+	if tx.IsSalaryTx() {
+		valEnv = WithAct(valEnv, common.TxActInit)
+	}
+	if tx.IsPrivacy() {
+		valEnv = WithPrivacy(valEnv)
+	} else {
+		valEnv = WithNoPrivacy(valEnv)
+	}
+	valEnv = WithType(valEnv, tx.GetType())
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	valEnv = WithShardID(valEnv, int(sID))
+	tx.SetValidationEnv(valEnv)
+	return valEnv
+}
+
 func (tx *Tx) UnmarshalJSON(data []byte) error {
 	type Alias Tx
 	temp := &struct {
@@ -54,17 +73,19 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		Logger.log.Error("UnmarshalJSON tx", string(data))
 		return NewTransactionErr(UnexpectedError, err)
 	}
+
 	if temp.Metadata == nil {
 		tx.SetMetadata(nil)
-		return nil
-	}
 
-	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
-	if parseErr != nil {
-		Logger.log.Error(parseErr)
-		return parseErr
+	} else {
+		meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+		if parseErr != nil {
+			Logger.log.Error(parseErr)
+			return parseErr
+		}
+		tx.SetMetadata(meta)
 	}
-	tx.SetMetadata(meta)
+	tx.initEnv()
 	return nil
 }
 
@@ -421,8 +442,8 @@ func (tx *Tx) signTx() error {
 	return nil
 }
 
-// verifySigTx - verify signature on tx
-func (tx *Tx) verifySigTx() (bool, error) {
+// VerifySigTx - verify signature on tx
+func (tx *Tx) VerifySigTx() (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
@@ -457,8 +478,12 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	}
 	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
 	res = verifyKey.Verify(signature, tx.Hash()[:])
+	if !res {
+		err = errors.Errorf("Verify signature of tx %v failed", tx.Hash().String())
+		Logger.log.Error(err)
+	}
 
-	return res, nil
+	return res, err
 }
 
 // ValidateTransaction returns true if transaction is valid:
@@ -477,7 +502,7 @@ func (tx *Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB
 	var valid bool
 	var err error
 
-	valid, err = tx.verifySigTx()
+	valid, err = tx.VerifySigTx()
 	if !valid {
 		if err != nil {
 			Logger.log.Errorf("Error verifying signature with tx hash %s: %+v \n", tx.Hash().String(), err)
@@ -696,7 +721,6 @@ func (tx Tx) ListSNDOutputsHashH() []common.Hash {
 	return result
 }
 
-
 // CheckCMExistence returns true if cm exists in cm list
 func (tx Tx) CheckCMExistence(cm []byte, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	ok, err := statedb.HasCommitment(stateDB, *tokenID, cm, shardID)
@@ -851,7 +875,6 @@ func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 
-
 }
 
 // ValidateDoubleSpend - check double spend for any transaction type
@@ -978,7 +1001,7 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 				return false, errors.New("invalid cmValues in Bullet proof")
 			}
 
-			if len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetSerialNumberProof()) || len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetOneOfManyProof()){
+			if len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetSerialNumberProof()) || len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetOneOfManyProof()) {
 				return false, errors.New("the number of input coins must be equal to the number of serialnumber proofs and the number of one-of-many proofs")
 			}
 
@@ -1122,7 +1145,7 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 			}
 			inputCoins := txN.Proof.GetInputCoins()
 
-			if len(inputCoins) != len(txN.Proof.GetSerialNumberNoPrivacyProof()){
+			if len(inputCoins) != len(txN.Proof.GetSerialNumberNoPrivacyProof()) {
 				return false, errors.New("the number of input coins must be equal to the number of serialnumbernoprivacy proofs")
 			}
 
@@ -1239,7 +1262,6 @@ func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *
 	return true, nil
 }
 
-
 // GetMetadataType returns the type of underlying metadata if is existed
 func (tx Tx) GetMetadataType() int {
 	if tx.Metadata != nil {
@@ -1256,6 +1278,25 @@ func (tx Tx) GetMetadata() metadata.Metadata {
 // SetMetadata sets metadata to tx
 func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 	tx.Metadata = meta
+}
+
+func (tx *Tx) GetValidationEnv() metadata.ValidationEnviroment {
+	return tx.valEnv
+}
+
+func (tx *Tx) SetValidationEnv(vEnv metadata.ValidationEnviroment) {
+	if vE, ok := vEnv.(*ValidationEnv); ok {
+		tx.valEnv = vE
+	} else {
+		valEnv := DefaultValEnv()
+		if tx.IsPrivacy() {
+			valEnv = WithPrivacy(valEnv)
+		} else {
+			valEnv = WithNoPrivacy(valEnv)
+		}
+		valEnv = WithType(valEnv, tx.GetType())
+		tx.valEnv = valEnv
+	}
 }
 
 // GetMetadata returns metadata of tx is existed
@@ -1432,7 +1473,7 @@ func (tx Tx) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool {
 
 func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	// verify signature
-	valid, err := tx.verifySigTx()
+	valid, err := tx.VerifySigTx()
 	if !valid {
 		if err != nil {
 			Logger.log.Debugf("Error verifying signature of tx: %+v", err)
@@ -1488,7 +1529,7 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.Tran
 		}
 	}
 	//if type is reward and not have metadata
-	if tx.GetType() == common.TxRewardType && meta == nil  {
+	if tx.GetType() == common.TxRewardType && meta == nil {
 		return false, nil
 	}
 	//if type is return staking and not have metadata
