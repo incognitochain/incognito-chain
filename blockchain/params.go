@@ -3,10 +3,6 @@ package blockchain
 import (
 	"time"
 
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 
 	"github.com/incognitochain/incognito-chain/portal"
@@ -18,8 +14,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type SlashLevel struct {
@@ -108,8 +102,6 @@ var genesisParamsTestnetNew *GenesisParams
 var genesisParamsTestnet2New *GenesisParams
 var genesisParamsMainnetNew *GenesisParams
 var GenesisParam *GenesisParams
-var ListAccount map[byte][]string
-var ListPubkey map[byte][]string
 
 func initPortalTokensV3ForTestNet() map[string]portaltokensv3.PortalTokenProcessorV3 {
 	return map[string]portaltokensv3.PortalTokenProcessorV3{
@@ -484,7 +476,6 @@ func SetupParam() {
 		},
 	}
 	if IsTestNet {
-		getListAccountForBenchmark("account.json")
 		if !IsTestNet2 {
 			GenesisParam = genesisParamsTestnetNew
 		} else {
@@ -507,30 +498,4 @@ func (p *Params) CreateGenesisBlocks() {
 	}
 	p.GenesisBeaconBlock = CreateGenesisBeaconBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
 	p.GenesisShardBlock = CreateGenesisShardBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
-}
-
-func getListAccountForBenchmark(filename string) {
-	ListAccount = map[byte][]string{}
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		fmt.Print(err)
-	}
-	err = json.Unmarshal(data, &ListAccount)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-	ListPubkey = map[byte][]string{}
-	for k, v := range ListAccount {
-		listPK := []string{}
-		for _, pk := range v {
-			keyWalletDevAccount, err := wallet.Base58CheckDeserialize(pk)
-			if err != nil {
-				panic(err)
-			}
-			tempPK := base58.Base58Check{}.Encode(keyWalletDevAccount.KeySet.PaymentAddress.Pk, common.Base58Version)
-			listPK = append(listPK, tempPK)
-		}
-		ListPubkey[k] = listPK
-	}
-	return
 }
