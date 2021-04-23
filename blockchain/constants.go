@@ -33,6 +33,12 @@ const (
 	OutcoinReindexerRoutines 	  = 2
 )
 
+// burning addresses
+const (
+	burningAddress  = "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"
+	burningAddress2 = "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
+)
+
 // CONSTANT for network MAINNET
 const (
 	// ------------- Mainnet ---------------------------------------------
