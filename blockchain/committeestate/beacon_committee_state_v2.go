@@ -220,7 +220,7 @@ func (b *BeaconCommitteeStateV2) getDataForUpgrading(env *BeaconCommitteeStateEn
 }
 
 //SplitReward ...
-func (engine *BeaconCommitteeStateV2) SplitReward(
+func (b *BeaconCommitteeStateV2) SplitReward(
 	env *SplitRewardEnvironment) (
 	map[common.Hash]uint64, map[common.Hash]uint64,
 	map[common.Hash]uint64, map[common.Hash]uint64, error,
@@ -231,8 +231,8 @@ func (engine *BeaconCommitteeStateV2) SplitReward(
 	rewardForShard := map[common.Hash]uint64{}
 	rewardForIncDAO := map[common.Hash]uint64{}
 	rewardForCustodian := map[common.Hash]uint64{}
-	lenBeaconCommittees := uint64(len(engine.getBeaconCommittee()))
-	lenShardCommittees := uint64(len(engine.getShardCommittee()[env.ShardID]))
+	lenBeaconCommittees := uint64(len(b.getBeaconCommittee()))
+	lenShardCommittees := uint64(len(b.getShardCommittee()[env.ShardID]))
 
 	if len(allCoinTotalReward) == 0 {
 		Logger.log.Info("Beacon Height %+v, 😭 found NO reward", env.BeaconHeight)
@@ -243,7 +243,7 @@ func (engine *BeaconCommitteeStateV2) SplitReward(
 		totalRewardForDAOAndCustodians := devPercent * totalReward / 100
 		totalRewardForShardAndBeaconValidators := totalReward - totalRewardForDAOAndCustodians
 		shardWeight := float64(lenShardCommittees)
-		beaconWeight := 2 * float64(lenBeaconCommittees) / float64(len(engine.shardCommittee))
+		beaconWeight := 2 * float64(lenBeaconCommittees) / float64(len(b.shardCommittee))
 		totalValidatorWeight := shardWeight + beaconWeight
 
 		rewardForShard[key] = uint64(shardWeight * float64(totalRewardForShardAndBeaconValidators) / totalValidatorWeight)

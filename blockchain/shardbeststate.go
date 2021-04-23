@@ -346,6 +346,13 @@ func GetProposerByTimeSlot(ts int64, committeeLen int) int {
 	return id
 }
 
+//GetSubsetID for block producing v3 only
+func GetSubsetID(proposerTime int64, fixedValidator int) int {
+	proposerIndex := GetProposerByTimeSlot(common.CalculateTimeSlot(proposerTime), fixedValidator)
+	subsetID := proposerIndex % MaxSubsetCommittees
+	return subsetID
+}
+
 func (shardBestState *ShardBestState) GetShardCommittee() []incognitokey.CommitteePublicKey {
 	return shardBestState.shardCommitteeState.GetShardCommittee()
 }

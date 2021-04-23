@@ -10,22 +10,22 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type ShardSubsetReward struct {
+type ShardReceiveRewardV3 struct {
 	reward   map[common.Hash]uint64
 	epoch    uint64
 	shardID  byte
 	subsetID byte
 }
 
-func NewShardSubsetReward() *ShardSubsetReward {
-	return &ShardSubsetReward{}
+func NewShardReceiveRewardV3() *ShardReceiveRewardV3 {
+	return &ShardReceiveRewardV3{}
 }
 
-func NewShardSubsetRewardWithValue(
+func NewShardReceiveRewardV3WithValue(
 	reward map[common.Hash]uint64,
 	epoch uint64, shardID, subsetID byte,
-) *ShardSubsetReward {
-	return &ShardSubsetReward{
+) *ShardReceiveRewardV3 {
+	return &ShardReceiveRewardV3{
 		reward:   reward,
 		epoch:    epoch,
 		shardID:  shardID,
@@ -33,32 +33,32 @@ func NewShardSubsetRewardWithValue(
 	}
 }
 
-func (shardSubsetReward *ShardSubsetReward) SubsetID() byte {
+func (shardSubsetReward *ShardReceiveRewardV3) SubsetID() byte {
 	return shardSubsetReward.subsetID
 }
 
-func (shardSubsetReward *ShardSubsetReward) ShardID() byte {
+func (shardSubsetReward *ShardReceiveRewardV3) ShardID() byte {
 	return shardSubsetReward.shardID
 }
 
 //read only function
-func (shardSubsetReward *ShardSubsetReward) Reward() map[common.Hash]uint64 {
+func (shardSubsetReward *ShardReceiveRewardV3) Reward() map[common.Hash]uint64 {
 	return shardSubsetReward.reward
 }
 
-func (shardSubsetReward *ShardSubsetReward) Epoch() uint64 {
+func (shardSubsetReward *ShardReceiveRewardV3) Epoch() uint64 {
 	return shardSubsetReward.epoch
 }
 
-func (shardSubsetReward *ShardSubsetReward) IsEmpty() bool {
-	return reflect.DeepEqual(shardSubsetReward, NewShardSubsetReward())
+func (shardSubsetReward *ShardReceiveRewardV3) IsEmpty() bool {
+	return reflect.DeepEqual(shardSubsetReward, NewShardReceiveRewardV3())
 }
 
-func (shardSubsetReward *ShardSubsetReward) GetType() string {
+func (shardSubsetReward *ShardReceiveRewardV3) GetType() string {
 	return SHARD_RECEIVE_REWARD_V3_ACTION
 }
 
-func (shardSubsetReward *ShardSubsetReward) String() []string {
+func (shardSubsetReward *ShardReceiveRewardV3) String() []string {
 	shardSubsetRewardStr := []string{SHARD_RECEIVE_REWARD_V3_ACTION}
 	shardSubsetRewardStr = append(shardSubsetRewardStr, strconv.Itoa(int(shardSubsetReward.shardID)))
 	shardSubsetRewardStr = append(shardSubsetRewardStr, strconv.Itoa(int(shardSubsetReward.subsetID)))
@@ -68,15 +68,15 @@ func (shardSubsetReward *ShardSubsetReward) String() []string {
 	return shardSubsetRewardStr
 }
 
-func ValidateAndImportShardSubsetRewardInstructionFromString(instruction []string) (*ShardSubsetReward, error) {
-	if err := ValidateShardSubsetRewardInstructionSanity(instruction); err != nil {
+func ValidateAndImportShardReceiveRewardV3InstructionFromString(instruction []string) (*ShardReceiveRewardV3, error) {
+	if err := ValidateShardReceiveRewardV3InstructionFromString(instruction); err != nil {
 		return nil, err
 	}
-	return ImportShardSubsetRewardInstructionFromString(instruction)
+	return ImportShardReceiveRewardV3InstructionFromString(instruction)
 }
 
-func ImportShardSubsetRewardInstructionFromString(instruction []string) (*ShardSubsetReward, error) {
-	shardSubsetReward := NewShardSubsetReward()
+func ImportShardReceiveRewardV3InstructionFromString(instruction []string) (*ShardReceiveRewardV3, error) {
+	shardSubsetReward := NewShardReceiveRewardV3()
 	shardID, err := strconv.Atoi(instruction[1])
 	if err != nil {
 		return shardSubsetReward, err
@@ -104,7 +104,7 @@ func ImportShardSubsetRewardInstructionFromString(instruction []string) (*ShardS
 	return shardSubsetReward, err
 }
 
-func ValidateShardSubsetRewardInstructionSanity(instruction []string) error {
+func ValidateShardReceiveRewardV3InstructionFromString(instruction []string) error {
 	if len(instruction) != 5 {
 		return fmt.Errorf("invalid length, %+v", instruction)
 	}

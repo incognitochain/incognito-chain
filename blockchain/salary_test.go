@@ -715,13 +715,13 @@ func TestBlockChain_buildInstRewardForShards(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			blockchain := &BlockChain{}
-			got, err := blockchain.buildInstRewardForShards(tt.args.epoch, tt.args.totalRewards)
+			got, err := blockchain.buildInstructionRewardForShards(tt.args.epoch, tt.args.totalRewards)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("buildInstRewardForShards() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("buildInstructionRewardForShards() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("buildInstRewardForShards() got = %v, want %v", got, tt.want)
+				t.Errorf("buildInstructionRewardForShards() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
