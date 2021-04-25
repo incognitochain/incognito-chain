@@ -13,9 +13,6 @@ func (proof *PaymentProof) LoadCommitmentFromStateDB(db *statedb.StateDB, tokenI
 	privacy.Logger.Log.Infof("[testperformance] LoadCommitmentFromStateDB, tokenID %v, shardID %v", tokenID.String(), shardID)
 	cmInputSum := make([]*privacy.Point, len(proof.oneOfManyProof))
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
-		// privacy.Logger.Log.Debugf("[TEST] input coins %v\n ShardID %v fee %v", i, shardID, fee)
-		// privacy.Logger.Log.Debugf("[TEST] commitments indices %v\n", proof.commitmentIndices[i*privacy.CommitmentRingSize:i*privacy.CommitmentRingSize+8])
-		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
 		// Calculate cm input sum
 		cmInputSum[i] = new(privacy.Point).Add(proof.commitmentInputSecretKey, proof.commitmentInputValue[i])
 		cmInputSum[i].Add(cmInputSum[i], proof.commitmentInputSND[i])
@@ -80,8 +77,6 @@ func (proof PaymentProof) VerifyV2(
 	vEnv privacy.ValidationEnviroment,
 	pubKey privacy.PublicKey,
 	fee uint64,
-	// shardID byte,
-	// tokenID *common.Hash,
 ) (
 	bool,
 	error,
@@ -187,11 +182,11 @@ func (proof PaymentProof) verifyNoPrivacyV2(
 	}
 
 	// check overflow fee value
-	tmp := sumOutputValue + fee
-	if tmp < sumOutputValue || tmp < fee {
-		return false, privacy.NewPrivacyErr(privacy.UnexpectedErr, fmt.Errorf("Overflow fee value %v\n", fee))
-	}
-	if (vEnv.TxType() == common.TxRewardType) || (vEnv.TxAction() == common.TxActInit) {
+	// tmp := sumOutputValue + fee
+	// if tmp < sumOutputValue || tmp < fee {
+	// 	return false, privacy.NewPrivacyErr(privacy.UnexpectedErr, fmt.Errorf("Overflow fee value %v\n", fee))
+	// }
+	if (vEnv.TxType() == common.TxRewardType) || (vEnv.TxType() == common.TxReturnStakingType) || (vEnv.TxAction() == common.TxActInit) {
 		return true, nil
 	}
 	// check if sum of input values equal sum of output values
@@ -208,9 +203,6 @@ func (proof PaymentProof) verifyNoPrivacyV2(
 func (proof PaymentProof) verifyHasPrivacyV2(
 	pubKey privacy.PublicKey,
 	fee uint64,
-	// stateDB *statedb.StateDB,
-	// shardID byte,
-	// tokenID *common.Hash,
 	vEnv privacy.ValidationEnviroment,
 ) (
 	bool,
@@ -275,8 +267,6 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 		}
 	}
 
-	// Verify the proof that output values and sum of them do not exceed v_max
-	// if !isBatch {
 	if isNewZKP {
 		valid, err := proof.aggregatedRangeProof.Verify()
 		if !valid {
@@ -294,7 +284,6 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 			}
 		}
 	}
-	// }
 
 	// Verify the proof that sum of all input values is equal to sum of all output values
 	comInputValueSum := new(privacy.Point).Identity()

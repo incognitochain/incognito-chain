@@ -217,70 +217,22 @@ func (tx *Tx) ValidateTxCorrectness(
 		return ok, err
 	}
 
-	// Todo Moving out
 	Logger.log.Debugf("VALIDATING TX........\n")
-	// if tx.IsSalaryTx() {
-	// 	return tx.ValidateTxSalary(transactionStateDB)
-	// }
-	// hasPrivacy := tx.IsPrivacy()
+
 	var valid bool
 	var err error
 
-	//Todo find out how to validate safer
-	if tx.GetType() == common.TxReturnStakingType {
-		return true, nil //
-	}
-
 	if tx.Proof != nil {
-		// if tokenID == nil {
-		// 	tokenID = &common.Hash{}
-		// 	err := tokenID.SetBytes(common.PRVCoinID[:])
-		// 	if err != nil {
-		// 		Logger.log.Error(err)
-		// 		return false, NewTransactionErr(TokenIDInvalidError, err, tokenID.String())
-		// 	}
-		// }
-
-		/*----------- TODO Moving out --------------
-
-		// if !tx.valEnv.IsPrivacy() {
-			// Check input coins' commitment is exists in cm list (Database)
-
-		// }
-		------------------------------------------ */
-		// Verify the payment proof
-
 		valid, err = tx.Proof.VerifyV2(tx.valEnv, tx.SigPubKey, tx.Fee)
 		if !valid {
 			if err != nil {
 				Logger.log.Error(err)
 			}
-			// Logger.log.Error("FAILED VERIFICATION PAYMENT PROOF")
-			// err1, ok := err.(*privacy.PrivacyError)
-			// if ok {
-			// 	// parse error detail
-			// 	if err1.Code == privacy.ErrCodeMessage[privacy.VerifyOneOutOfManyProofFailedErr].Code {
-			// 		// if isNewTransaction {
-			// 		// 	return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-			// 		// } else {
-			// 		// for old txs which be get from sync block or validate new block
-			// 		// if tx.LockTime <= ValidateTimeForOneoutOfManyProof {
-			// 		// 	// only verify by sign on block because of issue #504(that mean we should pass old tx, which happen before this issue)
-			// 		// 	return true, nil
-			// 		// } else {
-			// 		return false, NewTransactionErr(VerifyOneOutOfManyProofFailedErr, err1, tx.Hash().String())
-			// 		// }
-			// 		// }
-			// 	}
-			// }
 			return false, NewTransactionErr(TxProofVerifyFailError, err, tx.Hash().String())
 		} else {
 			Logger.log.Debugf("SUCCESSED VERIFICATION PAYMENT PROOF ")
 		}
 	}
-	//@UNCOMMENT: metrics time
-	//elapsed := time.Since(start)
-	//Logger.log.Debugf("Validation normal tx %+v in %s time \n", *tx.Hash(), elapsed)
 
 	return true, nil
 }
@@ -424,9 +376,6 @@ func (txN Tx) validateOutputPrivacy() (bool, error) {
 		if oCoin.CoinDetails.GetRandomness() != nil {
 			return false, errors.New("Randomness of output coin is not nil")
 		}
-		// if oCoin.CoinDetails.GetSerialNumber() != nil {
-		// 	return false, errors.Errorf("SerialNumber of output coin is not nil %v", string(oCoin.CoinDetails.GetSerialNumber().MarshalText()))
-		// }
 
 		if !cmOutSIDs[i].PointValid() {
 			return false, errors.New("validate sanity ComOutputShardID of proof failed")
@@ -457,9 +406,6 @@ func (txN Tx) validateOutputNoPrivacy() (bool, error) {
 		if !oCoin.CoinDetails.GetSNDerivator().ScalarValid() {
 			return false, errors.New("validate sanity SNDerivator of output coin failed")
 		}
-		// if oCoin.CoinDetails.GetSerialNumber() != nil {
-		// 	return false, errors.Errorf("SerialNumber of output coin is not nil %v", string(oCoin.CoinDetails.GetSerialNumber().MarshalText()))
-		// }
 	}
 	return true, nil
 }

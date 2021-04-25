@@ -520,21 +520,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	if len(shardBlock.Body.Transactions) > 0 {
 		Logger.log.Infof("[testperformance] SHARD %+v | Validate %v txs of block %v cost %v", shardID, len(shardBlock.Body.Transactions), shardBlock.GetHeight(), time.Since(st))
 	}
-	// bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(shardBlock.Header.BeaconHash)
-	// if err != nil {
-	// 	return NewBlockChainError(CloneBeaconBestStateError, err)
-	// }
-	// st := time.Now()
-	// ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
-	// 	blockchain,
-	// 	curView,
-	// 	bView,
-	// 	shardBlock.Body.Transactions,
-	// )
-	// Logger.log.Infof("[testperformance] SHARD %+v | Validate %v txs of block %v cost %v", shardID, len(shardBlock.Body.Transactions), shardBlock.GetHeight(), time.Since(st))
-	// if !ok {
-	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
-	// }
 	// Verify Instruction
 	beaconInstructions := [][]string{}
 

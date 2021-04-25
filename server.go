@@ -22,6 +22,7 @@ import (
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/syncker"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/incognitochain/incognito-chain/wallet"
 
@@ -755,46 +756,46 @@ func (serverObj *Server) GetActiveShardNumber() int {
 // }
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
-	// ticker := time.NewTicker(serverObj.memPool.ScanTime)
-	// defer ticker.Stop()
-	// for _ = range ticker.C {
-	// 	txDescs := serverObj.memPool.GetPool()
+	ticker := time.NewTicker(serverObj.memPool.ScanTime)
+	defer ticker.Stop()
+	for _ = range ticker.C {
+		txDescs := serverObj.memPool.GetPool()
 
-	// 	for _, txDesc := range txDescs {
-	// 		time.Sleep(50 * time.Millisecond)
-	// 		if !txDesc.IsFowardMessage {
-	// 			tx := txDesc.Desc.Tx
-	// 			switch tx.GetType() {
-	// 			case common.TxNormalType:
-	// 				{
-	// 					txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-	// 					if err != nil {
-	// 						continue
-	// 					}
-	// 					normalTx := tx.(*transaction.Tx)
-	// 					txMsg.(*wire.MessageTx).Transaction = normalTx
-	// 					err = serverObj.PushMessageToAll(txMsg)
-	// 					if err == nil {
-	// 						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
-	// 					}
-	// 				}
-	// 			case common.TxCustomTokenPrivacyType:
-	// 				{
-	// 					txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
-	// 					if err != nil {
-	// 						continue
-	// 					}
-	// 					customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-	// 					txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
-	// 					err = serverObj.PushMessageToAll(txMsg)
-	// 					if err == nil {
-	// 						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
+		for _, txDesc := range txDescs {
+			time.Sleep(50 * time.Millisecond)
+			if !txDesc.IsFowardMessage {
+				tx := txDesc.Desc.Tx
+				switch tx.GetType() {
+				case common.TxNormalType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+						if err != nil {
+							continue
+						}
+						normalTx := tx.(*transaction.Tx)
+						txMsg.(*wire.MessageTx).Transaction = normalTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+						}
+					}
+				case common.TxCustomTokenPrivacyType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
+						if err != nil {
+							continue
+						}
+						customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 // CheckForceUpdateSourceCode - loop to check current version with update version is equal

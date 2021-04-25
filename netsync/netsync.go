@@ -2,10 +2,11 @@ package netsync
 
 import (
 	"errors"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/syncker"
 
@@ -170,18 +171,6 @@ out:
 							netSync.handleMessageBFTMsg(msg)
 						}
 
-					case *wire.MessageGetCrossShard:
-						{
-							netSync.handleMessageGetCrossShard(msg)
-						}
-					case *wire.MessageGetBlockBeacon:
-						{
-							netSync.handleMessageGetBlockBeacon(msg)
-						}
-					case *wire.MessageGetBlockShard:
-						{
-							netSync.handleMessageGetBlockShard(msg)
-						}
 					default:
 						Logger.log.Debugf("Invalid message type in block "+"handler: %T", msg)
 					}
@@ -354,66 +343,6 @@ func (netSync *NetSync) handleMessageBFTMsg(msg *wire.MessageBFT) {
 	// 	metrics.Tag:              metrics.ShardIDTag,
 	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
 	// })
-}
-
-func (netSync *NetSync) handleMessageGetBlockShard(msg *wire.MessageGetBlockShard) {
-	Logger.log.Debug("Handling new message - " + wire.CmdGetBlockShard)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.HandleMessageGetBlockShard,
-	// 	metrics.MeasurementValue: float64(1),
-	// 	metrics.Tag:              metrics.ShardIDTag,
-	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
-	// })
-	peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	if msg.ByHash {
-		netSync.getBlockShardByHashAndSend(peerID, blockShard, msg.BlkHashes, 0)
-	} else {
-		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, blockShard, msg.BySpecificHeight, msg.ShardID, msg.BlkHeights, 0)
-	}
-}
-
-func (netSync *NetSync) handleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon) {
-	Logger.log.Debug("Handling new message - " + wire.CmdGetBlockBeacon)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.HandleMessageGetBlockBeacon,
-	// 	metrics.MeasurementValue: float64(1),
-	// 	metrics.Tag:              metrics.ShardIDTag,
-	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
-	// })
-	peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	if msg.ByHash {
-		netSync.getBlockBeaconByHashAndSend(peerID, msg.BlkHashes)
-	} else {
-		netSync.getBlockBeaconByHeightAndSend(peerID, msg.FromPool, msg.BySpecificHeight, msg.BlkHeights)
-	}
-}
-
-func (netSync *NetSync) handleMessageGetCrossShard(msg *wire.MessageGetCrossShard) {
-	Logger.log.Debug("Handling new message getcrossshard")
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.HandleMessageGetCrossShard,
-	// 	metrics.MeasurementValue: float64(1),
-	// 	metrics.Tag:              metrics.ShardIDTag,
-	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
-	// })
-	peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	if msg.ByHash {
-		netSync.getBlockShardByHashAndSend(peerID, crossShard, msg.BlkHashes, msg.ToShardID)
-	} else {
-		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, crossShard, msg.BySpecificHeight, msg.FromShardID, msg.BlkHeights, msg.ToShardID)
-	}
 }
 
 func (netSync *NetSync) handleCacheBlock(blockHash string) bool {
