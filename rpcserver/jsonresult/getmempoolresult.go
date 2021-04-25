@@ -3,6 +3,7 @@ package jsonresult
 import (
 	"sort"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/txpool"
 )
@@ -43,7 +44,7 @@ func NewGetMempoolInfoV2(info txpool.MempoolInfo) *GetMempoolInfo {
 
 func NewGetMempoolInfo(txMempool interface {
 	MaxFee() uint64
-	ListTxsDetail() []metadata.Transaction
+	ListTxsDetail() ([]common.Hash, []metadata.Transaction)
 	Count() int
 	Size() uint64
 }) *GetMempoolInfo {
@@ -53,11 +54,11 @@ func NewGetMempoolInfo(txMempool interface {
 		MempoolMaxFee: txMempool.MaxFee(),
 	}
 	// get list data from mempool
-	listTxsDetail := txMempool.ListTxsDetail()
-	if len(listTxsDetail) > 0 {
+	tpKeys, txs := txMempool.ListTxsDetail()
+	if len(txs) > 0 {
 		result.ListTxs = make([]GetMempoolInfoTx, 0)
-		for _, tx := range listTxsDetail {
-			item := NewGetMempoolInfoTx(tx)
+		for idx, tx := range txs {
+			item := NewGetMempoolInfoTx(tpKeys[idx], tx)
 			result.ListTxs = append(result.ListTxs, *item)
 		}
 	}
@@ -70,20 +71,10 @@ func NewGetMempoolInfo(txMempool interface {
 	return result
 }
 
-// GetTxDetailsFromMempool is to get all txs along with their detailed info from mempool
-func GetTxDetailsFromMempool(txMempool interface {
-	MaxFee() uint64
-	ListTxsDetail() []metadata.Transaction
-	Count() int
-	Size() uint64
-}) []metadata.Transaction {
-	txDetailsInMempool := txMempool.ListTxsDetail()
-	return txDetailsInMempool
-}
-
 type GetMempoolInfoTx struct {
 	TxID     string `json:"TxID"`
 	LockTime int64  `json:"LockTime"`
+	TpKey    string `json:"TpKey"`
 }
 
 func NewGetMempoolInfoTxV2(infoTx txpool.MempoolInfoTx) *GetMempoolInfoTx {
