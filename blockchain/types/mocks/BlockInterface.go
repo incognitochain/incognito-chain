@@ -246,22 +246,6 @@ func (_m *BlockInterface) Hash() *common.Hash {
 	return r0
 }
 
-// SubsetCommitteesFromBlock provides a mock function with given fields:
-func (_m *BlockInterface) SubsetCommitteesFromBlock() common.Hash {
-	ret := _m.Called()
-
-	var r0 common.Hash
-	if rf, ok := ret.Get(0).(func() common.Hash); ok {
-		r0 = rf()
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(common.Hash)
-		}
-	}
-
-	return r0
-}
-
 // Type provides a mock function with given fields:
 func (_m *BlockInterface) Type() string {
 	ret := _m.Called()

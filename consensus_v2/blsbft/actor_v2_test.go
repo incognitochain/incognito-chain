@@ -28,18 +28,16 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 	initTestParams()
 	common.TIMESLOT = 1
 	hash1, _ := common.Hash{}.NewHashFromStr("123")
-	hash2, _ := common.Hash{}.NewHashFromStr("456")
 	logger := initLog()
 
 	shardBlock := &types.ShardBlock{
 		Header: types.ShardHeader{
-			Height:                    10,
-			CommitteeFromBlock:        *hash1,
-			SubsetCommitteesFromBlock: *hash2,
-			Producer:                  key0,
-			ProposeTime:               10,
-			Version:                   4,
-			PreviousBlockHash:         *hash1,
+			Height:             10,
+			CommitteeFromBlock: *hash1,
+			Producer:           key0,
+			ProposeTime:        10,
+			Version:            4,
+			PreviousBlockHash:  *hash1,
 		},
 	}
 	shardBlockData, _ := json.Marshal(shardBlock)
@@ -48,8 +46,8 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 	errorUnmarshalChain.On("UnmarshalBlock", shardBlockData).Return(nil, errors.New("Errror"))
 
 	errorCommitteeChain := &mockchain.Chain{}
-	errorCommitteeChain.On("CommitteesFromViewHashForShard", *hash1, *hash2, byte(1), 2).
-		Return([]incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, errors.New("Errror"))
+	errorCommitteeChain.On("CommitteesFromViewHashForShard", *hash1, byte(1)).
+		Return([]incognitokey.CommitteePublicKey{}, errors.New("Errror"))
 
 	errorGetBestViewHeight := &mockchain.Chain{}
 	errorGetBestViewHeight.On("UnmarshalBlock", shardBlockData).Return(shardBlock, nil)
@@ -58,9 +56,8 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 	errorGetBestViewHeight.On("GetShardID").Return(1)
 
 	validCommitteeChain := &mockchain.Chain{}
-	validCommitteeChain.On("CommitteesFromViewHashForShard", *hash1, *hash2, byte(1), 2).
+	validCommitteeChain.On("CommitteesFromViewHashForShard", *hash1, byte(1)).
 		Return(
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
 			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
 			nil,
 		)
@@ -130,8 +127,9 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 			name: "Can not get committees from block",
 			fields: fields{
 				actorBase: actorBase{
-					chain:  errorGetBestViewHeight,
-					logger: logger,
+					chain:   errorGetBestViewHeight,
+					logger:  logger,
+					chainID: 1,
 				},
 				committeeChain: errorCommitteeChain,
 			},
@@ -148,8 +146,9 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 			name: "Receive block from old view",
 			fields: fields{
 				actorBase: actorBase{
-					chain:  errorGetBestViewHeight,
-					logger: logger,
+					chain:   errorGetBestViewHeight,
+					logger:  logger,
+					chainID: 1,
 				},
 				committeeChain:       validCommitteeChain,
 				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
@@ -168,9 +167,10 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 			name: "Sync blocks to current proposed block",
 			fields: fields{
 				actorBase: actorBase{
-					chain:  syncProposeViewChain,
-					logger: logger,
-					node:   node,
+					chain:   syncProposeViewChain,
+					logger:  logger,
+					node:    node,
+					chainID: 1,
 				},
 				committeeChain:       validCommitteeChain,
 				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
@@ -189,8 +189,9 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 			name: "Normal Work",
 			fields: fields{
 				actorBase: actorBase{
-					chain:  normalChain,
-					logger: logger,
+					chain:   normalChain,
+					logger:  logger,
+					chainID: 1,
 				},
 				committeeChain:       validCommitteeChain,
 				receiveBlockByHash:   map[string]*ProposeBlockInfo{},
@@ -539,8 +540,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 	hash, _ := common.Hash{}.NewHashFromStr("123456")
 	block := &types.ShardBlock{
 		Header: types.ShardHeader{
-			CommitteeFromBlock:        *hash,
-			SubsetCommitteesFromBlock: *hash,
+			CommitteeFromBlock: *hash,
 		},
 	}
 
@@ -1520,7 +1520,7 @@ func Test_actorV2_processWithEnoughVotes(t *testing.T) {
 	}
 
 	errReplaceValidationDataShardChain := &mockchain.Chain{}
-	//errReplaceValidationDataShardChain.On("ReplacePreviousValidationData", *prevHash, )
+	errReplaceValidationDataShardChain.On("ReplacePreviousValidationData", *prevHash)
 
 	type fields struct {
 		actorBase            actorBase
