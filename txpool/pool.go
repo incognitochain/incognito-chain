@@ -1,7 +1,6 @@
 package txpool
 
 import (
-	"fmt"
 	"log"
 	"runtime"
 	"time"
@@ -90,7 +89,7 @@ func (tp *TxsPool) Start() {
 	if tp.isRunning {
 		return
 	}
-	fmt.Println("[testperformance] Start pool!!")
+	Logger.Infof("Start transaction pool v1")
 	tp.isRunning = true
 	cValidTxs := make(chan txInfoTemp, 1024)
 	stopGetTxs := make(chan interface{})
@@ -102,9 +101,9 @@ func (tp *TxsPool) Start() {
 			stopGetTxs <- nil
 			return
 		case f := <-tp.action:
-			fmt.Printf("[testperformance] Total txs received %v, total txs in pool %v\n", total, len(tp.Data.TxInfos))
+			Logger.Debugf("[testperformance] Total txs received %v, total txs in pool %v\n", total, len(tp.Data.TxInfos))
 			f(tp)
-			fmt.Printf("[testperformance] Total txs in pool %v after func\n", len(tp.Data.TxInfos))
+			Logger.Debugf("[testperformance] Total txs in pool %v after func\n", len(tp.Data.TxInfos))
 		case validTx := <-cValidTxs:
 			total++
 			txH := validTx.tx.Hash().String()
@@ -134,7 +133,7 @@ func (tp *TxsPool) RemoveTxs(txHashes []string) {
 func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Duration) {
 	txHash := tx.Hash().String()
 	start := time.Now()
-	log.Printf("[txTracing] Start validate tx %v at %v", txHash, start.UTC())
+	Logger.Debugf("[txTracing] Start validate tx %v at %v", txHash, start.UTC())
 	t := time.NewTimer(2 * time.Second)
 	defer t.Stop()
 	errChan := make(chan validateResult)
@@ -151,7 +150,7 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 		ok := tp.Verifier.LoadCommitment(tx, nil)
 		if !ok {
 			err := errors.Errorf("Can not load commitment for this tx %v", tx.Hash().String())
-			log.Printf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
+			Logger.Debugf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
 			errChan <- validateResult{
 				err:    err,
 				result: false,
@@ -170,7 +169,7 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 	case <-t.C:
 		return false, errors.Errorf("[stream] Trying send to client but timeout"), 0
 	case err := <-errChan:
-		log.Printf("[txTracing] validate tx %v return %v, error %v, cost %v", txHash, err.result, err.err, err.cost)
+		Logger.Debugf("[txTracing] validate tx %v return %v, error %v, cost %v", txHash, err.result, err.err, err.cost)
 		return err.result, err.err, err.cost
 	}
 }
@@ -185,7 +184,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 ) []metadata.Transaction {
 	//TODO Timeout
 	timeOut := time.After(getTxsDuration)
-	fmt.Printf("[testperformance] Has %v time for crawling txs\n", getTxsDuration)
+	Logger.Infof("Has %v time for crawling txs for shard %v\n", getTxsDuration, sView.GetShardID())
 	st := time.Now()
 	res := []metadata.Transaction{}
 	txDetailCh := make(chan *TxInfoDetail, 1024)
@@ -199,7 +198,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 	}{}
 	sDB := sView.GetCopiedTransactionStateDB()
 	defer func() {
-		fmt.Printf("[testperformance] Return list txs #res %v cursize %v curtime %v maxsize %v maxtime %v \n", len(res), curSize, curTime, maxSize, maxTime)
+		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v maxtime %v for shard %v \n", len(res), curSize, curTime, maxSize, maxTime, sView.GetShardID())
 	}()
 	limitTxAction := map[int]int{}
 	for {
@@ -208,7 +207,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			if txDetails == nil {
 				return res
 			}
-			fmt.Printf("[testvalidate] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
+			Logger.Debugf("[txTracing] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
 			if (curSize+txDetails.Size > maxSize) || (curTime+txDetails.VTime > maxTime) {
 				continue
 			}
@@ -217,7 +216,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			}
 			err := txDetails.Tx.LoadCommitment(sDB.Copy())
 			if err != nil {
-				fmt.Printf("Validate tx %v return error %v\n", txDetails.Hash, err)
+				Logger.Errorf("[txTracing] Validate tx %v return error %v\n", txDetails.Hash, err)
 				continue
 			}
 			ok, err := tp.Verifier.ValidateWithChainState(
@@ -228,12 +227,12 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				sView.GetBeaconHeight(),
 			)
 			if !ok || err != nil {
-				fmt.Printf("Validate tx %v return error %v\n", txDetails.Hash, err)
+				Logger.Errorf("[txTracing]Validate tx %v return error %v\n", txDetails.Hash, err)
 				continue
 			}
-			fmt.Printf("[testperformance] Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
+			Logger.Debugf("[testperformance] Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
 			ok, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
-			fmt.Printf("[testperformance] Added %v, needed to remove %v\n", ok, removedInfo)
+			Logger.Debugf("[testperformance] Added %v, needed to remove %v\n", ok, removedInfo)
 			if ok {
 				curSize = curSize - removedInfo.Fee + txDetails.Fee
 				curTime = curTime - removedInfo.VTime + txDetails.VTime
@@ -241,7 +240,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			}
 		case <-timeOut:
 			stopCh <- nil
-			fmt.Printf("[testperformance] Timeout!!! %v\n", time.Since(st))
+			Logger.Debugf("Crawling txs for new block shard %v timeout! %v\n", sView.GetShardID(), time.Since(st))
 			return res
 		}
 	}
@@ -269,53 +268,45 @@ func (tp *TxsPool) CheckDoubleSpend(
 		removeIdx := map[uint]interface{}{}
 		for _, iCoin := range iCoins {
 			if info, ok := dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
-				fmt.Println("1", info)
 				if _, ok := removeIdx[info.Index]; ok {
 					continue
 				}
 				if tp.better(info.Detail.Tx, tx) {
 					return false, removedInfos
 				} else {
-					fmt.Println("Assign map remove 1")
 					removeIdx[info.Index] = nil
 				}
 			}
 		}
 		for _, oCoin := range oCoins {
 			if info, ok := dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
-				fmt.Println("2", info)
 				if _, ok := removeIdx[info.Index]; ok {
 					continue
 				}
 				if tp.better(info.Detail.Tx, tx) {
 					return false, removedInfos
 				} else {
-					fmt.Println("Assign map remove 2")
 					removeIdx[info.Index] = nil
 				}
 			}
 		}
 		if len(removeIdx) > 0 {
-			fmt.Printf("[testperformance] %v %v Doublespend %v ", len(removeIdx), len((*txs)), tx.Hash().String())
+			Logger.Debugf("%v %v Doublespend %v ", len(removeIdx), len((*txs)), tx.Hash().String())
 			for k, v := range dataHelper {
 				if _, ok := removeIdx[v.Index]; ok {
 					delete(dataHelper, k)
 				}
 			}
 			for k := range removeIdx {
-				fmt.Printf("%v:", k)
 				if int(k) == len(*txs)-1 {
-					fmt.Printf("%v; ", (*txs)[k].Hash().String())
 					(*txs) = (*txs)[:k]
 				} else {
-					fmt.Printf("%v; ", (*txs)[k].Hash().String())
 					if int(k) < len((*txs))-1 {
 						(*txs) = append((*txs)[:k], (*txs)[k+1:]...)
 					}
 				}
 
 			}
-			fmt.Println()
 		}
 	}
 	return true, removedInfos
@@ -387,13 +378,13 @@ func (tp *TxsPool) getTxs(quit <-chan interface{}, cValidTxs chan txInfoTemp) {
 			msg := <-tp.Inbox
 			txHah := msg.Hash().String()
 			workerID := len(nWorkers)
-			log.Printf("[txTracing] Received new tx %v, send to worker %v", txHah, workerID)
+			Logger.Debugf("[txTracing] Received new tx %v, send to worker %v", txHah, workerID)
 			nWorkers <- 1
 			go func() {
 				isValid, err, vTime := tp.ValidateNewTx(msg)
 				<-nWorkers
 				if err != nil {
-					fmt.Printf("Validate tx %v return error %v:\n", msg.Hash().String(), err)
+					Logger.Errorf("Validate tx %v return error %v:\n", msg.Hash().String(), err)
 				}
 				if isValid {
 					cValidTxs <- txInfoTemp{
@@ -431,7 +422,7 @@ func (tp *TxsPool) getTxsFromPool(
 	tp.action <- func(tpTemp *TxsPool) {
 		defer func() {
 			close(txCh)
-			fmt.Println("[testperformance] tx channel is closed")
+			Logger.Debug("[testperformance] tx channel is closed")
 		}()
 		for k, v := range tpTemp.Data.TxByHash {
 			select {
@@ -449,7 +440,7 @@ func (tp *TxsPool) getTxsFromPool(
 				}
 				if v != nil {
 					txDetails.Tx = v
-					fmt.Printf("[debugperformance] Got %v, send to channel\n", txDetails.Hash)
+					Logger.Debugf("[debugperformance] Got %v, send to channel\n", txDetails.Hash)
 					txCh <- txDetails
 				}
 			}
@@ -470,8 +461,8 @@ func checkTxAction(
 		remining[act] = metadata.GetLimitOfMeta(tx.GetMetadataType())
 	}
 	limit := remining[act]
-	fmt.Printf("[rejecttx] Total txs %v is larger than limit %v, reject this tx %v \n", act, limit, tx.Hash().String())
 	if limit < 1 {
+		Logger.Errorf("[rejecttx] Total txs %v is larger than limit %v, reject this tx %v \n", act, limit, tx.Hash().String())
 		return false
 	}
 	remining[act] = limit - 1

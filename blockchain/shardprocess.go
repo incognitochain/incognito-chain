@@ -478,15 +478,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	}
 	shardVerifyPreprocesingTimer.UpdateSince(startTimeVerifyPreProcessingShardBlock)
 	// Get cross shard shardBlock from pool
-	// ok := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
-	// 	blockchain,
-	// 	curView,
-	// 	blockchain.GetBeaconBestState(),
-	// 	shardBlock.Body.Transactions,
-	// )
-	// if !ok {
-	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
-	// }
 	if isPreSign {
 		err := blockchain.verifyPreProcessingShardBlockForSigning(curView, shardBlock, beaconBlocks, txInstructions, shardID, committees)
 		if err != nil {
@@ -955,7 +946,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 	if err != nil {
 		return NewBlockChainError(CloneBeaconBestStateError, err)
 	}
-	ok, err := blockchain.ShardChain[shardID].TxsVerifier.ValidateBlockTransactions(
+	ok, err := blockchain.ShardChain[shardID].TxsVerifier.FullValidateTransactions(
 		blockchain,
 		curView,
 		bView,

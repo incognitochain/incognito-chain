@@ -57,7 +57,7 @@ type TxPool interface {
 }
 
 type BlockTxsVerifier interface {
-	ValidateBlockTransactions(
+	FullValidateTransactions(
 		txP TxPool,
 		sView interface{},
 		bcView interface{},
@@ -75,7 +75,7 @@ type TxVerifier interface {
 		beaconViewRetriever metadata.BeaconViewRetriever,
 		beaconHeight uint64,
 	) (bool, error)
-	ValidateBlockTransactions(
+	FullValidateTransactions(
 		chainRetriever metadata.ChainRetriever,
 		shardViewRetriever metadata.ShardViewRetriever,
 		beaconViewRetriever metadata.BeaconViewRetriever,

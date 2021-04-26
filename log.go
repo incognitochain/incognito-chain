@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
-	"os"
-	"path/filepath"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -78,6 +79,7 @@ var (
 	portalV3CommonLogger  = backendLog.Logger("Portal v3 common log ", false)
 	portalV3ProcessLogger = backendLog.Logger("Portal v3 process log ", false)
 	portalV3TokenLogger   = backendLog.Logger("Portal v3 token log ", false)
+	TxPoolLogger          = backendLog.Logger("Txpool log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and

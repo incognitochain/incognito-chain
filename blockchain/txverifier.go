@@ -117,7 +117,7 @@ func (v *TxsVerifier) ValidateWithChainState(
 	return tx.ValidateDoubleSpendWithBlockChain(shardViewRetriever.GetCopiedTransactionStateDB())
 }
 
-func (v *TxsVerifier) ValidateBlockTransactions(
+func (v *TxsVerifier) FullValidateTransactions(
 	chainRetriever metadata.ChainRetriever,
 	shardViewRetriever metadata.ShardViewRetriever,
 	beaconViewRetriever metadata.BeaconViewRetriever,
