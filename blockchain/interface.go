@@ -97,11 +97,17 @@ type Chain interface {
 	GetViewByHash(hash common.Hash) multiview.View
 	CommitteeEngineVersion() int
 	GetProposerByTimeSlot(
+		committeeViewHash common.Hash,
 		shardID byte,
 		ts int64,
 		committees []incognitokey.CommitteePublicKey,
-	) (incognitokey.CommitteePublicKey, int)
+	) (incognitokey.CommitteePublicKey, int, error)
 	CommitteesFromViewHashForShard(committeeHash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
 	ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error
-	SigningCommittees(proposerIndex int, committees []incognitokey.CommitteePublicKey) []incognitokey.CommitteePublicKey
+	SigningCommittees(
+		committeeViewHash common.Hash,
+		proposerIndex int,
+		committees []incognitokey.CommitteePublicKey,
+		shardID byte,
+	) []incognitokey.CommitteePublicKey
 }
