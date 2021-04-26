@@ -8,9 +8,6 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
-//TODO: @tin please document a set function of FinishSyncManager object as well as their usage]
-// for each function, please inform which package or where this function will be called
-// Please remember to use mu.(R)lock and mu.(R)unlock on exported functions
 type FinishSyncManager struct {
 	validators map[byte][]incognitokey.CommitteePublicKey
 	mu         *sync.RWMutex
@@ -87,8 +84,9 @@ func (manager *FinishSyncManager) AddFinishedSyncValidators(
 func (manager *FinishSyncManager) Validators(shardID byte) []incognitokey.CommitteePublicKey {
 	manager.mu.RLock()
 	defer manager.mu.RUnlock()
-	//TODO: @tin before return, so any further modification on the return slice won't have side effect to manager.validators field
-	return manager.validators[shardID]
+	res := make([]incognitokey.CommitteePublicKey, len(manager.validators[shardID]))
+	copy(res, manager.validators[shardID])
+	return res
 }
 
 //RemoveValidators only remove FinishSyncManager.validator list ONCE
