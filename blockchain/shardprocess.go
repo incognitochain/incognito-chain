@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -725,7 +725,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		err     error
 		shardID = shardBlock.Header.ShardID
 	)
-	startTimeUpdateShardBestState := time.Now()
+
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	shardBestState := NewShardBestState()
 	if err := shardBestState.cloneShardBestStateFrom(oldBestState); err != nil {
@@ -795,7 +795,13 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	if err != nil {
 		return nil, nil, nil, NewBlockChainError(UpdateShardCommitteeStateError, err)
 	}
-	shardUpdateBestStateTimer.UpdateSince(startTimeUpdateShardBestState)
+
+	//process salary instruction
+	err = blockchain.processSalaryInstructions(shardBestState.rewardStateDB, beaconBlocks, shardBestState.ShardID)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
 	return shardBestState, hashes, committeeChange, nil
 }

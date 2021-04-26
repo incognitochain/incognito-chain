@@ -167,27 +167,84 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 	return chain.GetBestState().ShardProposerIdx
 }
 
+type ShardProducingFlow struct {
+	curView              *ShardBestState
+	nextView             *ShardBestState
+	newBlock             *types.ShardBlock
+	version              int
+	proposer             string
+	round                int
+	startTime            int64
+	blockCommittees      []incognitokey.CommitteePublicKey
+	committeeViewHash    common.Hash
+	beaconBlocks         []*types.BeaconBlock
+	crossShardBlockToAdd map[byte][]*types.CrossShardBlock
+	shardCommitteeHashes *committeestate.ShardCommitteeStateHash
+	committeeChange      *committeestate.CommitteeChange
+}
+
+func (chain *ShardChain) getDataBeforeBlockProducing(version int, proposer string, round int, startTime int64,
+	committees []incognitokey.CommitteePublicKey,
+	committeeViewHash common.Hash) (*ShardProducingFlow, error) {
+
+	createFlow := &ShardProducingFlow{
+		curView:           chain.GetBestState(),
+		nextView:          nil,
+		newBlock:          types.NewShardBlock(),
+		version:           version,
+		proposer:          proposer,
+		round:             round,
+		startTime:         startTime,
+		blockCommittees:   committees,
+		committeeViewHash: committeeViewHash,
+	}
+
+	return createFlow, nil
+}
+
+func (chain *ShardChain) BuildHeader(flow *ShardProducingFlow) error {
+
+	//if version >= 2 {
+	//	newBlock.Header.Proposer = proposer
+	//	newBlock.Header.ProposeTime = startTime
+	//}
+	return nil
+}
+
+func (chain *ShardChain) BuildBody(flow *ShardProducingFlow) error {
+	return nil
+}
+
+func (chain *ShardChain) UpdateHeaderWithBodyContent(flow *ShardProducingFlow) error {
+	return nil
+}
+
 func (chain *ShardChain) CreateNewBlock(
 	version int, proposer string, round int, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash) (types.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
-	newBlock, err := chain.Blockchain.NewBlockShard(
-		chain.GetBestState(),
-		version, proposer, round,
-		startTime, committees, committeeViewHash)
-	Logger.log.Infof("Finish New Block Shard %+v", time.Now())
-	if err != nil {
-		Logger.log.Error(err)
+
+	createFlow, err := chain.getDataBeforeBlockProducing(version, proposer, round, startTime, committees, committeeViewHash)
+	if err := chain.BuildHeader(createFlow); err != nil {
 		return nil, err
 	}
-	if version >= 2 {
-		newBlock.Header.Proposer = proposer
-		newBlock.Header.ProposeTime = startTime
+
+	if err := chain.BuildBody(createFlow); err != nil {
+		return nil, err
 	}
 
-	Logger.log.Infof("Finish Create New Block")
-	return newBlock, nil
+	createFlow.nextView, createFlow.shardCommitteeHashes, createFlow.committeeChange, err =
+		createFlow.curView.updateShardBestState(chain.Blockchain, createFlow.newBlock, createFlow.beaconBlocks, createFlow.blockCommittees)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := chain.UpdateHeaderWithBodyContent(createFlow); err != nil {
+		return nil, err
+	}
+
+	return createFlow.newBlock, nil
 }
 
 func (chain *ShardChain) CreateNewBlockFromOldBlock(
@@ -517,26 +574,6 @@ func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlo
 	return validationFlow, nil
 }
 
-func (chain *ShardChain) processBlock(flow *ShardValidationFlow) (err error) {
-	blockchain := flow.blockchain
-	shardBlock := flow.block
-	beaconBlocks := flow.beaconBlocks
-	committees := flow.blockCommittees
-	curView := flow.curView
-
-	flow.nextView, flow.shardCommitteeHashes, flow.committeeChange, err = curView.updateShardBestState(blockchain, shardBlock, beaconBlocks, committees)
-	if err != nil {
-		return err
-	}
-
-	err = blockchain.processSalaryInstructions(flow.nextView.rewardStateDB, beaconBlocks, curView.ShardID)
-	if err != nil {
-		return err
-	}
-
-	return err
-}
-
 func (chain *ShardChain) validateNewState(flow *ShardValidationFlow) (err error) {
 	if err = flow.nextView.verifyPostProcessingShardBlock(flow.block, byte(flow.curView.ShardID), flow.shardCommitteeHashes); err != nil {
 		return err
@@ -671,7 +708,7 @@ func (chain *ShardChain) ValidatePreSignBlock(block types.BlockInterface, commit
 	return chain.ValidateAndProcessBlock(block, validationFlow)
 }
 
-func (chain *ShardChain) ValidateAndProcessBlock(block types.BlockInterface, validationFlow *ShardValidationFlow) error {
+func (chain *ShardChain) ValidateAndProcessBlock(block types.BlockInterface, validationFlow *ShardValidationFlow) (err error) {
 	shardBlock := block.(*types.ShardBlock)
 	blockHeight := shardBlock.Header.Height
 	shardID := shardBlock.Header.ShardID
@@ -703,7 +740,9 @@ func (chain *ShardChain) ValidateAndProcessBlock(block types.BlockInterface, val
 
 	//process block
 	Logger.log.Infof("SHARD %+v | Process block feature height %+v - hash %+v", shardID, blockHeight, blockHash)
-	if err := chain.processBlock(validationFlow); err != nil {
+	validationFlow.nextView, validationFlow.shardCommitteeHashes, validationFlow.committeeChange, err =
+		validationFlow.curView.updateShardBestState(chain.Blockchain, shardBlock, validationFlow.beaconBlocks, validationFlow.blockCommittees)
+	if err != nil {
 		return err
 	}
 
