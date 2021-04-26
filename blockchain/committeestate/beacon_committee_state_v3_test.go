@@ -4301,6 +4301,242 @@ func TestBeaconCommitteeStateV3_SplitReward(t *testing.T) {
 			want3:   map[common.Hash]uint64{},
 			wantErr: false,
 		},
+		{
+			name: "Year 2, Subset 0",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
+						},
+						shardCommittee: map[byte][]string{
+							0: []string{},
+							1: []string{
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3,
+							},
+							2: []string{},
+							3: []string{},
+							4: []string{},
+							5: []string{},
+							6: []string{},
+							7: []string{},
+						},
+						mu: &sync.RWMutex{},
+					},
+				},
+			},
+			args: args{
+				env: &SplitRewardEnvironment{
+					DAOPercent:                9,
+					ShardID:                   1,
+					IsSplitRewardForCustodian: false,
+					PercentCustodianReward:    0,
+					TotalReward: map[common.Hash]uint64{
+						common.PRVCoinID: 497768,
+					},
+					MaxSubsetCommittees: 2,
+					SubsetID:            0,
+				},
+			},
+			want: map[common.Hash]uint64{
+				common.PRVCoinID: 12057,
+			},
+			want1: map[common.Hash]uint64{
+				common.PRVCoinID: 440912,
+			},
+			want2: map[common.Hash]uint64{
+				common.PRVCoinID: 44799,
+			},
+			want3:   map[common.Hash]uint64{},
+			wantErr: false,
+		},
+		{
+			name: "Year 2, Subset 1",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
+						},
+						shardCommittee: map[byte][]string{
+							0: []string{},
+							1: []string{
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3,
+							},
+							2: []string{},
+							3: []string{},
+							4: []string{},
+							5: []string{},
+							6: []string{},
+							7: []string{},
+						},
+						mu: &sync.RWMutex{},
+					},
+				},
+			},
+			args: args{
+				env: &SplitRewardEnvironment{
+					DAOPercent:                9,
+					ShardID:                   1,
+					IsSplitRewardForCustodian: false,
+					PercentCustodianReward:    0,
+					TotalReward: map[common.Hash]uint64{
+						common.PRVCoinID: 497768,
+					},
+					MaxSubsetCommittees: 2,
+					SubsetID:            1,
+				},
+			},
+			want: map[common.Hash]uint64{
+				common.PRVCoinID: 12057,
+			},
+			want1: map[common.Hash]uint64{
+				common.PRVCoinID: 440912,
+			},
+			want2: map[common.Hash]uint64{
+				common.PRVCoinID: 44799,
+			},
+			want3:   map[common.Hash]uint64{},
+			wantErr: false,
+		},
+		{
+			name: "Year 3, Subset 0, shard committee size = 61",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
+						},
+						shardCommittee: map[byte][]string{
+							0: []string{},
+							1: []string{
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0,
+							},
+							2: []string{},
+							3: []string{},
+							4: []string{},
+							5: []string{},
+							6: []string{},
+							7: []string{},
+						},
+						mu: &sync.RWMutex{},
+					},
+				},
+			},
+			args: args{
+				env: &SplitRewardEnvironment{
+					DAOPercent:                8,
+					ShardID:                   1,
+					IsSplitRewardForCustodian: false,
+					PercentCustodianReward:    0,
+					TotalReward: map[common.Hash]uint64{
+						common.PRVCoinID: 452696,
+					},
+					MaxSubsetCommittees: 2,
+					SubsetID:            0,
+				},
+			},
+			want: map[common.Hash]uint64{
+				common.PRVCoinID: 11433,
+			},
+			want1: map[common.Hash]uint64{
+				common.PRVCoinID: 405048,
+			},
+			want2: map[common.Hash]uint64{
+				common.PRVCoinID: 36215,
+			},
+			want3:   map[common.Hash]uint64{},
+			wantErr: false,
+		},
+		{
+			name: "Year 3, Subset 1, shard committee size = 61",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						beaconCommittee: []string{
+							key0, key, key2, key3, key, key2, key3,
+						},
+						shardCommittee: map[byte][]string{
+							0: []string{},
+							1: []string{
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0, key, key2, key3, key4, key5,
+								key0,
+							},
+							2: []string{},
+							3: []string{},
+							4: []string{},
+							5: []string{},
+							6: []string{},
+							7: []string{},
+						},
+						mu: &sync.RWMutex{},
+					},
+				},
+			},
+			args: args{
+				env: &SplitRewardEnvironment{
+					DAOPercent:                8,
+					ShardID:                   1,
+					IsSplitRewardForCustodian: false,
+					PercentCustodianReward:    0,
+					TotalReward: map[common.Hash]uint64{
+						common.PRVCoinID: 452696,
+					},
+					MaxSubsetCommittees: 2,
+					SubsetID:            1,
+				},
+			},
+			want: map[common.Hash]uint64{
+				common.PRVCoinID: 11804,
+			},
+			want1: map[common.Hash]uint64{
+				common.PRVCoinID: 404677,
+			},
+			want2: map[common.Hash]uint64{
+				common.PRVCoinID: 36215,
+			},
+			want3:   map[common.Hash]uint64{},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
