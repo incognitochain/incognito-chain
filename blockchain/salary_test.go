@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/trie"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
@@ -694,8 +695,8 @@ func TestBlockChain_buildInstRewardForShards(t *testing.T) {
 	totalRewardShard0_1[common.PRVCoinID] = 1000
 	totalRewardShard1_1 := make(map[common.Hash]uint64)
 	totalRewardShard1_1[common.PRVCoinID] = 1123
-	rewardInstShard0_1, _ := instruction.BuildInstForShardReward(totalRewardShard0_1, 1, 0)
-	rewardInstShard1_1, _ := instruction.BuildInstForShardReward(totalRewardShard1_1, 1, 1)
+	rewardInstShard0_1, _ := instruction.NewShardReceiveRewardV1WithValue(totalRewardShard0_1, 1, 0)
+	rewardInstShard1_1, _ := instruction.NewShardReceiveRewardV1WithValue(totalRewardShard1_1, 1, 1)
 	tests := []struct {
 		name    string
 		args    args
@@ -897,6 +898,84 @@ func Test_calculateReward(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got3, tt.want3) {
 				t.Errorf("calculateReward() got3 = %v, want %v", got3, tt.want3)
+			}
+		})
+	}
+}
+
+func Test_getCommitteeToPayRewardV3(t *testing.T) {
+
+	initPublicKey()
+	initLog()
+	wl0, _ := wallet.Base58CheckDeserialize("12RpJeW7vnRPekywx9nhSraaAfANDYaWYYYE7iVhivr5chCo5S9g1YHQFJ6TxHMJz6okHXTmmMEyqaov912ZkxJuyLicEU4QXJeRysY")
+	wl1, _ := wallet.Base58CheckDeserialize("12RxxmjTTzEGm6eCvHhXmNoCjZt9WMAAKECyGu9wpWMKHXD1Pgvh2TZRVM47CiVFG3XjzjdzMRSsSdWE4p1evcyJ6pCS5QCWWNtn5Bk")
+	wl2, _ := wallet.Base58CheckDeserialize("12Ry1WG32b6D2PXnA2AfUfwnfuKJdtExZeZbwszKxTbUaeH8BJBpaHibnJmHTzehKduPDVbRUbv38wrZ4snsX6sKZH5PmUoys7r8KJA")
+	wl3, _ := wallet.Base58CheckDeserialize("12Ry21dYZX8qmrSq9JJkSydwtKrSpvGGJGUqJyJVP491gWtiKA9ya7XSsJ5gYfTSjALMudEn3M5iXTVw3sQ1rouZ3EBnFMf9ojfJwpG")
+	wl4, _ := wallet.Base58CheckDeserialize("12Ry2Tej7dFBy4TrfGeu6hkTDMSTsSSExCiyutSSex4y28stcWLqbFMP2pEVFvgQzuLdPaYS2Gcwwv4wmUtecMYxNkBneEMK1BFELvJ")
+	wl5, _ := wallet.Base58CheckDeserialize("12Ry4s7jtiJ9C61iUmLToDYgVAsc2gA7GsihqRgdyqq9u7DY3qTe3Ns3UPpuhts6qkfXbtqtzRxZp1cE7ULZA2sCttsBYjFVwNcNRw3")
+	stakerInfos := make([]*statedb.StakerInfo, 6)
+	stakerInfos[0] = &statedb.StakerInfo{}
+	stakerInfos[0].SetRewardReceiver(wl0.KeySet.PaymentAddress)
+	stakerInfos[0].SetTxStakingID(common.HashH([]byte{0}))
+	stakerInfos[0].SetAutoStaking(true)
+	stakerInfos[1] = &statedb.StakerInfo{}
+	stakerInfos[1].SetRewardReceiver(wl1.KeySet.PaymentAddress)
+	stakerInfos[1].SetTxStakingID(common.HashH([]byte{1}))
+	stakerInfos[1].SetAutoStaking(false)
+	stakerInfos[2] = &statedb.StakerInfo{}
+	stakerInfos[2].SetRewardReceiver(wl2.KeySet.PaymentAddress)
+	stakerInfos[2].SetTxStakingID(common.HashH([]byte{2}))
+	stakerInfos[2].SetAutoStaking(true)
+	stakerInfos[3] = &statedb.StakerInfo{}
+	stakerInfos[3].SetRewardReceiver(wl3.KeySet.PaymentAddress)
+	stakerInfos[3].SetTxStakingID(common.HashH([]byte{3}))
+	stakerInfos[3].SetAutoStaking(false)
+	stakerInfos[4] = &statedb.StakerInfo{}
+	stakerInfos[4].SetRewardReceiver(wl4.KeySet.PaymentAddress)
+	stakerInfos[4].SetTxStakingID(common.HashH([]byte{4}))
+	stakerInfos[4].SetAutoStaking(true)
+	stakerInfos[5] = &statedb.StakerInfo{}
+	stakerInfos[5].SetRewardReceiver(wl5.KeySet.PaymentAddress)
+	stakerInfos[5].SetTxStakingID(common.HashH([]byte{5}))
+	stakerInfos[5].SetAutoStaking(true)
+	type args struct {
+		committees           []*statedb.StakerInfo
+		shardReceiveRewardV3 *instruction.ShardReceiveRewardV3
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*statedb.StakerInfo
+	}{
+		{
+			name: "subset 0",
+			args: args{
+				committees:           stakerInfos,
+				shardReceiveRewardV3: instruction.NewShardReceiveRewardV3().SetSubsetID(0),
+			},
+			want: []*statedb.StakerInfo{
+				stakerInfos[0],
+				stakerInfos[2],
+				stakerInfos[4],
+			},
+		},
+		{
+			name: "subset 1",
+			args: args{
+				committees:           stakerInfos,
+				shardReceiveRewardV3: instruction.NewShardReceiveRewardV3().SetSubsetID(1),
+			},
+			want: []*statedb.StakerInfo{
+				stakerInfos[1],
+				stakerInfos[3],
+				stakerInfos[5],
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getCommitteeToPayRewardV3(tt.args.committees, tt.args.shardReceiveRewardV3); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getCommitteeToPayRewardV3() = %v, want %v", got, tt.want)
 			}
 		})
 	}

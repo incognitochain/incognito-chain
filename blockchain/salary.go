@@ -79,7 +79,11 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 	return nil
 }
 
-func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.StateDB, beaconBlocks []*types.BeaconBlock, shardID byte) error {
+func (blockchain *BlockChain) processSalaryInstructions(
+	rewardStateDB *statedb.StateDB,
+	beaconBlocks []*types.BeaconBlock,
+	shardID byte,
+) error {
 	cInfos := make(map[int][]*statedb.StakerInfo)
 	isInit := false
 	epoch := uint64(0)
@@ -92,13 +96,13 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				continue
 			}
 			if l[0] == instruction.SHARD_RECEIVE_REWARD_V3_ACTION {
-				shardSubsetRewardInst, err := instruction.ValidateAndImportShardReceiveRewardV3InstructionFromString(l)
+				shardReceiveRewardV3, err := instruction.ValidateAndImportShardReceiveRewardV3InstructionFromString(l)
 				if err != nil {
 					Logger.log.Debug(err)
 					continue
 				}
-				if shardSubsetRewardInst.Epoch() != 0 {
-					height := blockchain.GetLastBeaconHeightInEpoch(shardSubsetRewardInst.Epoch())
+				if shardReceiveRewardV3.Epoch() != 0 {
+					height := blockchain.GetLastBeaconHeightInEpoch(shardReceiveRewardV3.Epoch())
 					var beaconConsensusRootHash common.Hash
 					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), height)
 					if err != nil {
@@ -110,13 +114,8 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					}
 					cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
 				}
-				shardSubsetStakerInfo := []*statedb.StakerInfo{}
-				for i, v := range cInfos[int(shardSubsetRewardInst.ShardID())] {
-					if i%MaxSubsetCommittees == 0 {
-						shardSubsetStakerInfo = append(shardSubsetStakerInfo, v)
-					}
-				}
-				err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardSubsetRewardInst.Reward(), shardSubsetStakerInfo)
+				shardSubsetStakerInfo := getCommitteeToPayRewardV3(cInfos[int(shardID)], shardReceiveRewardV3)
+				err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardReceiveRewardV3.Reward(), shardSubsetStakerInfo)
 				if err != nil {
 					return err
 				}
@@ -196,6 +195,19 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 		}
 	}
 	return nil
+}
+
+func getCommitteeToPayRewardV3(
+	committees []*statedb.StakerInfo,
+	shardReceiveRewardV3 *instruction.ShardReceiveRewardV3,
+) []*statedb.StakerInfo {
+	res := []*statedb.StakerInfo{}
+	for i, v := range committees {
+		if i%MaxSubsetCommittees == int(shardReceiveRewardV3.SubsetID()) {
+			res = append(res, v)
+		}
+	}
+	return res
 }
 
 func (blockchain *BlockChain) addShardCommitteeReward(

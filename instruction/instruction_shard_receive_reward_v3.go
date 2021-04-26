@@ -37,6 +37,11 @@ func (shardSubsetReward *ShardReceiveRewardV3) SubsetID() byte {
 	return shardSubsetReward.subsetID
 }
 
+func (shardSubsetReward *ShardReceiveRewardV3) SetSubsetID(subsetID byte) *ShardReceiveRewardV3 {
+	shardSubsetReward.subsetID = subsetID
+	return shardSubsetReward
+}
+
 func (shardSubsetReward *ShardReceiveRewardV3) ShardID() byte {
 	return shardSubsetReward.shardID
 }
