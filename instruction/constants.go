@@ -17,8 +17,8 @@ const (
 	TRUE                           = "true"
 	FALSE                          = "false"
 	FINISH_SYNC_ACTION             = "finish_sync"
-	ACCEPT_BLOCK_REWARD_V3_ACTION  = "accept_block_reward"
-	SHARD_RECEIVE_REWARD_V3_ACTION = "shard_subset_reward"
+	ACCEPT_BLOCK_REWARD_V3_ACTION  = "accept_block_reward_v3"
+	SHARD_RECEIVE_REWARD_V3_ACTION = "shard_receive_reward_v3"
 
 	SHARD_RECEIVE_REWARD_V1_ACTION = 43
 	ACCEPT_BLOCK_REWARD_V1_ACTION  = 37

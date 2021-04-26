@@ -79,7 +79,11 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 	return nil
 }
 
-func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.StateDB, beaconBlocks []*types.BeaconBlock, shardID byte) error {
+func (blockchain *BlockChain) processSalaryInstructions(
+	rewardStateDB *statedb.StateDB,
+	beaconBlocks []*types.BeaconBlock,
+	shardID byte,
+) error {
 	cInfos := make(map[int][]*statedb.StakerInfo)
 	isInit := false
 	epoch := uint64(0)
@@ -92,13 +96,13 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				continue
 			}
 			if l[0] == instruction.SHARD_RECEIVE_REWARD_V3_ACTION {
-				shardSubsetRewardInst, err := instruction.ValidateAndImportShardSubsetRewardInstructionFromString(l)
+				shardReceiveRewardV3, err := instruction.ValidateAndImportShardReceiveRewardV3InstructionFromString(l)
 				if err != nil {
 					Logger.log.Debug(err)
 					continue
 				}
-				if shardSubsetRewardInst.Epoch() != 0 {
-					height := blockchain.GetLastBeaconHeightInEpoch(shardSubsetRewardInst.Epoch())
+				if shardReceiveRewardV3.Epoch() != 0 {
+					height := blockchain.GetLastBeaconHeightInEpoch(shardReceiveRewardV3.Epoch())
 					var beaconConsensusRootHash common.Hash
 					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), height)
 					if err != nil {
@@ -110,15 +114,8 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					}
 					cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
 				}
-				shardSubsetStakerInfo := []*statedb.StakerInfo{}
-				if len(cInfos[int(shardSubsetRewardInst.ShardID())]) != 0 {
-					for i, v := range cInfos[int(shardSubsetRewardInst.ShardID())] {
-						if i%MaxSubsetCommittees == 0 {
-							shardSubsetStakerInfo = append(shardSubsetStakerInfo, v)
-						}
-					}
-				}
-				err = blockchain.addShardCommitteeRewardV3(rewardStateDB, shardID, shardSubsetRewardInst.Reward(), shardSubsetStakerInfo)
+				shardSubsetStakerInfo := getCommitteeToPayRewardV3(cInfos[int(shardID)], shardReceiveRewardV3)
+				err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardReceiveRewardV3.Reward(), shardSubsetStakerInfo)
 				if err != nil {
 					return err
 				}
@@ -170,7 +167,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 			}
 			switch instType {
 			case instruction.SHARD_RECEIVE_REWARD_V1_ACTION:
-				shardRewardInfo, err := instruction.NewShardBlockRewardInfoFromString(l[3])
+				shardRewardInfo, err := instruction.NewShardReceiveRewardV1FromString(l[3])
 				if err != nil {
 					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
@@ -188,7 +185,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					}
 					cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
 				}
-				err = blockchain.addShardCommitteeRewardV3(rewardStateDB, shardID, shardRewardInfo.ShardReward, cInfos[int(shardToProcess)])
+				err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardRewardInfo.ShardReward, cInfos[int(shardToProcess)])
 				if err != nil {
 					return err
 				}
@@ -200,7 +197,20 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 	return nil
 }
 
-func (blockchain *BlockChain) addShardCommitteeRewardV3(
+func getCommitteeToPayRewardV3(
+	committees []*statedb.StakerInfo,
+	shardReceiveRewardV3 *instruction.ShardReceiveRewardV3,
+) []*statedb.StakerInfo {
+	res := []*statedb.StakerInfo{}
+	for i, v := range committees {
+		if i%MaxSubsetCommittees == int(shardReceiveRewardV3.SubsetID()) {
+			res = append(res, v)
+		}
+	}
+	return res
+}
+
+func (blockchain *BlockChain) addShardCommitteeReward(
 	rewardStateDB *statedb.StateDB,
 	shardID byte,
 	reward map[common.Hash]uint64,
@@ -399,7 +409,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			isSplitRewardForCustodian, percentCustodianRewards,
 		)
 
-		instRewardForShards, err = blockchain.buildInstRewardForShardsV3(epoch, totalRewardForShardSubset)
+		instRewardForShards, err = blockchain.buildInstructionRewardForShardsV3(epoch, totalRewardForShardSubset)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -416,7 +426,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			isSplitRewardForCustodian, percentCustodianRewards,
 		)
 
-		instRewardForShards, err = blockchain.buildInstRewardForShards(epoch, totalRewardForShard)
+		instRewardForShards, err = blockchain.buildInstructionRewardForShards(epoch, totalRewardForShard)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -470,13 +480,13 @@ func (blockchain *BlockChain) buildInstRewardForIncDAO(epoch uint64, totalReward
 	return resInst, nil
 }
 
-func (blockchain *BlockChain) buildInstRewardForShardsV3(epoch uint64, totalRewards [][]map[common.Hash]uint64) ([][]string, error) {
+func (blockchain *BlockChain) buildInstructionRewardForShardsV3(epoch uint64, totalRewards [][]map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 
 	for shardID, v := range totalRewards {
 		for subsetID, reward := range v {
 			if len(reward) > 0 {
-				shardSubsetReward := instruction.NewShardSubsetRewardWithValue(reward, epoch, byte(shardID), byte(subsetID))
+				shardSubsetReward := instruction.NewShardReceiveRewardV3WithValue(reward, epoch, byte(shardID), byte(subsetID))
 				shardSubsetRewardInst := shardSubsetReward.String()
 				resInst = append(resInst, shardSubsetRewardInst)
 			}
@@ -486,11 +496,11 @@ func (blockchain *BlockChain) buildInstRewardForShardsV3(epoch uint64, totalRewa
 	return resInst, nil
 }
 
-func (blockchain *BlockChain) buildInstRewardForShards(epoch uint64, totalRewards []map[common.Hash]uint64) ([][]string, error) {
+func (blockchain *BlockChain) buildInstructionRewardForShards(epoch uint64, totalRewards []map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
 	for i, reward := range totalRewards {
 		if len(reward) > 0 {
-			shardRewardInst, err := instruction.BuildInstForShardReward(reward, epoch, byte(i))
+			shardRewardInst, err := instruction.NewShardReceiveRewardV1WithValue(reward, epoch, byte(i))
 			if err != nil {
 				Logger.log.Errorf("BuildInstForShardReward error %+v\n Totalreward: %+v, epoch: %+v\n; shard:%+v", err, reward, epoch, byte(i))
 				return nil, err
