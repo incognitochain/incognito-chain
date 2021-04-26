@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"os"
+	"sort"
 	"sync"
 	"time"
 
@@ -205,20 +206,27 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 	return newBlock, nil
 }
 
-func (chain *ShardChain) validateBlockSignaturesWithCurrentView(block types.BlockInterface, curView *ShardBestState, committee []incognitokey.CommitteePublicKey) (err error) {
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerPosition(block.(*types.ShardBlock),
+func (chain *ShardChain) validateBlockSignaturesWithCurrentView(validationFlow *ShardValidationFlow) (err error) {
+	shardBlock := validationFlow.block
+	curView := validationFlow.curView
+	committee := validationFlow.blockCommittees
+
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
 		curView.ShardProposerIdx, committee,
 		curView.MinShardCommitteeSize); err != nil {
 		return err
 	}
 
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(shardBlock, chain.GetConsensusType()); err != nil {
 		return err
 	}
 
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
-		return err
+	if !validationFlow.forSigning {
+		if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, committee); err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
 
@@ -248,14 +256,15 @@ func (chain *ShardChain) getCommitteeFromBlock(shardBlock *types.ShardBlock, cur
 }
 
 type ShardValidationFlow struct {
-	validationMode  int
-	blockchain      *BlockChain
-	curView         *ShardBestState
-	nextView        *ShardBestState
-	block           *types.ShardBlock
-	beaconBlocks    []*types.BeaconBlock
-	blockCommittees []incognitokey.CommitteePublicKey
-
+	validationMode       int
+	forSigning           bool
+	blockchain           *BlockChain
+	curView              *ShardBestState
+	nextView             *ShardBestState
+	block                *types.ShardBlock
+	beaconBlocks         []*types.BeaconBlock
+	blockCommittees      []incognitokey.CommitteePublicKey
+	crossShardBlockToAdd map[byte][]*types.CrossShardBlock
 	shardCommitteeHashes *committeestate.ShardCommitteeStateHash
 	committeeChange      *committeestate.CommitteeChange
 }
@@ -310,19 +319,135 @@ func (chain *ShardChain) validateBlockBody(flow *ShardValidationFlow) error {
 	shardID := flow.curView.ShardID
 	shardBlock := flow.block
 	curView := flow.curView
+	blockchain := flow.blockchain
+	beaconBlocks := flow.beaconBlocks
 
 	//validate transaction
 	if err := flow.blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(curView.BeaconHeight), curView); err != nil {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 
-	//TODO: validate cross shard transaction hash (only check hash)
-	//TODO: validate cross shard transaction content (when beacon chain not confirm, we need to validate its content)
+	//validate instruction
+	beaconInstructions := [][]string{}
+	shardCommittee, err := incognitokey.CommitteeKeyListToString(flow.blockCommittees)
+	if err != nil {
+		return err
+	}
+
+	shardPendingValidator := curView.GetShardPendingValidator()
+	shardPendingValidatorStr := []string{}
+
+	if curView != nil {
+		var err error
+		shardPendingValidatorStr, err = incognitokey.
+			CommitteeKeyListToString(shardPendingValidator)
+		if err != nil {
+			return err
+		}
+	}
+
+	beaconInstructions, _, err = blockchain.
+		preProcessInstructionFromBeacon(beaconBlocks, curView.ShardID)
+	if err != nil {
+		return err
+	}
+
+	env := committeestate.
+		NewShardEnvBuilder().
+		BuildShardID(curView.ShardID).
+		BuildBeaconInstructions(beaconInstructions).
+		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfFixedBlockValidators).
+		BuildShardHeight(curView.ShardHeight).
+		Build()
+
+	committeeChange, err := curView.shardCommitteeEngine.ProcessInstructionFromBeacon(env)
+	if err != nil {
+		return err
+	}
+	curView.shardCommitteeEngine.AbortUncommittedShardState()
+
+	instructions := [][]string{}
+	isOldBeaconHeight := false
+	if curView.BeaconHeight == shardBlock.Header.BeaconHeight {
+		isOldBeaconHeight = true
+	}
+
+	shardPendingValidator, err = updateCommiteesWithAddedAndRemovedListValidator(shardPendingValidator,
+		committeeChange.ShardSubstituteAdded[curView.ShardID],
+		committeeChange.ShardSubstituteRemoved[curView.ShardID])
+
+	if err != nil {
+		return NewBlockChainError(ProcessInstructionFromBeaconError, err)
+	}
+
+	shardPendingValidatorStr, err = incognitokey.CommitteeKeyListToString(shardPendingValidator)
+	if err != nil {
+		return NewBlockChainError(ProcessInstructionFromBeaconError, err)
+	}
+
+	instructions, _, shardCommittee, err = blockchain.generateInstruction(curView, shardID,
+		shardBlock.Header.BeaconHeight, isOldBeaconHeight, beaconBlocks,
+		shardPendingValidatorStr, shardCommittee)
+	if err != nil {
+		return NewBlockChainError(GenerateInstructionError, err)
+	}
+	///
+	totalInstructions := []string{}
+	for _, value := range instructions {
+		totalInstructions = append(totalInstructions, value...)
+	}
+
+	if len(totalInstructions) != 0 {
+		Logger.log.Info("totalInstructions:", totalInstructions)
+	}
+
+	if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {
+		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but %+v", shardBlock.Header.InstructionsRoot, hash))
+	}
+
+	//check crossshard output coin content
+	//TODO: add check crossshard output coin content in mode beacon full validation, and beacon not confirm this block shard yet
+	if flow.forSigning {
+		toShardAllCrossShardBlock := flow.crossShardBlockToAdd
+		for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {
+			toShardCrossShardBlocks := toShardAllCrossShardBlock[fromShard]
+			sort.SliceStable(toShardCrossShardBlocks[:], func(i, j int) bool {
+				return toShardCrossShardBlocks[i].Header.Height < toShardCrossShardBlocks[j].Header.Height
+			})
+			isValids := 0
+			for _, crossTransaction := range crossTransactions {
+				for index, toShardCrossShardBlock := range toShardCrossShardBlocks {
+					//Compare block height and block hash
+					if crossTransaction.BlockHeight == toShardCrossShardBlock.Header.Height {
+						compareCrossTransaction := types.CrossTransaction{
+							TokenPrivacyData: toShardCrossShardBlock.CrossTxTokenPrivacyData,
+							OutputCoin:       toShardCrossShardBlock.CrossOutputCoin,
+							BlockHash:        *toShardCrossShardBlock.Hash(),
+							BlockHeight:      toShardCrossShardBlock.Header.Height,
+						}
+						targetHash := crossTransaction.Hash()
+						hash := compareCrossTransaction.Hash()
+						if !hash.IsEqual(&targetHash) {
+							return NewBlockChainError(CrossTransactionHashError, fmt.Errorf("Cross Output Coin From New Block %+v not compatible with cross shard block in pool %+v", targetHash, hash))
+						}
+						if true {
+							toShardCrossShardBlocks = toShardCrossShardBlocks[index:]
+							isValids++
+							break
+						}
+					}
+				}
+			}
+			if len(crossTransactions) != isValids {
+				return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Can't not verify all cross shard block from shard %+v", fromShard))
+			}
+		}
+	}
 
 	return nil
 }
 
-func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlock, validationMode int) (*ShardValidationFlow, error) {
+func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlock, validationMode int, forSigning bool) (*ShardValidationFlow, error) {
 	blockHash := shardBlock.Header.Hash()
 	blockHeight := shardBlock.Header.Height
 	shardID := shardBlock.Header.ShardID
@@ -331,8 +456,9 @@ func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlo
 
 	validationFlow := new(ShardValidationFlow)
 	validationFlow.block = shardBlock
+	validationFlow.blockchain = blockchain
 	validationFlow.validationMode = validationMode
-
+	validationFlow.forSigning = forSigning
 	//check if view is committed
 	checkView := chain.GetViewByHash(blockHash)
 	if checkView != nil {
@@ -353,7 +479,7 @@ func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlo
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
 	validationFlow.beaconBlocks = beaconBlocks
 	if err != nil {
-		return nil, NewBlockChainError(FetchBeaconBlocksError, err)
+		return nil, NewBlockChainError(FetchBeaconBlocksError, fmt.Errorf("Cannot fetch beacon block height %v hash %v", shardBlock.Header.BeaconHeight, shardBlock.Header.BeaconHash.String()))
 	}
 
 	committee, err := chain.getCommitteeFromBlock(shardBlock, curView)
@@ -362,7 +488,32 @@ func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlo
 		return nil, NewBlockChainError(CommitteeFromBlockNotFoundError, err)
 	}
 
-	//TODO: get cross shard block (when beacon chain not confirm, we need to validate its content)
+	//TODO: get cross shard block (when beacon chain not confirm, we need to validate the cross shard output coin)
+	if forSigning {
+		toShard := shardID
+		var toShardAllCrossShardBlock = make(map[byte][]*types.CrossShardBlock)
+		validationFlow.crossShardBlockToAdd = toShardAllCrossShardBlock
+		// blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(toShard, list map[byte]common.Hash) map[byte][]interface{}
+		crossShardRequired := make(map[byte][]uint64)
+		for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {
+			for _, crossTransaction := range crossTransactions {
+				//fmt.Println("Crossshard from ", fromShard, crossTransaction.BlockHash)
+				crossShardRequired[fromShard] = append(crossShardRequired[fromShard], crossTransaction.BlockHeight)
+			}
+		}
+		crossShardBlksFromPool, err := blockchain.config.Syncker.GetCrossShardBlocksForShardValidator(toShard, crossShardRequired)
+		if err != nil {
+			return nil, NewBlockChainError(CrossShardBlockError, fmt.Errorf("Unable to get required crossShard blocks from pool in time"))
+		}
+		for sid, v := range crossShardBlksFromPool {
+			heightList := make([]uint64, len(v))
+			for i, b := range v {
+				toShardAllCrossShardBlock[sid] = append(toShardAllCrossShardBlock[sid], b.(*types.CrossShardBlock))
+				heightList[i] = b.(*types.CrossShardBlock).GetHeight()
+			}
+			Logger.log.Infof("Shard %v, GetCrossShardBlocksForShardValidator from shard %v: %v", toShard, sid, heightList)
+		}
+	}
 	return validationFlow, nil
 }
 
@@ -404,7 +555,7 @@ func (chain *ShardChain) commitAndStore(flow *ShardValidationFlow) (err error) {
 	return err
 }
 
-func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode int) error {
+func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode int) (err error) {
 
 	blockchain := chain.Blockchain
 	shardBlock := block.(*types.ShardBlock)
@@ -419,42 +570,12 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode 
 
 	//get required object for validation
 	Logger.log.Infof("SHARD %+v | Begin insert block height %+v - hash %+v, get required data for validate", shardID, blockHeight, blockHash)
-	validationFlow, err := chain.getDataBeforeBlockValidation(shardBlock, validationMode)
-	validationFlow.blockchain = blockchain
+	validationFlow, err := chain.getDataBeforeBlockValidation(shardBlock, validationMode, false)
 	if err != nil {
 		return err
 	}
 
-	//validation block signature with current view
-	if validationMode == common.FULL_VALIDATION {
-		Logger.log.Infof("SHARD %+v | Validation block signature height %+v - hash %+v", shardID, blockHeight, blockHash)
-		if err := chain.validateBlockSignaturesWithCurrentView(block, validationFlow.curView, validationFlow.blockCommittees); err != nil {
-			return err
-		}
-	}
-
-	//validate block content
-	Logger.log.Infof("SHARD %+v | Validation block header height %+v - hash %+v", shardID, blockHeight, blockHash)
-	if err := chain.validateBlockHeader(validationFlow); err != nil {
-		return err
-	}
-
-	if validationMode == common.FULL_VALIDATION {
-		Logger.log.Infof("SHARD %+v | Validation block body height %+v - hash %+v", shardID, blockHeight, blockHash)
-		if err := chain.validateBlockBody(validationFlow); err != nil {
-			return err
-		}
-	}
-
-	//process block
-	Logger.log.Infof("SHARD %+v | Process block feature height %+v - hash %+v", shardID, blockHeight, blockHash)
-	if err := chain.processBlock(validationFlow); err != nil {
-		return err
-	}
-
-	//validate new state
-	Logger.log.Infof("SHARD %+v | Validate new state height %+v - hash %+v", shardID, blockHeight, blockHash)
-	if err = chain.validateNewState(validationFlow); err != nil {
+	if err = chain.ValidateAndProcessBlock(block, validationFlow); err != nil {
 		return err
 	}
 
@@ -541,8 +662,60 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (types.BlockInterfac
 	return &shardBlk, nil
 }
 
-func (chain *ShardChain) ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
-	return chain.Blockchain.VerifyPreSignShardBlock(block.(*types.ShardBlock), committees, byte(block.(*types.ShardBlock).GetShardID()))
+//TODO: no need to pass committee => refactor bftv3
+func (chain *ShardChain) ValidatePreSignBlock(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	validationFlow, err := chain.getDataBeforeBlockValidation(block.(*types.ShardBlock), common.FULL_VALIDATION, true)
+	if err != nil {
+		return err
+	}
+	return chain.ValidateAndProcessBlock(block, validationFlow)
+}
+
+func (chain *ShardChain) ValidateAndProcessBlock(block types.BlockInterface, validationFlow *ShardValidationFlow) error {
+	shardBlock := block.(*types.ShardBlock)
+	blockHeight := shardBlock.Header.Height
+	shardID := shardBlock.Header.ShardID
+	blockHash := shardBlock.Hash().String()
+	validationMode := validationFlow.validationMode
+
+	//validation block signature with current view
+	if validationMode >= common.BASIC_VALIDATION {
+		Logger.log.Infof("SHARD %+v | Validation block signature height %+v - hash %+v", shardID, blockHeight, blockHash)
+		if err := chain.validateBlockSignaturesWithCurrentView(validationFlow); err != nil {
+			return err
+		}
+	}
+
+	//validate block content
+	if validationMode >= common.BASIC_VALIDATION {
+		Logger.log.Infof("SHARD %+v | Validation block header height %+v - hash %+v", shardID, blockHeight, blockHash)
+		if err := chain.validateBlockHeader(validationFlow); err != nil {
+			return err
+		}
+	}
+
+	if validationMode >= common.FULL_VALIDATION {
+		Logger.log.Infof("SHARD %+v | Validation block body height %+v - hash %+v", shardID, blockHeight, blockHash)
+		if err := chain.validateBlockBody(validationFlow); err != nil {
+			return err
+		}
+	}
+
+	//process block
+	Logger.log.Infof("SHARD %+v | Process block feature height %+v - hash %+v", shardID, blockHeight, blockHash)
+	if err := chain.processBlock(validationFlow); err != nil {
+		return err
+	}
+
+	//validate new state
+	if validationMode >= common.BASIC_VALIDATION {
+		Logger.log.Infof("SHARD %+v | Validate new state height %+v - hash %+v", shardID, blockHeight, blockHash)
+		if err := chain.validateNewState(validationFlow); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (chain *ShardChain) GetAllView() []multiview.View {
