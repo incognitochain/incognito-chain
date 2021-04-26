@@ -52,36 +52,27 @@ func (_m *Chain) CommitteeEngineVersion() int {
 	return r0
 }
 
-// CommitteesFromViewHashForShard provides a mock function with given fields: committeeHash, subsetHash, shardID, threshold
-func (_m *Chain) CommitteesFromViewHashForShard(committeeHash common.Hash, subsetHash common.Hash, shardID byte, threshold int) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
-	ret := _m.Called(committeeHash, subsetHash, shardID, threshold)
+// CommitteesFromViewHashForShard provides a mock function with given fields: committeeHash, shardID
+func (_m *Chain) CommitteesFromViewHashForShard(committeeHash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
+	ret := _m.Called(committeeHash, shardID)
 
 	var r0 []incognitokey.CommitteePublicKey
-	if rf, ok := ret.Get(0).(func(common.Hash, common.Hash, byte, int) []incognitokey.CommitteePublicKey); ok {
-		r0 = rf(committeeHash, subsetHash, shardID, threshold)
+	if rf, ok := ret.Get(0).(func(common.Hash, byte) []incognitokey.CommitteePublicKey); ok {
+		r0 = rf(committeeHash, shardID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]incognitokey.CommitteePublicKey)
 		}
 	}
 
-	var r1 []incognitokey.CommitteePublicKey
-	if rf, ok := ret.Get(1).(func(common.Hash, common.Hash, byte, int) []incognitokey.CommitteePublicKey); ok {
-		r1 = rf(committeeHash, subsetHash, shardID, threshold)
+	var r1 error
+	if rf, ok := ret.Get(1).(func(common.Hash, byte) error); ok {
+		r1 = rf(committeeHash, shardID)
 	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).([]incognitokey.CommitteePublicKey)
-		}
+		r1 = ret.Error(1)
 	}
 
-	var r2 error
-	if rf, ok := ret.Get(2).(func(common.Hash, common.Hash, byte, int) error); ok {
-		r2 = rf(committeeHash, subsetHash, shardID, threshold)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
+	return r0, r1
 }
 
 // CreateNewBlock provides a mock function with given fields: version, proposer, round, startTime, committees, hash
@@ -406,6 +397,34 @@ func (_m *Chain) GetPendingCommittee() []incognitokey.CommitteePublicKey {
 	return r0
 }
 
+// GetProposerByTimeSlot provides a mock function with given fields: committeeViewHash, shardID, ts, committees
+func (_m *Chain) GetProposerByTimeSlot(committeeViewHash common.Hash, shardID byte, ts int64, committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int, error) {
+	ret := _m.Called(committeeViewHash, shardID, ts, committees)
+
+	var r0 incognitokey.CommitteePublicKey
+	if rf, ok := ret.Get(0).(func(common.Hash, byte, int64, []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey); ok {
+		r0 = rf(committeeViewHash, shardID, ts, committees)
+	} else {
+		r0 = ret.Get(0).(incognitokey.CommitteePublicKey)
+	}
+
+	var r1 int
+	if rf, ok := ret.Get(1).(func(common.Hash, byte, int64, []incognitokey.CommitteePublicKey) int); ok {
+		r1 = rf(committeeViewHash, shardID, ts, committees)
+	} else {
+		r1 = ret.Get(1).(int)
+	}
+
+	var r2 error
+	if rf, ok := ret.Get(2).(func(common.Hash, byte, int64, []incognitokey.CommitteePublicKey) error); ok {
+		r2 = rf(committeeViewHash, shardID, ts, committees)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
+}
+
 // GetPubKeyCommitteeIndex provides a mock function with given fields: _a0
 func (_m *Chain) GetPubKeyCommitteeIndex(_a0 string) int {
 	ret := _m.Called(_a0)
@@ -492,20 +511,6 @@ func (_m *Chain) IsReady() bool {
 	return r0
 }
 
-// ProposerByTimeSlot provides a mock function with given fields: shardID, ts, committees
-func (_m *Chain) ProposerByTimeSlot(shardID byte, ts int64, committees []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey {
-	ret := _m.Called(shardID, ts, committees)
-
-	var r0 incognitokey.CommitteePublicKey
-	if rf, ok := ret.Get(0).(func(byte, int64, []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey); ok {
-		r0 = rf(shardID, ts, committees)
-	} else {
-		r0 = ret.Get(0).(incognitokey.CommitteePublicKey)
-	}
-
-	return r0
-}
-
 // ReplacePreviousValidationData provides a mock function with given fields: previousBlockHash, newValidationData
 func (_m *Chain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
 	ret := _m.Called(previousBlockHash, newValidationData)
@@ -523,6 +528,22 @@ func (_m *Chain) ReplacePreviousValidationData(previousBlockHash common.Hash, ne
 // SetReady provides a mock function with given fields: _a0
 func (_m *Chain) SetReady(_a0 bool) {
 	_m.Called(_a0)
+}
+
+// SigningCommittees provides a mock function with given fields: committeeViewHash, proposerIndex, committees, shardID
+func (_m *Chain) SigningCommittees(committeeViewHash common.Hash, proposerIndex int, committees []incognitokey.CommitteePublicKey, shardID byte) []incognitokey.CommitteePublicKey {
+	ret := _m.Called(committeeViewHash, proposerIndex, committees, shardID)
+
+	var r0 []incognitokey.CommitteePublicKey
+	if rf, ok := ret.Get(0).(func(common.Hash, int, []incognitokey.CommitteePublicKey, byte) []incognitokey.CommitteePublicKey); ok {
+		r0 = rf(committeeViewHash, proposerIndex, committees, shardID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]incognitokey.CommitteePublicKey)
+		}
+	}
+
+	return r0
 }
 
 // UnmarshalBlock provides a mock function with given fields: blockString

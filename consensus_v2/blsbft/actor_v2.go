@@ -621,13 +621,14 @@ func (actorV2 *actorV2) getCommitteeForBlock(
 		if err != nil {
 			return signingCommittees, committees, err
 		}
-		committeesStr, err := incognitokey.CommitteeKeyListToString(committees)
+		_, proposerIndex, err = actorV2.chain.GetProposerByTimeSlot(
+			v.CommitteeFromBlock(),
+			byte(actorV2.chainID),
+			common.CalculateTimeSlot(v.GetProposeTime()),
+			committees,
+		)
 		if err != nil {
 			return signingCommittees, committees, err
-		}
-		proposerIndex = common.IndexOfStr(v.GetProposer(), committeesStr)
-		if proposerIndex == -1 {
-			return signingCommittees, committees, errors.New("Not Found Proposer In List Committees")
 		}
 	}
 

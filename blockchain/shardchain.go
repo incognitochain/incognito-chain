@@ -182,6 +182,7 @@ func (chain *ShardChain) CreateNewBlock(
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
+	Logger.log.Infof("[dcs] new block header proposer %v proposerTime %v", newBlock.Header.Proposer, newBlock.Header.ProposeTime)
 
 	Logger.log.Infof("Finish Create New Block")
 	return newBlock, nil
