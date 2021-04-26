@@ -739,7 +739,7 @@ func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	userKeySet := actorV2.getUserKeySetForSigning(signingCommittees, actorV2.userKeySet)
 	if len(userKeySet) == 0 {
-		actorV2.logger.Info("[dcs] Not in round for voting")
+		actorV2.logger.Debug("[dcs] Not in round for voting")
 	}
 
 	if v, ok := actorV2.receiveBlockByHash[blkHash]; !ok {
