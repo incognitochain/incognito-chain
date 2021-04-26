@@ -413,7 +413,7 @@ func (actorV2 *actorV2) createBLSAggregatedSignatures(
 func (actorV2 *actorV2) voteForBlock(
 	v *ProposeBlockInfo,
 ) error {
-	for _, userKey := range actorV2.userKeySet {
+	for _, userKey := range v.userKeySet {
 		Vote, err := createVote(&userKey, v.block, v.signingCommittes)
 		if err != nil {
 			actorV2.logger.Error(err)
@@ -786,6 +786,7 @@ func (actorV2 *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 				if b.block != nil && pubKey.GetMiningKeyBase58(actorV2.GetConsensusName()) == b.proposerMiningKeyBase58 { // if this node is proposer and not sending vote
 					var err error
 					if err = actorV2.validateBlock(actorV2.chain.GetBestView(), b); err != nil {
+						actorV2.logger.Info("[dcs] 0")
 						err = actorV2.voteForBlock(b)
 						if err != nil {
 							actorV2.logger.Debug(err)
