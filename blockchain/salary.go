@@ -114,7 +114,7 @@ func (blockchain *BlockChain) processSalaryInstructions(
 					}
 					cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
 				}
-				shardSubsetStakerInfo := getCommitteeToPayRewardV3(cInfos[int(shardID)], shardReceiveRewardV3)
+				shardSubsetStakerInfo := getCommitteeToPayRewardV3(cInfos[int(shardReceiveRewardV3.ShardID())], shardReceiveRewardV3)
 				err = blockchain.addShardCommitteeReward(rewardStateDB, shardID, shardReceiveRewardV3.Reward(), shardSubsetStakerInfo)
 				if err != nil {
 					return err
