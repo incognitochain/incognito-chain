@@ -919,6 +919,7 @@ func deductPDEAmountsV2(
 	currentPDEState *CurrentPDEState,
 	beaconHeight uint64,
 ) *DeductingAmountsByWithdrawal {
+	Logger.log.Infof("BUGLOG5 deducting shares for %v, tokens: %v-%v, amount: %v\n", wdMeta.WithdrawerAddressStr, wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, wdMeta.WithdrawalShareAmt)
 	var deductingAmounts *DeductingAmountsByWithdrawal
 	pairKey := string(rawdbv2.BuildPDEPoolForPairKey(
 		beaconHeight,
@@ -970,6 +971,8 @@ func deductPDEAmountsV2(
 		return deductingAmounts
 	}
 
+	Logger.log.Infof("BUGLOG5 before deduction - poolValue1: %v, poolValue 2: %v\n", pdePoolPair.Token1PoolValue, pdePoolPair.Token2PoolValue)
+
 	deductingAmounts = &DeductingAmountsByWithdrawal{}
 	deductingPoolValueToken1 := big.NewInt(0)
 	deductingPoolValueToken1.Mul(new(big.Int).SetUint64(pdePoolPair.Token1PoolValue), new(big.Int).SetUint64(wdSharesForWithdrawer))
@@ -999,6 +1002,10 @@ func deductPDEAmountsV2(
 		currentPDEState.PDEShares[shareForWithdrawerKey] -= wdSharesForWithdrawer
 	}
 	deductingAmounts.Shares = wdSharesForWithdrawer
+
+	Logger.log.Infof("BUGLOG5 deductedAmounts: %v, %v\n", deductingAmounts.PoolValue1, deductingAmounts.PoolValue2)
+	Logger.log.Infof("BUGLOG5 after deduction - poolValue1: %v, poolValue 2: %v\n", pdePoolPair.Token1PoolValue, pdePoolPair.Token2PoolValue)
+
 	return deductingAmounts
 }
 
