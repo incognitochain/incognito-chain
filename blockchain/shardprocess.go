@@ -97,8 +97,7 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 
 	//========Verify shardBlock only
 	if err := blockchain.verifyPreProcessingShardBlock(
-		shardBestState, shardBlock, beaconBlocks,
-		shardID, true, committees); err != nil {
+		shardBestState, shardBlock, beaconBlocks, true, committees); err != nil {
 		return err
 	}
 	//========Verify shardBlock with previous best state
@@ -125,12 +124,11 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 // InsertShardBlock Insert Shard Block into blockchain
 // this block must have full information (complete block)
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, validationMode int) error {
-	fullValidation := os.Getenv("FULL_VALIDATION")
+	fullValidation := os.Getenv("FULL_VALIDATION") //trigger full validation when sync network for rechecking code logic
 	if fullValidation == "1" {
 		validationMode = common.FULL_VALIDATION
 	}
 
-	//startTimeInsertShardBlock := time.Now()
 	blockHash := shardBlock.Header.Hash()
 	blockHeight := shardBlock.Header.Height
 	shardID := shardBlock.Header.ShardID
@@ -184,7 +182,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, val
 
 	if validationMode != common.BYPASS_VALIDATION {
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v", shardID, blockHeight, blockHash)
-		if err := blockchain.verifyPreProcessingShardBlock(curView, shardBlock, beaconBlocks, shardID, false, committees); err != nil {
+		if err := blockchain.verifyPreProcessingShardBlock(curView, shardBlock, beaconBlocks, false, committees); err != nil {
 			return err
 		}
 	} else {
@@ -288,9 +286,10 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, val
 //	- ALL Transaction in block: see in verifyTransactionFromNewBlock
 func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestState,
 	shardBlock *types.ShardBlock, beaconBlocks []*types.BeaconBlock,
-	shardID byte, isPreSign bool, committees []incognitokey.CommitteePublicKey) error {
+	isPreSign bool, committees []incognitokey.CommitteePublicKey) error {
 	startTimeVerifyPreProcessingShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin verifyPreProcessingShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
+	shardID := curView.ShardID
 	if shardBlock.Header.ShardID != shardID {
 		return NewBlockChainError(WrongShardIDError, fmt.Errorf("Expect receive shardBlock from Shard ID %+v but get %+v", shardID, shardBlock.Header.ShardID))
 	}
@@ -655,7 +654,6 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *BlockChain,
 	shardBlock *types.ShardBlock,
 	committees []incognitokey.CommitteePublicKey) error {
-	startTimeVerifyBestStateWithShardBlock := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	//verify producer via index
 
@@ -703,7 +701,6 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	if shardBlock.Header.BeaconHeight < shardBestState.BeaconHeight {
 		return NewBlockChainError(ShardBestStateBeaconHeightNotCompatibleError, fmt.Errorf("Shard Block contain invalid beacon height, current beacon height %+v but get %+v ", shardBestState.BeaconHeight, shardBlock.Header.BeaconHeight))
 	}
-	shardVerifyWithBestStateTimer.UpdateSince(startTimeVerifyBestStateWithShardBlock)
 	Logger.log.Debugf("SHARD %+v | Finish VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	return nil
 }
@@ -969,7 +966,6 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
 
-	Logger.log.Infof("SHARD %+v | Process store block height %+v at hash %+v", shardBlock.Header.ShardID, blockHeight, *shardBlock.Hash())
 	if len(shardBlock.Body.CrossTransactions) != 0 {
 		Logger.log.Critical("processStoreShardBlock/CrossTransactions	", shardBlock.Body.CrossTransactions)
 	}
