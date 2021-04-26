@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"os"
 	"time"
 
@@ -248,7 +249,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 			insertBeaconTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++
 			//must validate this block when insert
-			if err := s.chain.InsertBlock(blk.(types.BlockInterface), true); err != nil {
+			if err := s.chain.InsertBlock(blk.(types.BlockInterface), common.BASIC_VALIDATION); err != nil {
 				Logger.Error("Insert beacon block from pool fail", blk.GetHeight(), blk.Hash(), err)
 				continue
 			}

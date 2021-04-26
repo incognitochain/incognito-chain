@@ -100,18 +100,19 @@ CONTINUE_VERIFY:
 // var bcStart time.Time
 // var bcAllTime time.Duration
 
-func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
+func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, validationMode int) error {
 	fullValidation := os.Getenv("FULL_VALIDATION")
+	if fullValidation == "1" {
+		validationMode = common.FULL_VALIDATION
+	}
 
 	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if fullValidation == "1" {
-		shouldValidate = true
-	}
+
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
-	startTimeStoreBeaconBlock := time.Now()
+
 	//check view if exited
 	checkView := blockchain.BeaconChain.GetViewByHash(*beaconBlock.Hash())
 	if checkView != nil {
@@ -132,25 +133,24 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		return errors.New("Not expected height")
 	}
 
-	Logger.log.Debugf("BEACON | Begin Insert new Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if shouldValidate {
-		Logger.log.Debugf("BEACON | Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+	if validationMode != common.BYPASS_VALIDATION {
+		Logger.log.Infof("BEACON | Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		if err := blockchain.verifyPreProcessingBeaconBlock(beaconBlock, curView); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Debugf("BEACON | SKIP Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+		Logger.log.Infof("BEACON | SKIP Verify Pre Processing, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
 	// Verify beaconBlock with previous best state
-	if shouldValidate {
-		Logger.log.Debugf("BEACON | Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+	if validationMode != common.BYPASS_VALIDATION {
+		Logger.log.Infof("BEACON | Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		// Verify beaconBlock with previous best state
 		if err := curView.verifyBestStateWithBeaconBlock(blockchain, beaconBlock, true); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Debugf("BEACON | SKIP Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+		Logger.log.Infof("BEACON | SKIP Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
 	// Backup beststate
@@ -165,13 +165,13 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		return err
 	}
 
-	if shouldValidate {
-		Logger.log.Debugf("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+	if validationMode != common.BYPASS_VALIDATION {
+		Logger.log.Infof("BEACON | Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 		if err = newBestState.verifyPostProcessingBeaconBlock(beaconBlock, hashes); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
+		Logger.log.Infof("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
@@ -191,8 +191,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, beaconBlock))
 	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.BeaconBeststateTopic, newBestState))
-	// For masternode: broadcast new committee to highways
-	beaconInsertBlockTimer.UpdateSince(startTimeStoreBeaconBlock)
+
 	return nil
 }
 

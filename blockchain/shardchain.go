@@ -232,9 +232,9 @@ func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, com
 	return nil
 }
 
-func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
+func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode int) error {
 
-	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), shouldValidate)
+	err := chain.Blockchain.InsertShardBlock(block.(*types.ShardBlock), validationMode)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
@@ -247,7 +247,7 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) err
 
 	go chain.Blockchain.config.Server.PushBlockToAll(block, "", false)
 
-	if err := chain.InsertBlock(block, false); err != nil {
+	if err := chain.InsertBlock(block, common.BASIC_VALIDATION); err != nil {
 		return err
 	}
 
@@ -274,7 +274,7 @@ func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block typ
 
 	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
 
-	if err := chain.InsertBlock(block, false); err != nil {
+	if err := chain.InsertBlock(block, common.BASIC_VALIDATION); err != nil {
 		return err
 	}
 

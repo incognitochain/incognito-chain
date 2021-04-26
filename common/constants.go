@@ -80,7 +80,7 @@ const (
 	PendingRole   = "pending"
 	SyncingRole   = "syncing" //this is for shard case - when beacon tell it is committee, but its state not
 	WaitingRole   = "waiting"
-	UnstakeRole    = "unstake" // for unstake node
+	UnstakeRole   = "unstake" // for unstake node
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
@@ -182,5 +182,11 @@ var TIMESLOT = uint64(0) //need to be set when init chain
 /* ================ Feature Flags ================ */
 const (
 	PortalRelayingFlag = 0
-	PortalV3Flag = 1
+	PortalV3Flag       = 1
+)
+
+const (
+	BYPASS_VALIDATION = 0
+	BASIC_VALIDATION  = 1
+	FULL_VALIDATION   = 2
 )

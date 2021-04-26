@@ -124,18 +124,17 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 
 // InsertShardBlock Insert Shard Block into blockchain
 // this block must have full information (complete block)
-func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, shouldValidate bool) error {
+func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, validationMode int) error {
 	fullValidation := os.Getenv("FULL_VALIDATION")
+	if fullValidation == "1" {
+		validationMode = common.FULL_VALIDATION
+	}
 
 	//startTimeInsertShardBlock := time.Now()
 	blockHash := shardBlock.Header.Hash()
 	blockHeight := shardBlock.Header.Height
 	shardID := shardBlock.Header.ShardID
 	preHash := shardBlock.Header.PreviousBlockHash
-
-	if fullValidation == "1" {
-		shouldValidate = true
-	}
 
 	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v Prev hash: %+v", shardID, blockHeight, blockHash, preHash)
 	blockchain.ShardChain[int(shardID)].insertLock.Lock()
@@ -179,11 +178,11 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, committees); err != nil {
-		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committees, err)
+		//Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committees, err)
 		return err
 	}
 
-	if shouldValidate {
+	if validationMode != common.BYPASS_VALIDATION {
 		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v", shardID, blockHeight, blockHash)
 		if err := blockchain.verifyPreProcessingShardBlock(curView, shardBlock, beaconBlocks, shardID, false, committees); err != nil {
 			return err
@@ -192,28 +191,28 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		Logger.log.Infof("SHARD %+v | SKIP Verify Pre Processing, block height %+v with hash %+v", shardID, blockHeight, blockHash)
 	}
 
-	if shouldValidate {
+	if validationMode != common.BYPASS_VALIDATION {
 		// Verify block with previous best state
-		Logger.log.Debugf("SHARD %+v | Verify BestState With Shard Block, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+		Logger.log.Infof("SHARD %+v | Verify BestState With Shard Block, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 		if err := curView.verifyBestStateWithShardBlock(blockchain, shardBlock, committees); err != nil {
 			return err
 		}
 	} else {
-		Logger.log.Debugf("SHARD %+v | SKIP Verify Best State With Shard Block, Shard Block Height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+		Logger.log.Infof("SHARD %+v | SKIP Verify Best State With Shard Block, Shard Block Height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	}
-	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 
-	//only validate all tx if we have env variable FULL_VALIDATION = 1
-	if fullValidation == "1" {
+	if validationMode == common.FULL_VALIDATION {
 		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(curView.BeaconHeight), curView); err != nil {
 			return NewBlockChainError(TransactionFromNewBlockError, err)
 		}
 	}
 
+	Logger.log.Infof("SHARD %+v | Update ShardBestState, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	newBestState, hashes, committeeChange, err := curView.updateShardBestState(blockchain, shardBlock, beaconBlocks, committees)
 	if err != nil {
 		return err
 	}
+
 	var err2 error
 	defer func() {
 		if err2 != nil {
@@ -222,8 +221,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}()
 
 	//========Post verification: verify new beaconstate with corresponding block
-	if shouldValidate {
-		Logger.log.Debugf("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	if validationMode != common.BYPASS_VALIDATION {
+		Logger.log.Infof("SHARD %+v | Verify Post Processing, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 		if err2 = newBestState.verifyPostProcessingShardBlock(shardBlock, shardID, hashes); err2 != nil {
 			return err2
 		}
