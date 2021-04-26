@@ -1,117 +1,103 @@
 package finishsync
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"sort"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
+// FinishSyncManager manages finishedSyncValidators in sync pool of attached view
+//  already sent finish sync message to this node
+// FinishSyncManager could maintain different data in different beacon nodes
 type FinishSyncManager struct {
-	validators map[byte][]incognitokey.CommitteePublicKey
-	mu         *sync.RWMutex
+	finishedSyncValidators map[byte]map[string]bool
+	mu                     *sync.RWMutex
 }
 
-func NewManager() *FinishSyncManager {
+func NewFinishManager() *FinishSyncManager {
+	finishedSyncValidators := make(map[byte]map[string]bool)
+	for i := 0; i < common.MaxShardNumber; i++ {
+		finishedSyncValidators[byte(i)] = make(map[string]bool)
+	}
 	return &FinishSyncManager{
-		mu: &sync.RWMutex{},
+		finishedSyncValidators: finishedSyncValidators,
+		mu:                     &sync.RWMutex{},
 	}
 }
 
-func NewManagerWithValue(validators map[byte][]incognitokey.CommitteePublicKey) *FinishSyncManager {
+func NewManagerWithValue(validators map[byte]map[string]bool) *FinishSyncManager {
 	return &FinishSyncManager{
-		validators: validators,
-		mu:         &sync.RWMutex{},
+		finishedSyncValidators: validators,
+		mu:                     &sync.RWMutex{},
 	}
 }
 
 func (manager *FinishSyncManager) Clone() *FinishSyncManager {
 	manager.mu.RLock()
 	defer manager.mu.RUnlock()
-	res := NewManager()
-	res.validators = make(map[byte][]incognitokey.CommitteePublicKey)
-	for i, v := range manager.validators {
-		res.validators[i] = make([]incognitokey.CommitteePublicKey, len(v))
-		copy(res.validators[i], v)
+	res := NewFinishManager()
+	for i, validatorList := range manager.finishedSyncValidators {
+		for k, _ := range validatorList {
+			res.finishedSyncValidators[i][k] = true
+		}
 	}
 	return res
 }
 
-//AddFinishedSyncValidators only add validators in valid syncing list and not duplicate in FinishSyncManager.validator list
+// AddFinishedSyncValidators only add finishedSyncValidators in sync pool of attached view
+// and NOT duplicate in FinishSyncManager.validator list
 func (manager *FinishSyncManager) AddFinishedSyncValidators(
-	validators []string,
-	syncingValidators []incognitokey.CommitteePublicKey,
+	newFinishedSyncValidators []string,
+	syncPool []string,
 	shardID byte,
 ) {
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
-	finishedSyncValidators := make(map[string]bool)
-	for _, v := range manager.validators[shardID] {
-		key, _ := v.ToBase58()
-		finishedSyncValidators[key] = true
-	}
 
-	validKeys := []string{}
-	for _, v := range validators {
-		if finishedSyncValidators[v] {
+	finishedValidatorsToAdd := make(map[string]bool)
+	// do not allow duplicate key
+	for _, v := range newFinishedSyncValidators {
+		if manager.finishedSyncValidators[shardID][v] {
 			continue
 		}
-		validKeys = append(validKeys, v)
+		finishedValidatorsToAdd[v] = true
 	}
 
-	finishedSyncValidators = make(map[string]bool)
-	for _, v := range validKeys {
-		finishedSyncValidators[v] = true
-	}
+	// finished sync finishedSyncValidators must in sync pool
 	count := 0
-	lenValidKeys := len(validKeys)
-	validKeys = []string{}
-	for _, v := range syncingValidators {
-		if count == lenValidKeys {
+	for _, v := range syncPool {
+		if count == len(finishedValidatorsToAdd) {
 			break
 		}
-		key, _ := v.ToBase58()
-		if finishedSyncValidators[key] {
-			validKeys = append(validKeys, key)
+		if finishedValidatorsToAdd[v] {
+			manager.finishedSyncValidators[shardID][v] = true
 			count++
 		}
 	}
-	committeePublicKeys, _ := incognitokey.CommitteeBase58KeyListToStruct(validKeys)
-	manager.validators[shardID] = append(manager.validators[shardID], committeePublicKeys...)
 }
 
-func (manager *FinishSyncManager) Validators(shardID byte) []incognitokey.CommitteePublicKey {
+func (manager *FinishSyncManager) Validators(shardID byte) []string {
 	manager.mu.RLock()
 	defer manager.mu.RUnlock()
-	res := make([]incognitokey.CommitteePublicKey, len(manager.validators[shardID]))
-	copy(res, manager.validators[shardID])
+	res := []string{}
+	for k, _ := range manager.finishedSyncValidators[shardID] {
+		res = append(res, k)
+	}
+	sort.Slice(res, func(i, j int) bool {
+		return res[i] < res[j]
+	})
 	return res
 }
 
 //RemoveValidators only remove FinishSyncManager.validator list ONCE
-// ignore validators not in FinishSyncManager.validators list
-func (manager *FinishSyncManager) RemoveValidators(validators []incognitokey.CommitteePublicKey, shardID byte) {
+// ignore finishedSyncValidators not in FinishSyncManager.finishedSyncValidators list
+func (manager *FinishSyncManager) RemoveValidators(validators []string, shardID byte) {
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
-	finishedSyncValidators := make(map[string]bool)
 	for _, v := range validators {
-		key, _ := v.ToBase58()
-		finishedSyncValidators[key] = true
-	}
-	count := 0
-	for i := 0; i < len(manager.validators[shardID]); i++ {
-		v := manager.validators[shardID][i]
-		if count == len(validators) {
-			break
-		}
-		key, _ := v.ToBase58()
-		if finishedSyncValidators[key] {
-			manager.validators[shardID] = append(
-				manager.validators[shardID][:i], manager.validators[shardID][i+1:]...)
-			i--
-			count++
-		}
+		delete(manager.finishedSyncValidators[shardID], v)
 	}
 }
 
@@ -121,12 +107,15 @@ func (manager *FinishSyncManager) Instructions() []*instruction.FinishSyncInstru
 	defer manager.mu.RUnlock()
 	res := []*instruction.FinishSyncInstruction{}
 	keys := []int{}
-	for i := 0; i < len(manager.validators); i++ {
+	for i := 0; i < len(manager.finishedSyncValidators); i++ {
 		keys = append(keys, i)
 	}
 	sort.Ints(keys)
 	for _, v := range keys {
-		committeePublicKeys, _ := incognitokey.CommitteeKeyListToString(manager.validators[byte(v)])
+		committeePublicKeys := manager.Validators(byte(v))
+		if len(committeePublicKeys) == 0 {
+			continue
+		}
 		finishSyncInstruction := instruction.NewFinishSyncInstructionWithValue(v, committeePublicKeys)
 		res = append(res, finishSyncInstruction)
 	}

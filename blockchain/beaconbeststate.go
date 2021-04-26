@@ -843,17 +843,8 @@ func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePub
 	return false
 }
 
-func (beaconBestState *BeaconBestState) AddFinishedSyncValidators(committeePublicKeys []string, shardID byte) {
-	beaconBestState.finishSyncManager.AddFinishedSyncValidators(
-		committeePublicKeys,
-		beaconBestState.beaconCommitteeState.GetSyncingValidators()[shardID],
-		shardID,
-	)
-}
-
-func (beaconBestState *BeaconBestState) RemoveFinishedSyncValidators(committeeChange *committeestate.CommitteeChange) {
+func (beaconBestState *BeaconBestState) removeFinishedSyncValidators(committeeChange *committeestate.CommitteeChange) {
 	for shardID := 0; shardID < beaconBestState.beaconCommitteeState.GetNumberOfActiveShards(); shardID++ {
-		committeePublicKeys, _ := incognitokey.CommitteeBase58KeyListToStruct(committeeChange.FinishedSyncValidators[byte(shardID)])
-		beaconBestState.finishSyncManager.RemoveValidators(committeePublicKeys, byte(shardID))
+		beaconBestState.finishSyncManager.RemoveValidators(committeeChange.FinishedSyncValidators[byte(shardID)], byte(shardID))
 	}
 }

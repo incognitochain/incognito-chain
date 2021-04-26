@@ -472,7 +472,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			}
 			Logger.log.Infof("Init Missing Signature Counter, %+v, height %+v", beaconState.missingSignatureCounter, beaconState.BeaconHeight)
 		}
-		beaconState.finishSyncManager = finishsync.NewManager()
+		beaconState.finishSyncManager = finishsync.NewFinishManager()
 	}
 	return nil
 }
@@ -985,4 +985,19 @@ func (blockchain *BlockChain) getTempCommitteeInfoByHash(
 	}
 
 	return tempCommitteeInfo, nil
+}
+
+// AddFinishedSyncValidators add finishedSyncValidators from message to all current beacon views
+func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []string, shardID byte) {
+	for _, view := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
+		beaconView := view.(*BeaconBestState)
+		syncPool, _ := incognitokey.CommitteeKeyListToString(beaconView.beaconCommitteeState.GetSyncingValidators()[shardID])
+		go func(syncPool []string) {
+			beaconView.finishSyncManager.AddFinishedSyncValidators(
+				committeePublicKeys,
+				syncPool,
+				shardID,
+			)
+		}(syncPool)
+	}
 }
