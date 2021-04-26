@@ -344,6 +344,7 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 		acceptedRewardInstruction, err := acceptedBlockRewardInfo.String()
 		if err != nil {
 			// if err then ignore accepted reward instruction
+			Logger.log.Error(NewBlockChainError(GenerateInstructionError, err))
 			return []string{}
 		}
 
