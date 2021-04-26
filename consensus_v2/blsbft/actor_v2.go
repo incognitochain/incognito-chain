@@ -413,7 +413,7 @@ func (actorV2 *actorV2) createBLSAggregatedSignatures(
 func (actorV2 *actorV2) voteForBlock(
 	v *ProposeBlockInfo,
 ) error {
-	for _, userKey := range actorV2.userKeySet {
+	for _, userKey := range v.userKeySet {
 		Vote, err := createVote(&userKey, v.block, v.signingCommittes)
 		if err != nil {
 			actorV2.logger.Error(err)
@@ -608,7 +608,30 @@ func (actorV2 *actorV2) preValidateVote(blockHash []byte, vote *BFTVote, candida
 func (actorV2 *actorV2) getCommitteeForBlock(
 	v types.BlockInterface,
 ) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
-	signingCommittees, committees, _, err := actorV2.getCommitteesForSigning(v.CommitteeFromBlock())
+	committees := []incognitokey.CommitteePublicKey{}
+	signingCommittees := []incognitokey.CommitteePublicKey{}
+	var err error
+	proposerIndex := -1
+	if actorV2.blockVersion == MultiViewsVersion || actorV2.chain.IsBeaconChain() {
+		committees = actorV2.chain.GetBestView().GetCommittee()
+	} else {
+		committees, err = actorV2.
+			committeeChain.
+			CommitteesFromViewHashForShard(v.CommitteeFromBlock(), byte(actorV2.chainID))
+		if err != nil {
+			return signingCommittees, committees, err
+		}
+		committeesStr, err := incognitokey.CommitteeKeyListToString(committees)
+		if err != nil {
+			return signingCommittees, committees, err
+		}
+		proposerIndex = common.IndexOfStr(v.GetProposer(), committeesStr)
+		if proposerIndex == -1 {
+			return signingCommittees, committees, errors.New("Not Found Proposer In List Committees")
+		}
+	}
+
+	signingCommittees = actorV2.chain.SigningCommittees(v.CommitteeFromBlock(), proposerIndex, committees, byte(actorV2.chainID))
 	return signingCommittees, committees, err
 }
 
@@ -652,43 +675,45 @@ func (actorV2 *actorV2) getUserKeySetForSigning(
 	return res
 }
 
-func (actorV2 *actorV2) getCommitteesForSigning(
-	committeeViewHash common.Hash,
-) (
-	[]incognitokey.CommitteePublicKey,
-	[]incognitokey.CommitteePublicKey,
-	incognitokey.CommitteePublicKey, error,
-) {
-	committees := []incognitokey.CommitteePublicKey{}
-	signingCommittees := []incognitokey.CommitteePublicKey{}
-	var err error
-
-	if actorV2.blockVersion == MultiViewsVersion || actorV2.chain.IsBeaconChain() {
-		committees = actorV2.chain.GetBestView().GetCommittee()
-	} else {
-		committees, err = actorV2.
-			committeeChain.
-			CommitteesFromViewHashForShard(committeeViewHash, byte(actorV2.chainID))
-		if err != nil {
-			return signingCommittees, committees, incognitokey.CommitteePublicKey{}, err
-		}
-	}
-	proposerPk, proposerIndex := actorV2.chain.GetProposerByTimeSlot(byte(actorV2.chainID), actorV2.currentTimeSlot, committees)
-	signingCommittees = actorV2.chain.SigningCommittees(proposerIndex, committees)
-
-	return signingCommittees, committees, proposerPk, err
-}
-
 func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 	[]incognitokey.CommitteePublicKey,
 	[]incognitokey.CommitteePublicKey,
 	incognitokey.CommitteePublicKey, common.Hash, error,
 ) {
 	committeeViewHash := common.Hash{}
-	if actorV2.blockVersion != MultiViewsVersion && !actorV2.chain.IsBeaconChain() {
+	committees := []incognitokey.CommitteePublicKey{}
+	var err error
+	signingCommittees := []incognitokey.CommitteePublicKey{}
+	if actorV2.blockVersion == MultiViewsVersion || actorV2.chain.IsBeaconChain() {
+		committees = actorV2.chain.GetBestView().GetCommittee()
+	} else {
 		committeeViewHash = *actorV2.committeeChain.GetFinalView().GetHash()
+		committees, err = actorV2.
+			committeeChain.
+			CommitteesFromViewHashForShard(committeeViewHash, byte(actorV2.chainID))
+		if err != nil {
+			return []incognitokey.CommitteePublicKey{},
+				[]incognitokey.CommitteePublicKey{},
+				incognitokey.CommitteePublicKey{},
+				committeeViewHash, err
+		}
 	}
-	signingCommittees, committees, proposerPk, err := actorV2.getCommitteesForSigning(committeeViewHash)
+
+	proposerPk, proposerIndex, err := actorV2.chain.GetProposerByTimeSlot(
+		committeeViewHash,
+		byte(actorV2.chainID),
+		actorV2.currentTimeSlot,
+		committees,
+	)
+
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{},
+			[]incognitokey.CommitteePublicKey{},
+			incognitokey.CommitteePublicKey{},
+			committeeViewHash, err
+	}
+	signingCommittees = actorV2.chain.SigningCommittees(committeeViewHash, proposerIndex, committees, byte(actorV2.chainID))
+
 	return signingCommittees, committees, proposerPk, committeeViewHash, err
 }
 
@@ -701,6 +726,10 @@ func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 	block := blockIntf.(types.BlockInterface)
 	blkHash := block.Hash().String()
 
+	blkCPk := incognitokey.CommitteePublicKey{}
+	blkCPk.FromBase58(block.GetProducer())
+	proposerMiningKeyBase58 := blkCPk.GetMiningKeyBase58(actorV2.GetConsensusName())
+
 	signingCommittees, committees, err := actorV2.getCommitteeForBlock(block)
 	if err != nil {
 		actorV2.logger.Error(err)
@@ -709,22 +738,18 @@ func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	userKeySet := actorV2.getUserKeySetForSigning(signingCommittees, actorV2.userKeySet)
 	if len(userKeySet) == 0 {
-		actorV2.logger.Debug("Not in round for voting")
+		actorV2.logger.Info("[dcs] Not in round for voting")
 	}
-
-	blkCPk := incognitokey.CommitteePublicKey{}
-	blkCPk.FromBase58(block.GetProducer())
-	proposerMiningKeyBas58 := blkCPk.GetMiningKeyBase58(actorV2.GetConsensusName())
 
 	if v, ok := actorV2.receiveBlockByHash[blkHash]; !ok {
 		proposeBlockInfo := newProposeBlockForProposeMsg(
-			block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58)
+			block, committees, signingCommittees, userKeySet, proposerMiningKeyBase58)
 		actorV2.receiveBlockByHash[blkHash] = proposeBlockInfo
 		actorV2.logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()))
 		actorV2.receiveBlockByHeight[block.GetHeight()] = append(actorV2.receiveBlockByHeight[block.GetHeight()], actorV2.receiveBlockByHash[blkHash])
 	} else {
 		actorV2.receiveBlockByHash[blkHash].addBlockInfo(
-			block, committees, signingCommittees, userKeySet, proposerMiningKeyBas58, v.validVotes, v.errVotes)
+			block, committees, signingCommittees, userKeySet, proposerMiningKeyBase58, v.validVotes, v.errVotes)
 	}
 
 	if block.GetHeight() <= actorV2.chain.GetBestViewHeight() {
@@ -761,6 +786,7 @@ func (actorV2 *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 				if b.block != nil && pubKey.GetMiningKeyBase58(actorV2.GetConsensusName()) == b.proposerMiningKeyBase58 { // if this node is proposer and not sending vote
 					var err error
 					if err = actorV2.validateBlock(actorV2.chain.GetBestView(), b); err != nil {
+						actorV2.logger.Info("[dcs] 0")
 						err = actorV2.voteForBlock(b)
 						if err != nil {
 							actorV2.logger.Debug(err)

@@ -77,7 +77,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	)
 
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
-	Logger.log.Info(" Block %+v", curView.ShardHeight+1)
 	// Clone best state value into new variable
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
 		return nil, err
@@ -303,7 +302,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	newShardBlock.Header.Timestamp = start
 
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
-
 	return newShardBlock, nil
 }
 
