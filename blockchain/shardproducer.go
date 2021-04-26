@@ -78,7 +78,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		beaconProcessView                 *BeaconBestState
 		err                               error
 	)
-
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
 	// Clone best state value into new variable
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
