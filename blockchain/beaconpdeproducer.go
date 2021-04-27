@@ -971,7 +971,7 @@ func deductPDEAmountsV2(
 		return deductingAmounts
 	}
 
-	Logger.log.Infof("BUGLOG5 before deduction - poolValue1: %v, poolValue 2: %v\n", pdePoolPair.Token1PoolValue, pdePoolPair.Token2PoolValue)
+	Logger.log.Infof("BUGLOG5 before deduction - poolValue1: %v, poolValue 2: %v, totalShares: %v\n", pdePoolPair.Token1PoolValue, pdePoolPair.Token2PoolValue, totalSharesForPair.Uint64())
 
 	deductingAmounts = &DeductingAmountsByWithdrawal{}
 	deductingPoolValueToken1 := big.NewInt(0)
