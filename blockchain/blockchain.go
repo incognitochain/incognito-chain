@@ -933,12 +933,7 @@ func (blockchain *BlockChain) getCommitteesForSigning(
 			return res, err
 		}
 		if tempCommitteeInfo.BeaconHeight() >= blockchain.config.ChainParams.ConsensusV4Height {
-			proposerIndex := GetProposerByTimeSlot(common.CalculateTimeSlot(block.GetProposeTime()), blockchain.config.ChainParams.NumberOfShardFixedBlockValidators)
-			for i, v := range committees {
-				if (i % MaxSubsetCommittees) == (proposerIndex % MaxSubsetCommittees) {
-					res = append(res, v)
-				}
-			}
+			res = GetSigningCommitteeV3(committees, block.GetProposeTime(), blockchain.config.ChainParams.NumberOfShardFixedBlockValidators)
 		} else {
 			res = committees
 		}
