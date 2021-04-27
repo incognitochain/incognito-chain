@@ -95,7 +95,7 @@ func (shieldingReq PortalShieldingRequest) ValidateSanityData(chainRetriever Cha
 
 	// check tx version and type
 	if tx.GetVersion() != 2 {
-		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Tx shielding request be version 2"))
+		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Tx shielding request must be version 2"))
 	}
 	if tx.GetType() != common.TxNormalType {
 		return false, false, NewMetadataTxError(PortalV4ShieldRequestValidateSanityDataError, errors.New("Tx shielding request must be TxNormalType"))

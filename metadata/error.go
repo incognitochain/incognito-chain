@@ -85,6 +85,9 @@ const (
 	PortalV4UnshieldRequestValidateSanityDataError
 	PortalV4FeeReplacementRequestMetaError
 	PortalV4SubmitConfirmedTxRequestMetaError
+
+	// relaying header
+	RelayingHeaderMetaError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -170,6 +173,9 @@ var ErrCodeMessage = map[int]struct {
 	PortalV4UnshieldRequestValidateSanityDataError: {-10002, "Validate sanity data portal v4 unshielding request error"},
 	PortalV4FeeReplacementRequestMetaError:         {-10003, "Portal batch unshield request metadata error"},
 	PortalV4SubmitConfirmedTxRequestMetaError:      {-10004, "Portal submit external confirmed tx metadata error"},
+
+	// relaying header
+	RelayingHeaderMetaError: {-11005, " relaying header metadata error"},
 }
 
 type MetadataTxError struct {
