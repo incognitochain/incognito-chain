@@ -100,6 +100,7 @@ type BeaconViewRetriever interface {
 	GetStakerInfo(string) (*statedb.StakerInfo, bool, error)
 	GetBeaconConsensusStateDB() *statedb.StateDB
 	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
+	GetCandidateShardWaitingForCurrentRandom() []incognitokey.CommitteePublicKey
 }
 
 type ShardViewRetriever interface {
