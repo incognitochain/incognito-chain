@@ -8,7 +8,6 @@ import (
 	"log"
 	"math"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -39,7 +38,7 @@ func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, da
 		blockchain.MainnetBTCChainID:  int32(634140),
 	}
 	return btcrelaying.GetChainV2(
-		filepath.Join("./"+dataFolder, btcDataFolderName),
+		filepath.Join(dataFolder, btcDataFolderName),
 		relayingChainParams[btcRelayingChainID],
 		relayingChainGenesisBlkHeight[btcRelayingChainID],
 	)
@@ -48,7 +47,7 @@ func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, da
 func getBNBRelayingChainState(bnbRelayingChainID string, dataFolder string) (*bnbrelaying.BNBChainState, error) {
 	bnbChainState := new(bnbrelaying.BNBChainState)
 	err := bnbChainState.LoadBNBChainState(
-		filepath.Join("./"+dataFolder, "bnbrelayingv3"),
+		filepath.Join(dataFolder, "bnbrelayingv3"),
 		bnbRelayingChainID,
 	)
 	if err != nil {
@@ -93,38 +92,6 @@ func initSalaryTx(amount string, privateKey string, stateDB *statedb.StateDB) []
 		initTxs = append(initTxs, string(initTx))
 	}
 	return initTxs
-}
-func DownloadLatestBackup(remoteURL string, chainID int) error {
-	chainName := "beacon"
-	if chainID > -1 {
-		chainName = fmt.Sprintf("shard%v", chainID)
-	}
-	backupFile := "./data/preload/" + chainName
-	fd, err := os.OpenFile(backupFile, os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		return err
-	}
-	fd.Truncate(0)
-	err = makeRPCDownloadRequest(remoteURL, "downloadbackup", fd, chainName)
-	if err != nil {
-		return err
-	}
-	fd.Close()
-	if chainName == "beacon" {
-		fd, err = os.OpenFile("./data/preload/btc", os.O_CREATE|os.O_WRONLY, 0666)
-		if err != nil {
-			return err
-		}
-		fd.Truncate(0)
-		err = makeRPCDownloadRequest(remoteURL, "downloadbackup", fd, chainName, "btc")
-		if err != nil {
-			return err
-		}
-		fd.Close()
-	}
-
-	fmt.Println("Download finish", chainName)
-	return nil
 }
 
 type JsonRequest struct {

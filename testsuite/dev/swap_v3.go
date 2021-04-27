@@ -10,7 +10,6 @@ import (
 func Test_Swap_v3() {
 	sim := testsuite.NewStandaloneSimulation("newsim", testsuite.Config{
 		ChainParam: testsuite.NewChainParam(testsuite.ID_TESTNET2).SetActiveShardNumber(2).SetMaxShardCommitteeSize(5),
-		DisableLog: true,
 	})
 	sim.GenerateBlock().NextRound()
 	miner1 := sim.NewAccountFromShard(0)

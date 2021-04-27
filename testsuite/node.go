@@ -45,7 +45,6 @@ import (
 type Config struct {
 	ConsensusVersion int
 	ChainParam       *ChainParam
-	DisableLog       bool
 }
 
 type NodeEngine struct {
@@ -182,7 +181,7 @@ func (sim *NodeEngine) init() {
 	if err != nil {
 		panic(err)
 	}
-	dbpath := filepath.Join("./"+simName, "database")
+	dbpath := filepath.Join("/tmp/database")
 	db, err := incdb.OpenMultipleDB("leveldb", dbpath)
 	// Create db and use it.
 	if err != nil {
@@ -209,11 +208,11 @@ func (sim *NodeEngine) init() {
 	rpcServer := &rpcserver.RpcServer{}
 	rpclocal := &LocalRPCClient{rpcServer}
 
-	btcChain, err := getBTCRelayingChain(activeNetParams.PortalParams.RelayingParam.BTCRelayingHeaderChainID, "btcchain", simName)
+	btcChain, err := getBTCRelayingChain(activeNetParams.PortalParams.RelayingParam.BTCRelayingHeaderChainID, "btcchain", "/tmp/database")
 	if err != nil {
 		panic(err)
 	}
-	bnbChainState, err := getBNBRelayingChainState(activeNetParams.PortalParams.RelayingParam.BNBRelayingHeaderChainID, simName)
+	bnbChainState, err := getBNBRelayingChainState(activeNetParams.PortalParams.RelayingParam.BNBRelayingHeaderChainID, "/tmp/database")
 	if err != nil {
 		panic(err)
 	}
@@ -442,12 +441,14 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 			if err != nil {
 				panic(err)
 			}
+			log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
 		} else {
 			err = chain.InsertShardBlock(block.(*types.ShardBlock), common.FULL_VALIDATION)
 			if err != nil {
 				panic(err)
 			} else {
 				crossX := blockchain.CreateAllCrossShardBlock(block.(*types.ShardBlock), sim.config.ChainParam.ActiveShards)
+				log.Printf("SHARD %v | Produced block %v hash %v", chainID, block.GetHeight(), block.Hash().String())
 				for _, blk := range crossX {
 					sim.syncker.InsertCrossShardBlock(blk)
 				}
