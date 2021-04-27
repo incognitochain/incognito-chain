@@ -756,7 +756,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	for k, v := range substituteValidator {
 		shardSubstitute[byte(k)] = v
 	}
-	if bc.IsEqualToRandomTime(beaconBestState.BeaconHeight) && !beaconBestState.IsGetRandomNumber {
+	if bc.IsEqualToRandomTime(beaconBestState.BeaconHeight) {
 		var err error
 		var tempBeaconBlock = types.NewBeaconBlock()
 		var randomTimeBeaconHash = beaconBestState.BestBlockHash
