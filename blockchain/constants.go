@@ -28,9 +28,9 @@ const (
 	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
 	NumberOfFixedBeaconBlockValidators = 4
 	NumberOfFixedShardBlockValidators  = 4
-	MaxOutcoinQueryInterval 	  = 8640 // 1 day worth of blocks
-	OutcoinReindexerTimeout 	  = 90	 // seconds
-	OutcoinReindexerRoutines 	  = 2
+	MaxOutcoinQueryInterval            = 8640 // 1 day worth of blocks
+	OutcoinReindexerTimeout            = 90   // seconds
+	OutcoinReindexerRoutines           = 2
 )
 
 // burning addresses
@@ -116,8 +116,8 @@ const (
 	TestnetName              = "testnet"
 	TestnetDefaultPort       = "9444"
 	TestnetGenesisBlockTime  = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch             = 100
-	TestnetRandomTime        = 50
+	TestnetEpoch             = 20
+	TestnetRandomTime        = 10
 	TestnetEpochV2BreakPoint = 10e9
 	TestnetEpochV2           = 100
 	TestnetRandomTimeV2      = 50
@@ -125,11 +125,11 @@ const (
 	TestnetSwapOffset        = 1
 	TestnetAssignOffset      = 2
 
-	TestNetShardCommitteeSize     = 32
+	TestNetShardCommitteeSize     = 6
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetActiveShards           = 2
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
@@ -139,7 +139,7 @@ const (
 
 	//board and proposal parameters
 	TestnetBasicReward                      = 400000000 //40 mili PRV
-	TestnetETHContractAddressStr            = "0xE0D5e7217c6C4bc475404b26d763fAD3F14D2b86"
+	TestnetETHContractAddressStr            = "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
@@ -152,7 +152,7 @@ const (
 	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
 	TestnetBNBFullNodeProtocol = "https"
 	TestnetBNBFullNodePort     = "443"
-	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+	TestnetPortalFeeder        = "12ss6PhRTe7G7PuNkRVcosHRRS1dsJukwurhvvD3NAiaxbFeUYcQC1eJ1rGprJ941zHsC5AT4YykUGmzxRopeAw7J5SpYJjNkk8WzgdxsxTa7p4mJkurRV1L4a7GERSTVNPvNKn5zYeRBwXVKcZf"
 
 	// Enable Feature Flag
 	TestnetEnablePortalRelaying = 1
