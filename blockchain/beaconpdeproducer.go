@@ -944,6 +944,8 @@ func deductPDEAmountsV2(
 		return deductingAmounts
 	}
 
+	Logger.log.Infof("BUGLOG5 shareForWithdrawer: %v\n", currentSharesForWithdrawer)
+
 	totalSharesForPairPrefixBytes, err := rawdbv2.BuildPDESharesKeyV2(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, "",
@@ -955,9 +957,16 @@ func deductPDEAmountsV2(
 
 	totalSharesForPairPrefix := string(totalSharesForPairPrefixBytes)
 	totalSharesForPair := big.NewInt(0)
+
+	Logger.log.Infof("BUGLOG5 shardKeyPrefix: %v\n", totalSharesForPairPrefix)
+
 	for shareKey, shareAmt := range currentPDEState.PDEShares {
 		if strings.Contains(shareKey, totalSharesForPairPrefix) {
+			Logger.log.Infof("BUGLOG5 shareKey %v, amount %v\n", shareKey, shareAmt)
 			totalSharesForPair.Add(totalSharesForPair, new(big.Int).SetUint64(shareAmt))
+
+			Logger.log.Infof("BUGLOG5 totalShare: %v\n", totalSharesForPair.Uint64())
+
 		}
 	}
 	if totalSharesForPair.Cmp(big.NewInt(0)) == 0 {
