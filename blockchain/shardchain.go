@@ -185,8 +185,8 @@ type ShardProducingFlow struct {
 	isOldBeaconHeight    bool
 	epoch                uint64
 	processBeaconBlock   types.BeaconBlock
-
-	blockCommitteesStr []string
+	shardInstructions    [][]string
+	blockCommitteesStr   []string
 }
 
 func (chain *ShardChain) getDataBeforeBlockProducing(version int, proposer string, round int, startTime int64,
@@ -323,12 +323,11 @@ func (chain *ShardChain) updateHeaderRootHash(flow *ShardProducingFlow) error {
 		return err
 	}
 
-	shardInstructions := [][]string{}
 	totalInstructions := []string{}
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
-	for _, value := range shardInstructions {
+	for _, value := range flow.shardInstructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
 	instructionsHash, err := generateHashFromStringArray(totalInstructions)
@@ -341,7 +340,7 @@ func (chain *ShardChain) updateHeaderRootHash(flow *ShardProducingFlow) error {
 	if err != nil {
 		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from Tx: %+v", err))
 	}
-	flattenInsts, err := FlattenAndConvertStringInst(shardInstructions)
+	flattenInsts, err := FlattenAndConvertStringInst(flow.shardInstructions)
 	if err != nil {
 		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from block body: %+v", err))
 	}
@@ -439,6 +438,7 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 		Logger.log.Info("Shard Producer: Instruction", shardInstructions)
 	}
 
+	flow.shardInstructions = shardInstructions
 	flow.newBlock.BuildShardBlockBody(shardInstructions, crossTransactions, transactionsForNewBlock)
 	totalTxsFee := curView.shardCommitteeEngine.BuildTotalTxsFeeFromTxs(flow.newBlock.Body.Transactions)
 
