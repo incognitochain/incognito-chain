@@ -15,7 +15,6 @@ import (
 
 type blockValidation interface {
 	types.BlockInterface
-	AddValidationField(validationData string)
 }
 
 func ValidateProducerSig(block types.BlockInterface) error {

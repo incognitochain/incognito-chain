@@ -535,6 +535,10 @@ func (block CrossShardBlock) GetValidationField() string {
 	return block.ValidationData
 }
 
+func (block *CrossShardBlock) AddValidationField(validationData string) {
+	block.ValidationData = validationData
+}
+
 func (block CrossShardBlock) GetRound() int {
 	return block.Header.Round
 }
