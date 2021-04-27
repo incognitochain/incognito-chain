@@ -361,16 +361,27 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	}
 	blockCreationLeftOver = blockCreationLeftOver - time.Now().Sub(st)
 	st = time.Now()
-	txsToAdd := chain.TxPool.GetTxsTranferForNewBlock(
-		blockGenerator.chain,
-		curView,
-		bView,
-		maxSize,
-		24*time.Second,
-		blockCreationLeftOver,
-	)
+	txsToAdd := []metadata.Transaction{}
+	if !blockGenerator.chain.config.usingNewPool {
+		txToRemove := []metadata.Transaction{}
+
+		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreationLeftOver.Nanoseconds(), beaconHeight, curView)
+		if len(txsToAdd) == 0 {
+			Logger.log.Info("Creating empty block...")
+		}
+		go blockGenerator.txPool.RemoveTx(txToRemove, false)
+	} else {
+		txsToAdd = chain.TxPool.GetTxsTranferForNewBlock(
+			blockGenerator.chain,
+			curView,
+			bView,
+			maxSize,
+			24*time.Second,
+			blockCreationLeftOver,
+		)
+	}
 	if len(txsToAdd) > 0 {
-		Logger.log.Infof("[testperformance] SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(txsToAdd), curView.ShardHeight+1, time.Since(st))
+		Logger.log.Infof("SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(txsToAdd), curView.ShardHeight+1, time.Since(st))
 	}
 	txsToAdd = append(txsToAdd, responseTxsBeacon...)
 	if len(errInstructions) > 0 {

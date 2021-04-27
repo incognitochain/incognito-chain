@@ -2,11 +2,13 @@ package netsync
 
 import (
 	"errors"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/metadata"
 
 	"github.com/incognitochain/incognito-chain/syncker"
 
@@ -36,6 +38,8 @@ type NetSync struct {
 
 	config *NetSyncConfig
 	cache  *NetSyncCache
+
+	usingNewPool bool
 }
 
 type NetSyncConfig struct {
@@ -80,6 +84,13 @@ func (netSync *NetSync) Init(cfg *NetSyncConfig) {
 	netSync.cache = &NetSyncCache{
 		txCache:    txCache,
 		blockCache: blockCache,
+	}
+
+	newTxPool := os.Getenv("TXPOOL_VERSION")
+	if newTxPool == "0" {
+		netSync.usingNewPool = false
+	} else {
+		netSync.usingNewPool = true
 	}
 
 	// register pubsub channel
@@ -155,15 +166,14 @@ out:
 					case *wire.MessageTx, *wire.MessageTxPrivacyToken:
 						{
 							beaconHeight := netSync.config.BlockChain.GetBeaconBestState().BestBlock.GetHeight()
+							var tx metadata.Transaction
 							switch msg := msgC.(type) {
 							case *wire.MessageTx:
-								{
-									netSync.handleMessageTx(msg, int64(beaconHeight))
-								}
+								tx = msg.Transaction
+								netSync.handleMessageTx(msg, tx, int64(beaconHeight))
 							case *wire.MessageTxPrivacyToken:
-								{
-									netSync.handleMessageTxPrivacyToken(msg, int64(beaconHeight))
-								}
+								tx = msg.Transaction
+								netSync.handleMessageTx(msg, tx, int64(beaconHeight))
 							}
 						}
 					case *wire.MessageBFT:
@@ -249,38 +259,31 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 }
 
 // handleTxMsg handles transaction messages from all peers.
-func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64) {
-	txHash := msg.Transaction.Hash().String()
+func (netSync *NetSync) handleMessageTx(msg wire.Message, tx metadata.Transaction, beaconHeight int64) {
+	txHash := tx.Hash().String()
 	Logger.log.Infof("[testperformance] Handling new message tx %v", txHash)
-	// if !netSync.handleTxWithRole(msg.Transaction) {
-	// 	return
-	// }
-	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		tx := msg.Transaction
+	if isAdded := netSync.handleCacheTx(*tx.Hash()); !isAdded {
 		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		tp, err := netSync.config.BlockChain.GetConfig().PoolManager.GetShardTxsPool(sID)
-		if err != nil {
-			Logger.log.Errorf("[testperformance] Cannot get tx pool of shard %v, got err %v", sID, err)
-		} else {
-			if !tp.IsRunning() {
-				return
+		err := netSync.config.Server.PushMessageToShard(msg, sID)
+		Logger.log.Error(err)
+		if !netSync.usingNewPool {
+			hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(tx, beaconHeight)
+			if err != nil {
+				Logger.log.Error(err)
+			} else {
+				Logger.log.Debugf("Node got hash of transaction %s", hash.String())
 			}
-			tp.GetInbox() <- tx
-			Logger.log.Infof("Sent transaction %+v to pool", txHash)
-			// Broadcast to network
-			/*go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-				metrics.Measurement:      metrics.TxEnterNetSyncSuccess,
-				metrics.MeasurementValue: float64(1),
-				metrics.Tag:              metrics.TxHashTag,
-				metrics.TagValue:         msg.Transaction.Hash().String(),
-			})*/
-			// Logger.log.Debugf("there is hash of transaction %s", tx.Hash().String())
-			// err := netSync.config.Server.PushMessageToAll(msg)
-			// if err != nil {
-			// 	Logger.log.Error(err)
-			// } else {
-			// netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
-			// }
+		} else {
+			tp, err := netSync.config.BlockChain.GetConfig().PoolManager.GetShardTxsPool(sID)
+			if err != nil {
+				Logger.log.Errorf("[testperformance] Cannot get tx pool of shard %v, got err %v", sID, err)
+			} else {
+				if !tp.IsRunning() {
+					return
+				}
+				tp.GetInbox() <- tx
+				Logger.log.Infof("Sent transaction %+v to pool", txHash)
+			}
 		}
 	}
 	Logger.log.Infof("Transaction %+v found in cache", txHash)

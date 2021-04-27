@@ -30,23 +30,31 @@ func NewPoolManager(
 	return res, nil
 }
 
-func (pm *PoolManager) Start() error {
+func (pm *PoolManager) Start(relayShards []byte) error {
 	_, newRoleECh, err := pm.ps.RegisterNewSubscriber(pubsub.NodeRoleDetailTopic)
 	if err != nil {
 		Logger.Errorf("Register receieved error", err)
 		return err
 	}
+	relayShardM := map[byte]interface{}{}
+	for _, sID := range relayShards {
+		if int(sID) < len(pm.ShardTxsPool) {
+			pm.ShardTxsPool[sID].Start()
+			relayShardM[sID] = nil
+		}
+	}
 	for msg := range newRoleECh {
 		newRole, ok := msg.Value.(*pubsub.NodeRole)
 		if ok {
 			Logger.Infof(" Received new role %v %v\n", newRole.CID, newRole.Role)
-			if (newRole.CID == -1) && (newRole.Role == common.CommitteeRole) {
-				for _, txPool := range pm.ShardTxsPool {
-					if !txPool.IsRunning() {
-						txPool.Start()
-					}
-				}
-			}
+			// Enable this for beacon full validation
+			// if (newRole.CID == -1) && (newRole.Role == common.CommitteeRole) {
+			// 	for _, txPool := range pm.ShardTxsPool {
+			// 		if !txPool.IsRunning() {
+			// 			txPool.Start()
+			// 		}
+			// 	}
+			// }
 			if (newRole.CID > -1) && (newRole.CID < len(pm.ShardTxsPool)) {
 				if (newRole.Role == common.SyncingRole) || (newRole.Role == common.CommitteeRole) /*|| (newRole.Role == common.NodeModeRelay) */ {
 					if !pm.ShardTxsPool[newRole.CID].IsRunning() {
@@ -54,7 +62,9 @@ func (pm *PoolManager) Start() error {
 					}
 				} else {
 					if pm.ShardTxsPool[newRole.CID].IsRunning() {
-						pm.ShardTxsPool[newRole.CID].Stop()
+						if _, ok := relayShardM[byte(newRole.CID)]; !ok {
+							pm.ShardTxsPool[newRole.CID].Stop()
+						}
 					}
 				}
 			}

@@ -330,7 +330,7 @@ func (serverObj *Server) NewServer(
 	if err != nil {
 		return err
 	}
-	go poolManager.Start()
+	go poolManager.Start(relayShards)
 
 	//set bc obj for monitor
 	monitor.SetBlockChainObj(serverObj.blockChain)

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"sync"
 
@@ -67,6 +68,7 @@ type Config struct {
 	PoolManager       *txpool.PoolManager
 
 	relayShardLck sync.Mutex
+	usingNewPool  bool
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
@@ -102,6 +104,12 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		return err
 	}
 	blockchain.cQuitSync = make(chan struct{})
+	newTxPool := os.Getenv("TXPOOL_VERSION")
+	if newTxPool == "0" {
+		blockchain.config.usingNewPool = false
+	} else {
+		blockchain.config.usingNewPool = true
+	}
 	return nil
 }
 
