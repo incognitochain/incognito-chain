@@ -3,8 +3,10 @@
 package mocks
 
 import (
-	common "github.com/incognitochain/incognito-chain/common"
+	chaincfg "github.com/btcsuite/btcd/chaincfg"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
+
+	common "github.com/incognitochain/incognito-chain/common"
 
 	metadata "github.com/incognitochain/incognito-chain/metadata"
 
@@ -27,6 +29,20 @@ func (_m *ChainRetriever) CheckBlockTimeIsReached(recentBeaconHeight uint64, bea
 	var r0 bool
 	if rf, ok := ret.Get(0).(func(uint64, uint64, uint64, uint64, time.Duration) bool); ok {
 		r0 = rf(recentBeaconHeight, beaconHeight, recentShardHeight, shardHeight, duration)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// CheckBlockTimeIsReachedByBeaconHeight provides a mock function with given fields: recentBeaconHeight, beaconHeight, duration
+func (_m *ChainRetriever) CheckBlockTimeIsReachedByBeaconHeight(recentBeaconHeight uint64, beaconHeight uint64, duration time.Duration) bool {
+	ret := _m.Called(recentBeaconHeight, beaconHeight, duration)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(uint64, uint64, time.Duration) bool); ok {
+		r0 = rf(recentBeaconHeight, beaconHeight, duration)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
@@ -94,6 +110,22 @@ func (_m *ChainRetriever) GetBTCChainID() string {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// GetBTCChainParams provides a mock function with given fields:
+func (_m *ChainRetriever) GetBTCChainParams() *chaincfg.Params {
+	ret := _m.Called()
+
+	var r0 *chaincfg.Params
+	if rf, ok := ret.Get(0).(func() *chaincfg.Params); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*chaincfg.Params)
+		}
 	}
 
 	return r0
@@ -208,20 +240,20 @@ func (_m *ChainRetriever) GetLatestBNBBlkHeight() (int64, error) {
 	return r0, r1
 }
 
-// GetMinAmountPortalToken provides a mock function with given fields: tokenIDStr, beaconHeight
-func (_m *ChainRetriever) GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error) {
-	ret := _m.Called(tokenIDStr, beaconHeight)
+// GetMinAmountPortalToken provides a mock function with given fields: tokenIDStr, beaconHeight, version
+func (_m *ChainRetriever) GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64, version uint) (uint64, error) {
+	ret := _m.Called(tokenIDStr, beaconHeight, version)
 
 	var r0 uint64
-	if rf, ok := ret.Get(0).(func(string, uint64) uint64); ok {
-		r0 = rf(tokenIDStr, beaconHeight)
+	if rf, ok := ret.Get(0).(func(string, uint64, uint) uint64); ok {
+		r0 = rf(tokenIDStr, beaconHeight, version)
 	} else {
 		r0 = ret.Get(0).(uint64)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, uint64) error); ok {
-		r1 = rf(tokenIDStr, beaconHeight)
+	if rf, ok := ret.Get(1).(func(string, uint64, uint) error); ok {
+		r1 = rf(tokenIDStr, beaconHeight, version)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -252,6 +284,62 @@ func (_m *ChainRetriever) GetPortalFeederAddress(beaconHeight uint64) string {
 		r0 = rf(beaconHeight)
 	} else {
 		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// GetPortalReplacementAddress provides a mock function with given fields: beaconHeight
+func (_m *ChainRetriever) GetPortalReplacementAddress(beaconHeight uint64) string {
+	ret := _m.Called(beaconHeight)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(uint64) string); ok {
+		r0 = rf(beaconHeight)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// GetPortalV4GeneralMultiSigAddress provides a mock function with given fields: tokenIDStr, beaconHeight
+func (_m *ChainRetriever) GetPortalV4GeneralMultiSigAddress(tokenIDStr string, beaconHeight uint64) string {
+	ret := _m.Called(tokenIDStr, beaconHeight)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string, uint64) string); ok {
+		r0 = rf(tokenIDStr, beaconHeight)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
+// GetPortalV4MinUnshieldAmount provides a mock function with given fields: tokenIDStr, beaconHeight
+func (_m *ChainRetriever) GetPortalV4MinUnshieldAmount(tokenIDStr string, beaconHeight uint64) uint64 {
+	ret := _m.Called(tokenIDStr, beaconHeight)
+
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func(string, uint64) uint64); ok {
+		r0 = rf(tokenIDStr, beaconHeight)
+	} else {
+		r0 = ret.Get(0).(uint64)
+	}
+
+	return r0
+}
+
+// GetPortalV4MultipleTokenAmount provides a mock function with given fields: tokenIDStr, beaconHeight
+func (_m *ChainRetriever) GetPortalV4MultipleTokenAmount(tokenIDStr string, beaconHeight uint64) uint64 {
+	ret := _m.Called(tokenIDStr, beaconHeight)
+
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func(string, uint64) uint64); ok {
+		r0 = rf(tokenIDStr, beaconHeight)
+	} else {
+		r0 = ret.Get(0).(uint64)
 	}
 
 	return r0
@@ -375,18 +463,25 @@ func (_m *ChainRetriever) IsPortalExchangeRateToken(beaconHeight uint64, tokenID
 	return r0
 }
 
-// IsPortalToken provides a mock function with given fields: beaconHeight, tokenIDStr
-func (_m *ChainRetriever) IsPortalToken(beaconHeight uint64, tokenIDStr string) bool {
-	ret := _m.Called(beaconHeight, tokenIDStr)
+// IsPortalToken provides a mock function with given fields: beaconHeight, tokenIDStr, version
+func (_m *ChainRetriever) IsPortalToken(beaconHeight uint64, tokenIDStr string, version uint) (bool, error) {
+	ret := _m.Called(beaconHeight, tokenIDStr, version)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(uint64, string) bool); ok {
-		r0 = rf(beaconHeight, tokenIDStr)
+	if rf, ok := ret.Get(0).(func(uint64, string, uint) bool); ok {
+		r0 = rf(beaconHeight, tokenIDStr, version)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(uint64, string, uint) error); ok {
+		r1 = rf(beaconHeight, tokenIDStr, version)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // IsSupportedTokenCollateralV3 provides a mock function with given fields: beaconHeight, externalTokenID
@@ -403,20 +498,20 @@ func (_m *ChainRetriever) IsSupportedTokenCollateralV3(beaconHeight uint64, exte
 	return r0
 }
 
-// IsValidPortalRemoteAddress provides a mock function with given fields: tokenIDStr, remoteAddr, beaconHeight
-func (_m *ChainRetriever) IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error) {
-	ret := _m.Called(tokenIDStr, remoteAddr, beaconHeight)
+// IsValidPortalRemoteAddress provides a mock function with given fields: tokenIDStr, remoteAddr, beaconHeight, version
+func (_m *ChainRetriever) IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64, version uint) (bool, error) {
+	ret := _m.Called(tokenIDStr, remoteAddr, beaconHeight, version)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(string, string, uint64) bool); ok {
-		r0 = rf(tokenIDStr, remoteAddr, beaconHeight)
+	if rf, ok := ret.Get(0).(func(string, string, uint64, uint) bool); ok {
+		r0 = rf(tokenIDStr, remoteAddr, beaconHeight, version)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, uint64) error); ok {
-		r1 = rf(tokenIDStr, remoteAddr, beaconHeight)
+	if rf, ok := ret.Get(1).(func(string, string, uint64, uint) error); ok {
+		r1 = rf(tokenIDStr, remoteAddr, beaconHeight, version)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -447,20 +542,20 @@ func (_m *ChainRetriever) ListPrivacyTokenAndBridgeTokenAndPRVByShardID(_a0 byte
 	return r0, r1
 }
 
-// ValidatePortalRemoteAddresses provides a mock function with given fields: remoteAddresses, beaconHeight
-func (_m *ChainRetriever) ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64) (bool, error) {
-	ret := _m.Called(remoteAddresses, beaconHeight)
+// ValidatePortalRemoteAddresses provides a mock function with given fields: remoteAddresses, beaconHeight, version
+func (_m *ChainRetriever) ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64, version uint) (bool, error) {
+	ret := _m.Called(remoteAddresses, beaconHeight, version)
 
 	var r0 bool
-	if rf, ok := ret.Get(0).(func(map[string]string, uint64) bool); ok {
-		r0 = rf(remoteAddresses, beaconHeight)
+	if rf, ok := ret.Get(0).(func(map[string]string, uint64, uint) bool); ok {
+		r0 = rf(remoteAddresses, beaconHeight, version)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(map[string]string, uint64) error); ok {
-		r1 = rf(remoteAddresses, beaconHeight)
+	if rf, ok := ret.Get(1).(func(map[string]string, uint64, uint) error); ok {
+		r1 = rf(remoteAddresses, beaconHeight, version)
 	} else {
 		r1 = ret.Error(1)
 	}

@@ -738,7 +738,7 @@ func initBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestat
 func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Params, bc *BlockChain) committeestate.BeaconCommitteeEngine {
 	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
-	var numberOfAssignedCandidate int
+	var numberOfAssignedCandidate int = 0
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
 	}
@@ -756,7 +756,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	for k, v := range substituteValidator {
 		shardSubstitute[byte(k)] = v
 	}
-	if bc.IsGreaterThanRandomTime(beaconBestState.BeaconHeight) && !beaconBestState.IsGetRandomNumber {
+	if bc.IsEqualToRandomTime(beaconBestState.BeaconHeight) && !beaconBestState.IsGetRandomNumber {
 		var err error
 		var tempBeaconBlock = types.NewBeaconBlock()
 		var randomTimeBeaconHash = beaconBestState.BestBlockHash

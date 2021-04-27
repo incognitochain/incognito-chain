@@ -84,9 +84,6 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 	index := common.IndexOfStr(requestedPublicKey, waitingValidatorsList)
 	if index == -1 {
 		if !stakerInfo.AutoStaking() {
-			Logger.log.Errorf("GetAllCommitteeValidatorCandidateFlattenListFromDatabase %+v \n", committees)
-			Logger.log.Errorf("Waiting For next random number %+v \n", beaconViewRetriever.GetCandidateShardWaitingForCurrentRandom())
-			Logger.log.Errorf("waitingValidatorsList %+v \n, requestedPublicKey %+v \n, stakerInfo %+v", waitingValidatorsList, requestedPublicKey, stakerInfo)
 			return false, NewMetadataTxError(UnstakingRequestAlreadyUnstake, errors.New("Public Key Has Already Been Unstaked"))
 		}
 
