@@ -968,3 +968,11 @@ func (bc *BlockChain) GetAllCommitteeStakeInfoByEpoch(epoch uint64) (map[int][]*
 	bc.committeeByEpochCache.Add(epoch, allCommitteeState)
 	return statedb.GetAllCommitteeStakeInfoV2(beaconConsensusStateDB, allCommitteeState), nil
 }
+
+func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {
+	return blockchain.config.PoolManager
+}
+
+func (blockchain *BlockChain) UsingNewPool() bool {
+	return blockchain.config.usingNewPool
+}

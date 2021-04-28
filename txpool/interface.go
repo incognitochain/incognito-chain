@@ -54,6 +54,8 @@ type TxPool interface {
 		valid []metadata.Transaction,
 		needValidate []metadata.Transaction,
 	)
+	snapshotPool() TxsData
+	getTxByHash(txID string) metadata.Transaction
 }
 
 type BlockTxsVerifier interface {

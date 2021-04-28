@@ -81,3 +81,54 @@ func (pm *PoolManager) GetShardTxsPool(shardID byte) (TxPool, error) {
 	}
 	return pm.ShardTxsPool[shardID], nil
 }
+
+func (pm *PoolManager) GetMempoolInfo() MempoolInfo {
+	res := &GetMempoolInfo{
+		Size:          0,
+		Bytes:         0,
+		Usage:         0,
+		MaxMempool:    0,
+		MempoolMinFee: 1000000,
+		MempoolMaxFee: 0,
+		ListTxs:       []MempoolInfoTx{},
+	}
+
+	allTxsData := []TxsData{}
+	for _, txPool := range pm.ShardTxsPool {
+		if txPool.IsRunning() {
+			allTxsData = append(allTxsData, txPool.snapshotPool())
+		}
+	}
+	for _, txsData := range allTxsData {
+		res.Size += len(txsData.TxByHash)
+		for txHash, tx := range txsData.TxByHash {
+			res.ListTxs = append(res.ListTxs, &GetMempoolInfoTx{
+				TxID:     txHash,
+				LockTime: tx.GetLockTime(),
+			})
+			if txInfo, ok := txsData.TxInfos[txHash]; ok {
+				res.Bytes += txInfo.Size
+				if res.MempoolMinFee > txInfo.Fee {
+					res.MempoolMinFee = txInfo.Fee
+				} else {
+					if res.MempoolMaxFee < txInfo.Fee {
+						res.MempoolMaxFee = txInfo.Fee
+					}
+				}
+			}
+		}
+	}
+	return res
+}
+
+func (pm *PoolManager) GetTransactionByHash(txHash string) metadata.Transaction {
+	for _, txPool := range pm.ShardTxsPool {
+		if txPool.IsRunning() {
+			tx := txPool.getTxByHash(txHash)
+			if tx != nil {
+				return tx
+			}
+		}
+	}
+	return nil
+}

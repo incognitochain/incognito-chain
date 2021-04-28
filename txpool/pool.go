@@ -415,6 +415,18 @@ func (tp *TxsPool) snapshotPool() TxsData {
 	return <-cData
 }
 
+func (tp *TxsPool) getTxByHash(txID string) metadata.Transaction {
+	cData := make(chan metadata.Transaction)
+	tp.action <- func(tpTemp *TxsPool) {
+		if tx, ok := tpTemp.Data.TxByHash[txID]; ok {
+			cData <- tx
+		} else {
+			cData <- nil
+		}
+	}
+	return <-cData
+}
+
 func (tp *TxsPool) getTxsFromPool(
 	txCh chan *TxInfoDetail,
 	stopC <-chan interface{},
