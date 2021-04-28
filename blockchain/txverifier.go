@@ -126,7 +126,7 @@ func (v *TxsVerifier) FilterWhitelistTxs(txs []metadata.Transaction) []metadata.
 	j := 0
 	res := make([]metadata.Transaction, len(txs))
 	for i, tx := range txs {
-		if _, ok := v.whitelist[tx.Hash().String()]; ok {
+		if _, ok := v.whitelist[tx.Hash().String()]; !ok {
 			res[j] = txs[i]
 			j++
 		}
@@ -144,6 +144,7 @@ func (v *TxsVerifier) FullValidateTransactions(
 	if len(txs) == 0 {
 		return true, nil
 	}
+	txs = v.FilterWhitelistTxs(txs)
 	_, newTxs := v.txPool.CheckValidatedTxs(txs)
 	// fmt.Println("Is Validated")
 	errCh := make(chan error)
