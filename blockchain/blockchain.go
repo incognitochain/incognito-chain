@@ -109,10 +109,10 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	blockchain.cQuitSync = make(chan struct{})
 	newTxPool := os.Getenv("TXPOOL_VERSION")
-	if newTxPool == "0" {
-		blockchain.config.usingNewPool = false
-	} else {
+	if newTxPool == "1" {
 		blockchain.config.usingNewPool = true
+	} else {
+		blockchain.config.usingNewPool = false
 	}
 	return nil
 }
