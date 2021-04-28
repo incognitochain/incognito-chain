@@ -1,12 +1,13 @@
 package finishsync
 
 import (
+	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
+	"sort"
 	"sync"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/instruction"
 )
 
 var (
@@ -162,144 +163,462 @@ func initTestParams() {
 	return
 }
 
-func TestManager_AddFinishedSyncValidators(t *testing.T) {
-	initTestParams()
+func TestFinishSyncManager_AddFinishedSyncValidators(t *testing.T) {
 	type fields struct {
-		validators map[byte][]incognitokey.CommitteePublicKey
+		finishedSyncValidators map[byte]map[string]bool
+		mu                     *sync.RWMutex
 	}
 	type args struct {
-		validators        []string
-		syncingValidators []incognitokey.CommitteePublicKey
-		shardID           byte
+		newFinishedSyncValidators []string
+		syncPool                  []string
+		shardID                   byte
 	}
 	tests := []struct {
 		name               string
 		fields             fields
-		fieldsAfterProcess fields
+		fieldsAfterProcess map[byte]map[string]bool
 		args               args
 	}{
-		//TODO: @hung add testcase
-		// Testcase 1: add 1 validator 1 shard
-		// Testcase 2: add > 1 validator 1 shard
-		// Testcase 3: add 1 validator > 1 shard
-		// Testcase 4: add > 1 validator > 1 shard
-		// Testcase 5: add duplicate validator
-		// Testcase 6: add existent validator
-		// @NOTE: Validator is only valid if in sync validator list
 		{
-			name: "Valid Input",
+			name: "Add 1 validator 1 shard",
 			fields: fields{
-				validators: map[byte][]incognitokey.CommitteePublicKey{
-					1: []incognitokey.CommitteePublicKey{
-						*incKey0, *incKey,
-					},
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{},
 				},
-			},
-			fieldsAfterProcess: fields{
-				validators: map[byte][]incognitokey.CommitteePublicKey{
-					1: []incognitokey.CommitteePublicKey{
-						*incKey0, *incKey, *incKey2, *incKey3,
-					},
-				},
+				mu: new(sync.RWMutex),
 			},
 			args: args{
-				validators: []string{
-					key2, key3, key4,
+				newFinishedSyncValidators: []string{key},
+				syncPool:                  []string{key},
+				shardID:                   0,
+			},
+			fieldsAfterProcess: map[byte]map[string]bool{
+				0: map[string]bool{
+					key: true,
 				},
-				syncingValidators: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3,
+			},
+		},
+		{
+			name: "Add > 1 validator 1 shard",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{},
 				},
-				shardID: 1,
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				newFinishedSyncValidators: []string{key, key2},
+				syncPool:                  []string{key, key2},
+				shardID:                   0,
+			},
+			fieldsAfterProcess: map[byte]map[string]bool{
+				0: map[string]bool{
+					key:  true,
+					key2: true,
+				},
+			},
+		},
+		{
+			name: "Add > 1 validator 1 shard, some not in sync pool",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				newFinishedSyncValidators: []string{key, key2, key3, key4},
+				syncPool:                  []string{key, key2},
+				shardID:                   0,
+			},
+			fieldsAfterProcess: map[byte]map[string]bool{
+				0: map[string]bool{
+					key:  true,
+					key2: true,
+				},
+			},
+		},
+		{
+			name: "Add > 1 validator 1 shard, some duplicate in finishedSyncValidators",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{
+						key3: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				newFinishedSyncValidators: []string{key, key2, key3},
+				syncPool:                  []string{key, key2, key3},
+				shardID:                   0,
+			},
+			fieldsAfterProcess: map[byte]map[string]bool{
+				0: map[string]bool{
+					key:  true,
+					key2: true,
+					key3: true,
+				},
+			},
+		},
+		{
+			name: "Add > 1 validator 1 shard, some not in sync pool, some duplicate in finishedSyncValidators",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{
+						key3: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				newFinishedSyncValidators: []string{key, key2, key3, key4, key5, key8},
+				syncPool:                  []string{key, key2, key3, key6, key7, key8},
+				shardID:                   0,
+			},
+			fieldsAfterProcess: map[byte]map[string]bool{
+				0: map[string]bool{
+					key:  true,
+					key2: true,
+					key3: true,
+					key8: true,
+				},
+			},
+		},
+		{
+			name: "Add > 1 validator 1 shard (data > 1 shard), some not in sync pool, some duplicate in finishedSyncValidators",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{
+						key3: true,
+					},
+					1: map[string]bool{
+						key10: true,
+						key11: true,
+						key12: true,
+						key13: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				newFinishedSyncValidators: []string{key, key2, key3, key4, key5, key8},
+				syncPool:                  []string{key, key2, key3, key6, key7, key8},
+				shardID:                   0,
+			},
+			fieldsAfterProcess: map[byte]map[string]bool{
+				0: map[string]bool{
+					key:  true,
+					key2: true,
+					key3: true,
+					key8: true,
+				},
+				1: map[string]bool{
+					key10: true,
+					key11: true,
+					key12: true,
+					key13: true,
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			manager := NewManagerWithValue(tt.fields.validators)
-			manager.AddFinishedSyncValidators(tt.args.validators, tt.args.syncingValidators, tt.args.shardID)
-			if !reflect.DeepEqual(manager.Validators(tt.args.shardID), tt.fieldsAfterProcess.validators[tt.args.shardID]) {
-				t.Errorf("validators = %v, want %v", manager.Validators(tt.args.shardID), tt.fieldsAfterProcess.validators[tt.args.shardID])
+			manager := &FinishSyncManager{
+				finishedSyncValidators: tt.fields.finishedSyncValidators,
+				mu:                     tt.fields.mu,
+			}
+			manager.AddFinishedSyncValidators(tt.args.newFinishedSyncValidators, tt.args.syncPool, tt.args.shardID)
+			if !reflect.DeepEqual(manager.finishedSyncValidators, tt.fieldsAfterProcess) {
+				t.Errorf("AddFinishedSyncValidators() = %v, want %v", manager.finishedSyncValidators, tt.fieldsAfterProcess)
 			}
 		})
 	}
 }
 
-func TestManager_RemoveValidators(t *testing.T) {
+func TestFinishSyncManager_RemoveValidators(t *testing.T) {
 	initTestParams()
 	type fields struct {
-		validators map[byte][]incognitokey.CommitteePublicKey
+		finishedSyncValidators map[byte]map[string]bool
+		mu                     *sync.RWMutex
 	}
 	type args struct {
-		validators []incognitokey.CommitteePublicKey
+		validators []string
 		shardID    byte
 	}
 	tests := []struct {
 		name               string
 		fields             fields
-		fieldsAfterProcess fields
+		fieldsAfterProcess map[byte]map[string]bool
 		args               args
 	}{
-		//TODO: @hung add testcase
-		// Testcase 1: remove 1 validator 1 shard
-		// Testcase 2: remove > 1 validator 1 shard
-		// Testcase 3: remove 1 validator > 1 shard
-		// Testcase 4: remove > 1 validator > 1 shard
-		// Testcase 5: remove duplicate validator (not allow)
-		// Testcase 6: remove NOT FOUND validator (allow)
 		{
-			name: "Valid Input",
+			name: "1 validator 1 shard",
 			fields: fields{
-				validators: map[byte][]incognitokey.CommitteePublicKey{
-					1: []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{
+						key:  true,
+						key2: true,
+						key3: true,
+						key8: true,
+					},
+					1: map[string]bool{
+						key10: true,
+						key11: true,
+						key12: true,
+						key13: true,
+					},
 				},
-			},
-			fieldsAfterProcess: fields{
-				validators: map[byte][]incognitokey.CommitteePublicKey{
-					1: []incognitokey.CommitteePublicKey{*incKey, *incKey3},
-				},
+				mu: new(sync.RWMutex),
 			},
 			args: args{
-				validators: []incognitokey.CommitteePublicKey{*incKey0, *incKey2},
-				shardID:    1,
+				validators: []string{key2},
+				shardID:    0,
+			},
+			fieldsAfterProcess: map[byte]map[string]bool{
+				0: map[string]bool{
+					key:  true,
+					key3: true,
+					key8: true,
+				},
+				1: map[string]bool{
+					key10: true,
+					key11: true,
+					key12: true,
+					key13: true,
+				},
+			},
+		},
+		{
+			name: "> 1 validator 1 shard",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{
+						key:  true,
+						key2: true,
+						key3: true,
+						key8: true,
+					},
+					1: map[string]bool{
+						key10: true,
+						key11: true,
+						key12: true,
+						key13: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				validators: []string{key2, key3},
+				shardID:    0,
+			},
+			fieldsAfterProcess: map[byte]map[string]bool{
+				0: map[string]bool{
+					key:  true,
+					key8: true,
+				},
+				1: map[string]bool{
+					key10: true,
+					key11: true,
+					key12: true,
+					key13: true,
+				},
+			},
+		},
+		{
+			name: "> 1 validator 1 shard, some not exist",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{
+						key:  true,
+						key2: true,
+						key3: true,
+						key8: true,
+					},
+					1: map[string]bool{
+						key10: true,
+						key11: true,
+						key12: true,
+						key13: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				validators: []string{key2, key3, key5},
+				shardID:    0,
+			},
+			fieldsAfterProcess: map[byte]map[string]bool{
+				0: map[string]bool{
+					key:  true,
+					key8: true,
+				},
+				1: map[string]bool{
+					key10: true,
+					key11: true,
+					key12: true,
+					key13: true,
+				},
+			},
+		},
+		{
+			name: "> 1 validator 1 shard, some duplicate",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{
+						key:  true,
+						key2: true,
+						key3: true,
+						key8: true,
+					},
+					1: map[string]bool{
+						key10: true,
+						key11: true,
+						key12: true,
+						key13: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			args: args{
+				validators: []string{key2, key3, key3},
+				shardID:    0,
+			},
+			fieldsAfterProcess: map[byte]map[string]bool{
+				0: map[string]bool{
+					key:  true,
+					key8: true,
+				},
+				1: map[string]bool{
+					key10: true,
+					key11: true,
+					key12: true,
+					key13: true,
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			manager := NewManagerWithValue(tt.fields.validators)
+			manager := &FinishSyncManager{
+				finishedSyncValidators: tt.fields.finishedSyncValidators,
+				mu:                     tt.fields.mu,
+			}
 			manager.RemoveValidators(tt.args.validators, tt.args.shardID)
-			if !reflect.DeepEqual(manager.Validators(tt.args.shardID), tt.fieldsAfterProcess.validators[tt.args.shardID]) {
-				t.Errorf("validators = %v, want %v", manager.Validators(tt.args.shardID), tt.fieldsAfterProcess.validators[tt.args.shardID])
+			if !reflect.DeepEqual(manager.finishedSyncValidators, tt.fieldsAfterProcess) {
+				t.Errorf("AddFinishedSyncValidators() = %v, want %v", manager.finishedSyncValidators, tt.fieldsAfterProcess)
 			}
 		})
 	}
 }
 
 func TestFinishSyncManager_Instructions(t *testing.T) {
+	res0_shard0 := []string{key, key2, key3, key8}
+	sort.Slice(res0_shard0, func(i, j int) bool {
+		return res0_shard0[i] < res0_shard0[j]
+	})
+	res0_shard1 := []string{key10, key11, key12, key13}
+	sort.Slice(res0_shard1, func(i, j int) bool {
+		return res0_shard1[i] < res0_shard1[j]
+	})
 	type fields struct {
-		validators map[byte][]incognitokey.CommitteePublicKey
-		mu         *sync.RWMutex
+		finishedSyncValidators map[byte]map[string]bool
+		mu                     *sync.RWMutex
 	}
 	tests := []struct {
 		name   string
 		fields fields
 		want   []*instruction.FinishSyncInstruction
 	}{
-		//TODO: @hung add testcase
-		// Testcase 1: empty instruction
-		// Testcase 2: instruction with 1 shard, 1 validator
-		// Testcase 3: instruction with 1 shard, > 1 validators
-		// Testcase 4: instruction with > 1 shard, 1 validator
-		// Testcase 5: instruction with > 1 shard, > 1 validators
+		{
+			name: " > 1 validator > 1 shard",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					2: map[string]bool{},
+					3: map[string]bool{},
+					0: map[string]bool{
+						key:  true,
+						key2: true,
+						key3: true,
+						key8: true,
+					},
+					1: map[string]bool{
+						key10: true,
+						key11: true,
+						key12: true,
+						key13: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			want: []*instruction.FinishSyncInstruction{
+				instruction.NewFinishSyncInstructionWithValue(
+					0, res0_shard0,
+				),
+				instruction.NewFinishSyncInstructionWithValue(
+					1, res0_shard1,
+				),
+			},
+		},
+		{
+			name: "1 validator 2 shard",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					2: map[string]bool{},
+					3: map[string]bool{},
+					0: map[string]bool{
+						key: true,
+					},
+					1: map[string]bool{
+						key10: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			want: []*instruction.FinishSyncInstruction{
+				instruction.NewFinishSyncInstructionWithValue(
+					0, []string{key},
+				),
+				instruction.NewFinishSyncInstructionWithValue(
+					1, []string{key10},
+				),
+			},
+		},
+		{
+			name: "1 validator 1 shard",
+			fields: fields{
+				finishedSyncValidators: map[byte]map[string]bool{
+					0: map[string]bool{},
+					2: map[string]bool{},
+					3: map[string]bool{},
+					1: map[string]bool{
+						key10: true,
+					},
+				},
+				mu: new(sync.RWMutex),
+			},
+			want: []*instruction.FinishSyncInstruction{
+				instruction.NewFinishSyncInstructionWithValue(
+					1, []string{key10},
+				),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			manager := &FinishSyncManager{
-				validators: tt.fields.validators,
-				mu:         tt.fields.mu,
+				finishedSyncValidators: tt.fields.finishedSyncValidators,
+				mu:                     tt.fields.mu,
 			}
-			if got := manager.Instructions(); !reflect.DeepEqual(got, tt.want) {
+			got := manager.Instructions()
+			if len(got) != len(tt.want) {
 				t.Errorf("Instructions() = %v, want %v", got, tt.want)
+			}
+			for k, v := range got {
+				wantV := tt.want[k]
+				if !reflect.DeepEqual(v, wantV) {
+					t.Errorf("Instructions() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}

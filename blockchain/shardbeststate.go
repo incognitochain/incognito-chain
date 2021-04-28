@@ -353,6 +353,17 @@ func GetSubsetID(proposerTime int64, fixedValidator int) int {
 	return subsetID
 }
 
+func GetSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, proposerTime int64, fixedValidator int) []incognitokey.CommitteePublicKey {
+	signingCommittees := []incognitokey.CommitteePublicKey{}
+	subsetID := GetSubsetID(proposerTime, fixedValidator)
+	for i, v := range fullCommittees {
+		if (i % MaxSubsetCommittees) == subsetID {
+			signingCommittees = append(signingCommittees, v)
+		}
+	}
+	return signingCommittees
+}
+
 func (shardBestState *ShardBestState) GetShardCommittee() []incognitokey.CommitteePublicKey {
 	return shardBestState.shardCommitteeState.GetShardCommittee()
 }
