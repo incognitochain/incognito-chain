@@ -679,7 +679,7 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
 
-	jsb, _ := json.Marshal(pdeState)
+	jsb, _ := json.MarshalIndent(pdeState, "", "\t")
 	Logger.log.Infof("BUGLOG5 pdeState in get: %v\n", string(jsb))
 
 	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))

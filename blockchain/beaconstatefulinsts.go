@@ -106,7 +106,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		Logger.log.Error(err)
 	}
 
-	jsb, _ := json.Marshal(currentPDEState)
+	jsb, _ := json.MarshalIndent(currentPDEState, "", "\t")
 	Logger.log.Infof("BUGLOG5 currentPDEState in beaconstatefulinst: %v\n", string(jsb))
 
 
