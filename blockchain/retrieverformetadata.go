@@ -3,16 +3,18 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
-	"time"
 )
 
 func (blockchain *BlockChain) GetStakingAmountShard() uint64 {
@@ -131,6 +133,10 @@ func (blockchain *BlockChain) GetBCHeightBreakPointPortalV3() uint64 {
 
 func (blockchain *BlockChain) GetBNBChainID() string {
 	return blockchain.GetConfig().ChainParams.PortalParams.RelayingParam.BNBRelayingHeaderChainID
+}
+
+func (blockchain *BlockChain) GetBNBHeaderChain() *bnbrelaying.BNBChainState {
+	return blockchain.GetConfig().BNBChainState
 }
 
 func (blockchain *BlockChain) GetBTCChainID() string {

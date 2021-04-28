@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"errors"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -10,34 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
-	bnbTypes "github.com/tendermint/tendermint/types"
 )
-
-// TODO: move to portalrelaying package
-func (bc *BlockChain) InitRelayingHeaderChainStateFromDB() (*portalrelaying.RelayingHeaderChainState, error) {
-	bnbChain := bc.config.BNBChainState
-	btcChain := bc.config.BTCChain
-	return &portalrelaying.RelayingHeaderChainState{
-		BNBHeaderChain: bnbChain,
-		BTCHeaderChain: btcChain,
-	}, nil
-}
-
-// GetBNBBlockByHeight gets bnb header by height
-func (bc *BlockChain) GetBNBBlockByHeight(blockHeight int64) (*bnbTypes.Block, error) {
-	bnbChainState := bc.config.BNBChainState
-	return bnbChainState.GetBNBBlockByHeight(blockHeight)
-}
-
-// GetLatestBNBBlockHeight return latest block height of bnb chain
-func (bc *BlockChain) GetLatestBNBBlockHeight() (int64, error) {
-	bnbChainState := bc.config.BNBChainState
-
-	if bnbChainState.LatestBlock == nil {
-		return int64(0), errors.New("Latest bnb block is nil")
-	}
-	return bnbChainState.LatestBlock.Height, nil
-}
 
 // Beacon producer for portal protocol
 func (blockchain *BlockChain) handlePortalInsts(
@@ -71,7 +42,7 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		isSkipPortalV3Ints = true
 	}
 	beaconHeight := block.Header.Height - 1
-	relayingState, err := blockchain.InitRelayingHeaderChainStateFromDB()
+	relayingState, err := portalrelaying.InitRelayingHeaderChainStateFromDB(blockchain.GetBNBHeaderChain(), blockchain.GetBTCHeaderChain())
 	if err != nil {
 		Logger.log.Error(err)
 		return nil
