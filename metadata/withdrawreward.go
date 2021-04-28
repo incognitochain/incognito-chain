@@ -19,7 +19,7 @@ type WithDrawRewardRequest struct {
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) Hash() *common.Hash {
-	if withDrawRewardRequest.Version == 1 {
+	if withDrawRewardRequest.Version == common.SALARY_VER_FIX_HASH {
 		bArr := append(withDrawRewardRequest.PaymentAddress.Bytes(), withDrawRewardRequest.TokenID.GetBytes()...)
 		txReqHash := common.HashH(bArr)
 		return &txReqHash
@@ -55,7 +55,7 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 		MetadataBase:   metadataBase,
 		PaymentAddress: requesterPublicKeySet.KeySet.PaymentAddress,
 		TokenID:        *tokenID,
-		Version:        1,
+		Version:        common.SALARY_VER_FIX_HASH,
 	}
 
 	versionInt, ok := data["Version"].(int)
@@ -84,17 +84,13 @@ func NewWithDrawRewardResponse(txRequest *WithDrawRewardRequest, reqID *common.H
 		TxRequest:    reqID,
 		TokenID:      txRequest.TokenID,
 	}
-	result.Version = txRequest.Version
-
-	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, result.Version); !ok || err != nil {
-		return nil, errors.Errorf("Invalid version %d", result.Version)
-	}
+	result.Version = common.SALARY_VER_FIX_HASH
 
 	return result, nil
 }
 
 func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
-	if withDrawRewardResponse.Version == 1 {
+	if withDrawRewardResponse.Version >= common.SALARY_VER_FIX_HASH {
 		if withDrawRewardResponse.TxRequest == nil {
 			return &common.Hash{}
 		}
@@ -164,7 +160,10 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(chainRetri
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
+	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, withDrawRewardRequest.Version); !ok || err != nil {
+		Logger.log.Error(errors.Errorf("Invalid version %d", withDrawRewardRequest.Version))
+		return false
+	}
 	return true
 }
 
@@ -181,10 +180,12 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	if !unique {
 		return false, errors.New("Just one receiver")
 	}
-	//cmp, err := withDrawRewardResponse.TokenID.Cmp(coinID)
-	//if (cmp != 0) || (err != nil) {
-	//	return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
-	//}
+	if withDrawRewardResponse.Version >= common.SALARY_VER_FIX_HASH {
+		cmp, err := withDrawRewardResponse.TokenID.Cmp(coinID)
+		if (cmp != 0) || (err != nil) {
+			return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
+		}
+	}
 	tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
 	value, err := statedb.GetCommitteeReward(shardViewRetriever.GetShardRewardStateDB(), tempPublicKey, *coinID)
 	if (err != nil) || (value == 0) {
@@ -201,6 +202,9 @@ func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(chainRet
 }
 
 func (withDrawRewardResponse WithDrawRewardResponse) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
+	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, withDrawRewardResponse.Version); !ok || err != nil {
+		Logger.log.Error(errors.Errorf("Invalid version %d", withDrawRewardResponse.Version))
+		return false
+	}
 	return true
 }
