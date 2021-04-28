@@ -106,6 +106,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		Logger.log.Error(err)
 	}
 
+	jsb, _ := json.Marshal(currentPDEState)
+	Logger.log.Infof("BUGLOG5 currentPDEState in beaconstatefulinst: %v\n", string(jsb))
+
+
 	pm := portal.NewPortalManager()
 	currentPortalStateV3, err := portalprocessv3.InitCurrentPortalStateFromDB(featureStateDB)
 	if err != nil {
