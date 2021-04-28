@@ -182,10 +182,10 @@ func (proof PaymentProof) verifyNoPrivacyV2(
 	}
 
 	// check overflow fee value
-	// tmp := sumOutputValue + fee
-	// if tmp < sumOutputValue || tmp < fee {
-	// 	return false, privacy.NewPrivacyErr(privacy.UnexpectedErr, fmt.Errorf("Overflow fee value %v\n", fee))
-	// }
+	tmp := sumOutputValue + fee
+	if tmp < sumOutputValue || tmp < fee {
+		return false, privacy.NewPrivacyErr(privacy.UnexpectedErr, fmt.Errorf("Overflow fee value %v\n", fee))
+	}
 	if (vEnv.TxType() == common.TxRewardType) || (vEnv.TxType() == common.TxReturnStakingType) || (vEnv.TxAction() == common.TxActInit) {
 		return true, nil
 	}
