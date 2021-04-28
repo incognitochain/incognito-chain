@@ -422,7 +422,6 @@ func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 	committeeChange *CommitteeChange,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
-
 	for index, publicKey := range unstakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(publicKey, env.newUnassignedCommonPool) == -1 {
 			if common.IndexOfStr(publicKey, env.newAllSubstituteCommittees) != -1 {

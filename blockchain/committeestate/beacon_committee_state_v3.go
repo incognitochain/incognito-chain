@@ -187,6 +187,15 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			committeeChange = b.processFinishSyncInstruction(
 				finishSyncInstruction, env, committeeChange)
 		case instruction.UNSTAKE_ACTION:
+			unstakeInstruction, err := instruction.ValidateAndImportUnstakeInstructionFromString(inst)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
+			committeeChange, returnStakingInstruction, err = b.processUnstakeInstruction(
+				unstakeInstruction, env, committeeChange, returnStakingInstruction)
+			if err != nil {
+				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
 			return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, fmt.Errorf("Instruction %+v not allow", instruction.UNSTAKE_ACTION))
 		}
 	}
@@ -348,15 +357,6 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	return committeeChange
 }
 
-func (b *BeaconCommitteeStateV3) processUnstakeInstruction(
-	unstakeInstruction *instruction.UnstakeInstruction,
-	env *BeaconCommitteeStateEnvironment,
-	committeeChange *CommitteeChange,
-	oldState BeaconCommitteeState,
-) *CommitteeChange {
-	return b.turnOffAutoStake(env.newValidators, unstakeInstruction.CommitteePublicKeys, committeeChange)
-}
-
 func (b *BeaconCommitteeStateV3) addData(env *BeaconCommitteeStateEnvironment) {
 	env.newUnassignedCommonPool = common.DeepCopyString(b.shardCommonPool[b.numberOfAssignedCandidates:])
 	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
@@ -432,4 +432,16 @@ func (b *BeaconCommitteeStateV3) SplitReward(
 		rewardForBeacon[coinID] += totalReward - (rewardForShardSubset[coinID] + totalRewardForDAOAndCustodians)
 	}
 	return rewardForBeacon, rewardForShardSubset, rewardForIncDAO, rewardForCustodian, nil
+}
+
+func (b *BeaconCommitteeStateV3) GetAllCandidateSubstituteCommittee() []string {
+	return b.getAllCandidateSubstituteCommittee()
+}
+
+func (b *BeaconCommitteeStateV3) getAllCandidateSubstituteCommittee() []string {
+	res := b.beaconCommitteeStateSlashingBase.getAllCandidateSubstituteCommittee()
+	for _, validators := range b.syncPool {
+		res = append(res, validators...)
+	}
+	return res
 }
