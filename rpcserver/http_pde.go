@@ -670,6 +670,7 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
 	}
+	Logger.log.Infof("BUGLOG5 beaconFeatureRoot: %v\n",beaconFeatureStateRootHash.String())
 	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
