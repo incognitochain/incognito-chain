@@ -95,7 +95,7 @@ func (lastState *CurrentPDEState) transformKeyWithNewBeaconHeight(beaconHeight u
 	for k, v := range lastState.PDETradingFees {
 		newState.PDETradingFees[transformKey(k, beaconHeight)] = v
 	}
-	fmt.Println("transform key", time.Since(time1).Seconds())
+	Logger.log.Infof("Time spent for transforming keys: %f", time.Since(time1).Seconds())
 	return newState
 }
 
@@ -105,8 +105,8 @@ func InitCurrentPDEStateFromDB(
 	beaconHeight uint64,
 ) (*CurrentPDEState, error) {
 	if lastState != nil {
-		lastState.transformKeyWithNewBeaconHeight(beaconHeight)
-		return lastState, nil
+		newState := lastState.transformKeyWithNewBeaconHeight(beaconHeight)
+		return newState, nil
 	}
 	waitingPDEContributions, err := statedb.GetWaitingPDEContributions(stateDB, beaconHeight)
 	if err != nil {
