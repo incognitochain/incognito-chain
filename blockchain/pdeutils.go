@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -52,10 +54,60 @@ type DeductingAmountsByWithdrawalWithPRVFee struct {
 	FeeAmount     uint64
 }
 
+func (lastState *CurrentPDEState) transformKeyWithNewBeaconHeight(beaconHeight uint64) *CurrentPDEState {
+	time1 := time.Now()
+	sameHeight := false
+	//transform pdex key prefix-<beaconheight>-id1-id2 (if same height, no transform)
+	transformKey := func(key string, beaconHeight uint64) string {
+		if sameHeight {
+			return key
+		}
+		keySplit := strings.Split(key, "-")
+		if keySplit[1] == strconv.Itoa(int(beaconHeight)) {
+			sameHeight = true
+		}
+		keySplit[1] = strconv.Itoa(int(beaconHeight))
+		return strings.Join(keySplit, "-")
+	}
+
+	newState := &CurrentPDEState{}
+	newState.WaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
+	newState.DeletedWaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
+	newState.PDEPoolPairs = make(map[string]*rawdbv2.PDEPoolForPair)
+	newState.PDEShares = make(map[string]uint64)
+	newState.PDETradingFees = make(map[string]uint64)
+
+	for k, v := range lastState.WaitingPDEContributions {
+		newState.WaitingPDEContributions[transformKey(k, beaconHeight)] = v
+		if sameHeight {
+			return lastState
+		}
+	}
+	for k, v := range lastState.DeletedWaitingPDEContributions {
+		newState.DeletedWaitingPDEContributions[transformKey(k, beaconHeight)] = v
+	}
+	for k, v := range lastState.PDEPoolPairs {
+		newState.PDEPoolPairs[transformKey(k, beaconHeight)] = v
+	}
+	for k, v := range lastState.PDEShares {
+		newState.PDEShares[transformKey(k, beaconHeight)] = v
+	}
+	for k, v := range lastState.PDETradingFees {
+		newState.PDETradingFees[transformKey(k, beaconHeight)] = v
+	}
+	Logger.log.Infof("Time spent for transforming keys: %f", time.Since(time1).Seconds())
+	return newState
+}
+
 func InitCurrentPDEStateFromDB(
 	stateDB *statedb.StateDB,
+	lastState *CurrentPDEState,
 	beaconHeight uint64,
 ) (*CurrentPDEState, error) {
+	if lastState != nil {
+		newState := lastState.transformKeyWithNewBeaconHeight(beaconHeight)
+		return newState, nil
+	}
 	waitingPDEContributions, err := statedb.GetWaitingPDEContributions(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
@@ -72,6 +124,7 @@ func InitCurrentPDEStateFromDB(
 	if err != nil {
 		return nil, err
 	}
+
 	return &CurrentPDEState{
 		WaitingPDEContributions:        waitingPDEContributions,
 		PDEPoolPairs:                   pdePoolPairs,
@@ -83,24 +136,23 @@ func InitCurrentPDEStateFromDB(
 
 func storePDEStateToDB(
 	stateDB *statedb.StateDB,
-	beaconHeight uint64,
 	currentPDEState *CurrentPDEState,
 ) error {
 	var err error
 	statedb.DeleteWaitingPDEContributions(stateDB, currentPDEState.DeletedWaitingPDEContributions)
-	err = statedb.StoreWaitingPDEContributions(stateDB, beaconHeight, currentPDEState.WaitingPDEContributions)
+	err = statedb.StoreWaitingPDEContributions(stateDB, currentPDEState.WaitingPDEContributions)
 	if err != nil {
 		return err
 	}
-	err = statedb.StorePDEPoolPairs(stateDB, beaconHeight, currentPDEState.PDEPoolPairs)
+	err = statedb.StorePDEPoolPairs(stateDB, currentPDEState.PDEPoolPairs)
 	if err != nil {
 		return err
 	}
-	err = statedb.StorePDEShares(stateDB, beaconHeight, currentPDEState.PDEShares)
+	err = statedb.StorePDEShares(stateDB, currentPDEState.PDEShares)
 	if err != nil {
 		return err
 	}
-	err = statedb.StorePDETradingFees(stateDB, beaconHeight, currentPDEState.PDETradingFees)
+	err = statedb.StorePDETradingFees(stateDB, currentPDEState.PDETradingFees)
 	if err != nil {
 		return err
 	}

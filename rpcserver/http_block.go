@@ -195,8 +195,8 @@ func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeC
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
 	}
 	bestBlockBeaconItem := jsonresult.NewGetBestBlockItemFromBeacon(beaconBestState)
-	bestBlockBeaconItem.RemainingBlockEpoch = (httpServer.config.ChainParams.Epoch * bestBlockBeaconItem.Epoch) - bestBlockBeaconItem.Height
-	bestBlockBeaconItem.EpochBlock = httpServer.config.ChainParams.Epoch
+	_, bestBlockBeaconItem.RemainingBlockEpoch = httpServer.config.BlockChain.GetBeaconBlockOrderInEpoch(beaconBestState.BeaconHeight)
+	bestBlockBeaconItem.EpochBlock = httpServer.config.BlockChain.GetCurrentEpochLength(beaconBestState.BeaconHeight)
 	result.BestBlocks[-1] = *bestBlockBeaconItem
 
 	return result, nil

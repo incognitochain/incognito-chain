@@ -127,19 +127,6 @@ func (iReq IssuingETHRequest) ValidateTxWithBlockChain(tx Transaction, chainRetr
 	if ethReceipt == nil {
 		return false, errors.Errorf("The eth proof's receipt could not be null.")
 	}
-
-	// check this is a normal pToken
-	if statedb.PrivacyTokenIDExisted(transactionStateDB, iReq.IncTokenID) {
-		isBridgeToken, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), iReq.IncTokenID, false)
-		if !isBridgeToken {
-			if err != nil {
-				return false, NewMetadataTxError(InvalidMeta, err)
-			} else {
-				return false, NewMetadataTxError(InvalidMeta, errors.New("token is invalid"))
-			}
-		}
-	}
-
 	return true, nil
 }
 

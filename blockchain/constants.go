@@ -37,15 +37,19 @@ const (
 // CONSTANT for network MAINNET
 const (
 	// ------------- Mainnet ---------------------------------------------
-	Mainnet                 = 0x01
-	MainetName              = "mainnet"
-	MainnetDefaultPort      = "9333"
-	MainnetGenesisBlockTime = "2019-10-29T00:00:00.000Z"
-	MainnetEpoch            = 350
-	MainnetRandomTime       = 175
-	MainnetOffset           = 4
-	MainnetSwapOffset       = 4
-	MainnetAssignOffset     = 8
+	Mainnet                  = 0x01
+	MainetName               = "mainnet"
+	MainnetDefaultPort       = "9333"
+	MainnetGenesisBlockTime  = "2019-10-29T00:00:00.000Z"
+	MainnetEpoch             = 350
+	MainnetRandomTime        = 175
+	MainnetEpochV2BreakPoint = 10e9
+	MainnetEpochV2           = 350
+	MainnetRandomTimeV2      = 175
+	MainnetOffset            = 4
+	MainnetSwapOffset        = 4
+	MainnetAssignOffset      = 8
+	MainnetMaxSwapOrAssign   = 10
 
 	MainNetShardCommitteeSize     = 32
 	MainNetMinShardCommitteeSize  = 22
@@ -103,15 +107,18 @@ var MainnetReplaceCommitteeEpoch = []uint64{}
 
 // CONSTANT for network TESTNET
 const (
-	Testnet                 = 0x16
-	TestnetName             = "testnet"
-	TestnetDefaultPort      = "9444"
-	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
-	TestnetEpoch            = 100
-	TestnetRandomTime       = 50
-	TestnetOffset           = 1
-	TestnetSwapOffset       = 1
-	TestnetAssignOffset     = 2
+	Testnet                  = 0x16
+	TestnetName              = "testnet"
+	TestnetDefaultPort       = "9444"
+	TestnetGenesisBlockTime  = "2019-11-29T00:00:00.000Z"
+	TestnetEpoch             = 100
+	TestnetRandomTime        = 50
+	TestnetEpochV2BreakPoint = 1e9
+	TestnetEpochV2           = 100
+	TestnetRandomTimeV2      = 50
+	TestnetOffset            = 1
+	TestnetSwapOffset        = 1
+	TestnetAssignOffset      = 2
 
 	TestNetShardCommitteeSize     = 32
 	TestNetMinShardCommitteeSize  = 4
@@ -149,15 +156,18 @@ const (
 
 // CONSTANT for network TESTNET-2
 const (
-	Testnet2                 = 0x32
-	Testnet2Name             = "testnet-2"
-	Testnet2DefaultPort      = "9444"
-	Testnet2GenesisBlockTime = "2020-08-11T00:00:00.000Z"
-	Testnet2Epoch            = 100
-	Testnet2RandomTime       = 50
-	Testnet2Offset           = 1
-	Testnet2SwapOffset       = 1
-	Testnet2AssignOffset     = 2
+	Testnet2                  = 0x32
+	Testnet2Name              = "testnet-2"
+	Testnet2DefaultPort       = "9444"
+	Testnet2GenesisBlockTime  = "2020-08-11T00:00:00.000Z"
+	Testnet2Epoch             = 100
+	Testnet2RandomTimeV2      = 50
+	Testnet2EpochV2BreakPoint = 10e9
+	Testnet2EpochV2           = 100
+	Testnet2RandomTime        = 50
+	Testnet2Offset            = 1
+	Testnet2SwapOffset        = 1
+	Testnet2AssignOffset      = 2
 
 	TestNet2ShardCommitteeSize     = 32
 	TestNet2MinShardCommitteeSize  = 4
@@ -173,7 +183,7 @@ const (
 
 	//board and proposal parameters
 	Testnet2BasicReward                      = 400000000 //40 mili PRV
-	Testnet2ETHContractAddressStr            = "0x7c7e371D1e25771f2242833C1A354dCE846f3ec8"
+	Testnet2ETHContractAddressStr            = "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
 	Testnet2IncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	Testnet2CentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
@@ -317,17 +327,6 @@ func ReadKey(v1, v2 []byte) {
 // public key
 
 // END CONSTANT for network TESTNET
-
-// -------------- FOR INSTRUCTION --------------
-// Action for instruction
-const (
-	SetAction     = "set"
-	SwapAction    = "swap"
-	RandomAction  = "random"
-	StakeAction   = "stake"
-	AssignAction  = "assign"
-	StopAutoStake = "stopautostake"
-)
 
 var (
 	shardInsertBlockTimer                  = metrics.NewRegisteredTimer("shard/insert", nil)

@@ -17,7 +17,7 @@ type GetMiningInfoResult struct {
 	IsEnableMining      bool   `json:"IsEnableMining"`
 }
 
-func NewGetMiningInfoResult(txMemPoolSize int, blChain blockchain.BlockChain, consensus interface{ GetUserRole() (string, string, int) }, param blockchain.Params, isEnableMining bool) *GetMiningInfoResult {
+func NewGetMiningInfoResult(txMemPoolSize int, blChain blockchain.BlockChain, consensus blockchain.ConsensusEngine, param blockchain.Params, isEnableMining bool) *GetMiningInfoResult {
 	result := &GetMiningInfoResult{}
 	result.PoolSize = txMemPoolSize
 	result.Chain = param.Name
@@ -29,6 +29,7 @@ func NewGetMiningInfoResult(txMemPoolSize int, blChain blockchain.BlockChain, co
 	result.Role = role
 	result.Layer = layer
 	result.ShardID = shardID
+	result.MiningPublickey, _ = consensus.GetCurrentMiningPublicKey()
 	if shardID >= 0 {
 		result.ShardHeight = blChain.GetBestStateShard(byte(shardID)).ShardHeight
 		result.CurrentShardBlockTx = len(blChain.GetBestStateShard(byte(shardID)).BestBlock.Body.Transactions)
