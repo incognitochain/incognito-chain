@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"sync"
@@ -138,7 +139,10 @@ func (blockchain *BlockChain) InitChainState() error {
 
 	//beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), 1)
 	//panic(beaconHash.String())
-
+	wl, err := blockchain.GetWhiteList()
+	if err != nil {
+		Logger.log.Errorf("Can not get whitelist txs, error %v", err)
+	}
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
 	for shard := 1; shard <= blockchain.GetBeaconBestState().ActiveShards; shard++ {
 		shardID := byte(shard - 1)
@@ -149,6 +153,7 @@ func (blockchain *BlockChain) InitChainState() error {
 		tv := NewTxsVerifier(
 			nil,
 			tp,
+			wl,
 		)
 		tp.UpdateTxVerifier(tv)
 		blockchain.ShardChain[shardID] = NewShardChain(shard-1, multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID), tp, tv)
@@ -173,6 +178,29 @@ func (blockchain *BlockChain) InitChainState() error {
 	}
 
 	return nil
+}
+
+func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
+	netID := blockchain.config.ChainParams.Name
+	res := map[string]interface{}{}
+	whitelistData, err := ioutil.ReadFile("whitelist.json")
+	if err != nil {
+		return nil, err
+	}
+	type WhiteList struct {
+		Data map[string][]string
+	}
+	whiteList := WhiteList{}
+	err = json.Unmarshal(whitelistData, &whiteList)
+	if err != nil {
+		return nil, err
+	}
+	if wlByNetID, ok := whiteList.Data[netID]; ok {
+		for _, txHash := range wlByNetID {
+			res[txHash] = nil
+		}
+	}
+	return res, nil
 }
 
 /*

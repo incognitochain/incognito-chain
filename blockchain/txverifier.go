@@ -15,6 +15,8 @@ import (
 type TxsVerifier struct {
 	txDB   *statedb.StateDB
 	txPool txpool.TxPool
+
+	whitelist map[string]interface{}
 }
 
 func (v *TxsVerifier) UpdateTransactionStateDB(
@@ -26,10 +28,13 @@ func (v *TxsVerifier) UpdateTransactionStateDB(
 func NewTxsVerifier(
 	txDB *statedb.StateDB,
 	tp txpool.TxPool,
+	whitelist map[string]interface{},
 ) txpool.TxVerifier {
 	return &TxsVerifier{
 		txDB:   txDB,
 		txPool: tp,
+
+		whitelist: whitelist,
 	}
 }
 
@@ -115,6 +120,18 @@ func (v *TxsVerifier) ValidateWithChainState(
 		return ok, err
 	}
 	return tx.ValidateDoubleSpendWithBlockChain(shardViewRetriever.GetCopiedTransactionStateDB())
+}
+
+func (v *TxsVerifier) FilterWhitelistTxs(txs []metadata.Transaction) []metadata.Transaction {
+	j := 0
+	res := make([]metadata.Transaction, len(txs))
+	for i, tx := range txs {
+		if _, ok := v.whitelist[tx.Hash().String()]; ok {
+			res[j] = txs[i]
+			j++
+		}
+	}
+	return res[:j]
 }
 
 func (v *TxsVerifier) FullValidateTransactions(
