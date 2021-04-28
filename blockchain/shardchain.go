@@ -170,31 +170,30 @@ func (chain *ShardChain) GetLastProposerIndex() int {
 }
 
 type ShardProducingFlow struct {
-	curView              *ShardBestState
-	nextView             *ShardBestState
-	newBlock             *types.ShardBlock
-	version              int
-	proposer             string
-	round                int
-	startTime            int64
-	blockCommittees      []incognitokey.CommitteePublicKey
-	committeeViewHash    common.Hash
-	beaconBlocks         []*types.BeaconBlock
-	shardCommitteeHashes *committeestate.ShardCommitteeStateHash
-	committeeChange      *committeestate.CommitteeChange
-	isOldBeaconHeight    bool
-	epoch                uint64
-	processBeaconBlock   types.BeaconBlock
-	shardInstructions    [][]string
-	blockCommitteesStr   []string
+	curView                 *ShardBestState
+	nextView                *ShardBestState
+	newBlock                *types.ShardBlock
+	version                 int
+	proposer                string
+	round                   int
+	startTime               int64
+	blockCommittees         []incognitokey.CommitteePublicKey
+	committeeViewHash       common.Hash
+	beaconBlocks            []*types.BeaconBlock
+	shardCommitteeHashes    *committeestate.ShardCommitteeStateHash
+	isOldBeaconHeight       bool
+	processBeaconBlock      types.BeaconBlock
+	crossTransactions       map[byte][]types.CrossTransaction
+	transactionsForNewBlock []metadata.Transaction
 }
 
 func (chain *ShardChain) getDataBeforeBlockProducing(version int, proposer string, round int, startTime int64,
-	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash) (*ShardProducingFlow, error) {
 	blockchain := chain.Blockchain
 
-	var err error
+	curView := chain.GetBestState()
+	//
+	blockCommittees, err := chain.getCommitteeFromBlock(committeeViewHash, chain.GetBestState())
 
 	createFlow := &ShardProducingFlow{
 		curView:           chain.GetBestState(),
@@ -204,7 +203,7 @@ func (chain *ShardChain) getDataBeforeBlockProducing(version int, proposer strin
 		proposer:          proposer,
 		round:             round,
 		startTime:         startTime,
-		blockCommittees:   committees,
+		blockCommittees:   blockCommittees,
 		committeeViewHash: committeeViewHash,
 		isOldBeaconHeight: false,
 	}
@@ -212,100 +211,96 @@ func (chain *ShardChain) getDataBeforeBlockProducing(version int, proposer strin
 	if err := createFlow.nextView.cloneShardBestStateFrom(createFlow.curView); err != nil {
 		return nil, err
 	}
-	shardBestState := createFlow.nextView
 
 	beaconProcessView := blockchain.BeaconChain.GetFinalView().(*BeaconBestState)
 	beaconProcessHeight := beaconProcessView.GetHeight()
-	if beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
-		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
+	if beaconProcessHeight-curView.BeaconHeight > MAX_BEACON_BLOCK {
+		beaconProcessHeight = curView.BeaconHeight + MAX_BEACON_BLOCK
 	}
 
-	currentCommitteePublicKeys := []string{}
-	currentCommitteePublicKeysStructs := []incognitokey.CommitteePublicKey{}
-	committeeFromBlockHash := common.Hash{}
-
-	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
-		currentCommitteePublicKeysStructs = shardBestState.GetShardCommittee()
-		currentCommitteePublicKeys, err = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
+	if curView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		if err != nil {
 			return nil, err
 		}
 		if beaconProcessHeight > blockchain.config.ChainParams.StakingFlowV2Height {
 			beaconProcessHeight = blockchain.config.ChainParams.StakingFlowV2Height
 		}
-	} else if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
-		if beaconProcessHeight <= shardBestState.BeaconHeight {
-			Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
-				beaconProcessHeight, shardBestState.BeaconHeight)
-			return nil, errors.New("Waiting For Beacon Produce Block")
-		}
-		currentCommitteePublicKeysStructs = committees
+	}
 
-		if !shardBestState.CommitteeFromBlock().IsZeroValue() {
-			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
-			currentCommitteePublicKeys, _ = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
-			temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
-			if len(temp) != 0 {
-				committeeFromBlockHash = committeeViewHash
-				oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
-				if err != nil {
-					return nil, err
-				}
-				newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlockHash)
-				if err != nil {
-					return nil, err
-				}
-				if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
-					return nil, NewBlockChainError(WrongBlockHeightError,
-						fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
-							newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
-				}
-			} else {
-				committeeFromBlockHash = shardBestState.CommitteeFromBlock()
+	//TODO: review below code, how this can happen in honest node?
+	//if !shardBestState.CommitteeFromBlock().IsZeroValue() {
+	//	oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
+	//	currentCommitteePublicKeys, _ = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
+	//	temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
+	//	if len(temp) != 0 {
+	//		oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
+	//		if err != nil {
+	//			return nil, err
+	//		}
+	//		newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(committeeViewHash)
+	//		if err != nil {
+	//			return nil, err
+	//		}
+	//		if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
+	//			return nil, NewBlockChainError(WrongBlockHeightError,
+	//				fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
+	//					newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
+	//		}
+	//	}
+	//}
+	//}
+
+	//if no new beacon block,
+	if beaconProcessHeight == curView.BeaconHeight {
+		//return error if this is slashing version
+		if curView.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
+			if beaconProcessHeight <= curView.BeaconHeight {
+				Logger.log.Info("Waiting For Beacon Produce Block beaconProcessHeight %+v shardBestState.BeaconHeight %+v",
+					beaconProcessHeight, curView.BeaconHeight)
+				return nil, errors.New("Waiting For Beacon Produce Block")
 			}
-		} else {
-			committeeFromBlockHash = committeeViewHash
 		}
-	}
-	createFlow.blockCommitteesStr = currentCommitteePublicKeys
-	// Fetch Beacon Blocks
-	beaconHash, err := rawdbv2.GetFinalizedBeaconBlockHashByIndex(blockchain.GetBeaconChainDatabase(), beaconProcessHeight)
-	if err != nil {
-		Logger.log.Errorf("Beacon block %+v not found", beaconProcessHeight)
-		return nil, NewBlockChainError(FetchBeaconBlockHashError, err)
-	}
 
-	beaconBlockBytes, err := rawdbv2.GetBeaconBlockByHash(blockchain.GetBeaconChainDatabase(), *beaconHash)
-	if err != nil {
-		return nil, err
-	}
-
-	beaconBlock := types.BeaconBlock{}
-	err = json.Unmarshal(beaconBlockBytes, &beaconBlock)
-	if err != nil {
-		return nil, err
-	}
-	createFlow.processBeaconBlock = beaconBlock
-	createFlow.epoch = beaconBlock.Header.Epoch
-
-	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconProcessHeight, shardBestState.BeaconHeight)
-
-	//Fetch beacon block from height
-	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, shardBestState.BeaconHeight+1, beaconProcessHeight)
-	createFlow.beaconBlocks = beaconBlocks
-	if err != nil {
-		return nil, err
-	}
-
-	if beaconProcessHeight == shardBestState.BeaconHeight {
+		//continue with the old new block
 		createFlow.isOldBeaconHeight = true
+		beaconBlock, _, err := blockchain.GetBeaconBlockByHash(curView.BestBeaconHash)
+		if err != nil {
+			return nil, err
+		}
+		createFlow.processBeaconBlock = *beaconBlock
+		createFlow.beaconBlocks = []*types.BeaconBlock{}
+	} else {
+		//get new beacon blocks to process
+		beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, curView.BeaconHeight+1, beaconProcessHeight)
+		if err != nil {
+			return nil, err
+		}
+		createFlow.beaconBlocks = beaconBlocks
+		createFlow.processBeaconBlock = *beaconBlocks[len(beaconBlocks)-1]
 	}
+
+	//cross shard
+	tempPrivateKey := blockchain.config.BlockGen.createTempKeyset(startTime)
+	createFlow.crossTransactions = blockchain.config.BlockGen.getCrossShardData(curView.ShardID, curView.BeaconHeight, beaconProcessHeight)
+
+	// Get Transaction for new block
+	blockCreationLeftOver := curView.BlockMaxCreateTime.Nanoseconds() - startTime
+	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(curView, &tempPrivateKey, curView.ShardID, createFlow.beaconBlocks, blockCreationLeftOver, createFlow.processBeaconBlock.Header.Height)
+	if err != nil {
+		return nil, err
+	}
+	transactionsForNewBlock := []metadata.Transaction{}
+	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
+	// build txs with metadata
+	transactionsForNewBlock, err = blockchain.BuildResponseTransactionFromTxsWithMetadata(curView, transactionsForNewBlock, &tempPrivateKey, curView.ShardID)
+	createFlow.transactionsForNewBlock = transactionsForNewBlock
 
 	return createFlow, nil
 }
 
 func (chain *ShardChain) updateHeaderRootHash(flow *ShardProducingFlow) error {
 	newShardBlock := flow.newBlock
+	shardInstructions := flow.newBlock.Body.Instructions
 	blockchain := chain.Blockchain
 	shardID := byte(chain.shardID)
 
@@ -327,7 +322,7 @@ func (chain *ShardChain) updateHeaderRootHash(flow *ShardProducingFlow) error {
 	for _, value := range txInstructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
-	for _, value := range flow.shardInstructions {
+	for _, value := range shardInstructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
 	instructionsHash, err := generateHashFromStringArray(totalInstructions)
@@ -340,7 +335,7 @@ func (chain *ShardChain) updateHeaderRootHash(flow *ShardProducingFlow) error {
 	if err != nil {
 		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from Tx: %+v", err))
 	}
-	flattenInsts, err := FlattenAndConvertStringInst(flow.shardInstructions)
+	flattenInsts, err := FlattenAndConvertStringInst(shardInstructions)
 	if err != nil {
 		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from block body: %+v", err))
 	}
@@ -371,27 +366,11 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 	shardID := byte(chain.shardID)
 	curView := flow.nextView
 
-	tempPrivateKey := blockchain.config.BlockGen.createTempKeyset(flow.startTime)
 	beaconBlocks := flow.beaconBlocks
-	beaconBlock := flow.processBeaconBlock
 	beaconProcessHeight := flow.processBeaconBlock.GetHeight()
 	beaconProcessHash := flow.processBeaconBlock.Hash()
 
-	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardID, curView.BeaconHeight, beaconProcessHeight)
-	Logger.log.Critical("Cross Transaction: ", crossTransactions)
-	// Get Transaction for new block
-
-	blockCreationLeftOver := flow.nextView.BlockMaxCreateTime.Nanoseconds() - flow.startTime
-	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(curView, &tempPrivateKey, shardID, beaconBlocks, blockCreationLeftOver, beaconBlock.Header.Height)
-	if err != nil {
-		return err
-	}
-	transactionsForNewBlock := []metadata.Transaction{}
-	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
-	// build txs with metadata
-	transactionsForNewBlock, err = blockchain.BuildResponseTransactionFromTxsWithMetadata(curView, transactionsForNewBlock, &tempPrivateKey, shardID)
 	// process instruction from beacon block
-
 	beaconInstructions, _, err := blockchain.
 		preProcessInstructionFromBeacon(beaconBlocks, curView.ShardID)
 	if err != nil {
@@ -422,6 +401,11 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 		committeeChange.ShardSubstituteAdded[curView.ShardID],
 		committeeChange.ShardSubstituteRemoved[curView.ShardID])
 
+	blockCommitteesStr, err := incognitokey.CommitteeKeyListToString(flow.blockCommittees)
+	if err != nil {
+		return NewBlockChainError(ProcessInstructionFromBeaconError, err)
+	}
+
 	shardPendingValidatorStr, err = incognitokey.CommitteeKeyListToString(currentPendingValidators)
 	if err != nil {
 		return NewBlockChainError(ProcessInstructionFromBeaconError, err)
@@ -429,7 +413,7 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 
 	shardInstructions, _, _, err := blockchain.generateInstruction(curView, shardID,
 		beaconProcessHeight, flow.isOldBeaconHeight, beaconBlocks,
-		shardPendingValidatorStr, flow.blockCommitteesStr)
+		shardPendingValidatorStr, blockCommitteesStr)
 	if err != nil {
 		return NewBlockChainError(GenerateInstructionError, err)
 	}
@@ -438,8 +422,7 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 		Logger.log.Info("Shard Producer: Instruction", shardInstructions)
 	}
 
-	flow.shardInstructions = shardInstructions
-	flow.newBlock.BuildShardBlockBody(shardInstructions, crossTransactions, transactionsForNewBlock)
+	flow.newBlock.BuildShardBlockBody(shardInstructions, flow.crossTransactions, flow.transactionsForNewBlock)
 	totalTxsFee := curView.shardCommitteeEngine.BuildTotalTxsFeeFromTxs(flow.newBlock.Body.Transactions)
 
 	flow.newBlock.Header = types.ShardHeader{
@@ -450,7 +433,7 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 		PreviousBlockHash:  curView.BestBlockHash,
 		Height:             curView.ShardHeight + 1,
 		Round:              flow.round,
-		Epoch:              flow.epoch,
+		Epoch:              flow.processBeaconBlock.GetCurrentEpoch(),
 		CrossShardBitMap:   CreateCrossShardByteArray(flow.newBlock.Body.Transactions, shardID),
 		BeaconHeight:       beaconProcessHeight,
 		BeaconHash:         *beaconProcessHash,
@@ -468,13 +451,13 @@ func (chain *ShardChain) CreateNewBlock(
 	committeeViewHash common.Hash) (types.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
 
-	createFlow, err := chain.getDataBeforeBlockProducing(version, proposer, round, startTime, committees, committeeViewHash)
+	createFlow, err := chain.getDataBeforeBlockProducing(version, proposer, round, startTime, committeeViewHash)
 
 	if err := chain.buildBlockWithoutHeaderRootHash(createFlow); err != nil {
 		return nil, err
 	}
 
-	createFlow.nextView, createFlow.shardCommitteeHashes, createFlow.committeeChange, err =
+	createFlow.nextView, createFlow.shardCommitteeHashes, _, err =
 		createFlow.curView.updateShardBestState(chain.Blockchain, createFlow.newBlock, createFlow.beaconBlocks, createFlow.blockCommittees)
 	if err != nil {
 		return nil, err
@@ -539,12 +522,12 @@ func (chain *ShardChain) ValidateBlockSignatures(block types.BlockInterface, com
 	return nil
 }
 
-func (chain *ShardChain) getCommitteeFromBlock(shardBlock *types.ShardBlock, curView *ShardBestState) (committee []incognitokey.CommitteePublicKey, err error) {
+func (chain *ShardChain) getCommitteeFromBlock(CommitteeFromBlock common.Hash, curView *ShardBestState) (committee []incognitokey.CommitteePublicKey, err error) {
 	if curView.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION ||
-		shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
+		CommitteeFromBlock.IsZeroValue() {
 		committee = curView.GetShardCommittee()
 	} else {
-		committee, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, byte(shardBlock.GetShardID()))
+		committee, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(CommitteeFromBlock, byte(curView.GetShardID()))
 		if err != nil {
 			return nil, err
 		}
@@ -779,7 +762,7 @@ func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlo
 		return nil, NewBlockChainError(FetchBeaconBlocksError, fmt.Errorf("Cannot fetch beacon block height %v hash %v", shardBlock.Header.BeaconHeight, shardBlock.Header.BeaconHash.String()))
 	}
 
-	committee, err := chain.getCommitteeFromBlock(shardBlock, curView)
+	committee, err := chain.getCommitteeFromBlock(shardBlock.Header.CommitteeFromBlock, curView)
 	validationFlow.blockCommittees = committee
 	if err != nil {
 		return nil, NewBlockChainError(CommitteeFromBlockNotFoundError, err)
