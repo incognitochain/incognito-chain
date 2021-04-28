@@ -636,23 +636,22 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
 	}
 	return &committeestate.BeaconCommitteeStateEnvironment{
-		BeaconHeight:                      beaconBestState.BeaconHeight,
-		BeaconHash:                        beaconBestState.BestBlockHash,
-		Epoch:                             beaconBestState.Epoch,
-		EpochLengthV1:                     params.Epoch,
-		BeaconInstructions:                beaconInstructions,
-		EpochBreakPointSwapNewKey:         params.EpochBreakPointSwapNewKey,
-		AssignOffset:                      params.AssignOffset,
-		RandomNumber:                      beaconBestState.CurrentRandomNumber,
-		IsFoundRandomNumber:               isFoundRandomInstruction,
-		IsBeaconRandomTime:                isBeaconRandomTime,
-		ActiveShards:                      beaconBestState.ActiveShards,
-		MinShardCommitteeSize:             beaconBestState.MinShardCommitteeSize,
-		ConsensusStateDB:                  beaconBestState.consensusStateDB,
-		NumberOfFixedBeaconBlockValidator: NumberOfFixedBeaconBlockValidators,
-		NumberOfFixedShardBlockValidator:  NumberOfFixedShardBlockValidators,
-		MaxShardCommitteeSize:             params.MaxShardCommitteeSize,
-		MissingSignaturePenalty:           slashingPenalty,
+		BeaconHeight:                     beaconBestState.BeaconHeight,
+		BeaconHash:                       beaconBestState.BestBlockHash,
+		Epoch:                            beaconBestState.Epoch,
+		EpochLengthV1:                    params.Epoch,
+		BeaconInstructions:               beaconInstructions,
+		EpochBreakPointSwapNewKey:        params.EpochBreakPointSwapNewKey,
+		AssignOffset:                     params.AssignOffset,
+		RandomNumber:                     beaconBestState.CurrentRandomNumber,
+		IsFoundRandomNumber:              isFoundRandomInstruction,
+		IsBeaconRandomTime:               isBeaconRandomTime,
+		ActiveShards:                     beaconBestState.ActiveShards,
+		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
+		ConsensusStateDB:                 beaconBestState.consensusStateDB,
+		NumberOfFixedShardBlockValidator: params.NumberOfFixedBlockValidators,
+		MaxShardCommitteeSize:            params.MaxShardCommitteeSize,
+		MissingSignaturePenalty:          slashingPenalty,
 		PreviousBlockHashes: &committeestate.BeaconCommitteeStateHash{
 			BeaconCandidateHash:             beaconBestState.BestBlock.Header.BeaconCandidateRoot,
 			BeaconCommitteeAndValidatorHash: beaconBestState.BestBlock.Header.BeaconCommitteeAndValidatorRoot,
@@ -675,18 +674,17 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
 	}
 	return &committeestate.BeaconCommitteeStateEnvironment{
-		BeaconHeight:                      beaconBestState.BeaconHeight,
-		BeaconHash:                        beaconBestState.BestBlockHash,
-		Epoch:                             beaconBestState.Epoch,
-		EpochLengthV1:                     params.Epoch,
-		RandomNumber:                      beaconBestState.CurrentRandomNumber,
-		ActiveShards:                      beaconBestState.ActiveShards,
-		MinShardCommitteeSize:             beaconBestState.MinShardCommitteeSize,
-		ConsensusStateDB:                  beaconBestState.consensusStateDB,
-		MaxShardCommitteeSize:             params.MaxShardCommitteeSize,
-		NumberOfFixedBeaconBlockValidator: NumberOfFixedBeaconBlockValidators,
-		NumberOfFixedShardBlockValidator:  NumberOfFixedShardBlockValidators,
-		MissingSignaturePenalty:           slashingPenalty,
+		BeaconHeight:                     beaconBestState.BeaconHeight,
+		BeaconHash:                       beaconBestState.BestBlockHash,
+		Epoch:                            beaconBestState.Epoch,
+		EpochLengthV1:                    params.Epoch,
+		RandomNumber:                     beaconBestState.CurrentRandomNumber,
+		ActiveShards:                     beaconBestState.ActiveShards,
+		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
+		ConsensusStateDB:                 beaconBestState.consensusStateDB,
+		MaxShardCommitteeSize:            params.MaxShardCommitteeSize,
+		NumberOfFixedShardBlockValidator: params.NumberOfFixedBlockValidators,
+		MissingSignaturePenalty:          slashingPenalty,
 	}
 }
 
@@ -751,7 +749,7 @@ func initBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestat
 func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Params, bc *BlockChain) committeestate.BeaconCommitteeEngine {
 	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
-	var numberOfAssignedCandidate int
+	var numberOfAssignedCandidate int = 0
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
 	}
@@ -769,7 +767,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	for k, v := range substituteValidator {
 		shardSubstitute[byte(k)] = v
 	}
-	if bc.IsGreaterThanRandomTime(beaconBestState.BeaconHeight) && !beaconBestState.IsGetRandomNumber {
+	if bc.IsEqualToRandomTime(beaconBestState.BeaconHeight) {
 		var err error
 		var tempBeaconBlock = types.NewBeaconBlock()
 		var randomTimeBeaconHash = beaconBestState.BestBlockHash
@@ -808,7 +806,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 			snapshotShardCommonPool,
 			snapshotShardCommittee,
 			snapshotShardSubstitute,
-			NumberOfFixedShardBlockValidators,
+			params.NumberOfFixedBlockValidators,
 			params.MinShardCommitteeSize,
 		)
 	}

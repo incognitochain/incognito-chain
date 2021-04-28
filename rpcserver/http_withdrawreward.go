@@ -39,7 +39,7 @@ func (httpServer *HttpServer) handleCreateRawWithDrawTransaction(params interfac
 	param := map[string]interface{}{}
 	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
 	param["TokenID"] = tokenIDParam
-	param["Version"] = 1
+	param["Version"] = common.SALARY_VER_FIX_HASH
 	arrayParams[4] = interface{}(param)
 	return httpServer.createRawTxWithMetadata(
 		arrayParams,

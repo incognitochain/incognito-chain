@@ -369,8 +369,6 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 	engine.beaconCommitteeStateV1.mu.RUnlock()
 	newB := engine.uncommittedBeaconCommitteeStateV1
 	committeeChange := NewCommitteeChange()
-	newBeaconCandidates := []incognitokey.CommitteePublicKey{}
-	newShardCandidates := []incognitokey.CommitteePublicKey{}
 	newB.setHashes(env.PreviousBlockHashes)
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -406,17 +404,17 @@ func (engine *BeaconCommitteeEngineV1) UpdateCommitteeState(env *BeaconCommittee
 			}
 			newB.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
 		}
+
 		if len(tempNewBeaconCandidates) > 0 {
-			newBeaconCandidates = append(newBeaconCandidates, tempNewBeaconCandidates...)
+			newB.nextEpochBeaconCandidate = append(newB.nextEpochBeaconCandidate, tempNewBeaconCandidates...)
+			committeeChange.NextEpochBeaconCandidateAdded = append(committeeChange.NextEpochBeaconCandidateAdded, tempNewBeaconCandidates...)
 		}
 		if len(tempNewShardCandidates) > 0 {
-			newShardCandidates = append(newShardCandidates, tempNewShardCandidates...)
+			newB.nextEpochShardCandidate = append(newB.nextEpochShardCandidate, tempNewShardCandidates...)
+			committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, tempNewShardCandidates...)
 		}
+
 	}
-	newB.nextEpochBeaconCandidate = append(newB.nextEpochBeaconCandidate, newBeaconCandidates...)
-	committeeChange.NextEpochBeaconCandidateAdded = append(committeeChange.NextEpochBeaconCandidateAdded, newBeaconCandidates...)
-	newB.nextEpochShardCandidate = append(newB.nextEpochShardCandidate, newShardCandidates...)
-	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, newShardCandidates...)
 	if env.IsBeaconRandomTime {
 		committeeChange.CurrentEpochShardCandidateAdded = newB.nextEpochShardCandidate
 		newB.currentEpochShardCandidate = newB.nextEpochShardCandidate
