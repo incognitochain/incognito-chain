@@ -5,8 +5,6 @@ import (
 	"crypto/sha256"
 	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
-
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 // padByteSlice returns a byte slice of the given size with contents of the
@@ -87,14 +85,4 @@ func IsPublicKeyBurningAddress(publicKey []byte) bool {
 	}
 
 	return false
-}
-func PaymentAddressFromString(payment string) (
-	privacy.PaymentAddress,
-	error,
-) {
-	wl, err := Base58CheckDeserialize(payment)
-	if err != nil {
-		return privacy.PaymentAddress{}, err
-	}
-	return wl.KeySet.PaymentAddress, nil
 }
