@@ -928,6 +928,7 @@ func (blockchain *BlockChain) getCommitteesForSigning(
 		res = committees
 	case common.ShardChainKey:
 		shardBlock := block.(*types.ShardBlock)
+		//beaconHeight := blockchain.BeaconChain.GetFinalView().GetHeight()
 		tempCommitteeInfo, err := blockchain.getTempCommitteeInfoByHash(block.CommitteeFromBlock(), shardBlock.Header.ShardID)
 		if err != nil {
 			return res, err
