@@ -77,6 +77,8 @@ func NewPortalCustodianDepositV3(
 
 func NewPortalCustodianDepositV3FromMap(
 	data map[string]interface{},
+	chainRetriever ChainRetriever,
+	beaconHeight uint64,
 ) (*PortalCustodianDepositV3, error) {
 	remoteAddressesMap, ok := data["RemoteAddresses"].(map[string]interface{})
 	if !ok {
@@ -88,7 +90,7 @@ func NewPortalCustodianDepositV3FromMap(
 	remoteAddresses := make(map[string]string, 0)
 	tokenIDKeys := make([]string, 0)
 	for pTokenID, remoteAddress := range remoteAddressesMap {
-		if !IsPortalToken(pTokenID) {
+		if !chainRetriever.IsPortalToken(beaconHeight, pTokenID) {
 			return nil, NewMetadataTxError(NewPortalCustodianDepositV3MetaFromMapError, errors.New("metadata public token is not supported currently"))
 		}
 		_, ok := remoteAddress.(string)
@@ -159,7 +161,7 @@ func (custodianDeposit PortalCustodianDepositV3) ValidateSanityData(
 	}
 
 	// validate remote addresses
-	isValid, err := ValidatePortalRemoteAddresses(custodianDeposit.RemoteAddresses, chainRetriever)
+	isValid, err := chainRetriever.ValidatePortalRemoteAddresses(custodianDeposit.RemoteAddresses, beaconHeight)
 	if !isValid || err != nil {
 		return false, false, NewMetadataTxError(PortalCustodianDepositV3ValidateSanityDataError, err)
 	}

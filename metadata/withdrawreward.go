@@ -1,13 +1,14 @@
 package metadata
 
 import (
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
-	"strconv"
 )
 
 type WithDrawRewardRequest struct {
@@ -54,12 +55,12 @@ func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, err
 		MetadataBase:   metadataBase,
 		PaymentAddress: requesterPublicKeySet.KeySet.PaymentAddress,
 		TokenID:        *tokenID,
+		Version:        1,
 	}
 
-	versionFloat, ok := data["Version"].(float64)
+	versionInt, ok := data["Version"].(int)
 	if ok {
-		version := int(versionFloat)
-		result.Version = version
+		result.Version = versionInt
 	}
 	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, result.Version); !ok || err != nil {
 		return nil, errors.Errorf("Invalid version %d", result.Version)
@@ -180,10 +181,10 @@ func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(t
 	if !unique {
 		return false, errors.New("Just one receiver")
 	}
-	cmp, err := withDrawRewardResponse.TokenID.Cmp(coinID)
-	if (cmp != 0) || (err != nil) {
-		return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
-	}
+	//cmp, err := withDrawRewardResponse.TokenID.Cmp(coinID)
+	//if (cmp != 0) || (err != nil) {
+	//	return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
+	//}
 	tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
 	value, err := statedb.GetCommitteeReward(shardViewRetriever.GetShardRewardStateDB(), tempPublicKey, *coinID)
 	if (err != nil) || (value == 0) {

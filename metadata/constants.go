@@ -22,10 +22,11 @@ const (
 	WithDrawRewardRequestMeta    = 44
 	WithDrawRewardResponseMeta   = 45
 
-	//statking
+	//staking
 	ShardStakingMeta    = 63
 	StopAutoStakingMeta = 127
 	BeaconStakingMeta   = 64
+	UnStakingMeta       = 210
 
 	// Incognito -> Ethereum bridge
 	BeaconSwapConfirmMeta = 70
@@ -177,3 +178,60 @@ const (
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}
+
+var portalMetaTypesV3 = []int{
+	PortalCustodianDepositMeta,
+	PortalRequestPortingMeta,
+	PortalUserRequestPTokenMeta,
+	PortalCustodianDepositResponseMeta,
+	PortalUserRequestPTokenResponseMeta,
+	PortalExchangeRatesMeta,
+	PortalRedeemRequestMeta,
+	PortalRedeemRequestResponseMeta,
+	PortalRequestUnlockCollateralMeta,
+	PortalCustodianWithdrawRequestMeta,
+	PortalCustodianWithdrawResponseMeta,
+	PortalLiquidateCustodianMeta,
+	PortalLiquidateCustodianResponseMeta,
+	PortalLiquidateTPExchangeRatesMeta,
+	PortalExpiredWaitingPortingReqMeta,
+	PortalRewardMeta,
+	PortalRequestWithdrawRewardMeta,
+	PortalRequestWithdrawRewardResponseMeta,
+	PortalRedeemFromLiquidationPoolMeta,
+	PortalRedeemFromLiquidationPoolResponseMeta,
+	PortalCustodianTopupMeta,
+	PortalCustodianTopupResponseMeta,
+	PortalTotalRewardCustodianMeta,
+	PortalPortingResponseMeta,
+	PortalReqMatchingRedeemMeta,
+	PortalPickMoreCustodianForRedeemMeta,
+	PortalCustodianTopupMetaV2,
+	PortalCustodianTopupResponseMetaV2,
+
+	// Portal v3
+	PortalCustodianDepositMetaV3,
+	PortalCustodianWithdrawRequestMetaV3,
+	PortalRewardMetaV3,
+	PortalRequestUnlockCollateralMetaV3,
+	PortalLiquidateCustodianMetaV3,
+	PortalLiquidateByRatesMetaV3,
+	PortalRedeemFromLiquidationPoolMetaV3,
+	PortalRedeemFromLiquidationPoolResponseMetaV3,
+	PortalCustodianTopupMetaV3,
+	PortalTopUpWaitingPortingRequestMetaV3,
+	PortalRequestPortingMetaV3,
+	PortalRedeemRequestMetaV3,
+	PortalCustodianWithdrawConfirmMetaV3,
+	PortalRedeemFromLiquidationPoolConfirmMetaV3,
+	PortalLiquidateRunAwayCustodianConfirmMetaV3,
+	PortalResetPortalDBMeta,
+
+	PortalTopUpWaitingPortingRequestMeta,
+	PortalTopUpWaitingPortingResponseMeta,
+}
+
+var portalRelayingMetaTypes = []int{
+	RelayingBNBHeaderMeta,
+	RelayingBTCHeaderMeta,
+}

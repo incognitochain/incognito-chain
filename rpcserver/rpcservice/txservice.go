@@ -2,9 +2,11 @@ package rpcservice
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"math"
 	"math/big"
 	"sort"
@@ -40,10 +42,11 @@ type MempoolInterface interface {
 	GetClonedPoolCandidate() map[common.Hash]string
 	ListTxs() []string
 	RemoveTx(txs []metadata.Transaction, isInBlock bool)
+	RemoveStuckTx(txHash common.Hash, tx metadata.Transaction)
 	TriggerCRemoveTxs(tx metadata.Transaction)
 	MarkForwardedTransaction(txHash common.Hash)
 	MaxFee() uint64
-	ListTxsDetail() []metadata.Transaction
+	ListTxsDetail() ([]common.Hash, []metadata.Transaction)
 	Count() int
 	Size() uint64
 	SendTransactionToBlockGen()
@@ -548,7 +551,7 @@ func (txService TxService) BuildTokenParam(tokenParamsRaw map[string]interface{}
 	return privacyTokenParam, nil
 }
 
-func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
+func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]types.CrossShardTokenPrivacyMetaData, *RPCError) {
 	property, ok := tokenParamsRaw["TokenID"].(string)
 	if !ok {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token ID, Params %+v ", tokenParamsRaw))
@@ -677,7 +680,7 @@ func (txService TxService) BuildTokenParamV2(tokenParamsRaw map[string]interface
 	return privacyTokenParam, nil
 }
 
-func (txService TxService) BuildPrivacyCustomTokenParamV2(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
+func (txService TxService) BuildPrivacyCustomTokenParamV2(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]types.CrossShardTokenPrivacyMetaData, *RPCError) {
 	property, ok := tokenParamsRaw["TokenID"].(string)
 	if !ok {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token ID, Params %+v ", tokenParamsRaw))
@@ -1794,9 +1797,18 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 	return result, nil
 }
 
+func encodeBytes(data []byte, isBase64Encode bool) string {
+	if isBase64Encode {
+		return base64.StdEncoding.EncodeToString(data)
+	} else {
+		return base58.Base58Check{}.Encode(data, common.ZeroByte)
+	}
+}
+
 func (txService TxService) buildTxDetails(
 	txInfos []TxInfo,
 	keySet incognitokey.KeySet,
+	isBase64EncodeSN bool,
 ) []jsonresult.ReceivedTransactionV2 {
 	txDetails := []jsonresult.ReceivedTransactionV2{}
 	for _, txInfo := range txInfos {
@@ -1836,7 +1848,7 @@ func (txService TxService) buildTxDetails(
 						inputCoins := proof.GetInputCoins()
 						for _, in := range inputCoins {
 							item.InputSerialNumbers[common.PRVCoinID] = append(item.InputSerialNumbers[common.PRVCoinID],
-								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+								encodeBytes(in.CoinDetails.GetSerialNumber().ToBytesS(), isBase64EncodeSN))
 						}
 
 						outputs := proof.GetOutputCoins()
@@ -1897,7 +1909,7 @@ func (txService TxService) buildTxDetails(
 						nativeInputCoins := proof.GetInputCoins()
 						for _, in := range nativeInputCoins {
 							item.InputSerialNumbers[common.PRVCoinID] = append(item.InputSerialNumbers[common.PRVCoinID],
-								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+								encodeBytes(in.CoinDetails.GetSerialNumber().ToBytesS(), isBase64EncodeSN))
 						}
 
 						outputs := proof.GetOutputCoins()
@@ -1937,7 +1949,7 @@ func (txService TxService) buildTxDetails(
 						ptokenInputCoins := proof.GetInputCoins()
 						for _, in := range ptokenInputCoins {
 							item.InputSerialNumbers[privacyTokenTx.TxPrivacyTokenData.PropertyID] = append(item.InputSerialNumbers[privacyTokenTx.TxPrivacyTokenData.PropertyID],
-								base58.Base58Check{}.Encode(in.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte))
+								encodeBytes(in.CoinDetails.GetSerialNumber().ToBytesS(), isBase64EncodeSN))
 						}
 
 						outputs := proof.GetOutputCoins()
@@ -2053,6 +2065,7 @@ func (txService TxService) GetTransactionByReceiverV2(
 	keySet incognitokey.KeySet,
 	skip, limit uint,
 	tokenIDHash common.Hash,
+	isBase64EncodeSN bool,
 ) (*jsonresult.ListReceivedTransactionV2, uint, *RPCError) {
 	result := &jsonresult.ListReceivedTransactionV2{
 		ReceivedTransactions: []jsonresult.ReceivedTransactionV2{},
@@ -2070,6 +2083,9 @@ func (txService TxService) GetTransactionByReceiverV2(
 		allTxHashs = append(allTxHashs, txHashs...)
 	}
 	totalTxHashs := len(allTxHashs)
+	if totalTxHashs == 0 {
+		return result, 0, nil
+	}
 
 	chunksNum := 32 // default number of concurrent goroutines
 
@@ -2118,7 +2134,7 @@ func (txService TxService) GetTransactionByReceiverV2(
 		limit = txNum
 	}
 	pagingTxInfos := txInfos[skip:limit]
-	txDetails := txService.buildTxDetails(pagingTxInfos, keySet)
+	txDetails := txService.buildTxDetails(pagingTxInfos, keySet, isBase64EncodeSN)
 	result.ReceivedTransactions = txDetails
 	return result, txNum, nil
 }
@@ -2350,7 +2366,7 @@ func (txService TxService) BuildDefragmentTokenParam(tokenParamsRaw map[string]i
 	return privacyTokenParam, nil
 }
 
-func (txService TxService) BuildDefragmentPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
+func (txService TxService) BuildDefragmentPrivacyCustomTokenParam(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]types.CrossShardTokenPrivacyMetaData, *RPCError) {
 	property, ok := tokenParamsRaw["TokenID"].(string)
 	if !ok {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token ID, Params %+v ", tokenParamsRaw))
@@ -2446,7 +2462,7 @@ func (txService TxService) BuildDefragmentPrivacyCustomTokenParam(tokenParamsRaw
 	return tokenParams, nil, nil, nil
 }
 
-func (txService TxService) BuildDefragmentPrivacyCustomTokenParamV2(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, *RPCError) {
+func (txService TxService) BuildDefragmentPrivacyCustomTokenParamV2(tokenParamsRaw map[string]interface{}, senderKeySet *incognitokey.KeySet, shardIDSender byte) (*transaction.CustomTokenPrivacyParamTx, map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]types.CrossShardTokenPrivacyMetaData, *RPCError) {
 	property, ok := tokenParamsRaw["TokenID"].(string)
 	if !ok {
 		return nil, nil, nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Token ID, Params %+v ", tokenParamsRaw))

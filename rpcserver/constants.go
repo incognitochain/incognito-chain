@@ -105,12 +105,16 @@ const (
 	decryptoutputcoinbykeyoftransaction          = "decryptoutputcoinbykeyoftransaction"
 
 	//===========For Testing and Benchmark==============
-	getAndSendTxsFromFile   = "getandsendtxsfromfile"
-	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
-	unlockMempool           = "unlockmempool"
-	getAutoStakingByHeight  = "getautostakingbyheight"
-	getCommitteeState       = "getcommitteestate"
-	getRewardAmountByEpoch  = "getrewardamountbyepoch"
+	getAndSendTxsFromFile      = "getandsendtxsfromfile"
+	getAndSendTxsFromFileV2    = "getandsendtxsfromfilev2"
+	unlockMempool              = "unlockmempool"
+	handleGetConsensusInfoV3   = "getconsensusinfov3"
+	getAutoStakingByHeight     = "getautostakingbyheight"
+	getCommitteeState          = "getcommitteestate"
+	getCommitteeStateByShard   = "getcommitteestatebyshard"
+	getSlashingCommittee       = "getslashingcommittee"
+	getSlashingCommitteeDetail = "getslashingcommitteedetail"
+	getRewardAmountByEpoch     = "getrewardamountbyepoch"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
@@ -184,10 +188,6 @@ const (
 	getRoleByValidatorKey       = "getrolebyvalidatorkey"
 	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
-
-	// slash
-	getProducersBlackList       = "getproducersblacklist"
-	getProducersBlackListDetail = "getproducersblacklistdetail"
 
 	// pde
 	getPDEState                                = "getpdestate"
@@ -278,6 +278,7 @@ const (
 	createAndSendBurningForDepositToSCRequest   = "createandsendburningfordeposittoscrequest"
 	createAndSendBurningForDepositToSCRequestV2 = "createandsendburningfordeposittoscrequestv2"
 
+	getSyncStats          = "getsyncstats"
 	getBeaconPoolInfo     = "getbeaconpoolinfo"
 	getShardPoolInfo      = "getshardpoolinfo"
 	getCrossShardPoolInfo = "getcrossshardpoolinfo"
@@ -291,6 +292,9 @@ const (
 
 	//validator state
 	getValKeyState = "getvalkeystate"
+
+	// stake
+	unstake = "createunstaketransaction"
 )
 
 const (
@@ -310,6 +314,67 @@ const (
 	subcribeMempoolInfo                         = "subcribemempoolinfo"
 	subcribeShardBestState                      = "subcribeshardbeststate"
 	subcribeBeaconBestState                     = "subcribebeaconbeststate"
+	subcribeBeaconBestStateFromMem              = "subcribebeaconbeststatefrommem"
 	subcribeBeaconPoolBeststate                 = "subcribebeaconpoolbeststate"
 	subcribeShardPoolBeststate                  = "subcribeshardpoolbeststate"
 )
+
+var PortalV3RPCs = []string{
+	createAndSendTxWithCustodianDeposit,
+	createAndSendTxWithReqPToken,
+	getPortalState,
+	getPortalCustodianDepositStatus,
+	createAndSendRegisterPortingPublicTokens,
+	createAndSendPortalExchangeRates,
+	getPortalFinalExchangeRates,
+	getPortalPortingRequestByKey,
+	getPortalPortingRequestByPortingId,
+	convertExchangeRates,
+	getPortalReqPTokenStatus,
+	getPortingRequestFees,
+	createAndSendTxWithRedeemReq,
+	createAndSendTxWithReqUnlockCollateral,
+	getPortalReqUnlockCollateralStatus,
+	getPortalReqRedeemStatus,
+	createAndSendCustodianWithdrawRequest,
+	getCustodianWithdrawByTxId,
+	getCustodianLiquidationStatus,
+	createAndSendTxWithReqWithdrawRewardPortal,
+	createAndSendTxRedeemFromLiquidationPoolV3,
+	createAndSendCustodianTopup,
+	createAndSendTopUpWaitingPorting,
+	createAndSendCustodianTopupV3,
+	createAndSendTopUpWaitingPortingV3,
+	getTopupAmountForCustodian,
+	getLiquidationExchangeRatesPool,
+	getPortalReward,
+	getRequestWithdrawPortalRewardStatus,
+	createAndSendTxWithReqMatchingRedeem,
+	getReqMatchingRedeemStatus,
+	getPortalCustodianTopupStatus,
+	getPortalCustodianTopupStatusV3,
+	getPortalCustodianTopupWaitingPortingStatus,
+	getPortalCustodianTopupWaitingPortingStatusV3,
+	getAmountTopUpWaitingPorting,
+	getPortalReqRedeemByTxIDStatus,
+	getReqRedeemFromLiquidationPoolByTxIDStatus,
+	getReqRedeemFromLiquidationPoolByTxIDStatusV3,
+	getPortalCustodianDepositStatusV3,
+	checkPortalExternalHashSubmitted,
+	createAndSendTxWithCustodianWithdrawRequestV3,
+	getCustodianWithdrawRequestStatusV3ByTxId,
+	getPortalWithdrawCollateralProof,
+	createAndSendUnlockOverRateCollaterals,
+	getPortalUnlockOverRateCollateralsStatus,
+	getRewardFeature,
+}
+
+var PortalRelayingRPCs = []string{
+	createAndSendTxWithRelayingBNBHeader,
+	createAndSendTxWithRelayingBTCHeader,
+	getRelayingBNBHeaderState,
+	getRelayingBNBHeaderByBlockHeight,
+	getBTCRelayingBestState,
+	getBTCBlockByHash,
+	getLatestBNBHeaderBlockHeight,
+}

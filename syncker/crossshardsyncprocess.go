@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
-
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -29,7 +29,7 @@ type CrossXReq struct {
 func NewCrossShardSyncProcess(network Network, bc *blockchain.BlockChain, shardSyncProcess *ShardSyncProcess, beaconChain BeaconChainInterface) *CrossShardSyncProcess {
 
 	var isOutdatedBlock = func(blk interface{}) bool {
-		if blk.(*blockchain.CrossShardBlock).GetHeight() < shardSyncProcess.Chain.GetCrossShardState()[byte(blk.(*blockchain.CrossShardBlock).GetHeight())] {
+		if blk.(*types.CrossShardBlock).GetHeight() < shardSyncProcess.Chain.GetCrossShardState()[byte(blk.(*types.CrossShardBlock).GetHeight())] {
 			return true
 		}
 		return false
@@ -72,7 +72,7 @@ func (s *CrossShardSyncProcess) stop() {
 }
 
 func (s *CrossShardSyncProcess) InsertCrossShardBlock(blk interface{}) {
-	s.crossShardPool.AddBlock(blk.(common.BlockPoolInterface))
+	s.crossShardPool.AddBlock(blk.(types.BlockPoolInterface))
 }
 
 //check beacon state and retrieve needed crossshard block, then add to request pool
@@ -137,7 +137,7 @@ func (s *CrossShardSyncProcess) streamMissingCrossShardBlock(fromSID int, hashes
 	for blk := range ch {
 		if !isNil(blk) {
 			fmt.Println("syncker: Insert crossShard block", blk.GetHeight(), blk.Hash().String())
-			s.crossShardPool.AddBlock(blk.(common.BlockPoolInterface))
+			s.crossShardPool.AddBlock(blk.(types.BlockPoolInterface))
 		} else {
 			return
 		}

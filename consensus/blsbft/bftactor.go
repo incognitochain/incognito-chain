@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sync"
 	"time"
 
@@ -31,9 +33,9 @@ type BLSBFT struct {
 
 	RoundData struct {
 		TimeStart         time.Time
-		Block             common.BlockInterface
+		Block             types.BlockInterface
 		BlockHash         common.Hash
-		BlockValidateData ValidationData
+		BlockValidateData consensustypes.ValidationData
 		lockVotes         sync.Mutex
 		Votes             map[string]vote
 		Round             int
@@ -47,7 +49,7 @@ type BLSBFT struct {
 		}
 		LastProposerIndex int
 	}
-	Blocks         map[string]common.BlockInterface
+	Blocks         map[string]types.BlockInterface
 	EarlyVotes     map[string]map[string]vote
 	lockEarlyVotes sync.Mutex
 	isOngoing      bool
@@ -95,7 +97,7 @@ func (e *BLSBFT) Start() error {
 	e.isOngoing = false
 	e.StopCh = make(chan struct{})
 	e.EarlyVotes = make(map[string]map[string]vote)
-	e.Blocks = map[string]common.BlockInterface{}
+	e.Blocks = map[string]types.BlockInterface{}
 	e.ProposeMessageCh = make(chan BFTPropose)
 	e.VoteMessageCh = make(chan BFTVote)
 	e.InitRoundData()
@@ -228,7 +230,7 @@ func (e *BLSBFT) Start() error {
 						monitor.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
 						//fmt.Println("CONSENSUS: listen phase 2")
 
-						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey]); err != nil {
+						if err := e.Chain.ValidatePreSignBlock(e.Blocks[roundKey], []incognitokey.CommitteePublicKey{}); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
 							continue
@@ -241,7 +243,7 @@ func (e *BLSBFT) Start() error {
 
 							e.RoundData.Block = e.Blocks[roundKey]
 							e.RoundData.BlockHash = *e.RoundData.Block.Hash()
-							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
+							valData, err := consensustypes.DecodeValidationData(e.RoundData.Block.GetValidationField())
 							if err != nil {
 								e.logger.Error(err)
 								continue
@@ -272,7 +274,7 @@ func (e *BLSBFT) Start() error {
 						e.RoundData.BlockValidateData.BridgeSig = brigSigs
 						e.RoundData.BlockValidateData.ValidatiorsIdx = validatorIdx
 
-						validationDataString, _ := EncodeValidationData(e.RoundData.BlockValidateData)
+						validationDataString, _ := consensustypes.EncodeValidationData(e.RoundData.BlockValidateData)
 						e.RoundData.Block.(blockValidation).AddValidationField(validationDataString)
 
 						//TODO: check issue invalid sig when swap
@@ -327,7 +329,7 @@ func (e *BLSBFT) enterProposePhase() {
 		return
 	}
 	validationData := e.CreateValidationData(block)
-	validationDataString, err := EncodeValidationData(validationData)
+	validationDataString, err := consensustypes.EncodeValidationData(validationData)
 	if err != nil {
 		e.logger.Errorf("Encode validation data failed %+v", err)
 	}
@@ -415,10 +417,10 @@ func (e *BLSBFT) addEarlyVote(voteMsg BFTVote) {
 	return
 }
 
-func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
+func (e *BLSBFT) createNewBlock() (types.BlockInterface, error) {
 
 	var errCh chan error
-	var block common.BlockInterface = nil
+	var block types.BlockInterface = nil
 	errCh = make(chan error)
 	timeout := time.NewTimer(timeout / 2).C
 
@@ -434,7 +436,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 			return
 		}
 
-		block, err = e.Chain.CreateNewBlock(1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix())
+		block, err = e.Chain.CreateNewBlock(1, base58Str, int(e.RoundData.Round), e.RoundData.TimeStart.Unix(), []incognitokey.CommitteePublicKey{}, common.Hash{})
 		if block != nil {
 			e.logger.Info("create block", block.GetHeight(), time.Since(time1).Seconds())
 		} else {

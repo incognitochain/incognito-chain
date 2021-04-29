@@ -80,6 +80,7 @@ const (
 	PendingRole   = "pending"
 	SyncingRole   = "syncing" //this is for shard case - when beacon tell it is committee, but its state not
 	WaitingRole   = "waiting"
+	UnstakeRole    = "unstake" // for unstake node
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
@@ -137,72 +138,6 @@ const (
 
 	MinTxFeesOnTokenRequirement                             = 10000000000000 // 10000 prv, this requirement is applied from beacon height 87301 mainnet
 	BeaconBlockHeighMilestoneForMinTxFeesOnTokenRequirement = 87301          // milestone of beacon height, when apply min fee on token requirement
-
-	//portal
-	PortalCustodianDepositAcceptedStatus = 1
-	PortalCustodianDepositRefundStatus   = 2
-
-	PortalReqPTokenAcceptedStatus = 1
-	PortalReqPTokenRejectedStatus = 2
-
-	PortalPortingTxRequestAcceptedStatus = 1
-	PortalPortingTxRequestRejectedStatus = 3
-
-	PortalPortingReqSuccessStatus    = 1
-	PortalPortingReqWaitingStatus    = 2
-	PortalPortingReqExpiredStatus    = 3
-	PortalPortingReqLiquidatedStatus = 4
-
-	PortalRedeemReqSuccessStatus                = 1
-	PortalRedeemReqWaitingStatus                = 2
-	PortalRedeemReqMatchedStatus                = 3
-	PortalRedeemReqLiquidatedStatus             = 4
-	PortalRedeemReqCancelledByLiquidationStatus = 5
-
-	PortalRedeemRequestTxAcceptedStatus = 1
-	PortalRedeemRequestTxRejectedStatus = 2
-
-	PortalCustodianWithdrawReqAcceptedStatus = 1
-	PortalCustodianWithdrawReqRejectStatus   = 2
-
-	PortalReqUnlockCollateralAcceptedStatus = 1
-	PortalReqUnlockCollateralRejectedStatus = 2
-
-	PortalLiquidateCustodianSuccessStatus = 1
-	PortalLiquidateCustodianFailedStatus  = 2
-
-	PortalLiquidationTPExchangeRatesSuccessStatus = 1
-	PortalLiquidationTPExchangeRatesFailedStatus  = 2
-
-	PortalReqWithdrawRewardAcceptedStatus = 1
-	PortalReqWithdrawRewardRejectedStatus = 2
-
-	PortalRedeemFromLiquidationPoolSuccessStatus  = 1
-	PortalRedeemFromLiquidationPoolRejectedStatus = 2
-
-	PortalCustodianTopupSuccessStatus  = 1
-	PortalCustodianTopupRejectedStatus = 2
-
-	PortalExpiredPortingReqSuccessStatus = 1
-	PortalExpiredPortingReqFailedStatus  = 2
-
-	PortalExchangeRatesAcceptedStatus = 1
-	PortalExchangeRatesRejectedStatus = 2
-
-	PortalReqMatchingRedeemAcceptedStatus = 1
-	PortalReqMatchingRedeemRejectedStatus = 2
-
-	PortalTopUpWaitingPortingSuccessStatus  = 1
-	PortalTopUpWaitingPortingRejectedStatus = 2
-
-	PortalCustodianDepositV3AcceptedStatus = 1
-	PortalCustodianDepositV3RejectedStatus = 2
-
-	PortalCustodianWithdrawReqV3AcceptedStatus = 1
-	PortalCustodianWithdrawReqV3RejectStatus   = 2
-
-	PortalUnlockOverRateCollateralsAcceptedStatus = 1
-	PortalUnlockOverRateCollateralsRejectedStatus = 2
 )
 
 // PDE statuses for chain
@@ -230,88 +165,7 @@ const (
 	PDECrossPoolTradeAcceptedChainStatus           = "xPoolTradeAccepted"
 )
 
-// Portal status for chain
-const (
-	PortalCustodianDepositAcceptedChainStatus = "accepted"
-	PortalCustodianDepositRefundChainStatus   = "refund"
-
-	PortalReqPTokensAcceptedChainStatus = "accepted"
-	PortalReqPTokensRejectedChainStatus = "rejected"
-
-	PortalPortingRequestAcceptedChainStatus = "accepted"
-	PortalPortingRequestRejectedChainStatus = "rejected"
-
-	PortalExchangeRatesAcceptedChainStatus = "accepted"
-	PortalExchangeRatesRejectedChainStatus = "rejected"
-
-	PortalRedeemRequestAcceptedChainStatus           = "accepted"
-	PortalRedeemRequestRejectedChainStatus           = "rejected"
-	PortalRedeemReqCancelledByLiquidationChainStatus = "cancelled"
-
-	PortalCustodianWithdrawRequestAcceptedChainStatus = "accepted"
-	PortalCustodianWithdrawRequestRejectedChainStatus = "rejected"
-
-	PortalReqUnlockCollateralAcceptedChainStatus = "accepted"
-	PortalReqUnlockCollateralRejectedChainStatus = "rejected"
-
-	PortalLiquidateCustodianSuccessChainStatus = "success"
-	PortalLiquidateCustodianFailedChainStatus  = "failed"
-
-	PortalLiquidateTPExchangeRatesSuccessChainStatus = "success"
-	PortalLiquidateTPExchangeRatesFailedChainStatus  = "rejected"
-
-	PortalReqWithdrawRewardAcceptedChainStatus = "accepted"
-	PortalReqWithdrawRewardRejectedChainStatus = "rejected"
-
-	PortalRedeemFromLiquidationPoolSuccessChainStatus  = "success"
-	PortalRedeemFromLiquidationPoolRejectedChainStatus = "rejected"
-
-	PortalCustodianTopupSuccessChainStatus  = "success"
-	PortalCustodianTopupRejectedChainStatus = "rejected"
-
-	PortalExpiredWaitingPortingReqSuccessChainStatus = "success"
-	PortalExpiredWaitingPortingReqFailedChainStatus  = "failed"
-
-	PortalReqMatchingRedeemAcceptedChainStatus = "accepted"
-	PortalReqMatchingRedeemRejectedChainStatus = "rejected"
-
-	PortalPickMoreCustodianRedeemSuccessChainStatus = "success"
-	PortalPickMoreCustodianRedeemFailedChainStatus  = "failed"
-
-	PortalTopUpWaitingPortingSuccessChainStatus  = "success"
-	PortalTopUpWaitingPortingRejectedChainStatus = "rejected"
-
-	// Portal v3
-	PortalCustodianDepositV3AcceptedChainStatus         = "accepted"
-	PortalCustodianDepositV3RejectedChainStatus         = "rejected"
-	PortalCustodianWithdrawRequestV3AcceptedChainStatus = "accepted"
-	PortalCustodianWithdrawRequestV3RejectedChainStatus = "rejected"
-
-	PortalCusUnlockOverRateCollateralsAcceptedChainStatus = "accepted"
-	PortalCusUnlockOverRateCollateralsRejectedChainStatus = "rejected"
-)
-
-// Relaying header
-const (
-	RelayingHeaderRejectedChainStatus    = "rejected"
-	RelayingHeaderConsideringChainStatus = "considering"
-)
-
-const PortalBTCIDStr = "ef5947f70ead81a76a53c7c8b7317dd5245510c665d3a13921dc9a581188728b"
-const PortalBNBIDStr = "6abd698ea7ddd1f98b1ecaaddab5db0453b8363ff092f0d8d7d4c6b1155fb693"
 const PRVIDStr = "0000000000000000000000000000000000000000000000000000000000000004"
-
-var PortalSupportedIncTokenIDs = []string{
-	PortalBTCIDStr, // pBTC
-	PortalBNBIDStr, // pBNB
-}
-
-// set MinAmountPortalPToken to avoid attacking with amount is less than smallest unit of cryptocurrency
-// such as satoshi in BTC
-var MinAmountPortalPToken = map[string]uint64{
-	PortalBTCIDStr: 10,
-	PortalBNBIDStr: 10,
-}
 
 const ETHChainName = "eth"
 
@@ -324,3 +178,9 @@ var (
 )
 
 var TIMESLOT = uint64(0) //need to be set when init chain
+
+/* ================ Feature Flags ================ */
+const (
+	PortalRelayingFlag = 0
+	PortalV3Flag = 1
+)

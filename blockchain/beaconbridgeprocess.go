@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -17,21 +18,13 @@ import (
 
 // NOTE: for whole bridge's deposit process, anytime an error occurs it will be logged for debugging and the request will be skipped for retry later. No error will be returned so that the network can still continue to process others.
 
-type UpdatingInfo struct {
-	countUpAmt      uint64
-	deductAmt       uint64
-	tokenID         common.Hash
-	externalTokenID []byte
-	isCentralized   bool
-}
-
 type BurningReqAction struct {
 	Meta          metadata.BurningRequest `json:"meta"`
 	RequestedTxID *common.Hash            `json:"RequestedTxID"`
 }
 
-func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.StateDB, block *BeaconBlock) error {
-	updatingInfoByTokenID := map[common.Hash]UpdatingInfo{}
+func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.StateDB, block *types.BeaconBlock) error {
+	updatingInfoByTokenID := map[common.Hash]metadata.UpdatingInfo{}
 	for _, inst := range block.Body.Instructions {
 		if len(inst) < 2 {
 			continue // Not error, just not bridge instruction
@@ -58,19 +51,19 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 	for _, updatingInfo := range updatingInfoByTokenID {
 		var updatingAmt uint64
 		var updatingType string
-		if updatingInfo.countUpAmt > updatingInfo.deductAmt {
-			updatingAmt = updatingInfo.countUpAmt - updatingInfo.deductAmt
+		if updatingInfo.CountUpAmt > updatingInfo.DeductAmt {
+			updatingAmt = updatingInfo.CountUpAmt - updatingInfo.DeductAmt
 			updatingType = "+"
 		}
-		if updatingInfo.countUpAmt < updatingInfo.deductAmt {
-			updatingAmt = updatingInfo.deductAmt - updatingInfo.countUpAmt
+		if updatingInfo.CountUpAmt < updatingInfo.DeductAmt {
+			updatingAmt = updatingInfo.DeductAmt - updatingInfo.CountUpAmt
 			updatingType = "-"
 		}
 		err := statedb.UpdateBridgeTokenInfo(
 			bridgeStateDB,
-			updatingInfo.tokenID,
-			updatingInfo.externalTokenID,
-			updatingInfo.isCentralized,
+			updatingInfo.TokenID,
+			updatingInfo.ExternalTokenID,
+			updatingInfo.IsCentralized,
 			updatingAmt,
 			updatingType,
 		)
@@ -81,7 +74,7 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 	return nil
 }
 
-func (blockchain *BlockChain) processIssuingETHReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
+func (blockchain *BlockChain) processIssuingETHReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo) (map[common.Hash]metadata.UpdatingInfo, error) {
 	if len(instruction) != 4 {
 		return updatingInfoByTokenID, nil // skip the instruction
 	}
@@ -115,21 +108,21 @@ func (blockchain *BlockChain) processIssuingETHReq(bridgeStateDB *statedb.StateD
 	}
 	updatingInfo, found := updatingInfoByTokenID[issuingETHAcceptedInst.IncTokenID]
 	if found {
-		updatingInfo.countUpAmt += issuingETHAcceptedInst.IssuingAmount
+		updatingInfo.CountUpAmt += issuingETHAcceptedInst.IssuingAmount
 	} else {
-		updatingInfo = UpdatingInfo{
-			countUpAmt:      issuingETHAcceptedInst.IssuingAmount,
-			deductAmt:       0,
-			tokenID:         issuingETHAcceptedInst.IncTokenID,
-			externalTokenID: issuingETHAcceptedInst.ExternalTokenID,
-			isCentralized:   false,
+		updatingInfo = metadata.UpdatingInfo{
+			CountUpAmt:      issuingETHAcceptedInst.IssuingAmount,
+			DeductAmt:       0,
+			TokenID:         issuingETHAcceptedInst.IncTokenID,
+			ExternalTokenID: issuingETHAcceptedInst.ExternalTokenID,
+			IsCentralized:   false,
 		}
 	}
 	updatingInfoByTokenID[issuingETHAcceptedInst.IncTokenID] = updatingInfo
 	return updatingInfoByTokenID, nil
 }
 
-func (blockchain *BlockChain) processIssuingReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]UpdatingInfo) (map[common.Hash]UpdatingInfo, error) {
+func (blockchain *BlockChain) processIssuingReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo) (map[common.Hash]metadata.UpdatingInfo, error) {
 	if len(instruction) != 4 {
 		return updatingInfoByTokenID, nil // skip the instruction
 	}
@@ -159,13 +152,13 @@ func (blockchain *BlockChain) processIssuingReq(bridgeStateDB *statedb.StateDB, 
 	}
 	updatingInfo, found := updatingInfoByTokenID[issuingAcceptedInst.IncTokenID]
 	if found {
-		updatingInfo.countUpAmt += issuingAcceptedInst.DepositedAmount
+		updatingInfo.CountUpAmt += issuingAcceptedInst.DepositedAmount
 	} else {
-		updatingInfo = UpdatingInfo{
-			countUpAmt:    issuingAcceptedInst.DepositedAmount,
-			deductAmt:     0,
-			tokenID:       issuingAcceptedInst.IncTokenID,
-			isCentralized: true,
+		updatingInfo = metadata.UpdatingInfo{
+			CountUpAmt:    issuingAcceptedInst.DepositedAmount,
+			DeductAmt:     0,
+			TokenID:       issuingAcceptedInst.IncTokenID,
+			IsCentralized: true,
 		}
 	}
 	updatingInfoByTokenID[issuingAcceptedInst.IncTokenID] = updatingInfo
@@ -175,8 +168,8 @@ func (blockchain *BlockChain) processIssuingReq(bridgeStateDB *statedb.StateDB, 
 func (blockchain *BlockChain) processContractingReq(
 	bridgeStateDB *statedb.StateDB,
 	instruction []string,
-	updatingInfoByTokenID map[common.Hash]UpdatingInfo,
-) (map[common.Hash]UpdatingInfo, error) {
+	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+) (map[common.Hash]metadata.UpdatingInfo, error) {
 	if len(instruction) != 4 {
 		return updatingInfoByTokenID, nil // skip the instruction
 	}
@@ -208,13 +201,13 @@ func (blockchain *BlockChain) processContractingReq(
 
 	updatingInfo, found := updatingInfoByTokenID[md.TokenID]
 	if found {
-		updatingInfo.deductAmt += md.BurnedAmount
+		updatingInfo.DeductAmt += md.BurnedAmount
 	} else {
-		updatingInfo = UpdatingInfo{
-			countUpAmt:    0,
-			deductAmt:     md.BurnedAmount,
-			tokenID:       md.TokenID,
-			isCentralized: true,
+		updatingInfo = metadata.UpdatingInfo{
+			CountUpAmt:    0,
+			DeductAmt:     md.BurnedAmount,
+			TokenID:       md.TokenID,
+			IsCentralized: true,
 		}
 	}
 	updatingInfoByTokenID[md.TokenID] = updatingInfo
@@ -224,8 +217,8 @@ func (blockchain *BlockChain) processContractingReq(
 func (blockchain *BlockChain) processBurningReq(
 	bridgeStateDB *statedb.StateDB,
 	instruction []string,
-	updatingInfoByTokenID map[common.Hash]UpdatingInfo,
-) (map[common.Hash]UpdatingInfo, error) {
+	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+) (map[common.Hash]metadata.UpdatingInfo, error) {
 	if len(instruction) < 8 {
 		return updatingInfoByTokenID, nil // skip the instruction
 	}
@@ -260,14 +253,14 @@ func (blockchain *BlockChain) processBurningReq(
 
 	updatingInfo, found := updatingInfoByTokenID[*incTokenID]
 	if found {
-		updatingInfo.deductAmt += amount
+		updatingInfo.DeductAmt += amount
 	} else {
-		updatingInfo = UpdatingInfo{
-			countUpAmt:      0,
-			deductAmt:       amount,
-			tokenID:         *incTokenID,
-			externalTokenID: externalTokenID,
-			isCentralized:   false,
+		updatingInfo = metadata.UpdatingInfo{
+			CountUpAmt:      0,
+			DeductAmt:       amount,
+			TokenID:         *incTokenID,
+			ExternalTokenID: externalTokenID,
+			IsCentralized:   false,
 		}
 	}
 	updatingInfoByTokenID[*incTokenID] = updatingInfo
@@ -300,7 +293,7 @@ func (blockchain *BlockChain) storeBurningConfirm(stateDB *statedb.StateDB, inst
 	return nil
 }
 
-func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.StateDB, block *ShardBlock) error {
+func (blockchain *BlockChain) updateBridgeIssuanceStatus(bridgeStateDB *statedb.StateDB, block *types.ShardBlock) error {
 	for _, tx := range block.Body.Transactions {
 		metaType := tx.GetMetadataType()
 		var err error
