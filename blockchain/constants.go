@@ -69,7 +69,8 @@ const (
 	//MainETHContractAddressStr               = "0x3c8ec94213f09A1575f773470830124dfb40042e"                                                              // v3-main - mainnet
 	//MainETHContractAddressStr               = "0x6CC3873C3ca91cf5500DaD8B1A2c620B4f20507c"                                                              // v4-main - mainnet
 	//MainETHContractAddressStr               = "0xED5309daac912a52d985c317576a1b3f5020FDc9"                                                              // v5-main - mainnet
-	MainETHContractAddressStr               = "0x97875355eF55Ae35613029df8B1C8Cf8f89c9066"                                                              // v6-main - mainnet
+	// MainETHContractAddressStr               = "0x97875355eF55Ae35613029df8B1C8Cf8f89c9066"                                                              // v6-main - mainnet
+	MainETHContractAddressStr               = "0x43D037A562099A4C2c95b1E2120cc43054450629"                                                              // v7-main - mainnet
 	MainnetIncognitoDAOAddress              = "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" // community fund
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 
