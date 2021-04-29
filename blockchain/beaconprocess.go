@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate/finishsync"
@@ -753,10 +754,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = statedb.StoreAllShardSubstitutesValidator(newBestState.consensusStateDB, committeeChange.ShardSubstituteAdded)
-	if err != nil {
-		return err
-	}
 	err = statedb.StoreAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeAdded)
 	if err != nil {
 		return err
@@ -794,10 +791,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteAllShardSubstitutesValidator(newBestState.consensusStateDB, committeeChange.ShardSubstituteRemoved)
-	if err != nil {
-		return err
-	}
 	err = statedb.DeleteAllShardCommittee(newBestState.consensusStateDB, committeeChange.ShardCommitteeRemoved)
 	if err != nil {
 		return err
@@ -811,6 +804,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return err
 	}
 	err = statedb.DeleteSyncingValidators(newBestState.consensusStateDB, committeeChange.SyncingPoolRemoved)
+	if err != nil {
+		return err
+	}
+	err = newBestState.updateAllShardSubstituteValidators(committeeChange)
 	if err != nil {
 		return err
 	}

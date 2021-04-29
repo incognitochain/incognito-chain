@@ -435,6 +435,17 @@ func (stateDB *StateDB) getStakerObject(key common.Hash) (*StateObject, bool, er
 	return &stakerObject, true, nil
 }
 
+func (stateDB *StateDB) getValidators(key common.Hash) (*Validators, bool, error) {
+	validatorsObject, err := stateDB.getStateObject(ValidatorsObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if validatorsObject != nil {
+		return validatorsObject.GetValue().(*Validators), true, nil
+	}
+	return NewValidators(), false, nil
+}
+
 func (stateDB *StateDB) getAllValidatorCommitteePublicKey(role int, ids []int) map[int][]*CommitteeState {
 	if role != CurrentValidator && role != SubstituteValidator {
 		panic("wrong expected role " + strconv.Itoa(role))
@@ -527,16 +538,14 @@ func (stateDB *StateDB) getByShardIDSubstituteValidatorState(shardID int) []*Com
 
 // getAllCommitteeState return all data related to all committee roles
 // return params #1: current validator
-// return params #2: substitute validator
-// return params #3: next epoch candidate
-// return params #4: current epoch candidate
-// return params #5: syncing validators
-// return params #6: reward receiver map
-// return params #7: auto staking map
-// return params #8: staking tx
+// return params #2: next epoch candidate
+// return params #3: current epoch candidate
+// return params #4: syncing validators
+// return params #5: reward receiver map
+// return params #6: auto staking map
+// return params #7: staking tx
 func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	currentValidator map[int][]*CommitteeState,
-	substituteValidator map[int][]*CommitteeState,
 	nextEpochShardCandidate []*CommitteeState,
 	currentEpochShardCandidate []*CommitteeState,
 	nextEpochBeaconCandidate []*CommitteeState,
@@ -547,7 +556,6 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	stakingTx map[string]common.Hash,
 ) {
 	currentValidator = make(map[int][]*CommitteeState)
-	substituteValidator = make(map[int][]*CommitteeState)
 	nextEpochShardCandidate = []*CommitteeState{}
 	currentEpochShardCandidate = []*CommitteeState{}
 	nextEpochBeaconCandidate = []*CommitteeState{}
@@ -582,30 +590,6 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
 		}
 		currentValidator[shardID] = tempCurrentValidator
-		// Substitute Validator
-		prefixSubstituteValidator := GetCommitteePrefixWithRole(SubstituteValidator, shardID)
-		resSubstituteValidator := stateDB.iterateWithCommitteeState(prefixSubstituteValidator)
-		tempSubstituteValidator := []*CommitteeState{}
-		for _, v := range resSubstituteValidator {
-			tempSubstituteValidator = append(tempSubstituteValidator, v)
-			cPKBytes, _ := v.committeePublicKey.RawBytes()
-			s, has, err := stateDB.getStakerInfo(GetStakerInfoKey(cPKBytes))
-			if err != nil {
-				panic(err)
-			}
-			if !has || s == nil {
-				panic(errors.Errorf("Can not found staker info for this committee %v", v.committeePublicKey))
-			}
-			committeePublicKeyStr, err := v.committeePublicKey.ToBase58()
-			if err != nil {
-				panic(err)
-			}
-			incPublicKeyStr := v.committeePublicKey.GetIncKeyBase58()
-			autoStake[committeePublicKeyStr] = s.autoStaking
-			stakingTx[committeePublicKeyStr] = s.txStakingID
-			rewardReceiver[incPublicKeyStr] = s.rewardReceiver
-		}
-		substituteValidator[shardID] = tempSubstituteValidator
 
 		// Syncing Validators
 		prefixSyncingValidators := GetCommitteePrefixWithRole(SyncingValidators, shardID)
@@ -722,7 +706,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 		rewardReceiver[incKey] = stakerInfo.rewardReceiver
 	}
 
-	return currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceiver, autoStake, stakingTx
+	return currentValidator, nextEpochShardCandidate, currentEpochShardCandidate, nextEpochBeaconCandidate, currentEpochBeaconCandidate, syncingValidators, rewardReceiver, autoStake, stakingTx
 }
 
 func (stateDB *StateDB) IterateWithStaker(prefix []byte) []*StakerInfo {

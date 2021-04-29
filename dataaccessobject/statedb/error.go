@@ -49,6 +49,7 @@ const (
 	ErrInvalidPortalExternalTxStateType          = "invalid portal external tx state type"
 	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
 	ErrInvalidBlockHashType                      = "invalid block hash type"
+	ErrInvalidValidators                         = "invalid validators type"
 )
 const (
 	InvalidByteArrayTypeError = iota

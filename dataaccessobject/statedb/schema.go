@@ -124,12 +124,13 @@ func GetCommitteePrefixWithRole(role int, shardID int) []byte {
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
 	case SyncingValidators:
-		temp := []byte(string(syncingValidatorsPrefix))
+		temp := []byte(string(syncingValidatorsPrefix) + strconv.Itoa(shardID))
 		h := common.HashH(temp)
 		return h[:][:prefixHashKeyLength]
 	default:
 		panic("role not exist: " + strconv.Itoa(role))
 	}
+	return []byte{}
 }
 
 func GetStakerInfoPrefix() []byte {

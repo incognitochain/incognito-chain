@@ -95,6 +95,8 @@ func newStateObjectWithValue(db *StateDB, objectType int, hash common.Hash, valu
 		return newStakerObjectWithValue(db, hash, value)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObjectWithValue(db, hash, value)
+	case ValidatorsObjectType:
+		return newValidatorsObjectWithValue(db, hash, value)
 	default:
 		panic("state object type not exist")
 	}
@@ -170,6 +172,8 @@ func newStateObject(db *StateDB, objectType int, hash common.Hash) StateObject {
 		return newStakerObject(db, hash)
 	case SlashingCommitteeObjectType:
 		return newSlashingCommitteeObject(db, hash)
+	case ValidatorsObjectType:
+		return newValidatorsObject(db, hash)
 	default:
 		panic("state object type not exist")
 	}

@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/pkg/errors"
 )
 
 var defaultEnterTime = []int64{}
@@ -271,16 +272,6 @@ func StoreCurrentEpochBeaconCandidate(stateDB *StateDB, candidate []incognitokey
 	return nil
 }
 
-func StoreAllShardSubstitutesValidator(stateDB *StateDB, allShardSubstitutes map[byte][]incognitokey.CommitteePublicKey) error {
-	for shardID, committee := range allShardSubstitutes {
-		err := storeCommittee(stateDB, int(shardID), SubstituteValidator, committee, defaultEnterTime)
-		if err != nil {
-			return NewStatedbError(StoreNextEpochCandidateError, err)
-		}
-	}
-	return nil
-}
-
 func StoreOneShardSubstitutesValidator(stateDB *StateDB, shardID byte, shardSubstitutes []incognitokey.CommitteePublicKey) error {
 	err := storeCommittee(stateDB, int(shardID), SubstituteValidator, shardSubstitutes, defaultEnterTime)
 	if err != nil {
@@ -402,6 +393,7 @@ func GetCurrentEpochCandidate(stateDB *StateDB) []incognitokey.CommitteePublicKe
 	}
 	return list
 }
+
 func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 	map[int][]incognitokey.CommitteePublicKey,
 	map[int][]incognitokey.CommitteePublicKey,
@@ -414,7 +406,7 @@ func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 	map[string]bool,
 	map[string]common.Hash,
 ) {
-	tempCurrentValidator, tempSubstituteValidator, tempNextEpochShardCandidate,
+	tempCurrentValidator, tempNextEpochShardCandidate,
 		tempCurrentEpochShardCandidate, tempNextEpochBeaconCandidate, tempCurrentEpochBeaconCandidate,
 		tempSyncingValidators,
 		rewardReceivers, autoStaking, stakingTx := stateDB.getAllCommitteeState(shardIDs)
@@ -437,15 +429,30 @@ func GetAllCandidateSubstituteCommittee(stateDB *StateDB, shardIDs []int) (
 		currentValidator[shardID] = list
 	}
 
-	for shardID, tempShardSubstituteStates := range tempSubstituteValidator {
-		sort.Slice(tempShardSubstituteStates, func(i, j int) bool {
-			return tempShardSubstituteStates[i].EnterTime() < tempShardSubstituteStates[j].EnterTime()
-		})
-		list := []incognitokey.CommitteePublicKey{}
-		for _, tempShardCommitteeState := range tempShardSubstituteStates {
-			list = append(list, tempShardCommitteeState.CommitteePublicKey())
+	for _, v := range shardIDs {
+		validators, err := GetValidators(stateDB, v, SubstituteValidator)
+		if err != nil {
+			panic(err)
 		}
-		substituteValidator[shardID] = list
+		substituteValidator[v] = validators.keys
+		for _, value := range substituteValidator[v] {
+			cPKBytes, _ := value.RawBytes()
+			s, has, err := stateDB.getStakerInfo(GetStakerInfoKey(cPKBytes))
+			if err != nil {
+				panic(err)
+			}
+			if !has || s == nil {
+				panic(errors.Errorf("Can not found staker info for this committee %v", value))
+			}
+			committeePublicKeyStr, err := value.ToBase58()
+			if err != nil {
+				panic(err)
+			}
+			incPublicKeyStr := value.GetIncKeyBase58()
+			autoStaking[committeePublicKeyStr] = s.autoStaking
+			stakingTx[committeePublicKeyStr] = s.txStakingID
+			rewardReceivers[incPublicKeyStr] = s.rewardReceiver
+		}
 	}
 
 	for shardID, singleChainSyncingValidators := range tempSyncingValidators {
@@ -590,16 +597,6 @@ func DeleteCurrentEpochBeaconCandidate(stateDB *StateDB, candidate []incognitoke
 	return nil
 }
 
-func DeleteAllShardSubstitutesValidator(stateDB *StateDB, allShardSubstitutes map[byte][]incognitokey.CommitteePublicKey) error {
-	for shardID, committee := range allShardSubstitutes {
-		err := deleteCommittee(stateDB, int(shardID), SubstituteValidator, committee)
-		if err != nil {
-			return NewStatedbError(DeleteAllShardSubstitutesValidatorError, err)
-		}
-	}
-	return nil
-}
-
 func DeleteOneShardSubstitutesValidator(stateDB *StateDB, shardID byte, shardSubstitutes []incognitokey.CommitteePublicKey) error {
 	err := deleteCommittee(stateDB, int(shardID), SubstituteValidator, shardSubstitutes)
 	if err != nil {
@@ -739,4 +736,16 @@ func deleteSyncingValidators(stateDB *StateDB, shardID byte, role int, committee
 		stateDB.MarkDeleteStateObject(CommitteeObjectType, key)
 	}
 	return nil
+}
+
+func StoreValidators(stateDB *StateDB, shardID, role int, keys []incognitokey.CommitteePublicKey) error {
+	key := generateValidatorsObjectKey(role, shardID)
+	value := NewValidatorsStateWithValue(shardID, role, keys)
+	return stateDB.SetStateObject(ValidatorsObjectType, key, value)
+}
+
+func GetValidators(stateDB *StateDB, shardID, role int) (*Validators, error) {
+	key := generateValidatorsObjectKey(role, shardID)
+	value, _, err := stateDB.getValidators(key)
+	return value, err
 }

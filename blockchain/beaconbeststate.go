@@ -848,3 +848,15 @@ func (beaconBestState *BeaconBestState) removeFinishedSyncValidators(committeeCh
 		beaconBestState.finishSyncManager.RemoveValidators(committeeChange.FinishedSyncValidators[byte(shardID)], byte(shardID))
 	}
 }
+
+func (beaconBestState *BeaconBestState) updateAllShardSubstituteValidators(committeeChange *committeestate.CommitteeChange) error {
+	for i, v := range beaconBestState.beaconCommitteeState.GetShardSubstitute() {
+		if len(committeeChange.ShardSubstituteAdded[i]) != 0 || len(committeeChange.ShardSubstituteRemoved[i]) != 0 {
+			err := statedb.StoreValidators(beaconBestState.consensusStateDB, int(i), statedb.SubstituteValidator, v)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
