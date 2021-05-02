@@ -10,7 +10,8 @@
 #		GETH_PROTOCOl
 #		GETH_PORT
 #		CHECK_INTERVAL
-#	2. To install, run:
+#       FULLNODE
+#	2. To install, reinstall, make changes, run:
 #		sudo ./{this script}
 #	3. To uninstall, run:
 #		sudo ./{this script} uninstall
@@ -18,55 +19,69 @@
 
 # check super user
 if [ $(whoami) != root ]; then
-	echo -e "  !!! Please run with sudo or su, otherwise it won't work"
-	echo -e "  !!! Script now exit exits "
+cat << EOF
+	!!! Please run with sudo or su, otherwise it won't work
+	!!! Script now exit exits
+EOF
 	exit 1
 fi
 
 # change config here:
 BOOTNODE="mainnet-bootnode.incognito.org:9330"
-PORT_RPC="8333"
+PORT_RPC="8334"
 PORT_NODE="9433"
 VALIDATOR_K="12mF1dVuaGCrgkQkzm3h4e9zFCCpkNhmEQ3WnM2yJ5GzLuT9cy5"
-GETH_NAME="mainnet.infura.io/v3/YYYZZZ" #infura link
+GETH_NAME="mainnet.infura.io/v3/xxxyyy" #infura link
 GETH_PROTOCOL="https"
 GETH_PORT="80"
 CHECK_INTERVAL="3600" # 1 hour
+FULLNODE=0  # set to 1 to run as a full node, 0 or empty to run as normal node
 
 # Do not edit lines below unless you know what you're doing
 USER="incognito"
 SCRIPT="/bin/run_node.sh"
-SERVICE="/etc/systemd/system/incognito_updater.service"
-DATA_DIR="/var/run/$USER/node_data"
+SERVICE="/etc/systemd/system/IncognitoUpdater.service"
+DATA_DIR="/home/$USER/node_data"
 TMP="/tmp/inc_node_latest_tag"
+systemctl stop $(basename $SERVICE) 2> /dev/null
+
 function uninstall {
-	echo " # Stop and remove update service"
-	systemctl stop $(basename $SERVICE)
+	echo " # Remove update service"
 	systemctl disable $(basename $SERVICE)
 	systemctl daemon-reload
 	echo " # Stop and remove docker container"
 	docker container stop inc_mainnet
 	docker container rm inc_mainnet
 	echo " # Clearing node's data"
-	rm $TMP
-	rm -Rf $DATA_DIR
-	rm $SCRIPT
-	rm $SERVICE
+	rm -Rf $TMP $DATA_DIR $SCRIPT $SERVICE
 	echo " # Removing user"
 	deluser $USER
 }
 
 if [[ $1 = "uninstall" ]]; then
-	echo "Uninstalling and cleanup"
-	echo "!!! WARNING !!!"
-	echo "This action will remove the systemd service, docker container, $USER user, $DATA_DIR and $SCRIPT script"
-	echo "Do you really want to do this? (N/y)"
+cat << EOF 
+!!!===============================================!!!
+###                    WARNING                    ###
+!!!===============================================!!!
+!   Uninstalling and cleanup !
+!   This action will remove:
+!      - The systemd service: $SERVICE
+!      - Docker container
+!      - User: $USER 
+!      - Node's data: $DATA_DIR
+!      - Run script: $SCRIPT
+!!! Do you really want to do this? (N/y)
+EOF
 	read consent
 	if [ -z $consent ] || [[ ${consent,,} = "n" ]] || [[ ${consent,,} != "y" ]] ; then
-		echo "Do nothing, exit now!"
+		echo "!!! Good choice !!!"
 		exit 1
 	else
-		echo "Uninstalling...."
+cat << EOF
+#####################################################
+#          Too bad! So sad! See you again!          #
+#####################################################
+EOF
 		uninstall
 	fi
 	exit 1
@@ -77,7 +92,7 @@ useradd $USER
 usermod -aG docker ${USER} || echo
 mkdir -p $DATA_DIR
 chown -R $USER:$USER $DATA_DIR
-touch $TMP
+rm -f $TMP && touch $TMP
 chown $USER:$USER $TMP
 
 echo " # Creating systemd service to check for new release"
@@ -120,6 +135,7 @@ run()
   geth_name=$GETH_NAME
   geth_port=$GETH_PORT
   geth_proto=$GETH_PROTOCOL
+  fullnode=$FULLNODE
 EOF
 cat << 'EOF' >> $SCRIPT
 
@@ -149,9 +165,10 @@ cat << 'EOF' >> $SCRIPT
   docker network create --driver bridge inc_net || true
   echo "Start the incognito mainnet docker container"
   set -x
-  docker run --restart=always --net inc_net -p $node_port:$node_port -p $rpc_port:$rpc_port -e NODE_PORT=$node_port \
-	-e RPC_PORT=$rpc_port -e BOOTNODE_IP=$bootnode -e GETH_NAME=$geth_name \
-	-e GETH_PROTOCOL=$geth_proto -e GETH_PORT=$geth_port -e MININGKEY=${validator_key} -e TESTNET=false -e LIMIT_FEE=1 \
+  docker run --restart=always --net inc_net -p $node_port:$node_port -p $rpc_port:$rpc_port \
+  	-e NODE_PORT=$node_port -e RPC_PORT=$rpc_port -e BOOTNODE_IP=$bootnode \
+	-e GETH_NAME=$geth_name -e GETH_PROTOCOL=$geth_proto -e GETH_PORT=$geth_port \
+	-e FULLNODE=$fullnode -e MININGKEY=${validator_key} -e TESTNET=false -e LIMIT_FEE=1 \
 	-v ${data_dir}:/data -d --name inc_mainnet incognitochain/incognito-mainnet:${latest_tag}
   set +x
 
@@ -163,7 +180,8 @@ cat << 'EOF' >> $SCRIPT
 
 current_latest_tag=$(cat $TMP)
 echo "Getting Incognito docker tags"
-tags=$(curl -s -X GET https://registry.hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags  | sed -e 's/[][]//g' -e 's/"//g' -e 's/ //g' | tr '}' '\n'  | awk -F: '{print $3}' | sed -e 's/\n/;/g')
+tags=$(curl -s -X GET https://registry.hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags  \
+	| sed -e 's/[][]//g' -e 's/"//g' -e 's/ //g' | tr '}' '\n'  | awk -F: '{print $3}' | sed -e 's/\n/;/g')
 sorted_tags=($(echo ${tags[*]}| tr " " "\n" | sort -rn))
 latest_tag=${sorted_tags[0]}
 echo "Latest tag is ${latest_tag}"
@@ -174,7 +192,6 @@ if [ "$current_latest_tag" != "$latest_tag" ]; then
 	current_latest_tag=$latest_tag
 	echo $current_latest_tag > $TMP
 fi
-
 EOF
 
 chmod +x $SCRIPT
