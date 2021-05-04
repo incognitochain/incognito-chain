@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/pkg/errors"
 	"strconv"
@@ -34,7 +35,7 @@ func NewWithDrawRewardResponse(metaRequest *WithDrawRewardRequest, reqID *common
 }
 
 func (withDrawRewardResponse WithDrawRewardResponse) Hash() *common.Hash {
-	if withDrawRewardResponse.Version == 1 {
+	if withDrawRewardResponse.Version == common.SALARY_VER_FIX_HASH {
 		if withDrawRewardResponse.TxRequest == nil {
 			return &common.Hash{}
 		}
@@ -60,6 +61,27 @@ func (withDrawRewardResponse *WithDrawRewardResponse) CheckTransactionFee(tr Tra
 }
 
 func (withDrawRewardResponse *WithDrawRewardResponse) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	if tx.IsPrivacy() {
+		return false, errors.New("This transaction is not private")
+	}
+	unique, requesterRes, amountRes, coinID := tx.GetTransferData()
+	if !unique {
+		return false, errors.New("Just one receiver")
+	}
+	if withDrawRewardResponse.Version >= common.SALARY_VER_FIX_HASH {
+		cmp, err := withDrawRewardResponse.TokenID.Cmp(coinID)
+		if (cmp != 0) || (err != nil) {
+			return false, errors.Errorf("WithdrawResponse metadata want tokenID %v, got %v, error %v", withDrawRewardResponse.TokenID.String(), coinID.String(), err)
+		}
+	}
+	tempPublicKey := base58.Base58Check{}.Encode(requesterRes, common.Base58Version)
+	value, err := statedb.GetCommitteeReward(shardViewRetriever.GetShardRewardStateDB(), tempPublicKey, *coinID)
+	if (err != nil) || (value == 0) {
+		return false, errors.New("Not enough reward")
+	}
+	if value != amountRes {
+		return false, errors.New("Wrong amounts")
+	}
 	return true, nil
 }
 
@@ -68,7 +90,10 @@ func (withDrawRewardResponse WithDrawRewardResponse) ValidateSanityData(chainRet
 }
 
 func (withDrawRewardResponse WithDrawRewardResponse) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
+	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, withDrawRewardResponse.Version); !ok || err != nil {
+		Logger.log.Error(errors.Errorf("Invalid version %d", withDrawRewardResponse.Version))
+		return false
+	}
 	return true
 }
 

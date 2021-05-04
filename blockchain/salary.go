@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"strconv"
 

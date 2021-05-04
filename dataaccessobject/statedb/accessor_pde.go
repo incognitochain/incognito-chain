@@ -79,7 +79,6 @@ func StorePDEShares(stateDB *StateDB, pdeShares map[string]uint64) error {
 			return NewStatedbError(StorePDEShareError, err)
 		}
 
-		fmt.Printf("BUGLOG5 StorePDEShares at bHeight %v, %v-%v-%v: %v, newAmount %v\n", beaconHeight, token1ID, token2ID, contributorAddress, shareAmount, value)
 	}
 	return nil
 }

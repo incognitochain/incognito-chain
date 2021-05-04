@@ -1,12 +1,9 @@
 package rpcserver
 
 import (
-	"fmt"
-
+	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -19,7 +16,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	tokenIDStr, ok := metaParam["TokenID"].(string);
+	tokenIDStr, ok := metaParam["TokenID"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token ID string is invalid"))
 	}
@@ -43,15 +40,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 	if txVersion == 1 {
 		meta.PaymentAddress.OTAPublic = nil
 	}
-	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
 
 	param := map[string]interface{}{}
-	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
-	param["TokenID"] = tokenIDParam
+	param["PaymentAddress"] = paymentAddStr
+	param["TokenID"] = tokenIDStr
 	param["Version"] = common.SALARY_VER_FIX_HASH
 	arrayParams[4] = interface{}(param)
 	return httpServer.createRawTxWithMetadata(

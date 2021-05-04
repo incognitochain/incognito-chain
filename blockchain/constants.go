@@ -125,11 +125,11 @@ const (
 	TestnetSwapOffset        = 1
 	TestnetAssignOffset      = 2
 
-	TestNetShardCommitteeSize     = 32
+	TestNetShardCommitteeSize     = 6
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
-	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetMinBeaconCommitteeSize = 1
+	TestNetActiveShards           = 2
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
@@ -174,11 +174,11 @@ const (
 	Testnet2SwapOffset        = 1
 	Testnet2AssignOffset      = 2
 
-	TestNet2ShardCommitteeSize     = 32
+	TestNet2ShardCommitteeSize     = 6
 	TestNet2MinShardCommitteeSize  = 4
 	TestNet2BeaconCommitteeSize    = 4
-	TestNet2MinBeaconCommitteeSize = 4
-	TestNet2ActiveShards           = 8
+	TestNet2MinBeaconCommitteeSize = 1
+	TestNet2ActiveShards           = 2
 	TestNet2StakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNet2MinBeaconBlkInterval = 10 * time.Second //second
