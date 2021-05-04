@@ -538,7 +538,6 @@ func (chain *ShardChain) getCommitteeFromBlock(CommitteeFromBlock common.Hash, c
 type ShardValidationFlow struct {
 	validationMode       int
 	forSigning           bool
-	blockchain           *BlockChain
 	curView              *ShardBestState
 	nextView             *ShardBestState
 	block                *types.ShardBlock
@@ -553,7 +552,7 @@ func (chain *ShardChain) validateBlockHeader(flow *ShardValidationFlow) error {
 	chain.Blockchain.verifyPreProcessingShardBlock(flow.curView, flow.block, flow.beaconBlocks, false, flow.blockCommittees)
 	shardBestState := flow.curView
 	committees := flow.blockCommittees
-	blockchain := flow.blockchain
+	blockchain := chain.Blockchain
 	shardBlock := flow.block
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
@@ -599,11 +598,11 @@ func (chain *ShardChain) validateBlockBody(flow *ShardValidationFlow) error {
 	shardID := flow.curView.ShardID
 	shardBlock := flow.block
 	curView := flow.curView
-	blockchain := flow.blockchain
+	blockchain := chain.Blockchain
 	beaconBlocks := flow.beaconBlocks
 
 	//validate transaction
-	if err := flow.blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(curView.BeaconHeight), curView); err != nil {
+	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(curView.BeaconHeight), curView); err != nil {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 
@@ -736,7 +735,6 @@ func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlo
 
 	validationFlow := new(ShardValidationFlow)
 	validationFlow.block = shardBlock
-	validationFlow.blockchain = blockchain
 	validationFlow.validationMode = validationMode
 	validationFlow.forSigning = forSigning
 	//check if view is committed
@@ -809,7 +807,7 @@ func (chain *ShardChain) commitAndStore(flow *ShardValidationFlow) (err error) {
 		return err
 	}
 
-	if err = flow.blockchain.processStoreShardBlock(flow.nextView, flow.block, flow.committeeChange, flow.beaconBlocks); err != nil {
+	if err = chain.Blockchain.processStoreShardBlock(flow.nextView, flow.block, flow.committeeChange, flow.beaconBlocks); err != nil {
 		return err
 	}
 	return err
