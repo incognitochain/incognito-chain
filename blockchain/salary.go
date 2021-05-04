@@ -59,8 +59,6 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 
 func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.StateDB, beaconBlocks []*types.BeaconBlock, shardID byte) error {
 	cInfos := make(map[int][]*statedb.StakerInfo)
-	isInit := false
-	epoch := uint64(0)
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == instruction.STAKE_ACTION || l[0] == instruction.RANDOM_ACTION {
@@ -119,19 +117,23 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				if err != nil {
 					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
-				if (!isInit) || (epoch != shardRewardInfo.Epoch) {
-					isInit = true
-					height := blockchain.GetLastBeaconHeightInEpoch(shardRewardInfo.Epoch)
-					var beaconConsensusRootHash common.Hash
-					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), height)
-					if err != nil {
-						return NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
-					}
-					beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-					if err != nil {
-						return NewBlockChainError(ProcessSalaryInstructionsError, err)
-					}
-					cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
+				// if (!isInit) || (epoch != shardRewardInfo.Epoch) {
+				// 	isInit = true
+				// 	height := blockchain.GetLastBeaconHeightInEpoch(shardRewardInfo.Epoch)
+				// 	var beaconConsensusRootHash common.Hash
+				// 	beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), height)
+				// 	if err != nil {
+				// 		return NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
+				// 	}
+				// 	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+				// 	if err != nil {
+				// 		return NewBlockChainError(ProcessSalaryInstructionsError, err)
+				// 	}
+				// 	cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
+				// }
+				cInfos, err = blockchain.GetAllCommitteeStakeInfoByEpoch(shardRewardInfo.Epoch)
+				if err != nil {
+					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
 				err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo, cInfos[int(shardToProcess)])
 				if err != nil {

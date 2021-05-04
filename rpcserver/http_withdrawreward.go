@@ -1,7 +1,8 @@
 package rpcserver
 
 import (
-	"errors"
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -48,17 +49,16 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
 
-	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, meta)
-	if err.(*rpcservice.RPCError) != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
-	}
-
-	result := jsonresult.CreateTransactionResult{
-		TxID:            txID.String(),
-		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
-		ShardID:         txShardID,
-	}
-	return result, nil
+	param := map[string]interface{}{}
+	param["PaymentAddress"] = keyWallet.Base58CheckSerialize(1)
+	param["TokenID"] = tokenIDParam
+	param["Version"] = common.SALARY_VER_FIX_HASH
+	arrayParams[4] = interface{}(param)
+	return httpServer.createRawTxWithMetadata(
+		arrayParams,
+		closeChan,
+		metadata.NewWithDrawRewardRequestFromRPC,
+	)
 }
 
 func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

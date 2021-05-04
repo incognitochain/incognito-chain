@@ -4,34 +4,25 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"reflect"
-	"strconv"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"reflect"
+	"strconv"
 )
 
-func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateDB, beaconBlock *types.BeaconBlock) error {
+func (blockchain *BlockChain) processPDEInstructions(beaconView *BeaconBestState, beaconBlock *types.BeaconBlock) (*CurrentPDEState, error) {
 	if !hasPDEInstruction(beaconBlock.Body.Instructions) {
-		return nil
+		return beaconView.pdeState, nil
 	}
+	pdexStateDB := beaconView.featureStateDB
 	beaconHeight := beaconBlock.Header.Height - 1
-	currentPDEState, err := InitCurrentPDEStateFromDB(pdexStateDB, beaconHeight)
+	currentPDEState, err := InitCurrentPDEStateFromDB(beaconView.featureStateDB, beaconView.pdeState, beaconHeight)
 	if err != nil {
-		Logger.log.Error(err)
-		return nil
+		return nil, err
 	}
-	backUpCurrentPDEState := new(CurrentPDEState)
-	temp, err := json.Marshal(currentPDEState)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(temp, backUpCurrentPDEState)
-	if err != nil {
-		return err
-	}
+
 	for _, inst := range beaconBlock.Body.Instructions {
 		if len(inst) < 2 {
 			continue // Not error, just not PDE instruction
@@ -54,19 +45,53 @@ func (blockchain *BlockChain) processPDEInstructions(pdexStateDB *statedb.StateD
 			err = blockchain.processPDETradingFeesDistribution(pdexStateDB, beaconHeight, inst, currentPDEState)
 		}
 		if err != nil {
-			Logger.log.Error(err)
-			return nil
+			return nil, err
 		}
 	}
-	if reflect.DeepEqual(backUpCurrentPDEState, currentPDEState) {
+	return currentPDEState, nil
+}
+
+func getDiffPDEState(previous *CurrentPDEState, current *CurrentPDEState) (diffState *CurrentPDEState) {
+	if current == nil {
 		return nil
 	}
-	// store updated currentPDEState to leveldb with new beacon height
-	err = storePDEStateToDB(pdexStateDB, beaconHeight+1, currentPDEState)
-	if err != nil {
-		Logger.log.Error(err)
+	if previous == nil {
+		return current
 	}
-	return nil
+
+	diffState = new(CurrentPDEState)
+	diffState.WaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
+	diffState.DeletedWaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
+	diffState.PDEPoolPairs = make(map[string]*rawdbv2.PDEPoolForPair)
+	diffState.PDEShares = make(map[string]uint64)
+	diffState.PDETradingFees = make(map[string]uint64)
+
+	for k, v := range current.WaitingPDEContributions {
+		if m, ok := previous.WaitingPDEContributions[k]; !ok || !reflect.DeepEqual(m, v) {
+			diffState.WaitingPDEContributions[k] = v
+		}
+	}
+	for k, v := range current.DeletedWaitingPDEContributions {
+		if m, ok := previous.DeletedWaitingPDEContributions[k]; !ok || !reflect.DeepEqual(m, v) {
+			diffState.DeletedWaitingPDEContributions[k] = v
+		}
+	}
+	for k, v := range current.PDEPoolPairs {
+		if m, ok := previous.PDEPoolPairs[k]; !ok || !reflect.DeepEqual(m, v) {
+			diffState.PDEPoolPairs[k] = v
+		}
+	}
+	for k, v := range current.PDEShares {
+		if m, ok := previous.PDEShares[k]; !ok || !reflect.DeepEqual(m, v) {
+			diffState.PDEShares[k] = v
+		}
+	}
+	for k, v := range current.PDETradingFees {
+		if m, ok := previous.PDETradingFees[k]; !ok || !reflect.DeepEqual(m, v) {
+			diffState.PDETradingFees[k] = v
+		}
+	}
+	return diffState
 }
 
 func hasPDEInstruction(instructions [][]string) bool {

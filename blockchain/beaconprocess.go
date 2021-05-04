@@ -180,7 +180,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err2 := blockchain.processStoreBeaconBlock(newBestState, beaconBlock, committeeChange); err2 != nil {
+	if err2 := blockchain.processStoreBeaconBlock(curView, newBestState, beaconBlock, committeeChange); err2 != nil {
 		return err2
 	}
 
@@ -709,6 +709,7 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 }
 
 func (blockchain *BlockChain) processStoreBeaconBlock(
+	curView *BeaconBestState,
 	newBestState *BeaconBestState,
 	beaconBlock *types.BeaconBlock,
 	committeeChange *committeestate.CommitteeChange,
@@ -823,7 +824,25 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	// execute, store token init instructions
 	blockchain.processTokenInitInstructions(newBestState.featureStateDB, beaconBlock)
 	// execute, store PDE instruction
-	err = blockchain.processPDEInstructions(newBestState.featureStateDB, beaconBlock)
+	newBestState.pdeState, err = blockchain.processPDEInstructions(newBestState, beaconBlock)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+	if newBestState.pdeState != nil {
+		if !reflect.DeepEqual(curView.pdeState, newBestState.pdeState) {
+			//check updated field in currentPDEState and store these field into statedb
+			diffState := getDiffPDEState(curView.pdeState, newBestState.pdeState)
+			err = storePDEStateToDB(newBestState.featureStateDB, diffState)
+			if err != nil {
+				Logger.log.Error(err)
+				return err
+			}
+		}
+		//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
+		newBestState.pdeState = newBestState.pdeState.transformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
+	}
+
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
