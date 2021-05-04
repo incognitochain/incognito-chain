@@ -121,14 +121,14 @@ func (pm *PoolManager) GetMempoolInfo() MempoolInfo {
 	return res
 }
 
-func (pm *PoolManager) GetTransactionByHash(txHash string) metadata.Transaction {
+func (pm *PoolManager) GetTransactionByHash(txHash string) (metadata.Transaction, error) {
 	for _, txPool := range pm.ShardTxsPool {
 		if txPool.IsRunning() {
 			tx := txPool.getTxByHash(txHash)
 			if tx != nil {
-				return tx
+				return tx, nil
 			}
 		}
 	}
-	return nil
+	return nil, errors.Errorf("Transaction %v not found in mempool", txHash)
 }
