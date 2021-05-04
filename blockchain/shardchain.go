@@ -338,7 +338,7 @@ func (chain *ShardChain) updateHeaderRootHash(flow *ShardProducingFlow) error {
 func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlow) error {
 	blockchain := chain.Blockchain
 	shardID := byte(chain.shardID)
-	curView := flow.nextView
+	curView := flow.curView
 
 	beaconBlocks := flow.beaconBlocks
 	beaconProcessHeight := flow.processBeaconBlock.GetHeight()
