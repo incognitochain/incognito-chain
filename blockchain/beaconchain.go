@@ -26,7 +26,8 @@ type BeaconChain struct {
 	Ready               bool //when has peerstate
 	committeesInfoCache *lru.Cache
 
-	insertLock sync.Mutex
+	committeeCache *lru.Cache
+	insertLock     sync.Mutex
 }
 
 func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
@@ -187,7 +188,7 @@ func (chain *BeaconChain) CreateNewBlock(
 	if err != nil {
 		return nil, err
 	}
-	if version != 1 {
+	if version >= 2 {
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}

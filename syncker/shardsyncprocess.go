@@ -42,6 +42,7 @@ type ShardSyncProcess struct {
 	actionCh               chan func()
 	consensus              peerv2.ConsensusData
 	lock                   *sync.RWMutex
+	lastInsert             string
 }
 
 func NewShardSyncProcess(
@@ -80,6 +81,8 @@ func NewShardSyncProcess(
 
 	go func() {
 		ticker := time.NewTicker(time.Millisecond * 500)
+		lastHeight := s.Chain.GetBestViewHeight()
+
 		for {
 			if s.isCommittee {
 				s.crossShardSyncProcess.start()
@@ -106,6 +109,10 @@ func NewShardSyncProcess(
 					if ps.Timestamp < time.Now().Unix()-10 {
 						delete(s.shardPeerState, sender)
 					}
+				}
+				if lastHeight != s.Chain.GetBestViewHeight() {
+					s.lastInsert = time.Now().Format("2006-01-02T15:04:05-0700")
+					lastHeight = s.Chain.GetBestViewHeight()
 				}
 			}
 		}

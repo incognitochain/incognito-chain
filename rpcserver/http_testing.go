@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/consensus_v2"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -38,6 +41,30 @@ type CountResult struct {
 func (httpServer *HttpServer) handleUnlockMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	httpServer.config.TxMemPool.SendTransactionToBlockGen()
 	return nil, nil
+}
+
+func (httpServer *HttpServer) handleGetConsensusInfoV3(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	_, ok := httpServer.config.ConsensusEngine.(*consensus_v2.Engine)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("consensus engine not found, got "+reflect.TypeOf(httpServer.config.ConsensusEngine).String()))
+	}
+
+	arr := []interface{}{}
+	/*for chainID, bftactor := range engine.BFTProcess() {*/
+	//bftactorV2, ok := bftactor.(temp)
+	//if !ok {
+	//continue
+	//}
+	//m := map[string]interface{}{
+	//"ChainID":              chainID,
+	//"VoteHistory":          bftactorV3.GetVoteHistory(),
+	//"ReceiveBlockByHash":   bftactorV3.GetReceiveBlockByHash(),
+	//"ReceiveBlockByHeight": bftactorV3.GetReceiveBlockByHeight(),
+	//}
+	//arr = append(arr, m)
+	/*}*/
+
+	return arr, nil
 }
 
 func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

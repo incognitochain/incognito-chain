@@ -69,6 +69,11 @@ func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingB
 	return res
 }
 
+func (b *beaconCommitteeStateSlashingBase) reset() {
+	b.beaconCommitteeStateBase.reset()
+	b.shardCommonPool = []string{}
+}
+
 func (b beaconCommitteeStateSlashingBase) Hash() (*BeaconCommitteeStateHash, error) {
 	if b.isEmpty() {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")

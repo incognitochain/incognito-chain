@@ -854,6 +854,27 @@ func (stateDB *StateDB) getShardsCommitteeInfo(sIDs []int) (curValidatorInfo map
 	return curValidatorInfo
 }
 
+func (stateDB *StateDB) getShardsCommitteeInfov2(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfo) {
+	curValidatorInfo = make(map[int][]*StakerInfo)
+	for shardID, listCommittee := range curValidator {
+		tempStakerInfos := []*StakerInfo{}
+		for _, c := range listCommittee {
+			cPKBytes, _ := c.committeePublicKey.RawBytes()
+			s, has, err := stateDB.getStakerInfo(GetStakerInfoKey(cPKBytes))
+			if err != nil {
+				panic(err)
+			}
+			if !has || s == nil {
+				res, err2 := c.committeePublicKey.ToBase58()
+				panic(errors.Errorf("Can not found staker info for this committee %+v, %+v", res, err2))
+			}
+			tempStakerInfos = append(tempStakerInfos, s)
+		}
+		curValidatorInfo[shardID] = tempStakerInfos
+	}
+	return curValidatorInfo
+}
+
 func (beaconConsensusStateDB *StateDB) GetAllStakingTX(ids []int) (map[string]string, error) {
 	allStaker := []*CommitteeState{}
 	mapStakingTx := map[string]string{}

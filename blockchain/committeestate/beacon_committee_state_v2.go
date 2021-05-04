@@ -1,6 +1,8 @@
 package committeestate
 
 import (
+	"sync"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -13,6 +15,21 @@ type BeaconCommitteeStateV2 struct {
 func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
 		beaconCommitteeStateSlashingBase: *newBeaconCommitteeStateSlashingBase(),
+	}
+}
+func NewBeaconCommitteeStateV2WithMu(mu *sync.RWMutex) *BeaconCommitteeStateV2 {
+
+	return &BeaconCommitteeStateV2{
+		beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+			beaconCommitteeStateBase: beaconCommitteeStateBase{
+				shardCommittee:  make(map[byte][]string),
+				shardSubstitute: make(map[byte][]string),
+				autoStake:       make(map[string]bool),
+				rewardReceiver:  make(map[string]privacy.PaymentAddress),
+				stakingTx:       make(map[string]common.Hash),
+				mu:              mu,
+			},
+		},
 	}
 }
 
@@ -37,20 +54,21 @@ func NewBeaconCommitteeStateV2WithValue(
 	}
 }
 
-func (b BeaconCommitteeStateV2) Version() int {
+//shallowCopy maintain dst mutex value
+func (b *BeaconCommitteeStateV2) shallowCopy(newB *BeaconCommitteeStateV2) {
+	newB.beaconCommittee = b.beaconCommittee
+	newB.shardCommittee = b.shardCommittee
+	newB.shardSubstitute = b.shardSubstitute
+	newB.shardCommonPool = b.shardCommonPool
+	newB.numberOfAssignedCandidates = b.numberOfAssignedCandidates
+	newB.autoStake = b.autoStake
+	newB.rewardReceiver = b.rewardReceiver
+	newB.stakingTx = b.stakingTx
+}
+
+//Version :
+func (b *BeaconCommitteeStateV2) Version() int {
 	return SLASHING_VERSION
-}
-
-func (b *BeaconCommitteeStateV2) Clone() BeaconCommitteeState {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	return b.clone()
-}
-
-func (b *BeaconCommitteeStateV2) clone() *BeaconCommitteeStateV2 {
-	res := NewBeaconCommitteeStateV2()
-	res.beaconCommitteeStateSlashingBase = *b.beaconCommitteeStateSlashingBase.clone()
-	return res
 }
 
 func InitGenesisBeaconCommitteeStateV2(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV2 {

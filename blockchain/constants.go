@@ -11,24 +11,23 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                            = 1
-	RANDOM_NUMBER                      = 3
-	SHARD_BLOCK_VERSION                = 1
-	DefaultMaxBlkReqPerPeer            = 900
-	MinCommitteeSize                   = 3 // min size to run bft
-	WorkerNumber                       = 5
-	MAX_S2B_BLOCK                      = 30
-	MAX_BEACON_BLOCK                   = 5
-	LowerBoundPercentForIncDAO         = 3
-	UpperBoundPercentForIncDAO         = 10
-	TestRandom                         = true
-	ValidateTimeForSpamRequestTxs      = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
-	TransactionBatchSize               = 30
-	SpareTime                          = 1000             // in mili-second
-	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
-	divideShardCommitteesPartThreshold = 2
-	Duration                           = 1000000
-	MaxSubsetCommittees                = 2
+	VERSION                       = 1
+	RANDOM_NUMBER                 = 3
+	SHARD_BLOCK_VERSION           = 1
+	DefaultMaxBlkReqPerPeer       = 900
+	MinCommitteeSize              = 3 // min size to run bft
+	WorkerNumber                  = 5
+	MAX_S2B_BLOCK                 = 30
+	MAX_BEACON_BLOCK              = 5
+	LowerBoundPercentForIncDAO    = 3
+	UpperBoundPercentForIncDAO    = 10
+	TestRandom                    = true
+	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
+	TransactionBatchSize          = 30
+	SpareTime                     = 1000             // in mili-second
+	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
+	Duration                      = 1000000
+	MaxSubsetCommittees           = 2
 )
 
 // burning addresses
@@ -85,7 +84,12 @@ const (
 	MainnetBNBFullNodeHost     = "dataseed1.ninicoin.io"
 	MainnetBNBFullNodeProtocol = "https"
 	MainnetBNBFullNodePort     = "443"
-	MainnetPortalFeeder        = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
+
+	MainnetPortalFeeder = "12RwJVcDx4SM4PvjwwPrCRPZMMRT9g6QrnQUHD54EbtDb6AQbe26ciV6JXKyt4WRuFQVqLKqUUbb7VbWxR5V6KaG9HyFbKf6CrRxhSm"
+
+	// Enable Feature Flag
+	MainnetEnablePortalRelaying = 1
+	MainnetEnablePortalV3       = 0
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -148,6 +152,10 @@ const (
 	TestnetBNBFullNodeProtocol = "https"
 	TestnetBNBFullNodePort     = "443"
 	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+
+	// Enable Feature Flag
+	TestnetEnablePortalRelaying = 1
+	TestnetEnablePortalV3       = 0
 )
 
 // CONSTANT for network TESTNET-2
@@ -179,7 +187,7 @@ const (
 
 	//board and proposal parameters
 	Testnet2BasicReward                      = 400000000 //40 mili PRV
-	Testnet2ETHContractAddressStr            = "0x7c7e371D1e25771f2242833C1A354dCE846f3ec8"
+	Testnet2ETHContractAddressStr            = "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
 	Testnet2IncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	Testnet2CentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 
@@ -193,6 +201,10 @@ const (
 	Testnet2BNBFullNodeProtocol = "https"
 	Testnet2BNBFullNodePort     = "443"
 	Testnet2PortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+
+	// Enable Feature Flag
+	Testnet2EnablePortalRelaying = 1
+	Testnet2EnablePortalV3       = 0
 )
 
 // VARIABLE for testnet

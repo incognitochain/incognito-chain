@@ -177,7 +177,6 @@ func (chain *ShardChain) CreateNewBlock(
 		Logger.log.Error(err)
 		return nil, err
 	}
-
 	if version >= 2 {
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
@@ -346,14 +345,14 @@ func (chain *ShardChain) GetProposerByTimeSlot(
 	committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int, error) {
 	lenProposers := 0
 	beaconHeight := chain.Blockchain.BeaconChain.GetFinalView().GetHeight()
-	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV2 {
+	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV2Height {
 		tempCommitteeInfo, err := chain.Blockchain.getTempCommitteeInfoByHash(committeeViewHash, shardID)
 		if err != nil {
 			return incognitokey.CommitteePublicKey{}, -1, err
 		}
 		beaconHeight = tempCommitteeInfo.BeaconHeight()
 	}
-	if beaconHeight >= chain.Blockchain.config.ChainParams.ConsensusV4Height {
+	if beaconHeight >= chain.Blockchain.config.ChainParams.BlockProducingV3Height {
 		lenProposers = chain.Blockchain.config.ChainParams.NumberOfShardFixedBlockValidators
 	} else {
 		lenProposers = chain.Blockchain.GetBestStateShard(shardID).MinShardCommitteeSize
@@ -367,7 +366,7 @@ func (chain *ShardChain) SigningCommittees(
 ) []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
 	beaconHeight := chain.Blockchain.BeaconChain.GetFinalView().GetHeight()
-	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV2 {
+	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV2Height {
 		tempCommitteeInfo, err := chain.Blockchain.getTempCommitteeInfoByHash(committeeViewHash, shardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}
@@ -375,7 +374,7 @@ func (chain *ShardChain) SigningCommittees(
 		beaconHeight = tempCommitteeInfo.BeaconHeight()
 	}
 
-	if beaconHeight >= chain.Blockchain.config.ChainParams.ConsensusV4Height {
+	if beaconHeight >= chain.Blockchain.config.ChainParams.BlockProducingV3Height {
 		for i, v := range committees {
 			if (i % MaxSubsetCommittees) == (proposerIndex % MaxSubsetCommittees) {
 				res = append(res, v)

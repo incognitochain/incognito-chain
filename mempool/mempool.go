@@ -226,7 +226,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	if !tp.checkRelayShard(tx) && !tp.checkPublicKeyRole(tx) {
 		err := NewMempoolTxError(UnexpectedTransactionError, errors.New("Unexpected Transaction From Shard "+fmt.Sprintf("%d", senderShardID)))
-		Logger.log.Error(err)
+		Logger.log.Debug(err)
 		return &common.Hash{}, &TxDesc{}, err
 	}
 	beaconView := tp.config.BlockChain.BeaconChain.GetFinalView().(*blockchain.BeaconBestState)
@@ -235,15 +235,23 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	if uint64(len(tp.pool)) >= tp.config.MaxTx {
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
-	if tx.GetType() == common.TxReturnStakingType{
+	if tx.GetMetadata() != nil {
+		currentEpoch := common.GetEpochFromBeaconHeight(uint64(beaconHeight), tp.config.BlockChain.GetChainParams().Epoch)
+		isFeatureFlag, isEnable := tp.checkEnableFeatureFlagMetadata(tx.GetMetadataType(), currentEpoch)
+		if isFeatureFlag && !isEnable {
+			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("This tx %v with metadata %v is disable", tx.Hash().String(), tx.GetMetadataType()))
+		}
+	}
+
+	if tx.GetType() == common.TxReturnStakingType {
 		return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", tx.Hash().String()))
 	}
-	if tx.GetType() == common.TxCustomTokenPrivacyType{
+	if tx.GetType() == common.TxCustomTokenPrivacyType {
 		tempTx, ok := tx.(*transaction.TxCustomTokenPrivacy)
 		if !ok {
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("cannot detect transaction type for tx %+v", tx.Hash().String()))
 		}
-		if tempTx.TxPrivacyTokenData.Mintable{
+		if tempTx.TxPrivacyTokenData.Mintable {
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
 		}
 	}
@@ -265,13 +273,25 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	return hash, txDesc, err
 }
 
+func hasCommitteeRelatedTx(txs ...metadata.Transaction) bool {
+	for _, tx := range txs {
+		if tx.GetMetadata() != nil {
+			switch tx.GetMetadata().GetType() {
+			case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // This function is safe for concurrent access.
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(tx))
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -290,7 +310,7 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(txs...))
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -392,9 +412,9 @@ func (tp *TxPool) checkFees(
 		beaconStateDB, err := tp.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), tp.config.DataBase[common.BeaconChainDataBaseID])
 		if err != nil {
 			Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
-					fmt.Errorf("transaction %+v - cannot get beacon state db at height: %d",
-						tx.Hash().String(), beaconHeight)))
-				return false
+				fmt.Errorf("transaction %+v - cannot get beacon state db at height: %d",
+					tx.Hash().String(), beaconHeight)))
+			return false
 		}
 
 		// check transaction fee for meta data
@@ -810,6 +830,44 @@ func (tp *TxPool) RemoveTx(txs []metadata.Transaction, isInBlock bool) {
 	return
 }
 
+// RemoveStuckTx is to remove a stuck tx from mempool by passing tx hash (not by a hash built from tx object)
+func (tp *TxPool) RemoveStuckTx(txHash common.Hash, tx metadata.Transaction) {
+	tp.mtx.Lock()
+	defer tp.mtx.Unlock()
+
+	if tp.config.PersistMempool {
+		err := tp.removeTransactionFromDatabaseMP(&txHash)
+		if err != nil {
+			Logger.log.Error(err)
+		}
+	}
+
+	// remove tx by hash from mempool
+	if _, exists := tp.pool[txHash]; exists {
+		delete(tp.pool, txHash)
+		atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+	}
+	if _, exists := tp.poolSerialNumbersHashList[txHash]; exists {
+		delete(tp.poolSerialNumbersHashList, txHash)
+	}
+	serialNumberHashList := tx.ListSerialNumbersHashH()
+	hash := common.HashArrayOfHashArray(serialNumberHashList)
+	if _, exists := tp.poolSerialNumberHash[hash]; exists {
+		delete(tp.poolSerialNumberHash, hash)
+		// Using the same list serial number to delete new transaction out of pool
+		// this new transaction maybe not exist
+		if _, exists := tp.pool[hash]; exists {
+			delete(tp.pool, hash)
+			atomic.StoreInt64(&tp.lastUpdated, time.Now().Unix())
+		}
+		if _, exists := tp.poolSerialNumbersHashList[hash]; exists {
+			delete(tp.poolSerialNumbersHashList, hash)
+		}
+	}
+	tp.removeRequestStopStakingByTxHash(txHash)
+	tp.TriggerCRemoveTxs(tx)
+}
+
 /*
 	- Remove transaction out of pool
 		+ Tx Description pool
@@ -1111,6 +1169,16 @@ func (tp *TxPool) calPoolSize() uint64 {
 		totalSize += size
 	}
 	return totalSize
+}
+
+func (tp *TxPool) checkEnableFeatureFlagMetadata(metaType int, epoch uint64) (bool, bool) {
+	bc := tp.config.BlockChain
+	if metadata.IsPortalRelayingMetaType(metaType) {
+		return true, bc.IsEnableFeature(common.PortalRelayingFlag, epoch)
+	} else if metadata.IsPortalMetaTypeV3(metaType) {
+		return true, bc.IsEnableFeature(common.PortalV3Flag, epoch)
+	}
+	return false, false
 }
 
 // ----------- transaction.MempoolRetriever's implementation -----------------

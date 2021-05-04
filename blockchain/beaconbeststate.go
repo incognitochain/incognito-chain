@@ -77,6 +77,8 @@ type BeaconBestState struct {
 	FeatureStateDBRootHash   common.Hash
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
+
+	pdeState *CurrentPDEState
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -452,6 +454,9 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.beaconCommitteeState = target.beaconCommitteeState.Clone()
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
 	beaconBestState.finishSyncManager = target.finishSyncManager.Clone()
+	if target.pdeState != nil {
+		beaconBestState.pdeState = target.pdeState.Copy()
+	}
 
 	return nil
 }
@@ -630,7 +635,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 	slashingPenalty := make(map[string]signaturecounter.Penalty)
 	if beaconBestState.BeaconHeight != 1 &&
 		beaconBestState.CommitteeStateVersion() == committeestate.SLASHING_VERSION &&
-		params.EnableSlashingStakingFlowV2 >= beaconBestState.BeaconHeight {
+		beaconBestState.BeaconHeight >= params.EnableSlashingStakingFlowV2 {
 		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
 	} else {
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
@@ -651,7 +656,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		NumberOfFixedShardBlockValidator: params.NumberOfShardFixedBlockValidators,
 		MaxShardCommitteeSize:            params.MaxShardCommitteeSize,
 		MissingSignaturePenalty:          slashingPenalty,
-		StakingV3Height:                  params.StakingFlowV3,
+		StakingV3Height:                  params.StakingFlowV3Height,
 		EpochLengthV1:                    params.Epoch,
 	}
 }
@@ -659,6 +664,14 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	params *Params,
 ) *committeestate.BeaconCommitteeStateEnvironment {
+	slashingPenalty := make(map[string]signaturecounter.Penalty)
+	if beaconBestState.BeaconHeight != 1 &&
+		beaconBestState.CommitteeStateVersion() == committeestate.SLASHING_VERSION &&
+		beaconBestState.BeaconHeight >= params.EnableSlashingStakingFlowV2 {
+		slashingPenalty = beaconBestState.missingSignatureCounter.GetAllSlashingPenalty()
+	} else {
+		slashingPenalty = make(map[string]signaturecounter.Penalty)
+	}
 	return &committeestate.BeaconCommitteeStateEnvironment{
 		BeaconHeight:                     beaconBestState.BeaconHeight,
 		BeaconHash:                       beaconBestState.BestBlockHash,
@@ -669,8 +682,8 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		ConsensusStateDB:                 beaconBestState.consensusStateDB,
 		MaxShardCommitteeSize:            params.MaxShardCommitteeSize,
 		NumberOfFixedShardBlockValidator: params.NumberOfShardFixedBlockValidators,
-		MissingSignaturePenalty:          beaconBestState.missingSignatureCounter.GetAllSlashingPenalty(),
-		StakingV3Height:                  params.StakingFlowV3,
+		MissingSignaturePenalty:          slashingPenalty,
+		StakingV3Height:                  params.StakingFlowV3Height,
 		EpochLengthV1:                    params.Epoch,
 	}
 }
@@ -699,8 +712,8 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 	//init version of committeeState here
 	version := committeestate.VersionByBeaconHeight(
 		beaconBestState.BeaconHeight,
-		bc.config.ChainParams.StakingFlowV2,
-		bc.config.ChainParams.StakingFlowV3)
+		bc.config.ChainParams.StakingFlowV2Height,
+		bc.config.ChainParams.StakingFlowV3Height)
 
 	shardCommonPool := []incognitokey.CommitteePublicKey{}
 	numberOfAssignedCandidates := 0
@@ -709,7 +722,7 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 	if version != committeestate.SELF_SWAP_SHARD_VERSION {
 		shardCommonPool = nextEpochShardCandidate
 		swapRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForSwapRule(
-			beaconBestState.BeaconHeight, bc.config.ChainParams.StakingFlowV3,
+			beaconBestState.BeaconHeight, bc.config.ChainParams.StakingFlowV3Height,
 		)
 		swapRule = committeestate.SwapRuleByEnv(swapRuleEnv)
 
@@ -758,12 +771,12 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 	beaconBestState.beaconCommitteeState = committeeState
 }
 
-func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaconBlock *types.BeaconBlock) error {
-	committees := curView.GetShardCommitteeFlattenList()
+func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockChain, beaconBlock *types.BeaconBlock) error {
+	committees := beaconBestState.GetShardCommitteeFlattenList()
 	missingSignatureCounter := signaturecounter.NewDefaultSignatureCounter(committees)
-	curView.SetMissingSignatureCounter(missingSignatureCounter)
+	beaconBestState.SetMissingSignatureCounter(missingSignatureCounter)
 
-	firstBeaconHeightOfEpoch := bc.GetFirstBeaconHeightInEpoch(curView.Epoch)
+	firstBeaconHeightOfEpoch := bc.GetFirstBeaconHeightInEpoch(beaconBestState.Epoch)
 	tempBeaconBlock := beaconBlock
 	tempBeaconHeight := beaconBlock.Header.Height
 	allShardStates := make(map[byte][]types.ShardState)
@@ -783,7 +796,7 @@ func initMissingSignatureCounter(bc *BlockChain, curView *BeaconBestState, beaco
 		tempBeaconHeight--
 	}
 
-	return curView.countMissingSignature(bc, allShardStates)
+	return beaconBestState.countMissingSignature(bc, allShardStates)
 }
 
 func (beaconBestState *BeaconBestState) CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey {
@@ -805,10 +818,10 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 }
 
 // TODO: @hung pay reward v2 when upgrade to v3
-func (beaconBestState *BeaconBestState) upgradeCommitteeEngine(bc *BlockChain) {
+func (beaconBestState *BeaconBestState) upgradeCommitteeState(bc *BlockChain) {
 	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpgrading(
 		beaconBestState.BeaconHeight,
-		bc.config.ChainParams.StakingFlowV3,
+		bc.config.ChainParams.StakingFlowV3Height,
 		beaconBestState.BestBlockHash,
 	)
 

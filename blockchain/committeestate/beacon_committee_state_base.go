@@ -179,6 +179,15 @@ func (b beaconCommitteeStateBase) clone() *beaconCommitteeStateBase {
 	return newB
 }
 
+func (b *beaconCommitteeStateBase) reset() {
+	b.beaconCommittee = []string{}
+	b.shardCommittee = make(map[byte][]string)
+	b.shardSubstitute = make(map[byte][]string)
+	b.autoStake = make(map[string]bool)
+	b.rewardReceiver = make(map[string]privacy.PaymentAddress)
+	b.stakingTx = make(map[string]common.Hash)
+}
+
 func (b beaconCommitteeStateBase) Version() int {
 	panic("do not use function of beaconCommitteeStateBase struct")
 }
