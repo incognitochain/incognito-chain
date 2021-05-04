@@ -427,6 +427,9 @@ func (chain *ShardChain) CreateNewBlock(
 
 	linkedView := chain.GetBestView().(*ShardBestState) //this should be pass from consensus package
 	createFlow, err := chain.getDataBeforeBlockProducing(linkedView, version, proposer, round, startTime, committeeViewHash)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := chain.buildBlockWithoutHeaderRootHash(createFlow); err != nil {
 		return nil, err
@@ -646,8 +649,16 @@ func (chain *ShardChain) validateBlockBody(flow *ShardValidationFlow) error {
 	if err != nil {
 		return NewBlockChainError(GenerateInstructionError, err)
 	}
-	///
+
+	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height)
+	if err != nil {
+		return err
+	}
+
 	totalInstructions := []string{}
+	for _, value := range txInstructions {
+		totalInstructions = append(totalInstructions, value...)
+	}
 	for _, value := range instructions {
 		totalInstructions = append(totalInstructions, value...)
 	}
@@ -657,7 +668,7 @@ func (chain *ShardChain) validateBlockBody(flow *ShardValidationFlow) error {
 	}
 
 	if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {
-		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but %+v", shardBlock.Header.InstructionsRoot, hash))
+		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v", shardBlock.Header.InstructionsRoot, hash))
 	}
 
 	//check crossshard output coin content
