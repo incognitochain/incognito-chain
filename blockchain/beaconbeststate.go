@@ -104,7 +104,7 @@ func NewBeaconBestState() *BeaconBestState {
 	return beaconBestState
 }
 func NewBeaconBestStateWithConfig(netparam *Params,
-	beaconCommitteeEngine committeestate.BeaconCommitteeState,
+	beaconCommitteeState committeestate.BeaconCommitteeState,
 ) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
@@ -121,7 +121,7 @@ func NewBeaconBestStateWithConfig(netparam *Params,
 	beaconBestState.LastCrossShardState = make(map[byte]map[byte]uint64)
 	beaconBestState.BlockInterval = netparam.MinBeaconBlockInterval
 	beaconBestState.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
-	beaconBestState.beaconCommitteeState = beaconCommitteeEngine
+	beaconBestState.beaconCommitteeState = beaconCommitteeState
 	return beaconBestState
 }
 
@@ -429,7 +429,7 @@ func (beaconBestState *BeaconBestState) SyncingValidators() map[byte][]incognito
 	return beaconBestState.beaconCommitteeState.GetSyncingValidators()
 }
 
-//CommitteeEngineVersion ...
+//CommitteeStateVersion ...
 func (beaconBestState *BeaconBestState) CommitteeStateVersion() int {
 	return beaconBestState.beaconCommitteeState.Version()
 }
@@ -688,8 +688,8 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 	}
 }
 
-func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
-	Logger.log.Infof("Init Beacon Committee Engine V1, %+v", beaconBestState.BeaconHeight)
+func (beaconBestState *BeaconBestState) initCommitteeState(bc *BlockChain) {
+	Logger.log.Infof("Init Beacon Committee State %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
@@ -714,6 +714,7 @@ func (beaconBestState *BeaconBestState) initCommitteeEngine(bc *BlockChain) {
 		beaconBestState.BeaconHeight,
 		bc.config.ChainParams.StakingFlowV2Height,
 		bc.config.ChainParams.StakingFlowV3Height)
+	Logger.log.Info("[dcs] version:", version)
 
 	shardCommonPool := []incognitokey.CommitteePublicKey{}
 	numberOfAssignedCandidates := 0
@@ -825,8 +826,8 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeState(bc *BlockChain) {
 		beaconBestState.BestBlockHash,
 	)
 
-	committeeEngine := beaconBestState.beaconCommitteeState.Upgrade(env)
-	beaconBestState.beaconCommitteeState = committeeEngine
+	committeeState := beaconBestState.beaconCommitteeState.Upgrade(env)
+	beaconBestState.beaconCommitteeState = committeeState
 }
 
 func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePublicKeys []string, shardID byte) bool {

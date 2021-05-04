@@ -117,7 +117,6 @@ func (blockchain *BlockChain) InitChainState() error {
 	blockchain.BeaconChain = NewBeaconChain(multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.BeaconChainKey)
 	var err error
 	blockchain.BeaconChain.hashHistory, err = lru.New(1000)
-	blockchain.BeaconChain.committeeCache, err = lru.New(1000)
 	if err != nil {
 		return err
 	}
@@ -465,7 +464,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		}
 		// finish reproduce
 		if !blockchain.BeaconChain.multiView.AddView(v) {
-			Logger.log.Info("[dcs] error")
 			panic("Restart beacon views fail")
 		}
 	}
@@ -476,7 +474,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			if err != nil {
 				return err
 			}
-			Logger.log.Infof("Init Missing Signature Counter, %+v, height %+v", beaconState.missingSignatureCounter, beaconState.BeaconHeight)
 		}
 		beaconState.finishSyncManager = finishsync.NewFinishManager()
 	}
@@ -903,7 +900,6 @@ func (blockchain *BlockChain) getCommitteesForSigning(
 			}
 			beaconHeight = tempCommitteeInfo.BeaconHeight()
 		}
-
 		if beaconHeight >= blockchain.config.ChainParams.BlockProducingV3Height {
 			res = GetSigningCommitteeV3(committees, block.GetProposeTime(), blockchain.config.ChainParams.NumberOfShardFixedBlockValidators)
 		} else {

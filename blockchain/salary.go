@@ -294,6 +294,8 @@ func calculateRewardV3(
 				percentForIncognitoDAO,
 			)
 
+			Logger.log.Info("[dcs] env.MaxSubsetCommittees:", env.MaxSubsetCommittees)
+
 			rewardForBeacon, rewardForShardSubset, rewardForDAO, rewardForCustodian, err := splitRewardRuleProcessor.SplitReward(env)
 			if err != nil {
 				return nil, nil, nil, nil, err

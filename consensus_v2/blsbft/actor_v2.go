@@ -73,7 +73,7 @@ func (actorV2 *actorV2) Run() error {
 		//init view maps
 		ticker := time.Tick(200 * time.Millisecond)
 		cleanMemTicker := time.Tick(5 * time.Minute)
-		actorV2.logger.Infof("init bls-bft-%+v, consensus for chain %+v", actorV2.blockVersion, actorV2.chainKey)
+		actorV2.logger.Infof("init bls-bft-v2 consensus for chain %+v", actorV2.chainKey)
 
 		for { //actor loop
 			select {
@@ -508,7 +508,7 @@ func (actorV2 *actorV2) proposeBlock(
 	}
 
 	if block != nil {
-		actorV2.logger.Infof("[dcs] create block %v hash %v, propose time %v, produce time %v", block.GetHeight(), block.Hash().String(), block.(types.BlockInterface).GetProposeTime(), block.(types.BlockInterface).GetProduceTime())
+		actorV2.logger.Infof("create block %v hash %v, propose time %v, produce time %v", block.GetHeight(), block.Hash().String(), block.(types.BlockInterface).GetProposeTime(), block.(types.BlockInterface).GetProduceTime())
 	} else {
 		actorV2.logger.Infof("create block fail, time: %v", time.Since(time1).Seconds())
 		return nil, NewConsensusError(BlockCreationError, errors.New("block is nil"))
@@ -586,7 +586,7 @@ func (actorV2 *actorV2) proposeShardBlock(
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
 	} else {
-		actorV2.logger.Infof("[dcs] CreateNewBlockFromOldBlock, Block Height %+v hash %+v", block.GetHeight(), block.Hash().String())
+		actorV2.logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v hash %+v", block.GetHeight(), block.Hash().String())
 		newBlock, err = actorV2.chain.CreateNewBlockFromOldBlock(block, b58Str, actorV2.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
@@ -739,7 +739,7 @@ func (actorV2 *actorV2) handleProposeMsg(proposeMsg BFTPropose) error {
 
 	userKeySet := actorV2.getUserKeySetForSigning(signingCommittees, actorV2.userKeySet)
 	if len(userKeySet) == 0 {
-		actorV2.logger.Debug("[dcs] Not in round for voting")
+		actorV2.logger.Debug("Not in round for voting")
 	}
 
 	if v, ok := actorV2.receiveBlockByHash[blkHash]; !ok {
@@ -787,7 +787,6 @@ func (actorV2 *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 				if b.block != nil && pubKey.GetMiningKeyBase58(actorV2.GetConsensusName()) == b.proposerMiningKeyBase58 { // if this node is proposer and not sending vote
 					var err error
 					if err = actorV2.validateBlock(actorV2.chain.GetBestView(), b); err != nil {
-						actorV2.logger.Info("[dcs] 0")
 						err = actorV2.voteForBlock(b)
 						if err != nil {
 							actorV2.logger.Debug(err)
@@ -889,7 +888,7 @@ func (actorV2 *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo 
 	}
 
 	if !shouldVote {
-		actorV2.logger.Infof("Can't vote for this block %v height %v timeslot %v",
+		actorV2.logger.Debugf("Can't vote for this block %v height %v timeslot %v",
 			proposeBlockInfo.block.Hash().String(), proposeBlockInfo.block.GetHeight(), blkCreateTimeSlot)
 		return errors.New("Can't vote for this block")
 	}

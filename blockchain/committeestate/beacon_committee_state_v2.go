@@ -298,3 +298,15 @@ func (b *beaconCommitteeStateSlashingBase) addData(env *BeaconCommitteeStateEnvi
 		env.numberOfValidator[i] += len(b.shardSubstitute[byte(i)])
 	}
 }
+
+func (b *BeaconCommitteeStateV2) Clone() BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.clone()
+}
+
+func (b *BeaconCommitteeStateV2) clone() *BeaconCommitteeStateV2 {
+	res := NewBeaconCommitteeStateV2()
+	res.beaconCommitteeStateSlashingBase = *b.beaconCommitteeStateSlashingBase.clone()
+	return res
+}

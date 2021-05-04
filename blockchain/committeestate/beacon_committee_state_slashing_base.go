@@ -48,7 +48,7 @@ func newBeaconCommitteeStateSlashingBaseWithValue(
 	}
 }
 
-func (b beaconCommitteeStateSlashingBase) Version() int {
+func (b *beaconCommitteeStateSlashingBase) Version() int {
 	panic("implement me")
 }
 
@@ -58,7 +58,7 @@ func (b *beaconCommitteeStateSlashingBase) Clone() BeaconCommitteeState {
 	return b.clone()
 }
 
-func (b beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingBase {
+func (b *beaconCommitteeStateSlashingBase) clone() *beaconCommitteeStateSlashingBase {
 	res := newBeaconCommitteeStateSlashingBase()
 	res.beaconCommitteeStateBase = *b.beaconCommitteeStateBase.clone()
 

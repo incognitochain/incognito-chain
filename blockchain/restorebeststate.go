@@ -18,7 +18,7 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	beaconBestState.PreviousBestBlockHash = block.PreviousBestBlockHash()
 
 	if includeCommittee {
-		beaconBestState.initCommitteeEngine(blockchain)
+		beaconBestState.initCommitteeState(blockchain)
 		if beaconBestState.BeaconHeight == blockchain.config.ChainParams.StakingFlowV2Height {
 			beaconBestState.upgradeCommitteeState(blockchain)
 		}

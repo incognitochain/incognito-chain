@@ -613,15 +613,19 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 
 	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
 		genesisBeaconBlock.Body.Instructions, false, false)
-	if blockchain.config.ChainParams.StakingFlowV2Height == 1 {
-		beaconBestState.beaconCommitteeState = committeestate.InitGenesisBeaconCommitteeStateV3(beaconCommitteeStateEnv)
-	} else {
-		if blockchain.config.ChainParams.StakingFlowV2Height == 1 {
-			beaconBestState.beaconCommitteeState = committeestate.InitGenesisBeaconCommitteeStateV2(beaconCommitteeStateEnv)
-		} else {
-			beaconBestState.beaconCommitteeState = committeestate.InitGenesisBeaconCommitteeStateV1(beaconCommitteeStateEnv)
-		}
+
+	var committeeState committeestate.BeaconCommitteeState
+	switch genesisBeaconBlock.Header.Height {
+	case blockchain.config.ChainParams.StakingFlowV3Height:
+		committeeState = committeestate.InitGenesisBeaconCommitteeStateV3(beaconCommitteeStateEnv)
+	case blockchain.config.ChainParams.StakingFlowV2Height:
+		committeeState = committeestate.InitGenesisBeaconCommitteeStateV2(beaconCommitteeStateEnv)
+	default:
+		committeeState = committeestate.InitGenesisBeaconCommitteeStateV1(beaconCommitteeStateEnv)
 	}
+	Logger.log.Info("[dcs] committeeState.Version():", committeeState.Version())
+	beaconBestState.beaconCommitteeState = committeeState
+
 	beaconBestState.finishSyncManager = finishsync.NewFinishManager()
 	beaconBestState.Epoch = 1
 	return nil
@@ -629,7 +633,10 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 
 func (curView *BeaconBestState) countMissingSignature(bc *BlockChain, allShardStates map[byte][]types.ShardState) error {
 	for shardID, shardStates := range allShardStates {
-		cache := new(lru.Cache)
+		cache, err := lru.New(1000)
+		if err != nil {
+			return err
+		}
 		for _, shardState := range shardStates {
 			// skip genesis block
 			if shardState.Height == 1 {
@@ -658,36 +665,26 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	shardState types.ShardState,
 ) error {
 	beaconHashForCommittee := shardState.CommitteeFromBlock
-
-	Logger.log.Infof("Add Missing Signature | ShardState %+v", shardState)
-	Logger.log.Infof("Add Missing Signature | committee from block %+v", beaconHashForCommittee)
-
 	if beaconHashForCommittee.IsZeroValue() {
 		return nil
 	}
+	committees := []incognitokey.CommitteePublicKey{}
 	var err error
 	tempCommittees, ok := cache.Get(beaconHashForCommittee)
-	committees := tempCommittees.([]incognitokey.CommitteePublicKey)
 	if !ok {
 		committees, err = bc.BeaconChain.CommitteesFromViewHashForShard(beaconHashForCommittee, shardID)
 		if err != nil {
 			return err
 		}
 		cache.Add(beaconHashForCommittee, committees)
+	} else {
+		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
 	if curView.BeaconHeight >= bc.config.ChainParams.BlockProducingV3Height {
 		committees = GetSigningCommitteeV3(committees, shardState.ProposerTime, bc.config.ChainParams.NumberOfShardFixedBlockValidators)
 	}
 
-	logCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
-	Logger.log.Infof("Add Missing Signature | Shard %+v, Validation Data: %+v, \n Committees: %+v", shardID, shardState.ValidationData, logCommittees)
-
-	err2 := curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
-	if err2 != nil {
-		return err2
-	}
-
-	return nil
+	return curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
 }
 
 func (curView *BeaconBestState) countMissingSignatureV1(
@@ -704,23 +701,12 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 		return nil
 	}
 
-	Logger.log.Infof("Add Missing Signature | ShardState %+v", shardState)
-	Logger.log.Infof("Add Missing Signature | Shard ID %+v , committee from height %+v", shardID, shardState.Height)
-
 	committees, err := getOneShardCommitteeFromShardDB(bc.GetShardChainDatabase(shardID), shardID, shardBlock.Header.PreviousBlockHash)
 	if err != nil {
 		return nil
 	}
 
-	logCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
-	Logger.log.Infof("Add Missing Signature | Shard %+v, Validation Data: %+v, \n Committees: %+v", shardID, shardState.ValidationData, logCommittees)
-
-	err = curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
 }
 
 func (blockchain *BlockChain) processStoreBeaconBlock(
