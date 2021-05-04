@@ -243,3 +243,16 @@ func (sim *NodeEngine) TrackAccount(acc account.Account) (int, int) {
 	}
 	return -1, -1
 }
+
+func (sim *NodeEngine) PrintChainInfo(chainIDs []int) {
+	chain := sim.GetBlockchain()
+	beacon := chain.BeaconChain
+	for _, cid := range chainIDs {
+		if cid == -1 {
+			fmt.Printf("Beacon chain height %v hash %v epoch %v\n", beacon.CurrentHeight(), beacon.GetBestViewHash(), beacon.GetEpoch())
+		} else {
+			shard := chain.GetChain(cid).(*blockchain.ShardChain)
+			fmt.Printf("Shard chain %v height %v hash %v beacon height %v committeefromblock %v\n", shard.GetShardID(), shard.CurrentHeight(), shard.GetBestViewHash(), shard.GetBestState().BeaconHeight, shard.GetBestState().CommitteeFromBlock().String())
+		}
+	}
+}

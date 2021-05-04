@@ -377,6 +377,14 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 	var block types.BlockInterface = nil
 	var err error
 
+	for _, arg := range args {
+		switch arg.(type) {
+		case *Execute:
+			exec := arg.(*Execute)
+			chainArray = exec.appliedChain
+		}
+	}
+
 	//Create blocks for apply chain
 	for _, chainID := range chainArray {
 		var proposerPK incognitokey.CommitteePublicKey

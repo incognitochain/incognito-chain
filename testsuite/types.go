@@ -10,6 +10,28 @@ import (
 	"github.com/incognitochain/incognito-chain/syncker"
 )
 
+type Execute struct {
+	sim          *NodeEngine
+	appliedChain []int
+}
+
+func (exec *Execute) GenerateBlock(args ...interface{}) *Execute {
+	args = append(args, exec)
+	exec.sim.GenerateBlock(args...)
+	return exec
+}
+
+func (exec *Execute) NextRound() {
+	exec.sim.NextRound()
+}
+
+func (sim *NodeEngine) ApplyChain(chain_array ...int) *Execute {
+	return &Execute{
+		sim,
+		chain_array,
+	}
+}
+
 type Syncker interface {
 	GetCrossShardBlocksForShardProducer(state *blockchain.ShardBestState, limit map[byte][]uint64) map[byte][]interface{}
 	GetCrossShardBlocksForShardValidator(state *blockchain.ShardBestState, list map[byte][]uint64) (map[byte][]interface{}, error)

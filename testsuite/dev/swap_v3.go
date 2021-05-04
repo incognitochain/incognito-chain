@@ -2,11 +2,50 @@ package main
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	testsuite "github.com/incognitochain/incognito-chain/testsuite"
 	"github.com/incognitochain/incognito-chain/testsuite/account"
 )
+
+func Test_Shard_Stall_v3() {
+	chainParam := testsuite.NewChainParam(testsuite.ID_MAINNET)
+	chainParam.ActiveShards = 2
+	chainParam.BCHeightBreakPointNewZKP = 1
+	chainParam.BeaconHeightBreakPointBurnAddr = 1
+
+	chainParam.StakingFlowV2Height = 1
+	chainParam.Epoch = 20
+	chainParam.RandomTime = 10
+	common.TIMESLOT = chainParam.Timeslot
+	sim := testsuite.NewStandaloneSimulation("newsim", testsuite.Config{
+		ChainParam:       chainParam,
+		ConsensusVersion: 3,
+	})
+	for i := 0; i < 10; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+	sim.Pause()
+	sim.PrintChainInfo([]int{0, 1})
+	sim.ApplyChain(0).GenerateBlock().NextRound()
+	sim.ApplyChain(0).GenerateBlock().NextRound()
+	sim.ApplyChain(0).GenerateBlock().NextRound()
+	sim.ApplyChain(0).GenerateBlock().NextRound()
+	sim.PrintChainInfo([]int{0, 1})
+	sim.Pause()
+	sim.GenerateBlock().NextRound()
+	sim.Pause()
+	sim.GenerateBlock().NextRound()
+	sim.PrintChainInfo([]int{0, 1})
+	for i := 0; i < 100; i++ {
+		sim.ApplyChain(-1).GenerateBlock().NextRound()
+
+	}
+	for i := 0; i < 10; i++ {
+		sim.GenerateBlock().NextRound()
+		sim.PrintChainInfo([]int{0, 1})
+	}
+
+}
 
 func Test_Swap_v3() {
 	chainParam := testsuite.NewChainParam(testsuite.ID_MAINNET)
@@ -44,7 +83,8 @@ func Test_Swap_v3() {
 		sim.SendPRV(sim.GenesisAccount, acc, 1e14)
 		sim.GenerateBlock().NextRound()
 		sim.GenerateBlock().NextRound()
-		fmt.Println("send", acc.Name, len(sim.GetBlockchain().GetChain(0).GetBestView().GetBlock().(*types.ShardBlock).Body.Transactions))
+
+		fmt.Println("send", acc.Name)
 		stakers = append(stakers, acc)
 
 	}
