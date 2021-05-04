@@ -3,6 +3,7 @@ package txpool
 import (
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -68,6 +69,12 @@ type BlockTxsVerifier interface {
 	ValidateBatchRangeProof([]metadata.Transaction) (bool, error)
 }
 
+type FeeEstimator interface {
+	RegisterBlock(block *types.ShardBlock) error
+	EstimateFee(numBlocks uint64, tokenId *common.Hash) (uint64, error)
+	GetLimitFeeForNativeToken() uint64
+}
+
 type TxVerifier interface {
 	ValidateWithoutChainstate(metadata.Transaction) (bool, error)
 	ValidateWithChainState(
@@ -93,5 +100,8 @@ type TxVerifier interface {
 	) bool
 	UpdateTransactionStateDB(
 		newSDB *statedb.StateDB,
+	)
+	UpdateFeeEstimator(
+		estimator FeeEstimator,
 	)
 }

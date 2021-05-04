@@ -949,7 +949,7 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 		if txService.BlockChain.UsingNewPool() {
 			pM := txService.BlockChain.GetPoolManager()
 			if pM != nil {
-				tx = pM.GetTransactionByHash(txHashStr)
+				tx, err = pM.GetTransactionByHash(txHashStr)
 			} else {
 				err = errors.New("PoolManager is nil")
 			}
