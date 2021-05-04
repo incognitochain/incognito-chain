@@ -497,6 +497,15 @@ func isTxForUser(tx metadata.Transaction) bool {
 	if tx.GetType() == common.TxReturnStakingType {
 		return false
 	}
+	if tx.GetType() == common.TxRewardType {
+		if tx.GetMetadata() == nil {
+			return false
+		}
+		if tx.GetMetadataType() != metadata.WithDrawRewardRequestMeta {
+			return false
+		}
+
+	}
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
 		tempTx, ok := tx.(*transaction.TxCustomTokenPrivacy)
 		if !ok {
