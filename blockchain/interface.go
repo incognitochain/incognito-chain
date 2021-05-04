@@ -2,9 +2,9 @@ package blockchain
 
 import (
 	"context"
-	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -49,8 +49,8 @@ type Highway interface {
 }
 
 type Syncker interface {
-	GetCrossShardBlocksForShardProducer(toShard byte, list map[byte][]uint64) map[byte][]interface{}
-	GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error)
+	GetCrossShardBlocksForShardProducer(curView *ShardBestState, list map[byte][]uint64) map[byte][]interface{}
+	GetCrossShardBlocksForShardValidator(curView *ShardBestState, list map[byte][]uint64) (map[byte][]interface{}, error)
 	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 }

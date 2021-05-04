@@ -73,6 +73,16 @@ type ShardBestState struct {
 	shardCommitteeEngine       committeestate.ShardCommitteeEngine
 }
 
+
+func (shardBestState *ShardBestState) GetBestCrossShard() map[byte]uint64 {
+	res := make(map[byte]uint64)
+	for index, key := range shardBestState.BestCrossShard {
+		res[index] = key
+	}
+	return res
+}
+
+
 func (shardBestState *ShardBestState) GetCopiedConsensusStateDB() *statedb.StateDB {
 	return shardBestState.consensusStateDB.Copy()
 }

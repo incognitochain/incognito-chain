@@ -169,7 +169,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
-	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconProcessHeight)
+	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardBestState)
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
@@ -620,17 +620,17 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 //	  - Process valid block to extract:
 //	   + Cross output coin
 //	   + Cross Normal Token
-func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64) map[byte][]types.CrossTransaction {
+func (blockGenerator *BlockGenerator) getCrossShardData(curView *ShardBestState) map[byte][]types.CrossTransaction {
 	crossTransactions := make(map[byte][]types.CrossTransaction)
 	// get cross shard block
 	var allCrossShardBlock = make([][]*types.CrossShardBlock, blockGenerator.chain.config.ChainParams.ActiveShards)
-	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(toShard, nil) {
+	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(curView, nil) {
 		heightList := make([]uint64, len(v))
 		for i, b := range v {
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*types.CrossShardBlock))
 			heightList[i] = b.(*types.CrossShardBlock).GetHeight()
 		}
-		Logger.log.Infof("Shard %v, GetCrossShardBlocksForShardProducer from shard %v: %v", toShard, sid, heightList)
+		Logger.log.Infof("Shard %v, GetCrossShardBlocksForShardProducer from shard %v: %v", curView.ShardID, sid, heightList)
 	}
 
 	// allCrossShardBlock => already sort
