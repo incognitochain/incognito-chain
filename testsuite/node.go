@@ -384,16 +384,9 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		switch sim.config.ConsensusVersion {
 		case 1:
 			var producerPosition int
-			// if chainID == -1 {
-			// 	lastProposerIdx := chain.BeaconChain.GetBestView().(*blockchain.BeaconBestState).BeaconProposerIndex
-			// 	producerPosition = lastProposerIdx + 1%len(chain.BeaconChain.GetBestView().GetCommittee())
-			// } else {
-			// 	lastProposerIdx := chain.ShardChain[chainID].GetBestState().ShardProposerIdx
-			// 	producerPosition = lastProposerIdx + 1%len(chain.GetChain(chainID).GetBestView().GetCommittee())
-			// }
 			proposerPK = chain.GetChain(chainID).GetBestView().GetCommittee()[producerPosition]
-		case 2:
-			proposerPK, _ = chain.GetChain(chainID).GetBestView().GetProposerByTimeSlot((sim.timer.Now() / 10), 2)
+		case 2, 3:
+			proposerPK, _ = chain.GetChain(chainID).GetBestView().GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
 		}
 
 		proposerPkStr, _ := proposerPK.ToBase58()
@@ -401,12 +394,14 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		if chainID == -1 {
 			block, err = chain.BeaconChain.CreateNewBlock(sim.config.ConsensusVersion, proposerPkStr, 1, sim.timer.Now(), nil, common.Hash{})
 			if err != nil {
-				panic(err)
+				Logger.log.Error(err)
+				return sim
 			}
 		} else {
 			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(sim.config.ConsensusVersion, proposerPkStr, 1, sim.timer.Now(), nil, common.Hash{})
 			if err != nil {
-				panic(err)
+				Logger.log.Error(err)
+				return sim
 			}
 		}
 
@@ -419,10 +414,11 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		if chainID == -1 {
 			err = chain.VerifyPreSignBeaconBlock(block.(*types.BeaconBlock), true)
 			if err != nil {
-				panic(err)
+				Logger.log.Error(err)
+				return sim
 			}
 		} else {
-			err = chain.VerifyPreSignShardBlock(block.(*types.ShardBlock), nil, byte(chainID))
+			err = chain.ShardChain[byte(chainID)].ValidatePreSignBlock(block.(*types.ShardBlock), nil)
 			if err != nil {
 				panic(err)
 			}
@@ -443,7 +439,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 			}
 			//log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
 		} else {
-			err = chain.InsertShardBlock(block.(*types.ShardBlock), common.FULL_VALIDATION)
+			err = chain.ShardChain[byte(chainID)].InsertBlock(block.(*types.ShardBlock), common.FULL_VALIDATION)
 			if err != nil {
 				panic(err)
 			} else {
@@ -462,7 +458,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 //number of second we want simulation to forward
 //default = round interval
 func (sim *NodeEngine) NextRound() {
-	sim.timer.Forward(10)
+	sim.timer.Forward(int64(common.TIMESLOT))
 }
 
 func (sim *NodeEngine) InjectTx(txBase58 string) error {

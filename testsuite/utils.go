@@ -171,6 +171,55 @@ func GenerateCommitteeIndex(nCommittee int) []int {
 	return res
 }
 
+func (sim *NodeEngine) ShowAccountPosition(accounts []account.Account) {
+	chain := sim.GetBlockchain()
+	pkMap := make(map[string]string)
+	for _, acc := range accounts {
+		pkMap[acc.SelfCommitteePubkey] = acc.Name
+	}
+	shardWaitingList, _ := incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsWaitingList())
+	tmp := ""
+	for _, pk := range shardWaitingList {
+		if pkMap[pk] != "" {
+			tmp += pkMap[pk] + " "
+		} else {
+			tmp += "@@ "
+		}
+	}
+	fmt.Printf("WaitingList: %v\n", tmp)
+
+	shardPendingList := make(map[int][]string)
+	shardCommitteeList := make(map[int][]string)
+	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
+		shardPendingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsPendingList()[sid])
+		shardCommitteeList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsCommitteeList()[sid])
+	}
+
+	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
+		tmp = ""
+		for _, pk := range shardPendingList[sid] {
+			if pkMap[pk] != "" {
+				tmp += pkMap[pk] + " "
+			} else {
+				tmp += "@@ "
+			}
+		}
+		fmt.Printf("Pending Shard %v: %v\n", sid, tmp)
+	}
+
+	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
+		tmp = ""
+		for _, pk := range shardCommitteeList[sid] {
+			if pkMap[pk] != "" {
+				tmp += pkMap[pk] + " "
+			} else {
+				tmp += "@@ "
+			}
+		}
+		fmt.Printf("Committee Shard %v: %v\n", sid, tmp)
+	}
+}
+
 func (sim *NodeEngine) TrackAccount(acc account.Account) (int, int) {
 	chain := sim.GetBlockchain()
 	shardWaitingList, _ := incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsWaitingList())
@@ -180,9 +229,6 @@ func (sim *NodeEngine) TrackAccount(acc account.Account) (int, int) {
 		shardPendingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsPendingList()[sid])
 		shardCommitteeList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsCommitteeList()[sid])
 	}
-	//fmt.Println("shardWaitingList", shardWaitingList)
-	//fmt.Println("shardPendingList", shardPendingList)
-	//fmt.Println("shardCommitteeList", shardCommitteeList)
 	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
 		if common.IndexOfStr(acc.SelfCommitteePubkey, shardPendingList[sid]) > -1 {
 			return 1, common.IndexOfStr(acc.SelfCommitteePubkey, shardPendingList[sid])
