@@ -5,8 +5,10 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
@@ -138,6 +140,15 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 	defer t.Stop()
 	errChan := make(chan validateResult)
 	go func() {
+		if ok := isTxForUser(tx); !ok {
+			Logger.Debugf("This transaction %v can not be sent by user", tx.Hash().String())
+			errChan <- validateResult{
+				err:    errors.Errorf("This transaction %v can not be sent by user", tx.Hash().String()),
+				result: false,
+				cost:   0,
+			}
+			return
+		}
 		if _, exist := tp.Cacher.Get(tx.Hash().String()); exist {
 			log.Printf("[txTracing] Not validate tx %v cuz it found in cache, cost %v", txHash, time.Since(start))
 			errChan <- validateResult{
@@ -381,6 +392,7 @@ func (tp *TxsPool) getTxs(quit <-chan interface{}, cValidTxs chan txInfoTemp) {
 			Logger.Debugf("[txTracing] Received new tx %v, send to worker %v", txHah, workerID)
 			nWorkers <- 1
 			go func() {
+
 				isValid, err, vTime := tp.ValidateNewTx(msg)
 				<-nWorkers
 				if err != nil {
@@ -478,5 +490,21 @@ func checkTxAction(
 		return false
 	}
 	remining[act] = limit - 1
+	return true
+}
+
+func isTxForUser(tx metadata.Transaction) bool {
+	if tx.GetType() == common.TxReturnStakingType {
+		return false
+	}
+	if tx.GetType() == common.TxCustomTokenPrivacyType {
+		tempTx, ok := tx.(*transaction.TxCustomTokenPrivacy)
+		if !ok {
+			return false
+		}
+		if tempTx.TxPrivacyTokenData.Mintable {
+			return false
+		}
+	}
 	return true
 }

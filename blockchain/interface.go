@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
@@ -25,6 +25,8 @@ type TxPool interface {
 
 type FeeEstimator interface {
 	RegisterBlock(block *types.ShardBlock) error
+	EstimateFee(numBlocks uint64, tokenId *common.Hash) (uint64, error)
+	GetLimitFeeForNativeToken() uint64
 }
 
 type ConsensusEngine interface {

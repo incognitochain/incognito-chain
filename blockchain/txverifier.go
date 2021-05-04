@@ -1,6 +1,8 @@
 package blockchain
 
 import (
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -17,6 +19,8 @@ type TxsVerifier struct {
 	txPool txpool.TxPool
 
 	whitelist map[string]interface{}
+
+	feeEstimator FeeEstimator
 }
 
 func (v *TxsVerifier) UpdateTransactionStateDB(
@@ -93,6 +97,80 @@ func (v *TxsVerifier) ValidateTxsSig(
 			}
 		}(tx)
 	}
+}
+
+func (v *TxsVerifier) checkFees(
+	beaconHeight uint64,
+	tx metadata.Transaction,
+	beaconStateDB *statedb.StateDB,
+	shardID byte,
+) bool {
+	Logger.log.Info("Beacon heigh for checkFees: ", beaconHeight, tx.Hash().String())
+	txType := tx.GetType()
+	if txType == common.TxCustomTokenPrivacyType {
+		limitFee := v.feeEstimator.GetLimitFeeForNativeToken()
+
+		// check transaction fee for meta data
+		meta := tx.GetMetadata()
+		// verify at metadata level
+		if meta != nil {
+			ok := meta.CheckTransactionFee(tx, limitFee, int64(beaconHeight), beaconStateDB)
+			if !ok {
+				Logger.log.Errorf("Error: %+v", fmt.Errorf("transaction %+v: Invalid fee metadata",
+					tx.Hash().String()))
+			}
+			return ok
+		}
+		// verify at transaction level
+		tokenID := tx.GetTokenID()
+		feeNativeToken := tx.GetTxFee()
+		feePToken := tx.GetTxFeeToken()
+		//convert fee in Ptoken to fee in native token (if feePToken > 0)
+		if feePToken > 0 {
+			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, int64(beaconHeight), beaconStateDB)
+			if err != nil {
+				Logger.log.Errorf("ERROR: %+v", fmt.Errorf("transaction %+v: %+v %v can not convert to native token %+v",
+					tx.Hash().String(), feePToken, tokenID, err))
+				return false
+			}
+
+			feePTokenToNativeToken := uint64(math.Ceil(feePTokenToNativeTokenTmp))
+			feeNativeToken += feePTokenToNativeToken
+		}
+		// get limit fee in native token
+		actualTxSize := tx.GetTxActualSize()
+		// check fee in native token
+		minFee := actualTxSize * limitFee
+		if feeNativeToken < minFee {
+			Logger.log.Errorf("ERROR: %+v", fmt.Errorf("transaction %+v has %d fees PRV which is under the required amount of %d, tx size %d",
+				tx.Hash().String(), feeNativeToken, minFee, actualTxSize))
+			return false
+		}
+	} else {
+		// This is a normal tx -> only check like normal tx with PRV
+		limitFee := v.feeEstimator.GetLimitFeeForNativeToken()
+		txFee := tx.GetTxFee()
+		// txNormal := tx.(*transaction.Tx)
+		if limitFee > 0 {
+			meta := tx.GetMetadata()
+			if meta != nil {
+				ok := tx.GetMetadata().CheckTransactionFee(tx, limitFee, int64(beaconHeight), beaconStateDB)
+				if !ok {
+					Logger.log.Errorf("ERROR: %+v", fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+						tx.Hash().String(), txFee, limitFee*tx.GetTxActualSize()))
+				}
+				return ok
+			}
+			fullFee := limitFee * tx.GetTxActualSize()
+			// ok := tx.CheckTransactionFee(limitFee)
+			if txFee < fullFee {
+				Logger.log.Errorf("ERROR: %+v", fmt.Errorf("transaction %+v has %d fees which is under the required amount of %d",
+					tx.Hash().String(), txFee, limitFee*tx.GetTxActualSize()))
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (v *TxsVerifier) ValidateWithoutChainstate(tx metadata.Transaction) (bool, error) {
@@ -233,11 +311,19 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 	// MAX := runtime.NumCPU() - 1
 	// nWorkers := make(chan int, MAX)
 	for _, tx := range txs {
-		if tx.Hash().String() == "9d0e017131c8d28d66c190484b4ea804859da1f8346280a0f279119670c0307d" { //Mainnet whitelist
-			continue
-		}
 		// nWorkers <- 1
 		go func(target metadata.Transaction) {
+			ok := v.checkFees(
+				bcView.GetHeight(),
+				target,
+				bcView.GetBeaconFeatureStateDB(),
+				sView.GetShardID(),
+			)
+			if !ok {
+				if errCh != nil {
+					errCh <- errors.Errorf("[NewPool] This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, errors.Errorf("Transaction fee %v is invalid", target.GetTxFee()))
+				}
+			}
 			ok, err := v.ValidateWithChainState(
 				target,
 				cView,
@@ -247,7 +333,7 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 			)
 			if !ok || err != nil {
 				if errCh != nil {
-					errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
+					errCh <- errors.Errorf("[NewPool] This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
 				}
 			} else {
 				if doneCh != nil {
