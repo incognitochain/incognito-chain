@@ -13,20 +13,23 @@ type ChainParam struct {
 	blockchain.Params
 }
 
-func (s *ChainParam) SetActiveShardNumber(nShard int) *ChainParam{
+func (s *ChainParam) SetActiveShardNumber(nShard int) *ChainParam {
 	s.ActiveShards = nShard
 	return s
 }
-func (s *ChainParam) SetMaxShardCommitteeSize(maxNum int) *ChainParam{
+func (s *ChainParam) SetMaxShardCommitteeSize(maxNum int) *ChainParam {
 	s.MaxShardCommitteeSize = maxNum
 	return s
 }
-
-func (s *ChainParam) GetParamData() *blockchain.Params{
+func (s *ChainParam) SetBCHeightBreakPointNewZKP(height uint64) *ChainParam {
+	s.BCHeightBreakPointNewZKP = height
+	return s
+}
+func (s *ChainParam) GetParamData() *blockchain.Params {
 	return &s.Params
 }
 
-func NewChainParam(networkID int) *ChainParam{
+func NewChainParam(networkID int) *ChainParam {
 	//setup param
 	blockchain.SetupParam()
 	switch networkID {
@@ -39,4 +42,3 @@ func NewChainParam(networkID int) *ChainParam{
 	}
 	return &ChainParam{blockchain.ChainTest2Param}
 }
-

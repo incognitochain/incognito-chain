@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"io"
 	"log"
 	"math"
@@ -136,9 +137,9 @@ func (sim *NodeEngine) SendPRV(args ...interface{}) (string, error) {
 			switch arg.(type) {
 			default:
 				if i%2 == 1 {
-					amount, ok := args[i+1].(int)
+					amount, ok := args[i+1].(float64)
 					if !ok {
-						amountF64 := args[i+1].(int)
+						amountF64 := args[i+1].(float64)
 						amount = amountF64
 					}
 					receivers[arg.(account.Account).PaymentAddress] = uint64(amount)
@@ -154,12 +155,12 @@ func (sim *NodeEngine) SendPRV(args ...interface{}) (string, error) {
 	return res.TxID, nil
 }
 
-func (sim *NodeEngine) ShowBalance(acc account.Account) {
+func (sim *NodeEngine) ShowBalance(acc account.Account) map[string]uint64 {
 	res, err := sim.RPC.API_GetBalance(acc)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(res)
+	return res
 }
 
 func GenerateCommitteeIndex(nCommittee int) []int {
@@ -168,4 +169,31 @@ func GenerateCommitteeIndex(nCommittee int) []int {
 		res = append(res, i)
 	}
 	return res
+}
+
+func (sim *NodeEngine) TrackAccount(acc account.Account) (int, int) {
+	chain := sim.GetBlockchain()
+	shardWaitingList, _ := incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsWaitingList())
+	shardPendingList := make(map[int][]string)
+	shardCommitteeList := make(map[int][]string)
+	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
+		shardPendingList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsPendingList()[sid])
+		shardCommitteeList[sid], _ = incognitokey.CommitteeKeyListToString(chain.BeaconChain.GetShardsCommitteeList()[sid])
+	}
+	//fmt.Println("shardWaitingList", shardWaitingList)
+	//fmt.Println("shardPendingList", shardPendingList)
+	//fmt.Println("shardCommitteeList", shardCommitteeList)
+	for sid := 0; sid < chain.GetActiveShardNumber(); sid++ {
+		if common.IndexOfStr(acc.SelfCommitteePubkey, shardPendingList[sid]) > -1 {
+			return 1, common.IndexOfStr(acc.SelfCommitteePubkey, shardPendingList[sid])
+		}
+		if common.IndexOfStr(acc.SelfCommitteePubkey, shardCommitteeList[sid]) > -1 {
+			return 2, common.IndexOfStr(acc.SelfCommitteePubkey, shardCommitteeList[sid])
+		}
+	}
+
+	if common.IndexOfStr(acc.SelfCommitteePubkey, shardWaitingList) > -1 {
+		return 0, common.IndexOfStr(acc.SelfCommitteePubkey, shardWaitingList)
+	}
+	return -1, -1
 }

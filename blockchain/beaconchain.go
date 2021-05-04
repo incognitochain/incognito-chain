@@ -309,14 +309,18 @@ func (chain *BeaconChain) GetBeaconPendingList() []incognitokey.CommitteePublicK
 	return result
 }
 
-func (chain *BeaconChain) GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey {
-	var result map[string]map[string][]incognitokey.CommitteePublicKey
-	result = make(map[string]map[string][]incognitokey.CommitteePublicKey)
-	for shardID, consensusType := range chain.multiView.GetBestView().(*BeaconBestState).GetShardConsensusAlgorithm() {
-		if _, ok := result[consensusType]; !ok {
-			result[consensusType] = make(map[string][]incognitokey.CommitteePublicKey)
-		}
-		result[consensusType][common.GetShardChainKey(shardID)] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).GetAShardPendingValidator(shardID)...)
+func (chain *BeaconChain) GetShardsCommitteeList() map[int][]incognitokey.CommitteePublicKey {
+	result := make(map[int][]incognitokey.CommitteePublicKey)
+	for shardID := 0; shardID < chain.GetActiveShardNumber(); shardID++ {
+		result[shardID] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).GetAShardCommittee(byte(shardID))...)
+	}
+	return result
+}
+
+func (chain *BeaconChain) GetShardsPendingList() map[int][]incognitokey.CommitteePublicKey {
+	result := make(map[int][]incognitokey.CommitteePublicKey)
+	for shardID := 0; shardID < chain.GetActiveShardNumber(); shardID++ {
+		result[shardID] = append([]incognitokey.CommitteePublicKey{}, chain.multiView.GetBestView().(*BeaconBestState).GetAShardPendingValidator(byte(shardID))...)
 	}
 	return result
 }

@@ -339,14 +339,14 @@ func (r *RPCClient) API_SendTxStaking(stakeMeta StakingTxParam) (*jsonresult.Cre
 	}
 	burnAddr := stakeMeta.BurnAddr
 
-	fmt.Println(burnAddr)
-	fmt.Println(stakingType)
-	fmt.Println(stakeAmount)
-	fmt.Println(stakeMeta.StakerPrk)
-	fmt.Println(minerPayment)
-	fmt.Println(privateSeed)
-	fmt.Println(stakeMeta.RewardAddr)
-	fmt.Println(stakeMeta.AutoRestake)
+	//fmt.Println(burnAddr)
+	//fmt.Println(stakingType)
+	//fmt.Println(stakeAmount)
+	//fmt.Println(stakeMeta.StakerPrk)
+	//fmt.Println(minerPayment)
+	//fmt.Println(privateSeed)
+	//fmt.Println(stakeMeta.RewardAddr)
+	//fmt.Println(stakeMeta.AutoRestake)
 
 	txResp, err := r.client.CreateAndSendStakingTransaction(stakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(stakeAmount)}, 1, 0, map[string]interface{}{
 		"StakingType":                  float64(stakingType),

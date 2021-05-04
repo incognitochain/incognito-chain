@@ -441,14 +441,14 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 			if err != nil {
 				panic(err)
 			}
-			log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
+			//log.Printf("BEACON | Produced block %v hash %v", block.GetHeight(), block.Hash().String())
 		} else {
 			err = chain.InsertShardBlock(block.(*types.ShardBlock), common.FULL_VALIDATION)
 			if err != nil {
 				panic(err)
 			} else {
 				crossX := blockchain.CreateAllCrossShardBlock(block.(*types.ShardBlock), sim.config.ChainParam.ActiveShards)
-				log.Printf("SHARD %v | Produced block %v hash %v", chainID, block.GetHeight(), block.Hash().String())
+				//log.Printf("SHARD %v | Produced block %v hash %v", chainID, block.GetHeight(), block.Hash().String())
 				for _, blk := range crossX {
 					sim.syncker.InsertCrossShardBlock(blk)
 				}

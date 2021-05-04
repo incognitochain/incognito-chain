@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/syncker"
@@ -25,12 +26,12 @@ func (s *Syncker) Init(config *syncker.SynckerManagerConfig) {
 	return
 }
 
-func (s *Syncker) GetCrossShardBlocksForShardProducer(toShard byte, limit map[byte][]uint64) map[byte][]interface{} {
-	return s.Syncker.GetCrossShardBlocksForShardProducer(toShard, limit)
+func (s *Syncker) GetCrossShardBlocksForShardProducer(view *blockchain.ShardBestState, limit map[byte][]uint64) map[byte][]interface{} {
+	return s.Syncker.GetCrossShardBlocksForShardProducer(view, limit)
 }
 
-func (s *Syncker) GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error) {
-	return s.Syncker.GetCrossShardBlocksForShardProducer(toShard, list), nil
+func (s *Syncker) GetCrossShardBlocksForShardValidator(view *blockchain.ShardBestState, list map[byte][]uint64) (map[byte][]interface{}, error) {
+	return s.Syncker.GetCrossShardBlocksForShardProducer(view, list), nil
 }
 
 func (s *Syncker) SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash) {
