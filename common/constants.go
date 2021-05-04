@@ -88,6 +88,10 @@ const (
 )
 
 const (
+	SALARY_VER_FIX_HASH = 1
+)
+
+const (
 	BeaconChainKey = "beacon"
 	ShardChainKey  = "shard"
 )
@@ -185,6 +189,7 @@ const (
 	PortalV3Flag       = 1
 	PortalV4Flag       = 2
 )
+
 const (
 	PortalVersion3 = 3
 	PortalVersion4 = 4

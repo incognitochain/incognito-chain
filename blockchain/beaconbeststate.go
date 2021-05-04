@@ -77,6 +77,8 @@ type BeaconBestState struct {
 	FeatureStateDBRootHash   common.Hash
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
+
+	pdeState *CurrentPDEState
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -447,6 +449,10 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine.Clone()
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
+	if target.pdeState != nil {
+		beaconBestState.pdeState = target.pdeState.Copy()
+	}
+
 	return nil
 }
 
@@ -630,23 +636,22 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
 	}
 	return &committeestate.BeaconCommitteeStateEnvironment{
-		BeaconHeight:                      beaconBestState.BeaconHeight,
-		BeaconHash:                        beaconBestState.BestBlockHash,
-		Epoch:                             beaconBestState.Epoch,
-		EpochLengthV1:                     params.Epoch,
-		BeaconInstructions:                beaconInstructions,
-		EpochBreakPointSwapNewKey:         params.EpochBreakPointSwapNewKey,
-		AssignOffset:                      params.AssignOffset,
-		RandomNumber:                      beaconBestState.CurrentRandomNumber,
-		IsFoundRandomNumber:               isFoundRandomInstruction,
-		IsBeaconRandomTime:                isBeaconRandomTime,
-		ActiveShards:                      beaconBestState.ActiveShards,
-		MinShardCommitteeSize:             beaconBestState.MinShardCommitteeSize,
-		ConsensusStateDB:                  beaconBestState.consensusStateDB,
-		NumberOfFixedBeaconBlockValidator: NumberOfFixedBeaconBlockValidators,
-		NumberOfFixedShardBlockValidator:  NumberOfFixedShardBlockValidators,
-		MaxShardCommitteeSize:             params.MaxShardCommitteeSize,
-		MissingSignaturePenalty:           slashingPenalty,
+		BeaconHeight:                     beaconBestState.BeaconHeight,
+		BeaconHash:                       beaconBestState.BestBlockHash,
+		Epoch:                            beaconBestState.Epoch,
+		EpochLengthV1:                    params.Epoch,
+		BeaconInstructions:               beaconInstructions,
+		EpochBreakPointSwapNewKey:        params.EpochBreakPointSwapNewKey,
+		AssignOffset:                     params.AssignOffset,
+		RandomNumber:                     beaconBestState.CurrentRandomNumber,
+		IsFoundRandomNumber:              isFoundRandomInstruction,
+		IsBeaconRandomTime:               isBeaconRandomTime,
+		ActiveShards:                     beaconBestState.ActiveShards,
+		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
+		ConsensusStateDB:                 beaconBestState.consensusStateDB,
+		NumberOfFixedShardBlockValidator: params.NumberOfFixedBlockValidators,
+		MaxShardCommitteeSize:            params.MaxShardCommitteeSize,
+		MissingSignaturePenalty:          slashingPenalty,
 	}
 }
 
@@ -662,18 +667,17 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		slashingPenalty = make(map[string]signaturecounter.Penalty)
 	}
 	return &committeestate.BeaconCommitteeStateEnvironment{
-		BeaconHeight:                      beaconBestState.BeaconHeight,
-		BeaconHash:                        beaconBestState.BestBlockHash,
-		Epoch:                             beaconBestState.Epoch,
-		EpochLengthV1:                     params.Epoch,
-		RandomNumber:                      beaconBestState.CurrentRandomNumber,
-		ActiveShards:                      beaconBestState.ActiveShards,
-		MinShardCommitteeSize:             beaconBestState.MinShardCommitteeSize,
-		ConsensusStateDB:                  beaconBestState.consensusStateDB,
-		MaxShardCommitteeSize:             params.MaxShardCommitteeSize,
-		NumberOfFixedBeaconBlockValidator: NumberOfFixedBeaconBlockValidators,
-		NumberOfFixedShardBlockValidator:  NumberOfFixedShardBlockValidators,
-		MissingSignaturePenalty:           slashingPenalty,
+		BeaconHeight:                     beaconBestState.BeaconHeight,
+		BeaconHash:                       beaconBestState.BestBlockHash,
+		Epoch:                            beaconBestState.Epoch,
+		EpochLengthV1:                    params.Epoch,
+		RandomNumber:                     beaconBestState.CurrentRandomNumber,
+		ActiveShards:                     beaconBestState.ActiveShards,
+		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
+		ConsensusStateDB:                 beaconBestState.consensusStateDB,
+		MaxShardCommitteeSize:            params.MaxShardCommitteeSize,
+		NumberOfFixedShardBlockValidator: params.NumberOfFixedBlockValidators,
+		MissingSignaturePenalty:          slashingPenalty,
 	}
 }
 
@@ -795,7 +799,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 			snapshotShardCommonPool,
 			snapshotShardCommittee,
 			snapshotShardSubstitute,
-			NumberOfFixedShardBlockValidators,
+			params.NumberOfFixedBlockValidators,
 			params.MinShardCommitteeSize,
 		)
 	}
