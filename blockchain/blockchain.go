@@ -104,16 +104,16 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
-	if err := blockchain.InitChainState(); err != nil {
-		return err
-	}
-	blockchain.cQuitSync = make(chan struct{})
 	newTxPool := os.Getenv("TXPOOL_VERSION")
 	if newTxPool == "1" {
 		blockchain.config.usingNewPool = true
 	} else {
 		blockchain.config.usingNewPool = false
 	}
+	if err := blockchain.InitChainState(); err != nil {
+		return err
+	}
+	blockchain.cQuitSync = make(chan struct{})
 	return nil
 }
 
@@ -147,8 +147,7 @@ func (blockchain *BlockChain) InitChainState() error {
 		Logger.log.Errorf("Can not get whitelist txs, error %v", err)
 	}
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
-	for shard := 1; shard <= blockchain.GetBeaconBestState().ActiveShards; shard++ {
-		shardID := byte(shard - 1)
+	for shardID := byte(0); int(shardID) < blockchain.GetBeaconBestState().ActiveShards; shardID++ {
 		tp, err := blockchain.config.PoolManager.GetShardTxsPool(shardID)
 		if err != nil {
 			return err
@@ -157,9 +156,10 @@ func (blockchain *BlockChain) InitChainState() error {
 			nil,
 			tp,
 			wl,
+			nil,
 		)
 		tp.UpdateTxVerifier(tv)
-		blockchain.ShardChain[shardID] = NewShardChain(shard-1, multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID), tp, tv)
+		blockchain.ShardChain[shardID] = NewShardChain(int(shardID), multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID), tp, tv)
 		blockchain.ShardChain[shardID].hashHistory, err = lru.New(1000)
 		if err != nil {
 			return err
@@ -382,11 +382,15 @@ func (blockchain *BlockChain) AddTempTxPool(temptxpool TxPool) {
 	blockchain.config.TempTxPool = temptxpool
 }
 
-func (blockchain *BlockChain) SetFeeEstimator(feeEstimator FeeEstimator, shardID byte) {
+func (blockchain *BlockChain) SetFeeEstimator(feeEstimator txpool.FeeEstimator, shardID byte) {
 	if len(blockchain.config.FeeEstimator) == 0 {
 		blockchain.config.FeeEstimator = make(map[byte]FeeEstimator)
 	}
+
 	blockchain.config.FeeEstimator[shardID] = feeEstimator
+	for shardID := byte(0); int(shardID) < blockchain.GetBeaconBestState().ActiveShards; shardID++ {
+		blockchain.ShardChain[shardID].TxsVerifier.UpdateFeeEstimator(feeEstimator)
+	}
 }
 
 func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Transaction) {

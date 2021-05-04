@@ -29,16 +29,24 @@ func (v *TxsVerifier) UpdateTransactionStateDB(
 	v.txDB = newSDB
 }
 
+func (v *TxsVerifier) UpdateFeeEstimator(
+	estimator txpool.FeeEstimator,
+) {
+	v.feeEstimator = estimator
+}
+
 func NewTxsVerifier(
 	txDB *statedb.StateDB,
 	tp txpool.TxPool,
 	whitelist map[string]interface{},
+	estimator FeeEstimator,
 ) txpool.TxVerifier {
 	return &TxsVerifier{
 		txDB:   txDB,
 		txPool: tp,
 
-		whitelist: whitelist,
+		feeEstimator: estimator,
+		whitelist:    whitelist,
 	}
 }
 
