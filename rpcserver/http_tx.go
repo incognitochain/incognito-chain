@@ -57,7 +57,9 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	err2 := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	if err2 == nil {
 		Logger.log.Info("handleSendRawTransaction broadcast message to all successfully")
-		httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
+		if !httpServer.txService.BlockChain.UsingNewPool() {
+			httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
+		}
 	} else {
 		Logger.log.Errorf("handleSendRawTransaction broadcast message to all with error %+v", err2)
 	}

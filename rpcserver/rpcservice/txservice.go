@@ -476,51 +476,74 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 		Logger.log.Errorf("Send Raw Transaction can not get beacon best state with error %+v", err)
 	}
 	// Try add tx in to mempool of node
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
-	if err != nil {
-		Logger.log.Errorf("Send Raw Transaction Error, try add tx into mempool of node: %+v", err)
-		mempoolErr, ok := err.(*mempool.MempoolTxError)
-		if ok {
-			switch mempoolErr.Code {
-			case mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code:
-				{
-					return nil, nil, byte(0), NewRPCError(RejectInvalidTxFeeError, mempoolErr)
+	hash := tx.Hash()
+	if txService.BlockChain.UsingNewPool() {
+		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		if int(sID) < len(txService.BlockChain.ShardChain) {
+			sChain := txService.BlockChain.ShardChain[sID]
+			if sChain != nil {
+
+				sView := sChain.GetBestState()
+				ok, e := sChain.TxsVerifier.FullValidateTransactions(
+					txService.BlockChain,
+					sView,
+					sChain.Blockchain.GetBeaconBestState(),
+					[]metadata.Transaction{&tx},
+				)
+				if (!ok) || (e != nil) {
+					return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
 				}
-			case mempool.ErrCodeMessage[mempool.RejectInvalidSize].Code:
-				{
-					return nil, nil, byte(0), NewRPCError(RejectInvalidTxSizeError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectInvalidTxType].Code:
-				{
-					return nil, nil, byte(0), NewRPCError(RejectInvalidTxTypeError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectInvalidTx].Code:
-				{
-					return nil, nil, byte(0), NewRPCError(RejectInvalidTxError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectReplacementTxError].Code:
-				{
-					return nil, nil, byte(0), NewRPCError(RejectReplacementTx, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithBlockchainTx].Code, mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithMempoolTx].Code:
-				{
-					return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectDuplicateTx].Code:
-				{
-					return nil, nil, byte(0), NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectVersion].Code:
-				{
-					return nil, nil, byte(0), NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectSanityTxLocktime].Code:
-				{
-					return nil, nil, byte(0), NewRPCError(RejectSanityTxLocktime, mempoolErr)
-				}
+			} else {
+				panic("aaaaaaa")
 			}
 		}
-		return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, err)
+	} else {
+		hash, _, err = txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
+		if err != nil {
+			Logger.log.Errorf("Send Raw Transaction Error, try add tx into mempool of node: %+v", err)
+			mempoolErr, ok := err.(*mempool.MempoolTxError)
+			if ok {
+				switch mempoolErr.Code {
+				case mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code:
+					{
+						return nil, nil, byte(0), NewRPCError(RejectInvalidTxFeeError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectInvalidSize].Code:
+					{
+						return nil, nil, byte(0), NewRPCError(RejectInvalidTxSizeError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectInvalidTxType].Code:
+					{
+						return nil, nil, byte(0), NewRPCError(RejectInvalidTxTypeError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectInvalidTx].Code:
+					{
+						return nil, nil, byte(0), NewRPCError(RejectInvalidTxError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectReplacementTxError].Code:
+					{
+						return nil, nil, byte(0), NewRPCError(RejectReplacementTx, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithBlockchainTx].Code, mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithMempoolTx].Code:
+					{
+						return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectDuplicateTx].Code:
+					{
+						return nil, nil, byte(0), NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectVersion].Code:
+					{
+						return nil, nil, byte(0), NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectSanityTxLocktime].Code:
+					{
+						return nil, nil, byte(0), NewRPCError(RejectSanityTxLocktime, mempoolErr)
+					}
+				}
+			}
+			return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, err)
+		}
 	}
 	Logger.log.Debugf("New transaction hash: %+v \n", *hash)
 	// Create tx message for broadcasting
@@ -1274,53 +1297,73 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 	if err == nil {
 		beaconHeigh = int64(beaconBestState.BeaconHeight)
 	}
-	hash, _, err := txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
-	if err != nil {
-		Logger.log.Errorf("txService.SendRawPrivacyCustomTokenTransaction Try add tx into mempool of node with err: %+v", err)
-		mempoolErr, ok := err.(*mempool.MempoolTxError)
-		if ok {
-			switch mempoolErr.Code {
-			case mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code:
-				{
-					return nil, nil, NewRPCError(RejectInvalidTxFeeError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectInvalidSize].Code:
-				{
-					return nil, nil, NewRPCError(RejectInvalidTxSizeError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectInvalidTxType].Code:
-				{
-					return nil, nil, NewRPCError(RejectInvalidTxTypeError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectInvalidTx].Code:
-				{
-					return nil, nil, NewRPCError(RejectInvalidTxError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectReplacementTxError].Code:
-				{
-					return nil, nil, NewRPCError(RejectReplacementTx, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithBlockchainTx].Code, mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithMempoolTx].Code:
-				{
-					return nil, nil, NewRPCError(RejectDoubleSpendTxError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectDuplicateTx].Code:
-				{
-					return nil, nil, NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectVersion].Code:
-				{
-					return nil, nil, NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
-				}
-			case mempool.ErrCodeMessage[mempool.RejectSanityTxLocktime].Code:
-				{
-					return nil, nil, NewRPCError(RejectSanityTxLocktime, mempoolErr)
+
+	hash := tx.Hash()
+	if txService.BlockChain.UsingNewPool() {
+		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		if int(sID) < len(txService.BlockChain.ShardChain) {
+			sChain := txService.BlockChain.ShardChain[sID]
+			if sChain != nil {
+				sView := sChain.GetBestState()
+				ok, e := sChain.TxsVerifier.FullValidateTransactions(
+					txService.BlockChain,
+					sView,
+					sChain.Blockchain.GetBeaconBestState(),
+					[]metadata.Transaction{&tx},
+				)
+				if (!ok) || (e != nil) {
+					return nil, nil, NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
 				}
 			}
 		}
-		return nil, nil, NewRPCError(TxPoolRejectTxError, err)
+	} else {
+		hash, _, err = txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
+		if err != nil {
+			Logger.log.Errorf("txService.SendRawPrivacyCustomTokenTransaction Try add tx into mempool of node with err: %+v", err)
+			mempoolErr, ok := err.(*mempool.MempoolTxError)
+			if ok {
+				switch mempoolErr.Code {
+				case mempool.ErrCodeMessage[mempool.RejectInvalidFee].Code:
+					{
+						return nil, nil, NewRPCError(RejectInvalidTxFeeError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectInvalidSize].Code:
+					{
+						return nil, nil, NewRPCError(RejectInvalidTxSizeError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectInvalidTxType].Code:
+					{
+						return nil, nil, NewRPCError(RejectInvalidTxTypeError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectInvalidTx].Code:
+					{
+						return nil, nil, NewRPCError(RejectInvalidTxError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectReplacementTxError].Code:
+					{
+						return nil, nil, NewRPCError(RejectReplacementTx, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithBlockchainTx].Code, mempool.ErrCodeMessage[mempool.RejectDoubleSpendWithMempoolTx].Code:
+					{
+						return nil, nil, NewRPCError(RejectDoubleSpendTxError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectDuplicateTx].Code:
+					{
+						return nil, nil, NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectVersion].Code:
+					{
+						return nil, nil, NewRPCError(RejectDuplicateTxInPoolError, mempoolErr)
+					}
+				case mempool.ErrCodeMessage[mempool.RejectSanityTxLocktime].Code:
+					{
+						return nil, nil, NewRPCError(RejectSanityTxLocktime, mempoolErr)
+					}
+				}
+			}
+			return nil, nil, NewRPCError(TxPoolRejectTxError, err)
+		}
 	}
-
 	Logger.log.Debugf("there is hash of transaction: %s\n", hash.String())
 
 	txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
