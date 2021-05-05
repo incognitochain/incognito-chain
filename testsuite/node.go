@@ -125,6 +125,7 @@ func (sim *NodeEngine) EnableDebug() {
 }
 
 func (sim *NodeEngine) init() {
+	os.Setenv("TXPOOL_VERSION", "1")
 	simName := sim.simName
 	path, err := os.Getwd()
 	if err != nil {
@@ -237,6 +238,7 @@ func (sim *NodeEngine) init() {
 		RelayShards:       nil,
 		PubSubManager:     ps,
 	})
+
 	// serverObj.blockChain.AddTxPool(serverObj.memPool)
 	txpoolV1.InitChannelMempool(cPendingTxs, cRemovedTxs)
 
@@ -277,6 +279,10 @@ func (sim *NodeEngine) init() {
 	}
 	bc.InitChannelBlockchain(cRemovedTxs)
 	go poolManager.Start(relayShards)
+	for shardID, feeEstimator := range fees {
+		bc.SetFeeEstimator(feeEstimator, shardID)
+	}
+
 	sim.param = activeNetParams
 	sim.bc = &bc
 	sim.consensus = &cs
