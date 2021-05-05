@@ -3140,6 +3140,7 @@ func TestBeaconCommitteeStateV2_clone(t *testing.T) {
 		autoStake                  map[string]bool
 		rewardReceiver             map[string]privacy.PaymentAddress
 		stakingTx                  map[string]common.Hash
+		hashes                     *BeaconCommitteeStateHash
 	}
 	type args struct {
 		newB *BeaconCommitteeStateV2
@@ -3180,6 +3181,7 @@ func TestBeaconCommitteeStateV2_clone(t *testing.T) {
 					key6: *hash6,
 				},
 				numberOfAssignedCandidates: 1,
+				hashes:                     NewBeaconCommitteeStateHash(),
 			},
 			args: args{
 				newB: NewBeaconCommitteeStateV2(),
@@ -3197,6 +3199,7 @@ func TestBeaconCommitteeStateV2_clone(t *testing.T) {
 				autoStake:                  tt.fields.autoStake,
 				rewardReceiver:             tt.fields.rewardReceiver,
 				stakingTx:                  tt.fields.stakingTx,
+				hashes:                     tt.fields.hashes,
 			}
 			tt.args.newB.mu = nil
 			if b.clone(tt.args.newB); !reflect.DeepEqual(b, tt.args.newB) {

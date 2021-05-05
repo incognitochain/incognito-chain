@@ -77,6 +77,8 @@ type BeaconBestState struct {
 	FeatureStateDBRootHash   common.Hash
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
+
+	pdeState *CurrentPDEState
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -447,6 +449,10 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine.Clone()
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
+	if target.pdeState != nil {
+		beaconBestState.pdeState = target.pdeState.Copy()
+	}
+
 	return nil
 }
 
@@ -646,6 +652,13 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		NumberOfFixedShardBlockValidator: params.NumberOfFixedBlockValidators,
 		MaxShardCommitteeSize:            params.MaxShardCommitteeSize,
 		MissingSignaturePenalty:          slashingPenalty,
+		PreviousBlockHashes: &committeestate.BeaconCommitteeStateHash{
+			BeaconCandidateHash:             beaconBestState.BestBlock.Header.BeaconCandidateRoot,
+			BeaconCommitteeAndValidatorHash: beaconBestState.BestBlock.Header.BeaconCommitteeAndValidatorRoot,
+			ShardCandidateHash:              beaconBestState.BestBlock.Header.ShardCandidateRoot,
+			ShardCommitteeAndValidatorHash:  beaconBestState.BestBlock.Header.ShardCommitteeAndValidatorRoot,
+			AutoStakeHash:                   beaconBestState.BestBlock.Header.AutoStakingRoot,
+		},
 	}
 }
 
@@ -736,7 +749,7 @@ func initBeaconCommitteeEngineV1(beaconBestState *BeaconBestState) committeestat
 func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Params, bc *BlockChain) committeestate.BeaconCommitteeEngine {
 	Logger.log.Infof("Init Beacon Committee Engine V2, %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
-	var numberOfAssignedCandidate int
+	var numberOfAssignedCandidate int = 0
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
 	}
@@ -754,7 +767,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, params *Param
 	for k, v := range substituteValidator {
 		shardSubstitute[byte(k)] = v
 	}
-	if bc.IsGreaterThanRandomTime(beaconBestState.BeaconHeight) && !beaconBestState.IsGetRandomNumber {
+	if bc.IsEqualToRandomTime(beaconBestState.BeaconHeight) {
 		var err error
 		var tempBeaconBlock = types.NewBeaconBlock()
 		var randomTimeBeaconHash = beaconBestState.BestBlockHash

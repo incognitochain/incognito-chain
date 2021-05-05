@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"math"
 	"math/big"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -945,8 +946,17 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 	shardID, blockHash, blockHeight, index, tx, err := txService.BlockChain.GetTransactionByHash(*txHash)
 	if err != nil {
 		// maybe tx is still in tx mempool -> check mempool
-		tx, errM := txService.TxMemPool.GetTx(txHash)
-		if errM != nil {
+		if txService.BlockChain.UsingNewPool() {
+			pM := txService.BlockChain.GetPoolManager()
+			if pM != nil {
+				tx, err = pM.GetTransactionByHash(txHashStr)
+			} else {
+				err = errors.New("PoolManager is nil")
+			}
+		} else {
+			tx, err = txService.TxMemPool.GetTx(txHash)
+		}
+		if err != nil {
 			return nil, NewRPCError(TxNotExistedInMemAndBLockError, errors.New("Tx is not existed in block or mempool"))
 		}
 		shardIDTemp := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
@@ -2107,7 +2117,7 @@ func (txService TxService) GetTransactionByReceiverV2(
 	for i := 0; i < actualChunksNum; i++ {
 		start := chunkSize * i
 		end := start + chunkSize
-		if i == actualChunksNum - 1 {
+		if i == actualChunksNum-1 {
 			if end > totalTxHashs {
 				end = totalTxHashs
 			}

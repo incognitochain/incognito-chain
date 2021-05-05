@@ -15,10 +15,12 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/txpool"
+
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
 )
@@ -33,11 +35,30 @@ type ShardChain struct {
 	ChainName   string
 	Ready       bool
 
+	TxPool      txpool.TxPool
+	TxsVerifier txpool.TxVerifier
+
 	insertLock sync.Mutex
 }
 
-func NewShardChain(shardID int, multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *ShardChain {
-	return &ShardChain{shardID: shardID, multiView: multiView, BlockGen: blockGen, Blockchain: blockchain, ChainName: chainName}
+func NewShardChain(
+	shardID int,
+	multiView *multiview.MultiView,
+	blockGen *BlockGenerator,
+	blockchain *BlockChain,
+	chainName string,
+	tp txpool.TxPool,
+	tv txpool.TxVerifier,
+) *ShardChain {
+	return &ShardChain{
+		shardID:     shardID,
+		multiView:   multiView,
+		BlockGen:    blockGen,
+		Blockchain:  blockchain,
+		ChainName:   chainName,
+		TxPool:      tp,
+		TxsVerifier: tv,
+	}
 }
 
 func (chain *ShardChain) CloneMultiView() *multiview.MultiView {
