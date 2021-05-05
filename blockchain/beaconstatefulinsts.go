@@ -127,7 +127,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	currentPortalStateV4, err := portalprocessv4.InitCurrentPortalStateV4FromDB(featureStateDB)
+	currentPortalStateV4, err := portalprocessv4.InitCurrentPortalStateV4FromDB(featureStateDB, beaconBestState.portalStateV4)
 	if err != nil {
 		Logger.log.Error(err)
 	}

@@ -132,17 +132,53 @@ func HandlePortalInstsV4(
 	return instructions, nil
 }
 
+func hasPortalV4Instruction(instructions [][]string) bool {
+	hasPortalV4Instruction := false
+	for _, inst := range instructions {
+		if len(inst) < 4 {
+			continue // Not error, just not Portal v4 instruction
+		}
+		switch inst[0] {
+		case strconv.Itoa(metadata.PortalV4ShieldingRequestMeta):
+			hasPortalV4Instruction = true
+			break
+		case strconv.Itoa(metadata.PortalV4ShieldingResponseMeta):
+			hasPortalV4Instruction = true
+			break
+		case strconv.Itoa(metadata.PortalV4UnshieldingRequestMeta):
+			hasPortalV4Instruction = true
+			break
+		case strconv.Itoa(metadata.PortalV4UnshieldBatchingMeta):
+			hasPortalV4Instruction = true
+			break
+		case strconv.Itoa(metadata.PortalV4FeeReplacementRequestMeta):
+			hasPortalV4Instruction = true
+			break
+		case strconv.Itoa(metadata.PortalV4SubmitConfirmedTxMeta):
+			hasPortalV4Instruction = true
+			break
+		}
+	}
+	return hasPortalV4Instruction
+}
+
 func ProcessPortalInstsV4(
 	portalStateDB *statedb.StateDB,
+	lastState *CurrentPortalStateV4,
 	portalParams portalv4.PortalParams,
 	beaconHeight uint64,
 	instructions [][]string,
 	ppv4 map[int]PortalInstructionProcessorV4,
-	epoch uint64) error {
-	currentPortalState, err := InitCurrentPortalStateV4FromDB(portalStateDB)
+	epoch uint64) (*CurrentPortalStateV4, error) {
+
+	if !hasPortalV4Instruction(instructions) {
+		return lastState, nil
+	}
+
+	currentPortalState, err := InitCurrentPortalStateV4FromDB(portalStateDB, lastState)
 	if err != nil {
 		Logger.log.Error(err)
-		return nil
+		return currentPortalState, nil
 	}
 
 	// re-use update info of bridge
@@ -184,16 +220,10 @@ func ProcessPortalInstsV4(
 			updatingType,
 		)
 		if err != nil {
-			return err
+			return currentPortalState, err
 		}
 	}
-
-	// store updated currentPortalState to leveldb with new beacon height
-	err = StorePortalV4StateToDB(portalStateDB, currentPortalState)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	return nil
+	return currentPortalState, nil
 }
 
 func handleBatchingUnshieldRequests(

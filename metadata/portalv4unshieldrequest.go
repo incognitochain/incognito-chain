@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"reflect"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -102,13 +103,6 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("tx burn ptoken must be TxCustomTokenPrivacyType"))
 	}
 
-	//todo:
-	// check tx version
-	//if tx.GetVersion() != transaction.CurrentTxVersion {
-	//	return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError,
-	//		fmt.Errorf("tx version (%v) is not the current transaction version (%v)", tx.GetVersion(), transaction.CurrentTxVersion))
-	//}
-
 	// check ota address string and tx random is valid
 	_, err, ver := checkIncognitoAddress(uReq.OTAPubKeyStr, uReq.TxRandomStr)
 	if err != nil {
@@ -129,6 +123,15 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 	burningAmt := burnedCoin.GetValue()
 	burningTokenID := burnedToken.String()
 
+	// validate tokenID
+	if uReq.TokenID != burningTokenID {
+		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID in metadata is not matched to burning tokenID in tx"))
+	}
+	// check tokenId is portal token or not
+	if ok, err := chainRetriever.IsPortalToken(beaconHeight, uReq.TokenID, common.PortalVersion4); !ok || err != nil {
+		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID is not in portal tokens list v4"))
+	}
+
 	// validate burning amount
 	// check unshielding amount is equal to burning amount
 	if uReq.UnshieldAmount != burningAmt {
@@ -145,15 +148,6 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 	multipleTokenAmount := chainRetriever.GetPortalV4MultipleTokenAmount(uReq.TokenID, beaconHeight)
 	if uReq.UnshieldAmount%multipleTokenAmount != 0 {
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("PToken amount has to be divisible by %v", multipleTokenAmount))
-	}
-
-	// validate tokenID
-	if uReq.TokenID != burningTokenID {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID in metadata is not matched to burning tokenID in tx"))
-	}
-	// check tokenId is portal token or not
-	if ok, err := chainRetriever.IsPortalToken(beaconHeight, uReq.TokenID, common.PortalVersion4); !ok || err != nil {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID is not in portal tokens list v4"))
 	}
 
 	// validate RemoteAddress

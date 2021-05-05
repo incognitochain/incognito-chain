@@ -1,6 +1,8 @@
 package portalprocess
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -14,10 +16,28 @@ type CurrentPortalStateV4 struct {
 	ProcessedUnshieldRequests map[string]map[string]*statedb.ProcessedUnshieldRequestBatch // tokenID : hash(tokenID || batchID) : value
 }
 
+func (s *CurrentPortalStateV4) Copy() *CurrentPortalStateV4 {
+	v := new(CurrentPortalStateV4)
+	b := new(bytes.Buffer)
+	err := gob.NewEncoder(b).Encode(s)
+	if err != nil {
+		return nil
+	}
+	err = gob.NewDecoder(bytes.NewBuffer(b.Bytes())).Decode(v)
+	if err != nil {
+		return nil
+	}
+	return v
+}
+
 func InitCurrentPortalStateV4FromDB(
 	stateDB *statedb.StateDB,
+	lastState *CurrentPortalStateV4,
 ) (*CurrentPortalStateV4, error) {
 	var err error
+	if lastState != nil {
+		return lastState, nil
+	}
 
 	// load list of UTXOs
 	utxos := map[string]map[string]*statedb.UTXO{}
