@@ -494,7 +494,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 					return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
 				}
 			} else {
-				panic("aaaaaaa")
+				Logger.log.Errorf("Can not get shard chain for this shard ID %v", sID)
 			}
 		}
 	} else {
