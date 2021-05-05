@@ -178,6 +178,12 @@ func GetPortalBatchUnshieldRequestStatus(stateDB *StateDB, batchID string) ([]by
 	return data, nil
 }
 
+// ================= Get List Batching Unshielding Requests =================s
+func GetListPortalBatchUnshieldRequests(stateDB *StateDB) ([]string, error) {
+	//todo:
+	return stateDB.getListAllBatchUnshieldRequests(), nil
+}
+
 // ================= Unshielding Batch Fee Replacement Status =================
 // Store and get the status of the Unshield Batch Replacement Request by batchID
 func StorePortalUnshieldBatchReplacementRequestStatus(stateDB *StateDB, txID string, statusContent []byte) error {

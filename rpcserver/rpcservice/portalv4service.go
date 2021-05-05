@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
 
 // ============================= Portal v4 ===============================
@@ -53,6 +54,19 @@ func (blockService BlockService) GetPortalBatchUnshieldingRequestStatus(batchID 
 	}
 
 	return &status, nil
+}
+
+func (blockService BlockService) GetListPortalBatchUnshieldingRequests() (*jsonresult.ListBatchUnshieldRequests, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	batchIDs, err := statedb.GetListPortalBatchUnshieldRequests(stateDB)
+	if err != nil {
+		return nil, err
+	}
+
+	return &jsonresult.ListBatchUnshieldRequests{
+		TotalUnshieldBatch: uint64(len(batchIDs)),
+		BatchIDs:           batchIDs,
+	}, nil
 }
 
 func (blockService BlockService) GetPortalReqReplacementFeeStatus(reqTxID string) (*metadata.PortalReplacementFeeRequestStatus, error) {

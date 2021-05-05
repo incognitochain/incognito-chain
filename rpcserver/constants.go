@@ -65,7 +65,7 @@ const (
 	createAndSendPrivacyCustomTokenTransaction   = "createandsendprivacycustomtokentransaction"
 	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"
 	getMempoolInfo                               = "getmempoolinfo"
-	getMempoolInfoDetails                    		 = "getmempoolinfodetails"
+	getMempoolInfoDetails                        = "getmempoolinfodetails"
 	getPendingTxsInBlockgen                      = "getpendingtxsinblockgen"
 	getCandidateList                             = "getcandidatelist"
 	getCommitteeList                             = "getcommitteelist"
@@ -301,6 +301,7 @@ const (
 	createAndSendTxWithPortalV4UnshieldRequest = "createandsendtxwithportalv4unshieldrequest"
 	getPortalUnshieldingRequestStatus          = "getportalunshieldrequeststatus"
 	getPortalBatchUnshieldingRequestStatus     = "getportalbatchunshieldrequeststatus"
+	getListPortalBatchUnshieldingRequests      = "getlistportalbatchunshieldrequests"
 	getSignedRawTransactionByBatchID           = "getportalsignedrawtransaction"
 	createAndSendTxWithPortalReplacementFee    = "createandsendtxwithportalreplacebyfee"
 	getPortalReplacementFeeStatus              = "getportalreplacebyfeestatus"
@@ -407,4 +408,5 @@ var PortalV4RPCs = []string{
 	createAndSendTxWithPortalSubmitConfirmedTx,
 	getPortalSubmitConfirmedTx,
 	getSignedRawReplaceFeeTransaction,
+	getListPortalBatchUnshieldingRequests,
 }

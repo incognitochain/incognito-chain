@@ -313,6 +313,15 @@ func (httpServer *HttpServer) handleGetPortalBatchUnshieldingRequestStatus(param
 	return status, nil
 }
 
+func (httpServer *HttpServer) handleGetListPortalBatchUnshieldingRequests(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// get list all of batch unshield requests
+	result, err := httpServer.blockService.GetListPortalBatchUnshieldingRequests()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalV4ListBatchUnshieldReqError, err)
+	}
+	return result, nil
+}
+
 /*
 ====== Get raw signed tx
 */

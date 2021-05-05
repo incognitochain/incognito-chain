@@ -135,6 +135,7 @@ const (
 	GetPortalV4BatchUnshieldReqStatusError
 	GetPortalV4FeeReplacementReqStatusError
 	GetPortalV4SubmitConfirmedTxStatusError
+	GetPortalV4ListBatchUnshieldReqError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -270,6 +271,7 @@ var ErrCodeMessage = map[int]struct {
 	GetPortalV4BatchUnshieldReqStatusError:  {-12503, "Get portal v4 batch unshielding request status error"},
 	GetPortalV4FeeReplacementReqStatusError: {-12504, "Get portal v4 fee replacement request status error"},
 	GetPortalV4SubmitConfirmedTxStatusError: {-12505, "Get portal v4 submit external confirmed tx request status error"},
+	GetPortalV4ListBatchUnshieldReqError:    {-12506, "Get portal v4 list of batch unshielding requests error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
