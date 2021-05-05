@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -142,7 +143,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, val
 		return nil
 	}
 	if ok := checkLimitTxAction(false, map[int]int{}, shardBlock); !ok {
-		return errors.Errorf("Total txs of this block %v %v shard %v is large than limit", shardBlock.GetHeight(), shardBlock.Hash().String(), shardBlock.GetShardID())
+		return fmt.Errorf("Total txs of this block %v %v shard %v is large than limit", shardBlock.GetHeight(), shardBlock.Hash().String(), shardBlock.GetShardID())
 	}
 	//get view that block link to
 	preView := blockchain.ShardChain[int(shardID)].GetViewByHash(preHash)
@@ -200,8 +201,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, val
 	}
 
 	if validationMode == common.FULL_VALIDATION {
-		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(curView.BeaconHeight), curView); err != nil {
 		st := time.Now()
+		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(curView.BeaconHeight), curView); err != nil {
 			return NewBlockChainError(TransactionFromNewBlockError, err)
 		}
 		if len(shardBlock.Body.Transactions) > 0 {
@@ -500,7 +501,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	// beaconHeight := shardBlock.Header.BeaconHeight
 	Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
 	st := time.Now()
-	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, shardBlock.Header.BeaconHash, curView); err != nil {
+	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(shardBlock.Header.BeaconHeight), curView); err != nil {
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 	if len(shardBlock.Body.Transactions) > 0 {
@@ -942,7 +943,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 			}
 		}
 	}
-	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, isRelatedCommittee)
+	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, isRelatedCommittee)
 	if err != nil {
 		return NewBlockChainError(CloneBeaconBestStateError, err)
 	}

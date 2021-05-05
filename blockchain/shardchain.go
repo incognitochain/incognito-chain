@@ -287,7 +287,7 @@ func (chain *ShardChain) getDataBeforeBlockProducing(buildView *ShardBestState, 
 	createFlow.crossTransactions = blockchain.config.BlockGen.getCrossShardData(curView)
 
 	// Get Transaction for new block
-	blockCreationLeftOver := curView.BlockMaxCreateTime.Nanoseconds() - startTime
+	blockCreationLeftOver := time.Duration(curView.BlockMaxCreateTime.Nanoseconds() - startTime)
 	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(curView, &tempPrivateKey, curView.ShardID, createFlow.beaconBlocks, blockCreationLeftOver, createFlow.processBeaconBlock.Header.Height)
 	if err != nil {
 		return nil, err

@@ -15,6 +15,10 @@ func (s *Server) PushBlockToAll(block types.BlockInterface, previousValidationDa
 	return nil
 }
 
+func (s *Server) PushMessageToShard(message wire.Message, shardID byte) error {
+	return nil
+}
+
 func (s *Server) PushMessageToAll(message wire.Message) error {
 	return nil
 }
