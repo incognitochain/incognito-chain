@@ -80,6 +80,7 @@ func HandlePortalInsts(
 
 func ProcessPortalInsts(
 	bc metadata.ChainRetriever,
+	portalLastStateV4 *portalprocessv4.CurrentPortalStateV4,
 	portalStateDB *statedb.StateDB,
 	relayingState *portalrelaying.RelayingHeaderChainState,
 	portalParams PortalParams,
@@ -87,7 +88,7 @@ func ProcessPortalInsts(
 	instructions [][]string,
 	pm *PortalManager,
 	epoch uint64,
-	isSkipPortalV3Ints bool) error {
+	isSkipPortalV3Ints bool) (*portalprocessv4.CurrentPortalStateV4, error) {
 	// process portal instructions v3
 	if !isSkipPortalV3Ints {
 		err := portalprocessv3.ProcessPortalInstsV3(
@@ -95,7 +96,7 @@ func ProcessPortalInsts(
 			beaconHeight, instructions, pm.PortalInstProcessorsV3, epoch)
 		if err != nil {
 			Logger.log.Error(err)
-			return err
+			return portalLastStateV4, err
 		}
 	}
 
@@ -103,19 +104,19 @@ func ProcessPortalInsts(
 	err := portalrelaying.ProcessRelayingInstructions(instructions, relayingState)
 	if err != nil {
 		Logger.log.Error(err)
-		return err
+		return portalLastStateV4, err
 	}
 
 	// process portal instructions v4
-	err = portalprocessv4.ProcessPortalInstsV4(
-		portalStateDB, portalParams.GetPortalParamsV4(beaconHeight),
+	portalLastStateV4, err = portalprocessv4.ProcessPortalInstsV4(
+		portalStateDB, portalLastStateV4, portalParams.GetPortalParamsV4(beaconHeight),
 		beaconHeight, instructions, pm.PortalInstProcessorsV4, epoch)
 	if err != nil {
 		Logger.log.Error(err)
-		return err
+		return portalLastStateV4, err
 	}
 
 	// Handle next things ...
 
-	return nil
+	return portalLastStateV4, nil
 }

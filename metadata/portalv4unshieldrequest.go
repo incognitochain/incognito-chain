@@ -113,11 +113,20 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("tx burn ptoken must be TxCustomTokenPrivacyType"))
 	}
 
+	// validate tokenID
+	if uReq.TokenID != tx.GetTokenID().String() {
+		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
+	}
+	// check tokenId is portal token or not
+	if ok, err := chainRetriever.IsPortalToken(beaconHeight, uReq.TokenID, common.PortalVersion4); !ok || err != nil {
+		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID is not in portal tokens list v4"))
+	}
+
+	// validate burning amount
 	if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("txprivacytoken in tx burn ptoken must be coin burning tx"))
 	}
 
-	// validate burning amount
 	minUnshieldAmount := chainRetriever.GetPortalV4MinUnshieldAmount(uReq.TokenID, beaconHeight)
 	if uReq.UnshieldAmount < minUnshieldAmount {
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("burning amount should be larger or equal to %v", minUnshieldAmount))
@@ -126,15 +135,6 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 	// validate value transfer of tx for redeem amount in ptoken
 	if uReq.UnshieldAmount != tx.CalculateTxValue() {
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("burning amount should be equal to the tx value"))
-	}
-
-	// validate tokenID
-	if uReq.TokenID != tx.GetTokenID().String() {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
-	}
-	// check tokenId is portal token or not
-	if ok, err := chainRetriever.IsPortalToken(beaconHeight, uReq.TokenID, common.PortalVersion4); !ok || err != nil {
-		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, errors.New("TokenID is not in portal tokens list v4"))
 	}
 
 	// validate amount of pToken is divisible by the decimal difference between nano pToken and nano Token
