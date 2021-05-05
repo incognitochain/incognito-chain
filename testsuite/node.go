@@ -111,6 +111,18 @@ func (sim *NodeEngine) NewAccount() account.Account {
 	return acc
 }
 
+func (sim *NodeEngine) EnableDebug() {
+	dbLogger.SetLevel(common.LevelTrace)
+	blockchainLogger.SetLevel(common.LevelInfo)
+	bridgeLogger.SetLevel(common.LevelTrace)
+	rpcLogger.SetLevel(common.LevelTrace)
+	rpcServiceLogger.SetLevel(common.LevelTrace)
+	rpcServiceBridgeLogger.SetLevel(common.LevelTrace)
+	transactionLogger.SetLevel(common.LevelTrace)
+	privacyLogger.SetLevel(common.LevelTrace)
+	mempoolLogger.SetLevel(common.LevelTrace)
+}
+
 func (sim *NodeEngine) init() {
 	simName := sim.simName
 	path, err := os.Getwd()
@@ -119,15 +131,6 @@ func (sim *NodeEngine) init() {
 	}
 
 	InitLogRotator(filepath.Join(path, simName+".log"))
-	dbLogger.SetLevel(common.LevelTrace)
-	blockchainLogger.SetLevel(common.LevelTrace)
-	bridgeLogger.SetLevel(common.LevelTrace)
-	rpcLogger.SetLevel(common.LevelTrace)
-	rpcServiceLogger.SetLevel(common.LevelTrace)
-	rpcServiceBridgeLogger.SetLevel(common.LevelTrace)
-	transactionLogger.SetLevel(common.LevelTrace)
-	privacyLogger.SetLevel(common.LevelTrace)
-	mempoolLogger.SetLevel(common.LevelTrace)
 
 	activeNetParams := sim.config.ChainParam.GetParamData()
 	common.MaxShardNumber = activeNetParams.ActiveShards
@@ -388,25 +391,34 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 	//Create blocks for apply chain
 	for _, chainID := range chainArray {
 		var proposerPK incognitokey.CommitteePublicKey
-
-		switch sim.config.ConsensusVersion {
-		case 1:
-			var producerPosition int
-			proposerPK = chain.GetChain(chainID).GetBestView().GetCommittee()[producerPosition]
-		case 2, 3:
+		committeeFromBlock := common.Hash{}
+		committees := sim.bc.GetChain(chainID).GetBestView().GetCommittee()
+		version := 2
+		if sim.bc.GetChainParams().StakingFlowV2Height <= sim.bc.GetChain(chainID).GetBestView().GetBeaconHeight() {
+			version = 3
+		}
+		switch version {
+		case 2:
 			proposerPK, _ = chain.GetChain(chainID).GetBestView().GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+		case 3:
+			proposerPK, _ = chain.GetChain(chainID).GetBestView().GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+			committeeFromBlock = *chain.BeaconChain.FinalView().GetHash()
+			if chainID > -1 {
+				committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
+			}
 		}
 
 		proposerPkStr, _ := proposerPK.ToBase58()
 
 		if chainID == -1 {
-			block, err = chain.BeaconChain.CreateNewBlock(sim.config.ConsensusVersion, proposerPkStr, 1, sim.timer.Now(), nil, common.Hash{})
+			block, err = chain.BeaconChain.CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, common.Hash{})
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
 			}
 		} else {
 			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(sim.config.ConsensusVersion, proposerPkStr, 1, sim.timer.Now(), nil, common.Hash{})
+			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, committeeFromBlock)
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
@@ -433,11 +445,14 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		}
 
 		//Combine votes
-		accs, err := sim.GetListAccountsByChainID(chainID)
+		accs, err := sim.GetListAccountByCommitteePubkey(committees)
 		if err != nil {
 			panic(err)
 		}
-		sim.SignBlockWithCommittee(block, accs, GenerateCommitteeIndex(len(sim.bc.GetChain(chainID).GetBestView().GetCommittee())))
+		err = sim.SignBlockWithCommittee(block, accs, GenerateCommitteeIndex(len(committees)))
+		if err != nil {
+			panic(err)
+		}
 
 		//Insert
 		if chainID == -1 {
@@ -495,7 +510,7 @@ func (s *NodeEngine) GetUserDatabase() *leveldb.DB {
 func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committees []account.Account, committeeIndex []int) error {
 	committeePubKey := []incognitokey.CommitteePublicKey{}
 	miningKeys := []*signatureschemes.MiningKey{}
-	if block.GetVersion() == 2 {
+	if block.GetVersion() >= 2 {
 		votes := make(map[string]*blsbftv2.BFTVote)
 		for _, committee := range committees {
 			miningKey, _ := consensus_v2.GetMiningKeyFromPrivateSeed(committee.MiningKey)
