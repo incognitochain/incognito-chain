@@ -3,12 +3,14 @@ package devframework
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/txpool"
 
 	"github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv2"
@@ -161,7 +163,7 @@ func (sim *NodeEngine) init() {
 	sim.timer.init(activeNetParams.GenesisBeaconBlock.Header.Timestamp + 10)
 
 	cs := mock.Consensus{}
-	txpool := mempool.TxPool{}
+	txpoolV1 := mempool.TxPool{}
 	temppool := mempool.TxPool{}
 	btcrd := mock.BTCRandom{} // use mock for now
 	sync := syncker.NewSynckerManager()
@@ -170,7 +172,9 @@ func (sim *NodeEngine) init() {
 	}
 	ps := pubsub.NewPubSubManager()
 	fees := make(map[byte]*mempool.FeeEstimator)
+	relayShards := []byte{}
 	for i := byte(0); i < byte(activeNetParams.ActiveShards); i++ {
+		relayShards = append(relayShards, i)
 		fees[i] = mempool.NewFeeEstimator(
 			mempool.DefaultEstimateFeeMaxRollback,
 			mempool.DefaultEstimateFeeMinRegisteredBlocks,
@@ -179,7 +183,7 @@ func (sim *NodeEngine) init() {
 	cPendingTxs := make(chan metadata.Transaction, 500)
 	cRemovedTxs := make(chan metadata.Transaction, 500)
 	cQuit := make(chan struct{})
-	blockgen, err := blockchain.NewBlockGenerator(&txpool, &bc, sync, cPendingTxs, cRemovedTxs)
+	blockgen, err := blockchain.NewBlockGenerator(&txpoolV1, &bc, sync, cPendingTxs, cRemovedTxs)
 	if err != nil {
 		panic(err)
 	}
@@ -203,7 +207,7 @@ func (sim *NodeEngine) init() {
 		ChainParams:    activeNetParams,
 		BlockChain:     &bc,
 		Blockgen:       blockgen,
-		TxMemPool:      &txpool,
+		TxMemPool:      &txpoolV1,
 		Server:         &server,
 		Database:       db,
 	}
@@ -219,7 +223,7 @@ func (sim *NodeEngine) init() {
 		panic(err)
 	}
 
-	txpool.Init(&mempool.Config{
+	txpoolV1.Init(&mempool.Config{
 		ConsensusEngine: &cs,
 		BlockChain:      &bc,
 		DataBase:        db,
@@ -234,7 +238,7 @@ func (sim *NodeEngine) init() {
 		PubSubManager:     ps,
 	})
 	// serverObj.blockChain.AddTxPool(serverObj.memPool)
-	txpool.InitChannelMempool(cPendingTxs, cRemovedTxs)
+	txpoolV1.InitChannelMempool(cPendingTxs, cRemovedTxs)
 
 	temppool.Init(&mempool.Config{
 		BlockChain:    &bc,
@@ -244,10 +248,13 @@ func (sim *NodeEngine) init() {
 		MaxTx:         1000,
 		PubSubManager: ps,
 	})
-	txpool.IsBlockGenStarted = true
+	txpoolV1.IsBlockGenStarted = true
 	go temppool.Start(cQuit)
-	go txpool.Start(cQuit)
-
+	go txpoolV1.Start(cQuit)
+	poolManager, _ := txpool.NewPoolManager(
+		common.MaxShardNumber,
+		ps,
+	)
 	err = bc.Init(&blockchain.Config{
 		BTCChain:        btcChain,
 		BNBChainState:   bnbChainState,
@@ -255,7 +262,7 @@ func (sim *NodeEngine) init() {
 		DataBase:        db,
 		MemCache:        memcache.New(),
 		BlockGen:        blockgen,
-		TxPool:          &txpool,
+		TxPool:          &txpoolV1,
 		TempTxPool:      &temppool,
 		Server:          &server,
 		Syncker:         sync,
@@ -263,16 +270,17 @@ func (sim *NodeEngine) init() {
 		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
 		ConsensusEngine: &cs,
 		GenesisParams:   blockchain.GenesisParam,
+		PoolManager:     poolManager,
 	})
 	if err != nil {
 		panic(err)
 	}
 	bc.InitChannelBlockchain(cRemovedTxs)
-
+	go poolManager.Start(relayShards)
 	sim.param = activeNetParams
 	sim.bc = &bc
 	sim.consensus = &cs
-	sim.txpool = &txpool
+	sim.txpool = &txpoolV1
 	sim.temppool = &temppool
 	sim.btcrd = &btcrd
 	sim.syncker = sync
