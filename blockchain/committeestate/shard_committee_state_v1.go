@@ -384,9 +384,9 @@ func (s *ShardCommitteeStateV1) processShardBlockInstructionForKeyListV2(
 			removedCommitteeSize := len(swapInstruction.InPublicKeys)
 			remainedShardCommittees := common.DeepCopyString(s.shardCommittee[removedCommitteeSize:])
 			tempShardSwappedCommittees := common.DeepCopyString(s.shardCommittee[:env.MinShardCommitteeSize()])
-			if !reflect.DeepEqual(swapInstruction.OutPublicKeyStructs, tempShardSwappedCommittees) {
+			if !reflect.DeepEqual(swapInstruction.OutPublicKeys, tempShardSwappedCommittees) {
 				return nil, NewCommitteeStateError(ErrUpdateCommitteeState,
-					fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeyStructs))
+					fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeys))
 			}
 			s.shardCommittee = common.DeepCopyString(append(swapInstruction.InPublicKeys, remainedShardCommittees...))
 			committeeReplace := [2][]incognitokey.CommitteePublicKey{}
