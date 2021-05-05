@@ -283,7 +283,7 @@ func (b *BeaconCommitteeStateV2) SplitReward(
 func (b *beaconCommitteeStateSlashingBase) addData(env *BeaconCommitteeStateEnvironment) {
 	env.newUnassignedCommonPool = common.DeepCopyString(b.shardCommonPool[b.numberOfAssignedCandidates:])
 	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
-	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
+	env.newAllRoles = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
 	env.shardCommittee = make(map[byte][]string)
 	for shardID, committees := range b.shardCommittee {
 		env.shardCommittee[shardID] = common.DeepCopyString(committees)

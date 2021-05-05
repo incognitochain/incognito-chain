@@ -28,7 +28,7 @@ type BeaconCommitteeStateEnvironment struct {
 	MaxShardCommitteeSize            int
 	ConsensusStateDB                 *statedb.StateDB
 	IsReplace                        bool
-	newValidators                    []string
+	newAllRoles                      []string
 	newUnassignedCommonPool          []string
 	newAllSubstituteCommittees       []string
 	LatestShardsState                map[byte][]types.ShardState
