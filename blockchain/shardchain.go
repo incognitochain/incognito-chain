@@ -40,6 +40,14 @@ func NewShardChain(shardID int, multiView *multiview.MultiView, blockGen *BlockG
 	return &ShardChain{shardID: shardID, multiView: multiView, BlockGen: blockGen, Blockchain: blockchain, ChainName: chainName}
 }
 
+func (chain *ShardChain) CloneMultiView() *multiview.MultiView {
+	return chain.multiView.Clone()
+}
+
+func (chain *ShardChain) SetMultiView(multiView *multiview.MultiView) {
+	chain.multiView = multiView
+}
+
 func (chain *ShardChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetShardChainDatabase(byte(chain.shardID))
 }
@@ -420,12 +428,15 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 }
 
 func (chain *ShardChain) CreateNewBlock(
+	buildView multiview.View,
 	version int, proposer string, round int, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash) (types.BlockInterface, error) {
 	Logger.log.Infof("Begin Start New Block Shard %+v", time.Now())
-
-	linkedView := chain.GetBestView().(*ShardBestState) //this should be pass from consensus package
+	if buildView == nil {
+		buildView = chain.GetBestView()
+	}
+	linkedView := buildView.(*ShardBestState) //this should be pass from consensus package
 	createFlow, err := chain.getDataBeforeBlockProducing(linkedView, version, proposer, round, startTime, committeeViewHash)
 	if err != nil {
 		return nil, err

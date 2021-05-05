@@ -43,8 +43,7 @@ import (
 )
 
 type Config struct {
-	ConsensusVersion int
-	ChainParam       *ChainParam
+	ChainParam *ChainParam
 }
 
 type NodeEngine struct {
@@ -350,6 +349,10 @@ func (sim *NodeEngine) startPubSub() {
 	}()
 }
 
+func (sim *NodeEngine) EmptyPool() {
+	sim.temppool.EmptyPool()
+	sim.txpool.EmptyPool()
+}
 func (sim *NodeEngine) StopSync() {
 	sim.syncker.Stop()
 }
@@ -390,18 +393,26 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 
 	//Create blocks for apply chain
 	for _, chainID := range chainArray {
+		curView := sim.bc.GetChain(chainID).GetBestView()
+		for _, arg := range args {
+			switch arg.(type) {
+			case PreView:
+				curView = arg.(PreView).View
+			}
+		}
+
 		var proposerPK incognitokey.CommitteePublicKey
 		committeeFromBlock := common.Hash{}
-		committees := sim.bc.GetChain(chainID).GetBestView().GetCommittee()
+		committees := curView.GetCommittee()
 		version := 2
-		if sim.bc.GetChainParams().StakingFlowV2Height <= sim.bc.GetChain(chainID).GetBestView().GetBeaconHeight() {
+		if sim.bc.GetChainParams().StakingFlowV2Height <= curView.GetBeaconHeight() {
 			version = 3
 		}
 		switch version {
 		case 2:
-			proposerPK, _ = chain.GetChain(chainID).GetBestView().GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
 		case 3:
-			proposerPK, _ = chain.GetChain(chainID).GetBestView().GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
+			proposerPK, _ = curView.GetProposerByTimeSlot(int64((uint64(sim.timer.Now()) / common.TIMESLOT)), 2)
 			committeeFromBlock = *chain.BeaconChain.FinalView().GetHash()
 			if chainID > -1 {
 				committees, _ = sim.bc.GetShardCommitteeFromBeaconHash(committeeFromBlock, byte(chainID))
@@ -411,14 +422,14 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		proposerPkStr, _ := proposerPK.ToBase58()
 
 		if chainID == -1 {
-			block, err = chain.BeaconChain.CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, common.Hash{})
+			block, err = chain.BeaconChain.CreateNewBlock(curView, version, proposerPkStr, 1, sim.timer.Now(), committees, common.Hash{})
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
 			}
+
 		} else {
-			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(sim.config.ConsensusVersion, proposerPkStr, 1, sim.timer.Now(), nil, common.Hash{})
-			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(version, proposerPkStr, 1, sim.timer.Now(), committees, committeeFromBlock)
+			block, err = chain.ShardChain[byte(chainID)].CreateNewBlock(curView, version, proposerPkStr, 1, sim.timer.Now(), committees, committeeFromBlock)
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
@@ -568,7 +579,7 @@ func (s *NodeEngine) GetListAccountByCommitteePubkey(cpks []incognitokey.Committ
 	return accounts, nil
 }
 
-func (sim *NodeEngine) GetListAccountsByChainID(chainID int) ([]account.Account, error) {
+func (sim *NodeEngine) GetMultiview(chainID int) ([]account.Account, error) {
 	committees := sim.bc.GetChain(chainID).GetBestView().GetCommittee()
 	return sim.GetListAccountByCommitteePubkey(committees)
 }

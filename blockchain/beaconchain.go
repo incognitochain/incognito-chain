@@ -40,6 +40,14 @@ func (chain *BeaconChain) GetAllViewHash() (res []common.Hash) {
 	return
 }
 
+func (chain *BeaconChain) CloneMultiView() *multiview.MultiView {
+	return chain.multiView.Clone()
+}
+
+func (chain *BeaconChain) SetMultiView(multiView *multiview.MultiView) {
+	chain.multiView = multiView
+}
+
 func (chain *BeaconChain) GetDatabase() incdb.Database {
 	return chain.Blockchain.GetBeaconChainDatabase()
 }
@@ -172,12 +180,17 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.multiView.GetBestView().(*BeaconBestState).BeaconProposerIndex
 }
 
-func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
+func (chain *BeaconChain) CreateNewBlock(
+	buildView multiview.View,
+	version int, proposer string,
 	round int, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash,
 ) (types.BlockInterface, error) {
-	newBlock, err := chain.Blockchain.NewBlockBeacon(chain.GetBestView().(*BeaconBestState), version, proposer, round, startTime)
+	if buildView == nil {
+		buildView = chain.GetBestView()
+	}
+	newBlock, err := chain.Blockchain.NewBlockBeacon(buildView.(*BeaconBestState), version, proposer, round, startTime)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +220,9 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(
 // TODO: change name
 func (chain *BeaconChain) InsertBlock(block types.BlockInterface, validationMode int) error {
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), validationMode); err != nil {
-		Logger.log.Info(err)
+		if err.Error() != "View already exists" {
+			Logger.log.Error(err)
+		}
 		return err
 	}
 	return nil

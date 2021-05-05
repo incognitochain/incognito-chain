@@ -9,10 +9,6 @@ import (
 
 func NewStandaloneSimulation(name string, config Config) *NodeEngine {
 	os.RemoveAll("/tmp/database")
-	// if config.ConsensusVersion < 1 || config.ConsensusVersion > 2 {
-	if config.ConsensusVersion != 2 {
-		config.ConsensusVersion = 2
-	}
 	sim := &NodeEngine{
 		config:            config,
 		simName:           name,

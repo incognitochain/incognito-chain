@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	testsuite "github.com/incognitochain/incognito-chain/testsuite"
 	"github.com/incognitochain/incognito-chain/testsuite/account"
@@ -12,14 +13,30 @@ func InitSimMainnet() *testsuite.NodeEngine {
 	chainParam.ActiveShards = 2
 	chainParam.BCHeightBreakPointNewZKP = 1
 	chainParam.BeaconHeightBreakPointBurnAddr = 1
-
 	chainParam.StakingFlowV2Height = 1
 	chainParam.Epoch = 20
 	chainParam.RandomTime = 10
 	common.TIMESLOT = chainParam.Timeslot
 	node := testsuite.NewStandaloneSimulation("newsim", testsuite.Config{
-		ChainParam:       chainParam,
-		ConsensusVersion: 3,
+		ChainParam: chainParam,
+	})
+	for i := 0; i < 10; i++ {
+		node.GenerateBlock().NextRound()
+	}
+	return node
+}
+
+func InitSimTestnetv2() *testsuite.NodeEngine {
+	chainParam := testsuite.NewChainParam(testsuite.ID_TESTNET2)
+	chainParam.ActiveShards = 2
+	chainParam.BCHeightBreakPointNewZKP = 1
+	chainParam.BeaconHeightBreakPointBurnAddr = 1
+	chainParam.StakingFlowV2Height = 1e9
+	chainParam.Epoch = 20
+	chainParam.RandomTime = 10
+	common.TIMESLOT = chainParam.Timeslot
+	node := testsuite.NewStandaloneSimulation("newsim", testsuite.Config{
+		ChainParam: chainParam,
 	})
 	for i := 0; i < 10; i++ {
 		node.GenerateBlock().NextRound()
@@ -54,13 +71,44 @@ func Test_Shard_Stall_v3() {
 	}
 }
 
+func printAllView(beaconChain *blockchain.BeaconChain) {
+	views := beaconChain.GetAllView()
+	bestView := beaconChain.GetBestView().GetHash().String()
+	finalView := beaconChain.GetFinalView().GetHash().String()
+	for _, v := range views {
+		note := ""
+		if v.GetHash().String() == bestView {
+			note = "(B)"
+		}
+		if v.GetHash().String() == finalView {
+			note = "(F)"
+		}
+		ts := common.CalculateTimeSlot(v.GetBlock().GetProposeTime())
+		fmt.Printf("%v:%v%v:%v -> %v\n", v.GetHeight(), v.GetHash().String(), note, ts, v.GetPreviousHash().String())
+	}
+	fmt.Printf("=============================\n")
+}
+
+func Test_Multiview() {
+	node := InitSimTestnetv2()
+	for i := 0; i < 10; i++ {
+		node.GenerateBlock().NextRound()
+	}
+
+	node.GenerateFork2Branch(-1, func() {})
+	printAllView(node.GetBlockchain().BeaconChain)
+
+}
+
 func Test_CrossShard() {
-	node := InitSimMainnet()
+	node := InitSimTestnetv2()
 
 	//send PRV same shard, and crossshard
 	miner0_1 := node.NewAccountFromShard(0)
 	miner1_1 := node.NewAccountFromShard(1)
-	node.SendPRV(node.GenesisAccount, miner0_1, 1e14, miner1_1, 2e14)
+	node.GenerateFork2Branch(0, func() {
+		node.SendPRV(node.GenesisAccount, miner0_1, 1e14, miner1_1, 2e14)
+	})
 	for i := 0; i < 10; i++ {
 		node.GenerateBlock().NextRound()
 	}
@@ -84,7 +132,6 @@ func Test_Swap_v3() {
 
 		fmt.Println("send", acc.Name)
 		stakers = append(stakers, acc)
-
 	}
 	for i := 0; i < len(stakers); i++ {
 		acc := stakers[i]

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"io"
 	"log"
 	"math"
@@ -255,4 +256,42 @@ func (sim *NodeEngine) PrintChainInfo(chainIDs []int) {
 			fmt.Printf("Shard chain %v height %v hash %v beacon height %v committeefromblock %v\n", shard.GetShardID(), shard.CurrentHeight(), shard.GetBestViewHash(), shard.GetBestState().BeaconHeight, shard.GetBestState().CommitteeFromBlock().String())
 		}
 	}
+}
+
+func (node *NodeEngine) GenerateFork2Branch(chainID int, foo func()) (multiview.View, multiview.View) {
+	multiView0 := &multiview.MultiView{}
+	if chainID == -1 {
+		multiView0 = node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).CloneMultiView()
+	} else {
+		multiView0 = node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).CloneMultiView()
+	}
+	foo()
+	node.ApplyChain(-1).GenerateBlock().NextRound()
+	node.NextRound()
+	view1 := node.GetBlockchain().GetChain(chainID).GetBestView()
+	node.ApplyChain(-1).GenerateBlock().NextRound()
+	view2 := node.GetBlockchain().GetChain(chainID).GetBestView()
+	node.NextRound()
+	if chainID == -1 {
+		node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).SetMultiView(multiView0)
+	} else {
+		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).SetMultiView(multiView0)
+	}
+
+	node.EmptyPool()
+	node.ApplyChain(-1).GenerateBlock().NextRound()
+	node.NextRound()
+	foo()
+	node.ApplyChain(-1).GenerateBlock().NextRound()
+	node.NextRound()
+	view4 := node.GetBlockchain().GetChain(chainID).GetBestView()
+
+	if chainID == -1 {
+		node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).InsertBlock(view1.GetBlock(), common.FULL_VALIDATION)
+		node.GetBlockchain().GetChain(chainID).(*blockchain.BeaconChain).InsertBlock(view2.GetBlock(), common.FULL_VALIDATION)
+	} else {
+		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).InsertBlock(view1.GetBlock(), common.FULL_VALIDATION)
+		node.GetBlockchain().GetChain(chainID).(*blockchain.ShardChain).InsertBlock(view2.GetBlock(), common.FULL_VALIDATION)
+	}
+	return view2, view4
 }

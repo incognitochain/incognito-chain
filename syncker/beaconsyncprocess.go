@@ -139,7 +139,7 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 		s.lastCrossShardState = lastBeaconStateConfirmCrossX.LastCrossShardState
 		lastBeaconHeightConfirmCrossX = lastBeaconStateConfirmCrossX.BeaconHeight
 	}
-	fmt.Println("lastBeaconHeightConfirmCrossX", lastBeaconHeightConfirmCrossX)
+	Logger.Info("lastBeaconHeightConfirmCrossX", lastBeaconHeightConfirmCrossX)
 	for {
 		if s.status != RUNNING_SYNC {
 			time.Sleep(time.Second)
@@ -164,7 +164,7 @@ func (s *BeaconSyncProcess) updateConfirmCrossShard() {
 				rawdbv2.StoreLastBeaconStateConfirmCrossShard(s.chain.GetDatabase(), LastCrossShardBeaconProcess{lastBeaconHeightConfirmCrossX, s.lastCrossShardState})
 			}
 		} else {
-			fmt.Println(err)
+			Logger.Error(err)
 			time.Sleep(time.Second * 5)
 		}
 

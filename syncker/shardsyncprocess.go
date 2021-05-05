@@ -170,7 +170,9 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 			insertCnt++
 			//must validate this block when insert
 			if err := s.Chain.InsertBlock(block.(types.BlockInterface), common.BASIC_VALIDATION); err != nil {
-				Logger.Error("Insert shard block from pool fail", block.GetHeight(), block.Hash(), err)
+				if err.Error() != "View already exists" {
+					Logger.Error("Insert shard block from pool fail", block.GetHeight(), block.Hash(), err)
+				}
 				continue
 			} else {
 				previousValidationData := s.shardPool.GetPreviousValidationData(block.GetPrevHash())
