@@ -465,9 +465,14 @@ func (tp *TxsPool) getTxsFromPool(
 				if v != nil {
 					txDetails.Tx = v
 					Logger.Debugf("[debugperformance] Got %v, send to channel\n", txDetails.Hash)
-					txCh <- txDetails
+					if txCh != nil {
+						txCh <- txDetails
+					}
 				}
 			}
+		}
+		if txCh != nil {
+			txCh <- nil
 		}
 	}
 
