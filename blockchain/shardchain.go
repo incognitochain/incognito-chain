@@ -703,9 +703,8 @@ func (chain *ShardChain) validateBlockBody(flow *ShardValidationFlow) error {
 		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v", shardBlock.Header.InstructionsRoot, hash))
 	}
 
-	//check crossshard output coin content
-	//TODO: add check crossshard output coin content in mode beacon full validation, and beacon not confirm this block shard yet
-	if flow.forSigning {
+	//check crossshard output coin content (when sign block or beacon full validation)
+	if flow.forSigning || flow.validationMode == common.BEACON_FULL_VALIDATION {
 		toShardAllCrossShardBlock := flow.crossShardBlockToAdd
 		for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {
 			toShardCrossShardBlocks := toShardAllCrossShardBlock[fromShard]
@@ -785,8 +784,10 @@ func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlo
 		return nil, NewBlockChainError(CommitteeFromBlockNotFoundError, err)
 	}
 
-	//TODO: get cross shard block (when beacon chain not confirm, we need to validate the cross shard output coin)
-	if forSigning {
+	// get cross shard block
+	// for signing
+	// or when beacon chain not confirm, we need to validate the cross shard output coin
+	if forSigning || validationMode == common.BEACON_FULL_VALIDATION {
 		toShard := shardID
 		var toShardAllCrossShardBlock = make(map[byte][]*types.CrossShardBlock)
 		validationFlow.crossShardBlockToAdd = toShardAllCrossShardBlock
@@ -843,6 +844,15 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode 
 	fullValidation := os.Getenv("FULL_VALIDATION") //trigger full validation when sync network for rechecking code logic
 	if fullValidation == "1" {
 		validationMode = common.FULL_VALIDATION
+	}
+
+	//check for beacon full validation mode
+	if chain.Blockchain.config.ConsensusEngine.IsCommitteeInChain(-1) {
+		//if current block height is not confirm by beacon final view, validate its content as for signing
+		shardHeight := chain.Blockchain.BeaconChain.GetFinalView().(*BeaconBestState).BestShardHeight
+		if shardHeight[shardID] < blockHeight {
+			validationMode = common.BEACON_FULL_VALIDATION
+		}
 	}
 
 	//get required object for validation

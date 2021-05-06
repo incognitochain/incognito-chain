@@ -200,7 +200,8 @@ const (
 )
 
 const (
-	BYPASS_VALIDATION = 0
-	BASIC_VALIDATION  = 1
-	FULL_VALIDATION   = 2
+	BYPASS_VALIDATION      = 0 // just process state and insert
+	BASIC_VALIDATION       = 1 // add another step, including validating header, state, validating block signature
+	FULL_VALIDATION        = 2 // add validate body transaction
+	BEACON_FULL_VALIDATION = 3 // validate as for signing with committee aggregated sig check
 )

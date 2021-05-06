@@ -52,7 +52,7 @@ type Consensus interface {
 	ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error
 	ValidateProducerSig(block types.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	IsCommitteeInShard(byte) bool
+	IsCommitteeInChain(int) bool
 }
 
 const (

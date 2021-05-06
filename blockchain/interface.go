@@ -40,6 +40,7 @@ type ConsensusEngine interface {
 	ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
 	GetAllValidatorKeyState() map[string]consensus.MiningState
 	GetUserRole() (string, string, int)
+	IsCommitteeInChain(chainID int) bool
 	// CommitteeChange(chainName string)
 }
 

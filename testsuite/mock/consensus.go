@@ -17,7 +17,7 @@ type ConsensusInterface interface {
 	ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error
 	ValidateProducerSig(block types.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	IsCommitteeInShard(byte) bool
+	IsCommitteeInChain(int) bool
 }
 
 type Consensus struct {
@@ -64,6 +64,6 @@ func (c *Consensus) ValidateBlockCommitteSig(block types.BlockInterface, committ
 	return c.consensusEngine.ValidateBlockCommitteSig(block, committee)
 }
 
-func (c *Consensus) IsCommitteeInShard(sid byte) bool {
+func (c *Consensus) IsCommitteeInChain(sid int) bool {
 	return true
 }
