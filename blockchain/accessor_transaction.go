@@ -344,14 +344,6 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 				for _, c := range results {
 					//indexer supports v2 only
 					coinsToStore = append(coinsToStore, c)
-		if len(outCointsInBytes) == 0 {
-			// cached data is nil or fail -> get from database
-			outCointsInBytes, err = statedb.GetOutcoinsByPubkey(transactionStateDB, *tokenID, keyset.PaymentAddress.Pk[:], shardID)
-			if len(outCointsInBytes) > 0 {
-				// cache 1 day for result
-				cachedData, err = json.Marshal(outCointsInBytes)
-				if err == nil {
-					blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 5*time.Second)
 				}
 				coinIndexer.StoreReindexedOutputCoins(keyset.OTAKey, coinsToStore, shardID)
 			}

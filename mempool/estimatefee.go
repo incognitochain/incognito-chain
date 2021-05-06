@@ -186,7 +186,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 	if _, ok := ef.observed[hash]; !ok {
 		size := t.Desc.Tx.GetTxActualSize()
 
-		feeRateForToken := make(map[common.Hash]CoinPerKilobyte)
+		feeRateForToken := make(map[common.Hash]uint64)
 		if t.Desc.Tx.GetType() == common.TxCustomTokenPrivacyType || t.Desc.Tx.GetType() == common.TxCustomTokenPrivacyType {
 			tokenID := t.Desc.Tx.GetTokenID()
 			tokenFee := t.Desc.FeeToken

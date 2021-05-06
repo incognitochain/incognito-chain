@@ -369,21 +369,21 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 		iCoins := prf.GetInputCoins()
 		oCoins := prf.GetOutputCoins()
 		for _, iCoin := range iCoins {
-			if _, ok := mapForChkDbSpend[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
+			if _, ok := mapForChkDbSpend[iCoin.GetKeyImage().ToBytes()]; ok {
 				return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
 			} else {
-				mapForChkDbSpend[iCoin.CoinDetails.GetSerialNumber().ToBytes()] = nil
+				mapForChkDbSpend[iCoin.GetKeyImage().ToBytes()] = nil
 			}
 		}
 		for _, oCoin := range oCoins {
-			if _, ok := mapForChkDbSpend[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
+			if _, ok := mapForChkDbSpend[oCoin.GetSNDerivator().ToBytes()]; ok {
 				return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
 			} else {
-				mapForChkDbSpend[oCoin.CoinDetails.GetSNDerivator().ToBytes()] = nil
+				mapForChkDbSpend[oCoin.GetSNDerivator().ToBytes()] = nil
 			}
 		}
 		if tx.GetType() == common.TxCustomTokenPrivacyType {
-			txNormal := tx.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
+			txNormal := tx.(transaction.TransactionToken).GetTxTokenData().TxNormal
 			normalPrf := txNormal.GetProof()
 			if normalPrf == nil {
 				continue
@@ -391,17 +391,17 @@ func (v *TxsVerifier) checkDoubleSpendInListTxs(
 			iCoins := normalPrf.GetInputCoins()
 			oCoins := normalPrf.GetOutputCoins()
 			for _, iCoin := range iCoins {
-				if _, ok := mapForChkDbSpend[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
+				if _, ok := mapForChkDbSpend[iCoin.GetKeyImage().ToBytes()]; ok {
 					return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
 				} else {
-					mapForChkDbSpend[iCoin.CoinDetails.GetSerialNumber().ToBytes()] = nil
+					mapForChkDbSpend[iCoin.GetKeyImage().ToBytes()] = nil
 				}
 			}
 			for _, oCoin := range oCoins {
-				if _, ok := mapForChkDbSpend[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
+				if _, ok := mapForChkDbSpend[oCoin.GetSNDerivator().ToBytes()]; ok {
 					return false, errors.Errorf("List txs contain double spend tx %v", tx.Hash().String())
 				} else {
-					mapForChkDbSpend[oCoin.CoinDetails.GetSNDerivator().ToBytes()] = nil
+					mapForChkDbSpend[oCoin.GetSNDerivator().ToBytes()] = nil
 				}
 			}
 		}
