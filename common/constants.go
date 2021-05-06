@@ -33,7 +33,7 @@ const (
 	SigPrivacySize   = 96
 	IncPubKeyB58Size = 51
 
-	MaxPSMsgSize = 1 << 22 //4Mb
+	MaxPSMsgSize = 1 << 23 //4Mb
 )
 
 // for exit code
@@ -53,6 +53,16 @@ const (
 	TxTokenConversionType = "tcv" // Convert 1 - 2 token tx
 	//TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
+)
+
+const (
+	TxActTranfer = iota // Tx for tranfer PRV/Token
+	TxActBurning        // Tx burn PRV/Token
+	TxActInit           // Tx init PRV/Token
+)
+
+const (
+	MaxTxRequestIssue = 400
 )
 
 var (

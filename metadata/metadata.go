@@ -9,11 +9,15 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"time"
 )
 
 // Interface for all types of metadata in tx
@@ -89,10 +93,11 @@ type ChainRetriever interface {
 }
 
 type BeaconViewRetriever interface {
+	GetHeight() uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
 	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
 	GetAutoStakingList() map[string]bool
-	GetAllBridgeTokens() ([]common.Hash, error)
+	// GetAllBridgeTokens() ([]common.Hash, error)
 	GetBeaconFeatureStateDB() *statedb.StateDB
 	GetBeaconRewardStateDB() *statedb.StateDB
 	GetBeaconSlashStateDB() *statedb.StateDB
@@ -110,7 +115,20 @@ type ShardViewRetriever interface {
 	ListShardPrivacyTokenAndPRV() []common.Hash
 	GetShardRewardStateDB() *statedb.StateDB
 	GetCopiedFeatureStateDB() *statedb.StateDB
+	GetCopiedTransactionStateDB() *statedb.StateDB
 	GetHeight() uint64
+}
+
+type ValidationEnviroment interface {
+	IsPrivacy() bool
+	IsConfimed() bool
+	TxType() string
+	TxAction() int
+	ShardID() int
+	ShardHeight() uint64
+	BeaconHeight() uint64
+	ConfimedTime() int64
+	Version() int
 }
 
 // Interface for all type of transaction
@@ -166,6 +184,21 @@ type Transaction interface {
 	ValidateTxSalary(*statedb.StateDB) (bool, error)
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateSanityData(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) (bool, error)
+
+	ValidateSanityDataByItSelf() (bool, error)
+	ValidateTxCorrectness() (bool, error)
+	LoadCommitment(db *statedb.StateDB) error
+	ValidateSanityDataWithBlockchain(
+		chainRetriever ChainRetriever,
+		shardViewRetriever ShardViewRetriever,
+		beaconViewRetriever BeaconViewRetriever,
+		beaconHeight uint64,
+	) (
+		bool,
+		error,
+	)
+	ValidateDoubleSpendWithBlockChain(stateDB *statedb.StateDB) (bool, error)
+
 	ValidateTxWithBlockChain(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error
 	ValidateDoubleSpendWithBlockchain(byte, *statedb.StateDB, *common.Hash) error
 	ValidateTxByItself(map[string]bool, *statedb.StateDB, *statedb.StateDB, ChainRetriever, byte, ShardViewRetriever, BeaconViewRetriever) (bool, error)
@@ -177,6 +210,19 @@ type Transaction interface {
 	Init(interface{}) error
 	// Verify the init function above, which verify zero knowledge proof and signatures
 	Verify(map[string]bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash) (bool, error)
+	ValidateTransaction(map[string]bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash) (bool, error)
+	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, ChainRetriever, *AccumulatedValues, ShardViewRetriever, BeaconViewRetriever) (bool, error)
+	IsPrivacy() bool
+	IsCoinsBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
+	CalculateTxValue() uint64
+	CalculateBurningTxValue(bcr ChainRetriever, retriever ShardViewRetriever, viewRetriever BeaconViewRetriever, beaconHeight uint64) (bool, uint64)
+	IsSalaryTx() bool
+	GetFullTxValues() (uint64, uint64)
+	IsFullBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
+	VerifySigTx() (bool, error)
+	GetValidationEnv() ValidationEnviroment
+	SetValidationEnv(ValidationEnviroment)
+	UnmarshalJSON(data []byte) error
 }
 
 type MintData struct {

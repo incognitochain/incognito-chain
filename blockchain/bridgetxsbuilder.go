@@ -9,6 +9,8 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"

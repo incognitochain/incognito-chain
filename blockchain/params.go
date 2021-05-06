@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
@@ -220,7 +221,7 @@ func SetupParam() {
 		StakingFlowV2Height:            3016278,
 		EnableSlashingStakingFlowV2:    3016778,
 		Timeslot:                       10,
-		BeaconHeightBreakPointBurnAddr: 250000,
+		BeaconHeightBreakPointBurnAddr: 1,
 		PortalParams: portal.PortalParams{
 			PortalParamsV3: map[uint64]portalv3.PortalParams{
 				0: {
@@ -509,5 +510,4 @@ func (p *Params) CreateGenesisBlocks() {
 	}
 	p.GenesisBeaconBlock = CreateGenesisBeaconBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
 	p.GenesisShardBlock = CreateGenesisShardBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
-	return
 }

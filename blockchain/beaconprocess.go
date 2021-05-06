@@ -175,7 +175,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err2 := newBestState.beaconCommitteeEngine.Commit(hashes); err2 != nil {
+	if err2 := newBestState.beaconCommitteeEngine.Commit(hashes, committeeChange); err2 != nil {
 		return err2
 	}
 
@@ -1095,7 +1095,7 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			beaconBestState.beaconCommitteeEngine.GetStakingTx(),
 		)
 		if err != nil {
-			return err
+			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
 	}
 

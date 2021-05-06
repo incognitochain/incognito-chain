@@ -77,8 +77,7 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	if err != nil {
 		return nil, err
 	}
-
-	err2 := httpServer.config.Server.PushMessageToAll(txMsg)
+	err2 := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	if err2 == nil {
 		Logger.log.Info("handleSendRawTransaction broadcast message to all successfully")
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
@@ -182,8 +181,8 @@ func (httpServer *HttpServer) handleGetTransactionHashByReceiverV2(params interf
 		txHashs = append(txHashs, txHashsByShard...)
 	}
 	result := struct {
-		Skip uint
-		Limit uint
+		Skip    uint
+		Limit   uint
 		TxHashs []common.Hash
 	}{
 		uint(skip),
@@ -283,9 +282,9 @@ func (httpServer *HttpServer) handleGetTransactionByReceiverV2(params interface{
 		return nil, err
 	}
 	result := struct {
-		Total uint
-		Skip uint
-		Limit uint
+		Total                uint
+		Skip                 uint
+		Limit                uint
 		ReceivedTransactions []jsonresult.ReceivedTransactionV2
 	}{
 		total,
@@ -985,8 +984,8 @@ func (httpServer *HttpServer) 	handleSendRawPrivacyCustomTokenTransaction(params
 	if err1 != nil {
 		return nil, err1
 	}
-
-	err := httpServer.config.Server.PushMessageToAll(txMsg)
+	LastBytePubKeySender := tx.GetSenderAddrLastByte()
+	err := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	//Mark forwarded message
 	if err == nil {
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
@@ -1013,6 +1012,50 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransaction(p
 	newParam := make([]interface{}, 0)
 	newParam = append(newParam, base58CheckData)
 	_, err = httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err != nil {
+		Logger.log.Errorf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
+		return nil, err
+	}
+	return tx, nil
+}
+
+// handleCreateRawCustomTokenTransaction - handle create a custom token command and return in hex string format.
+func (httpServer *HttpServer) handleCreateRawPrivacyCustomTokenTransactionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	tx, err := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, nil)
+	if err.(*rpcservice.RPCError) != nil {
+		Logger.log.Error(err)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+
+	byteArrays, err := json.Marshal(tx)
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+	result := jsonresult.CreateTransactionTokenResult{
+		ShardID:         common.GetShardIDFromLastByte(tx.Tx.PubKeyLastByteSender),
+		TxID:            tx.Hash().String(),
+		TokenID:         tx.TxPrivacyTokenData.PropertyID.String(),
+		TokenName:       tx.TxPrivacyTokenData.PropertyName,
+		TokenAmount:     tx.TxPrivacyTokenData.Amount,
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+// handleCreateAndSendCustomTokenTransaction - create and send a tx which process on a custom token look like erc-20 on eth
+func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransactionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawPrivacyCustomTokenTransactionV2(params, closeChan)
+	if err != nil {
+		return nil, err
+	}
+	tx := data.(jsonresult.CreateTransactionTokenResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	txId, err := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	_ = txId
 	if err != nil {
 		Logger.log.Errorf("handleCreateAndSendPrivacyCustomTokenTransaction result: %+v, err: %+v", nil, err)
 		return nil, err
