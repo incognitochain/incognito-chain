@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
+	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/syncker"
@@ -85,6 +86,8 @@ type RpcServerConfig struct {
 		GetPublicKeyRole(publicKey string, keyType string) (int, int)
 		GetIncognitoPublicKeyRole(publicKey string) (int, bool, int)
 		GetMinerIncognitoPublickey(publicKey string, keyType string) []byte
+		OnTx(p *peer.PeerConn, msg *wire.MessageTx)
+		OnTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken)
 	}
 	ConsensusEngine blockchain.ConsensusEngine
 
