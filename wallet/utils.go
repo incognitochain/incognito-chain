@@ -6,9 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"math/big"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 // padByteSlice returns a byte slice of the given size with contents of the
