@@ -13,41 +13,41 @@ import (
 	"strconv"
 )
 
-func (txCustomTokenPrivacy *TxToken) initEnv() metadata.ValidationEnviroment {
+func (tx *TxToken) initEnv() metadata.ValidationEnviroment {
 	valEnv := tx_generic.DefaultValEnv()
 	// if txCustomTokenPrivacy.IsSalaryTx() {
 	valEnv = tx_generic.WithAct(valEnv, common.TxActTranfer)
 	// }
-	if txCustomTokenPrivacy.IsPrivacy() {
+	if tx.IsPrivacy() {
 		valEnv = tx_generic.WithPrivacy(valEnv)
 	} else {
 		valEnv = tx_generic.WithNoPrivacy(valEnv)
 	}
 
-	valEnv = tx_generic.WithType(valEnv, txCustomTokenPrivacy.GetType())
-	sID := common.GetShardIDFromLastByte(txCustomTokenPrivacy.GetSenderAddrLastByte())
+	valEnv = tx_generic.WithType(valEnv, tx.GetType())
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	valEnv = tx_generic.WithShardID(valEnv, int(sID))
-	txCustomTokenPrivacy.SetValidationEnv(valEnv)
+	tx.SetValidationEnv(valEnv)
 	txNormalValEnv := valEnv.Clone()
-	if txCustomTokenPrivacy.GetTxTokenData().Type == utils.CustomTokenInit {
+	if tx.GetTxTokenData().Type == utils.CustomTokenInit {
 		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActInit)
 	} else {
 		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActTranfer)
 	}
-	if txCustomTokenPrivacy.GetTxTokenData().TxNormal.IsPrivacy() {
+	if tx.GetTxTokenData().TxNormal.IsPrivacy() {
 		txNormalValEnv = tx_generic.WithPrivacy(txNormalValEnv)
 	} else {
 		txNormalValEnv = tx_generic.WithNoPrivacy(txNormalValEnv)
 	}
-	txCustomTokenPrivacy.GetTxTokenData().TxNormal.SetValidationEnv(txNormalValEnv)
+	tx.GetTxTokenData().TxNormal.SetValidationEnv(txNormalValEnv)
 	return valEnv
 }
 
-func (txCustomTokenPrivacy *TxToken) VerifySigTx() (bool, error) {
-	ok, err := txCustomTokenPrivacy.Tx.VerifySigTx()
+func (tx *TxToken) VerifySigTx() (bool, error) {
+	ok, err := tx.Tx.VerifySigTx()
 	if ok {
-		if txCustomTokenPrivacy.GetTxTokenData().Type != utils.CustomTokenInit {
-			return txCustomTokenPrivacy.GetTxTokenData().TxNormal.VerifySigTx()
+		if tx.GetTxTokenData().Type != utils.CustomTokenInit {
+			return tx.GetTxTokenData().TxNormal.VerifySigTx()
 		}
 	}
 	return ok, err
@@ -204,14 +204,14 @@ func (tx *TxToken) ValidateTxCorrectness(
 }
 
 // Todo decoupling this function
-func (txN TxToken) validateSanityDataOfProofV2() (bool, error) {
-	tmpProof := txN.GetProof()
+func (tx TxToken) validateSanityDataOfProofV2() (bool, error) {
+	tmpProof := tx.GetProof()
 	if tmpProof != nil {
 		prf, ok := tmpProof.(*privacy.ProofV1)
 		if !ok {
 			return false, fmt.Errorf("cannot cast payment proof v1")
 		}
-		if len(txN.GetProof().GetInputCoins()) > 255 {
+		if len(tx.GetProof().GetInputCoins()) > 255 {
 			return false, errors.New("Input coins in tx are very large:" + strconv.Itoa(len(prf.GetInputCoins())))
 		}
 
@@ -224,7 +224,7 @@ func (txN TxToken) validateSanityDataOfProofV2() (bool, error) {
 		for i, inCoin := range prf.GetInputCoins() {
 			hashSN := common.HashH(inCoin.GetKeyImage().ToBytesS())
 			if serialNumbers[hashSN] {
-				utils.Logger.Log.Errorf("Double input in tx - txId %v - index %v", txN.Hash().String(), i)
+				utils.Logger.Log.Errorf("Double input in tx - txId %v - index %v", tx.Hash().String(), i)
 				return false, errors.New("double input in tx")
 			}
 			serialNumbers[hashSN] = true
@@ -239,7 +239,7 @@ func (txN TxToken) validateSanityDataOfProofV2() (bool, error) {
 			return false, utils.NewTransactionErr(utils.DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
 		}
 
-		isPrivacy := txN.IsPrivacy()
+		isPrivacy := tx.IsPrivacy()
 
 		if isPrivacy {
 			// check cmValue of output coins is equal to comValue in Bulletproof
@@ -255,7 +255,7 @@ func (txN TxToken) validateSanityDataOfProofV2() (bool, error) {
 
 			for i := 0; i < len(cmValueOfOutputCoins); i++ {
 				if !privacy.IsPointEqual(cmValueOfOutputCoins[i], cmValueInBulletProof[i]) {
-					utils.Logger.Log.Errorf("cmValue in Bulletproof is not equal to commitment of output's Value - txId %v", txN.Hash().String())
+					utils.Logger.Log.Errorf("cmValue in Bulletproof is not equal to commitment of output's Value - txId %v", tx.Hash().String())
 					return false, fmt.Errorf("cmValue %v in Bulletproof is not equal to commitment of output's Value", i)
 				}
 			}
@@ -275,19 +275,19 @@ func (txN TxToken) validateSanityDataOfProofV2() (bool, error) {
 			for i := 0; i < len(prf.GetSerialNumberProof()); i++ {
 				// check cmSK of input coin is equal to comSK in serial number proof
 				if !privacy.IsPointEqual(cmInputSK, prf.GetSerialNumberProof()[i].GetComSK()) {
-					utils.Logger.Log.Errorf("ComSK in SNproof is not equal to commitment of private key - txId %v", txN.Hash().String())
+					utils.Logger.Log.Errorf("ComSK in SNproof is not equal to commitment of private key - txId %v", tx.Hash().String())
 					return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("comSK of SNProof %v is not comSK of input coins", i))
 				}
 
 				// check cmSND of input coins is equal to comInputSND in serial number proof
 				if !privacy.IsPointEqual(cmInputSNDs[i], prf.GetSerialNumberProof()[i].GetComInput()) {
-					utils.Logger.Log.Errorf("cmSND in SNproof is not equal to commitment of input's SND - txId %v", txN.Hash().String())
+					utils.Logger.Log.Errorf("cmSND in SNproof is not equal to commitment of input's SND - txId %v", tx.Hash().String())
 					return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("cmSND in SNproof %v is not equal to commitment of input's SND", i))
 				}
 
 				// check SN of input coins is equal to the corresponding SN in serial number proof
 				if !privacy.IsPointEqual(prf.GetInputCoins()[i].GetKeyImage(), prf.GetSerialNumberProof()[i].GetSN()) {
-					utils.Logger.Log.Errorf("SN in SNProof is not equal to SN of input coin - txId %v", txN.Hash().String())
+					utils.Logger.Log.Errorf("SN in SNProof is not equal to SN of input coin - txId %v", tx.Hash().String())
 					return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("SN in SNProof %v is not equal to SN of input coin", i))
 				}
 
@@ -320,13 +320,13 @@ func (txN TxToken) validateSanityDataOfProofV2() (bool, error) {
 			}
 
 			// check SigPubKey
-			sigPubKeyPoint, err := new(privacy.Point).FromBytesS(txN.GetSigPubKey())
+			sigPubKeyPoint, err := new(privacy.Point).FromBytesS(tx.GetSigPubKey())
 			if err != nil {
-				utils.Logger.Log.Errorf("SigPubKey is invalid - txId %v", txN.Hash().String())
+				utils.Logger.Log.Errorf("SigPubKey is invalid - txId %v", tx.Hash().String())
 				return false, errors.New("SigPubKey is invalid")
 			}
 			if !privacy.IsPointEqual(cmInputSK, sigPubKeyPoint) {
-				utils.Logger.Log.Errorf("SigPubKey is not equal to commitment of private key - txId %v", txN.Hash().String())
+				utils.Logger.Log.Errorf("SigPubKey is not equal to commitment of private key - txId %v", tx.Hash().String())
 				return false, errors.New("SigPubKey is not equal to commitment of private key")
 			}
 
@@ -348,7 +348,7 @@ func (txN TxToken) validateSanityDataOfProofV2() (bool, error) {
 				return false, errors.New("validate sanity ComInputShardID of proof failed")
 			}
 
-			ok, err := prf.VerifySanityData(txN.GetValidationEnv())
+			ok, err := prf.VerifySanityData(tx.GetValidationEnv())
 			if err != nil {
 				return false, err
 			}
@@ -382,9 +382,9 @@ func (txN TxToken) validateSanityDataOfProofV2() (bool, error) {
 
 		if !isPrivacy {
 			// check SigPubKey
-			sigPubKeyPoint, err := new(privacy.Point).FromBytesS(txN.GetSigPubKey())
+			sigPubKeyPoint, err := new(privacy.Point).FromBytesS(tx.GetSigPubKey())
 			if err != nil {
-				utils.Logger.Log.Errorf("SigPubKey is invalid - txId %v", txN.Hash().String())
+				utils.Logger.Log.Errorf("SigPubKey is invalid - txId %v", tx.Hash().String())
 				return false, errors.New("SigPubKey is invalid")
 			}
 			inputCoins := prf.GetInputCoins()
@@ -396,7 +396,7 @@ func (txN TxToken) validateSanityDataOfProofV2() (bool, error) {
 			for i := 0; i < len(inputCoins); i++ {
 				// check PublicKey of input coin is equal to SigPubKey
 				if !privacy.IsPointEqual(inputCoins[i].GetPublicKey(), sigPubKeyPoint) {
-					utils.Logger.Log.Errorf("SigPubKey is not equal to public key of input coins - txId %v", txN.Hash().String())
+					utils.Logger.Log.Errorf("SigPubKey is not equal to public key of input coins - txId %v", tx.Hash().String())
 					return false, errors.New("SigPubKey is not equal to public key of input coins")
 				}
 			}
@@ -404,19 +404,19 @@ func (txN TxToken) validateSanityDataOfProofV2() (bool, error) {
 			for i := 0; i < len(prf.GetSerialNumberNoPrivacyProof()); i++ {
 				// check PK of input coin is equal to vKey in serial number proof
 				if !privacy.IsPointEqual(prf.GetInputCoins()[i].GetPublicKey(), prf.GetSerialNumberNoPrivacyProof()[i].GetVKey()) {
-					utils.Logger.Log.Errorf("VKey in SNNoPrivacyProof is not equal public key of sender - txId %v", txN.Hash().String())
+					utils.Logger.Log.Errorf("VKey in SNNoPrivacyProof is not equal public key of sender - txId %v", tx.Hash().String())
 					return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("VKey of SNNoPrivacyProof %v is not public key of sender", i))
 				}
 
 				// check SND of input coins is equal to SND in serial number no privacy proof
 				if !privacy.IsScalarEqual(prf.GetInputCoins()[i].GetSNDerivator(), prf.GetSerialNumberNoPrivacyProof()[i].GetInput()) {
-					utils.Logger.Log.Errorf("SND in SNNoPrivacyProof is not equal to input's SND - txId %v", txN.Hash().String())
+					utils.Logger.Log.Errorf("SND in SNNoPrivacyProof is not equal to input's SND - txId %v", tx.Hash().String())
 					return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SND in SNNoPrivacyProof %v is not equal to input's SND", i))
 				}
 
 				// check SND of input coins is equal to SND in serial number no privacy proof
 				if !privacy.IsPointEqual(prf.GetInputCoins()[i].GetKeyImage(), prf.GetSerialNumberNoPrivacyProof()[i].GetOutput()) {
-					utils.Logger.Log.Errorf("SN in SNNoPrivacyProof is not equal to SN in input coin - txId %v", txN.Hash().String())
+					utils.Logger.Log.Errorf("SN in SNNoPrivacyProof is not equal to SN in input coin - txId %v", tx.Hash().String())
 					return false, errhandler.NewPrivacyErr(errhandler.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SN in SNNoPrivacyProof %v is not equal to SN in input coin", i))
 				}
 
