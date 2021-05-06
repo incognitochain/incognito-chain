@@ -3,6 +3,8 @@ package mock
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer2 "github.com/libp2p/go-libp2p-peer"
 )
@@ -47,4 +49,13 @@ func (s *Server) GetIncognitoPublicKeyRole(publicKey string) (int, bool, int) {
 }
 func (s *Server) GetMinerIncognitoPublickey(publicKey string, keyType string) []byte {
 	return nil
+}
+
+func (s *Server) OnTx(p *peer.PeerConn, msg *wire.MessageTx) {
+	sid := common.GetShardIDFromLastByte(msg.Transaction.GetSenderAddrLastByte())
+	s.BlockChain.GetChain(int(sid)).(*blockchain.ShardChain).TxPool.GetInbox() <- msg.Transaction
+}
+func (s *Server) OnTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {
+	sid := common.GetShardIDFromLastByte(msg.Transaction.GetSenderAddrLastByte())
+	s.BlockChain.GetChain(int(sid)).(*blockchain.ShardChain).TxPool.GetInbox() <- msg.Transaction
 }

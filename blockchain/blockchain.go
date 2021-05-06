@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 
@@ -219,7 +220,17 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	var committeeEngine committeestate.ShardCommitteeEngine
 
 	if blockchain.config.ChainParams.StakingFlowV2Height == 1 {
-		committeeEngine = committeestate.NewShardCommitteeEngineV2(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV2())
+		Logger.log.Info("")
+		committeeEngine = committeestate.NewShardCommitteeEngineV2(
+			1,
+			initShardBlock.Header.Hash(),
+			shardID,
+			committeestate.NewShardCommitteeStateV2WithValue(
+				[]incognitokey.CommitteePublicKey{},
+				*blockchain.BeaconChain.GetBestView().GetHash(),
+			),
+		)
+
 	} else {
 		committeeEngine = committeestate.NewShardCommitteeEngineV1(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
 	}
@@ -593,7 +604,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 		var shardCommitteeEngine committeestate.ShardCommitteeEngine
-		if v.BeaconHeight > blockchain.config.ChainParams.StakingFlowV2Height {
+		if v.BeaconHeight >= blockchain.config.ChainParams.StakingFlowV2Height {
 			shardCommitteeEngine = InitShardCommitteeEngineV2(
 				v.consensusStateDB,
 				v.ShardHeight, v.ShardID, v.BestBlockHash,
