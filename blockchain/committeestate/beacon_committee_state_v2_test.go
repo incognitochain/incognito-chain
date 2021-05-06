@@ -2481,7 +2481,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					newValidators: []string{key2},
+					newAllRoles: []string{key2},
 				},
 				committeeChange: &CommitteeChange{},
 			},
@@ -2512,7 +2512,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					newValidators: []string{key},
+					newAllRoles: []string{key},
 				},
 				committeeChange: &CommitteeChange{},
 			},

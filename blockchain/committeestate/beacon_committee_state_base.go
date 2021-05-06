@@ -461,7 +461,7 @@ func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 ) *CommitteeChange {
-	return b.turnOffAutoStake(env.newValidators, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange)
+	return b.turnOffAutoStake(env.newAllRoles, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange)
 }
 
 //SplitReward ...

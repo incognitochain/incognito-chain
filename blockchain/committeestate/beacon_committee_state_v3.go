@@ -360,9 +360,10 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 func (b *BeaconCommitteeStateV3) addData(env *BeaconCommitteeStateEnvironment) {
 	env.newUnassignedCommonPool = common.DeepCopyString(b.shardCommonPool[b.numberOfAssignedCandidates:])
 	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
-	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
+	env.newAllRoles = append([]string{},env.newUnassignedCommonPool...)
+	env.newAllRoles = append(env.newAllRoles, env.newAllSubstituteCommittees...)
 	for _, syncPoolValidators := range b.syncPool {
-		env.newValidators = append(env.newValidators, syncPoolValidators...)
+		env.newAllRoles = append(env.newAllRoles, syncPoolValidators...)
 	}
 	env.shardCommittee = make(map[byte][]string)
 	for shardID, committees := range b.shardCommittee {

@@ -128,7 +128,7 @@ func (b beaconCommitteeStateSlashingBase) getAllSubstituteCommittees() ([]string
 		return []string{}, err
 	}
 
-	candidateShardWaitingForCurrentRandomStr := b.shardCommonPool[:b.numberOfAssignedCandidates]
+	candidateShardWaitingForCurrentRandomStr := common.DeepCopyString(b.shardCommonPool[:b.numberOfAssignedCandidates])
 	validators = append(validators, candidateShardWaitingForCurrentRandomStr...)
 	return validators, nil
 }
@@ -429,17 +429,12 @@ func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 ) (*CommitteeChange, *instruction.ReturnStakeInstruction, error) {
 	for index, publicKey := range unstakeInstruction.CommitteePublicKeys {
 		if common.IndexOfStr(publicKey, env.newUnassignedCommonPool) == -1 {
-			if common.IndexOfStr(publicKey, env.newAllSubstituteCommittees) != -1 {
-				// if found in committee list then turn off auto staking
-				if _, ok := b.autoStake[publicKey]; ok {
-					committeeChange = b.turnOffStopAutoStake(publicKey, committeeChange)
-				}
+			// if found in committee list then turn off auto staking
+			if _, ok := b.autoStake[publicKey]; ok {
+				committeeChange = b.turnOffStopAutoStake(publicKey, committeeChange)
 			}
 		} else {
 			indexCandidate := common.IndexOfStr(publicKey, b.shardCommonPool)
-			if indexCandidate == -1 {
-				return committeeChange, returnStakingInstruction, errors.Errorf("Committee public key: %s is not valid for any committee sets", publicKey)
-			}
 			b.shardCommonPool = append(b.shardCommonPool[:indexCandidate], b.shardCommonPool[indexCandidate+1:]...)
 			stakerInfo, has, err := statedb.GetStakerInfo(env.ConsensusStateDB, publicKey)
 			if err != nil {
@@ -448,8 +443,7 @@ func (b *beaconCommitteeStateSlashingBase) processUnstakeInstruction(
 			if !has {
 				return committeeChange, returnStakingInstruction, errors.New("Can't find staker info")
 			}
-			committeeChange.NextEpochShardCandidateRemoved =
-				append(committeeChange.NextEpochShardCandidateRemoved, unstakeInstruction.CommitteePublicKeysStruct[index])
+			committeeChange.AddNextEpochShardCandidateRemoved([]string{unstakeInstruction.CommitteePublicKeys[index]})
 
 			returnStakingInstruction, committeeChange = b.buildReturnStakingInstructionAndDeleteStakerInfo(
 				returnStakingInstruction,

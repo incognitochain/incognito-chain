@@ -1,11 +1,12 @@
 package committeestate
 
 import (
-	"github.com/incognitochain/incognito-chain/wallet"
 	"reflect"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/common"
@@ -1616,9 +1617,10 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 	statedb.StoreStakerInfo(
 		sDB,
 		[]incognitokey.CommitteePublicKey{
-			*incKey0, *incKey2, *incKey4, *incKey6, *incKey8, *incKey10, *incKey12,
+			*incKey, *incKey0, *incKey2, *incKey4, *incKey6, *incKey8, *incKey10, *incKey12,
 		},
 		map[string]privacy.PaymentAddress{
+			incKey.GetIncKeyBase58():   paymentAddress,
 			incKey0.GetIncKeyBase58():  paymentAddress,
 			incKey2.GetIncKeyBase58():  paymentAddress,
 			incKey4.GetIncKeyBase58():  paymentAddress,
@@ -1628,6 +1630,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			incKey12.GetIncKeyBase58(): paymentAddress,
 		},
 		map[string]bool{
+			key:   true,
 			key0:  true,
 			key2:  true,
 			key4:  true,
@@ -1637,6 +1640,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			key12: true,
 		},
 		map[string]common.Hash{
+			key:   *hash,
 			key0:  *hash,
 			key2:  *hash,
 			key4:  *hash,
@@ -1653,27 +1657,29 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 		finishedSyncValidators           map[byte][]string
 	}
 	type args struct {
-		unstakeInstruction *instruction.UnstakeInstruction
-		env                *BeaconCommitteeStateEnvironment
-		committeeChange    *CommitteeChange
-		oldState           BeaconCommitteeState
+		unstakeInstruction       *instruction.UnstakeInstruction
+		env                      *BeaconCommitteeStateEnvironment
+		committeeChange          *CommitteeChange
+		returnStakingInstruction *instruction.ReturnStakeInstruction
 	}
 	tests := []struct {
-		name               string
-		fields             fields
-		fieldsAfterProcess fields
-		args               args
-		want               *CommitteeChange
+		name                string
+		fields              fields
+		fieldsAfterProcess  fields
+		args                args
+		wantCommitteeChange *CommitteeChange
+		wantReturnStakeInst *instruction.ReturnStakeInstruction
+		wantErr             bool
 	}{
 		{
-			name: "Valid Input",
+			name: "Unstake next candidate, current candidate > 0, turn off auto stake flag > 0",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-					shardCommonPool: []string{key0, key},
+					shardCommonPool: []string{key2, key, key0},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
-							0: []string{key2, key3},
+							0: []string{key3},
 							1: []string{key4, key5},
 						},
 						shardSubstitute: map[byte][]string{
@@ -1681,6 +1687,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							1: []string{key8, key9},
 						},
 						autoStake: map[string]bool{
+							key:   true,
 							key0:  true,
 							key2:  true,
 							key4:  true,
@@ -1689,7 +1696,28 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							key10: true,
 							key12: true,
 						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey.GetIncKeyBase58():   paymentAddress,
+							incKey0.GetIncKeyBase58():  paymentAddress,
+							incKey2.GetIncKeyBase58():  paymentAddress,
+							incKey4.GetIncKeyBase58():  paymentAddress,
+							incKey6.GetIncKeyBase58():  paymentAddress,
+							incKey8.GetIncKeyBase58():  paymentAddress,
+							incKey10.GetIncKeyBase58(): paymentAddress,
+							incKey12.GetIncKeyBase58(): paymentAddress,
+						},
+						stakingTx: map[string]common.Hash{
+							key:   *hash,
+							key0:  *hash,
+							key2:  *hash,
+							key4:  *hash,
+							key6:  *hash,
+							key8:  *hash,
+							key10: *hash,
+							key12: *hash,
+						},
 					},
+					numberOfAssignedCandidates: 1,
 				},
 				syncPool: map[byte][]string{
 					0: []string{key10, key11},
@@ -1698,11 +1726,11 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			},
 			fieldsAfterProcess: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-					shardCommonPool: []string{key0, key},
+					shardCommonPool: []string{key2},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
 						beaconCommittee: []string{},
 						shardCommittee: map[byte][]string{
-							0: []string{key2, key3},
+							0: []string{key3},
 							1: []string{key4, key5},
 						},
 						shardSubstitute: map[byte][]string{
@@ -1710,7 +1738,6 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							1: []string{key8, key9},
 						},
 						autoStake: map[string]bool{
-							key0:  true,
 							key2:  true,
 							key4:  true,
 							key6:  true,
@@ -1718,7 +1745,24 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							key10: true,
 							key12: true,
 						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey2.GetIncKeyBase58():  paymentAddress,
+							incKey4.GetIncKeyBase58():  paymentAddress,
+							incKey6.GetIncKeyBase58():  paymentAddress,
+							incKey8.GetIncKeyBase58():  paymentAddress,
+							incKey10.GetIncKeyBase58(): paymentAddress,
+							incKey12.GetIncKeyBase58(): paymentAddress,
+						},
+						stakingTx: map[string]common.Hash{
+							key2:  *hash,
+							key4:  *hash,
+							key6:  *hash,
+							key8:  *hash,
+							key10: *hash,
+							key12: *hash,
+						},
 					},
+					numberOfAssignedCandidates: 1,
 				},
 				syncPool: map[byte][]string{
 					0: []string{key10, key11},
@@ -1726,49 +1770,21 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 				},
 			},
 			args: args{
-				unstakeInstruction: &instruction.UnstakeInstruction{
-					CommitteePublicKeys: []string{key0, key2, key4, key6, key8, key10, key12, key14},
-				},
+				unstakeInstruction: instruction.NewUnstakeInstructionWithValue([]string{key, key0, key2, key4, key6, key8, key10, key12, key14}),
 				env: &BeaconCommitteeStateEnvironment{
-					newValidators: []string{
-						key0, key, key2, key3, key4, key5, key6,
-						key7, key8, key9, key10, key11, key12, key13,
-					},
+					ConsensusStateDB: sDB,
 				},
-				committeeChange: &CommitteeChange{},
-				oldState: &BeaconCommitteeStateV3{
-					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-						shardCommonPool: []string{key0, key},
-						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							beaconCommittee: []string{},
-							shardCommittee: map[byte][]string{
-								0: []string{key2, key3},
-								1: []string{key4, key5},
-							},
-							shardSubstitute: map[byte][]string{
-								0: []string{key6, key7},
-								1: []string{key8, key9},
-							},
-							autoStake: map[string]bool{
-								key0:  true,
-								key2:  true,
-								key4:  true,
-								key6:  true,
-								key8:  true,
-								key10: true,
-								key12: true,
-							},
-						},
-					},
-					syncPool: map[byte][]string{
-						0: []string{key10, key11},
-						1: []string{key12, key13},
-					},
-				},
+				committeeChange:          NewCommitteeChange(),
+				returnStakingInstruction: instruction.NewReturnStakeIns(),
 			},
-			want: &CommitteeChange{
-				StopAutoStake: []string{key0, key2, key4, key6, key8, key10, key12},
-			},
+			wantCommitteeChange: NewCommitteeChange().
+				AddStopAutoStakes([]string{key2, key4, key6, key8, key10, key12}).
+				AddNextEpochShardCandidateRemoved([]string{key, key0}).
+				AddRemovedStakers([]string{key, key0}),
+			wantReturnStakeInst: instruction.NewReturnStakeInsWithValue(
+				[]string{key, key0},
+				[]string{hash.String(), hash.String()},
+			),
 		},
 	}
 	for _, tt := range tests {
@@ -1777,9 +1793,17 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 				beaconCommitteeStateSlashingBase: tt.fields.beaconCommitteeStateSlashingBase,
 				syncPool:                         tt.fields.syncPool,
 			}
-			got := b.processUnstakeInstruction(tt.args.unstakeInstruction, tt.args.env, tt.args.committeeChange, tt.args.oldState)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BeaconCommitteeStateV3.processUnstakeInstruction() got = %v, want %v", got, tt.want)
+			b.addData(tt.args.env)
+			got, got1, err := b.processUnstakeInstruction(tt.args.unstakeInstruction, tt.args.env, tt.args.committeeChange, tt.args.returnStakingInstruction)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("processUnstakeInstruction() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.wantCommitteeChange) {
+				t.Errorf("BeaconCommitteeStateV3.processUnstakeInstruction() gotCommitteeChange = %v, want %v", got, tt.wantCommitteeChange)
+			}
+			if !reflect.DeepEqual(got1, tt.wantReturnStakeInst) {
+				t.Errorf("BeaconCommitteeStateV3.processUnstakeInstruction() gotReturnStakeInst = %v, want %v", got1, tt.wantReturnStakeInst)
 			}
 		})
 	}
@@ -1980,7 +2004,7 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 							strings.Join([]string{key, key7}, instruction.SPLITTER),
 						},
 					},
-					newValidators: []string{
+					newAllRoles: []string{
 						key0, key, key2, key3, key4, key5, key6, key7, key8,
 						key9, key10, key11, key12, key13, key14, key15,
 					},
