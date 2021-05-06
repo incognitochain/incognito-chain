@@ -185,7 +185,7 @@ type Transaction interface {
 	ValidateSanityDataByItSelf() (bool, error)
 	ValidateTxCorrectness() (bool, error)
 	LoadCommitment(db *statedb.StateDB) error
-	ValidateSanityDataWithBlockchain(
+	Va	lidateSanityDataWithBlockchain(
 		chainRetriever ChainRetriever,
 		shardViewRetriever ShardViewRetriever,
 		beaconViewRetriever BeaconViewRetriever,
@@ -207,9 +207,6 @@ type Transaction interface {
 	Init(interface{}) error
 	// Verify the init function above, which verify zero knowledge proof and signatures
 	Verify(map[string]bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash) (bool, error)
-	CalculateBurningTxValue(bcr ChainRetriever, retriever ShardViewRetriever, viewRetriever BeaconViewRetriever, beaconHeight uint64) (bool, uint64)
-	GetFullTxValues() (uint64, uint64)
-	IsFullBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
 	VerifySigTx() (bool, error)
 	GetValidationEnv() ValidationEnviroment
 	SetValidationEnv(ValidationEnviroment)
