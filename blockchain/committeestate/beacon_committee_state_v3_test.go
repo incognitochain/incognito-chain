@@ -2215,6 +2215,22 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
 							mu: finalMutex,
+							autoStake: map[string]bool{
+								key:   true,
+								key10: false,
+							},
+							rewardReceiver: map[string]privacy.PaymentAddress{
+								incKey.GetIncKeyBase58():   paymentAddress,
+								incKey10.GetIncKeyBase58(): paymentAddress,
+							},
+							stakingTx: map[string]common.Hash{
+								key:   *hash,
+								key10: *hash,
+							},
+						},
+						shardCommonPool: []string{
+							key0, key, key2, key3, key4, key5, key6, key7, key8,
+							key9, key10, key11, key12, key13, key14, key15,
 						},
 					},
 				},
@@ -2223,29 +2239,41 @@ func TestBeaconCommitteeStateV3_UpdateCommitteeState(t *testing.T) {
 				BeaconCommitteeStateV3: &BeaconCommitteeStateV3{
 					beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 						beaconCommitteeStateBase: beaconCommitteeStateBase{
-							mu: finalMutex,
+							mu:             finalMutex,
+							autoStake:      map[string]bool{},
+							stakingTx:      map[string]common.Hash{},
+							rewardReceiver: map[string]privacy.PaymentAddress{},
+						},
+						shardCommonPool: []string{
+							key0, key2, key3, key4, key5, key6, key7, key8,
+							key9, key11, key12, key13, key14, key15,
 						},
 					},
 				},
 			},
 			args: args{
 				env: &BeaconCommitteeStateEnvironment{
-					ActiveShards: 2,
+					ActiveShards:     2,
+					ConsensusStateDB: sDB,
 					BeaconInstructions: [][]string{
 						[]string{
 							instruction.UNSTAKE_ACTION,
-							strings.Join([]string{key, key7}, instruction.SPLITTER),
+							strings.Join([]string{key, key10}, instruction.SPLITTER),
 						},
 					},
-					newAllRoles: []string{
+					newUnassignedCommonPool: []string{
 						key0, key, key2, key3, key4, key5, key6, key7, key8,
 						key9, key10, key11, key12, key13, key14, key15,
 					},
 				},
 			},
-			wantCommitteeChange:   nil,
-			wantReturnInstruction: nil,
-			wantErr:               true,
+			wantCommitteeChange: NewCommitteeChange().
+				AddNextEpochShardCandidateRemoved([]string{key, key10}).
+				AddRemovedStakers([]string{key, key10}),
+			wantReturnInstruction: [][]string{
+				instruction.NewReturnStakeInsWithValue([]string{key, key10}, []string{hash.String(), hash.String()}).ToString(),
+			},
+			wantErr: false,
 		},
 		{
 			name: "Process Finish Sync Instruction",
