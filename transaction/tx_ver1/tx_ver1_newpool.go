@@ -15,6 +15,56 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
+// VerifySigTx - verify signature on tx
+func (tx *Tx) VerifySigTx() (bool, error) {
+	// check input transaction
+	if tx.Sig == nil || tx.SigPubKey == nil {
+		return false, utils.NewTransactionErr(utils.UnexpectedError, errors.New("input transaction must be an signed one"))
+	}
+
+	var err error
+	res := false
+
+	/****** verify Schnorr signature *****/
+	// prepare Public key for verification
+	verifyKey := new(privacy.SchnorrPublicKey)
+	sigPublicKey, err := new(privacy.Point).FromBytesS(tx.SigPubKey)
+
+	if err != nil {
+		utils.Logger.Log.Error(err)
+		return false, utils.NewTransactionErr(utils.DecompressSigPubKeyError, err)
+	}
+	verifyKey.Set(sigPublicKey)
+
+	// convert signature from byte array to SchnorrSign
+	signature := new(privacy.SchnSignature)
+	err = signature.SetBytes(tx.Sig)
+	if err != nil {
+		utils.Logger.Log.Error(err)
+		return false, utils.NewTransactionErr(utils.InitTxSignatureFromBytesError, err)
+	}
+
+	// verify signature
+	/*Logger.log.Debugf(" VERIFY SIGNATURE ----------- HASH: %v\n", tx.Hash()[:])
+	if tx.Proof != nil {
+		Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX Proof bytes before verifing the signature: %v\n", tx.Proof.Bytes())
+	}
+	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
+	res = verifyKey.Verify(signature, tx.Hash()[:])
+	if !res {
+		err = fmt.Errorf("Verify signature of tx %v failed", tx.Hash().String())
+		utils.Logger.Log.Error(err)
+	}
+
+	return res, err
+}
+
+// CheckCMExistence returns true if cm exists in cm list
+func (tx Tx) CheckCMExistence(cm []byte, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
+	ok, err := statedb.HasCommitment(stateDB, *tokenID, cm, shardID)
+	return ok, err
+}
+
 func (tx Tx) ValidateDoubleSpendWithBlockChain(
 	stateDB *statedb.StateDB,
 ) (bool, error) {

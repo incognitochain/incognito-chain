@@ -1,4 +1,4 @@
-package privacy
+package env
 
 type ValidationEnviroment interface {
 	IsPrivacy() bool

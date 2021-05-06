@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"io/ioutil"
 	"log"
 	"net"
@@ -19,10 +20,8 @@ import (
 
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/peerv2"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/syncker"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/incognitochain/incognito-chain/wallet"
 
@@ -47,8 +46,6 @@ import (
 	"github.com/incognitochain/incognito-chain/pubsub"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
-	"github.com/incognitochain/incognito-chain/syncker"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 	"google.golang.org/api/option"
