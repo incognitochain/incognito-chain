@@ -164,8 +164,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		return NewBlockChainError(InsertShardBlockError, fmt.Errorf("Not expected height, current view height %+v, incomming block height %+v", curView.ShardHeight, blockHeight))
 	}
 
-	beaconHeight := shardBlock.Header.BeaconHeight
-	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(beaconHeight), curView); err != nil {
+	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, shardBlock.Header.BeaconHash, curView); err != nil {
 		Logger.log.Errorf("BUGLOG2 verifyTransactionFromNewBlock for block %v, shard %v error: %v\n", blockHeight, shardID, err)
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
@@ -949,17 +948,9 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 		panic("TempTxPool Is not Empty")
 	}
 	defer blockchain.config.TempTxPool.EmptyPool()
-	listTxs := []metadata.Transaction{}
 
 	isRelatedCommittee := false
 	for _, tx := range txs {
-		if tx.IsSalaryTx() {
-			_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, beaconHeight, curView)
-			if err != nil {
-				return err
-			}
-		} else {
-			listTxs = append(listTxs, tx)
 		if tx.GetMetadata() != nil {
 			switch tx.GetMetadata().GetType() {
 			case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
@@ -971,29 +962,12 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 	bView, err := blockchain.GetBeaconViewStateDataFromBlockHash(beaconHash, isRelatedCommittee)
 	if err != nil {
 		Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
-		return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, beaconHeight, curView)
+		return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
 	}
 	return nil
 }
 
-func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHeight int64, curView *ShardBestState) error {
-	if len(txs) == 0 {
-		return nil
-	}
-	isEmpty := blockchain.config.TempTxPool.EmptyPool()
-	if !isEmpty {
-		panic("TempTxPool Is not Empty")
-	}
-	defer blockchain.config.TempTxPool.EmptyPool()
-	listTxs := []metadata.Transaction{}
-
-	for _, tx := range txs {
-		if tx.IsSalaryTx() {
-			_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, beaconHeight, curView)
-			if err != nil {
-				return err
-		return NewBlockChainError(CloneBeaconBestStateError, err)
-	}
+func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, bView *BeaconBestState, curView *ShardBestState) error {
 	if blockchain.config.usingNewPool {
 		ok, err := blockchain.ShardChain[shardID].TxsVerifier.FullValidateTransactions(
 			blockchain,
@@ -1012,11 +986,14 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 		defer blockchain.config.TempTxPool.EmptyPool()
 		listTxs := []metadata.Transaction{}
 		for _, tx := range txs {
-			if !tx.IsSalaryTx() {
+			if tx.IsSalaryTx() {
+				_, err := blockchain.config.TempTxPool.MaybeAcceptSalaryTransactionForBlockProducing(shardID, tx, int64(bView.BeaconHeight), curView)
+				if err != nil {
+					return err
+				}
+			} else {
 				listTxs = append(listTxs, tx)
 			}
-		} else {
-			listTxs = append(listTxs, tx)
 		}
 		_, err := blockchain.config.TempTxPool.MaybeAcceptBatchTransactionForBlockProducing(shardID, listTxs, int64(bView.BeaconHeight), curView)
 		if err != nil {
@@ -1033,13 +1010,7 @@ func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID 
 			}
 		}
 	}
-	for index, tx := range listTxs {
-		_, err := blockchain.config.TempTxPool.MaybeAcceptTransactionForBlockProducing(tx, beaconHeight, curView)
-		if err != nil {
-			Logger.log.Errorf("One by one verify txs at index %d error: %+v", index, err)
-			return NewBlockChainError(TransactionFromNewBlockError, fmt.Errorf("Transaction %+v, index %+v get %+v ", *tx.Hash(), index, err))
-		}
-	}
+
 	return nil
 }
 
