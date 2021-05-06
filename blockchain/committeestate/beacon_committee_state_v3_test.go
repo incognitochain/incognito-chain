@@ -1665,14 +1665,14 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 	tests := []struct {
 		name                string
 		fields              fields
-		fieldsAfterProcess  fields
+		fieldsAfterProcess  *BeaconCommitteeStateV3
 		args                args
 		wantCommitteeChange *CommitteeChange
 		wantReturnStakeInst *instruction.ReturnStakeInstruction
 		wantErr             bool
 	}{
 		{
-			name: "Unstake next candidate, current candidate > 0, turn off auto stake flag > 0",
+			name: "Unstake next candidate > 0, current candidate > 0, turn off auto stake flag > 0",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					shardCommonPool: []string{key2, key, key0},
@@ -1724,7 +1724,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 					1: []string{key12, key13},
 				},
 			},
-			fieldsAfterProcess: fields{
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
 					shardCommonPool: []string{key2},
 					beaconCommitteeStateBase: beaconCommitteeStateBase{
@@ -1738,12 +1738,12 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 							1: []string{key8, key9},
 						},
 						autoStake: map[string]bool{
-							key2:  true,
-							key4:  true,
-							key6:  true,
-							key8:  true,
-							key10: true,
-							key12: true,
+							key2:  false,
+							key4:  false,
+							key6:  false,
+							key8:  false,
+							key10: false,
+							key12: false,
 						},
 						rewardReceiver: map[string]privacy.PaymentAddress{
 							incKey2.GetIncKeyBase58():  paymentAddress,
@@ -1770,7 +1770,7 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 				},
 			},
 			args: args{
-				unstakeInstruction: instruction.NewUnstakeInstructionWithValue([]string{key, key0, key2, key4, key6, key8, key10, key12, key14}),
+				unstakeInstruction: instruction.NewUnstakeInstructionWithValue([]string{key, key0, key2, key4, key6, key8, key10, key12}),
 				env: &BeaconCommitteeStateEnvironment{
 					ConsensusStateDB: sDB,
 				},
@@ -1783,6 +1783,236 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 				AddRemovedStakers([]string{key, key0}),
 			wantReturnStakeInst: instruction.NewReturnStakeInsWithValue(
 				[]string{key, key0},
+				[]string{hash.String(), hash.String()},
+			),
+		},
+		{
+			name: "Unstake next candidate = 0, current candidate = 0, turn off auto stake flag > 0",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					shardCommonPool: []string{key2, key, key0},
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						beaconCommittee: []string{},
+						shardCommittee: map[byte][]string{
+							0: []string{key3},
+							1: []string{key4, key5},
+						},
+						shardSubstitute: map[byte][]string{
+							0: []string{key6, key7},
+							1: []string{key8, key9},
+						},
+						autoStake: map[string]bool{
+							key:   true,
+							key0:  true,
+							key2:  true,
+							key4:  true,
+							key6:  true,
+							key8:  true,
+							key10: true,
+							key12: true,
+						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey.GetIncKeyBase58():   paymentAddress,
+							incKey0.GetIncKeyBase58():  paymentAddress,
+							incKey2.GetIncKeyBase58():  paymentAddress,
+							incKey4.GetIncKeyBase58():  paymentAddress,
+							incKey6.GetIncKeyBase58():  paymentAddress,
+							incKey8.GetIncKeyBase58():  paymentAddress,
+							incKey10.GetIncKeyBase58(): paymentAddress,
+							incKey12.GetIncKeyBase58(): paymentAddress,
+						},
+						stakingTx: map[string]common.Hash{
+							key:   *hash,
+							key0:  *hash,
+							key2:  *hash,
+							key4:  *hash,
+							key6:  *hash,
+							key8:  *hash,
+							key10: *hash,
+							key12: *hash,
+						},
+					},
+					numberOfAssignedCandidates: 0,
+				},
+				syncPool: map[byte][]string{
+					0: []string{key10, key11},
+					1: []string{key12, key13},
+				},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					shardCommonPool: []string{key2, key, key0},
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						beaconCommittee: []string{},
+						shardCommittee: map[byte][]string{
+							0: []string{key3},
+							1: []string{key4, key5},
+						},
+						shardSubstitute: map[byte][]string{
+							0: []string{key6, key7},
+							1: []string{key8, key9},
+						},
+						autoStake: map[string]bool{
+							key:   true,
+							key0:  true,
+							key2:  true,
+							key4:  false,
+							key6:  false,
+							key8:  false,
+							key10: false,
+							key12: false,
+						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey.GetIncKeyBase58():   paymentAddress,
+							incKey0.GetIncKeyBase58():  paymentAddress,
+							incKey2.GetIncKeyBase58():  paymentAddress,
+							incKey4.GetIncKeyBase58():  paymentAddress,
+							incKey6.GetIncKeyBase58():  paymentAddress,
+							incKey8.GetIncKeyBase58():  paymentAddress,
+							incKey10.GetIncKeyBase58(): paymentAddress,
+							incKey12.GetIncKeyBase58(): paymentAddress,
+						},
+						stakingTx: map[string]common.Hash{
+							key:   *hash,
+							key0:  *hash,
+							key2:  *hash,
+							key4:  *hash,
+							key6:  *hash,
+							key8:  *hash,
+							key10: *hash,
+							key12: *hash,
+						},
+					},
+					numberOfAssignedCandidates: 0,
+				},
+				syncPool: map[byte][]string{
+					0: []string{key10, key11},
+					1: []string{key12, key13},
+				},
+			},
+			args: args{
+				unstakeInstruction: instruction.NewUnstakeInstructionWithValue([]string{key4, key6, key8, key10, key12}),
+				env: &BeaconCommitteeStateEnvironment{
+					ConsensusStateDB: sDB,
+				},
+				committeeChange:          NewCommitteeChange(),
+				returnStakingInstruction: instruction.NewReturnStakeIns(),
+			},
+			wantCommitteeChange: NewCommitteeChange().
+				AddStopAutoStakes([]string{key4, key6, key8, key10, key12}),
+			wantReturnStakeInst: instruction.NewReturnStakeIns(),
+		},
+		{
+			name: "Unstake next candidate > 0, current candidate = 0, turn off auto stake flag = 0",
+			fields: fields{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					shardCommonPool: []string{key2, key, key0},
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						beaconCommittee: []string{},
+						shardCommittee: map[byte][]string{
+							0: []string{key3},
+							1: []string{key4, key5},
+						},
+						shardSubstitute: map[byte][]string{
+							0: []string{key6, key7},
+							1: []string{key8, key9},
+						},
+						autoStake: map[string]bool{
+							key:   true,
+							key0:  true,
+							key2:  true,
+							key4:  true,
+							key6:  true,
+							key8:  true,
+							key10: true,
+							key12: true,
+						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey.GetIncKeyBase58():   paymentAddress,
+							incKey0.GetIncKeyBase58():  paymentAddress,
+							incKey2.GetIncKeyBase58():  paymentAddress,
+							incKey4.GetIncKeyBase58():  paymentAddress,
+							incKey6.GetIncKeyBase58():  paymentAddress,
+							incKey8.GetIncKeyBase58():  paymentAddress,
+							incKey10.GetIncKeyBase58(): paymentAddress,
+							incKey12.GetIncKeyBase58(): paymentAddress,
+						},
+						stakingTx: map[string]common.Hash{
+							key:   *hash,
+							key0:  *hash,
+							key2:  *hash,
+							key4:  *hash,
+							key6:  *hash,
+							key8:  *hash,
+							key10: *hash,
+							key12: *hash,
+						},
+					},
+					numberOfAssignedCandidates: 0,
+				},
+				syncPool: map[byte][]string{
+					0: []string{key10, key11},
+					1: []string{key12, key13},
+				},
+			},
+			fieldsAfterProcess: &BeaconCommitteeStateV3{
+				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+					shardCommonPool: []string{key},
+					beaconCommitteeStateBase: beaconCommitteeStateBase{
+						beaconCommittee: []string{},
+						shardCommittee: map[byte][]string{
+							0: []string{key3},
+							1: []string{key4, key5},
+						},
+						shardSubstitute: map[byte][]string{
+							0: []string{key6, key7},
+							1: []string{key8, key9},
+						},
+						autoStake: map[string]bool{
+							key:   true,
+							key4:  true,
+							key6:  true,
+							key8:  true,
+							key10: true,
+							key12: true,
+						},
+						rewardReceiver: map[string]privacy.PaymentAddress{
+							incKey.GetIncKeyBase58():   paymentAddress,
+							incKey4.GetIncKeyBase58():  paymentAddress,
+							incKey6.GetIncKeyBase58():  paymentAddress,
+							incKey8.GetIncKeyBase58():  paymentAddress,
+							incKey10.GetIncKeyBase58(): paymentAddress,
+							incKey12.GetIncKeyBase58(): paymentAddress,
+						},
+						stakingTx: map[string]common.Hash{
+							key:   *hash,
+							key4:  *hash,
+							key6:  *hash,
+							key8:  *hash,
+							key10: *hash,
+							key12: *hash,
+						},
+					},
+					numberOfAssignedCandidates: 0,
+				},
+				syncPool: map[byte][]string{
+					0: []string{key10, key11},
+					1: []string{key12, key13},
+				},
+			},
+			args: args{
+				unstakeInstruction: instruction.NewUnstakeInstructionWithValue([]string{key0, key2}),
+				env: &BeaconCommitteeStateEnvironment{
+					ConsensusStateDB: sDB,
+				},
+				committeeChange:          NewCommitteeChange(),
+				returnStakingInstruction: instruction.NewReturnStakeIns(),
+			},
+			wantCommitteeChange: NewCommitteeChange().
+				AddNextEpochShardCandidateRemoved([]string{key0, key2}).
+				AddRemovedStakers([]string{key0, key2}),
+			wantReturnStakeInst: instruction.NewReturnStakeInsWithValue(
+				[]string{key0, key2},
 				[]string{hash.String(), hash.String()},
 			),
 		},
@@ -1804,6 +2034,9 @@ func TestBeaconCommitteeStateV3_processUnstakeInstruction(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got1, tt.wantReturnStakeInst) {
 				t.Errorf("BeaconCommitteeStateV3.processUnstakeInstruction() gotReturnStakeInst = %v, want %v", got1, tt.wantReturnStakeInst)
+			}
+			if !reflect.DeepEqual(b, tt.fieldsAfterProcess) {
+				t.Errorf("BeaconCommitteeStateV3.processUnstakeInstruction() fieldsAfterProcess = %v, want %v", b, tt.fieldsAfterProcess)
 			}
 		})
 	}
