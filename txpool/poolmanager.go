@@ -39,7 +39,7 @@ func (pm *PoolManager) Start(relayShards []byte) error {
 	relayShardM := map[byte]interface{}{}
 	for _, sID := range relayShards {
 		if int(sID) < len(pm.ShardTxsPool) {
-			pm.ShardTxsPool[sID].Start()
+			go pm.ShardTxsPool[sID].Start()
 			relayShardM[sID] = nil
 		}
 	}
@@ -58,12 +58,12 @@ func (pm *PoolManager) Start(relayShards []byte) error {
 			if (newRole.CID > -1) && (newRole.CID < len(pm.ShardTxsPool)) {
 				if (newRole.Role == common.SyncingRole) || (newRole.Role == common.CommitteeRole) /*|| (newRole.Role == common.NodeModeRelay) */ {
 					if !pm.ShardTxsPool[newRole.CID].IsRunning() {
-						pm.ShardTxsPool[newRole.CID].Start()
+						go pm.ShardTxsPool[newRole.CID].Start()
 					}
 				} else {
 					if pm.ShardTxsPool[newRole.CID].IsRunning() {
 						if _, ok := relayShardM[byte(newRole.CID)]; !ok {
-							pm.ShardTxsPool[newRole.CID].Stop()
+							go pm.ShardTxsPool[newRole.CID].Stop()
 						}
 					}
 				}
