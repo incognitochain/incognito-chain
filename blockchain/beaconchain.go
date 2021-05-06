@@ -208,7 +208,7 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(
 // TODO: change name
 func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), shouldValidate); err != nil {
-		Logger.log.Info(err)
+		Logger.log.Error(err)
 		return err
 	}
 	return nil
@@ -223,7 +223,7 @@ func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, "", true)
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), true); err != nil {
-		Logger.log.Info(err)
+		Logger.log.Error(err)
 		return err
 	}
 	return nil

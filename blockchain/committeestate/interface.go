@@ -29,7 +29,9 @@ type BeaconCommitteeEngine interface {
 	GetStakingTx() map[string]common.Hash
 	GetRewardReceiver() map[string]privacy.PaymentAddress
 	GetAllCandidateSubstituteCommittee() []string
-	Commit(*BeaconCommitteeStateHash) error
+	//Commit function is deprecate
+	Commit(*BeaconCommitteeStateHash, *CommitteeChange) error
+	//AbortUncommittedBeaconState function is deprecate
 	AbortUncommittedBeaconState()
 	UpdateCommitteeState(env *BeaconCommitteeStateEnvironment) (
 		*BeaconCommitteeStateHash,

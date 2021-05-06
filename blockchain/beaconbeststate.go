@@ -657,6 +657,13 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		NumberOfFixedShardBlockValidator: params.NumberOfFixedBlockValidators,
 		MaxShardCommitteeSize:            params.MaxShardCommitteeSize,
 		MissingSignaturePenalty:          slashingPenalty,
+		PreviousBlockHashes: &committeestate.BeaconCommitteeStateHash{
+			BeaconCandidateHash:             beaconBestState.BestBlock.Header.BeaconCandidateRoot,
+			BeaconCommitteeAndValidatorHash: beaconBestState.BestBlock.Header.BeaconCommitteeAndValidatorRoot,
+			ShardCandidateHash:              beaconBestState.BestBlock.Header.ShardCandidateRoot,
+			ShardCommitteeAndValidatorHash:  beaconBestState.BestBlock.Header.ShardCommitteeAndValidatorRoot,
+			AutoStakeHash:                   beaconBestState.BestBlock.Header.AutoStakingRoot,
+		},
 	}
 }
 
