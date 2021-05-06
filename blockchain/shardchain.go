@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/pubsub"
 	"os"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/pubsub"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -189,7 +190,6 @@ type ShardProducingFlow struct {
 func (chain *ShardChain) getDataBeforeBlockProducing(buildView *ShardBestState, version int, proposer string, round int, startTime int64,
 	committeeViewHash common.Hash) (*ShardProducingFlow, error) {
 	blockchain := chain.Blockchain
-
 	blockCommittees, err := chain.getCommitteeFromBlock(committeeViewHash, chain.GetBestState())
 
 	createFlow := &ShardProducingFlow{
@@ -249,6 +249,13 @@ func (chain *ShardChain) getDataBeforeBlockProducing(buildView *ShardBestState, 
 		if err != nil {
 			return nil, err
 		}
+
+		currentCommitteePublicKeys, _ := incognitokey.CommitteeKeyListToString(buildView.GetCommittee())
+		newCommitteesPublicKeys, _ := incognitokey.CommitteeKeyListToString(blockCommittees)
+		if len(common.DifferentElementStrings(newCommitteesPublicKeys, currentCommitteePublicKeys)) == 0 {
+			createFlow.committeeViewHash = createFlow.curView.shardCommitteeEngine.CommitteeFromBlock()
+		}
+
 		createFlow.beaconBlocks = beaconBlocks
 		createFlow.processBeaconBlock = *beaconBlocks[len(beaconBlocks)-1]
 	}
@@ -528,32 +535,32 @@ type ShardValidationFlow struct {
 }
 
 func (chain *ShardChain) validateBlockHeader(flow *ShardValidationFlow) error {
-	chain.Blockchain.verifyPreProcessingShardBlock(flow.curView, flow.block, flow.beaconBlocks, false, flow.blockCommittees)
+	err := chain.Blockchain.verifyPreProcessingShardBlock(flow.curView, flow.block, flow.beaconBlocks, false, flow.blockCommittees)
+	if err != nil {
+		return err
+	}
 	shardBestState := flow.curView
 	committees := flow.blockCommittees
 	blockchain := chain.Blockchain
 	shardBlock := flow.block
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
-		if !shardBestState.CommitteeFromBlock().IsZeroValue() {
-			newCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(committees)
-			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
-			//Logger.log.Infof("new Committee %+v \n old Committees %+v", newCommitteesPubKeys, oldCommitteesPubKeys)
-			temp := common.DifferentElementStrings(oldCommitteesPubKeys, newCommitteesPubKeys)
-			if len(temp) != 0 {
-				oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
-				if err != nil {
-					return err
-				}
-				newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.CommitteeFromBlock)
-				if err != nil {
-					return err
-				}
-				if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
-					return NewBlockChainError(WrongBlockHeightError,
-						fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
-							newBeaconBlock.Header.Hash(), oldBeaconBlock.Header.Hash()))
-				}
+		newCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(committees)
+		oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
+		temp := common.DifferentElementStrings(oldCommitteesPubKeys, newCommitteesPubKeys)
+		if len(temp) != 0 {
+			oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
+			if err != nil {
+				return err
+			}
+			newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBlock.Header.CommitteeFromBlock)
+			if err != nil {
+				return err
+			}
+			if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
+				return NewBlockChainError(WrongBlockHeightError,
+					fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
+						newBeaconBlock.Header.Hash(), oldBeaconBlock.Header.Hash()))
 			}
 		}
 	}
