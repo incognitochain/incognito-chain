@@ -799,7 +799,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = newBestState.updateAllShardSubstituteValidators(committeeChange)
+	err = newBestState.storeAllShardSubstitutesValidator(committeeChange.ShardSubstituteAdded)
+	if err != nil {
+		return err
+	}
+	err = statedb.DeleteAllShardSubstitutesValidator(newBestState.consensusStateDB, committeeChange.ShardSubstituteRemoved)
 	if err != nil {
 		return err
 	}

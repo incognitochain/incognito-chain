@@ -863,12 +863,34 @@ func (beaconBestState *BeaconBestState) removeFinishedSyncValidators(committeeCh
 	}
 }
 
-func (beaconBestState *BeaconBestState) updateAllShardSubstituteValidators(committeeChange *committeestate.CommitteeChange) error {
-	for i, v := range beaconBestState.beaconCommitteeState.GetShardSubstitute() {
-		if len(committeeChange.ShardSubstituteAdded[i]) != 0 || len(committeeChange.ShardSubstituteRemoved[i]) != 0 {
-			err := statedb.StoreValidators(beaconBestState.consensusStateDB, int(i), statedb.SubstituteValidator, v)
+func (beaconBestState *BeaconBestState) storeAllShardSubstitutesValidator(
+	addedValidators map[byte][]incognitokey.CommitteePublicKey,
+) error {
+	for shardID, v := range addedValidators {
+		validators := make(map[string]bool)
+		for _, validator := range v {
+			key, err := validator.ToBase58()
 			if err != nil {
 				return err
+			}
+			validators[key] = true
+		}
+		newSubstituteValidators := beaconBestState.beaconCommitteeState.GetOneShardSubstitute(shardID)
+		for i, v := range newSubstituteValidators {
+			key, err := v.ToBase58()
+			if err != nil {
+				return err
+			}
+			if validators[key] {
+				err = statedb.StoreOneShardCommittee(
+					beaconBestState.consensusStateDB,
+					shardID,
+					newSubstituteValidators[i:],
+				)
+				if err != nil {
+					return err
+				}
+				break
 			}
 		}
 	}
