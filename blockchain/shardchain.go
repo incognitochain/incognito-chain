@@ -250,6 +250,7 @@ func (chain *ShardChain) getDataBeforeBlockProducing(buildView *ShardBestState, 
 			return nil, err
 		}
 
+		//make sure all shard block with same commiteee have same commiteeViewHash (the first block of epoch)
 		currentCommitteePublicKeys, _ := incognitokey.CommitteeKeyListToString(buildView.GetCommittee())
 		newCommitteesPublicKeys, _ := incognitokey.CommitteeKeyListToString(blockCommittees)
 		if len(common.DifferentElementStrings(newCommitteesPublicKeys, currentCommitteePublicKeys)) == 0 {
