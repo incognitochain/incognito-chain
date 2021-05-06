@@ -22,6 +22,7 @@ import (
 
 type TxBase struct {
 	// Basic data, required
+	valEnv *ValidationEnv
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
@@ -148,7 +149,7 @@ func GetTxVersionFromCoins(inputCoins []privacy.PlainCoin) (int8, error) {
 	}
 }
 
-// return bool indicates whether we should continue "Init" function or not
+// InitializeTxAndParams returns bool indicates whether we should continue "Init" function or not
 func (tx *TxBase) InitializeTxAndParams(params *TxPrivacyInitParams) error {
 	var err error
 	// Get Keyset from param
@@ -229,6 +230,42 @@ func (tx *TxBase) UnmarshalJSON(data []byte) error {
 }
 
 // =================== GET/SET FUNCTIONS ===================
+
+func (tx *TxBase) initEnv() metadata.ValidationEnviroment {
+	valEnv := DefaultValEnv()
+	if tx.IsSalaryTx() {
+		valEnv = WithAct(valEnv, common.TxActInit)
+	}
+	if tx.IsPrivacy() {
+		valEnv = WithPrivacy(valEnv)
+	} else {
+		valEnv = WithNoPrivacy(valEnv)
+	}
+	valEnv = WithType(valEnv, tx.GetType())
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	valEnv = WithShardID(valEnv, int(sID))
+	tx.SetValidationEnv(valEnv)
+	return valEnv
+}
+
+func (tx *TxBase) GetValidationEnv() metadata.ValidationEnviroment {
+	return tx.valEnv
+}
+
+func (tx *TxBase) SetValidationEnv(vEnv metadata.ValidationEnviroment) {
+	if vE, ok := vEnv.(*ValidationEnv); ok {
+		tx.valEnv = vE
+	} else {
+		valEnv := DefaultValEnv()
+		if tx.IsPrivacy() {
+			valEnv = WithPrivacy(valEnv)
+		} else {
+			valEnv = WithNoPrivacy(valEnv)
+		}
+		valEnv = WithType(valEnv, tx.GetType())
+		tx.valEnv = valEnv
+	}
+}
 
 func (tx TxBase) GetVersion() int8 { return tx.Version }
 
@@ -649,3 +686,4 @@ func (tx TxBase) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { return
 func (tx TxBase) ListOTAHashH() []common.Hash {
 	return []common.Hash{}
 }
+

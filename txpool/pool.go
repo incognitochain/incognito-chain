@@ -278,7 +278,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 		oCoins := prf.GetOutputCoins()
 		removeIdx := map[uint]interface{}{}
 		for _, iCoin := range iCoins {
-			if info, ok := dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
+			if info, ok := dataHelper[iCoin.GetKeyImage().ToBytes()]; ok {
 				if _, ok := removeIdx[info.Index]; ok {
 					continue
 				}
@@ -290,7 +290,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 			}
 		}
 		for _, oCoin := range oCoins {
-			if info, ok := dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
+			if info, ok := dataHelper[oCoin.GetSNDerivator().ToBytes()]; ok {
 				if _, ok := removeIdx[info.Index]; ok {
 					continue
 				}
@@ -337,7 +337,7 @@ func insertTxIntoList(
 		iCoins := prf.GetInputCoins()
 		oCoins := prf.GetOutputCoins()
 		for _, iCoin := range iCoins {
-			dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()] = struct {
+			dataHelper[iCoin.GetKeyImage().ToBytes()] = struct {
 				Index  uint
 				Detail TxInfoDetail
 			}{
@@ -346,7 +346,7 @@ func insertTxIntoList(
 			}
 		}
 		for _, oCoin := range oCoins {
-			dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()] = struct {
+			dataHelper[oCoin.GetSNDerivator().ToBytes()] = struct {
 				Index  uint
 				Detail TxInfoDetail
 			}{
@@ -501,11 +501,11 @@ func isTxForUser(tx metadata.Transaction) bool {
 		return false
 	}
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		tempTx, ok := tx.(*transaction.TxCustomTokenPrivacy)
+		tempTx, ok := tx.(transaction.TransactionToken)
 		if !ok {
 			return false
 		}
-		if tempTx.TxPrivacyTokenData.Mintable {
+		if tempTx.GetTxTokenData().Mintable {
 			return false
 		}
 	}

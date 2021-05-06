@@ -1,4 +1,4 @@
-package transaction
+package tx_generic
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
