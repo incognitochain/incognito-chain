@@ -386,7 +386,11 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 			totalInstructions = append(totalInstructions, value...)
 		}
 		if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {
-			return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v at block %+v hash %+v", shardBlock.Header.InstructionsRoot, hash, shardBlock.Header.Height, shardBlock.Hash().String()))
+			return NewBlockChainError(
+				InstructionsHashError,
+				fmt.Errorf("Expect instruction hash to be %+v but get %+v at block %+v hash %+v", hash, shardBlock.Header.InstructionsRoot, shardBlock.Header.Height, shardBlock.Hash().String()),
+				//fmt.Errorf("Expect instruction hash to be %+v but get %+v at block %+v hash %+v", shardBlock.Header.InstructionsRoot, hash, shardBlock.Header.Height, shardBlock.Hash().String()),
+			)
 		}
 	}
 

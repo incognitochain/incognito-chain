@@ -714,7 +714,6 @@ func (beaconBestState *BeaconBestState) initCommitteeState(bc *BlockChain) {
 		beaconBestState.BeaconHeight,
 		bc.config.ChainParams.StakingFlowV2Height,
 		bc.config.ChainParams.StakingFlowV3Height)
-	Logger.log.Info("[dcs] version:", version)
 
 	shardCommonPool := []incognitokey.CommitteePublicKey{}
 	numberOfAssignedCandidates := 0
@@ -882,7 +881,7 @@ func (beaconBestState *BeaconBestState) storeAllShardSubstitutesValidator(
 				return err
 			}
 			if validators[key] {
-				err = statedb.StoreOneShardCommittee(
+				err = statedb.StoreOneShardSubstitutesValidator(
 					beaconBestState.consensusStateDB,
 					shardID,
 					newSubstituteValidators[i:],
