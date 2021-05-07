@@ -84,7 +84,7 @@ CONTINUE_VERIFY:
 	if err != nil {
 		return err
 	}
-	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(curView, beaconBlock, incurredInstructions); err != nil {
+	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(copiedCurView, beaconBlock, incurredInstructions); err != nil {
 		return err
 	}
 	// Post verififcation: verify new beaconstate with corresponding block
