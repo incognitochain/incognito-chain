@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -150,4 +151,95 @@ func Test_Swap_v3() {
 			node.ShowAccountPosition(stakers)
 		}
 	}
+}
+func Test_PDE() {
+	sim := InitSimMainnet()
+	acc1 := sim.NewAccountFromShard(0)
+	_, err := sim.RPC.API_SendTxPRV(sim.GenesisAccount.PrivateKey, map[string]uint64{
+		acc1.PaymentAddress: 100000000,
+	}, -1, false)
+	if err != nil {
+		panic(err)
+	}
+	// for i := 0; i < 2; i++ {
+	sim.GenerateBlock().NextRound()
+	// }
+	// blx, _ := sim.RPC.API_GetBalance(acc1)
+	// fmt.Println("ACC1", blx)
+	// return
+	//Create custom token
+	result1, err := sim.RPC.API_SendTxCreateCustomToken(sim.GenesisAccount.PrivateKey, sim.GenesisAccount.PaymentAddress, true, "pTest", "TES", 30000000000)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(result1.TokenName, result1.TokenID)
+	for i := 0; i < 50; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+
+	bl0, _ := sim.RPC.API_GetBalance(sim.GenesisAccount)
+	fmt.Println(bl0)
+
+	// burnAddr := sim.GetBlockchain().GetBurningAddress(sim.GetBlockchain().BeaconChain.GetFinalViewHeight())
+	// fmt.Println(burnAddr)
+	result2, err := sim.RPC.API_SendTxWithPTokenContributionV2(sim.GenesisAccount, result1.TokenID, 300000000, "testPAIR")
+	if err != nil {
+		panic(err)
+	}
+
+	r2Bytes, _ := json.Marshal(result2)
+	fmt.Println(string(r2Bytes))
+
+	for i := 0; i < 10; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+
+	_, err = sim.RPC.API_SendTxWithPRVContributionV2(sim.GenesisAccount, 100000000000, "testPAIR")
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < 10; i++ {
+		sim.GenerateBlock().NextRound()
+		sim.Pause()
+	}
+
+	r, err := sim.RPC.API_GetPDEState(float64(sim.GetBlockchain().GetBeaconBestState().BeaconHeight))
+	fmt.Println(r)
+	if err != nil {
+		panic(err)
+	}
+	rBytes, _ := json.Marshal(r)
+	fmt.Println(string(rBytes))
+	fmt.Println("XXXXXXXXXXXXX")
+	_, err = sim.RPC.API_SendTxWithPRVCrossPoolTradeReq(acc1, result1.TokenID, 1000000, 1)
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < 10; i++ {
+		sim.GenerateBlock().NextRound()
+		sim.Pause()
+	}
+	fmt.Println("YYYYYYYYYYYY")
+	_, err = sim.RPC.API_SendTxWithPTokenCrossPoolTradeReq(sim.GenesisAccount, result1.TokenID, "0000000000000000000000000000000000000000000000000000000000000004", 1000000000, 1)
+	if err != nil {
+		panic(err)
+	}
+	for i := 0; i < 10; i++ {
+		sim.GenerateBlock().NextRound()
+	}
+	fmt.Println("------------------------------------------------------------")
+	bl, _ := sim.RPC.API_GetBalance(sim.GenesisAccount)
+	fmt.Println("ICO", bl)
+	fmt.Println("------------------------------------------------------------")
+	bl1, _ := sim.RPC.API_GetBalance(acc1)
+	fmt.Println("ACC1", bl1)
+
+	fmt.Println("------------------------------------------------------------")
+	r2, err := sim.RPC.API_GetPDEState(float64(sim.GetBlockchain().GetBeaconBestState().BeaconHeight))
+	if err != nil {
+		panic(err)
+	}
+	rBytes2, _ := json.Marshal(r2)
+	fmt.Println(string(rBytes2))
+
 }

@@ -394,7 +394,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 	}
 	//beacon
 	chain := sim.bc
-	var block types.BlockInterface = nil
+
 	var err error
 
 	for _, arg := range args {
@@ -407,6 +407,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 
 	//Create blocks for apply chain
 	for _, chainID := range chainArray {
+		var block types.BlockInterface = nil
 		curView := sim.bc.GetChain(chainID).GetBestView()
 		for _, arg := range args {
 			switch arg.(type) {
@@ -454,6 +455,16 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		proposeAcc := sim.GetAccountByCommitteePubkey(&proposerPK)
 		userKey, _ := consensus_v2.GetMiningKeyFromPrivateSeed(proposeAcc.MiningKey)
 		sim.SignBlock(userKey, block)
+
+		//simulate network transfer
+		b, err := json.Marshal(block)
+		if err != nil {
+			panic(err)
+		}
+		err = json.Unmarshal(b, block)
+		if err != nil {
+			panic(err)
+		}
 
 		//Validation
 		if chainID == -1 {
