@@ -423,6 +423,11 @@ func (curView *BeaconBestState) GenerateInstruction(
 		}
 	}
 
+	// Unstake
+	for _, unstakeInstruction := range shardInstruction.unstakeInstructions {
+		instructions = append(instructions, unstakeInstruction.ToString())
+	}
+
 	// Generate swap shard instruction at block height %chainParamEpoch == 0
 	if curView.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		if blockchain.IsLastBeaconHeightInEpoch(newBeaconHeight) {
@@ -465,11 +470,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 	// Stop Auto Stake
 	for _, stopAutoStakeInstruction := range shardInstruction.stopAutoStakeInstructions {
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())
-	}
-
-	// Unstake
-	for _, unstakeInstruction := range shardInstruction.unstakeInstructions {
-		instructions = append(instructions, unstakeInstruction.ToString())
 	}
 
 	// Finish Sync Instructions
@@ -690,7 +690,6 @@ func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
 
 	for _, unstakeInstruction := range shardInstructions.unstakeInstructions {
 		for _, tempUnstakePublicKey := range unstakeInstruction.CommitteePublicKeys {
-			// TODO: @hung check why only one transaction but it said duplicate unstake instruction
 			if _, ok := validUnstakePublicKeys[tempUnstakePublicKey]; ok {
 				Logger.log.Errorf("SHARD %v | UNSTAKE duplicated unstake instruction %+v ", shardID, tempUnstakePublicKey)
 				continue

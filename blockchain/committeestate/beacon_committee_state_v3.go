@@ -196,7 +196,6 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 			if err != nil {
 				return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 			}
-			return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, fmt.Errorf("Instruction %+v not allow", instruction.UNSTAKE_ACTION))
 		}
 	}
 
@@ -348,11 +347,12 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 	committeeChange.AddFinishedSyncValidators(byte(finishSyncInstruction.ChainID), finishSyncInstruction.PublicKeys)
 	b.removeValidatorsFromSyncPool(finishSyncInstruction.PublicKeys, byte(finishSyncInstruction.ChainID))
 
-	committeeChange = b.assignRandomlyToSubstituteList(
-		finishSyncInstruction.PublicKeys,
-		env.RandomNumber,
-		byte(finishSyncInstruction.ChainID),
-		committeeChange)
+	committeeChange = b.
+		assignRandomlyToSubstituteList(
+			finishSyncInstruction.PublicKeys,
+			env.RandomNumber,
+			byte(finishSyncInstruction.ChainID),
+			committeeChange)
 
 	return committeeChange
 }
@@ -360,7 +360,7 @@ func (b *BeaconCommitteeStateV3) processFinishSyncInstruction(
 func (b *BeaconCommitteeStateV3) addData(env *BeaconCommitteeStateEnvironment) {
 	env.newUnassignedCommonPool = common.DeepCopyString(b.shardCommonPool[b.numberOfAssignedCandidates:])
 	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
-	env.newAllRoles = append([]string{},env.newUnassignedCommonPool...)
+	env.newAllRoles = append([]string{}, env.newUnassignedCommonPool...)
 	env.newAllRoles = append(env.newAllRoles, env.newAllSubstituteCommittees...)
 	for _, syncPoolValidators := range b.syncPool {
 		env.newAllRoles = append(env.newAllRoles, syncPoolValidators...)
