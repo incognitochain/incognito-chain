@@ -876,13 +876,13 @@ func (beaconBestState *BeaconBestState) storeAllShardSubstitutesValidator(
 			validators[key] = true
 		}
 		newSubstituteValidators := beaconBestState.beaconCommitteeState.GetOneShardSubstitute(shardID)
-		for i, v := range newSubstituteValidators {
-			key, err := v.ToBase58()
+		for i, newSubstituteValidator := range newSubstituteValidators {
+			key, err := newSubstituteValidator.ToBase58()
 			if err != nil {
 				return err
 			}
 			if validators[key] {
-				err = statedb.StoreOneShardCommittee(
+				err = statedb.StoreOneShardSubstitutesValidator(
 					beaconBestState.consensusStateDB,
 					shardID,
 					newSubstituteValidators[i:],
