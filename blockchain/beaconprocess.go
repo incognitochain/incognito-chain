@@ -661,8 +661,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 		return err
 	}
 
-	logCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
-	Logger.log.Infof("Add Missing Signature | Shard %+v, Validation Data: %+v, \n Committees: %+v", shardID, shardState.ValidationData, logCommittees)
+	Logger.log.Infof("Add Missing Signature | Shard %+v, Validation Data: %+v", shardID, shardState.ValidationData)
 
 	err = curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
 	if err != nil {

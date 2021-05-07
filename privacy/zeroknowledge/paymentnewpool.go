@@ -10,7 +10,7 @@ import (
 )
 
 func (proof *PaymentProof) LoadCommitmentFromStateDB(db *statedb.StateDB, tokenID *common.Hash, shardID byte) error {
-	privacy.Logger.Log.Infof("[testperformance] LoadCommitmentFromStateDB, tokenID %v, shardID %v", tokenID.String(), shardID)
+	privacy.Logger.Log.Debugf("LoadCommitmentFromStateDB, tokenID %v, shardID %v", tokenID.String(), shardID)
 	cmInputSum := make([]*privacy.Point, len(proof.oneOfManyProof))
 	for i := 0; i < len(proof.oneOfManyProof); i++ {
 		// Calculate cm input sum
