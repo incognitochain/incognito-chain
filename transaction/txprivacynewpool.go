@@ -75,7 +75,6 @@ func (tx Tx) ValidateSanityDataByItSelf() (bool, error) {
 	// check tx size
 	actualTxSize := tx.GetTxActualSize()
 	if actualTxSize > common.MaxTxSize {
-		//fmt.Print(actualTxSize, common.MaxTxSize)
 		return false, NewTransactionErr(RejectTxSize, fmt.Errorf("tx size %d kB is too large", actualTxSize))
 	}
 
@@ -182,7 +181,6 @@ func (tx *Tx) LoadCommitment(
 		}
 	}
 	tokenID := tx.GetTokenID()
-	fmt.Printf("[debugtxs] %v %v\n", tx, tx.valEnv)
 	if tx.valEnv.IsPrivacy() {
 		return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
 	} else {
