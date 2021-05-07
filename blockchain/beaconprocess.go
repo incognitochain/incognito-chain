@@ -803,7 +803,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = newBestState.storeAllShardSubstitutesValidator(committeeChange.ShardSubstituteAdded)
+	err = blockchain.storeAllShardSubstitutesValidator(newBestState, committeeChange.ShardSubstituteAdded)
 	if err != nil {
 		return err
 	}
