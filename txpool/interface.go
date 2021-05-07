@@ -97,7 +97,7 @@ type TxVerifier interface {
 	LoadCommitmentForTxs(
 		txs []metadata.Transaction,
 		shardViewRetriever metadata.ShardViewRetriever,
-	) bool
+	) (bool, error)
 	UpdateTransactionStateDB(
 		newSDB *statedb.StateDB,
 	)

@@ -69,7 +69,7 @@ func (v *TxsVerifier) LoadCommitment(
 func (v *TxsVerifier) LoadCommitmentForTxs(
 	txs []metadata.Transaction,
 	shardViewRetriever metadata.ShardViewRetriever,
-) bool {
+) (bool, error) {
 	sDB := v.txDB
 	if shardViewRetriever != nil {
 		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
@@ -77,11 +77,11 @@ func (v *TxsVerifier) LoadCommitmentForTxs(
 	for _, tx := range txs {
 		err := tx.LoadCommitment(sDB.Copy())
 		if err != nil {
-			Logger.log.Errorf("[testNewPool] Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
-			return false
+			err = errors.Errorf("Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
+			return false, err
 		}
 	}
-	return true
+	return true, nil
 }
 
 func (v *TxsVerifier) ValidateTxsSig(
@@ -236,10 +236,13 @@ func (v *TxsVerifier) FullValidateTransactions(
 	numOfValidGoroutine := 0
 	totalMsgDone := 0
 	timeout := time.After(10 * time.Second)
-	v.LoadCommitmentForTxs(
+	ok, err := v.LoadCommitmentForTxs(
 		txs,
 		shardViewRetriever,
 	)
+	if (!ok) || (err != nil) {
+		return false, errors.Errorf("Can not load commitment for this txs, errors %v", err)
+	}
 	v.ValidateTxsSig(
 		newTxs,
 		errCh,
@@ -269,7 +272,7 @@ func (v *TxsVerifier) FullValidateTransactions(
 			return false, err
 		case <-doneCh:
 			numOfValidGoroutine++
-			Logger.log.Infof("[testNewPool] %v %v\n", numOfValidGoroutine, len(txs))
+			Logger.log.Debugf(" %v %v\n", numOfValidGoroutine, len(txs))
 			if numOfValidGoroutine == totalMsgDone {
 				ok, err := v.checkDoubleSpendInListTxs(txs)
 				if (!ok) || (err != nil) {
@@ -295,7 +298,7 @@ func (v *TxsVerifier) validateTxsWithoutChainstate(
 			ok, err := v.ValidateWithoutChainstate(target)
 			if !ok || err != nil {
 				if errCh != nil {
-					errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
+					errCh <- errors.Errorf("This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
 				}
 			} else {
 				if doneCh != nil {
@@ -327,7 +330,7 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 			)
 			if !ok {
 				if errCh != nil {
-					errCh <- errors.Errorf("[NewPool] This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, errors.Errorf("Transaction fee %v is invalid", target.GetTxFee()))
+					errCh <- errors.Errorf(" This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, errors.Errorf("Transaction fee %v is invalid", target.GetTxFee()))
 				}
 			}
 			ok, err := v.ValidateWithChainState(
@@ -339,7 +342,7 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 			)
 			if !ok || err != nil {
 				if errCh != nil {
-					errCh <- errors.Errorf("[NewPool] This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
+					errCh <- errors.Errorf("This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
 				}
 			} else {
 				if doneCh != nil {
