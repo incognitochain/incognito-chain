@@ -187,6 +187,8 @@ const (
 	CountMissingSignatureError
 	ReplacePreviousValidationDataError
 	CommitteeFromBlockNotFoundError
+	ShardBlockAlreadyExist
+	PDEStateDBError
 )
 
 var ErrCodeMessage = map[int]struct {
