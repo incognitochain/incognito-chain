@@ -290,12 +290,13 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	shardBlock.Header = tempShardBlock.Header
+	shardBlock.Body = blkBody
 	if shardBlock.Body.Transactions == nil {
 		shardBlock.Body.Transactions = []metadata.Transaction{}
 	}
 	for _, tx := range shardBlock.Body.Transactions {
 		valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), shardBlock.GetHeight())
-		valEnv = transaction.WithShardHeight(valEnv, shardBlock.Header.BeaconHeight)
+		valEnv = transaction.WithBeaconHeight(valEnv, shardBlock.Header.BeaconHeight)
 		valEnv = transaction.WithConfirmedTime(valEnv, shardBlock.GetProduceTime())
 		tx.SetValidationEnv(valEnv)
 		// fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
@@ -313,7 +314,6 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		// panic(string(data) + err.Error())
 		return err
 	}
-	shardBlock.Body = blkBody
 	return nil
 }
 
