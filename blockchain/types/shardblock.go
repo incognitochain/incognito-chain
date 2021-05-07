@@ -266,7 +266,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if shardBlock.Body.Transactions == nil {
 		return false, fmt.Errorf("Expect Shard Block Transactions is not nil")
 	}
-	if len(shardBlock.Body.Transactions) != 0 && shardBlock.Header.TxRoot.IsEqual(&common.Hash{}) {
+	if (shardBlock.Header.Height != 1) && (len(shardBlock.Body.Transactions) != 0) && (shardBlock.Header.TxRoot.IsEqual(&common.Hash{})) {
 		return false, fmt.Errorf("Expect Shard Block Tx Root have Non-Zero Hash Value because Transactions List is not empty")
 	}
 	return true, nil
