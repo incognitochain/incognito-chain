@@ -816,6 +816,8 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode 
 	shardID := shardBlock.Header.ShardID
 	blockHash := shardBlock.Hash().String()
 	//update validation Mode if need
+	//TODO: @dung.v can we change FULL_VALIDATION from osenv to flag
+	// so we can this dynamically based on node mode
 	fullValidation := os.Getenv("FULL_VALIDATION") //trigger full validation when sync network for rechecking code logic
 	if fullValidation == "1" {
 		validationMode = common.FULL_VALIDATION
