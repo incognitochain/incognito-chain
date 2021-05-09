@@ -208,10 +208,6 @@ func (tx *Tx) ValidateTxCorrectness(
 	bool,
 	error,
 ) {
-	if ok, err := tx.VerifySigTx(); (!ok) || (err != nil) {
-		Logger.log.Errorf("Validate tx %v return %v error %v", tx.Hash().String(), ok, err)
-		return ok, err
-	}
 
 	Logger.log.Debugf("VALIDATING TX........\n")
 
