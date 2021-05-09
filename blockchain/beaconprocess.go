@@ -84,7 +84,7 @@ CONTINUE_VERIFY:
 	if err != nil {
 		return err
 	}
-	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(curView, beaconBlock, incurredInstructions); err != nil {
+	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(copiedCurView, beaconBlock, incurredInstructions); err != nil {
 		return err
 	}
 	// Post verififcation: verify new beaconstate with corresponding block
@@ -300,7 +300,21 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
-	var err error
+
+	//check previous pdestate state consistency
+	dbPDEState, err := InitCurrentPDEStateFromDB(curView.featureStateDB, nil, beaconBlock.Header.Height-1) //get from db
+	if err != nil {
+		return NewBlockChainError(PDEStateDBError, fmt.Errorf("Cannot get PDE from DB"))
+	}
+	if curView.pdeState != nil && !reflect.DeepEqual(curView.pdeState, dbPDEState) { //if db and beststate is different => stop produce block
+		mem, _ := json.Marshal(curView.pdeState)
+		db, _ := json.Marshal(dbPDEState)
+		Logger.log.Errorf("Last Beacon Block Instruction %+v", curView.BestBlock.Body.Instructions)
+		Logger.log.Error("Mem", string(mem))
+		Logger.log.Error("DB", string(db))
+		return NewBlockChainError(PDEStateDBError, fmt.Errorf("PDE state in Mem and DB is not consistent! Check before restart."))
+	}
+
 	portalParams := blockchain.GetPortalParams()
 
 	// get shard to beacon blocks from pool
@@ -833,6 +847,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 				return err
 			}
 		}
+		//clear DeletedWaitingPDEContributions
+		newBestState.pdeState.DeletedWaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
 		//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
 		newBestState.pdeState = newBestState.pdeState.transformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
 	}
