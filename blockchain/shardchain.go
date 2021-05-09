@@ -571,9 +571,11 @@ func (chain *ShardChain) validateBlockHeader(flow *ShardValidationFlow) error {
 	if !shardBestState.BestBlockHash.IsEqual(&shardBlock.Header.PreviousBlockHash) {
 		return NewBlockChainError(ShardBestStateNotCompatibleError, fmt.Errorf("Current Best Block Hash %+v, New Shard Block %+v, Previous Block Hash of New Block %+v", shardBestState.BestBlockHash, shardBlock.Header.Height, shardBlock.Header.PreviousBlockHash))
 	}
+	// TODO: @dung.v duplicate shardprocess.go line 310
 	if shardBestState.ShardHeight+1 != shardBlock.Header.Height {
 		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Shard Block height of new Shard Block should be %+v, but get %+v", shardBestState.ShardHeight+1, shardBlock.Header.Height))
 	}
+	// TODO: @dung.v duplicate shardprocess.go line 302
 	if shardBlock.Header.BeaconHeight < shardBestState.BeaconHeight {
 		return NewBlockChainError(ShardBestStateBeaconHeightNotCompatibleError, fmt.Errorf("Shard Block contain invalid beacon height, current beacon height %+v but get %+v ", shardBestState.BeaconHeight, shardBlock.Header.BeaconHeight))
 	}
@@ -756,10 +758,10 @@ func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlo
 	}
 
 	committee, err := chain.getCommitteeFromBlock(shardBlock.Header.CommitteeFromBlock, curView)
-	validationFlow.blockCommittees = committee
 	if err != nil {
 		return nil, NewBlockChainError(CommitteeFromBlockNotFoundError, err)
 	}
+	validationFlow.blockCommittees = committee
 
 	//TODO: get cross shard block (when beacon chain not confirm, we need to validate the cross shard output coin)
 	if forSigning {
