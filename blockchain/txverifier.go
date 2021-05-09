@@ -204,22 +204,24 @@ func (v *TxsVerifier) ValidateWithChainState(
 		beaconViewRetriever,
 		beaconHeight,
 	)
-	if ok && err == nil {
-		txDB := shardViewRetriever.GetCopiedTransactionStateDB()
-		if meta := tx.GetMetadata(); meta != nil {
-			ok, err = meta.ValidateTxWithBlockChain(
-				tx,
-				chainRetriever,
-				shardViewRetriever,
-				beaconViewRetriever,
-				shardViewRetriever.GetShardID(),
-				txDB,
-			)
-		}
-	}
 	if !ok || err != nil {
 		return ok, err
 	}
+	txDB := shardViewRetriever.GetCopiedTransactionStateDB()
+	if meta := tx.GetMetadata(); meta != nil {
+		ok, err = meta.ValidateTxWithBlockChain(
+			tx,
+			chainRetriever,
+			shardViewRetriever,
+			beaconViewRetriever,
+			shardViewRetriever.GetShardID(),
+			txDB,
+		)
+		if err != nil {
+			return false, err
+		}
+	}
+
 	return tx.ValidateDoubleSpendWithBlockChain(shardViewRetriever.GetCopiedTransactionStateDB())
 }
 
