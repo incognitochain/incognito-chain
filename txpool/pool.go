@@ -103,9 +103,9 @@ func (tp *TxsPool) Start() {
 			stopGetTxs <- nil
 			return
 		case f := <-tp.action:
-			Logger.Debugf("[testperformance] Total txs received %v, total txs in pool %v\n", total, len(tp.Data.TxInfos))
+			Logger.Debugf("Total txs received %v, total txs in pool %v\n", total, len(tp.Data.TxInfos))
 			f(tp)
-			Logger.Debugf("[testperformance] Total txs in pool %v after func\n", len(tp.Data.TxInfos))
+			Logger.Debugf("Total txs in pool %v after func\n", len(tp.Data.TxInfos))
 		case validTx := <-cValidTxs:
 			total++
 			txH := validTx.tx.Hash().String()
@@ -241,9 +241,9 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				Logger.Errorf("[txTracing]Validate tx %v return error %v\n", txDetails.Hash, err)
 				continue
 			}
-			Logger.Debugf("[testperformance] Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
+			Logger.Debugf("Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
 			ok, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
-			Logger.Debugf("[testperformance] Added %v, needed to remove %v\n", ok, removedInfo)
+			Logger.Debugf("Added %v, needed to remove %v\n", ok, removedInfo)
 			if ok {
 				curSize = curSize - removedInfo.Fee + txDetails.Fee
 				curTime = curTime - removedInfo.VTime + txDetails.VTime
@@ -446,7 +446,7 @@ func (tp *TxsPool) getTxsFromPool(
 	tp.action <- func(tpTemp *TxsPool) {
 		defer func() {
 			close(txCh)
-			Logger.Debug("[testperformance] tx channel is closed")
+			Logger.Debug("tx channel is closed")
 		}()
 		for k, v := range tpTemp.Data.TxByHash {
 			select {
@@ -465,9 +465,14 @@ func (tp *TxsPool) getTxsFromPool(
 				if v != nil {
 					txDetails.Tx = v
 					Logger.Debugf("[debugperformance] Got %v, send to channel\n", txDetails.Hash)
-					txCh <- txDetails
+					if txCh != nil {
+						txCh <- txDetails
+					}
 				}
 			}
+		}
+		if txCh != nil {
+			txCh <- nil
 		}
 	}
 
