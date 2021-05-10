@@ -681,7 +681,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 					txService.BlockChain,
 					sView,
 					sChain.Blockchain.GetBeaconBestState(),
-					[]metadata.Transaction{&tx},
+					[]metadata.Transaction{tx},
 				)
 				if (!ok) || (e != nil) {
 					return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
@@ -691,7 +691,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 			}
 		}
 	} else {
-		hash, _, err = txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
+		hash, _, err = txService.TxMemPool.MaybeAcceptTransaction(tx, beaconHeigh)
 		if err != nil {
 			Logger.log.Errorf("Send Raw Transaction Error, try add tx into mempool of node: %+v", err)
 			mempoolErr, ok := err.(*mempool.MempoolTxError)
@@ -1848,7 +1848,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 					txService.BlockChain,
 					sView,
 					sChain.Blockchain.GetBeaconBestState(),
-					[]metadata.Transaction{&tx},
+					[]metadata.Transaction{tx},
 				)
 				if (!ok) || (e != nil) {
 					return nil, nil, NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
@@ -1856,7 +1856,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 			}
 		}
 	} else {
-		hash, _, err = txService.TxMemPool.MaybeAcceptTransaction(&tx, beaconHeigh)
+		hash, _, err = txService.TxMemPool.MaybeAcceptTransaction(tx, beaconHeigh)
 		if err != nil {
 			Logger.log.Errorf("txService.SendRawPrivacyCustomTokenTransaction Try add tx into mempool of node with err: %+v", err)
 			mempoolErr, ok := err.(*mempool.MempoolTxError)
