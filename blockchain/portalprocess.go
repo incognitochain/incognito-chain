@@ -72,7 +72,12 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		isSkipPortalV3Ints = true
 	}
 	// get the last portalv4 state
-	lastPortalV4State := blockchain.GetBeaconBestState().portalStateV4
+	clonedBeaconBestState, err := blockchain.GetClonedBeaconBestState()
+	if err != nil {
+		Logger.log.Error(err)
+		return nil, nil
+	}
+	lastPortalV4State := clonedBeaconBestState.portalStateV4
 	beaconHeight := block.Header.Height - 1
 	relayingState, err := blockchain.InitRelayingHeaderChainStateFromDB()
 	if err != nil {
@@ -101,7 +106,7 @@ func getDiffPortalStateV4(previous *portalprocessv4.CurrentPortalStateV4, curren
 	}
 
 	diffState = &portalprocessv4.CurrentPortalStateV4{
-		UTXOs:                     map[string]map[string]*statedb.UTXO{}  ,
+		UTXOs:                     map[string]map[string]*statedb.UTXO{},
 		ShieldingExternalTx:       map[string]map[string]*statedb.ShieldingRequest{},
 		WaitingUnshieldRequests:   map[string]map[string]*statedb.WaitingUnshieldRequest{},
 		ProcessedUnshieldRequests: map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{},
