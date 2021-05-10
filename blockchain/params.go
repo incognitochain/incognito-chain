@@ -62,21 +62,22 @@ type Params struct {
 	ConsensusV2Epoch                  uint64
 	StakingFlowV2Height               uint64
 	EnableSlashingStakingFlowV2       uint64
-	StakingFlowV3Height               uint64
-	BlockProducingV3Height            uint64
-	Timeslot                          uint64
-	BeaconHeightBreakPointBurnAddr    uint64
-	PortalParams                      portal.PortalParams
-	EpochBreakPointSwapNewKey         []uint64
-	IsBackup                          bool
-	PreloadAddress                    string
-	ReplaceStakingTxHeight            uint64
-	ETHRemoveBridgeSigEpoch           uint64
-	BCHeightBreakPointNewZKP          uint64
-	MissingSignaturePenalty           []signaturecounter.Penalty
-	PortalETHContractAddressStr       string // smart contract of ETH for portal
-	BCHeightBreakPointPortalV3        uint64
-	EnableFeatureFlags                map[int]uint64 // featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature
+	//StakingFlowV3Height must at the end of an epoch
+	StakingFlowV3Height            uint64
+	BlockProducingV3Height         uint64
+	Timeslot                       uint64
+	BeaconHeightBreakPointBurnAddr uint64
+	PortalParams                   portal.PortalParams
+	EpochBreakPointSwapNewKey      []uint64
+	IsBackup                       bool
+	PreloadAddress                 string
+	ReplaceStakingTxHeight         uint64
+	ETHRemoveBridgeSigEpoch        uint64
+	BCHeightBreakPointNewZKP       uint64
+	MissingSignaturePenalty        []signaturecounter.Penalty
+	PortalETHContractAddressStr    string // smart contract of ETH for portal
+	BCHeightBreakPointPortalV3     uint64
+	EnableFeatureFlags             map[int]uint64 // featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature
 }
 
 type GenesisParams struct {
