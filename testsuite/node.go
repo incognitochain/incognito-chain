@@ -468,7 +468,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 
 		//Validation
 		if chainID == -1 {
-			err = chain.VerifyPreSignBeaconBlock(block.(*types.BeaconBlock), true)
+			err = chain.BeaconChain.ValidatePreSignBlock(block.(*types.BeaconBlock), nil)
 			if err != nil {
 				Logger.log.Error(err)
 				return sim
@@ -492,7 +492,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 
 		//Insert
 		if chainID == -1 {
-			err = chain.InsertBeaconBlock(block.(*types.BeaconBlock), common.FULL_VALIDATION)
+			err = chain.BeaconChain.InsertBlock(block.(*types.BeaconBlock), common.FULL_VALIDATION)
 			if err != nil {
 				panic(err)
 			}

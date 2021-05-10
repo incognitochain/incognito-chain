@@ -84,7 +84,25 @@ CONTINUE_VERIFY:
 	if err != nil {
 		return err
 	}
-	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(copiedCurView, beaconBlock, incurredInstructions); err != nil {
+
+	// get shard to beacon blocks from pool
+	allRequiredShardBlockHeight := make(map[byte][]uint64)
+	for shardID, shardstates := range beaconBlock.Body.ShardState {
+		heights := []uint64{}
+		for _, state := range shardstates {
+			heights = append(heights, state.Height)
+		}
+		sort.Slice(heights, func(i, j int) bool {
+			return heights[i] < heights[j]
+		})
+		allRequiredShardBlockHeight[shardID] = heights
+	}
+	allShardBlocks, err := blockchain.GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight)
+	if err != nil {
+		Logger.log.Error(err)
+		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
+	}
+	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(copiedCurView, beaconBlock, incurredInstructions, allShardBlocks); err != nil {
 		return err
 	}
 	// Post verififcation: verify new beaconstate with corresponding block
@@ -297,7 +315,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 //		* Block Reward Instruction
 //	+ Generate Instruction Hash from all recently got instructions
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
-func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
+func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string, confirmShardBlocks map[byte][]*types.ShardBlock) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
 
 	//check previous pdestate state consistency
@@ -316,29 +334,11 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 
 	portalParams := blockchain.GetPortalParams()
 
-	// get shard to beacon blocks from pool
-	allRequiredShardBlockHeight := make(map[byte][]uint64)
-	for shardID, shardstates := range beaconBlock.Body.ShardState {
-		heights := []uint64{}
-		for _, state := range shardstates {
-			heights = append(heights, state.Height)
-		}
-		sort.Slice(heights, func(i, j int) bool {
-			return heights[i] < heights[j]
-		})
-		allRequiredShardBlockHeight[shardID] = heights
-	}
-
-	allShardBlocks, err := blockchain.GetShardBlocksForBeaconValidator(allRequiredShardBlockHeight)
-	if err != nil {
-		Logger.log.Error(err)
-		return NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
-	}
 	instructions, _, err := blockchain.GenerateBeaconBlockBody(
 		beaconBlock,
 		curView,
 		portalParams,
-		allShardBlocks,
+		confirmShardBlocks,
 	)
 
 	if len(incurredInstructions) != 0 {

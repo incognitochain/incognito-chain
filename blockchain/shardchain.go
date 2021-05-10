@@ -507,7 +507,7 @@ func (chain *ShardChain) CreateNewBlockFromOldBlock(
 
 func (chain *ShardChain) validateBlockSignaturesWithCurrentView(validationFlow *ShardValidationFlow) (err error) {
 	shardBlock := validationFlow.block
-	curView := validationFlow.curView
+	curView := validationFlow.copiedCurView
 	committee := validationFlow.blockCommittees
 
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
@@ -557,7 +557,7 @@ func (chain *ShardChain) getCommitteeFromBlock(CommitteeFromBlock common.Hash, c
 type ShardValidationFlow struct {
 	validationMode          int
 	forSigning              bool
-	curView                 *ShardBestState
+	copiedCurView           *ShardBestState
 	nextView                *ShardBestState
 	block                   *types.ShardBlock
 	beaconBlocks            []*types.BeaconBlock
@@ -568,11 +568,11 @@ type ShardValidationFlow struct {
 }
 
 func (chain *ShardChain) validateBlockHeader(flow *ShardValidationFlow) error {
-	err := chain.Blockchain.verifyPreProcessingShardBlock(flow.curView, flow.block, flow.beaconBlocks, false, flow.blockCommittees)
+	err := chain.Blockchain.verifyPreProcessingShardBlock(flow.copiedCurView, flow.block, flow.beaconBlocks, false, flow.blockCommittees)
 	if err != nil {
 		return err
 	}
-	shardBestState := flow.curView
+	shardBestState := flow.copiedCurView
 	committees := flow.blockCommittees
 	blockchain := chain.Blockchain
 	shardBlock := flow.block
@@ -616,9 +616,9 @@ func (chain *ShardChain) validateBlockHeader(flow *ShardValidationFlow) error {
 }
 
 func (chain *ShardChain) validateBlockBody(flow *ShardValidationFlow) error {
-	shardID := flow.curView.ShardID
+	shardID := flow.copiedCurView.ShardID
 	shardBlock := flow.block
-	curView := flow.curView
+	curView := flow.copiedCurView
 	blockchain := chain.Blockchain
 	beaconBlocks := flow.beaconBlocks
 
@@ -779,7 +779,11 @@ func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlo
 		return nil, NewBlockChainError(InsertShardBlockError, fmt.Errorf("ShardBlock %v link to wrong view (%s)", blockHeight, preHash.String()))
 	}
 	curView := preView.(*ShardBestState)
-	validationFlow.curView = curView
+	//copy current view
+	validationFlow.copiedCurView = NewShardBestState()
+	if err := validationFlow.copiedCurView.cloneShardBestStateFrom(curView); err != nil {
+		return nil, err
+	}
 
 	previousBeaconHeight := curView.BeaconHeight
 	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
@@ -826,7 +830,7 @@ func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlo
 }
 
 func (chain *ShardChain) validateNewState(flow *ShardValidationFlow) (err error) {
-	if err = flow.nextView.verifyPostProcessingShardBlock(flow.block, byte(flow.curView.ShardID), flow.newShardCommitteeHashes); err != nil {
+	if err = flow.nextView.verifyPostProcessingShardBlock(flow.block, byte(flow.copiedCurView.ShardID), flow.newShardCommitteeHashes); err != nil {
 		return err
 	}
 	return err
@@ -1009,7 +1013,7 @@ func (chain *ShardChain) ValidateAndProcessBlock(block types.BlockInterface, val
 	//process block
 	Logger.log.Infof("SHARD %+v | Process block feature height %+v - hash %+v", shardID, blockHeight, blockHash)
 	validationFlow.nextView, validationFlow.newShardCommitteeHashes, validationFlow.committeeChange, err =
-		validationFlow.curView.updateShardBestState(chain.Blockchain, shardBlock, validationFlow.beaconBlocks, validationFlow.blockCommittees)
+		validationFlow.copiedCurView.updateShardBestState(chain.Blockchain, shardBlock, validationFlow.beaconBlocks, validationFlow.blockCommittees)
 	if err != nil {
 		return err
 	}
