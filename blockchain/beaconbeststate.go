@@ -819,8 +819,17 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }
 
-// TODO: @hung pay reward v2 when upgrade to v3
 func (beaconBestState *BeaconBestState) upgradeCommitteeState(bc *BlockChain) {
+	if beaconBestState.BeaconHeight == bc.config.ChainParams.StakingFlowV3Height {
+		if beaconBestState.beaconCommitteeState.Version() == committeestate.DCS_VERSION {
+			return
+		}
+	}
+	if beaconBestState.BeaconHeight == bc.config.ChainParams.StakingFlowV2Height {
+		if beaconBestState.beaconCommitteeState.Version() == committeestate.SLASHING_VERSION {
+			return
+		}
+	}
 	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpgrading(
 		beaconBestState.BeaconHeight,
 		bc.config.ChainParams.StakingFlowV3Height,
@@ -829,6 +838,7 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeState(bc *BlockChain) {
 
 	committeeState := beaconBestState.beaconCommitteeState.Upgrade(env)
 	beaconBestState.beaconCommitteeState = committeeState
+
 }
 
 func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePublicKeys []string, shardID byte) bool {
