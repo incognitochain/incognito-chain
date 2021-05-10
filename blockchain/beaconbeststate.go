@@ -818,6 +818,16 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 }
 
 func (beaconBestState *BeaconBestState) upgradeCommitteeState(bc *BlockChain) {
+	if beaconBestState.BeaconHeight == bc.config.ChainParams.StakingFlowV3Height {
+		if beaconBestState.beaconCommitteeState.Version() == committeestate.DCS_VERSION {
+			return
+		}
+	}
+	if beaconBestState.BeaconHeight == bc.config.ChainParams.StakingFlowV2Height {
+		if beaconBestState.beaconCommitteeState.Version() == committeestate.SLASHING_VERSION {
+			return
+		}
+	}
 	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpgrading(
 		beaconBestState.BeaconHeight,
 		bc.config.ChainParams.StakingFlowV3Height,
