@@ -881,6 +881,7 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode 
 	defer func() {
 		if validationMode == common.BEACON_FULL_VALIDATION {
 			//TODO: based on the error, we trigger appropriate action (using another module which pass action to beacon process)
+			// @dung.v: consider using validation mode with node mode before triggering appropriate action
 		}
 	}()
 

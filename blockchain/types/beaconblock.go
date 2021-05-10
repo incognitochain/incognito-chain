@@ -33,6 +33,7 @@ type BeaconHeader struct {
 	Version           int         `json:"Version"`
 	Height            uint64      `json:"Height"`
 	Epoch             uint64      `json:"Epoch"`
+	//TODO: @dung.v verify round value with proposer
 	Round             int         `json:"Round"`
 	Timestamp         int64       `json:"Timestamp"`
 	PreviousBlockHash common.Hash `json:"PreviousBlockHash"`
