@@ -72,6 +72,7 @@ func getBNBRelayingChainState(bnbRelayingChainID string) (*bnbrelaying.BNBChainS
 // notified with the server once it is setup so it can gracefully stop it when
 // requested from the service control manager.
 func mainMaster(serverChan chan<- *Server) error {
+
 	//init key & param
 	blockchain.ReadKey(nil, nil)
 	blockchain.SetupParam()
@@ -82,6 +83,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		log.Println(err)
 		return err
 	}
+
 	cfg = tempConfig
 	common.MaxShardNumber = activeNetParams.ActiveShards
 	common.TIMESLOT = activeNetParams.Timeslot

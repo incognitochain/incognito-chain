@@ -61,7 +61,6 @@ bin/incognito-test
 bin/bootnode
 bin/sample-config.conf
 incognito
-config
 
 mempool/testdatabase
 cmd/incognito
