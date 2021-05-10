@@ -506,7 +506,7 @@ func (chain *BeaconChain) getDataBeforeBlockValidation(beaconBlock *types.Beacon
 			Logger.log.Error(err)
 			return nil, NewBlockChainError(GetShardBlocksForBeaconProcessError, fmt.Errorf("Unable to get required shard block for beacon process."))
 		}
-		if err := checkValidShardState(curView, beaconBlock.Body.ShardState, allShardBlocks); err != nil {
+		if err := checkValidShardState(copiedCurView, beaconBlock.Body.ShardState, allShardBlocks); err != nil {
 			return nil, err
 		}
 		validationFlow.confirmShardBlocks = allShardBlocks
