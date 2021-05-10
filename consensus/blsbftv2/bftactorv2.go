@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"sort"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
 
@@ -128,7 +129,7 @@ func (e *BLSBFT_V2) Start() error {
 						votes:      make(map[string]BFTVote),
 						hasNewVote: false,
 					}
-					e.Logger.Info("[testperformance] Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()), " size ", float64(len(proposeMsg.Block))/1024)
+					e.Logger.Info("Receive block ", block.Hash().String(), "height", block.GetHeight(), ",block timeslot ", common.CalculateTimeSlot(block.GetProposeTime()), " size ", float64(len(proposeMsg.Block))/1024)
 					e.receiveBlockByHeight[block.GetHeight()] = append(e.receiveBlockByHeight[block.GetHeight()], e.receiveBlockByHash[blkHash])
 					e.Logger.Infof("Current ticker: %v\n", ticker)
 				} else {
