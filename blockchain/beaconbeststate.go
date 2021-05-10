@@ -103,7 +103,9 @@ func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
 	return beaconBestState
 }
-func NewBeaconBestStateWithConfig(netparam *Params,
+
+func NewBeaconBestStateWithConfig(
+	params *Params,
 	beaconCommitteeState committeestate.BeaconCommitteeState,
 ) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
@@ -113,14 +115,14 @@ func NewBeaconBestStateWithConfig(netparam *Params,
 	beaconBestState.BeaconHeight = 0
 	beaconBestState.Params = make(map[string]string)
 	beaconBestState.CurrentRandomNumber = -1
-	beaconBestState.MaxBeaconCommitteeSize = netparam.MaxBeaconCommitteeSize
-	beaconBestState.MinBeaconCommitteeSize = netparam.MinBeaconCommitteeSize
-	beaconBestState.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
-	beaconBestState.MinShardCommitteeSize = netparam.MinShardCommitteeSize
-	beaconBestState.ActiveShards = netparam.ActiveShards
+	beaconBestState.MaxBeaconCommitteeSize = params.MaxBeaconCommitteeSize
+	beaconBestState.MinBeaconCommitteeSize = params.MinBeaconCommitteeSize
+	beaconBestState.MaxShardCommitteeSize = params.MaxShardCommitteeSize
+	beaconBestState.MinShardCommitteeSize = params.GetMinShardCommitteeSize(1)
+	beaconBestState.ActiveShards = params.ActiveShards
 	beaconBestState.LastCrossShardState = make(map[byte]map[byte]uint64)
-	beaconBestState.BlockInterval = netparam.MinBeaconBlockInterval
-	beaconBestState.BlockMaxCreateTime = netparam.MaxBeaconBlockCreation
+	beaconBestState.BlockInterval = params.MinBeaconBlockInterval
+	beaconBestState.BlockMaxCreateTime = params.MaxBeaconBlockCreation
 	beaconBestState.beaconCommitteeState = beaconCommitteeState
 	return beaconBestState
 }
@@ -653,8 +655,8 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 		ActiveShards:                     beaconBestState.ActiveShards,
 		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
 		ConsensusStateDB:                 beaconBestState.consensusStateDB,
-		NumberOfFixedShardBlockValidator: params.NumberOfShardFixedBlockValidators,
-		MaxShardCommitteeSize:            params.MaxShardCommitteeSize,
+		NumberOfFixedShardBlockValidator: params.GetNumberOfShardFixedBlockValidators(beaconBestState.BeaconHeight),
+		MaxShardCommitteeSize:            params.GetMinShardCommitteeSize(beaconBestState.BeaconHeight),
 		MissingSignaturePenalty:          slashingPenalty,
 		StakingV3Height:                  params.StakingFlowV3Height,
 		EpochLengthV1:                    params.Epoch,
@@ -681,7 +683,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment(
 		MinShardCommitteeSize:            beaconBestState.MinShardCommitteeSize,
 		ConsensusStateDB:                 beaconBestState.consensusStateDB,
 		MaxShardCommitteeSize:            params.MaxShardCommitteeSize,
-		NumberOfFixedShardBlockValidator: params.NumberOfShardFixedBlockValidators,
+		NumberOfFixedShardBlockValidator: params.GetNumberOfShardFixedBlockValidators(beaconBestState.BeaconHeight),
 		MissingSignaturePenalty:          slashingPenalty,
 		StakingV3Height:                  params.StakingFlowV3Height,
 		EpochLengthV1:                    params.Epoch,
@@ -754,8 +756,8 @@ func (beaconBestState *BeaconBestState) initCommitteeState(bc *BlockChain) {
 				snapshotShardCommonPool,
 				snapshotShardCommittee,
 				snapshotShardSubstitute,
-				bc.config.ChainParams.NumberOfShardFixedBlockValidators,
-				bc.config.ChainParams.MinShardCommitteeSize,
+				bc.config.ChainParams.GetNumberOfShardFixedBlockValidators(beaconBestState.BeaconHeight),
+				bc.config.ChainParams.GetMinShardCommitteeSize(beaconBestState.BeaconHeight),
 				swapRule,
 			)
 		} else {

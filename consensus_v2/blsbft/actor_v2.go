@@ -197,7 +197,7 @@ func (actorV2 *actorV2) Run() error {
 						actorV2.logger.Critical(UnExpectedError, errors.New("can't propose block"))
 						actorV2.logger.Critical(err)
 					} else {
-						actorV2.logger.Infof("proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), actorV2.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.Hash().String())
+						actorV2.logger.Infof("[dcs] proposer block %v round %v time slot %v blockTimeSlot %v with hash %v", createdBlk.GetHeight(), createdBlk.GetRound(), actorV2.currentTimeSlot, common.CalculateTimeSlot(createdBlk.GetProduceTime()), createdBlk.Hash().String())
 					}
 				}
 

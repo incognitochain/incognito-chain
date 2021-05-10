@@ -202,8 +202,9 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 		}
 	}
 
-	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, committees); err != nil {
-		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committees, err)
+	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
+		committeesStr, _ := incognitokey.CommitteeKeyListToString(committees)
+		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr, err)
 		return err
 	}
 
@@ -673,18 +674,13 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	//verify producer via index
 
-	minShardCommitteeSize := 0
-	if blockchain.BeaconChain.GetFinalView().GetHeight() >= blockchain.config.ChainParams.BlockProducingV3Height {
-		minShardCommitteeSize = shardBestState.MinShardCommitteeSize
-	} else {
-		minShardCommitteeSize = shardBestState.MinShardCommitteeSize
-	}
-
 	lenProducer := 0
-	if blockchain.BeaconChain.GetFinalView().GetHeight() >= blockchain.config.ChainParams.BlockProducingV3Height {
-		lenProducer = blockchain.config.ChainParams.NumberOfShardFixedBlockValidators
+	if blockchain.BeaconChain.GetFinalView().GetHeight() >= blockchain.config.ChainParams.StakingFlowV3Height {
+		lenProducer = blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(
+			blockchain.BeaconChain.GetFinalViewHeight(),
+		)
 	} else {
-		lenProducer = minShardCommitteeSize
+		lenProducer = shardBestState.MinShardCommitteeSize
 	}
 
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
@@ -789,7 +785,11 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(beaconInstructions).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
-		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfShardFixedBlockValidators).
+		BuildNumberOfFixedBlockValidators(
+			blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(
+				blockchain.BeaconChain.GetFinalViewHeight(),
+			),
+		).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
 		BuildOffset(blockchain.config.ChainParams.Offset).
 		BuildShardBlockHash(shardBestState.BestBlockHash).
@@ -813,8 +813,12 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	return shardBestState, hashes, committeeChange, nil
 }
 
-func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
-	db incdb.Database, genesisShardBlock *types.ShardBlock, genesisBeaconBlock *types.BeaconBlock) error {
+func (shardBestState *ShardBestState) initShardBestState(
+	blockchain *BlockChain,
+	db incdb.Database,
+	genesisShardBlock *types.ShardBlock,
+	genesisBeaconBlock *types.BeaconBlock,
+) error {
 
 	shardBestState.BestBeaconHash = genesisBeaconBlock.Header.Hash()
 	shardBestState.BestBlock = genesisShardBlock
@@ -842,7 +846,7 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		BuildEpoch(shardBestState.Epoch).
 		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(instructions).
-		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfShardFixedBlockValidators).
+		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(shardBestState.BeaconHeight)).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
 		BuildOffset(blockchain.config.ChainParams.Offset).

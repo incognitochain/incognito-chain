@@ -352,8 +352,8 @@ func (chain *ShardChain) GetProposerByTimeSlot(
 		}
 		beaconHeight = tempCommitteeInfo.BeaconHeight()
 	}
-	if beaconHeight >= chain.Blockchain.config.ChainParams.BlockProducingV3Height {
-		lenProposers = chain.Blockchain.config.ChainParams.NumberOfShardFixedBlockValidators
+	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV3Height {
+		lenProposers = chain.Blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(beaconHeight)
 	} else {
 		lenProposers = chain.Blockchain.GetBestStateShard(shardID).MinShardCommitteeSize
 	}
@@ -374,7 +374,7 @@ func (chain *ShardChain) SigningCommittees(
 		beaconHeight = tempCommitteeInfo.BeaconHeight()
 	}
 
-	if beaconHeight >= chain.Blockchain.config.ChainParams.BlockProducingV3Height {
+	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV3Height {
 		for i, v := range committees {
 			if (i % MaxSubsetCommittees) == (proposerIndex % MaxSubsetCommittees) {
 				res = append(res, v)

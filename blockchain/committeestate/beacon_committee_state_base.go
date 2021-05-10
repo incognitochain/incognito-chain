@@ -373,8 +373,13 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 	}
 	b.beaconCommittee = []string{}
 	b.beaconCommittee = append(b.beaconCommittee, newBeaconCandidates...)
+	Logger.log.Info("[dcs] newShardCandidates:", newShardCandidates)
 	for shardID := 0; shardID < env.ActiveShards; shardID++ {
-		b.shardCommittee[byte(shardID)] = append(b.shardCommittee[byte(shardID)], newShardCandidates[shardID*env.MinShardCommitteeSize:(shardID+1)*env.MinShardCommitteeSize]...)
+		Logger.log.Info("[dcs] env.MinShardCommitteeSize:", env.MinShardCommitteeSize)
+		b.shardCommittee[byte(shardID)] = append(
+			b.shardCommittee[byte(shardID)],
+			newShardCandidates[shardID*env.MinShardCommitteeSize:(shardID+1)*env.MinShardCommitteeSize]...,
+		)
 	}
 }
 

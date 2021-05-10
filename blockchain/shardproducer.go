@@ -533,7 +533,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 			Logger.log.Info("ShardID", shardID)
 
-			numberOfFixedShardBlockValidators := blockchain.config.ChainParams.NumberOfShardFixedBlockValidators
+			numberOfFixedShardBlockValidators := blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(beaconHeight)
 
 			maxShardCommitteeSize := view.MaxShardCommitteeSize - numberOfFixedShardBlockValidators
 			var minShardCommitteeSize int

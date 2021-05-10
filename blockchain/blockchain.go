@@ -168,7 +168,7 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	initShardBlockHeight := initShardBlock.Header.Height
 	var shardCommitteeState committeestate.ShardCommitteeState
 
-	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams, shardCommitteeState)
+	initShardState := NewBestStateShardWithConfig(shardID, blockchain, shardCommitteeState)
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
@@ -900,8 +900,11 @@ func (blockchain *BlockChain) getCommitteesForSigning(
 			}
 			beaconHeight = tempCommitteeInfo.BeaconHeight()
 		}
-		if beaconHeight >= blockchain.config.ChainParams.BlockProducingV3Height {
-			res = GetSigningCommitteeV3(committees, block.GetProposeTime(), blockchain.config.ChainParams.NumberOfShardFixedBlockValidators)
+		if beaconHeight >= blockchain.config.ChainParams.StakingFlowV3Height {
+			res = GetSigningCommitteeV3(
+				committees,
+				block.GetProposeTime(),
+				blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(beaconHeight))
 		} else {
 			res = committees
 		}
@@ -914,6 +917,7 @@ func (blockchain *BlockChain) getShardCommitteeFromBeaconHash(
 ) (
 	[]incognitokey.CommitteePublicKey, error,
 ) {
+	Logger.log.Info("[dcs] hash:", hash.String())
 	tempCommitteeInfo, err := blockchain.getTempCommitteeInfoByHash(hash, shardID)
 	return tempCommitteeInfo.Committees(), err
 }
@@ -940,6 +944,9 @@ func (blockchain *BlockChain) getTempCommitteeInfoByHash(
 			return tempCommitteeInfo, err
 		}
 		committees := statedb.GetOneShardCommittee(stateDB, shardID)
+		committeesStr, _ := incognitokey.CommitteeKeyListToString(committees)
+		Logger.log.Info("[dcs] committeesStr:", committeesStr)
+
 		tempCommitteeInfo = committeestate.NewTempCommitteeInfoWithValue(
 			hash, committees, shardID, beaconBlock.Header.Height)
 		blockchain.BeaconChain.committeesInfoCache.Add(getCommitteeCacheKey(hash, shardID), tempCommitteeInfo)

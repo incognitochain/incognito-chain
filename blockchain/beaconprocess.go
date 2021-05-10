@@ -535,8 +535,10 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		isBeginRandom = true
 	}
 
-	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
-		beaconBlock.Body.Instructions, isFoundRandomInstruction, isBeginRandom)
+	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(
+		blockchain.config.ChainParams,
+		beaconBlock.Body.Instructions,
+		isFoundRandomInstruction, isBeginRandom)
 
 	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
 	if err != nil {
@@ -611,8 +613,10 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 
-	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(blockchain.config.ChainParams,
-		genesisBeaconBlock.Body.Instructions, false, false)
+	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(
+		blockchain.config.ChainParams,
+		genesisBeaconBlock.Body.Instructions,
+		false, false)
 
 	var committeeState committeestate.BeaconCommitteeState
 	switch genesisBeaconBlock.Header.Height {
@@ -623,7 +627,6 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	default:
 		committeeState = committeestate.InitGenesisBeaconCommitteeStateV1(beaconCommitteeStateEnv)
 	}
-	Logger.log.Info("[dcs] committeeState.Version():", committeeState.Version())
 	beaconBestState.beaconCommitteeState = committeeState
 
 	beaconBestState.finishSyncManager = finishsync.NewFinishManager()
@@ -680,8 +683,12 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	} else {
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
-	if curView.BeaconHeight >= bc.config.ChainParams.BlockProducingV3Height {
-		committees = GetSigningCommitteeV3(committees, shardState.ProposerTime, bc.config.ChainParams.NumberOfShardFixedBlockValidators)
+	if curView.BeaconHeight >= bc.config.ChainParams.StakingFlowV3Height {
+		committees = GetSigningCommitteeV3(
+			committees,
+			shardState.ProposerTime,
+			bc.config.ChainParams.GetNumberOfShardFixedBlockValidators(curView.BeaconHeight),
+		)
 	}
 
 	return curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)

@@ -398,7 +398,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForCustodian := make(map[common.Hash]uint64)
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 
-	if curView.BeaconHeight >= blockchain.config.ChainParams.BlockProducingV3Height {
+	if curView.BeaconHeight >= blockchain.config.ChainParams.StakingFlowV3Height {
 		totalRewardForBeacon,
 			totalRewardForShardSubset,
 			totalRewardForIncDAO,
