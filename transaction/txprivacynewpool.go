@@ -28,7 +28,7 @@ func (tx Tx) ValidateDoubleSpendWithBlockChain(
 			serialNumber := txInput.CoinDetails.GetSerialNumber().ToBytesS()
 			ok, err := statedb.HasSerialNumber(stateDB, *tokenID, serialNumber, shardID)
 			if ok || err != nil {
-				return false, errors.New("double spend")
+				return false, errors.Errorf("double spend %v, error %v", ok, err)
 			}
 		}
 		for i, txOutput := range tx.Proof.GetOutputCoins() {

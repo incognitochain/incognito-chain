@@ -222,7 +222,7 @@ func (v *TxsVerifier) ValidateWithChainState(
 		}
 	}
 
-	return tx.ValidateDoubleSpendWithBlockChain(shardViewRetriever.GetCopiedTransactionStateDB())
+	return tx.ValidateDoubleSpendWithBlockChain(txDB)
 }
 
 func (v *TxsVerifier) FilterWhitelistTxs(txs []metadata.Transaction) []metadata.Transaction {
