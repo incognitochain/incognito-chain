@@ -20,6 +20,7 @@ func InitSimMainnet() *testsuite.NodeEngine {
 	common.TIMESLOT = chainParam.Timeslot
 	node := testsuite.NewStandaloneSimulation("newsim", testsuite.Config{
 		ChainParam: chainParam,
+		ResetDB:    true,
 	})
 	for i := 0; i < 10; i++ {
 		node.GenerateBlock().NextRound()
@@ -38,6 +39,7 @@ func InitSimTestnetv2() *testsuite.NodeEngine {
 	common.TIMESLOT = chainParam.Timeslot
 	node := testsuite.NewStandaloneSimulation("newsim", testsuite.Config{
 		ChainParam: chainParam,
+		ResetDB:    true,
 	})
 	for i := 0; i < 10; i++ {
 		node.GenerateBlock().NextRound()

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"os"
 	"sort"
 	"sync"
@@ -710,11 +711,17 @@ func (chain *ShardChain) validateBlockBody(flow *ShardValidationFlow) error {
 	}
 
 	if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {
+		if len(shardBlock.Body.Instructions) > 0 {
+			//TODO: add block height in the past, we have empty swap instruction
+			if shardBlock.Body.Instructions[0][0] == instruction.SWAP_ACTION && shardBlock.Body.Instructions[0][1] == "" {
+				goto CONT
+			}
+		}
 		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v", shardBlock.Header.InstructionsRoot, hash))
 	}
-
+CONT:
 	//check crossshard output coin content (when sign block or beacon full validation)
-	if flow.forSigning || flow.validationMode == common.BEACON_FULL_VALIDATION {
+	if flow.forSigning || flow.validationMode >= common.BEACON_FULL_VALIDATION {
 		toShardAllCrossShardBlock := flow.crossShardBlockToAdd
 		for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {
 			toShardCrossShardBlocks := toShardAllCrossShardBlock[fromShard]
@@ -801,7 +808,7 @@ func (chain *ShardChain) getDataBeforeBlockValidation(shardBlock *types.ShardBlo
 	// get cross shard block
 	// for signing
 	// or when beacon chain not confirm, we need to validate the cross shard output coin
-	if forSigning || validationMode == common.BEACON_FULL_VALIDATION {
+	if forSigning || validationMode >= common.BEACON_FULL_VALIDATION {
 		toShard := shardID
 		var toShardAllCrossShardBlock = make(map[byte][]*types.CrossShardBlock)
 		validationFlow.crossShardBlockToAdd = toShardAllCrossShardBlock

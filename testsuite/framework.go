@@ -8,7 +8,13 @@ import (
 )
 
 func NewStandaloneSimulation(name string, config Config) *NodeEngine {
-	os.RemoveAll("/tmp/database")
+	if config.DataDir == "" {
+		config.DataDir = "/tmp/database"
+	}
+	if config.ResetDB {
+		os.RemoveAll(config.DataDir)
+	}
+
 	sim := &NodeEngine{
 		config:            config,
 		simName:           name,
@@ -18,6 +24,7 @@ func NewStandaloneSimulation(name string, config Config) *NodeEngine {
 		committeeAccount:  make(map[int][]account.Account),
 		listennerRegister: make(map[int][]func(msg interface{})),
 	}
+
 	sim.init()
 	time.Sleep(1 * time.Second)
 	return sim

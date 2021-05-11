@@ -3,6 +3,7 @@ package devframework
 import (
 	"encoding/json"
 	"fmt"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"log"
 	"net"
 	"os"
@@ -46,6 +47,9 @@ import (
 
 type Config struct {
 	ChainParam *ChainParam
+	DataDir    string
+	ResetDB    bool
+	AppNode    bool
 }
 
 type NodeEngine struct {
@@ -133,31 +137,63 @@ func (sim *NodeEngine) init() {
 	}
 
 	InitLogRotator(filepath.Join(path, simName+".log"))
-
 	activeNetParams := sim.config.ChainParam.GetParamData()
+	if sim.config.AppNode {
+		switch activeNetParams.Net {
+		case blockchain.Mainnet:
+			blockchain.IsTestNet = false
+			blockchain.IsTestNet2 = false
+			blockchain.ReadKey(MainnetKeylist, Mainnetv2Keylist)
+			blockchain.SetupParam()
+			activeNetParams = &blockchain.ChainMainParam
+			break
+		case blockchain.Testnet:
+			blockchain.IsTestNet = true
+			blockchain.IsTestNet2 = false
+			blockchain.ReadKey(TestnetKeylist, Testnetv2Keylist)
+			blockchain.SetupParam()
+			activeNetParams = &blockchain.ChainTestParam
+			break
+		case blockchain.Testnet2:
+			blockchain.IsTestNet = true
+			blockchain.IsTestNet2 = true
+			blockchain.ReadKey(Testnet2Keylist, Testnet2v2Keylist)
+			blockchain.SetupParam()
+			break
+		default:
+			blockchain.IsTestNet = true
+			blockchain.IsTestNet2 = true
+			blockchain.ReadKey(Testnet2Keylist, Testnet2v2Keylist)
+			blockchain.SetupParam()
+			activeNetParams = &blockchain.ChainTest2Param
+			break
+		}
+
+	} else {
+		sim.GenesisAccount = sim.NewAccount()
+		for i := 0; i < activeNetParams.MinBeaconCommitteeSize; i++ {
+			acc := sim.NewAccountFromShard(-1)
+			sim.committeeAccount[-1] = append(sim.committeeAccount[-1], acc)
+			activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey, acc.SelfCommitteePubkey)
+			activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress, acc.PaymentAddress)
+		}
+		for i := 0; i < activeNetParams.ActiveShards; i++ {
+			for a := 0; a < activeNetParams.MinShardCommitteeSize; a++ {
+				acc := sim.NewAccountFromShard(i)
+				sim.committeeAccount[i] = append(sim.committeeAccount[i], acc)
+				activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey, acc.SelfCommitteePubkey)
+				activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress, acc.PaymentAddress)
+			}
+		}
+
+		initTxs := createGenesisTx([]account.Account{sim.GenesisAccount})
+		activeNetParams.GenesisParams.InitialIncognito = initTxs
+	}
+
+	zkp.InitCheckpoint(activeNetParams.BCHeightBreakPointNewZKP)
 	common.MaxShardNumber = activeNetParams.ActiveShards
 	common.TIMESLOT = activeNetParams.Timeslot
-	sim.GenesisAccount = sim.NewAccount()
-
-	for i := 0; i < activeNetParams.MinBeaconCommitteeSize; i++ {
-		acc := sim.NewAccountFromShard(-1)
-		sim.committeeAccount[-1] = append(sim.committeeAccount[-1], acc)
-		activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey, acc.SelfCommitteePubkey)
-		activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress, acc.PaymentAddress)
-	}
-	for i := 0; i < activeNetParams.ActiveShards; i++ {
-		for a := 0; a < activeNetParams.MinShardCommitteeSize; a++ {
-			acc := sim.NewAccountFromShard(i)
-			sim.committeeAccount[i] = append(sim.committeeAccount[i], acc)
-			activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey, acc.SelfCommitteePubkey)
-			activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress, acc.PaymentAddress)
-		}
-	}
-
-	initTxs := createGenesisTx([]account.Account{sim.GenesisAccount})
-	activeNetParams.GenesisParams.InitialIncognito = initTxs
 	activeNetParams.CreateGenesisBlocks()
-
 	//init blockchain
 	bc := blockchain.BlockChain{}
 
@@ -188,7 +224,7 @@ func (sim *NodeEngine) init() {
 	if err != nil {
 		panic(err)
 	}
-	dbpath := filepath.Join("/tmp/database")
+	dbpath := filepath.Join(sim.config.DataDir)
 	db, err := incdb.OpenMultipleDB("leveldb", dbpath)
 	// Create db and use it.
 	if err != nil {
@@ -215,11 +251,11 @@ func (sim *NodeEngine) init() {
 	rpcServer := &rpcserver.RpcServer{}
 	rpclocal := &LocalRPCClient{rpcServer}
 
-	btcChain, err := getBTCRelayingChain(activeNetParams.PortalParams.RelayingParam.BTCRelayingHeaderChainID, "btcchain", "/tmp/database")
+	btcChain, err := getBTCRelayingChain(activeNetParams.PortalParams.RelayingParam.BTCRelayingHeaderChainID, "btcchain", sim.config.DataDir)
 	if err != nil {
 		panic(err)
 	}
-	bnbChainState, err := getBNBRelayingChainState(activeNetParams.PortalParams.RelayingParam.BNBRelayingHeaderChainID, "/tmp/database")
+	bnbChainState, err := getBNBRelayingChainState(activeNetParams.PortalParams.RelayingParam.BNBRelayingHeaderChainID, sim.config.DataDir)
 	if err != nil {
 		panic(err)
 	}
@@ -537,6 +573,10 @@ func (sim *NodeEngine) InjectTx(txBase58 string) error {
 
 func (sim *NodeEngine) GetBlockchain() *blockchain.BlockChain {
 	return sim.bc
+}
+
+func (sim *NodeEngine) GetSyncker() *syncker.SynckerManager {
+	return sim.syncker
 }
 
 func (s *NodeEngine) GetUserDatabase() *leveldb.DB {
