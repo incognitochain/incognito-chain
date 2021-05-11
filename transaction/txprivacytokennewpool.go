@@ -117,9 +117,9 @@ func (tx *TxCustomTokenPrivacy) LoadCommitment(
 				return err
 			}
 		} else {
-			for i := 0; i < len(embededTx.Proof.GetInputCoins()); i++ {
+			for _, iCoin := range prf.GetInputCoins() {
 				ok, err := tx.CheckCMExistence(
-					tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(),
+					iCoin.CoinDetails.GetCoinCommitment().ToBytesS(),
 					db,
 					byte(tx.valEnv.ShardID()),
 					&common.PRVCoinID,
@@ -151,9 +151,9 @@ func (tx *TxCustomTokenPrivacy) LoadCommitment(
 				return err
 			}
 		} else {
-			for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
+			for _, iCoin := range prf.GetInputCoins() {
 				ok, err := tx.CheckCMExistence(
-					tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(),
+					iCoin.CoinDetails.GetCoinCommitment().ToBytesS(),
 					db,
 					byte(tx.valEnv.ShardID()),
 					tokenID,

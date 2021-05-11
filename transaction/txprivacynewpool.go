@@ -184,9 +184,9 @@ func (tx *Tx) LoadCommitment(
 	if tx.valEnv.IsPrivacy() {
 		return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
 	} else {
-		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
+		for _, iCoin := range prf.GetInputCoins() {
 			ok, err := tx.CheckCMExistence(
-				tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(),
+				iCoin.CoinDetails.GetCoinCommitment().ToBytesS(),
 				db,
 				byte(tx.valEnv.ShardID()),
 				tokenID,
