@@ -119,16 +119,17 @@ func (tx *TxCustomTokenPrivacy) LoadCommitment(
 		}
 		// return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
 	}
-	if normalTx.valEnv.IsPrivacy() {
-		tokenID := tx.GetTokenID()
-		if tx.TxPrivacyTokenData.Type == CustomTokenInit {
-			if !tx.TxPrivacyTokenData.Mintable {
-				// check exist token
-				if statedb.PrivacyTokenIDExisted(db, *tokenID) {
-					return errors.Errorf("Privacy Token ID is existed")
-				}
+	tokenID := tx.GetTokenID()
+	if tx.TxPrivacyTokenData.Type == CustomTokenInit {
+		if !tx.TxPrivacyTokenData.Mintable {
+			// check exist token
+			if statedb.PrivacyTokenIDExisted(db, *tokenID) {
+				return errors.Errorf("Privacy Token ID is existed")
 			}
 		}
+	}
+	if normalTx.valEnv.IsPrivacy() {
+
 		prf := normalTx.Proof
 		if prf != nil {
 			err := prf.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
