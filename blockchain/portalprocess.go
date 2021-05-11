@@ -65,7 +65,9 @@ func (blockchain *BlockChain) handlePortalInsts(
 }
 
 // Beacon process for portal protocol
-func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *types.BeaconBlock) (*portalprocessv4.CurrentPortalStateV4, error) {
+func (blockchain *BlockChain) processPortalInstructions(
+	portalStateDB *statedb.StateDB, block *types.BeaconBlock,
+) (*portalprocessv4.CurrentPortalStateV4, error) {
 	// Note: should comment this code if you need to create local chain.
 	isSkipPortalV3Ints := false
 	if blockchain.config.ChainParams.Net == Testnet && block.Header.Height < 1580600 {
@@ -89,7 +91,9 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 	epoch := blockchain.config.ChainParams.Epoch
 
 	newPortalV4State, err := portal.ProcessPortalInsts(
-		blockchain, lastPortalV4State, portalStateDB, relayingState, portalParams, beaconHeight, block.Body.Instructions, pm, epoch, isSkipPortalV3Ints)
+		blockchain, lastPortalV4State, portalStateDB, relayingState, portalParams, beaconHeight,
+		block.Body.Instructions, pm, epoch, isSkipPortalV3Ints,
+	)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -97,7 +101,9 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 	return newPortalV4State, nil
 }
 
-func getDiffPortalStateV4(previous *portalprocessv4.CurrentPortalStateV4, current *portalprocessv4.CurrentPortalStateV4) (diffState *portalprocessv4.CurrentPortalStateV4) {
+func getDiffPortalStateV4(
+	previous *portalprocessv4.CurrentPortalStateV4, current *portalprocessv4.CurrentPortalStateV4,
+) (diffState *portalprocessv4.CurrentPortalStateV4) {
 	if current == nil {
 		return nil
 	}
@@ -113,24 +119,53 @@ func getDiffPortalStateV4(previous *portalprocessv4.CurrentPortalStateV4, curren
 	}
 
 	for k, v := range current.UTXOs {
-		if m, ok := previous.UTXOs[k]; !ok || !reflect.DeepEqual(m, v) {
+		if _, ok := previous.UTXOs[k]; !ok {
 			diffState.UTXOs[k] = v
+			continue
+		}
+		diffState.UTXOs[k] = map[string]*statedb.UTXO{}
+		for _k, _v := range v {
+			if m, ok := previous.UTXOs[k][_k]; !ok || !reflect.DeepEqual(m, _v) {
+				diffState.UTXOs[k][_k] = _v
+			}
 		}
 	}
 	for k, v := range current.ShieldingExternalTx {
-		if m, ok := previous.ShieldingExternalTx[k]; !ok || !reflect.DeepEqual(m, v) {
+		if _, ok := previous.ShieldingExternalTx[k]; !ok {
 			diffState.ShieldingExternalTx[k] = v
+			continue
+		}
+		diffState.ShieldingExternalTx[k] = map[string]*statedb.ShieldingRequest{}
+		for _k, _v := range v {
+			if m, ok := previous.ShieldingExternalTx[k][_k]; !ok || !reflect.DeepEqual(m, _v) {
+				diffState.ShieldingExternalTx[k][_k] = _v
+			}
 		}
 	}
 	for k, v := range current.WaitingUnshieldRequests {
-		if m, ok := previous.WaitingUnshieldRequests[k]; !ok || !reflect.DeepEqual(m, v) {
+		if _, ok := previous.WaitingUnshieldRequests[k]; !ok {
 			diffState.WaitingUnshieldRequests[k] = v
+			continue
+		}
+		diffState.WaitingUnshieldRequests[k] = map[string]*statedb.WaitingUnshieldRequest{}
+		for _k, _v := range v {
+			if m, ok := previous.WaitingUnshieldRequests[k][_k]; !ok || !reflect.DeepEqual(m, _v) {
+				diffState.WaitingUnshieldRequests[k][_k] = _v
+			}
 		}
 	}
 	for k, v := range current.ProcessedUnshieldRequests {
-		if m, ok := previous.ProcessedUnshieldRequests[k]; !ok || !reflect.DeepEqual(m, v) {
+		if _, ok := previous.ProcessedUnshieldRequests[k]; !ok {
 			diffState.ProcessedUnshieldRequests[k] = v
+			continue
+		}
+		diffState.ProcessedUnshieldRequests[k] = map[string]*statedb.ProcessedUnshieldRequestBatch{}
+		for _k, _v := range v {
+			if m, ok := previous.ProcessedUnshieldRequests[k][_k]; !ok || !reflect.DeepEqual(m, _v) {
+				diffState.ProcessedUnshieldRequests[k][_k] = _v
+			}
 		}
 	}
+
 	return diffState
 }
