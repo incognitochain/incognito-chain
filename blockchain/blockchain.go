@@ -190,15 +190,12 @@ func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	type WhiteList struct {
-		Data map[string][]string
-	}
-	whiteList := WhiteList{}
+	whiteList := map[string][]string{}
 	err = json.Unmarshal(whitelistData, &whiteList)
 	if err != nil {
 		return nil, err
 	}
-	if wlByNetID, ok := whiteList.Data[netID]; ok {
+	if wlByNetID, ok := whiteList[netID]; ok {
 		for _, txHash := range wlByNetID {
 			res[txHash] = nil
 		}
