@@ -159,9 +159,7 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 			}
 			return
 		}
-		ok := tp.Verifier.LoadCommitment(tx, nil)
-		if !ok {
-			err := errors.Errorf("Can not load commitment for this tx %v", tx.Hash().String())
+		if ok, err := tp.Verifier.LoadCommitment(tx, nil); !ok || err != nil {
 			Logger.Debugf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
 			errChan <- validateResult{
 				err:    err,
@@ -209,7 +207,6 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		Detail TxInfoDetail
 	}{}
 	mapForChkDbStake := map[string]interface{}{}
-	sDB := sView.GetCopiedTransactionStateDB()
 	defer func() {
 		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v maxtime %v for shard %v \n", len(res), curSize, curTime, maxSize, maxTime, sView.GetShardID())
 	}()
@@ -218,6 +215,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		select {
 		case txDetails := <-txDetailCh:
 			if txDetails == nil {
+				removeNilTx(&res)
 				return res
 			}
 			Logger.Debugf("[txTracing] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
@@ -231,8 +229,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				Logger.Errorf("[txTracing] Tx %v is stake/unstake/stop auto stake twice\n", txDetails.Hash)
 				continue
 			}
-			err := txDetails.Tx.LoadCommitment(sDB.Copy())
-			if err != nil {
+			if ok, err := tp.Verifier.LoadCommitment(txDetails.Tx, sView); !ok || err != nil {
 				Logger.Errorf("[txTracing] Validate tx %v return error %v\n", txDetails.Hash, err)
 				continue
 			}
@@ -248,16 +245,18 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				continue
 			}
 			Logger.Debugf("Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
-			ok, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
-			Logger.Debugf("Added %v, needed to remove %v\n", ok, removedInfo)
-			if ok {
-				curSize = curSize - removedInfo.Fee + txDetails.Fee
-				curTime = curTime - removedInfo.VTime + txDetails.VTime
-				res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
+			isDoubleSpend, needToReplace, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
+			if isDoubleSpend && !needToReplace {
+				continue
 			}
+			curSize = curSize - removedInfo.Size + txDetails.Size
+			curTime = curTime - removedInfo.VTime + txDetails.VTime
+			Logger.Debugf("Added tx %v, %v %v\n", txDetails.Tx.Hash().String(), needToReplace, removedInfo)
+			res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
 		case <-timeOut:
 			stopCh <- nil
 			Logger.Debugf("Crawling txs for new block shard %v timeout! %v\n", sView.GetShardID(), time.Since(st))
+			removeNilTx(&res)
 			return res
 		}
 	}
@@ -301,6 +300,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 	txs *[]metadata.Transaction,
 ) (
 	bool,
+	bool,
 	TxInfo,
 ) {
 	prf := tx.GetProof()
@@ -312,9 +312,9 @@ func (tp *TxsPool) CheckDoubleSpend(
 	isDoubleSpend := false
 	needToReplace := false
 	if prf != nil {
-		isDoubleSpend, needToReplace, removedInfos = tp.checkPrfDoubleSpend(prf, dataHelper, removeIdx, tx, removedInfos)
+		isDoubleSpend, needToReplace, removeIdx, removedInfos = tp.checkPrfDoubleSpend(prf, dataHelper, removeIdx, tx, removedInfos)
 		if isDoubleSpend && !needToReplace {
-			return needToReplace, removedInfos
+			return isDoubleSpend, needToReplace, removedInfos
 		}
 	}
 
@@ -322,31 +322,25 @@ func (tp *TxsPool) CheckDoubleSpend(
 		txNormal := tx.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
 		normalPrf := txNormal.GetProof()
 		if normalPrf != nil {
-			isDoubleSpend, needToReplace, removedInfos = tp.checkPrfDoubleSpend(normalPrf, dataHelper, removeIdx, tx, removedInfos)
+			isDoubleSpend, needToReplace, removeIdx, removedInfos = tp.checkPrfDoubleSpend(normalPrf, dataHelper, removeIdx, tx, removedInfos)
 			if isDoubleSpend && !needToReplace {
-				return needToReplace, removedInfos
+				return isDoubleSpend, needToReplace, removedInfos
 			}
 		}
 	}
 
 	if len(removeIdx) > 0 {
-		Logger.Debugf("%v %v Doublespend %v ", len(removeIdx), len((*txs)), tx.Hash().String())
+		Logger.Debugf("%v %v Doublespend %v\n", len(removeIdx), len((*txs)), tx.Hash().String())
 		for k, v := range dataHelper {
 			if _, ok := removeIdx[v.Index]; ok {
 				delete(dataHelper, k)
 			}
 		}
 		for k := range removeIdx {
-			if int(k) == len(*txs)-1 {
-				(*txs) = (*txs)[:k]
-			} else {
-				if int(k) < len((*txs))-1 {
-					(*txs) = append((*txs)[:k], (*txs)[k+1:]...)
-				}
-			}
+			(*txs)[k] = nil
 		}
 	}
-	return true, removedInfos
+	return isDoubleSpend, needToReplace, removedInfos
 }
 
 func (tp *TxsPool) checkPrfDoubleSpend(
@@ -358,17 +352,20 @@ func (tp *TxsPool) checkPrfDoubleSpend(
 	removeIdx map[uint]interface{},
 	tx metadata.Transaction,
 	removedInfos TxInfo,
-) (bool, bool, TxInfo) {
+) (bool, bool, map[uint]interface{}, TxInfo) {
 	needToReplace := false
+	isDoubleSpend := false
 	iCoins := prf.GetInputCoins()
 	oCoins := prf.GetOutputCoins()
 	for _, iCoin := range iCoins {
 		if info, ok := dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
+			isDoubleSpend = true
 			if _, ok := removeIdx[info.Index]; ok {
+				needToReplace = true
 				continue
 			}
 			if tp.better(info.Detail.Tx, tx) {
-				return true, false, removedInfos
+				return true, false, removeIdx, removedInfos
 			} else {
 				removeIdx[info.Index] = nil
 				removedInfos.Fee += info.Detail.Fee
@@ -380,11 +377,12 @@ func (tp *TxsPool) checkPrfDoubleSpend(
 	}
 	for _, oCoin := range oCoins {
 		if info, ok := dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
+			isDoubleSpend = true
 			if _, ok := removeIdx[info.Index]; ok {
 				continue
 			}
 			if tp.better(info.Detail.Tx, tx) {
-				return true, false, removedInfos
+				return true, false, removeIdx, removedInfos
 			} else {
 				removeIdx[info.Index] = nil
 				removedInfos.Fee += info.Detail.Fee
@@ -395,7 +393,7 @@ func (tp *TxsPool) checkPrfDoubleSpend(
 		}
 	}
 
-	return false, needToReplace, removedInfos
+	return isDoubleSpend, needToReplace, removeIdx, removedInfos
 }
 
 func insertTxIntoList(
@@ -609,4 +607,16 @@ func isTxForUser(tx metadata.Transaction) bool {
 		}
 	}
 	return true
+}
+
+func removeNilTx(txs *[]metadata.Transaction) {
+	j := 0
+	for _, tx := range *txs {
+		if tx == nil {
+			continue
+		}
+		(*txs)[j] = tx
+		j++
+	}
+	*txs = (*txs)[:j]
 }
