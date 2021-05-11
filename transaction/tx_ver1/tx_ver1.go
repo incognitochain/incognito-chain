@@ -13,9 +13,9 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-	errhandler "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 )
 
 type Tx struct {
@@ -285,7 +285,7 @@ func (tx *Tx) prove(params *tx_generic.TxPrivacyInitParams) error {
 // 		commitmentProving[i] = new(operation.Point)
 // 		commitmentProving[i], err = commitmentProving[i].FromBytesS(cmBytes)
 // 		if err != nil {
-// 			utils.Logger.Log.Error(errors.New(fmt.Sprintf("ASM: Can not get commitment from index=%d shardID=%+v value=%+v", params.commitmentIndices[i], shardID, cmBytes)))
+// 			utils.utils.Logger.Log.Error(errors.New(fmt.Sprintf("ASM: Can not get commitment from index=%d shardID=%+v value=%+v", params.commitmentIndices[i], shardID, cmBytes)))
 // 			return nil, NewTransactionErr(CanNotDecompressCommitmentFromIndexError, err, params.commitmentIndices[i], shardID, cmBytes)
 // 		}
 // 	}
@@ -334,7 +334,7 @@ func (tx *Tx) sign() error {
 	return nil
 }
 
-func (tx *Tx) Sign(sigPrivakey []byte) error {//For testing-purpose only, remove when deploy
+func (tx *Tx) Sign(sigPrivakey []byte) error { //For testing-purpose only, remove when deploy
 	if sigPrivakey != nil{
 		tx.SetPrivateKey(sigPrivakey)
 	}
@@ -700,7 +700,6 @@ func (tx Tx) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash
 	isBurn, burnedCoin, burnedTokenID, err := tx.GetTxBurnData()
 	return isBurn, burnedCoin, nil, burnedTokenID, err
 }
-
 
 func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	err := tx_generic.MdValidateWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)

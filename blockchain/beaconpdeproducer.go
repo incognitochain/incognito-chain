@@ -665,7 +665,16 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 			shardID,
 			txReqID,
 		)
-		return [][]string{refundTradingFeeInst, refundSellingTokenInst}, nil
+
+		untradableInsts := make([][]string, 0)
+		if len(refundTradingFeeInst) > 0 {
+			untradableInsts = append(untradableInsts, refundTradingFeeInst)
+		}
+		if len(refundSellingTokenInst) > 0 {
+			untradableInsts = append(untradableInsts, refundSellingTokenInst)
+		}
+
+		return untradableInsts, nil
 	}
 
 	tradeAcceptedContents := []metadata.PDECrossPoolTradeAcceptedContent{}
@@ -910,6 +919,7 @@ func deductPDEAmountsV2(
 	currentPDEState *CurrentPDEState,
 	beaconHeight uint64,
 ) *DeductingAmountsByWithdrawal {
+	Logger.log.Infof("BUGLOG5 deducting shares for %v, tokens: %v-%v, amount: %v\n", wdMeta.WithdrawerAddressStr, wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, wdMeta.WithdrawalShareAmt)
 	var deductingAmounts *DeductingAmountsByWithdrawal
 	pairKey := string(rawdbv2.BuildPDEPoolForPairKey(
 		beaconHeight,
@@ -934,6 +944,8 @@ func deductPDEAmountsV2(
 		return deductingAmounts
 	}
 
+	Logger.log.Infof("BUGLOG5 shareForWithdrawer: %v\n", currentSharesForWithdrawer)
+
 	totalSharesForPairPrefixBytes, err := rawdbv2.BuildPDESharesKeyV2(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, "",
@@ -945,9 +957,16 @@ func deductPDEAmountsV2(
 
 	totalSharesForPairPrefix := string(totalSharesForPairPrefixBytes)
 	totalSharesForPair := big.NewInt(0)
+
+	Logger.log.Infof("BUGLOG5 shardKeyPrefix: %v\n", totalSharesForPairPrefix)
+
 	for shareKey, shareAmt := range currentPDEState.PDEShares {
 		if strings.Contains(shareKey, totalSharesForPairPrefix) {
+			Logger.log.Infof("BUGLOG5 shareKey %v, amount %v\n", shareKey, shareAmt)
 			totalSharesForPair.Add(totalSharesForPair, new(big.Int).SetUint64(shareAmt))
+
+			Logger.log.Infof("BUGLOG5 totalShare: %v\n", totalSharesForPair.Uint64())
+
 		}
 	}
 	if totalSharesForPair.Cmp(big.NewInt(0)) == 0 {
@@ -960,6 +979,8 @@ func deductPDEAmountsV2(
 	if wdSharesForWithdrawer == 0 {
 		return deductingAmounts
 	}
+
+	Logger.log.Infof("BUGLOG5 before deduction - poolValue1: %v, poolValue 2: %v, totalShares: %v\n", pdePoolPair.Token1PoolValue, pdePoolPair.Token2PoolValue, totalSharesForPair.Uint64())
 
 	deductingAmounts = &DeductingAmountsByWithdrawal{}
 	deductingPoolValueToken1 := big.NewInt(0)
@@ -990,6 +1011,10 @@ func deductPDEAmountsV2(
 		currentPDEState.PDEShares[shareForWithdrawerKey] -= wdSharesForWithdrawer
 	}
 	deductingAmounts.Shares = wdSharesForWithdrawer
+
+	Logger.log.Infof("BUGLOG5 deductedAmounts: %v, %v\n", deductingAmounts.PoolValue1, deductingAmounts.PoolValue2)
+	Logger.log.Infof("BUGLOG5 after deduction - poolValue1: %v, poolValue 2: %v\n", pdePoolPair.Token1PoolValue, pdePoolPair.Token2PoolValue)
+
 	return deductingAmounts
 }
 

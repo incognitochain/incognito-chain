@@ -95,10 +95,11 @@ type ChainRetriever interface {
 }
 
 type BeaconViewRetriever interface {
+	GetHeight() uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
 	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
 	GetAutoStakingList() map[string]bool
-	GetAllBridgeTokens() ([]common.Hash, error)
+	// GetAllBridgeTokens() ([]common.Hash, error)
 	GetBeaconFeatureStateDB() *statedb.StateDB
 	GetBeaconRewardStateDB() *statedb.StateDB
 	GetBeaconSlashStateDB() *statedb.StateDB
@@ -116,7 +117,20 @@ type ShardViewRetriever interface {
 	ListShardPrivacyTokenAndPRV() []common.Hash
 	GetShardRewardStateDB() *statedb.StateDB
 	GetCopiedFeatureStateDB() *statedb.StateDB
+	GetCopiedTransactionStateDB() *statedb.StateDB
 	GetHeight() uint64
+}
+
+type ValidationEnviroment interface {
+	IsPrivacy() bool
+	IsConfimed() bool
+	TxType() string
+	TxAction() int
+	ShardID() int
+	ShardHeight() uint64
+	BeaconHeight() uint64
+	ConfimedTime() int64
+	Version() int
 }
 
 // Interface for all type of transaction
@@ -172,6 +186,7 @@ type Transaction interface {
 	ValidateTxSalary(*statedb.StateDB) (bool, error)
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateSanityData(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) (bool, error)
+
 	ValidateTxWithBlockChain(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error
 	ValidateDoubleSpendWithBlockchain(byte, *statedb.StateDB, *common.Hash) error
 	ValidateTxByItself(map[string]bool, *statedb.StateDB, *statedb.StateDB, ChainRetriever, byte, ShardViewRetriever, BeaconViewRetriever) (bool, error)
@@ -183,6 +198,25 @@ type Transaction interface {
 	Init(interface{}) error
 	// Verify the init function above, which verify zero knowledge proof and signatures
 	Verify(map[string]bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash) (bool, error)
+
+	GetValidationEnv() ValidationEnviroment
+	SetValidationEnv(ValidationEnviroment)
+	UnmarshalJSON(data []byte) error
+
+	VerifySigTx() (bool, error)
+	ValidateSanityDataByItSelf() (bool, error)
+	ValidateTxCorrectness() (bool, error)
+	LoadCommitment(db *statedb.StateDB) error
+	ValidateSanityDataWithBlockchain(
+		chainRetriever ChainRetriever,
+		shardViewRetriever ShardViewRetriever,
+		beaconViewRetriever BeaconViewRetriever,
+		beaconHeight uint64,
+	) (
+		bool,
+		error,
+	)
+	ValidateDoubleSpendWithBlockChain(stateDB *statedb.StateDB) (bool, error)
 }
 
 type MintData struct {

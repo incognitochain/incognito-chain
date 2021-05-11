@@ -5,9 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"math/big"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"

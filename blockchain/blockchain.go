@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"sync"
 
@@ -26,6 +27,8 @@ import (
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
 	txutils "github.com/incognitochain/incognito-chain/transaction/utils"
+	"github.com/incognitochain/incognito-chain/txpool"
+	"github.com/pkg/errors"
 )
 
 type BlockChain struct {
@@ -37,6 +40,8 @@ type BlockChain struct {
 	IsTest bool
 
 	beaconViewCache *lru.Cache
+
+	committeeByEpochCache *lru.Cache
 }
 
 // Config is a descriptor which specifies the blockchain instblockchain/beaconstatefulinsts.goance configuration.
@@ -62,8 +67,10 @@ type Config struct {
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
 	OutcoinByOTAKeyDb *incdb.Database
+	PoolManager       *txpool.PoolManager
 
 	relayShardLck sync.Mutex
+	usingNewPool  bool
 }
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
@@ -92,16 +99,23 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
 	blockchain.beaconViewCache, _ = lru.New(100)
+	blockchain.committeeByEpochCache, _ = lru.New(100)
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
+	newTxPool := os.Getenv("TXPOOL_VERSION")
+	if newTxPool == "1" {
+		blockchain.config.usingNewPool = true
+	} else {
+		blockchain.config.usingNewPool = false
+	}
 	if err := blockchain.InitChainState(); err != nil {
 		return err
 	}
 	blockchain.cQuitSync = make(chan struct{})
 
-	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb!=nil)
-	if EnableIndexingCoinByOTAKey{
+	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb != nil)
+	if EnableIndexingCoinByOTAKey {
 		var err error
 		outcoinIndexer, err = txutils.NewOutcoinReindexer(*config.OutcoinByOTAKeyDb)
 		return err
@@ -134,11 +148,24 @@ func (blockchain *BlockChain) InitChainState() error {
 
 	//beaconHash, err := statedb.GetBeaconBlockHashByIndex(blockchain.GetBeaconBestState().GetBeaconConsensusStateDB(), 1)
 	//panic(beaconHash.String())
-
+	wl, err := blockchain.GetWhiteList()
+	if err != nil {
+		Logger.log.Errorf("Can not get whitelist txs, error %v", err)
+	}
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
-	for shard := 1; shard <= blockchain.GetBeaconBestState().ActiveShards; shard++ {
-		shardID := byte(shard - 1)
-		blockchain.ShardChain[shardID] = NewShardChain(shard-1, multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID))
+	for shardID := byte(0); int(shardID) < blockchain.GetBeaconBestState().ActiveShards; shardID++ {
+		tp, err := blockchain.config.PoolManager.GetShardTxsPool(shardID)
+		if err != nil {
+			return err
+		}
+		tv := NewTxsVerifier(
+			nil,
+			tp,
+			wl,
+			nil,
+		)
+		tp.UpdateTxVerifier(tv)
+		blockchain.ShardChain[shardID] = NewShardChain(int(shardID), multiview.NewMultiView(), blockchain.config.BlockGen, blockchain, common.GetShardChainKey(shardID), tp, tv)
 		blockchain.ShardChain[shardID].hashHistory, err = lru.New(1000)
 		if err != nil {
 			return err
@@ -151,10 +178,38 @@ func (blockchain *BlockChain) InitChainState() error {
 				return err
 			}
 		}
+		sBestState := blockchain.ShardChain[shardID].GetBestState()
+		txDB := sBestState.GetCopiedTransactionStateDB()
+		// Logger.log.Infof("[testperformance] SHARD %v | Init txDB from block %v, txdb roothash %v\n", shardID, sBestState.BestBlock.Header.Height, txDB)
+
+		blockchain.ShardChain[shardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
 	}
 
 	return nil
+}
+
+func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
+	netID := blockchain.config.ChainParams.Name
+	res := map[string]interface{}{}
+	whitelistData, err := ioutil.ReadFile("whitelist.json")
+	if err != nil {
+		return nil, err
+	}
+	type WhiteList struct {
+		Data map[string][]string
+	}
+	whiteList := WhiteList{}
+	err = json.Unmarshal(whitelistData, &whiteList)
+	if err != nil {
+		return nil, err
+	}
+	if wlByNetID, ok := whiteList.Data[netID]; ok {
+		for _, txHash := range wlByNetID {
+			res[txHash] = nil
+		}
+	}
+	return res, nil
 }
 
 /*
@@ -327,7 +382,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 	assetTags := make([][]byte, 0)
 	// these coins either all have asset tags or none does
 	var hasAssetTags bool = true
-	for i:=0;i<numOutputs;i++{
+	for i := 0; i < numOutputs; i++ {
 		idx, _ := common.RandBigIntMaxRange(lenOTA)
 		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx.Uint64(), shardID)
 		if err != nil {
@@ -335,7 +390,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		}
 		coinDB := new(coin.CoinV2)
 		if err := coinDB.SetBytes(coinBytes); err != nil {
-			return nil, nil, nil, nil , err
+			return nil, nil, nil, nil, err
 		}
 		publicKey := coinDB.GetPublicKey()
 		commitment := coinDB.GetCommitment()
@@ -344,11 +399,11 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		publicKeys = append(publicKeys, publicKey.ToBytesS())
 		commitments = append(commitments, commitment.ToBytesS())
 
-		if hasAssetTags{
+		if hasAssetTags {
 			assetTag := coinDB.GetAssetTag()
-			if assetTag!=nil{
+			if assetTag != nil {
 				assetTags = append(assetTags, assetTag.ToBytesS())
-			}else{
+			} else {
 				hasAssetTags = false
 			}
 		}
@@ -382,11 +437,15 @@ func (blockchain *BlockChain) AddTempTxPool(temptxpool TxPool) {
 	blockchain.config.TempTxPool = temptxpool
 }
 
-func (blockchain *BlockChain) SetFeeEstimator(feeEstimator FeeEstimator, shardID byte) {
+func (blockchain *BlockChain) SetFeeEstimator(feeEstimator txpool.FeeEstimator, shardID byte) {
 	if len(blockchain.config.FeeEstimator) == 0 {
 		blockchain.config.FeeEstimator = make(map[byte]FeeEstimator)
 	}
+
 	blockchain.config.FeeEstimator[shardID] = feeEstimator
+	for shardID := byte(0); int(shardID) < blockchain.GetBeaconBestState().ActiveShards; shardID++ {
+		blockchain.ShardChain[shardID].TxsVerifier.UpdateFeeEstimator(feeEstimator)
+	}
 }
 
 func (blockchain *BlockChain) InitChannelBlockchain(cRemovedTxs chan metadata.Transaction) {
@@ -935,4 +994,33 @@ func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
 		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
 		return newEpochBlocks%params.EpochV2 == params.RandomTimeV2
 	}
+}
+
+func (bc *BlockChain) GetAllCommitteeStakeInfoByEpoch(epoch uint64) (map[int][]*statedb.StakerInfo, error) {
+	height := bc.GetLastBeaconHeightInEpoch(epoch)
+	var beaconConsensusRootHash common.Hash
+	beaconConsensusRootHash, err := bc.GetBeaconConsensusRootHash(bc.GetBeaconBestState(), height)
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
+	}
+	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(bc.GetBeaconChainDatabase()))
+	if err != nil {
+		return nil, NewBlockChainError(ProcessSalaryInstructionsError, err)
+	}
+	if cState, has := bc.committeeByEpochCache.Peek(epoch); has {
+		if result, ok := cState.(map[int][]*statedb.CommitteeState); ok {
+			return statedb.GetAllCommitteeStakeInfoV2(beaconConsensusStateDB, result), nil
+		}
+	}
+	allCommitteeState := statedb.GetAllCommitteeState(beaconConsensusStateDB, bc.GetShardIDs())
+	bc.committeeByEpochCache.Add(epoch, allCommitteeState)
+	return statedb.GetAllCommitteeStakeInfoV2(beaconConsensusStateDB, allCommitteeState), nil
+}
+
+func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {
+	return blockchain.config.PoolManager
+}
+
+func (blockchain *BlockChain) UsingNewPool() bool {
+	return blockchain.config.usingNewPool
 }

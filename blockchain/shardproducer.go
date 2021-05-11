@@ -175,8 +175,15 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
-	blockCreationLeftOver := curView.BlockMaxCreateTime.Nanoseconds() - time.Since(newShardBlockBeginTime).Nanoseconds()
-	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(curView, &tempPrivateKey, shardID, beaconBlocks, blockCreationLeftOver, beaconBlock.Header.Height)
+	blockCreationLeftOver := curView.BlockMaxCreateTime - time.Since(newShardBlockBeginTime)
+	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(
+		curView,
+		&tempPrivateKey,
+		shardID,
+		beaconBlocks,
+		blockCreationLeftOver,
+		beaconProcessHeight,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +208,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		NewShardEnvBuilder().
 		BuildBeaconInstructions(beaconInstructions).
 		BuildShardID(shardBestState.ShardID).
-		BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
+		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfFixedBlockValidators).
 		BuildShardHeight(shardBestState.ShardHeight).
 		Build()
 
@@ -326,31 +333,59 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 // 3. Build response Transaction For Shard
 // 4. Build response Transaction For Beacon
 // 5. Return valid transaction from pending, response transactions from shard and beacon
-func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBestState, privatekey *privacy.PrivateKey, shardID byte, beaconBlocks []*types.BeaconBlock, blockCreation int64, beaconHeight uint64) ([]metadata.Transaction, error) {
-	txsToAdd, txToRemove, _ := blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreation, beaconHeight, curView)
-	if len(txsToAdd) == 0 {
-		Logger.log.Info("Creating empty block...")
-	}
-	go blockGenerator.txPool.RemoveTx(txToRemove, false)
+func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
+	curView *ShardBestState,
+	privatekey *privacy.PrivateKey,
+	shardID byte,
+	beaconBlocks []*types.BeaconBlock,
+	blockCreationLeftOver time.Duration,
+	beaconHeight uint64,
+) (
+	[]metadata.Transaction,
+	error,
+) {
+	var err error
+	st := time.Now()
+	chain := blockGenerator.chain.ShardChain[shardID]
+	maxSize := uint64(4096) //kB
 	var responseTxsBeacon []metadata.Transaction
 	var errInstructions [][]string
-	var cError chan error
-	cError = make(chan error)
-	go func() {
-		var err error
-		responseTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(curView, beaconBlocks, privatekey, shardID)
-		cError <- err
-	}()
-	nilCount := 0
-	for {
-		err := <-cError
-		if err != nil {
-			return nil, err
+	responseTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(curView, beaconBlocks, privatekey, shardID)
+	if err != nil {
+		return nil, err
+	}
+	bView := &BeaconBestState{}
+	if len(beaconBlocks) == 0 {
+		bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true)
+	} else {
+		bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(*beaconBlocks[len(beaconBlocks)-1].Hash(), true)
+	}
+	if err != nil {
+		return nil, NewBlockChainError(CloneBeaconBestStateError, err)
+	}
+	blockCreationLeftOver = blockCreationLeftOver - time.Now().Sub(st)
+	st = time.Now()
+	txsToAdd := []metadata.Transaction{}
+	if !blockGenerator.chain.config.usingNewPool {
+		txToRemove := []metadata.Transaction{}
+
+		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreationLeftOver.Nanoseconds(), beaconHeight, curView)
+		if len(txsToAdd) == 0 {
+			Logger.log.Info("Creating empty block...")
 		}
-		nilCount++
-		if nilCount == 1 {
-			break
-		}
+		go blockGenerator.txPool.RemoveTx(txToRemove, false)
+	} else {
+		txsToAdd = chain.TxPool.GetTxsTranferForNewBlock(
+			blockGenerator.chain,
+			curView,
+			bView,
+			maxSize,
+			24*time.Second,
+			blockCreationLeftOver,
+		)
+	}
+	if len(txsToAdd) > 0 {
+		Logger.log.Infof("SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(txsToAdd), curView.ShardHeight+1, time.Since(st))
 	}
 	txsToAdd = append(txsToAdd, responseTxsBeacon...)
 	if len(errInstructions) > 0 {
@@ -557,19 +592,20 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 		Logger.log.Info("ShardID", shardID)
 
-		maxShardCommitteeSize := view.MaxShardCommitteeSize - NumberOfFixedShardBlockValidators
+		numberOfFixedShardBlockValidators := blockchain.config.ChainParams.NumberOfFixedBlockValidators
+		maxShardCommitteeSize := view.MaxShardCommitteeSize - numberOfFixedShardBlockValidators
 		var minShardCommitteeSize int
-		if view.MinShardCommitteeSize-NumberOfFixedShardBlockValidators < 0 {
+		if view.MinShardCommitteeSize-numberOfFixedShardBlockValidators < 0 {
 			minShardCommitteeSize = 0
 		} else {
-			minShardCommitteeSize = view.MinShardCommitteeSize - NumberOfFixedShardBlockValidators
+			minShardCommitteeSize = view.MinShardCommitteeSize - numberOfFixedShardBlockValidators
 		}
 		epoch := blockchain.GetEpochByHeight(beaconHeight)
 		if common.IndexOfUint64(epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
 			swapOrConfirmShardSwapInstruction, shardCommittees = createShardSwapActionForKeyListV2(
 				blockchain.config.GenesisParams,
 				shardCommittees,
-				NumberOfFixedShardBlockValidators,
+				numberOfFixedShardBlockValidators,
 				blockchain.config.ChainParams.ActiveShards,
 				shardID,
 				epoch,
@@ -583,7 +619,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 				BuildShardHeight(view.ShardHeight).
 				BuildOffset(blockchain.config.ChainParams.Offset).
 				BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
-				BuildNumberOfFixedBlockValidators(NumberOfFixedShardBlockValidators).
+				BuildNumberOfFixedBlockValidators(numberOfFixedShardBlockValidators).
 				Build()
 			tempSwapInstruction, shardPendingValidators, shardCommittees, err = view.shardCommitteeEngine.GenerateSwapInstruction(env)
 			if err != nil {

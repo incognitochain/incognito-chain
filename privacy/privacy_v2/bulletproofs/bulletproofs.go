@@ -121,7 +121,7 @@ func (proof AggregatedRangeProof) Bytes() []byte {
 	return res
 }
 
-// GetCommitments is the getter for cmsValue
+// GetCommitments is the getter for cmsValueGetCommitments() []*operation.Point
 func (proof AggregatedRangeProof) GetCommitments() []*operation.Point {return proof.cmsValue}
 
 func (proof *AggregatedRangeProof) SetCommitments(cmsValue []*operation.Point) {

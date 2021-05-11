@@ -3,7 +3,7 @@ package rawdbv2
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy/privacy_util"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
 )
 
@@ -74,7 +74,7 @@ func BuildPDESharesKey(
 		keyAddr = contributorAddressStr
 	}else{
 		//Always parse the contributor address into the oldest version for compatibility
-		keyAddr, err = privacy_util.GetPaymentAddressV1(contributorAddressStr, false)
+		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddressStr, false)
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +100,7 @@ func BuildPDESharesKeyV2(
 		keyAddr = contributorAddressStr
 	}else{
 		//Always parse the contributor address into the oldest version for compatibility
-		keyAddr, err = privacy_util.GetPaymentAddressV1(contributorAddressStr, false)
+		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddressStr, false)
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +138,7 @@ func BuildPDETradingFeeKey(
 		keyAddr = contributorAddressStr
 	}else{
 		//Always parse the contributor address into the oldest version for compatibility
-		keyAddr, err = privacy_util.GetPaymentAddressV1(contributorAddressStr, false)
+		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddressStr, false)
 		if err != nil {
 			return nil, err
 		}

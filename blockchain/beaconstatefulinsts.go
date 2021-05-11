@@ -107,10 +107,16 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	beaconHeight uint64,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams portal.PortalParams) [][]string {
-	currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconHeight-1)
+
+	currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconBestState.pdeState, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
 	}
+
+	rootHash, _ := blockchain.GetBeaconFeatureRootHash(blockchain.GetBeaconBestState(), beaconHeight-1)
+	jsb, _ := json.MarshalIndent(currentPDEState, "", "\t")
+	Logger.log.Infof("BUGLOG5 currentPDEState in beaconRoot %v: %v\n", rootHash.String(), string(jsb))
+
 
 	pm := portal.NewPortalManager()
 	currentPortalStateV3, err := portalprocessv3.InitCurrentPortalStateFromDB(featureStateDB)

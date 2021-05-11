@@ -22,6 +22,7 @@ import (
 
 type TxBase struct {
 	// Basic data, required
+	valEnv *ValidationEnv
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
@@ -148,7 +149,7 @@ func GetTxVersionFromCoins(inputCoins []privacy.PlainCoin) (int8, error) {
 	}
 }
 
-// return bool indicates whether we should continue "Init" function or not
+// InitializeTxAndParams returns bool indicates whether we should continue "Init" function or not
 func (tx *TxBase) InitializeTxAndParams(params *TxPrivacyInitParams) error {
 	var err error
 	// Get Keyset from param
@@ -229,7 +230,6 @@ func (tx *TxBase) UnmarshalJSON(data []byte) error {
 }
 
 // =================== GET/SET FUNCTIONS ===================
-
 func (tx TxBase) GetVersion() int8 { return tx.Version }
 
 func (tx *TxBase) SetVersion(version int8) { tx.Version = version }

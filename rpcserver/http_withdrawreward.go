@@ -3,9 +3,7 @@ package rpcserver
 import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -18,7 +16,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
 	}
-	tokenIDStr, ok := metaParam["TokenID"].(string);
+	tokenIDStr, ok := metaParam["TokenID"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token ID string is invalid"))
 	}
@@ -42,23 +40,17 @@ func (httpServer *HttpServer) handleCreateRawTxWithWithdrawRewardReq(params inte
 	if txVersion == 1 {
 		meta.PaymentAddress.OTAPublic = nil
 	}
-	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
 
-	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, meta)
-	if err.(*rpcservice.RPCError) != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
-	}
-
-	result := jsonresult.CreateTransactionResult{
-		TxID:            txID.String(),
-		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
-		ShardID:         txShardID,
-	}
-	return result, nil
+	param := map[string]interface{}{}
+	param["PaymentAddress"] = paymentAddStr
+	param["TokenID"] = tokenIDStr
+	param["Version"] = common.SALARY_VER_FIX_HASH
+	arrayParams[4] = interface{}(param)
+	return httpServer.createRawTxWithMetadata(
+		arrayParams,
+		closeChan,
+		metadata.NewWithDrawRewardRequestFromRPC,
+	)
 }
 
 func (httpServer *HttpServer) handleCreateAndSendWithDrawTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

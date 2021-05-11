@@ -670,14 +670,19 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, fmt.Errorf("Can't found ConsensusStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
 	}
+	Logger.log.Infof("BUGLOG5 beaconFeatureRoot: %v\n",beaconFeatureStateRootHash.String())
 	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.GetBeaconChainDatabase()))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDB(beaconFeatureStateDB, uint64(beaconHeight))
+	pdeState, err := blockchain.InitCurrentPDEStateFromDB(beaconFeatureStateDB, nil, uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
+
+	jsb, _ := json.MarshalIndent(pdeState, "", "\t")
+	Logger.log.Infof("BUGLOG5 pdeState in get: %v\n", string(jsb))
+
 	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
@@ -1216,7 +1221,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := blockchain.InitCurrentPDEStateFromDB(beaconFeatureStateDB, latestBeaconHeight)
+	pdeState, err := blockchain.InitCurrentPDEStateFromDB(beaconFeatureStateDB, nil, latestBeaconHeight)
 	if err != nil || pdeState == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}

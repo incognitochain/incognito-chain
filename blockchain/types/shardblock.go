@@ -42,12 +42,14 @@ type ShardHeader struct {
 	PendingValidatorRoot  common.Hash            `json:"PendingValidatorRoot"`  // hash from public key list of all pending validators designated to this ShardID
 	StakingTxRoot         common.Hash            `json:"StakingTxRoot"`         // hash from staking transaction map in shard best state
 	InstructionMerkleRoot common.Hash            `json:"InstructionMerkleRoot"` // Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
-	CommitteeFromBlock    common.Hash            `json:"CommitteeFromBlock"`    // Block Hash Of Swapped Committees Block
 	// This obsoletes InstructionMerkleRoot but for simplicity, we keep it for now
 
 	//for version 2
 	Proposer    string
 	ProposeTime int64
+
+	//for version 3
+	CommitteeFromBlock common.Hash `json:"CommitteeFromBlock"` // Block Hash Of Swapped Committees Block
 }
 
 type ShardBody struct {
@@ -314,6 +316,13 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 	if shardBlock.Body.Transactions == nil {
 		shardBlock.Body.Transactions = []metadata.Transaction{}
 	}
+	for _, tx := range shardBlock.Body.Transactions {
+		valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), shardBlock.GetHeight())
+		valEnv = transaction.WithShardHeight(valEnv, shardBlock.Header.BeaconHeight)
+		valEnv = transaction.WithConfirmedTime(valEnv, shardBlock.GetProduceTime())
+		tx.SetValidationEnv(valEnv)
+		// fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
+	}
 	if shardBlock.Body.Instructions == nil {
 		shardBlock.Body.Instructions = [][]string{}
 	}
@@ -374,10 +383,15 @@ func (shardHeader *ShardHeader) String() string {
 		res += string(value)
 	}
 
-	if shardHeader.Version == 2 {
+	if shardHeader.Version >= 2 {
 		res += shardHeader.Proposer
 		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
+
+	if shardHeader.Version == 3 {
+		res += shardHeader.CommitteeFromBlock.String()
+	}
+
 	return res
 }
 
