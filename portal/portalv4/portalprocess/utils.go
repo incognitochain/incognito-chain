@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
@@ -119,18 +120,26 @@ func UpdatePortalStateUTXOs(CurrentPortalStateV4 *CurrentPortalStateV4, tokenID 
 		outputIdx := utxo.GetOutputIndex()
 		outputAmount := utxo.GetOutputAmount()
 		chainCodeSeed := utxo.GetChainCodeSeed()
-		CurrentPortalStateV4.UTXOs[tokenID][statedb.GenerateUTXOObjectKey(tokenID, walletAddress, txHash, outputIdx).String()] = statedb.NewUTXOWithValue(walletAddress, txHash, outputIdx, outputAmount, chainCodeSeed)
+		keyUTXO := statedb.GenerateUTXOObjectKey(tokenID, walletAddress, txHash, outputIdx).String()
+		CurrentPortalStateV4.UTXOs[tokenID][keyUTXO] = statedb.NewUTXOWithValue(walletAddress, txHash, outputIdx, outputAmount, chainCodeSeed)
 	}
 }
 
-func UpdatePortalStateShieldingExternalTx(CurrentPortalStateV4 *CurrentPortalStateV4, tokenID string, shieldingProofTxHash string, shieldingExternalTxHash string, incAddress string, amount uint64) {
-	if CurrentPortalStateV4.ShieldingExternalTx == nil {
-		CurrentPortalStateV4.ShieldingExternalTx = map[string]map[string]*statedb.ShieldingRequest{}
+func UpdatePortalStateShieldingExternalTx(
+	currentPortalStateV4 *CurrentPortalStateV4,
+	tokenID string,
+	shieldingProofTxHash string,
+	shieldingExternalTxHash string,
+	incAddress string,
+	amount uint64) {
+	if currentPortalStateV4.ShieldingExternalTx == nil {
+		currentPortalStateV4.ShieldingExternalTx = map[string]map[string]*statedb.ShieldingRequest{}
 	}
-	if CurrentPortalStateV4.ShieldingExternalTx[tokenID] == nil {
-		CurrentPortalStateV4.ShieldingExternalTx[tokenID] = map[string]*statedb.ShieldingRequest{}
+	if currentPortalStateV4.ShieldingExternalTx[tokenID] == nil {
+		currentPortalStateV4.ShieldingExternalTx[tokenID] = map[string]*statedb.ShieldingRequest{}
 	}
-	CurrentPortalStateV4.ShieldingExternalTx[tokenID][statedb.GenerateShieldingRequestObjectKey(tokenID, shieldingProofTxHash).String()] = statedb.NewShieldingRequestWithValue(shieldingExternalTxHash, incAddress, amount)
+	shieldReqKeyStr := statedb.GenerateShieldingRequestObjectKey(tokenID, shieldingProofTxHash).String()
+	currentPortalStateV4.ShieldingExternalTx[tokenID][shieldReqKeyStr] = statedb.NewShieldingRequestWithValue(shieldingExternalTxHash, incAddress, amount)
 }
 
 func IsExistsProofInPortalState(CurrentPortalStateV4 *CurrentPortalStateV4, tokenID string, shieldingProofTxHash string) bool {
@@ -140,7 +149,8 @@ func IsExistsProofInPortalState(CurrentPortalStateV4 *CurrentPortalStateV4, toke
 	if CurrentPortalStateV4.ShieldingExternalTx[tokenID] == nil {
 		return false
 	}
-	_, exists := CurrentPortalStateV4.ShieldingExternalTx[tokenID][statedb.GenerateShieldingRequestObjectKey(tokenID, shieldingProofTxHash).String()]
+	shieldReqKeyStr := statedb.GenerateShieldingRequestObjectKey(tokenID, shieldingProofTxHash).String()
+	_, exists := CurrentPortalStateV4.ShieldingExternalTx[tokenID][shieldReqKeyStr]
 	return exists
 }
 
@@ -276,7 +286,12 @@ func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, externalTx
 }
 
 func UpdatePortalStateAfterReplaceFeeRequest(
-	currentPortalV4State *CurrentPortalStateV4, unshieldBatch *statedb.ProcessedUnshieldRequestBatch, beaconHeight uint64, fee uint, tokenIDStr, batchIDStr string) {
+	currentPortalV4State *CurrentPortalStateV4,
+	unshieldBatch *statedb.ProcessedUnshieldRequestBatch,
+	beaconHeight uint64,
+	fee uint,
+	tokenIDStr,
+	batchIDStr string) {
 	if currentPortalV4State.ProcessedUnshieldRequests == nil {
 		currentPortalV4State.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
 	}
@@ -286,7 +301,8 @@ func UpdatePortalStateAfterReplaceFeeRequest(
 	keyWaitingReplacementRequest := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenIDStr, batchIDStr).String()
 	fees := unshieldBatch.GetExternalFees()
 	fees[beaconHeight] = fee
-	waitingReplacementRequest := statedb.NewProcessedUnshieldRequestBatchWithValue(unshieldBatch.GetBatchID(), unshieldBatch.GetUnshieldRequests(), unshieldBatch.GetUTXOs(), fees)
+	waitingReplacementRequest := statedb.NewProcessedUnshieldRequestBatchWithValue(
+		unshieldBatch.GetBatchID(), unshieldBatch.GetUnshieldRequests(), unshieldBatch.GetUTXOs(), fees)
 	currentPortalV4State.ProcessedUnshieldRequests[tokenIDStr][keyWaitingReplacementRequest] = waitingReplacementRequest
 }
 

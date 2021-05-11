@@ -175,12 +175,14 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 	}
 
 	// generate expected multisig address from master pubkeys and user payment address
-	_, expectedReceivedMultisigAddress, err := portalTokenProcessor.GenerateOTMultisigAddress(portalParams.MasterPubKeys[meta.TokenID], int(portalParams.NumRequiredSigs), meta.IncogAddressStr)
+	_, expectedReceivedMultisigAddress, err := portalTokenProcessor.GenerateOTMultisigAddress(
+		portalParams.MasterPubKeys[meta.TokenID], int(portalParams.NumRequiredSigs), meta.IncogAddressStr)
 	if err != nil {
 		Logger.log.Error("Shielding Request: Could not generate multisig address - Error: %v", err)
 		return [][]string{rejectInst}, nil
 	}
-	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyShieldProof(meta.ShieldingProof, bc, expectedReceivedMultisigAddress, meta.IncogAddressStr)
+	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyShieldProof(
+		meta.ShieldingProof, bc, expectedReceivedMultisigAddress, meta.IncogAddressStr)
 	if !isValid || err != nil {
 		Logger.log.Error("Shielding Request: Parse proof and verify shielding proof failed - Error: %v", err)
 		return [][]string{rejectInst}, nil
@@ -191,7 +193,8 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 	for _, utxo := range listUTXO {
 		shieldingAmount += utxo.GetOutputAmount()
 	}
-	UpdatePortalStateShieldingExternalTx(currentPortalState, meta.TokenID, proofHash, listUTXO[0].GetTxHash(), meta.IncogAddressStr, shieldingAmount)
+	UpdatePortalStateShieldingExternalTx(
+		currentPortalState, meta.TokenID, proofHash, listUTXO[0].GetTxHash(), meta.IncogAddressStr, shieldingAmount)
 
 	mintingAmount := portalTokenProcessor.ConvertExternalToIncAmount(shieldingAmount)
 
@@ -243,7 +246,9 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 		for _, utxo := range actionData.ShieldingUTXO {
 			shieldingAmount += utxo.GetOutputAmount()
 		}
-		UpdatePortalStateShieldingExternalTx(currentPortalState, actionData.TokenID, actionData.ProofHash, shieldingExternalTxHash, actionData.IncogAddressStr, shieldingAmount)
+		UpdatePortalStateShieldingExternalTx(
+			currentPortalState, actionData.TokenID, actionData.ProofHash,
+			shieldingExternalTxHash, actionData.IncogAddressStr, shieldingAmount)
 
 		// track shieldingReq status by txID into DB
 		shieldingReqTrackData := metadata.PortalShieldingRequestStatus{

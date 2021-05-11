@@ -171,13 +171,15 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 
 	// validate unshielding amount
 	if meta.UnshieldAmount < portalParams.MinUnshieldAmts[meta.TokenID] {
-		Logger.log.Errorf("[UnshieldRequest] Unshield amount %v is less than min amount %v", meta.UnshieldAmount, portalParams.MinUnshieldAmts[meta.TokenID])
+		Logger.log.Errorf("[UnshieldRequest] Unshield amount %v is less than min amount %v",
+			meta.UnshieldAmount, portalParams.MinUnshieldAmts[meta.TokenID])
 		return [][]string{refundInst}, nil
 	}
 
 	multipleTokenAmt := portalParams.PortalTokens[meta.TokenID].GetMultipleTokenAmount()
-	if meta.UnshieldAmount % multipleTokenAmt != 0 {
-		Logger.log.Errorf("[UnshieldRequest] Unshield amount %v is not divisible by %v", meta.UnshieldAmount, multipleTokenAmt)
+	if meta.UnshieldAmount%multipleTokenAmt != 0 {
+		Logger.log.Errorf("[UnshieldRequest] Unshield amount %v is not divisible by %v",
+			meta.UnshieldAmount, multipleTokenAmt)
 		return [][]string{refundInst}, nil
 	}
 
@@ -194,7 +196,8 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	)
 
 	// add new waiting unshield request to waiting list
-	UpdatePortalStateAfterUnshieldRequest(currentPortalStateV4, unshieldID, meta.TokenID, meta.RemoteAddress, meta.UnshieldAmount, beaconHeight+1)
+	UpdatePortalStateAfterUnshieldRequest(
+		currentPortalStateV4, unshieldID, meta.TokenID, meta.RemoteAddress, meta.UnshieldAmount, beaconHeight+1)
 
 	return [][]string{newInst}, nil
 }
@@ -231,12 +234,15 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 		updatedStatus = portalcommonv4.PortalUnshieldReqWaitingStatus
 
 		// add new waiting unshield request to waiting list
-		UpdatePortalStateAfterUnshieldRequest(currentPortalStateV4, actionData.TxReqID.String(), actionData.TokenID, actionData.RemoteAddress, actionData.UnshieldAmount, beaconHeight+1)
+		UpdatePortalStateAfterUnshieldRequest(
+			currentPortalStateV4, actionData.TxReqID.String(), actionData.TokenID,
+			actionData.RemoteAddress, actionData.UnshieldAmount, beaconHeight+1)
 
 		// update bridge token info
 		err := metadata.UpdateBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.UnshieldAmount, true)
 		if err != nil {
-			Logger.log.Errorf("[ProcessUnshieldRequest] Update Portal token info for UnshieldID - Error %v\n", actionData.TxReqID.String(), err)
+			Logger.log.Errorf("[ProcessUnshieldRequest] Update Portal token info for UnshieldID - Error %v\n",
+				actionData.TxReqID.String(), err)
 			return nil
 		}
 	} else if reqStatus == portalcommonv4.PortalV4RequestRefundedChainStatus {

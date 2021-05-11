@@ -4,11 +4,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
-	"strconv"
 )
 
 // PortalSig defines sigs of one beacon validator on unshield external tx
@@ -70,7 +71,8 @@ func CheckAndSignPortalUnshieldExternalTx(seedKey []byte, insts [][]string, port
 		if portalTokenProcessor == nil {
 			return nil, fmt.Errorf("[checkAndSignPortalV4] portalTokenProcessor is nil")
 		}
-		sigs, txHash, err := portalTokenProcessor.PartSignOnRawExternalTx(seedKey, portalParam.MasterPubKeys[tokenID], int(portalParam.NumRequiredSigs), rawTxBytes, utxos)
+		sigs, txHash, err := portalTokenProcessor.PartSignOnRawExternalTx(
+			seedKey, portalParam.MasterPubKeys[tokenID], int(portalParam.NumRequiredSigs), rawTxBytes, utxos)
 		if err != nil {
 			return nil, fmt.Errorf("[checkAndSignPortalV4] Error when signing raw tx bytes: %v", err)
 		}
