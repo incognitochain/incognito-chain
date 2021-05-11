@@ -57,6 +57,7 @@ type TxPool interface {
 	)
 	snapshotPool() TxsData
 	getTxByHash(txID string) metadata.Transaction
+	removeTx(txHash string, arg interface{})
 }
 
 type BlockTxsVerifier interface {

@@ -135,3 +135,11 @@ func (pm *PoolManager) GetTransactionByHash(txHash string) (metadata.Transaction
 	}
 	return nil, errors.Errorf("Transaction %v not found in mempool", txHash)
 }
+
+func (pm *PoolManager) RemoveTransactionInPool(txHash string) {
+	for _, txPool := range pm.ShardTxsPool {
+		if txPool.IsRunning() {
+			txPool.removeTx(txHash, nil)
+		}
+	}
+}
