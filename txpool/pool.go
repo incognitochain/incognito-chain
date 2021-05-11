@@ -53,27 +53,32 @@ type TxsPool struct {
 	isRunning bool
 	cQuit     chan bool
 	better    func(txA, txB metadata.Transaction) bool
+	ttl       time.Duration
 }
 
 func NewTxsPool(
 	txVerifier TxVerifier,
 	inbox chan metadata.Transaction,
+	ttl time.Duration,
 ) *TxsPool {
-	return &TxsPool{
+	tp := &TxsPool{
 		action:   make(chan func(*TxsPool)),
 		Verifier: txVerifier,
 		Data: TxsData{
 			TxByHash: map[string]metadata.Transaction{},
 			TxInfos:  map[string]TxInfo{},
 		},
-		Cacher:    cache.New(10*time.Second, 10*time.Second),
+		Cacher:    cache.New(ttl, ttl),
 		Inbox:     inbox,
 		isRunning: false,
 		cQuit:     make(chan bool),
 		better: func(txA, txB metadata.Transaction) bool {
 			return txA.GetTxFee() > txB.GetTxFee()
 		},
+		ttl: ttl,
 	}
+	tp.Cacher.OnEvicted(tp.removeTx)
+	return tp
 }
 
 func (tp *TxsPool) UpdateTxVerifier(tv TxVerifier) {
@@ -124,6 +129,14 @@ func (tp *TxsPool) Stop() {
 	tp.cQuit <- true
 }
 
+func (tp *TxsPool) removeTx(txHash string, arg interface{}) {
+	tp.action <- func(tpTemp *TxsPool) {
+		Logger.Debugf("Removing tx %v at %v", txHash, time.Now())
+		delete(tpTemp.Data.TxByHash, txHash)
+		delete(tpTemp.Data.TxInfos, txHash)
+	}
+}
+
 func (tp *TxsPool) RemoveTxs(txHashes []string) {
 	tp.action <- func(tpTemp *TxsPool) {
 		for _, tx := range txHashes {
@@ -158,6 +171,9 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 				cost:   0,
 			}
 			return
+		} else {
+			Logger.Debugf("Caching tx %v at %v", tx.Hash().String(), time.Now())
+			tp.Cacher.Add(tx.Hash().String(), nil, tp.ttl)
 		}
 		if ok, err := tp.Verifier.LoadCommitment(tx, nil); !ok || err != nil {
 			Logger.Debugf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
@@ -484,7 +500,6 @@ func (tp *TxsPool) getTxs(quit <-chan interface{}, cValidTxs chan txInfoTemp) {
 			Logger.Debugf("[txTracing] Received new tx %v, send to worker %v", txHah, workerID)
 			nWorkers <- 1
 			go func() {
-
 				isValid, err, vTime := tp.ValidateNewTx(msg)
 				<-nWorkers
 				if err != nil {
