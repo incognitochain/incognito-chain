@@ -100,7 +100,12 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyShieldProof(
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
-	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string, expectPaymentInfo []*OutputTx, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, string, uint64, error) {
+	proof string,
+	bc metadata.ChainRetriever,
+	expectedReceivedMultisigAddress string,
+	chainCodeSeed string,
+	expectPaymentInfo []*OutputTx,
+	utxos []*statedb.UTXO) (bool, []*statedb.UTXO, string, uint64, error) {
 	btcChain := bc.GetBTCHeaderChain()
 	if btcChain == nil {
 		Logger.log.Error("BTC relaying chain should not be null")
@@ -232,7 +237,8 @@ func (p PortalBTCTokenProcessor) generateOTPrivateKey(seed []byte, chainCodeSeed
 		return BTCPrivateKeyMaster, nil
 	} else {
 		chainCode := chainhash.HashB([]byte(chainCodeSeed))
-		extendedBTCPrivateKey := hdkeychain.NewExtendedKey(p.ChainParam.HDPrivateKeyID[:], BTCPrivateKeyMaster, chainCode, []byte{}, 0, 0, true)
+		extendedBTCPrivateKey := hdkeychain.NewExtendedKey(
+			p.ChainParam.HDPrivateKeyID[:], BTCPrivateKeyMaster, chainCode, []byte{}, 0, 0, true)
 		extendedBTCChildPrivateKey, err := extendedBTCPrivateKey.Child(0)
 		if err != nil {
 			return []byte{}, fmt.Errorf("Could not generate child private key for incognito address: %v", chainCodeSeed)
@@ -248,7 +254,8 @@ func (p PortalBTCTokenProcessor) generateOTPrivateKey(seed []byte, chainCodeSeed
 
 // Generate Bech32 P2WSH multisig address for each Incognito address
 // Return redeem script, OTMultisigAddress
-func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byte, numSigsRequired int, chainCodeSeed string) ([]byte, string, error) {
+func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(
+	masterPubKeys [][]byte, numSigsRequired int, chainCodeSeed string) ([]byte, string, error) {
 	if len(masterPubKeys) < numSigsRequired || numSigsRequired < 0 {
 		return []byte{}, "", fmt.Errorf("Invalid signature requirement")
 	}
@@ -261,7 +268,8 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byt
 		chainCode := chainhash.HashB([]byte(chainCodeSeed))
 		for idx, masterPubKey := range masterPubKeys {
 			// generate BTC child public key for this Incognito address
-			extendedBTCPublicKey := hdkeychain.NewExtendedKey(p.ChainParam.HDPublicKeyID[:], masterPubKey, chainCode, []byte{}, 0, 0, false)
+			extendedBTCPublicKey := hdkeychain.NewExtendedKey(
+				p.ChainParam.HDPublicKeyID[:], masterPubKey, chainCode, []byte{}, 0, 0, false)
 			extendedBTCChildPubKey, _ := extendedBTCPublicKey.Child(0)
 			childPubKey, err := extendedBTCChildPubKey.ECPubKey()
 			if err != nil {
@@ -304,7 +312,8 @@ func (p PortalBTCTokenProcessor) GenerateOTMultisigAddress(masterPubKeys [][]byt
 // inputs: UTXO state of beacon, unit of amount in btc
 // outputs: unit of amount in pbtc ~ unshielding amount
 // feePerOutput: unit in pbtc
-func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, outputs []*OutputTx, feePerOutput uint64, bc metadata.ChainRetriever) (string, string, error) {
+func (p PortalBTCTokenProcessor) CreateRawExternalTx(
+	inputs []*statedb.UTXO, outputs []*OutputTx, feePerOutput uint64, bc metadata.ChainRetriever) (string, string, error) {
 	msgTx := wire.NewMsgTx(wire.TxVersion)
 
 	// convert feePerOutput from inc unit to external unit
@@ -390,7 +399,8 @@ func (p PortalBTCTokenProcessor) CreateRawExternalTx(inputs []*statedb.UTXO, out
 	return hexRawTx, msgTx.TxHash().String(), nil
 }
 
-func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(seedKey []byte, masterPubKeys [][]byte, numSigsRequired int, rawTxBytes []byte, inputs []*statedb.UTXO) ([][]byte, string, error) {
+func (p PortalBTCTokenProcessor) PartSignOnRawExternalTx(
+	seedKey []byte, masterPubKeys [][]byte, numSigsRequired int, rawTxBytes []byte, inputs []*statedb.UTXO) ([][]byte, string, error) {
 	// new MsgTx from rawTxBytes
 	msgTx := new(btcwire.MsgTx)
 	rawTxBuffer := bytes.NewBuffer(rawTxBytes)
@@ -544,7 +554,7 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 		// use a dust UTXO
 		if utxoIdx < len(utxos)-dustUTXOUsed &&
 			utxosArr[len(utxos)-dustUTXOUsed-1].value.GetOutputAmount() <= dustValueThreshold &&
-			p.IsAcceptableTxSize(len(chosenUTXOs) + 1, len(chosenUnshieldIDs)) {
+			p.IsAcceptableTxSize(len(chosenUTXOs)+1, len(chosenUnshieldIDs)) {
 			dustUTXOUsed += 1
 			chosenUTXOs = append(chosenUTXOs, utxosArr[len(utxos)-dustUTXOUsed].value)
 		}

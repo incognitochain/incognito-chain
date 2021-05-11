@@ -42,14 +42,17 @@ func (httpServer *HttpServer) handleGetPortalV4State(params interface{}, closeCh
 	}
 
 	// get PortalStateDB
-	beaconFeatureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(httpServer.config.BlockChain.GetBeaconBestState(), uint64(beaconHeight))
+	beaconFeatureStateRootHash, err := httpServer.config.BlockChain.GetBeaconFeatureRootHash(
+		httpServer.config.BlockChain.GetBeaconBestState(), uint64(beaconHeight))
 	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError,
+			fmt.Errorf("Can't found FeatureStateRootHash of beacon height %+v, error %+v", beaconHeight, err))
 	}
-	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash, statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
+	beaconFeatureStateDB, err := statedb.NewWithPrefixTrie(beaconFeatureStateRootHash,
+		statedb.NewDatabaseAccessWarper(httpServer.config.BlockChain.GetBeaconChainDatabase()))
 
 	// init Portal State from PortalStateDB
-	portalState, err := portalprocessv4.InitCurrentPortalStateV4FromDB(beaconFeatureStateDB,  nil)
+	portalState, err := portalprocessv4.InitCurrentPortalStateV4FromDB(beaconFeatureStateDB, nil)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
 	}
@@ -98,15 +101,10 @@ func (httpServer *HttpServer) handleCreateRawTxWithShieldingReq(params interface
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
-	//tokenIDHash, err := new(common.Hash).NewHashFromStr(tokenID)
-	//if err != nil {
-	//	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Can not new TokenIDHash from TokenID"))
-	//}
 	incognitoAddress, ok := data["IncogAddressStr"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncogAddressStr is invalid"))
 	}
-
 	shieldingProof, ok := data["ShieldingProof"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata ShieldingProof param is invalid"))
@@ -429,7 +427,8 @@ func getRawSignedTxByHeight(
 	// then, attach sig into TxIn in externalTx
 	portalParams := httpServer.blockService.BlockChain.GetPortalParamsV4(height)
 	for i, v := range sigs {
-		multisigScriptHex, _, err := portalParams.PortalTokens[tokenID].GenerateOTMultisigAddress(portalParams.MasterPubKeys[tokenID], int(portalParams.NumRequiredSigs), utxos[i].GetChainCodeSeed())
+		multisigScriptHex, _, err := portalParams.PortalTokens[tokenID].GenerateOTMultisigAddress(
+			portalParams.MasterPubKeys[tokenID], int(portalParams.NumRequiredSigs), utxos[i].GetChainCodeSeed())
 		if err != nil {
 			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 		}
@@ -477,7 +476,8 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalReplaceUnshieldFee(para
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("BatchID is invalid"))
 	}
 
-	meta, err := metadata.NewPortalReplacementFeeRequest(metadata.PortalV4FeeReplacementRequestMeta, portalTokenID, batchID, uint(replacementFee))
+	meta, err := metadata.NewPortalReplacementFeeRequest(
+		metadata.PortalV4FeeReplacementRequestMeta, portalTokenID, batchID, uint(replacementFee))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
