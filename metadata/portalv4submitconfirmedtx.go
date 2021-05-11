@@ -4,10 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"strconv"
 )
 
 type PortalSubmitConfirmedTxRequest struct {
@@ -43,7 +44,9 @@ type PortalSubmitConfirmedTxStatus struct {
 	Status       int
 }
 
-func NewPortalSubmitConfirmedTxStatus(tokenID, batchID, externalTxID, txID string, UTXOs []*statedb.UTXO, status int, externalFee uint64) *PortalSubmitConfirmedTxStatus {
+func NewPortalSubmitConfirmedTxStatus(
+	tokenID, batchID, externalTxID, txID string, UTXOs []*statedb.UTXO, status int, externalFee uint64,
+) *PortalSubmitConfirmedTxStatus {
 	return &PortalSubmitConfirmedTxStatus{
 		TokenID:      tokenID,
 		UTXOs:        UTXOs,
@@ -55,7 +58,9 @@ func NewPortalSubmitConfirmedTxStatus(tokenID, batchID, externalTxID, txID strin
 	}
 }
 
-func NewPortalSubmitConfirmedTxRequest(metaType int, unshieldProof, tokenID, batchID string) (*PortalSubmitConfirmedTxRequest, error) {
+func NewPortalSubmitConfirmedTxRequest(
+	metaType int, unshieldProof, tokenID, batchID string,
+) (*PortalSubmitConfirmedTxRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -82,7 +87,13 @@ func (r PortalSubmitConfirmedTxRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (r PortalSubmitConfirmedTxRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (r PortalSubmitConfirmedTxRequest) ValidateSanityData(
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+	beaconHeight uint64,
+	tx Transaction,
+) (bool, bool, error) {
 	// check tx type
 	if tx.GetType() != common.TxNormalType {
 		return false, false, NewMetadataTxError(PortalV4SubmitConfirmedTxRequestMetaError, errors.New("tx replace transaction must be TxNormalType"))
@@ -117,7 +128,14 @@ func (r PortalSubmitConfirmedTxRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (r *PortalSubmitConfirmedTxRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (r *PortalSubmitConfirmedTxRequest) BuildReqActions(
+	tx Transaction,
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+	shardID byte,
+	shardHeight uint64,
+) ([][]string, error) {
 	actionContent := PortalSubmitConfirmedTxAction{
 		Meta:    *r,
 		TxReqID: *tx.Hash(),

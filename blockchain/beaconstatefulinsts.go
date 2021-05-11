@@ -120,7 +120,10 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	if err != nil {
 		Logger.log.Error(err)
 	}
-	currentPortalStateV4, err := portalprocessv4.InitCurrentPortalStateV4FromDB(featureStateDB, beaconBestState.portalStateV4)
+	currentPortalStateV4, err := portalprocessv4.InitCurrentPortalStateV4FromDB(
+		featureStateDB,
+		beaconBestState.portalStateV4,
+	)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -164,10 +167,14 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 			switch metaType {
 			case metadata.IssuingRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingReq(
+					beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues,
+				)
 
 			case metadata.IssuingETHRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingETHReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
+				newInst, err = blockchain.buildInstructionsForIssuingETHReq(
+					beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues,
+				)
 
 			case metadata.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(

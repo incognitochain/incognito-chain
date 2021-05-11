@@ -42,17 +42,35 @@ func NewPortalShieldingResponse(
 	}
 }
 
-func (iRes PortalShieldingResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PortalShieldingResponse) CheckTransactionFee(
+	tr Transaction,
+	minFee uint64,
+	beaconHeight int64,
+	db *statedb.StateDB,
+) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes PortalShieldingResponse) ValidateTxWithBlockChain(txr Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
+func (iRes PortalShieldingResponse) ValidateTxWithBlockChain(
+	txr Transaction,
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+	shardID byte,
+	db *statedb.StateDB,
+) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PortalShieldingResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
+func (iRes PortalShieldingResponse) ValidateSanityData(
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+	beaconHeight uint64,
+	txr Transaction,
+) (bool, bool, error) {
 	return false, true, nil
 }
 

@@ -48,7 +48,9 @@ type PortalUnshieldRequestStatus struct {
 	Status         int
 }
 
-func NewPortalUnshieldRequestStatus(incAddressStr, tokenID, remoteAddress, unshieldID, externalTxID string, burnAmount, externalFee uint64, status int) *PortalUnshieldRequestStatus {
+func NewPortalUnshieldRequestStatus(
+	incAddressStr, tokenID, remoteAddress, unshieldID, externalTxID string, burnAmount, externalFee uint64, status int,
+) *PortalUnshieldRequestStatus {
 	return &PortalUnshieldRequestStatus{
 		IncAddressStr:  incAddressStr,
 		RemoteAddress:  remoteAddress,
@@ -61,7 +63,9 @@ func NewPortalUnshieldRequestStatus(incAddressStr, tokenID, remoteAddress, unshi
 	}
 }
 
-func NewPortalUnshieldRequest(metaType int, incAddressStr, tokenID, remoteAddress string, burnAmount uint64) (*PortalUnshieldRequest, error) {
+func NewPortalUnshieldRequest(
+	metaType int, incAddressStr, tokenID, remoteAddress string, burnAmount uint64,
+) (*PortalUnshieldRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -89,7 +93,10 @@ func (uReq PortalUnshieldRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (uReq PortalUnshieldRequest) ValidateSanityData(
+	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction,
+) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
 	if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
 		return true, true, nil
@@ -139,7 +146,7 @@ func (uReq PortalUnshieldRequest) ValidateSanityData(chainRetriever ChainRetriev
 
 	// validate amount of pToken is divisible by the decimal difference between nano pToken and nano Token
 	multipleTokenAmount := chainRetriever.GetPortalV4MultipleTokenAmount(uReq.TokenID, beaconHeight)
-	if uReq.UnshieldAmount % multipleTokenAmount != 0 {
+	if uReq.UnshieldAmount%multipleTokenAmount != 0 {
 		return false, false, NewMetadataTxError(PortalV4UnshieldRequestValidateSanityDataError, fmt.Errorf("PToken amount has to be divisible by %v", multipleTokenAmount))
 	}
 
@@ -168,7 +175,10 @@ func (uReq PortalUnshieldRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (uReq *PortalUnshieldRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (uReq *PortalUnshieldRequest) BuildReqActions(
+	tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64,
+) ([][]string, error) {
 	actionContent := PortalUnshieldRequestAction{
 		Meta:    *uReq,
 		TxReqID: *tx.Hash(),

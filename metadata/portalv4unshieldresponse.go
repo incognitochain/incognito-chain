@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	"strconv"
+
+	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -42,17 +43,25 @@ func NewPortalV4UnshieldResponse(
 	}
 }
 
-func (iRes PortalUnshieldResponse) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB) bool {
+func (iRes PortalUnshieldResponse) CheckTransactionFee(
+	tr Transaction, minFee uint64, beaconHeight int64, db *statedb.StateDB,
+) bool {
 	// no need to have fee for this tx
 	return true
 }
 
-func (iRes PortalUnshieldResponse) ValidateTxWithBlockChain(txr Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, db *statedb.StateDB) (bool, error) {
+func (iRes PortalUnshieldResponse) ValidateTxWithBlockChain(
+	txr Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever, shardID byte, db *statedb.StateDB,
+) (bool, error) {
 	// no need to validate tx with blockchain, just need to validate with requested tx (via RequestedTxID)
 	return false, nil
 }
 
-func (iRes PortalUnshieldResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
+func (iRes PortalUnshieldResponse) ValidateSanityData(
+	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction,
+) (bool, bool, error) {
 	return false, true, nil
 }
 

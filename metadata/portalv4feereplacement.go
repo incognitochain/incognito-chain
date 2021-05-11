@@ -45,7 +45,12 @@ type PortalReplacementFeeRequestStatus struct {
 	Status        int
 }
 
-func NewPortalReplacementFeeRequestStatus(tokenID, batchID string, fee uint, externalRawTx string, status int) *PortalReplacementFeeRequestStatus {
+func NewPortalReplacementFeeRequestStatus(
+	tokenID string,
+	batchID string,
+	fee uint,
+	externalRawTx string, status int,
+) *PortalReplacementFeeRequestStatus {
 	return &PortalReplacementFeeRequestStatus{
 		TokenID:       tokenID,
 		BatchID:       batchID,
@@ -55,7 +60,12 @@ func NewPortalReplacementFeeRequestStatus(tokenID, batchID string, fee uint, ext
 	}
 }
 
-func NewPortalReplacementFeeRequest(metaType int, tokenID, batchID string, fee uint) (*PortalReplacementFeeRequest, error) {
+func NewPortalReplacementFeeRequest(
+	metaType int,
+	tokenID string,
+	batchID string,
+	fee uint,
+) (*PortalReplacementFeeRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
@@ -82,7 +92,13 @@ func (repl PortalReplacementFeeRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (repl PortalReplacementFeeRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+func (repl PortalReplacementFeeRequest) ValidateSanityData(
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+	beaconHeight uint64,
+	tx Transaction,
+) (bool, bool, error) {
 	// validate IncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(chainRetriever.GetPortalReplacementAddress(beaconHeight))
 	if err != nil {
@@ -109,7 +125,7 @@ func (repl PortalReplacementFeeRequest) ValidateSanityData(chainRetriever ChainR
 	}
 
 	// validate amount of pToken is divisible by the decimal difference between nano pToken and nano Token
-	if uint64(repl.Fee) % chainRetriever.GetPortalV4MultipleTokenAmount(repl.TokenID, beaconHeight) != 0 {
+	if uint64(repl.Fee)%chainRetriever.GetPortalV4MultipleTokenAmount(repl.TokenID, beaconHeight) != 0 {
 		return false, false, errors.New("pBTC amount has to be divisible by 10")
 	}
 
@@ -135,7 +151,14 @@ func (repl PortalReplacementFeeRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (repl *PortalReplacementFeeRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (repl *PortalReplacementFeeRequest) BuildReqActions(
+	tx Transaction,
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+	shardID byte,
+	shardHeight uint64,
+) ([][]string, error) {
 	actionContent := PortalReplacementFeeRequestAction{
 		Meta:    *repl,
 		TxReqID: *tx.Hash(),

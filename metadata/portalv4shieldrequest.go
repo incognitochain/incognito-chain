@@ -77,7 +77,13 @@ func (shieldingReq PortalShieldingRequest) ValidateTxWithBlockChain(
 	return true, nil
 }
 
-func (shieldingReq PortalShieldingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
+func (shieldingReq PortalShieldingRequest) ValidateSanityData(
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+	beaconHeight uint64,
+	txr Transaction,
+) (bool, bool, error) {
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(shieldingReq.IncogAddressStr)
 	if err != nil {
@@ -121,7 +127,14 @@ func (shieldingReq PortalShieldingRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (shieldingReq *PortalShieldingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+func (shieldingReq *PortalShieldingRequest) BuildReqActions(
+	tx Transaction,
+	chainRetriever ChainRetriever,
+	shardViewRetriever ShardViewRetriever,
+	beaconViewRetriever BeaconViewRetriever,
+	shardID byte,
+	shardHeight uint64,
+) ([][]string, error) {
 	actionContent := PortalShieldingRequestAction{
 		Meta:    *shieldingReq,
 		TxReqID: *tx.Hash(),
