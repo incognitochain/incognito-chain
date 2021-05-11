@@ -93,7 +93,7 @@ type TxVerifier interface {
 	LoadCommitment(
 		tx metadata.Transaction,
 		shardViewRetriever metadata.ShardViewRetriever,
-	) bool
+	) (bool, error)
 	LoadCommitmentForTxs(
 		txs []metadata.Transaction,
 		shardViewRetriever metadata.ShardViewRetriever,

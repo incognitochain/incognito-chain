@@ -53,7 +53,7 @@ func NewTxsVerifier(
 func (v *TxsVerifier) LoadCommitment(
 	tx metadata.Transaction,
 	shardViewRetriever metadata.ShardViewRetriever,
-) bool {
+) (bool, error) {
 	sDB := v.txDB
 	if shardViewRetriever != nil {
 		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
@@ -61,9 +61,9 @@ func (v *TxsVerifier) LoadCommitment(
 	err := tx.LoadCommitment(sDB.Copy())
 	if err != nil {
 		Logger.log.Errorf("Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
-		return false
+		return false, err
 	}
-	return true
+	return true, nil
 }
 
 func (v *TxsVerifier) LoadCommitmentForTxs(
