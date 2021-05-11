@@ -119,10 +119,6 @@ func getDiffPortalStateV4(
 	}
 
 	for k, v := range current.UTXOs {
-		if _, ok := previous.UTXOs[k]; !ok {
-			diffState.UTXOs[k] = v
-			continue
-		}
 		diffState.UTXOs[k] = map[string]*statedb.UTXO{}
 		for _k, _v := range v {
 			if m, ok := previous.UTXOs[k][_k]; !ok || !reflect.DeepEqual(m, _v) {
@@ -131,10 +127,6 @@ func getDiffPortalStateV4(
 		}
 	}
 	for k, v := range current.ShieldingExternalTx {
-		if _, ok := previous.ShieldingExternalTx[k]; !ok {
-			diffState.ShieldingExternalTx[k] = v
-			continue
-		}
 		diffState.ShieldingExternalTx[k] = map[string]*statedb.ShieldingRequest{}
 		for _k, _v := range v {
 			if m, ok := previous.ShieldingExternalTx[k][_k]; !ok || !reflect.DeepEqual(m, _v) {
@@ -143,10 +135,6 @@ func getDiffPortalStateV4(
 		}
 	}
 	for k, v := range current.WaitingUnshieldRequests {
-		if _, ok := previous.WaitingUnshieldRequests[k]; !ok {
-			diffState.WaitingUnshieldRequests[k] = v
-			continue
-		}
 		diffState.WaitingUnshieldRequests[k] = map[string]*statedb.WaitingUnshieldRequest{}
 		for _k, _v := range v {
 			if m, ok := previous.WaitingUnshieldRequests[k][_k]; !ok || !reflect.DeepEqual(m, _v) {
@@ -155,10 +143,6 @@ func getDiffPortalStateV4(
 		}
 	}
 	for k, v := range current.ProcessedUnshieldRequests {
-		if _, ok := previous.ProcessedUnshieldRequests[k]; !ok {
-			diffState.ProcessedUnshieldRequests[k] = v
-			continue
-		}
 		diffState.ProcessedUnshieldRequests[k] = map[string]*statedb.ProcessedUnshieldRequestBatch{}
 		for _k, _v := range v {
 			if m, ok := previous.ProcessedUnshieldRequests[k][_k]; !ok || !reflect.DeepEqual(m, _v) {
