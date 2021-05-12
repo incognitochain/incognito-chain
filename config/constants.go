@@ -1,17 +1,19 @@
 package config
 
-import (
-	"path/filepath"
-
-	"github.com/incognitochain/incognito-chain/common"
+//Env variables key
+const (
+	NetworkKey        = "INCOGNITO_NETWORK_KEY"
+	NetworkVersionKey = "INCOGNITO_NETWORK_VERSION_KEY"
+	ConfigFileKey     = "INCOGNITO_CONFIG_FILE_KEY"
+	ConfigDirKey      = "INCOGNITO_CONFIG_DIR_KEY"
+	ConfigFileTypeKey = "INCOGNITO_CONFIG_FILE_TYPE_KEY"
 )
 
 // default config
 const (
-	DefaultConfigFilename              = "config.conf"
 	DefaultDataDirname                 = "data"
 	DefaultDatabaseDirname             = "block"
-	DefaultDatabaseMempoolDirname      = "mempool"
+	DefaultMempoolDirname              = "mempool"
 	DefaultLogLevel                    = "info"
 	DefaultLogDirname                  = "logs"
 	DefaultLogFilename                 = "log.log"
@@ -40,13 +42,26 @@ const (
 	DefaultPersistMempool = false
 	DefaultBtcClient      = 0
 	DefaultBtcClientPort  = "8332"
+	DefaultNetwork        = LocalNetwork
+	DefaultConfigDir      = "config"
+	DefaultConfigFile     = "config"
+	DefaultConfigFileType = "yaml"
+)
+
+const (
+	LocalNetwork    = "local"
+	TestNetNetwork  = "testnet"
+	MainnetNetwork  = "mainnet"
+	TestNetVersion1 = "1"
+	TestNetVersion2 = "2"
+	DefaultPort     = "9444"
+	DefaultRPCPort  = "9344"
+	DefaultWSPort   = "19444"
 )
 
 var (
-	defaultHomeDir     = common.AppDataDir("incognito", false)
-	defaultConfigFile  = filepath.Join(defaultHomeDir, DefaultConfigFilename)
-	defaultDataDir     = filepath.Join(defaultHomeDir, DefaultDataDirname)
-	defaultRPCKeyFile  = filepath.Join(defaultHomeDir, "rpc.key")
-	defaultRPCCertFile = filepath.Join(defaultHomeDir, "rpc.cert")
-	defaultLogDir      = filepath.Join(defaultHomeDir, DefaultLogDirname)
+	defaultDataDir     = DefaultDataDirname
+	defaultRPCKeyFile  = "rpc.key"
+	defaultRPCCertFile = "rpc.cert"
+	defaultLogDir      = DefaultLogDirname
 )

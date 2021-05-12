@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
@@ -93,12 +94,13 @@ type Server struct {
 // addresses and TLS.
 func (serverObj *Server) setupRPCListeners() ([]net.Listener, error) {
 	// Setup TLS if not disabled.
+	cfg := config.Config()
 	listenFunc := net.Listen
 	if !cfg.DisableTLS {
 		Logger.log.Debug("Disable TLS for RPC is false")
 		// Generate the TLS cert and key file if both don't already
 		// exist.
-		if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
+		if !common.FileExists(cfg.RPCKey) && !common.FileExists(cfg.RPCCert) {
 			err := rpcserver.GenCertPair(cfg.RPCCert, cfg.RPCKey)
 			if err != nil {
 				return nil, err
@@ -139,13 +141,14 @@ func (serverObj *Server) setupRPCListeners() ([]net.Listener, error) {
 	return listeners, nil
 }
 func (serverObj *Server) setupRPCWsListeners() ([]net.Listener, error) {
+	cfg := config.Config()
 	// Setup TLS if not disabled.
 	listenFunc := net.Listen
 	if !cfg.DisableTLS {
 		Logger.log.Debug("Disable TLS for RPC is false")
 		// Generate the TLS cert and key file if both don't already
 		// exist.
-		if !fileExists(cfg.RPCKey) && !fileExists(cfg.RPCCert) {
+		if !common.FileExists(cfg.RPCKey) && !common.FileExists(cfg.RPCCert) {
 			err := rpcserver.GenCertPair(cfg.RPCCert, cfg.RPCKey)
 			if err != nil {
 				return nil, err
@@ -219,6 +222,8 @@ func (serverObj *Server) NewServer(
 	var err error
 	// init an pubsub manager
 	var pubsubManager = pubsub.NewPubSubManager()
+
+	cfg := config.Config()
 
 	serverObj.miningKeys = cfg.MiningKeys
 	serverObj.privateKey = cfg.PrivateKey
@@ -393,8 +398,8 @@ func (serverObj *Server) NewServer(
 		TxLifeTime:        cfg.TxPoolTTL,
 		MaxTx:             cfg.TxPoolMaxTx,
 		DataBaseMempool:   dbmp,
-		IsLoadFromMempool: cfg.LoadMempool,
-		PersistMempool:    cfg.PersistMempool,
+		IsLoadFromMempool: cfg.IsLoadFromMempool,
+		PersistMempool:    cfg.IsPersistMempool,
 		RelayShards:       relayShards,
 		// UserKeyset:        serverObj.userKeySet,
 		PubSubManager: serverObj.pusubManager,
@@ -601,7 +606,7 @@ func (serverObj *Server) Stop() error {
 	}
 
 	// Shutdown the RPC server if it's not disabled.
-	if !cfg.DisableRPC && serverObj.rpcServer != nil {
+	if !config.Config().DisableRPC && serverObj.rpcServer != nil {
 		serverObj.rpcServer.Stop()
 	}
 
@@ -644,14 +649,14 @@ func (serverObj *Server) peerHandler() {
 
 	Logger.log.Debug("Start peer handler")
 
-	if len(cfg.ConnectPeers) == 0 {
+	if len(config.Config().ConnectPeers) == 0 {
 		for _, addr := range serverObj.addrManager.AddressCache() {
 			pk, pkT := addr.GetPublicKey()
 			go serverObj.connManager.Connect(addr.GetRawAddress(), pk, pkT, nil)
 		}
 	}
 
-	go serverObj.connManager.Start(cfg.DiscoverPeersAddress)
+	go serverObj.connManager.Start(config.Config().DiscoverPeersAddress)
 
 out:
 	for {
@@ -688,11 +693,13 @@ func (serverObj Server) Start() {
 	if serverObj.chainParams.CheckForce {
 		serverObj.CheckForceUpdateSourceCode()
 	}
-	if cfg.IsTestnet() {
-		Logger.log.Critical("************************" +
-			"* Testnet is active *" +
-			"************************")
-	}
+
+	cfg := config.Config()
+
+	Logger.log.Criticalf("************************"+
+		"* Node is running in %s network *"+
+		"************************", cfg.Network())
+
 	// Server startup time. Used for the uptime command for uptime calculation.
 	serverObj.startupTime = time.Now().Unix()
 
@@ -857,7 +864,7 @@ func (serverObject Server) CheckForceUpdateSourceCode() {
 					"\n*********************************************************************************\n")
 				if versionChain.RemoveData {
 					serverObject.Stop()
-					errRemove := os.RemoveAll(cfg.DataDir)
+					errRemove := os.RemoveAll(config.Config().DataDir)
 					if errRemove != nil {
 						Logger.log.Error("We NEEDD to REMOVE database directory but can not process by error", errRemove)
 					}
@@ -883,7 +890,7 @@ func (serverObj *Server) InitListenerPeer(amgr *addrmanager.AddrManager, listenA
 
 	// use keycache to save listener peer into file, this will make peer id of listener not change after turn off node
 	kc := KeyCache{}
-	kc.Load(filepath.Join(cfg.DataDir, "listenerpeer.json"))
+	kc.Load(filepath.Join(config.Config().DataDir, "listenerpeer.json"))
 
 	// load seed of libp2p from keycache file, if not exist -> save a new data into keycache file
 	seed := int64(0)
@@ -945,9 +952,9 @@ func (serverObj *Server) NewPeerConfig() *peer.Config {
 			PushRawBytesToBeacon: serverObj.PushRawBytesToBeacon,
 			GetCurrentRoleShard:  serverObj.GetCurrentRoleShard,
 		},
-		MaxInPeers:      cfg.MaxInPeers,
-		MaxPeers:        cfg.MaxPeers,
-		MaxOutPeers:     cfg.MaxOutPeers,
+		MaxInPeers:      config.Config().MaxInPeers,
+		MaxPeers:        config.Config().MaxPeers,
+		MaxOutPeers:     config.Config().MaxOutPeers,
 		ConsensusEngine: serverObj.consensusEngine,
 	}
 	// if KeySetUser != nil && len(KeySetUser.PrivateKey) != 0 {
@@ -1609,7 +1616,7 @@ func (serverObj *Server) GetChainMiningStatus(chain int) string {
 	if chain >= common.MaxShardNumber || chain < -1 {
 		return notmining
 	}
-	if cfg.MiningKeys != "" || cfg.PrivateKey != "" {
+	if config.Config().MiningKeys != "" || config.Config().PrivateKey != "" {
 		//Beacon: chain = -1
 		role, chainID := serverObj.GetUserMiningState()
 		layer := ""

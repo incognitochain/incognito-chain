@@ -11,6 +11,7 @@ import (
 	"runtime/debug"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 
@@ -27,15 +28,12 @@ import (
 )
 
 //go:generate mockery -dir=incdb/ -name=Database
-var (
-	cfg *config
-)
 
 // winServiceMain is only invoked on Windows.  It detects when incognito network is running
 // as a service and reacts accordingly.
 var winServiceMain func() (bool, error)
 
-func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string) (*btcrelaying.BlockChain, error) {
+func getBTCRelayingChain(btcRelayingChainID, btcDataFolderName string) (*btcrelaying.BlockChain, error) {
 	relayingChainParams := map[string]*chaincfg.Params{
 		blockchain.TestnetBTCChainID:  btcrelaying.GetTestNet3Params(),
 		blockchain.Testnet2BTCChainID: btcrelaying.GetTestNet3ParamsForInc2(),
@@ -47,7 +45,7 @@ func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string) (*
 		blockchain.MainnetBTCChainID:  int32(634140),
 	}
 	return btcrelaying.GetChainV2(
-		filepath.Join(cfg.DataDir, btcDataFolderName),
+		filepath.Join(config.Config().DataDir, btcDataFolderName),
 		relayingChainParams[btcRelayingChainID],
 		relayingChainGenesisBlkHeight[btcRelayingChainID],
 	)
@@ -56,7 +54,7 @@ func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string) (*
 func getBNBRelayingChainState(bnbRelayingChainID string) (*bnbrelaying.BNBChainState, error) {
 	bnbChainState := new(bnbrelaying.BNBChainState)
 	err := bnbChainState.LoadBNBChainState(
-		filepath.Join(cfg.DataDir, "bnbrelayingv3"),
+		filepath.Join(config.Config().DataDir, "bnbrelayingv3"),
 		bnbRelayingChainID,
 	)
 	if err != nil {
@@ -73,18 +71,22 @@ func getBNBRelayingChainState(bnbRelayingChainID string) (*bnbrelaying.BNBChainS
 // requested from the service control manager.
 func mainMaster(serverChan chan<- *Server) error {
 
+	cfg := config.LoadConfig()
+
+	// Initialize log rotation.  After log rotation has been initialized, the
+	// logger variables may be used.
+	initLogRotator(cfg.LogFileName)
+
+	// Parse, validate, and set debug log level(s).
+	if err := parseAndSetDebugLevels(cfg.LogLevel); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		panic(err)
+	}
+
 	//init key & param
 	blockchain.ReadKey(nil, nil)
 	blockchain.SetupParam()
 
-	tempConfig, _, err := loadConfig()
-	if err != nil {
-		log.Println("Load config error")
-		log.Println(err)
-		return err
-	}
-
-	cfg = tempConfig
 	common.MaxShardNumber = activeNetParams.ActiveShards
 	common.TIMESLOT = activeNetParams.Timeslot
 	activeNetParams.CreateGenesisBlocks()
@@ -108,7 +110,7 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 	// Create db for mempool and use it
-	dbmp, err := databasemp.Open("leveldbmempool", filepath.Join(cfg.DataDir, cfg.DatabaseMempoolDir))
+	dbmp, err := databasemp.Open("leveldbmempool", filepath.Join(cfg.DataDir, cfg.MempoolDir))
 	if err != nil {
 		Logger.log.Error("could not open connection to leveldb")
 		Logger.log.Error(err)
@@ -116,7 +118,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 	// Check wallet and start it
 	var walletObj *wallet.Wallet
-	if cfg.Wallet {
+	if cfg.EnableWallet {
 		walletObj = &wallet.Wallet{}
 		walletConf := wallet.WalletConfig{
 			DataDir:        cfg.DataDir,

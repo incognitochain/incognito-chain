@@ -439,8 +439,8 @@ func CheckError(errs ...error) error {
 	return errSaver.Save(errs...)
 }
 
-// GetENV to get environment variable by key
-func GetENV(key, fallback string) string {
+// GetEnv to get environment variable by key
+func GetEnv(key, fallback string) string {
 	value, ok := os.LookupEnv(key)
 	if !ok {
 		return fallback
@@ -496,7 +496,7 @@ func Remove0xPrefix(str string) string {
 // Add0xPrefix adds 0x prefix (if there) from string
 func Add0xPrefix(str string) string {
 	if !Has0xPrefix(str) {
-		return "0x"+str
+		return "0x" + str
 	}
 	return str
 }
@@ -553,5 +553,15 @@ func DecodeETHAddr(addr string) ([]byte, error) {
 }
 
 func GetEpochFromBeaconHeight(beaconHeight uint64, epochNumBlocksPerEpoch uint64) uint64 {
-	return (beaconHeight - 1) / epochNumBlocksPerEpoch + 1
+	return (beaconHeight-1)/epochNumBlocksPerEpoch + 1
+}
+
+//FilesExists reports whether the named file or directory exists.
+func FileExists(name string) bool {
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
 }
