@@ -107,30 +107,67 @@ func (tx *TxCustomTokenPrivacy) LoadCommitment(
 ) error {
 	embededTx := tx.Tx
 	normalTx := tx.TxPrivacyTokenData.TxNormal
-	if embededTx.valEnv.IsPrivacy() {
-		// tokenID := embededTx.GetTokenID()
-		prf := embededTx.Proof
-		if prf != nil {
+	prf := embededTx.Proof
+	if prf != nil {
+		if embededTx.valEnv.IsPrivacy() {
+			// tokenID := embededTx.GetTokenID()
 			err := prf.LoadCommitmentFromStateDB(db, &common.PRVCoinID, byte(tx.valEnv.ShardID()))
 			if err != nil {
 				Logger.log.Error(err)
 				return err
 			}
+		} else {
+			for _, iCoin := range prf.GetInputCoins() {
+				ok, err := tx.CheckCMExistence(
+					iCoin.CoinDetails.GetCoinCommitment().ToBytesS(),
+					db,
+					byte(tx.valEnv.ShardID()),
+					&common.PRVCoinID,
+				)
+				if !ok || err != nil {
+					if err != nil {
+						Logger.log.Error(err)
+					}
+					return NewTransactionErr(InputCommitmentIsNotExistedError, err)
+				}
+			}
 		}
-		// return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
 	}
-	if normalTx.valEnv.IsPrivacy() {
-		tokenID := tx.GetTokenID()
-		prf := normalTx.Proof
-		if prf != nil {
+	tokenID := tx.GetTokenID()
+	if tx.TxPrivacyTokenData.Type == CustomTokenInit {
+		if !tx.TxPrivacyTokenData.Mintable {
+			// check exist token
+			if statedb.PrivacyTokenIDExisted(db, *tokenID) {
+				return errors.Errorf("Privacy Token ID is existed")
+			}
+		}
+	}
+	prf = normalTx.Proof
+	if prf != nil {
+		if normalTx.valEnv.IsPrivacy() {
 			err := prf.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
 			if err != nil {
 				Logger.log.Error(err)
 				return err
 			}
 		} else {
-			return errors.Errorf("Normal tx of Tx CustomeTokenPrivacy can not has no input no outputs")
+			for _, iCoin := range prf.GetInputCoins() {
+				ok, err := tx.CheckCMExistence(
+					iCoin.CoinDetails.GetCoinCommitment().ToBytesS(),
+					db,
+					byte(tx.valEnv.ShardID()),
+					tokenID,
+				)
+				if !ok || err != nil {
+					if err != nil {
+						Logger.log.Error(err)
+					}
+					return NewTransactionErr(InputCommitmentIsNotExistedError, err)
+				}
+			}
 		}
+	} else {
+		return errors.Errorf("Normal tx of Tx CustomeTokenPrivacy can not has no input no outputs")
 	}
 	return nil
 }
