@@ -162,8 +162,8 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 				beaconHeight + 1: uint(feeUnshield),
 			}
 			chosenUTXOs := bcTx.UTXOs
-			UpdatePortalStateAfterProcessBatchUnshieldRequest(
-				currentPortalStateV4, batchID, chosenUTXOs, externalFees, bcTx.UnshieldIDs, tokenID)
+			currentPortalStateV4.UpdatePortalStateAfterProcessBatchUnshieldRequest(
+				batchID, chosenUTXOs, externalFees, bcTx.UnshieldIDs, tokenID)
 
 			// build new instruction with new raw external tx
 			newInst := buildUnshieldBatchingInst(
@@ -214,10 +214,8 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 
 		// add new processed batch unshield request to batch unshield list
 		// remove waiting unshield request from waiting list
-		UpdatePortalStateAfterProcessBatchUnshieldRequest(
-			currentPortalStateV4, actionData.BatchID, actionData.UTXOs, actionData.NetworkFee, actionData.UnshieldIDs, actionData.TokenID)
-		RemoveListUtxoFromDB(stateDB, actionData.UTXOs, actionData.TokenID)
-		RemoveListWaitingUnshieldFromDB(stateDB, actionData.UnshieldIDs, actionData.TokenID)
+		currentPortalStateV4.UpdatePortalStateAfterProcessBatchUnshieldRequest(
+			actionData.BatchID, actionData.UTXOs, actionData.NetworkFee, actionData.UnshieldIDs, actionData.TokenID)
 
 		for _, unshieldID := range actionData.UnshieldIDs {
 			// update status of unshield request that processed
@@ -424,8 +422,9 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		portalcommonv4.PortalV4RequestAcceptedChainStatus,
 	)
 
-	// add new waiting unshield request to waiting list
-	UpdatePortalStateAfterReplaceFeeRequest(currentPortalV4State, unshieldBatch, beaconHeight+1, meta.Fee, tokenIDStr, meta.BatchID)
+	// update external fee for batch processed unshield requests
+	currentPortalV4State.AddExternalFeeForBatchProcessedUnshieldRequest(unshieldBatch.GetBatchID(), tokenIDStr,
+		meta.Fee, beaconHeight+1)
 
 	return [][]string{newInst}, nil
 }
@@ -462,7 +461,8 @@ func (p *PortalFeeReplacementRequestProcessor) ProcessInsts(
 		// update unshield batch
 		keyUnshieldBatch := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(actionData.TokenID, actionData.BatchID).String()
 		unshieldBatch := currentPortalV4State.ProcessedUnshieldRequests[actionData.TokenID][keyUnshieldBatch]
-		UpdatePortalStateAfterReplaceFeeRequest(currentPortalV4State, unshieldBatch, beaconHeight+1, actionData.Fee, actionData.TokenID, actionData.BatchID)
+		currentPortalV4State.AddExternalFeeForBatchProcessedUnshieldRequest(unshieldBatch.GetBatchID(),
+			actionData.TokenID, actionData.Fee, beaconHeight+1)
 
 		// track status of unshield batch request by batchID
 		unshieldBatchRequestStatus = metadata.PortalReplacementFeeRequestStatus{
@@ -646,7 +646,8 @@ func (p *PortalSubmitConfirmedTxProcessor) BuildNewInsts(
 
 	tokenIDStr := meta.TokenID
 	batchIDStr := meta.BatchID
-	keyUnshieldBatch := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenIDStr, batchIDStr).String()
+	keyUnshieldBatchHash := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenIDStr, batchIDStr)
+	keyUnshieldBatch := keyUnshieldBatchHash.String()
 	if currentPortalV4State.ProcessedUnshieldRequests == nil ||
 		currentPortalV4State.ProcessedUnshieldRequests[tokenIDStr] == nil {
 		Logger.log.Errorf("[SubmitConfirmedRequest]: currentPortalV4State.ProcessedUnshieldRequests not initialized yet")
@@ -689,9 +690,9 @@ func (p *PortalSubmitConfirmedTxProcessor) BuildNewInsts(
 	)
 
 	// remove unshield being processed and update status
-	UpdatePortalStateAfterSubmitConfirmedTx(currentPortalV4State, tokenIDStr, keyUnshieldBatch)
+	currentPortalV4State.RemoveBatchProcessedUnshieldRequest(tokenIDStr, keyUnshieldBatchHash)
 	if len(listUTXO) > 0 {
-		UpdatePortalStateUTXOs(currentPortalV4State, tokenIDStr, listUTXO)
+		currentPortalV4State.AddUTXOs(listUTXO, tokenIDStr)
 	}
 
 	return [][]string{newInst}, nil
@@ -730,10 +731,9 @@ func (p *PortalSubmitConfirmedTxProcessor) ProcessInsts(
 		keyUnshieldBatchHash := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(actionData.TokenID, actionData.BatchID)
 		keyUnshieldBatch := keyUnshieldBatchHash.String()
 		unshieldRequests := currentPortalV4State.ProcessedUnshieldRequests[actionData.TokenID][keyUnshieldBatch].GetUnshieldRequests()
-		UpdatePortalStateAfterSubmitConfirmedTx(currentPortalV4State, actionData.TokenID, keyUnshieldBatch)
-		statedb.DeleteUnshieldBatchRequest(stateDB, keyUnshieldBatchHash)
+		currentPortalV4State.RemoveBatchProcessedUnshieldRequest(actionData.TokenID, keyUnshieldBatchHash)
 		if len(actionData.UTXOs) > 0 {
-			UpdatePortalStateUTXOs(currentPortalV4State, actionData.TokenID, actionData.UTXOs)
+			currentPortalV4State.AddUTXOs(actionData.UTXOs, actionData.TokenID)
 		}
 		// track status of unshield batch request by batchID
 		portalSubmitConfirmedStatus = metadata.PortalSubmitConfirmedTxStatus{

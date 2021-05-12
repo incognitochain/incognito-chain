@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+
+	"github.com/incognitochain/incognito-chain/common"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
@@ -14,6 +17,10 @@ type CurrentPortalStateV4 struct {
 	ShieldingExternalTx       map[string]map[string]*statedb.ShieldingRequest              // tokenID : hash(tokenID || proofHash) : value
 	WaitingUnshieldRequests   map[string]map[string]*statedb.WaitingUnshieldRequest        // tokenID : hash(tokenID || unshieldID) : value
 	ProcessedUnshieldRequests map[string]map[string]*statedb.ProcessedUnshieldRequestBatch // tokenID : hash(tokenID || batchID) : value
+
+	deletedUTXOKeyHashes                 []common.Hash
+	deletedWaitingUnshieldReqKeyHashes   []common.Hash
+	deletedProcessedUnshieldReqKeyHashes []common.Hash
 }
 
 func (s *CurrentPortalStateV4) Copy() *CurrentPortalStateV4 {
@@ -36,6 +43,10 @@ func InitCurrentPortalStateV4FromDB(
 ) (*CurrentPortalStateV4, error) {
 	var err error
 	if lastState != nil {
+		// reset temporary states
+		lastState.deletedUTXOKeyHashes = []common.Hash{}
+		lastState.deletedWaitingUnshieldReqKeyHashes = []common.Hash{}
+		lastState.deletedProcessedUnshieldReqKeyHashes = []common.Hash{}
 		return lastState, nil
 	}
 
@@ -71,6 +82,10 @@ func InitCurrentPortalStateV4FromDB(
 		ShieldingExternalTx:       nil,
 		WaitingUnshieldRequests:   waitingUnshieldRequests,
 		ProcessedUnshieldRequests: processedUnshieldRequestsBatch,
+
+		deletedUTXOKeyHashes:                 []common.Hash{},
+		deletedWaitingUnshieldReqKeyHashes:   []common.Hash{},
+		deletedProcessedUnshieldReqKeyHashes: []common.Hash{},
 	}, nil
 }
 
@@ -103,45 +118,147 @@ func StorePortalV4StateToDB(
 			return err
 		}
 	}
+
+	err = statedb.DeleteUTXOs(stateDB, currentPortalState.deletedUTXOKeyHashes)
+	if err != nil {
+		return err
+	}
+	err = statedb.DeleteWaitingUnshieldRequests(stateDB, currentPortalState.deletedWaitingUnshieldReqKeyHashes)
+	if err != nil {
+		return err
+	}
+	err = statedb.DeletePortalBatchUnshieldRequests(stateDB, currentPortalState.deletedProcessedUnshieldReqKeyHashes)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func UpdatePortalStateUTXOs(CurrentPortalStateV4 *CurrentPortalStateV4, tokenID string, listUTXO []*statedb.UTXO) {
-	if CurrentPortalStateV4.UTXOs == nil {
-		CurrentPortalStateV4.UTXOs = map[string]map[string]*statedb.UTXO{}
+func (s *CurrentPortalStateV4) AddUTXOs(utxos []*statedb.UTXO, tokenID string) {
+	if s.UTXOs == nil {
+		s.UTXOs = map[string]map[string]*statedb.UTXO{}
 	}
-	if CurrentPortalStateV4.UTXOs[tokenID] == nil {
-		CurrentPortalStateV4.UTXOs[tokenID] = map[string]*statedb.UTXO{}
+	if s.UTXOs[tokenID] == nil {
+		s.UTXOs[tokenID] = map[string]*statedb.UTXO{}
 	}
-	for _, utxo := range listUTXO {
-		walletAddress := utxo.GetWalletAddress()
-		txHash := utxo.GetTxHash()
-		outputIdx := utxo.GetOutputIndex()
-		outputAmount := utxo.GetOutputAmount()
-		chainCodeSeed := utxo.GetChainCodeSeed()
-		CurrentPortalStateV4.UTXOs[tokenID][statedb.GenerateUTXOObjectKey(tokenID, walletAddress, txHash, outputIdx).String()] = statedb.NewUTXOWithValue(walletAddress, txHash, outputIdx, outputAmount, chainCodeSeed)
+
+	var walletAddress string
+	var txHash string
+	var outputIdx uint32
+	var outputAmount uint64
+	var chainCodeSeed string
+	var utxoKeyStr string
+	for _, utxo := range utxos {
+		walletAddress = utxo.GetWalletAddress()
+		txHash = utxo.GetTxHash()
+		outputIdx = utxo.GetOutputIndex()
+		outputAmount = utxo.GetOutputAmount()
+		chainCodeSeed = utxo.GetChainCodeSeed()
+		utxoKeyStr = statedb.GenerateUTXOObjectKey(tokenID, walletAddress, txHash, outputIdx).String()
+		s.UTXOs[tokenID][utxoKeyStr] = statedb.NewUTXOWithValue(walletAddress, txHash, outputIdx, outputAmount, chainCodeSeed)
 	}
 }
 
-func UpdatePortalStateShieldingExternalTx(CurrentPortalStateV4 *CurrentPortalStateV4, tokenID string, shieldingProofTxHash string, shieldingExternalTxHash string, incAddress string, amount uint64) {
-	if CurrentPortalStateV4.ShieldingExternalTx == nil {
-		CurrentPortalStateV4.ShieldingExternalTx = map[string]map[string]*statedb.ShieldingRequest{}
+func (s *CurrentPortalStateV4) AddShieldingExternalTx(tokenID string, shieldingProofTxHash string,
+	shieldingExternalTxHash string, incAddress string, amount uint64) {
+	if s.ShieldingExternalTx == nil {
+		s.ShieldingExternalTx = map[string]map[string]*statedb.ShieldingRequest{}
 	}
-	if CurrentPortalStateV4.ShieldingExternalTx[tokenID] == nil {
-		CurrentPortalStateV4.ShieldingExternalTx[tokenID] = map[string]*statedb.ShieldingRequest{}
+	if s.ShieldingExternalTx[tokenID] == nil {
+		s.ShieldingExternalTx[tokenID] = map[string]*statedb.ShieldingRequest{}
 	}
-	CurrentPortalStateV4.ShieldingExternalTx[tokenID][statedb.GenerateShieldingRequestObjectKey(tokenID, shieldingProofTxHash).String()] = statedb.NewShieldingRequestWithValue(shieldingExternalTxHash, incAddress, amount)
+	shieldKeyStr := statedb.GenerateShieldingRequestObjectKey(tokenID, shieldingProofTxHash).String()
+	s.ShieldingExternalTx[tokenID][shieldKeyStr] = statedb.NewShieldingRequestWithValue(shieldingExternalTxHash, incAddress, amount)
 }
 
-func IsExistsProofInPortalState(CurrentPortalStateV4 *CurrentPortalStateV4, tokenID string, shieldingProofTxHash string) bool {
-	if CurrentPortalStateV4.ShieldingExternalTx == nil {
+func (s *CurrentPortalStateV4) IsExistedShieldingExternalTx(tokenID string, shieldingProofTxHash string) bool {
+	if s.ShieldingExternalTx == nil || s.ShieldingExternalTx[tokenID] == nil {
 		return false
 	}
-	if CurrentPortalStateV4.ShieldingExternalTx[tokenID] == nil {
-		return false
+	shieldKeyStr := statedb.GenerateShieldingRequestObjectKey(tokenID, shieldingProofTxHash).String()
+	_, isExisted := s.ShieldingExternalTx[tokenID][shieldKeyStr]
+	return isExisted
+}
+
+func (s *CurrentPortalStateV4) AddWaitingUnshieldRequest(
+	unshieldID string, tokenID string, remoteAddress string, unshieldAmt uint64, beaconHeight uint64) {
+	if s.WaitingUnshieldRequests == nil {
+		s.WaitingUnshieldRequests = map[string]map[string]*statedb.WaitingUnshieldRequest{}
 	}
-	_, exists := CurrentPortalStateV4.ShieldingExternalTx[tokenID][statedb.GenerateShieldingRequestObjectKey(tokenID, shieldingProofTxHash).String()]
-	return exists
+	if s.WaitingUnshieldRequests[tokenID] == nil {
+		s.WaitingUnshieldRequests[tokenID] = map[string]*statedb.WaitingUnshieldRequest{}
+	}
+
+	keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID).String()
+	waitingUnshieldRequest := statedb.NewWaitingUnshieldRequestStateWithValue(remoteAddress, unshieldAmt, unshieldID, beaconHeight)
+	s.WaitingUnshieldRequests[tokenID][keyWaitingUnshieldRequest] = waitingUnshieldRequest
+}
+
+func (s *CurrentPortalStateV4) AddBatchProcessedUnshieldRequest(
+	batchID string, utxos []*statedb.UTXO, externalFees map[uint64]uint, unshieldIDs []string, tokenID string) {
+	if s.ProcessedUnshieldRequests == nil {
+		s.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
+	}
+	if s.ProcessedUnshieldRequests[tokenID] == nil {
+		s.ProcessedUnshieldRequests[tokenID] = map[string]*statedb.ProcessedUnshieldRequestBatch{}
+	}
+
+	keyProcessedUnshieldRequest := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenID, batchID).String()
+	s.ProcessedUnshieldRequests[tokenID][keyProcessedUnshieldRequest] = statedb.NewProcessedUnshieldRequestBatchWithValue(
+		batchID, unshieldIDs, utxos, externalFees)
+}
+
+func (s *CurrentPortalStateV4) UpdatePortalStateAfterProcessBatchUnshieldRequest(
+	batchID string, utxos []*statedb.UTXO, externalFees map[uint64]uint, unshieldIDs []string, tokenID string) {
+	// remove unshieldIDs from WaitingUnshieldRequests
+	s.RemoveWaitingUnshieldReqs(unshieldIDs, tokenID)
+
+	// remove list utxos from state
+	s.RemoveUTXOs(utxos, tokenID)
+
+	// add batch process to ProcessedUnshieldRequests
+	s.AddBatchProcessedUnshieldRequest(batchID, utxos, externalFees, unshieldIDs, tokenID)
+}
+
+func (s *CurrentPortalStateV4) RemoveUTXOs(utxos []*statedb.UTXO, tokenID string) {
+	// remove list utxos that spent
+	for _, u := range utxos {
+		utxoKeyHash := statedb.GenerateUTXOObjectKey(tokenID, u.GetWalletAddress(), u.GetTxHash(), u.GetOutputIndex())
+		delete(s.UTXOs[tokenID], utxoKeyHash.String())
+		s.deletedUTXOKeyHashes = append(s.deletedUTXOKeyHashes, utxoKeyHash)
+	}
+}
+
+func (s *CurrentPortalStateV4) RemoveWaitingUnshieldReqs(unshieldIDs []string, tokenID string) {
+	// remove unshieldIDs from WaitingUnshieldRequests
+	for _, unshieldID := range unshieldIDs {
+		keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID)
+		delete(s.WaitingUnshieldRequests[tokenID], keyWaitingUnshieldRequest.String())
+		s.deletedWaitingUnshieldReqKeyHashes = append(s.deletedWaitingUnshieldReqKeyHashes, keyWaitingUnshieldRequest)
+	}
+}
+
+func (s *CurrentPortalStateV4) AddExternalFeeForBatchProcessedUnshieldRequest(
+	batchID string, tokenID string, externalFee uint, beaconHeight uint64) {
+	if s.ProcessedUnshieldRequests == nil {
+		s.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
+	}
+	if s.ProcessedUnshieldRequests[tokenID] == nil {
+		s.ProcessedUnshieldRequests[tokenID] = map[string]*statedb.ProcessedUnshieldRequestBatch{}
+	}
+
+	keyProcessedUnshieldRequest := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenID, batchID).String()
+	externalFees := s.ProcessedUnshieldRequests[tokenID][keyProcessedUnshieldRequest].GetExternalFees()
+	if externalFees == nil {
+		externalFees = map[uint64]uint{}
+	}
+	externalFees[beaconHeight] = externalFee
+	s.ProcessedUnshieldRequests[tokenID][keyProcessedUnshieldRequest].SetExternalFees(externalFees)
+}
+
+func (s *CurrentPortalStateV4) RemoveBatchProcessedUnshieldRequest(tokenIDStr string, batchKey common.Hash) {
+	delete(s.ProcessedUnshieldRequests[tokenIDStr], batchKey.String())
+	s.deletedProcessedUnshieldReqKeyHashes = append(s.deletedProcessedUnshieldReqKeyHashes, batchKey)
 }
 
 // get latest beaconheight
@@ -153,82 +270,6 @@ func GetMaxKeyValue(input map[uint64]uint) (max uint64) {
 		}
 	}
 	return max
-}
-
-func UpdatePortalStateAfterUnshieldRequest(
-	currentPortalStateV4 *CurrentPortalStateV4,
-	unshieldID string, tokenID string, remoteAddress string, unshieldAmt uint64, beaconHeight uint64) {
-
-	if currentPortalStateV4.WaitingUnshieldRequests == nil {
-		currentPortalStateV4.WaitingUnshieldRequests = map[string]map[string]*statedb.WaitingUnshieldRequest{}
-	}
-	if currentPortalStateV4.WaitingUnshieldRequests[tokenID] == nil {
-		currentPortalStateV4.WaitingUnshieldRequests[tokenID] = map[string]*statedb.WaitingUnshieldRequest{}
-	}
-
-	keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID).String()
-	waitingUnshieldRequest := statedb.NewWaitingUnshieldRequestStateWithValue(remoteAddress, unshieldAmt, unshieldID, beaconHeight)
-	currentPortalStateV4.WaitingUnshieldRequests[tokenID][keyWaitingUnshieldRequest] = waitingUnshieldRequest
-}
-
-func UpdatePortalStateAfterProcessBatchUnshieldRequest(
-	CurrentPortalStateV4 *CurrentPortalStateV4,
-	batchID string, utxos []*statedb.UTXO, externalFees map[uint64]uint, unshieldIDs []string, tokenID string) {
-	// remove unshieldIDs from WaitingUnshieldRequests
-	RemoveListWaitingUnshieldFromState(CurrentPortalStateV4, unshieldIDs, tokenID)
-
-	// remove list utxos from state
-	RemoveListUtxoFromState(CurrentPortalStateV4, utxos, tokenID)
-
-	// add batch process to ProcessedUnshieldRequests
-	if CurrentPortalStateV4.ProcessedUnshieldRequests == nil {
-		CurrentPortalStateV4.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
-	}
-	if CurrentPortalStateV4.ProcessedUnshieldRequests[tokenID] == nil {
-		CurrentPortalStateV4.ProcessedUnshieldRequests[tokenID] = map[string]*statedb.ProcessedUnshieldRequestBatch{}
-	}
-
-	keyProcessedUnshieldRequest := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenID, batchID).String()
-	CurrentPortalStateV4.ProcessedUnshieldRequests[tokenID][keyProcessedUnshieldRequest] = statedb.NewProcessedUnshieldRequestBatchWithValue(
-		batchID, unshieldIDs, utxos, externalFees)
-}
-
-func RemoveListUtxoFromState(
-	CurrentPortalStateV4 *CurrentPortalStateV4,
-	utxos []*statedb.UTXO, tokenID string) {
-	// remove list utxos that spent
-	for _, u := range utxos {
-		keyUtxo := statedb.GenerateUTXOObjectKey(tokenID, u.GetWalletAddress(), u.GetTxHash(), u.GetOutputIndex()).String()
-		delete(CurrentPortalStateV4.UTXOs[tokenID], keyUtxo)
-	}
-}
-
-func RemoveListUtxoFromDB(
-	stateDB *statedb.StateDB,
-	utxos []*statedb.UTXO, tokenID string) {
-	// remove list utxos that spent
-	for _, u := range utxos {
-		statedb.DeleteUTXO(stateDB, tokenID, u.GetWalletAddress(), u.GetTxHash(), u.GetOutputIndex())
-	}
-}
-
-func RemoveListWaitingUnshieldFromState(
-	CurrentPortalStateV4 *CurrentPortalStateV4,
-	unshieldIDs []string, tokenID string) {
-	// remove unshieldIDs from WaitingUnshieldRequests
-	for _, unshieldID := range unshieldIDs {
-		keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID).String()
-		delete(CurrentPortalStateV4.WaitingUnshieldRequests[tokenID], keyWaitingUnshieldRequest)
-	}
-}
-
-func RemoveListWaitingUnshieldFromDB(
-	stateDB *statedb.StateDB,
-	unshieldIDs []string, tokenID string) {
-	// delete waiting unshield request from db
-	for _, unshieldID := range unshieldIDs {
-		statedb.DeleteWaitingUnshieldRequest(stateDB, tokenID, unshieldID)
-	}
 }
 
 func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, externalTxID string, externalFee uint64, stateDB *statedb.StateDB) error {
@@ -274,23 +315,4 @@ func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, externalTx
 		return err
 	}
 	return nil
-}
-
-func UpdatePortalStateAfterReplaceFeeRequest(
-	currentPortalV4State *CurrentPortalStateV4, unshieldBatch *statedb.ProcessedUnshieldRequestBatch, beaconHeight uint64, fee uint, tokenIDStr, batchIDStr string) {
-	if currentPortalV4State.ProcessedUnshieldRequests == nil {
-		currentPortalV4State.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
-	}
-	if currentPortalV4State.ProcessedUnshieldRequests[tokenIDStr] == nil {
-		currentPortalV4State.ProcessedUnshieldRequests[tokenIDStr] = map[string]*statedb.ProcessedUnshieldRequestBatch{}
-	}
-	keyWaitingReplacementRequest := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenIDStr, batchIDStr).String()
-	fees := unshieldBatch.GetExternalFees()
-	fees[beaconHeight] = fee
-	waitingReplacementRequest := statedb.NewProcessedUnshieldRequestBatchWithValue(unshieldBatch.GetBatchID(), unshieldBatch.GetUnshieldRequests(), unshieldBatch.GetUTXOs(), fees)
-	currentPortalV4State.ProcessedUnshieldRequests[tokenIDStr][keyWaitingReplacementRequest] = waitingReplacementRequest
-}
-
-func UpdatePortalStateAfterSubmitConfirmedTx(currentPortalV4State *CurrentPortalStateV4, tokenIDStr, batchKey string) {
-	delete(currentPortalV4State.ProcessedUnshieldRequests[tokenIDStr], batchKey)
 }

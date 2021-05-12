@@ -27,10 +27,6 @@ func GetShieldingRequestStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	return data, nil
 }
 
-func GetShieldingRequestsByTokenID(stateDB *StateDB, tokenID string) (map[string]*ShieldingRequest, error) {
-	return stateDB.getShieldingRequestsByTokenID(tokenID), nil
-}
-
 func IsExistsShieldingRequest(stateDB *StateDB, tokenID string, proofHash string) (bool, error) {
 	keyStr := GenerateShieldingRequestObjectKey(tokenID, proofHash).String()
 	key, err := common.Hash{}.NewHashFromStr(keyStr)
@@ -75,9 +71,12 @@ func StoreUTXOs(stateDB *StateDB, utxos map[string]*UTXO) error {
 	return nil
 }
 
-func DeleteUTXO(stateDB *StateDB, tokenID string, walletAddress string, txHash string, inputIndex uint32) {
-	key := GenerateUTXOObjectKey(tokenID, walletAddress, txHash, inputIndex)
-	stateDB.MarkDeleteStateObject(PortalV4UTXOObjectType, key)
+func DeleteUTXOs(stateDB *StateDB, utxoKeys []common.Hash) error {
+	for _, keyHash := range utxoKeys {
+		stateDB.MarkDeleteStateObject(PortalV4UTXOObjectType, keyHash)
+	}
+
+	return nil
 }
 
 // ================= List Waiting Unshielding Requests =================
@@ -102,9 +101,12 @@ func StoreWaitingUnshieldRequests(
 	return nil
 }
 
-func DeleteWaitingUnshieldRequest(stateDB *StateDB, tokenID string, unshieldID string) {
-	key := GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID)
-	stateDB.MarkDeleteStateObject(PortalWaitingUnshieldObjectType, key)
+func DeleteWaitingUnshieldRequests(stateDB *StateDB, wUnshieldReqKeys []common.Hash) error {
+	for _, keyHash := range wUnshieldReqKeys {
+		stateDB.MarkDeleteStateObject(PortalWaitingUnshieldObjectType, keyHash)
+	}
+
+	return nil
 }
 
 // ================= Unshielding Request Status =================
@@ -132,7 +134,6 @@ func GetPortalUnshieldRequestStatus(stateDB *StateDB, unshieldID string) ([]byte
 }
 
 // ================= List Batching Unshielding Request =================
-
 func GetListProcessedBatchUnshieldRequestsByTokenID(stateDB *StateDB, tokenID string) (map[string]*ProcessedUnshieldRequestBatch, error) {
 	return stateDB.getListProcessedBatchUnshieldRequestsByTokenID(tokenID), nil
 }
@@ -161,6 +162,14 @@ func StorePortalBatchUnshieldRequestStatus(stateDB *StateDB, batchID string, sta
 	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
 	if err != nil {
 		return NewStatedbError(StorePortalBatchUnshieldRequestStatusError, err)
+	}
+
+	return nil
+}
+
+func DeletePortalBatchUnshieldRequests(stateDB *StateDB, batchProcessedUnshieldReqKeys []common.Hash) error {
+	for _, keyHash := range batchProcessedUnshieldReqKeys {
+		stateDB.MarkDeleteStateObject(PortalProcessedUnshieldRequestBatchObjectType, keyHash)
 	}
 
 	return nil
@@ -224,8 +233,4 @@ func GetPortalSubmitConfirmedTxRequestStatus(stateDB *StateDB, txID string) ([]b
 	}
 
 	return data, nil
-}
-
-func DeleteUnshieldBatchRequest(stateDB *StateDB, key common.Hash) {
-	stateDB.MarkDeleteStateObject(PortalProcessedUnshieldRequestBatchObjectType, key)
 }

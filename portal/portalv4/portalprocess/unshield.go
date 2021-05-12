@@ -180,7 +180,7 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	}
 
 	multipleTokenAmt := portalParams.PortalTokens[meta.TokenID].GetMultipleTokenAmount()
-	if meta.UnshieldAmount % multipleTokenAmt != 0 {
+	if meta.UnshieldAmount%multipleTokenAmt != 0 {
 		Logger.log.Errorf("[UnshieldRequest] Unshield amount %v is not divisible by %v", meta.UnshieldAmount, multipleTokenAmt)
 		return [][]string{refundInst}, nil
 	}
@@ -199,7 +199,7 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 	)
 
 	// add new waiting unshield request to waiting list
-	UpdatePortalStateAfterUnshieldRequest(currentPortalStateV4, unshieldID, meta.TokenID, meta.RemoteAddress, meta.UnshieldAmount, beaconHeight+1)
+	currentPortalStateV4.AddWaitingUnshieldRequest(unshieldID, meta.TokenID, meta.RemoteAddress, meta.UnshieldAmount, beaconHeight+1)
 
 	return [][]string{newInst}, nil
 }
@@ -236,7 +236,8 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 		updatedStatus = portalcommonv4.PortalUnshieldReqWaitingStatus
 
 		// add new waiting unshield request to waiting list
-		UpdatePortalStateAfterUnshieldRequest(currentPortalStateV4, actionData.TxReqID.String(), actionData.TokenID, actionData.RemoteAddress, actionData.UnshieldAmount, beaconHeight+1)
+		currentPortalStateV4.AddWaitingUnshieldRequest(
+			actionData.TxReqID.String(), actionData.TokenID, actionData.RemoteAddress, actionData.UnshieldAmount, beaconHeight+1)
 
 		// update bridge token info
 		err := metadata.UpdateBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.UnshieldAmount, true)
@@ -251,7 +252,7 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 	// store status of unshield request by unshieldID (txID)
 	unshieldRequestStatus := metadata.PortalUnshieldRequestStatus{
 		OTAPubKeyStr:   actionData.OTAPubKeyStr,
-		TxRandomStr: actionData.TxRandomStr,
+		TxRandomStr:    actionData.TxRandomStr,
 		RemoteAddress:  actionData.RemoteAddress,
 		TokenID:        actionData.TokenID,
 		UnshieldAmount: actionData.UnshieldAmount,
