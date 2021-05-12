@@ -505,7 +505,11 @@ func (txN Tx) validateNoPrivacyZKPSanityWithOutput() (bool, error) {
 
 func (txN Tx) validateSanityDataPrivacyProof() (bool, error) {
 	if len(txN.Proof.GetInputCoins()) > 0 {
-		ok, err := txN.validateInputPrivacy()
+		ok, err := txN.checkDuplicateInput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = txN.validateInputPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}
@@ -515,7 +519,11 @@ func (txN Tx) validateSanityDataPrivacyProof() (bool, error) {
 		}
 	}
 	if len(txN.Proof.GetOutputCoins()) > 0 {
-		ok, err := txN.validateOutputPrivacy()
+		ok, err := txN.checkDuplicateOutput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = txN.validateOutputPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}
@@ -529,7 +537,11 @@ func (txN Tx) validateSanityDataPrivacyProof() (bool, error) {
 
 func (txN Tx) validateSanityDataNoPrivacyProof() (bool, error) {
 	if len(txN.Proof.GetInputCoins()) > 0 {
-		ok, err := txN.validateInputNoPrivacy()
+		ok, err := txN.checkDuplicateInput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = txN.validateInputNoPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}
@@ -539,7 +551,11 @@ func (txN Tx) validateSanityDataNoPrivacyProof() (bool, error) {
 		}
 	}
 	if len(txN.Proof.GetOutputCoins()) > 0 {
-		ok, err := txN.validateOutputNoPrivacy()
+		ok, err := txN.checkDuplicateOutput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = txN.validateOutputNoPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}

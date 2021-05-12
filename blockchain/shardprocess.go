@@ -209,7 +209,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	if fullValidation == "1" {
 		Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
 		st := time.Now()
-		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, shardBlock.Header.BeaconHash, curView); err != nil {
+		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, int64(curView.BeaconHeight), curView); err != nil {
 			return NewBlockChainError(TransactionFromNewBlockError, err)
 		}
 		if len(shardBlock.Body.Transactions) > 0 {
