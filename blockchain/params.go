@@ -3,8 +3,6 @@ package blockchain
 import (
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
@@ -15,11 +13,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 )
-
-type SlashLevel struct {
-	MinRange        uint8
-	PunishedEpoches uint8
-}
 
 /*
 Params defines a network by its component. These component may be used by Applications
@@ -50,7 +43,6 @@ type Params struct {
 	EpochV2BreakPoint                uint64
 	RandomTime                       uint64
 	RandomTimeV2                     uint64
-	SlashLevels                      []SlashLevel
 	EthContractAddressStr            string // smart contract of ETH for bridge
 	Offset                           int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
 	SwapOffset                       int    // is used for case that good producers length is equal to max committee size
@@ -72,7 +64,6 @@ type Params struct {
 	ReplaceStakingTxHeight           uint64
 	ETHRemoveBridgeSigEpoch          uint64
 	BCHeightBreakPointNewZKP         uint64
-	MissingSignaturePenalty          []signaturecounter.Penalty
 	PortalETHContractAddressStr      string // smart contract of ETH for portal
 	BCHeightBreakPointPortalV3       uint64
 	EnableFeatureFlags               map[int]uint64 // featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature
@@ -207,18 +198,13 @@ func SetupParam() {
 		EthContractAddressStr:            TestnetETHContractAddressStr,
 		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
-			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
-			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
-			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
-		},
-		CheckForce:                     false,
-		ChainVersion:                   "version-chain-test.json",
-		ConsensusV2Epoch:               16930,
-		StakingFlowV2Height:            3016278,
-		EnableSlashingStakingFlowV2:    3016778,
-		Timeslot:                       10,
-		BeaconHeightBreakPointBurnAddr: 1,
+		CheckForce:                       false,
+		ChainVersion:                     "version-chain-test.json",
+		ConsensusV2Epoch:                 16930,
+		StakingFlowV2Height:              3016278,
+		EnableSlashingStakingFlowV2:      3016778,
+		Timeslot:                         10,
+		BeaconHeightBreakPointBurnAddr:   1,
 		PortalParams: portal.PortalParams{
 			PortalParamsV3: map[uint64]portalv3.PortalParams{
 				0: {
@@ -255,7 +241,7 @@ func SetupParam() {
 		ReplaceStakingTxHeight:      1,
 		IsBackup:                    false,
 		PreloadAddress:              "",
-		BCHeightBreakPointNewZKP:    2300000, //TODO: change this value when deployed testnet
+		BCHeightBreakPointNewZKP:    22300000300000, //TODO: change this value when deployed testnet
 		ETHRemoveBridgeSigEpoch:     21920,
 		EpochV2:                     TestnetEpochV2,
 		EpochV2BreakPoint:           TestnetEpochV2BreakPoint,
@@ -312,18 +298,13 @@ func SetupParam() {
 		EthContractAddressStr:            Testnet2ETHContractAddressStr,
 		IncognitoDAOAddress:              Testnet2IncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: Testnet2CentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
-			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
-			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
-			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
-		},
-		CheckForce:                     false,
-		ChainVersion:                   "version-chain-test-2.json",
-		ConsensusV2Epoch:               1e9,
-		StakingFlowV2Height:            2051863,
-		EnableSlashingStakingFlowV2:    2087789,
-		Timeslot:                       10,
-		BeaconHeightBreakPointBurnAddr: 1,
+		CheckForce:                       false,
+		ChainVersion:                     "version-chain-test-2.json",
+		ConsensusV2Epoch:                 1e9,
+		StakingFlowV2Height:              2051863,
+		EnableSlashingStakingFlowV2:      2087789,
+		Timeslot:                         10,
+		BeaconHeightBreakPointBurnAddr:   1,
 		PortalParams: portal.PortalParams{
 			PortalParamsV3: map[uint64]portalv3.PortalParams{
 				0: {
@@ -415,18 +396,13 @@ func SetupParam() {
 		EthContractAddressStr:            MainETHContractAddressStr,
 		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
-		SlashLevels:                      []SlashLevel{
-			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
-			//SlashLevel{MinRange: 50, PunishedEpoches: 2},
-			//SlashLevel{MinRange: 75, PunishedEpoches: 3},
-		},
-		CheckForce:                     false,
-		ChainVersion:                   "version-chain-main.json",
-		ConsensusV2Epoch:               1e9,
-		StakingFlowV2Height:            1e12,
-		EnableSlashingStakingFlowV2:    1e12,
-		Timeslot:                       40,
-		BeaconHeightBreakPointBurnAddr: 150500,
+		CheckForce:                       false,
+		ChainVersion:                     "version-chain-main.json",
+		ConsensusV2Epoch:                 1e9,
+		StakingFlowV2Height:              1e12,
+		EnableSlashingStakingFlowV2:      1e12,
+		Timeslot:                         40,
+		BeaconHeightBreakPointBurnAddr:   150500,
 		PortalParams: portal.PortalParams{
 			PortalParamsV3: map[uint64]portalv3.PortalParams{
 				0: {

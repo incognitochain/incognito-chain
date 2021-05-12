@@ -53,5 +53,4 @@ mining_keys: "" #
 private_key: "" #
 accelerator: false #
 p2p_private_key: "" #
-preload_address: "" #
 force_backup: false #

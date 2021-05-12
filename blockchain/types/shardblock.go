@@ -14,9 +14,9 @@ import (
 )
 
 type ShardBlock struct {
-	ValidationData string `json:"ValidationData"`
-	Body           ShardBody
-	Header         ShardHeader
+	ValidationData string      `json:"ValidationData"`
+	Body           ShardBody   `yaml:"body"`
+	Header         ShardHeader `yaml:"header"`
 }
 
 type ShardHeader struct {

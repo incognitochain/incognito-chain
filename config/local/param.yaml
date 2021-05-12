@@ -1,0 +1,93 @@
+name: ""
+genesis_param: 
+  initial_incognito: 
+    - "{
+		    "Version":1,
+		    "Type":"s",
+		    "LockTime":1570159128,
+		    "Fee":0,
+		    "Info":null,
+		    "SigPubKey":"5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA=",
+		    "Sig":"oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA==",
+		    "Proof":"AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA=",
+		    "PubKeyLastByteSender":0,
+		    "Metadata":null }"
+  fee_per_tx_kb: 1
+  consensus_algorithm: "bls"
+  beacon_block:
+  shard_block:
+committee_size:
+  max_shard_committee_size: 4
+  min_shard_committee_size: 10
+  min_beacon_committee_size: 4
+  max_beacon_committee_size: 7
+  init_shard_committee_size: 4
+  init_beacon_committee_size: 4
+  number_of_fixed_shard_block_validators: 4
+block_time:
+  min_shard_block_interval: 10
+  max_shard_block_creation: 8
+  min_beacon_block_interval: 10
+  max_beacon_block_creation: 6
+staking_amount_shard: 1750000000000
+active_shards: 2
+basic_reward: 400000000
+epoch_param:
+  number_of_block_in_epoch: 10
+  number_of_block_in_epoch_v2: 1000000000000
+  epoch_v2_break_point: 1000000000000
+  random_time: 5
+  random_time_v2: 1000000000000
+eth_contract_address: "0xE0D5e7217c6C4bc475404b26d763fAD3F14D2b86"
+dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
+centralized_website_payment_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+swap_committee_param:
+  offset: 1
+  swap_offset: 1
+  assign_offset: 2
+consensus_param: 
+  consensus_v2_epoch: 1
+  staking_flow_v2_height: 1
+  enable_slashing_height: 1
+  timeslot: 10
+  epoch_break_point_swap_new_key: 
+    - 1000000000
+beacon_height_break_point_burn_addr: 1
+eth_remove_bridge_sig_epoch: 21920
+replace_staking_tx_height: 1
+bc_height_break_point_new_zkp: 1148608
+enable_feature_flags:
+  - 0: 1
+  - 1: 0
+portal_param:
+  bc_height_break_point_portal_v3: 2300000
+  portal_param_v3:
+    time_out_custodian_return_pub_token: 900
+    time_out_waiting_porting_request: 900
+    time_out_waiting_redeem_request: 600
+    max_percent_liquidated_collateral_amount: 105
+    max_percent_custodian_rewards: 10
+    min_percent_custodian_rewards: 1
+    min_lock_collateral_amount_in_epoch: 10000
+    min_percent_locked_collateral: 150
+    tp120: 120
+    tp130: 130
+    min_percent_porting_fee: 0.01
+    min_percent_redeem_fee: 0.01
+    supported_collateral_tokens: 
+    min_portal_fee: 100
+    portal_tokens:
+      - "ef5947f70ead81a76a53c7c8b7317dd5245510c665d3a13921dc9a581188728b":
+        chain_id: "Bitcoin-Testnet"
+      - "6abd698ea7ddd1f98b1ecaaddab5db0453b8363ff092f0d8d7d4c6b1155fb693":
+        chain_id: "Binance-Chain-Ganges"
+    portal_feeder_address: "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+    portal_eth_contract_address: "0x6D53de7aFa363F779B5e125876319695dC97171E"
+    min_unlock_over_rate_collaterals: 25
+  relaying_param:
+    bnb_relaying_header_chain_id: "Binance-Chain-Ganges"
+    btc_relaying_header_chain_id: "Bitcoin-Testnet"
+    btc_data_folder_name: "btcrelayingv14"
+    bnb_full_node_protocol: "https"
+    bnb_full_node_host: "data-seed-pre-0-s3.binance.org"
+    bnb_full_node_host: "443"
