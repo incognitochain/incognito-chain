@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
+
 	"github.com/incognitochain/incognito-chain/consensus_v2"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -81,6 +83,39 @@ func (httpServer *HttpServer) handleGetAutoStakingByHeight(params interface{}, c
 	// _, newAutoStaking := statedb.GetRewardReceiverAndAutoStaking(beaconConsensusStateDB, httpServer.blockService.BlockChain.GetShardIDs())
 	newAutoStaking := map[string]bool{}
 	return []interface{}{beaconConsensusStateRootHash, newAutoStaking}, nil
+}
+
+func (httpServer *HttpServer) handleGetTotalBlockInEpoch(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 1 {
+		return nil, rpcservice.NewRPCError(-1, errors.New("Invalid number of params, accept only 1 value"))
+	}
+	epoch := uint64(arrayParams[0].(float64))
+
+	res := make(map[byte]*stats.NumberOfBlockInOneEpochStats)
+	for i := 0; i < httpServer.config.BlockChain.BeaconChain.GetActiveShardNumber(); i++ {
+		shardID := byte(i)
+		numberOfBlockInOneEpochStats, err := stats.GetShardEpochBPV3Stats(httpServer.config.BlockChain.GetShardChainDatabase(shardID), shardID, epoch)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(-1, err)
+		}
+		res[shardID] = numberOfBlockInOneEpochStats
+	}
+	return res, nil
+}
+
+func (httpServer *HttpServer) handleGetDetailBlocksOfEpoch(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	shardID := byte(arrayParams[0].(float64))
+	epoch := uint64(arrayParams[1].(float64))
+	if len(arrayParams) != 2 {
+		return nil, rpcservice.NewRPCError(-1, errors.New("Invalid number of params, accept only 2 value"))
+	}
+	res, err := stats.GetShardHeightBPV3Stats(httpServer.config.BlockChain.GetShardChainDatabase(shardID), shardID, epoch)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(-1, err)
+	}
+	return res, nil
 }
 
 func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

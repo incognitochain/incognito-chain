@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -1168,6 +1170,21 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			}
 		} else {
 			storeBlock = newFinalView.GetBlock()
+		}
+		if stats.IsEnableBPV3Stats {
+			committeesStoreBlock, err := blockchain.getShardCommitteeFromBeaconHash(storeBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
+			if err != nil {
+				Logger.log.Error(NewBlockChainError(StoreShardBlockError, err))
+			}
+			err2 := stats.UpdateBPV3Stats(
+				blockchain.GetShardChainDatabase(shardID),
+				storeBlock.(*types.ShardBlock),
+				GetSubsetID(shardBlock.GetProposeTime(), blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(newShardState.BeaconHeight)),
+				committeesStoreBlock,
+			)
+			if err2 != nil {
+				Logger.log.Error(NewBlockChainError(StoreShardBlockError, err))
+			}
 		}
 	}
 
