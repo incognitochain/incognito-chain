@@ -31,6 +31,10 @@ type MultiView struct {
 	//state
 	finalView View
 	bestView  View
+
+	//commitFinalView
+	commitFinalView View
+	commitBestView  View
 }
 
 func NewMultiView() *MultiView {
@@ -68,6 +72,8 @@ func (multiView *MultiView) Clone() *MultiView {
 	}
 	s.finalView = multiView.finalView
 	s.bestView = multiView.bestView
+	s.commitBestView = multiView.commitBestView
+	s.commitFinalView = multiView.commitFinalView
 	return s
 }
 
@@ -100,12 +106,16 @@ func (multiView *MultiView) GetViewByHash(hash common.Hash) View {
 }
 
 //Only add view if view is validated (at least enough signature)
-func (multiView *MultiView) AddView(view View) bool {
+func (multiView *MultiView) AddView(view View, commit bool) bool {
 	res := make(chan bool)
 	multiView.actionCh <- func() {
 		if len(multiView.viewByHash) == 0 { //if no view in map, this is init view -> always allow
 			multiView.viewByHash[*view.GetHash()] = view
 			multiView.updateViewState(view)
+			if commit {
+				multiView.commitFinalView = multiView.finalView
+				multiView.commitBestView = multiView.bestView
+			}
 			res <- true
 			return
 		} else if _, ok := multiView.viewByHash[*view.GetHash()]; !ok { //otherwise, if view is not yet inserted
@@ -113,6 +123,10 @@ func (multiView *MultiView) AddView(view View) bool {
 				multiView.viewByHash[*view.GetHash()] = view
 				multiView.viewByPrevHash[*view.GetPreviousHash()] = append(multiView.viewByPrevHash[*view.GetPreviousHash()], view)
 				multiView.updateViewState(view)
+				if commit {
+					multiView.commitFinalView = multiView.finalView
+					multiView.commitBestView = multiView.bestView
+				}
 				res <- true
 				return
 			}
@@ -123,11 +137,24 @@ func (multiView *MultiView) AddView(view View) bool {
 }
 
 func (multiView *MultiView) GetBestView() View {
-	return multiView.bestView
+	return multiView.commitBestView
 }
 
 func (multiView *MultiView) GetFinalView() View {
+	return multiView.commitFinalView
+}
+
+func (multiView *MultiView) GetUnCommitBestView() View {
+	return multiView.bestView
+}
+
+func (multiView *MultiView) GetUnCommitFinalView() View {
 	return multiView.finalView
+}
+
+func (multiView *MultiView) Commit() {
+	multiView.commitFinalView = multiView.finalView
+	multiView.commitBestView = multiView.bestView
 }
 
 //update view whenever there is new view insert into system

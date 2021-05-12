@@ -1166,11 +1166,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
-	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState)
+	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState, false)
 	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
 
 	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
-	newFinalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
+	newFinalView := blockchain.ShardChain[shardID].multiView.GetUnCommitFinalView()
 
 	storeBlock := newFinalView.GetBlock()
 
@@ -1193,6 +1193,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			storeBlock = newFinalView.GetBlock()
 		}
 	}
+
+	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.Commit()
 	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)
 	if err != nil {
 		panic("Backup shard view error")

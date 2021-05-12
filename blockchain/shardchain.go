@@ -713,10 +713,16 @@ func (chain *ShardChain) validateBlockBody(flow *ShardValidationFlow) error {
 	if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {
 		if len(shardBlock.Body.Instructions) > 0 {
 			//TODO: add block height in the past, we have empty swap instruction
-			if shardBlock.Body.Instructions[0][0] == instruction.SWAP_ACTION && shardBlock.Body.Instructions[0][1] == "" {
-				goto CONT
+			for _, inst := range shardBlock.Body.Instructions {
+				if inst[0] == instruction.SWAP_ACTION && inst[1] == "" && inst[2] == "" {
+					goto CONT
+				}
+				if inst[0] == "71" {
+					goto CONT
+				}
 			}
 		}
+		Logger.log.Error("blockInstruction", shardBlock.Body.Instructions)
 		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v", shardBlock.Header.InstructionsRoot, hash))
 	}
 CONT:

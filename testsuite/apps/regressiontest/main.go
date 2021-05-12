@@ -9,7 +9,10 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/incdb"
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
+	"log"
 	"os"
+	"strings"
+	"time"
 )
 
 func GetShardBlockByHeight(db incdb.KeyValueReader, sid byte, height uint64) (*types.ShardBlock, error) {
@@ -59,57 +62,94 @@ func main() {
 	})
 
 	beaconChain := node.GetBlockchain().BeaconChain
-	for {
-		for i := -1; i < 8; i++ {
-			nextHeight := node.GetBlockchain().GetChain(i).GetBestView().GetHeight() + 1
-			fmt.Println("Insert", i, nextHeight)
-			if i == -1 { //beacon
-				beaconBlock, err := GetBeaconBlockByHeight(db[-1], nextHeight)
+	//beacon insert process
+	go func() {
+		for {
+			time1 := time.Now()
+			nextHeight := node.GetBlockchain().GetChain(-1).GetBestView().GetHeight() + 1
+			beaconBlock, err := GetBeaconBlockByHeight(db[-1], nextHeight)
+			if err != nil {
+				fmt.Println("Exit with beacon", nextHeight)
+				os.Exit(0)
+			}
+			shouldWait := false
+			for sid, shardStates := range beaconBlock.Body.ShardState {
+				if len(shardStates) > 0 && shardStates[len(shardStates)-1].Height > node.GetBlockchain().GetChain(int(sid)).GetFinalView().GetHeight() {
+					shouldWait = true
+				}
+			}
+			//log.Printf("Get and Check beacon block %v - %vs\n", nextHeight, time.Since(time1).Seconds())
+			time1 = time.Now()
+			if !shouldWait {
+				err = beaconChain.InsertBlock(beaconBlock, common.REGRESSION_TEST)
+				log.Printf("Insert beacon block %v - %vs\n", nextHeight, time.Since(time1).Seconds())
 				if err != nil {
-					fmt.Println("Exit with beacon", nextHeight)
-					os.Exit(0)
-				}
-				shouldWait := false
-				for sid, shardStates := range beaconBlock.Body.ShardState {
-					if len(shardStates) > 0 && shardStates[len(shardStates)-1].Height > node.GetBlockchain().GetChain(int(sid)).GetFinalView().GetHeight() {
-						shouldWait = true
-					}
-				}
-				if shouldWait == false {
-					err = beaconChain.InsertBlock(beaconBlock, common.REGRESSION_TEST)
-					if err != nil {
-						fmt.Printf("%+v", beaconBlock)
-						panic(fmt.Sprintf("Insert beacon fail! Block %v - %v. Error: %+v", beaconBlock.GetHeight(), beaconBlock.Hash().String(), err))
-					}
+					log.Println(err)
+					continue
 				}
 			} else {
-				shardBlock, err := GetShardBlockByHeight(db[i], byte(i), nextHeight)
+				time.Sleep(time.Millisecond * 5)
+			}
+		}
+	}()
+
+	for j := 0; j < 8; j++ {
+		go func(shardID int) {
+			for {
+				time1 := time.Now()
+				nextHeight := node.GetBlockchain().GetChain(shardID).GetBestView().GetHeight() + 1
+				shardBlock, err := GetShardBlockByHeight(db[shardID], byte(shardID), nextHeight)
 				if err != nil {
-					fmt.Println("Exit with shard", i, nextHeight)
+					fmt.Println("Exit with shard", shardID, nextHeight)
 					os.Exit(0)
 				}
 				shouldWait := false
+				beaconFinaView := beaconChain.GetFinalViewHeight()
 				if shardBlock.Header.BeaconHeight > beaconChain.GetFinalViewHeight() {
 					shouldWait = true
 				}
 				for sid, cross := range shardBlock.Body.CrossTransactions {
-					if cross[len(cross)-1].BlockHeight > node.GetBlockchain().GetChain(int(sid)).GetBestView().GetHeight() {
+					if cross[len(cross)-1].BlockHeight > node.GetBlockchain().BeaconChain.GetFinalView().(*blockchain.BeaconBestState).BestShardHeight[sid] {
 						shouldWait = true
-					}
-				}
-				if !shouldWait {
-					err = node.GetBlockchain().GetChain(i).(*blockchain.ShardChain).InsertBlock(shardBlock, common.REGRESSION_TEST)
-					if err != nil {
-						fmt.Printf("%+v", shardBlock)
-						panic(fmt.Sprintf("Insert shard fail! Block %v - %v. Error: %+v", shardBlock.GetHeight(), shardBlock.Hash().String(), err))
-					}
-					crossX := blockchain.CreateAllCrossShardBlock(shardBlock, node.GetBlockchain().GetChainParams().ActiveShards)
-					for _, blk := range crossX {
-						node.GetSyncker().InsertCrossShardBlock(blk)
+					} else {
+						for _, blk := range cross {
+							fmt.Println("debug create crossshard block", int(sid), int(shardID), blk.BlockHeight, blk.BlockHash.String())
+							crossBlk, err := GetShardBlockByHeight(db[int(sid)], sid, blk.BlockHeight)
+							if err != nil {
+								panic(err)
+							}
+							crossX, err := blockchain.CreateCrossShardBlock(crossBlk, byte(shardID))
+							if err != nil {
+								panic(err)
+							}
+							fmt.Println("debug insert cross shard block", int(sid), int(shardID), blk.BlockHeight, crossX.Hash().String())
+
+							node.GetSyncker().InsertCrossShardBlock(crossX)
+						}
+
 					}
 				}
 
+				//log.Printf("Get and Check shard %v block %v - %vs\n", shardID, nextHeight, time.Since(time1).Seconds())
+				time1 = time.Now()
+				if !shouldWait {
+
+					err = node.GetBlockchain().GetChain(shardID).(*blockchain.ShardChain).InsertBlock(shardBlock, common.REGRESSION_TEST)
+					log.Printf("Insert shard %v block %v - %vs\n", shardID, nextHeight, time.Since(time1).Seconds())
+					if err != nil {
+						if strings.Index(err.Error(), "Fetch Beacon Blocks Error") == -1 {
+							log.Println(err)
+							panic(1)
+						} else {
+							log.Println("Wait for beacon", shardBlock.Header.BeaconHeight, beaconFinaView)
+						}
+						continue
+					}
+				} else {
+					time.Sleep(time.Millisecond * 5)
+				}
 			}
-		}
+		}(j)
 	}
+	select {}
 }

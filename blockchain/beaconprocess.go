@@ -945,10 +945,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 
-	blockchain.BeaconChain.multiView.AddView(newBestState)
+	blockchain.BeaconChain.multiView.AddView(newBestState, false)
 	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
 
-	newFinalView := blockchain.BeaconChain.multiView.GetFinalView()
+	newFinalView := blockchain.BeaconChain.multiView.GetUnCommitFinalView()
 
 	storeBlock := newFinalView.GetBlock()
 
@@ -980,7 +980,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		Logger.log.Debug("process beacon block", finalizedBlocks[i].Header.Height)
 		processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
 	}
-
+	blockchain.BeaconChain.multiView.Commit()
 	err = blockchain.BackupBeaconViews(batch)
 	if err != nil {
 		// panic("Backup shard view error")

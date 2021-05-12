@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -131,12 +130,7 @@ func (sim *NodeEngine) EnableDebug() {
 func (sim *NodeEngine) init() {
 	os.Setenv("TXPOOL_VERSION", "1")
 	simName := sim.simName
-	path, err := os.Getwd()
-	if err != nil {
-		log.Println(err)
-	}
-
-	InitLogRotator(filepath.Join(path, simName+".log"))
+	InitLogRotator(filepath.Join("/data", simName+".log"))
 	activeNetParams := sim.config.ChainParam.GetParamData()
 	if sim.config.AppNode {
 		switch activeNetParams.Net {
@@ -292,6 +286,7 @@ func (sim *NodeEngine) init() {
 	poolManager, _ := txpool.NewPoolManager(
 		common.MaxShardNumber,
 		ps,
+		time.Duration(15*60)*time.Second,
 	)
 	err = bc.Init(&blockchain.Config{
 		BTCChain:        btcChain,
