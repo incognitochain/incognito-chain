@@ -28,7 +28,7 @@ func (tx Tx) ValidateDoubleSpendWithBlockChain(
 			serialNumber := txInput.CoinDetails.GetSerialNumber().ToBytesS()
 			ok, err := statedb.HasSerialNumber(stateDB, *tokenID, serialNumber, shardID)
 			if ok || err != nil {
-				return false, errors.New("double spend")
+				return false, errors.Errorf("double spend %v, error %v", ok, err)
 			}
 		}
 		for i, txOutput := range tx.Proof.GetOutputCoins() {
@@ -184,9 +184,9 @@ func (tx *Tx) LoadCommitment(
 	if tx.valEnv.IsPrivacy() {
 		return tx.Proof.LoadCommitmentFromStateDB(db, tokenID, byte(tx.valEnv.ShardID()))
 	} else {
-		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
+		for _, iCoin := range prf.GetInputCoins() {
 			ok, err := tx.CheckCMExistence(
-				tx.Proof.GetInputCoins()[i].CoinDetails.GetCoinCommitment().ToBytesS(),
+				iCoin.CoinDetails.GetCoinCommitment().ToBytesS(),
 				db,
 				byte(tx.valEnv.ShardID()),
 				tokenID,
@@ -208,10 +208,6 @@ func (tx *Tx) ValidateTxCorrectness(
 	bool,
 	error,
 ) {
-	if ok, err := tx.VerifySigTx(); (!ok) || (err != nil) {
-		Logger.log.Errorf("Validate tx %v return %v error %v", tx.Hash().String(), ok, err)
-		return ok, err
-	}
 
 	Logger.log.Debugf("VALIDATING TX........\n")
 
@@ -509,7 +505,11 @@ func (txN Tx) validateNoPrivacyZKPSanityWithOutput() (bool, error) {
 
 func (txN Tx) validateSanityDataPrivacyProof() (bool, error) {
 	if len(txN.Proof.GetInputCoins()) > 0 {
-		ok, err := txN.validateInputPrivacy()
+		ok, err := txN.checkDuplicateInput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = txN.validateInputPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}
@@ -519,7 +519,11 @@ func (txN Tx) validateSanityDataPrivacyProof() (bool, error) {
 		}
 	}
 	if len(txN.Proof.GetOutputCoins()) > 0 {
-		ok, err := txN.validateOutputPrivacy()
+		ok, err := txN.checkDuplicateOutput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = txN.validateOutputPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}
@@ -533,7 +537,11 @@ func (txN Tx) validateSanityDataPrivacyProof() (bool, error) {
 
 func (txN Tx) validateSanityDataNoPrivacyProof() (bool, error) {
 	if len(txN.Proof.GetInputCoins()) > 0 {
-		ok, err := txN.validateInputNoPrivacy()
+		ok, err := txN.checkDuplicateInput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = txN.validateInputNoPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}
@@ -543,7 +551,11 @@ func (txN Tx) validateSanityDataNoPrivacyProof() (bool, error) {
 		}
 	}
 	if len(txN.Proof.GetOutputCoins()) > 0 {
-		ok, err := txN.validateOutputNoPrivacy()
+		ok, err := txN.checkDuplicateOutput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = txN.validateOutputNoPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}

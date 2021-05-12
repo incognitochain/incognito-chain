@@ -53,7 +53,7 @@ func NewTxsVerifier(
 func (v *TxsVerifier) LoadCommitment(
 	tx metadata.Transaction,
 	shardViewRetriever metadata.ShardViewRetriever,
-) bool {
+) (bool, error) {
 	sDB := v.txDB
 	if shardViewRetriever != nil {
 		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
@@ -61,15 +61,15 @@ func (v *TxsVerifier) LoadCommitment(
 	err := tx.LoadCommitment(sDB.Copy())
 	if err != nil {
 		Logger.log.Errorf("Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
-		return false
+		return false, err
 	}
-	return true
+	return true, nil
 }
 
 func (v *TxsVerifier) LoadCommitmentForTxs(
 	txs []metadata.Transaction,
 	shardViewRetriever metadata.ShardViewRetriever,
-) bool {
+) (bool, error) {
 	sDB := v.txDB
 	if shardViewRetriever != nil {
 		sDB = shardViewRetriever.GetCopiedTransactionStateDB()
@@ -77,11 +77,11 @@ func (v *TxsVerifier) LoadCommitmentForTxs(
 	for _, tx := range txs {
 		err := tx.LoadCommitment(sDB.Copy())
 		if err != nil {
-			Logger.log.Errorf("[testNewPool] Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
-			return false
+			err = errors.Errorf("Can not load commitment of this tx %v, error: %v\n", tx.Hash().String(), err)
+			return false, err
 		}
 	}
-	return true
+	return true, nil
 }
 
 func (v *TxsVerifier) ValidateTxsSig(
@@ -180,6 +180,10 @@ func (v *TxsVerifier) checkFees(
 }
 
 func (v *TxsVerifier) ValidateWithoutChainstate(tx metadata.Transaction) (bool, error) {
+	if ok, err := tx.VerifySigTx(); (!ok) || (err != nil) {
+		Logger.log.Errorf("Validate tx %v return %v error %v", tx.Hash().String(), ok, err)
+		return ok, err
+	}
 	ok, err := tx.ValidateSanityDataByItSelf()
 	if !ok || err != nil {
 		return ok, err
@@ -203,7 +207,22 @@ func (v *TxsVerifier) ValidateWithChainState(
 	if !ok || err != nil {
 		return ok, err
 	}
-	return tx.ValidateDoubleSpendWithBlockChain(shardViewRetriever.GetCopiedTransactionStateDB())
+	txDB := shardViewRetriever.GetCopiedTransactionStateDB()
+	if meta := tx.GetMetadata(); meta != nil {
+		ok, err = meta.ValidateTxWithBlockChain(
+			tx,
+			chainRetriever,
+			shardViewRetriever,
+			beaconViewRetriever,
+			shardViewRetriever.GetShardID(),
+			txDB,
+		)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return tx.ValidateDoubleSpendWithBlockChain(txDB)
 }
 
 func (v *TxsVerifier) FilterWhitelistTxs(txs []metadata.Transaction) []metadata.Transaction {
@@ -224,28 +243,28 @@ func (v *TxsVerifier) FullValidateTransactions(
 	beaconViewRetriever metadata.BeaconViewRetriever,
 	txs []metadata.Transaction,
 ) (bool, error) {
-	Logger.log.Infof("[testNewPool] Total txs %v\n", len(txs))
+	Logger.log.Infof("Total txs %v\n", len(txs))
+	txs = v.FilterWhitelistTxs(txs)
 	if len(txs) == 0 {
 		return true, nil
 	}
-	txs = v.FilterWhitelistTxs(txs)
+	txsTmp := v.filterSpamStake(txs)
+	if len(txsTmp) != len(txs) {
+		return false, errors.Errorf("This list txs contain double stake/unstake/stop auto stake for the same key")
+	}
 	_, newTxs := v.txPool.CheckValidatedTxs(txs)
-	// fmt.Println("Is Validated")
 	errCh := make(chan error)
-	doneCh := make(chan interface{}, len(txs)+2*len(newTxs))
+	doneCh := make(chan interface{}, len(txs)+len(newTxs))
 	numOfValidGoroutine := 0
 	totalMsgDone := 0
 	timeout := time.After(10 * time.Second)
-	v.LoadCommitmentForTxs(
+	ok, err := v.LoadCommitmentForTxs(
 		txs,
 		shardViewRetriever,
 	)
-	v.ValidateTxsSig(
-		newTxs,
-		errCh,
-		doneCh,
-	)
-	totalMsgDone += len(newTxs)
+	if (!ok) || (err != nil) {
+		return false, errors.Errorf("Can not load commitment for this txs, errors %v", err)
+	}
 	v.validateTxsWithoutChainstate(
 		newTxs,
 		errCh,
@@ -261,7 +280,6 @@ func (v *TxsVerifier) FullValidateTransactions(
 		doneCh,
 	)
 	totalMsgDone += len(txs)
-	// fmt.Println("[testNewPool] wait!")
 	for {
 		select {
 		case err := <-errCh:
@@ -269,7 +287,7 @@ func (v *TxsVerifier) FullValidateTransactions(
 			return false, err
 		case <-doneCh:
 			numOfValidGoroutine++
-			Logger.log.Infof("[testNewPool] %v %v\n", numOfValidGoroutine, len(txs))
+			Logger.log.Debugf(" %v %v\n", numOfValidGoroutine, len(txs))
 			if numOfValidGoroutine == totalMsgDone {
 				ok, err := v.checkDoubleSpendInListTxs(txs)
 				if (!ok) || (err != nil) {
@@ -295,7 +313,7 @@ func (v *TxsVerifier) validateTxsWithoutChainstate(
 			ok, err := v.ValidateWithoutChainstate(target)
 			if !ok || err != nil {
 				if errCh != nil {
-					errCh <- errors.Errorf("[testNewPool] This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
+					errCh <- errors.Errorf("This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
 				}
 			} else {
 				if doneCh != nil {
@@ -327,7 +345,7 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 			)
 			if !ok {
 				if errCh != nil {
-					errCh <- errors.Errorf("[NewPool] This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, errors.Errorf("Transaction fee %v is invalid", target.GetTxFee()))
+					errCh <- errors.Errorf(" This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, errors.Errorf("Transaction fee %v is invalid", target.GetTxFee()))
 				}
 			}
 			ok, err := v.ValidateWithChainState(
@@ -339,7 +357,7 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 			)
 			if !ok || err != nil {
 				if errCh != nil {
-					errCh <- errors.Errorf("[NewPool] This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
+					errCh <- errors.Errorf("This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, err)
 				}
 			} else {
 				if doneCh != nil {
@@ -349,6 +367,39 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 			// <-nWorkers
 		}(tx)
 	}
+}
+
+func (v *TxsVerifier) filterSpamStake(
+	transactions []metadata.Transaction,
+) []metadata.Transaction {
+	res := []metadata.Transaction{}
+	spam := map[string]interface{}{}
+	for _, tx := range transactions {
+		metaType := tx.GetMetadataType()
+		pk := ""
+		switch metaType {
+		case metadata.ShardStakingMeta, metadata.BeaconStakingMeta:
+			if meta, ok := tx.GetMetadata().(*metadata.StakingMetadata); ok {
+				pk = meta.CommitteePublicKey
+			}
+		case metadata.UnStakingMeta:
+			if meta, ok := tx.GetMetadata().(*metadata.UnStakingMetadata); ok {
+				pk = meta.CommitteePublicKey
+			}
+		case metadata.StopAutoStakingMeta:
+			if meta, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata); ok {
+				pk = meta.CommitteePublicKey
+			}
+		}
+		if pk != "" {
+			if _, existed := spam[pk]; existed {
+				continue
+			}
+			spam[pk] = nil
+		}
+		res = append(res, tx)
+	}
+	return res
 }
 
 func (v *TxsVerifier) checkDoubleSpendInListTxs(
