@@ -521,7 +521,7 @@ func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter, newFina
 	}
 
 	for _, v := range allViews {
-		Logger.log.Info("backup beacon view", v.GetHeight(), v.Hash().String())
+		Logger.log.Info("backup beacon view", v.GetHeight(), v.BestBlock.Hash().String())
 	}
 
 	b, _ := json.Marshal(allViews)
@@ -588,7 +588,7 @@ func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID 
 	}
 
 	for _, v := range allViews {
-		Logger.log.Info("backup shard view", v.GetHeight(), v.Hash().String())
+		Logger.log.Info("backup shard view", v.GetHeight(), v.BestBlock.Hash().String())
 	}
 	return rawdbv2.StoreShardBestState(db, shardID, allViews)
 }
