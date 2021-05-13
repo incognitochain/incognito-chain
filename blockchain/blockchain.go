@@ -314,7 +314,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 
 	// Insert new block into beacon chain
 	blockchain.BeaconChain.multiView.AddView(initBeaconBestState)
-	if err := blockchain.BackupBeaconViews(blockchain.GetBeaconChainDatabase(), blockchain.BeaconChain.multiView.GetFinalView()); err != nil {
+	if err := blockchain.BackupBeaconViews(blockchain.GetBeaconChainDatabase(), blockchain.BeaconChain.multiView.GetFinalView(), initBeaconBestState); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.GetBeaconBestState().BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
@@ -507,11 +507,23 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 /*
 Backup all BeaconView into Database
 */
-func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter, newFinalView multiview.View) error {
+func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter, newFinalView multiview.View, newView multiview.View) error {
 	allViews := []*BeaconBestState{}
+	alreadyHas := false
 	for _, v := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS(newFinalView) {
+		if v.GetHash().String() == newView.GetHash().String() {
+			alreadyHas = true
+		}
 		allViews = append(allViews, v.(*BeaconBestState))
 	}
+	if !alreadyHas && newView != nil {
+		allViews = append(allViews, newView.(*BeaconBestState))
+	}
+
+	for _, v := range allViews {
+		Logger.log.Info("backup beacon view", v.GetHeight(), v.Hash().String())
+	}
+
 	b, _ := json.Marshal(allViews)
 	return rawdbv2.StoreBeaconViews(db, b)
 }
@@ -561,12 +573,23 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 /*
 Backup shard views
 */
-func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID byte, newFinalView multiview.View) error {
+func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID byte, newFinalView multiview.View, newView multiview.View) error {
 	allViews := []*ShardBestState{}
+
+	alreadyHas := false
 	for _, v := range blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS(newFinalView) {
+		if v.GetHash().String() == newView.GetHash().String() {
+			alreadyHas = true
+		}
 		allViews = append(allViews, v.(*ShardBestState))
 	}
-	// fmt.Println("debug BackupShardViews", len(allViews))
+	if !alreadyHas && newView != nil {
+		allViews = append(allViews, newView.(*ShardBestState))
+	}
+
+	for _, v := range allViews {
+		Logger.log.Info("backup shard view", v.GetHeight(), v.Hash().String())
+	}
 	return rawdbv2.StoreShardBestState(db, shardID, allViews)
 }
 

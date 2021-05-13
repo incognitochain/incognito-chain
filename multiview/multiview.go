@@ -182,7 +182,7 @@ func (multiView *MultiView) NewViewAfterAdd(newView View) (bestView View, finalV
 	} else {
 		fmt.Println("Block version is not correct")
 	}
-	return
+	return bestView, finalView
 }
 
 //update view whenever there is new view insert into system

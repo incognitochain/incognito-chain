@@ -962,15 +962,15 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 		finalizedBlocks = append(finalizedBlocks, storeBlock.(*types.BeaconBlock))
 		prevHash := storeBlock.GetPrevHash()
-		newFinalView = blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
-		if newFinalView == nil {
+		prevView := blockchain.BeaconChain.multiView.GetViewByHash(prevHash)
+		if prevView == nil {
 			storeBlock, _, err = blockchain.GetBeaconBlockByHash(prevHash)
 			if err != nil {
 				// panic("Database is corrupt")
 				return err
 			}
 		} else {
-			storeBlock = newFinalView.GetBlock()
+			storeBlock = prevView.GetBlock()
 		}
 	}
 
@@ -979,7 +979,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
 	}
 
-	err = blockchain.BackupBeaconViews(batch, newFinalView)
+	err = blockchain.BackupBeaconViews(batch, newFinalView, newBestState)
 	if err != nil {
 		// panic("Backup shard view error")
 		return err

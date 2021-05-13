@@ -1178,18 +1178,18 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			break
 		}
 		prevHash := storeBlock.GetPrevHash()
-		newFinalView = blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
-		if newFinalView == nil {
+		prevView := blockchain.ShardChain[shardID].multiView.GetViewByHash(prevHash)
+		if prevView == nil {
 			storeBlock, _, err = blockchain.GetShardBlockByHashWithShardID(prevHash, shardID)
 			if err != nil {
 				panic("Database is corrupt")
 			}
 		} else {
-			storeBlock = newFinalView.GetBlock()
+			storeBlock = prevView.GetBlock()
 		}
 	}
 
-	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID, newFinalView)
+	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID, newFinalView, newShardState)
 	if err != nil {
 		panic("Backup shard view error")
 	}

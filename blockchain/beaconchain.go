@@ -373,6 +373,8 @@ func (chain *BeaconChain) InsertBlock(block types.BlockInterface, validationMode
 		return err
 	}
 
+	Logger.log.Infof("BEACON | Finish insert block height %+v - hash %+v", blockHeight, blockHash)
+
 	//broadcast after successfully insert
 	chain.Blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, block))
 	chain.Blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, validationFlow.nextView))
