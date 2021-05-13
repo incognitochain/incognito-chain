@@ -490,9 +490,9 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 	broadcastTxs := []*BroadcastTx{}
 	utxoIdx := 0
 	unshieldIdx := 0
-	dustUTXOUsed := 0
-	for utxoIdx < len(utxos)-dustUTXOUsed && unshieldIdx < len(wReqsArr) {
+	for utxoIdx < len(utxos) && unshieldIdx < len(wReqsArr) {
 		// utxoIdx always increases at least 1 in this scope
+		lastUTXOIdx, lastUnshieldIdx := utxoIdx, unshieldIdx
 
 		chosenUTXOs := []*statedb.UTXO{}
 		chosenUnshieldIDs := []string{}
@@ -511,13 +511,13 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 			utxoIdx += 1 // utxoIdx increases
 		} else {
 			// find the first utxo idx that the cumulative sum of utxo amount >= current unshield amount
-			for utxoIdx < len(utxos)-dustUTXOUsed && curSumAmount+utxosArr[utxoIdx].value.GetOutputAmount() < wReqsArr[unshieldIdx].value.GetAmount() {
+			for utxoIdx < len(utxos) && curSumAmount+utxosArr[utxoIdx].value.GetOutputAmount() < wReqsArr[unshieldIdx].value.GetAmount() {
 				curSumAmount += utxosArr[utxoIdx].value.GetOutputAmount()
 				chosenUTXOs = append(chosenUTXOs, utxosArr[utxoIdx].value)
 				utxoIdx += 1 // utxoIdx increases
 				cnt += 1
 			}
-			if utxoIdx < len(utxos)-dustUTXOUsed && p.IsAcceptableTxSize(cnt+1, 1) {
+			if utxoIdx < len(utxos) && p.IsAcceptableTxSize(cnt+1, 1) {
 				curSumAmount += utxosArr[utxoIdx].value.GetOutputAmount()
 				chosenUTXOs = append(chosenUTXOs, utxosArr[utxoIdx].value)
 				utxoIdx += 1
@@ -537,36 +537,73 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 
 			} else {
 				// not enough utxo for last unshield IDs
+				utxoIdx, unshieldIdx = lastUTXOIdx, lastUnshieldIdx
 				break
 			}
 		}
 
-		// use a dust UTXO
-		if utxoIdx < len(utxos)-dustUTXOUsed &&
-			utxosArr[len(utxos)-dustUTXOUsed-1].value.GetOutputAmount() <= dustValueThreshold &&
-			p.IsAcceptableTxSize(len(chosenUTXOs) + 1, len(chosenUnshieldIDs)) {
-			dustUTXOUsed += 1
-			chosenUTXOs = append(chosenUTXOs, utxosArr[len(utxos)-dustUTXOUsed].value)
-		}
-
-		// merge small batches
-		if len(broadcastTxs) > 0 {
-			prevUTXOs := broadcastTxs[len(broadcastTxs)-1].UTXOs
-			prevRequests := broadcastTxs[len(broadcastTxs)-1].UnshieldIDs
-			lenUTXOs := len(prevUTXOs) + len(chosenUTXOs)
-			lenRequests := len(prevRequests) + len(chosenUnshieldIDs)
-			if p.IsAcceptableTxSize(lenUTXOs, lenRequests) {
-				broadcastTxs[len(broadcastTxs)-1] = &BroadcastTx{
-					UTXOs:       append(prevUTXOs, chosenUTXOs...),
-					UnshieldIDs: append(prevRequests, chosenUnshieldIDs...),
-				}
-				continue
-			}
-		}
 		broadcastTxs = append(broadcastTxs, &BroadcastTx{
 			UTXOs:       chosenUTXOs,
 			UnshieldIDs: chosenUnshieldIDs,
 		})
 	}
-	return broadcastTxs
+
+	// merged small batches into bigger batches
+	mergedBatches := []*BroadcastTx{}
+	if len(broadcastTxs) > 0 {
+		mergedBatches = append(mergedBatches, broadcastTxs[0])
+		for idx := 1; idx < len(broadcastTxs); idx++ {
+			mergedIdx := len(mergedBatches) - 1
+			prevUTXOs, prevRequests := mergedBatches[mergedIdx].UTXOs, mergedBatches[mergedIdx].UnshieldIDs
+			curUTXOs, curRequests := broadcastTxs[idx].UTXOs, broadcastTxs[idx].UnshieldIDs
+
+			lenUTXOs := len(prevUTXOs) + len(curUTXOs)
+			lenRequests := len(prevRequests) + len(curRequests)
+			if p.IsAcceptableTxSize(lenUTXOs, lenRequests) {
+				mergedBatches[mergedIdx] = &BroadcastTx{
+					UTXOs:       append(prevUTXOs, curUTXOs...),
+					UnshieldIDs: append(prevRequests, curRequests...),
+				}
+			} else {
+				mergedBatches = append(mergedBatches, &BroadcastTx{
+					UTXOs:       curUTXOs,
+					UnshieldIDs: curRequests,
+				})
+			}
+		}
+	}
+
+	// add a dust UTXO
+	dustUTXOUsed := 0
+	for idx := 0; idx < len(mergedBatches); idx++ {
+		if utxoIdx < len(utxos)-dustUTXOUsed &&
+			utxosArr[len(utxos)-dustUTXOUsed-1].value.GetOutputAmount() <= dustValueThreshold &&
+			p.IsAcceptableTxSize(len(mergedBatches[idx].UTXOs)+1, len(mergedBatches[idx].UnshieldIDs)) {
+			dustUTXOUsed += 1
+			mergedBatches[idx].UTXOs = append(mergedBatches[idx].UTXOs, utxosArr[len(utxos)-dustUTXOUsed].value)
+		}
+	}
+
+	// add small unshield requests while they still can fit in merged batches
+	unshieldAmountMap := map[string]uint64{}
+	for _, req := range waitingUnshieldReqs {
+		unshieldAmountMap[req.GetUnshieldID()] = p.ConvertIncToExternalAmount(req.GetAmount())
+	}
+	for idx := 0; idx < len(mergedBatches); idx++ {
+		sumUTXOAmount, sumRequestAmount := uint64(0), uint64(0)
+		for _, val := range mergedBatches[idx].UTXOs {
+			sumUTXOAmount += val.GetOutputAmount()
+		}
+		for _, val := range mergedBatches[idx].UnshieldIDs {
+			sumRequestAmount += unshieldAmountMap[val]
+		}
+		for unshieldIdx < len(wReqsArr) && sumRequestAmount+wReqsArr[unshieldIdx].value.GetAmount() <= sumUTXOAmount &&
+			p.IsAcceptableTxSize(len(mergedBatches[idx].UTXOs), len(mergedBatches[idx].UnshieldIDs)+1) {
+			sumRequestAmount += wReqsArr[unshieldIdx].value.GetAmount()
+			mergedBatches[idx].UnshieldIDs = append(mergedBatches[idx].UnshieldIDs, wReqsArr[unshieldIdx].value.GetUnshieldID())
+			unshieldIdx += 1
+		}
+	}
+
+	return mergedBatches
 }
