@@ -83,9 +83,19 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 
+	Logger.log.Info("[dcs] cfg:", cfg)
+	param := config.LoadParam()
+	Logger.log.Info("[dcs] param:", param)
+
+	if cfg.IsLocal {
+		activeNetParams = &testNetParams
+	}
+
 	//init key & param
 	blockchain.ReadKey(nil, nil)
 	blockchain.SetupParam()
+
+	Logger.log.Info("[dcs] activeNetParams:", activeNetParams)
 
 	common.MaxShardNumber = activeNetParams.ActiveShards
 	common.TIMESLOT = activeNetParams.Timeslot

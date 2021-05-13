@@ -544,7 +544,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			if err != nil {
 				return err
 			}
-			Logger.log.Infof("Init Missing Signature Counter, %+v, height %+v", beaconState.missingSignatureCounter, beaconState.BeaconHeight)
 		}
 	}
 	return nil

@@ -472,6 +472,7 @@ func (p *Params) CreateGenesisBlocks() {
 	case Testnet2:
 		blockTime = Testnet2GenesisBlockTime
 	}
+
 	p.GenesisBeaconBlock = CreateGenesisBeaconBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
 	p.GenesisShardBlock = CreateGenesisShardBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
 }

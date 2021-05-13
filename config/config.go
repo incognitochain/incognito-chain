@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/jessevdk/go-flags"
 	"github.com/spf13/viper"
 )
 
@@ -21,87 +22,87 @@ func Config() *config {
 
 type config struct {
 	//Basic config
-	DataDir     string `yaml:"data_dir" short:"d" long:"datadir" description:"Directory to store data"`
-	DatabaseDir string `yaml:"database_dir" short:"d" long:"datapre" description:"Database dir"`
-	MempoolDir  string `yaml:"mempool_dir" short:"m" long:"mempooldir" description:"Mempool Directory"`
-	LogDir      string `yaml:"log_dir" short:"l" long:"logdir" description:"Directory to log output."`
-	LogLevel    string `yaml:"log_level" long:"loglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
-	LogFileName string `yaml:"log_file_name" long:"logfilename" description:"log file name"`
+	DataDir     string `mapstructure:"data_dir" short:"d" long:"datadir" description:"Directory to store data"`
+	DatabaseDir string `mapstructure:"database_dir" short:"d" long:"datapre" description:"Database dir"`
+	MempoolDir  string `mapstructure:"mempool_dir" short:"m" long:"mempooldir" description:"Mempool Directory"`
+	LogDir      string `mapstructure:"log_dir" short:"l" long:"logdir" description:"Directory to log output."`
+	LogLevel    string `mapstructure:"log_level" long:"loglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
+	LogFileName string `mapstructure:"log_file_name" long:"logfilename" description:"log file name"`
 
 	//Peer Config
-	AddPeers             []string `yaml:"add_peers" short:"a" long:"addpeer" description:"Add a peer to connect with at startup"`
-	ConnectPeers         []string `yaml:"connect_peers" short:"c" long:"connect" description:"Connect only to the specified peers at startup"`
-	DisableListen        bool     `yaml:"disable_listen" long:"nolisten" description:"Disable listening for incoming connections -- NOTE: Listening is automatically disabled if the --connect or --proxy options are used without also specifying listen interfaces via --listen"`
-	Listener             string   `yaml:"listener" long:"listen" description:"Add an interface/port to listen for connections (default all interfaces port: 9333, testnet: 9444)"`
-	MaxPeers             int      `yaml:"max_peers" long:"maxpeers" description:"Max number of inbound and outbound peers"`
-	MaxOutPeers          int      `yaml:"max_out_peers" long:"maxoutpeers" description:"Max number of outbound peers"`
-	MaxInPeers           int      `yaml:"max_in_peers" long:"maxinpeers" description:"Max number of inbound peers"`
-	DiscoverPeers        bool     `yaml:"discover_peers" long:"discoverpeers" description:"Enable discover peers"`
-	DiscoverPeersAddress string   `yaml:"discover_peers_address" long:"discoverpeersaddress" description:"Url to connect discover peers server"`
-	MaxPeersSameShard    int      `yaml:"max_peers_same_shard" long:"maxpeersameshard" description:"Max peers in same shard for connection"`
-	MaxPeersOtherShard   int      `yaml:"max_pmax_peers_other_shard" long:"maxpeerothershard" description:"Max peers in other shard for connection"`
-	MaxPeersOther        int      `yaml:"max_peers_other" long:"maxpeerother" description:"Max peers in other for connection"`
-	MaxPeersNoShard      int      `yaml:"max_peers_no_shard" long:"maxpeernoshard" description:"Max peers in no shard for connection"`
-	MaxPeersBeacon       int      `yaml:"max_peers_beacon" long:"maxpeerbeacon" description:"Max peers in beacon for connection"`
+	AddPeers             []string `mapstructure:"add_peers" short:"a" long:"addpeer" description:"Add a peer to connect with at startup"`
+	ConnectPeers         []string `mapstructure:"connect_peers" short:"c" long:"connect" description:"Connect only to the specified peers at startup"`
+	DisableListen        bool     `mapstructure:"disable_listen" long:"nolisten" description:"Disable listening for incoming connections -- NOTE: Listening is automatically disabled if the --connect or --proxy options are used without also specifying listen interfaces via --listen"`
+	Listener             string   `mapstructure:"listener" long:"listen" description:"Add an interface/port to listen for connections (default all interfaces port: 9333, testnet: 9444)"`
+	MaxPeers             int      `mapstructure:"max_peers" long:"maxpeers" description:"Max number of inbound and outbound peers"`
+	MaxOutPeers          int      `mapstructure:"max_out_peers" long:"maxoutpeers" description:"Max number of outbound peers"`
+	MaxInPeers           int      `mapstructure:"max_in_peers" long:"maxinpeers" description:"Max number of inbound peers"`
+	DiscoverPeers        bool     `mapstructure:"discover_peers" long:"discoverpeers" description:"Enable discover peers"`
+	DiscoverPeersAddress string   `mapstructure:"discover_peers_address" long:"discoverpeersaddress" description:"Url to connect discover peers server"`
+	MaxPeersSameShard    int      `mapstructure:"max_peers_same_shard" long:"maxpeersameshard" description:"Max peers in same shard for connection"`
+	MaxPeersOtherShard   int      `mapstructure:"max_pmax_peers_other_shard" long:"maxpeerothershard" description:"Max peers in other shard for connection"`
+	MaxPeersOther        int      `mapstructure:"max_peers_other" long:"maxpeerother" description:"Max peers in other for connection"`
+	MaxPeersNoShard      int      `mapstructure:"max_peers_no_shard" long:"maxpeernoshard" description:"Max peers in no shard for connection"`
+	MaxPeersBeacon       int      `mapstructure:"max_peers_beacon" long:"maxpeerbeacon" description:"Max peers in beacon for connection"`
 
 	//Rpc Config
-	ExternalAddress             string   `yaml:"external_address" long:"externaladdress" description:"External address"`
-	RPCDisableAuth              bool     `yaml:"rpc_disable_auth" long:"norpcauth" description:"Disable RPC authorization by username/password"`
-	RPCUser                     string   `yaml:"rpc_user" short:"u" long:"rpcuser" description:"Username for RPC connections"`
-	RPCPass                     string   `yaml:"rpc_pass" short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
-	RPCLimitUser                string   `yaml:"rpc_limit_user" long:"rpclimituser" description:"Username for limited RPC connections"`
-	RPCLimitPass                string   `yaml:"rpc_limit_pass" long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
-	RPCListeners                []string `yaml:"rpc_listeners" long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 9334, testnet: 9334)"`
-	RPCWSListeners              []string `yaml:"rpc_ws_listeners" long:"rpcwslisten" description:"Add an interface/port to listen for RPC Websocket connections (default port: 19334, testnet: 19334)"`
-	RPCCert                     string   `yaml:"rpc_cert" long:"rpccert" description:"File containing the certificate file"`
-	RPCKey                      string   `yaml:"rpc_key" long:"rpckey" description:"File containing the certificate key"`
-	RPCLimitRequestPerDay       int      `yaml:"rpc_limit_request_per_day" long:"rpclimitrequestperday" description:"Max request per day by remote address"`
-	RPCLimitRequestErrorPerHour int      `yaml:"rpc_limit_request_error_per_hour" long:"rpclimitrequesterrorperhour" description:"Max request error per hour by remote address"`
-	RPCMaxClients               int      `yaml:"rpc_max_clients" long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
-	RPCMaxWSClients             int      `yaml:"rpc_max_ws_clients" long:"rpcmaxwsclients" description:"Max number of RPC clients for standard connections"`
-	RPCQuirks                   bool     `yaml:"rpc_quirks" long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
-	DisableRPC                  bool     `yaml:"disable_rpc" long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
-	DisableTLS                  bool     `yaml:"disable_tls" long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
-	Proxy                       string   `yaml:"proxy" long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
+	ExternalAddress             string   `mapstructure:"external_address" long:"externaladdress" description:"External address"`
+	RPCDisableAuth              bool     `mapstructure:"rpc_disable_auth" long:"norpcauth" description:"Disable RPC authorization by username/password"`
+	RPCUser                     string   `mapstructure:"rpc_user" yaml:"rpc_user" short:"u" long:"rpcuser" description:"Username for RPC connections"`
+	RPCPass                     string   `mapstructure:"rpc_pass" short:"P" long:"rpcpass" default-mask:"-" description:"Password for RPC connections"`
+	RPCLimitUser                string   `mapstructure:"rpc_limit_user" long:"rpclimituser" description:"Username for limited RPC connections"`
+	RPCLimitPass                string   `mapstructure:"rpc_limit_pass" long:"rpclimitpass" default-mask:"-" description:"Password for limited RPC connections"`
+	RPCListeners                []string `mapstructure:"rpc_listeners" long:"rpclisten" description:"Add an interface/port to listen for RPC connections (default port: 9334, testnet: 9334)"`
+	RPCWSListeners              []string `mapstructure:"rpc_ws_listeners" long:"rpcwslisten" description:"Add an interface/port to listen for RPC Websocket connections (default port: 19334, testnet: 19334)"`
+	RPCCert                     string   `mapstructure:"rpc_cert" long:"rpccert" description:"File containing the certificate file"`
+	RPCKey                      string   `mapstructure:"rpc_key" long:"rpckey" description:"File containing the certificate key"`
+	RPCLimitRequestPerDay       int      `mapstructure:"rpc_limit_request_per_day" long:"rpclimitrequestperday" description:"Max request per day by remote address"`
+	RPCLimitRequestErrorPerHour int      `mapstructure:"rpc_limit_request_error_per_hour" long:"rpclimitrequesterrorperhour" description:"Max request error per hour by remote address"`
+	RPCMaxClients               int      `mapstructure:"rpc_max_clients" long:"rpcmaxclients" description:"Max number of RPC clients for standard connections"`
+	RPCMaxWSClients             int      `mapstructure:"rpc_max_ws_clients" long:"rpcmaxwsclients" description:"Max number of RPC clients for standard connections"`
+	RPCQuirks                   bool     `mapstructure:"rpc_quirks" long:"rpcquirks" description:"Mirror some JSON-RPC quirks of coin Core -- NOTE: Discouraged unless interoperability issues need to be worked around"`
+	DisableRPC                  bool     `mapstructure:"disable_rpc" long:"norpc" description:"Disable built-in RPC server -- NOTE: The RPC server is disabled by default if no rpcuser/rpcpass or rpclimituser/rpclimitpass is specified"`
+	DisableTLS                  bool     `mapstructure:"disable_tls" long:"notls" description:"Disable TLS for the RPC server -- NOTE: This is only allowed if the RPC server is bound to localhost"`
+	Proxy                       string   `mapstructure:"proxy" long:"proxy" description:"Connect via SOCKS5 proxy (eg. 127.0.0.1:9050)"`
 
 	//Network Config
-	IsLocal        bool `long:"local" description:"Use the local network"`
-	IsTestNet      bool `long:"istestnet" description:"Use the testnet network"`
-	IsMainNet      bool `long:"ismainnet" description:"Use the mainnet network"`
-	TestNetVersion int  `long:"testnetversion" description:"Use the test network"`
+	IsLocal        bool `description:"Use the local network"`
+	IsTestNet      bool `description:"Use the testnet network"`
+	IsMainNet      bool `description:"Use the mainnet network"`
+	TestNetVersion int  `description:"Use the test network"`
 
-	RelayShards string `yaml:"relay_shards" long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
+	RelayShards string `mapstructure:"relay_shards" long:"relayshards" description:"set relay shards of this node when in 'relay' mode if noderole is auto then it only sync shard data when user is a shard producer/validator"`
 	// For Wallet
-	EnableWallet     bool   `yaml:"enable_wallet" long:"enablewallet" description:"Enable wallet"`
-	WalletName       string `yaml:"wallet_name" long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
-	WalletPassphrase string `yaml:"wallet_passphrase" long:"walletpassphrase" description:"Wallet passphrase"`
-	WalletAutoInit   bool   `yaml:"wallet_auto_init" long:"walletautoinit" description:"Init wallet automatically if not exist"`
-	WalletShardID    int    `yaml:"wallet_shard_id" long:"walletshardid" description:"ShardID which wallet use to create account"`
+	EnableWallet     bool   `mapstructure:"enable_wallet" long:"enablewallet" description:"Enable wallet"`
+	WalletName       string `mapstructure:"wallet_name" long:"wallet" description:"Wallet Database Name file, default is 'wallet'"`
+	WalletPassphrase string `mapstructure:"wallet_passphrase" long:"walletpassphrase" description:"Wallet passphrase"`
+	WalletAutoInit   bool   `mapstructure:"wallet_auto_init" long:"walletautoinit" description:"Init wallet automatically if not exist"`
+	WalletShardID    int    `mapstructure:"wallet_shard_id" long:"walletshardid" description:"ShardID which wallet use to create account"`
 
 	//Fast start up config
-	FastStartup bool `yaml:"fast_start_up" long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
+	FastStartup bool `mapstructure:"fast_start_up" long:"faststartup" description:"Load existed shard/chain dependencies instead of rebuild from block data"`
 
 	//Txpool config
-	TxPoolTTL   uint   `yaml:"tx_pool_ttl" long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
-	TxPoolMaxTx uint64 `yaml:"tx_pool_max_tx" long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
-	LimitFee    uint64 `yaml:"limit_fee" long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.00 PRV"`
+	TxPoolTTL   uint   `mapstructure:"tx_pool_ttl" long:"txpoolttl" description:"Set Time To Live (TTL) Value for transaction that enter pool"`
+	TxPoolMaxTx uint64 `mapstructure:"tx_pool_max_tx" long:"txpoolmaxtx" description:"Set Maximum number of transaction in pool"`
+	LimitFee    uint64 `mapstructure:"limit_fee" long:"limitfee" description:"Limited fee for tx(per Kb data), default is 0.00 PRV"`
 
 	//Mempool config
-	IsLoadFromMempool bool `yaml:"is_load_from_mem_pool" long:"loadmempool" description:"Load transactions from Mempool database"`
-	IsPersistMempool  bool `yaml:"is_persist_mem_pool" long:"persistmempool" description:"Persistence transaction in memepool database"`
+	IsLoadFromMempool bool `mapstructure:"is_load_from_mem_pool" long:"loadmempool" description:"Load transactions from Mempool database"`
+	IsPersistMempool  bool `mapstructure:"is_persist_mem_pool" long:"persistmempool" description:"Persistence transaction in memepool database"`
 
 	//Mining config
-	EnableMining bool   `yaml:"enable_mining" long:"mining" description:"enable mining"`
-	MiningKeys   string `yaml:"mining_keys" long:"miningkeys" description:"keys used for different consensus algorigthm"`
-	PrivateKey   string `yaml:"private_key" long:"privatekey" description:"your wallet privatekey"`
-	Accelerator  bool   `yaml:"accelerator" long:"accelerator" description:"Relay Node Configuration For Consensus"`
+	EnableMining bool   `mapstructure:"enable_mining" long:"mining" description:"enable mining"`
+	MiningKeys   string `mapstructure:"mining_keys" long:"miningkeys" description:"keys used for different consensus algorigthm"`
+	PrivateKey   string `mapstructure:"private_key" long:"privatekey" description:"your wallet privatekey"`
+	Accelerator  bool   `mapstructure:"accelerator" long:"accelerator" description:"Relay Node Configuration For Consensus"`
 
 	// Highway
-	Libp2pPrivateKey string `yaml:"p2p_private_key" long:"libp2pprivatekey" description:"Private key used to create node's PeerID, empty to generate random key each run"`
+	Libp2pPrivateKey string `mapstructure:"p2p_private_key" long:"libp2pprivatekey" description:"Private key used to create node's PeerID, empty to generate random key each run"`
 
 	//backup
-	PreloadAddress string `yaml:"preload_address" long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
-	ForceBackup    bool   `yaml:"force_backup" long:"forcebackup" description:"Force node to backup"`
+	PreloadAddress string `mapstructure:"preload_address" yaml:"preload_address" long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
+	ForceBackup    bool   `mapstructure:"force_backup" long:"forcebackup" description:"Force node to backup"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
@@ -410,17 +411,30 @@ func LoadConfig() *config {
 }
 
 func (c *config) loadConfig(network string) {
-	//read config from file
-	viper.SetConfigName(common.GetEnv(ConfigFileKey, DefaultConfigFile))         // name of config file (without extension)
-	viper.SetConfigType(common.GetEnv(ConfigFileTypeKey, DefaultConfigFileType)) // REQUIRED if the config file does not have the extension in the name
-	viper.AddConfigPath(
-		filepath.Join(
-			common.GetEnv(ConfigDirKey, DefaultConfigDir), network,
-		) + "/",
-	) // optionally look for config in the working directory
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			// Config file was found but another error was produced
+	mode := common.GetEnv(ConfigModeKey, FileConfigMode)
+	if mode == FileConfigMode {
+		//read config from file
+		viper.SetConfigName(common.GetEnv(ConfigFileKey, DefaultConfigFile))                       // name of config file (without extension)
+		viper.SetConfigType(common.GetEnv(ConfigFileTypeKey, DefaultConfigFileType))               // REQUIRED if the config file does not have the extension in the name
+		viper.AddConfigPath(filepath.Join(common.GetEnv(ConfigDirKey, DefaultConfigDir), network)) // optionally look for config in the working directory
+		if err := viper.ReadInConfig(); err != nil {
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				// Config file was found but another error was produced
+				if err != nil {
+					panic(err)
+				}
+			}
+		} else {
+			err = viper.Unmarshal(&c)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+	if mode == FlagConfigMode {
+		parser := flags.NewParser(c, flags.Default)
+		_, err := parser.Parse()
+		if err != nil {
 			panic(err)
 		}
 	}

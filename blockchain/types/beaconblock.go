@@ -9,9 +9,9 @@ import (
 )
 
 type BeaconBlock struct {
-	ValidationData string       `json:"ValidationData"`
-	Body           BeaconBody   `yaml:"body"`
-	Header         BeaconHeader `yaml:"header"`
+	ValidationData string `json:"ValidationData"`
+	Body           BeaconBody
+	Header         BeaconHeader
 }
 
 type BeaconBody struct {

@@ -9,7 +9,7 @@ genesis_param:
       Sig: "oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA=="
       Proof: "AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA="
       PubKeyLastByteSender: 0
-  fee_per_tx_kb: 0
+  fee_per_tx_kb: 1
   consensus_algorithm: "bls"
   block_timestamp: "2019-11-29T00:00:00.000Z"
   tx_stake: "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d"
@@ -23,10 +23,10 @@ committee_size:
   init_beacon_committee_size: 4
   number_of_fixed_shard_block_validators: 4
 block_time:
-  min_shard_block_interval: 10000000000
-  max_shard_block_creation: 8000000000
-  min_beacon_block_interval: 10000000000
-  max_beacon_block_creation: 6000000000
+  min_shard_block_interval: 10
+  max_shard_block_creation: 8
+  min_beacon_block_interval: 10
+  max_beacon_block_creation: 6
 staking_amount_shard: 1750000000000
 active_shards: 2
 basic_reward: 400000000
@@ -58,7 +58,7 @@ enable_feature_flags:
   - 0: 1
   - 1: 0
 portal_param:
-  bc_height_break_point_portal_v3: 22300000300000
+  bc_height_break_point_portal_v3: 2300000
   portal_param_v3:
     time_out_custodian_return_pub_token: 900
     time_out_waiting_porting_request: 900
