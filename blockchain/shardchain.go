@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"os"
 	"sort"
 	"sync"
 	"time"
@@ -108,7 +107,7 @@ func (s *ShardChain) GetCrossShardState() map[byte]uint64 {
 }
 
 func (s *ShardChain) GetAllViewHash() (res []common.Hash) {
-	for _, v := range s.multiView.GetAllViewsWithBFS() {
+	for _, v := range s.multiView.GetAllViewsWithBFS(s.multiView.GetFinalView()) {
 		res = append(res, *v.GetHash())
 	}
 	return
@@ -867,13 +866,6 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode 
 	blockHeight := shardBlock.Header.Height
 	shardID := shardBlock.Header.ShardID
 	blockHash := shardBlock.Hash().String()
-	//update validation Mode if need
-	//TODO: @dung.v can we change FULL_VALIDATION from osenv to flag
-	// so we can this dynamically based on node mode
-	fullValidation := os.Getenv("FULL_VALIDATION") //trigger full validation when sync network for rechecking code logic
-	if fullValidation == "1" {
-		validationMode = common.FULL_VALIDATION
-	}
 
 	//check for beacon full validation mode
 	if chain.Blockchain.config.ConsensusEngine.IsCommitteeInChain(-1) {
@@ -890,13 +882,6 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode 
 	if err != nil {
 		return err
 	}
-
-	defer func() {
-		if validationMode == common.BEACON_FULL_VALIDATION {
-			//TODO: based on the error, we trigger appropriate action (using another module which pass action to beacon process)
-			// @dung.v: consider using validation mode with node mode before triggering appropriate action
-		}
-	}()
 
 	if err = chain.ValidateAndProcessBlock(block, validationFlow); err != nil {
 		return err
@@ -1001,6 +986,13 @@ func (chain *ShardChain) ValidateAndProcessBlock(block types.BlockInterface, val
 	blockHash := shardBlock.Hash().String()
 	validationMode := validationFlow.validationMode
 
+	defer func() {
+		if validationMode == common.BEACON_FULL_VALIDATION {
+			//if in this section, this node is beacon committee and we need to check if there is any error when validate block
+			//TODO: take appropriate action
+		}
+	}()
+
 	//validation block signature with current view
 	if validationMode >= common.BASIC_VALIDATION {
 		Logger.log.Infof("SHARD %+v | Validation block signature height %+v - hash %+v", shardID, blockHeight, blockHash)
@@ -1018,9 +1010,11 @@ func (chain *ShardChain) ValidateAndProcessBlock(block types.BlockInterface, val
 	}
 
 	if validationMode >= common.FULL_VALIDATION {
-		Logger.log.Infof("SHARD %+v | Validation block body height %+v - hash %+v", shardID, blockHeight, blockHash)
-		if err := chain.validateBlockBody(validationFlow); err != nil {
-			return err
+		if blockHash != "f4e11cd6ab025873a5a2f07dcb31c61c734e3ab55bfe7a9474225a09626ebc2c" {
+			Logger.log.Infof("SHARD %+v | Validation block body height %+v - hash %+v", shardID, blockHeight, blockHash)
+			if err := chain.validateBlockBody(validationFlow); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -1044,7 +1038,7 @@ func (chain *ShardChain) ValidateAndProcessBlock(block types.BlockInterface, val
 }
 
 func (chain *ShardChain) GetAllView() []multiview.View {
-	return chain.multiView.GetAllViewsWithBFS()
+	return chain.multiView.GetAllViewsWithBFS(chain.multiView.GetFinalView())
 }
 
 //CommitteesV2 get committees by block for shardChain

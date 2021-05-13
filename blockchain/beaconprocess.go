@@ -724,7 +724,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	beaconBlock *types.BeaconBlock,
 	committeeChange *committeestate.CommitteeChange,
 ) error {
-	startTimeProcessStoreBeaconBlock := time.Now()
+
 	Logger.log.Debugf("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, beaconBlock.Header.Hash())
 	blockHash := beaconBlock.Header.Hash()
 
@@ -945,10 +945,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 
-	blockchain.BeaconChain.multiView.AddView(newBestState, false)
+	_, newFinalView := blockchain.BeaconChain.multiView.NewViewAfterAdd(newBestState)
 	blockchain.beaconViewCache.Add(blockHash, newBestState) // add to cache,in case we need past view to validate shard block tx
-
-	newFinalView := blockchain.BeaconChain.multiView.GetUnCommitFinalView()
 
 	storeBlock := newFinalView.GetBlock()
 
@@ -980,8 +978,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		Logger.log.Debug("process beacon block", finalizedBlocks[i].Header.Height)
 		processBeaconForConfirmmingCrossShard(blockchain, finalizedBlocks[i], newBestState.LastCrossShardState)
 	}
-	blockchain.BeaconChain.multiView.Commit()
-	err = blockchain.BackupBeaconViews(batch)
+
+	err = blockchain.BackupBeaconViews(batch, newFinalView)
 	if err != nil {
 		// panic("Backup shard view error")
 		return err
@@ -990,28 +988,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err := batch.Write(); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
-	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
-
-	if !blockchain.config.ChainParams.IsBackup {
-		return nil
-	}
-	if blockchain.IsLastBeaconHeightInEpoch(newBestState.GetHeight() + 1) {
-
-		err := blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-		if err != nil {
-			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-			return nil
-		}
-
-		err = blockchain.config.BTCChain.BackupDB(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
-		if err != nil {
-			blockchain.config.BTCChain.RemoveBackup(fmt.Sprintf("../backup/btc/%d", newBestState.Epoch))
-			blockchain.GetBeaconChainDatabase().RemoveBackup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
-			return nil
-		}
-
-	}
-
+	blockchain.BeaconChain.multiView.AddView(newBestState)
 	return nil
 }
 

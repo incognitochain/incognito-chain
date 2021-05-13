@@ -999,9 +999,8 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	committeeChange *committeestate.CommitteeChange,
 	beaconBlocks []*types.BeaconBlock,
 ) error {
-	startTimeProcessStoreShardBlock := time.Now()
+
 	shardID := shardBlock.Header.ShardID
-	blockHeight := shardBlock.Header.Height
 	blockHash := shardBlock.Header.Hash()
 
 	if len(shardBlock.Body.CrossTransactions) != 0 {
@@ -1166,11 +1165,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
-	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState, false)
-	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
-
-	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
-	newFinalView := blockchain.ShardChain[shardID].multiView.GetUnCommitFinalView()
+	_, newFinalView := blockchain.ShardChain[shardBlock.Header.ShardID].multiView.NewViewAfterAdd(newShardState)
 
 	storeBlock := newFinalView.GetBlock()
 
@@ -1194,8 +1189,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		}
 	}
 
-	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.Commit()
-	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID)
+	err = blockchain.BackupShardViews(batchData, shardBlock.Header.ShardID, newFinalView)
 	if err != nil {
 		panic("Backup shard view error")
 	}
@@ -1203,27 +1197,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err := batchData.Write(); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
+	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState)
 
-	if !blockchain.config.ChainParams.IsBackup {
-		return nil
-	}
+	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
+	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 
-	backupPoint := false
-	for _, beaconBlock := range beaconBlocks {
-		if blockchain.IsLastBeaconHeightInEpoch(beaconBlock.GetHeight() + 1) {
-			backupPoint = true
-		}
-	}
-
-	if backupPoint {
-		err := blockchain.GetShardChainDatabase(newShardState.ShardID).Backup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
-		if err != nil {
-			blockchain.GetShardChainDatabase(newShardState.ShardID).RemoveBackup(fmt.Sprintf("../../backup/shard%d/%d", newShardState.ShardID, newShardState.Epoch))
-		}
-	}
-
-	shardStoreBlockTimer.UpdateSince(startTimeProcessStoreShardBlock)
-	Logger.log.Infof("SHARD %+v | 🔎 %d transactions in block height %+v \n", shardBlock.Header.ShardID, len(shardBlock.Body.Transactions), blockHeight)
 	return nil
 }
 

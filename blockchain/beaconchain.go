@@ -41,7 +41,7 @@ func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, bl
 }
 
 func (chain *BeaconChain) GetAllViewHash() (res []common.Hash) {
-	for _, v := range chain.multiView.GetAllViewsWithBFS() {
+	for _, v := range chain.multiView.GetAllViewsWithBFS(chain.multiView.GetFinalView()) {
 		res = append(res, *v.GetHash())
 	}
 	return
@@ -738,7 +738,7 @@ func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (types.BlockInterfa
 }
 
 func (chain *BeaconChain) GetAllView() []multiview.View {
-	return chain.multiView.GetAllViewsWithBFS()
+	return chain.multiView.GetAllViewsWithBFS(chain.multiView.GetFinalView())
 }
 
 //CommitteesByShardID ...

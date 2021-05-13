@@ -31,10 +31,6 @@ type MultiView struct {
 	//state
 	finalView View
 	bestView  View
-
-	//commitFinalView
-	commitFinalView View
-	commitBestView  View
 }
 
 func NewMultiView() *MultiView {
@@ -62,6 +58,7 @@ func NewMultiView() *MultiView {
 
 }
 
+//this is shallow copy!
 func (multiView *MultiView) Clone() *MultiView {
 	s := NewMultiView()
 	for h, v := range multiView.viewByHash {
@@ -72,8 +69,6 @@ func (multiView *MultiView) Clone() *MultiView {
 	}
 	s.finalView = multiView.finalView
 	s.bestView = multiView.bestView
-	s.commitBestView = multiView.commitBestView
-	s.commitFinalView = multiView.commitFinalView
 	return s
 }
 
@@ -106,14 +101,12 @@ func (multiView *MultiView) GetViewByHash(hash common.Hash) View {
 }
 
 //Only add view if view is validated (at least enough signature)
-func (multiView *MultiView) AddView(view View, commit bool) bool {
+func (multiView *MultiView) AddView(view View) bool {
 	res := make(chan bool)
 	multiView.actionCh <- func() {
 		if len(multiView.viewByHash) == 0 { //if no view in map, this is init view -> always allow
 			multiView.viewByHash[*view.GetHash()] = view
 			multiView.updateViewState(view)
-			multiView.commitFinalView = multiView.finalView
-			multiView.commitBestView = multiView.bestView
 			res <- true
 			return
 		} else if _, ok := multiView.viewByHash[*view.GetHash()]; !ok { //otherwise, if view is not yet inserted
@@ -121,10 +114,6 @@ func (multiView *MultiView) AddView(view View, commit bool) bool {
 				multiView.viewByHash[*view.GetHash()] = view
 				multiView.viewByPrevHash[*view.GetPreviousHash()] = append(multiView.viewByPrevHash[*view.GetPreviousHash()], view)
 				multiView.updateViewState(view)
-				if commit {
-					multiView.commitFinalView = multiView.finalView
-					multiView.commitBestView = multiView.bestView
-				}
 				res <- true
 				return
 			}
@@ -135,24 +124,65 @@ func (multiView *MultiView) AddView(view View, commit bool) bool {
 }
 
 func (multiView *MultiView) GetBestView() View {
-	return multiView.commitBestView
-}
-
-func (multiView *MultiView) GetFinalView() View {
-	return multiView.commitFinalView
-}
-
-func (multiView *MultiView) GetUnCommitBestView() View {
 	return multiView.bestView
 }
 
-func (multiView *MultiView) GetUnCommitFinalView() View {
+func (multiView *MultiView) GetFinalView() View {
 	return multiView.finalView
 }
 
-func (multiView *MultiView) Commit() {
-	multiView.commitFinalView = multiView.finalView
-	multiView.commitBestView = multiView.bestView
+func (multiView *MultiView) NewViewAfterAdd(newView View) (bestView View, finalView View) {
+
+	finalView = multiView.finalView
+	bestView = multiView.bestView
+
+	if multiView.finalView == nil {
+		multiView.bestView = newView
+		multiView.finalView = newView
+
+		finalView = multiView.finalView
+		bestView = multiView.bestView
+
+		return
+	}
+
+	//update bestView
+	if newView.GetHeight() > multiView.bestView.GetHeight() {
+		bestView = newView
+	}
+
+	//get best view with min produce time
+	if newView.GetHeight() == bestView.GetHeight() && newView.GetBlock().GetProduceTime() < bestView.GetBlock().GetProduceTime() {
+		bestView = newView
+	}
+
+	if newView.GetBlock().GetVersion() == 1 {
+		//update finalView: consensus 1
+		prev1Hash := bestView.GetPreviousHash()
+		if prev1Hash == nil {
+			return
+		}
+		prev1View := multiView.viewByHash[*prev1Hash]
+		if prev1View == nil {
+			return
+		}
+		finalView = prev1View
+	} else if newView.GetBlock().GetVersion() >= 2 {
+		////update finalView: consensus 2
+		prev1Hash := bestView.GetPreviousHash()
+		prev1View := multiView.viewByHash[*prev1Hash]
+		if prev1View == nil || finalView.GetHeight() == prev1View.GetHeight() {
+			return
+		}
+		bestViewTimeSlot := common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
+			finalView = prev1View
+		}
+	} else {
+		fmt.Println("Block version is not correct")
+	}
+	return
 }
 
 //update view whenever there is new view insert into system
@@ -163,56 +193,15 @@ func (multiView *MultiView) updateViewState(newView View) {
 			delete(multiView.viewByPrevHash, *multiView.finalView.GetPreviousHash())
 		}
 	}()
-
-	if multiView.finalView == nil {
-		multiView.bestView = newView
-		multiView.finalView = newView
-		return
-	}
-
-	//update bestView
-	if newView.GetHeight() > multiView.bestView.GetHeight() {
-		multiView.bestView = newView
-	}
-
-	//get bestview with min produce time
-	if newView.GetHeight() == multiView.bestView.GetHeight() && newView.GetBlock().GetProduceTime() < multiView.bestView.GetBlock().GetProduceTime() {
-		multiView.bestView = newView
-	}
-
-	if newView.GetBlock().GetVersion() == 1 {
-		//update finalView: consensus 1
-		prev1Hash := multiView.bestView.GetPreviousHash()
-		if prev1Hash == nil {
-			return
-		}
-		prev1View := multiView.viewByHash[*prev1Hash]
-		if prev1View == nil {
-			return
-		}
-		multiView.finalView = prev1View
-	} else if newView.GetBlock().GetVersion() >= 2 {
-		////update finalView: consensus 2
-		prev1Hash := multiView.bestView.GetPreviousHash()
-		prev1View := multiView.viewByHash[*prev1Hash]
-		if prev1View == nil || multiView.finalView.GetHeight() == prev1View.GetHeight() {
-			return
-		}
-		bestViewTimeSlot := common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProposeTime())
-		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
-		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
-			multiView.finalView = prev1View
-		}
-	} else {
-		fmt.Println("Block version is not correct")
-	}
-
-	//fmt.Println("Debug bestview", multiView.bestView.GetHeight())
+	multiView.bestView, multiView.finalView = multiView.NewViewAfterAdd(newView)
 	return
 }
 
-func (multiView *MultiView) GetAllViewsWithBFS() []View {
-	queue := []View{multiView.finalView}
+func (multiView *MultiView) GetAllViewsWithBFS(finalView View) []View {
+	if finalView == nil {
+		finalView = multiView.finalView
+	}
+	queue := []View{finalView}
 	resCh := make(chan []View)
 
 	multiView.actionCh <- func() {
