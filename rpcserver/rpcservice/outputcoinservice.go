@@ -474,3 +474,37 @@ func (coinService CoinService) ListUnspentOutputTokensByKey(listKeyParams []inte
 	}
 	return result, nil
 }
+
+func (coinService CoinService) GetOutputCoinByIndex(tokenID common.Hash, idxList []uint64, shardID byte) (map[uint64]jsonresult.OutCoin, *RPCError) {
+	if int(shardID) >= common.MaxShardNumber {
+		return nil, NewRPCError(RPCInternalError, fmt.Errorf("shardID out of range"))
+	}
+	result := make(map[uint64]jsonresult.OutCoin)
+
+	db := coinService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+	otaCoinLength, err := statedb.GetOTACoinLength(db, tokenID, shardID)
+	if err != nil {
+		return nil, NewRPCError(RPCInternalError, fmt.Errorf("cannot get ota coin length"))
+	}
+
+	for _, idx := range idxList {
+		if idx >= otaCoinLength.Uint64() {
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("ota idx is invalid"))
+		}
+		otaCoinBytes, err := statedb.GetOTACoinByIndex(db, tokenID, idx, shardID)
+		if err != nil {
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("cannot get ota coin at index %v, tokenID %v: %v", idx, tokenID.String(), err))
+		}
+
+		otaCoin := new(privacy.CoinV2)
+		if err := otaCoin.SetBytes(otaCoinBytes); err != nil {
+			return nil, NewRPCError(RPCInternalError, fmt.Errorf("internal error happened when parsing coin"))
+		}
+
+		outCoin := jsonresult.NewOutCoin(otaCoin)
+
+		result[idx] = outCoin
+	}
+
+	return result, nil
+}
