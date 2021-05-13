@@ -113,9 +113,9 @@ func TestChooseUnshieldIDsFromCandidates(t *testing.T) {
 
 	// Broadcast multiple txs
 	waitingUnshieldState = map[string]*statedb.WaitingUnshieldRequest{}
-	insertUnshieldIDIntoStateDB(waitingUnshieldState, tokenID, "remoteAddr_8", "unshield_12", 10000, 8)
-	insertUnshieldIDIntoStateDB(waitingUnshieldState, tokenID, "remoteAddr_9", "unshield_13", 10005, 9)
-	insertUnshieldIDIntoStateDB(waitingUnshieldState, tokenID, "remoteAddr_10", "unshield_14", 10000, 10)
+	insertUnshieldIDIntoStateDB(waitingUnshieldState, tokenID, "remoteAddr_12", "unshield_12", 10000, 8)
+	insertUnshieldIDIntoStateDB(waitingUnshieldState, tokenID, "remoteAddr_13", "unshield_13", 10010, 9)
+	insertUnshieldIDIntoStateDB(waitingUnshieldState, tokenID, "remoteAddr_14", "unshield_14", 10000, 10)
 
 	utxos = map[string]*statedb.UTXO{}
 	insertUTXOIntoStateDB(utxos, "utxo_12", 10)
@@ -128,6 +128,25 @@ func TestChooseUnshieldIDsFromCandidates(t *testing.T) {
 	insertUTXOIntoStateDB(utxos, "utxo_19", 500)
 
 	broadcastTxs = p.MatchUTXOsAndUnshieldIDs(utxos, waitingUnshieldState, dustAmount)
+	printBroadcastTxs(t, broadcastTxs)
+
+	waitingUnshieldState = map[string]*statedb.WaitingUnshieldRequest{}
+	insertUnshieldIDIntoStateDB(waitingUnshieldState, tokenID, "remoteAddr_15", "unshield_15", 10000, 8)
+	insertUnshieldIDIntoStateDB(waitingUnshieldState, tokenID, "remoteAddr_16", "unshield_16", 10000, 9)
+	insertUnshieldIDIntoStateDB(waitingUnshieldState, tokenID, "remoteAddr_17", "unshield_17", 100000, 10)
+	insertUnshieldIDIntoStateDB(waitingUnshieldState, tokenID, "remoteAddr_18", "unshield_18", 5000, 10)
+
+	utxos = map[string]*statedb.UTXO{}
+	insertUTXOIntoStateDB(utxos, "utxo_20", 10)
+	insertUTXOIntoStateDB(utxos, "utxo_21", 15)
+	insertUTXOIntoStateDB(utxos, "utxo_22", 2000)
+	insertUTXOIntoStateDB(utxos, "utxo_23", 20)
+	insertUTXOIntoStateDB(utxos, "utxo_24", 1000)
+	insertUTXOIntoStateDB(utxos, "utxo_25", 1000)
+	insertUTXOIntoStateDB(utxos, "utxo_26", 500)
+	insertUTXOIntoStateDB(utxos, "utxo_27", 500)
+
+	broadcastTxs = p.ChooseUnshieldIDsFromCandidates(utxos, waitingUnshieldState, dustAmount)
 	printBroadcastTxs(t, broadcastTxs)
 }
 
