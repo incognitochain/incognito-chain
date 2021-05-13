@@ -79,7 +79,7 @@ func hashProof(proof string, incAddressStr string) string {
 }
 
 // beacon build new instruction from instruction received from ShardToBeaconBlock
-func buildReqPTokensInstV4(
+func buildPortalShieldingRequestInstV4(
 	tokenID string,
 	incogAddressStr string,
 	proofHash string,
@@ -132,7 +132,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 	}
 	meta := actionData.Meta
 
-	rejectInst := buildReqPTokensInstV4(
+	rejectInst := buildPortalShieldingRequestInstV4(
 		meta.TokenID,
 		meta.IncogAddressStr,
 		"",
@@ -175,29 +175,35 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 	}
 
 	// generate expected multisig address from master pubkeys and user payment address
-	_, expectedReceivedMultisigAddress, err := portalTokenProcessor.GenerateOTMultisigAddress(portalParams.MasterPubKeys[meta.TokenID], int(portalParams.NumRequiredSigs), meta.IncogAddressStr)
+	_, expectedReceivedMultisigAddress, err := portalTokenProcessor.GenerateOTMultisigAddress(
+		portalParams.MasterPubKeys[meta.TokenID], int(portalParams.NumRequiredSigs), meta.IncogAddressStr)
 	if err != nil {
 		Logger.log.Error("Shielding Request: Could not generate multisig address - Error: %v", err)
 		return [][]string{rejectInst}, nil
 	}
-	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyShieldProof(meta.ShieldingProof, bc, expectedReceivedMultisigAddress, meta.IncogAddressStr)
+
+	// verify shielding proof
+	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyShieldProof(
+		meta.ShieldingProof, bc, expectedReceivedMultisigAddress, meta.IncogAddressStr)
 	if !isValid || err != nil {
 		Logger.log.Error("Shielding Request: Parse proof and verify shielding proof failed - Error: %v", err)
 		return [][]string{rejectInst}, nil
 	}
 
-	currentPortalState.AddUTXOs(listUTXO, meta.TokenID)
+	// calculate shielding amount and minting amount
 	shieldingAmount := uint64(0)
 	for _, utxo := range listUTXO {
 		shieldingAmount += utxo.GetOutputAmount()
 	}
+	mintingAmount := portalTokenProcessor.ConvertExternalToIncAmount(shieldingAmount)
+
+	// update portal state
+	currentPortalState.AddUTXOs(listUTXO, meta.TokenID)
 	currentPortalState.AddShieldingExternalTx(
 		meta.TokenID, proofHash, listUTXO[0].GetTxHash(),
 		meta.IncogAddressStr, shieldingAmount)
 
-	mintingAmount := portalTokenProcessor.ConvertExternalToIncAmount(shieldingAmount)
-
-	inst := buildReqPTokensInstV4(
+	inst := buildPortalShieldingRequestInstV4(
 		actionData.Meta.TokenID,
 		actionData.Meta.IncogAddressStr,
 		proofHash,
@@ -237,37 +243,20 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 		return nil
 	}
 
+	var shieldStatus byte
 	reqStatus := instructions[2]
 	if reqStatus == portalcommonv4.PortalV4RequestAcceptedChainStatus {
-		currentPortalState.AddUTXOs(actionData.ShieldingUTXO, actionData.TokenID)
+		shieldStatus = portalcommonv4.PortalV4RequestAcceptedStatus
+
 		shieldingExternalTxHash := actionData.ShieldingUTXO[0].GetTxHash()
 		shieldingAmount := uint64(0)
 		for _, utxo := range actionData.ShieldingUTXO {
 			shieldingAmount += utxo.GetOutputAmount()
 		}
+
+		currentPortalState.AddUTXOs(actionData.ShieldingUTXO, actionData.TokenID)
 		currentPortalState.AddShieldingExternalTx(actionData.TokenID, actionData.ProofHash,
 			shieldingExternalTxHash, actionData.IncogAddressStr, shieldingAmount)
-
-		// track shieldingReq status by txID into DB
-		shieldingReqTrackData := metadata.PortalShieldingRequestStatus{
-			Status:          portalcommonv4.PortalV4RequestAcceptedStatus,
-			TokenID:         actionData.TokenID,
-			IncogAddressStr: actionData.IncogAddressStr,
-			ProofHash:       actionData.ProofHash,
-			ShieldingUTXO:   actionData.ShieldingUTXO,
-			MintingAmount:   actionData.MintingAmount,
-			TxReqID:         actionData.TxReqID,
-		}
-		shieldingReqTrackDataBytes, _ := json.Marshal(shieldingReqTrackData)
-		err = statedb.StoreShieldingRequestStatus(
-			stateDB,
-			actionData.TxReqID.String(),
-			shieldingReqTrackDataBytes,
-		)
-		if err != nil {
-			Logger.log.Errorf("Shielding Request: An error occurred while tracking shielding request by TxReqID - Error: %+v", err)
-			return nil
-		}
 
 		// update bridge token info
 		err := metadata.UpdateBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.MintingAmount, false)
@@ -275,27 +264,28 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 			Logger.log.Errorf("Shielding Request: Update Portal token info for UnshieldID - Error %v\n", actionData.TxReqID.String(), err)
 			return nil
 		}
-
 	} else if reqStatus == portalcommonv4.PortalV4RequestRejectedChainStatus {
-		shieldingReqTrackData := metadata.PortalShieldingRequestStatus{
-			Status:          portalcommonv4.PortalV4RequestRejectedStatus,
-			TokenID:         actionData.TokenID,
-			IncogAddressStr: actionData.IncogAddressStr,
-			ProofHash:       actionData.ProofHash,
-			ShieldingUTXO:   actionData.ShieldingUTXO,
-			MintingAmount:   actionData.MintingAmount,
-			TxReqID:         actionData.TxReqID,
-		}
-		shieldingReqTrackDataBytes, _ := json.Marshal(shieldingReqTrackData)
-		err = statedb.StoreShieldingRequestStatus(
-			stateDB,
-			actionData.TxReqID.String(),
-			shieldingReqTrackDataBytes,
-		)
-		if err != nil {
-			Logger.log.Errorf("Shielding Request: An error occurred while tracking shielding request tx - Error: %v", err)
-			return nil
-		}
+		shieldStatus = portalcommonv4.PortalV4RequestRejectedStatus
+	}
+
+	// track shieldingReq status by txID into DB
+	shieldingReqTrackData := metadata.PortalShieldingRequestStatus{
+		Status:          shieldStatus,
+		TokenID:         actionData.TokenID,
+		IncogAddressStr: actionData.IncogAddressStr,
+		ProofHash:       actionData.ProofHash,
+		ShieldingUTXO:   actionData.ShieldingUTXO,
+		MintingAmount:   actionData.MintingAmount,
+		TxReqID:         actionData.TxReqID,
+	}
+	shieldingReqTrackDataBytes, _ := json.Marshal(shieldingReqTrackData)
+	err = statedb.StoreShieldingRequestStatus(
+		stateDB,
+		actionData.TxReqID.String(),
+		shieldingReqTrackDataBytes,
+	)
+	if err != nil {
+		Logger.log.Errorf("Shielding Request: An error occurred while tracking shielding request tx - Error: %v", err)
 	}
 
 	return nil

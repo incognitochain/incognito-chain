@@ -128,11 +128,11 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 
 		// choose waiting unshield IDs to process with current UTXOs
 		utxos := currentPortalStateV4.UTXOs[tokenID]
-		tinyAmount := portalTokenProcessor.ConvertIncToExternalAmount(portalParams.DustValueThreshold[tokenID])
-		broadCastTxs := portalTokenProcessor.ChooseUnshieldIDsFromCandidates(utxos, wReqForProcess, tinyAmount)
+		dustAmount := portalTokenProcessor.ConvertIncToExternalAmount(portalParams.DustValueThreshold[tokenID])
+		batchTxs := portalTokenProcessor.MatchUTXOsAndUnshieldIDs(utxos, wReqForProcess, dustAmount)
 
 		// create raw external txs
-		for _, bcTx := range broadCastTxs {
+		for _, bcTx := range batchTxs {
 			// prepare outputs for tx in pbtc amount (haven't paid network fee)
 			outputTxs := []*portaltokens.OutputTx{}
 			for _, chosenUnshieldID := range bcTx.UnshieldIDs {
@@ -377,7 +377,8 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 	latestBeaconHeight := GetMaxKeyValue(unshieldBatch.GetExternalFees())
-	if latestBeaconHeight == 0 || !bc.CheckBlockTimeIsReachedByBeaconHeight(beaconHeight+1, latestBeaconHeight, portalParams.TimeSpaceForFeeReplacement) {
+	if latestBeaconHeight == 0 ||
+		!bc.CheckBlockTimeIsReachedByBeaconHeight(beaconHeight+1, latestBeaconHeight, portalParams.TimeSpaceForFeeReplacement) {
 		Logger.log.Errorf("[ReplaceFeeRequest]: can not replace unshield batch with TokenID - %v, BatchID - %v.", tokenIDStr, meta.BatchID)
 		return [][]string{rejectInst}, nil
 	}
@@ -385,7 +386,8 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 
 	maxFeeTemp := latestFee * portalParams.MaxFeePercentageForEachStep
 	if maxFeeTemp < latestFee {
-		Logger.log.Errorf("[ReplaceFeeRequest]: invalid fee request with LatestFee - %v, MaxFeeForEachStep - %v.", latestFee, portalParams.MaxFeePercentageForEachStep)
+		Logger.log.Errorf("[ReplaceFeeRequest]: invalid fee request with LatestFee - %v, MaxFeeForEachStep - %v.",
+			latestFee, portalParams.MaxFeePercentageForEachStep)
 		return [][]string{rejectInst}, nil
 	}
 
@@ -403,7 +405,8 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		Logger.log.Errorf("[ReplaceFeeRequest]: UTXOs of unshield batchID - %v is empty: ", meta.BatchID)
 		return [][]string{rejectInst}, nil
 	}
-	hexRawExtTxStr, _, err := portalTokenProcessor.CreateRawExternalTx(unshieldBatch.GetUTXOs(), optionalData["outputs"].([]*portaltokens.OutputTx), uint64(meta.Fee), bc)
+	hexRawExtTxStr, _, err := portalTokenProcessor.CreateRawExternalTx(
+		unshieldBatch.GetUTXOs(), optionalData["outputs"].([]*portaltokens.OutputTx), uint64(meta.Fee), bc)
 	if err != nil {
 		Logger.log.Errorf("[ReplaceFeeRequest]: an error occured create new raw transaction portal replacement fee: %+v", err)
 		return nil, fmt.Errorf("[ReplaceFeeRequest]: an error occured create new raw transaction portal replacement fee: %+v", err)
@@ -423,8 +426,8 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 	)
 
 	// update external fee for batch processed unshield requests
-	currentPortalV4State.AddExternalFeeForBatchProcessedUnshieldRequest(unshieldBatch.GetBatchID(), tokenIDStr,
-		meta.Fee, beaconHeight+1)
+	currentPortalV4State.AddExternalFeeForBatchProcessedUnshieldRequest(
+		unshieldBatch.GetBatchID(), tokenIDStr, meta.Fee, beaconHeight+1)
 
 	return [][]string{newInst}, nil
 }
@@ -455,38 +458,27 @@ func (p *PortalFeeReplacementRequestProcessor) ProcessInsts(
 	}
 
 	reqStatus := instructions[2]
-	var unshieldBatchRequestStatus metadata.PortalReplacementFeeRequestStatus
-
+	var rbfStatus int
 	if reqStatus == portalcommonv4.PortalV4RequestAcceptedChainStatus {
+		rbfStatus = portalcommonv4.PortalV4RequestAcceptedStatus
+
 		// update unshield batch
-		keyUnshieldBatch := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(actionData.TokenID, actionData.BatchID).String()
-		unshieldBatch := currentPortalV4State.ProcessedUnshieldRequests[actionData.TokenID][keyUnshieldBatch]
-		currentPortalV4State.AddExternalFeeForBatchProcessedUnshieldRequest(unshieldBatch.GetBatchID(),
-			actionData.TokenID, actionData.Fee, beaconHeight+1)
-
-		// track status of unshield batch request by batchID
-		unshieldBatchRequestStatus = metadata.PortalReplacementFeeRequestStatus{
-			TokenID:       actionData.TokenID,
-			BatchID:       actionData.BatchID,
-			Fee:           actionData.Fee,
-			ExternalRawTx: actionData.ExternalRawTx,
-			BeaconHeight:  beaconHeight + 1,
-			TxHash:        actionData.TxReqID.String(),
-			Status:        portalcommonv4.PortalV4RequestAcceptedStatus,
-		}
+		currentPortalV4State.AddExternalFeeForBatchProcessedUnshieldRequest(
+			actionData.BatchID, actionData.TokenID, actionData.Fee, beaconHeight+1)
 	} else if reqStatus == portalcommonv4.PortalV4RequestRejectedChainStatus {
-
-		unshieldBatchRequestStatus = metadata.PortalReplacementFeeRequestStatus{
-			TokenID:       actionData.TokenID,
-			BatchID:       actionData.BatchID,
-			ExternalRawTx: actionData.ExternalRawTx,
-			Fee:           actionData.Fee,
-			BeaconHeight:  beaconHeight + 1,
-			TxHash:        actionData.TxReqID.String(),
-			Status:        portalcommonv4.PortalV4RequestRejectedStatus,
-		}
+		rbfStatus = portalcommonv4.PortalV4RequestRejectedStatus
 	}
 
+	// track status of unshield batch request by batchID
+	unshieldBatchRequestStatus := metadata.PortalReplacementFeeRequestStatus{
+		TokenID:       actionData.TokenID,
+		BatchID:       actionData.BatchID,
+		Fee:           actionData.Fee,
+		ExternalRawTx: actionData.ExternalRawTx,
+		BeaconHeight:  beaconHeight + 1,
+		TxHash:        actionData.TxReqID.String(),
+		Status:        rbfStatus,
+	}
 	unshieldBatchStatusBytes, _ := json.Marshal(unshieldBatchRequestStatus)
 	err = statedb.StorePortalUnshieldBatchReplacementRequestStatus(
 		stateDB,
@@ -494,7 +486,6 @@ func (p *PortalFeeReplacementRequestProcessor) ProcessInsts(
 		unshieldBatchStatusBytes)
 	if err != nil {
 		Logger.log.Errorf("[ReplaceFeeRequest]: Error when storing status of replacement request: %+v\n", err)
-		return nil
 	}
 
 	return nil
@@ -670,7 +661,8 @@ func (p *PortalSubmitConfirmedTxProcessor) BuildNewInsts(
 		Logger.log.Errorf("[SubmitConfirmedRequest]: UTXOs of unshield batchID - %v is empty: ", meta.BatchID)
 		return [][]string{rejectInst}, nil
 	}
-	isValid, listUTXO, externalTxID, externalFee, err := portalTokenProcessor.ParseAndVerifyUnshieldProof(meta.UnshieldProof, bc, expectedReceivedMultisigAddress, "", outputs, unshieldBatch.GetUTXOs())
+	isValid, listUTXO, externalTxID, externalFee, err := portalTokenProcessor.ParseAndVerifyUnshieldProof(
+		meta.UnshieldProof, bc, expectedReceivedMultisigAddress, "", outputs, unshieldBatch.GetUTXOs())
 	if !isValid || err != nil {
 		Logger.log.Errorf("[SubmitConfirmedRequest]: unshield Proof is invalid with Proof - %v, Error - %+v", meta.UnshieldProof, err)
 		return [][]string{rejectInst}, nil
@@ -724,9 +716,10 @@ func (p *PortalSubmitConfirmedTxProcessor) ProcessInsts(
 	}
 
 	reqStatus := instructions[2]
-	var portalSubmitConfirmedStatus metadata.PortalSubmitConfirmedTxStatus
-
+	// var portalSubmitConfirmedStatus metadata.PortalSubmitConfirmedTxStatus
+	var submitConfirmStatus int
 	if reqStatus == portalcommonv4.PortalV4RequestAcceptedChainStatus {
+		submitConfirmStatus = portalcommonv4.PortalV4RequestAcceptedStatus
 		// update unshield batch
 		keyUnshieldBatchHash := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(actionData.TokenID, actionData.BatchID)
 		keyUnshieldBatch := keyUnshieldBatchHash.String()
@@ -734,16 +727,6 @@ func (p *PortalSubmitConfirmedTxProcessor) ProcessInsts(
 		currentPortalV4State.RemoveBatchProcessedUnshieldRequest(actionData.TokenID, keyUnshieldBatchHash)
 		if len(actionData.UTXOs) > 0 {
 			currentPortalV4State.AddUTXOs(actionData.UTXOs, actionData.TokenID)
-		}
-		// track status of unshield batch request by batchID
-		portalSubmitConfirmedStatus = metadata.PortalSubmitConfirmedTxStatus{
-			TokenID:      actionData.TokenID,
-			UTXOs:        actionData.UTXOs,
-			BatchID:      actionData.BatchID,
-			TxHash:       actionData.TxReqID.String(),
-			ExternalTxID: actionData.ExternalTxID,
-			ExternalFee:  actionData.ExternalFee,
-			Status:       portalcommonv4.PortalV4RequestAcceptedStatus,
 		}
 
 		// update unshield list to completed
@@ -756,15 +739,17 @@ func (p *PortalSubmitConfirmedTxProcessor) ProcessInsts(
 			}
 		}
 	} else if reqStatus == portalcommonv4.PortalV4RequestRejectedChainStatus {
-		portalSubmitConfirmedStatus = metadata.PortalSubmitConfirmedTxStatus{
-			TokenID:      actionData.TokenID,
-			UTXOs:        actionData.UTXOs,
-			BatchID:      actionData.BatchID,
-			TxHash:       actionData.TxReqID.String(),
-			ExternalTxID: actionData.ExternalTxID,
-			ExternalFee:  actionData.ExternalFee,
-			Status:       portalcommonv4.PortalV4RequestRejectedStatus,
-		}
+		submitConfirmStatus = portalcommonv4.PortalV4RequestRejectedStatus
+	}
+
+	portalSubmitConfirmedStatus := metadata.PortalSubmitConfirmedTxStatus{
+		TokenID:      actionData.TokenID,
+		UTXOs:        actionData.UTXOs,
+		BatchID:      actionData.BatchID,
+		TxHash:       actionData.TxReqID.String(),
+		ExternalTxID: actionData.ExternalTxID,
+		ExternalFee:  actionData.ExternalFee,
+		Status:       submitConfirmStatus,
 	}
 	portalSubmitConfirmedStatusBytes, _ := json.Marshal(portalSubmitConfirmedStatus)
 	err = statedb.StorePortalSubmitConfirmedTxRequestStatus(
@@ -772,8 +757,8 @@ func (p *PortalSubmitConfirmedTxProcessor) ProcessInsts(
 		actionData.TxReqID.String(),
 		portalSubmitConfirmedStatusBytes)
 	if err != nil {
-		Logger.log.Errorf("[SubmitConfirmedRequest]: error occur when storing status of replacement request: %+v\n", err)
-		return nil
+		Logger.log.Errorf("[SubmitConfirmedRequest]: error occur when storing status of submit confirm tx request"+
+			": %+v\n", err)
 	}
 
 	return nil

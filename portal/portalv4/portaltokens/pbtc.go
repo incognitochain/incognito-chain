@@ -94,13 +94,20 @@ func (p PortalBTCTokenProcessor) parseAndVerifyProofBTCChain(
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyShieldProof(
-	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string) (bool, []*statedb.UTXO, error) {
+	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string,
+) (bool, []*statedb.UTXO, error) {
 	btcChain := bc.GetBTCHeaderChain()
 	return p.parseAndVerifyProofBTCChain(proof, btcChain, expectedReceivedMultisigAddress, chainCodeSeed)
 }
 
 func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
-	proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string, expectPaymentInfo []*OutputTx, utxos []*statedb.UTXO) (bool, []*statedb.UTXO, string, uint64, error) {
+	proof string,
+	bc metadata.ChainRetriever,
+	expectedReceivedMultisigAddress string,
+	chainCodeSeed string,
+	expectPaymentInfo []*OutputTx,
+	utxos []*statedb.UTXO,
+) (bool, []*statedb.UTXO, string, uint64, error) {
 	btcChain := bc.GetBTCHeaderChain()
 	if btcChain == nil {
 		Logger.log.Error("BTC relaying chain should not be null")
@@ -126,15 +133,13 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 		return false, nil, "", 0, fmt.Errorf("Submit confirmed tx: no tx inputs in proof")
 	}
 
-	for _, input := range btcTxProof.BTCTx.TxIn {
-		isMatched := false
-		for _, v := range utxos {
-			if v.GetTxHash() == input.PreviousOutPoint.Hash.String() && v.GetOutputIndex() == input.PreviousOutPoint.Index {
-				isMatched = true
-				break
-			}
-		}
-		if !isMatched {
+	if len(utxos) != len(btcTxProof.BTCTx.TxIn) {
+		Logger.log.Errorf("Length of transaction input coins is not match")
+		return false, nil, "", 0, fmt.Errorf("Submit confirmed tx: Length of transaction input coins is not match")
+	}
+	for i, input := range btcTxProof.BTCTx.TxIn {
+		if utxos[i].GetTxHash() != input.PreviousOutPoint.Hash.String() ||
+			utxos[i].GetOutputIndex() != input.PreviousOutPoint.Index {
 			Logger.log.Errorf("Submit confirmed: tx inputs from proof is diff utxos from unshield batch")
 			return false, nil, "", 0, fmt.Errorf("Submit confirmed tx: tx inputs from proof is diff utxos from unshield batch")
 		}
@@ -165,7 +170,7 @@ func (p PortalBTCTokenProcessor) ParseAndVerifyUnshieldProof(
 				Logger.log.Errorf("[portal] Calculate external fee error")
 				return false, nil, "", 0, fmt.Errorf("[portal] Calculate external fee error")
 			}
-			externalFee = (unshieldAmt - tmp)
+			externalFee = unshieldAmt - tmp
 		}
 	}
 
@@ -428,8 +433,9 @@ func (p PortalBTCTokenProcessor) IsAcceptableTxSize(numInputs int, numOutputs in
 	return p.ExternalInputSize*uint(numInputs)+p.ExternalOutputSize*uint(numOutputs) <= p.ExternalTxMaxSize
 }
 
+//TODO: update
 // Choose list of pairs (UTXOs and unshield IDs) for broadcast external transactions
-func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
+func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDs(
 	utxos map[string]*statedb.UTXO,
 	waitingUnshieldReqs map[string]*statedb.WaitingUnshieldRequest,
 	dustValueThreshold uint64) []*BroadcastTx {
@@ -544,7 +550,7 @@ func (p PortalBTCTokenProcessor) ChooseUnshieldIDsFromCandidates(
 		// use a dust UTXO
 		if utxoIdx < len(utxos)-dustUTXOUsed &&
 			utxosArr[len(utxos)-dustUTXOUsed-1].value.GetOutputAmount() <= dustValueThreshold &&
-			p.IsAcceptableTxSize(len(chosenUTXOs) + 1, len(chosenUnshieldIDs)) {
+			p.IsAcceptableTxSize(len(chosenUTXOs)+1, len(chosenUnshieldIDs)) {
 			dustUTXOUsed += 1
 			chosenUTXOs = append(chosenUTXOs, utxosArr[len(utxos)-dustUTXOUsed].value)
 		}

@@ -62,21 +62,21 @@ func TestChooseUnshieldIDsFromCandidates(t *testing.T) {
 	utxos := map[string]*statedb.UTXO{}
 	insertUTXOIntoStateDB(utxos, "utxo_1", 900) // satoshi
 
-	broadcastTxs := p.ChooseUnshieldIDsFromCandidates(utxos, waitingUnshieldState, dustAmount)
+	broadcastTxs := p.MatchUTXOsAndUnshieldIDs(utxos, waitingUnshieldState, dustAmount)
 	printBroadcastTxs(t, broadcastTxs)
 
 	// Broadcast a part of unshield requests
 	utxos = map[string]*statedb.UTXO{}
 	insertUTXOIntoStateDB(utxos, "utxo_2", 1500)
 
-	broadcastTxs = p.ChooseUnshieldIDsFromCandidates(utxos, waitingUnshieldState, dustAmount)
+	broadcastTxs = p.MatchUTXOsAndUnshieldIDs(utxos, waitingUnshieldState, dustAmount)
 	printBroadcastTxs(t, broadcastTxs)
 
 	// Broadcast all unshield requests
 	utxos = map[string]*statedb.UTXO{}
 	insertUTXOIntoStateDB(utxos, "utxo_3", 5000)
 
-	broadcastTxs = p.ChooseUnshieldIDsFromCandidates(utxos, waitingUnshieldState, dustAmount)
+	broadcastTxs = p.MatchUTXOsAndUnshieldIDs(utxos, waitingUnshieldState, dustAmount)
 	printBroadcastTxs(t, broadcastTxs)
 
 	// First unshield request need multiple UTXOs + a dust UTXO
@@ -91,7 +91,7 @@ func TestChooseUnshieldIDsFromCandidates(t *testing.T) {
 	insertUTXOIntoStateDB(utxos, "utxo_5", 1600)
 	insertUTXOIntoStateDB(utxos, "utxo_6", 1000)
 
-	broadcastTxs = p.ChooseUnshieldIDsFromCandidates(utxos, waitingUnshieldState, dustAmount)
+	broadcastTxs = p.MatchUTXOsAndUnshieldIDs(utxos, waitingUnshieldState, dustAmount)
 	printBroadcastTxs(t, broadcastTxs)
 
 	// Broadcast multiple txs
@@ -108,7 +108,7 @@ func TestChooseUnshieldIDsFromCandidates(t *testing.T) {
 	insertUTXOIntoStateDB(utxos, "utxo_10", 1600)
 	insertUTXOIntoStateDB(utxos, "utxo_11", 1000)
 
-	broadcastTxs = p.ChooseUnshieldIDsFromCandidates(utxos, waitingUnshieldState, dustAmount)
+	broadcastTxs = p.MatchUTXOsAndUnshieldIDs(utxos, waitingUnshieldState, dustAmount)
 	printBroadcastTxs(t, broadcastTxs)
 
 	// Broadcast multiple txs
@@ -127,7 +127,7 @@ func TestChooseUnshieldIDsFromCandidates(t *testing.T) {
 	insertUTXOIntoStateDB(utxos, "utxo_18", 500)
 	insertUTXOIntoStateDB(utxos, "utxo_19", 500)
 
-	broadcastTxs = p.ChooseUnshieldIDsFromCandidates(utxos, waitingUnshieldState, dustAmount)
+	broadcastTxs = p.MatchUTXOsAndUnshieldIDs(utxos, waitingUnshieldState, dustAmount)
 	printBroadcastTxs(t, broadcastTxs)
 }
 
