@@ -261,13 +261,13 @@ func Base58CheckDeserialize(data string) (*KeyWallet, error) {
 	return deserialize(b)
 }
 
-//Retrieves the payment address ver 1 from the payment address ver 2.
+// GetPaymentAddressV1 retrieves the payment address ver 1 from the payment address ver 2.
 //
-//	Payment Address V1 consists of: PK + TK
-//	Payment Address V2 consists of: PK + TK + PublicOTA
+//	- Payment Address V1 consists of: PK + TK
+//	- Payment Address V2 consists of: PK + TK + PublicOTA
 //
-//If the input is a payment address ver 2, try to retrieve the corresponding payment address ver 1.
-//Otherwise, return the input.
+// If the input is a payment address ver 2, try to retrieve the corresponding payment address ver 1.
+// Otherwise, return the input.
 func GetPaymentAddressV1(addr string, isNewEncoding bool) (string, error) {
 	newWallet, err := Base58CheckDeserialize(addr)
 	if err != nil {
@@ -303,7 +303,7 @@ func GetPaymentAddressV1(addr string, isNewEncoding bool) (string, error) {
 	}
 }
 
-//Checks if two payment addresses are generated from the same private key.
+//ComparePaymentAddresses checks if two payment addresses are generated from the same private key.
 //
 //Just need to compare PKs and TKs.
 func ComparePaymentAddresses(addr1, addr2 string) (bool, error) {

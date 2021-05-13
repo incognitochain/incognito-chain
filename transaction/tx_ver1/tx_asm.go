@@ -169,7 +169,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 
 // TODO Privacy, WILL DO THIS LATER BECAUSE IT IS ASM
 // Init -  build normal tx component and privacy custom token data
-func (txToken *TxToken) InitForASM(params *TxPrivacyTokenInitParamsForASM, serverTime int64) error {
+func (tx *TxToken) InitForASM(params *TxPrivacyTokenInitParamsForASM, serverTime int64) error {
 	//var err error
 	//initTokenParamsASM := NewTxPrivacyInitParamsForASM(
 	//	params.txParam.senderKey,

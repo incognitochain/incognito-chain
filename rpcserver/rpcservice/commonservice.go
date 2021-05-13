@@ -76,6 +76,41 @@ func CreateCustomTokenPrivacyReceiverArray(dataReceiver interface{}) ([]*privacy
 	return paymentInfos, voutsAmount, nil
 }
 
+// CreateCustomTokenPrivacyReceiverArrayV2 parses data frm rpc request to create a list vout for preparing to create a custom token tx
+// data interface is a map[paymentt-address]{transferring-amount}
+func CreateCustomTokenPrivacyReceiverArrayV2(dataReceiver interface{}) ([]*privacy.PaymentInfo, int64, error) {
+	if dataReceiver == nil {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
+	result := []*privacy.PaymentInfo{}
+	voutsAmount := int64(0)
+	receivers, ok := dataReceiver.(map[string]interface{})
+	if !ok {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
+	for key, value := range receivers {
+		keyWallet, err := wallet.Base58CheckDeserialize(key)
+		if err != nil {
+			Logger.log.Errorf("Invalid key in CreateCustomTokenPrivacyReceiverArray %+v", key)
+			return nil, 0, err
+		}
+		keySet := keyWallet.KeySet
+
+		amount, err := common.AssertAndConvertStrToNumber(value)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		temp := &privacy.PaymentInfo{
+			PaymentAddress: keySet.PaymentAddress,
+			Amount:         amount,
+		}
+		result = append(result, temp)
+		voutsAmount += int64(temp.Amount)
+	}
+	return result, voutsAmount, nil
+}
+
 func CreateCustomTokenPrivacyBurningReceiverArray(dataReceiver interface{}, bcr metadata.ChainRetriever, beaconHeight uint64) ([]*privacy.PaymentInfo, int64, error) {
 	if dataReceiver == nil {
 		return nil, 0, fmt.Errorf("data receiver is in valid")

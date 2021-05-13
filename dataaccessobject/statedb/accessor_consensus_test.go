@@ -1,12 +1,12 @@
 package statedb
 
 import (
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"reflect"
 	"testing"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
@@ -187,7 +187,7 @@ func TestStoreAndGetStakerInfo(t *testing.T) {
 	shardID := byte(0)
 	shardCommittees := committeePublicKeys[:number]
 	shardCommitteesStruct, _ := incognitokey.CommitteeBase58KeyListToStruct(shardCommittees)
-	rewardReceiver := make(map[string]privacy.PaymentAddress)
+	rewardReceiver := make(map[string]key.PaymentAddress)
 	autoStaking := make(map[string]bool)
 	stakingTx := make(map[string]common.Hash)
 	for index, beaconCommittee := range shardCommitteesStruct {

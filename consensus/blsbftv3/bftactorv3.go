@@ -189,7 +189,7 @@ func (e *BLSBFT_V3) Start() error {
 					}
 					proposerPk = e.CommitteeChain.ProposerByTimeSlot(byte(e.ChainID), e.currentTimeSlot, committees)
 				} else {
-					proposerPk = bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
+					proposerPk, _ = bestView.GetProposerByTimeSlot(e.currentTimeSlot, 2)
 					committees = e.Chain.GetBestView().GetCommittee()
 				}
 

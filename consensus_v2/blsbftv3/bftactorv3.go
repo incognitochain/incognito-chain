@@ -137,9 +137,6 @@ func (e *BLSBFT_V3) run() error {
 					continue
 				}
 
-				res, _ := incognitokey.CommitteeKeyListToString(committees)
-				e.Logger.Infof("######### Shard %+v, Hash %+v, BlockHeight %+v, Committee %+v", e.Chain.GetShardID(), *block.Hash(), block.GetHeight(), res)
-
 				blkCPk := incognitokey.CommitteePublicKey{}
 				blkCPk.FromBase58(block.GetProducer())
 				proposerMiningKeyBas58 := blkCPk.GetMiningKeyBase58(e.GetConsensusName())

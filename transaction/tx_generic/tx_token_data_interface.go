@@ -82,6 +82,25 @@ type TransactionToken interface {
 	Init(interface{}) error
 	// Verify the init function above, which verify zero knowledge proof and signatures
 	Verify(map[string]bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash) (bool, error)
+
+	GetValidationEnv() metadata.ValidationEnviroment
+	SetValidationEnv(metadata.ValidationEnviroment)
+	UnmarshalJSON(data []byte) error
+
+	VerifySigTx() (bool, error)
+	ValidateSanityDataByItSelf() (bool, error)
+	ValidateTxCorrectness() (bool, error)
+	LoadCommitment(db *statedb.StateDB) error
+	ValidateSanityDataWithBlockchain(
+		chainRetriever metadata.ChainRetriever,
+		shardViewRetriever metadata.ShardViewRetriever,
+		beaconViewRetriever metadata.BeaconViewRetriever,
+		beaconHeight uint64,
+	) (
+		bool,
+		error,
+	)
+	ValidateDoubleSpendWithBlockChain(stateDB *statedb.StateDB) (bool, error)
 }
 
 

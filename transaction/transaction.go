@@ -533,6 +533,38 @@ func GetOTADeclarationsFromTx(tx metadata.Transaction) []OTADeclaration {
 	return tx_generic.GetOTADeclarationsFromTx(tx)
 }
 
+func WithPrivacy(vE metadata.ValidationEnviroment) *tx_generic.ValidationEnv {
+	return tx_generic.WithPrivacy(vE)
+}
+
+func WithNoPrivacy(vE metadata.ValidationEnviroment) *tx_generic.ValidationEnv {
+	return tx_generic.WithNoPrivacy(vE)
+}
+
+func WithShardID(vE metadata.ValidationEnviroment, sID int) *tx_generic.ValidationEnv {
+	return tx_generic.WithShardID(vE, sID)
+}
+
+func WithShardHeight(vE metadata.ValidationEnviroment, sHeight uint64) *tx_generic.ValidationEnv {
+	return tx_generic.WithShardHeight(vE, sHeight)
+}
+
+func WithBeaconHeight(vE metadata.ValidationEnviroment, bcHeight uint64) *tx_generic.ValidationEnv {
+	return tx_generic.WithBeaconHeight(vE, bcHeight)
+}
+
+func WithConfirmedTime(vE metadata.ValidationEnviroment, confirmedTime int64) *tx_generic.ValidationEnv {
+	return tx_generic.WithConfirmedTime(vE, confirmedTime)
+}
+
+func WithType(vE metadata.ValidationEnviroment, t string) *tx_generic.ValidationEnv {
+	return tx_generic.WithType(vE, t)
+}
+
+func WithAct(vE metadata.ValidationEnviroment, act int) *tx_generic.ValidationEnv {
+	return tx_generic.WithAct(vE, act)
+}
+
 // func (txToken *tx_generic.TxTokenBase) UnmarshalJSON(data []byte) error {
 // 	var err error
 // 	if txToken.Tx, err = NewTransactionFromJsonBytes(data); err != nil {

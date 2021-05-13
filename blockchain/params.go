@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
@@ -509,5 +510,4 @@ func (p *Params) CreateGenesisBlocks() {
 	}
 	p.GenesisBeaconBlock = CreateGenesisBeaconBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
 	p.GenesisShardBlock = CreateGenesisShardBlock(1, uint16(p.Net), blockTime, p.GenesisParams)
-	return
 }

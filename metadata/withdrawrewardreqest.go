@@ -69,7 +69,7 @@ func (withDrawRewardRequest WithDrawRewardRequest) Hash() *common.Hash {
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) HashWithoutSig() *common.Hash {
-	if withDrawRewardRequest.Version == 1 {
+	if withDrawRewardRequest.Version == common.SALARY_VER_FIX_HASH {
 		bArr := append(withDrawRewardRequest.PaymentAddress.Bytes(), withDrawRewardRequest.TokenID.GetBytes()...)
 		txReqHash := common.HashH(bArr)
 		return &txReqHash
@@ -105,11 +105,51 @@ func NewWithDrawRewardRequest(tokenIDStr string, paymentAddStr string, version f
 	return withdrawRewardRequest, nil
 }
 
+func NewWithDrawRewardRequestFromRPC(data map[string]interface{}) (Metadata, error) {
+	metadataBase := NewMetadataBaseWithSignature(WithDrawRewardRequestMeta)
+	requesterPaymentStr, ok := data["PaymentAddress"].(string)
+	if !ok {
+		return nil, errors.New("Invalid payment address receiver")
+	}
+	requestTokenID, ok := data["TokenID"].(string)
+	if !ok {
+		return nil, errors.New("Invalid token Id")
+	}
+	tokenID, err := common.Hash{}.NewHashFromStr(requestTokenID)
+	if err != nil {
+		return nil, err
+	}
+	requesterPublicKeySet, err := wallet.Base58CheckDeserialize(requesterPaymentStr)
+	if err != nil {
+		return nil, err
+	}
+	result := &WithDrawRewardRequest{
+		MetadataBaseWithSignature: *metadataBase,
+		PaymentAddress: requesterPublicKeySet.KeySet.PaymentAddress,
+		TokenID:        *tokenID,
+		Version:        common.SALARY_VER_FIX_HASH,
+	}
+
+	// versionFloat, ok := data["Version"].(float64)
+	// if ok {
+	// 	version := int(versionFloat)
+	// 	result.Version = version
+	// }
+	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, result.Version); !ok || err != nil {
+		return nil, errors.Errorf("Invalid version %d", result.Version)
+	}
+	return result, nil
+}
+
 func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transaction, minFee uint64, beaconHeight int64, stateDB *statedb.StateDB) bool {
 	return true
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	if tx.IsPrivacy() {
+		return false, errors.New("This transaction is not private")
+	}
+
 	//check authorized sender
 	if ok, err := withDrawRewardRequest.MetadataBaseWithSignature.VerifyMetadataSignature(withDrawRewardRequest.PaymentAddress.Pk, tx); err != nil || !ok {
 		return false, fmt.Errorf("public key in withdraw reward request metadata is unauthorized. Error %v, OK %v", err, ok)
@@ -152,7 +192,10 @@ func (withDrawRewardRequest WithDrawRewardRequest) ValidateSanityData(chainRetri
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) ValidateMetadataByItself() bool {
-	// The validation just need to check at tx level, so returning true here
+	if ok, err := common.SliceExists(AcceptedWithdrawRewardRequestVersion, withDrawRewardRequest.Version); !ok || err != nil {
+		Logger.log.Error(errors.Errorf("Invalid version %d", withDrawRewardRequest.Version))
+		return false
+	}
 	return true
 }
 

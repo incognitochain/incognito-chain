@@ -87,7 +87,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 }
 
 func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
-	publishable := []string{wire.CmdPeerState, wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT}
+	publishable := []string{wire.CmdPeerState, wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT, wire.CmdTx, wire.CmdPrivacyCustomToken}
 	msgType := msg.MessageType()
 	subs := cm.Subscriber.GetMsgToTopics()
 	for _, p := range publishable {
@@ -104,10 +104,10 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 	}
 
 	Logger.Warn("Cannot publish message", msgType)
-	return nil
+	return errors.Errorf("Can not publish message, this msg type %v is not allow", msgType)
 }
 
-func (cm *ConnManager) Start(ns NetSync) {
+func (cm *ConnManager) Start(bg BlockGetter) {
 	// Pubsub
 	var err error
 	cm.ps, err = pubsub.NewFloodSub(
@@ -126,8 +126,8 @@ func (cm *ConnManager) Start(ns NetSync) {
 	go cm.keepHighwayConnection()
 
 	cm.Requester = NewRequester(cm.LocalHost.GRPC)
-	cm.Subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages)
-	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
+	cm.Subscriber = NewSubManager(cm.info, cm.ps, cm.Requester, cm.messages, cm.disp)
+	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, bg)
 	go cm.manageRoleSubscription()
 	cm.process()
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 )
 
-func StoreWaitingPDEContributions(stateDB *StateDB, beaconHeight uint64, waitingPDEContributions map[string]*rawdbv2.PDEContribution) error {
+func StoreWaitingPDEContributions(stateDB *StateDB, waitingPDEContributions map[string]*rawdbv2.PDEContribution) error {
 	for tempKey, contribution := range waitingPDEContributions {
 		strs := strings.Split(tempKey, "-")
 		pairID := strings.Join(strs[2:], "-")
@@ -43,7 +43,7 @@ func DeleteWaitingPDEContributions(stateDB *StateDB, deletedWaitingPDEContributi
 	}
 }
 
-func StorePDEPoolPairs(stateDB *StateDB, beaconHeight uint64, pdePoolPairs map[string]*rawdbv2.PDEPoolForPair) error {
+func StorePDEPoolPairs(stateDB *StateDB, pdePoolPairs map[string]*rawdbv2.PDEPoolForPair) error {
 	for _, pdePoolPair := range pdePoolPairs {
 		key := GeneratePDEPoolPairObjectKey(pdePoolPair.Token1IDStr, pdePoolPair.Token2IDStr)
 		value := NewPDEPoolPairStateWithValue(pdePoolPair.Token1IDStr, pdePoolPair.Token1PoolValue, pdePoolPair.Token2IDStr, pdePoolPair.Token2PoolValue)
@@ -66,7 +66,7 @@ func GetPDEPoolPair(stateDB *StateDB, beaconHeight uint64) (map[string]*rawdbv2.
 	return pdePoolPairs, nil
 }
 
-func StorePDEShares(stateDB *StateDB, beaconHeight uint64, pdeShares map[string]uint64) error {
+func StorePDEShares(stateDB *StateDB, pdeShares map[string]uint64) error {
 	for tempKey, shareAmount := range pdeShares {
 		strs := strings.Split(tempKey, "-")
 		token1ID := strs[2]
@@ -78,11 +78,12 @@ func StorePDEShares(stateDB *StateDB, beaconHeight uint64, pdeShares map[string]
 		if err != nil {
 			return NewStatedbError(StorePDEShareError, err)
 		}
+
 	}
 	return nil
 }
 
-func StorePDETradingFees(stateDB *StateDB, beaconHeight uint64, pdeTradingFees map[string]uint64) error {
+func StorePDETradingFees(stateDB *StateDB, pdeTradingFees map[string]uint64) error {
 	for tempKey, feeAmount := range pdeTradingFees {
 		strs := strings.Split(tempKey, "-")
 		token1ID := strs[2]

@@ -3,14 +3,14 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"reflect"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 type StakerInfo struct {
-	rewardReceiver privacy.PaymentAddress
+	rewardReceiver key.PaymentAddress
 	txStakingID    common.Hash
 	autoStaking    bool
 }
@@ -20,7 +20,7 @@ func NewStakerInfo() *StakerInfo {
 }
 
 func NewStakerInfoWithValue(
-	rewardReceiver privacy.PaymentAddress,
+	rewardReceiver key.PaymentAddress,
 	autoStaking bool,
 	txStakingID common.Hash,
 ) *StakerInfo {
@@ -33,7 +33,7 @@ func NewStakerInfoWithValue(
 
 func (c StakerInfo) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
-		RewardReceiver privacy.PaymentAddress
+		RewardReceiver key.PaymentAddress
 		AutoStaking    bool
 		TxStakingID    common.Hash
 		ShardID        byte
@@ -51,7 +51,7 @@ func (c StakerInfo) MarshalJSON() ([]byte, error) {
 
 func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 	temp := struct {
-		RewardReceiver privacy.PaymentAddress
+		RewardReceiver key.PaymentAddress
 		AutoStaking    bool
 		TxStakingID    common.Hash
 		ShardID        byte
@@ -67,7 +67,7 @@ func (c *StakerInfo) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (s *StakerInfo) SetRewardReceiver(r privacy.PaymentAddress) {
+func (s *StakerInfo) SetRewardReceiver(r key.PaymentAddress) {
 	s.rewardReceiver = r
 }
 
@@ -79,7 +79,7 @@ func (s *StakerInfo) SetAutoStaking(a bool) {
 	s.autoStaking = a
 }
 
-func (s StakerInfo) RewardReceiver() privacy.PaymentAddress {
+func (s StakerInfo) RewardReceiver() key.PaymentAddress {
 	return s.rewardReceiver
 }
 
