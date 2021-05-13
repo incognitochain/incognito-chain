@@ -58,6 +58,7 @@ const (
 	PortalUnlockOverRateCollaterals
 
 	// Portal v4
+	PortalV4StatusObjectType
 	PortalV4UTXOObjectType
 	PortalV4ShieldRequestObjectType
 	PortalWaitingUnshieldObjectType

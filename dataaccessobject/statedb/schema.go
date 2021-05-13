@@ -3,9 +3,10 @@ package statedb
 import (
 	"bytes"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/wallet"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/wallet"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -101,6 +102,7 @@ var (
 	withdrawCollateralProofType = []byte("0-")
 
 	// portal v4
+	portalV4StatusPrefix                         = []byte("portalv4status-")
 	portalUTXOStatePrefix                        = []byte("portalutxo-")
 	portalShieldRequestPrefix                    = []byte("portalshieldrequest-")
 	portalWaitingUnshieldRequestsPrefix          = []byte("portalwaitingunshieldrequest-")
@@ -338,9 +340,9 @@ func GetPDEShareKey(beaconHeight uint64, token1ID string, token2ID string, contr
 
 	var keyAddr string
 	var err error
-	if len(contributorAddress) == 0{
+	if len(contributorAddress) == 0 {
 		keyAddr = contributorAddress
-	}else{
+	} else {
 		//Always parse the contributor address into the oldest version for compatibility
 		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddress, false)
 		if err != nil {
@@ -358,9 +360,9 @@ func GetPDETradingFeeKey(beaconHeight uint64, token1ID string, token2ID string, 
 
 	var keyAddr string
 	var err error
-	if len(contributorAddress) == 0{
+	if len(contributorAddress) == 0 {
 		keyAddr = contributorAddress
-	}else{
+	} else {
 		//Always parse the contributor address into the oldest version for compatibility
 		keyAddr, err = wallet.GetPaymentAddressV1(contributorAddress, false)
 		if err != nil {
@@ -554,6 +556,12 @@ func PortalBatchUnshieldRequestStatusPrefix() []byte {
 }
 
 // Portal v4 prefix hash of the key
+
+func GetPortalV4StatusPrefix() []byte {
+	h := common.HashH(portalV4StatusPrefix)
+	return h[:][:prefixHashKeyLength]
+}
+
 func GetPortalUTXOStatePrefix(tokenID string) []byte {
 	h := common.HashH(append(portalUTXOStatePrefix, []byte(tokenID)...))
 	return h[:][:prefixHashKeyLength]

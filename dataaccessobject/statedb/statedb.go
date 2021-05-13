@@ -3,15 +3,16 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"strconv"
+	"time"
+
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/pkg/errors"
-	"math/big"
-	"strconv"
-	"time"
 )
 
 // StateDBs within the incognito protocol are used to store anything
@@ -1865,7 +1866,6 @@ func (stateDB *StateDB) getPortalConfirmProofState(key common.Hash) (*PortalConf
 	return NewPortalConfirmProofState(), false, nil
 }
 
-
 // ================================= Portal V4 OBJECT =======================================
 func (stateDB *StateDB) getShieldingRequestByKey(key common.Hash) (*ShieldingRequest, bool, error) {
 	shieldingRequest, err := stateDB.getStateObject(PortalV4ShieldRequestObjectType, key)
@@ -1956,4 +1956,15 @@ func (stateDB *StateDB) getListProcessedBatchUnshieldRequestsByTokenID(tokenID s
 		processedBatchUnshieldRequests[keyHash.String()] = wr
 	}
 	return processedBatchUnshieldRequests
+}
+
+func (stateDB *StateDB) getPortalV4StatusByKey(key common.Hash) (*PortalV4StatusState, bool, error) {
+	portalStatusState, err := stateDB.getStateObject(PortalV4StatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if portalStatusState != nil {
+		return portalStatusState.GetValue().(*PortalV4StatusState), true, nil
+	}
+	return NewPortalV4StatusState(), false, nil
 }

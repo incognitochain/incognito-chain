@@ -47,7 +47,8 @@ const (
 	ErrInvalidPDETradingFeeStateType             = "invalid pde trading fee state type"
 	ErrInvalidBlockHashType                      = "invalid block hash type"
 	ErrInvalidUnlockOverRateCollateralsStateType = "invalid unlock over rate collaterals state type"
-	ErrInvalidSlasingCommitteeStateType       = "invalid slashing committee state type"
+	ErrInvalidSlasingCommitteeStateType          = "invalid slashing committee state type"
+	ErrInvalidPortalV4StatusStateType            = "invalid portal v4 status state type"
 	ErrInvalidPortalExternalTxStateType          = "invalid portal external tx state type"
 	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
 	ErrInvalidPortalUTXOType                     = "invalid portal utxo state type"
@@ -217,6 +218,8 @@ const (
 	GetPortalUnlockOverRateCollateralsStatusError
 
 	// portal v4
+	StorePortalV4StatusError
+	GetPortalV4StatusError
 	StorePortalV4UTXOsError
 	StorePortalV4ShieldingRequestStatusError
 	GetPortalV4ShieldingRequestStatusError
@@ -392,6 +395,8 @@ var ErrCodeMessage = map[int]struct {
 	StorePortalUnshieldBatchFeeReplacementRequestStatusError: {-15018, "Store portal unshield batch replacement request status error"},
 	GetPortalSubmitConfirmedTxRequestStatusError:             {-15019, "Get portal submit confirmed tx request status error"},
 	StorePortalSubmitConfirmedTxRequestStatusError:           {-15020, "Store portal submit confirmed tx request status error"},
+	StorePortalV4StatusError:                                 {-15021, "Store portal v4 status error"},
+	GetPortalV4StatusError:                                   {-15022, "Get portal v4 status error"},
 }
 
 type StatedbError struct {

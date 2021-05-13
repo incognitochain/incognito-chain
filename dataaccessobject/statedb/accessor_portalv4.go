@@ -1,6 +1,8 @@
 package statedb
 
 import (
+	"fmt"
+
 	"github.com/incognitochain/incognito-chain/common"
 )
 
@@ -8,7 +10,7 @@ import (
 func StoreShieldingRequestStatus(stateDB *StateDB, txID string, statusContent []byte) error {
 	statusType := PortalShieldingRequestStatusPrefix()
 	statusSuffix := []byte(txID)
-	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	err := StorePortalV4Status(stateDB, statusType, statusSuffix, statusContent)
 	if err != nil {
 		return NewStatedbError(StorePortalV4ShieldingRequestStatusError, err)
 	}
@@ -19,7 +21,7 @@ func StoreShieldingRequestStatus(stateDB *StateDB, txID string, statusContent []
 func GetShieldingRequestStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	statusType := PortalShieldingRequestStatusPrefix()
 	statusSuffix := []byte(txID)
-	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	data, err := GetPortalV4Status(stateDB, statusType, statusSuffix)
 	if err != nil {
 		return []byte{}, NewStatedbError(GetPortalV4ShieldingRequestStatusError, err)
 	}
@@ -114,7 +116,7 @@ func DeleteWaitingUnshieldRequests(stateDB *StateDB, wUnshieldReqKeys []common.H
 func StorePortalUnshieldRequestStatus(stateDB *StateDB, unshieldID string, statusContent []byte) error {
 	statusType := PortalUnshieldRequestStatusPrefix()
 	statusSuffix := []byte(unshieldID)
-	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	err := StorePortalV4Status(stateDB, statusType, statusSuffix, statusContent)
 	if err != nil {
 		return NewStatedbError(StorePortalUnshieldRequestStatusError, err)
 	}
@@ -125,7 +127,7 @@ func StorePortalUnshieldRequestStatus(stateDB *StateDB, unshieldID string, statu
 func GetPortalUnshieldRequestStatus(stateDB *StateDB, unshieldID string) ([]byte, error) {
 	statusType := PortalUnshieldRequestStatusPrefix()
 	statusSuffix := []byte(unshieldID)
-	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	data, err := GetPortalV4Status(stateDB, statusType, statusSuffix)
 	if err != nil && err.(*StatedbError).GetErrorCode() != ErrCodeMessage[GetPortalStatusNotFoundError].Code {
 		return []byte{}, NewStatedbError(GetPortalUnshieldRequestStatusError, err)
 	}
@@ -159,7 +161,7 @@ func StoreProcessedBatchUnshieldRequests(
 func StorePortalBatchUnshieldRequestStatus(stateDB *StateDB, batchID string, statusContent []byte) error {
 	statusType := PortalBatchUnshieldRequestStatusPrefix()
 	statusSuffix := []byte(batchID)
-	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	err := StorePortalV4Status(stateDB, statusType, statusSuffix, statusContent)
 	if err != nil {
 		return NewStatedbError(StorePortalBatchUnshieldRequestStatusError, err)
 	}
@@ -179,7 +181,7 @@ func DeletePortalBatchUnshieldRequests(stateDB *StateDB, batchProcessedUnshieldR
 func GetPortalBatchUnshieldRequestStatus(stateDB *StateDB, batchID string) ([]byte, error) {
 	statusType := PortalBatchUnshieldRequestStatusPrefix()
 	statusSuffix := []byte(batchID)
-	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	data, err := GetPortalV4Status(stateDB, statusType, statusSuffix)
 	if err != nil && err.(*StatedbError).GetErrorCode() != ErrCodeMessage[GetPortalStatusNotFoundError].Code {
 		return []byte{}, NewStatedbError(GetPortalBatchUnshieldRequestStatusError, err)
 	}
@@ -192,7 +194,7 @@ func GetPortalBatchUnshieldRequestStatus(stateDB *StateDB, batchID string) ([]by
 func StorePortalUnshieldBatchReplacementRequestStatus(stateDB *StateDB, txID string, statusContent []byte) error {
 	statusType := PortalUnshielFeeReplacementBatchStatusPrefix()
 	statusSuffix := []byte(txID)
-	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	err := StorePortalV4Status(stateDB, statusType, statusSuffix, statusContent)
 	if err != nil {
 		return NewStatedbError(StorePortalUnshieldBatchFeeReplacementRequestStatusError, err)
 	}
@@ -203,7 +205,7 @@ func StorePortalUnshieldBatchReplacementRequestStatus(stateDB *StateDB, txID str
 func GetPortalUnshieldBatchReplacementRequestStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	statusType := PortalUnshielFeeReplacementBatchStatusPrefix()
 	statusSuffix := []byte(txID)
-	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	data, err := GetPortalV4Status(stateDB, statusType, statusSuffix)
 	if err != nil && err.(*StatedbError).GetErrorCode() != ErrCodeMessage[GetPortalStatusNotFoundError].Code {
 		return []byte{}, NewStatedbError(GetPortalUnshieldBatchFeeReplacementRequestStatusError, err)
 	}
@@ -216,7 +218,7 @@ func GetPortalUnshieldBatchReplacementRequestStatus(stateDB *StateDB, txID strin
 func StorePortalSubmitConfirmedTxRequestStatus(stateDB *StateDB, txID string, statusContent []byte) error {
 	statusType := PortalSubmitConfirmedTxStatusPrefix()
 	statusSuffix := []byte(txID)
-	err := StorePortalStatus(stateDB, statusType, statusSuffix, statusContent)
+	err := StorePortalV4Status(stateDB, statusType, statusSuffix, statusContent)
 	if err != nil {
 		return NewStatedbError(StorePortalSubmitConfirmedTxRequestStatusError, err)
 	}
@@ -227,10 +229,33 @@ func StorePortalSubmitConfirmedTxRequestStatus(stateDB *StateDB, txID string, st
 func GetPortalSubmitConfirmedTxRequestStatus(stateDB *StateDB, txID string) ([]byte, error) {
 	statusType := PortalSubmitConfirmedTxStatusPrefix()
 	statusSuffix := []byte(txID)
-	data, err := GetPortalStatus(stateDB, statusType, statusSuffix)
+	data, err := GetPortalV4Status(stateDB, statusType, statusSuffix)
 	if err != nil && err.(*StatedbError).GetErrorCode() != ErrCodeMessage[GetPortalStatusNotFoundError].Code {
 		return []byte{}, NewStatedbError(GetPortalSubmitConfirmedTxRequestStatusError, err)
 	}
 
 	return data, nil
+}
+
+// ================= Portal v4 Status =================
+func StorePortalV4Status(stateDB *StateDB, statusType []byte, statusSuffix []byte, statusContent []byte) error {
+	key := GeneratePortalV4StatusObjectKey(statusType, statusSuffix)
+	value := NewPortalV4StatusStateWithValue(statusType, statusSuffix, statusContent)
+	err := stateDB.SetStateObject(PortalV4StatusObjectType, key, value)
+	if err != nil {
+		return NewStatedbError(StorePortalV4StatusError, err)
+	}
+	return nil
+}
+
+func GetPortalV4Status(stateDB *StateDB, statusType []byte, statusSuffix []byte) ([]byte, error) {
+	key := GeneratePortalV4StatusObjectKey(statusType, statusSuffix)
+	s, has, err := stateDB.getPortalV4StatusByKey(key)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalV4StatusError, err)
+	}
+	if !has {
+		return []byte{}, NewStatedbError(GetPortalStatusNotFoundError, fmt.Errorf("status %+v with prefix %+v not found", string(statusType), string(statusSuffix)))
+	}
+	return s.statusContent, nil
 }
