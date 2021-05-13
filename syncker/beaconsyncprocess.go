@@ -259,8 +259,77 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 
 }
 
+func (s *BeaconSyncProcess) streamBlockFromHighway() chan *types.BeaconBlock {
+	fromHeight := s.chain.GetBestViewHeight() + 1
+	beaconCh := make(chan *types.BeaconBlock, 500)
+	time.Sleep(time.Second * 5)
+	go func() {
+		for {
+		REPEAT:
+			ctx, _ := context.WithTimeout(context.Background(), time.Minute)
+			ch, err := s.network.RequestBeaconBlocksViaStream(ctx, "", fromHeight, fromHeight+100)
+			if err != nil || ch == nil {
+				time.Sleep(time.Second * 30)
+				continue
+			}
+			tmpHeight := fromHeight
+			for {
+				select {
+				case blk := <-ch:
+					if !isNil(blk) {
+						beaconCh <- blk.(*types.BeaconBlock)
+						fromHeight = blk.GetHeight() + 1
+					} else {
+						if tmpHeight == fromHeight {
+							time.Sleep(time.Second * 20)
+						}
+						goto REPEAT
+					}
+				}
+			}
+		}
+
+	}()
+	return beaconCh
+}
+
 //sync beacon
 func (s *BeaconSyncProcess) syncBeacon() {
+	regression := os.Getenv("REGRESSION")
+
+	//if regression, we sync from highway, not care about fork and peerstate
+	if regression == "1" {
+		beaconCh := s.streamBlockFromHighway()
+		for {
+			nextHeight := s.chain.GetBestViewHeight() + 1
+			beaconBlock := <-beaconCh
+			if nextHeight != beaconBlock.GetHeight() {
+				Logger.Error("Something wrong", nextHeight, beaconBlock.GetHeight())
+				panic(1)
+			}
+
+		BEACON_WAIT:
+			shouldWait := false
+			for sid, shardStates := range beaconBlock.Body.ShardState {
+				if len(shardStates) > 0 && shardStates[len(shardStates)-1].Height > s.blockchain.GetChain(int(sid)).GetFinalView().GetHeight() {
+					shouldWait = true
+				}
+			}
+			if !shouldWait {
+				err := s.chain.InsertBlock(beaconBlock, common.REGRESSION_TEST)
+				if err != nil {
+					Logger.Error(err)
+					goto BEACON_WAIT
+				}
+			} else {
+				time.Sleep(time.Millisecond * 5)
+				goto BEACON_WAIT
+			}
+		}
+		return
+	}
+
+	//if not regression, we sync from peer
 	for {
 		requestCnt := 0
 		if s.status != RUNNING_SYNC {
@@ -282,6 +351,7 @@ func (s *BeaconSyncProcess) syncBeacon() {
 			}
 			time.Sleep(time.Second * 5)
 		}
+
 	}
 }
 

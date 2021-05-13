@@ -130,7 +130,7 @@ func (sim *NodeEngine) EnableDebug() {
 func (sim *NodeEngine) init() {
 	os.Setenv("TXPOOL_VERSION", "1")
 	simName := sim.simName
-	InitLogRotator(filepath.Join("/data", simName+".log"))
+	InitLogRotator(filepath.Join(sim.config.DataDir, simName+".log"))
 	activeNetParams := sim.config.ChainParam.GetParamData()
 	if sim.config.AppNode {
 		switch activeNetParams.Net {

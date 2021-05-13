@@ -6,6 +6,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"os"
+	"strings"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -193,7 +194,103 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 	}
 }
 
+func (s *ShardSyncProcess) streamBlockFromHighway() chan *types.ShardBlock {
+	fromHeight := s.Chain.GetBestViewHeight() + 1
+	shardCh := make(chan *types.ShardBlock, 500)
+	time.Sleep(time.Second * 20)
+	go func() {
+		for {
+		REPEAT:
+			ctx, _ := context.WithTimeout(context.Background(), time.Minute)
+			ch, err := s.Network.RequestShardBlocksViaStream(ctx, "", s.shardID, fromHeight, fromHeight+100)
+			if err != nil || ch == nil {
+				time.Sleep(time.Second * 30)
+				continue
+			}
+			tmpHeight := fromHeight
+			for {
+				select {
+				case blk := <-ch:
+					if !isNil(blk) {
+						shardCh <- blk.(*types.ShardBlock)
+						fromHeight = blk.GetHeight() + 1
+					} else {
+						if tmpHeight == fromHeight {
+							time.Sleep(time.Second * 20)
+						}
+						goto REPEAT
+					}
+				}
+			}
+
+		}
+
+	}()
+	return shardCh
+}
+
 func (s *ShardSyncProcess) syncShardProcess() {
+	regression := os.Getenv("REGRESSION")
+
+	//if regression, we sync from highway, not care about fork and peerstate
+	if regression == "1" {
+		shardCh := s.streamBlockFromHighway()
+		for {
+			nextHeight := s.Chain.GetBestViewHeight() + 1
+			shardBlock := <-shardCh
+			if nextHeight != shardBlock.GetHeight() {
+				Logger.Error("Something wrong", nextHeight, shardBlock.GetHeight())
+				panic(1)
+			}
+
+		SHARD_WAIT:
+			//fmt.Println("insert shard", shardID, nextHeight)
+			shouldWait := false
+			beaconChain := s.blockchain.BeaconChain
+			beaconFinaView := beaconChain.GetFinalViewHeight()
+			if shardBlock.Header.BeaconHeight > beaconChain.GetFinalViewHeight() {
+				shouldWait = true
+			}
+			for sid, cross := range shardBlock.Body.CrossTransactions {
+				if cross[len(cross)-1].BlockHeight > beaconChain.GetFinalView().(*blockchain.BeaconBestState).BestShardHeight[sid] {
+					shouldWait = true
+				} else {
+					for _, blk := range cross {
+						//fmt.Println("debug create crossshard block", int(sid), int(shardID), blk.BlockHeight, blk.BlockHash.String())
+						crossBlk, err := s.blockchain.GetShardBlockByHeightV1(blk.BlockHeight, sid)
+						if err != nil {
+							panic(err)
+						}
+						crossX, err := blockchain.CreateCrossShardBlock(crossBlk, byte(s.shardID))
+						if err != nil {
+							panic(err)
+						}
+						//fmt.Println("debug insert cross shard block", int(sid), int(shardID), blk.BlockHeight, crossX.Hash().String())
+						s.crossShardSyncProcess.InsertCrossShardBlock(crossX)
+					}
+
+				}
+			}
+
+			if !shouldWait {
+				err := s.blockchain.GetChain(s.shardID).(*blockchain.ShardChain).InsertBlock(shardBlock, common.REGRESSION_TEST)
+				if err != nil {
+					if strings.Index(err.Error(), "Fetch Beacon Blocks Error") == -1 {
+						Logger.Error(err)
+						panic(1)
+					} else {
+						Logger.Error("Wait for beacon", shardBlock.Header.BeaconHeight, beaconFinaView)
+					}
+					goto SHARD_WAIT
+				}
+			} else {
+				time.Sleep(time.Millisecond * 5)
+				goto SHARD_WAIT
+			}
+		}
+		return
+	}
+
 	for {
 		requestCnt := 0
 		if s.status != RUNNING_SYNC {

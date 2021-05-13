@@ -18,9 +18,7 @@ COPY ./run_fullnode.sh /
 RUN chmod +x /run_fullnode.sh
 
 COPY ./incognito /
-COPY ./regressiontest /
 
 RUN chmod +x /incognito
-RUN chmod +x /regressiontest
 
 CMD ["/bin/bash","run_incognito.sh"]

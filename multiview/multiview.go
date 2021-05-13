@@ -112,10 +112,8 @@ func (multiView *MultiView) AddView(view View, commit bool) bool {
 		if len(multiView.viewByHash) == 0 { //if no view in map, this is init view -> always allow
 			multiView.viewByHash[*view.GetHash()] = view
 			multiView.updateViewState(view)
-			if commit {
-				multiView.commitFinalView = multiView.finalView
-				multiView.commitBestView = multiView.bestView
-			}
+			multiView.commitFinalView = multiView.finalView
+			multiView.commitBestView = multiView.bestView
 			res <- true
 			return
 		} else if _, ok := multiView.viewByHash[*view.GetHash()]; !ok { //otherwise, if view is not yet inserted

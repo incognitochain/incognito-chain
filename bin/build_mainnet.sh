@@ -9,7 +9,6 @@ if [ -f ./bootnode ]; then
     rm -rf ./bootnode
 fi
 env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o incognito ../*.go
-env CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o regressiontest ../testsuite/apps/regressiontest/*.go
 
 cp ../keylist-mainnet.json ./keylist.json
 cp ../keylist-mainnet-v2.json ./keylist-v2.json

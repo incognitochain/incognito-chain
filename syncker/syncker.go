@@ -23,7 +23,7 @@ import (
 )
 
 const MAX_S2B_BLOCK = 90
-const MAX_CROSSX_BLOCK = 10
+const MAX_CROSSX_BLOCK = 200
 
 type SynckerManagerConfig struct {
 	Network    Network
@@ -318,6 +318,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(curVi
 	missingBlocks := compareListsByHeight(crossShardPoolLists, list)
 	// synckerManager.config.Server.
 	if len(missingBlocks) > 0 {
+		Logger.Error("stream missing crossshard block", missingBlocks)
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		synckerManager.StreamMissingCrossShardBlock(ctx, toShard, missingBlocks)
 		//Logger.Info("debug finish stream missing crossX block")
@@ -343,7 +344,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(curVi
 //Stream Missing CrossShard Block
 func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.Context, toShard byte, missingBlock map[byte][]uint64) {
 	for fromShard, missingHeight := range missingBlock {
-		//fmt.Println("debug stream missing crossshard block", int(fromShard), int(toShard), missingHeight)
+
 		ch, err := synckerManager.config.Network.RequestCrossShardBlocksViaStream(ctx, "", int(fromShard), int(toShard), missingHeight)
 		if err != nil {
 			fmt.Println("Syncker: create channel fail")

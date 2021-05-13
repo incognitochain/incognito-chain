@@ -2,11 +2,6 @@
 mkdir -p /data
 cron
 
-if [ "$REGRESSION" == "1" ]; then
-    ./regressiontest
-    exit
-fi
-
 if [ "$1" == "y" ]; then
     find /data -maxdepth 1 -mindepth 1 -type d | xargs rm -rf
 fi

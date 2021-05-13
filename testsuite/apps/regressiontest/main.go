@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -10,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	devframework "github.com/incognitochain/incognito-chain/testsuite"
 	"log"
-	"os"
 	"strings"
 	"time"
 )
@@ -49,17 +49,70 @@ func GetBeaconBlockByHeight(db incdb.KeyValueReader, height uint64) (*types.Beac
 	return blk, nil
 }
 
-func main() {
-	db, err := incdb.OpenMultipleDB("leveldb", "/data/mainnet/block")
-	if err != nil {
-		panic(err)
+func streamblock(endpoint string, node *devframework.NodeEngine) (chan types.BeaconBlock, map[int]chan types.ShardBlock) {
+	beaconCh := make(chan types.BeaconBlock, 500)
+	shardCh := make(map[int]chan types.ShardBlock)
+
+	fullnodeRPC := devframework.RemoteRPCClient{endpoint}
+
+	go func() {
+		fromBlk := node.GetBlockchain().BeaconChain.GetBestViewHeight() + 1
+
+		for {
+
+			data, err := fullnodeRPC.GetBlocksFromHeight(-1, uint64(fromBlk), 50)
+			//fmt.Println("len", len(beaconCh))
+			if err != nil || len(data.([]types.BeaconBlock)) == 0 {
+				fmt.Println(err)
+				time.Sleep(time.Minute)
+				continue
+			}
+			for _, blk := range data.([]types.BeaconBlock) {
+				beaconCh <- blk
+				fromBlk = blk.GetHeight() + 1
+				if fromBlk%10000 == 0 {
+
+				}
+			}
+		}
+	}()
+
+	for i := 0; i < 8; i++ {
+		shardCh[i] = make(chan types.ShardBlock, 500)
+		go func(sid int) {
+			fromBlk := node.GetBlockchain().GetChain(sid).GetBestView().GetHeight() + 1
+			for {
+				data, err := fullnodeRPC.GetBlocksFromHeight(sid, uint64(fromBlk), 50)
+				//fmt.Println("len", len(shardCh[sid]))
+				if err != nil || len(data.([]types.ShardBlock)) == 0 {
+					fmt.Println(err)
+					time.Sleep(time.Minute)
+					continue
+				}
+				for _, blk := range data.([]types.ShardBlock) {
+					shardCh[sid] <- blk
+					fromBlk = blk.GetHeight() + 1
+				}
+			}
+		}(i)
 	}
+
+	return beaconCh, shardCh
+
+}
+
+func main() {
+	dir := flag.String("d", "./regression", "Datadir")
+	fullnode := flag.String("h", "http://139.162.54.236:38934/", "Fullnode Endpoint")
+	flag.Parse()
+
 	node := devframework.NewStandaloneSimulation("regression", devframework.Config{
 		ChainParam: devframework.NewChainParam(devframework.ID_MAINNET),
-		DataDir:    "/data/regression",
+		DataDir:    *dir,
 		ResetDB:    false,
 		AppNode:    true,
 	})
+	beaconCh, shardCh := streamblock(*fullnode, node)
 
 	beaconChain := node.GetBlockchain().BeaconChain
 	//beacon insert process
@@ -67,11 +120,13 @@ func main() {
 		for {
 			time1 := time.Now()
 			nextHeight := node.GetBlockchain().GetChain(-1).GetBestView().GetHeight() + 1
-			beaconBlock, err := GetBeaconBlockByHeight(db[-1], nextHeight)
-			if err != nil {
-				fmt.Println("Exit with beacon", nextHeight)
-				os.Exit(0)
+			beaconBlock := <-beaconCh
+			if nextHeight != beaconBlock.GetHeight() {
+				fmt.Println("Something wrong", nextHeight, beaconBlock.GetHeight())
+				panic(1)
 			}
+
+		BEACON_WAIT:
 			shouldWait := false
 			for sid, shardStates := range beaconBlock.Body.ShardState {
 				if len(shardStates) > 0 && shardStates[len(shardStates)-1].Height > node.GetBlockchain().GetChain(int(sid)).GetFinalView().GetHeight() {
@@ -81,14 +136,15 @@ func main() {
 			//log.Printf("Get and Check beacon block %v - %vs\n", nextHeight, time.Since(time1).Seconds())
 			time1 = time.Now()
 			if !shouldWait {
-				err = beaconChain.InsertBlock(beaconBlock, common.REGRESSION_TEST)
+				err := beaconChain.InsertBlock(&beaconBlock, common.REGRESSION_TEST)
 				log.Printf("Insert beacon block %v - %vs\n", nextHeight, time.Since(time1).Seconds())
 				if err != nil {
 					log.Println(err)
-					continue
+					goto BEACON_WAIT
 				}
 			} else {
 				time.Sleep(time.Millisecond * 5)
+				goto BEACON_WAIT
 			}
 		}
 	}()
@@ -98,11 +154,13 @@ func main() {
 			for {
 				time1 := time.Now()
 				nextHeight := node.GetBlockchain().GetChain(shardID).GetBestView().GetHeight() + 1
-				shardBlock, err := GetShardBlockByHeight(db[shardID], byte(shardID), nextHeight)
-				if err != nil {
-					fmt.Println("Exit with shard", shardID, nextHeight)
-					os.Exit(0)
+				shardBlock := <-shardCh[shardID]
+				if nextHeight != shardBlock.GetHeight() {
+					fmt.Println("Something wrong", nextHeight, shardBlock.GetHeight())
+					panic(1)
 				}
+			SHARD_WAIT:
+				//fmt.Println("insert shard", shardID, nextHeight)
 				shouldWait := false
 				beaconFinaView := beaconChain.GetFinalViewHeight()
 				if shardBlock.Header.BeaconHeight > beaconChain.GetFinalViewHeight() {
@@ -113,8 +171,8 @@ func main() {
 						shouldWait = true
 					} else {
 						for _, blk := range cross {
-							fmt.Println("debug create crossshard block", int(sid), int(shardID), blk.BlockHeight, blk.BlockHash.String())
-							crossBlk, err := GetShardBlockByHeight(db[int(sid)], sid, blk.BlockHeight)
+							//fmt.Println("debug create crossshard block", int(sid), int(shardID), blk.BlockHeight, blk.BlockHash.String())
+							crossBlk, err := node.GetBlockchain().GetShardBlockByHeightV1(blk.BlockHeight, sid)
 							if err != nil {
 								panic(err)
 							}
@@ -122,8 +180,7 @@ func main() {
 							if err != nil {
 								panic(err)
 							}
-							fmt.Println("debug insert cross shard block", int(sid), int(shardID), blk.BlockHeight, crossX.Hash().String())
-
+							//fmt.Println("debug insert cross shard block", int(sid), int(shardID), blk.BlockHeight, crossX.Hash().String())
 							node.GetSyncker().InsertCrossShardBlock(crossX)
 						}
 
@@ -133,8 +190,7 @@ func main() {
 				//log.Printf("Get and Check shard %v block %v - %vs\n", shardID, nextHeight, time.Since(time1).Seconds())
 				time1 = time.Now()
 				if !shouldWait {
-
-					err = node.GetBlockchain().GetChain(shardID).(*blockchain.ShardChain).InsertBlock(shardBlock, common.REGRESSION_TEST)
+					err := node.GetBlockchain().GetChain(shardID).(*blockchain.ShardChain).InsertBlock(&shardBlock, common.REGRESSION_TEST)
 					log.Printf("Insert shard %v block %v - %vs\n", shardID, nextHeight, time.Since(time1).Seconds())
 					if err != nil {
 						if strings.Index(err.Error(), "Fetch Beacon Blocks Error") == -1 {
@@ -143,10 +199,11 @@ func main() {
 						} else {
 							log.Println("Wait for beacon", shardBlock.Header.BeaconHeight, beaconFinaView)
 						}
-						continue
+						goto SHARD_WAIT
 					}
 				} else {
 					time.Sleep(time.Millisecond * 5)
+					goto SHARD_WAIT
 				}
 			}
 		}(j)
