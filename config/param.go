@@ -148,6 +148,6 @@ type initialIncognito struct {
 	SigPubKey            string `mapstructure:"SigPubKey"`
 	Sig                  string `mapstructure:"Sig"`
 	Proof                string `mapstructure:"Proof"`
-	PubKeyLastByteSender int    `mapstructure:"Proof"`
+	PubKeyLastByteSender int    `mapstructure:"PubKeyLastByteSender"`
 	Metadata             string `mapstructure:"Metadata"`
 }

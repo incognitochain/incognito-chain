@@ -82,24 +82,15 @@ func mainMaster(serverChan chan<- *Server) error {
 		fmt.Fprintln(os.Stderr, err)
 		panic(err)
 	}
-
-	Logger.log.Info("[dcs] cfg:", cfg)
 	param := config.LoadParam()
-	Logger.log.Info("[dcs] param:", param)
-
-	if cfg.IsLocal {
-		activeNetParams = &testNetParams
-	}
+	Logger.log.Info(param)
 
 	//init key & param
 	blockchain.ReadKey(nil, nil)
 	blockchain.SetupParam()
 
-	Logger.log.Info("[dcs] activeNetParams:", activeNetParams)
-
-	common.MaxShardNumber = activeNetParams.ActiveShards
-	common.TIMESLOT = activeNetParams.Timeslot
 	activeNetParams.CreateGenesisBlocks()
+
 	// Get a channel that will be closed when a shutdown signal has been
 	// triggered either from an OS signal such as SIGINT (Ctrl+C) or from
 	// another subsystem such as the RPC server.

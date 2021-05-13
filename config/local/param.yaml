@@ -73,6 +73,12 @@ portal_param:
     min_percent_porting_fee: 0.01
     min_percent_redeem_fee: 0.01
     supported_collateral_tokens: 
+      - external_token_id: "0000000000000000000000000000000000000000"
+        decimal: 9
+      - external_token_id: "3a829f4b97660d970428cd370c4e41cbad62092b"
+        decimal: 6
+      - external_token_id: "75b0622cec14130172eae9cf166b92e5c112faff"
+        decimal: 6
     min_portal_fee: 100
     portal_tokens: 
       ef5947f70ead81a76a53c7c8b7317dd5245510c665d3a13921dc9a581188728b:
