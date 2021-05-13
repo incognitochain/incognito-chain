@@ -57,6 +57,7 @@ type TxPool interface {
 	)
 	snapshotPool() TxsData
 	getTxByHash(txID string) metadata.Transaction
+	removeTx(txHash string, arg interface{})
 }
 
 type BlockTxsVerifier interface {
@@ -93,7 +94,7 @@ type TxVerifier interface {
 	LoadCommitment(
 		tx metadata.Transaction,
 		shardViewRetriever metadata.ShardViewRetriever,
-	) bool
+	) (bool, error)
 	LoadCommitmentForTxs(
 		txs []metadata.Transaction,
 		shardViewRetriever metadata.ShardViewRetriever,

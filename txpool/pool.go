@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
@@ -52,27 +53,32 @@ type TxsPool struct {
 	isRunning bool
 	cQuit     chan bool
 	better    func(txA, txB metadata.Transaction) bool
+	ttl       time.Duration
 }
 
 func NewTxsPool(
 	txVerifier TxVerifier,
 	inbox chan metadata.Transaction,
+	ttl time.Duration,
 ) *TxsPool {
-	return &TxsPool{
+	tp := &TxsPool{
 		action:   make(chan func(*TxsPool)),
 		Verifier: txVerifier,
 		Data: TxsData{
 			TxByHash: map[string]metadata.Transaction{},
 			TxInfos:  map[string]TxInfo{},
 		},
-		Cacher:    cache.New(10*time.Second, 10*time.Second),
+		Cacher:    cache.New(ttl, ttl),
 		Inbox:     inbox,
 		isRunning: false,
 		cQuit:     make(chan bool),
 		better: func(txA, txB metadata.Transaction) bool {
 			return txA.GetTxFee() > txB.GetTxFee()
 		},
+		ttl: ttl,
 	}
+	tp.Cacher.OnEvicted(tp.removeTx)
+	return tp
 }
 
 func (tp *TxsPool) UpdateTxVerifier(tv TxVerifier) {
@@ -123,6 +129,14 @@ func (tp *TxsPool) Stop() {
 	tp.cQuit <- true
 }
 
+func (tp *TxsPool) removeTx(txHash string, arg interface{}) {
+	tp.action <- func(tpTemp *TxsPool) {
+		Logger.Debugf("Removing tx %v at %v", txHash, time.Now())
+		delete(tpTemp.Data.TxByHash, txHash)
+		delete(tpTemp.Data.TxInfos, txHash)
+	}
+}
+
 func (tp *TxsPool) RemoveTxs(txHashes []string) {
 	tp.action <- func(tpTemp *TxsPool) {
 		for _, tx := range txHashes {
@@ -157,10 +171,11 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 				cost:   0,
 			}
 			return
+		} else {
+			Logger.Debugf("Caching tx %v at %v", tx.Hash().String(), time.Now())
+			tp.Cacher.Add(tx.Hash().String(), nil, tp.ttl)
 		}
-		ok := tp.Verifier.LoadCommitment(tx, nil)
-		if !ok {
-			err := errors.Errorf("Can not load commitment for this tx %v", tx.Hash().String())
+		if ok, err := tp.Verifier.LoadCommitment(tx, nil); !ok || err != nil {
 			Logger.Debugf("[txTracing] validate tx %v failed, error %v, cost %v", txHash, err, time.Since(start))
 			errChan <- validateResult{
 				err:    err,
@@ -207,7 +222,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		Index  uint
 		Detail TxInfoDetail
 	}{}
-	sDB := sView.GetCopiedTransactionStateDB()
+	mapForChkDbStake := map[string]interface{}{}
 	defer func() {
 		Logger.Infof("Return list txs #res %v cursize %v curtime %v maxsize %v maxtime %v for shard %v \n", len(res), curSize, curTime, maxSize, maxTime, sView.GetShardID())
 	}()
@@ -216,6 +231,7 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 		select {
 		case txDetails := <-txDetailCh:
 			if txDetails == nil {
+				removeNilTx(&res)
 				return res
 			}
 			Logger.Debugf("[txTracing] Validate new tx %v with chainstate\n", txDetails.Tx.Hash().String())
@@ -225,8 +241,11 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 			if ok := checkTxAction(limitTxAction, txDetails.Tx); !ok {
 				continue
 			}
-			err := txDetails.Tx.LoadCommitment(sDB.Copy())
-			if err != nil {
+			if tp.isDoubleStake(mapForChkDbStake, txDetails.Tx) {
+				Logger.Errorf("[txTracing] Tx %v is stake/unstake/stop auto stake twice\n", txDetails.Hash)
+				continue
+			}
+			if ok, err := tp.Verifier.LoadCommitment(txDetails.Tx, sView); !ok || err != nil {
 				Logger.Errorf("[txTracing] Validate tx %v return error %v\n", txDetails.Hash, err)
 				continue
 			}
@@ -242,19 +261,50 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				continue
 			}
 			Logger.Debugf("Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
-			ok, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
-			Logger.Debugf("Added %v, needed to remove %v\n", ok, removedInfo)
-			if ok {
-				curSize = curSize - removedInfo.Fee + txDetails.Fee
-				curTime = curTime - removedInfo.VTime + txDetails.VTime
-				res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
+			isDoubleSpend, needToReplace, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
+			if isDoubleSpend && !needToReplace {
+				continue
 			}
+			curSize = curSize - removedInfo.Size + txDetails.Size
+			curTime = curTime - removedInfo.VTime + txDetails.VTime
+			Logger.Debugf("Added tx %v, %v %v\n", txDetails.Tx.Hash().String(), needToReplace, removedInfo)
+			res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
 		case <-timeOut:
 			stopCh <- nil
 			Logger.Debugf("Crawling txs for new block shard %v timeout! %v\n", sView.GetShardID(), time.Since(st))
+			removeNilTx(&res)
 			return res
 		}
 	}
+}
+
+func (tp *TxsPool) isDoubleStake(
+	dataHelper map[string]interface{},
+	tx metadata.Transaction,
+) bool {
+	metaType := tx.GetMetadataType()
+	pk := ""
+	switch metaType {
+	case metadata.ShardStakingMeta, metadata.BeaconStakingMeta:
+		if meta, ok := tx.GetMetadata().(*metadata.StakingMetadata); ok {
+			pk = meta.CommitteePublicKey
+		}
+	case metadata.UnStakingMeta:
+		if meta, ok := tx.GetMetadata().(*metadata.UnStakingMetadata); ok {
+			pk = meta.CommitteePublicKey
+		}
+	case metadata.StopAutoStakingMeta:
+		if meta, ok := tx.GetMetadata().(*metadata.StopAutoStakingMetadata); ok {
+			pk = meta.CommitteePublicKey
+		}
+	}
+	if pk != "" {
+		if _, existed := dataHelper[pk]; existed {
+			return true
+		}
+		dataHelper[pk] = nil
+	}
+	return false
 }
 
 func (tp *TxsPool) CheckDoubleSpend(
@@ -266,6 +316,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 	txs *[]metadata.Transaction,
 ) (
 	bool,
+	bool,
 	TxInfo,
 ) {
 	prf := tx.GetProof()
@@ -273,54 +324,92 @@ func (tp *TxsPool) CheckDoubleSpend(
 		Fee:   0,
 		VTime: 0,
 	}
+	removeIdx := map[uint]interface{}{}
+	isDoubleSpend := false
+	needToReplace := false
 	if prf != nil {
-		iCoins := prf.GetInputCoins()
-		oCoins := prf.GetOutputCoins()
-		removeIdx := map[uint]interface{}{}
-		for _, iCoin := range iCoins {
-			if info, ok := dataHelper[iCoin.GetKeyImage().ToBytes()]; ok {
-				if _, ok := removeIdx[info.Index]; ok {
-					continue
-				}
-				if tp.better(info.Detail.Tx, tx) {
-					return false, removedInfos
-				} else {
-					removeIdx[info.Index] = nil
-				}
-			}
+		isDoubleSpend, needToReplace, removeIdx, removedInfos = tp.checkPrfDoubleSpend(prf, dataHelper, removeIdx, tx, removedInfos)
+		if isDoubleSpend && !needToReplace {
+			return isDoubleSpend, needToReplace, removedInfos
 		}
-		for _, oCoin := range oCoins {
-			if info, ok := dataHelper[oCoin.GetSNDerivator().ToBytes()]; ok {
-				if _, ok := removeIdx[info.Index]; ok {
-					continue
-				}
-				if tp.better(info.Detail.Tx, tx) {
-					return false, removedInfos
-				} else {
-					removeIdx[info.Index] = nil
-				}
-			}
-		}
-		if len(removeIdx) > 0 {
-			Logger.Debugf("%v %v Doublespend %v ", len(removeIdx), len((*txs)), tx.Hash().String())
-			for k, v := range dataHelper {
-				if _, ok := removeIdx[v.Index]; ok {
-					delete(dataHelper, k)
-				}
-			}
-			for k := range removeIdx {
-				if int(k) == len(*txs)-1 {
-					(*txs) = (*txs)[:k]
-				} else {
-					if int(k) < len((*txs))-1 {
-						(*txs) = append((*txs)[:k], (*txs)[k+1:]...)
-					}
-				}
+	}
 
+	if tx.GetType() == common.TxCustomTokenPrivacyType {
+		txNormal := tx.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
+		normalPrf := txNormal.GetProof()
+		if normalPrf != nil {
+			isDoubleSpend, needToReplace, removeIdx, removedInfos = tp.checkPrfDoubleSpend(normalPrf, dataHelper, removeIdx, tx, removedInfos)
+			if isDoubleSpend && !needToReplace {
+				return isDoubleSpend, needToReplace, removedInfos
 			}
 		}
 	}
-	return true, removedInfos
+
+	if len(removeIdx) > 0 {
+		Logger.Debugf("%v %v Doublespend %v\n", len(removeIdx), len((*txs)), tx.Hash().String())
+		for k, v := range dataHelper {
+			if _, ok := removeIdx[v.Index]; ok {
+				delete(dataHelper, k)
+			}
+		}
+		for k := range removeIdx {
+			(*txs)[k] = nil
+		}
+	}
+	return isDoubleSpend, needToReplace, removedInfos
+}
+
+func (tp *TxsPool) checkPrfDoubleSpend(
+	prf *zkp.PaymentProof,
+	dataHelper map[[privacy.Ed25519KeySize]byte]struct {
+		Index  uint
+		Detail TxInfoDetail
+	},
+	removeIdx map[uint]interface{},
+	tx metadata.Transaction,
+	removedInfos TxInfo,
+) (bool, bool, map[uint]interface{}, TxInfo) {
+	needToReplace := false
+	isDoubleSpend := false
+	iCoins := prf.GetInputCoins()
+	oCoins := prf.GetOutputCoins()
+	for _, iCoin := range iCoins {
+		if info, ok := dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()]; ok {
+			isDoubleSpend = true
+			if _, ok := removeIdx[info.Index]; ok {
+				needToReplace = true
+				continue
+			}
+			if tp.better(info.Detail.Tx, tx) {
+				return true, false, removeIdx, removedInfos
+			} else {
+				removeIdx[info.Index] = nil
+				removedInfos.Fee += info.Detail.Fee
+				removedInfos.Size += info.Detail.Size
+				removedInfos.VTime += info.Detail.VTime
+				needToReplace = true
+			}
+		}
+	}
+	for _, oCoin := range oCoins {
+		if info, ok := dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()]; ok {
+			isDoubleSpend = true
+			if _, ok := removeIdx[info.Index]; ok {
+				continue
+			}
+			if tp.better(info.Detail.Tx, tx) {
+				return true, false, removeIdx, removedInfos
+			} else {
+				removeIdx[info.Index] = nil
+				removedInfos.Fee += info.Detail.Fee
+				removedInfos.Size += info.Detail.Size
+				removedInfos.VTime += info.Detail.VTime
+				needToReplace = true
+			}
+		}
+	}
+
+	return isDoubleSpend, needToReplace, removeIdx, removedInfos
 }
 
 func insertTxIntoList(
@@ -334,28 +423,47 @@ func insertTxIntoList(
 	tx := txDetail.Tx
 	prf := tx.GetProof()
 	if prf != nil {
-		iCoins := prf.GetInputCoins()
-		oCoins := prf.GetOutputCoins()
-		for _, iCoin := range iCoins {
-			dataHelper[iCoin.GetKeyImage().ToBytes()] = struct {
-				Index  uint
-				Detail TxInfoDetail
-			}{
-				Index:  uint(len(txs)),
-				Detail: txDetail,
-			}
-		}
-		for _, oCoin := range oCoins {
-			dataHelper[oCoin.GetSNDerivator().ToBytes()] = struct {
-				Index  uint
-				Detail TxInfoDetail
-			}{
-				Index:  uint(len(txs)),
-				Detail: txDetail,
-			}
+		insertPrfForCheck(prf, dataHelper, txDetail, len(txs))
+	}
+	if tx.GetType() == common.TxCustomTokenPrivacyType {
+		txNormal := tx.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
+		normalPrf := txNormal.GetProof()
+		if normalPrf != nil {
+			insertPrfForCheck(normalPrf, dataHelper, txDetail, len(txs))
 		}
 	}
 	return append(txs, tx)
+}
+
+func insertPrfForCheck(
+	prf *zkp.PaymentProof,
+	dataHelper map[[privacy.Ed25519KeySize]byte]struct {
+		Index  uint
+		Detail TxInfoDetail
+	},
+	txDetail TxInfoDetail,
+	idx int,
+) {
+	iCoins := prf.GetInputCoins()
+	oCoins := prf.GetOutputCoins()
+	for _, iCoin := range iCoins {
+		dataHelper[iCoin.CoinDetails.GetSerialNumber().ToBytes()] = struct {
+			Index  uint
+			Detail TxInfoDetail
+		}{
+			Index:  uint(idx),
+			Detail: txDetail,
+		}
+	}
+	for _, oCoin := range oCoins {
+		dataHelper[oCoin.CoinDetails.GetSNDerivator().ToBytes()] = struct {
+			Index  uint
+			Detail TxInfoDetail
+		}{
+			Index:  uint(idx),
+			Detail: txDetail,
+		}
+	}
 }
 
 func (tp *TxsPool) CheckValidatedTxs(
@@ -392,7 +500,6 @@ func (tp *TxsPool) getTxs(quit <-chan interface{}, cValidTxs chan txInfoTemp) {
 			Logger.Debugf("[txTracing] Received new tx %v, send to worker %v", txHah, workerID)
 			nWorkers <- 1
 			go func() {
-
 				isValid, err, vTime := tp.ValidateNewTx(msg)
 				<-nWorkers
 				if err != nil {
@@ -515,4 +622,16 @@ func isTxForUser(tx metadata.Transaction) bool {
 		}
 	}
 	return true
+}
+
+func removeNilTx(txs *[]metadata.Transaction) {
+	j := 0
+	for _, tx := range *txs {
+		if tx == nil {
+			continue
+		}
+		(*txs)[j] = tx
+		j++
+	}
+	*txs = (*txs)[:j]
 }
