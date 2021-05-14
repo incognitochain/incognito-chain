@@ -87,10 +87,10 @@ func (netSync *NetSync) Init(cfg *NetSyncConfig) {
 	}
 
 	newTxPool := os.Getenv("TXPOOL_VERSION")
-	if newTxPool == "0" {
-		netSync.usingNewPool = false
-	} else {
+	if newTxPool == "1" {
 		netSync.usingNewPool = true
+	} else {
+		netSync.usingNewPool = false
 	}
 
 	// register pubsub channel
