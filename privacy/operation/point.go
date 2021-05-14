@@ -35,7 +35,7 @@ func (p *Point) SetKey(a *C25519.Key) (*Point, error) {
 
 	var point C25519.ExtendedGroupElement
 	if !point.FromBytes(&p.key) {
-		return nil, errors.New("Invalid point value")
+		return nil, fmt.Errorf("invalid point value: %v", *a)
 	}
 	return p, nil
 }
