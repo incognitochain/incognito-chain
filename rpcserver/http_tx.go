@@ -495,6 +495,69 @@ func (httpServer *HttpServer) handleListUnspentOutputTokens(params interface{}, 
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetOTACoinsByIndices(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	// get component
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
+	paramList, ok := paramsArray[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
+	}
+
+	tokenID := &common.PRVCoinID
+	if tmpTokenIDStr, ok := paramList["TokenID"]; ok {
+		tokenIDStr, ok := tmpTokenIDStr.(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("tokenID must be a string"))
+		}
+		tokenID, err = new(common.Hash).NewHashFromStr(tokenIDStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("tokenID %v is invalid", tokenIDStr))
+		}
+	}
+
+	fmt.Printf("tokenID: %v\n", tokenID.String())
+
+	tmpShardID, ok := paramList["ShardID"]
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("shardID not found"))
+	}
+	shardID, ok := tmpShardID.(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("shardID %v must be a float64", tmpShardID))
+	}
+
+	fmt.Printf("shardID: %v\n", shardID)
+
+	tmpIdxList, ok := paramList["Indices"]
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("field `Indices` not found"))
+	}
+
+	jsb, err := json.Marshal(tmpIdxList)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot marshal list indices"))
+	}
+	var idxList []float64
+
+	err = json.Unmarshal(jsb, &idxList)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse index list as []float64"))
+	}
+
+	fmt.Printf("idxList: %v\n", idxList)
+
+	uIdxList := make([]uint64, 0)
+	for _, idx := range idxList {
+		uIdxList = append(uIdxList, uint64(idx))
+	}
+
+	return httpServer.outputCoinService.GetOutputCoinByIndex(*tokenID, uIdxList, byte(shardID))
+}
 
 // handlePrivacyCustomTokenDetail - return list tx which relate to privacy custom token by token id
 func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
