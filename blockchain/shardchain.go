@@ -720,6 +720,9 @@ func (chain *ShardChain) validateBlockBody(flow *ShardValidationFlow) error {
 					goto CONT
 				}
 			}
+			if shardBlock.Header.BeaconHeight == 670950 { //mainnet change keylist v2
+				return nil
+			}
 		}
 		Logger.log.Error("blockInstruction", shardBlock.Body.Instructions)
 		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but get %+v", shardBlock.Header.InstructionsRoot, hash))
