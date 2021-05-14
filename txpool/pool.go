@@ -107,7 +107,10 @@ func (tp *TxsPool) Start() {
 		select {
 		case <-tp.cQuit:
 			stopGetTxs <- nil
+<<<<<<< HEAD
 			tp.isRunning = false
+=======
+>>>>>>> 2757919da... Enable staking v2
 			return
 		case f := <-tp.action:
 			Logger.Debugf("Total txs received %v, total txs in pool %v\n", total, len(tp.Data.TxInfos))

@@ -94,11 +94,14 @@ func NewGetMempoolInfoTxV2(infoTx txpool.MempoolInfoTx) *GetMempoolInfoTx {
 	return result
 }
 
-func NewGetMempoolInfoTx(tx metadata.Transaction) *GetMempoolInfoTx {
+func NewGetMempoolInfoTx(tpKey common.Hash, tx metadata.Transaction) *GetMempoolInfoTx {
 	result := &GetMempoolInfoTx{
 		LockTime: tx.GetLockTime(),
 		TxID:     tx.Hash().String(),
+		TpKey:    tpKey.String(),
 	}
+	return result
+
 	return result
 }
 
