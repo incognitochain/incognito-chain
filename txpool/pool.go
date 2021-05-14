@@ -106,6 +106,7 @@ func (tp *TxsPool) Start() {
 		select {
 		case <-tp.cQuit:
 			stopGetTxs <- nil
+			tp.isRunning = false
 			return
 		case f := <-tp.action:
 			Logger.Debugf("Total txs received %v, total txs in pool %v\n", total, len(tp.Data.TxInfos))

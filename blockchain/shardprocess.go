@@ -1087,9 +1087,11 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		}
 		Logger.log.Debug("Transaction in block with hash", blockHash, "and index", index)
 	}
-	if len(listTxHashes) > 0 {
-		if blockchain.ShardChain[shardID].TxPool.IsRunning() {
-			blockchain.ShardChain[shardID].TxPool.RemoveTxs(listTxHashes)
+	if blockchain.UsingNewPool() {
+		if len(listTxHashes) > 0 {
+			if blockchain.ShardChain[shardID].TxPool.IsRunning() {
+				blockchain.ShardChain[shardID].TxPool.RemoveTxs(listTxHashes)
+			}
 		}
 	}
 	// Store Incomming Cross Shard
