@@ -5,15 +5,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/portal/portalv3"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"math/big"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 )
 
 /* =======
@@ -74,7 +75,7 @@ func (p *PortalCustodianDepositProcessor) BuildNewInsts(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 	shardHeights map[byte]uint64,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	optionalData map[string]interface{},
 ) ([][]string, error) {
 	// parse instruction
@@ -134,7 +135,7 @@ func (p *PortalCustodianDepositProcessor) ProcessInsts(
 	beaconHeight uint64,
 	instructions []string,
 	currentPortalState *CurrentPortalState,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 ) error {
 	if currentPortalState == nil {
@@ -262,7 +263,7 @@ func (p *PortalRequestWithdrawCollateralProcessor) BuildNewInsts(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 	shardHeights map[byte]uint64,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	optionalData map[string]interface{},
 ) ([][]string, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -332,7 +333,7 @@ func (p *PortalRequestWithdrawCollateralProcessor) ProcessInsts(
 	beaconHeight uint64,
 	instructions []string,
 	currentPortalState *CurrentPortalState,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 ) error {
 	if currentPortalState == nil {
@@ -500,7 +501,7 @@ func (p *PortalCustodianDepositProcessorV3) BuildNewInsts(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 	shardHeights map[byte]uint64,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	optionalData map[string]interface{},
 ) ([][]string, error) {
 	// parse instruction
@@ -638,7 +639,7 @@ func (p *PortalCustodianDepositProcessorV3) ProcessInsts(
 	beaconHeight uint64,
 	instructions []string,
 	currentPortalState *CurrentPortalState,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 ) error {
 	if currentPortalState == nil {
@@ -813,7 +814,7 @@ func (p *PortalRequestWithdrawCollateralProcessorV3) BuildNewInsts(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 	shardHeights map[byte]uint64,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	optionalData map[string]interface{},
 ) ([][]string, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -911,7 +912,7 @@ func (p *PortalRequestWithdrawCollateralProcessorV3) ProcessInsts(
 	beaconHeight uint64,
 	instructions []string,
 	currentPortalState *CurrentPortalState,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 ) error {
 	if currentPortalState == nil {
@@ -1040,7 +1041,7 @@ func (p *PortalCusUnlockOverRateCollateralsProcessor) BuildNewInsts(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 	shardHeights map[byte]uint64,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	optionalData map[string]interface{},
 ) ([][]string, error) {
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
@@ -1147,7 +1148,7 @@ func (p *PortalCusUnlockOverRateCollateralsProcessor) ProcessInsts(
 	beaconHeight uint64,
 	instructions []string,
 	currentPortalState *CurrentPortalState,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 ) error {
 	if currentPortalState == nil {

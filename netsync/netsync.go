@@ -45,7 +45,6 @@ type NetSync struct {
 type NetSyncConfig struct {
 	Syncker          *syncker.SynckerManager
 	BlockChain       *blockchain.BlockChain
-	ChainParam       *blockchain.Params
 	TxMemPool        *mempool.TxPool
 	PubSubManager    *pubsub.PubSubManager
 	TransactionEvent pubsub.EventChannel // transaction event

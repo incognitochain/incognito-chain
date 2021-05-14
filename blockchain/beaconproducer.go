@@ -9,10 +9,10 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 )
 
@@ -76,13 +76,13 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 
 	BLogger.log.Infof("Producing block: %d (epoch %d)", newBeaconBlock.Header.Height, newBeaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
-	portalParams := blockchain.GetPortalParams()
+	portalParam := config.Param().PortalParam
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
 
 	instructions, shardStates, err := blockchain.GenerateBeaconBlockBody(
 		newBeaconBlock,
 		copiedCurView,
-		portalParams,
+		portalParam,
 		allShardBlocks,
 	)
 	if err != nil {
@@ -140,7 +140,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	newBeaconBlock *types.BeaconBlock,
 	curView *BeaconBestState,
-	portalParams portal.PortalParams,
+	portalParam config.PortalParam,
 	allShardBlocks map[byte][]*types.ShardBlock,
 ) ([][]string, map[byte][]types.ShardState, error) {
 	bridgeInstructions := [][]string{}
@@ -161,7 +161,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
 
-		portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
+		portalParamsV3 := portalParam.GetPortalParamsV3(newBeaconBlock.GetHeight())
 		isSplitRewardForCustodian := totalLockedCollateral > 0
 		percentCustodianRewards := portalParamsV3.MaxPercentCustodianRewards
 		if totalLockedCollateral < portalParamsV3.MinLockCollateralAmountInEpoch {

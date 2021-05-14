@@ -4,6 +4,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"math"
+	"math/big"
+	"os"
+	"strconv"
+	"testing"
+	"time"
+
 	eCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -17,13 +25,6 @@ import (
 	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
 	"github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/stretchr/testify/suite"
-	"io/ioutil"
-	"math"
-	"math/big"
-	"os"
-	"strconv"
-	"testing"
-	"time"
 )
 
 var _ = func() (_ struct{}) {
@@ -180,7 +181,6 @@ func (s *PortalTestSuiteV3) SetupTest() {
 						BNBFullNodePort:          TestnetBNBFullNodePort,
 					},
 				},
-
 			},
 		},
 	}
@@ -366,7 +366,7 @@ func processPortalInstructions(
 		case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3),
 			strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3),
 			strconv.Itoa(metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3):
-			err = portalprocessv3.ProcessPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+			err = portalprocessv3.ProcessPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState)
 		}
 
 		if err != nil {

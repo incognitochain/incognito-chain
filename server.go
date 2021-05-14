@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -25,9 +23,9 @@ import (
 	"github.com/incognitochain/incognito-chain/syncker"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/txpool"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 
-	"cloud.google.com/go/storage"
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -50,7 +48,6 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
-	"google.golang.org/api/option"
 
 	pb "github.com/incognitochain/go-libp2p-pubsub/pb"
 )
@@ -61,7 +58,6 @@ type Server struct {
 
 	protocolVersion string
 	isEnableMining  bool
-	chainParams     *blockchain.Params
 	connManager     *connmanager.ConnManager
 	blockChain      *blockchain.BlockChain
 	dataBase        map[int]incdb.Database
@@ -189,10 +185,6 @@ func (serverObj *Server) setupRPCWsListeners() ([]net.Listener, error) {
 	return listeners, nil
 }
 
-func (serverObj *Server) GetChainParam() *blockchain.Params {
-	return serverObj.chainParams
-}
-
 /*
 NewServer - create server object which control all process of node
 */
@@ -200,7 +192,6 @@ func (serverObj *Server) NewServer(
 	listenAddrs string,
 	db map[int]incdb.Database,
 	dbmp databasemp.DatabaseInterface,
-	chainParams *blockchain.Params,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
 	bnbChainState *bnbrelaying.BNBChainState,
@@ -208,7 +199,6 @@ func (serverObj *Server) NewServer(
 ) error {
 	// Init data for Server
 	serverObj.protocolVersion = protocolVer
-	serverObj.chainParams = chainParams
 	serverObj.cQuit = make(chan struct{})
 	serverObj.cNewPeers = make(chan *peer.Peer)
 	serverObj.dataBase = db
@@ -310,7 +300,6 @@ func (serverObj *Server) NewServer(
 	err = serverObj.blockChain.Init(&blockchain.Config{
 		BTCChain:      btcChain,
 		BNBChainState: bnbChainState,
-		ChainParams:   serverObj.chainParams,
 		DataBase:      serverObj.dataBase,
 		MemCache:      serverObj.memCache,
 		//MemCache:          nil,
@@ -325,7 +314,6 @@ func (serverObj *Server) NewServer(
 		PubSubManager:   pubsubManager,
 		ConsensusEngine: serverObj.consensusEngine,
 		Highway:         serverObj.highway,
-		GenesisParams:   blockchain.GenesisParam,
 		PoolManager:     poolManager,
 	})
 	if err != nil {
@@ -393,7 +381,6 @@ func (serverObj *Server) NewServer(
 		ConsensusEngine:   serverObj.consensusEngine,
 		BlockChain:        serverObj.blockChain,
 		DataBase:          serverObj.dataBase,
-		ChainParams:       chainParams,
 		FeeEstimator:      serverObj.feeEstimator,
 		TxLifeTime:        cfg.TxPoolTTL,
 		MaxTx:             cfg.TxPoolMaxTx,
@@ -407,14 +394,13 @@ func (serverObj *Server) NewServer(
 	serverObj.memPool.AnnouncePersisDatabaseMempool()
 	//add tx pool
 	serverObj.blockChain.AddTxPool(serverObj.memPool)
-	zkp.InitCheckpoint(serverObj.chainParams.BCHeightBreakPointNewZKP)
+	zkp.InitCheckpoint(config.Param().BCHeightBreakPointNewZKP)
 	serverObj.memPool.InitChannelMempool(cPendingTxs, cRemovedTxs)
 	//==============Temp mem pool only used for validation
 	serverObj.tempMemPool = &mempool.TxPool{}
 	serverObj.tempMemPool.Init(&mempool.Config{
 		BlockChain:    serverObj.blockChain,
 		DataBase:      serverObj.dataBase,
-		ChainParams:   chainParams,
 		FeeEstimator:  serverObj.feeEstimator,
 		MaxTx:         cfg.TxPoolMaxTx,
 		PubSubManager: pubsubManager,
@@ -423,14 +409,13 @@ func (serverObj *Server) NewServer(
 	serverObj.blockChain.AddTempTxPool(serverObj.tempMemPool)
 	//===============
 
-	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(activeNetParams.Params.Net))) // use network param Net as key for storage
+	serverObj.addrManager = addrmanager.NewAddrManager(cfg.DataDir, common.HashH(common.Uint32ToBytes(config.Param().Net))) // use network param Net as key for storage
 
 	// Init Net Sync manager to process messages
 	serverObj.netSync = &netsync.NetSync{}
 	serverObj.netSync.Init(&netsync.NetSyncConfig{
 		Syncker:    serverObj.syncker,
 		BlockChain: serverObj.blockChain,
-		ChainParam: chainParams,
 		TxMemPool:  serverObj.memPool,
 		Server:     serverObj,
 		Consensus:  serverObj.consensusEngine, // for onBFTMsg
@@ -511,7 +496,6 @@ func (serverObj *Server) NewServer(
 			RPCMaxWSClients:             cfg.RPCMaxWSClients,
 			RPCLimitRequestPerDay:       cfg.RPCLimitRequestPerDay,
 			RPCLimitRequestErrorPerHour: cfg.RPCLimitRequestErrorPerHour,
-			ChainParams:                 chainParams,
 			BlockChain:                  serverObj.blockChain,
 			Blockgen:                    serverObj.blockgen,
 			TxMemPool:                   serverObj.memPool,
@@ -689,10 +673,10 @@ func (serverObj Server) Start() {
 		return
 	}
 	Logger.log.Debug("Starting server")
-	// --- Checkforce update code ---
-	if serverObj.chainParams.CheckForce {
-		serverObj.CheckForceUpdateSourceCode()
-	}
+	//// --- Checkforce update code ---
+	/*if serverObj.chainParams.CheckForce {*/
+	//serverObj.CheckForceUpdateSourceCode()
+	/*}*/
 
 	cfg := config.Config()
 
@@ -805,77 +789,77 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 	}
 }
 
-// CheckForceUpdateSourceCode - loop to check current version with update version is equal
-// Force source code to be updated and remove data
-func (serverObject Server) CheckForceUpdateSourceCode() {
-	go func() {
-		ctx := context.Background()
-		myClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
-		if err != nil {
-			Logger.log.Error(err)
-		}
-		for {
-			reader, err := myClient.Bucket("incognito").Object(serverObject.chainParams.ChainVersion).NewReader(ctx)
-			if err != nil {
-				Logger.log.Error(err)
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			defer reader.Close()
+/*// CheckForceUpdateSourceCode - loop to check current version with update version is equal*/
+//// Force source code to be updated and remove data
+//func (serverObject Server) CheckForceUpdateSourceCode() {
+//go func() {
+//ctx := context.Background()
+//myClient, err := storage.NewClient(ctx, option.WithoutAuthentication())
+//if err != nil {
+//Logger.log.Error(err)
+//}
+//for {
+//reader, err := myClient.Bucket("incognito").Object(serverObject.chainParams.ChainVersion).NewReader(ctx)
+//if err != nil {
+//Logger.log.Error(err)
+//time.Sleep(10 * time.Second)
+//continue
+//}
+//defer reader.Close()
 
-			type VersionChain struct {
-				Version    string `json:"Version"`
-				Note       string `json:"Note"`
-				RemoveData bool   `json:"RemoveData"`
-			}
-			versionChain := VersionChain{}
-			currentVersion := version()
-			body, err := ioutil.ReadAll(reader)
-			if err != nil {
-				Logger.log.Error(err)
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			err = json.Unmarshal(body, &versionChain)
-			if err != nil {
-				Logger.log.Error(err)
-				time.Sleep(10 * time.Second)
-				continue
-			}
-			force := currentVersion != versionChain.Version
-			if force {
-				Logger.log.Error("\n*********************************************************************************\n" +
-					versionChain.Note +
-					"\n*********************************************************************************\n")
-				Logger.log.Error("\n*********************************************************************************\n You're running version: " +
-					currentVersion +
-					"\n*********************************************************************************\n")
-				Logger.log.Error("\n*********************************************************************************\n" +
-					versionChain.Note +
-					"\n*********************************************************************************\n")
+//type VersionChain struct {
+//Version    string `json:"Version"`
+//Note       string `json:"Note"`
+//RemoveData bool   `json:"RemoveData"`
+//}
+//versionChain := VersionChain{}
+//currentVersion := version()
+//body, err := ioutil.ReadAll(reader)
+//if err != nil {
+//Logger.log.Error(err)
+//time.Sleep(10 * time.Second)
+//continue
+//}
+//err = json.Unmarshal(body, &versionChain)
+//if err != nil {
+//Logger.log.Error(err)
+//time.Sleep(10 * time.Second)
+//continue
+//}
+//force := currentVersion != versionChain.Version
+//if force {
+//Logger.log.Error("\n*********************************************************************************\n" +
+//versionChain.Note +
+//"\n*********************************************************************************\n")
+//Logger.log.Error("\n*********************************************************************************\n You're running version: " +
+//currentVersion +
+//"\n*********************************************************************************\n")
+//Logger.log.Error("\n*********************************************************************************\n" +
+//versionChain.Note +
+//"\n*********************************************************************************\n")
 
-				Logger.log.Error("\n*********************************************************************************\n New version: " +
-					versionChain.Version +
-					"\n*********************************************************************************\n")
+//Logger.log.Error("\n*********************************************************************************\n New version: " +
+//versionChain.Version +
+//"\n*********************************************************************************\n")
 
-				Logger.log.Error("\n*********************************************************************************\n" +
-					"We're exited because having a force update on this souce code." +
-					"\nPlease Update source code at https://github.com/incognitochain/incognito-chain" +
-					"\n*********************************************************************************\n")
-				if versionChain.RemoveData {
-					serverObject.Stop()
-					errRemove := os.RemoveAll(config.Config().DataDir)
-					if errRemove != nil {
-						Logger.log.Error("We NEEDD to REMOVE database directory but can not process by error", errRemove)
-					}
-					time.Sleep(60 * time.Second)
-				}
-				os.Exit(common.ExitCodeForceUpdate)
-			}
-			time.Sleep(10 * time.Second)
-		}
-	}()
-}
+//Logger.log.Error("\n*********************************************************************************\n" +
+//"We're exited because having a force update on this souce code." +
+//"\nPlease Update source code at https://github.com/incognitochain/incognito-chain" +
+//"\n*********************************************************************************\n")
+//if versionChain.RemoveData {
+//serverObject.Stop()
+//errRemove := os.RemoveAll(config.Config().DataDir)
+//if errRemove != nil {
+//Logger.log.Error("We NEEDD to REMOVE database directory but can not process by error", errRemove)
+//}
+//time.Sleep(60 * time.Second)
+//}
+//os.Exit(utils.ExitCodeForceUpdate)
+//}
+//time.Sleep(10 * time.Second)
+//}
+//}()
+/*}*/
 
 /*
 // initListeners initializes the configured net listeners and adds any bound
@@ -1363,7 +1347,7 @@ func (serverObj *Server) PushVersionMessage(peerConn *peer.PeerConn) error {
 
 	// ValidateTransaction Public Key from ProducerPrvKey
 	// publicKeyInBase58CheckEncode, publicKeyType := peerConn.GetListenerPeer().GetConfig().ConsensusEngine.GetCurrentMiningPublicKey()
-	signDataInBase58CheckEncode := common.EmptyString
+	signDataInBase58CheckEncode := utils.EmptyString
 	// if publicKeyInBase58CheckEncode != "" {
 	// msg.(*wire.MessageVersion).PublicKey = publicKeyInBase58CheckEncode
 	// msg.(*wire.MessageVersion).PublicKeyType = publicKeyType

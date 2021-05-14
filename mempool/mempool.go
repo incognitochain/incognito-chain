@@ -39,11 +39,10 @@ type Config struct {
 	BlockChain        *blockchain.BlockChain       // Block chain of node
 	DataBase          map[int]incdb.Database       // main database of blockchain
 	DataBaseMempool   databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
-	ChainParams       *blockchain.Params
-	FeeEstimator      map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
-	TxLifeTime        uint                   // Transaction life time in pool
-	MaxTx             uint64                 //Max transaction pool may have
-	IsLoadFromMempool bool                   //Reset mempool database when run node
+	FeeEstimator      map[byte]*FeeEstimator       // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
+	TxLifeTime        uint                         // Transaction life time in pool
+	MaxTx             uint64                       //Max transaction pool may have
+	IsLoadFromMempool bool                         //Reset mempool database when run node
 	PersistMempool    bool
 	RelayShards       []byte
 	// UserKeyset            *incognitokey.KeySet

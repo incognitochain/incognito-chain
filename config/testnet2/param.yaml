@@ -21,6 +21,8 @@ committee_size:
   max_beacon_committee_size: 4
   init_shard_committee_size: 4
   init_beacon_committee_size: 4
+  shard_committee_size_key_list_v2: 4
+  beacon_committee_size_key_list_v2: 4
   number_of_fixed_shard_block_validators: 4
 block_time:
   min_shard_block_interval: 10000000000
@@ -60,35 +62,35 @@ enable_feature_flags:
 portal_param:
   bc_height_break_point_portal_v3: 1328816
   portal_param_v3:
-    time_out_custodian_return_pub_token: 15m
-    time_out_waiting_porting_request: 15m
-    time_out_waiting_redeem_request: 10m
-    max_percent_liquidated_collateral_amount: 105
-    max_percent_custodian_rewards: 10
-    min_percent_custodian_rewards: 1
-    min_lock_collateral_amount_in_epoch: 10000
-    min_percent_locked_collateral: 150
-    tp120: 120
-    tp130: 130
-    min_percent_porting_fee: 0.01
-    min_percent_redeem_fee: 0.01
-    supported_collateral_tokens: 
-      - external_token_id: "0000000000000000000000000000000000000000"
-        decimal: 9
-      - external_token_id: "3a829f4b97660d970428cd370c4e41cbad62092b"
-        decimal: 6
-      - external_token_id: "75b0622cec14130172eae9cf166b92e5c112faff"
-        decimal: 6
-    min_portal_fee: 100
-    portal_tokens: 
-      ef5947f70ead81a76a53c7c8b7317dd5245510c665d3a13921dc9a581188728b:
-        chain_id: "Bitcoin-Testnet"
-      6abd698ea7ddd1f98b1ecaaddab5db0453b8363ff092f0d8d7d4c6b1155fb693:
-        chain_id: "Binance-Chain-Ganges"
-
-    portal_feeder_address: "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
-    portal_eth_contract_address: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46"
-    min_unlock_over_rate_collaterals: 25
+    0: 
+      time_out_custodian_return_pub_token: 15m
+      time_out_waiting_porting_request: 15m
+      time_out_waiting_redeem_request: 10m
+      max_percent_liquidated_collateral_amount: 105
+      max_percent_custodian_rewards: 10
+      min_percent_custodian_rewards: 1
+      min_lock_collateral_amount_in_epoch: 10000
+      min_percent_locked_collateral: 150
+      tp120: 120
+      tp130: 130
+      min_percent_porting_fee: 0.01
+      min_percent_redeem_fee: 0.01
+      supported_collateral_tokens: 
+        - external_token_id: "0000000000000000000000000000000000000000"
+          decimal: 9
+        - external_token_id: "3a829f4b97660d970428cd370c4e41cbad62092b"
+          decimal: 6
+        - external_token_id: "75b0622cec14130172eae9cf166b92e5c112faff"
+          decimal: 6
+      min_portal_fee: 100
+      portal_tokens: 
+        ef5947f70ead81a76a53c7c8b7317dd5245510c665d3a13921dc9a581188728b:
+          chain_id: "Bitcoin-Testnet"
+        6abd698ea7ddd1f98b1ecaaddab5db0453b8363ff092f0d8d7d4c6b1155fb693:
+          chain_id: "Binance-Chain-Ganges"
+      portal_feeder_address: "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+      portal_eth_contract_address: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46"
+      min_unlock_over_rate_collaterals: 25
   relaying_param:
     bnb_relaying_header_chain_id: "Binance-Chain-Ganges"
     btc_relaying_header_chain_id: "Bitcoin-Testnet-2"

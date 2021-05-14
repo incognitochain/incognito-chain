@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/jessevdk/go-flags"
 	"github.com/spf13/viper"
 )
@@ -141,14 +141,14 @@ func removeDuplicateAddresses(addrs []string) []string {
 
 func (c *config) loadNetwork() string {
 	res := ""
-	switch common.GetEnv(NetworkKey, LocalNetwork) {
+	switch utils.GetEnv(NetworkKey, LocalNetwork) {
 	case LocalNetwork:
 		res = LocalNetwork
 		c.IsLocal = true
 	case TestNetNetwork:
 		res = TestNetNetwork
 		c.IsTestNet = true
-		testnetVersion := common.GetEnv(NetworkVersionKey, TestNetVersion1)
+		testnetVersion := utils.GetEnv(NetworkVersionKey, TestNetVersion1)
 		version, err := strconv.Atoi(testnetVersion)
 		if err != nil {
 			panic(err)
@@ -163,9 +163,9 @@ func (c *config) loadNetwork() string {
 }
 
 func (c *config) Network() string {
-	res := common.GetEnv(NetworkKey, LocalNetwork)
+	res := utils.GetEnv(NetworkKey, LocalNetwork)
 	if res == TestNetNetwork {
-		res += common.GetEnv(NetworkVersionKey, TestNetVersion1)
+		res += utils.GetEnv(NetworkVersionKey, TestNetVersion1)
 	}
 	return res
 }
@@ -185,7 +185,7 @@ func (c *config) verify(network string) {
 
 	if numNets > 1 {
 		log.Println("The network can not be used together -- choose one of them")
-		os.Exit(common.ExitCodeUnknow)
+		os.Exit(utils.ExitCodeUnknow)
 	}
 
 	// Append the network type to the data directory so it is "namespaced"
@@ -221,7 +221,7 @@ func (c *config) verify(network string) {
 	}
 
 	// --proxy or --connect without --listen disables listening.
-	if (c.Proxy != common.EmptyString || len(c.ConnectPeers) > 0) &&
+	if (c.Proxy != utils.EmptyString || len(c.ConnectPeers) > 0) &&
 		len(c.Listener) == 0 {
 		c.DisableListen = true
 	}
@@ -390,8 +390,8 @@ func LoadConfig() *config {
 		RPCDisableAuth:              false,
 		DiscoverPeers:               true,
 		DiscoverPeersAddress:        "127.0.0.1:9330", //"35.230.8.182:9339",
-		MiningKeys:                  common.EmptyString,
-		PrivateKey:                  common.EmptyString,
+		MiningKeys:                  utils.EmptyString,
+		PrivateKey:                  utils.EmptyString,
 		FastStartup:                 DefaultFastStartup,
 		TxPoolTTL:                   DefaultTxPoolTTL,
 		TxPoolMaxTx:                 DefaultTxPoolMaxTx,
@@ -411,12 +411,12 @@ func LoadConfig() *config {
 }
 
 func (c *config) loadConfig(network string) {
-	mode := common.GetEnv(ConfigModeKey, FileConfigMode)
+	mode := utils.GetEnv(ConfigModeKey, FileConfigMode)
 	if mode == FileConfigMode {
 		//read config from file
-		viper.SetConfigName(common.GetEnv(ConfigFileKey, DefaultConfigFile))                       // name of config file (without extension)
-		viper.SetConfigType(common.GetEnv(ConfigFileTypeKey, DefaultConfigFileType))               // REQUIRED if the config file does not have the extension in the name
-		viper.AddConfigPath(filepath.Join(common.GetEnv(ConfigDirKey, DefaultConfigDir), network)) // optionally look for config in the working directory
+		viper.SetConfigName(utils.GetEnv(ConfigFileKey, DefaultConfigFile))                       // name of config file (without extension)
+		viper.SetConfigType(utils.GetEnv(ConfigFileTypeKey, DefaultConfigFileType))               // REQUIRED if the config file does not have the extension in the name
+		viper.AddConfigPath(filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)) // optionally look for config in the working directory
 		if err := viper.ReadInConfig(); err != nil {
 			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 				// Config file was found but another error was produced
@@ -439,3 +439,64 @@ func (c *config) loadConfig(network string) {
 		}
 	}
 }
+
+func (c *config) GetDataDir() string                  { return c.DataDir }
+func (c *config) GetDatabaseDir() string              { return c.DatabaseDir }
+func (c *config) GetMempoolDir() string               { return c.MempoolDir }
+func (c *config) GetLogDir() string                   { return c.LogDir }
+func (c *config) GetLogLevel() string                 { return c.LogLevel }
+func (c *config) GetLogFileName() string              { return c.LogFileName }
+func (c *config) GetAddPeers() []string               { return c.AddPeers }
+func (c *config) GetConnectPeers() []string           { return c.ConnectPeers }
+func (c *config) GetListener() string                 { return c.Listener }
+func (c *config) GetMaxPeers() int                    { return c.MaxPeers }
+func (c *config) GetMaxOurPeers() int                 { return c.MaxOutPeers }
+func (c *config) GetMaxInPeers() int                  { return c.MaxInPeers }
+func (c *config) GetDiscoverPeers() bool              { return c.DiscoverPeers }
+func (c *config) GetDiscoverPeersAddress() string     { return c.DiscoverPeersAddress }
+func (c *config) GetMaxPeersSameShard() int           { return c.MaxPeersSameShard }
+func (c *config) GetMaxPeersOtherShard() int          { return c.MaxPeersOtherShard }
+func (c *config) GetMaxPeersOther() int               { return c.MaxPeersOther }
+func (c *config) GetMaxPeersNoShard() int             { return c.MaxPeersNoShard }
+func (c *config) GetMaxPeersBeacon() int              { return c.MaxPeersBeacon }
+func (c *config) GetExternalAddress() string          { return c.ExternalAddress }
+func (c *config) GetRPCDisableAuth() bool             { return c.RPCDisableAuth }
+func (c *config) GetRPCUser() string                  { return c.RPCUser }
+func (c *config) GetRPCPass() string                  { return c.RPCPass }
+func (c *config) GetRPCLimitUser() string             { return c.RPCLimitUser }
+func (c *config) GetRPCLimitPass() string             { return c.RPCLimitPass }
+func (c *config) GetRPCListeners() []string           { return c.RPCListeners }
+func (c *config) GetRPCWSListeners() []string         { return c.RPCWSListeners }
+func (c *config) GetRPCKey() string                   { return c.RPCKey }
+func (c *config) GetRPCCert() string                  { return c.RPCCert }
+func (c *config) GetRPCLimitRequestPerDay() int       { return c.RPCLimitRequestPerDay }
+func (c *config) GetRPCLimitRequestErrorPerHour() int { return c.RPCLimitRequestErrorPerHour }
+func (c *config) GetRPCMaxClients() int               { return c.RPCMaxClients }
+func (c *config) GetRPCMaxWsClient() int              { return c.RPCMaxWSClients }
+func (c *config) GetRPCQuirks() bool                  { return c.RPCQuirks }
+func (c *config) GetDisableRPC() bool                 { return c.DisableRPC }
+func (c *config) GetDisableTLS() bool                 { return c.DisableTLS }
+func (c *config) GetProxy() string                    { return c.Proxy }
+func (c *config) GetIsLocal() bool                    { return c.IsLocal }
+func (c *config) GetIsTestNet() bool                  { return c.IsTestNet }
+func (c *config) GetIsMainNet() bool                  { return c.IsMainNet }
+func (c *config) GetTestNetVersion() int              { return c.TestNetVersion }
+func (c *config) GetRelayShards() string              { return c.RelayShards }
+func (c *config) GetEnableWallet() bool               { return c.EnableWallet }
+func (c *config) GetWalletName() string               { return c.WalletName }
+func (c *config) GetWalletPassphrase() string         { return c.WalletPassphrase }
+func (c *config) GetWalletAutoInit() bool             { return c.WalletAutoInit }
+func (c *config) GetWalletShardID() int               { return c.WalletShardID }
+func (c *config) GetFastStartUp() bool                { return c.FastStartup }
+func (c *config) GetTxPoolTTL() uint                  { return c.TxPoolTTL }
+func (c *config) GetTxPoolMaxTx() uint64              { return c.TxPoolMaxTx }
+func (c *config) GetLimitFee() uint64                 { return c.LimitFee }
+func (c *config) GetIsLoadFromMempool() bool          { return c.IsLoadFromMempool }
+func (c *config) GetIsPersistMempool() bool           { return c.IsPersistMempool }
+func (c *config) GetEnableMining() bool               { return c.EnableMining }
+func (c *config) GetMiningKeys() string               { return c.MiningKeys }
+func (c *config) GetPrivateKey() string               { return c.PrivateKey }
+func (c *config) GetAccelerator() bool                { return c.Accelerator }
+func (c *config) GetLibp2pPrivateKey() string         { return c.Libp2pPrivateKey }
+func (c *config) GetPreloadAddress() string           { return c.PreloadAddress }
+func (c *config) GetForceBackup() bool                { return c.ForceBackup }

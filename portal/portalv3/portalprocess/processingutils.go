@@ -1,15 +1,16 @@
 package portalprocess
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	"sort"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-func CollectPortalInstsV3 (pv3 map[int]PortalInstructionProcessorV3, metaType int, action []string, shardID byte) {
+func CollectPortalInstsV3(pv3 map[int]PortalInstructionProcessorV3, metaType int, action []string, shardID byte) {
 	switch metaType {
 	case metadata.PortalCustodianDepositMeta:
 		pv3[metadata.PortalCustodianDepositMeta].PutAction(action, shardID)
@@ -71,13 +72,13 @@ func autoCheckAndCreatePortalLiquidationInsts(
 	beaconHeight uint64,
 	shardHeights map[byte]uint64,
 	currentPortalState *CurrentPortalState,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	pv3 map[int]PortalInstructionProcessorV3) ([][]string, error) {
 	insts := [][]string{}
 
 	// check there is any waiting porting request timeout
 	expiredWPortingProcessor := pv3[metadata.PortalExpiredWaitingPortingReqMeta]
-	expiredWaitingPortingInsts, err := expiredWPortingProcessor.BuildNewInsts(bc, "", 0, currentPortalState, beaconHeight, shardHeights, portalParams, nil)
+	expiredWaitingPortingInsts, err := expiredWPortingProcessor.BuildNewInsts(bc, "", 0, currentPortalState, beaconHeight, shardHeights, portalParam, nil)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
@@ -89,7 +90,7 @@ func autoCheckAndCreatePortalLiquidationInsts(
 	// case 1: check there is any custodian doesn't send public tokens back to user after TimeOutCustodianReturnPubToken
 	// get custodian's collateral to return user
 	liquidateCustodianProcessor := pv3[metadata.PortalLiquidateCustodianMetaV3]
-	custodianLiqInsts, err := liquidateCustodianProcessor.BuildNewInsts(bc, "", 0, currentPortalState, beaconHeight, shardHeights, portalParams, nil)
+	custodianLiqInsts, err := liquidateCustodianProcessor.BuildNewInsts(bc, "", 0, currentPortalState, beaconHeight, shardHeights, portalParam, nil)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build custodian liquidation %v\n", err)
 	}
@@ -100,7 +101,7 @@ func autoCheckAndCreatePortalLiquidationInsts(
 
 	// case 2: check collateral's value (locked collateral amount) drops below MinRatio
 	liquidationByRateProcessor := pv3[metadata.PortalLiquidateByRatesMetaV3]
-	exchangeRatesLiqInsts, err := liquidationByRateProcessor.BuildNewInsts(bc, "", 0, currentPortalState, beaconHeight, shardHeights, portalParams, nil)
+	exchangeRatesLiqInsts, err := liquidationByRateProcessor.BuildNewInsts(bc, "", 0, currentPortalState, beaconHeight, shardHeights, portalParam, nil)
 	if err != nil {
 		Logger.log.Errorf("Error when check and build exchange rates liquidation %v\n", err)
 	}
@@ -120,7 +121,7 @@ func buildNewPortalInstsFromActions(
 	currentPortalState *CurrentPortalState,
 	beaconHeight uint64,
 	shardHeights map[byte]uint64,
-	portalParams portalv3.PortalParams) ([][]string, error) {
+	portalParam config.PortalParam) ([][]string, error) {
 
 	instructions := [][]string{}
 	actions := p.GetActions()
@@ -147,7 +148,7 @@ func buildNewPortalInstsFromActions(
 				currentPortalState,
 				beaconHeight,
 				shardHeights,
-				portalParams,
+				portalParam,
 				optionalData,
 			)
 			if err != nil {
@@ -192,7 +193,7 @@ func HandlePortalInstsV3(
 	shardHeights map[byte]uint64,
 	currentPortalState *CurrentPortalState,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	pv3 map[int]PortalInstructionProcessorV3,
 ) ([][]string, error) {
 	instructions := [][]string{}
@@ -205,7 +206,7 @@ func HandlePortalInstsV3(
 		beaconHeight,
 		shardHeights,
 		currentPortalState,
-		portalParams,
+		portalParam,
 		pv3,
 	)
 	if err != nil {
@@ -231,7 +232,7 @@ func HandlePortalInstsV3(
 			currentPortalState,
 			beaconHeight,
 			shardHeights,
-			portalParams)
+			portalParam)
 
 		if err != nil {
 			Logger.log.Error(err)
@@ -245,8 +246,8 @@ func HandlePortalInstsV3(
 	var pickCustodiansForRedeemReqInsts [][]string
 
 	pickCustodiansProcessor := pv3[metadata.PortalPickMoreCustodianForRedeemMeta]
-	pickCustodiansForRedeemReqInsts, err = pickCustodiansProcessor.BuildNewInsts(bc, "", 0,  currentPortalState,beaconHeight, shardHeights,
-		portalParams, nil)
+	pickCustodiansForRedeemReqInsts, err = pickCustodiansProcessor.BuildNewInsts(bc, "", 0, currentPortalState, beaconHeight, shardHeights,
+		portalParam, nil)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -277,7 +278,7 @@ func HandlePortalInstsV3(
 
 func ProcessPortalInstsV3(
 	portalStateDB *statedb.StateDB,
-	portalParams portalv3.PortalParams,
+	portalParam config.PortalParam,
 	beaconHeight uint64,
 	instructions [][]string,
 	pv3 map[int]PortalInstructionProcessorV3,
@@ -300,7 +301,7 @@ func ProcessPortalInstsV3(
 		metaType, _ := strconv.Atoi(inst[0])
 		processor := GetPortalInstProcessorByMetaType(pv3, metaType)
 		if processor != nil {
-			err = processor.ProcessInsts(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, updatingInfoByTokenID)
+			err = processor.ProcessInsts(portalStateDB, beaconHeight, inst, currentPortalState, portalParam, updatingInfoByTokenID)
 			if err != nil {
 				Logger.log.Errorf("Process portal instruction err: %v, inst %+v", err, inst)
 			}
@@ -311,16 +312,16 @@ func ProcessPortalInstsV3(
 		// ============ Reward ============
 		// portal reward
 		case strconv.Itoa(metadata.PortalRewardMeta), strconv.Itoa(metadata.PortalRewardMetaV3):
-			err = ProcessPortalReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, epoch)
+			err = ProcessPortalReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParam, epoch)
 		// total custodian reward instruction
 		case strconv.Itoa(metadata.PortalTotalRewardCustodianMeta):
-			err = ProcessPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParams, epoch)
+			err = ProcessPortalTotalCustodianReward(portalStateDB, beaconHeight, inst, currentPortalState, portalParam, epoch)
 
 		// ============ Portal smart contract ============
 		case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3),
 			strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3),
 			strconv.Itoa(metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3):
-			err = ProcessPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState, portalParams)
+			err = ProcessPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState)
 		}
 
 		if err != nil {
@@ -381,7 +382,7 @@ func ProcessPortalConfirmWithdrawInstV3(
 	beaconHeight uint64,
 	instructions []string,
 	currentPortalState *CurrentPortalState,
-	portalParams portalv3.PortalParams) error {
+) error {
 	if currentPortalState == nil {
 		Logger.log.Errorf("current portal state is nil")
 		return nil

@@ -7,13 +7,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
 	"github.com/incognitochain/incognito-chain/txpool"
+	"github.com/incognitochain/incognito-chain/utils"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -84,7 +84,6 @@ var (
 	portalV3ProcessLogger = backendLog.Logger("Portal v3 process log ", false)
 	portalV3TokenLogger   = backendLog.Logger("Portal v3 token log ", false)
 	txPoolLogger          = backendLog.Logger("Txpool log ", false)
-	configLogger          = backendLog.Logger("Config log", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -137,7 +136,6 @@ func init() {
 	portaltokensv3.Logger.Init(portalV3TokenLogger)
 
 	txpool.Logger.Init(txPoolLogger)
-	config.Logger.Init(configLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -184,12 +182,12 @@ func initLogRotator(logFile string) {
 	err := os.MkdirAll(logDir, 0700)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
-		os.Exit(common.ExitByLogging)
+		os.Exit(utils.ExitByLogging)
 	}
 	r, err := rotator.New(logFile, 10*1024, false, 3)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
-		os.Exit(common.ExitByLogging)
+		os.Exit(utils.ExitByLogging)
 	}
 
 	logRotator = r

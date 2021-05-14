@@ -3,13 +3,15 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
+	"sort"
+	"strconv"
+
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
-	"math/big"
-	"sort"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -99,7 +101,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	statefulActionsByShardID map[byte][][]string,
 	beaconHeight uint64,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
-	portalParams portal.PortalParams) [][]string {
+	portalParam config.PortalParam) [][]string {
 
 	currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconBestState.pdeState, beaconHeight-1)
 	if err != nil {
@@ -235,7 +237,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		currentPortalStateV3,
 		relayingHeaderState,
 		rewardForCustodianByEpoch,
-		portalParams,
+		portalParam,
 		pm,
 	)
 

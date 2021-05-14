@@ -1,6 +1,6 @@
 package metadata
 
-import "github.com/incognitochain/incognito-chain/common"
+import "github.com/incognitochain/incognito-chain/utils"
 
 const (
 	InvalidMeta = 1
@@ -153,9 +153,9 @@ var (
 	// if the blockchain is running in Docker container
 	// then using GETH_NAME env's value (aka geth container name)
 	// otherwise using localhost
-	EthereumLightNodeHost     = common.GetEnv("GETH_NAME", "127.0.0.1")
-	EthereumLightNodeProtocol = common.GetEnv("GETH_PROTOCOL", "http")
-	EthereumLightNodePort     = common.GetEnv("GETH_PORT", "8545")
+	EthereumLightNodeHost     = utils.GetEnv("GETH_NAME", "127.0.0.1")
+	EthereumLightNodeProtocol = utils.GetEnv("GETH_PROTOCOL", "http")
+	EthereumLightNodePort     = utils.GetEnv("GETH_PORT", "8545")
 )
 
 // Kovan testnet

@@ -2,7 +2,6 @@ package common
 
 // for common
 const (
-	EmptyString       = ""
 	ZeroByte          = byte(0x00)
 	DateOutputFormat  = "2006-01-02T15:04:05.999999"
 	BigIntSize        = 32 // bytes
@@ -36,14 +35,6 @@ const (
 	MaxPSMsgSize = 1 << 23 //4Mb
 )
 
-// for exit code
-const (
-	ExitCodeUnknow = iota
-	ExitByOs
-	ExitByLogging
-	ExitCodeForceUpdate
-)
-
 // For all Transaction information
 const (
 	TxNormalType        = "n"  // normal tx(send and receive coin)
@@ -70,8 +61,9 @@ var (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	PRVCoinID   = Hash{4} // To send PRV in custom token
-	PRVCoinName = "PRV"   // To send PRV in custom token
+	PRVCoinID      = Hash{4} // To send PRV in custom token
+	PRVCoinName    = "PRV"   // To send PRV in custom token
+	MaxShardNumber = 0
 )
 
 // CONSENSUS
@@ -195,3 +187,5 @@ const (
 	PortalRelayingFlag = 0
 	PortalV3Flag       = 1
 )
+
+var TIMESLOT = uint64(0) //need to be set when init chain

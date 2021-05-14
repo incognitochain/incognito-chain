@@ -52,16 +52,22 @@ const (
 )
 
 const (
-	LocalNetwork    = "local"
-	TestNetNetwork  = "testnet"
-	MainnetNetwork  = "mainnet"
-	TestNetVersion1 = "1"
-	TestNetVersion2 = "2"
-	DefaultPort     = "9444"
-	DefaultRPCPort  = "9344"
-	DefaultWSPort   = "19444"
-	FlagConfigMode  = "flag"
-	FileConfigMode  = "file"
+	LocalNetwork      = "local"
+	TestNetNetwork    = "testnet"
+	MainnetNetwork    = "mainnet"
+	TestNetVersion1   = "1"
+	TestNetVersion2   = "2"
+	DefaultPort       = "9444"
+	DefaultRPCPort    = "9344"
+	DefaultWSPort     = "19444"
+	FlagConfigMode    = "flag"
+	FileConfigMode    = "file"
+	LocalNet          = 0x02
+	Testnet2Net       = 0x32
+	TestnetNet        = 0x16
+	MainnetNet        = 0x01
+	KeyListFileName   = "keylist.json"
+	KeyListV2FileName = "keylist-v2.json"
 )
 
 var (

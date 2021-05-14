@@ -1,11 +1,12 @@
 package config
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"path/filepath"
-	"strconv"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/spf13/viper"
 )
 
@@ -57,20 +58,22 @@ type genesisParam struct {
 }
 
 type committeeSize struct {
-	MaxShardCommitteeSize   int `mapstructure:"max_shard_committee_size"`
-	MinShardCommitteeSize   int `mapstructure:"min_shard_committee_size"`
-	MaxBeaconCommitteeSize  int `mapstructure:"max_beacon_committee_size"`
-	MinBeaconCommitteeSize  int `mapstructure:"min_beacon_committee_size"`
-	InitShardCommitteeSize  int `mapstructure:"init_shard_committee_size"`
-	InitBeaconCommitteeSize int `mapstructure:"init_beacon_committee_size"`
+	MaxShardCommitteeSize        int `mapstructure:"max_shard_committee_size"`
+	MinShardCommitteeSize        int `mapstructure:"min_shard_committee_size"`
+	MaxBeaconCommitteeSize       int `mapstructure:"max_beacon_committee_size"`
+	MinBeaconCommitteeSize       int `mapstructure:"min_beacon_committee_size"`
+	InitShardCommitteeSize       int `mapstructure:"init_shard_committee_size"`
+	InitBeaconCommitteeSize      int `mapstructure:"init_beacon_committee_size"`
+	ShardCommitteeSizeKeyListV2  int `mapstructure:"shard_committee_size_key_list_v2"`
+	BeaconCommitteeSizeKeyListV2 int `mapstructure:"beacon_committee_size_key_list_v2"`
+	NumberOfFixedBlockValidators int `mapstructure:"number_of_fixed_shard_block_validators"`
 }
 
 type blockTime struct {
-	MinShardBlockInterval        time.Duration `mapstructure:"min_shard_block_interval"`
-	MaxShardBlockCreation        time.Duration `mapstructure:"max_shard_block_creation"`
-	MinBeaconBlockInterval       time.Duration `mapstructure:"min_beacon_block_interval"`
-	MaxBeaconBlockCreation       time.Duration `mapstructure:"min_beacon_block_creation"`
-	NumberOfFixedBlockValidators int           `mapstructure:"number_of_fixed_shard_block_validators"`
+	MinShardBlockInterval  time.Duration `mapstructure:"min_shard_block_interval"`
+	MaxShardBlockCreation  time.Duration `mapstructure:"max_shard_block_creation"`
+	MinBeaconBlockInterval time.Duration `mapstructure:"min_beacon_block_interval"`
+	MaxBeaconBlockCreation time.Duration `mapstructure:"min_beacon_block_creation"`
 }
 
 type epochParam struct {
@@ -95,31 +98,43 @@ type consensusParam struct {
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
 }
 
-func LoadParam() *param {
+func (p *param) loadNetwork() string {
 	network := ""
-	switch common.GetEnv(NetworkKey, LocalNetwork) {
+	switch utils.GetEnv(NetworkKey, LocalNetwork) {
 	case LocalNetwork:
 		network = LocalNetwork
-		c.IsLocal = true
+		p.Net = LocalNet
 	case TestNetNetwork:
 		network = TestNetNetwork
-		c.IsTestNet = true
-		testnetVersion := common.GetEnv(NetworkVersionKey, TestNetVersion1)
-		version, err := strconv.Atoi(testnetVersion)
-		if err != nil {
-			panic(err)
+		testnetVersion := utils.GetEnv(NetworkVersionKey, TestNetVersion1)
+		switch testnetVersion {
+		case TestNetVersion2:
+			p.Net = Testnet2Net
 		}
 		network += testnetVersion
-		c.TestNetVersion = version
 	case MainnetNetwork:
 		network = MainnetNetwork
-		c.IsMainNet = true
+		p.Net = MainnetNet
 	}
+	return network
+}
+
+func LoadParam() *param {
+
+	p = &param{
+		GenesisParam: &genesisParam{
+			SelectBeaconNodeSerializedPubkeyV2:         map[uint64][]string{},
+			SelectBeaconNodeSerializedPaymentAddressV2: map[uint64][]string{},
+			SelectShardNodeSerializedPubkeyV2:          map[uint64][]string{},
+			SelectShardNodeSerializedPaymentAddressV2:  map[uint64][]string{},
+		},
+	}
+	network := p.loadNetwork()
 
 	//read config from file
-	viper.SetConfigName(common.GetEnv(ParamFileKey, DefaultParamFile))                         // name of config file (without extension)
-	viper.SetConfigType(common.GetEnv(ConfigFileTypeKey, DefaultConfigFileType))               // REQUIRED if the config file does not have the extension in the name
-	viper.AddConfigPath(filepath.Join(common.GetEnv(ConfigDirKey, DefaultConfigDir), network)) // optionally look for config in the working directory
+	viper.SetConfigName(utils.GetEnv(ParamFileKey, DefaultParamFile))                         // name of config file (without extension)
+	viper.SetConfigType(utils.GetEnv(ConfigFileTypeKey, DefaultConfigFileType))               // REQUIRED if the config file does not have the extension in the name
+	viper.AddConfigPath(filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)) // optionally look for config in the working directory
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			// Config file was found but another error was produced
@@ -140,14 +155,109 @@ func LoadParam() *param {
 }
 
 type initialIncognito struct {
-	Version              int    `mapstructure:"Version"`
-	Type                 string `mapstructure:"Type"`
-	LockTime             uint64 `mapstructure:"LockTime"`
-	Fee                  int    `mapstructure:"Fee"`
-	Info                 string `mapstructure:"Info"`
-	SigPubKey            string `mapstructure:"SigPubKey"`
-	Sig                  string `mapstructure:"Sig"`
-	Proof                string `mapstructure:"Proof"`
-	PubKeyLastByteSender int    `mapstructure:"PubKeyLastByteSender"`
-	Metadata             string `mapstructure:"Metadata"`
+	Version              int                    `mapstructure:"Version"`
+	Type                 string                 `mapstructure:"Type"`
+	LockTime             uint64                 `mapstructure:"LockTime"`
+	Fee                  int                    `mapstructure:"Fee"`
+	Info                 string                 `mapstructure:"Info"`
+	SigPubKey            string                 `mapstructure:"SigPubKey"`
+	Sig                  string                 `mapstructure:"Sig"`
+	Proof                string                 `mapstructure:"Proof"`
+	PubKeyLastByteSender int                    `mapstructure:"PubKeyLastByteSender"`
+	Metadata             map[string]interface{} `mapstructure:"Metadata"`
 }
+
+func (p *param) LoadKey() {
+	network := p.loadNetwork()
+	configPath := filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)
+
+	keyData, err := ioutil.ReadFile(filepath.Join(configPath, KeyListFileName))
+	if err != nil {
+		panic(err)
+	}
+
+	keyDataV2, err := ioutil.ReadFile(filepath.Join(configPath, KeyListV2FileName))
+	if err != nil {
+		panic(err)
+	}
+
+	type AccountKey struct {
+		PaymentAddress     string
+		CommitteePublicKey string
+	}
+
+	type KeyList struct {
+		Shard  map[int][]AccountKey
+		Beacon []AccountKey
+	}
+
+	keylist := KeyList{}
+	keylistV2 := []KeyList{}
+
+	err = json.Unmarshal(keyData, &keylist)
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(keyDataV2, &keylistV2)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < p.CommitteeSize.InitBeaconCommitteeSize; i++ {
+		p.GenesisParam.PreSelectBeaconNodeSerializedPubkey =
+			append(p.GenesisParam.PreSelectBeaconNodeSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
+		p.GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress =
+			append(p.GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
+	}
+
+	for i := 0; i < p.ActiveShards; i++ {
+		for j := 0; j < p.CommitteeSize.InitShardCommitteeSize; j++ {
+			p.GenesisParam.PreSelectShardNodeSerializedPubkey =
+				append(p.GenesisParam.PreSelectShardNodeSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
+			p.GenesisParam.PreSelectShardNodeSerializedPaymentAddress =
+				append(p.GenesisParam.PreSelectShardNodeSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+		}
+	}
+	for _, v := range keylistV2 {
+		for i := 0; i < p.CommitteeSize.BeaconCommitteeSizeKeyListV2; i++ {
+			p.GenesisParam.SelectBeaconNodeSerializedPubkeyV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]] =
+				append(p.GenesisParam.SelectBeaconNodeSerializedPubkeyV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Beacon[i].CommitteePublicKey)
+			p.GenesisParam.SelectBeaconNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]] =
+				append(p.GenesisParam.SelectBeaconNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Beacon[i].PaymentAddress)
+		}
+		for i := 0; i < p.ActiveShards; i++ {
+			for j := 0; j < p.CommitteeSize.ShardCommitteeSizeKeyListV2; j++ {
+				p.GenesisParam.SelectShardNodeSerializedPubkeyV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]] =
+					append(p.GenesisParam.SelectShardNodeSerializedPubkeyV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Shard[i][j].CommitteePublicKey)
+				p.GenesisParam.SelectShardNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]] =
+					append(p.GenesisParam.SelectShardNodeSerializedPaymentAddressV2[p.ConsensusParam.EpochBreakPointSwapNewKey[0]], v.Shard[i][j].PaymentAddress)
+			}
+		}
+	}
+
+}
+
+func (p *param) GetName() string                 { return p.Name }
+func (p *param) GetNet() uint32                  { return p.Net }
+func (p *param) GetGenesisParam() *genesisParam  { return p.GenesisParam }
+func (p *param) GetCommitteeSize() committeeSize { return p.CommitteeSize }
+func (p *param) GetBlockTime() blockTime         { return p.BlockTime }
+func (p *param) GetStakingAmountShard() uint64   { return p.StakingAmountShard }
+func (p *param) GetActiveShards() int            { return p.ActiveShards }
+func (p *param) GetBasicReward() uint64          { return p.BasicReward }
+func (p *param) GetEpochParam() epochParam       { return p.EpochParam }
+func (p *param) GetEthContractAddress() string   { return p.EthContractAddressStr }
+func (p *param) GetIncognitoDAOAdress() string   { return p.IncognitoDAOAddress }
+func (p *param) GetCentralizedWebsitePaymentAddress() string {
+	return p.CentralizedWebsitePaymentAddress
+}
+func (p *param) GetSwapCommitteeParam() swapCommitteeParam { return p.SwapCommitteeParam }
+func (p *param) GetConsensusParam() consensusParam         { return p.ConsensusParam }
+func (p *param) GetBeaconHeightBreakPointBurnAddr() uint64 { return p.BeaconHeightBreakPointBurnAddr }
+func (p *param) GetReplaceStakingTxHeight() uint64         { return p.ReplaceStakingTxHeight }
+func (p *param) GetETHRemoveBridgeSigEpoch() uint64        { return p.ETHRemoveBridgeSigEpoch }
+func (p *param) GetBCHeightBreakPointNewZKP() uint64       { return p.BCHeightBreakPointNewZKP }
+func (p *param) GetEnableFeatureFlags() map[int]uint64     { return p.EnableFeatureFlags }
+func (p *param) GetPortalParam() PortalParam               { return p.PortalParam }
+func (p *param) GetIsBackup() bool                         { return p.IsBackup }

@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -53,7 +53,6 @@ type Config struct {
 	DataBase      map[int]incdb.Database
 	MemCache      *memcache.MemoryCache
 	Interrupt     <-chan struct{}
-	ChainParams   *Params
 	GenesisParams *GenesisParams
 	RelayShards   []byte
 	// NodeMode          string
@@ -76,7 +75,6 @@ type Config struct {
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc := &BlockChain{}
-	bc.config = *config
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
 	bc.beaconViewCache, _ = lru.New(100)
@@ -92,9 +90,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	// Enforce required config fields.
 	if config.DataBase == nil {
 		return NewBlockChainError(UnExpectedError, errors.New("Database is not config"))
-	}
-	if config.ChainParams == nil {
-		return NewBlockChainError(UnExpectedError, errors.New("Chain parameters is not config"))
 	}
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
@@ -183,7 +178,7 @@ func (blockchain *BlockChain) InitChainState() error {
 }
 
 func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
-	netID := blockchain.config.ChainParams.Name
+	netID := config.Param().Name
 	res := map[string]interface{}{}
 	whitelistData, err := ioutil.ReadFile("whitelist.json")
 	if err != nil {
@@ -213,18 +208,18 @@ func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
 func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
 	initShardBlock := types.ShardBlock{}
-	initShardBlock = *blockchain.config.ChainParams.GenesisShardBlock
+	initShardBlock = *genesisShardBlock
 	initShardBlock.Header.ShardID = shardID
 	initShardBlockHeight := initShardBlock.Header.Height
 	var committeeEngine committeestate.ShardCommitteeEngine
 
-	if blockchain.config.ChainParams.StakingFlowV2Height == 1 {
+	if config.Param().ConsensusParam.StakingFlowV2Height == 1 {
 		committeeEngine = committeestate.NewShardCommitteeEngineV2(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV2())
 	} else {
 		committeeEngine = committeestate.NewShardCommitteeEngineV1(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
 	}
 
-	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams, committeeEngine)
+	initShardState := NewBestStateShardWithConfig(shardID, committeeEngine)
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
@@ -247,10 +242,10 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 }
 
 func (blockchain *BlockChain) initBeaconState() error {
-	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
+	initBlock := genesisBeaconBlock
 	var committeeEngine committeestate.BeaconCommitteeEngine
 
-	if blockchain.config.ChainParams.StakingFlowV2Height == 1 {
+	if config.Param().ConsensusParam.StakingFlowV2Height == 1 {
 		committeeEngine = committeestate.
 			NewBeaconCommitteeEngineV2(1, initBlock.Header.Hash(),
 				committeestate.NewBeaconCommitteeStateV2())
@@ -260,7 +255,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 				1, initBlock.Header.Hash(),
 				committeestate.NewBeaconCommitteeStateV1())
 	}
-	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeeEngine)
+	initBeaconBestState := NewBeaconBestStateWithConfig(committeeEngine)
 	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
@@ -523,7 +518,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		return err
 	}
 	sID := []int{}
-	for i := 0; i < blockchain.config.ChainParams.ActiveShards; i++ {
+	for i := 0; i < config.Param().ActiveShards; i++ {
 		sID = append(sID, i)
 	}
 
@@ -592,7 +587,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 		var shardCommitteeEngine committeestate.ShardCommitteeEngine
-		if v.BeaconHeight > blockchain.config.ChainParams.StakingFlowV2Height {
+		if v.BeaconHeight > config.Param().ConsensusParam.StakingFlowV2Height {
 			shardCommitteeEngine = InitShardCommitteeEngineV2(
 				v.consensusStateDB,
 				v.ShardHeight, v.ShardID, v.BestBlockHash,
@@ -602,7 +597,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 				v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
 		}
 		v.shardCommitteeEngine = shardCommitteeEngine
-		if v.BeaconHeight == blockchain.config.ChainParams.StakingFlowV2Height {
+		if v.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
 			err := v.upgradeCommitteeEngineV2(blockchain)
 			if err != nil {
 				panic(err)
@@ -673,7 +668,7 @@ func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint6
 func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]struct{} {
 	res := map[byte]struct{}{}
 	if isBeaconCommittee {
-		for sID := byte(0); sID < byte(blockchain.config.ChainParams.ActiveShards); sID++ {
+		for sID := byte(0); sID < byte(config.Param().ActiveShards); sID++ {
 			res[sID] = struct{}{}
 		}
 	} else {
@@ -689,11 +684,6 @@ func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]st
 // GetConfig returns blockchain's config
 func (blockchain *BlockChain) GetConfig() *Config {
 	return &blockchain.config
-}
-
-// GetPortalParams returns portal params in beaconheight
-func (blockchain *BlockChain) GetPortalParams() portal.PortalParams {
-	return blockchain.GetConfig().ChainParams.PortalParams
 }
 
 func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.PortalParams {

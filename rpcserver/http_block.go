@@ -2,8 +2,10 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -182,9 +184,9 @@ getblockchaininfo RPC return information for blockchain node
 */
 func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	result := jsonresult.GetBlockChainInfoResult{
-		ChainName:    httpServer.config.ChainParams.Name,
+		ChainName:    config.Param().Name,
 		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
-		ActiveShards: httpServer.config.ChainParams.ActiveShards,
+		ActiveShards: config.Param().ActiveShards,
 	}
 	shardsBestState := httpServer.blockService.GetShardBestStates()
 	for shardID, bestState := range shardsBestState {

@@ -3,12 +3,14 @@ package blockchain
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
-	"time"
 )
 
 func (blockchain *BlockChain) GetStakingAmountShard() uint64 {
@@ -16,7 +18,7 @@ func (blockchain *BlockChain) GetStakingAmountShard() uint64 {
 }
 
 func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress(beaconHeight uint64) string {
-	if blockchain.config.ChainParams.Net == Testnet || blockchain.config.ChainParams.Net == Testnet2 {
+	if blockchain.config.ChainParams.Net == config.TestnetNet || blockchain.config.ChainParams.Net == config.Testnet2Net {
 		return blockchain.config.ChainParams.CentralizedWebsitePaymentAddress
 	}
 	if blockchain.config.ChainParams.Net == Mainnet {
@@ -42,8 +44,6 @@ func (blockchain *BlockChain) GetETHRemoveBridgeSigEpoch() uint64 {
 	return blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch
 }
 
-
-
 func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 	breakPoint := blockchain.GetBeaconHeightBreakPointBurnAddr()
 	if beaconHeight == 0 {
@@ -55,7 +55,6 @@ func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 
 	return burningAddress2
 }
-
 
 /* ================== Retriever for portal v3 ================== */
 func (blockchain *BlockChain) GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error) {
@@ -139,7 +138,7 @@ func (blockchain *BlockChain) GetPortalETHContractAddrStr(beaconHeight uint64) s
 
 // GetBNBHeader calls RPC to fullnode bnb to get latest bnb block height
 func (blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
-	portalRelayingParams := blockchain.GetPortalParams().RelayingParam
+	portalRelayingParams := config.Param().PortalParam.RelayingParam
 	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
 		portalRelayingParams.BNBFullNodeProtocol,
 		portalRelayingParams.BNBFullNodeHost,
@@ -158,7 +157,7 @@ func (blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
 func (blockchain *BlockChain) GetBNBHeader(
 	blockHeight int64,
 ) (*types.Header, error) {
-	portalRelayingParams := blockchain.GetPortalParams().RelayingParam
+	portalRelayingParams := config.Param().PortalParam.RelayingParam
 	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
 		portalRelayingParams.BNBFullNodeProtocol,
 		portalRelayingParams.BNBFullNodeHost,

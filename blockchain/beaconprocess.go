@@ -16,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -23,6 +24,7 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 // VerifyPreSignBeaconBlock should receives block in consensus round
@@ -315,7 +317,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		return NewBlockChainError(PDEStateDBError, fmt.Errorf("PDE state in Mem and DB is not consistent! Check before restart."))
 	}
 
-	portalParams := blockchain.GetPortalParams()
+	portalParam := config.Param().PortalParam
 
 	// get shard to beacon blocks from pool
 	allRequiredShardBlockHeight := make(map[byte][]uint64)
@@ -338,7 +340,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	instructions, _, err := blockchain.GenerateBeaconBlockBody(
 		beaconBlock,
 		curView,
-		portalParams,
+		portalParam,
 		allShardBlocks,
 	)
 
@@ -690,7 +692,7 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 	shardID byte,
 	shardState types.ShardState,
 ) error {
-	if shardState.ValidationData == common.EmptyString {
+	if shardState.ValidationData == utils.EmptyString {
 		return nil
 	}
 

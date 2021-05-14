@@ -11,13 +11,14 @@ import (
 	"runtime/debug"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	"github.com/incognitochain/incognito-chain/utils"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	_ "github.com/incognitochain/incognito-chain/databasemp/lvdb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -83,13 +84,15 @@ func mainMaster(serverChan chan<- *Server) error {
 		panic(err)
 	}
 	param := config.LoadParam()
-	Logger.log.Info(param)
 
-	//init key & param
-	blockchain.ReadKey(nil, nil)
-	blockchain.SetupParam()
+	common.TIMESLOT = param.ConsensusParam.Timeslot
+	common.MaxShardNumber = param.ActiveShards
 
-	activeNetParams.CreateGenesisBlocks()
+	//load keys from file
+	param.LoadKey()
+
+	//create genesis block
+	blockchain.CreateGenesisBlocks()
 
 	// Get a channel that will be closed when a shutdown signal has been
 	// triggered either from an OS signal such as SIGINT (Ctrl+C) or from
@@ -148,8 +151,8 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 	// Create btcrelaying chain
 	btcChain, err := getBTCRelayingChain(
-		activeNetParams.Params.PortalParams.RelayingParam.BTCRelayingHeaderChainID,
-		activeNetParams.Params.PortalParams.RelayingParam.BTCDataFolderName,
+		param.PortalParam.RelayingParam.BTCRelayingHeaderChainID,
+		param.PortalParam.RelayingParam.BTCDataFolderName,
 	)
 	if err != nil {
 		Logger.log.Error("could not get or create btc relaying chain")
@@ -163,23 +166,17 @@ func mainMaster(serverChan chan<- *Server) error {
 	}()
 
 	// Create bnbrelaying chain state
-	bnbChainState, err := getBNBRelayingChainState(activeNetParams.Params.PortalParams.RelayingParam.BNBRelayingHeaderChainID)
+	bnbChainState, err := getBNBRelayingChainState(param.PortalParam.RelayingParam.BNBRelayingHeaderChainID)
 	if err != nil {
 		Logger.log.Error("could not get or create bnb relaying chain state")
 		Logger.log.Error(err)
 		panic(err)
 	}
 
-	//update preload address
-	if cfg.PreloadAddress != "" {
-		activeNetParams.Params.PreloadAddress = cfg.PreloadAddress
-	}
-
 	// Create server and start it.
 	server := Server{}
 	server.wallet = walletObj
-	activeNetParams.Params.IsBackup = cfg.ForceBackup
-	err = server.NewServer(cfg.Listener, db, dbmp, activeNetParams.Params, version, btcChain, bnbChainState, interrupt)
+	err = server.NewServer(cfg.Listener, db, dbmp, version, btcChain, bnbChainState, interrupt)
 	if err != nil {
 		Logger.log.Errorf("Unable to start server on %+v", cfg.Listener)
 		Logger.log.Error(err)
@@ -234,7 +231,7 @@ func main() {
 	// Up some limits.
 	if err := limits.SetLimits(); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to set limits: %+v\n", err)
-		os.Exit(common.ExitByOs)
+		os.Exit(utils.ExitByOs)
 	}
 	// Call serviceMain on Windows to handle running as a service.  When
 	// the return isService flag is true, exit now since we ran as a
@@ -243,14 +240,14 @@ func main() {
 		isService, err := winServiceMain()
 		if err != nil {
 			fmt.Println(err)
-			os.Exit(common.ExitByOs)
+			os.Exit(utils.ExitByOs)
 		}
 		if isService {
-			os.Exit(common.ExitCodeUnknow)
+			os.Exit(utils.ExitCodeUnknow)
 		}
 	}
 	// Work around defer not working after os.Exit()
 	if err := mainMaster(nil); err != nil {
-		os.Exit(common.ExitByOs)
+		os.Exit(utils.ExitByOs)
 	}
 }

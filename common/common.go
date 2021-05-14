@@ -17,6 +17,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/pkg/errors"
 )
 
@@ -166,7 +167,7 @@ func ParseListener(addr string, netType string) (*SimpleAddr, error) {
 
 	var netAddr *SimpleAddr
 	// Empty host or host of * on plan9 is both IPv4 and IPv6.
-	if host == EmptyString || (host == "*" && runtime.GOOS == "plan9") {
+	if host == utils.EmptyString || (host == "*" && runtime.GOOS == "plan9") {
 		netAddr = &SimpleAddr{Net: netType + "4", Addr: addr}
 		return netAddr, nil
 	}
@@ -437,15 +438,6 @@ func (s *ErrorSaver) Get() error {
 func CheckError(errs ...error) error {
 	errSaver := &ErrorSaver{}
 	return errSaver.Save(errs...)
-}
-
-// GetEnv to get environment variable by key
-func GetEnv(key, fallback string) string {
-	value, ok := os.LookupEnv(key)
-	if !ok {
-		return fallback
-	}
-	return value
 }
 
 func GetValidStaker(committees []string, stakers []string) []string {

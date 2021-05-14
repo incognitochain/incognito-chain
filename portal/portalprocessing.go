@@ -2,6 +2,7 @@ package portal
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
@@ -29,7 +30,7 @@ func HandlePortalInsts(
 	currentPortalState *portalprocessv3.CurrentPortalState,
 	relayingState *portalrelaying.RelayingHeaderChainState,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
-	portalParams PortalParams,
+	portalParam config.PortalParam,
 	pm *PortalManager,
 	epochBlocks uint64,
 ) ([][]string, error) {
@@ -39,7 +40,7 @@ func HandlePortalInsts(
 	if bc.IsEnableFeature(common.PortalV3Flag, currentEpoch) {
 		portalInstsV3, err := portalprocessv3.HandlePortalInstsV3(
 			bc, stateDB, beaconHeight, shardHeight, currentPortalState, rewardForCustodianByEpoch,
-			portalParams.GetPortalParamsV3(beaconHeight), pm.PortalInstProcessorsV3)
+			portalParam.GetPortalParamsV3(beaconHeight), pm.PortalInstProcessorsV3)
 		if err != nil {
 			Logger.log.Error(err)
 		}
@@ -65,7 +66,7 @@ func ProcessPortalInsts(
 	bc metadata.ChainRetriever,
 	portalStateDB *statedb.StateDB,
 	relayingState *portalrelaying.RelayingHeaderChainState,
-	portalParams PortalParams,
+	portalParam config.PortalParam,
 	beaconHeight uint64,
 	instructions [][]string,
 	pm *PortalManager,
@@ -74,7 +75,7 @@ func ProcessPortalInsts(
 	// process portal instructions v3
 	if !isSkipPortalV3Ints {
 		err := portalprocessv3.ProcessPortalInstsV3(
-			portalStateDB, portalParams.GetPortalParamsV3(beaconHeight),
+			portalStateDB, portalParam.GetPortalParamsV3(beaconHeight),
 			beaconHeight, instructions, pm.PortalInstProcessorsV3, epoch)
 		if err != nil {
 			Logger.log.Error(err)
