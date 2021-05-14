@@ -190,6 +190,8 @@ const (
 	ReplacePreviousValidationDataError
 	CommitteeFromBlockNotFoundError
 	GetListOutputCoinsByKeysetError
+	ShardBlockAlreadyExist
+	PDEStateDBError
 )
 
 var ErrCodeMessage = map[int]struct {

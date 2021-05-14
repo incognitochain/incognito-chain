@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/incognitochain/incognito-chain/wire"
 )
 
 // handleCreateTransaction handles createtransaction commands.
@@ -77,10 +78,13 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	if err != nil {
 		return nil, err
 	}
+	httpServer.config.Server.OnTx(nil, txMsg.(*wire.MessageTx))
 	err2 := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	if err2 == nil {
 		Logger.log.Info("handleSendRawTransaction broadcast message to all successfully")
-		httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
+		if !httpServer.txService.BlockChain.UsingNewPool() {
+			httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
+		}
 	} else {
 		Logger.log.Errorf("handleSendRawTransaction broadcast message to all with error %+v", err2)
 	}
@@ -491,6 +495,69 @@ func (httpServer *HttpServer) handleListUnspentOutputTokens(params interface{}, 
 	return result, nil
 }
 
+func (httpServer *HttpServer) handleGetOTACoinsByIndices(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	// get component
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
+	paramList, ok := paramsArray[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
+	}
+
+	tokenID := &common.PRVCoinID
+	if tmpTokenIDStr, ok := paramList["TokenID"]; ok {
+		tokenIDStr, ok := tmpTokenIDStr.(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("tokenID must be a string"))
+		}
+		tokenID, err = new(common.Hash).NewHashFromStr(tokenIDStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("tokenID %v is invalid", tokenIDStr))
+		}
+	}
+
+	fmt.Printf("tokenID: %v\n", tokenID.String())
+
+	tmpShardID, ok := paramList["ShardID"]
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("shardID not found"))
+	}
+	shardID, ok := tmpShardID.(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("shardID %v must be a float64", tmpShardID))
+	}
+
+	fmt.Printf("shardID: %v\n", shardID)
+
+	tmpIdxList, ok := paramList["Indices"]
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("field `Indices` not found"))
+	}
+
+	jsb, err := json.Marshal(tmpIdxList)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot marshal list indices"))
+	}
+	var idxList []float64
+
+	err = json.Unmarshal(jsb, &idxList)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse index list as []float64"))
+	}
+
+	fmt.Printf("idxList: %v\n", idxList)
+
+	uIdxList := make([]uint64, 0)
+	for _, idx := range idxList {
+		uIdxList = append(uIdxList, uint64(idx))
+	}
+
+	return httpServer.outputCoinService.GetOutputCoinByIndex(*tokenID, uIdxList, byte(shardID))
+}
 
 // handlePrivacyCustomTokenDetail - return list tx which relate to privacy custom token by token id
 func (httpServer *HttpServer) handlePrivacyCustomTokenDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -984,6 +1051,7 @@ func (httpServer *HttpServer) 	handleSendRawPrivacyCustomTokenTransaction(params
 	if err1 != nil {
 		return nil, err1
 	}
+	httpServer.config.Server.OnTxPrivacyToken(nil, txMsg.(*wire.MessageTxPrivacyToken))
 	LastBytePubKeySender := tx.GetSenderAddrLastByte()
 	err := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	//Mark forwarded message

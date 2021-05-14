@@ -3,6 +3,7 @@ package tx_ver2
 import (
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 )
 
 func (txToken *TxToken) LoadCommitment(*statedb.StateDB) error {
@@ -30,11 +31,11 @@ func (txToken *TxToken) VerifySigTx() (bool, error) {
 }
 
 func (txToken *TxToken) initEnv() metadata.ValidationEnviroment {
-	return nil
+	return tx_generic.DefaultValEnv()
 }
 
 func (txToken *TxToken) GetValidationEnv() metadata.ValidationEnviroment {
-	return nil
+	return tx_generic.DefaultValEnv()
 }
 
 func (txToken *TxToken) SetValidationEnv(metadata.ValidationEnviroment) {

@@ -379,6 +379,7 @@ func buildMetaInfo() {
 	listNNoInNoOut := []int{
 		WithDrawRewardRequestMeta,
 		StopAutoStakingMeta,
+		UnStakingMeta,
 	}
 
 	metaListNInfo = append(metaListNInfo, ListAndInfo{

@@ -87,10 +87,10 @@ func (netSync *NetSync) Init(cfg *NetSyncConfig) {
 	}
 
 	newTxPool := os.Getenv("TXPOOL_VERSION")
-	if newTxPool == "0" {
-		netSync.usingNewPool = false
-	} else {
+	if newTxPool == "1" {
 		netSync.usingNewPool = true
+	} else {
+		netSync.usingNewPool = false
 	}
 
 	// register pubsub channel
@@ -261,7 +261,7 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) handleMessageTx(msg wire.Message, tx metadata.Transaction, beaconHeight int64) {
 	txHash := tx.Hash().String()
-	Logger.log.Infof("[testperformance] Handling new message tx %v", txHash)
+	Logger.log.Debugf(" Handling new message tx %v", txHash)
 	if isAdded := netSync.handleCacheTx(*tx.Hash()); !isAdded {
 		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		err := netSync.config.Server.PushMessageToShard(msg, sID)
@@ -276,7 +276,7 @@ func (netSync *NetSync) handleMessageTx(msg wire.Message, tx metadata.Transactio
 		} else {
 			tp, err := netSync.config.BlockChain.GetConfig().PoolManager.GetShardTxsPool(sID)
 			if err != nil {
-				Logger.log.Errorf("[testperformance] Cannot get tx pool of shard %v, got err %v", sID, err)
+				Logger.log.Errorf("Cannot get tx pool of shard %v, got err %v", sID, err)
 			} else {
 				if !tp.IsRunning() {
 					return
@@ -292,7 +292,7 @@ func (netSync *NetSync) handleMessageTx(msg wire.Message, tx metadata.Transactio
 // handleTxMsg handles transaction messages from all peers.
 func (netSync *NetSync) handleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyToken, beaconHeight int64) {
 	txHash := msg.Transaction.Hash().String()
-	Logger.log.Infof("[testperformance] Handling new message tx %v", txHash)
+	Logger.log.Debugf("Handling new message tx %v", txHash)
 	// if !netSync.handleTxWithRole(msg.Transaction) {
 	// 	return
 	// }
@@ -301,7 +301,7 @@ func (netSync *NetSync) handleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyTo
 		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		tp, err := netSync.config.BlockChain.GetConfig().PoolManager.GetShardTxsPool(sID)
 		if err != nil {
-			Logger.log.Errorf("[testperformance] Cannot get tx pool of shard %v, got err %v", sID, err)
+			Logger.log.Errorf("Cannot get tx pool of shard %v, got err %v", sID, err)
 		} else {
 			if !tp.IsRunning() {
 				return

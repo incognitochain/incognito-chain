@@ -289,7 +289,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if shardBlock.Body.Transactions == nil {
 		return false, fmt.Errorf("Expect Shard Block Transactions is not nil")
 	}
-	if len(shardBlock.Body.Transactions) != 0 && shardBlock.Header.TxRoot.IsEqual(&common.Hash{}) {
+	if (shardBlock.Header.Height != 1) && (len(shardBlock.Body.Transactions) != 0) && (shardBlock.Header.TxRoot.IsEqual(&common.Hash{})) {
 		return false, fmt.Errorf("Expect Shard Block Tx Root have Non-Zero Hash Value because Transactions List is not empty")
 	}
 	return true, nil
@@ -313,12 +313,13 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	shardBlock.Header = tempShardBlock.Header
+	shardBlock.Body = blkBody
 	if shardBlock.Body.Transactions == nil {
 		shardBlock.Body.Transactions = []metadata.Transaction{}
 	}
 	for _, tx := range shardBlock.Body.Transactions {
 		valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), shardBlock.GetHeight())
-		valEnv = transaction.WithShardHeight(valEnv, shardBlock.Header.BeaconHeight)
+		valEnv = transaction.WithBeaconHeight(valEnv, shardBlock.Header.BeaconHeight)
 		valEnv = transaction.WithConfirmedTime(valEnv, shardBlock.GetProduceTime())
 		tx.SetValidationEnv(valEnv)
 		// fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
@@ -336,7 +337,6 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		// panic(string(data) + err.Error())
 		return err
 	}
-	shardBlock.Body = blkBody
 	return nil
 }
 

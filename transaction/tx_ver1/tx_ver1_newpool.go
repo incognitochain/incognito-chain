@@ -235,9 +235,9 @@ func (tx *Tx) LoadCommitment(
 		}
 		return proofV1.LoadCommitmentFromStateDB(db, tokenID, byte(tx.GetValidationEnv().ShardID()))
 	} else {
-		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
+		for _, iCoin := range prf.GetInputCoins() {
 			ok, err := tx.CheckCMExistence(
-				tx.Proof.GetInputCoins()[i].GetCommitment().ToBytesS(),
+				iCoin.GetCommitment().ToBytesS(),
 				db,
 				byte(tx.GetValidationEnv().ShardID()),
 				tokenID,
@@ -600,7 +600,11 @@ func (tx Tx) validateNoPrivacyZKPSanityWithOutput() (bool, error) {
 
 func (tx Tx) validateSanityDataPrivacyProof() (bool, error) {
 	if len(tx.Proof.GetInputCoins()) > 0 {
-		ok, err := tx.validateInputPrivacy()
+		ok, err := tx.checkDuplicateInput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = tx.validateInputPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}
@@ -610,7 +614,11 @@ func (tx Tx) validateSanityDataPrivacyProof() (bool, error) {
 		}
 	}
 	if len(tx.Proof.GetOutputCoins()) > 0 {
-		ok, err := tx.validateOutputPrivacy()
+		ok, err := tx.checkDuplicateOutput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = tx.validateOutputPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}
@@ -624,7 +632,11 @@ func (tx Tx) validateSanityDataPrivacyProof() (bool, error) {
 
 func (tx Tx) validateSanityDataNoPrivacyProof() (bool, error) {
 	if len(tx.Proof.GetInputCoins()) > 0 {
-		ok, err := tx.validateInputNoPrivacy()
+		ok, err := tx.checkDuplicateInput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = tx.validateInputNoPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}
@@ -634,7 +646,11 @@ func (tx Tx) validateSanityDataNoPrivacyProof() (bool, error) {
 		}
 	}
 	if len(tx.Proof.GetOutputCoins()) > 0 {
-		ok, err := tx.validateOutputNoPrivacy()
+		ok, err := tx.checkDuplicateOutput()
+		if !ok || err != nil {
+			return ok, err
+		}
+		ok, err = tx.validateOutputNoPrivacy()
 		if !ok || err != nil {
 			return ok, err
 		}

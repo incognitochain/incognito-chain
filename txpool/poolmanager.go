@@ -1,6 +1,8 @@
 package txpool
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -16,6 +18,7 @@ type PoolManager struct {
 func NewPoolManager(
 	activeShards int,
 	ps *pubsub.PubSubManager,
+	ttl time.Duration,
 ) (
 	*PoolManager,
 	error,
@@ -24,7 +27,7 @@ func NewPoolManager(
 		ps: ps,
 	}
 	for i := 0; i < activeShards; i++ {
-		res.ShardTxsPool = append(res.ShardTxsPool, NewTxsPool(nil, make(chan metadata.Transaction)))
+		res.ShardTxsPool = append(res.ShardTxsPool, NewTxsPool(nil, make(chan metadata.Transaction), ttl))
 	}
 
 	return res, nil
@@ -39,7 +42,7 @@ func (pm *PoolManager) Start(relayShards []byte) error {
 	relayShardM := map[byte]interface{}{}
 	for _, sID := range relayShards {
 		if int(sID) < len(pm.ShardTxsPool) {
-			pm.ShardTxsPool[sID].Start()
+			go pm.ShardTxsPool[sID].Start()
 			relayShardM[sID] = nil
 		}
 	}
@@ -58,12 +61,12 @@ func (pm *PoolManager) Start(relayShards []byte) error {
 			if (newRole.CID > -1) && (newRole.CID < len(pm.ShardTxsPool)) {
 				if (newRole.Role == common.SyncingRole) || (newRole.Role == common.CommitteeRole) /*|| (newRole.Role == common.NodeModeRelay) */ {
 					if !pm.ShardTxsPool[newRole.CID].IsRunning() {
-						pm.ShardTxsPool[newRole.CID].Start()
+						go pm.ShardTxsPool[newRole.CID].Start()
 					}
 				} else {
 					if pm.ShardTxsPool[newRole.CID].IsRunning() {
 						if _, ok := relayShardM[byte(newRole.CID)]; !ok {
-							pm.ShardTxsPool[newRole.CID].Stop()
+							go pm.ShardTxsPool[newRole.CID].Stop()
 						}
 					}
 				}
@@ -131,4 +134,12 @@ func (pm *PoolManager) GetTransactionByHash(txHash string) (metadata.Transaction
 		}
 	}
 	return nil, errors.Errorf("Transaction %v not found in mempool", txHash)
+}
+
+func (pm *PoolManager) RemoveTransactionInPool(txHash string) {
+	for _, txPool := range pm.ShardTxsPool {
+		if txPool.IsRunning() {
+			txPool.removeTx(txHash, nil)
+		}
+	}
 }

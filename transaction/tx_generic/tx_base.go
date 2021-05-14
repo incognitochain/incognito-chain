@@ -226,6 +226,7 @@ func (tx *TxBase) UnmarshalJSON(data []byte) error {
 		}
 		tx.SetProof(proof)
 	}
+	tx.initEnv()
 	return nil
 }
 

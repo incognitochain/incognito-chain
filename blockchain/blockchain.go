@@ -180,7 +180,6 @@ func (blockchain *BlockChain) InitChainState() error {
 		}
 		sBestState := blockchain.ShardChain[shardID].GetBestState()
 		txDB := sBestState.GetCopiedTransactionStateDB()
-		// Logger.log.Infof("[testperformance] SHARD %v | Init txDB from block %v, txdb roothash %v\n", shardID, sBestState.BestBlock.Header.Height, txDB)
 
 		blockchain.ShardChain[shardID].TxsVerifier.UpdateTransactionStateDB(txDB)
 		Logger.log.Infof("Init Shard View shardID %+v, height %+v", shardID, blockchain.ShardChain[shardID].GetFinalViewHeight())
@@ -196,15 +195,12 @@ func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	type WhiteList struct {
-		Data map[string][]string
-	}
-	whiteList := WhiteList{}
+	whiteList := map[string][]string{}
 	err = json.Unmarshal(whitelistData, &whiteList)
 	if err != nil {
 		return nil, err
 	}
-	if wlByNetID, ok := whiteList.Data[netID]; ok {
+	if wlByNetID, ok := whiteList[netID]; ok {
 		for _, txHash := range wlByNetID {
 			res[txHash] = nil
 		}
