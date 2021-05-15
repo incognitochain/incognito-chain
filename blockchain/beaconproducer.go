@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 )
 
@@ -76,13 +77,13 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 
 	BLogger.log.Infof("Producing block: %d (epoch %d)", newBeaconBlock.Header.Height, newBeaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
-	portalParam := config.Param().PortalParam
+	portalParams := blockchain.GetPortalParams()
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
 
 	instructions, shardStates, err := blockchain.GenerateBeaconBlockBody(
 		newBeaconBlock,
 		copiedCurView,
-		portalParam,
+		portalParams,
 		allShardBlocks,
 	)
 	if err != nil {
@@ -140,7 +141,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	newBeaconBlock *types.BeaconBlock,
 	curView *BeaconBestState,
-	portalParam config.PortalParam,
+	portalParams portal.PortalParams,
 	allShardBlocks map[byte][]*types.ShardBlock,
 ) ([][]string, map[byte][]types.ShardState, error) {
 	bridgeInstructions := [][]string{}
@@ -161,7 +162,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
 
-		portalParamsV3 := portalParam.GetPortalParamsV3(newBeaconBlock.GetHeight())
+		portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
 		isSplitRewardForCustodian := totalLockedCollateral > 0
 		percentCustodianRewards := portalParamsV3.MaxPercentCustodianRewards
 		if totalLockedCollateral < portalParamsV3.MinLockCollateralAmountInEpoch {
@@ -377,7 +378,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 		Logger.log.Infof("Beacon Producer found Random Instruction at Block Height %+v, %+v", randomInstruction, newBeaconHeight)
 		assignInstructions, _, _ := curView.beaconCommitteeEngine.GenerateAssignInstruction(
 			randomNumber,
-			blockchain.config.ChainParams.AssignOffset,
+			config.Param().SwapCommitteeParam.AssignOffset,
 			curView.ActiveShards,
 		)
 		for _, assignInstruction := range assignInstructions {
@@ -395,8 +396,8 @@ func (curView *BeaconBestState) GenerateInstruction(
 				Logger.log.Error(err)
 			}
 			epoch := blockchain.GetEpochByHeight(newBeaconHeight)
-			if common.IndexOfUint64(epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
-				swapBeaconInstructions, beaconCommittee := CreateBeaconSwapActionForKeyListV2(blockchain.config.GenesisParams, beaconCommitteeStr, curView.MinBeaconCommitteeSize, epoch)
+			if common.IndexOfUint64(epoch, config.Param().ConsensusParam.EpochBreakPointSwapNewKey) > -1 {
+				swapBeaconInstructions, beaconCommittee := CreateBeaconSwapActionForKeyListV2(beaconCommitteeStr, curView.MinBeaconCommitteeSize, epoch)
 				instructions = append(instructions, swapBeaconInstructions)
 				beaconRootInst, _ := buildBeaconSwapConfirmInstruction(beaconCommittee, newBeaconHeight)
 				instructions = append(instructions, beaconRootInst)
@@ -405,7 +406,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 	} else if curView.CommitteeEngineVersion() == committeestate.SLASHING_VERSION {
 		if blockchain.IsFirstBeaconHeightInEpoch(newBeaconHeight) {
 			// Generate request shard swap instruction, only available after upgrade to BeaconCommitteeEngineV2
-			env := curView.NewBeaconCommitteeStateEnvironment(blockchain.config.ChainParams)
+			env := curView.NewBeaconCommitteeStateEnvironment()
 			env.LatestShardsState = shardsState
 			swapShardInstructions, err := curView.beaconCommitteeEngine.GenerateAllSwapShardInstructions(env)
 			if err != nil {
@@ -453,12 +454,11 @@ func (curView *BeaconBestState) generateRandomInstruction() ([]string, int64) {
 }
 
 func CreateBeaconSwapActionForKeyListV2(
-	genesisParam *GenesisParams,
 	beaconCommittees []string,
 	minCommitteeSize int,
 	epoch uint64,
 ) ([]string, []string) {
-	swapInstruction, newBeaconCommittees := GetBeaconSwapInstructionKeyListV2(genesisParam, epoch)
+	swapInstruction, newBeaconCommittees := GetBeaconSwapInstructionKeyListV2(epoch)
 	remainBeaconCommittees := beaconCommittees[minCommitteeSize:]
 	return swapInstruction, append(newBeaconCommittees, remainBeaconCommittees...)
 }

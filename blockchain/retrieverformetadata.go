@@ -13,15 +13,11 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
-func (blockchain *BlockChain) GetStakingAmountShard() uint64 {
-	return blockchain.config.ChainParams.StakingAmountShard
-}
-
 func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress(beaconHeight uint64) string {
-	if blockchain.config.ChainParams.Net == config.TestnetNet || blockchain.config.ChainParams.Net == config.Testnet2Net {
-		return blockchain.config.ChainParams.CentralizedWebsitePaymentAddress
+	if config.Param().Net == config.TestnetNet || config.Param().Net == config.Testnet2Net {
+		return config.Param().CentralizedWebsitePaymentAddress
 	}
-	if blockchain.config.ChainParams.Net == Mainnet {
+	if config.Param().Net == Mainnet {
 		if beaconHeight >= 677000 {
 			// use new address
 			return "12RwAheAvvMqrpxviWCV5r6JLS2puiMom3fy6GUCAmPNN1BXnEW4DXpueqMfV66zyAMpurEuegWPGV6U4HR6Mi9KzUiDL4K3uyv1xxF"
@@ -30,22 +26,14 @@ func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress(beaconHeight u
 			return "12S6jZ6sjJaqsuMJKS6jG7gvE9eHUXGWa2B2dNC7PwyEYJkL6cE53Uzk926HrQMEv2i2oBvKP2GDTC6tzU9dYSVH5X3w9P58VWqux4F"
 		} else {
 			// use original address
-			return blockchain.config.ChainParams.CentralizedWebsitePaymentAddress
+			return config.Param().CentralizedWebsitePaymentAddress
 		}
 	}
 	return ""
 }
 
-func (blockchain *BlockChain) GetBeaconHeightBreakPointBurnAddr() uint64 {
-	return blockchain.config.ChainParams.BeaconHeightBreakPointBurnAddr
-}
-
-func (blockchain *BlockChain) GetETHRemoveBridgeSigEpoch() uint64 {
-	return blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch
-}
-
 func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
-	breakPoint := blockchain.GetBeaconHeightBreakPointBurnAddr()
+	breakPoint := config.Param().BeaconHeightBreakPointBurnAddr
 	if beaconHeight == 0 {
 		beaconHeight = blockchain.BeaconChain.GetFinalViewHeight()
 	}
@@ -75,10 +63,6 @@ func (blockchain *BlockChain) IsValidPortalRemoteAddress(tokenIDStr string, remo
 	return portalToken.IsValidRemoteAddress(remoteAddr, blockchain)
 }
 
-func (blockchain *BlockChain) GetBCHeightBreakPointPortalV3() uint64 {
-	return blockchain.config.ChainParams.BCHeightBreakPointPortalV3
-}
-
 func (blockchain *BlockChain) GetBNBChainID() string {
 	return blockchain.GetConfig().ChainParams.PortalParams.RelayingParam.BNBRelayingHeaderChainID
 }
@@ -98,12 +82,12 @@ func (blockchain *BlockChain) GetPortalFeederAddress(beaconHeight uint64) string
 
 // convertDurationTimeToBeaconBlocks returns number of beacon blocks corresponding to duration time
 func (blockchain *BlockChain) convertDurationTimeToBeaconBlocks(duration time.Duration) uint64 {
-	return uint64(duration.Seconds() / blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds())
+	return uint64(duration.Seconds() / config.Param().BlockTime.MinBeaconBlockInterval.Seconds())
 }
 
 // convertDurationTimeToShardBlocks returns number of shard blocks corresponding to duration time
 func (blockchain *BlockChain) convertDurationTimeToShardBlocks(duration time.Duration) uint64 {
-	return uint64(duration.Seconds() / blockchain.config.ChainParams.MinShardBlockInterval.Seconds())
+	return uint64(duration.Seconds() / config.Param().BlockTime.MinShardBlockInterval.Seconds())
 }
 
 // convertDurationTimeToBeaconBlocks returns number of beacon blocks corresponding to duration time
@@ -207,12 +191,8 @@ func (blockchain *BlockChain) ValidatePortalRemoteAddresses(remoteAddresses map[
 	return true, nil
 }
 
-func (blockchain *BlockChain) GetEnableFeatureFlags() map[int]uint64 {
-	return blockchain.GetChainParams().EnableFeatureFlags
-}
-
 func (blockchain *BlockChain) IsEnableFeature(featureFlag int, epoch uint64) bool {
-	enableFeatureFlags := blockchain.config.ChainParams.EnableFeatureFlags
+	enableFeatureFlags := config.Param().EnableFeatureFlags
 	if enableFeatureFlags[featureFlag] == 0 {
 		return false
 	}

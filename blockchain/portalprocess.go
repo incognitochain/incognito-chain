@@ -46,7 +46,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 	currentPortalState *portalprocessv3.CurrentPortalState,
 	relayingState *portalrelaying.RelayingHeaderChainState,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
-	portalParam config.PortalParam,
+	portalParams portal.PortalParams,
 	pm *portal.PortalManager,
 ) ([][]string, error) {
 	// get shard height of all shards for producer
@@ -56,9 +56,10 @@ func (blockchain *BlockChain) handlePortalInsts(
 	}
 
 	epochBlocks := config.Param().EpochParam.NumberOfBlockInEpoch
+
 	return portal.HandlePortalInsts(
 		blockchain, stateDB, beaconHeight, shardHeights, currentPortalState, relayingState,
-		rewardForCustodianByEpoch, portalParam, pm, epochBlocks)
+		rewardForCustodianByEpoch, portalParams, pm, epochBlocks)
 }
 
 // Beacon process for portal protocol
@@ -74,12 +75,12 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		Logger.log.Error(err)
 		return nil
 	}
-	portalParam := config.Param().PortalParam
+	portalParams := blockchain.GetPortalParams()
 	pm := portal.NewPortalManager()
 	epoch := config.Param().EpochParam.NumberOfBlockInEpoch
 
 	err = portal.ProcessPortalInsts(
-		blockchain, portalStateDB, relayingState, portalParam, beaconHeight, block.Body.Instructions, pm, epoch, isSkipPortalV3Ints)
+		blockchain, portalStateDB, relayingState, portalParams, beaconHeight, block.Body.Instructions, pm, epoch, isSkipPortalV3Ints)
 	if err != nil {
 		Logger.log.Error(err)
 	}

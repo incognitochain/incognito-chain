@@ -7,7 +7,6 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/portal"
@@ -101,7 +100,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	statefulActionsByShardID map[byte][][]string,
 	beaconHeight uint64,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
-	portalParam config.PortalParam) [][]string {
+	portalParams portal.PortalParams) [][]string {
 
 	currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconBestState.pdeState, beaconHeight-1)
 	if err != nil {
@@ -237,7 +236,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		currentPortalStateV3,
 		relayingHeaderState,
 		rewardForCustodianByEpoch,
-		portalParam,
+		portalParams,
 		pm,
 	)
 

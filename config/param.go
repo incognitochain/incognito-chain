@@ -37,7 +37,7 @@ type param struct {
 	ETHRemoveBridgeSigEpoch          uint64             `mapstructure:"eth_remove_bridge_sig_epoch"`
 	BCHeightBreakPointNewZKP         uint64             `mapstructure:"bc_height_break_point_new_zkp"`
 	EnableFeatureFlags               map[int]uint64     `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
-	PortalParam                      PortalParam        `mapstructure:"portal_param"`
+	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	IsBackup                         bool
 }
 
@@ -58,15 +58,15 @@ type genesisParam struct {
 }
 
 type committeeSize struct {
-	MaxShardCommitteeSize        int `mapstructure:"max_shard_committee_size"`
-	MinShardCommitteeSize        int `mapstructure:"min_shard_committee_size"`
-	MaxBeaconCommitteeSize       int `mapstructure:"max_beacon_committee_size"`
-	MinBeaconCommitteeSize       int `mapstructure:"min_beacon_committee_size"`
-	InitShardCommitteeSize       int `mapstructure:"init_shard_committee_size"`
-	InitBeaconCommitteeSize      int `mapstructure:"init_beacon_committee_size"`
-	ShardCommitteeSizeKeyListV2  int `mapstructure:"shard_committee_size_key_list_v2"`
-	BeaconCommitteeSizeKeyListV2 int `mapstructure:"beacon_committee_size_key_list_v2"`
-	NumberOfFixedBlockValidators int `mapstructure:"number_of_fixed_shard_block_validators"`
+	MaxShardCommitteeSize            int `mapstructure:"max_shard_committee_size"`
+	MinShardCommitteeSize            int `mapstructure:"min_shard_committee_size"`
+	MaxBeaconCommitteeSize           int `mapstructure:"max_beacon_committee_size"`
+	MinBeaconCommitteeSize           int `mapstructure:"min_beacon_committee_size"`
+	InitShardCommitteeSize           int `mapstructure:"init_shard_committee_size"`
+	InitBeaconCommitteeSize          int `mapstructure:"init_beacon_committee_size"`
+	ShardCommitteeSizeKeyListV2      int `mapstructure:"shard_committee_size_key_list_v2"`
+	BeaconCommitteeSizeKeyListV2     int `mapstructure:"beacon_committee_size_key_list_v2"`
+	NumberOfFixedShardBlockValidator int `mapstructure:"number_of_fixed_shard_block_validators"`
 }
 
 type blockTime struct {
@@ -237,27 +237,3 @@ func (p *param) LoadKey() {
 	}
 
 }
-
-func (p *param) GetName() string                 { return p.Name }
-func (p *param) GetNet() uint32                  { return p.Net }
-func (p *param) GetGenesisParam() *genesisParam  { return p.GenesisParam }
-func (p *param) GetCommitteeSize() committeeSize { return p.CommitteeSize }
-func (p *param) GetBlockTime() blockTime         { return p.BlockTime }
-func (p *param) GetStakingAmountShard() uint64   { return p.StakingAmountShard }
-func (p *param) GetActiveShards() int            { return p.ActiveShards }
-func (p *param) GetBasicReward() uint64          { return p.BasicReward }
-func (p *param) GetEpochParam() epochParam       { return p.EpochParam }
-func (p *param) GetEthContractAddress() string   { return p.EthContractAddressStr }
-func (p *param) GetIncognitoDAOAdress() string   { return p.IncognitoDAOAddress }
-func (p *param) GetCentralizedWebsitePaymentAddress() string {
-	return p.CentralizedWebsitePaymentAddress
-}
-func (p *param) GetSwapCommitteeParam() swapCommitteeParam { return p.SwapCommitteeParam }
-func (p *param) GetConsensusParam() consensusParam         { return p.ConsensusParam }
-func (p *param) GetBeaconHeightBreakPointBurnAddr() uint64 { return p.BeaconHeightBreakPointBurnAddr }
-func (p *param) GetReplaceStakingTxHeight() uint64         { return p.ReplaceStakingTxHeight }
-func (p *param) GetETHRemoveBridgeSigEpoch() uint64        { return p.ETHRemoveBridgeSigEpoch }
-func (p *param) GetBCHeightBreakPointNewZKP() uint64       { return p.BCHeightBreakPointNewZKP }
-func (p *param) GetEnableFeatureFlags() map[int]uint64     { return p.EnableFeatureFlags }
-func (p *param) GetPortalParam() PortalParam               { return p.PortalParam }
-func (p *param) GetIsBackup() bool                         { return p.IsBackup }

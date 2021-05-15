@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -235,7 +236,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
 	if tx.GetMetadata() != nil {
-		currentEpoch := common.GetEpochFromBeaconHeight(uint64(beaconHeight), tp.config.BlockChain.GetChainParams().Epoch)
+		currentEpoch := common.GetEpochFromBeaconHeight(uint64(beaconHeight), config.Param().EpochParam.NumberOfBlockInEpoch)
 		isFeatureFlag, isEnable := tp.checkEnableFeatureFlagMetadata(tx.GetMetadataType(), currentEpoch)
 		if isFeatureFlag && !isEnable {
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("This tx %v with metadata %v is disable", tx.Hash().String(), tx.GetMetadataType()))

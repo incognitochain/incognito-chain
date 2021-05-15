@@ -89,13 +89,122 @@ const (
 	// ------------- end Mainnet --------------------------------------
 )
 
+// VARIABLE for mainnet
+var PreSelectBeaconNodeMainnetSerializedPubkey = []string{}
+var PreSelectBeaconNodeMainnetSerializedPaymentAddress = []string{}
+var PreSelectShardNodeMainnetSerializedPubkey = []string{}
+var PreSelectShardNodeMainnetSerializedPaymentAddress = []string{}
+
+var SelectBeaconNodeMainnetSerializedPubkeyV2 = make(map[uint64][]string)
+var SelectBeaconNodeMainnetSerializedPaymentAddressV2 = make(map[uint64][]string)
+var SelectShardNodeMainnetSerializedPubkeyV2 = make(map[uint64][]string)
+var SelectShardNodeMainnetSerializedPaymentAddressV2 = make(map[uint64][]string)
+var MainnetReplaceCommitteeEpoch = []uint64{}
+
+// END CONSTANT for network MAINNET
+
+// CONSTANT for network TESTNET
 const (
-	TestnetBNBChainID         = "Binance-Chain-Ganges"
-	TestnetBTCChainID         = "Bitcoin-Testnet"
+	Testnet                  = 0x16
+	TestnetName              = "testnet"
+	TestnetDefaultPort       = "9444"
+	TestnetGenesisBlockTime  = "2019-11-29T00:00:00.000Z"
+	TestnetEpoch             = 100
+	TestnetRandomTime        = 50
+	TestnetEpochV2BreakPoint = 1e9
+	TestnetEpochV2           = 100
+	TestnetRandomTimeV2      = 50
+	TestnetOffset            = 1
+	TestnetSwapOffset        = 1
+	TestnetAssignOffset      = 2
+
+	TestNetShardCommitteeSize     = 32
+	TestNetMinShardCommitteeSize  = 4
+	TestNetBeaconCommitteeSize    = 4
+	TestNetMinBeaconCommitteeSize = 4
+	TestNetActiveShards           = 8
+	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+
+	TestNetMinBeaconBlkInterval = 8 * time.Second //second
+	TestNetMaxBeaconBlkCreation = 5 * time.Second //second
+	TestNetMinShardBlkInterval  = 8 * time.Second //second
+	TestNetMaxShardBlkCreation  = 5 * time.Second //second
+
+	//board and proposal parameters
+	TestnetBasicReward                      = 400000000 //40 mili PRV
+	TestnetETHContractAddressStr            = "0xE0D5e7217c6C4bc475404b26d763fAD3F14D2b86"
+	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
+	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+
+	// relaying header chain
+	TestnetBNBChainID        = "Binance-Chain-Ganges"
+	TestnetBTCChainID        = "Bitcoin-Testnet"
+	TestnetBTCDataFolderName = "btcrelayingv14"
+
+	// BNB fullnode
+	TestnetBNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
+	TestnetBNBFullNodeProtocol = "https"
+	TestnetBNBFullNodePort     = "443"
+	TestnetPortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+
+	// Enable Feature Flag
+	TestnetEnablePortalRelaying = 1
+	TestnetEnablePortalV3       = 0
+)
+
+// CONSTANT for network TESTNET-2
+const (
+	Testnet2                  = 0x32
+	Testnet2Name              = "testnet-2"
+	Testnet2DefaultPort       = "9444"
+	Testnet2GenesisBlockTime  = "2020-08-11T00:00:00.000Z"
+	Testnet2Epoch             = 100
+	Testnet2RandomTimeV2      = 50
+	Testnet2EpochV2BreakPoint = 10e9
+	Testnet2EpochV2           = 100
+	Testnet2RandomTime        = 50
+	Testnet2Offset            = 1
+	Testnet2SwapOffset        = 1
+	Testnet2AssignOffset      = 2
+
+	TestNet2ShardCommitteeSize     = 32
+	TestNet2MinShardCommitteeSize  = 4
+	TestNet2BeaconCommitteeSize    = 4
+	TestNet2MinBeaconCommitteeSize = 4
+	TestNet2ActiveShards           = 8
+	TestNet2StakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+
+	TestNet2MinBeaconBlkInterval = 10 * time.Second //second
+	TestNet2MaxBeaconBlkCreation = 8 * time.Second  //second
+	TestNet2MinShardBlkInterval  = 10 * time.Second //second
+	TestNet2MaxShardBlkCreation  = 6 * time.Second  //second
+
+	//board and proposal parameters
+	Testnet2BasicReward                      = 400000000 //40 mili PRV
+	Testnet2ETHContractAddressStr            = "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
+	Testnet2IncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
+	Testnet2CentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+
+	// relaying header chain
 	Testnet2BNBChainID        = "Binance-Chain-Ganges"
 	Testnet2BTCChainID        = "Bitcoin-Testnet-2"
 	Testnet2BTCDataFolderName = "btcrelayingv11"
+
+	// BNB fullnode
+	Testnet2BNBFullNodeHost     = "data-seed-pre-0-s3.binance.org"
+	Testnet2BNBFullNodeProtocol = "https"
+	Testnet2BNBFullNodePort     = "443"
+	Testnet2PortalFeeder        = "12S2ciPBja9XCnEVEcsPvmCLeQH44vF8DMwSqgkH7wFETem5FiqiEpFfimETcNqDkARfht1Zpph9u5eQkjEnWsmZ5GB5vhc928EoNYH"
+
+	// Enable Feature Flag
+	Testnet2EnablePortalRelaying = 1
+	Testnet2EnablePortalV3       = 0
 )
+
+// For shard
+// public key
+
+// END CONSTANT for network TESTNET
 
 var (
 	shardInsertBlockTimer                  = metrics.NewRegisteredTimer("shard/insert", nil)

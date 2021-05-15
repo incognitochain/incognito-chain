@@ -2,9 +2,9 @@ package portalprocess
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
 )
 
 // interface for portal instruction processor v3
@@ -21,7 +21,7 @@ type PortalInstructionProcessorV3 interface {
 		currentPortalState *CurrentPortalState,
 		beaconHeight uint64,
 		shardHeights map[byte]uint64,
-		portalParam config.PortalParam,
+		portalParams portalv3.PortalParams,
 		optionalData map[string]interface{},
 	) ([][]string, error)
 	// process instructions that confirmed in beacon blocks
@@ -30,7 +30,7 @@ type PortalInstructionProcessorV3 interface {
 		beaconHeight uint64,
 		instructions []string,
 		currentPortalState *CurrentPortalState,
-		portalParam config.PortalParam,
+		portalParams portalv3.PortalParams,
 		updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 	) error
 }
