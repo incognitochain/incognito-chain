@@ -23,6 +23,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/utils"
 )
@@ -317,7 +318,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		return NewBlockChainError(PDEStateDBError, fmt.Errorf("PDE state in Mem and DB is not consistent! Check before restart."))
 	}
 
-	portalParams := blockchain.GetPortalParams()
+	portalParams := portal.GetPortalParams()
 
 	// get shard to beacon blocks from pool
 	allRequiredShardBlockHeight := make(map[byte][]uint64)
@@ -340,7 +341,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	instructions, _, err := blockchain.GenerateBeaconBlockBody(
 		beaconBlock,
 		curView,
-		portalParams,
+		*portalParams,
 		allShardBlocks,
 	)
 

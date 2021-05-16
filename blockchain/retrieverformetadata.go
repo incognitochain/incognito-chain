@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
+	"github.com/incognitochain/incognito-chain/portal"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
@@ -17,7 +18,7 @@ func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress(beaconHeight u
 	if config.Param().Net == config.TestnetNet || config.Param().Net == config.Testnet2Net {
 		return config.Param().CentralizedWebsitePaymentAddress
 	}
-	if config.Param().Net == Mainnet {
+	if config.Param().Net == config.MainnetNet {
 		if beaconHeight >= 677000 {
 			// use new address
 			return "12RwAheAvvMqrpxviWCV5r6JLS2puiMom3fy6GUCAmPNN1BXnEW4DXpueqMfV66zyAMpurEuegWPGV6U4HR6Mi9KzUiDL4K3uyv1xxF"
@@ -46,12 +47,12 @@ func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 
 /* ================== Retriever for portal v3 ================== */
 func (blockchain *BlockChain) GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error) {
-	return blockchain.GetPortalParamsV3(beaconHeight).GetMinAmountPortalToken(tokenIDStr)
+	return portal.GetPortalParams().GetPortalParamsV3(beaconHeight).GetMinAmountPortalToken(tokenIDStr)
 }
 
 // IsPortalToken check tokenIDStr is the valid portal token on portal v3 or not
 func (blockchain *BlockChain) IsPortalToken(beaconHeight uint64, tokenIDStr string) bool {
-	return blockchain.GetPortalParamsV3(beaconHeight).IsPortalToken(tokenIDStr)
+	return portal.GetPortalParams().GetPortalParamsV3(beaconHeight).IsPortalToken(tokenIDStr)
 }
 
 func (blockchain *BlockChain) IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error) {
@@ -64,11 +65,11 @@ func (blockchain *BlockChain) IsValidPortalRemoteAddress(tokenIDStr string, remo
 }
 
 func (blockchain *BlockChain) GetBNBChainID() string {
-	return blockchain.GetConfig().ChainParams.PortalParams.RelayingParam.BNBRelayingHeaderChainID
+	return portal.GetPortalParams().RelayingParam.BNBRelayingHeaderChainID
 }
 
 func (blockchain *BlockChain) GetBTCChainID() string {
-	return blockchain.GetConfig().ChainParams.PortalParams.RelayingParam.BTCRelayingHeaderChainID
+	return portal.GetPortalParams().RelayingParam.BTCRelayingHeaderChainID
 }
 
 func (blockchain *BlockChain) GetBTCHeaderChain() *btcrelaying.BlockChain {
@@ -122,7 +123,7 @@ func (blockchain *BlockChain) GetPortalETHContractAddrStr(beaconHeight uint64) s
 
 // GetBNBHeader calls RPC to fullnode bnb to get latest bnb block height
 func (blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
-	portalRelayingParams := config.Param().PortalParam.RelayingParam
+	portalRelayingParams := portal.GetPortalParams().RelayingParam
 	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
 		portalRelayingParams.BNBFullNodeProtocol,
 		portalRelayingParams.BNBFullNodeHost,
@@ -141,7 +142,7 @@ func (blockchain *BlockChain) GetLatestBNBBlkHeight() (int64, error) {
 func (blockchain *BlockChain) GetBNBHeader(
 	blockHeight int64,
 ) (*types.Header, error) {
-	portalRelayingParams := config.Param().PortalParam.RelayingParam
+	portalRelayingParams := portal.GetPortalParams().RelayingParam
 	bnbFullNodeAddress := rpccaller.BuildRPCServerAddress(
 		portalRelayingParams.BNBFullNodeProtocol,
 		portalRelayingParams.BNBFullNodeHost,

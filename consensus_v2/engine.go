@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/pubsub"
 
@@ -247,11 +248,11 @@ func (engine *Engine) updateVersion(chainID int) {
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
 	}
 
-	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
+	if chainEpoch >= config.Param().ConsensusParam.ConsensusV2Epoch {
 		engine.version[chainID] = 2
 	}
 
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.StakingFlowV2Height {
+	if chainHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
 		engine.version[chainID] = 3
 	}
 }

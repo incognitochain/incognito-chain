@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/portal"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/utils"
 
@@ -36,14 +37,14 @@ var winServiceMain func() (bool, error)
 
 func getBTCRelayingChain(btcRelayingChainID, btcDataFolderName string) (*btcrelaying.BlockChain, error) {
 	relayingChainParams := map[string]*chaincfg.Params{
-		blockchain.TestnetBTCChainID:  btcrelaying.GetTestNet3Params(),
-		blockchain.Testnet2BTCChainID: btcrelaying.GetTestNet3ParamsForInc2(),
-		blockchain.MainnetBTCChainID:  btcrelaying.GetMainNetParams(),
+		portal.TestnetBTCChainID:  btcrelaying.GetTestNet3Params(),
+		portal.Testnet2BTCChainID: btcrelaying.GetTestNet3ParamsForInc2(),
+		portal.MainnetBTCChainID:  btcrelaying.GetMainNetParams(),
 	}
 	relayingChainGenesisBlkHeight := map[string]int32{
-		blockchain.TestnetBTCChainID:  int32(1896910),
-		blockchain.Testnet2BTCChainID: int32(1863675),
-		blockchain.MainnetBTCChainID:  int32(634140),
+		portal.TestnetBTCChainID:  int32(1896910),
+		portal.Testnet2BTCChainID: int32(1863675),
+		portal.MainnetBTCChainID:  int32(634140),
 	}
 	return btcrelaying.GetChainV2(
 		filepath.Join(config.Config().DataDir, btcDataFolderName),
@@ -90,6 +91,7 @@ func mainMaster(serverChan chan<- *Server) error {
 
 	//load keys from file
 	param.LoadKey()
+	portal.SetupParam()
 
 	//create genesis block
 	blockchain.CreateGenesisBlocks()
@@ -151,8 +153,8 @@ func mainMaster(serverChan chan<- *Server) error {
 	}
 	// Create btcrelaying chain
 	btcChain, err := getBTCRelayingChain(
-		param.PortalParam.RelayingParam.BTCRelayingHeaderChainID,
-		param.PortalParam.RelayingParam.BTCDataFolderName,
+		portal.GetPortalParams().RelayingParam.BTCRelayingHeaderChainID,
+		portal.GetPortalParams().RelayingParam.BTCDataFolderName,
 	)
 	if err != nil {
 		Logger.log.Error("could not get or create btc relaying chain")
@@ -166,7 +168,7 @@ func mainMaster(serverChan chan<- *Server) error {
 	}()
 
 	// Create bnbrelaying chain state
-	bnbChainState, err := getBNBRelayingChainState(param.PortalParam.RelayingParam.BNBRelayingHeaderChainID)
+	bnbChainState, err := getBNBRelayingChainState(portal.GetPortalParams().RelayingParam.BNBRelayingHeaderChainID)
 	if err != nil {
 		Logger.log.Error("could not get or create bnb relaying chain state")
 		Logger.log.Error(err)

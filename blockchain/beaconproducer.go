@@ -77,13 +77,13 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 
 	BLogger.log.Infof("Producing block: %d (epoch %d)", newBeaconBlock.Header.Height, newBeaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
-	portalParams := blockchain.GetPortalParams()
+	portalParams := portal.GetPortalParams()
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
 
 	instructions, shardStates, err := blockchain.GenerateBeaconBlockBody(
 		newBeaconBlock,
 		copiedCurView,
-		portalParams,
+		*portalParams,
 		allShardBlocks,
 	)
 	if err != nil {

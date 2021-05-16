@@ -75,12 +75,12 @@ func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.S
 		Logger.log.Error(err)
 		return nil
 	}
-	portalParams := blockchain.GetPortalParams()
+	portalParams := portal.GetPortalParams()
 	pm := portal.NewPortalManager()
 	epoch := config.Param().EpochParam.NumberOfBlockInEpoch
 
 	err = portal.ProcessPortalInsts(
-		blockchain, portalStateDB, relayingState, portalParams, beaconHeight, block.Body.Instructions, pm, epoch, isSkipPortalV3Ints)
+		blockchain, portalStateDB, relayingState, *portalParams, beaconHeight, block.Body.Instructions, pm, epoch, isSkipPortalV3Ints)
 	if err != nil {
 		Logger.log.Error(err)
 	}

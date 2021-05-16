@@ -686,13 +686,8 @@ func (blockchain *BlockChain) GetConfig() *Config {
 	return &blockchain.config
 }
 
-// GetPortalParams returns portal params in beaconheight
-func (blockchain *BlockChain) GetPortalParams() portal.PortalParams {
-	return blockchain.GetConfig().ChainParams.PortalParams
-}
-
 func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.PortalParams {
-	return blockchain.GetConfig().ChainParams.PortalParams.GetPortalParamsV3(beaconHeight)
+	return portal.GetPortalParams().GetPortalParamsV3(beaconHeight)
 }
 
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {
