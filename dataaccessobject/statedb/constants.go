@@ -53,6 +53,12 @@ const (
 	PortalConfirmProofObjectType
 	PortalUnlockOverRateCollaterals
 
+	// Portal v4
+	PortalV4UTXOObjectType
+	PortalV4ShieldRequestObjectType
+	PortalWaitingUnshieldObjectType
+	PortalProcessedUnshieldRequestBatchObjectType
+
 	SlashingCommitteeObjectType
 )
 
@@ -91,7 +97,7 @@ const (
 
 // bridge
 const (
-	BridgeMinorOperator = "-"
+	BridgeMinusOperator = "-"
 	BridgePlusOperator  = "+"
 )
 

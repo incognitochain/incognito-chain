@@ -659,6 +659,8 @@ func (httpServer *HttpServer) checkEnableFeatureFlagRPC(methodName string) (bool
 		return true, bc.IsEnableFeature(common.PortalRelayingFlag, epoch)
 	} else if httpServer.isPortalV3RPC(methodName) {
 		return true, bc.IsEnableFeature(common.PortalV3Flag, epoch)
+	} else if httpServer.isPortalV4RPC(methodName) {
+		return true, bc.IsEnableFeature(common.PortalV4Flag, epoch)
 	}
 	return false, false
 }

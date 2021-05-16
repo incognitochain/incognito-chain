@@ -30,13 +30,13 @@ var HttpHandler = map[string]httpHandler{
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
 
 	//tx pool
-	getRawMempool:             (*HttpServer).handleGetRawMempool,
-	getNumberOfTxsInMempool:   (*HttpServer).handleGetNumberOfTxsInMempool,
-	getMempoolEntry:           (*HttpServer).handleMempoolEntry,
-	removeTxInMempool:         (*HttpServer).handleRemoveTxInMempool,
-	getMempoolInfo:            (*HttpServer).handleGetMempoolInfo,
-	getMempoolInfoDetails: 		 (*HttpServer).handleGetMempoolInfoDetails,
-	getPendingTxsInBlockgen:   (*HttpServer).handleGetPendingTxsInBlockgen,
+	getRawMempool:           (*HttpServer).handleGetRawMempool,
+	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
+	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
+	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
+	getMempoolInfoDetails:   (*HttpServer).handleGetMempoolInfoDetails,
+	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
 	// getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
@@ -279,6 +279,21 @@ var HttpHandler = map[string]httpHandler{
 
 	//validators state
 	getValKeyState: (*HttpServer).handleGetValKeyState,
+
+	// portal v4
+	getPortalV4State:                           (*HttpServer).handleGetPortalV4State,
+	createAndSendTxWithShieldingRequest:        (*HttpServer).handleCreateAndSendTxWithShieldingReq,
+	getPortalShieldingRequestStatus:            (*HttpServer).handleGetPortalShieldingRequestStatus,
+	createAndSendTxWithPortalV4UnshieldRequest: (*HttpServer).handleCreateAndSendTxWithPortalV4UnshieldRequest,
+	getPortalUnshieldingRequestStatus:          (*HttpServer).handleGetPortalUnshieldingRequestStatus,
+	getPortalBatchUnshieldingRequestStatus:     (*HttpServer).handleGetPortalBatchUnshieldingRequestStatus,
+	getListPortalBatchUnshieldingRequests:      (*HttpServer).handleGetListPortalBatchUnshieldingRequests,
+	getSignedRawTransactionByBatchID:           (*HttpServer).handleGetPortalSignedExtTxWithBatchID,
+	createAndSendTxWithPortalReplacementFee:    (*HttpServer).handleCreateAndSendTxWithPortalReplaceUnshieldFee,
+	getPortalReplacementFeeStatus:              (*HttpServer).handleGetPortalReplacementFeeRequestStatus,
+	createAndSendTxWithPortalSubmitConfirmedTx: (*HttpServer).handleCreateAndSendTxWithPortalSubmitConfirmedTx,
+	getPortalSubmitConfirmedTx:                 (*HttpServer).handleGetPortalPortalSubmitConfirmedTxStatus,
+	getSignedRawReplaceFeeTransaction:          (*HttpServer).handleGetPortalTransactionSignedWithFeeReplacementTx,
 
 	// unstake
 	unstake: (*HttpServer).handleCreateUnstakeTransaction,

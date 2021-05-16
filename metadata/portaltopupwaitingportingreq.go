@@ -136,8 +136,9 @@ func (p PortalTopUpWaitingPortingRequest) ValidateSanityData(
 		return false, false, errors.New("both DepositedAmount and FreeCollateralAmount are zero")
 	}
 
-	if !chainRetriever.IsPortalToken(beaconHeight, p.PTokenID) {
-		return false, false, errors.New("TokenID in remote address is invalid")
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, p.PTokenID, common.PortalVersion3)
+	if !isPortalToken || err != nil {
+		return false, false, errors.New("TokenID is not a portal token")
 	}
 
 	if p.PortingID == "" {

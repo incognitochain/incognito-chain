@@ -69,6 +69,11 @@ const (
 	PortalCustodianDepositV3ValidateSanityDataError
 	NewPortalCustodianDepositV3MetaFromMapError
 	PortalUnlockOverRateCollateralsError
+
+	// portal v4
+	PortalV4UnshieldRequestValidateSanityDataError
+	PortalV4FeeReplacementRequestMetaError
+	PortalV4SubmitConfirmedTxRequestMetaError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -138,6 +143,11 @@ var ErrCodeMessage = map[int]struct {
 	PortalCustodianDepositV3ValidateSanityDataError: {-9002, "Validate sanity data tx portal custodian deposit v3 error"},
 	NewPortalCustodianDepositV3MetaFromMapError:     {-9003, "New portal custodian deposit v3 metadata from map error"},
 	PortalUnlockOverRateCollateralsError:            {-9004, "Validate with blockchain tx portal custodian unlock over rate v3 error"},
+
+	// portal v4
+	PortalV4UnshieldRequestValidateSanityDataError: {-9101, "Validate sanity data portal v4 unshielding request error"},
+	PortalV4FeeReplacementRequestMetaError:         {-17002, "Portal batch unshield  request metadata error"},
+	PortalV4SubmitConfirmedTxRequestMetaError:      {-17003, "Portal submit external confirmed tx metadata error"},
 }
 
 type MetadataTxError struct {

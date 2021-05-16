@@ -158,6 +158,18 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalLiquidationCustodianDepositV3{}
 	case PortalTopUpWaitingPortingRequestMetaV3:
 		md = &PortalTopUpWaitingPortingRequestV3{}
+	case PortalV4ShieldingRequestMeta:
+		md = &PortalShieldingRequest{}
+	case PortalV4ShieldingResponseMeta:
+		md = &PortalShieldingResponse{}
+	case PortalV4UnshieldingRequestMeta:
+		md = &PortalUnshieldRequest{}
+	case PortalV4UnshieldingResponseMeta:
+		md = &PortalUnshieldResponse{}
+	case PortalV4FeeReplacementRequestMeta:
+		md = &PortalReplacementFeeRequest{}
+	case PortalV4SubmitConfirmedTxMeta:
+		md = &PortalSubmitConfirmedTxRequest{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
@@ -588,5 +600,10 @@ func IsPortalMetaTypeV3(metaType int) bool {
 
 func IsPortalRelayingMetaType(metaType int) bool {
 	res, _ := common.SliceExists(portalRelayingMetaTypes, metaType)
+	return res
+}
+
+func IsPortalMetaTypeV4(metaType int) bool {
+	res, _ := common.SliceExists(portalV4MetaTypes, metaType)
 	return res
 }

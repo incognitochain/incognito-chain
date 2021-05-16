@@ -197,4 +197,10 @@ var TIMESLOT = uint64(0) //need to be set when init chain
 const (
 	PortalRelayingFlag = 0
 	PortalV3Flag       = 1
+	PortalV4Flag       = 2
+)
+
+const (
+	PortalVersion3 = 3
+	PortalVersion4 = 4
 )

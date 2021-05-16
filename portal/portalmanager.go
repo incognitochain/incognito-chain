@@ -4,11 +4,13 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 )
 
 type PortalManager struct {
 	RelayingChainsProcessors map[int]portalrelaying.RelayingProcessor
 	PortalInstProcessorsV3   map[int]portalprocessv3.PortalInstructionProcessorV3
+	PortalInstProcessorsV4   map[int]portalprocessv4.PortalInstructionProcessorV4
 }
 
 func NewPortalManager() *PortalManager {
@@ -148,9 +150,37 @@ func NewPortalManager() *PortalManager {
 		},
 	}
 
+	portalInstProcessorV4 := map[int]portalprocessv4.PortalInstructionProcessorV4{
+		metadata.PortalV4ShieldingRequestMeta: &portalprocessv4.PortalShieldingRequestProcessor{
+			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
+				Actions: map[byte][][]string{},
+			},
+		},
+		metadata.PortalV4UnshieldingRequestMeta: &portalprocessv4.PortalUnshieldRequestProcessor{
+			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
+				Actions: map[byte][][]string{},
+			},
+		},
+		metadata.PortalV4UnshieldBatchingMeta: &portalprocessv4.PortalUnshieldBatchingProcessor{
+			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
+				Actions: map[byte][][]string{},
+			},
+		},
+		metadata.PortalV4FeeReplacementRequestMeta: &portalprocessv4.PortalFeeReplacementRequestProcessor{
+			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
+				Actions: map[byte][][]string{},
+			},
+		},
+		metadata.PortalV4SubmitConfirmedTxMeta: &portalprocessv4.PortalSubmitConfirmedTxProcessor{
+			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
+				Actions: map[byte][][]string{},
+			},
+		},
+	}
+
 	return &PortalManager{
 		RelayingChainsProcessors: relayingChainProcessor,
 		PortalInstProcessorsV3:   portalInstProcessorV3,
+		PortalInstProcessorsV4:   portalInstProcessorV4,
 	}
 }
-

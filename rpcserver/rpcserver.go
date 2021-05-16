@@ -89,6 +89,7 @@ type RpcServerConfig struct {
 		OnTx(p *peer.PeerConn, msg *wire.MessageTx)
 		OnTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken)
 	}
+
 	ConsensusEngine blockchain.ConsensusEngine
 
 	TxMemPool                   rpcservice.MempoolInterface

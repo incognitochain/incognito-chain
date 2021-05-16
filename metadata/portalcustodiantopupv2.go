@@ -109,10 +109,10 @@ func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateSanityData(c
 		return false, false, errors.New("both DepositedAmount and FreeCollateralAmount are zero")
 	}
 
-	if !chainRetriever.IsPortalToken(beaconHeight, custodianDeposit.PTokenId) {
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, custodianDeposit.PTokenId, common.PortalVersion3)
+	if !isPortalToken || err != nil {
 		return false, false, errors.New("TokenID in remote address is invalid")
 	}
-
 	return true, true, nil
 }
 

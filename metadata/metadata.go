@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-
 	"time"
 
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -69,6 +68,7 @@ type ChainRetriever interface {
 	GetBNBChainID() string
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
+	GetBTCChainParams() *chaincfg.Params
 	GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error)
 	GetPortalFeederAddress(beaconHeight uint64) string
 	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
@@ -78,11 +78,16 @@ type ChainRetriever interface {
 	GetBNBDataHash(blockHeight int64) ([]byte, error)
 	CheckBlockTimeIsReached(recentBeaconHeight, beaconHeight, recentShardHeight, shardHeight uint64, duration time.Duration) bool
 	IsPortalExchangeRateToken(beaconHeight uint64, tokenIDStr string) bool
-	GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error)
-	IsPortalToken(beaconHeight uint64, tokenIDStr string) bool
-	IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error)
-	ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64) (bool, error)
+	GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64, version uint) (uint64, error)
+	IsPortalToken(beaconHeight uint64, tokenIDStr string, version uint) (bool, error)
+	IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64, version uint) (bool, error)
+	ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64, version uint) (bool, error)
 	IsEnableFeature(featureFlag int, epoch uint64) bool
+	GetPortalV4MinUnshieldAmount(tokenIDStr string, beaconHeight uint64) uint64
+	GetPortalV4GeneralMultiSigAddress(tokenIDStr string, beaconHeight uint64) string
+	GetPortalReplacementAddress(beaconHeight uint64) string
+	CheckBlockTimeIsReachedByBeaconHeight(recentBeaconHeight, beaconHeight uint64, duration time.Duration) bool
+	GetPortalV4MultipleTokenAmount(tokenIDStr string, beaconHeight uint64) uint64
 }
 
 type BeaconViewRetriever interface {

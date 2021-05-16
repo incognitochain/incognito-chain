@@ -115,6 +115,15 @@ const (
 	BurningForDepositToSCRequestMetaV2 = 242
 	BurningConfirmForDepositToSCMeta   = 97
 	BurningConfirmForDepositToSCMetaV2 = 243
+
+	// PORTAL V4
+	PortalV4ShieldingRequestMeta      = 250
+	PortalV4ShieldingResponseMeta     = 251
+	PortalV4UnshieldingRequestMeta    = 252
+	PortalV4UnshieldingResponseMeta   = 253
+	PortalV4UnshieldBatchingMeta      = 254
+	PortalV4FeeReplacementRequestMeta = 255
+	PortalV4SubmitConfirmedTxMeta     = 256
 )
 
 var minerCreatedMetaTypes = []int{
@@ -141,6 +150,8 @@ var minerCreatedMetaTypes = []int{
 	PortalPortingResponseMeta,
 	PortalTopUpWaitingPortingResponseMeta,
 	PortalRedeemFromLiquidationPoolResponseMetaV3,
+	PortalV4ShieldingResponseMeta,
+	PortalV4UnshieldingResponseMeta,
 }
 
 // Special rules for shardID: stored as 2nd param of instruction of BeaconBlock
@@ -234,4 +245,13 @@ var portalMetaTypesV3 = []int{
 var portalRelayingMetaTypes = []int{
 	RelayingBNBHeaderMeta,
 	RelayingBTCHeaderMeta,
+}
+
+var portalV4MetaTypes = []int{
+	PortalV4ShieldingRequestMeta,
+	PortalV4ShieldingResponseMeta,
+	PortalV4UnshieldingRequestMeta,
+	PortalV4UnshieldBatchingMeta,
+	PortalV4FeeReplacementRequestMeta,
+	PortalV4SubmitConfirmedTxMeta,
 }

@@ -65,7 +65,7 @@ const (
 	createAndSendPrivacyCustomTokenTransaction   = "createandsendprivacycustomtokentransaction"
 	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"
 	getMempoolInfo                               = "getmempoolinfo"
-	getMempoolInfoDetails                    		 = "getmempoolinfodetails"
+	getMempoolInfoDetails                        = "getmempoolinfodetails"
 	getPendingTxsInBlockgen                      = "getpendingtxsinblockgen"
 	getCandidateList                             = "getcandidatelist"
 	getCommitteeList                             = "getcommitteelist"
@@ -294,6 +294,21 @@ const (
 	//validator state
 	getValKeyState = "getvalkeystate"
 
+	// portal v4
+	getPortalV4State                           = "getportalv4state"
+	createAndSendTxWithShieldingRequest        = "createandsendtxshieldingrequest"
+	getPortalShieldingRequestStatus            = "getportalshieldingrequeststatus"
+	createAndSendTxWithPortalV4UnshieldRequest = "createandsendtxwithportalv4unshieldrequest"
+	getPortalUnshieldingRequestStatus          = "getportalunshieldrequeststatus"
+	getPortalBatchUnshieldingRequestStatus     = "getportalbatchunshieldrequeststatus"
+	getListPortalBatchUnshieldingRequests      = "getlistportalbatchunshieldrequests"
+	getSignedRawTransactionByBatchID           = "getportalsignedrawtransaction"
+	createAndSendTxWithPortalReplacementFee    = "createandsendtxwithportalreplacebyfee"
+	getPortalReplacementFeeStatus              = "getportalreplacebyfeestatus"
+	createAndSendTxWithPortalSubmitConfirmedTx = "createandsendtxwithportalsubmitconfirmedtx"
+	getPortalSubmitConfirmedTx                 = "getportalsubmitconfirmedtxstatus"
+	getSignedRawReplaceFeeTransaction          = "getportalsignedrawreplacebyfeetransaction"
+
 	// stake
 	unstake = "createunstaketransaction"
 )
@@ -378,4 +393,20 @@ var PortalRelayingRPCs = []string{
 	getBTCRelayingBestState,
 	getBTCBlockByHash,
 	getLatestBNBHeaderBlockHeight,
+}
+
+var PortalV4RPCs = []string{
+	getPortalV4State,
+	createAndSendTxWithShieldingRequest,
+	getPortalShieldingRequestStatus,
+	createAndSendTxWithPortalV4UnshieldRequest,
+	getPortalUnshieldingRequestStatus,
+	getPortalBatchUnshieldingRequestStatus,
+	getSignedRawTransactionByBatchID,
+	createAndSendTxWithPortalReplacementFee,
+	getPortalReplacementFeeStatus,
+	createAndSendTxWithPortalSubmitConfirmedTx,
+	getPortalSubmitConfirmedTx,
+	getSignedRawReplaceFeeTransaction,
+	getListPortalBatchUnshieldingRequests,
 }
