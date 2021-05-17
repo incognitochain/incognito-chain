@@ -1,0 +1,15 @@
+=============== May 17, 2021 (+07) ===============
+00:17:13.125329 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+00:17:13.127385 db@open opening
+00:17:13.129036 version@stat F·[] S·0B[] Sc·[]
+00:17:13.131679 db@janitor F·2 G·0
+00:17:13.131724 db@open done T·4.324413ms
+00:17:13.193307 memdb@flush N·3 S·93B
+00:17:13.198509 memdb@flush created L0@3 N·3 S·260B "\x00\x00\x00..loc,v1":"bid..bid,v3"
+00:17:13.198583 version@stat F·[1] S·260B[260B] Sc·[0.25]
+00:17:13.203824 memdb@flush committed F·1 T·8.618249ms
+00:17:13.206832 journal@remove removed @1
+00:17:13.215489 transaction@flush created L0@4 N·14 S·791B "\x00\x00\x00..ate,v4":"bid..bid,v17"
+00:17:13.215535 version@stat F·[2] S·1KiB[1KiB] Sc·[0.50]
+00:17:13.223912 db@close closing
+00:17:13.223998 db@close done T·85.403µs

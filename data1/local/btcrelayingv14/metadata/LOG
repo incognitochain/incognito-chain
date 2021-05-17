@@ -1,0 +1,43 @@
+=============== May 16, 2021 (+07) ===============
+23:58:40.515541 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+23:58:40.519252 db@open opening
+23:58:40.519547 version@stat F·[] S·0B[] Sc·[]
+23:58:40.525185 db@janitor F·2 G·0
+23:58:40.525261 db@open done T·5.989363ms
+23:58:41.022765 memdb@flush N·3 S·93B
+23:58:41.028871 memdb@flush created L0@3 N·3 S·260B "\x00\x00\x00..loc,v1":"bid..bid,v3"
+23:58:41.028952 version@stat F·[1] S·260B[260B] Sc·[0.25]
+23:58:41.034835 memdb@flush committed F·1 T·12.016657ms
+23:58:41.037955 journal@remove removed @1
+23:58:41.041422 transaction@flush created L0@4 N·14 S·789B "\x00\x00\x00..ate,v4":"bid..bid,v17"
+23:58:41.041496 version@stat F·[2] S·1KiB[1KiB] Sc·[0.50]
+23:58:41.047268 db@close closing
+23:58:41.047381 db@close done T·111.314µs
+=============== May 16, 2021 (+07) ===============
+23:59:32.781690 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+23:59:32.782713 version@stat F·[2] S·1KiB[1KiB] Sc·[0.50]
+23:59:32.782770 db@open opening
+23:59:32.782926 journal@recovery F·1
+23:59:32.785571 journal@recovery recovering @2
+23:59:32.785972 version@stat F·[2] S·1KiB[1KiB] Sc·[0.50]
+23:59:32.786772 db@janitor F·4 G·0
+23:59:32.786814 db@open done T·4.025478ms
+23:59:33.844414 transaction@flush created L0@7 N·1 S·203B "\x00\x00\x00..loc,v18":"\x00\x00\x00..loc,v18"
+23:59:33.844467 version@stat F·[3] S·1KiB[1KiB] Sc·[0.75]
+23:59:33.850243 db@close closing
+23:59:33.850326 db@close done T·79.649µs
+=============== May 17, 2021 (+07) ===============
+00:01:57.629009 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+00:01:57.630103 version@stat F·[3] S·1KiB[1KiB] Sc·[0.75]
+00:01:57.630152 db@open opening
+00:01:57.630280 journal@recovery F·1
+00:01:57.630940 journal@recovery recovering @5
+00:01:57.633397 version@stat F·[3] S·1KiB[1KiB] Sc·[0.75]
+00:01:57.634161 db@janitor F·5 G·0
+00:01:57.634204 db@open done T·4.036802ms
+00:01:58.075643 transaction@flush created L0@10 N·1 S·203B "\x00\x00\x00..loc,v19":"\x00\x00\x00..loc,v19"
+00:01:58.075688 version@stat F·[4] S·1KiB[1KiB] Sc·[1.00]
+00:01:58.082204 db@close closing
+00:01:58.082262 table@compaction L0·4 -> L1·0 S·1KiB Q·19
+00:01:58.082293 table@build exiting
+00:01:58.082365 db@close done T·159.424µs

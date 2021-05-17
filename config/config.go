@@ -101,8 +101,9 @@ type config struct {
 	Libp2pPrivateKey string `mapstructure:"p2p_private_key" long:"libp2pprivatekey" description:"Private key used to create node's PeerID, empty to generate random key each run"`
 
 	//backup
-	PreloadAddress string `mapstructure:"preload_address" yaml:"preload_address" long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
-	ForceBackup    bool   `mapstructure:"force_backup" long:"forcebackup" description:"Force node to backup"`
+	PreloadAddress   string `mapstructure:"preload_address" yaml:"preload_address" long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
+	ForceBackup      bool   `mapstructure:"force_backup" long:"forcebackup" description:"Force node to backup"`
+	IsFullValidation bool   `mapstructure:"is_full_validation" long:"is_full_validation" description:"fully validation data"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
@@ -141,6 +142,7 @@ func removeDuplicateAddresses(addrs []string) []string {
 
 func (c *config) loadNetwork() string {
 	res := ""
+	log.Println("[prefix] networkkey:", utils.GetEnv(NetworkKey, LocalNetwork))
 	switch utils.GetEnv(NetworkKey, LocalNetwork) {
 	case LocalNetwork:
 		res = LocalNetwork
@@ -414,9 +416,10 @@ func (c *config) loadConfig(network string) {
 	mode := utils.GetEnv(ConfigModeKey, FileConfigMode)
 	if mode == FileConfigMode {
 		//read config from file
-		viper.SetConfigName(utils.GetEnv(ConfigFileKey, DefaultConfigFile))                       // name of config file (without extension)
-		viper.SetConfigType(utils.GetEnv(ConfigFileTypeKey, DefaultConfigFileType))               // REQUIRED if the config file does not have the extension in the name
-		viper.AddConfigPath(filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)) // optionally look for config in the working directory
+		viper.SetConfigName(utils.GetEnv(ConfigFileKey, DefaultConfigFile))         // name of config file (without extension)
+		viper.SetConfigType(utils.GetEnv(ConfigFileTypeKey, DefaultConfigFileType)) // REQUIRED if the config file does not have the extension in the name
+		path := filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)
+		viper.AddConfigPath(path) // optionally look for config in the working directory
 		if err := viper.ReadInConfig(); err != nil {
 			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 				// Config file was found but another error was produced
@@ -430,6 +433,7 @@ func (c *config) loadConfig(network string) {
 				panic(err)
 			}
 		}
+		return
 	}
 	if mode == FlagConfigMode {
 		parser := flags.NewParser(c, flags.Default)

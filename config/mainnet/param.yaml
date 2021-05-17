@@ -51,7 +51,7 @@ consensus_param:
   enable_slashing_height: 1
   timeslot: 10
   epoch_break_point_swap_new_key: 
-    - 1000000000
+    - 1917
 beacon_height_break_point_burn_addr: 1
 eth_remove_bridge_sig_epoch: 21920
 replace_staking_tx_height: 1

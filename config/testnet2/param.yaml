@@ -51,7 +51,7 @@ consensus_param:
   enable_slashing_height: 2087789
   timeslot: 10
   epoch_break_point_swap_new_key: # read from file key list v2 
-    - 1000000000
+    - 1280
 beacon_height_break_point_burn_addr: 1
 eth_remove_bridge_sig_epoch: 2085
 replace_staking_tx_height: 1
@@ -60,3 +60,4 @@ enable_feature_flags:
   - 0: 1
   - 1: 0
 portal_v3_height: 1328816
+is_full_validation: true
