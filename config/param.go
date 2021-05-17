@@ -44,11 +44,11 @@ type param struct {
 }
 
 type genesisParam struct {
-	InitialIncognito                            []initialIncognito `mapstructure:"initial_incognito" description:"init tx for genesis block"`
-	FeePerTxKb                                  uint64             `mapstructure:"fee_per_tx_kb" description:"fee per tx calculate by kb"`
-	ConsensusAlgorithm                          string             `mapstructure:"consensus_algorithm"`
-	BlockTimestamp                              string             `mapstructure:"block_timestamp"`
-	TxStake                                     string             `mapstructure:"tx_stake"`
+	InitialIncognito                            []initialIncognito
+	FeePerTxKb                                  uint64 `mapstructure:"fee_per_tx_kb" description:"fee per tx calculate by kb"`
+	ConsensusAlgorithm                          string `mapstructure:"consensus_algorithm"`
+	BlockTimestamp                              string `mapstructure:"block_timestamp"`
+	TxStake                                     string `mapstructure:"tx_stake"`
 	PreSelectBeaconNodeSerializedPubkey         []string
 	SelectBeaconNodeSerializedPubkeyV2          map[uint64][]string
 	PreSelectBeaconNodeSerializedPaymentAddress []string
@@ -153,20 +153,11 @@ func LoadParam() *param {
 		}
 	}
 
-	return p
-}
+	initTx := new(initTx)
+	initTx.load(network)
+	p.GenesisParam.InitialIncognito = initTx.InitialIncognito
 
-type initialIncognito struct {
-	Version              int                    `mapstructure:"Version"`
-	Type                 string                 `mapstructure:"Type"`
-	LockTime             uint64                 `mapstructure:"LockTime"`
-	Fee                  int                    `mapstructure:"Fee"`
-	Info                 string                 `mapstructure:"Info"`
-	SigPubKey            string                 `mapstructure:"SigPubKey"`
-	Sig                  string                 `mapstructure:"Sig"`
-	Proof                string                 `mapstructure:"Proof"`
-	PubKeyLastByteSender int                    `mapstructure:"PubKeyLastByteSender"`
-	Metadata             map[string]interface{} `mapstructure:"Metadata"`
+	return p
 }
 
 func (p *param) LoadKey() {

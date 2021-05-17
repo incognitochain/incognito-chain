@@ -9,6 +9,7 @@ const (
 	ConfigFileTypeKey = "INCOGNITO_CONFIG_FILE_TYPE_KEY"
 	ConfigModeKey     = "INCOGNITO_CONFIG_MODE_KEY"
 	ParamFileKey      = "INCOGNITO_PARAM_FILE_KEY"
+	InitTxFileKey     = "INCOGNITO_INIT_TX_FILE_KEY"
 )
 
 // default config
@@ -49,6 +50,8 @@ const (
 	DefaultConfigFile     = "config"
 	DefaultConfigFileType = "yaml"
 	DefaultParamFile      = "param"
+	DefaultInitTxFile     = "init_tx"
+	DefaultInitTxFileType = "json"
 )
 
 const (

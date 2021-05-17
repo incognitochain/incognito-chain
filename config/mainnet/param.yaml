@@ -1,14 +1,5 @@
 name: "local"
 genesis_param: 
-  initial_incognito: 
-    - Version: 1
-      Type: "s"
-      LockTime: 1570159128
-      SigPubKey: "5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA="
-      Fee: 0
-      Sig: "oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA=="
-      Proof: "AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA="
-      PubKeyLastByteSender: 0
   fee_per_tx_kb: 0
   consensus_algorithm: "bls"
   block_timestamp: "2019-11-29T00:00:00.000Z"

@@ -142,7 +142,6 @@ func removeDuplicateAddresses(addrs []string) []string {
 
 func (c *config) loadNetwork() string {
 	res := ""
-	log.Println("[prefix] networkkey:", utils.GetEnv(NetworkKey, LocalNetwork))
 	switch utils.GetEnv(NetworkKey, LocalNetwork) {
 	case LocalNetwork:
 		res = LocalNetwork
@@ -413,7 +412,7 @@ func LoadConfig() *config {
 }
 
 func (c *config) loadConfig(network string) {
-	mode := utils.GetEnv(ConfigModeKey, FileConfigMode)
+	mode := utils.GetEnv(ConfigModeKey, FlagConfigMode)
 	if mode == FileConfigMode {
 		//read config from file
 		viper.SetConfigName(utils.GetEnv(ConfigFileKey, DefaultConfigFile))         // name of config file (without extension)
