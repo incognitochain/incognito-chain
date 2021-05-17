@@ -60,6 +60,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		}
 	}
 
+	//check block height is sequential
 	for i, blk := range sameCommitteeBlock {
 		if i == len(sameCommitteeBlock)-1 {
 			break
@@ -69,8 +70,18 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 			break
 		}
 	}
+
 	//validate the last block for batching
-	epochCommittee := chain.GetCommittee()
+	//get block has same committee
+	epochCommittee := []incognitokey.CommitteePublicKey{}
+	if len(sameCommitteeBlock) != 0 {
+		var err error
+		epochCommittee, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
+		if err != nil {
+			return 0, err
+		}
+	}
+
 	validBlockForInsert := sameCommitteeBlock[:]
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
 		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], epochCommittee); err != nil {
@@ -86,12 +97,13 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		validBlockForInsert = sameCommitteeBlock[:]
 		batchingValidate = false
 	}
-
-	for i, v := range validBlockForInsert {
+	firstInsert := true
+	for _, v := range validBlockForInsert {
 		if !chain.CheckExistedBlk(v) {
 			var err error
-			if i == 0 {
+			if firstInsert { //always validate the first block even in batch mode
 				err = chain.InsertBlock(v, true)
+				firstInsert = false
 			} else {
 				err = chain.InsertBlock(v, batchingValidate == false)
 			}
