@@ -322,8 +322,8 @@ func (engine *Engine) GetAllValidatorKeyState() map[string]consensus.MiningState
 	return result
 }
 
-func (engine *Engine) IsCommitteeInShard(shardID byte) bool {
-	if shard, ok := engine.BFTProcess[int(shardID)]; ok {
+func (engine *Engine) IsCommitteeInChain(chainID int) bool {
+	if shard, ok := engine.BFTProcess[int(chainID)]; ok {
 		return shard.IsStarted()
 	}
 	return false

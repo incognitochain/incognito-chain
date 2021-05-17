@@ -90,7 +90,7 @@ const (
 	PendingRole   = "pending"
 	SyncingRole   = "syncing" //this is for shard case - when beacon tell it is committee, but its state not
 	WaitingRole   = "waiting"
-	UnstakeRole    = "unstake" // for unstake node
+	UnstakeRole   = "unstake" // for unstake node
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
@@ -197,4 +197,12 @@ var TIMESLOT = uint64(0) //need to be set when init chain
 const (
 	PortalRelayingFlag = 0
 	PortalV3Flag       = 1
+)
+
+const (
+	BYPASS_VALIDATION      = 0 // just process state and insert
+	BASIC_VALIDATION       = 1 // add another step, including validating header, state, validating block signature
+	FULL_VALIDATION        = 2 // add validate body transaction
+	BEACON_FULL_VALIDATION = 3 // validate as for signing with committee aggregated sig check
+	REGRESSION_TEST        = 4
 )

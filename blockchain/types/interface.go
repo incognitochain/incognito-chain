@@ -17,6 +17,7 @@ type BlockInterface interface {
 	// AddValidationField(validateData string) error
 	GetProducer() string
 	GetValidationField() string
+	AddValidationField(validationData string)
 	GetRound() int
 	GetRoundKey() string
 	GetInstructions() [][]string

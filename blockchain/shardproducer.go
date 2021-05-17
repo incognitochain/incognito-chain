@@ -78,7 +78,6 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		beaconProcessView                 *BeaconBestState
 		err                               error
 	)
-
 	Logger.log.Criticalf("⛏ Creating Shard Block %+v", curView.ShardHeight+1)
 	// Clone best state value into new variable
 	if err := shardBestState.cloneShardBestStateFrom(curView); err != nil {
@@ -91,6 +90,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if beaconProcessHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
 		beaconProcessHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
 	}
+
+	Logger.log.Info("[dcs] shardBestState.shardCommitteeEngine.Version():", shardBestState.shardCommitteeEngine.Version())
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		currentCommitteePublicKeysStructs = shardBestState.GetShardCommittee()
@@ -105,30 +106,26 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		}
 		currentCommitteePublicKeysStructs = committees
 
-		if !shardBestState.CommitteeFromBlock().IsZeroValue() {
-			oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
-			currentCommitteePublicKeys, _ = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
-			temp := common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)
-			if len(temp) != 0 {
-				committeeFromBlockHash = committeeFinalViewHash
-				oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
-				if err != nil {
-					return nil, err
-				}
-				newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlockHash)
-				if err != nil {
-					return nil, err
-				}
-				if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
-					return nil, NewBlockChainError(WrongBlockHeightError,
-						fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
-							newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
-				}
-			} else {
-				committeeFromBlockHash = shardBestState.CommitteeFromBlock()
+		oldCommitteesPubKeys, _ := incognitokey.CommitteeKeyListToString(shardBestState.GetCommittee())
+		currentCommitteePublicKeys, _ = incognitokey.CommitteeKeyListToString(currentCommitteePublicKeysStructs)
+		if len(common.DifferentElementStrings(oldCommitteesPubKeys, currentCommitteePublicKeys)) != 0 {
+			committeeFromBlockHash = committeeFinalViewHash
+			oldBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(shardBestState.CommitteeFromBlock())
+			if err != nil {
+				return nil, err
+			}
+			newBeaconBlock, _, err := blockchain.GetBeaconBlockByHash(committeeFromBlockHash)
+			if err != nil {
+				return nil, err
+			}
+			if oldBeaconBlock.Header.Height >= newBeaconBlock.Header.Height {
+				return nil, NewBlockChainError(WrongBlockHeightError,
+					fmt.Errorf("Height of New Shard Block's Committee From Block %+v is smaller than current Committee From Block View %+v",
+						newBeaconBlock.Hash(), oldBeaconBlock.Hash()))
 			}
 		} else {
-			committeeFromBlockHash = committeeFinalViewHash
+			Logger.log.Info("[dcs] shardBestState.CommitteeFromBlock():", shardBestState.CommitteeFromBlock())
+			committeeFromBlockHash = shardBestState.CommitteeFromBlock()
 		}
 	}
 
@@ -170,7 +167,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
-	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconProcessHeight)
+	crossTransactions := blockchain.config.BlockGen.getCrossShardData(shardBestState)
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
@@ -656,17 +653,17 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 //	  - Process valid block to extract:
 //	   + Cross output coin
 //	   + Cross Normal Token
-func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64) map[byte][]types.CrossTransaction {
+func (blockGenerator *BlockGenerator) getCrossShardData(curView *ShardBestState) map[byte][]types.CrossTransaction {
 	crossTransactions := make(map[byte][]types.CrossTransaction)
 	// get cross shard block
 	var allCrossShardBlock = make([][]*types.CrossShardBlock, blockGenerator.chain.config.ChainParams.ActiveShards)
-	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(toShard, nil) {
+	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(curView, nil) {
 		heightList := make([]uint64, len(v))
 		for i, b := range v {
 			allCrossShardBlock[sid] = append(allCrossShardBlock[sid], b.(*types.CrossShardBlock))
 			heightList[i] = b.(*types.CrossShardBlock).GetHeight()
 		}
-		Logger.log.Infof("Shard %v, GetCrossShardBlocksForShardProducer from shard %v: %v", toShard, sid, heightList)
+		Logger.log.Infof("Shard %v, GetCrossShardBlocksForShardProducer from shard %v: %v", curView.ShardID, sid, heightList)
 	}
 
 	// allCrossShardBlock => already sort

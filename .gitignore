@@ -77,3 +77,4 @@ keylist.json
 run_new_local.sh
 *.txt
 *.log
+testsuite/apps/regressiontest/regressiontest

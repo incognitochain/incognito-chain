@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/peerv2"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 
@@ -23,7 +23,7 @@ import (
 )
 
 const MAX_S2B_BLOCK = 90
-const MAX_CROSSX_BLOCK = 10
+const MAX_CROSSX_BLOCK = 200
 
 type SynckerManagerConfig struct {
 	Network    Network
@@ -225,11 +225,11 @@ func (synckerManager *SynckerManager) ReceivePeerState(peerState *wire.MessagePe
 }
 
 //Get Crossshard Block for creating shardblock block
-func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShard byte, limit map[byte][]uint64) map[byte][]interface{} {
+func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(curView *blockchain.ShardBestState, limit map[byte][]uint64) map[byte][]interface{} {
 	//get last confirm crossshard -> process request until retrieve info
 	res := make(map[byte][]interface{})
-
-	lastRequestCrossShard := synckerManager.config.Blockchain.ShardChain[int(toShard)].GetCrossShardState()
+	toShard := curView.ShardID
+	lastRequestCrossShard := curView.GetBestCrossShard()
 	bc := synckerManager.config.Blockchain
 	beaconDB := bc.GetBeaconChainDatabase()
 	for i := 0; i < synckerManager.config.Blockchain.GetActiveShardNumber(); i++ {
@@ -311,17 +311,19 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardProducer(toShar
 }
 
 //Get Crossshard Block for validating shardblock block
-func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error) {
-	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(toShard, list)
+func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(curView *blockchain.ShardBestState, list map[byte][]uint64) (map[byte][]interface{}, error) {
+	toShard := curView.ShardID
+	crossShardPoolLists := synckerManager.GetCrossShardBlocksForShardProducer(curView, list)
 
 	missingBlocks := compareListsByHeight(crossShardPoolLists, list)
 	// synckerManager.config.Server.
 	if len(missingBlocks) > 0 {
+		Logger.Error("stream missing crossshard block", missingBlocks)
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		synckerManager.StreamMissingCrossShardBlock(ctx, toShard, missingBlocks)
 		//Logger.Info("debug finish stream missing crossX block")
 
-		crossShardPoolLists = synckerManager.GetCrossShardBlocksForShardProducer(toShard, list)
+		crossShardPoolLists = synckerManager.GetCrossShardBlocksForShardProducer(curView, list)
 		//Logger.Info("get crosshshard block for shard producer", crossShardPoolLists)
 		missingBlocks = compareListsByHeight(crossShardPoolLists, list)
 
@@ -342,7 +344,7 @@ func (synckerManager *SynckerManager) GetCrossShardBlocksForShardValidator(toSha
 //Stream Missing CrossShard Block
 func (synckerManager *SynckerManager) StreamMissingCrossShardBlock(ctx context.Context, toShard byte, missingBlock map[byte][]uint64) {
 	for fromShard, missingHeight := range missingBlock {
-		//fmt.Println("debug stream missing crossshard block", int(fromShard), int(toShard), missingHeight)
+
 		ch, err := synckerManager.config.Network.RequestCrossShardBlocksViaStream(ctx, "", int(fromShard), int(toShard), missingHeight)
 		if err != nil {
 			fmt.Println("Syncker: create channel fail")

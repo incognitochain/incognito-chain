@@ -34,7 +34,7 @@ const (
 // config is a descriptor containing the memory pool configuration.
 type Config struct {
 	ConsensusEngine interface {
-		IsCommitteeInShard(shardID byte) bool
+		IsCommitteeInChain(chainID int) bool
 	}
 	BlockChain        *blockchain.BlockChain       // Block chain of node
 	DataBase          map[int]incdb.Database       // main database of blockchain
@@ -803,7 +803,7 @@ func (tp *TxPool) checkRelayShard(tx metadata.Transaction) bool {
 func (tp *TxPool) checkPublicKeyRole(tx metadata.Transaction) bool {
 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 	tp.roleMtx.RLock()
-	if tp.config.ConsensusEngine.IsCommitteeInShard(senderShardID) {
+	if tp.config.ConsensusEngine.IsCommitteeInChain(int(senderShardID)) {
 		tp.roleMtx.RUnlock()
 		return true
 	} else {

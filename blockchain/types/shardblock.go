@@ -26,7 +26,9 @@ type ShardHeader struct {
 	Version               int                    `json:"Version"`               // version of block structure
 	PreviousBlockHash     common.Hash            `json:"PreviousBlockHash"`     // previous block hash or Parent block hash
 	Height                uint64                 `json:"Height"`                // block height
+	//TODO: @dung.v verify round
 	Round                 int                    `json:"Round"`                 // bpft consensus round
+	//TODO: @dung.v verify epoch
 	Epoch                 uint64                 `json:"Epoch"`                 // epoch of block (according to current beacon height)
 	CrossShardBitMap      []byte                 `json:"CrossShardBitMap"`      // crossShards bitmap for beacon
 	BeaconHeight          uint64                 `json:"BeaconHeight"`          // beacon check point height
@@ -540,6 +542,10 @@ func (block CrossShardBlock) GetShardID() int {
 
 func (block CrossShardBlock) GetValidationField() string {
 	return block.ValidationData
+}
+
+func (block *CrossShardBlock) AddValidationField(validationData string) {
+	block.ValidationData = validationData
 }
 
 func (block CrossShardBlock) GetRound() int {

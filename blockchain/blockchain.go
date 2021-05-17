@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 
@@ -216,7 +217,17 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	var committeeEngine committeestate.ShardCommitteeEngine
 
 	if blockchain.config.ChainParams.StakingFlowV2Height == 1 {
-		committeeEngine = committeestate.NewShardCommitteeEngineV2(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV2())
+		Logger.log.Info("")
+		committeeEngine = committeestate.NewShardCommitteeEngineV2(
+			1,
+			initShardBlock.Header.Hash(),
+			shardID,
+			committeestate.NewShardCommitteeStateV2WithValue(
+				[]incognitokey.CommitteePublicKey{},
+				*blockchain.BeaconChain.GetBestView().GetHash(),
+			),
+		)
+
 	} else {
 		committeeEngine = committeestate.NewShardCommitteeEngineV1(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
 	}
@@ -303,7 +314,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 
 	// Insert new block into beacon chain
 	blockchain.BeaconChain.multiView.AddView(initBeaconBestState)
-	if err := blockchain.BackupBeaconViews(blockchain.GetBeaconChainDatabase()); err != nil {
+	if err := blockchain.BackupBeaconViews(blockchain.GetBeaconChainDatabase(), blockchain.BeaconChain.multiView.GetFinalView(), initBeaconBestState); err != nil {
 		Logger.log.Error("Error Store best state for block", blockchain.GetBeaconBestState().BestBlockHash, "in beacon chain")
 		return NewBlockChainError(UnExpectedError, err)
 	}
@@ -496,11 +507,23 @@ func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
 /*
 Backup all BeaconView into Database
 */
-func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter) error {
+func (blockchain *BlockChain) BackupBeaconViews(db incdb.KeyValueWriter, newFinalView multiview.View, newView multiview.View) error {
 	allViews := []*BeaconBestState{}
-	for _, v := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
+	alreadyHas := false
+	for _, v := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS(newFinalView) {
+		if v.GetHash().String() == newView.GetHash().String() {
+			alreadyHas = true
+		}
 		allViews = append(allViews, v.(*BeaconBestState))
 	}
+	if !alreadyHas && newView != nil {
+		allViews = append(allViews, newView.(*BeaconBestState))
+	}
+
+	for _, v := range allViews {
+		Logger.log.Info("backup beacon view", v.GetHeight(), v.BestBlock.Hash().String())
+	}
+
 	b, _ := json.Marshal(allViews)
 	return rawdbv2.StoreBeaconViews(db, b)
 }
@@ -541,7 +564,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			if err != nil {
 				return err
 			}
-			Logger.log.Infof("Init Missing Signature Counter, %+v, height %+v", beaconState.missingSignatureCounter, beaconState.BeaconHeight)
+			Logger.log.Debugf("Init Missing Signature Counter, %+v, height %+v", beaconState.missingSignatureCounter, beaconState.BeaconHeight)
 		}
 	}
 	return nil
@@ -550,12 +573,23 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 /*
 Backup shard views
 */
-func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID byte) error {
+func (blockchain *BlockChain) BackupShardViews(db incdb.KeyValueWriter, shardID byte, newFinalView multiview.View, newView multiview.View) error {
 	allViews := []*ShardBestState{}
-	for _, v := range blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS() {
+
+	alreadyHas := false
+	for _, v := range blockchain.ShardChain[shardID].multiView.GetAllViewsWithBFS(newFinalView) {
+		if v.GetHash().String() == newView.GetHash().String() {
+			alreadyHas = true
+		}
 		allViews = append(allViews, v.(*ShardBestState))
 	}
-	// fmt.Println("debug BackupShardViews", len(allViews))
+	if !alreadyHas && newView != nil {
+		allViews = append(allViews, newView.(*ShardBestState))
+	}
+
+	for _, v := range allViews {
+		Logger.log.Info("backup shard view", v.GetHeight(), v.BestBlock.Hash().String())
+	}
 	return rawdbv2.StoreShardBestState(db, shardID, allViews)
 }
 
@@ -566,12 +600,12 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 	allViews := []*ShardBestState{}
 	b, err := rawdbv2.GetShardBestState(blockchain.GetShardChainDatabase(shardID), shardID)
 	if err != nil {
-		fmt.Println("debug Cannot see shard best state")
+		Logger.log.Error("debug Cannot see shard best state")
 		return err
 	}
 	err = json.Unmarshal(b, &allViews)
 	if err != nil {
-		fmt.Println("debug Cannot unmarshall shard best state", string(b))
+		Logger.log.Error("debug Cannot unmarshall shard best state", string(b))
 		return err
 	}
 	// fmt.Println("debug RestoreShardViews", len(allViews))
@@ -590,7 +624,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 		var shardCommitteeEngine committeestate.ShardCommitteeEngine
-		if v.BeaconHeight > blockchain.config.ChainParams.StakingFlowV2Height {
+		if v.BeaconHeight >= blockchain.config.ChainParams.StakingFlowV2Height {
 			shardCommitteeEngine = InitShardCommitteeEngineV2(
 				v.consensusStateDB,
 				v.ShardHeight, v.ShardID, v.BestBlockHash,

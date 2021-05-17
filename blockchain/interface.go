@@ -2,8 +2,6 @@ package blockchain
 
 import (
 	"context"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/consensus"
@@ -11,6 +9,7 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"time"
 )
 
 type TxPool interface {
@@ -41,6 +40,7 @@ type ConsensusEngine interface {
 	ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
 	GetAllValidatorKeyState() map[string]consensus.MiningState
 	GetUserRole() (string, string, int)
+	IsCommitteeInChain(chainID int) bool
 	// CommitteeChange(chainName string)
 }
 
@@ -53,8 +53,8 @@ type Highway interface {
 }
 
 type Syncker interface {
-	GetCrossShardBlocksForShardProducer(toShard byte, list map[byte][]uint64) map[byte][]interface{}
-	GetCrossShardBlocksForShardValidator(toShard byte, list map[byte][]uint64) (map[byte][]interface{}, error)
+	GetCrossShardBlocksForShardProducer(curView *ShardBestState, list map[byte][]uint64) map[byte][]interface{}
+	GetCrossShardBlocksForShardValidator(curView *ShardBestState, list map[byte][]uint64) (map[byte][]interface{}, error)
 	SyncMissingBeaconBlock(ctx context.Context, peerID string, fromHash common.Hash)
 	SyncMissingShardBlock(ctx context.Context, peerID string, sid byte, fromHash common.Hash)
 }

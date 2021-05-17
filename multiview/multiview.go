@@ -58,6 +58,20 @@ func NewMultiView() *MultiView {
 
 }
 
+//this is shallow copy!
+func (multiView *MultiView) Clone() *MultiView {
+	s := NewMultiView()
+	for h, v := range multiView.viewByHash {
+		s.viewByHash[h] = v
+	}
+	for h, v := range multiView.viewByPrevHash {
+		s.viewByPrevHash[h] = v
+	}
+	s.finalView = multiView.finalView
+	s.bestView = multiView.bestView
+	return s
+}
+
 func (multiView *MultiView) Reset() {
 	multiView.viewByHash = make(map[common.Hash]View)
 	multiView.viewByPrevHash = make(map[common.Hash][]View)
@@ -117,6 +131,60 @@ func (multiView *MultiView) GetFinalView() View {
 	return multiView.finalView
 }
 
+func (multiView *MultiView) NewViewAfterAdd(newView View) (bestView View, finalView View) {
+
+	finalView = multiView.finalView
+	bestView = multiView.bestView
+
+	if multiView.finalView == nil {
+		multiView.bestView = newView
+		multiView.finalView = newView
+
+		finalView = multiView.finalView
+		bestView = multiView.bestView
+
+		return
+	}
+
+	//update bestView
+	if newView.GetHeight() > multiView.bestView.GetHeight() {
+		bestView = newView
+	}
+
+	//get best view with min produce time
+	if newView.GetHeight() == bestView.GetHeight() && newView.GetBlock().GetProduceTime() < bestView.GetBlock().GetProduceTime() {
+		bestView = newView
+	}
+
+	if newView.GetBlock().GetVersion() == 1 {
+		//update finalView: consensus 1
+		prev1Hash := bestView.GetPreviousHash()
+		if prev1Hash == nil {
+			return
+		}
+		prev1View := multiView.viewByHash[*prev1Hash]
+		if prev1View == nil {
+			return
+		}
+		finalView = prev1View
+	} else if newView.GetBlock().GetVersion() >= 2 {
+		////update finalView: consensus 2
+		prev1Hash := bestView.GetPreviousHash()
+		prev1View := multiView.viewByHash[*prev1Hash]
+		if prev1View == nil || finalView.GetHeight() == prev1View.GetHeight() {
+			return
+		}
+		bestViewTimeSlot := common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
+			finalView = prev1View
+		}
+	} else {
+		fmt.Println("Block version is not correct")
+	}
+	return bestView, finalView
+}
+
 //update view whenever there is new view insert into system
 func (multiView *MultiView) updateViewState(newView View) {
 	defer func() {
@@ -125,56 +193,15 @@ func (multiView *MultiView) updateViewState(newView View) {
 			delete(multiView.viewByPrevHash, *multiView.finalView.GetPreviousHash())
 		}
 	}()
-
-	if multiView.finalView == nil {
-		multiView.bestView = newView
-		multiView.finalView = newView
-		return
-	}
-
-	//update bestView
-	if newView.GetHeight() > multiView.bestView.GetHeight() {
-		multiView.bestView = newView
-	}
-
-	//get bestview with min produce time
-	if newView.GetHeight() == multiView.bestView.GetHeight() && newView.GetBlock().GetProduceTime() < multiView.bestView.GetBlock().GetProduceTime() {
-		multiView.bestView = newView
-	}
-
-	if newView.GetBlock().GetVersion() == 1 {
-		//update finalView: consensus 1
-		prev1Hash := multiView.bestView.GetPreviousHash()
-		if prev1Hash == nil {
-			return
-		}
-		prev1View := multiView.viewByHash[*prev1Hash]
-		if prev1View == nil {
-			return
-		}
-		multiView.finalView = prev1View
-	} else if newView.GetBlock().GetVersion() >= 2 {
-		////update finalView: consensus 2
-		prev1Hash := multiView.bestView.GetPreviousHash()
-		prev1View := multiView.viewByHash[*prev1Hash]
-		if prev1View == nil || multiView.finalView.GetHeight() == prev1View.GetHeight() {
-			return
-		}
-		bestViewTimeSlot := common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProposeTime())
-		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
-		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
-			multiView.finalView = prev1View
-		}
-	} else {
-		fmt.Println("Block version is not correct")
-	}
-
-	//fmt.Println("Debug bestview", multiView.bestView.GetHeight())
+	multiView.bestView, multiView.finalView = multiView.NewViewAfterAdd(newView)
 	return
 }
 
-func (multiView *MultiView) GetAllViewsWithBFS() []View {
-	queue := []View{multiView.finalView}
+func (multiView *MultiView) GetAllViewsWithBFS(finalView View) []View {
+	if finalView == nil {
+		finalView = multiView.finalView
+	}
+	queue := []View{finalView}
 	resCh := make(chan []View)
 
 	multiView.actionCh <- func() {

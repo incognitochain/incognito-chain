@@ -618,7 +618,7 @@ func (e *BLSBFT_V2) proposeBlock(userMiningKey signatureschemes2.MiningKey, prop
 		defer cancel()
 		//block, _ = e.Chain.CreateNewBlock(ctx, e.currentTimeSlot, e.UserKeySet.GetPublicKeyBase58())
 		e.Logger.Info("debug CreateNewBlock")
-		block, err = e.Chain.CreateNewBlock(2, b58Str, 1, e.currentTime, []incognitokey.CommitteePublicKey{}, common.Hash{})
+		block, err = e.Chain.CreateNewBlock(nil, 2, b58Str, 1, e.currentTime, []incognitokey.CommitteePublicKey{}, common.Hash{})
 	} else {
 		e.Logger.Info("debug CreateNewBlockFromOldBlock")
 		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, []incognitokey.CommitteePublicKey{}, common.Hash{})

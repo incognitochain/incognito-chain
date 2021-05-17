@@ -102,9 +102,13 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		if !chain.CheckExistedBlk(v) {
 			var err error
 			if i == 0 {
-				err = chain.InsertBlock(v, true)
+				err = chain.InsertBlock(v, common.BASIC_VALIDATION)
 			} else {
-				err = chain.InsertBlock(v, batchingValidate == false)
+				validationMode := common.BYPASS_VALIDATION
+				if batchingValidate == false {
+					validationMode = common.BASIC_VALIDATION
+				}
+				err = chain.InsertBlock(v, validationMode)
 			}
 			if err != nil {
 				committeeStr, _ := incognitokey.CommitteeKeyListToString(epochCommittee)

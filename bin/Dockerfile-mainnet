@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:21.04
 
 RUN apt-get update
 RUN apt-get install -y ca-certificates cronolog cron
@@ -18,6 +18,7 @@ COPY ./run_fullnode.sh /
 RUN chmod +x /run_fullnode.sh
 
 COPY ./incognito /
+
 RUN chmod +x /incognito
 
 CMD ["/bin/bash","run_incognito.sh"]
