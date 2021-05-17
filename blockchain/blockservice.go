@@ -30,7 +30,7 @@ func (bc *BlockChain) GetBlockByHeight(
 		if err != nil {
 			return nil, err
 		}
-		return CreateCrossShardBlock(blk, tocID)
+		return types.CreateCrossShardBlock(blk, tocID)
 	default:
 		return nil, errors.Errorf("Invalid block type")
 	}
@@ -63,7 +63,7 @@ func (bc *BlockChain) GetBlockByHash(
 		if err != nil {
 			return nil, err
 		}
-		return CreateCrossShardBlock(blk, tocID)
+		return types.CreateCrossShardBlock(blk, tocID)
 	default:
 		return nil, errors.Errorf("Invalid block type")
 	}
