@@ -244,10 +244,10 @@ func (v *TxsVerifier) FullValidateTransactions(
 	txs []metadata.Transaction,
 ) (bool, error) {
 	Logger.log.Infof("Total txs %v\n", len(txs))
+	txs = v.FilterWhitelistTxs(txs)
 	if len(txs) == 0 {
 		return true, nil
 	}
-	txs = v.FilterWhitelistTxs(txs)
 	txsTmp := v.filterSpamStake(txs)
 	if len(txsTmp) != len(txs) {
 		return false, errors.Errorf("This list txs contain double stake/unstake/stop auto stake for the same key")
