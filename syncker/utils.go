@@ -3,6 +3,7 @@ package syncker
 import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
@@ -92,6 +93,10 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	}
 
 	batchingValidate := true
+	if time.Now().Unix()-chain.GetBestView().GetBlock().GetProduceTime() < 24*60*60 { //only batching insert when block is created more than 1 day ago
+		batchingValidate = false
+	}
+
 	//if no valid block, this could be a fork chain, or the chunks that have old committee (current best block have swap) => try to insert all with full validation
 	if len(validBlockForInsert) == 0 {
 		validBlockForInsert = sameCommitteeBlock[:]
