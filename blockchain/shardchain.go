@@ -870,6 +870,10 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode 
 	shardID := shardBlock.Header.ShardID
 	blockHash := shardBlock.Hash().String()
 
+	Logger.log.Infof("SHARD %+v | Begin insert block height %+v - hash %+v, get required data for validate", shardID, blockHeight, blockHash)
+	chain.insertLock.Lock()
+	defer chain.insertLock.Unlock()
+
 	//check for beacon full validation mode
 	if chain.Blockchain.config.ConsensusEngine.IsCommitteeInChain(-1) {
 		//if current block height is not confirm by beacon final view, validate its content as for signing
@@ -880,7 +884,6 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode 
 	}
 
 	//get required object for validation
-	Logger.log.Infof("SHARD %+v | Begin insert block height %+v - hash %+v, get required data for validate", shardID, blockHeight, blockHash)
 	validationFlow, err := chain.getDataBeforeBlockValidation(shardBlock, validationMode, false)
 	if err != nil {
 		return err

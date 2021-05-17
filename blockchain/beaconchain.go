@@ -358,6 +358,10 @@ func (chain *BeaconChain) InsertBlock(block types.BlockInterface, validationMode
 	blockHash := block.Hash().String()
 	//get required object for validation
 	Logger.log.Infof("BEACON | Begin insert block height %+v - hash %+v, get required data for validate", blockHeight, blockHash)
+
+	chain.insertLock.Lock()
+	defer chain.insertLock.Unlock()
+
 	validationFlow, err := chain.getDataBeforeBlockValidation(block.(*types.BeaconBlock), validationMode, false)
 	if err != nil {
 		return err
