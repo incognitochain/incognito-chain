@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	fullnode := flag.String("h", "http://139.162.54.236:38934/", "Fullnode Endpoint")
+	fullnode := flag.String("h", "http://51.83.36.184:38934/", "Fullnode Endpoint")
 	flag.Parse()
 
 	app := devframework.NewAppService(*fullnode, true)

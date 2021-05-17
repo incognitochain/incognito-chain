@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
@@ -377,11 +376,9 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 func (httpServer *HttpServer) handleGetBlocksFromHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) != 3 {
-		arrayParams = []interface{}{
-			0.0,
-			0.0,
-		}
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Number of parameter is invalid"))
 	}
+
 	chainIDTemp, ok := arrayParams[0].(float64)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("chainID is invalid"))
@@ -400,7 +397,6 @@ func (httpServer *HttpServer) handleGetBlocksFromHeight(params interface{}, clos
 	}
 	numBlock := int(numBlockTemp)
 
-	fmt.Println(chainID, fromHeight, numBlock)
 	result, err := httpServer.blockService.GetBlocksFromHeight(chainID, fromHeight, numBlock)
 	if err != nil {
 		return nil, err
