@@ -944,6 +944,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 		return NewBlockChainError(CloneBeaconBestStateError, err)
 	}
 	if blockchain.config.usingNewPool {
+		fmt.Println("Get beacon block", bView.BeaconHeight, curView.BeaconHeight)
 		ok, err := blockchain.ShardChain[shardID].TxsVerifier.FullValidateTransactions(
 			blockchain,
 			curView,
