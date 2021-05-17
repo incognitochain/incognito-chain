@@ -11,23 +11,21 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                            = 1
-	RANDOM_NUMBER                      = 3
-	SHARD_BLOCK_VERSION                = 1
-	DefaultMaxBlkReqPerPeer            = 900
-	MinCommitteeSize                   = 3 // min size to run bft
-	WorkerNumber                       = 5
-	MAX_S2B_BLOCK                      = 30
-	MAX_BEACON_BLOCK                   = 5
-	LowerBoundPercentForIncDAO         = 3
-	UpperBoundPercentForIncDAO         = 10
-	TestRandom                         = true
-	ValidateTimeForSpamRequestTxs      = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
-	TransactionBatchSize               = 30
-	SpareTime                          = 1000             // in mili-second
-	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
-	NumberOfFixedBeaconBlockValidators = 4
-	NumberOfFixedShardBlockValidators  = 4
+	VERSION                       = 1
+	RANDOM_NUMBER                 = 3
+	SHARD_BLOCK_VERSION           = 1
+	DefaultMaxBlkReqPerPeer       = 900
+	MinCommitteeSize              = 3 // min size to run bft
+	WorkerNumber                  = 5
+	MAX_S2B_BLOCK                 = 30
+	MAX_BEACON_BLOCK              = 5
+	LowerBoundPercentForIncDAO    = 3
+	UpperBoundPercentForIncDAO    = 10
+	TestRandom                    = true
+	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
+	TransactionBatchSize          = 30
+	SpareTime                     = 1000             // in mili-second
+	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 )
 
 // burning addresses
@@ -129,10 +127,10 @@ const (
 	TestNetActiveShards           = 8
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
-	TestNetMinBeaconBlkInterval = 10 * time.Second //second
-	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second
-	TestNetMinShardBlkInterval  = 10 * time.Second //second
-	TestNetMaxShardBlkCreation  = 6 * time.Second  //second
+	TestNetMinBeaconBlkInterval = 8 * time.Second //second
+	TestNetMaxBeaconBlkCreation = 5 * time.Second //second
+	TestNetMinShardBlkInterval  = 8 * time.Second //second
+	TestNetMaxShardBlkCreation  = 5 * time.Second //second
 
 	//board and proposal parameters
 	TestnetBasicReward                      = 400000000 //40 mili PRV

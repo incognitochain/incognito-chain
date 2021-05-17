@@ -12,8 +12,16 @@ import (
 handleGetMempoolInfo - RPC returns information about the node's current txs memory pool
 */
 func (httpServer *HttpServer) handleGetMempoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := jsonresult.NewGetMempoolInfo(httpServer.config.TxMemPool)
-	return result, nil
+	if httpServer.config.BlockChain.UsingNewPool() {
+		pM := httpServer.config.BlockChain.GetPoolManager()
+		if pM != nil {
+			return jsonresult.NewGetMempoolInfoV2(pM.GetMempoolInfo()), nil
+		} else {
+			return nil, rpcservice.NewRPCError(rpcservice.GeTxFromPoolError, errors.New("PoolManager is nil"))
+		}
+	} else {
+		return jsonresult.NewGetMempoolInfo(httpServer.config.TxMemPool), nil
+	}
 }
 
 /*
@@ -81,7 +89,18 @@ func (httpServer *HttpServer) handleRemoveTxInMempool(params interface{}, closeC
 	for _, txHashString := range arrays {
 		txHash, ok := txHashString.(string)
 		if ok {
-			t, _ := httpServer.txMemPoolService.RemoveTxInMempool(txHash)
+			t := false
+			if httpServer.config.BlockChain.UsingNewPool() {
+				pM := httpServer.config.BlockChain.GetPoolManager()
+				if pM != nil {
+					pM.RemoveTransactionInPool(txHash)
+					t = true
+				} else {
+					return nil, rpcservice.NewRPCError(rpcservice.GeTxFromPoolError, errors.New("PoolManager is nil"))
+				}
+			} else {
+				t, _ = httpServer.txMemPoolService.RemoveTxInMempool(txHash)
+			}
 			result = append(result, t)
 		} else {
 			result = append(result, false)
@@ -89,7 +108,6 @@ func (httpServer *HttpServer) handleRemoveTxInMempool(params interface{}, closeC
 	}
 	return result, nil
 }
-
 
 // handleHasSerialNumbersInMempool - check list serial numbers existed in mempool or not
 func (httpServer *HttpServer) handleHasSerialNumbersInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

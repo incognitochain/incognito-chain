@@ -9,13 +9,14 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"io"
 	"math"
 	"math/rand"
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/transaction"
@@ -49,13 +50,10 @@ var (
 	EstimateFeeDatabaseKey = []byte("estimatefee")
 )
 
-// CoinPerKilobyte is number with units of coins per kilobyte.
-type CoinPerKilobyte uint64
-
 // NewCoinPerKilobyte creates a CoinPerByte from an Amount and a
 // size in bytes.
-func NewCoinPerKilobyte(fee uint64, size uint64) CoinPerKilobyte {
-	return CoinPerKilobyte(float64(fee) / float64(size))
+func NewCoinPerKilobyte(fee uint64, size uint64) uint64 {
+	return uint64(float64(fee) / float64(size))
 }
 
 // observedTransaction represents an observed transaction and some
@@ -65,10 +63,10 @@ type observedTransaction struct {
 	hash common.Hash
 
 	// The PRV fee per kilobyte of the transaction in coins.
-	feeRate CoinPerKilobyte
+	feeRate uint64
 
 	// The token fee per kilobyte of the transaction in coins.
-	feeRateForToken map[common.Hash]CoinPerKilobyte
+	feeRateForToken map[common.Hash]uint64
 
 	// The block height when it was observed.
 	observed uint64
@@ -148,7 +146,7 @@ type FeeEstimator struct {
 	bin      [estimateFeeDepth][]*observedTransaction
 
 	// The cached estimates.
-	cached []CoinPerKilobyte
+	cached []uint64
 
 	// Transactions that have been removed from the bins. This allows us to
 	// revert in case of an orphaned block.
@@ -189,7 +187,7 @@ func (ef *FeeEstimator) ObserveTransaction(t *TxDesc) {
 	if _, ok := ef.observed[hash]; !ok {
 		size := t.Desc.Tx.GetTxActualSize()
 
-		feeRateForToken := make(map[common.Hash]CoinPerKilobyte)
+		feeRateForToken := make(map[common.Hash]uint64)
 		if t.Desc.Tx.GetType() == common.TxCustomTokenPrivacyType {
 			tokenID := t.Desc.Tx.(*transaction.TxCustomTokenPrivacy).GetTokenID()
 			tokenFee := t.Desc.FeeToken
@@ -457,8 +455,8 @@ func (ef *FeeEstimator) rollback() {
 // by the fee per kb rate.
 // inherit from golang sorter
 type estimateFeeSet struct {
-	feeRate         []CoinPerKilobyte
-	feeRateForToken map[common.Hash][]CoinPerKilobyte
+	feeRate         []uint64
+	feeRateForToken map[common.Hash][]uint64
 	bin             [estimateFeeDepth]uint32
 }
 
@@ -475,9 +473,9 @@ func (b *estimateFeeSet) Swap(i, j int) {
 // estimateFee returns the estimated fee for a transaction
 // to confirm in confirmations blocks from now, given
 // the data set we have collected.
-func (b *estimateFeeSet) estimateFee(confirmations int) CoinPerKilobyte {
+func (b *estimateFeeSet) estimateFee(confirmations int) uint64 {
 	if confirmations <= 0 {
-		return CoinPerKilobyte(math.Inf(1))
+		return uint64(math.Inf(1))
 	}
 
 	if confirmations > estimateFeeDepth {
@@ -509,9 +507,9 @@ func (b *estimateFeeSet) estimateFee(confirmations int) CoinPerKilobyte {
 // estimateFee returns the estimated fee for a transaction
 // to confirm in confirmations blocks from now, given
 // the data set we have collected.
-func (b *estimateFeeSet) estimateFeeForToken(confirmations int, tokenId *common.Hash) CoinPerKilobyte {
+func (b *estimateFeeSet) estimateFeeForToken(confirmations int, tokenId *common.Hash) uint64 {
 	if confirmations <= 0 {
-		return CoinPerKilobyte(math.Inf(1))
+		return uint64(math.Inf(1))
 	}
 
 	if confirmations > estimateFeeDepth {
@@ -554,8 +552,8 @@ func (ef *FeeEstimator) newEstimateFeeSet(tokenID *common.Hash) *estimateFeeSet 
 		capacity += l
 	}
 
-	set.feeRate = make([]CoinPerKilobyte, capacity)
-	set.feeRateForToken = make(map[common.Hash][]CoinPerKilobyte)
+	set.feeRate = make([]uint64, capacity)
+	set.feeRateForToken = make(map[common.Hash][]uint64)
 
 	i := 0
 	for _, b := range ef.bin {
@@ -584,10 +582,10 @@ func (ef *FeeEstimator) newEstimateFeeSet(tokenID *common.Hash) *estimateFeeSet 
 
 // estimates returns the set of all fee estimates from 1 to estimateFeeDepth
 // confirmations from now.
-func (ef *FeeEstimator) estimates(tokenID *common.Hash) []CoinPerKilobyte {
+func (ef *FeeEstimator) estimates(tokenID *common.Hash) []uint64 {
 	set := ef.newEstimateFeeSet(tokenID)
 
-	estimates := make([]CoinPerKilobyte, estimateFeeDepth)
+	estimates := make([]uint64, estimateFeeDepth)
 	for i := 0; i < estimateFeeDepth; i++ {
 		if tokenID != nil {
 			estimates[i] = set.estimateFeeForToken(i+1, tokenID)
@@ -601,7 +599,7 @@ func (ef *FeeEstimator) estimates(tokenID *common.Hash) []CoinPerKilobyte {
 
 // EstimateFee estimates the fee per byte to have a tx confirmed a given
 // number of blocks from now.
-func (ef *FeeEstimator) EstimateFee(numBlocks uint64, tokenId *common.Hash) (CoinPerKilobyte, error) {
+func (ef *FeeEstimator) EstimateFee(numBlocks uint64, tokenId *common.Hash) (uint64, error) {
 	ef.mtx.Lock()
 	defer ef.mtx.Unlock()
 

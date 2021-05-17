@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"math/big"
 
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
 )
 
@@ -76,4 +78,19 @@ func PaymentAddressFromString(payment string) (
 		return privacy.PaymentAddress{}, err
 	}
 	return wl.KeySet.PaymentAddress, nil
+}
+func GetPublicKeysFromPaymentAddresses(payments []string) []string {
+	res := []string{}
+	for _, paymentAddressStr := range payments {
+		keyWallet, err := Base58CheckDeserialize(paymentAddressStr)
+		if err != nil {
+			return res
+		}
+		if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
+			return res
+		}
+		pkStr := base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.Base58Version)
+		res = append(res, pkStr)
+	}
+	return res
 }

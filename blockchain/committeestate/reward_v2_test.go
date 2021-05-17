@@ -1,6 +1,5 @@
 package committeestate
 
-// @NOTE: V2 is now skipped
 //func TestBeaconCommitteeEngineV2_SplitReward(t *testing.T) {
 //
 //	hash, _ := common.Hash{}.NewHashFromStr("123")
