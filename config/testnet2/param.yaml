@@ -60,4 +60,8 @@ enable_feature_flags:
   - 0: 1
   - 1: 0
 portal_v3_height: 1328816
-is_full_validation: true
+tx_pool_version: 0
+geth_param: 
+  host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
+  protocol: "https"
+  port: ""

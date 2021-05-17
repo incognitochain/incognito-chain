@@ -2,12 +2,12 @@ package netsync
 
 import (
 	"errors"
-	"os"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metadata"
 
 	"github.com/incognitochain/incognito-chain/syncker"
@@ -85,8 +85,8 @@ func (netSync *NetSync) Init(cfg *NetSyncConfig) {
 		blockCache: blockCache,
 	}
 
-	newTxPool := os.Getenv("TXPOOL_VERSION")
-	if newTxPool == "0" {
+	txPoolVersion := config.Param().TxPoolVersion
+	if txPoolVersion == 0 {
 		netSync.usingNewPool = false
 	} else {
 		netSync.usingNewPool = true

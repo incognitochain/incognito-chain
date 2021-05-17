@@ -38,6 +38,8 @@ type param struct {
 	BCHeightBreakPointNewZKP         uint64             `mapstructure:"bc_height_break_point_new_zkp"`
 	EnableFeatureFlags               map[int]uint64     `mapstructure:"enable_feature_flags" description:"featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature"`
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
+	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
+	GethParam                        gethParam          `mapstructure:"geth_param"`
 	IsBackup                         bool
 }
 
@@ -236,4 +238,10 @@ func (p *param) LoadKey() {
 		}
 	}
 
+}
+
+type gethParam struct {
+	Host     string `mapstructure:"host"`
+	Protocol string `mapstructure:"protocol"`
+	Port     string `mapstructure:"port"`
 }

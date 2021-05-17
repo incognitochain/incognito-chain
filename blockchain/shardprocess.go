@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"sort"
 	"strconv"
 	"time"
@@ -127,15 +126,13 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 // InsertShardBlock Insert Shard Block into blockchain
 // this block must have full information (complete block)
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, shouldValidate bool) error {
-	fullValidation := os.Getenv("FULL_VALIDATION")
-
 	//startTimeInsertShardBlock := time.Now()
 	blockHash := shardBlock.Header.Hash()
 	blockHeight := shardBlock.Header.Height
 	shardID := shardBlock.Header.ShardID
 	preHash := shardBlock.Header.PreviousBlockHash
 
-	if fullValidation == "1" {
+	if config.Config().IsFullValidation {
 		shouldValidate = true
 	}
 
@@ -207,7 +204,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 
 	//only validate all tx if we have env variable FULL_VALIDATION = 1
-	if fullValidation == "1" {
+	if config.Config().IsFullValidation {
 		Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
 		st := time.Now()
 		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, shardBlock.Header.BeaconHash, curView); err != nil {
