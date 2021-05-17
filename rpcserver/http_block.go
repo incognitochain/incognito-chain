@@ -2,7 +2,6 @@ package rpcserver
 
 import (
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
