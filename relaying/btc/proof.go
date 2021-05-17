@@ -166,12 +166,14 @@ func (btcChain *BlockChain) VerifyTxWithMerkleProofs(
 
 	bestState := btcChain.BestSnapshot()
 	if bestState == nil || btcBlock == nil {
-		Logger.log.Errorf("Both BTC best state and BTC block by hash (%s) should not be null, but best state: %+v; block: %+v\n", btcProof.BlockHash.String(), bestState, btcBlock)
+		Logger.log.Errorf("Both BTC best state and BTC block by hash (%s) should not be null, "+
+			"but best state: %+v; block: %+v\n", btcProof.BlockHash.String(), bestState, btcBlock)
 		return false, nil
 	}
 	if bestState.Height < btcBlock.Height()+BTCBlockConfirmations-1 {
 		Logger.log.Errorf("Need to wait for %d btc block confirmations, best state height: %d, "+
-			"targeting block height: %d\n", BTCBlockConfirmations, bestState.Height, btcBlock.Height()+BTCBlockConfirmations)
+			"targeting block height: %d\n", BTCBlockConfirmations, bestState.Height,
+			btcBlock.Height()+BTCBlockConfirmations-1)
 		return false, nil
 	}
 	merkleRoot := btcBlock.MsgBlock().Header.MerkleRoot
