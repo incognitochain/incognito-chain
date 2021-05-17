@@ -146,8 +146,8 @@ func (withDrawRewardRequest WithDrawRewardRequest) CheckTransactionFee(tr Transa
 }
 
 func (withDrawRewardRequest WithDrawRewardRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	if tx.IsPrivacy() {
-		return false, errors.New("This transaction is not private")
+	if tx.IsPrivacy()  && tx.GetVersion() <= 1 {
+		return false, fmt.Errorf("reward-withdraw request transaction version 1 should not be private")
 	}
 
 	//check authorized sender
