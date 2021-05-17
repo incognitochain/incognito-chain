@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"path/filepath"
 	"time"
 
@@ -156,6 +157,8 @@ func LoadParam() *param {
 	initTx := new(initTx)
 	initTx.load(network)
 	p.GenesisParam.InitialIncognito = initTx.InitialIncognito
+
+	log.Println("p.ActiveShards:", p.ActiveShards)
 
 	return p
 }

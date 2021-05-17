@@ -375,8 +375,6 @@ func (engine *BeaconCommitteeEngineV2) InitCommitteeState(env *BeaconCommitteeSt
 		}
 	}
 	b.beaconCommittee = append(b.beaconCommittee, newBeaconCandidates...)
-	Logger.log.Info("[dcs] env.ActiveShards:", env.ActiveShards)
-	Logger.log.Info("[dcs] env.MinShardCommitteeSize:", env.MinShardCommitteeSize)
 	for shardID := 0; shardID < env.ActiveShards; shardID++ {
 		b.shardCommittee[byte(shardID)] = append(b.shardCommittee[byte(shardID)], newShardCandidates[shardID*env.MinShardCommitteeSize:(shardID+1)*env.MinShardCommitteeSize]...)
 	}

@@ -1,8 +1,8 @@
 data_dir: "data" # database directory
 database_dir: "block" # persistent directory
 mempool_dir: "mempool" # mempool directory
-log_dir: "log" # log directory
-log_file_name: "local.log" # log file
+log_dir: "logs" # log directory
+log_file_name: "log.log" # log file
 log_level: "info" # log level
 add_peers: "" #TODO: add info here
 connect_peers: "" #TODO: add info here

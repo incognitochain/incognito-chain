@@ -23,7 +23,7 @@ func Config() *config {
 type config struct {
 	//Basic config
 	DataDir     string `mapstructure:"data_dir" short:"d" long:"datadir" description:"Directory to store data"`
-	DatabaseDir string `mapstructure:"database_dir" short:"d" long:"datapre" description:"Database dir"`
+	DatabaseDir string `mapstructure:"database_dir" long:"datapre" description:"Database dir"`
 	MempoolDir  string `mapstructure:"mempool_dir" short:"m" long:"mempooldir" description:"Mempool Directory"`
 	LogDir      string `mapstructure:"log_dir" short:"l" long:"logdir" description:"Directory to log output."`
 	LogLevel    string `mapstructure:"log_level" long:"loglevel" description:"Logging level for all subsystems {trace, debug, info, warn, error, critical} -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems -- Use show to list available subsystems"`
@@ -142,7 +142,7 @@ func removeDuplicateAddresses(addrs []string) []string {
 
 func (c *config) loadNetwork() string {
 	res := ""
-	switch utils.GetEnv(NetworkKey, LocalNetwork) {
+	switch utils.GetEnv(NetworkKey, MainnetNetwork) {
 	case LocalNetwork:
 		res = LocalNetwork
 		c.IsLocal = true
@@ -200,6 +200,7 @@ func (c *config) verify(network string) {
 	// Append the network type to the log directory so it is "namespaced"
 	// per network in the same fashion as the data directory.
 	c.LogDir = filepath.Join(c.LogDir, network)
+	log.Println(c.LogFileName)
 	c.LogFileName = filepath.Join(c.LogDir, c.LogFileName)
 
 	/*// Initialize log rotation.  After log rotation has been initialized, the*/
@@ -399,6 +400,7 @@ func LoadConfig() *config {
 		IsPersistMempool:            DefaultPersistMempool,
 		LimitFee:                    DefaultLimitFee,
 		EnableMining:                DefaultEnableMining,
+		LogFileName:                 DefaultLogFilename,
 	}
 
 	//get network
