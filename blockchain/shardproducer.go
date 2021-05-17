@@ -365,6 +365,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 		}
 		go blockGenerator.txPool.RemoveTx(txToRemove, false)
 	} else {
+		fmt.Println("Get beacon block", bView.BeaconHeight, curView.BeaconHeight)
 		txsToAdd = chain.TxPool.GetTxsTranferForNewBlock(
 			blockGenerator.chain,
 			curView,
