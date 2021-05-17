@@ -351,11 +351,8 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 		return nil, err
 	}
 	bView := &BeaconBestState{}
-	if len(beaconBlocks) == 0 {
-		bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true)
-	} else {
-		bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(*beaconBlocks[len(beaconBlocks)-1].Hash(), true)
-	}
+	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true)
+
 	if err != nil {
 		return nil, NewBlockChainError(CloneBeaconBestStateError, err)
 	}
@@ -365,7 +362,7 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	if !blockGenerator.chain.config.usingNewPool {
 		txToRemove := []metadata.Transaction{}
 
-		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreationLeftOver.Nanoseconds(), beaconHeight, curView)
+		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreationLeftOver.Nanoseconds(), bView.BeaconHeight, curView)
 		if len(txsToAdd) == 0 {
 			Logger.log.Info("Creating empty block...")
 		}
