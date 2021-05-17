@@ -24,9 +24,6 @@ testnet2:
 mainnet:
 	INCOGNITO_NETWORK_KEY=$(MAINNET) INCOGNITO_CONFIG_MODE_KEY=$(FILE_MODE) $(GOBIN)/$(BUILD_FILE_NAME)
 
-run:
-	$(GOBIN)/$(BUILD_FILE_NAME)
-
 test: 
 	go test ./...
 

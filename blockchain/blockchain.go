@@ -180,7 +180,7 @@ func (blockchain *BlockChain) InitChainState() error {
 func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
 	netID := config.Param().Name
 	res := map[string]interface{}{}
-	whitelistData, err := ioutil.ReadFile("whitelist.json")
+	whitelistData, err := ioutil.ReadFile("./whitelist.json")
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
 		Data map[string][]string
 	}
 	whiteList := WhiteList{}
-	err = json.Unmarshal(whitelistData, &whiteList)
+	err = json.Unmarshal(whitelistData, &whiteList.Data)
 	if err != nil {
 		return nil, err
 	}

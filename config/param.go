@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"path/filepath"
 	"time"
 
@@ -101,27 +100,6 @@ type consensusParam struct {
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
 }
 
-func (p *param) loadNetwork() string {
-	network := ""
-	switch utils.GetEnv(NetworkKey, LocalNetwork) {
-	case LocalNetwork:
-		network = LocalNetwork
-		p.Net = LocalNet
-	case TestNetNetwork:
-		network = TestNetNetwork
-		testnetVersion := utils.GetEnv(NetworkVersionKey, TestNetVersion1)
-		switch testnetVersion {
-		case TestNetVersion2:
-			p.Net = Testnet2Net
-		}
-		network += testnetVersion
-	case MainnetNetwork:
-		network = MainnetNetwork
-		p.Net = MainnetNet
-	}
-	return network
-}
-
 func LoadParam() *param {
 
 	p = &param{
@@ -132,7 +110,7 @@ func LoadParam() *param {
 			SelectShardNodeSerializedPaymentAddressV2:  map[uint64][]string{},
 		},
 	}
-	network := p.loadNetwork()
+	network := c.Network()
 
 	//read config from file
 	viper.SetConfigName(utils.GetEnv(ParamFileKey, DefaultParamFile))                         // name of config file (without extension)
@@ -155,16 +133,14 @@ func LoadParam() *param {
 	}
 
 	initTx := new(initTx)
-	initTx.load(network)
+	initTx.load()
 	p.GenesisParam.InitialIncognito = initTx.InitialIncognito
-
-	log.Println("p.ActiveShards:", p.ActiveShards)
 
 	return p
 }
 
 func (p *param) LoadKey() {
-	network := p.loadNetwork()
+	network := c.Network()
 	configPath := filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)
 
 	keyData, err := ioutil.ReadFile(filepath.Join(configPath, KeyListFileName))

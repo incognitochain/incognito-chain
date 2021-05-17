@@ -24,7 +24,8 @@ type initTx struct {
 	InitialIncognito []initialIncognito `mapstructure:"initial_incognito" description:"fee per tx calculate by kb"`
 }
 
-func (initTx *initTx) load(network string) {
+func (initTx *initTx) load() {
+	network := c.Network()
 	//read config from file
 	viper.SetConfigName(utils.GetEnv(InitTxFileKey, DefaultInitTxFile))                       // name of config file (without extension)
 	viper.SetConfigType(utils.GetEnv(ConfigFileTypeKey, DefaultInitTxFileType))               // REQUIRED if the config file does not have the extension in the name
