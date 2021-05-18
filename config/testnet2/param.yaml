@@ -1,4 +1,5 @@
 name: "testnet-2"
+net: 0x32
 genesis_param: 
   initial_incognito: 
     - Version: 1

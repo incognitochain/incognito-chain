@@ -1,4 +1,5 @@
 name: "local"
+net: 0x01
 genesis_param: 
   fee_per_tx_kb: 0
   consensus_algorithm: "bls"

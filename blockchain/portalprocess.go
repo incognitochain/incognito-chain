@@ -66,7 +66,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 func (blockchain *BlockChain) processPortalInstructions(portalStateDB *statedb.StateDB, block *types.BeaconBlock) error {
 	// Note: should comment this code if you need to create local chain.
 	isSkipPortalV3Ints := false
-	if config.Param().Net == config.TestnetNet && block.Header.Height < 1580600 {
+	if (config.Param().Net == config.LocalNet || config.Param().Net == config.TestnetNet) && block.Header.Height < 1580600 {
 		isSkipPortalV3Ints = true
 	}
 	beaconHeight := block.Header.Height - 1

@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"path/filepath"
 	"time"
 
@@ -19,7 +20,7 @@ func Param() *param {
 //param for all variables in incognito node process
 type param struct {
 	Name                             string             `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `
-	Net                              uint32             `description:"Net defines the magic bytes used to identify the network"`
+	Net                              uint32             `mapstructure:"net" description:"Net defines the magic bytes used to identify the network"`
 	GenesisParam                     *genesisParam      `mapstructure:"genesis_param" description:"genesis params"`
 	CommitteeSize                    committeeSize      `mapstructure:"committee_size"`
 	BlockTime                        blockTime          `mapstructure:"block_time"`
@@ -135,6 +136,8 @@ func LoadParam() *param {
 	initTx := new(initTx)
 	initTx.load()
 	p.GenesisParam.InitialIncognito = initTx.InitialIncognito
+	log.Println("p.Net:", p.Net)
+	log.Println("p.Net:", p.Net)
 
 	return p
 }
