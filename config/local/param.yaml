@@ -24,10 +24,10 @@ staking_amount_shard: 1750000000000
 active_shards: 2
 basic_reward: 400000000
 epoch_param:
-  number_of_block_in_epoch: 5
+  number_of_block_in_epoch: 10
   number_of_block_in_epoch_v2: 1000000000000
   epoch_v2_break_point: 1000000000000
-  random_time: 3
+  random_time: 5
   random_time_v2: 1000000000000
 eth_contract_address: "0xE0D5e7217c6C4bc475404b26d763fAD3F14D2b86"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
