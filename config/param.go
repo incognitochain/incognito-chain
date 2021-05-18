@@ -81,7 +81,7 @@ type blockTime struct {
 	MinShardBlockInterval  time.Duration `mapstructure:"min_shard_block_interval"`
 	MaxShardBlockCreation  time.Duration `mapstructure:"max_shard_block_creation"`
 	MinBeaconBlockInterval time.Duration `mapstructure:"min_beacon_block_interval"`
-	MaxBeaconBlockCreation time.Duration `mapstructure:"min_beacon_block_creation"`
+	MaxBeaconBlockCreation time.Duration `mapstructure:"max_beacon_block_creation"`
 }
 
 type epochParam struct {
@@ -137,7 +137,6 @@ func LoadParam() *param {
 			panic(err)
 		}
 	}
-
 	initTx := new(initTx)
 	initTx.load()
 	p.GenesisParam.InitialIncognito = initTx.InitialIncognito

@@ -17,10 +17,10 @@ committee_size:
   beacon_committee_size_key_list_v2: 7
   number_of_fixed_shard_block_validators: 22
 block_time:
-  min_shard_block_interval: 40s
-  max_shard_block_creation: 10s
   min_beacon_block_interval: 40s
   max_beacon_block_creation: 10s
+  min_shard_block_interval: 40s
+  max_shard_block_creation: 10s
 staking_amount_shard: 1750000000000
 active_shards: 8
 basic_reward: 1386666000

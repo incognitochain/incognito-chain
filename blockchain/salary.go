@@ -250,7 +250,14 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 		totalRewardForShard,
 		totalRewardForIncDAO,
 		totalRewardForCustodian,
-		err := curView.calculateReward(blockchain, blkHeight, epoch, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
+		err := curView.calculateReward(
+		blockchain,
+		blkHeight,
+		epoch,
+		curView.GetBeaconRewardStateDB(),
+		isSplitRewardForCustodian,
+		percentCustodianRewards,
+	)
 	if err != nil {
 		return nil, nil, err
 	}

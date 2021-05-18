@@ -121,6 +121,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 
 	//get view that block link to
 	preView := blockchain.BeaconChain.GetViewByHash(preHash)
+	Logger.log.Info("[config] preView:", preView.GetHash().String())
 	if preView == nil {
 		ctx, cancel := context.WithTimeout(context.Background(), DefaultMaxBlockSyncTime)
 		defer cancel()

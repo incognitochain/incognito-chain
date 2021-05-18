@@ -420,7 +420,8 @@ func LoadConfig() *config {
 
 func (c *config) loadConfig() {
 	mode := utils.GetEnv(ConfigModeKey, FlagConfigMode)
-	if mode == FileConfigMode {
+	switch mode {
+	case FileConfigMode:
 		network := c.Network()
 		//read config from file
 		viper.SetConfigName(utils.GetEnv(ConfigFileKey, DefaultConfigFile))         // name of config file (without extension)
@@ -440,13 +441,13 @@ func (c *config) loadConfig() {
 				panic(err)
 			}
 		}
-		return
-	}
-	if mode == FlagConfigMode {
+
+	case FlagConfigMode:
 		parser := flags.NewParser(c, flags.Default)
 		_, err := parser.Parse()
 		if err != nil {
 			panic(err)
 		}
+
 	}
 }
