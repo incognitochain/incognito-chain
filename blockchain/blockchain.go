@@ -194,7 +194,7 @@ func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
 	}
 	if wlByNetID, ok := whiteList.Data[netID]; ok {
 		for _, txHash := range wlByNetID {
-			res[txHash] = nil
+			res[txHash] = true
 		}
 	}
 	return res, nil
