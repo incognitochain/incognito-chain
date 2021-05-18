@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"strconv"
 	"sync"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	configpkg "github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -99,12 +99,12 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
-	newTxPool := os.Getenv("TXPOOL_VERSION")
-	if newTxPool == "1" {
-		blockchain.config.usingNewPool = true
-	} else {
+	if configpkg.Param().TxPoolVersion == 0 {
 		blockchain.config.usingNewPool = false
+	} else {
+		blockchain.config.usingNewPool = true
 	}
+
 	if err := blockchain.InitChainState(); err != nil {
 		return err
 	}
@@ -184,15 +184,12 @@ func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	type WhiteList struct {
-		Data map[string][]string
-	}
-	whiteList := WhiteList{}
-	err = json.Unmarshal(whitelistData, &whiteList.Data)
+	whiteList := map[string][]string{}
+	err = json.Unmarshal(whitelistData, &whiteList)
 	if err != nil {
 		return nil, err
 	}
-	if wlByNetID, ok := whiteList.Data[netID]; ok {
+	if wlByNetID, ok := whiteList[netID]; ok {
 		for _, txHash := range wlByNetID {
 			res[txHash] = true
 		}

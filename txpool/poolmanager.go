@@ -1,6 +1,8 @@
 package txpool
 
 import (
+	"time"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -16,6 +18,7 @@ type PoolManager struct {
 func NewPoolManager(
 	activeShards int,
 	ps *pubsub.PubSubManager,
+	ttl time.Duration,
 ) (
 	*PoolManager,
 	error,
@@ -24,7 +27,7 @@ func NewPoolManager(
 		ps: ps,
 	}
 	for i := 0; i < activeShards; i++ {
-		res.ShardTxsPool = append(res.ShardTxsPool, NewTxsPool(nil, make(chan metadata.Transaction)))
+		res.ShardTxsPool = append(res.ShardTxsPool, NewTxsPool(nil, make(chan metadata.Transaction), ttl))
 	}
 
 	return res, nil
@@ -131,4 +134,12 @@ func (pm *PoolManager) GetTransactionByHash(txHash string) (metadata.Transaction
 		}
 	}
 	return nil, errors.Errorf("Transaction %v not found in mempool", txHash)
+}
+
+func (pm *PoolManager) RemoveTransactionInPool(txHash string) {
+	for _, txPool := range pm.ShardTxsPool {
+		if txPool.IsRunning() {
+			txPool.removeTx(txHash, nil)
+		}
+	}
 }
