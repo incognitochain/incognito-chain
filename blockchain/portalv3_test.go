@@ -339,7 +339,7 @@ func processPortalInstructions(
 		case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3),
 			strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3),
 			strconv.Itoa(metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3):
-			err = portalprocessv3.ProcessPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState)
+			err = portalprocessv3.ProcessPortalConfirmWithdrawInstV3(portalStateDB, beaconHeight, inst, currentPortalState, portalv3.PortalParams{}) //@tin TODO: fill data here
 		}
 
 		if err != nil {
