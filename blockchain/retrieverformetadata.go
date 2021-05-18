@@ -15,9 +15,7 @@ import (
 )
 
 func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress(beaconHeight uint64) string {
-	Logger.log.Info("[config] config.Param().Net:", config.Param().Net)
 	if config.Param().Net == config.TestnetNet || config.Param().Net == config.Testnet2Net || config.Param().Net == config.LocalNet {
-		Logger.log.Info("[config] centralized_website_payment_address:", config.Param().CentralizedWebsitePaymentAddress)
 		return config.Param().CentralizedWebsitePaymentAddress
 	}
 	if config.Param().Net == config.MainnetNet {

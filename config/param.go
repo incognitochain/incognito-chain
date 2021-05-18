@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"path/filepath"
 	"time"
 
@@ -136,8 +135,6 @@ func LoadParam() *param {
 	initTx := new(initTx)
 	initTx.load()
 	p.GenesisParam.InitialIncognito = initTx.InitialIncognito
-	log.Println("p.Net:", p.Net)
-	log.Println("p.Net:", p.Net)
 
 	return p
 }
