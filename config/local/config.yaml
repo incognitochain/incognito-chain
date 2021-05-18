@@ -6,7 +6,7 @@ log_file_name: "log.log" # log file
 log_level: "info" # log level
 add_peers: "" #TODO: add info here
 connect_peers: "" #TODO: add info here
-disable_listen: true #
+disable_listen: false #
 listener: "0.0.0.0:9876" #
 max_peers: 1000 #
 max_out_peers: 1000 #
@@ -19,7 +19,7 @@ max_peers_other: 300 #
 max_peers_no_shard: 200 #
 max_peers_beacon: 500 #
 external_address: "0.0.0.0:8765" #
-rpc_disable_auth: false #
+rpc_disable_auth: true #
 rpc_user: "" #
 rpc_pass: "" #
 rpc_limit_user: "" #
