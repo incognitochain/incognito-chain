@@ -141,6 +141,10 @@ func (blockchain *BlockChain) InitChainState() error {
 	if err != nil {
 		Logger.log.Errorf("Can not get whitelist txs, error %v", err)
 	}
+	whiteListTx = make(map[string]bool)
+	for k, _ := range wl {
+		whiteListTx[k] = true
+	}
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
 	for shardID := byte(0); int(shardID) < blockchain.GetBeaconBestState().ActiveShards; shardID++ {
 		tp, err := blockchain.config.PoolManager.GetShardTxsPool(shardID)
@@ -177,6 +181,8 @@ func (blockchain *BlockChain) InitChainState() error {
 	return nil
 }
 
+var whiteListTx map[string]bool
+
 func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
 	netID := config.Param().Name
 	res := map[string]interface{}{}
@@ -195,6 +201,10 @@ func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
 		}
 	}
 	return res, nil
+}
+
+func (blockchain *BlockChain) WhiteListTx() map[string]bool {
+	return whiteListTx
 }
 
 /*
