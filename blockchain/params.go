@@ -214,9 +214,9 @@ func SetupParam() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		ConsensusV2Epoch:               16930,
-		StakingFlowV2Height:            3016278,
-		EnableSlashingStakingFlowV2:    3016778,
+		ConsensusV2Epoch:               15290,
+		StakingFlowV2Height:            2051863,
+		EnableSlashingStakingFlowV2:    2087789,
 		Timeslot:                       10,
 		BeaconHeightBreakPointBurnAddr: 1,
 		PortalParams: portal.PortalParams{
