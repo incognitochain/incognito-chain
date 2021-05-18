@@ -16,6 +16,12 @@ func Param() *param {
 	return p
 }
 
+//AbortParam use for unit test only
+// DO NOT use this function for development process
+func AbortParam() {
+	p = &param{}
+}
+
 //param for all variables in incognito node process
 type param struct {
 	Name                             string             `mapstructure:"name" description:"Name defines a human-readable identifier for the network" `

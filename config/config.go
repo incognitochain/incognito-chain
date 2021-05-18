@@ -20,6 +20,12 @@ func Config() *config {
 	return c
 }
 
+//AbortConfig use for unit test only
+// DO NOT use this function for development process
+func AbortConfig() {
+	c = &config{}
+}
+
 type config struct {
 	//Basic config
 	DataDir     string `mapstructure:"data_dir" short:"d" long:"datadir" description:"Directory to store data"`

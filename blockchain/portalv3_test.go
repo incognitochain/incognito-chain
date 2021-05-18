@@ -14,11 +14,11 @@ import (
 
 	eCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal"
-	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
@@ -162,35 +162,8 @@ func (s *PortalTestSuiteV3) SetupTest() {
 
 		PortalETHContractAddressStr: "0xDdFe62F1022a62bF8Dc007cb4663228C71F5235b",
 	}
-	s.blockChain = &BlockChain{
-		config: Config{
-			ChainParams: &Params{
-				MinBeaconBlockInterval: 40 * time.Second,
-				MinShardBlockInterval:  40 * time.Second,
-				Epoch:                  100,
-				PortalParams: portal.PortalParams{
-					PortalParamsV3: map[uint64]portalv3.PortalParams{
-						0: s.portalParams,
-					},
-					RelayingParam: portalrelaying.RelayingParams{
-						BNBRelayingHeaderChainID: TestnetBNBChainID,
-						BTCRelayingHeaderChainID: TestnetBTCChainID,
-						BTCDataFolderName:        TestnetBTCDataFolderName,
-						BNBFullNodeProtocol:      TestnetBNBFullNodeProtocol,
-						BNBFullNodeHost:          TestnetBNBFullNodeHost,
-						BNBFullNodePort:          TestnetBNBFullNodePort,
-					},
-				},
-			},
-		},
-	}
-
-	// if the blockchain is running in Docker container
-	// then using GETH_NAME env's value (aka geth container name)
-	// otherwise using localhost
-	metadata.EthereumLightNodeHost = common.GetENV("GETH_NAME", "kovan.infura.io/v3/93fe721349134964aa71071a713c5cef")
-	metadata.EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "https")
-	metadata.EthereumLightNodePort = common.GetENV("GETH_PORT", "")
+	config.AbortConfig()
+	config.Config().IsLocal = true
 }
 
 /*
