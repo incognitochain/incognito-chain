@@ -363,11 +363,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-
 	var txVersion int8
 	tmpVersionParam, ok := data["TxVersion"]
 	if !ok {
@@ -380,22 +375,41 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVTradeReq(params interface{
 		txVersion = int8(tmpVersion)
 	}
 
-	meta, _ := metadata.NewPDETradeRequest(
-		tokenIDToBuyStr,
-		tokenIDToSellStr,
-		sellAmount,
-		minAcceptableAmount,
-		tradingFee,
-		traderOTAPublicKeyStr,
-		traderOTAtxRandomStr,
-		metadata.PDETradeRequestMeta,
-	)
+	var meta *metadata.PDETradeRequest
 	if txVersion == 1 {
-		tmpAddr := meta.TraderAddressStr
-		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		addrV1, err := wallet.GetPaymentAddressV1(traderAddressStr, false)
 		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", traderAddressStr))
 		}
+
+		meta, _ = metadata.NewPDETradeRequest(
+			tokenIDToBuyStr,
+			tokenIDToSellStr,
+			sellAmount,
+			minAcceptableAmount,
+			tradingFee,
+			addrV1,
+			"",
+			metadata.PDETradeRequestMeta,
+		)
+
+	} else {
+		var traderOTAPublicKeyStr, traderOTAtxRandomStr string
+		traderOTAPublicKeyStr, traderOTAtxRandomStr, err = httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+
+		meta, _ = metadata.NewPDETradeRequest(
+			tokenIDToBuyStr,
+			tokenIDToSellStr,
+			sellAmount,
+			minAcceptableAmount,
+			tradingFee,
+			traderOTAPublicKeyStr,
+			traderOTAtxRandomStr,
+			metadata.PDETradeRequestMeta,
+		)
 	}
 
 	// create new param to build raw tx from param interface
@@ -480,11 +494,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-
 	var txVersion int8
 	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
 	if !ok {
@@ -497,22 +506,40 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenTradeReq(params interfa
 		txVersion = int8(tmpVersion)
 	}
 
-	meta, _ := metadata.NewPDETradeRequest(
-		tokenIDToBuyStr,
-		tokenIDToSellStr,
-		sellAmount,
-		minAcceptableAmount,
-		tradingFee,
-		traderOTAPublicKeyStr,
-		traderOTAtxRandomStr,
-		metadata.PDETradeRequestMeta,
-	)
+	var meta *metadata.PDETradeRequest
 	if txVersion == 1 {
-		tmpAddr := meta.TraderAddressStr
-		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		addrV1, err := wallet.GetPaymentAddressV1(traderAddressStr, false)
 		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", traderAddressStr))
 		}
+
+		meta, _ = metadata.NewPDETradeRequest(
+			tokenIDToBuyStr,
+			tokenIDToSellStr,
+			sellAmount,
+			minAcceptableAmount,
+			tradingFee,
+			addrV1,
+			"",
+			metadata.PDETradeRequestMeta,
+		)
+	} else {
+		var traderOTAPublicKeyStr, traderOTAtxRandomStr string
+		traderOTAPublicKeyStr, traderOTAtxRandomStr, err = httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+
+		meta, _ = metadata.NewPDETradeRequest(
+			tokenIDToBuyStr,
+			tokenIDToSellStr,
+			sellAmount,
+			minAcceptableAmount,
+			tradingFee,
+			traderOTAPublicKeyStr,
+			traderOTAtxRandomStr,
+			metadata.PDETradeRequestMeta,
+		)
 	}
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
@@ -1303,14 +1330,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVCrossPoolTradeReq(params i
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
-	traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-	traderSubOTAPublicKeyStr, traderSubOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
 
 	var txVersion int8
 	tmpVersionParam, ok := data["TxVersion"]
@@ -1324,25 +1343,48 @@ func (httpServer *HttpServer) handleCreateRawTxWithPRVCrossPoolTradeReq(params i
 		txVersion = int8(tmpVersion)
 	}
 
-	meta, _ := metadata.NewPDECrossPoolTradeRequest(
-		tokenIDToBuyStr,
-		tokenIDToSellStr,
-		sellAmount,
-		minAcceptableAmount,
-		tradingFee,
-		traderOTAPublicKeyStr,
-		traderOTAtxRandomStr,
-		traderSubOTAPublicKeyStr,
-		traderSubOTAtxRandomStr,
-		metadata.PDECrossPoolTradeRequestMeta,
-	)
-
+	var meta *metadata.PDECrossPoolTradeRequest
 	if txVersion == 1 {
-		tmpAddr := meta.TraderAddressStr
-		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		addrV1, err := wallet.GetPaymentAddressV1(traderAddressStr, false)
 		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", traderAddressStr))
 		}
+
+		meta, _ = metadata.NewPDECrossPoolTradeRequest(
+			tokenIDToBuyStr,
+			tokenIDToSellStr,
+			sellAmount,
+			minAcceptableAmount,
+			tradingFee,
+			addrV1,
+			"",
+			addrV1,
+			"",
+			metadata.PDECrossPoolTradeRequestMeta,
+		)
+
+	} else {
+		traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		traderSubOTAPublicKeyStr, traderSubOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+
+		meta, _ = metadata.NewPDECrossPoolTradeRequest(
+			tokenIDToBuyStr,
+			tokenIDToSellStr,
+			sellAmount,
+			minAcceptableAmount,
+			tradingFee,
+			traderOTAPublicKeyStr,
+			traderOTAtxRandomStr,
+			traderSubOTAPublicKeyStr,
+			traderSubOTAtxRandomStr,
+			metadata.PDECrossPoolTradeRequestMeta,
+		)
 	}
 
 	// create new param to build raw tx from param interface
@@ -1427,15 +1469,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenCrossPoolTradeReq(param
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
 	}
 
-	traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-	traderSubOTAPublicKeyStr, traderSubOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
-	if err != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
-	}
-
 	var txVersion int8
 	tmpVersionParam, ok := tokenParamsRaw["TxVersion"]
 	if !ok {
@@ -1448,24 +1481,48 @@ func (httpServer *HttpServer) handleCreateRawTxWithPTokenCrossPoolTradeReq(param
 		txVersion = int8(tmpVersion)
 	}
 
-	meta, _ := metadata.NewPDECrossPoolTradeRequest(
-		tokenIDToBuyStr,
-		tokenIDToSellStr,
-		sellAmount,
-		minAcceptableAmount,
-		tradingFee,
-		traderOTAPublicKeyStr,
-		traderOTAtxRandomStr,
-		traderSubOTAPublicKeyStr,
-		traderSubOTAtxRandomStr,
-		metadata.PDECrossPoolTradeRequestMeta,
-	)
+	var meta *metadata.PDECrossPoolTradeRequest
 	if txVersion == 1 {
-		tmpAddr := meta.TraderAddressStr
-		meta.TraderAddressStr, err = wallet.GetPaymentAddressV1(tmpAddr, false)
+		addrV1, err := wallet.GetPaymentAddressV1(traderAddressStr, false)
 		if err != nil {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", tmpAddr))
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot get payment address V1 from %v", traderAddressStr))
 		}
+
+		meta, _ = metadata.NewPDECrossPoolTradeRequest(
+			tokenIDToBuyStr,
+			tokenIDToSellStr,
+			sellAmount,
+			minAcceptableAmount,
+			tradingFee,
+			addrV1,
+			"",
+			addrV1,
+			"",
+			metadata.PDECrossPoolTradeRequestMeta,
+		)
+
+	} else {
+		traderOTAPublicKeyStr, traderOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+		traderSubOTAPublicKeyStr, traderSubOTAtxRandomStr, err := httpServer.txService.GenerateOTAFromPaymentAddress(traderAddressStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+		}
+
+		meta, _ = metadata.NewPDECrossPoolTradeRequest(
+			tokenIDToBuyStr,
+			tokenIDToSellStr,
+			sellAmount,
+			minAcceptableAmount,
+			tradingFee,
+			traderOTAPublicKeyStr,
+			traderOTAtxRandomStr,
+			traderSubOTAPublicKeyStr,
+			traderSubOTAtxRandomStr,
+			metadata.PDECrossPoolTradeRequestMeta,
+		)
 	}
 
 	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
