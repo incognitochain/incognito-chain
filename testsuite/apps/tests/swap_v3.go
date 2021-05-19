@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	testsuite "github.com/incognitochain/incognito-chain/testsuite"
 	"github.com/incognitochain/incognito-chain/testsuite/account"
 )
@@ -141,7 +143,28 @@ func Test_Swap_v3() {
 		node.RPC.Stake(acc)
 		fmt.Println("stake", acc.Name)
 		node.GenerateBlock().NextRound()
+
+		fmt.Printf("\n======================================\nBeacon Height %v Epoch %v \n", node.GetBlockchain().BeaconChain.CurrentHeight(), node.GetBlockchain().BeaconChain.GetEpoch())
+		shardIDs := []int{-1}
+		shardIDs = append(shardIDs, node.GetBlockchain().GetShardIDs()...)
+		consensusStateDB := node.GetBlockchain().BeaconChain.GetBestView().(*blockchain.BeaconBestState).GetBeaconConsensusStateDB()
+		_, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate, _, _, _, _, _ := statedb.GetAllCandidateSubstituteCommittee(consensusStateDB, shardIDs)
+		str, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
+		fmt.Println("currentEpochShardCandidate", str)
+		str, _ = incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
+		fmt.Println("nextEpochShardCandidate", str)
+
+		substituteValidatorStr := make(map[int][]string)
+		for shardID, v := range substituteValidator {
+			tempV, _ := incognitokey.CommitteeKeyListToString(v)
+			substituteValidatorStr[shardID] = tempV
+		}
+		fmt.Println("substituteValidator", substituteValidatorStr)
+		if node.GetBlockchain().BeaconChain.CurrentHeight() == 71 {
+			node.Pause()
+		}
 	}
+
 	node.GenerateBlock().NextRound()
 
 	for {
