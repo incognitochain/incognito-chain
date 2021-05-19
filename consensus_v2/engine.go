@@ -183,6 +183,7 @@ func (s *Engine) WatchCommitteeChange() {
 	for chainID, proc := range s.BFTProcess {
 		if _, ok := ValidatorGroup[chainID]; !ok {
 			proc.Stop()
+			proc.Destroy()
 			s.NotifyNewRole(chainID, common.WaitingRole)
 		}
 	}
