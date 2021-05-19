@@ -306,197 +306,171 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 		},
 		{
 			name:   "< break point 5",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             20,
-				//EpochV2:           50,
-				//EpochV2BreakPoint: 10,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 20,
 			},
 			want:  2,
 			want1: true,
+			param: param{
+				Epoch:             20,
+				EpochV2:           50,
+				EpochV2BreakPoint: 10,
+			},
 		},
 		{
 			name:   "= break point 1",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 299,
 			},
 			want:  3,
 			want1: false,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "= break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 300,
 			},
 			want:  4,
 			want1: true,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "= break point 3",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 301,
 			},
 			want:  4,
 			want1: false,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "> break point",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 301,
 			},
 			want:  4,
 			want1: false,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "> break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 650,
 			},
 			want:  5,
 			want1: true,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "> break point 3",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 649,
 			},
 			want:  4,
 			want1: false,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "> break point 4",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 651,
 			},
 			want:  5,
 			want1: false,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "> break point 5",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 1000,
 			},
 			want:  6,
 			want1: true,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "> break point 6",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 1001,
 			},
 			want:  6,
 			want1: false,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "> break point 7",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 999,
 			},
 			want:  5,
 			want1: false,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 	}
+
+	setupParam := func(param param) {
+		config.Param().EpochParam.NumberOfBlockInEpoch = param.Epoch
+		config.Param().EpochParam.NumberOfBlockInEpochV2 = param.EpochV2
+		config.Param().EpochParam.EpochV2BreakPoint = param.EpochV2BreakPoint
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bc := &BlockChain{
-				config: tt.fields.config,
-			}
+			config.AbortParam()
+			bc := &BlockChain{}
+			setupParam(tt.param)
 			got, got1 := bc.GetEpochNextHeight(tt.args.beaconHeight)
 			if got != tt.want {
 				t.Errorf("GetEpochNextHeight() got = %v, want %v", got, tt.want)
@@ -509,8 +483,14 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 }
 
 func TestBlockChain_GetRandomTimeOfCurrentEpoch(t *testing.T) {
+	type param struct {
+		Epoch             uint64
+		EpochV2           uint64
+		EpochV2BreakPoint uint64
+		RandomTime        uint64
+		RandomTimeV2      uint64
+	}
 	type fields struct {
-		config Config
 	}
 	type args struct {
 		epoch uint64
@@ -520,121 +500,113 @@ func TestBlockChain_GetRandomTimeOfCurrentEpoch(t *testing.T) {
 		fields fields
 		args   args
 		want   uint64
+		param  param
 	}{
 		{
 			name:   "< break point 1",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 2,
 			},
 			want: 150,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "< break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 3,
 			},
 			want: 250,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "= break point",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 4,
 			},
 			want: 300 + 175,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "> break point",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 5,
 			},
 			want: 300 + 350 + 175,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "> break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 6,
 			},
 			want: 300 + 350*2 + 175,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "> break point 3",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 7,
 			},
 			want: 300 + 350*3 + 175,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 	}
+
+	setupParam := func(param param) {
+		config.Param().EpochParam.NumberOfBlockInEpoch = param.Epoch
+		config.Param().EpochParam.NumberOfBlockInEpochV2 = param.EpochV2
+		config.Param().EpochParam.EpochV2BreakPoint = param.EpochV2BreakPoint
+		config.Param().EpochParam.RandomTime = param.RandomTime
+		config.Param().EpochParam.RandomTimeV2 = param.RandomTimeV2
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bc := &BlockChain{
-				config: tt.fields.config,
-			}
+			config.AbortParam()
+			bc := &BlockChain{}
+			setupParam(tt.param)
 			if got := bc.GetRandomTimeInEpoch(tt.args.epoch); got != tt.want {
 				t.Errorf("GetRandomTimeInEpoch() = %v, want %v", got, tt.want)
 			}
@@ -643,8 +615,15 @@ func TestBlockChain_GetRandomTimeOfCurrentEpoch(t *testing.T) {
 }
 
 func TestBlockChain_GetFirstBeaconHeightInEpoch(t *testing.T) {
+	type param struct {
+		Epoch             uint64
+		EpochV2           uint64
+		EpochV2BreakPoint uint64
+		RandomTime        uint64
+		RandomTimeV2      uint64
+	}
+
 	type fields struct {
-		config Config
 	}
 	type args struct {
 		epoch uint64
@@ -654,139 +633,128 @@ func TestBlockChain_GetFirstBeaconHeightInEpoch(t *testing.T) {
 		fields fields
 		args   args
 		want   uint64
+		param  param
 	}{
 		{
 			name:   "< break point 1",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 2,
 			},
 			want: 101,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "< break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 3,
 			},
 			want: 201,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "= break point",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 4,
 			},
 			want: 301,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "= break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             10,
-				//EpochV2:           20,
-				//EpochV2BreakPoint: 999,
-				//RandomTime:        5,
-				//RandomTimeV2:      10,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 999,
 			},
 			want: 9981,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "> break point",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 5,
 			},
 			want: 300 + 350 + 1,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "> break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 6,
 			},
 			want: 300 + 350*2 + 1,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "> break point 3",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 7,
 			},
 			want: 300 + 350*3 + 1,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 	}
+
+	setupParam := func(param param) {
+		config.Param().EpochParam.NumberOfBlockInEpoch = param.Epoch
+		config.Param().EpochParam.NumberOfBlockInEpochV2 = param.EpochV2
+		config.Param().EpochParam.EpochV2BreakPoint = param.EpochV2BreakPoint
+		config.Param().EpochParam.RandomTime = param.RandomTime
+		config.Param().EpochParam.RandomTimeV2 = param.RandomTimeV2
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bc := &BlockChain{
-				config: tt.fields.config,
-			}
+			config.AbortParam()
+			bc := &BlockChain{}
+			setupParam(tt.param)
 			if got := bc.GetFirstBeaconHeightInEpoch(tt.args.epoch); got != tt.want {
 				t.Errorf("GetFirstBeaconHeightInEpoch() = %v, want %v", got, tt.want)
 			}
@@ -795,8 +763,14 @@ func TestBlockChain_GetFirstBeaconHeightInEpoch(t *testing.T) {
 }
 
 func TestBlockChain_GetLastBeaconHeightInEpoch(t *testing.T) {
+	type param struct {
+		Epoch             uint64
+		EpochV2           uint64
+		EpochV2BreakPoint uint64
+		RandomTime        uint64
+		RandomTimeV2      uint64
+	}
 	type fields struct {
-		config Config
 	}
 	type args struct {
 		epoch uint64
@@ -806,121 +780,113 @@ func TestBlockChain_GetLastBeaconHeightInEpoch(t *testing.T) {
 		fields fields
 		args   args
 		want   uint64
+		param  param
 	}{
 		{
 			name:   "< break point 1",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 2,
 			},
 			want: 200,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "< break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 3,
 			},
 			want: 300,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "= break point",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 4,
 			},
 			want: 650,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "> break point",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 5,
 			},
 			want: 300 + 350 + 350,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "> break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 6,
 			},
 			want: 300 + 350*2 + 350,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "> break point 3",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				epoch: 7,
 			},
 			want: 300 + 350*3 + 350,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 	}
+
+	setupParam := func(param param) {
+		config.Param().EpochParam.NumberOfBlockInEpoch = param.Epoch
+		config.Param().EpochParam.NumberOfBlockInEpochV2 = param.EpochV2
+		config.Param().EpochParam.EpochV2BreakPoint = param.EpochV2BreakPoint
+		config.Param().EpochParam.RandomTime = param.RandomTime
+		config.Param().EpochParam.RandomTimeV2 = param.RandomTimeV2
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bc := &BlockChain{
-				config: tt.fields.config,
-			}
+			config.AbortParam()
+			bc := &BlockChain{}
+			setupParam(tt.param)
 			if got := bc.GetLastBeaconHeightInEpoch(tt.args.epoch); got != tt.want {
 				t.Errorf("GetLastBeaconHeightInEpoch() = %v, want %v", got, tt.want)
 			}
@@ -929,8 +895,14 @@ func TestBlockChain_GetLastBeaconHeightInEpoch(t *testing.T) {
 }
 
 func TestBlockChain_GetBeaconBlockOrderInEpoch(t *testing.T) {
+	type param struct {
+		Epoch             uint64
+		EpochV2           uint64
+		EpochV2BreakPoint uint64
+		RandomTime        uint64
+		RandomTimeV2      uint64
+	}
 	type fields struct {
-		config Config
 	}
 	type args struct {
 		beaconHeight uint64
@@ -941,146 +913,135 @@ func TestBlockChain_GetBeaconBlockOrderInEpoch(t *testing.T) {
 		args   args
 		want   uint64
 		want1  uint64
+		param  param
 	}{
 		{
 			name:   "< break point 1",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 170,
 			},
 			want:  70,
 			want1: 30,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "< break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 264,
 			},
 			want:  64,
 			want1: 36,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "= break point 1",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 300,
 			},
 			want:  0,
 			want1: 350,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "= break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 301,
 			},
 			want:  1,
 			want1: 349,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "= break point 3",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 402,
 			},
 			want:  102,
 			want1: 248,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "> break point",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 734,
 			},
 			want:  84,
 			want1: 266,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 		{
 			name:   "> break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//RandomTime:        50,
-				//RandomTimeV2:      175,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 888,
 			},
 			want:  238,
 			want1: 112,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+				RandomTime:        50,
+				RandomTimeV2:      175,
+			},
 		},
 	}
+
+	setupParam := func(param param) {
+		config.Param().EpochParam.NumberOfBlockInEpoch = param.Epoch
+		config.Param().EpochParam.NumberOfBlockInEpochV2 = param.EpochV2
+		config.Param().EpochParam.EpochV2BreakPoint = param.EpochV2BreakPoint
+		config.Param().EpochParam.RandomTime = param.RandomTime
+		config.Param().EpochParam.RandomTimeV2 = param.RandomTimeV2
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bc := &BlockChain{
-				config: tt.fields.config,
-			}
+			config.AbortParam()
+			bc := &BlockChain{}
+			setupParam(tt.param)
 			got, got1 := bc.GetBeaconBlockOrderInEpoch(tt.args.beaconHeight)
 			if got != tt.want {
 				t.Errorf("GetBeaconBlockOrderInEpoch() got = %v, want %v", got, tt.want)
