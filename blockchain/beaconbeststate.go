@@ -806,7 +806,6 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, bc *BlockChai
 			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
 			config.Param().CommitteeSize.MinShardCommitteeSize,
 		)
-		Logger.log.Critical("[config] 0")
 	}
 
 	beaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
@@ -825,9 +824,6 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, bc *BlockChai
 		beaconBestState.BestBlockHash,
 		beaconCommitteeStateV2,
 	)
-	shardCommonPoolStr, _ := incognitokey.CommitteeKeyListToString(shardCommonPool)
-	Logger.log.Critical("[config] shardCommonPoolStr:", shardCommonPoolStr)
-	Logger.log.Critical("[config] numberOfAssignedCandidate:", numberOfAssignedCandidate)
 	return beaconCommitteeEngine
 }
 
