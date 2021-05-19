@@ -228,8 +228,14 @@ func TestBlockChain_GetEpochByHeight(t *testing.T) {
 }
 
 func TestBlockChain_GetEpochNextHeight(t *testing.T) {
+
+	type param struct {
+		Epoch             uint64
+		EpochV2           uint64
+		EpochV2BreakPoint uint64
+	}
+
 	type fields struct {
-		config Config
 	}
 	type args struct {
 		beaconHeight uint64
@@ -240,74 +246,63 @@ func TestBlockChain_GetEpochNextHeight(t *testing.T) {
 		args   args
 		want   uint64
 		want1  bool
+		param  param
 	}{
 		{
 			name:   "< break point 1",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 299,
 			},
 			want:  3,
 			want1: false,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "< break point 2",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 2,
 			},
 			want:  1,
 			want1: false,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "< break point 3",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 1,
 			},
 			want:  1,
 			want1: false,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "< break point 4",
-			fields: fields{
-				/*config: Config{*/
-				//ChainParams: &Params{
-				//Epoch:             100,
-				//EpochV2:           350,
-				//EpochV2BreakPoint: 4,
-				//},
-				/*},*/
-			},
+			fields: fields{},
 			args: args{
 				beaconHeight: 100,
 			},
 			want:  2,
 			want1: true,
+			param: param{
+				Epoch:             100,
+				EpochV2:           350,
+				EpochV2BreakPoint: 4,
+			},
 		},
 		{
 			name:   "< break point 5",
