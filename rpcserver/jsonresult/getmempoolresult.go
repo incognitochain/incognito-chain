@@ -92,6 +92,8 @@ func NewGetMempoolInfoTx(tpKey common.Hash, tx metadata.Transaction) *GetMempool
 		TpKey:    tpKey.String(),
 	}
 	return result
+
+	return result
 }
 
 type GetRawMempoolResult struct {
