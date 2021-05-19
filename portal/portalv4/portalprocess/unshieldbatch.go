@@ -45,7 +45,7 @@ func buildUnshieldBatchingInst(
 	tokenID string,
 	unshieldIDs []string,
 	utxos []*statedb.UTXO,
-	networkFee map[uint64]uint,
+	networkFee uint,
 	beaconHeight uint64,
 	metaType int,
 	status string,
@@ -158,16 +158,13 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 			// update current portal state
 			// remove chosen waiting unshield requests from waiting list
 			// remove utxos
-			externalFees := map[uint64]uint{
-				beaconHeight + 1: uint(feeUnshield),
-			}
 			chosenUTXOs := bcTx.UTXOs
 			currentPortalStateV4.UpdatePortalStateAfterProcessBatchUnshieldRequest(
-				batchID, chosenUTXOs, externalFees, bcTx.UnshieldIDs, tokenID)
+				batchID, chosenUTXOs, beaconHeight+1, uint(feeUnshield), bcTx.UnshieldIDs, tokenID)
 
 			// build new instruction with new raw external tx
 			newInst := buildUnshieldBatchingInst(
-				batchID, hexRawExtTxStr, tokenID, bcTx.UnshieldIDs, chosenUTXOs, externalFees, beaconHeight+1,
+				batchID, hexRawExtTxStr, tokenID, bcTx.UnshieldIDs, chosenUTXOs, uint(feeUnshield), beaconHeight+1,
 				metadata.PortalV4UnshieldBatchingMeta, portalcommonv4.PortalV4RequestAcceptedChainStatus)
 			newInsts = append(newInsts, newInst)
 		}
@@ -200,13 +197,31 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 		return nil
 	}
 
+	// get portal token procesor
 	reqStatus := instructions[2]
 	if reqStatus == portalcommonv4.PortalV4RequestAcceptedChainStatus {
+		batchUnshieldStatus := metadata.PortalUnshieldRequestBatchStatus{
+			BatchID:       actionData.BatchID,
+			TokenID:       actionData.TokenID,
+			UnshieldIDs:   actionData.UnshieldIDs,
+			UTXOs:         actionData.UTXOs,
+			RawExternalTx: actionData.RawExternalTx,
+			NetworkFees: map[uint64]metadata.ExternalFeeInfo{
+				beaconHeight + 1: {
+					NetworkFee:    actionData.NetworkFee,
+					RBFReqIncTxID: "",
+				},
+			},
+			BeaconHeight: beaconHeight + 1,
+			Status:       portalcommonv4.PortalBatchUnshieldProcessingStatus,
+		}
+
+		batchUnshieldStatusBytes, _ := json.Marshal(batchUnshieldStatus)
 		// store status of batch unshield by batchID
-		err := statedb.StorePortalBatchUnshieldRequestStatus(
+		err = statedb.StorePortalBatchUnshieldRequestStatus(
 			stateDB,
 			actionData.BatchID,
-			[]byte(instructions[3]))
+			batchUnshieldStatusBytes)
 		if err != nil {
 			Logger.log.Errorf("[ProcessBatchUnshieldRequest] Error when storing status of batch unshield requests: %v\n", err)
 			return nil
@@ -215,7 +230,7 @@ func (p *PortalUnshieldBatchingProcessor) ProcessInsts(
 		// add new processed batch unshield request to batch unshield list
 		// remove waiting unshield request from waiting list
 		currentPortalStateV4.UpdatePortalStateAfterProcessBatchUnshieldRequest(
-			actionData.BatchID, actionData.UTXOs, actionData.NetworkFee, actionData.UnshieldIDs, actionData.TokenID)
+			actionData.BatchID, actionData.UTXOs, beaconHeight+1, actionData.NetworkFee, actionData.UnshieldIDs, actionData.TokenID)
 
 		for _, unshieldID := range actionData.UnshieldIDs {
 			// update status of unshield request that processed
@@ -271,7 +286,7 @@ func (p *PortalFeeReplacementRequestProcessor) PrepareDataForBlockProducer(state
 		return nil, err
 	}
 
-	var processedUnshieldRequestBatch metadata.PortalUnshieldRequestBatchContent
+	var processedUnshieldRequestBatch metadata.PortalUnshieldRequestBatchStatus
 	err = json.Unmarshal(unshieldBatchBytes, &processedUnshieldRequestBatch)
 	if err != nil {
 		Logger.log.Errorf("[ReplaceFeeRequest]: an error occurred while unmarshal processedUnshieldRequestBatch status: %+v", err)
@@ -382,7 +397,7 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 		Logger.log.Errorf("[ReplaceFeeRequest]: can not replace unshield batch with TokenID - %v, BatchID - %v.", tokenIDStr, meta.BatchID)
 		return [][]string{rejectInst}, nil
 	}
-	latestFee := unshieldBatch.GetExternalFees()[latestBeaconHeight]
+	latestFee := unshieldBatch.GetExternalFees()[latestBeaconHeight].NetworkFee
 
 	maxFeeTemp := latestFee * portalParams.MaxFeePercentageForEachStep
 	if maxFeeTemp < latestFee {
@@ -427,7 +442,7 @@ func (p *PortalFeeReplacementRequestProcessor) BuildNewInsts(
 
 	// update external fee for batch processed unshield requests
 	currentPortalV4State.AddExternalFeeForBatchProcessedUnshieldRequest(
-		unshieldBatch.GetBatchID(), tokenIDStr, meta.Fee, beaconHeight+1)
+		unshieldBatch.GetBatchID(), tokenIDStr, meta.Fee, beaconHeight+1, actionData.TxReqID.String())
 
 	return [][]string{newInst}, nil
 }
@@ -462,9 +477,23 @@ func (p *PortalFeeReplacementRequestProcessor) ProcessInsts(
 	if reqStatus == portalcommonv4.PortalV4RequestAcceptedChainStatus {
 		rbfStatus = portalcommonv4.PortalV4RequestAcceptedStatus
 
-		// update unshield batch
+		// update unshield batch status
+		newExternalFee := map[uint64]metadata.ExternalFeeInfo{
+			beaconHeight + 1: {
+				NetworkFee:    actionData.Fee,
+				RBFReqIncTxID: actionData.TxReqID.String(),
+			},
+		}
+		err = UpdateNewStatusBatchUnshield(actionData.BatchID, portalcommonv4.PortalBatchUnshieldProcessingStatus,
+			newExternalFee, stateDB)
+		if err != nil {
+			Logger.log.Errorf("[ReplaceFeeRequest]: Error when updating status of unshield batch: %+v\n", err)
+			return nil
+		}
+
+		// update unshield batch in portal state
 		currentPortalV4State.AddExternalFeeForBatchProcessedUnshieldRequest(
-			actionData.BatchID, actionData.TokenID, actionData.Fee, beaconHeight+1)
+			actionData.BatchID, actionData.TokenID, actionData.Fee, beaconHeight+1, actionData.TxReqID.String())
 	} else if reqStatus == portalcommonv4.PortalV4RequestRejectedChainStatus {
 		rbfStatus = portalcommonv4.PortalV4RequestRejectedStatus
 	}
@@ -532,7 +561,7 @@ func (p *PortalSubmitConfirmedTxProcessor) PrepareDataForBlockProducer(stateDB *
 		return nil, err
 	}
 
-	var processedUnshieldRequestBatch metadata.PortalUnshieldRequestBatchContent
+	var processedUnshieldRequestBatch metadata.PortalUnshieldRequestBatchStatus
 	err = json.Unmarshal(unshieldBatchBytes, &processedUnshieldRequestBatch)
 	if err != nil {
 		Logger.log.Errorf("[SubmitConfirmedRequest]: an error occurred while unmarshal processedUnshieldRequestBatch status: %+v", err)
@@ -728,6 +757,9 @@ func (p *PortalSubmitConfirmedTxProcessor) ProcessInsts(
 		if len(actionData.UTXOs) > 0 {
 			currentPortalV4State.AddUTXOs(actionData.UTXOs, actionData.TokenID)
 		}
+
+		// update status of batch unshield process
+		UpdateNewStatusBatchUnshield(actionData.BatchID, portalcommonv4.PortalBatchUnshieldCompletedStatus, nil, stateDB)
 
 		// update unshield list to completed
 		for _, unshieldID := range unshieldRequests {

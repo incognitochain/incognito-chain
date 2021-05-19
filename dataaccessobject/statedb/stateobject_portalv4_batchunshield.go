@@ -8,11 +8,16 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
+type ExternalFeeInfo struct {
+	NetworkFee    uint
+	RBFReqIncTxID string
+}
+
 type ProcessedUnshieldRequestBatch struct {
 	batchID      string
 	unshieldsID  []string
 	utxos        []*UTXO
-	externalFees map[uint64]uint // beaconHeight => fee
+	externalFees map[uint64]ExternalFeeInfo // beaconHeight => fee
 }
 
 func (us *ProcessedUnshieldRequestBatch) GetUTXOs() []*UTXO {
@@ -31,11 +36,11 @@ func (us *ProcessedUnshieldRequestBatch) SetUnshieldRequests(usRequests []string
 	us.unshieldsID = usRequests
 }
 
-func (us *ProcessedUnshieldRequestBatch) GetExternalFees() map[uint64]uint {
+func (us *ProcessedUnshieldRequestBatch) GetExternalFees() map[uint64]ExternalFeeInfo {
 	return us.externalFees
 }
 
-func (us *ProcessedUnshieldRequestBatch) SetExternalFees(externalFees map[uint64]uint) {
+func (us *ProcessedUnshieldRequestBatch) SetExternalFees(externalFees map[uint64]ExternalFeeInfo) {
 	us.externalFees = externalFees
 }
 
@@ -52,7 +57,7 @@ func (rq ProcessedUnshieldRequestBatch) MarshalJSON() ([]byte, error) {
 		BatchID      string
 		UnshieldsID  []string
 		UTXOs        []*UTXO
-		ExternalFees map[uint64]uint
+		ExternalFees map[uint64]ExternalFeeInfo
 	}{
 		BatchID:      rq.batchID,
 		UnshieldsID:  rq.unshieldsID,
@@ -70,7 +75,7 @@ func (rq *ProcessedUnshieldRequestBatch) UnmarshalJSON(data []byte) error {
 		BatchID      string
 		UnshieldsID  []string
 		UTXOs        []*UTXO
-		ExternalFees map[uint64]uint
+		ExternalFees map[uint64]ExternalFeeInfo
 	}{}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
@@ -87,7 +92,7 @@ func NewProcessedUnshieldRequestBatchWithValue(
 	batchID string,
 	unshieldsIDInput []string,
 	utxosInput []*UTXO,
-	externalFees map[uint64]uint) *ProcessedUnshieldRequestBatch {
+	externalFees map[uint64]ExternalFeeInfo) *ProcessedUnshieldRequestBatch {
 	return &ProcessedUnshieldRequestBatch{
 		batchID:      batchID,
 		unshieldsID:  unshieldsIDInput,

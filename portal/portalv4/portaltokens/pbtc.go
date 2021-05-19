@@ -612,3 +612,19 @@ func (p PortalBTCTokenProcessor) MatchUTXOsAndUnshieldIDs(
 
 	return mergedBatches
 }
+
+func (p PortalBTCTokenProcessor) GetTxHashFromRawTx(rawTx string) (string, error) {
+	// parse rawTx to get externalTxHash
+	hexRawTx, err := hex.DecodeString(rawTx)
+	if err != nil {
+		return "", err
+	}
+	buffer := bytes.NewReader(hexRawTx)
+	externalTx := wire.NewMsgTx(wire.TxVersion)
+	err = externalTx.Deserialize(buffer)
+	if err != nil {
+		return "", err
+	}
+
+	return externalTx.TxHash().String(), nil
+}

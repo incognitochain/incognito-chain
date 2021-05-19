@@ -2,6 +2,7 @@ package rpcservice
 
 import (
 	"encoding/json"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
@@ -39,14 +40,14 @@ func (blockService BlockService) GetPortalUnshieldingRequestStatus(unshieldID st
 	return &status, nil
 }
 
-func (blockService BlockService) GetPortalBatchUnshieldingRequestStatus(batchID string) (*metadata.PortalUnshieldRequestBatchContent, error) {
+func (blockService BlockService) GetPortalBatchUnshieldingRequestStatus(batchID string) (*metadata.PortalUnshieldRequestBatchStatus, error) {
 	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
 	data, err := statedb.GetPortalBatchUnshieldRequestStatus(stateDB, batchID)
 	if err != nil {
 		return nil, err
 	}
 
-	var status metadata.PortalUnshieldRequestBatchContent
+	var status metadata.PortalUnshieldRequestBatchStatus
 	err = json.Unmarshal(data, &status)
 	if err != nil {
 		return nil, err

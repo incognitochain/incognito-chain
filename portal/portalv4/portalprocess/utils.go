@@ -195,12 +195,20 @@ func (s *CurrentPortalStateV4) AddWaitingUnshieldRequest(
 }
 
 func (s *CurrentPortalStateV4) AddBatchProcessedUnshieldRequest(
-	batchID string, utxos []*statedb.UTXO, externalFees map[uint64]uint, unshieldIDs []string, tokenID string) {
+	batchID string, utxos []*statedb.UTXO, beaconHeight uint64, externalFee uint, unshieldIDs []string,
+	tokenID string) {
 	if s.ProcessedUnshieldRequests == nil {
 		s.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
 	}
 	if s.ProcessedUnshieldRequests[tokenID] == nil {
 		s.ProcessedUnshieldRequests[tokenID] = map[string]*statedb.ProcessedUnshieldRequestBatch{}
+	}
+
+	externalFees := map[uint64]statedb.ExternalFeeInfo{
+		beaconHeight: {
+			NetworkFee:    externalFee,
+			RBFReqIncTxID: "",
+		},
 	}
 
 	keyProcessedUnshieldRequest := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenID, batchID).String()
@@ -209,7 +217,8 @@ func (s *CurrentPortalStateV4) AddBatchProcessedUnshieldRequest(
 }
 
 func (s *CurrentPortalStateV4) UpdatePortalStateAfterProcessBatchUnshieldRequest(
-	batchID string, utxos []*statedb.UTXO, externalFees map[uint64]uint, unshieldIDs []string, tokenID string) {
+	batchID string, utxos []*statedb.UTXO, beaconHeight uint64, externalFee uint, unshieldIDs []string,
+	tokenID string) {
 	// remove unshieldIDs from WaitingUnshieldRequests
 	s.RemoveWaitingUnshieldReqs(unshieldIDs, tokenID)
 
@@ -217,7 +226,7 @@ func (s *CurrentPortalStateV4) UpdatePortalStateAfterProcessBatchUnshieldRequest
 	s.RemoveUTXOs(utxos, tokenID)
 
 	// add batch process to ProcessedUnshieldRequests
-	s.AddBatchProcessedUnshieldRequest(batchID, utxos, externalFees, unshieldIDs, tokenID)
+	s.AddBatchProcessedUnshieldRequest(batchID, utxos, beaconHeight, externalFee, unshieldIDs, tokenID)
 }
 
 func (s *CurrentPortalStateV4) RemoveUTXOs(utxos []*statedb.UTXO, tokenID string) {
@@ -239,7 +248,7 @@ func (s *CurrentPortalStateV4) RemoveWaitingUnshieldReqs(unshieldIDs []string, t
 }
 
 func (s *CurrentPortalStateV4) AddExternalFeeForBatchProcessedUnshieldRequest(
-	batchID string, tokenID string, externalFee uint, beaconHeight uint64) {
+	batchID string, tokenID string, externalFee uint, beaconHeight uint64, rbfReqIncTxID string) {
 	if s.ProcessedUnshieldRequests == nil {
 		s.ProcessedUnshieldRequests = map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{}
 	}
@@ -250,9 +259,12 @@ func (s *CurrentPortalStateV4) AddExternalFeeForBatchProcessedUnshieldRequest(
 	keyProcessedUnshieldRequest := statedb.GenerateProcessedUnshieldRequestBatchObjectKey(tokenID, batchID).String()
 	externalFees := s.ProcessedUnshieldRequests[tokenID][keyProcessedUnshieldRequest].GetExternalFees()
 	if externalFees == nil {
-		externalFees = map[uint64]uint{}
+		externalFees = map[uint64]statedb.ExternalFeeInfo{}
 	}
-	externalFees[beaconHeight] = externalFee
+	externalFees[beaconHeight] = statedb.ExternalFeeInfo{
+		NetworkFee:    externalFee,
+		RBFReqIncTxID: rbfReqIncTxID,
+	}
 	s.ProcessedUnshieldRequests[tokenID][keyProcessedUnshieldRequest].SetExternalFees(externalFees)
 }
 
@@ -262,7 +274,7 @@ func (s *CurrentPortalStateV4) RemoveBatchProcessedUnshieldRequest(tokenIDStr st
 }
 
 // get latest beaconheight
-func GetMaxKeyValue(input map[uint64]uint) (max uint64) {
+func GetMaxKeyValue(input map[uint64]statedb.ExternalFeeInfo) (max uint64) {
 	max = 0
 	for k := range input {
 		if k > max {
@@ -310,6 +322,48 @@ func UpdateNewStatusUnshieldRequest(unshieldID string, newStatus int, externalTx
 	err = statedb.StorePortalUnshieldRequestStatus(
 		stateDB,
 		unshieldID,
+		unshieldRequestNewStatusBytes)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateNewStatusBatchUnshield(
+	batchID string, newStatus byte,
+	newExternalFee map[uint64]metadata.ExternalFeeInfo, stateDB *statedb.StateDB) error {
+	// get unshield request by unshield ID
+	batchUnshieldStatusBytes, err := statedb.GetPortalBatchUnshieldRequestStatus(stateDB, batchID)
+	if err != nil {
+		return err
+	}
+	var batchUnshield metadata.PortalUnshieldRequestBatchStatus
+	err = json.Unmarshal(batchUnshieldStatusBytes, &batchUnshield)
+	if err != nil {
+		Logger.log.Errorf("Can not unmarshal instruction content %v - Error %v\n", batchUnshieldStatusBytes, err)
+		return err
+	}
+
+	updateExternalFees := batchUnshield.NetworkFees
+	for beaconHeight, externalFeeInfo := range newExternalFee {
+		updateExternalFees[beaconHeight] = externalFeeInfo
+	}
+
+	// update new status and store to db
+	unshieldRequestNewStatus := metadata.PortalUnshieldRequestBatchStatus{
+		BatchID:       batchID,
+		TokenID:       batchUnshield.TokenID,
+		UnshieldIDs:   batchUnshield.UnshieldIDs,
+		UTXOs:         batchUnshield.UTXOs,
+		RawExternalTx: batchUnshield.RawExternalTx,
+		NetworkFees:   updateExternalFees,
+		BeaconHeight:  batchUnshield.BeaconHeight,
+		Status:        newStatus,
+	}
+	unshieldRequestNewStatusBytes, _ := json.Marshal(unshieldRequestNewStatus)
+	err = statedb.StorePortalBatchUnshieldRequestStatus(
+		stateDB,
+		batchID,
 		unshieldRequestNewStatusBytes)
 	if err != nil {
 		return err

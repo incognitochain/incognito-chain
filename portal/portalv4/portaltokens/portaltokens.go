@@ -16,6 +16,7 @@ type PortalTokenProcessor interface {
 	GetMultipleTokenAmount() uint64
 	ConvertExternalToIncAmount(incAmt uint64) uint64
 	ConvertIncToExternalAmount(incAmt uint64) uint64
+	GetTxHashFromRawTx(rawTx string) (string, error)
 
 	ParseAndVerifyShieldProof(
 		proof string, bc metadata.ChainRetriever, expectedReceivedMultisigAddress string, chainCodeSeed string) (bool, []*statedb.UTXO, error)

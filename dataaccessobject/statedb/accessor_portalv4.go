@@ -157,6 +157,7 @@ func StoreProcessedBatchUnshieldRequests(
 	return nil
 }
 
+// ================= Batching Unshielding Request Status =================
 // Store and get the status of the Unshield Request by unshieldID
 func StorePortalBatchUnshieldRequestStatus(stateDB *StateDB, batchID string, statusContent []byte) error {
 	statusType := PortalBatchUnshieldRequestStatusPrefix()
@@ -177,7 +178,6 @@ func DeletePortalBatchUnshieldRequests(stateDB *StateDB, batchProcessedUnshieldR
 	return nil
 }
 
-// ================= Batching Unshielding Request Status =================
 func GetPortalBatchUnshieldRequestStatus(stateDB *StateDB, batchID string) ([]byte, error) {
 	statusType := PortalBatchUnshieldRequestStatusPrefix()
 	statusSuffix := []byte(batchID)
