@@ -49,6 +49,13 @@ func GetPortalParams() *PortalParams {
 	return p
 }
 
+//SetupPortalParam Do not use this function in development or production process
+// Only use for unit test
+func SetupPortalParam(newPortalParam *PortalParams) {
+	p = &PortalParams{}
+	*p = *newPortalParam
+}
+
 func SetupParam() {
 	p = new(PortalParams)
 	if config.Config().IsLocal {
