@@ -557,8 +557,8 @@ func PortalBatchUnshieldRequestStatusPrefix() []byte {
 
 // Portal v4 prefix hash of the key
 
-func GetPortalV4StatusPrefix() []byte {
-	h := common.HashH(portalV4StatusPrefix)
+func GetPortalV4StatusPrefix(statusType []byte) []byte {
+	h := common.HashH(append(portalV4StatusPrefix, statusType...))
 	return h[:][:prefixHashKeyLength]
 }
 

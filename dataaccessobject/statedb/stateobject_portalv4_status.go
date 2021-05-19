@@ -141,7 +141,7 @@ func newPortalV4StatusObjectWithValue(db *StateDB, key common.Hash, data interfa
 }
 
 func GeneratePortalV4StatusObjectKey(statusType []byte, statusSuffix []byte) common.Hash {
-	prefixHash := GetPortalV4StatusPrefix()
+	prefixHash := GetPortalV4StatusPrefix(statusType)
 	valueHash := common.HashH(append(statusType, statusSuffix...))
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
