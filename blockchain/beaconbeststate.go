@@ -764,6 +764,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, bc *BlockChai
 		shardSubstitute[byte(k)] = v
 	}
 	if bc.IsEqualToRandomTime(beaconBestState.BeaconHeight) {
+
 		var err error
 		var tempBeaconBlock = types.NewBeaconBlock()
 		var randomTimeBeaconHash = beaconBestState.BestBlockHash
@@ -824,8 +825,8 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, bc *BlockChai
 		beaconBestState.BestBlockHash,
 		beaconCommitteeStateV2,
 	)
-	nextEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
-	Logger.log.Critical("[config] nextEpochShardCandidateStr:", nextEpochShardCandidateStr)
+	shardCommonPoolStr, _ := incognitokey.CommitteeKeyListToString(shardCommonPool)
+	Logger.log.Critical("[config] shardCommonPoolStr:", shardCommonPoolStr)
 	Logger.log.Critical("[config] numberOfAssignedCandidate:", numberOfAssignedCandidate)
 	return beaconCommitteeEngine
 }
