@@ -18,9 +18,9 @@ type CurrentPortalStateV4 struct {
 	WaitingUnshieldRequests   map[string]map[string]*statedb.WaitingUnshieldRequest        // tokenID : hash(tokenID || unshieldID) : value
 	ProcessedUnshieldRequests map[string]map[string]*statedb.ProcessedUnshieldRequestBatch // tokenID : hash(tokenID || batchID) : value
 
-	deletedUTXOKeyHashes                 []common.Hash
-	deletedWaitingUnshieldReqKeyHashes   []common.Hash
-	deletedProcessedUnshieldReqKeyHashes []common.Hash
+	DeletedUTXOKeyHashes                 []common.Hash
+	DeletedWaitingUnshieldReqKeyHashes   []common.Hash
+	DeletedProcessedUnshieldReqKeyHashes []common.Hash
 }
 
 func (s *CurrentPortalStateV4) Copy() *CurrentPortalStateV4 {
@@ -44,9 +44,9 @@ func InitCurrentPortalStateV4FromDB(
 	var err error
 	if lastState != nil {
 		// reset temporary states
-		lastState.deletedUTXOKeyHashes = []common.Hash{}
-		lastState.deletedWaitingUnshieldReqKeyHashes = []common.Hash{}
-		lastState.deletedProcessedUnshieldReqKeyHashes = []common.Hash{}
+		lastState.DeletedUTXOKeyHashes = []common.Hash{}
+		lastState.DeletedWaitingUnshieldReqKeyHashes = []common.Hash{}
+		lastState.DeletedProcessedUnshieldReqKeyHashes = []common.Hash{}
 		return lastState, nil
 	}
 
@@ -83,9 +83,9 @@ func InitCurrentPortalStateV4FromDB(
 		WaitingUnshieldRequests:   waitingUnshieldRequests,
 		ProcessedUnshieldRequests: processedUnshieldRequestsBatch,
 
-		deletedUTXOKeyHashes:                 []common.Hash{},
-		deletedWaitingUnshieldReqKeyHashes:   []common.Hash{},
-		deletedProcessedUnshieldReqKeyHashes: []common.Hash{},
+		DeletedUTXOKeyHashes:                 []common.Hash{},
+		DeletedWaitingUnshieldReqKeyHashes:   []common.Hash{},
+		DeletedProcessedUnshieldReqKeyHashes: []common.Hash{},
 	}, nil
 }
 
@@ -119,15 +119,15 @@ func StorePortalV4StateToDB(
 		}
 	}
 
-	err = statedb.DeleteUTXOs(stateDB, currentPortalState.deletedUTXOKeyHashes)
+	err = statedb.DeleteUTXOs(stateDB, currentPortalState.DeletedUTXOKeyHashes)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeleteWaitingUnshieldRequests(stateDB, currentPortalState.deletedWaitingUnshieldReqKeyHashes)
+	err = statedb.DeleteWaitingUnshieldRequests(stateDB, currentPortalState.DeletedWaitingUnshieldReqKeyHashes)
 	if err != nil {
 		return err
 	}
-	err = statedb.DeletePortalBatchUnshieldRequests(stateDB, currentPortalState.deletedProcessedUnshieldReqKeyHashes)
+	err = statedb.DeletePortalBatchUnshieldRequests(stateDB, currentPortalState.DeletedProcessedUnshieldReqKeyHashes)
 	if err != nil {
 		return err
 	}
@@ -225,7 +225,7 @@ func (s *CurrentPortalStateV4) RemoveUTXOs(utxos []*statedb.UTXO, tokenID string
 	for _, u := range utxos {
 		utxoKeyHash := statedb.GenerateUTXOObjectKey(tokenID, u.GetWalletAddress(), u.GetTxHash(), u.GetOutputIndex())
 		delete(s.UTXOs[tokenID], utxoKeyHash.String())
-		s.deletedUTXOKeyHashes = append(s.deletedUTXOKeyHashes, utxoKeyHash)
+		s.DeletedUTXOKeyHashes = append(s.DeletedUTXOKeyHashes, utxoKeyHash)
 	}
 }
 
@@ -234,7 +234,7 @@ func (s *CurrentPortalStateV4) RemoveWaitingUnshieldReqs(unshieldIDs []string, t
 	for _, unshieldID := range unshieldIDs {
 		keyWaitingUnshieldRequest := statedb.GenerateWaitingUnshieldRequestObjectKey(tokenID, unshieldID)
 		delete(s.WaitingUnshieldRequests[tokenID], keyWaitingUnshieldRequest.String())
-		s.deletedWaitingUnshieldReqKeyHashes = append(s.deletedWaitingUnshieldReqKeyHashes, keyWaitingUnshieldRequest)
+		s.DeletedWaitingUnshieldReqKeyHashes = append(s.DeletedWaitingUnshieldReqKeyHashes, keyWaitingUnshieldRequest)
 	}
 }
 
@@ -258,7 +258,7 @@ func (s *CurrentPortalStateV4) AddExternalFeeForBatchProcessedUnshieldRequest(
 
 func (s *CurrentPortalStateV4) RemoveBatchProcessedUnshieldRequest(tokenIDStr string, batchKey common.Hash) {
 	delete(s.ProcessedUnshieldRequests[tokenIDStr], batchKey.String())
-	s.deletedProcessedUnshieldReqKeyHashes = append(s.deletedProcessedUnshieldReqKeyHashes, batchKey)
+	s.DeletedProcessedUnshieldReqKeyHashes = append(s.DeletedProcessedUnshieldReqKeyHashes, batchKey)
 }
 
 // get latest beaconheight

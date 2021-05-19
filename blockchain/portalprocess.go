@@ -84,10 +84,13 @@ func getDiffPortalStateV4(
 	}
 
 	diffState = &portalprocessv4.CurrentPortalStateV4{
-		UTXOs:                     map[string]map[string]*statedb.UTXO{},
-		ShieldingExternalTx:       map[string]map[string]*statedb.ShieldingRequest{},
-		WaitingUnshieldRequests:   map[string]map[string]*statedb.WaitingUnshieldRequest{},
-		ProcessedUnshieldRequests: map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{},
+		UTXOs:                                map[string]map[string]*statedb.UTXO{},
+		ShieldingExternalTx:                  map[string]map[string]*statedb.ShieldingRequest{},
+		WaitingUnshieldRequests:              map[string]map[string]*statedb.WaitingUnshieldRequest{},
+		ProcessedUnshieldRequests:            map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{},
+		DeletedUTXOKeyHashes:                 current.DeletedUTXOKeyHashes,
+		DeletedWaitingUnshieldReqKeyHashes:   current.DeletedWaitingUnshieldReqKeyHashes,
+		DeletedProcessedUnshieldReqKeyHashes: current.DeletedProcessedUnshieldReqKeyHashes,
 	}
 
 	for k, v := range current.UTXOs {

@@ -881,7 +881,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	// optimize storing PortalV4 state
 	if newBestState.portalStateV4 != nil {
 		if !reflect.DeepEqual(curView.portalStateV4, newBestState.portalStateV4) {
-			//check updated field in portalStateV4 and store these field into statedb
+			// check updated field in portalStateV4 and store these field into statedb
 			diffState := getDiffPortalStateV4(curView.portalStateV4, newBestState.portalStateV4)
 			err = portalprocessv4.StorePortalV4StateToDB(newBestState.featureStateDB, diffState)
 			if err != nil {
