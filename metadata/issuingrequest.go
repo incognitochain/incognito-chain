@@ -103,23 +103,41 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 	)
 }
 
+func NewIssuingRequestFromMapV2(data map[string]interface{}) (Metadata, error) {
+	tokenID, err := common.Hash{}.NewHashFromStr(data["TokenID"].(string))
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenID incorrect"))
+	}
+
+	tokenName, ok := data["TokenName"].(string)
+	if !ok {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenName incorrect"))
+	}
+
+	depositedAmt, err := common.AssertAndConvertStrToNumber(data["DepositedAmount"])
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("DepositedAmount incorrect"))
+	}
+
+	keyWallet, err := wallet.Base58CheckDeserialize(data["ReceiveAddress"].(string))
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ReceiveAddress incorrect"))
+	}
+
+	return NewIssuingRequest(
+		keyWallet.KeySet.PaymentAddress,
+		depositedAmt,
+		*tokenID,
+		tokenName,
+		IssuingRequestMeta,
+	)
+}
+
 func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	shardBlockBeaconHeight := shardViewRetriever.GetBeaconHeight()
 	keySet, err := wallet.Base58CheckDeserialize(chainRetriever.GetCentralizedWebsitePaymentAddress(shardBlockBeaconHeight))
 	if err != nil || !bytes.Equal(tx.GetSigPubKey(), keySet.KeySet.PaymentAddress.Pk) {
 		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("the issuance request must be called by centralized website"))
-	}
-
-	// check this is a normal pToken
-	if statedb.PrivacyTokenIDExisted(transactionStateDB, iReq.TokenID) {
-		isBridgeToken, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), iReq.TokenID, true)
-		if !isBridgeToken {
-			if err != nil {
-				return false, NewMetadataTxError(InvalidMeta, err)
-			} else {
-				return false, NewMetadataTxError(InvalidMeta, errors.New("token is invalid"))
-			}
-		}
 	}
 	return true, nil
 }
@@ -147,6 +165,7 @@ func (iReq IssuingRequest) ValidateMetadataByItself() bool {
 func (iReq IssuingRequest) Hash() *common.Hash {
 	record := iReq.ReceiverAddress.String()
 	record += iReq.TokenID.String()
+	// TODO: @hung change to record += fmt.Sprint(iReq.DepositedAmount)
 	record += string(iReq.DepositedAmount)
 	record += iReq.TokenName
 	record += iReq.MetadataBase.Hash().String()
@@ -156,7 +175,7 @@ func (iReq IssuingRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (iReq *IssuingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (iReq *IssuingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	txReqID := *(tx.Hash())
 	actionContent := map[string]interface{}{
 		"meta":    *iReq,

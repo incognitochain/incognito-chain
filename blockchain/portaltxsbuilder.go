@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -78,7 +79,7 @@ func (curView *ShardBestState) buildPortalRejectedTopUpWaitingPortingTx(
 	}
 
 	meta := metadata.NewPortalTopUpWaitingPortingResponse(
-		common.PortalLiquidationCustodianDepositRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		topUpInfo.TxReqID,
 		metadata.PortalTopUpWaitingPortingResponseMeta,
 	)
@@ -124,11 +125,11 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
 	}
 
 	meta := metadata.NewPortalLiquidationCustodianDepositResponse(
-		common.PortalLiquidationCustodianDepositRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		refundDeposit.TxReqID,
 		refundDeposit.IncogAddressStr,
 		refundDeposit.DepositedAmount,
-		metadata.PortalLiquidationCustodianDepositResponseMeta,
+		metadata.PortalCustodianTopupResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(refundDeposit.IncogAddressStr)
@@ -174,11 +175,11 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositRejectV2(
 	}
 
 	meta := metadata.NewPortalLiquidationCustodianDepositResponseV2(
-		common.PortalLiquidationCustodianDepositRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		refundDeposit.TxReqID,
 		refundDeposit.IncogAddressStr,
 		refundDeposit.DepositedAmount,
-		metadata.PortalLiquidationCustodianDepositResponseMetaV2,
+		metadata.PortalCustodianTopupResponseMetaV2,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(refundDeposit.IncogAddressStr)
@@ -308,7 +309,7 @@ func (curView *ShardBestState) buildPortalCustodianWithdrawRequest(
 	}
 
 	meta := metadata.NewPortalCustodianWithdrawResponse(
-		common.PortalCustodianWithdrawRequestAcceptedStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 		custodianWithdrawRequest.TxReqID,
 		custodianWithdrawRequest.PaymentAddress,
 		custodianWithdrawRequest.Amount,
@@ -360,13 +361,13 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTx(
 	}
 
 	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
-		common.PortalRedeemLiquidateExchangeRatesSuccessChainStatus,
+		pCommon.PortalProducerInstSuccessChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
 		redeemReqContent.TotalPTokenReceived,
 		redeemReqContent.TokenID,
-		metadata.PortalRedeemLiquidateExchangeRatesResponseMeta,
+		metadata.PortalRedeemFromLiquidationPoolResponseMeta,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
@@ -377,6 +378,64 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTx(
 
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 	receiveAmt := redeemReqContent.TotalPTokenReceived
+
+	// the returned currency is PRV
+	resTx := new(transaction.Tx)
+	err = resTx.InitTxSalary(
+		receiveAmt,
+		&receiverAddr,
+		producerPrivateKey,
+		curView.GetCopiedTransactionStateDB(),
+		meta,
+	)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing custodian withdraw  (normal) tx: %+v", err)
+		return nil, nil
+	}
+
+	return resTx, nil
+}
+
+func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTxV3(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Errorf("[Shard buildPortalRedeemLiquidateExchangeRatesRequestTxV3] Starting...")
+	contentBytes := []byte(contentStr)
+	var redeemReqContent metadata.PortalRedeemFromLiquidationPoolContentV3
+	err := json.Unmarshal(contentBytes, &redeemReqContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while unmarshaling portal redeem liquidate exchange rates content: %+v", err)
+		return nil, nil
+	}
+	if redeemReqContent.ShardID != shardID {
+		Logger.log.Errorf("ERROR: ShardID unexpected expect %v, but got %+v", shardID, redeemReqContent.ShardID)
+		return nil, nil
+	}
+	// skip instructions with MintedPRVCollateral = 0
+	if redeemReqContent.MintedPRVCollateral == 0 {
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalRedeemFromLiquidationPoolResponseV3(
+		pCommon.PortalProducerInstSuccessChainStatus,
+		redeemReqContent.TxReqID,
+		redeemReqContent.RedeemerIncAddressStr,
+		redeemReqContent.RedeemAmount,
+		redeemReqContent.MintedPRVCollateral,
+		redeemReqContent.TokenID,
+		metadata.PortalRedeemFromLiquidationPoolResponseMetaV3,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occurred while deserializing custodian address string: %+v", err)
+		return nil, nil
+	}
+
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+	receiveAmt := redeemReqContent.MintedPRVCollateral
 
 	// the returned currency is PRV
 	resTx := new(transaction.Tx)
@@ -495,6 +554,10 @@ func (curView *ShardBestState) buildPortalLiquidateCustodianResponseTx(
 	}
 	if liqCustodian.ShardID != shardID {
 		Logger.log.Errorf("ERROR: ShardID is invalid: liqCustodian.ShardID %v - shardID %v", liqCustodian.ShardID, shardID)
+		return nil, nil
+	}
+
+	if liqCustodian.LiquidatedCollateralAmount == 0 {
 		return nil, nil
 	}
 
@@ -646,7 +709,7 @@ func (curView *ShardBestState) buildPortalRefundPortingFeeTx(
 	}
 
 	meta := metadata.NewPortalFeeRefundResponse(
-		common.PortalPortingRequestRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		portalPortingRequest.TxReqID,
 		metadata.PortalPortingResponseMeta,
 	)
@@ -697,13 +760,97 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 	}
 
 	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
-		common.PortalRedeemLiquidateExchangeRatesRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
 		redeemReqContent.TotalPTokenReceived,
 		redeemReqContent.TokenID,
-		metadata.PortalRedeemLiquidateExchangeRatesResponseMeta,
+		metadata.PortalRedeemFromLiquidationPoolResponseMeta,
+	)
+
+	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while deserializing requester address string: %+v", err)
+		return nil, nil
+	}
+	receiverAddr := keyWallet.KeySet.PaymentAddress
+	receiveAmt := redeemReqContent.RedeemAmount
+	tokenID, _ := new(common.Hash).NewHashFromStr(redeemReqContent.TokenID)
+
+	// in case the returned currency is privacy custom token
+	refundedPTokenPaymentInfo := &privacy.PaymentInfo{
+		Amount:         receiveAmt,
+		PaymentAddress: receiverAddr,
+	}
+	var propertyID [common.HashSize]byte
+	copy(propertyID[:], tokenID[:])
+	propID := common.Hash(propertyID)
+	tokenParams := &transaction.CustomTokenPrivacyParamTx{
+		PropertyID:  propID.String(),
+		Amount:      receiveAmt,
+		TokenTxType: transaction.CustomTokenInit,
+		Receiver:    []*privacy.PaymentInfo{refundedPTokenPaymentInfo},
+		TokenInput:  []*privacy.InputCoin{},
+		Mintable:    true,
+	}
+	resTx := &transaction.TxCustomTokenPrivacy{}
+	txStateDB := curView.GetCopiedTransactionStateDB()
+	featureStateDB := baeconState.GetBeaconFeatureStateDB()
+	initErr := resTx.Init(
+		transaction.NewTxPrivacyTokenInitParams(
+			producerPrivateKey,
+			[]*privacy.PaymentInfo{},
+			nil,
+			0,
+			tokenParams,
+			txStateDB,
+			meta,
+			false,
+			false,
+			shardID,
+			nil,
+			featureStateDB,
+		),
+	)
+	if initErr != nil {
+		Logger.log.Errorf("ERROR: an error occured while initializing redeem request response tx: %+v", initErr)
+		return nil, nil
+	}
+
+	Logger.log.Info("[Shard buildPortalRefundRedeemFromLiquidationTx] Finished...")
+	return resTx, nil
+}
+
+// buildPortalRefundRedeemFromLiquidationTx builds response tx for user request redeem from liquidation pool tx with status "rejected"
+// mints ptoken to return to user (ptoken that user burned)
+func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTxV3(
+	baeconState *BeaconBestState,
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+) (metadata.Transaction, error) {
+	Logger.log.Errorf("[Shard buildPortalRefundRedeemFromLiquidationTx] Starting...")
+	contentBytes := []byte(contentStr)
+	var redeemReqContent metadata.PortalRedeemFromLiquidationPoolContentV3
+	err := json.Unmarshal(contentBytes, &redeemReqContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while unmarshaling portal redeem request content: %+v", err)
+		return nil, nil
+	}
+	if redeemReqContent.ShardID != shardID {
+		Logger.log.Errorf("ERROR: unexpected ShardID, expect %v, but got %+v", shardID, redeemReqContent.ShardID)
+		return nil, nil
+	}
+
+	meta := metadata.NewPortalRedeemFromLiquidationPoolResponseV3(
+		pCommon.PortalRequestRejectedChainStatus,
+		redeemReqContent.TxReqID,
+		redeemReqContent.RedeemerIncAddressStr,
+		redeemReqContent.RedeemAmount,
+		redeemReqContent.MintedPRVCollateral,
+		redeemReqContent.TokenID,
+		metadata.PortalRedeemFromLiquidationPoolResponseMetaV3,
 	)
 
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReqContent.RedeemerIncAddressStr)

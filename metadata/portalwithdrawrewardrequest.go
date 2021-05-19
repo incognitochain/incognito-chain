@@ -20,7 +20,6 @@ type PortalRequestWithdrawReward struct {
 }
 
 // PortalRequestWithdrawRewardAction - shard validator creates instruction that contain this action content
-// it will be append to ShardToBeaconBlock
 type PortalRequestWithdrawRewardAction struct {
 	Meta    PortalRequestWithdrawReward
 	TxReqID common.Hash
@@ -106,7 +105,7 @@ func (meta PortalRequestWithdrawReward) Hash() *common.Hash {
 	return &hash
 }
 
-func (meta *PortalRequestWithdrawReward) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (meta *PortalRequestWithdrawReward) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalRequestWithdrawRewardAction{
 		Meta:    *meta,
 		TxReqID: *tx.Hash(),

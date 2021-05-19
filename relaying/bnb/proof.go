@@ -10,10 +10,10 @@ import (
 	"github.com/tendermint/tendermint/types"
 )
 
-func getProofByTxHash(txHashStr string, url string) (*types.TxProof, *BNBRelayingError) {
+func getProofByTxHash(txHashStr string, url string) (*types.TxProof, int64, *BNBRelayingError) {
 	txHash, err := hex.DecodeString(txHashStr)
 	if err != nil {
-		return nil, NewBNBRelayingError(UnexpectedErr, err)
+		return nil, 0, NewBNBRelayingError(UnexpectedErr, err)
 	}
 
 	client := client.NewHTTP(url, "/websocket")
@@ -25,7 +25,8 @@ func getProofByTxHash(txHashStr string, url string) (*types.TxProof, *BNBRelayin
 	tx, err := client.Tx(txHash, true)
 	//fmt.Printf("tx: %+v\n", tx)
 
-	return &tx.Proof, nil
+
+	return &tx.Proof, tx.Height, nil
 }
 
 func getTxsInBlockHeight(blockHeight int64, url string) (*types.Txs, *BNBRelayingError) {
@@ -101,4 +102,42 @@ func ParseTxFromData(data []byte) (*bnbtx.StdTx, *BNBRelayingError) {
 	}
 	stdTx := tx.(bnbtx.StdTx)
 	return &stdTx, nil
+}
+
+func BuildProof(txIndex int, blockHeight int64, url string) (string, error) {
+	bnbProof := new(BNBProof)
+	err := bnbProof.Build(txIndex, blockHeight, url)
+	if err != nil {
+		return "", err
+	}
+
+	bnbProofBytes, err2 := json.Marshal(bnbProof)
+	if err2 != nil {
+		return "", err2
+	}
+
+	bnbProofStr := base64.StdEncoding.EncodeToString(bnbProofBytes)
+
+	return bnbProofStr, nil
+}
+
+
+func BuildProofFromTxID(txID string, url string) (string, error) {
+	txProof, blockHeight, err := getProofByTxHash(txID, url)
+	if err != nil {
+		return "", err
+	}
+
+	bnbProof := BNBProof{
+		Proof:       txProof,
+		BlockHeight: blockHeight,
+	}
+	bnbProofBytes, err2 := json.Marshal(bnbProof)
+	if err2 != nil {
+		return "", err2
+	}
+
+	bnbProofStr := base64.StdEncoding.EncodeToString(bnbProofBytes)
+
+	return bnbProofStr, nil
 }

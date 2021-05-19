@@ -23,7 +23,6 @@ type PortalRequestPTokens struct {
 }
 
 // PortalRequestPTokensAction - shard validator creates instruction that contain this action content
-// it will be append to ShardToBeaconBlock
 type PortalRequestPTokensAction struct {
 	Meta    PortalRequestPTokens
 	TxReqID common.Hash
@@ -85,11 +84,6 @@ func (reqPToken PortalRequestPTokens) ValidateTxWithBlockChain(
 }
 
 func (reqPToken PortalRequestPTokens) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	//if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-	//	return true, true, nil
-	//}
-
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(reqPToken.IncogAddressStr)
 	if err != nil {
@@ -114,7 +108,7 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(chainRetriever ChainRet
 	}
 
 	// validate tokenID and porting proof
-	if !common.IsPortalToken(reqPToken.TokenID) {
+	if !chainRetriever.IsPortalToken(beaconHeight, reqPToken.TokenID) {
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("TokenID is not supported currently on Portal"))
 	}
 
@@ -137,7 +131,7 @@ func (reqPToken PortalRequestPTokens) Hash() *common.Hash {
 	return &hash
 }
 
-func (reqPToken *PortalRequestPTokens) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (reqPToken *PortalRequestPTokens) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalRequestPTokensAction{
 		Meta:    *reqPToken,
 		TxReqID: *tx.Hash(),

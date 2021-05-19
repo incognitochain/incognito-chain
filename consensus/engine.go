@@ -2,13 +2,15 @@ package consensus
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus/blsbft"
 	blsbft2 "github.com/incognitochain/incognito-chain/consensus/blsbftv2"
+	blsbft3 "github.com/incognitochain/incognito-chain/consensus/blsbftv3"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -39,7 +41,11 @@ func (engine *Engine) GetUserLayer() (string, int) {
 }
 
 func (s *Engine) GetUserRole() (string, string, int) {
-	return s.curringMiningState.layer, s.curringMiningState.role, s.curringMiningState.chainID
+	layer := s.curringMiningState.layer
+	if s.curringMiningState.role == common.WaitingRole {
+		layer = "shard"
+	}
+	return layer, s.curringMiningState.role, s.curringMiningState.chainID
 }
 
 func (engine *Engine) IsOngoing(chainName string) bool {
@@ -68,14 +74,15 @@ func (s *Engine) WatchCommitteeChange() {
 	//extract role, layer, chainID
 	role, chainID := s.config.Node.GetUserMiningState()
 	if s.curringMiningState.role != role || s.curringMiningState.chainID != chainID {
-		Logger.Log.Infof("Node state role: %v chainID: %v", role, chainID)
+		Logger.Log.Infof("Node state role: %v, current: %v; chainID: %v, current %v", role, s.curringMiningState.role, chainID, s.curringMiningState.chainID)
+		s.NotifyRoleDetail(s.curringMiningState.chainID, chainID, s.curringMiningState.role, role)
 	}
 
 	s.curringMiningState.chainID = chainID
 	s.curringMiningState.role = role
 
 	if chainID == -2 {
-		s.curringMiningState.role = ""
+		s.curringMiningState.role = role
 		s.curringMiningState.layer = ""
 		s.NotifyBeaconRole(false)
 		s.NotifyShardRole(-2)
@@ -99,6 +106,7 @@ func (s *Engine) WatchCommitteeChange() {
 
 	monitor.SetGlobalParam("Role", s.curringMiningState.role)
 	monitor.SetGlobalParam("Layer", s.curringMiningState.layer)
+	monitor.SetGlobalParam("ShardID", s.curringMiningState.chainID)
 
 	var miningProcess ConsensusInterface = nil
 	//TODO: optimize - if in pending start to listen propose block, but not vote
@@ -124,6 +132,12 @@ func (s *Engine) WatchCommitteeChange() {
 			}
 			if s.version == 2 {
 				if _, ok := s.BFTProcess[chainID].(*blsbft2.BLSBFT_V2); !ok {
+					s.BFTProcess[chainID].Stop()
+					s.initProcess(chainID, chainName)
+				}
+			}
+			if s.version == 3 {
+				if _, ok := s.BFTProcess[chainID].(*blsbft3.BLSBFT_V3); !ok {
 					s.BFTProcess[chainID].Stop()
 					s.initProcess(chainID, chainName)
 				}
@@ -157,29 +171,62 @@ func NewConsensusEngine() *Engine {
 func (engine *Engine) initProcess(chainID int, chainName string) {
 	if engine.version == 1 {
 		if chainID == -1 {
-			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
+			engine.BFTProcess[chainID] = blsbft.NewInstance(
+				engine.config.Blockchain.BeaconChain,
+				chainName, chainID, engine.config.Node, Logger.Log)
 		} else {
-			engine.BFTProcess[chainID] = blsbft.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
+			engine.BFTProcess[chainID] = blsbft.NewInstance(
+				engine.config.Blockchain.ShardChain[chainID],
+				chainName, chainID, engine.config.Node, Logger.Log)
 		}
-	} else {
+	}
+	if engine.version == 2 {
 		if chainID == -1 {
-			engine.BFTProcess[chainID] = blsbft2.NewInstance(engine.config.Blockchain.BeaconChain, chainName, chainID, engine.config.Node, Logger.Log)
+			engine.BFTProcess[chainID] = blsbft2.NewInstance(
+				engine.config.Blockchain.BeaconChain,
+				chainName, chainID,
+				engine.config.Node, Logger.Log)
 		} else {
-			engine.BFTProcess[chainID] = blsbft2.NewInstance(engine.config.Blockchain.ShardChain[chainID], chainName, chainID, engine.config.Node, Logger.Log)
+			engine.BFTProcess[chainID] = blsbft2.NewInstance(
+				engine.config.Blockchain.ShardChain[chainID],
+				chainName, chainID,
+				engine.config.Node, Logger.Log)
+		}
+	}
+	if engine.version == 3 {
+		if chainID == -1 {
+			engine.BFTProcess[chainID] = blsbft3.NewInstance(
+				engine.config.Blockchain.BeaconChain,
+				engine.config.Blockchain.BeaconChain,
+				chainName, chainID,
+				engine.config.Node, Logger.Log)
+		} else {
+			engine.BFTProcess[chainID] = blsbft3.NewInstance(
+				engine.config.Blockchain.ShardChain[chainID],
+				engine.config.Blockchain.BeaconChain,
+				chainName, chainID,
+				engine.config.Node, Logger.Log)
 		}
 	}
 }
 
 func (engine *Engine) updateVersion(chainID int) {
 	chainEpoch := uint64(1)
+	chainHeight := uint64(1)
 	if chainID == -1 {
 		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
+		chainHeight = engine.config.Blockchain.BeaconChain.GetBestViewHeight()
 	} else {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
+		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestViewHeight()
 	}
 
 	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
 		engine.version = 2
+	}
+
+	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.StakingFlowV2Height {
+		engine.version = 3
 	}
 }
 
@@ -232,4 +279,35 @@ func (engine *Engine) NotifyBeaconRole(beaconRole bool) {
 }
 func (engine *Engine) NotifyShardRole(shardRole int) {
 	engine.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardRoleTopic, shardRole))
+}
+
+func (engine *Engine) NotifyRoleDetail(curCID, newCID int, curRole, newRole string) {
+	if curCID != newCID {
+		if curRole == common.CommitteeRole {
+			engine.config.PubSubManager.PublishMessage(
+				pubsub.NewMessage(pubsub.NodeRoleDetailTopic, &pubsub.NodeRole{
+					CID:  curCID,
+					Role: common.WaitingRole,
+				}),
+			)
+		}
+		if newRole == common.CommitteeRole {
+			engine.config.PubSubManager.PublishMessage(
+				pubsub.NewMessage(pubsub.NodeRoleDetailTopic, &pubsub.NodeRole{
+					CID:  newCID,
+					Role: newRole,
+				}),
+			)
+		}
+	} else {
+		if curRole == newRole {
+			return
+		}
+		engine.config.PubSubManager.PublishMessage(
+			pubsub.NewMessage(pubsub.NodeRoleDetailTopic, &pubsub.NodeRole{
+				CID:  newCID,
+				Role: newRole,
+			}),
+		)
+	}
 }

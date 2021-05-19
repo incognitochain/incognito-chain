@@ -63,7 +63,7 @@ func init() {
 	//}
 
 	go func() {
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(40 * time.Second)
 		idle0, total0 := getCPUSample()
 		var m runtime.MemStats
 		for _ = range ticker.C {
@@ -77,45 +77,6 @@ func init() {
 			totalTicks := float64(total1 - total0)
 			cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
 			runtime.ReadMemStats(&m)
-			bheight := blockchainObj.GetBeaconBestState().BeaconHeight
-			bhash := blockchainObj.GetBeaconBestState().BestBlockHash
-
-			//beaconValidator := []string{}
-			//for _, v := range blockchain.GetBeaconBestState().GetBeaconCommittee() {
-			//	beaconValidator = append(beaconValidator, v.GetMiningKeyBase58("bls"))
-			//}
-			//l.Add("beaconValidator", beaconValidator)
-			//
-			//waitingCandidateCurrentNumber := make([]string, len(blockchain.GetBeaconBestState().CandidateShardWaitingForCurrentRandom))
-			//for _, v := range blockchain.GetBeaconBestState().CandidateShardWaitingForCurrentRandom {
-			//	waitingCandidateCurrentNumber = append(waitingCandidateCurrentNumber, v.GetMiningKeyBase58("bls"))
-			//}
-			//l.Add("waitingShardCandidateCurrentNumber  ", waitingCandidateCurrentNumber)
-			//
-			//waitingCandidateNextNumber := make([]string, len(blockchain.GetBeaconBestState().CandidateShardWaitingForNextRandom))
-			//for _, v := range blockchain.GetBeaconBestState().CandidateShardWaitingForNextRandom {
-			//	waitingCandidateNextNumber = append(waitingCandidateNextNumber, v.GetMiningKeyBase58("bls"))
-			//}
-			//l.Add("waitingShardCandidateNextNumber", waitingCandidateNextNumber)
-			//pendingShardValidator := map[byte][]string{}
-			//shardValidator := map[byte][]string{}
-
-			for i := 0; i < blockchainObj.GetBeaconBestState().ActiveShards; i++ {
-				//for _, v := range blockchain.GetBestStateShard(byte(i)).ShardCommittee {
-				//	shardValidator[byte(i)] = append(shardValidator[byte(i)], v.GetMiningKeyBase58("bls"))
-				//}
-				//l.Add("shardValidator", shardValidator)
-				//
-				//for _, v := range blockchain.GetBestStateShard(byte(i)).ShardPendingValidator {
-				//	pendingShardValidator[byte(i)] = append(pendingShardValidator[byte(i)], v.GetMiningKeyBase58("bls"))
-				//
-				//}
-				//l.Add("pendingShardValidator", pendingShardValidator)
-
-				shash := blockchainObj.GetBestStateShard(byte(i)).BestBlockHash
-				sheight := blockchainObj.GetBestStateShard(byte(i)).ShardHeight
-				l.Add(fmt.Sprintf("Shard%v", i), fmt.Sprintf("%v:%v", sheight, shash.String()))
-			}
 
 			//disk usage
 			fs := syscall.Statfs_t{}
@@ -126,7 +87,7 @@ func init() {
 				Used := All - Free
 				l.Add("DISK_USAGE", fmt.Sprintf("%.2f", float64(Used*100)/float64(All)))
 			}
-			l.Add("CPU_USAGE", fmt.Sprintf("%.2f", cpuUsage), "MEM_USAGE", m.Sys>>20, "Beacon", fmt.Sprintf("%v:%v", bheight, bhash.String()))
+			l.Add("CPU_USAGE", fmt.Sprintf("%.2f", cpuUsage), "MEM_USAGE", m.Sys>>20)
 			idle0, total0 = getCPUSample()
 			l.Write()
 		}
@@ -180,21 +141,29 @@ func (s *logKV) Write() {
 	s.param["Time"] = fmt.Sprintf("%s", time.Now().Format(time.RFC3339))
 	b, _ := json.Marshal(s.param)
 
+	if v, ok := s.param["MINING_PUBKEY"]; !ok || v == "" {
+		return
+	}
 	//io.Copy(monitorFile, bytes.NewReader(b))
 	//io.Copy(monitorFile, bytes.NewReader([]byte("\n")))
 
 	go func() {
-		req, err := http.NewRequest(http.MethodPost, "http://51.91.220.58:33333", bytes.NewBuffer(b))
-		req.Header.Set("Content-Type", "application/json")
-		if err != nil {
-			metrics.IncLogger.Log.Debug("Create Request failed with err: ", err)
-			return
+
+		monitorEP := os.Getenv("MONITOR")
+		if monitorEP != "" {
+			req, err := http.NewRequest(http.MethodPost, monitorEP, bytes.NewBuffer(b))
+			req.Header.Set("Content-Type", "application/json")
+			if err != nil {
+				metrics.IncLogger.Log.Debug("Create Request failed with err: ", err)
+				return
+			}
+			ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
+			defer cancel()
+			req = req.WithContext(ctx)
+			client := &http.Client{}
+			client.Do(req)
 		}
-		ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
-		defer cancel()
-		req = req.WithContext(ctx)
-		client := &http.Client{}
-		client.Do(req)
+
 	}()
 }
 

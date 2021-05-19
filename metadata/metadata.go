@@ -4,13 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/relaying/bnb"
+
+	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 )
@@ -23,7 +25,7 @@ type Metadata interface {
 	ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error)
 	ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error)
 	ValidateMetadataByItself() bool
-	BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error)
+	BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error)
 	CalculateSize() uint64
 	VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error)
 	IsMinerCreatedMetaType() bool
@@ -52,9 +54,12 @@ type TxDesc struct {
 type MempoolRetriever interface {
 	GetSerialNumbersHashH() map[common.Hash][]common.Hash
 	GetTxsInMem() map[common.Hash]TxDesc
+	GetSNDOutputsHashH() map[common.Hash][]common.Hash
 }
 
 type ChainRetriever interface {
+	GetETHRemoveBridgeSigEpoch() uint64
+	GetBCHeightBreakPointPortalV3() uint64
 	GetStakingAmountShard() uint64
 	GetCentralizedWebsitePaymentAddress(uint64) string
 	GetBeaconHeightBreakPointBurnAddr() uint64
@@ -64,26 +69,58 @@ type ChainRetriever interface {
 	GetBNBChainID() string
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
-	GetPortalFeederAddress() string
+	GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error)
+	GetPortalFeederAddress(beaconHeight uint64) string
 	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
+	IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool
+	GetPortalETHContractAddrStr(beaconHeight uint64) string
+	GetLatestBNBBlkHeight() (int64, error)
+	GetBNBDataHash(blockHeight int64) ([]byte, error)
+	CheckBlockTimeIsReached(recentBeaconHeight, beaconHeight, recentShardHeight, shardHeight uint64, duration time.Duration) bool
+	IsPortalExchangeRateToken(beaconHeight uint64, tokenIDStr string) bool
+	GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error)
+	IsPortalToken(beaconHeight uint64, tokenIDStr string) bool
+	IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64) (bool, error)
+	ValidatePortalRemoteAddresses(remoteAddresses map[string]string, beaconHeight uint64) (bool, error)
+	IsEnableFeature(featureFlag int, epoch uint64) bool
 }
 
 type BeaconViewRetriever interface {
+	GetHeight() uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
 	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
 	GetAutoStakingList() map[string]bool
-	GetAllBridgeTokens() ([]common.Hash, error)
+	// GetAllBridgeTokens() ([]common.Hash, error)
 	GetBeaconFeatureStateDB() *statedb.StateDB
 	GetBeaconRewardStateDB() *statedb.StateDB
 	GetBeaconSlashStateDB() *statedb.StateDB
+	GetStakerInfo(string) (*statedb.StakerInfo, bool, error)
+	GetBeaconConsensusStateDB() *statedb.StateDB
+	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 }
 
 type ShardViewRetriever interface {
+	GetEpoch() uint64
 	GetBeaconHeight() uint64
+	GetShardID() byte
 	GetStakingTx() map[string]string
 	ListShardPrivacyTokenAndPRV() []common.Hash
 	GetShardRewardStateDB() *statedb.StateDB
 	GetCopiedFeatureStateDB() *statedb.StateDB
+	GetCopiedTransactionStateDB() *statedb.StateDB
+	GetHeight() uint64
+}
+
+type ValidationEnviroment interface {
+	IsPrivacy() bool
+	IsConfimed() bool
+	TxType() string
+	TxAction() int
+	ShardID() int
+	ShardHeight() uint64
+	BeaconHeight() uint64
+	ConfimedTime() int64
+	Version() int
 }
 
 // Interface for all type of transaction
@@ -112,17 +149,33 @@ type Transaction interface {
 	GetMetadataFromVinsTx(ChainRetriever, ShardViewRetriever, BeaconViewRetriever) (Metadata, error)
 	GetTokenID() *common.Hash
 	ListSerialNumbersHashH() []common.Hash
+	ListSNDOutputsHashH() []common.Hash
 	Hash() *common.Hash
 	// VALIDATE FUNC
 	CheckTxVersion(int8) bool
 	// CheckTransactionFee(minFeePerKbTx uint64) bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateSanityData(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) (bool, error)
+
+	ValidateSanityDataByItSelf() (bool, error)
+	ValidateTxCorrectness() (bool, error)
+	LoadCommitment(db *statedb.StateDB) error
+	ValidateSanityDataWithBlockchain(
+		chainRetriever ChainRetriever,
+		shardViewRetriever ShardViewRetriever,
+		beaconViewRetriever BeaconViewRetriever,
+		beaconHeight uint64,
+	) (
+		bool,
+		error,
+	)
+	ValidateDoubleSpendWithBlockChain(stateDB *statedb.StateDB) (bool, error)
+
 	ValidateTxWithBlockChain(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error
 	ValidateDoubleSpendWithBlockchain(byte, *statedb.StateDB, *common.Hash) error
-	ValidateTxByItself(bool, *statedb.StateDB, *statedb.StateDB, ChainRetriever, byte, bool, ShardViewRetriever, BeaconViewRetriever) (bool, error)
+	ValidateTxByItself(map[string]bool, *statedb.StateDB, *statedb.StateDB, ChainRetriever, byte, ShardViewRetriever, BeaconViewRetriever) (bool, error)
 	ValidateType() bool
-	ValidateTransaction(bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash, bool, bool) (bool, error)
+	ValidateTransaction(map[string]bool, *statedb.StateDB, *statedb.StateDB, byte, *common.Hash) (bool, error)
 	VerifyMinerCreatedTxBeforeGettingInBlock([]Transaction, []int, [][]string, []int, byte, ChainRetriever, *AccumulatedValues, ShardViewRetriever, BeaconViewRetriever) (bool, error)
 	IsPrivacy() bool
 	IsCoinsBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
@@ -131,6 +184,10 @@ type Transaction interface {
 	IsSalaryTx() bool
 	GetFullTxValues() (uint64, uint64)
 	IsFullBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
+	VerifySigTx() (bool, error)
+	GetValidationEnv() ValidationEnviroment
+	SetValidationEnv(ValidationEnviroment)
+	UnmarshalJSON(data []byte) error
 }
 
 func getPDEPoolPair(
@@ -244,31 +301,4 @@ func ConvertPrivacyTokenToNativeToken(
 		beaconHeight,
 		stateDB,
 	)
-}
-
-func IsValidRemoteAddress(
-	bcr ChainRetriever,
-	remoteAddress string,
-	tokenID string,
-	chainID string,
-) bool {
-	if tokenID == common.PortalBNBIDStr {
-		return bnb.IsValidBNBAddress(remoteAddress, chainID)
-	} else if tokenID == common.PortalBTCIDStr {
-		btcHeaderChain := bcr.GetBTCHeaderChain()
-		if btcHeaderChain == nil {
-			return false
-		}
-		return btcHeaderChain.IsBTCAddressValid(remoteAddress)
-	}
-	return false
-}
-
-func GetChainIDByTokenID(tokenID string, chainRetriever ChainRetriever) string {
-	if tokenID == common.PortalBNBIDStr {
-		return chainRetriever.GetBNBChainID()
-	} else if tokenID == common.PortalBTCIDStr {
-		return chainRetriever.GetBTCChainID()
-	}
-	return ""
 }

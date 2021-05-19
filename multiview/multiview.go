@@ -2,9 +2,13 @@ package multiview
 
 import (
 	"fmt"
+	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/incdb"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"time"
 )
 
 type View interface {
@@ -12,8 +16,11 @@ type View interface {
 	GetPreviousHash() *common.Hash
 	GetHeight() uint64
 	GetCommittee() []incognitokey.CommitteePublicKey
-	GetProposerByTimeSlot(ts int64, version int) incognitokey.CommitteePublicKey
-	GetBlock() common.BlockInterface
+	GetPreviousBlockCommittee(db incdb.Database) ([]incognitokey.CommitteePublicKey, error)
+	CommitteeEngineVersion() uint
+	GetBlock() types.BlockInterface
+	GetBeaconHeight() uint64
+	GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int)
 }
 
 type MultiView struct {
@@ -146,7 +153,7 @@ func (multiView *MultiView) updateViewState(newView View) {
 			return
 		}
 		multiView.finalView = prev1View
-	} else if newView.GetBlock().GetVersion() == 2 {
+	} else if newView.GetBlock().GetVersion() >= 2 {
 		////update finalView: consensus 2
 		prev1Hash := multiView.bestView.GetPreviousHash()
 		prev1View := multiView.viewByHash[*prev1Hash]

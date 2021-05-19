@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -66,7 +65,6 @@ func (object *PortalCustodianDeposit) UnmarshalJSON(data []byte) error {
 }
 
 // PortalCustodianDepositAction - shard validator creates instruction that contain this action content
-// it will be append to ShardToBeaconBlock
 type PortalCustodianDepositAction struct {
 	Meta    PortalCustodianDeposit
 	TxReqID common.Hash
@@ -117,11 +115,6 @@ func (custodianDeposit PortalCustodianDeposit) ValidateTxWithBlockChain(
 }
 
 func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
-	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	//if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-	//	return true, true, nil
-	//}
-
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(custodianDeposit.IncogAddressStr)
 	if err != nil {
@@ -154,21 +147,9 @@ func (custodianDeposit PortalCustodianDeposit) ValidateSanityData(chainRetriever
 	}
 
 	// validate remote addresses
-	if len(custodianDeposit.RemoteAddresses) == 0 {
-		return false, false, errors.New("remote addresses should be at least one")
-	}
-
-	for tokenID, remoteAddr := range custodianDeposit.RemoteAddresses {
-		if !common.IsPortalToken(tokenID) {
-			return false, false, errors.New("TokenID in remote address is invalid")
-		}
-		if len(remoteAddr) == 0 {
-			return false, false, errors.New("Remote address is invalid")
-		}
-		chainID := GetChainIDByTokenID(tokenID, chainRetriever)
-		if !IsValidRemoteAddress(chainRetriever, remoteAddr, tokenID, chainID) {
-			return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v", remoteAddr, tokenID)
-		}
+	isValid, err := chainRetriever.ValidatePortalRemoteAddresses(custodianDeposit.RemoteAddresses, beaconHeight)
+	if !isValid || err != nil {
+		return false, false, err
 	}
 
 	return true, true, nil
@@ -195,7 +176,7 @@ func (custodianDeposit PortalCustodianDeposit) Hash() *common.Hash {
 	return &hash
 }
 
-func (custodianDeposit *PortalCustodianDeposit) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (custodianDeposit *PortalCustodianDeposit) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := PortalCustodianDepositAction{
 		Meta:    *custodianDeposit,
 		TxReqID: *tx.Hash(),

@@ -16,11 +16,9 @@ const (
 	CmdGetBlockBeacon     = "getblkbeacon"
 	CmdGetBlockShard      = "getblkshard"
 	CmdGetCrossShard      = "getcrossshd"
-	CmdGetShardToBeacon   = "getshdtobcn"
 	CmdBlockShard         = "blockshard"
 	CmdBlockBeacon        = "blockbeacon"
 	CmdCrossShard         = "crossshard"
-	CmdBlkShardToBeacon   = "blkshdtobcn"
 	CmdTx                 = "tx"
 	CmdPrivacyCustomToken = "txprivacytok"
 	CmdVersion            = "version"
@@ -69,12 +67,6 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdCrossShard:
 		msg = &MessageCrossShard{}
 		break
-	case CmdGetShardToBeacon:
-		msg = &MessageGetShardToBeacon{}
-		break
-	case CmdBlkShardToBeacon:
-		msg = &MessageShardToBeacon{}
-		break
 	case CmdPrivacyCustomToken:
 		msg = &MessageTxPrivacyToken{
 			Transaction: &transaction.TxCustomTokenPrivacy{},
@@ -99,42 +91,11 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
-	// case CmdBFTReq:
-	// 	msg = &MessageBFTReq{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTReady:
-	// 	msg = &MessageBFTReady{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTPropose:
-	// 	msg = &MessageBFTProposeV2{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTPrepare:
-	// 	msg = &MessageBFTPrepareV2{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTAgree:
-	// 	msg = &MessageBFTAgree{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTCommit:
-	// 	msg = &MessageBFTCommit{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
 	case CmdPeerState:
 		msg = &MessagePeerState{
-			Timestamp:         time.Now().Unix(),
-			Shards:            make(map[byte]ChainState),
-			ShardToBeaconPool: make(map[byte][]uint64),
-			CrossShardPool:    make(map[byte]map[byte][]uint64),
+			Timestamp:      time.Now().Unix(),
+			Shards:         make(map[byte]ChainState),
+			CrossShardPool: make(map[byte]map[byte][]uint64),
 		}
 		break
 	case CmdGetAddr:
@@ -180,10 +141,6 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 		return CmdGetCrossShard, nil
 	case reflect.TypeOf(&MessageCrossShard{}):
 		return CmdCrossShard, nil
-	case reflect.TypeOf(&MessageGetShardToBeacon{}):
-		return CmdGetShardToBeacon, nil
-	case reflect.TypeOf(&MessageShardToBeacon{}):
-		return CmdBlkShardToBeacon, nil
 	case reflect.TypeOf(&MessageGetBlockBeacon{}):
 		return CmdGetBlockBeacon, nil
 	case reflect.TypeOf(&MessageGetBlockShard{}):

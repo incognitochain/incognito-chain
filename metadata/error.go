@@ -29,6 +29,7 @@ const (
 	BeaconBlockRewardBuildInstructionForBeaconBlockRewardError
 
 	StopAutoStakingRequestNotInCommitteeListError
+	StopAutoStakingRequestGetStakingTransactionError
 	StopAutoStakingRequestStakingTransactionNotFoundError
 	StopAutoStakingRequestInvalidTransactionSenderError
 	StopAutoStakingRequestNoAutoStakingAvaiableError
@@ -47,6 +48,27 @@ const (
 	PortalRequestPTokenParamError
 	PortalRedeemRequestParamError
 	PortalRedeemLiquidateExchangeRatesParamError
+
+	// Unstake
+	UnStakingRequestNotInCommitteeListError
+	UnStakingRequestGetStakerInfoError
+	UnStakingRequestNotFoundStakerInfoError
+	UnStakingRequestStakingTransactionNotFoundError
+	UnStakingRequestInvalidTransactionSenderError
+	UnStakingRequestNoAutoStakingAvaiableError
+	UnStakingRequestTypeAssertionError
+	UnStakingRequestAlreadyStopError
+	UnStakingRequestInvalidFormatRequestKey
+	UnstakingRequestAlreadyUnstake
+
+	// eth utils
+	VerifyProofAndParseReceiptError
+
+	// portal v3
+	PortalCustodianDepositV3ValidateWithBCError
+	PortalCustodianDepositV3ValidateSanityDataError
+	NewPortalCustodianDepositV3MetaFromMapError
+	PortalUnlockOverRateCollateralsError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -84,7 +106,17 @@ var ErrCodeMessage = map[int]struct {
 	StopAutoStakingRequestNoAutoStakingAvaiableError:      {-4003, "Stop Auto-Staking Request No Auto Staking Avaliable Error"},
 	StopAutoStakingRequestTypeAssertionError:              {-4004, "Stop Auto-Staking Request Type Assertion Error"},
 	StopAutoStakingRequestAlreadyStopError:                {-4005, "Stop Auto Staking Request Already Stop Error"},
-
+	StopAutoStakingRequestGetStakingTransactionError:      {-4006, "Stop Auto Staking Request Get Staking Transaction Error"},
+	UnStakingRequestNotInCommitteeListError:               {-4100, "Unstaking Request Not In Committee List Error"},
+	UnStakingRequestGetStakerInfoError:                    {-4101, "Unstaking Request Get Staker Info Error"},
+	UnStakingRequestNotFoundStakerInfoError:               {-4102, "Unstaking Request Not Found Staker Info Error"},
+	UnStakingRequestStakingTransactionNotFoundError:       {-4103, "Unstaking Request Staking Transaction Not Found Error"},
+	UnStakingRequestInvalidTransactionSenderError:         {-4104, "Unstaking Request Invalid Transaction Sender Error"},
+	UnStakingRequestNoAutoStakingAvaiableError:            {-4105, "UnStaking Request No Auto Staking Available Error"},
+	UnStakingRequestTypeAssertionError:                    {-4106, "UnStaking Request Type Assertion Error"},
+	UnStakingRequestAlreadyStopError:                      {-4107, "UnStaking Request Already Stop Error"},
+	UnStakingRequestInvalidFormatRequestKey:               {-4108, "Unstaking Request Key Is Invalid Format"},
+	UnstakingRequestAlreadyUnstake:                        {-4109, "Public Key Has Been Already Unstaked"},
 	// -5xxx dev reward error
 	WrongIncognitoDAOPaymentAddressError: {-5001, "Invalid dev account"},
 
@@ -97,6 +129,15 @@ var ErrCodeMessage = map[int]struct {
 	PortalRequestPTokenParamError:                {-7001, "Portal request ptoken param error"},
 	PortalRedeemRequestParamError:                {-7002, "Portal redeem request param error"},
 	PortalRedeemLiquidateExchangeRatesParamError: {-7003, "Portal redeem liquidate exchange rates param error"},
+
+	// eth utils
+	VerifyProofAndParseReceiptError: {-8001, "Verify proof and parse receipt eth error"},
+
+	// portal v3
+	PortalCustodianDepositV3ValidateWithBCError:     {-9001, "Validate with blockchain tx portal custodian deposit v3 error"},
+	PortalCustodianDepositV3ValidateSanityDataError: {-9002, "Validate sanity data tx portal custodian deposit v3 error"},
+	NewPortalCustodianDepositV3MetaFromMapError:     {-9003, "New portal custodian deposit v3 metadata from map error"},
+	PortalUnlockOverRateCollateralsError:            {-9004, "Validate with blockchain tx portal custodian unlock over rate v3 error"},
 }
 
 type MetadataTxError struct {

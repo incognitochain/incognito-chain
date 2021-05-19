@@ -248,8 +248,19 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 	var result interface{}
 	var request *JsonRequest
 	request, jsonErr = parseJsonRequest(body, r.Method)
-
 	if jsonErr == nil {
+		defer func(req *JsonRequest) {
+			if req.Method == getShardBestState {
+				return
+			}
+			err := recover()
+			if err != nil {
+				errMsg := fmt.Sprintf("Recovery error message: %v", err)
+				Logger.log.Error(errMsg)
+				httpServer.writeHTTPResponseHeaders(r, w.Header(), http.StatusInternalServerError, buf)
+			}
+		}(request)
+
 		if request.Id == nil && !(httpServer.config.RPCQuirks && request.Jsonrpc == "") {
 			return
 		}
@@ -299,7 +310,14 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 				}
 			}
 			if command != nil {
-				result, jsonErr = command(httpServer, request.Params, closeChan)
+				// check feature flags
+				isFeatureFlag, isEnable := httpServer.checkEnableFeatureFlagRPC(request.Method)
+				if isFeatureFlag && !isEnable {
+					result = nil
+					jsonErr = rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Method is disabled on this version: "+request.Method))
+				} else {
+					result, jsonErr = command(httpServer, request.Params, closeChan)
+				}
 			} else {
 				jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, errors.New("Method not found: "+request.Method))
 			}
@@ -630,4 +648,17 @@ func (httpServer *HttpServer) GetShardChainDatabase(shardID byte) incdb.Database
 
 func (httpServer *HttpServer) GetBlockchain() *blockchain.BlockChain {
 	return httpServer.config.BlockChain
+}
+
+// checkEnableFeatureFlagRPC checks methodName is belong to any featureFlag or not: the first boolean result
+// and checks featureFlag is enabled or not: the second boolean result
+func (httpServer *HttpServer) checkEnableFeatureFlagRPC(methodName string) (bool, bool) {
+	bc := httpServer.GetBlockchain()
+	epoch := bc.GetBeaconBestState().Epoch
+	if httpServer.isPortalRelayingRPC(methodName) {
+		return true, bc.IsEnableFeature(common.PortalRelayingFlag, epoch)
+	} else if httpServer.isPortalV3RPC(methodName) {
+		return true, bc.IsEnableFeature(common.PortalV3Flag, epoch)
+	}
+	return false, false
 }

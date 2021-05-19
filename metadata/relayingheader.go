@@ -22,7 +22,6 @@ type RelayingHeader struct {
 }
 
 // RelayingHeaderAction - shard validator creates instruction that contain this action content
-// it will be append to ShardToBeaconBlock
 type RelayingHeaderAction struct {
 	Meta    RelayingHeader
 	TxReqID common.Hash
@@ -123,7 +122,7 @@ func (rh RelayingHeader) Hash() *common.Hash {
 	return &hash
 }
 
-func (rh *RelayingHeader) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (rh *RelayingHeader) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := RelayingHeaderAction{
 		Meta:    *rh,
 		TxReqID: *tx.Hash(),

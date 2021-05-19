@@ -8,13 +8,14 @@ import (
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
+	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/syncker"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -69,12 +70,13 @@ type RpcServerConfig struct {
 	Wallet          *wallet.Wallet
 	ConnMgr         *connmanager.ConnManager
 	AddrMgr         *addrmanager.AddrManager
-	NodeMode        string
-	NetSync         *netsync.NetSync
-	Syncker         *syncker.SynckerManager
-	Server          interface {
+	// NodeMode        string
+	NetSync *netsync.NetSync
+	Syncker *syncker.SynckerManager
+	Server  interface {
 		// Push TxNormal Message
 		PushMessageToAll(message wire.Message) error
+		PushMessageToShard(msg wire.Message, shard byte) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
 		GetNodeRole() string
 		// GetUserKeySet() *incognitokey.KeySet
@@ -84,15 +86,12 @@ type RpcServerConfig struct {
 		GetPublicKeyRole(publicKey string, keyType string) (int, int)
 		GetIncognitoPublicKeyRole(publicKey string) (int, bool, int)
 		GetMinerIncognitoPublickey(publicKey string, keyType string) []byte
+		OnTx(p *peer.PeerConn, msg *wire.MessageTx)
+		OnTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken)
 	}
-	ConsensusEngine interface {
-		GetUserLayer() (string, int)
-		GetUserRole() (string, string, int)
-		GetCurrentMiningPublicKey() (publickey string, keyType string)
-		GetAllMiningPublicKeys() []string
-		ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
-	}
-	TxMemPool                   *mempool.TxPool
+	ConsensusEngine blockchain.ConsensusEngine
+
+	TxMemPool                   rpcservice.MempoolInterface
 	RPCMaxClients               int
 	RPCMaxWSClients             int
 	RPCLimitRequestPerDay       int

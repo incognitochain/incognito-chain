@@ -5,20 +5,23 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
-	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
-	btcRelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-
-	"github.com/incognitochain/incognito-chain/syncker"
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
+	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
+	"github.com/incognitochain/incognito-chain/txpool"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	main2 "github.com/incognitochain/incognito-chain/blockchain/btc"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/consensus"
+	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/netsync"
@@ -26,8 +29,11 @@ import (
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
 	"github.com/incognitochain/incognito-chain/privacy"
+	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
+	btcRelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/syncker"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -66,6 +72,15 @@ var (
 	daov2Logger            = backendLog.Logger("DAO log", false)
 	btcRelayingLogger      = backendLog.Logger("BTC relaying log", false)
 	synckerLogger          = backendLog.Logger("Syncker log ", false)
+	instructionLogger      = backendLog.Logger("Instruction log ", false)
+	committeeStateLogger   = backendLog.Logger("Committee State log ", false)
+
+	portalLogger          = backendLog.Logger("Portal log ", false)
+	portalRelayingLogger  = backendLog.Logger("Portal relaying log ", false)
+	portalV3CommonLogger  = backendLog.Logger("Portal v3 common log ", false)
+	portalV3ProcessLogger = backendLog.Logger("Portal v3 process log ", false)
+	portalV3TokenLogger   = backendLog.Logger("Portal v3 token log ", false)
+	txPoolLogger          = backendLog.Logger("Txpool log ", false)
 )
 
 // logWriter implements an io.Writer that outputs to both standard output and
@@ -95,7 +110,6 @@ func init() {
 	blockchain.Logger.Init(blockchainLogger)
 	consensus.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
-	main2.Logger.Init(randomLogger)
 	transaction.Logger.Init(transactionLogger)
 	privacy.Logger.Init(privacyLogger)
 	databasemp.Logger.Init(dbmpLogger)
@@ -109,6 +123,16 @@ func init() {
 	dataaccessobject.Logger.Init(daov2Logger)
 	btcRelaying.Logger.Init(btcRelayingLogger)
 	syncker.Logger.Init(synckerLogger)
+	instruction.Logger.Init(instructionLogger)
+	committeestate.Logger.Init(committeeStateLogger)
+
+	portal.Logger.Init(portalLogger)
+	portalrelaying.Logger.Init(portalRelayingLogger)
+	portalcommonv3.Logger.Init(portalV3CommonLogger)
+	portalprocessv3.Logger.Init(portalV3ProcessLogger)
+	portaltokensv3.Logger.Init(portalV3TokenLogger)
+
+	txpool.Logger.Init(txPoolLogger)
 }
 
 // subsystemLoggers maps each subsystem identifier to its associated logger.
@@ -138,6 +162,13 @@ var subsystemLoggers = map[string]common.Logger{
 	"DAO":               daov2Logger,
 	"BTCRELAYING":       btcRelayingLogger,
 	"SYNCKER":           synckerLogger,
+	"INST":              instructionLogger,
+	"COMS":              committeeStateLogger,
+	"PORTAL":            portalLogger,
+	"PORTALRELAYING":    portalRelayingLogger,
+	"PORTALV3COMMON":    portalV3CommonLogger,
+	"PORTALV3PROCESS":   portalV3ProcessLogger,
+	"PORTALV3TOKENS":    portalV3TokenLogger,
 }
 
 // initLogRotator initializes the logging rotater to write logs to logFile and

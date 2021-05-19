@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -12,16 +11,19 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type Tx struct {
+	valEnv *ValidationEnv
 	// Basic data, required
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
@@ -41,6 +43,23 @@ type Tx struct {
 	cachedActualSize *uint64      // cached actualsize data for tx
 }
 
+func (tx *Tx) initEnv() metadata.ValidationEnviroment {
+	valEnv := DefaultValEnv()
+	if tx.IsSalaryTx() {
+		valEnv = WithAct(valEnv, common.TxActInit)
+	}
+	if tx.IsPrivacy() {
+		valEnv = WithPrivacy(valEnv)
+	} else {
+		valEnv = WithNoPrivacy(valEnv)
+	}
+	valEnv = WithType(valEnv, tx.GetType())
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	valEnv = WithShardID(valEnv, int(sID))
+	tx.SetValidationEnv(valEnv)
+	return valEnv
+}
+
 func (tx *Tx) UnmarshalJSON(data []byte) error {
 	type Alias Tx
 	temp := &struct {
@@ -54,17 +73,19 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		Logger.log.Error("UnmarshalJSON tx", string(data))
 		return NewTransactionErr(UnexpectedError, err)
 	}
+
 	if temp.Metadata == nil {
 		tx.SetMetadata(nil)
-		return nil
-	}
 
-	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
-	if parseErr != nil {
-		Logger.log.Error(parseErr)
-		return parseErr
+	} else {
+		meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+		if parseErr != nil {
+			Logger.log.Error(parseErr)
+			return parseErr
+		}
+		tx.SetMetadata(meta)
 	}
-	tx.SetMetadata(meta)
+	tx.initEnv()
 	return nil
 }
 
@@ -173,7 +194,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		Logger.log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.Fee = params.fee
 		tx.sigPrivKey = *params.senderSK
-		tx.PubKeyLastByteSender = pkLastByteSender
+		tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(pkLastByteSender)
 		err := tx.signTx()
 		if err != nil {
 			Logger.log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
@@ -374,7 +395,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	}
 
 	// sign tx
-	tx.PubKeyLastByteSender = pkLastByteSender
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(pkLastByteSender)
 	err = tx.signTx()
 	if err != nil {
 		Logger.log.Error(err)
@@ -421,8 +442,8 @@ func (tx *Tx) signTx() error {
 	return nil
 }
 
-// verifySigTx - verify signature on tx
-func (tx *Tx) verifySigTx() (bool, error) {
+// VerifySigTx - verify signature on tx
+func (tx *Tx) VerifySigTx() (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
@@ -457,24 +478,31 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	}
 	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
 	res = verifyKey.Verify(signature, tx.Hash()[:])
+	if !res {
+		err = errors.Errorf("Verify signature of tx %v failed", tx.Hash().String())
+		Logger.log.Error(err)
+	}
 
-	return res, nil
+	return res, err
 }
 
 // ValidateTransaction returns true if transaction is valid:
 // - Verify tx signature
 // - Verify the payment proof
-func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+// ValidateTransaction returns true if transaction is valid:
+// - Verify tx signature
+// - Verify the payment proof
+func (tx *Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	//hasPrivacy = false
 	Logger.log.Debugf("VALIDATING TX........\n")
-	if tx.GetType() == common.TxRewardType {
+	if tx.IsSalaryTx() {
 		return tx.ValidateTxSalary(transactionStateDB)
 	}
 
 	var valid bool
 	var err error
 
-	valid, err = tx.verifySigTx()
+	valid, err = tx.VerifySigTx()
 	if !valid {
 		if err != nil {
 			Logger.log.Errorf("Error verifying signature with tx hash %s: %+v \n", tx.Hash().String(), err)
@@ -486,6 +514,15 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 
 	if tx.GetType() == common.TxReturnStakingType {
 		return true, nil //
+	}
+
+	hasPrivacy, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacy = false
+	}
+	isNewTransaction, ok := boolParams["isNewTransaction"]
+	if !ok {
+		isNewTransaction = false
 	}
 
 	if tx.Proof != nil {
@@ -534,7 +571,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, transactionStateDB *statedb.S
 			}
 		}
 		// Verify the payment proof
-		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID, isBatch)
+		valid, err = tx.Proof.Verify(boolParams, tx.SigPubKey, tx.Fee, transactionStateDB, shardID, tokenID)
 		if !valid {
 			if err != nil {
 				Logger.log.Error(err)
@@ -670,6 +707,20 @@ func (tx Tx) ListSerialNumbersHashH() []common.Hash {
 	return result
 }
 
+func (tx Tx) ListSNDOutputsHashH() []common.Hash {
+	result := []common.Hash{}
+	if tx.Proof != nil {
+		for _, outputCoin := range tx.Proof.GetOutputCoins() {
+			hash := common.HashH(outputCoin.CoinDetails.GetSNDerivator().ToBytesS())
+			result = append(result, hash)
+		}
+	}
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+	return result
+}
+
 // CheckCMExistence returns true if cm exists in cm list
 func (tx Tx) CheckCMExistence(cm []byte, stateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	ok, err := statedb.HasCommitment(stateDB, *tokenID, cm, shardID)
@@ -791,9 +842,39 @@ func (tx Tx) validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH map[
 	return nil
 }
 
+func (tx Tx) validateDoubleSNDOutputsWithCurrentMempool(poolSndOutputsHashH map[common.Hash][]common.Hash) error {
+	if tx.Proof == nil {
+		return nil
+	}
+	temp := make(map[common.Hash]interface{})
+	for _, outputCoin := range tx.Proof.GetOutputCoins() {
+		hash := common.HashH(outputCoin.CoinDetails.GetSNDerivator().ToBytesS())
+		temp[hash] = nil
+	}
+
+	for _, listSndOutputs := range poolSndOutputsHashH {
+		for _, sndHash := range listSndOutputs {
+			if _, ok := temp[sndHash]; ok {
+				return fmt.Errorf("duplicate snd output with current mempool %v",
+					sndHash.String())
+			}
+		}
+	}
+	return nil
+}
+
 func (tx Tx) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+	// check double snd outputs in mempool
+	poolSNDOutputsHashH := mr.GetSNDOutputsHashH()
+	duplicateSNDs := tx.validateDoubleSNDOutputsWithCurrentMempool(poolSNDOutputsHashH)
+	if duplicateSNDs != nil {
+		return duplicateSNDs
+	}
+
+	// check double spend
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	return tx.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
+
 }
 
 // ValidateDoubleSpend - check double spend for any transaction type
@@ -831,7 +912,7 @@ func (tx Tx) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, sh
 
 	if tx.Metadata != nil {
 		isContinued, err := tx.Metadata.ValidateTxWithBlockChain(&tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
-		fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
+		// fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
 		if err != nil {
 			Logger.log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", tx.GetMetadataType(), tx.Hash().String(), isContinued, err)
 			return NewTransactionErr(RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", tx.Hash().String(), err))
@@ -910,11 +991,7 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 			serialNumbers[hashSN] = true
 		}
 
-		isPrivacy := true
-		// check Privacy or not
-		if txN.Proof.GetAggregatedRangeProof() == nil || len(txN.Proof.GetOneOfManyProof()) == 0 || len(txN.Proof.GetSerialNumberProof()) == 0 {
-			isPrivacy = false
-		}
+		isPrivacy := txN.IsPrivacy()
 
 		if isPrivacy {
 			// check cmValue of output coins is equal to comValue in Bulletproof
@@ -922,6 +999,10 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 			cmValueInBulletProof := txN.Proof.GetAggregatedRangeProof().GetCmValues()
 			if len(cmValueOfOutputCoins) != len(cmValueInBulletProof) {
 				return false, errors.New("invalid cmValues in Bullet proof")
+			}
+
+			if len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetSerialNumberProof()) || len(txN.Proof.GetInputCoins()) != len(txN.Proof.GetOneOfManyProof()) {
+				return false, errors.New("the number of input coins must be equal to the number of serialnumber proofs and the number of one-of-many proofs")
 			}
 
 			for i := 0; i < len(cmValueOfOutputCoins); i++ {
@@ -954,6 +1035,12 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 				if !privacy.IsPointEqual(cmInputSNDs[i], txN.Proof.GetSerialNumberProof()[i].GetComInput()) {
 					Logger.log.Errorf("cmSND in SNproof is not equal to commitment of input's SND - txId %v", txN.Hash().String())
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("cmSND in SNproof %v is not equal to commitment of input's SND", i))
+				}
+
+				// check SN of input coins is equal to the corresponding SN in serial number proof
+				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber(), txN.Proof.GetSerialNumberProof()[i].GetSN()) {
+					Logger.log.Errorf("SN in SNProof is not equal to SN of input coin - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, fmt.Errorf("SN in SNProof %v is not equal to SN of input coin", i))
 				}
 
 				if !txN.Proof.GetSerialNumberProof()[i].ValidateSanity() {
@@ -1057,6 +1144,11 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 				return false, errors.New("SigPubKey is invalid")
 			}
 			inputCoins := txN.Proof.GetInputCoins()
+
+			if len(inputCoins) != len(txN.Proof.GetSerialNumberNoPrivacyProof()) {
+				return false, errors.New("the number of input coins must be equal to the number of serialnumbernoprivacy proofs")
+			}
+
 			for i := 0; i < len(inputCoins); i++ {
 				// check PublicKey of input coin is equal to SigPubKey
 				if !privacy.IsPointEqual(inputCoins[i].CoinDetails.GetPublicKey(), sigPubKeyPoint) {
@@ -1068,14 +1160,20 @@ func (txN Tx) validateSanityDataOfProof(bcr metadata.ChainRetriever, beaconHeigh
 			for i := 0; i < len(txN.Proof.GetSerialNumberNoPrivacyProof()); i++ {
 				// check PK of input coin is equal to vKey in serial number proof
 				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetPublicKey(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetVKey()) {
-					Logger.log.Errorf("VKey in SNProof is not equal public key of sender - txId %v", txN.Hash().String())
-					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("VKey of SNProof %v is not public key of sender", i))
+					Logger.log.Errorf("VKey in SNNoPrivacyProof is not equal public key of sender - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("VKey of SNNoPrivacyProof %v is not public key of sender", i))
 				}
 
 				// check SND of input coins is equal to SND in serial number no privacy proof
 				if !privacy.IsScalarEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetInput()) {
-					Logger.log.Errorf("SND in SNProof is not equal to input's SND - txId %v", txN.Hash().String())
-					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SND in SNProof %v is not equal to input's SND", i))
+					Logger.log.Errorf("SND in SNNoPrivacyProof is not equal to input's SND - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SND in SNNoPrivacyProof %v is not equal to input's SND", i))
+				}
+
+				// check SND of input coins is equal to SND in serial number no privacy proof
+				if !privacy.IsPointEqual(txN.Proof.GetInputCoins()[i].CoinDetails.GetSerialNumber(), txN.Proof.GetSerialNumberNoPrivacyProof()[i].GetOutput()) {
+					Logger.log.Errorf("SN in SNNoPrivacyProof is not equal to SN in input coin - txId %v", txN.Hash().String())
+					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, fmt.Errorf("SN in SNNoPrivacyProof %v is not equal to SN in input coin", i))
 				}
 
 				if !txN.Proof.GetSerialNumberNoPrivacyProof()[i].ValidateSanity() {
@@ -1135,19 +1233,24 @@ func (tx Tx) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardVie
 	return tx.validateNormalTxSanityData(chainRetriever, beaconHeight)
 }
 
-func (tx Tx) ValidateTxByItself(hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
+func (tx Tx) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	prvCoinID := &common.Hash{}
 	err := prvCoinID.SetBytes(common.PRVCoinID[:])
 	if err != nil {
 		return false, err
 	}
-	ok, err := tx.ValidateTransaction(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, prvCoinID, false, isNewTransaction)
+	ok, err := tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, prvCoinID)
 	if !ok {
 		return false, err
 	}
+
+	hasPrivacy, ok := boolParams["hasPrivacy"]
+	if !ok {
+		hasPrivacy = false
+	}
 	if tx.Metadata != nil {
 		if hasPrivacy {
-			return false, errors.New("Metadata can not exist in not privacy tx")
+			return false, errors.New("metadata can not exist in  privacy tx")
 		}
 		validateMetadata := tx.Metadata.ValidateMetadataByItself()
 		if validateMetadata {
@@ -1177,6 +1280,25 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 	tx.Metadata = meta
 }
 
+func (tx *Tx) GetValidationEnv() metadata.ValidationEnviroment {
+	return tx.valEnv
+}
+
+func (tx *Tx) SetValidationEnv(vEnv metadata.ValidationEnviroment) {
+	if vE, ok := vEnv.(*ValidationEnv); ok {
+		tx.valEnv = vE
+	} else {
+		valEnv := DefaultValEnv()
+		if tx.IsPrivacy() {
+			valEnv = WithPrivacy(valEnv)
+		} else {
+			valEnv = WithNoPrivacy(valEnv)
+		}
+		valEnv = WithType(valEnv, tx.GetType())
+		tx.valEnv = valEnv
+	}
+}
+
 // GetMetadata returns metadata of tx is existed
 func (tx Tx) GetInfo() []byte {
 	return tx.Info
@@ -1195,7 +1317,7 @@ func (tx Tx) GetProof() *zkp.PaymentProof {
 }
 
 func (tx Tx) IsPrivacy() bool {
-	if tx.Proof == nil || len(tx.Proof.GetOneOfManyProof()) == 0 {
+	if tx.Proof == nil || tx.Proof.GetAggregatedRangeProof() == nil || len(tx.Proof.GetOneOfManyProof()) == 0 || len(tx.Proof.GetSerialNumberProof()) == 0 {
 		return false
 	}
 	return true
@@ -1333,7 +1455,7 @@ func (tx *Tx) InitTxSalary(salary uint64, receiverAddr *privacy.PaymentAddress, 
 	}
 	tx.Proof.SetOutputCoins(tempOutputCoin)
 	// get last byte
-	tx.PubKeyLastByteSender = receiverAddr.Pk[len(receiverAddr.Pk)-1]
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(receiverAddr.Pk[len(receiverAddr.Pk)-1])
 	// sign Tx
 	tx.SigPubKey = receiverAddr.Pk
 	tx.sigPrivKey = *privateKey
@@ -1351,7 +1473,7 @@ func (tx Tx) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool {
 
 func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	// verify signature
-	valid, err := tx.verifySigTx()
+	valid, err := tx.VerifySigTx()
 	if !valid {
 		if err != nil {
 			Logger.log.Debugf("Error verifying signature of tx: %+v", err)
@@ -1405,6 +1527,14 @@ func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []metadata.Tran
 		if !meta.IsMinerCreatedMetaType() {
 			return false, nil
 		}
+	}
+	//if type is reward and not have metadata
+	if tx.GetType() == common.TxRewardType && meta == nil {
+		return false, nil
+	}
+	//if type is return staking and not have metadata
+	if tx.GetType() == common.TxReturnStakingType && (meta == nil || (meta.GetType() != metadata.ReturnStakingMeta)) {
+		return false, nil
 	}
 	if meta != nil {
 		ok, err := meta.VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock, txsUsed, insts, instsUsed, shardID, &tx, bcr, accumulatedValues, nil, nil)
@@ -1519,7 +1649,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM, serverTime int64) er
 		//Logger.log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.Fee = params.txParam.fee
 		tx.sigPrivKey = *params.txParam.senderSK
-		tx.PubKeyLastByteSender = pkLastByteSender
+		tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(pkLastByteSender)
 		err := tx.signTx()
 		if err != nil {
 			Logger.log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
@@ -1683,7 +1813,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM, serverTime int64) er
 	}
 
 	// sign tx
-	tx.PubKeyLastByteSender = pkLastByteSender
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(pkLastByteSender)
 	err = tx.signTx()
 	if err != nil {
 		Logger.log.Error(err)

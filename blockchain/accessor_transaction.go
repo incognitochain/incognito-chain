@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -124,7 +126,32 @@ func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.
 	return result, nil
 }
 
-func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *ShardBlock, shardView *ShardBestState) error {
+// GetTransactionHashByReceiverV2 - return list tx id which a receiver receives from any senders in paging fashion
+// this feature only apply on full node, because full node get all data from all shard
+func (blockchain *BlockChain) GetTransactionHashByReceiverV2(
+	keySet *incognitokey.KeySet,
+	skip, limit uint,
+) (map[byte][]common.Hash, error) {
+	result := make(map[byte][]common.Hash)
+	for _, i := range blockchain.GetShardIDs() {
+		shardID := byte(i)
+		var err error
+		var resultTemp map[byte][]common.Hash
+		resultTemp, skip, limit, err = rawdbv2.GetTxByPublicKeyV2(blockchain.GetShardChainDatabase(shardID), keySet.PaymentAddress.Pk, skip, limit)
+		if err == nil {
+			if resultTemp == nil || len(resultTemp) == 0 {
+				continue
+			}
+			result[shardID] = resultTemp[shardID]
+		}
+		if limit == 0 {
+			break
+		}
+	}
+	return result, nil
+}
+
+func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(shardBlock *types.ShardBlock, shardView *ShardBestState) error {
 	txRequestTable := reqTableFromReqTxs(shardBlock.Body.Transactions)
 	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
 		txsSpamRemoved := filterReqTxs(shardBlock.Body.Transactions, txRequestTable)
@@ -154,7 +181,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			Logger.log.Infof("Coin ID %+v", *coinID)
 			Logger.log.Infof("Amount Request %+v", amountRes)
 			Logger.log.Infof("Temp Public Key %+v", tempPublicKey)
-			amount, err := statedb.GetCommitteeReward(blockchain.GetBestStateShard(shardBlock.Header.ShardID).GetShardRewardStateDB(), tempPublicKey, requestMeta.TokenID)
+			amount, err := statedb.GetCommitteeReward(shardView.GetShardRewardStateDB(), tempPublicKey, requestMeta.TokenID)
 			if (amount == 0) || (err != nil) {
 				return errors.Errorf("Invalid request %v, amount from db %v, error %v", requester, amount, err)
 			}
@@ -163,18 +190,6 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 			}
 			delete(txRequestTable, requester)
 			continue
-			// case metadata.ReturnStakingMeta:
-			// 	returnMeta := tx.GetMetadata().(*metadata.ReturnStakingMetadata)
-			// 	if _, ok := txReturnTable[returnMeta.TxID]; !ok {
-			// 		//TODO: check we swap out committee address in beacon confirmed blocks of this shard block
-			// 		//	-> we must prebuild all outCommittee, then check if exist in stakingtx map, and get stakingtx
-			// 		//  -> check all outCommittee is repay (any missing)
-			// 		//TODO: from stakingtx, check receiver = staker (funder address)
-			// 		//TODO: from stakingtx, check amount is equal
-			// 		txReturnTable[returnMeta.TxID] = true
-			// 	} else {
-			// 		return errors.New("Double spent transaction return staking for a candidate.")
-			// 	}
 		}
 	}
 	if shardBlock.Header.Timestamp > ValidateTimeForSpamRequestTxs {
@@ -187,8 +202,8 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromTxsWithMetadata(sha
 
 func (blockchain *BlockChain) ValidateResponseTransactionFromBeaconInstructions(
 	curView *ShardBestState,
-	shardBlock *ShardBlock,
-	beaconBlocks []*BeaconBlock,
+	shardBlock *types.ShardBlock,
+	beaconBlocks []*types.BeaconBlock,
 	shardID byte,
 ) error {
 	//mainnet have two block return double when height < REPLACE_STAKINGTX
@@ -300,7 +315,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 				// cache 1 day for result
 				cachedData, err = json.Marshal(outCointsInBytes)
 				if err == nil {
-					blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
+					blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 5*time.Second)
 				}
 			}
 		}
@@ -335,7 +350,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 // CreateAndSaveTxViewPointFromBlock - fetch data from block, put into txviewpoint variable and save into db
 // still storage full data of commitments, serial number, snderivator to check double spend
 // this function only work for transaction transfer token/prv within shard
-func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB) error {
+func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(shardBlock *types.ShardBlock, transactionStateRoot *statedb.StateDB) error {
 	// Fetch data from shardBlock into tx View point
 	if shardBlock.Header.Height == 1 {
 		err := storePRV(transactionStateRoot)
@@ -544,7 +559,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPoint(stateDB *statedb.S
 	return nil
 }
 
-func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock *ShardBlock, transactionStateRoot *statedb.StateDB) error {
+func (blockchain *BlockChain) CreateAndSaveCrossTransactionViewPointFromBlock(shardBlock *types.ShardBlock, transactionStateRoot *statedb.StateDB) error {
 	Logger.log.Critical("Fetch Cross transaction", shardBlock.Body.CrossTransactions)
 	// Fetch data from block into tx View point
 	view := NewTxViewPoint(shardBlock.Header.ShardID)

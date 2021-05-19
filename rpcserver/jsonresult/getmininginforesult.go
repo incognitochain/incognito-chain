@@ -2,7 +2,6 @@ package jsonresult
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/mempool"
 )
 
 type GetMiningInfoResult struct {
@@ -18,9 +17,9 @@ type GetMiningInfoResult struct {
 	IsEnableMining      bool   `json:"IsEnableMining"`
 }
 
-func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockChain, consensus interface{ GetUserRole() (string, string, int) }, param blockchain.Params, isEnableMining bool) *GetMiningInfoResult {
+func NewGetMiningInfoResult(txMemPoolSize int, blChain blockchain.BlockChain, consensus blockchain.ConsensusEngine, param blockchain.Params, isEnableMining bool) *GetMiningInfoResult {
 	result := &GetMiningInfoResult{}
-	result.PoolSize = txMemPool.Count()
+	result.PoolSize = txMemPoolSize
 	result.Chain = param.Name
 	result.IsEnableMining = isEnableMining
 	result.BeaconHeight = blChain.GetBeaconBestState().BeaconHeight
@@ -30,6 +29,7 @@ func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockCh
 	result.Role = role
 	result.Layer = layer
 	result.ShardID = shardID
+	result.MiningPublickey, _ = consensus.GetCurrentMiningPublicKey()
 	if shardID >= 0 {
 		result.ShardHeight = blChain.GetBestStateShard(byte(shardID)).ShardHeight
 		result.CurrentShardBlockTx = len(blChain.GetBestStateShard(byte(shardID)).BestBlock.Body.Transactions)

@@ -2,6 +2,7 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -11,8 +12,16 @@ import (
 handleGetMempoolInfo - RPC returns information about the node's current txs memory pool
 */
 func (httpServer *HttpServer) handleGetMempoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := jsonresult.NewGetMempoolInfo(httpServer.config.TxMemPool)
-	return result, nil
+	if httpServer.config.BlockChain.UsingNewPool() {
+		pM := httpServer.config.BlockChain.GetPoolManager()
+		if pM != nil {
+			return jsonresult.NewGetMempoolInfoV2(pM.GetMempoolInfo()), nil
+		} else {
+			return nil, rpcservice.NewRPCError(rpcservice.GeTxFromPoolError, errors.New("PoolManager is nil"))
+		}
+	} else {
+		return jsonresult.NewGetMempoolInfo(httpServer.config.TxMemPool), nil
+	}
 }
 
 /*
@@ -20,7 +29,7 @@ handleGetRawMempool - RPC returns all transaction ids in memory pool as a json a
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
 func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := jsonresult.NewGetRawMempoolResult(*httpServer.config.TxMemPool)
+	result := jsonresult.NewGetRawMempoolResult(httpServer.config.TxMemPool)
 	return result, nil
 }
 
@@ -28,7 +37,7 @@ func (httpServer *HttpServer) handleGetRawMempool(params interface{}, closeChan 
 handleGetPendingTxsInBlockgen - RPC returns all transaction ids in blockgen
 */
 func (httpServer *HttpServer) handleGetPendingTxsInBlockgen(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	result := jsonresult.NewGetPendingTxsInBlockgenResult(httpServer.config.Blockgen.GetPendingTxsV2())
+	result := jsonresult.NewGetPendingTxsInBlockgenResult(httpServer.config.Blockgen.GetPendingTxsV2(255))
 	return result, nil
 }
 
@@ -72,11 +81,37 @@ func (httpServer *HttpServer) handleRemoveTxInMempool(params interface{}, closeC
 	for _, txHashString := range arrays {
 		txHash, ok := txHashString.(string)
 		if ok {
-			t, _ := httpServer.txMemPoolService.RemoveTxInMempool(txHash)
+			t := false
+			if httpServer.config.BlockChain.UsingNewPool() {
+				pM := httpServer.config.BlockChain.GetPoolManager()
+				if pM != nil {
+					pM.RemoveTransactionInPool(txHash)
+					t = true
+				} else {
+					return nil, rpcservice.NewRPCError(rpcservice.GeTxFromPoolError, errors.New("PoolManager is nil"))
+				}
+			} else {
+				t, _ = httpServer.txMemPoolService.RemoveTxInMempool(txHash)
+			}
 			result = append(result, t)
 		} else {
 			result = append(result, false)
 		}
 	}
 	return result, nil
+}
+
+// handleHasSerialNumbersInMempool - check list serial numbers existed in mempool or not
+func (httpServer *HttpServer) handleHasSerialNumbersInMempool(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+
+	//#0: list serialnumbers in base58check encode string
+	serialNumbersStr, ok := arrayParams[0].([]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("serialNumbers must be an array of string"))
+	}
+	return httpServer.txMemPoolService.CheckListSerialNumbersExistedInMempool(serialNumbersStr)
 }

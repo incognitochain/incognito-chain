@@ -5,9 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -77,6 +78,9 @@ func (cReq ContractingRequest) ValidateSanityData(chainRetriever ChainRetriever,
 	if cReq.BurnedAmount != tx.CalculateTxValue() {
 		return false, false, errors.New("BurnedAmount incorrect")
 	}
+	if !bytes.Equal(tx.GetTokenID()[:], cReq.TokenID[:]) {
+		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
+	}
 	if !bytes.Equal(tx.GetSigPubKey()[:], cReq.BurnerAddress.Pk[:]) {
 		return false, false, errors.New("BurnerAddress incorrect")
 	}
@@ -91,6 +95,7 @@ func (cReq ContractingRequest) Hash() *common.Hash {
 	record := cReq.MetadataBase.Hash().String()
 	record += cReq.BurnerAddress.String()
 	record += cReq.TokenID.String()
+	// TODO: @hung change to record += fmt.Sprint(cReq.BurnedAmount)
 	record += string(cReq.BurnedAmount)
 
 	// final hash
@@ -98,7 +103,7 @@ func (cReq ContractingRequest) Hash() *common.Hash {
 	return &hash
 }
 
-func (cReq *ContractingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte) ([][]string, error) {
+func (cReq *ContractingRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
 	actionContent := map[string]interface{}{
 		"meta":          *cReq,
 		"RequestedTxID": tx.Hash(),

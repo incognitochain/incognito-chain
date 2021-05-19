@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/hex"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"math/big"
 	"strconv"
 
@@ -37,9 +38,21 @@ func DecodeInstruction(inst []string) ([]byte, error) {
 			return nil, err
 		}
 
-	case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta):
+	case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2):
 		var err error
 		flatten, err = decodeBurningConfirmInst(inst)
+		if err != nil {
+			return nil, err
+		}
+
+	// for portal instructions
+	case strconv.Itoa(metadata.PortalCustodianWithdrawConfirmMetaV3),
+		strconv.Itoa(metadata.PortalRedeemFromLiquidationPoolConfirmMetaV3),
+		strconv.Itoa(metadata.PortalLiquidateRunAwayCustodianConfirmMetaV3):
+		var err error
+		metaType, _ := strconv.Atoi(inst[0])
+		incProof := NewIncProof(metaType)
+		flatten, err = incProof.ConvertInstToBytes(inst)
 		if err != nil {
 			return nil, err
 		}
@@ -165,7 +178,7 @@ func pickInstructionWithType(
 }
 
 // pickInstructionFromBeaconBlocks extracts all instructions of a specific type
-func pickInstructionFromBeaconBlocks(beaconBlocks []*BeaconBlock, instType string) [][]string {
+func pickInstructionFromBeaconBlocks(beaconBlocks []*types.BeaconBlock, instType string) [][]string {
 	insts := [][]string{}
 	for _, block := range beaconBlocks {
 		found := pickInstructionWithType(block.Body.Instructions, instType)
@@ -177,21 +190,20 @@ func pickInstructionFromBeaconBlocks(beaconBlocks []*BeaconBlock, instType strin
 }
 
 // pickBurningConfirmInstruction finds all BurningConfirmMeta instructions
-func pickBurningConfirmInstruction(
-	beaconBlocks []*BeaconBlock,
+func pickBurningConfirmInstructionV1(
+	beaconBlocks []*types.BeaconBlock,
 	height uint64,
 ) [][]string {
-	// Pick confirm insts for real burning
-	burningConfirmInstType := strconv.Itoa(metadata.BurningConfirmMeta)
-	burningConfirmInsts := pickInstructionFromBeaconBlocks(beaconBlocks, burningConfirmInstType)
-	BLogger.log.Infof("Num of burning confirm for withdrawal insts: %d", len(burningConfirmInsts))
+	metas := []string{
+		strconv.Itoa(metadata.BurningConfirmMeta),
+		strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta),
+	}
 
-	// Pick confirm insts for deposit to SC
-	burningConfirmForDepositToSCInstType := strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta)
-	burningConfirmForDepositToSCInsts := pickInstructionFromBeaconBlocks(beaconBlocks, burningConfirmForDepositToSCInstType)
-	BLogger.log.Infof("Num of burning confirm for deposit to SC insts: %d", len(burningConfirmForDepositToSCInsts))
-
-	insts := append(burningConfirmInsts, burningConfirmForDepositToSCInsts...)
+	insts := [][]string{}
+	for _, meta := range metas {
+		instOfMeta := pickInstructionFromBeaconBlocks(beaconBlocks, meta)
+		insts = append(insts, instOfMeta...)
+	}
 
 	// Replace beacon block height with shard's
 	h := big.NewInt(0).SetUint64(height)
@@ -203,10 +215,10 @@ func pickBurningConfirmInstruction(
 
 // pickBridgeSwapConfirmInst finds all BridgeSwapConfirmMeta instructions in a shard to beacon block
 func pickBridgeSwapConfirmInst(
-	block *ShardToBeaconBlock,
+	instructions [][]string,
 ) [][]string {
 	metaType := strconv.Itoa(metadata.BridgeSwapConfirmMeta)
-	return pickInstructionWithType(block.Instructions, metaType)
+	return pickInstructionWithType(instructions, metaType)
 }
 
 // parseAndConcatPubkeys parses pubkeys of a commmittee (stored as string), converts them to addresses and concat them together

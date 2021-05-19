@@ -30,6 +30,36 @@ type TxCustomTokenPrivacy struct {
 	cachedHash *common.Hash // cached hash data of tx
 }
 
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) initEnv() metadata.ValidationEnviroment {
+	valEnv := DefaultValEnv()
+	// if txCustomTokenPrivacy.IsSalaryTx() {
+	valEnv = WithAct(valEnv, common.TxActTranfer)
+	// }
+	if txCustomTokenPrivacy.IsPrivacy() {
+		valEnv = WithPrivacy(valEnv)
+	} else {
+		valEnv = WithNoPrivacy(valEnv)
+	}
+
+	valEnv = WithType(valEnv, txCustomTokenPrivacy.GetType())
+	sID := common.GetShardIDFromLastByte(txCustomTokenPrivacy.GetSenderAddrLastByte())
+	valEnv = WithShardID(valEnv, int(sID))
+	txCustomTokenPrivacy.SetValidationEnv(valEnv)
+	txNormalValEnv := valEnv.Clone()
+	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
+		txNormalValEnv = WithAct(txNormalValEnv, common.TxActInit)
+	} else {
+		txNormalValEnv = WithAct(txNormalValEnv, common.TxActTranfer)
+	}
+	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy() {
+		txNormalValEnv = WithPrivacy(txNormalValEnv)
+	} else {
+		txNormalValEnv = WithNoPrivacy(txNormalValEnv)
+	}
+	txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.SetValidationEnv(txNormalValEnv)
+	return valEnv
+}
+
 func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
 	tx := Tx{}
 	err := json.Unmarshal(data, &tx)
@@ -63,7 +93,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 			txCustomTokenPrivacy.TxPrivacyTokenData.Amount = 37772966455153487
 		}
 	}
-
+	txCustomTokenPrivacy.initEnv()
 	return nil
 }
 
@@ -256,7 +286,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				return NewTransactionErr(CommitOutputCoinError, err)
 			}
 			// get last byte
-			temp.PubKeyLastByteSender = params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			lastByteSender := params.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			temp.PubKeyLastByteSender = common.GetShardIDFromLastByte(lastByteSender)
 
 			// sign Tx
 			temp.SigPubKey = params.tokenParams.Receiver[0].PaymentAddress.Pk
@@ -361,6 +392,14 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateType() bool {
 
 // ValidateTxWithCurrentMempool - validate for serrial number use in tx is double with other tx in mempool
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithCurrentMempool(mr metadata.MempoolRetriever) error {
+	// check double snd outputs in mempool
+	poolSNDOutputsHashH := mr.GetSNDOutputsHashH()
+	duplicateSNDs := txCustomTokenPrivacy.validateDoubleSNDOutputsWithCurrentMempool(poolSNDOutputsHashH)
+	if duplicateSNDs != nil {
+		return duplicateSNDs
+	}
+
+	// check double spend
 	poolSerialNumbersHashH := mr.GetSerialNumbersHashH()
 	err := txCustomTokenPrivacy.validateDoubleSpendTxWithCurrentMempool(poolSerialNumbersHashH)
 	if err != nil {
@@ -423,7 +462,53 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) validateDoubleSpendTxWithCurren
 	return nil
 }
 
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) validateDoubleSNDOutputsWithCurrentMempool(poolSndOutputsHashH map[common.Hash][]common.Hash) error {
+	// check proof of PRV and pToken
+	if txCustomTokenPrivacy.Proof == nil && txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof == nil {
+		return errors.New("empty tx")
+	}
+
+	// collect serial number for PRV
+	temp := make(map[common.Hash]interface{})
+	if txCustomTokenPrivacy.Proof != nil {
+		for _, outputCoin := range txCustomTokenPrivacy.Proof.GetOutputCoins() {
+			hash := common.HashH(outputCoin.CoinDetails.GetSNDerivator().ToBytesS())
+			temp[hash] = nil
+		}
+	}
+	// collect serial number for pToken
+	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof != nil {
+		for _, outputCoin := range txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins() {
+			hash := common.HashH(outputCoin.CoinDetails.GetSNDerivator().ToBytesS())
+			temp[hash] = nil
+		}
+	}
+
+	// check with pool serial number in mempool
+	for _, listSndOutputs := range poolSndOutputsHashH {
+		for _, sndHash := range listSndOutputs {
+			if _, ok := temp[sndHash]; ok {
+				return fmt.Errorf("duplicate snd output with current mempool %v",
+					sndHash.String())
+			}
+		}
+	}
+	return nil
+}
+
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
+	if txCustomTokenPrivacy.Metadata != nil {
+		isContinued, err := txCustomTokenPrivacy.Metadata.ValidateTxWithBlockChain(&txCustomTokenPrivacy, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
+		// fmt.Printf("[transactionStateDB] validate metadata with blockchain: %d %h %t %v\n", tx.GetMetadataType(), tx.Hash(), isContinued, err)
+		if err != nil {
+			Logger.log.Errorf("[db] validate metadata with blockchain: %d %s %t %v\n", txCustomTokenPrivacy.GetMetadataType(), txCustomTokenPrivacy.Hash().String(), isContinued, err)
+			return NewTransactionErr(RejectTxMedataWithBlockChain, fmt.Errorf("validate metadata of tx %s with blockchain error %+v", txCustomTokenPrivacy.Hash().String(), err))
+		}
+		if !isContinued {
+			return nil
+		}
+	}
+
 	err := txCustomTokenPrivacy.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
 	if err != nil {
 		return NewTransactionErr(InvalidDoubleSpendPRVError, err)
@@ -437,6 +522,12 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(chainR
 
 // ValidateSanityData - validate sanity data of PRV and pToken
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+	if txCustomTokenPrivacy.GetType() != common.TxCustomTokenPrivacyType {
+		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.Tx should have type tp"))
+	}
+	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.GetType() != common.TxNormalType {
+		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.TxNormal should have type n"))
+	}
 	meta := txCustomTokenPrivacy.Tx.Metadata
 	if meta != nil {
 		isContinued, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, &txCustomTokenPrivacy)
@@ -467,13 +558,9 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(chainRetriev
 }
 
 // ValidateTxByItself - validate tx by itself, check signature, proof,... and metadata
-func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, isNewTransaction bool, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
-	// no need to check for tx init token
-	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
-		return txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction)
-	}
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, chainRetriever metadata.ChainRetriever, shardID byte, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	// check for proof, signature ...
-	if ok, err := txCustomTokenPrivacy.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, false, isNewTransaction); !ok {
+	if ok, err := txCustomTokenPrivacy.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, nil); !ok {
 		return false, err
 	}
 	// check for metadata
@@ -488,20 +575,15 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxByItself(hasPrivacyCo
 }
 
 // ValidateTransaction - verify proof, signature, ... of PRV and pToken
-func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacyCoin bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash, isBatch bool, isNewTransaction bool) (bool, error) {
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	// validate for PRV
-	ok, err := txCustomTokenPrivacy.Tx.ValidateTransaction(hasPrivacyCoin, transactionStateDB, bridgeStateDB, shardID, nil, isBatch, isNewTransaction)
+	ok, err := txCustomTokenPrivacy.Tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, nil)
 	if ok {
 		// validate for pToken
 		tokenID := txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
-		if txCustomTokenPrivacy.Type == common.TxRewardType && txCustomTokenPrivacy.TxPrivacyTokenData.Mintable {
+		if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
 			if txCustomTokenPrivacy.TxPrivacyTokenData.Mintable {
-				isBridgeCentralizedToken, _ := statedb.IsBridgeTokenExistedByType(bridgeStateDB, tokenID, true)
-				isBridgeDecentralizedToken, _ := statedb.IsBridgeTokenExistedByType(bridgeStateDB, tokenID, false)
-				if isBridgeCentralizedToken || isBridgeDecentralizedToken {
-					return true, nil
-				}
-				return false, nil
+				return true, nil
 			} else {
 				// check exist token
 				if statedb.PrivacyTokenIDExisted(transactionStateDB, tokenID) {
@@ -510,7 +592,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) ValidateTransaction(hasPrivacy
 				return true, nil
 			}
 		} else {
-			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateTransaction(txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy(), transactionStateDB, bridgeStateDB, shardID, &tokenID, isBatch, isNewTransaction)
+			boolParams["hasPrivacy"] = txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy()
+			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, &tokenID)
 		}
 	}
 	return false, err
@@ -721,6 +804,30 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ListSerialNumbersHashH() []comm
 	return result
 }
 
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) ListSNDOutputsHashH() []common.Hash {
+	// tx normal
+	tx := txCustomTokenPrivacy.Tx
+	result := []common.Hash{}
+	if tx.Proof != nil {
+		for _, outputCoin := range tx.Proof.GetOutputCoins() {
+			hash := common.HashH(outputCoin.CoinDetails.GetSNDerivator().ToBytesS())
+			result = append(result, hash)
+		}
+	}
+	// tx ptoken data
+	customTokenPrivacy := txCustomTokenPrivacy.TxPrivacyTokenData
+	if customTokenPrivacy.TxNormal.Proof != nil {
+		for _, outputCoin := range customTokenPrivacy.TxNormal.Proof.GetOutputCoins() {
+			hash := common.HashH(outputCoin.CoinDetails.GetSNDerivator().ToBytesS())
+			result = append(result, hash)
+		}
+	}
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+	return result
+}
+
 // GetSigPubKey - return sig pubkey for pToken
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetSigPubKey() []byte {
 	return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.SigPubKey
@@ -881,7 +988,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 				return NewTransactionErr(CommitOutputCoinError, err)
 			}
 			// get last byte
-			temp.PubKeyLastByteSender = params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			lastByteSender := params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk[len(params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk)-1]
+			temp.PubKeyLastByteSender = common.GetShardIDFromLastByte(lastByteSender)
 
 			// sign Tx
 			temp.SigPubKey = params.txParam.tokenParams.Receiver[0].PaymentAddress.Pk
@@ -966,4 +1074,14 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsFullBurning(
 	beaconHeight uint64,
 ) bool {
 	return txCustomTokenPrivacy.Tx.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight) && txCustomTokenPrivacy.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight)
+}
+
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifySigTx() (bool, error) {
+	ok, err := txCustomTokenPrivacy.Tx.VerifySigTx()
+	if ok {
+		if txCustomTokenPrivacy.TxPrivacyTokenData.Type != CustomTokenInit {
+			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.VerifySigTx()
+		}
+	}
+	return ok, err
 }

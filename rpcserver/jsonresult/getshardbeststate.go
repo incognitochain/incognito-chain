@@ -25,6 +25,8 @@ type GetShardBestState struct {
 	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int               `json:"ActiveShards"`
 	MetricBlockHeight      uint64            `json:"MetricBlockHeight"`
+	CommitteeFromBlock     common.Hash       `json:"CommitteeFromBlock"`
+	CommitteeEngineVersion uint              `json:"CommitteeEngineVersion"`
 }
 
 func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
@@ -44,27 +46,26 @@ func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
 		TotalTxns:              data.TotalTxns,
 		TotalTxnsExcludeSalary: data.TotalTxnsExcludeSalary,
 		BestCrossShard:         data.BestCrossShard,
+		CommitteeFromBlock:     data.CommitteeFromBlock(),
 	}
 
-	result.ShardCommittee = make([]string, len(data.ShardCommittee))
+	result.ShardCommittee = make([]string, len(data.ShardCommitteeEngine().GetShardCommittee()))
 
-	shardCommitteeStr, err := incognitokey.CommitteeKeyListToString(data.ShardCommittee)
+	shardCommitteeStr, err := incognitokey.CommitteeKeyListToString(data.ShardCommitteeEngine().GetShardCommittee())
 	if err != nil {
 		panic(err)
 	}
 	copy(result.ShardCommittee, shardCommitteeStr)
-	result.ShardPendingValidator = make([]string, len(data.ShardPendingValidator))
+	result.ShardPendingValidator = make([]string, len(data.ShardCommitteeEngine().GetShardSubstitute()))
 
-	shardPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(data.ShardPendingValidator)
+	shardPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(data.ShardCommitteeEngine().GetShardSubstitute())
 	if err != nil {
 		panic(err)
 	}
 	copy(result.ShardPendingValidator, shardPendingValidatorStr)
 
 	result.StakingTx = make(map[string]string)
-	for k, v := range data.StakingTx.GetMap() {
-		result.StakingTx[k] = v
-	}
+	result.CommitteeEngineVersion = data.CommitteeEngineVersion()
 
 	return result
 }

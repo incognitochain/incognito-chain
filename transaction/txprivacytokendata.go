@@ -3,6 +3,7 @@ package transaction
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/metadata"
 
@@ -138,10 +139,17 @@ func CreateCustomTokenPrivacyBurningReceiverArray(dataReceiver interface{}, bcr 
 			continue
 		}
 
+		amountParam, ok := value.(float64)
+		if !ok {
+			Logger.log.Errorf("Amount burning must be a number")
+			return nil, 0, errors.New("Amount burning must be a number")
+		}
+		amount := uint64(amountParam)
+
 		keySet := keyWallet.KeySet
 		temp := &privacy.PaymentInfo{
 			PaymentAddress: keySet.PaymentAddress,
-			Amount:         uint64(value.(float64)),
+			Amount:         amount,
 		}
 		result = append(result, temp)
 		voutsAmount += int64(temp.Amount)
@@ -174,6 +182,52 @@ func CreateCustomTokenPrivacyReceiverArrayV2(dataReceiver interface{}) ([]*priva
 			return nil, 0, err
 		}
 
+		temp := &privacy.PaymentInfo{
+			PaymentAddress: keySet.PaymentAddress,
+			Amount:         amount,
+		}
+		result = append(result, temp)
+		voutsAmount += int64(temp.Amount)
+	}
+	return result, voutsAmount, nil
+}
+
+func CreateCustomTokenPrivacyBurningReceiverArrayV2(dataReceiver interface{}, bcr metadata.ChainRetriever, beaconHeight uint64) ([]*privacy.PaymentInfo, int64, error) {
+	if dataReceiver == nil {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
+	result := []*privacy.PaymentInfo{}
+	voutsAmount := int64(0)
+	receivers, ok := dataReceiver.(map[string]interface{})
+	if !ok {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
+
+	burningAddress := bcr.GetBurningAddress(beaconHeight)
+	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
+	if err != nil {
+		return nil, 0, fmt.Errorf("data receiver is in valid")
+	}
+	keysetBurningAccount := keyWalletBurningAccount.KeySet
+	paymentAddressBurningAccount := keysetBurningAccount.PaymentAddress
+
+	for key, value := range receivers {
+		keyWallet, err := wallet.Base58CheckDeserialize(key)
+		if err != nil {
+			Logger.log.Errorf("Invalid key in CreateCustomTokenPrivacyReceiverArray %+v", key)
+			return nil, 0, err
+		}
+
+		if !bytes.Equal(keyWallet.KeySet.PaymentAddress.Pk[:], paymentAddressBurningAccount.Pk[:]) {
+			continue
+		}
+
+		amount, err := common.AssertAndConvertStrToNumber(value)
+		if err != nil {
+			return nil, 0, fmt.Errorf("Invalid burning amount %v", err)
+		}
+
+		keySet := keyWallet.KeySet
 		temp := &privacy.PaymentInfo{
 			PaymentAddress: keySet.PaymentAddress,
 			Amount:         amount,

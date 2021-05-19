@@ -9,8 +9,8 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/pkg/errors"
 )
@@ -21,9 +21,7 @@ type CommitteePublicKey struct {
 }
 
 func (pubKey *CommitteePublicKey) IsEqualMiningPubKey(consensusName string, k *CommitteePublicKey) bool {
-	u, _ := pubKey.GetMiningKey(consensusName)
-	b, _ := k.GetMiningKey(consensusName)
-	return reflect.DeepEqual(u, b)
+	return reflect.DeepEqual(pubKey.MiningPubKey, k.MiningPubKey)
 }
 
 func NewCommitteePublicKey() *CommitteePublicKey {
@@ -211,4 +209,15 @@ func (committeePublicKey *CommitteePublicKey) IsEqual(target CommitteePublicKey)
 		}
 	}
 	return true
+}
+
+func DeepCopy(committeePublicKeys []CommitteePublicKey) []CommitteePublicKey {
+	newCommitteePublicKeys := []CommitteePublicKey{}
+	for _, committeePublicKey := range committeePublicKeys {
+		res, _ := committeePublicKey.Bytes()
+		newCommitteePublicKey := new(CommitteePublicKey)
+		_ = newCommitteePublicKey.FromBytes(res)
+		newCommitteePublicKeys = append(newCommitteePublicKeys, *newCommitteePublicKey)
+	}
+	return newCommitteePublicKeys
 }

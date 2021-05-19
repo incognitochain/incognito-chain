@@ -2,12 +2,19 @@ package rpcserver
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
+
+func (httpServer *HttpServer) hanldeGetSyncStats(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	stats := httpServer.synkerService.GetSyncStats()
+	result := jsonresult.NewSyncStats(stats)
+	return result, nil
+}
 
 func (httpServer *HttpServer) hanldeGetBeaconPoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	Logger.log.Debugf("hanldeGetBeaconPoolInfo params: %+v", params)
@@ -17,13 +24,6 @@ func (httpServer *HttpServer) hanldeGetBeaconPoolInfo(params interface{}, closeC
 	return result, nil
 }
 
-func (httpServer *HttpServer) handleGetShardToBeaconPoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	Logger.log.Debugf("handleGetShardToBeaconPoolInfo params: %+v", params)
-	blks := httpServer.synkerService.GetShardToBeaconPoolInfo()
-	result := jsonresult.NewPoolInfo(blks)
-	Logger.log.Debugf("handleGetShardToBeaconPoolInfo result: %+v", result)
-	return result, nil
-}
 func (httpServer *HttpServer) hanldeGetShardPoolInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) != 1 {
@@ -78,7 +78,7 @@ func (httpServer *HttpServer) hanldeGetAllView(params interface{}, closeChan <-c
 		return nil, err
 	}
 	res := []jsonresult.GetViewResult{}
-	blksPool := []common.BlockPoolInterface{}
+	blksPool := []types.BlockPoolInterface{}
 	if shardID == -1 {
 		blks := blkOnChain.([]jsonresult.GetBeaconBlockResult)
 		if len(blks) == 0 {

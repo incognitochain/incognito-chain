@@ -2,16 +2,19 @@ package netsync
 
 import (
 	"errors"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/metadata"
 
 	"github.com/incognitochain/incognito-chain/syncker"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/mempool"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -35,25 +38,28 @@ type NetSync struct {
 
 	config *NetSyncConfig
 	cache  *NetSyncCache
+
+	usingNewPool bool
 }
 
 type NetSyncConfig struct {
-	Syncker               *syncker.SynckerManager
-	BlockChain            *blockchain.BlockChain
-	ChainParam            *blockchain.Params
-	TxMemPool             *mempool.TxPool
-	PubSubManager         *pubsub.PubSubManager
-	TransactionEvent      pubsub.EventChannel // transaction event
-	RoleInCommitteesEvent pubsub.EventChannel // role in committees event
-	BeaconBlockEvent      pubsub.EventChannel // beacon block event
-	ShardBlockEvent       pubsub.EventChannel // shard block event
-	RelayShard            []byte
-	RoleInCommittees      int
-	roleInCommitteesMtx   sync.RWMutex
-	Server                interface {
+	Syncker          *syncker.SynckerManager
+	BlockChain       *blockchain.BlockChain
+	ChainParam       *blockchain.Params
+	TxMemPool        *mempool.TxPool
+	PubSubManager    *pubsub.PubSubManager
+	TransactionEvent pubsub.EventChannel // transaction event
+	// RoleInCommitteesEvent pubsub.EventChannel // role in committees event
+	BeaconBlockEvent pubsub.EventChannel // beacon block event
+	ShardBlockEvent  pubsub.EventChannel // shard block event
+	RelayShard       []byte
+	// RoleInCommittees      int
+	// roleInCommitteesMtx   sync.RWMutex
+	Server interface {
 		// list functions callback which are assigned from Server struct
 		PushMessageToPeer(wire.Message, libp2p.ID) error
 		PushMessageToAll(wire.Message) error
+		PushMessageToShard(msg wire.Message, shard byte) error
 	}
 	Consensus interface {
 		OnBFTMsg(*wire.MessageBFT)
@@ -80,17 +86,24 @@ func (netSync *NetSync) Init(cfg *NetSyncConfig) {
 		blockCache: blockCache,
 	}
 
+	newTxPool := os.Getenv("TXPOOL_VERSION")
+	if newTxPool == "1" {
+		netSync.usingNewPool = true
+	} else {
+		netSync.usingNewPool = false
+	}
+
 	// register pubsub channel
 	_, subChanTx, err := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.TransactionHashEnterNodeTopic)
 	if err != nil {
 		Logger.log.Error(err)
 	}
 	netSync.config.TransactionEvent = subChanTx
-	_, subChanRole, err := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
-	if err != nil {
-		Logger.log.Error(err)
-	}
-	netSync.config.RoleInCommitteesEvent = subChanRole
+	// _, subChanRole, err := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// }
+	// netSync.config.RoleInCommitteesEvent = subChanRole
 	_, subChanBeaconBlock, err := netSync.config.PubSubManager.RegisterNewSubscriber(pubsub.NewBeaconBlockTopic)
 	if err != nil {
 		Logger.log.Error(err)
@@ -153,15 +166,14 @@ out:
 					case *wire.MessageTx, *wire.MessageTxPrivacyToken:
 						{
 							beaconHeight := netSync.config.BlockChain.GetBeaconBestState().BestBlock.GetHeight()
+							var tx metadata.Transaction
 							switch msg := msgC.(type) {
 							case *wire.MessageTx:
-								{
-									netSync.handleMessageTx(msg, int64(beaconHeight))
-								}
+								tx = msg.Transaction
+								netSync.handleMessageTx(msg, tx, int64(beaconHeight))
 							case *wire.MessageTxPrivacyToken:
-								{
-									netSync.handleMessageTxPrivacyToken(msg, int64(beaconHeight))
-								}
+								tx = msg.Transaction
+								netSync.handleMessageTx(msg, tx, int64(beaconHeight))
 							}
 						}
 					case *wire.MessageBFT:
@@ -169,23 +181,6 @@ out:
 							netSync.handleMessageBFTMsg(msg)
 						}
 
-					case *wire.MessageGetCrossShard:
-						{
-							netSync.handleMessageGetCrossShard(msg)
-						}
-
-					case *wire.MessageGetShardToBeacon:
-						{
-							netSync.handleMessageGetShardToBeacon(msg)
-						}
-					case *wire.MessageGetBlockBeacon:
-						{
-							netSync.handleMessageGetBlockBeacon(msg)
-						}
-					case *wire.MessageGetBlockShard:
-						{
-							netSync.handleMessageGetBlockShard(msg)
-						}
 					default:
 						Logger.log.Debugf("Invalid message type in block "+"handler: %T", msg)
 					}
@@ -264,16 +259,54 @@ func (netSync *NetSync) QueueMessage(peer *peer.Peer, msg wire.Message, done cha
 }
 
 // handleTxMsg handles transaction messages from all peers.
-func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64) {
-	Logger.log.Debug("Handling new message tx")
-	if !netSync.handleTxWithRole(msg.Transaction) {
-		return
-	}
-	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, beaconHeight)
-		if err != nil {
-			Logger.log.Error(err)
+func (netSync *NetSync) handleMessageTx(msg wire.Message, tx metadata.Transaction, beaconHeight int64) {
+	txHash := tx.Hash().String()
+	Logger.log.Debugf(" Handling new message tx %v", txHash)
+	if isAdded := netSync.handleCacheTx(*tx.Hash()); !isAdded {
+		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		err := netSync.config.Server.PushMessageToShard(msg, sID)
+		Logger.log.Error(err)
+		if !netSync.usingNewPool {
+			hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(tx, beaconHeight)
+			if err != nil {
+				Logger.log.Error(err)
+			} else {
+				Logger.log.Debugf("Node got hash of transaction %s", hash.String())
+			}
 		} else {
+			tp, err := netSync.config.BlockChain.GetConfig().PoolManager.GetShardTxsPool(sID)
+			if err != nil {
+				Logger.log.Errorf("Cannot get tx pool of shard %v, got err %v", sID, err)
+			} else {
+				if !tp.IsRunning() {
+					return
+				}
+				tp.GetInbox() <- tx
+				Logger.log.Infof("Sent transaction %+v to pool", txHash)
+			}
+		}
+	}
+	Logger.log.Infof("Transaction %+v found in cache", txHash)
+}
+
+// handleTxMsg handles transaction messages from all peers.
+func (netSync *NetSync) handleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyToken, beaconHeight int64) {
+	txHash := msg.Transaction.Hash().String()
+	Logger.log.Debugf("Handling new message tx %v", txHash)
+	// if !netSync.handleTxWithRole(msg.Transaction) {
+	// 	return
+	// }
+	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
+		tx := msg.Transaction
+		sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+		tp, err := netSync.config.BlockChain.GetConfig().PoolManager.GetShardTxsPool(sID)
+		if err != nil {
+			Logger.log.Errorf("Cannot get tx pool of shard %v, got err %v", sID, err)
+		} else {
+			if !tp.IsRunning() {
+				return
+			}
+			tp.GetInbox() <- tx
 			// Broadcast to network
 			/*go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
 				metrics.Measurement:      metrics.TxEnterNetSyncSuccess,
@@ -281,40 +314,16 @@ func (netSync *NetSync) handleMessageTx(msg *wire.MessageTx, beaconHeight int64)
 				metrics.Tag:              metrics.TxHashTag,
 				metrics.TagValue:         msg.Transaction.Hash().String(),
 			})*/
-			Logger.log.Debugf("there is hash of transaction %s", hash.String())
-			err := netSync.config.Server.PushMessageToAll(msg)
-			if err != nil {
-				Logger.log.Error(err)
-			} else {
-				netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
-			}
+			// Logger.log.Debugf("there is hash of transaction %s", tx.Hash().String())
+			// err := netSync.config.Server.PushMessageToAll(msg)
+			// if err != nil {
+			// 	Logger.log.Error(err)
+			// } else {
+			// netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
+			// }
 		}
 	}
-	Logger.log.Debug("Transaction %+v found in cache", *msg.Transaction.Hash())
-}
-
-// handleTxMsg handles transaction messages from all peers.
-func (netSync *NetSync) handleMessageTxPrivacyToken(msg *wire.MessageTxPrivacyToken, beaconHeight int64) {
-	Logger.log.Debug("Handling new message tx")
-	if !netSync.handleTxWithRole(msg.Transaction) {
-		return
-	}
-	if isAdded := netSync.handleCacheTx(*msg.Transaction.Hash()); !isAdded {
-		hash, _, err := netSync.config.TxMemPool.MaybeAcceptTransaction(msg.Transaction, beaconHeight)
-		if err != nil {
-			Logger.log.Error(err)
-		} else {
-			Logger.log.Debugf("Node got hash of transaction %s", hash.String())
-			// Broadcast to network
-			err := netSync.config.Server.PushMessageToAll(msg)
-			if err != nil {
-				Logger.log.Error(err)
-			} else {
-				netSync.config.TxMemPool.MarkForwardedTransaction(*msg.Transaction.Hash())
-			}
-		}
-	}
-	Logger.log.Debug("Transaction %+v found in cache", *msg.Transaction.Hash())
+	Logger.log.Infof("Transaction %+v found in cache", txHash)
 }
 
 func (netSync *NetSync) handleMessageBFTMsg(msg *wire.MessageBFT) {
@@ -337,86 +346,6 @@ func (netSync *NetSync) handleMessageBFTMsg(msg *wire.MessageBFT) {
 	// 	metrics.Tag:              metrics.ShardIDTag,
 	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
 	// })
-}
-
-func (netSync *NetSync) handleMessageGetBlockShard(msg *wire.MessageGetBlockShard) {
-	Logger.log.Debug("Handling new message - " + wire.CmdGetBlockShard)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.HandleMessageGetBlockShard,
-	// 	metrics.MeasurementValue: float64(1),
-	// 	metrics.Tag:              metrics.ShardIDTag,
-	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
-	// })
-	peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	if msg.ByHash {
-		netSync.getBlockShardByHashAndSend(peerID, blockShard, msg.BlkHashes, 0)
-	} else {
-		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, blockShard, msg.BySpecificHeight, msg.ShardID, msg.BlkHeights, 0)
-	}
-}
-
-func (netSync *NetSync) handleMessageGetBlockBeacon(msg *wire.MessageGetBlockBeacon) {
-	Logger.log.Debug("Handling new message - " + wire.CmdGetBlockBeacon)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.HandleMessageGetBlockBeacon,
-	// 	metrics.MeasurementValue: float64(1),
-	// 	metrics.Tag:              metrics.ShardIDTag,
-	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
-	// })
-	peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	if msg.ByHash {
-		netSync.getBlockBeaconByHashAndSend(peerID, msg.BlkHashes)
-	} else {
-		netSync.getBlockBeaconByHeightAndSend(peerID, msg.FromPool, msg.BySpecificHeight, msg.BlkHeights)
-	}
-}
-
-func (netSync *NetSync) handleMessageGetShardToBeacon(msg *wire.MessageGetShardToBeacon) {
-	Logger.log.Debug("Handling new message getshardtobeacon")
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.HandleMessageGetShardToBeacon,
-	// 	metrics.MeasurementValue: float64(1),
-	// 	metrics.Tag:              metrics.ShardIDTag,
-	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
-	// })
-	peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	if msg.ByHash {
-		netSync.getBlockShardByHashAndSend(peerID, shardToBeacon, msg.BlkHashes, 0)
-	} else {
-		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, shardToBeacon, msg.BySpecificHeight, msg.ShardID, msg.BlkHeights, 0)
-	}
-}
-
-func (netSync *NetSync) handleMessageGetCrossShard(msg *wire.MessageGetCrossShard) {
-	Logger.log.Debug("Handling new message getcrossshard")
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.HandleMessageGetCrossShard,
-	// 	metrics.MeasurementValue: float64(1),
-	// 	metrics.Tag:              metrics.ShardIDTag,
-	// 	metrics.TagValue:         fmt.Sprintf("shardid-%+v", netSync.config.RoleInCommittees),
-	// })
-	peerID, err := libp2p.IDB58Decode(msg.SenderID)
-	if err != nil {
-		Logger.log.Error(err)
-		return
-	}
-	if msg.ByHash {
-		netSync.getBlockShardByHashAndSend(peerID, crossShard, msg.BlkHashes, msg.ToShardID)
-	} else {
-		netSync.getBlockShardByHeightAndSend(peerID, msg.FromPool, crossShard, msg.BySpecificHeight, msg.FromShardID, msg.BlkHeights, msg.ToShardID)
-	}
 }
 
 func (netSync *NetSync) handleCacheBlock(blockHash string) bool {
@@ -449,22 +378,22 @@ func (netSync *NetSync) handleCacheTx(txHash common.Hash) bool {
 }
 
 // handleTxWithRole - check tx and make decision is processed or not
-func (netSync *NetSync) handleTxWithRole(tx metadata.Transaction) bool {
-	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	for _, shardID := range netSync.config.RelayShard {
-		if senderShardID == shardID {
-			return true
-		}
-	}
-	netSync.config.roleInCommitteesMtx.RLock()
-	if netSync.config.RoleInCommittees > -1 && byte(netSync.config.RoleInCommittees) == senderShardID {
-		netSync.config.roleInCommitteesMtx.RUnlock()
-		return true
-	} else {
-		netSync.config.roleInCommitteesMtx.RUnlock()
-		return false
-	}
-}
+// func (netSync *NetSync) handleTxWithRole(tx metadata.Transaction) bool {
+// 	senderShardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+// 	for _, shardID := range netSync.config.RelayShard {
+// 		if senderShardID == shardID {
+// 			return true
+// 		}
+// 	}
+// 	netSync.config.roleInCommitteesMtx.RLock()
+// 	if netSync.config.RoleInCommittees > -1 && byte(netSync.config.RoleInCommittees) == senderShardID {
+// 		netSync.config.roleInCommitteesMtx.RUnlock()
+// 		return true
+// 	} else {
+// 		netSync.config.roleInCommitteesMtx.RUnlock()
+// 		return false
+// 	}
+// }
 
 func (netSync *NetSync) cacheLoop() {
 	for w := 0; w < workers; w++ {
@@ -474,7 +403,7 @@ func (netSync *NetSync) cacheLoop() {
 		select {
 		case msg := <-netSync.config.ShardBlockEvent:
 			{
-				if shardBlock, ok := msg.Value.(*blockchain.ShardBlock); !ok {
+				if shardBlock, ok := msg.Value.(*types.ShardBlock); !ok {
 					continue
 				} else {
 					go netSync.handleCacheBlock("s" + shardBlock.Header.Hash().String())
@@ -482,22 +411,22 @@ func (netSync *NetSync) cacheLoop() {
 			}
 		case msg := <-netSync.config.BeaconBlockEvent:
 			{
-				if beaconBlock, ok := msg.Value.(*blockchain.BeaconBlock); !ok {
+				if beaconBlock, ok := msg.Value.(*types.BeaconBlock); !ok {
 					continue
 				} else {
 					go netSync.handleCacheBlock("b" + beaconBlock.Header.Hash().String())
 				}
 			}
-		case msg := <-netSync.config.RoleInCommitteesEvent:
-			{
-				if shardID, ok := msg.Value.(int); !ok {
-					continue
-				} else {
-					netSync.config.roleInCommitteesMtx.Lock()
-					netSync.config.RoleInCommittees = shardID
-					netSync.config.roleInCommitteesMtx.Unlock()
-				}
-			}
+			// case msg := <-netSync.config.RoleInCommitteesEvent:
+			// 	{
+			// 		if shardID, ok := msg.Value.(int); !ok {
+			// 			continue
+			// 		} else {
+			// 			netSync.config.roleInCommitteesMtx.Lock()
+			// 			netSync.config.RoleInCommittees = shardID
+			// 			netSync.config.roleInCommitteesMtx.Unlock()
+			// 		}
+			// 	}
 		}
 	}
 }

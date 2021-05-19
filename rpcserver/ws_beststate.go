@@ -1,9 +1,11 @@
 package rpcserver
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
@@ -38,12 +40,21 @@ func (wsServer *WsServer) handleSubscribeShardBestState(params interface{}, subc
 					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.ShardBestState, have %+v", reflect.TypeOf(msg.Value))
 					continue
 				}
-				allShardBestStateResult := wsServer.blockService.GetShardBestStates()
-				if shardBestStateResult, ok := allShardBestStateResult[shardID]; !ok {
-					continue
-				} else {
-					cResult <- RpcSubResult{Result: shardBestStateResult, Error: nil}
+				shardBestState, err := wsServer.blockService.GetShardBestStateByShardID(shardID)
+				if err != nil {
+					err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
+					cResult <- RpcSubResult{Error: err}
+					return
 				}
+				block, _, err := wsServer.config.BlockChain.GetShardBlockByHash(shardBestState.BestBlockHash)
+				if err != nil || block == nil {
+					err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
+					cResult <- RpcSubResult{Error: err}
+					return
+				}
+				shardBestState.BestBlock = block
+				shardBestStateResult := jsonresult.NewGetShardBestState(shardBestState)
+				cResult <- RpcSubResult{Result: shardBestStateResult, Error: nil}
 			}
 		case <-closeChan:
 			{
@@ -82,12 +93,76 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BeaconBestState, have %+v", reflect.TypeOf(msg.Value))
 					continue
 				}
-				beaconBestStateResult, err := wsServer.blockService.GetBeaconBestState()
+				allViews := []*blockchain.BeaconBestState{}
+				beaconBestState := &blockchain.BeaconBestState{}
+				beaconDB := wsServer.blockService.BlockChain.GetBeaconChainDatabase()
+				beaconViews, err := rawdbv2.GetBeaconViews(beaconDB)
+				if err != nil {
+					cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)}
+				}
+
+				err = json.Unmarshal(beaconViews, &allViews)
+				if err != nil {
+					cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)}
+				}
+
+				for _, v := range allViews {
+					err := v.RestoreBeaconViewStateFromHash(wsServer.GetBlockchain(), true)
+					if err != nil {
+						cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)}
+					}
+					beaconBestState = v
+				}
+				beaconBestStateResult := jsonresult.NewGetBeaconBestState(beaconBestState)
 				if err != nil {
 					err := rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
 					cResult <- RpcSubResult{Error: err}
 				} else {
-					cResult <- RpcSubResult{Result: jsonresult.NewGetBeaconBestState(beaconBestStateResult), Error: nil}
+					cResult <- RpcSubResult{Result: beaconBestStateResult, Error: nil}
+				}
+			}
+		case <-closeChan:
+			{
+				cResult <- RpcSubResult{Result: jsonresult.UnsubcribeResult{Message: "Unsubscribe Beacon Beststate"}}
+				return
+			}
+		}
+	}
+}
+func (wsServer *WsServer) handleSubscribeBeaconBestStateFromMem(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
+	Logger.log.Info("Handle Subscribe Beacon Beststate", params, subcription)
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) != 0 {
+		err := rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Methods should only contain NO params"))
+		cResult <- RpcSubResult{Error: err}
+		return
+	}
+	subId, subChan, err := wsServer.config.PubSubManager.RegisterNewSubscriber(pubsub.BeaconBeststateTopic)
+	if err != nil {
+		err := rpcservice.NewRPCError(rpcservice.SubcribeError, err)
+		cResult <- RpcSubResult{Error: err}
+		return
+	}
+	defer func() {
+		Logger.log.Info("Finish Subscribe Beacon Beststate Block")
+		wsServer.config.PubSubManager.Unsubscribe(pubsub.BeaconBeststateTopic, subId)
+		close(cResult)
+	}()
+	for {
+		select {
+		case msg := <-subChan:
+			{
+				_, ok := msg.Value.(*blockchain.BeaconBestState)
+				if !ok {
+					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BeaconBestState, have %+v", reflect.TypeOf(msg.Value))
+					continue
+				}
+				beaconBestStateResult := jsonresult.NewGetBeaconBestState(wsServer.blockService.BlockChain.GetBeaconBestState())
+				if err != nil {
+					err := rpcservice.NewRPCError(rpcservice.GetClonedBeaconBestStateError, err)
+					cResult <- RpcSubResult{Error: err}
+				} else {
+					cResult <- RpcSubResult{Result: beaconBestStateResult, Error: nil}
 				}
 			}
 		case <-closeChan:
