@@ -3,6 +3,7 @@ package rpcserver
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
 	"io/ioutil"
@@ -130,8 +131,34 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 		tempV, _ := incognitokey.CommitteeKeyListToString(v)
 		substituteValidatorStr[shardID] = tempV
 	}
-	nextEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
-	currentEpochShardCandidateStr, _ := incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
+	var currentEpochShardCandidateStr []string
+	var nextEpochShardCandidateStr []string
+	nextEpochShardCandidateStr, _ = incognitokey.CommitteeKeyListToString(nextEpochShardCandidate)
+	if httpServer.config.BlockChain.GetBeaconBestState().CommitteeEngineVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
+		currentEpochShardCandidateStr, _ = incognitokey.CommitteeKeyListToString(currentEpochShardCandidate)
+	} else {
+		if httpServer.config.BlockChain.IsEqualToRandomTime(height) {
+			snapshotShardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+			snapshotShardSubstitute := make(map[byte][]incognitokey.CommitteePublicKey)
+			delete(currentValidator, statedb.BeaconChainID)
+			delete(substituteValidator, statedb.BeaconChainID)
+			for k, v := range snapshotShardCommittee {
+				snapshotShardCommittee[byte(k)] = v
+			}
+			for k, v := range snapshotShardSubstitute {
+				snapshotShardSubstitute[byte(k)] = v
+			}
+			numberOfAssignedCandidate := committeestate.SnapshotShardCommonPoolV2(
+				nextEpochShardCandidate,
+				snapshotShardCommittee,
+				snapshotShardSubstitute,
+				httpServer.config.BlockChain.GetChainParams().NumberOfFixedBlockValidators,
+				httpServer.config.BlockChain.GetChainParams().MinShardCommitteeSize,
+			)
+			currentEpochShardCandidateStr = append([]string{},nextEpochShardCandidateStr[:numberOfAssignedCandidate]...)
+			nextEpochShardCandidateStr = append([]string{},nextEpochShardCandidateStr[numberOfAssignedCandidate:]...)
+		}
+	}
 	tempStakingTx := make(map[string]string)
 	for k, v := range stakingTx {
 		tempStakingTx[k] = v.String()
