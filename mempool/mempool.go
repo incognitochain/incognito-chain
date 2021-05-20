@@ -1110,14 +1110,16 @@ func (tp *TxPool) listTxs() []string {
 /*
 List all tx ids in mempool
 */
-func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
+func (tp *TxPool) ListTxsDetail() ([]common.Hash, []metadata.Transaction) {
 	tp.mtx.RLock()
 	defer tp.mtx.RUnlock()
-	result := make([]metadata.Transaction, 0)
-	for _, tx := range tp.pool {
-		result = append(result, tx.Desc.Tx)
+	tpKeys := make([]common.Hash, 0)
+	txs := make([]metadata.Transaction, 0)
+	for key, tx := range tp.pool {
+		tpKeys = append(tpKeys, key)
+		txs = append(txs, tx.Desc.Tx)
 	}
-	return result
+	return tpKeys, txs
 }
 
 // ValidateSerialNumberHashH - check serialNumberHashH which is
