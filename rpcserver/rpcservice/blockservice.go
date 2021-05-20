@@ -394,6 +394,32 @@ func (blockService BlockService) RetrieveBeaconBlockByHeight(blockHeight uint64)
 	return result, nil
 }
 
+func (blockService BlockService) GetBlocksFromHeight(chainID int, fromHeight int, numBlocks int) (interface{}, *RPCError) {
+	resultShard := make([]*types.ShardBlock, 0)
+	resultBeacon := make([]*types.BeaconBlock, 0)
+	if chainID == -1 {
+		for i := fromHeight; i < numBlocks+fromHeight; i++ {
+			blk, err := blockService.BlockChain.GetBeaconBlockByHeightV1(uint64(i))
+			if err != nil {
+				break
+			}
+			resultBeacon = append(resultBeacon, blk)
+		}
+		return resultBeacon, nil
+	} else {
+		for i := fromHeight; i < numBlocks+fromHeight; i++ {
+			blk, err := blockService.BlockChain.GetShardBlockByHeightV1(uint64(i), byte(chainID))
+			if err != nil {
+				break
+			}
+			resultShard = append(resultShard, blk)
+		}
+
+		return resultShard, nil
+	}
+
+}
+
 func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (interface{}, *RPCError) {
 	resultShard := make([]jsonresult.GetShardBlockResult, 0)
 	resultBeacon := make([]jsonresult.GetBeaconBlockResult, 0)
