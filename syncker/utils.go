@@ -1,8 +1,9 @@
 package syncker
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
@@ -69,8 +70,18 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 			break
 		}
 	}
-	//validate the last block for batching
-	epochCommittee := chain.GetCommittee()
+
+	epochCommittee := []incognitokey.CommitteePublicKey{}
+
+	if len(sameCommitteeBlock) != 0 {
+		var err error
+		//validate the last block for batching
+		epochCommittee, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
+		if err != nil {
+			return 0, err
+		}
+	}
+
 	validBlockForInsert := sameCommitteeBlock[:]
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
 		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], epochCommittee); err != nil {
