@@ -371,3 +371,35 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 	}
 	return result, nil
 }
+
+// handleGetBlocks - get n blocks from specific height
+func (httpServer *HttpServer) handleGetBlocksFromHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 3 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Number of parameter is invalid"))
+	}
+
+	chainIDTemp, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("chainID is invalid"))
+	}
+	chainID := int(chainIDTemp)
+
+	fromHeightTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("fromHeightTemp is invalid"))
+	}
+	fromHeight := int(fromHeightTemp)
+
+	numBlockTemp, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("numblock is invalid"))
+	}
+	numBlock := int(numBlockTemp)
+
+	result, err := httpServer.blockService.GetBlocksFromHeight(chainID, fromHeight, numBlock)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}

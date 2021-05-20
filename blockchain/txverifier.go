@@ -198,6 +198,16 @@ func (v *TxsVerifier) ValidateWithChainState(
 	beaconViewRetriever metadata.BeaconViewRetriever,
 	beaconHeight uint64,
 ) (bool, error) {
+	ok := v.checkFees(
+		beaconViewRetriever.GetHeight(),
+		tx,
+		beaconViewRetriever.GetBeaconFeatureStateDB(),
+		shardViewRetriever.GetShardID(),
+	)
+	if !ok {
+		err := errors.Errorf(" This list txs contains a invalid tx %v, validate result %v, error %v", tx.Hash().String(), ok, errors.Errorf("Transaction fee %v PRV %v Token is invalid", tx.GetTxFee(), tx.GetTxFeeToken()))
+		return ok, err
+	}
 	ok, err := tx.ValidateSanityDataWithBlockchain(
 		chainRetriever,
 		shardViewRetriever,
@@ -337,17 +347,6 @@ func (v *TxsVerifier) validateTxsWithChainstate(
 	for _, tx := range txs {
 		// nWorkers <- 1
 		go func(target metadata.Transaction) {
-			ok := v.checkFees(
-				bcView.GetHeight(),
-				target,
-				bcView.GetBeaconFeatureStateDB(),
-				sView.GetShardID(),
-			)
-			if !ok {
-				if errCh != nil {
-					errCh <- errors.Errorf(" This list txs contains a invalid tx %v, validate result %v, error %v", target.Hash().String(), ok, errors.Errorf("Transaction fee %v is invalid", target.GetTxFee()))
-				}
-			}
 			ok, err := v.ValidateWithChainState(
 				target,
 				cView,
