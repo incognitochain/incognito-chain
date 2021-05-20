@@ -1,22 +1,14 @@
 FROM golang:1.14-alpine
 
-ENV GOROOT="/usr/local/go"
-ENV GOPATH="$HOME/go"
-ENV WORKDIR = $GOPATH/src/github.com/incognitochain/incognito-chain
-
 # Create app directory
-WORKDIR $WORKDIR
+WORKDIR $GOPATH/src/github.com/incognitochain/incognito-chain
 
-RUN apk add --no-cache curl
-
-RUN apk update
-RUN apk add git
-RUN apk install build-essential
+RUN apk add --no-cache make gcc musl-dev linux-headers git
 
 COPY . .
 
-RUN go get -d
+#RUN go get -d
+
+#RUN go build -v -o ./bin/incognito
 
 RUN make build
-
-CMD [ "make", "mainnet" ]
