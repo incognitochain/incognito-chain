@@ -16,5 +16,7 @@ RUN apk install build-essential
 COPY . .
 
 RUN go get -d
+
 RUN make build
 
+CMD [ "make", "mainnet" ]
