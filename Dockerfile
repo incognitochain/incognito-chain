@@ -1,36 +1,20 @@
-FROM golang:1.11rc1-alpine
+FROM golang:1.14-alpine
 
-ENV REFLEXGLIDE=https://github.com/Masterminds/glide/releases/download/v0.12.3/glide-v0.12.3-linux-amd64.tar.gz
-ENV WORK=/go/src/github.com/ninjadotorg/constant
 ENV GOROOT="/usr/local/go"
-ENV GOPATH="/go"
+ENV GOPATH="$HOME/go"
+ENV WORKDIR = $GOPATH/src/github.com/incognitochain/incognito-chain
 
 # Create app directory
-WORKDIR $WORK
+WORKDIR $WORKDIR
 
 RUN apk add --no-cache curl
 
 RUN apk update
 RUN apk add git
-
-RUN mkdir glide
-RUN curl -Lk $REFLEXGLIDE -o glide.tar.gz
-RUN tar -xzf glide.tar.gz -C glide/
-RUN mv glide/linux-amd64/glide /bin/glide
-
-COPY glide.* ./
-
-
-RUN pwd && ls -lah && glide install && glide update
+RUN apk install build-essential
 
 COPY . .
 
 RUN go get -d
+RUN make build
 
-WORKDIR $WORK
-
-RUN go build
-
-EXPOSE 9333:9333
-
-CMD [ "./constant" ]
