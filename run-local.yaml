@@ -2,6 +2,8 @@ version: '3'
 
 services: 
   incognitochain:
+    # args: TODO: fill here for deploy by flag
+    restart: always
     image: incognitochain:latest
     container_name: incognitochain-local
     ports: 
@@ -15,6 +17,7 @@ services:
     environment:
       - INCOGNITO_NETWORK_KEY=local
       - INCOGNITO_CONFIG_MODE_KEY=file
+
 volumes:
   config:
   data:
