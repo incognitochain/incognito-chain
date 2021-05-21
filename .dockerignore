@@ -1,7 +1,6 @@
 vendor
 data
 bin/
-bootnode/
 log/
 logs/
 process/
