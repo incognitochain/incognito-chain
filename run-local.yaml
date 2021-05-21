@@ -1,0 +1,20 @@
+version: '3'
+
+services: 
+  incognitochain:
+    image: incognitochain:latest
+    container_name: incognitochain-local
+    ports: 
+      - "9876:9876"
+      - "8765:8765"
+      - "9334:9334"
+      - "9335:9335"
+    volumes:
+      - config:/incognitochain/config/
+      - data:/incognitochain/data/
+    environment:
+      - INCOGNITO_NETWORK_KEY=local
+      - INCOGNITO_CONFIG_MODE_KEY=file
+volumes:
+  config:
+  data:
