@@ -160,7 +160,7 @@ func (c *config) loadNetwork() string {
 		if err != nil {
 			panic(err)
 		}
-		res += testnetVersion
+		res = res + "-" + testnetVersion
 		c.TestNetVersion = version
 	case MainnetNetwork:
 		res = MainnetNetwork
