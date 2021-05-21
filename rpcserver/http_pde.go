@@ -706,7 +706,6 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
 
-	jsb, _ := json.MarshalIndent(pdeState, "", "\t")
 
 	beaconBlocks, err := httpServer.config.BlockChain.GetBeaconBlockByHeight(uint64(beaconHeight))
 	if err != nil {
