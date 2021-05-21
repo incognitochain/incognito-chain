@@ -308,10 +308,21 @@ func (s *BeaconSyncProcess) syncBeacon() {
 				panic(1)
 			}
 
+			//BYPASS
+			if beaconBlock.GetHeight() == 1110273 || beaconBlock.GetHeight() == 1110601 {
+				err := s.chain.InsertBlock(beaconBlock, common.BYPASS_VALIDATION)
+				if err != nil {
+					Logger.Error(err)
+					panic("Something wrong")
+				}
+			}
+
 		BEACON_WAIT:
 			shouldWait := false
 			for sid, shardStates := range beaconBlock.Body.ShardState {
 				if len(shardStates) > 0 && shardStates[len(shardStates)-1].Height > s.blockchain.GetChain(int(sid)).GetFinalView().GetHeight() {
+					fmt.Println(sid, shardStates[len(shardStates)-1].Height, s.blockchain.GetChain(int(sid)).GetFinalView().GetHeight())
+					//panic(1)
 					shouldWait = true
 				}
 			}

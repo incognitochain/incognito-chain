@@ -167,15 +167,27 @@ func (multiView *MultiView) NewViewAfterAdd(newView View) (bestView View, finalV
 			return
 		}
 		finalView = prev1View
+		//} else if newView.GetBlock().GetVersion() == 2 {
+		//	////update finalView: consensus 2
+		//	prev1Hash := bestView.GetPreviousHash()
+		//	prev1View := multiView.viewByHash[*prev1Hash]
+		//	if prev1View == nil || finalView.GetHeight() == prev1View.GetHeight() {
+		//		return
+		//	}
+		//	bestViewTimeSlot := common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
+		//	prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+		//	if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
+		//		finalView = prev1View
+		//	}
 	} else if newView.GetBlock().GetVersion() >= 2 {
-		////update finalView: consensus 2
+		////update finalView: consensus 3
 		prev1Hash := bestView.GetPreviousHash()
 		prev1View := multiView.viewByHash[*prev1Hash]
 		if prev1View == nil || finalView.GetHeight() == prev1View.GetHeight() {
 			return
 		}
-		bestViewTimeSlot := common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
-		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
+		bestViewTimeSlot := common.CalculateTimeSlot(bestView.GetBlock().GetProduceTime())
+		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProduceTime())
 		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 			finalView = prev1View
 		}
