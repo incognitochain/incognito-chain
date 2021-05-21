@@ -203,18 +203,6 @@ func (c *config) verify() {
 	c.LogDir = filepath.Join(c.DataDir, c.LogDir)
 	c.LogFileName = filepath.Join(c.LogDir, c.LogFileName)
 
-	/*// Initialize log rotation.  After log rotation has been initialized, the*/
-	//// logger variables may be used.
-	//initLogRotator(filepath.Join(cfg.LogDir, DefaultLogFilename))
-
-	//// Parse, validate, and set debug log level(s).
-	//if err := parseAndSetDebugLevels(cfg.LogLevel); err != nil {
-	//err := fmt.Errorf("%s: %v", funcName, err.Error())
-	//fmt.Fprintln(os.Stderr, err)
-	//fmt.Fprintln(os.Stderr, usageMessage)
-	//return nil, nil, err
-	/*}*/
-
 	// --addPeer and --connect do not mix.
 	if len(c.AddPeers) > 0 && len(c.ConnectPeers) > 0 {
 		str := "%s: the --addpeer and --connect options can not be mixed"
