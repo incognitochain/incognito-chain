@@ -13,5 +13,5 @@ COPY --from=builder /incognitochain/incognito /incognitochain
 COPY --from=builder /incognitochain/Makefile /incognitochain
 COPY --from=builder /incognitochain/priv2.json /incognitochain
 COPY --from=builder /incognitochain/whitelist.json /incognitochain
-COPY --from=builder /incognitochain/config /incognitochain/config/
+COPY --from=builder /incognitochain/config/ /incognitochain/
 #RUN make local
