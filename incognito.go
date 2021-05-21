@@ -77,7 +77,7 @@ func mainMaster(serverChan chan<- *Server) error {
 
 	// Initialize log rotation.  After log rotation has been initialized, the
 	// logger variables may be used.
-	initLogRotator()
+	initLogRotator(cfg.LogFileName)
 
 	// Parse, validate, and set debug log level(s).
 	if err := parseAndSetDebugLevels(cfg.LogLevel); err != nil {

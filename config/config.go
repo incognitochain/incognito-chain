@@ -146,38 +146,33 @@ func removeDuplicateAddresses(addrs []string) []string {
 	return result
 }
 
-func (c *config) loadNetwork() string {
-	res := ""
+func (c *config) loadNetwork() {
 	switch utils.GetEnv(NetworkKey, MainnetNetwork) {
 	case LocalNetwork:
-		res = LocalNetwork
 		c.IsLocal = true
 	case TestNetNetwork:
-		res = TestNetNetwork
 		c.IsTestNet = true
 		testnetVersion := utils.GetEnv(NetworkVersionKey, TestNetVersion1)
 		version, err := strconv.Atoi(testnetVersion)
 		if err != nil {
 			panic(err)
 		}
-		res = res + "-" + testnetVersion
 		c.TestNetVersion = version
 	case MainnetNetwork:
-		res = MainnetNetwork
 		c.IsMainNet = true
 	}
-	return res
 }
 
 func (c *config) Network() string {
 	res := utils.GetEnv(NetworkKey, MainnetNetwork)
 	if res == TestNetNetwork {
-		res += utils.GetEnv(NetworkVersionKey, TestNetVersion1)
+		res = res + "-" + utils.GetEnv(NetworkVersionKey, TestNetVersion1)
 	}
 	return res
 }
 
-func (c *config) verify(network string) {
+func (c *config) verify() {
+	network := c.Network()
 	// Multiple networks can't be selected simultaneously.
 	numNets := 0
 	if c.IsLocal {
@@ -205,7 +200,7 @@ func (c *config) verify(network string) {
 
 	// Append the network type to the log directory so it is "namespaced"
 	// per network in the same fashion as the data directory.
-	c.LogDir = filepath.Join(c.LogDir, network)
+	c.LogDir = filepath.Join(c.DataDir, c.LogDir)
 	c.LogFileName = filepath.Join(c.LogDir, c.LogFileName)
 
 	/*// Initialize log rotation.  After log rotation has been initialized, the*/
@@ -409,11 +404,11 @@ func LoadConfig() *config {
 	}
 
 	//get network
-	network := c.loadNetwork()
+	c.loadNetwork()
 	//load config from file
 	c.loadConfig()
 	//verify config
-	c.verify(network)
+	c.verify()
 
 	return c
 }

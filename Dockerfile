@@ -16,5 +16,3 @@ COPY --from=builder /incognitochain/whitelist.json /incognitochain/
 COPY --from=builder /incognitochain/config/local/ /incognitochain/config/local/
 COPY --from=builder /incognitochain/config/testnet2/ /incognitochain/config/testnet2/
 COPY --from=builder /incognitochain/config/mainnet/ /incognitochain/config/mainnet/
-
-ENTRYPOINT ["incognito"]

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -12,6 +13,7 @@ import (
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
 	"github.com/incognitochain/incognito-chain/txpool"
+	"github.com/incognitochain/incognito-chain/utils"
 
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -175,20 +177,20 @@ var subsystemLoggers = map[string]common.Logger{
 // initLogRotator initializes the logging rotater to write logs to logFile and
 // create roll files in the same directory.  It must be called before the
 // package-global log rotater variables are used.
-func initLogRotator() {
-	//logDir, _ := filepath.Split(logFile)
-	/*err := os.MkdirAll("", 0700)*/
-	//if err != nil {
-	//fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
-	//os.Exit(utils.ExitByLogging)
-	//}
-	//r, err := rotator.New("", 10*1024, false, 3)
-	//if err != nil {
-	//fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
-	//os.Exit(utils.ExitByLogging)
-	/*}*/
+func initLogRotator(logFile string) {
+	logDir, _ := filepath.Split(logFile)
+	err := os.MkdirAll(logDir, 0700)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
+		os.Exit(utils.ExitByLogging)
+	}
+	r, err := rotator.New(logFile, 10*1024, false, 3)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
+		os.Exit(utils.ExitByLogging)
+	}
 
-	logRotator = &rotator.Rotator{}
+	logRotator = r
 }
 
 // setLogLevel sets the logging level for provided subsystem.  Invalid
