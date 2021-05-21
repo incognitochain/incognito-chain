@@ -554,8 +554,6 @@ func deductSharesForWithdrawal(
 	amt uint64,
 	currentPDEState *CurrentPDEState,
 ) {
-	jsb, _ := json.MarshalIndent(currentPDEState, "", "\t")
-	Logger.log.Infof("BUGLOG5 before deduct: %v\n", string(jsb))
 	pdeShareKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, withdrawerAddressStr)
 	if err != nil {
 		Logger.log.Errorf("cannot find pdeShareKey for address: %v. Error: %v\n", withdrawerAddressStr, err)
@@ -568,9 +566,6 @@ func deductSharesForWithdrawal(
 		adjustingAmt = currentAmt - amt
 	}
 	currentPDEState.PDEShares[pdeShareKey] = adjustingAmt
-
-	jsb, _ = json.MarshalIndent(currentPDEState, "", "\t")
-	Logger.log.Infof("BUGLOG5 after deducting: %v\n", string(jsb))
 }
 
 func (blockchain *BlockChain) processPDETradingFeesDistribution(

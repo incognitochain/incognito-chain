@@ -115,7 +115,6 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 			receivingAmtFromInst = refundContribution.ContributedAmount
 
 		} else { // matched and returned
-			fmt.Println("[BUGLOG] Verify Metadata", tx.Hash().String(), iRes)
 			contentBytes := []byte(inst[3])
 			var matchedNReturnedContrib PDEMatchedNReturnedContribution
 			err := json.Unmarshal(contentBytes, &matchedNReturnedContrib)
@@ -151,7 +150,7 @@ func (iRes PDEContributionResponse) VerifyMinerCreatedTxBeforeGettingInBlock(min
 		}
 
 		idx = i
-		fmt.Println("[BUGLOG] Verify Metadata --- OK")
+		fmt.Println("BUGLOG Verify Metadata --- OK")
 		break
 	}
 	if idx == -1 { // not found the issuance request tx for this response
