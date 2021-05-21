@@ -244,8 +244,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	}
 
 	if beaconBlock.GetVersion() >= 2 && curView.BestBlock.GetProposeTime() > 0 && common.CalculateTimeSlot(beaconBlock.Header.ProposeTime) <= common.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) {
-		Logger.log.Infof("[config] curView GetHeight %v GetProposeTime() %v", curView.BestBlock.GetHeight(), curView.BestBlock.GetProposeTime())
-		Logger.log.Infof("[config] beaconBlock Height %v ProposeTime %v", beaconBlock.Header.Height, beaconBlock.Header.ProposeTime)
+		Logger.log.Infof("[config] curView Hash %v GetHeight %v GetProposeTime() %v Timestamp %v",
+			curView.BestBlock.Hash().String(), curView.BestBlock.GetHeight(), curView.BestBlock.GetProposeTime(), curView.BestBlock.Header.Timestamp)
+		Logger.log.Infof("[config] beaconBlock Hash %v Height %v ProposeTime %v Timestamp %v",
+			beaconBlock.Header.Hash().String(), beaconBlock.Header.Height, beaconBlock.Header.ProposeTime, beaconBlock.Header.Timestamp)
 		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(beaconBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
 	}
 
