@@ -175,6 +175,10 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
+	if beaconBlock.Header.Height == 2353313 {
+		panic("Reach to beacon block height 2353313")
+	}
+
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err2 := newBestState.beaconCommitteeEngine.Commit(hashes, committeeChange); err2 != nil {
 		return err2
@@ -244,10 +248,10 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	}
 
 	if beaconBlock.GetVersion() >= 2 && curView.BestBlock.GetProposeTime() > 0 && common.CalculateTimeSlot(beaconBlock.Header.ProposeTime) <= common.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) {
-		Logger.log.Infof("[config] curView Hash %v GetHeight %v GetProposeTime() %v Timestamp %v",
-			curView.BestBlock.Hash().String(), curView.BestBlock.GetHeight(), curView.BestBlock.GetProposeTime(), curView.BestBlock.Header.Timestamp)
-		Logger.log.Infof("[config] beaconBlock Hash %v Height %v ProposeTime %v Timestamp %v",
-			beaconBlock.Header.Hash().String(), beaconBlock.Header.Height, beaconBlock.Header.ProposeTime, beaconBlock.Header.Timestamp)
+		/*Logger.log.Infof("[config] curView Hash %v GetHeight %v GetProposeTime() %v Timestamp %v",*/
+		//curView.BestBlock.Hash().String(), curView.BestBlock.GetHeight(), curView.BestBlock.GetProposeTime(), curView.BestBlock.Header.Timestamp)
+		//Logger.log.Infof("[config] beaconBlock Hash %v Height %v ProposeTime %v Timestamp %v",
+		/*beaconBlock.Header.Hash().String(), beaconBlock.Header.Height, beaconBlock.Header.ProposeTime, beaconBlock.Header.Timestamp)*/
 		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(beaconBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
 	}
 
