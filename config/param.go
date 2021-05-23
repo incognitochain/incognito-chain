@@ -220,3 +220,15 @@ type gethParam struct {
 	Protocol string `mapstructure:"protocol"`
 	Port     string `mapstructure:"port"`
 }
+
+func (gethPram *gethParam) GetFromEnv() {
+	if utils.GetEnv(GethHostKey, utils.EmptyString) != utils.EmptyString {
+		gethPram.Host = utils.GetEnv(GethHostKey, utils.EmptyString)
+	}
+	if utils.GetEnv(GethProtocolKey, utils.EmptyString) != utils.EmptyString {
+		gethPram.Protocol = utils.GetEnv(GethProtocolKey, utils.EmptyString)
+	}
+	if utils.GetEnv(GethPortKey, utils.EmptyString) != utils.EmptyString {
+		gethPram.Port = utils.GetEnv(GethPortKey, utils.EmptyString)
+	}
+}

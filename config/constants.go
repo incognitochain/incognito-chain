@@ -10,6 +10,9 @@ const (
 	ConfigModeKey     = "INCOGNITO_CONFIG_MODE_KEY"
 	ParamFileKey      = "INCOGNITO_PARAM_FILE_KEY"
 	InitTxFileKey     = "INCOGNITO_INIT_TX_FILE_KEY"
+	GethHostKey       = "GETH_NAME"
+	GethPortKey       = "GETH_PORT"
+	GethProtocolKey   = "GETH_PROTOCOL"
 )
 
 // default config

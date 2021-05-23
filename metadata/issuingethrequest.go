@@ -275,6 +275,7 @@ func GetETHHeader(
 	getETHHeaderByHashParams := []interface{}{ethBlockHash, false}
 	var getETHHeaderByHashRes GetETHHeaderByHashRes
 	gethParam := config.Param().GethParam
+	gethParam.GetFromEnv()
 	err := rpcClient.RPCCall(
 		gethParam.Protocol,
 		gethParam.Host,
@@ -335,6 +336,7 @@ func GetMostRecentETHBlockHeight() (*big.Int, error) {
 	params := []interface{}{}
 	var getETHBlockNumRes GetETHBlockNumRes
 	gethParam := config.Param().GethParam
+	gethParam.GetFromEnv()
 	err := rpcClient.RPCCall(
 		gethParam.Protocol,
 		gethParam.Host,
