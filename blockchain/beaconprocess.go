@@ -176,6 +176,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	}
 
 	if beaconBlock.Header.Height == 2353313 {
+		Logger.log.Info("beaconBlock.Header.ProposeTime:", beaconBlock.Header.ProposeTime)
 		panic("Reach to beacon block height 2353313")
 	}
 
