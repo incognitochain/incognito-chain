@@ -108,7 +108,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		if !chain.CheckExistedBlk(v) {
 			var err error
 			if firstInsert { //always validate the first block even in batch mode
-				Logger.Infof("[config] block height %v proposetime %v", v.GetHeight, v.GetProposeTime())
+				Logger.Infof("[config] block height %v proposetime %v", v.GetHeight(), v.GetProposeTime())
 				err = chain.InsertBlock(v, true)
 				firstInsert = false
 			} else {
