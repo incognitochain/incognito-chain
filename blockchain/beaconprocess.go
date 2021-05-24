@@ -104,6 +104,11 @@ CONTINUE_VERIFY:
 
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
 
+	if beaconBlock.Header.Height == 2353313 {
+		Logger.log.Info("beaconBlock.Header.ProposeTime:", beaconBlock.Header.ProposeTime)
+		panic("Reach to beacon block height 2353313")
+	}
+
 	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
@@ -173,11 +178,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		}
 	} else {
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	}
-
-	if beaconBlock.Header.Height == 2353313 {
-		Logger.log.Info("beaconBlock.Header.ProposeTime:", beaconBlock.Header.ProposeTime)
-		panic("Reach to beacon block height 2353313")
 	}
 
 	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
