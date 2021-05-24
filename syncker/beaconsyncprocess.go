@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"os"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -248,6 +249,12 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 			insertBeaconTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++
 			//must validate this block when insert
+
+			if blk.GetHeight() == 2353313 {
+				Logger.Info("beaconBlock.Header.ProposeTime:", blk.(types.BlockInterface).GetProduceTime())
+				panic("Reach to beacon block height 2353313")
+			}
+
 			if err := s.chain.InsertBlock(blk.(types.BlockInterface), true); err != nil {
 				Logger.Error("Insert beacon block from pool fail", blk.GetHeight(), blk.Hash(), err)
 				continue
