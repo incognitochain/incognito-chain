@@ -209,8 +209,14 @@ func (tx *Tx) ValidateTxCorrectness(
 	error,
 ) {
 
-	Logger.log.Debugf("VALIDATING TX........\n")
-
+	Logger.log.Infof("[testTx] VALIDATING TX........ %v\n", tx.Hash().String())
+	txEnv := tx.valEnv
+	if txEnv == nil {
+		panic(tx.Hash().String())
+	}
+	if txEnv.beaconHeight == 0 {
+		Logger.log.Errorf("[testTx] This Env of tx %v has beacon 0 at sHeight %v", tx.Hash().String(), txEnv.shardHeight)
+	}
 	var valid bool
 	var err error
 
