@@ -1004,8 +1004,8 @@ func (serverObj *Server) OnGetCrossShard(_ *peer.PeerConn, msg *wire.MessageGetC
 
 func updateTxEnvWithSView(sView *blockchain.ShardBestState, tx metadata.Transaction) metadata.ValidationEnviroment {
 	valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), sView.GetHeight())
-	valEnv = transaction.WithBeaconHeight(valEnv, sView.BeaconHeight)
-	valEnv = transaction.WithConfirmedTime(valEnv, tx.GetLockTime())
+	valEnv = transaction.WithBeaconHeight(valEnv, sView.GetBeaconHeight())
+	valEnv = transaction.WithConfirmedTime(valEnv, sView.GetBlockTime())
 	return valEnv
 }
 
