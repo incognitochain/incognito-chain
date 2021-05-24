@@ -165,7 +165,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, shardBlock.Header.BeaconHash, curView); err != nil {
-		Logger.log.Errorf("BUGLOG2 verifyTransactionFromNewBlock for block %v, shard %v error: %v\n", blockHeight, shardID, err)
+		Logger.log.Errorf("verifyTransactionFromNewBlock for block %v, shard %v error: %v\n", blockHeight, shardID, err)
 		return NewBlockChainError(TransactionFromNewBlockError, err)
 	}
 

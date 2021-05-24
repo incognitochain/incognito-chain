@@ -111,6 +111,82 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 	return result, nil
 }
 
+func (coinService CoinService) ListCachedUnspentOutputCoinsByKey(listKeyParams []interface{}, tokenID *common.Hash, toHeight uint64) (*jsonresult.ListOutputCoins, *RPCError) {
+	result := &jsonresult.ListOutputCoins{
+		Outputs: make(map[string][]jsonresult.OutCoin),
+	}
+	for _, keyParam := range listKeyParams {
+		keys, ok := keyParam.(map[string]interface{})
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Invalid Params %+v", keyParam))
+		}
+		// get keyset only contain private key by deserializing
+		privateKeyStr, ok := keys["PrivateKey"].(string)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("private key is invalid"))
+		}
+		keyWallet, err := wallet.Base58CheckDeserialize(privateKeyStr)
+		if err != nil || keyWallet.KeySet.PrivateKey == nil {
+			Logger.log.Error("Check Deserialize err", err)
+			return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("Private key is invalid, error %+v", err))
+		}
+		keySetTmp, shardID, err := GetKeySetFromPrivateKey(keyWallet.KeySet.PrivateKey)
+		if err != nil {
+			return nil, NewRPCError(ListUnspentOutputCoinsByKeyError, err)
+		}
+		keyWallet.KeySet = *keySetTmp
+
+		// get shard height
+		// shardHeightTemp, ok := keys["StartHeight"].(float64)
+		// if !ok {
+		// 	return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid height param"))
+		// }
+		// shardHeight := uint64(shardHeightTemp)
+
+		plainOutputCoins, _, err := coinService.BlockChain.GetAllOutputCoinsByKeyset(&keyWallet.KeySet, shardID, tokenID, true)
+
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
+		}
+		result.ToHeight = 0
+		result.FromHeight = 0
+		item := make([]jsonresult.OutCoin, 0)
+
+		// add decrypted coins to response
+		for _, outCoin := range plainOutputCoins {
+			tmp := jsonresult.NewOutCoin(outCoin)
+			db := coinService.BlockChain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+
+			if outCoin.GetVersion() == 2{
+				tmpCoin, ok := outCoin.(*privacy.CoinV2)
+				if !ok{
+					continue
+				}
+
+				//Retrieve coin's index
+				publicKeyBytes := tmpCoin.GetPublicKey().ToBytesS()
+				idx, err := statedb.GetOTACoinIndex(db, *tokenID, publicKeyBytes)
+				if err != nil{
+					return nil, NewRPCError(ListDecryptedOutputCoinsByKeyError, err)
+				}
+
+				tmp.Index = base58.Base58Check{}.Encode(idx.Bytes(), common.ZeroByte)
+				if tmpCoin.GetSharedRandom() != nil{
+					tmp.SharedRandom = base58.Base58Check{}.Encode(tmpCoin.GetSharedRandom().ToBytesS(), common.ZeroByte)
+				}
+			}
+
+			item = append(item, tmp)
+		}
+
+		if len(item) > 0 {
+			result.Outputs[privateKeyStr] = item
+		}
+	}
+	return result, nil
+}
+
 func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{}, tokenID common.Hash, toHeight uint64) (*jsonresult.ListOutputCoins, *RPCError) {
 	result := &jsonresult.ListOutputCoins{
 		Outputs: make(map[string][]jsonresult.OutCoin),

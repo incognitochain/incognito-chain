@@ -74,6 +74,73 @@ func (httpServer *HttpServer) handleListUnspentOutputCoins(params interface{}, c
 	return result, nil
 }
 
+//handleListUnspentOutputCoinsFromCache - use private key to get all tx which contains cached output coin of account
+// by private key, it return full tx outputcoin with amount and receiver address in txs
+//component:
+//Parameter #1—the minimum number of confirmations an output must have
+//Parameter #2—the maximum number of confirmations an output may have
+//Parameter #3—the list priv-key which be used to view utxo which also includes the fromHeight of each key
+//From height is used to efficiently fetch onetimeaddress outputCoins
+func (httpServer *HttpServer) handleListUnspentOutputCoinsFromCache(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+
+	// get component
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 3 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
+	}
+
+	var min, max uint64
+
+	if paramsArray[0] != nil {
+		minParam, ok := paramsArray[0].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min param is invalid"))
+		}
+		min = uint64(minParam)
+	}
+
+	if paramsArray[1] != nil {
+		maxParam, ok := paramsArray[1].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("max param is invalid"))
+		}
+		max = uint64(maxParam)
+	}
+	_ = min
+	// _ = max
+
+	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	if listKeyParams == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("list key is invalid"))
+	}
+
+	tokenID := &common.Hash{}
+	err1 := tokenID.SetBytes(common.PRVCoinID[:])
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err1)
+	}
+	if len(paramsArray) == 4 {
+		tokenIDStr, ok := paramsArray[3].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
+		}
+		if tokenIDStr != "" {
+			tokenIDHash, err2 := common.Hash{}.NewHashFromStr(tokenIDStr)
+			if err2 != nil {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
+			}
+			tokenID = tokenIDHash
+		}
+	}
+
+	result, err := httpServer.outputCoinService.ListCachedUnspentOutputCoinsByKey(listKeyParams, tokenID, max)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 //handleListOutputCoins - use readonly key to get all tx which contains output coin of account
 // by private key, it return full tx outputcoin with amount and receiver address in txs
 //component:
