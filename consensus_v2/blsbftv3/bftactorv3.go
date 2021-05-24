@@ -558,6 +558,8 @@ func createBLSAggregatedSignatures(committees []incognitokey.CommitteePublicKey,
 func (e *BLSBFT_V3) validateAndVote(
 	v *ProposeBlockInfo,
 ) error {
+	v.lastValidateTime = time.Now()
+
 	//already vote for this proposed block
 	if v.isVoted {
 		return nil

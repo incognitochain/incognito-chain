@@ -482,16 +482,11 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 		if int(sID) < len(txService.BlockChain.ShardChain) {
 			sChain := txService.BlockChain.ShardChain[sID]
 			if sChain != nil {
-
 				sView := sChain.GetBestState()
-				bView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, true)
-				if err != nil {
-					return nil, nil, byte(0), NewRPCError(GetAllBeaconViews, fmt.Errorf("Can not rebuild beacon view, err %v", err))
-				}
 				ok, e := sChain.TxsVerifier.FullValidateTransactions(
 					txService.BlockChain,
 					sView,
-					bView,
+					sChain.Blockchain.BeaconChain.GetFinalViewState(),
 					[]metadata.Transaction{&tx},
 				)
 				if (!ok) || (e != nil) {
