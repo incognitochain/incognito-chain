@@ -255,7 +255,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 				panic("Reach to beacon block height 2353313")
 			}
 
-			panic("Reach to beacon block height 2353313")
+			//panic("Reach to beacon block height 2353313")
 			if err := s.chain.InsertBlock(blk.(types.BlockInterface), true); err != nil {
 				Logger.Error("Insert beacon block from pool fail", blk.GetHeight(), blk.Hash(), err)
 				continue
