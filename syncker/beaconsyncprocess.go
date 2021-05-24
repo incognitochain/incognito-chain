@@ -358,9 +358,9 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 				for {
 					time1 := time.Now()
 
-					for _, v := range blockBuffer {
-						Logger.Infof("[config] v height %v proposetime %v", v.GetHeight(), v.GetProposeTime())
-					}
+					/*for _, v := range blockBuffer {*/
+					//Logger.Infof("[config] v height %v proposetime %v", v.GetHeight(), v.GetProposeTime())
+					/*}*/
 
 					if successBlk, err := InsertBatchBlock(s.chain, blockBuffer); err != nil {
 						if successBlk == 0 {

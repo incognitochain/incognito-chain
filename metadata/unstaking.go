@@ -86,7 +86,6 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 		if !stakerInfo.AutoStaking() {
 			return false, NewMetadataTxError(UnstakingRequestAlreadyUnstake, errors.New("Public Key Has Already Been Unstaked"))
 		}
-
 	}
 
 	return true, nil

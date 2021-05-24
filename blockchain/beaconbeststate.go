@@ -490,7 +490,6 @@ func (beaconBestState *BeaconBestState) GetAutoStakingList() map[string]bool {
 }
 
 func (beaconBestState *BeaconBestState) GetAllCommitteeValidatorCandidateFlattenList() []string {
-
 	return beaconBestState.getAllCommitteeValidatorCandidateFlattenList()
 }
 

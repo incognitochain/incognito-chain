@@ -927,7 +927,12 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 //	9. Not accept a salary tx
 //	10. Check duplicate staker public key in block
 //	11. Check duplicate Init Custom Token in block
-func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHash common.Hash, curView *ShardBestState) error {
+func (blockchain *BlockChain) verifyTransactionFromNewBlock(
+	shardID byte,
+	txs []metadata.Transaction,
+	beaconHash common.Hash,
+	curView *ShardBestState,
+) error {
 	if len(txs) == 0 {
 		return nil
 	}
