@@ -17,8 +17,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 		return err
 	}
 	beaconBestState.BestBlock = *block
-	/*Logger.log.Infof("[config] beaconBlock Hash %v Height %v ProposerTime %v Timestamp %v",*/
-	/*block.Hash().String(), block.Header.Height, block.Header.ProposeTime, block.Header.Timestamp)*/
 	beaconBestState.BeaconHeight = block.GetHeight()
 
 	if includeCommittee {

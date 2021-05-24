@@ -222,7 +222,7 @@ func (header *BeaconHeader) toString() string {
 	res += header.ShardStateHash.String()
 	res += header.InstructionHash.String()
 
-	if header.Version == 2 {
+	if header.Version >= 2 {
 		res += header.Proposer
 		res += fmt.Sprintf("%v", header.ProposeTime)
 	}
