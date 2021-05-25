@@ -9,9 +9,9 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
-	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"

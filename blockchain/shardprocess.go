@@ -12,7 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
