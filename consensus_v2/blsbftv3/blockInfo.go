@@ -14,11 +14,10 @@ type ProposeBlockInfo struct {
 	votes                   map[string]*BFTVote //pk->BFTVote
 	isValid                 bool
 	hasNewVote              bool
-	sendVote                bool
+	isVoted                 bool
 	proposerSendVote        bool
 	proposerMiningKeyBase58 string
 	lastValidateTime        time.Time
-	isVoted                 bool
 	isCommitted             bool
 }
 
