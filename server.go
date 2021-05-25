@@ -1043,7 +1043,7 @@ func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.Message
 		txCustom.TxPrivacyTokenData.TxNormal.SetValidationEnv(valEnvCustom)
 	}
 	serverObj.netSync.QueueTxPrivacyToken(nil, msg, txProcessed)
-	<-txProcessed
+	//<-txProcessed
 
 	Logger.log.Debug("Receive a new transaction(privacy token) END")
 }
