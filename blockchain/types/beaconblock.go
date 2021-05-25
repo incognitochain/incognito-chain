@@ -223,10 +223,12 @@ func (header *BeaconHeader) toString() string {
 	res += header.ShardStateHash.String()
 	res += header.InstructionHash.String()
 
-	if header.Version == 2 {
+	//to compatible with mainnet database, version 3 dont have proposer info
+	if header.Version == 2 || header.Version >= 4 {
 		res += header.Proposer
 		res += fmt.Sprintf("%v", header.ProposeTime)
 	}
+
 	return res
 }
 

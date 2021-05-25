@@ -11,11 +11,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
