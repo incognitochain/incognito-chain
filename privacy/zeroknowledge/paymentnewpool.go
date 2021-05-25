@@ -217,7 +217,7 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 		// Verify for the proof one-out-of-N commitments is a commitment to the coins being spent
 
 		if isNewZKP {
-			if IsNewOneOfManyProof(vEnv.ConfimedTime()) {
+			if IsNewOneOfManyProof(vEnv.ConfirmedTime()) {
 				valid, err := proof.oneOfManyProof[i].Verify()
 				if !valid {
 					privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
@@ -231,7 +231,7 @@ func (proof PaymentProof) verifyHasPrivacyV2(
 				return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
 			}
 		} else {
-			if IsNewOneOfManyProof(vEnv.ConfimedTime()) {
+			if IsNewOneOfManyProof(vEnv.ConfirmedTime()) {
 				valid, err := proof.oneOfManyProof[i].VerifyOld()
 				if !valid {
 					valid2, err2 := proof.oneOfManyProof[i].Verify()

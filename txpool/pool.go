@@ -183,7 +183,7 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 	txHash := tx.Hash().String()
 	start := time.Now()
 	Logger.Debugf("[txTracing] Start validate tx %v at %v", txHash, start.UTC())
-	t := time.NewTimer(2 * time.Second)
+	t := time.NewTimer(5 * time.Second)
 	defer t.Stop()
 	errChan := make(chan validateResult)
 	go func() {
@@ -562,6 +562,20 @@ func (tp *TxsPool) snapshotPool() TxsData {
 		}
 		for k, v := range tpTemp.Data.TxInfos {
 			res.TxInfos[k] = v
+		}
+		cData <- res
+	}
+	return <-cData
+}
+
+func (tp *TxsPool) snapshotPoolOutCoin() map[common.Hash]interface{} {
+	cData := make(chan map[common.Hash]interface{})
+	tp.action <- func(tpTemp *TxsPool) {
+		res := map[common.Hash]interface{}{}
+		for _, v := range tpTemp.Data.TxByHash {
+			for _, serialNumber := range v.ListSerialNumbersHashH() {
+				res[serialNumber] = nil
+			}
 		}
 		cData <- res
 	}
