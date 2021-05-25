@@ -568,6 +568,20 @@ func (tp *TxsPool) snapshotPool() TxsData {
 	return <-cData
 }
 
+func (tp *TxsPool) snapshotPoolOutCoin() map[common.Hash]interface{} {
+	cData := make(chan map[common.Hash]interface{})
+	tp.action <- func(tpTemp *TxsPool) {
+		res := map[common.Hash]interface{}{}
+		for _, v := range tpTemp.Data.TxByHash {
+			for _, serialNumber := range v.ListSerialNumbersHashH() {
+				res[serialNumber] = nil
+			}
+		}
+		cData <- res
+	}
+	return <-cData
+}
+
 func (tp *TxsPool) getTxByHash(txID string) metadata.Transaction {
 	cData := make(chan metadata.Transaction)
 	tp.action <- func(tpTemp *TxsPool) {
