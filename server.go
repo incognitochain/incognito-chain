@@ -1021,7 +1021,7 @@ func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	tx.SetValidationEnv(valEnv)
 	var txProcessed chan struct{}
 	serverObj.netSync.QueueTx(nil, msg, txProcessed)
-	<-txProcessed
+	//<-txProcessed
 
 	Logger.log.Debug("Receive a new transaction END")
 }
