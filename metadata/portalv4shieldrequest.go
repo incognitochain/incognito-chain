@@ -43,6 +43,7 @@ type PortalShieldingRequestContent struct {
 // PortalRequestPTokensStatus - Beacon tracks status of request ptokens into db
 type PortalShieldingRequestStatus struct {
 	Status          byte
+	Error           string
 	TokenID         string // pTokenID in incognito chain
 	IncogAddressStr string
 	ProofHash       string

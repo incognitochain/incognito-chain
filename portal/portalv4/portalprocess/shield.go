@@ -89,6 +89,7 @@ func buildPortalShieldingRequestInstV4(
 	shardID byte,
 	txReqID common.Hash,
 	status string,
+	errorStr string,
 ) []string {
 	shieldingReqContent := metadata.PortalShieldingRequestContent{
 		TokenID:         tokenID,
@@ -105,6 +106,7 @@ func buildPortalShieldingRequestInstV4(
 		strconv.Itoa(int(shardID)),
 		status,
 		string(shieldingReqContentBytes),
+		errorStr,
 	}
 }
 
@@ -142,6 +144,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 		shardID,
 		actionData.TxReqID,
 		portalcommonv4.PortalV4RequestRejectedChainStatus,
+		"isInvalidProof",
 	)
 
 	if currentPortalState == nil {
@@ -170,6 +173,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 
 	// check unique external proof from portal state
 	if currentPortalState.IsExistedShieldingExternalTx(meta.TokenID, proofHash) || isExistInStateDB {
+		rejectInst[4] = "IsExistedProof"
 		Logger.log.Errorf("Shielding Request: Shielding request proof exist in db %v", meta.ShieldingProof)
 		return [][]string{rejectInst}, nil
 	}
@@ -213,6 +217,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 		shardID,
 		actionData.TxReqID,
 		portalcommonv4.PortalV4RequestAcceptedChainStatus,
+		"None",
 	)
 	return [][]string{inst}, nil
 }
@@ -230,7 +235,7 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 		return nil
 	}
 
-	if len(instructions) != 4 {
+	if len(instructions) != 5 {
 		Logger.log.Errorf("Shielding Request: Instructions are in wrong format")
 		return nil // skip the instruction
 	}
@@ -271,6 +276,7 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 	// track shieldingReq status by txID into DB
 	shieldingReqTrackData := metadata.PortalShieldingRequestStatus{
 		Status:          shieldStatus,
+		Error:           instructions[4],
 		TokenID:         actionData.TokenID,
 		IncogAddressStr: actionData.IncogAddressStr,
 		ProofHash:       actionData.ProofHash,
