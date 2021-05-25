@@ -206,10 +206,10 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(
 
 // TODO: change name
 func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
-	if block.GetHeight() == 2353313 {
-		Logger.log.Info("[config] beaconBlock.Header.ProposeTime:", block.GetProposeTime())
-		panic("[config] Reach to beacon block height 2353313")
-	}
+	/*if block.GetHeight() == 2353313 {*/
+	//Logger.log.Info("[config] beaconBlock.Header.ProposeTime:", block.GetProposeTime())
+	//panic("[config] Reach to beacon block height 2353313")
+	/*}*/
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), shouldValidate); err != nil {
 		Logger.log.Error(err)
 		return err
