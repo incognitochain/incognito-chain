@@ -56,8 +56,9 @@ type TxPool interface {
 		needValidate []metadata.Transaction,
 	)
 	snapshotPool() TxsData
+	snapshotPoolOutCoin() map[common.Hash]interface{}
 	getTxByHash(txID string) metadata.Transaction
-	removeTx(txHash string, arg interface{})
+	RemoveTx(txHash string)
 }
 
 type BlockTxsVerifier interface {

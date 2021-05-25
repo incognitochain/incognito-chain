@@ -5,7 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/consensus/blsbft"
+	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 )
 
 func TestRpcServer_AddOrUpdatePeer(t *testing.T) {
