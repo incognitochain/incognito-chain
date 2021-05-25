@@ -371,7 +371,7 @@ func (shardHeader *ShardHeader) String() string {
 		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
 
-	if shardHeader.Version == 3 {
+	if shardHeader.Version >= 3 {
 		res += shardHeader.CommitteeFromBlock.String()
 	}
 
