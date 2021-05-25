@@ -27,7 +27,7 @@ func NewPoolManager(
 		ps: ps,
 	}
 	for i := 0; i < activeShards; i++ {
-		res.ShardTxsPool = append(res.ShardTxsPool, NewTxsPool(nil, make(chan metadata.Transaction), ttl))
+		res.ShardTxsPool = append(res.ShardTxsPool, NewTxsPool(nil, make(chan metadata.Transaction, 128), ttl))
 	}
 
 	return res, nil
@@ -139,7 +139,7 @@ func (pm *PoolManager) GetTransactionByHash(txHash string) (metadata.Transaction
 func (pm *PoolManager) RemoveTransactionInPool(txHash string) {
 	for _, txPool := range pm.ShardTxsPool {
 		if txPool.IsRunning() {
-			txPool.removeTx(txHash, nil)
+			txPool.RemoveTx(txHash)
 		}
 	}
 }

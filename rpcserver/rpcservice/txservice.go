@@ -482,16 +482,20 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 		if int(sID) < len(txService.BlockChain.ShardChain) {
 			sChain := txService.BlockChain.ShardChain[sID]
 			if sChain != nil {
-
 				sView := sChain.GetBestState()
-				ok, e := sChain.TxsVerifier.FullValidateTransactions(
-					txService.BlockChain,
-					sView,
-					sChain.Blockchain.GetBeaconBestState(),
-					[]metadata.Transaction{&tx},
-				)
-				if (!ok) || (e != nil) {
-					return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
+				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(&tx))
+				if err == nil {
+					ok, e := sChain.TxsVerifier.FullValidateTransactions(
+						txService.BlockChain,
+						sView,
+						bcView,
+						[]metadata.Transaction{&tx},
+					)
+					if (!ok) || (e != nil) {
+						return nil, nil, byte(0), NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
+					}
+				} else {
+					return nil, nil, byte(0), NewRPCError(GetBeaconBlockByHashError, fmt.Errorf("Reject invalid tx, cannot init beaconview from hash %v, validate result %v, err %v", sView.BestBeaconHash, false, err))
 				}
 			} else {
 				Logger.log.Errorf("Can not get shard chain for this shard ID %v", sID)
@@ -1305,15 +1309,22 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 			sChain := txService.BlockChain.ShardChain[sID]
 			if sChain != nil {
 				sView := sChain.GetBestState()
-				ok, e := sChain.TxsVerifier.FullValidateTransactions(
-					txService.BlockChain,
-					sView,
-					sChain.Blockchain.GetBeaconBestState(),
-					[]metadata.Transaction{&tx},
-				)
-				if (!ok) || (e != nil) {
-					return nil, nil, NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
+				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(&tx))
+				if err == nil {
+					ok, e := sChain.TxsVerifier.FullValidateTransactions(
+						txService.BlockChain,
+						sView,
+						bcView,
+						[]metadata.Transaction{&tx},
+					)
+					if (!ok) || (e != nil) {
+						return nil, nil, NewRPCError(TxPoolRejectTxError, fmt.Errorf("Reject invalid tx, validate result %v, err %v", ok, e))
+					}
+				} else {
+					return nil, nil, NewRPCError(GetBeaconBlockByHashError, fmt.Errorf("Reject invalid tx, cannot init beaconview from hash %v, validate result %v, err %v", sView.BestBeaconHash, false, err))
 				}
+			} else {
+				Logger.log.Errorf("Can not get shard chain for this shard ID %v", sID)
 			}
 		}
 	} else {
@@ -2609,4 +2620,14 @@ func (txService TxService) BuildDefragmentPrivacyCustomTokenParamV2(tokenParamsR
 		}
 	}
 	return tokenParams, nil, nil, nil
+}
+
+func isTxRelateCommittee(tx metadata.Transaction) bool {
+	if tx.GetMetadata() != nil {
+		switch tx.GetMetadata().GetType() {
+		case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
+			return true
+		}
+	}
+	return false
 }
