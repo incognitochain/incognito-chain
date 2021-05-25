@@ -305,8 +305,8 @@ func (e *BLSBFT_V3) run() error {
 
 				//Check for valid block to vote
 				//rule 2 & rule 3 (nextheight = bestview + 1)
-				validProposeBlock := []*ProposeBlockInfo{}
 				bestViewHeight := bestView.GetHeight()
+				validProposeBlock := []*ProposeBlockInfo{}
 				for h, proposeBlockInfo := range e.receiveBlockByHash {
 					if proposeBlockInfo.block == nil {
 						continue
@@ -317,19 +317,19 @@ func (e *BLSBFT_V3) run() error {
 						continue
 					}
 
-					//if the block is bestview and we didnt vote yet => validate and vote
-					if proposeBlockInfo.block.Hash().String() == bestView.GetHash().String() && !proposeBlockInfo.isVoted {
+					// check if propose block in within TS
+					if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != e.currentTimeSlot {
+						continue
+					}
+
+					//special case: if we insert block too quick, before voting => vote for this block (within TS,but block is inserted into bestview)
+					if proposeBlockInfo.block.GetHeight() == bestViewHeight {
 						e.validateAndVote(proposeBlockInfo)
 						continue
 					}
 
-					//if the block height is not next height
+					//if the block height is not next height or current height
 					if proposeBlockInfo.block.GetHeight() != bestViewHeight+1 {
-						continue
-					}
-
-					// check if propose block in within TS
-					if common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime()) != e.currentTimeSlot {
 						continue
 					}
 
@@ -338,8 +338,8 @@ func (e *BLSBFT_V3) run() error {
 					if proposeBlockInfo.block.GetHeight() < e.Chain.GetFinalView().GetHeight() {
 						delete(e.receiveBlockByHash, h)
 					}
-
 				}
+
 				//rule 1: get history of vote for this height, vote if (round is lower than the vote before) or (round is equal but new proposer) or (there is no vote for this height yet)
 				sort.Slice(validProposeBlock, func(i, j int) bool {
 					return validProposeBlock[i].block.GetProduceTime() < validProposeBlock[j].block.GetProduceTime()
