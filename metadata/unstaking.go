@@ -46,7 +46,10 @@ func (unStakingMetadata *UnStakingMetadata) ValidateMetadataByItself() bool {
 //- Requester (sender of tx) must be address, which create staking transaction for current requested committee public key
 func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transaction,
 	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever,
-	beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
+	beaconViewRetriever BeaconViewRetriever,
+	shardID byte,
+	transactionStateDB *statedb.StateDB,
+) (bool, error) {
 
 	requestedPublicKey := unStakingMetadata.CommitteePublicKey
 	committees, err := beaconViewRetriever.GetAllCommitteeValidatorCandidateFlattenListFromDatabase()

@@ -951,7 +951,9 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	if err != nil {
 		return NewBlockChainError(CloneBeaconBestStateError, err)
 	}
-	if blockchain.config.usingNewPool {
+	if false {
+		//TODO: @tin uncomment here
+		//if blockchain.config.usingNewPool {
 		ok, err := blockchain.ShardChain[shardID].TxsVerifier.FullValidateTransactions(
 			blockchain,
 			curView,
@@ -962,6 +964,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 			return NewBlockChainError(TransactionFromNewBlockError, err)
 		}
 	} else {
+		Logger.log.Info("[config] Using old mempool to validate")
 		isEmpty := blockchain.config.TempTxPool.EmptyPool()
 		if !isEmpty {
 			panic("TempTxPool Is not Empty")

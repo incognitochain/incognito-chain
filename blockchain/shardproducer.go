@@ -362,8 +362,13 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	txsToAdd := []metadata.Transaction{}
 	if !blockGenerator.chain.config.usingNewPool {
 		txToRemove := []metadata.Transaction{}
-
-		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreationLeftOver.Nanoseconds(), bView.BeaconHeight, curView)
+		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(
+			shardID,
+			beaconBlocks,
+			blockCreationLeftOver.Nanoseconds(),
+			bView.BeaconHeight,
+			curView,
+		)
 		if len(txsToAdd) == 0 {
 			Logger.log.Info("Creating empty block...")
 		}
