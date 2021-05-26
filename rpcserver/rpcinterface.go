@@ -61,7 +61,7 @@ var HttpHandler = map[string]httpHandler{
 	checkHashValue:              (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
 	getBlockHeader:              (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 	getCrossShardBlock:          (*HttpServer).handleGetCrossShardBlock,
-
+	getBlocksFromHeight:         (*HttpServer).handleGetBlocksFromHeight,
 	// transaction
 	listOutputCoins:                         (*HttpServer).handleListOutputCoins,
 	listOutputCoinsFromCache:                (*HttpServer).handleListOutputCoinsFromCache,

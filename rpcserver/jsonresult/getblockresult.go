@@ -21,6 +21,7 @@ type GetBeaconBlockResult struct {
 	Instructions      [][]string  `json:"Instructions"`
 	Size              uint64      `json:"Size"`
 	ShardStates       interface{} `json:"ShardStates"`
+	ProposeTime       int64       `json:"ProposeTime"`
 }
 
 type GetShardBlockResult struct {
@@ -50,6 +51,7 @@ type GetShardBlockResult struct {
 	CommitteeFromBlock common.Hash        `json:"CommitteeFromBlock"`
 	Instruction        [][]string         `json:"Instruction"`
 	CrossShardBitMap   []int              `json:"CrossShardBitMap"`
+	ProposeTime        int64              `json:"ProposeTime"`
 }
 
 type GetBlockTxResult struct {
@@ -74,6 +76,7 @@ func NewGetBlocksBeaconResult(block *types.BeaconBlock, size uint64, nextBlockHa
 	getBlockResult.Size = size
 	getBlockResult.NextBlockHash = nextBlockHash
 	getBlockResult.ShardStates = block.Body.ShardState
+	getBlockResult.ProposeTime = block.Header.ProposeTime
 	return getBlockResult
 }
 
@@ -117,6 +120,7 @@ func NewGetBlockResult(block *types.ShardBlock, size uint64, nextBlockHash strin
 	}
 	getBlockResult.NextBlockHash = nextBlockHash
 	getBlockResult.CommitteeFromBlock = block.Header.CommitteeFromBlock
+	getBlockResult.ProposeTime = block.Header.ProposeTime
 	return getBlockResult
 }
 
