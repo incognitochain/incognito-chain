@@ -3,6 +3,7 @@ package txpool
 import (
 	"log"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -50,6 +51,7 @@ type TxsPool struct {
 	Cacher    *cache.Cache
 	Inbox     chan metadata.Transaction
 	isRunning bool
+	sttLock   *sync.RWMutex
 	cQuit     chan bool
 	better    func(txA, txB metadata.Transaction) bool
 	ttl       time.Duration
@@ -70,13 +72,21 @@ func NewTxsPool(
 		Cacher:    cache.New(ttl, ttl),
 		Inbox:     inbox,
 		isRunning: false,
+		sttLock:   &sync.RWMutex{},
 		cQuit:     make(chan bool),
 		better: func(txA, txB metadata.Transaction) bool {
 			return txA.GetTxFee() > txB.GetTxFee()
 		},
 		ttl: ttl,
 	}
-	tp.Cacher.OnEvicted(tp.removeTx)
+	removeTx := func(txHash string, arg interface{}) {
+		go func(txPool *TxsPool, target string) {
+			if txPool.IsRunning() {
+				tp.RemoveTx(target)
+			}
+		}(tp, txHash)
+	}
+	tp.Cacher.OnEvicted(removeTx)
 	return tp
 }
 
@@ -89,15 +99,21 @@ func (tp *TxsPool) GetInbox() chan metadata.Transaction {
 }
 
 func (tp *TxsPool) IsRunning() bool {
-	return tp.isRunning
+	tp.sttLock.RLock()
+	res := tp.isRunning
+	tp.sttLock.RUnlock()
+	return res
 }
 
 func (tp *TxsPool) Start() {
+	tp.sttLock.Lock()
 	if tp.isRunning {
+		tp.sttLock.Unlock()
 		return
 	}
 	Logger.Infof("Start transaction pool v1")
 	tp.isRunning = true
+	tp.sttLock.Unlock()
 	cValidTxs := make(chan txInfoTemp, 1024)
 	stopGetTxs := make(chan interface{})
 	go tp.getTxs(stopGetTxs, cValidTxs)
@@ -105,8 +121,22 @@ func (tp *TxsPool) Start() {
 	for {
 		select {
 		case <-tp.cQuit:
-			stopGetTxs <- nil
+			tp.sttLock.Lock()
 			tp.isRunning = false
+			stopGetTxs <- nil
+			emptyFCh := false
+			for {
+				select {
+				case f := <-tp.action:
+					f(tp)
+				default:
+					emptyFCh = true
+				}
+				if emptyFCh {
+					break
+				}
+			}
+			tp.sttLock.Unlock()
 			return
 		case f := <-tp.action:
 			Logger.Debugf("Total txs received %v, total txs in pool %v\n", total, len(tp.Data.TxInfos))
@@ -126,10 +156,12 @@ func (tp *TxsPool) Start() {
 }
 
 func (tp *TxsPool) Stop() {
-	tp.cQuit <- true
+	if tp.IsRunning() {
+		tp.cQuit <- true
+	}
 }
 
-func (tp *TxsPool) removeTx(txHash string, arg interface{}) {
+func (tp *TxsPool) RemoveTx(txHash string) {
 	tp.action <- func(tpTemp *TxsPool) {
 		Logger.Debugf("Removing tx %v at %v", txHash, time.Now())
 		delete(tpTemp.Data.TxByHash, txHash)
@@ -150,7 +182,7 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 	txHash := tx.Hash().String()
 	start := time.Now()
 	Logger.Debugf("[txTracing] Start validate tx %v at %v", txHash, start.UTC())
-	t := time.NewTimer(2 * time.Second)
+	t := time.NewTimer(5 * time.Second)
 	defer t.Stop()
 	errChan := make(chan validateResult)
 	go func() {
@@ -472,7 +504,7 @@ func (tp *TxsPool) CheckValidatedTxs(
 	valid []metadata.Transaction,
 	needValidate []metadata.Transaction,
 ) {
-	if !tp.isRunning {
+	if !tp.IsRunning() {
 		return []metadata.Transaction{}, txs
 	}
 	poolData := tp.snapshotPool()
@@ -491,10 +523,7 @@ func (tp *TxsPool) getTxs(quit <-chan interface{}, cValidTxs chan txInfoTemp) {
 	nWorkers := make(chan int, MAX)
 	for {
 		select {
-		case <-quit:
-			return
-		default:
-			msg := <-tp.Inbox
+		case msg := <-tp.Inbox:
 			txHah := msg.Hash().String()
 			workerID := len(nWorkers)
 			Logger.Debugf("[txTracing] Received new tx %v, send to worker %v", txHah, workerID)
@@ -505,13 +534,17 @@ func (tp *TxsPool) getTxs(quit <-chan interface{}, cValidTxs chan txInfoTemp) {
 				if err != nil {
 					Logger.Errorf("Validate tx %v return error %v:\n", msg.Hash().String(), err)
 				}
-				if isValid {
+				if (isValid) && (cValidTxs != nil) {
 					cValidTxs <- txInfoTemp{
 						msg,
 						vTime,
 					}
 				}
 			}()
+		case <-quit:
+			return
+		default:
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
@@ -528,6 +561,20 @@ func (tp *TxsPool) snapshotPool() TxsData {
 		}
 		for k, v := range tpTemp.Data.TxInfos {
 			res.TxInfos[k] = v
+		}
+		cData <- res
+	}
+	return <-cData
+}
+
+func (tp *TxsPool) snapshotPoolOutCoin() map[common.Hash]interface{} {
+	cData := make(chan map[common.Hash]interface{})
+	tp.action <- func(tpTemp *TxsPool) {
+		res := map[common.Hash]interface{}{}
+		for _, v := range tpTemp.Data.TxByHash {
+			for _, serialNumber := range v.ListSerialNumbersHashH() {
+				res[serialNumber] = nil
+			}
 		}
 		cData <- res
 	}

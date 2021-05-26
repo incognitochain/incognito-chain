@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/pkg/errors"
 )
@@ -27,7 +28,7 @@ func NewPoolManager(
 		ps: ps,
 	}
 	for i := 0; i < activeShards; i++ {
-		res.ShardTxsPool = append(res.ShardTxsPool, NewTxsPool(nil, make(chan metadata.Transaction), ttl))
+		res.ShardTxsPool = append(res.ShardTxsPool, NewTxsPool(nil, make(chan metadata.Transaction, 128), ttl))
 	}
 
 	return res, nil
@@ -85,6 +86,23 @@ func (pm *PoolManager) GetShardTxsPool(shardID byte) (TxPool, error) {
 	return pm.ShardTxsPool[shardID], nil
 }
 
+func (pm *PoolManager) FilterMemPoolOutcoinsToSpent(outCoins []privacy.PlainCoin, sID int) []privacy.PlainCoin {
+	if sID < len(pm.ShardTxsPool) {
+		sPool := pm.ShardTxsPool[sID]
+		if sPool.IsRunning() {
+			res := []privacy.PlainCoin{}
+			mapPoolOutcoins := sPool.snapshotPoolOutCoin()
+			for _, out := range outCoins {
+				if _, ok := mapPoolOutcoins[common.HashH(out.GetKeyImage().ToBytesS())]; !ok {
+					res = append(res, out)
+				}
+			}
+			return res
+		}
+	}
+	return outCoins
+}
+
 func (pm *PoolManager) GetMempoolInfo() MempoolInfo {
 	res := &GetMempoolInfo{
 		Size:          0,
@@ -139,7 +157,7 @@ func (pm *PoolManager) GetTransactionByHash(txHash string) (metadata.Transaction
 func (pm *PoolManager) RemoveTransactionInPool(txHash string) {
 	for _, txPool := range pm.ShardTxsPool {
 		if txPool.IsRunning() {
-			txPool.removeTx(txHash, nil)
+			txPool.RemoveTx(txHash)
 		}
 	}
 }

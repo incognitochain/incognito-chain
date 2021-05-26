@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"io/ioutil"
 	"log"
 	"net"
@@ -1001,18 +1003,24 @@ func (serverObj *Server) OnGetCrossShard(_ *peer.PeerConn, msg *wire.MessageGetC
 	Logger.log.Debug("Receive a getcrossshard END")
 }
 
+func updateTxEnvWithSView(sView *blockchain.ShardBestState, tx metadata.Transaction) metadata.ValidationEnviroment {
+	valEnv := tx_generic.WithShardHeight(tx.GetValidationEnv(), sView.GetHeight())
+	valEnv = tx_generic.WithBeaconHeight(valEnv, sView.GetBeaconHeight())
+	valEnv = tx_generic.WithConfirmedTime(valEnv, sView.GetBlockTime())
+	return valEnv
+}
+
 // OnTx is invoked when a peer receives a tx message.  It blocks
 // until the transaction has been fully processed.  Unlock the block
 // handler this does not serialize all transactions through a single thread
 // transactions don't rely on the previous one in a linear fashion like blocks.
 func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 	Logger.log.Debug("Receive a new transaction START")
+	tx := msg.Transaction
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	valEnv := updateTxEnvWithSView(serverObj.blockChain.GetBestStateShard(sID), tx)
+	tx.SetValidationEnv(valEnv)
 	var txProcessed chan struct{}
-	// txBytes, _ := json.Marshal(msg.Transaction)
-	// err := json.Unmarshal(txBytes, msg.Transaction)
-	// if err != nil {
-	// 	panic("dd")
-	// }
 	serverObj.netSync.QueueTx(nil, msg, txProcessed)
 	//<-txProcessed
 
@@ -1022,6 +1030,19 @@ func (serverObj *Server) OnTx(peer *peer.PeerConn, msg *wire.MessageTx) {
 func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {
 	Logger.log.Debug("Receive a new transaction(privacy token) START")
 	var txProcessed chan struct{}
+	tx := msg.Transaction
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	sView := serverObj.blockChain.GetBestStateShard(sID)
+	valEnv := updateTxEnvWithSView(sView, tx)
+	tx.SetValidationEnv(valEnv)
+	if tx.GetType() == common.TxCustomTokenPrivacyType {
+		txCustom, ok := tx.(transaction.TransactionToken)
+		if !ok {
+			return
+		}
+		valEnvCustom := updateTxEnvWithSView(sView, txCustom.GetTxNormal())
+		txCustom.GetTxNormal().SetValidationEnv(valEnvCustom)
+	}
 	serverObj.netSync.QueueTxPrivacyToken(nil, msg, txProcessed)
 	//<-txProcessed
 

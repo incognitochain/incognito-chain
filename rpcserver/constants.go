@@ -112,6 +112,7 @@ const (
 
 	createAndSendTransactionV2                   = "createandsendtransactionv2"
 	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"
+	getBlocksFromHeight                          = "getblocksfromheight"
 	hasSerialNumbersInMempool                    = "hasserialnumbersinmempool"
 	createAndSendStakingTransactionV2            = "createandsendstakingtransactionv2"
 	createAndSendStopAutoStakingTransactionV2    = "createandsendstopautostakingtransactionv2"

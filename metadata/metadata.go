@@ -129,7 +129,7 @@ type ValidationEnviroment interface {
 	ShardID() int
 	ShardHeight() uint64
 	BeaconHeight() uint64
-	ConfimedTime() int64
+	ConfirmedTime() int64
 	Version() int
 }
 

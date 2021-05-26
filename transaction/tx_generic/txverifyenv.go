@@ -106,7 +106,7 @@ func (vE *ValidationEnv) ShardHeight() uint64 {
 func (vE *ValidationEnv) BeaconHeight() uint64 {
 	return vE.beaconHeight
 }
-func (vE *ValidationEnv) ConfimedTime() int64 {
+func (vE *ValidationEnv) ConfirmedTime() int64 {
 	return vE.confimedTime
 }
 func (vE *ValidationEnv) Version() int {
@@ -122,7 +122,7 @@ func (vE *ValidationEnv) Clone() *ValidationEnv {
 		isConfimed:   vE.IsConfimed(),
 		shardHeight:  vE.ShardHeight(),
 		beaconHeight: vE.BeaconHeight(),
-		confimedTime: vE.ConfimedTime(),
+		confimedTime: vE.ConfirmedTime(),
 		shardID:      vE.ShardID(),
 		version:      vE.Version(),
 		isPrivacy:    vE.IsPrivacy(),
