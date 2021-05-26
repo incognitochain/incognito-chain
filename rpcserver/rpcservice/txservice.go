@@ -1477,8 +1477,8 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 	return result, nil
 }
 
-func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID byte, tokenID common.Hash) ([]string, *RPCError) {
-	txList := make([]string, 0)
+func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID byte, tokenID common.Hash) (map[string]string, *RPCError) {
+	txList := make(map[string]string, 0)
 	if int(shardID) >= common.MaxShardNumber {//If the shardID is not provided, just retrieve with all shards
 		for _, snStr := range snList {
 			snBytes, _, err := base58.Base58Check{}.Decode(snStr)
@@ -1504,7 +1504,7 @@ func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID
 			if len(txHashStr) == 0 {
 				return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("sn %v has not been seen in any transaction", snStr))
 			}
-			txList = append(txList, txHashStr)
+			txList[snStr] = txHashStr
 
 		}
 		return txList, nil
@@ -1523,7 +1523,7 @@ func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID
 			if err != nil {
 				return nil, NewRPCError(RPCInvalidParamsError, err)
 			} else {
-				txList = append(txList, txHash.String())
+				txList[snStr] = txHash.String()
 			}
 
 		}
