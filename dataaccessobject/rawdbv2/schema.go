@@ -36,6 +36,12 @@ var (
 	shardFeatureRootHashPrefix         = []byte("s-fe" + string(splitter))
 	previousBestStatePrefix            = []byte("previous-best-state" + string(splitter))
 	splitter                           = []byte("-[-]-")
+	txBySerialNumberPrefix             = []byte("tx-sn" + string(splitter))
+)
+
+const (
+	txBySerialNumberPrefixHashKeyLength = 12
+	txBySerialNumberPrefixKeyLength     = 20
 )
 
 func GetLastShardBlockKey(shardID byte) []byte {
@@ -332,4 +338,19 @@ func getShardPreCommitteeInfoForShardKey(hash common.Hash) []byte {
 //getShardPendingValidatorsKey ...
 func getShardPendingValidatorsKey(hash common.Hash) []byte {
 	return hash.Bytes()
+}
+
+func getTxBySerialNumberPrefix() []byte {
+	h := common.HashH(txBySerialNumberPrefix)
+	return h[:][:txBySerialNumberPrefixHashKeyLength]
+}
+
+func generateTxBySerialNumberObjectKey(serialNumber []byte, tokenID common.Hash, shardID byte) []byte {
+	prefixHash := getTxBySerialNumberPrefix()
+
+	valueToBeHashed := append(serialNumber, shardID)
+	valueToBeHashed = append(valueToBeHashed, tokenID.Bytes()...)
+	valueHash := common.HashH(valueToBeHashed)
+
+	return append(prefixHash, valueHash[:][:txBySerialNumberPrefixKeyLength]...)
 }

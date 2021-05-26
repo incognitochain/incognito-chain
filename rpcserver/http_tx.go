@@ -312,6 +312,59 @@ func (httpServer *HttpServer) handleGetTransactionByHash(params interface{}, clo
 	return httpServer.txService.GetTransactionByHash(txHashStr)
 }
 
+//Get transaction by serial numbers
+func (httpServer *HttpServer) handleGetTransactionBySerialNumber(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) == 0 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("there is no param to proceed"))
+	}
+	paramList, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("param must be a map[string]interface{}"))
+	}
+	//Get snList
+	snKey := "SerialNumbers"
+	if _, ok = paramList[snKey]; !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("%v not found in %v", snKey, paramList))
+	}
+	snListInterface, ok := paramList[snKey].([]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse serial numbers, not a []interface{}: %v", paramList[snKey]))
+	}
+	snList := make([]string, 0)
+	for _, sn := range snListInterface {
+		if tmp, ok := sn.(string); !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse serial numbers, %v is not a string", sn))
+		} else {
+			snList = append(snList, tmp)
+		}
+	}
+	//Get ShardID, default will retrieve with all shard
+	shardKey := "ShardID"
+	shardID := float64(255)
+	if shardIDParam, ok := paramList[shardKey]; ok {
+		shardID, ok = shardIDParam.(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse shardID: %v", shardIDParam))
+		}
+	}
+	//Get tokenID, default is PRV
+	tokenKey := "TokenID"
+	tokenID := &common.PRVCoinID
+	if tokenParam, ok := paramList[tokenKey]; ok {
+		tokenIDStr, ok := tokenParam.(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse tokenID: %v", tokenParam))
+		}
+		tokenID, err = new(common.Hash).NewHashFromStr(tokenIDStr)
+		if err != nil {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot decode tokenID %v", tokenIDStr))
+		}
+	}
+	return httpServer.txService.GetTransactionBySerialNumber(snList, byte(shardID), *tokenID)
+}
+
 // handleGetListPrivacyCustomTokenBalance - return list privacy token + balance for one account payment address
 func (httpServer *HttpServer) handleGetListPrivacyCustomTokenBalance(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 

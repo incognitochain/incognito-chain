@@ -1000,6 +1000,52 @@ func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.T
 	return result, nil
 }
 
+func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID byte, tokenID common.Hash) ([]string, *RPCError) {
+	txList := make([]string, 0)
+	if int(shardID) >= common.MaxShardNumber {//If the shardID is not provided, just retrieve with all shards
+		for _, snStr := range snList {
+			snBytes, _, err := base58.Base58Check{}.Decode(snStr)
+			if err != nil {
+				Logger.log.Errorf("decode serialNumber %v error: %v\n", snStr, err)
+				return nil, NewRPCError(RPCInvalidParamsError, err)
+			}
+			var txHashStr string
+			for shard := 0; shard < common.MaxShardNumber; shard++ {
+				shardDB := txService.BlockChain.GetShardChainDatabase(byte(shard))
+				txHash, err := rawdbv2.GetTxBySerialNumber(shardDB, snBytes, tokenID, byte(shard))
+				if err != nil {
+					Logger.log.Infof("sn %v has not been seen in shard %v: %v\n", snStr, shard, err)
+					continue
+				} else {
+					txHashStr = txHash.String()
+					break
+				}
+			}
+			if len(txHashStr) == 0 {
+				return nil, NewRPCError(RPCInvalidParamsError, fmt.Errorf("sn %v has not been seen in any transaction", snStr))
+			}
+			txList = append(txList, txHashStr)
+		}
+		return txList, nil
+	} else {//If the shardID is provided, just retrieve within the shard
+		shardDB := txService.BlockChain.GetShardChainDatabase(shardID)
+		for _, snStr := range snList {
+			snBytes, _, err := base58.Base58Check{}.Decode(snStr)
+			if err != nil {
+				Logger.log.Errorf("decode serialNumber %v error: %v\n", snStr, err)
+				return nil, NewRPCError(RPCInvalidParamsError, err)
+			}
+			txHash, err := rawdbv2.GetTxBySerialNumber(shardDB, snBytes, tokenID, shardID)
+			if err != nil {
+				return nil, NewRPCError(RPCInvalidParamsError, err)
+			} else {
+				txList = append(txList, txHash.String())
+			}
+		}
+		return txList, nil
+	}
+}
+
 func (txService TxService) ListPrivacyCustomToken() (map[common.Hash]*statedb.TokenState, error) {
 	tokenStates, err := txService.BlockChain.ListAllPrivacyCustomTokenAndPRV()
 	if err != nil {

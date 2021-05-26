@@ -30,12 +30,12 @@ var HttpHandler = map[string]httpHandler{
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
 
 	//tx pool
-	getRawMempool:             (*HttpServer).handleGetRawMempool,
-	getNumberOfTxsInMempool:   (*HttpServer).handleGetNumberOfTxsInMempool,
-	getMempoolEntry:           (*HttpServer).handleMempoolEntry,
-	removeTxInMempool:         (*HttpServer).handleRemoveTxInMempool,
-	getMempoolInfo:            (*HttpServer).handleGetMempoolInfo,
-	getPendingTxsInBlockgen:   (*HttpServer).handleGetPendingTxsInBlockgen,
+	getRawMempool:           (*HttpServer).handleGetRawMempool,
+	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
+	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
+	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
+	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
 	// getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
@@ -74,6 +74,7 @@ var HttpHandler = map[string]httpHandler{
 	gettransactionhashbyreceiverv2:            (*HttpServer).handleGetTransactionHashByReceiverV2,
 	gettransactionbyreceiver:                  (*HttpServer).handleGetTransactionByReceiver,
 	gettransactionbyreceiverv2:                (*HttpServer).handleGetTransactionByReceiverV2,
+	getTransactionBySerialNumber:              (*HttpServer).handleGetTransactionBySerialNumber,
 	createAndSendStakingTransaction:           (*HttpServer).handleCreateAndSendStakingTx,
 	createAndSendStakingTransactionV2:         (*HttpServer).handleCreateAndSendStakingTxV2,
 	createAndSendStopAutoStakingTransaction:   (*HttpServer).handleCreateAndSendStopAutoStakingTransaction,
