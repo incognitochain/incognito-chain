@@ -185,6 +185,22 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 		return [][]string{refundInst}, nil
 	}
 
+	if meta.UnshieldAmount > currentPortalStateV4.PortalTokenAmount[meta.TokenID] {
+		Logger.log.Errorf("[UnshieldRequest] Unshield amount %v is greater than PortalTokenAmount %v",
+			meta.UnshieldAmount,
+			currentPortalStateV4.PortalTokenAmount[meta.TokenID])
+		return [][]string{refundInst}, nil
+	}
+
+	err = currentPortalStateV4.DeductPortalTokenAmount(meta.TokenID, meta.UnshieldAmount)
+	if err != nil {
+		Logger.log.Errorf("[UnshieldRequest] Deduct portal token amount err %v", err)
+		return [][]string{refundInst}, nil
+	}
+
+	// add new waiting unshield request to waiting list
+	currentPortalStateV4.AddWaitingUnshieldRequest(unshieldID, meta.TokenID, meta.RemoteAddress, meta.UnshieldAmount, beaconHeight+1)
+
 	// build accept instruction
 	newInst := buildUnshieldRequestInst(
 		meta.TokenID,
@@ -197,10 +213,6 @@ func (p *PortalUnshieldRequestProcessor) BuildNewInsts(
 		actionData.TxReqID,
 		portalcommonv4.PortalV4RequestAcceptedChainStatus,
 	)
-
-	// add new waiting unshield request to waiting list
-	currentPortalStateV4.AddWaitingUnshieldRequest(unshieldID, meta.TokenID, meta.RemoteAddress, meta.UnshieldAmount, beaconHeight+1)
-
 	return [][]string{newInst}, nil
 }
 

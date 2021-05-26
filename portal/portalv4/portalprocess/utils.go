@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 
@@ -21,6 +22,8 @@ type CurrentPortalStateV4 struct {
 	DeletedUTXOKeyHashes                 []common.Hash
 	DeletedWaitingUnshieldReqKeyHashes   []common.Hash
 	DeletedProcessedUnshieldReqKeyHashes []common.Hash
+
+	PortalTokenAmount map[string]uint64
 }
 
 func (s *CurrentPortalStateV4) Copy() *CurrentPortalStateV4 {
@@ -77,6 +80,25 @@ func InitCurrentPortalStateV4FromDB(
 		}
 	}
 
+	// load total amount of portal token
+	// they are used to validate unshielding amount with pool of decentralized bridge
+	portalTokenAmount := map[string]uint64{}
+	var amount uint64
+	for _, tokenID := range portalcommonv4.PortalV4SupportedIncTokenIDs {
+		tokenIDHash, _ := common.Hash{}.NewHashFromStr(tokenID)
+		bridgeTokenState, has, err := statedb.GetBridgeTokenByType(stateDB, *tokenIDHash, false)
+		if err != nil {
+			return nil, err
+		}
+		if !has || bridgeTokenState == nil {
+			amount = 0
+		} else {
+			amount = bridgeTokenState.Amount()
+		}
+
+		portalTokenAmount[tokenID] = amount
+	}
+
 	return &CurrentPortalStateV4{
 		UTXOs:                     utxos,
 		ShieldingExternalTx:       nil,
@@ -86,6 +108,8 @@ func InitCurrentPortalStateV4FromDB(
 		DeletedUTXOKeyHashes:                 []common.Hash{},
 		DeletedWaitingUnshieldReqKeyHashes:   []common.Hash{},
 		DeletedProcessedUnshieldReqKeyHashes: []common.Hash{},
+
+		PortalTokenAmount: portalTokenAmount,
 	}, nil
 }
 
@@ -271,6 +295,27 @@ func (s *CurrentPortalStateV4) AddExternalFeeForBatchProcessedUnshieldRequest(
 func (s *CurrentPortalStateV4) RemoveBatchProcessedUnshieldRequest(tokenIDStr string, batchKey common.Hash) {
 	delete(s.ProcessedUnshieldRequests[tokenIDStr], batchKey.String())
 	s.DeletedProcessedUnshieldReqKeyHashes = append(s.DeletedProcessedUnshieldReqKeyHashes, batchKey)
+}
+
+func (s *CurrentPortalStateV4) CountUpPortalTokenAmount(tokenID string, amount uint64) {
+	if s.PortalTokenAmount == nil {
+		s.PortalTokenAmount = map[string]uint64{}
+	}
+
+	s.PortalTokenAmount[tokenID] += amount
+}
+
+func (s *CurrentPortalStateV4) DeductPortalTokenAmount(tokenID string, amount uint64) error {
+	if s.PortalTokenAmount == nil {
+		return errors.New("PortalTokenAmount is nil")
+	}
+
+	if s.PortalTokenAmount[tokenID] < amount {
+		return errors.New("PortalTokenAmount is less than deducted amount")
+	}
+
+	s.PortalTokenAmount[tokenID] -= amount
+	return nil
 }
 
 // get latest beaconheight

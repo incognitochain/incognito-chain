@@ -206,6 +206,7 @@ func (p *PortalShieldingRequestProcessor) BuildNewInsts(
 	currentPortalState.AddShieldingExternalTx(
 		meta.TokenID, proofHash, listUTXO[0].GetTxHash(),
 		meta.IncogAddressStr, shieldingAmount)
+	currentPortalState.CountUpPortalTokenAmount(meta.TokenID, mintingAmount)
 
 	inst := buildPortalShieldingRequestInstV4(
 		actionData.Meta.TokenID,
@@ -262,6 +263,7 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 		currentPortalState.AddUTXOs(actionData.ShieldingUTXO, actionData.TokenID)
 		currentPortalState.AddShieldingExternalTx(actionData.TokenID, actionData.ProofHash,
 			shieldingExternalTxHash, actionData.IncogAddressStr, shieldingAmount)
+		currentPortalState.CountUpPortalTokenAmount(actionData.TokenID, actionData.MintingAmount)
 
 		// update bridge token info
 		err := metadata.UpdateBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.MintingAmount, false)
