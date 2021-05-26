@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"io/ioutil"
 	"log"
 	"net"
@@ -1002,9 +1004,9 @@ func (serverObj *Server) OnGetCrossShard(_ *peer.PeerConn, msg *wire.MessageGetC
 }
 
 func updateTxEnvWithSView(sView *blockchain.ShardBestState, tx metadata.Transaction) metadata.ValidationEnviroment {
-	valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), sView.GetHeight())
-	valEnv = transaction.WithBeaconHeight(valEnv, sView.GetBeaconHeight())
-	valEnv = transaction.WithConfirmedTime(valEnv, sView.GetBlockTime())
+	valEnv := tx_generic.WithShardHeight(tx.GetValidationEnv(), sView.GetHeight())
+	valEnv = tx_generic.WithBeaconHeight(valEnv, sView.GetBeaconHeight())
+	valEnv = tx_generic.WithConfirmedTime(valEnv, sView.GetBlockTime())
 	return valEnv
 }
 
@@ -1034,12 +1036,12 @@ func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.Message
 	valEnv := updateTxEnvWithSView(sView, tx)
 	tx.SetValidationEnv(valEnv)
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		txCustom, ok := tx.(*transaction.TxCustomTokenPrivacy)
+		txCustom, ok := tx.(transaction.TransactionToken)
 		if !ok {
 			return
 		}
-		valEnvCustom := updateTxEnvWithSView(sView, &txCustom.TxPrivacyTokenData.TxNormal)
-		txCustom.TxPrivacyTokenData.TxNormal.SetValidationEnv(valEnvCustom)
+		valEnvCustom := updateTxEnvWithSView(sView, txCustom.GetTxNormal())
+		txCustom.GetTxNormal().SetValidationEnv(valEnvCustom)
 	}
 	serverObj.netSync.QueueTxPrivacyToken(nil, msg, txProcessed)
 	//<-txProcessed

@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"sort"
 
 	"github.com/pkg/errors"
 
@@ -324,12 +323,12 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		valEnv := updateTxEnvWithBlock(shardBlock, tx)
 		tx.SetValidationEnv(valEnv)
 		if tx.GetType() == common.TxCustomTokenPrivacyType {
-			txCustom, ok := tx.(*transaction.TxCustomTokenPrivacy)
+			txCustom, ok := tx.(transaction.TransactionToken)
 			if !ok {
 				return errors.Errorf("Can not parse this tx %v to tx custom token privacy", tx.Hash().String())
 			}
-			valEnvCustom := updateTxEnvWithBlock(shardBlock, &txCustom.TxPrivacyTokenData.TxNormal)
-			txCustom.TxPrivacyTokenData.TxNormal.SetValidationEnv(valEnvCustom)
+			valEnvCustom := updateTxEnvWithBlock(shardBlock, txCustom.GetTxNormal())
+			txCustom.GetTxNormal().SetValidationEnv(valEnvCustom)
 		}
 	}
 	if shardBlock.Body.Instructions == nil {
