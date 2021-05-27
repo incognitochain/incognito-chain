@@ -1,4 +1,4 @@
-name: "testnet-2"
+name: "testnet-1"
 net: 0x32
 genesis_param:
   initial_incognito:
@@ -39,7 +39,7 @@ epoch_param:
   epoch_v2_break_point: 1000000000000
   random_time: 50
   random_time_v2: 1000000000000
-eth_contract_address: "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
+eth_contract_address: "0xE0D5e7217c6C4bc475404b26d763fAD3F14D2b86"
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
 centralized_website_payment_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 swap_committee_param:

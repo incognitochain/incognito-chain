@@ -1,11 +1,11 @@
 name: "mainnet"
 net: 0x01
-genesis_param: 
+genesis_param:
   fee_per_tx_kb: 0
   consensus_algorithm: "bls"
   block_timestamp: "2019-10-29T00:00:00.000Z"
   tx_stake: "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d"
-  
+
 committee_size:
   max_shard_committee_size: 32
   min_shard_committee_size: 22
@@ -37,12 +37,12 @@ swap_committee_param:
   offset: 4
   swap_offset: 4
   assign_offset: 8
-consensus_param: 
+consensus_param:
   consensus_v2_epoch: 3071
   staking_flow_v2_height: 1207793
-  enable_slashing_height: 1
+  enable_slashing_height: 1000000000000
   timeslot: 40
-  epoch_break_point_swap_new_key: 
+  epoch_break_point_swap_new_key:
     - 1917
 beacon_height_break_point_burn_addr: 150500
 eth_remove_bridge_sig_epoch: 1973
@@ -53,7 +53,7 @@ enable_feature_flags:
   - 1: 0
 portal_v3_height: 10000000
 tx_pool_version: 0
-geth_param: 
+geth_param:
   host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
   protocol: "https"
   port: ""
