@@ -7,11 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy"
-	"reflect"
-	"strconv"
 )
 
 // whoever can send this type of tx
@@ -47,21 +47,21 @@ func NewBurningRequest(
 }
 
 func (bReq BurningRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	//bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), bReq.TokenID, false)
-	//if err != nil {
-	//	return false, err
-	//}
-	//if !bridgeTokenExisted {
-	//	return false, errors.New("the burning token is not existed in bridge tokens")
-	//}
+	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), bReq.TokenID, false)
+	if err != nil {
+		return false, err
+	}
+	if !bridgeTokenExisted {
+		return false, errors.New("the burning token is not existed in bridge tokens")
+	}
 	return true, nil
 }
 
 func (bReq BurningRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if reflect.TypeOf(tx).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	// if reflect.TypeOf(tx).String() == "*transaction.Tx" {
+	// 	return true, true, nil
+	// }
 
 	if _, err := hex.DecodeString(bReq.RemoteAddress); err != nil {
 		return false, false, err

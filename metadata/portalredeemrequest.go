@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -124,16 +123,16 @@ func (redeemReq PortalRedeemRequestV3) ValidateTxWithBlockChain(
 
 func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-			return false, false, errors.New("txnormal in tx redeem request must be coin burning tx")
-		}
-		// validate value transfer of tx for redeem fee in prv
-		if redeemReq.RedeemFee != txr.CalculateTxValue() {
-			return false, false, errors.New("redeem fee amount should be equal to the tx value")
-		}
-		return true, true, nil
+	// if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
+		return false, false, errors.New("txnormal in tx redeem request must be coin burning tx")
 	}
+	// validate value transfer of tx for redeem fee in prv
+	if redeemReq.RedeemFee != txr.CalculateTxValue() {
+		return false, false, errors.New("redeem fee amount should be equal to the tx value")
+	}
+	// 	return true, true, nil
+	// }
 
 	// validate RedeemerIncAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(redeemReq.RedeemerIncAddressStr)

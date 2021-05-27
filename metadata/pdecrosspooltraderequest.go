@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"reflect"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
@@ -25,7 +25,7 @@ type PDECrossPoolTradeRequest struct {
 	TraderAddressStr    string
 	TxRandomStr         string `json:"TxRandomStr,omitempty"`
 	SubTraderAddressStr string `json:"SubTraderAddressStr,omitempty"`
-	SubTxRandomStr		string `json:"SubTxRandomStr,omitempty"`
+	SubTxRandomStr      string `json:"SubTxRandomStr,omitempty"`
 	MetadataBase
 }
 
@@ -82,13 +82,13 @@ func NewPDECrossPoolTradeRequest(
 		TraderAddressStr:    traderAddressStr,
 		TxRandomStr:         txRandomStr,
 		SubTraderAddressStr: subTraderAddressStr,
-		SubTxRandomStr: subTxRandomStr,
+		SubTxRandomStr:      subTxRandomStr,
 	}
 	pdeCrossPoolTradeRequest.MetadataBase = metadataBase
 	return pdeCrossPoolTradeRequest, nil
 }
 
-func checkTraderAddress(address, txRandom string) (bool, error, int){
+func checkTraderAddress(address, txRandom string) (bool, error, int) {
 	version := 0
 	if len(txRandom) > 0 {
 		version = 2
@@ -111,9 +111,9 @@ func (pc PDECrossPoolTradeRequest) ValidateTxWithBlockChain(tx Transaction, chai
 
 func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	// if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
+	// 	return true, true, nil
+	// }
 
 	// check ota address string and tx random is valid
 	_, err, ver := checkTraderAddress(pc.TraderAddressStr, pc.TxRandomStr)
@@ -252,4 +252,3 @@ func (pc *PDECrossPoolTradeRequest) GetOTADeclarations() []OTADeclaration {
 	}
 	return result
 }
-
