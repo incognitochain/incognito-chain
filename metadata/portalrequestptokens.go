@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -89,17 +88,13 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(chainRetriever ChainRet
 	if err != nil {
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Requester incognito address is invalid"))
 	}
-	incogAddr := keyWallet.KeySet.PaymentAddress
-	if len(incogAddr.Pk) == 0 {
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
 		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Requester incognito address is invalid"))
-	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("Requester incognito address is not signer"))
 	}
 
 	// check tx type
 	if txr.GetType() != common.TxNormalType {
-		return false, false, errors.New("tx custodian deposit must be TxNormalType")
+		return false, false, errors.New("tx ptoken request must be TxNormalType")
 	}
 
 	// validate amount deposit
@@ -108,8 +103,9 @@ func (reqPToken PortalRequestPTokens) ValidateSanityData(chainRetriever ChainRet
 	}
 
 	// validate tokenID and porting proof
-	if !chainRetriever.IsPortalToken(beaconHeight, reqPToken.TokenID) {
-		return false, false, NewMetadataTxError(PortalRequestPTokenParamError, errors.New("TokenID is not supported currently on Portal"))
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, reqPToken.TokenID, common.PortalVersion3)
+	if !isPortalToken || err != nil {
+		return false, false, errors.New("TokenID is not supported currently on Portal")
 	}
 
 	return true, true, nil

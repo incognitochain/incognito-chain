@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -85,26 +84,20 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetr
 	if err != nil {
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("Address incognito redeem is invalid"))
 	}
-
-	incAddr := keyWallet.KeySet.PaymentAddress
-	if len(incAddr.Pk) == 0 {
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("Payment incognito address is invalid"))
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incAddr.Pk[:]) {
-		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("Address incognito redeem is not signer"))
+	// check burning tx
+	isBurned, burnCoin, burnedTokenID, err := txr.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, false, errors.New("Error This is not Tx Burn")
 	}
-
 	// check tx type
 	if txr.GetType() != common.TxCustomTokenPrivacyType {
 		return false, false, errors.New("tx redeem request must be TxCustomTokenPrivacyType")
 	}
-
-	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-		return false, false, errors.New("txprivacytoken in tx redeem request must be coin burning tx")
-	}
-
 	// validate redeem amount
-	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight)
+	minAmount, err := chainRetriever.GetMinAmountPortalToken(redeemReq.TokenID, beaconHeight, common.PortalVersion3)
 	if err != nil {
 		return false, false, err
 	}
@@ -113,17 +106,18 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetr
 	}
 
 	// validate value transfer of tx for redeem amount in ptoken
-	if redeemReq.RedeemAmount != txr.CalculateTxValue() {
+	if redeemReq.RedeemAmount != burnCoin.GetValue() {
 		return false, false, errors.New("redeem amount should be equal to the tx value")
 	}
 
 	// validate tokenID
-	if redeemReq.TokenID != txr.GetTokenID().String() {
+	if redeemReq.TokenID != burnedTokenID.String() {
 		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID in metadata is not matched to tokenID in tx"))
 	}
 	// check tokenId is portal token or not
-	if !chainRetriever.IsPortalToken(beaconHeight, redeemReq.TokenID) {
-		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, errors.New("TokenID is not in portal tokens list"))
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, redeemReq.TokenID, common.PortalVersion3)
+	if !isPortalToken || err != nil {
+		return false, false, errors.New("TokenID is not in portal tokens list")
 	}
 
 	// reject Redeem Request from Liquidation pool from BCHeightBreakPointPortalV3

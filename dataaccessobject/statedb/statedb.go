@@ -7,14 +7,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/privacy"
-
-	"github.com/pkg/errors"
-
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 	"github.com/incognitochain/incognito-chain/trie"
+	"github.com/pkg/errors"
 )
 
 // StateDBs within the incognito protocol are used to store anything
@@ -539,7 +537,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	currentEpochShardCandidate []*CommitteeState,
 	nextEpochBeaconCandidate []*CommitteeState,
 	currentEpochBeaconCandidate []*CommitteeState,
-	rewardReceiver map[string]privacy.PaymentAddress,
+	rewardReceiver map[string]key.PaymentAddress,
 	autoStake map[string]bool,
 	stakingTx map[string]common.Hash,
 ) {
@@ -549,7 +547,7 @@ func (stateDB *StateDB) getAllCommitteeState(ids []int) (
 	currentEpochShardCandidate = []*CommitteeState{}
 	nextEpochBeaconCandidate = []*CommitteeState{}
 	currentEpochBeaconCandidate = []*CommitteeState{}
-	rewardReceiver = make(map[string]privacy.PaymentAddress)
+	rewardReceiver = make(map[string]key.PaymentAddress)
 	autoStake = make(map[string]bool)
 	stakingTx = map[string]common.Hash{}
 	for _, shardID := range ids {
@@ -1236,6 +1234,68 @@ func (stateDB *StateDB) getAllOutputCoinState(tokenID common.Hash, shardID byte,
 	return outputCoins
 }
 
+// ================================= OnetimeAddress OBJECT =======================================
+
+func (stateDB *StateDB) getOnetimeAddressState(key common.Hash) (*OnetimeAddressState, bool, error) {
+	onetimeAddressState, err := stateDB.getStateObject(OnetimeAddressObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if onetimeAddressState != nil {
+		return onetimeAddressState.GetValue().(*OnetimeAddressState), true, nil
+	}
+	return NewOnetimeAddressState(), false, nil
+}
+
+func (stateDB *StateDB) getOTACoinIndexState(key common.Hash) (*OTACoinState, bool, error) {
+	otaCoinIndexState, err := stateDB.getStateObject(OTACoinIndexObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if otaCoinIndexState != nil {
+		tempKey, ok := otaCoinIndexState.GetValue().(common.Hash)
+		if !ok {
+			panic("wrong expected type")
+		}
+		otaCoinState, err := stateDB.getDeletedStateObject(OTACoinObjectType, tempKey)
+		if err != nil || otaCoinState == nil {
+			return NewOTACoinState(), false, nil
+		}
+		return otaCoinState.GetValue().(*OTACoinState), true, nil
+	}
+	return NewOTACoinState(), false, nil
+}
+
+func (stateDB *StateDB) getOTACoinLengthState(key common.Hash) (*big.Int, bool, error) {
+	otaCoinLengthState, err := stateDB.getStateObject(OTACoinLengthObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if otaCoinLengthState != nil {
+		return otaCoinLengthState.GetValue().(*big.Int), true, nil
+	}
+	return new(big.Int), false, nil
+}
+
+func (stateDB *StateDB) getAllOTACoinsByPrefix(tokenID common.Hash, shardID byte, height []byte) []*OTACoinState {
+	temp := stateDB.trie.NodeIterator(GetOTACoinPrefix(tokenID, shardID, height))
+	it := trie.NewIterator(temp)
+	onetimeAddresses := make([]*OTACoinState, 0)
+
+	for it.Next() {
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		newOnetimeAddress := NewOTACoinState()
+		err := json.Unmarshal(newValue, newOnetimeAddress)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		onetimeAddresses = append(onetimeAddresses, newOnetimeAddress)
+	}
+	return onetimeAddresses
+}
+
 // ================================= SNDerivator OBJECT =======================================
 func (stateDB *StateDB) getSNDerivatorState(key common.Hash) (*SNDerivatorState, bool, error) {
 	sndState, err := stateDB.getStateObject(SNDerivatorObjectType, key)
@@ -1804,4 +1864,107 @@ func (stateDB *StateDB) getPortalConfirmProofState(key common.Hash) (*PortalConf
 		return portalConfirmProofState.GetValue().(*PortalConfirmProofState), true, nil
 	}
 	return NewPortalConfirmProofState(), false, nil
+}
+
+// ================================= Portal V4 OBJECT =======================================
+func (stateDB *StateDB) getShieldingRequestByKey(key common.Hash) (*ShieldingRequest, bool, error) {
+	shieldingRequest, err := stateDB.getStateObject(PortalV4ShieldRequestObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if shieldingRequest != nil {
+		return shieldingRequest.GetValue().(*ShieldingRequest), true, nil
+	}
+	return NewShieldingRequest(), false, nil
+}
+
+func (stateDB *StateDB) getShieldingRequestsByTokenID(tokenID string) map[string]*ShieldingRequest {
+	shieldingRequests := make(map[string]*ShieldingRequest)
+	temp := stateDB.trie.NodeIterator(GetShieldingRequestPrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		sr := NewShieldingRequest()
+		err := json.Unmarshal(newValue, sr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		shieldingRequests[keyHash.String()] = sr
+	}
+	return shieldingRequests
+}
+
+func (stateDB *StateDB) getUTXOsByTokenID(tokenID string) map[string]*UTXO {
+	utxos := make(map[string]*UTXO)
+	temp := stateDB.trie.NodeIterator(GetPortalUTXOStatePrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewUTXO()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		utxos[keyHash.String()] = wr
+	}
+	return utxos
+}
+
+func (stateDB *StateDB) getListWaitingUnshieldRequestsByTokenID(tokenID string) map[string]*WaitingUnshieldRequest {
+	waitingUnshieldRequests := make(map[string]*WaitingUnshieldRequest)
+	temp := stateDB.trie.NodeIterator(GetWaitingUnshieldRequestPrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewWaitingUnshieldRequestState()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		waitingUnshieldRequests[keyHash.String()] = wr
+	}
+	return waitingUnshieldRequests
+}
+
+func (stateDB *StateDB) getListProcessedBatchUnshieldRequestsByTokenID(tokenID string) map[string]*ProcessedUnshieldRequestBatch {
+	processedBatchUnshieldRequests := make(map[string]*ProcessedUnshieldRequestBatch)
+	temp := stateDB.trie.NodeIterator(GetProcessedUnshieldRequestBatchPrefix(tokenID))
+	it := trie.NewIterator(temp)
+	for it.Next() {
+		key := it.Key
+		keyHash, _ := common.Hash{}.NewHash(key)
+		value := it.Value
+		newValue := make([]byte, len(value))
+		copy(newValue, value)
+		wr := NewProcessedUnshieldRequestBatch()
+		err := json.Unmarshal(newValue, wr)
+		if err != nil {
+			panic("wrong expect type")
+		}
+		processedBatchUnshieldRequests[keyHash.String()] = wr
+	}
+	return processedBatchUnshieldRequests
+}
+
+func (stateDB *StateDB) getPortalV4StatusByKey(key common.Hash) (*PortalV4StatusState, bool, error) {
+	portalStatusState, err := stateDB.getStateObject(PortalV4StatusObjectType, key)
+	if err != nil {
+		return nil, false, err
+	}
+	if portalStatusState != nil {
+		return portalStatusState.GetValue().(*PortalV4StatusState), true, nil
+	}
+	return NewPortalV4StatusState(), false, nil
 }

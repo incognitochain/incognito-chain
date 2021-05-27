@@ -1,5 +1,4 @@
 package blockchain
-
 import (
 	"io/ioutil"
 	"os"

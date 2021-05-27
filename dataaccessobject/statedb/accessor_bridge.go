@@ -130,6 +130,7 @@ func CanProcessTokenPair(stateDB *StateDB, externalTokenID []byte, incTokenID co
 }
 
 func UpdateBridgeTokenInfo(stateDB *StateDB, incTokenID common.Hash, externalTokenID []byte, isCentralized bool, updatingAmount uint64, updateType string) error {
+	dataaccessobject.Logger.Log.Infof("Update bridge token %v, isCentralized %v, amount %v\n", incTokenID.String(), isCentralized, updatingAmount)
 	bridgeTokenInfoState, has, err := getBridgeTokenByType(stateDB, incTokenID, isCentralized)
 	if err != nil {
 		return NewStatedbError(UpdateBridgeTokenInfoError, err)
@@ -138,7 +139,7 @@ func UpdateBridgeTokenInfo(stateDB *StateDB, incTokenID common.Hash, externalTok
 		bridgeTokenInfoState.SetIncTokenID(incTokenID)
 		bridgeTokenInfoState.SetExternalTokenID(externalTokenID)
 		bridgeTokenInfoState.SetIsCentralized(isCentralized)
-		if updateType == BridgeMinorOperator {
+		if updateType == BridgeMinusOperator {
 			bridgeTokenInfoState.SetAmount(0)
 		} else {
 			bridgeTokenInfoState.SetAmount(updatingAmount)

@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // PDEContribution - privacy dex contribution
@@ -108,34 +107,24 @@ func (pc PDEContribution) ValidateSanityData(chainRetriever ChainRetriever, shar
 		return false, false, errors.New("PDE contribution pair id should not be empty.")
 	}
 
-	keyWallet, err := wallet.Base58CheckDeserialize(pc.ContributorAddressStr)
-	if err != nil {
-		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ContributorAddressStr incorrect"))
+	if _, err := AssertPaymentAddressAndTxVersion(pc.ContributorAddressStr, tx.GetVersion()); err != nil {
+		return false, false, err
 	}
-	contributorAddr := keyWallet.KeySet.PaymentAddress
 
-	if len(contributorAddr.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's contributed address")
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, false, errors.New("Error This is not Tx Burn")
 	}
-	if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-		return false, false, errors.New("Must send coin to burning address")
-	}
-	if pc.ContributedAmount == 0 {
-		return false, false, errors.New("Contributed Amount should be larger than 0")
-	}
-	if pc.ContributedAmount != tx.CalculateTxValue() {
-		return false, false, errors.New("Contributed Amount should be equal to the tx value")
-	}
-	if !bytes.Equal(tx.GetSigPubKey()[:], contributorAddr.Pk[:]) {
-		return false, false, errors.New("ContributorAddress incorrect")
+
+	if pc.ContributedAmount == 0 || pc.ContributedAmount != burnCoin.GetValue() {
+		return false, false, errors.New("Contributed Amount is not valid ")
 	}
 
 	tokenID, err := common.Hash{}.NewHashFromStr(pc.TokenIDStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenIDStr incorrect"))
 	}
-
-	if !bytes.Equal(tx.GetTokenID()[:], tokenID[:]) {
+	if !bytes.Equal(burnedTokenID[:], tokenID[:]) {
 		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
 	}
 

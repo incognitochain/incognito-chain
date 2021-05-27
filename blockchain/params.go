@@ -3,17 +3,18 @@ package blockchain
 import (
 	"time"
 
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	portalcommonv3 "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	portaltokensv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portaltokens"
-
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-
-	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
+	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
+	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
 )
 
 type SlashLevel struct {
@@ -75,7 +76,10 @@ type Params struct {
 	MissingSignaturePenalty          []signaturecounter.Penalty
 	PortalETHContractAddressStr      string // smart contract of ETH for portal
 	BCHeightBreakPointPortalV3       uint64
+	BCHeightBreakPointPrivacyV2      uint64
 	EnableFeatureFlags               map[int]uint64 // featureFlag: epoch number - since that time, the feature will be enabled; 0 - disabled feature
+	CoinVersion2LowestHeight         uint64
+	WhiteListTxs                     map[string]bool
 }
 
 type GenesisParams struct {
@@ -163,6 +167,38 @@ func getSupportedPortalCollateralsTestnet2() []portalv3.PortalCollateral {
 	}
 }
 
+func initPortalTokensV4ForTestNet() map[string]portaltokensv4.PortalTokenProcessor {
+	return map[string]portaltokensv4.PortalTokenProcessor{
+		portalcommonv4.PortalBTCIDStr: portaltokensv4.PortalBTCTokenProcessor{
+			PortalToken: &portaltokensv4.PortalToken{
+				ChainID:             TestnetBTCChainID,
+				MinTokenAmount:      10,
+				MultipleTokenAmount: 10,
+				ExternalInputSize:   130,
+				ExternalOutputSize:  43,
+				ExternalTxMaxSize:   2048,
+			},
+			ChainParam: &chaincfg.TestNet3Params,
+		},
+	}
+}
+
+func initPortalTokensV4ForMainNet() map[string]portaltokensv4.PortalTokenProcessor {
+	return map[string]portaltokensv4.PortalTokenProcessor{
+		portalcommonv4.PortalBTCIDStr: portaltokensv4.PortalBTCTokenProcessor{
+			PortalToken: &portaltokensv4.PortalToken{
+				ChainID:             MainnetBTCChainID,
+				MinTokenAmount:      10,
+				MultipleTokenAmount: 10,
+				ExternalInputSize:   192,
+				ExternalOutputSize:  43,
+				ExternalTxMaxSize:   2048,
+			},
+			ChainParam: &chaincfg.MainNetParams,
+		},
+	}
+}
+
 func SetupParam() {
 	// FOR TESTNET
 	genesisParamsTestnetNew = &GenesisParams{
@@ -214,7 +250,7 @@ func SetupParam() {
 		},
 		CheckForce:                     false,
 		ChainVersion:                   "version-chain-test.json",
-		ConsensusV2Epoch:               15290,
+		ConsensusV2Epoch:               1,
 		StakingFlowV2Height:            2051863,
 		EnableSlashingStakingFlowV2:    2087789,
 		Timeslot:                       10,
@@ -250,6 +286,38 @@ func SetupParam() {
 				BNBFullNodeHost:          TestnetBNBFullNodeHost,
 				BNBFullNodePort:          TestnetBNBFullNodePort,
 			},
+			// todo: should update before deploying
+			PortalParamsV4: map[uint64]portalv4.PortalParams{
+				0: {
+					MasterPubKeys: map[string][][]byte{
+						portalcommonv4.PortalBTCIDStr: [][]byte{
+							[]byte{0x3, 0xb2, 0xd3, 0x16, 0x7d, 0x94, 0x9c, 0x25, 0x3, 0xe6, 0x9c, 0x9f, 0x29, 0x78, 0x7d, 0x9c, 0x8, 0x8d, 0x39, 0x17, 0x8d, 0xb4, 0x75, 0x40, 0x35, 0xf5, 0xae, 0x6a, 0xf0, 0x17, 0x12, 0x11, 0x0},
+							[]byte{0x3, 0x98, 0x7a, 0x87, 0xd1, 0x99, 0x13, 0xbd, 0xe3, 0xef, 0xf0, 0x55, 0x79, 0x2, 0xb4, 0x90, 0x57, 0xed, 0x1c, 0x9c, 0x8b, 0x32, 0xf9, 0x2, 0xbb, 0xbb, 0x85, 0x71, 0x3a, 0x99, 0x1f, 0xdc, 0x41},
+							[]byte{0x3, 0x73, 0x23, 0x5e, 0xb1, 0xc8, 0xf1, 0x84, 0xe7, 0x59, 0x17, 0x6c, 0xe3, 0x87, 0x37, 0xb7, 0x91, 0x19, 0x47, 0x1b, 0xba, 0x63, 0x56, 0xbc, 0xab, 0x8d, 0xcc, 0x14, 0x4b, 0x42, 0x99, 0x86, 0x1},
+							[]byte{0x3, 0x29, 0xe7, 0x59, 0x31, 0x89, 0xca, 0x7a, 0xf6, 0x1, 0xb6, 0x35, 0x67, 0x3d, 0xb1, 0x53, 0xd4, 0x19, 0xd7, 0x6, 0x19, 0x3, 0x2a, 0x32, 0x94, 0x57, 0x76, 0xb2, 0xb3, 0x80, 0x65, 0xe1, 0x5d},
+						},
+					},
+					NumRequiredSigs: 3,
+					GeneralMultiSigAddresses: map[string]string{
+						portalcommonv4.PortalBTCIDStr: "tb1qfgzhddwenekk573slpmqdutrd568ej89k37lmjr43tm9nhhulu0scjyajz",
+					},
+					PortalTokens: initPortalTokensV4ForTestNet(),
+					DefaultFeeUnshields: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 50000, // 50000 nano pbtc = 5000 satoshi
+					},
+					MinUnshieldAmts: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 500000, // 500000 nano pbtc = 50000 satoshi
+					},
+					DustValueThreshold: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
+					},
+					BatchNumBlks:                15, // ~ 2.5 mins
+					MinConfirmationIncBlockNum:  3,
+					PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
+					MaxFeePercentageForEachStep: 20, // ~ 20% from previous fee
+					TimeSpaceForFeeReplacement:  5 * time.Minute,
+				},
+			},
 		},
 		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:      1,
@@ -262,10 +330,14 @@ func SetupParam() {
 		RandomTimeV2:                TestnetRandomTimeV2,
 		PortalETHContractAddressStr: "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address
 		BCHeightBreakPointPortalV3:  30158,
+		BCHeightBreakPointPrivacyV2: 30, //TODO: change this value when deployed testnet
+		CoinVersion2LowestHeight:    10,
 		EnableFeatureFlags: map[int]uint64{
 			common.PortalV3Flag:       TestnetEnablePortalV3,
 			common.PortalRelayingFlag: TestnetEnablePortalRelaying,
+			common.PortalV4Flag:       TestnetEnablePortalV4,
 		},
+		WhiteListTxs: map[string]bool{},
 	}
 	// END TESTNET
 
@@ -355,6 +427,33 @@ func SetupParam() {
 				BNBFullNodeHost:          Testnet2BNBFullNodeHost,
 				BNBFullNodePort:          Testnet2BNBFullNodePort,
 			},
+			// todo: should update before deploying
+			PortalParamsV4: map[uint64]portalv4.PortalParams{
+				0: {
+					MasterPubKeys: map[string][][]byte{
+						portalcommonv4.PortalBTCIDStr: [][]byte{}, // 50000 nano pbtc = 5000 satoshi
+					},
+					NumRequiredSigs: 3,
+					GeneralMultiSigAddresses: map[string]string{
+						portalcommonv4.PortalBTCIDStr: "",
+					},
+					PortalTokens: initPortalTokensV4ForTestNet(),
+					DefaultFeeUnshields: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 100000, // 100000 nano pbtc = 10000 satoshi
+					},
+					MinUnshieldAmts: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
+					},
+					BatchNumBlks:               60, // ~ 10 mins
+					MinConfirmationIncBlockNum: 3,
+					DustValueThreshold: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
+					},
+					PortalReplacementAddress:    "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci",
+					MaxFeePercentageForEachStep: 20, // ~ 20% from previous fee
+					TimeSpaceForFeeReplacement:  5 * time.Minute,
+				},
+			},
 		},
 		EpochBreakPointSwapNewKey:   TestnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:      1,
@@ -366,11 +465,15 @@ func SetupParam() {
 		EpochV2BreakPoint:           Testnet2EpochV2BreakPoint,
 		RandomTimeV2:                Testnet2RandomTimeV2,
 		PortalETHContractAddressStr: "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46", // todo: update sc address
-		BCHeightBreakPointPortalV3:  1328816,
+		BCHeightBreakPointPortalV3:  8974,                                         // todo: should update before deploying
+		BCHeightBreakPointPrivacyV2: 30,                                           //TODO: change this value when deployed testnet2
+		CoinVersion2LowestHeight:    10,
 		EnableFeatureFlags: map[int]uint64{
 			common.PortalV3Flag:       Testnet2EnablePortalV3,
 			common.PortalRelayingFlag: Testnet2EnablePortalRelaying,
+			common.PortalV4Flag:       Testnet2EnablePortalV4,
 		},
+		WhiteListTxs: Testnet2WhiteListTxs,
 	}
 	// END TESTNET-2
 
@@ -458,6 +561,30 @@ func SetupParam() {
 				BNBFullNodeHost:          MainnetBNBFullNodeHost,
 				BNBFullNodePort:          MainnetBNBFullNodePort,
 			},
+			// todo: should update before deploying
+			PortalParamsV4: map[uint64]portalv4.PortalParams{
+				0: {
+					MasterPubKeys: map[string][][]byte{
+						portalcommonv4.PortalBTCIDStr: [][]byte{}, // 50000 nano pbtc = 5000 satoshi
+					},
+					NumRequiredSigs: 3,
+					GeneralMultiSigAddresses: map[string]string{
+						portalcommonv4.PortalBTCIDStr: "",
+					},
+					PortalTokens: initPortalTokensV4ForMainNet(),
+					DefaultFeeUnshields: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 100000, // 100000 nano pbtc = 10000 satoshi
+					},
+					MinUnshieldAmts: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
+					},
+					BatchNumBlks:               60, // ~ 10 mins
+					MinConfirmationIncBlockNum: 3,
+					DustValueThreshold: map[string]uint64{
+						portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
+					},
+				},
+			},
 		},
 		EpochBreakPointSwapNewKey:   MainnetReplaceCommitteeEpoch,
 		ReplaceStakingTxHeight:      559380,
@@ -468,12 +595,16 @@ func SetupParam() {
 		EpochV2:                     MainnetEpochV2,
 		EpochV2BreakPoint:           MainnetEpochV2BreakPoint,
 		RandomTimeV2:                MainnetRandomTimeV2,
-		PortalETHContractAddressStr: "", // todo: update sc address
-		BCHeightBreakPointPortalV3:  40, // todo: should update before deploying
+		PortalETHContractAddressStr: "",      // todo: update sc address
+		BCHeightBreakPointPortalV3:  40,      // todo: should update before deploying
+		BCHeightBreakPointPrivacyV2: 1500000, //TODO: change this value when deployed mainnet
+		CoinVersion2LowestHeight:    900000,  //TODO
 		EnableFeatureFlags: map[int]uint64{
 			common.PortalV3Flag:       MainnetEnablePortalV3,
 			common.PortalRelayingFlag: MainnetEnablePortalRelaying,
+			common.PortalV4Flag:       MainnetEnablePortalV4,
 		},
+		WhiteListTxs: map[string]bool{},
 	}
 	if IsTestNet {
 		if !IsTestNet2 {

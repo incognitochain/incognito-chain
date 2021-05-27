@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 	"math/big"
@@ -17,7 +16,7 @@ func InitPrivacyTokenTx(args string, serverTime int64) (string, error) {
 		return "", err
 	}
 
-	tx := new(transaction.TxCustomTokenPrivacy)
+	tx := new(transaction.TxTokenBase)
 	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
@@ -32,7 +31,7 @@ func InitPrivacyTokenTx(args string, serverTime int64) (string, error) {
 		return "", err
 	}
 
-	tokenIDBytes := tx.TxPrivacyTokenData.PropertyID.GetBytes()
+	tokenIDBytes := tx.TxTokenData.PropertyID.GetBytes()
 
 	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
 	resBytes := append(txJson, lockTimeBytes...)
@@ -117,7 +116,7 @@ func InitBurningRequestTx(args string, serverTime int64) (string, error) {
 
 	paramCreateTx.SetMetaData(metaData)
 
-	tx := new(transaction.TxCustomTokenPrivacy)
+	tx := new(transaction.TxTokenBase)
 	err = tx.InitForASM(paramCreateTx, serverTime)
 
 	if err != nil {
@@ -132,7 +131,7 @@ func InitBurningRequestTx(args string, serverTime int64) (string, error) {
 		return "", err
 	}
 
-	tokenIDBytes := tx.TxPrivacyTokenData.PropertyID.GetBytes()
+	tokenIDBytes := tx.TxTokenData.PropertyID.GetBytes()
 
 	lockTimeBytes := common.AddPaddingBigInt(new(big.Int).SetInt64(tx.LockTime), 8)
 	resBytes := append(txJson, lockTimeBytes...)

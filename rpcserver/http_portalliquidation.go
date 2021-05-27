@@ -45,7 +45,7 @@ func (httpServer *HttpServer) handleGetLiquidationExchangeRatesPool(params inter
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
 
-	if !httpServer.config.BlockChain.IsPortalToken(0, pTokenID) {
+	if ok, err := httpServer.config.BlockChain.IsPortalToken(0, pTokenID, common.PortalVersion3); !ok || err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is not support"))
 	}
 
@@ -120,7 +120,7 @@ func (httpServer *HttpServer) createRawTxRedeemFromLiquidationPoolV3(params inte
 		metadata.PortalRedeemFromLiquidationPoolMetaV3, redeemTokenID,
 		redeemAmount, redeemerIncAddressStr, redeemerExtAddressStr)
 
-	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransactionV2(params, meta)
+	customTokenTx, rpcErr := httpServer.txService.BuildRawPrivacyCustomTokenTransaction(params, meta)
 	if rpcErr != nil {
 		Logger.log.Error(rpcErr)
 		return nil, rpcErr
@@ -224,7 +224,7 @@ func (httpServer *HttpServer) createCustodianTopup(params interface{}, closeChan
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
 	}
 
-	if !httpServer.config.BlockChain.IsPortalToken(0, pTokenId) {
+	if ok, err := httpServer.config.BlockChain.IsPortalToken(0, pTokenId, common.PortalVersion3); !ok || err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -247,7 +247,7 @@ func (httpServer *HttpServer) createCustodianTopup(params interface{}, closeChan
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -320,7 +320,7 @@ func (httpServer *HttpServer) createTopUpWaitingPorting(params interface{}, clos
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
 	}
 
-	if !httpServer.config.BlockChain.IsPortalToken(0, pTokenId) {
+	if ok, err := httpServer.config.BlockChain.IsPortalToken(0, pTokenId, common.PortalVersion3); !ok || err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -344,7 +344,7 @@ func (httpServer *HttpServer) createTopUpWaitingPorting(params interface{}, clos
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -457,7 +457,7 @@ func (httpServer *HttpServer) createCustodianTopupV3(params interface{}, closeCh
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
 	}
 
-	if !httpServer.config.BlockChain.IsPortalToken(0, pTokenId) {
+	if ok, err := httpServer.config.BlockChain.IsPortalToken(0, pTokenId, common.PortalVersion3); !ok || err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -515,7 +515,7 @@ func (httpServer *HttpServer) createCustodianTopupV3(params interface{}, closeCh
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -587,7 +587,7 @@ func (httpServer *HttpServer) createTopUpWaitingPortingV3(params interface{}, cl
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PTokenId param is invalid"))
 	}
-	if !httpServer.config.BlockChain.IsPortalToken(0, pTokenId) {
+	if ok, err := httpServer.config.BlockChain.IsPortalToken(0, pTokenId, common.PortalVersion3); !ok || err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata public token is not supported currently"))
 	}
 
@@ -646,7 +646,7 @@ func (httpServer *HttpServer) createTopUpWaitingPortingV3(params interface{}, cl
 	)
 
 	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParam(params)
 	if errNewParam != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
 	}
@@ -763,7 +763,7 @@ func (httpServer *HttpServer) handleGetTopupAmountForCustodianState(params inter
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortalTokenID is invalid"))
 	}
-	if !httpServer.config.BlockChain.IsPortalToken(0, portalTokenID) {
+	if ok, err := httpServer.config.BlockChain.IsPortalToken(0, portalTokenID, common.PortalVersion3); !ok || err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata PortalTokenID is not support"))
 	}
 

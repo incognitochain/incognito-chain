@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
@@ -40,5 +41,7 @@ type ChainInterface interface {
 	InsertAndBroadcastBlock(block types.BlockInterface) error
 	GetShardID() int
 	GetViewByHash(hash common.Hash) multiview.View
+	// Portal v4
+	GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams
 	CommitteeEngineVersion() uint
 }

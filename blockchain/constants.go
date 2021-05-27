@@ -11,21 +11,26 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                       = 1
-	RANDOM_NUMBER                 = 3
-	SHARD_BLOCK_VERSION           = 1
-	DefaultMaxBlkReqPerPeer       = 900
-	MinCommitteeSize              = 3 // min size to run bft
-	WorkerNumber                  = 5
-	MAX_S2B_BLOCK                 = 30
-	MAX_BEACON_BLOCK              = 5
-	LowerBoundPercentForIncDAO    = 3
-	UpperBoundPercentForIncDAO    = 10
-	TestRandom                    = true
-	ValidateTimeForSpamRequestTxs = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
-	TransactionBatchSize          = 30
-	SpareTime                     = 1000             // in mili-second
-	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
+	VERSION                            = 1
+	RANDOM_NUMBER                      = 3
+	SHARD_BLOCK_VERSION                = 1
+	DefaultMaxBlkReqPerPeer            = 900
+	MinCommitteeSize                   = 3 // min size to run bft
+	WorkerNumber                       = 5
+	MAX_S2B_BLOCK                      = 30
+	MAX_BEACON_BLOCK                   = 20
+	LowerBoundPercentForIncDAO         = 3
+	UpperBoundPercentForIncDAO         = 10
+	TestRandom                         = true
+	ValidateTimeForSpamRequestTxs      = 1581565837 // GMT: Thursday, February 13, 2020 3:50:37 AM. From this time, block will be checked spam request-reward tx
+	TransactionBatchSize               = 30
+	SpareTime                          = 1000             // in mili-second
+	DefaultMaxBlockSyncTime            = 30 * time.Second // in second
+	NumberOfFixedBeaconBlockValidators = 4
+	NumberOfFixedShardBlockValidators  = 4
+	MaxOutcoinQueryInterval 	  = 8640 // 1 day worth of blocks
+	OutcoinReindexerTimeout 	  = 90	 // seconds
+	OutcoinReindexerRoutines 	  = 2
 )
 
 // burning addresses
@@ -88,6 +93,7 @@ const (
 	// Enable Feature Flag
 	MainnetEnablePortalRelaying = 1
 	MainnetEnablePortalV3       = 0
+	MainnetEnablePortalV4       = 0
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -113,7 +119,7 @@ const (
 	TestnetGenesisBlockTime  = "2019-11-29T00:00:00.000Z"
 	TestnetEpoch             = 100
 	TestnetRandomTime        = 50
-	TestnetEpochV2BreakPoint = 1e9
+	TestnetEpochV2BreakPoint = 10e9
 	TestnetEpochV2           = 100
 	TestnetRandomTimeV2      = 50
 	TestnetOffset            = 1
@@ -152,6 +158,7 @@ const (
 	// Enable Feature Flag
 	TestnetEnablePortalRelaying = 1
 	TestnetEnablePortalV3       = 0
+	TestnetEnablePortalV4       = 1
 )
 
 // CONSTANT for network TESTNET-2
@@ -201,6 +208,7 @@ const (
 	// Enable Feature Flag
 	Testnet2EnablePortalRelaying = 1
 	Testnet2EnablePortalV3       = 0
+	Testnet2EnablePortalV4       = 1
 )
 
 // VARIABLE for testnet
@@ -217,7 +225,7 @@ var SelectShardNodeTestnetSerializedPaymentAddressV2 = make(map[uint64][]string)
 var TestnetReplaceCommitteeEpoch = []uint64{}
 
 var IsTestNet = true
-var IsTestNet2 = false
+var IsTestNet2 = true
 
 func ReadKey(v1, v2 []byte) {
 

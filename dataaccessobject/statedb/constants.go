@@ -18,6 +18,10 @@ const (
 	CommitmentLengthObjectType
 	SNDerivatorObjectType
 	OutputCoinObjectType
+	OTACoinObjectType
+	OTACoinIndexObjectType
+	OTACoinLengthObjectType
+	OnetimeAddressObjectType
 	TokenObjectType
 	WaitingPDEContributionObjectType
 	PDEPoolPairObjectType
@@ -52,6 +56,13 @@ const (
 	PortalExternalTxObjectType
 	PortalConfirmProofObjectType
 	PortalUnlockOverRateCollaterals
+
+	// Portal v4
+	PortalV4StatusObjectType
+	PortalV4UTXOObjectType
+	PortalV4ShieldRequestObjectType
+	PortalWaitingUnshieldObjectType
+	PortalProcessedUnshieldRequestBatchObjectType
 
 	SlashingCommitteeObjectType
 )
@@ -91,7 +102,7 @@ const (
 
 // bridge
 const (
-	BridgeMinorOperator = "-"
+	BridgeMinusOperator = "-"
 	BridgePlusOperator  = "+"
 )
 

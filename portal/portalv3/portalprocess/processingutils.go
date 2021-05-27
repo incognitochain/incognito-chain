@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-func CollectPortalInstsV3 (pv3 map[int]PortalInstructionProcessorV3, metaType int, action []string, shardID byte) {
+func CollectPortalV3Insts(pv3 map[int]PortalInstructionProcessorV3, metaType int, action []string, shardID byte) {
 	switch metaType {
 	case metadata.PortalCustodianDepositMeta:
 		pv3[metadata.PortalCustodianDepositMeta].PutAction(action, shardID)
@@ -54,12 +54,6 @@ func CollectPortalInstsV3 (pv3 map[int]PortalInstructionProcessorV3, metaType in
 		pv3[metadata.PortalCustodianDepositMetaV3].PutAction(action, shardID)
 	case metadata.PortalCustodianWithdrawRequestMetaV3:
 		pv3[metadata.PortalCustodianWithdrawRequestMetaV3].PutAction(action, shardID)
-
-		// TODO: move to relaying package
-	//case metadata.RelayingBNBHeaderMeta:
-	//	pv3.RelayingChains[metadata.RelayingBNBHeaderMeta].putAction(action)
-	//case metadata.RelayingBTCHeaderMeta:
-	//	pv3.RelayingChains[metadata.RelayingBTCHeaderMeta].putAction(action)
 	default:
 		return
 	}

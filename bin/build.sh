@@ -14,5 +14,6 @@ cp ../keylist_256.json .
 cp ../sample-config.conf .
 
 commit=`git show --summary --oneline | cut -d ' ' -f 1`
-docker build --build-arg commit=$commit . -t incognitochaintestnet/incognito:${tag} && docker push incognitochaintestnet/incognito:${tag} && echo "Commit: $commit"
-docker rmi -f $(docker images --filter "dangling=true" -q)
+docker build --build-arg commit=$commit . -t incognitochainmainnet/incognito:syncmainnet
+#docker rmi -f $(docker images --filter "dangling=true" -q)
+

@@ -11,7 +11,6 @@ const (
 	ErrInvalidHashType                        = "invalid hash type"
 	ErrInvalidBigIntType                      = "invalid big int type"
 	ErrInvalidCommitteeStateType              = "invalid committee state type"
-	ErrInvalidSlasingCommitteeStateType       = "invalid slashing committee state type"
 	ErrInvalidStakerInfoType                  = "invalid staker info type"
 	ErrInvalidPaymentAddressType              = "invalid payment address type"
 	ErrInvalidIncognitoPublicKeyType          = "invalid incognito public key type"
@@ -22,6 +21,8 @@ const (
 	ErrInvalidCommitmentStateType             = "invalid commitment state type"
 	ErrInvalidSNDerivatorStateType            = "invalid snderivator state type"
 	ErrInvalidOutputCoinStateType             = "invalid output coin state type"
+	ErrInvalidOTACoinStateType                = "invalid ota coin state type"
+	ErrInvalidOnetimeAddressStateType         = "invalid onetime address state type"
 	ErrInvalidTokenStateType                  = "invalid token state type"
 	ErrInvalidWaitingPDEContributionStateType = "invalid waiting pde contribution state type"
 	ErrInvalidPDEPoolPairStateType            = "invalid pde pool pair state type"
@@ -44,10 +45,16 @@ const (
 	ErrInvalidPortalLockedCollateralStateType    = "invalid portal locked collateral state type"
 	ErrInvalidRewardFeatureStateType             = "invalid feature reward state type"
 	ErrInvalidPDETradingFeeStateType             = "invalid pde trading fee state type"
+	ErrInvalidBlockHashType                      = "invalid block hash type"
 	ErrInvalidUnlockOverRateCollateralsStateType = "invalid unlock over rate collaterals state type"
+	ErrInvalidSlasingCommitteeStateType          = "invalid slashing committee state type"
+	ErrInvalidPortalV4StatusStateType            = "invalid portal v4 status state type"
 	ErrInvalidPortalExternalTxStateType          = "invalid portal external tx state type"
 	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
-	ErrInvalidBlockHashType                      = "invalid block hash type"
+	ErrInvalidPortalUTXOType                     = "invalid portal utxo state type"
+	ErrInvalidPortalShieldingRequestType         = "invalid portal shielding request type"
+	ErrInvalidPortalV4WaitingUnshieldRequestType = "invalid portal waiting unshielding request type"
+	ErrInvalidPortalV4BatchUnshieldRequestType   = "invalid portal batch unshielding request type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -76,6 +83,12 @@ const (
 	GetCommitmentLengthError
 	StoreOutputCoinError
 	GetOutputCoinError
+	StoreOTACoinError
+	GetOTACoinIndexError
+	StoreOTACoinIndexError
+	StoreOTACoinLengthError
+	GetOTACoinLengthError
+	StoreOnetimeAddressError
 	StoreSNDerivatorError
 	GetSNDerivatorError
 	StorePrivacyTokenError
@@ -203,6 +216,25 @@ const (
 	GetWithdrawCollateralConfirmError
 	StorePortalUnlockOverRateCollateralsError
 	GetPortalUnlockOverRateCollateralsStatusError
+
+	// portal v4
+	StorePortalV4StatusError
+	GetPortalV4StatusError
+	StorePortalV4UTXOsError
+	StorePortalV4ShieldingRequestStatusError
+	GetPortalV4ShieldingRequestStatusError
+	StorePortalShieldingRequestsError
+	GetPortalShieldingRequestsError
+	GetPortalUnshieldRequestStatusError
+	StorePortalUnshieldRequestStatusError
+	GetPortalBatchUnshieldRequestStatusError
+	StorePortalBatchUnshieldRequestStatusError
+	StorePortalListWaitingUnshieldRequestError
+	StorePortalListProcessedBatchUnshieldRequestError
+	GetPortalUnshieldBatchFeeReplacementRequestStatusError
+	StorePortalUnshieldBatchFeeReplacementRequestStatusError
+	GetPortalSubmitConfirmedTxRequestStatusError
+	StorePortalSubmitConfirmedTxRequestStatusError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -346,6 +378,25 @@ var ErrCodeMessage = map[int]struct {
 	GetAllRewardFeatureError:             {-15002, "Get all reward feature state error"},
 	GetRewardFeatureAmountByTokenIDError: {-15004, "Get reward feature amount by tokenID error"},
 	InvalidStakerInfoTypeError:           {-15005, "Staker info invalid"},
+
+	// Portal v4
+	StorePortalV4UTXOsError:                                  {-15006, "Store portal v4 list uxtos error"},
+	StorePortalV4ShieldingRequestStatusError:                 {-15007, "Store portal v4 shielding request status error"},
+	GetPortalV4ShieldingRequestStatusError:                   {-15008, "Get portal v4 shielding request status error"},
+	StorePortalShieldingRequestsError:                        {-15009, "Store portal v4 list shielding requests error"},
+	GetPortalShieldingRequestsError:                          {-15010, "Get portal v4 list shielding requests error"},
+	GetPortalUnshieldRequestStatusError:                      {-15011, "Get portal v4 unshielding request status error"},
+	StorePortalUnshieldRequestStatusError:                    {-15012, "Store portal v4 unshielding request status error"},
+	GetPortalBatchUnshieldRequestStatusError:                 {-15013, "Get portal v4 batching unshield request status error"},
+	StorePortalBatchUnshieldRequestStatusError:               {-15014, "Store portal v4 batching unshield request status error"},
+	StorePortalListWaitingUnshieldRequestError:               {-15015, "Store portal v4 list waiting unshield request error"},
+	StorePortalListProcessedBatchUnshieldRequestError:        {-15016, "Store portal v4 list processed batch unshield request error"},
+	GetPortalUnshieldBatchFeeReplacementRequestStatusError:   {-15017, "Get portal unshield batch replacement request status error"},
+	StorePortalUnshieldBatchFeeReplacementRequestStatusError: {-15018, "Store portal unshield batch replacement request status error"},
+	GetPortalSubmitConfirmedTxRequestStatusError:             {-15019, "Get portal submit confirmed tx request status error"},
+	StorePortalSubmitConfirmedTxRequestStatusError:           {-15020, "Store portal submit confirmed tx request status error"},
+	StorePortalV4StatusError:                                 {-15021, "Store portal v4 status error"},
+	GetPortalV4StatusError:                                   {-15022, "Get portal v4 status error"},
 }
 
 type StatedbError struct {

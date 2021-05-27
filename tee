@@ -1,0 +1,251 @@
+This runs before init()!
+This runs before init()!
+NumCPU 8
+2020-06-29 09:25:53.624 incognito.go:87 [INF] Server log: Version 1.21.0-beta
+2020-06-29 09:25:53.659 engine.go:141 [INF] Consensus log: CONSENSUS: NewConsensusEngine
+2020-06-29 09:25:53.659 server.go:257 [INF] Server log: Init 3-rd Party Random Client
+encoded libp2p key: CAMSeTB3AgEBBCBmwDX9yYDqpAtjPkU9lYqt/tz3KwV0q9jtaB0+Tiy84qAKBggqhkjOPQMBB6FEA0IABIT18mzSM9TLiF7PW9uRIMdt11V24B5uJ7c7ORA//4ERnZWvlzkABlCQ+UXoF0JJrY9aj7Ww37W9rWC2grvHwJQ=
+2020-06-29 09:25:53.671 host.go:88 [INF] Peerv2 log: selfPeer: QmbCdapUsVdoiEXHQxQzafAAL2wpQEXjwtT7ZGYgBs6y8k 0.0.0.0 9439
+2020-06-29 09:25:53.672 blockchain.go:114 [INF] BlockChain log: Init Beacon View height 1
+debug RestoreShardViews 1
+2020-06-29 09:25:53.673 blockchain.go:128 [INF] BlockChain log: Init Shard View shardID 0, height 1
+debug RestoreShardViews 1
+2020-06-29 09:25:53.673 blockchain.go:128 [INF] BlockChain log: Init Shard View shardID 1, height 1
+2020-06-29 09:25:53.673 mempool.go:114 [CRT] Mempool log: Turn off Mempool Persistence Database
+settingup RPCListeners
+lastBeaconHeightConfirmCrossX 1
+2020-06-29 09:25:54.243 server.go:699 [CRT] Server log: ************************* Testnet is active *************************
+2020-06-29 09:25:54.244 mempool.go:126 [CRT] Mempool log: Successfully Reset from database
+2020-06-29 09:25:54.244 http.go:116 [INF] RPC log: RPC Http server listening on 0.0.0.0:9339
+2020-06-29 09:25:54.244 blockgenerator.go:36 [CRT] BlockChain log: Block Gen is starting
+2020-06-29 09:25:54.244 websocket.go:74 [INF] RPC log: RPC Websocket server listening on 127.0.0.1:19339
+2020-06-29 09:25:54.244 http.go:123 [INF] RPC log: RPC Http listener done for 0.0.0.0:9339
+2020-06-29 09:25:54.244 websocket.go:76 [INF] RPC log: RPC Websocket listener done for 127.0.0.1:19339
+2020-06-29 09:25:54.245 engine.go:203 [INF] Consensus log: CONSENSUS: Start
+2020-06-29 09:25:55.244 submanager.go:79 [INF] Peerv2 log: role   0, key 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:25:55.244 submanager.go:88 [INF] Peerv2 log: Role changed: {dummyLayer dummyRole -1000} -> {  0}
+2020-06-29 09:25:55.244 submanager.go:253 [INF] Peerv2 log: Registering: message: [blockbeacon peerstate tx txprivacytok]
+2020-06-29 09:25:55.244 submanager.go:254 [INF] Peerv2 log: Registering: nodeMode: auto
+2020-06-29 09:25:55.244 submanager.go:255 [INF] Peerv2 log: Registering: layer: 
+2020-06-29 09:25:55.244 submanager.go:256 [INF] Peerv2 log: Registering: role: 
+2020-06-29 09:25:55.244 submanager.go:257 [INF] Peerv2 log: Registering: shardID: [0]
+2020-06-29 09:25:55.244 submanager.go:258 [INF] Peerv2 log: Registering: peerID: QmbCdapUsVdoiEXHQxQzafAAL2wpQEXjwtT7ZGYgBs6y8k
+2020-06-29 09:25:55.244 submanager.go:259 [INF] Peerv2 log: Registering: pubkey: 1KUb5k6rDg63
+2020-06-29 09:25:55.244 connmanager.go:320 [ERR] Peerv2 log: Subscribe failed: forced = false hwID =  err = requester still not ready
+github.com/incognitochain/incognito-chain/peerv2.(*BlockRequester).Register
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/blockrequester.go:142
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).registerToProxy
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:261
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).Subscribe
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:93
+github.com/incognitochain/incognito-chain/peerv2.(*ConnManager).manageRoleSubscription
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/connmanager.go:318
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1333
+2020-06-29 09:25:56.244 submanager.go:79 [INF] Peerv2 log: role   0, key 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:25:56.245 submanager.go:88 [INF] Peerv2 log: Role changed: {dummyLayer dummyRole -1000} -> {  0}
+2020-06-29 09:25:56.245 submanager.go:253 [INF] Peerv2 log: Registering: message: [blockbeacon peerstate tx txprivacytok]
+2020-06-29 09:25:56.245 submanager.go:254 [INF] Peerv2 log: Registering: nodeMode: auto
+2020-06-29 09:25:56.245 submanager.go:255 [INF] Peerv2 log: Registering: layer: 
+2020-06-29 09:25:56.245 submanager.go:256 [INF] Peerv2 log: Registering: role: 
+2020-06-29 09:25:56.245 submanager.go:257 [INF] Peerv2 log: Registering: shardID: [0]
+2020-06-29 09:25:56.245 submanager.go:258 [INF] Peerv2 log: Registering: peerID: QmbCdapUsVdoiEXHQxQzafAAL2wpQEXjwtT7ZGYgBs6y8k
+2020-06-29 09:25:56.245 submanager.go:259 [INF] Peerv2 log: Registering: pubkey: 1KUb5k6rDg63
+2020-06-29 09:25:56.245 connmanager.go:320 [ERR] Peerv2 log: Subscribe failed: forced = false hwID =  err = requester still not ready
+github.com/incognitochain/incognito-chain/peerv2.(*BlockRequester).Register
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/blockrequester.go:142
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).registerToProxy
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:261
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).Subscribe
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:93
+github.com/incognitochain/incognito-chain/peerv2.(*ConnManager).manageRoleSubscription
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/connmanager.go:318
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1333
+2020-06-29 09:25:57.244 submanager.go:79 [INF] Peerv2 log: role   0, key 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:25:57.244 submanager.go:88 [INF] Peerv2 log: Role changed: {dummyLayer dummyRole -1000} -> {  0}
+2020-06-29 09:25:57.244 submanager.go:253 [INF] Peerv2 log: Registering: message: [blockbeacon peerstate tx txprivacytok]
+2020-06-29 09:25:57.244 submanager.go:254 [INF] Peerv2 log: Registering: nodeMode: auto
+2020-06-29 09:25:57.244 submanager.go:255 [INF] Peerv2 log: Registering: layer: 
+2020-06-29 09:25:57.244 submanager.go:256 [INF] Peerv2 log: Registering: role: 
+2020-06-29 09:25:57.244 submanager.go:257 [INF] Peerv2 log: Registering: shardID: [0]
+2020-06-29 09:25:57.244 submanager.go:258 [INF] Peerv2 log: Registering: peerID: QmbCdapUsVdoiEXHQxQzafAAL2wpQEXjwtT7ZGYgBs6y8k
+2020-06-29 09:25:57.244 submanager.go:259 [INF] Peerv2 log: Registering: pubkey: 1KUb5k6rDg63
+2020-06-29 09:25:57.244 engine.go:70 [INF] Consensus log: Node state role: committee chainID: 1
+2020-06-29 09:25:57.244 connmanager.go:320 [ERR] Peerv2 log: Subscribe failed: forced = false hwID =  err = requester still not ready
+github.com/incognitochain/incognito-chain/peerv2.(*BlockRequester).Register
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/blockrequester.go:142
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).registerToProxy
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:261
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).Subscribe
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:93
+github.com/incognitochain/incognito-chain/peerv2.(*ConnManager).manageRoleSubscription
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/connmanager.go:318
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1333
+2020-06-29 09:25:57.244 bftactorv2.go:104 [INF] Consensus log: start bls-bftv2 consensus for chain shard-1
+2020-06-29 09:25:58.248 submanager.go:79 [INF] Peerv2 log: role committee shard 1, key 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:25:58.248 submanager.go:88 [INF] Peerv2 log: Role changed: {dummyLayer dummyRole -1000} -> {shard committee 1}
+2020-06-29 09:25:58.248 submanager.go:253 [INF] Peerv2 log: Registering: message: [blockshard blockbeacon bft peerstate crossshard blkshdtobcn tx txprivacytok]
+2020-06-29 09:25:58.248 submanager.go:254 [INF] Peerv2 log: Registering: nodeMode: auto
+2020-06-29 09:25:58.248 submanager.go:255 [INF] Peerv2 log: Registering: layer: shard
+2020-06-29 09:25:58.248 submanager.go:256 [INF] Peerv2 log: Registering: role: committee
+2020-06-29 09:25:58.248 submanager.go:257 [INF] Peerv2 log: Registering: shardID: [1]
+2020-06-29 09:25:58.248 submanager.go:258 [INF] Peerv2 log: Registering: peerID: QmbCdapUsVdoiEXHQxQzafAAL2wpQEXjwtT7ZGYgBs6y8k
+2020-06-29 09:25:58.248 submanager.go:259 [INF] Peerv2 log: Registering: pubkey: 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:25:58.248 connmanager.go:320 [ERR] Peerv2 log: Subscribe failed: forced = false hwID =  err = requester still not ready
+github.com/incognitochain/incognito-chain/peerv2.(*BlockRequester).Register
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/blockrequester.go:142
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).registerToProxy
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:261
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).Subscribe
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:93
+github.com/incognitochain/incognito-chain/peerv2.(*ConnManager).manageRoleSubscription
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/connmanager.go:318
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1333
+2020-06-29 09:25:59.247 submanager.go:79 [INF] Peerv2 log: role committee shard 1, key 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:25:59.248 submanager.go:88 [INF] Peerv2 log: Role changed: {dummyLayer dummyRole -1000} -> {shard committee 1}
+2020-06-29 09:25:59.248 submanager.go:253 [INF] Peerv2 log: Registering: message: [blockshard blockbeacon bft peerstate crossshard blkshdtobcn tx txprivacytok]
+2020-06-29 09:25:59.248 submanager.go:254 [INF] Peerv2 log: Registering: nodeMode: auto
+2020-06-29 09:25:59.248 submanager.go:255 [INF] Peerv2 log: Registering: layer: shard
+2020-06-29 09:25:59.248 submanager.go:256 [INF] Peerv2 log: Registering: role: committee
+2020-06-29 09:25:59.248 submanager.go:257 [INF] Peerv2 log: Registering: shardID: [1]
+2020-06-29 09:25:59.248 submanager.go:258 [INF] Peerv2 log: Registering: peerID: QmbCdapUsVdoiEXHQxQzafAAL2wpQEXjwtT7ZGYgBs6y8k
+2020-06-29 09:25:59.248 submanager.go:259 [INF] Peerv2 log: Registering: pubkey: 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:25:59.248 connmanager.go:320 [ERR] Peerv2 log: Subscribe failed: forced = false hwID =  err = requester still not ready
+github.com/incognitochain/incognito-chain/peerv2.(*BlockRequester).Register
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/blockrequester.go:142
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).registerToProxy
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:261
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).Subscribe
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:93
+github.com/incognitochain/incognito-chain/peerv2.(*ConnManager).manageRoleSubscription
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/connmanager.go:318
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1333
+2020-06-29 09:26:00.246 submanager.go:79 [INF] Peerv2 log: role committee shard 1, key 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:26:00.246 submanager.go:88 [INF] Peerv2 log: Role changed: {dummyLayer dummyRole -1000} -> {shard committee 1}
+2020-06-29 09:26:00.246 submanager.go:253 [INF] Peerv2 log: Registering: message: [blockshard blockbeacon bft peerstate crossshard blkshdtobcn tx txprivacytok]
+2020-06-29 09:26:00.246 submanager.go:254 [INF] Peerv2 log: Registering: nodeMode: auto
+2020-06-29 09:26:00.246 submanager.go:255 [INF] Peerv2 log: Registering: layer: shard
+2020-06-29 09:26:00.246 submanager.go:256 [INF] Peerv2 log: Registering: role: committee
+2020-06-29 09:26:00.246 submanager.go:257 [INF] Peerv2 log: Registering: shardID: [1]
+2020-06-29 09:26:00.246 submanager.go:258 [INF] Peerv2 log: Registering: peerID: QmbCdapUsVdoiEXHQxQzafAAL2wpQEXjwtT7ZGYgBs6y8k
+2020-06-29 09:26:00.246 submanager.go:259 [INF] Peerv2 log: Registering: pubkey: 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:26:00.246 connmanager.go:320 [ERR] Peerv2 log: Subscribe failed: forced = false hwID =  err = requester still not ready
+github.com/incognitochain/incognito-chain/peerv2.(*BlockRequester).Register
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/blockrequester.go:142
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).registerToProxy
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:261
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).Subscribe
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:93
+github.com/incognitochain/incognito-chain/peerv2.(*ConnManager).manageRoleSubscription
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/connmanager.go:318
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1333
+2020-06-29 09:26:01.245 submanager.go:79 [INF] Peerv2 log: role committee shard 1, key 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:26:01.247 submanager.go:88 [INF] Peerv2 log: Role changed: {dummyLayer dummyRole -1000} -> {shard committee 1}
+2020-06-29 09:26:01.247 submanager.go:253 [INF] Peerv2 log: Registering: message: [blockshard blockbeacon bft peerstate crossshard blkshdtobcn tx txprivacytok]
+2020-06-29 09:26:01.247 submanager.go:254 [INF] Peerv2 log: Registering: nodeMode: auto
+2020-06-29 09:26:01.247 submanager.go:255 [INF] Peerv2 log: Registering: layer: shard
+2020-06-29 09:26:01.247 submanager.go:256 [INF] Peerv2 log: Registering: role: committee
+2020-06-29 09:26:01.247 submanager.go:257 [INF] Peerv2 log: Registering: shardID: [1]
+2020-06-29 09:26:01.247 submanager.go:258 [INF] Peerv2 log: Registering: peerID: QmbCdapUsVdoiEXHQxQzafAAL2wpQEXjwtT7ZGYgBs6y8k
+2020-06-29 09:26:01.247 submanager.go:259 [INF] Peerv2 log: Registering: pubkey: 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:26:01.247 connmanager.go:320 [ERR] Peerv2 log: Subscribe failed: forced = false hwID =  err = requester still not ready
+github.com/incognitochain/incognito-chain/peerv2.(*BlockRequester).Register
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/blockrequester.go:142
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).registerToProxy
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:261
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).Subscribe
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:93
+github.com/incognitochain/incognito-chain/peerv2.(*ConnManager).manageRoleSubscription
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/connmanager.go:318
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1333
+2020-06-29 09:26:02.245 submanager.go:79 [INF] Peerv2 log: role committee shard 1, key 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:26:02.245 submanager.go:88 [INF] Peerv2 log: Role changed: {dummyLayer dummyRole -1000} -> {shard committee 1}
+2020-06-29 09:26:02.245 submanager.go:253 [INF] Peerv2 log: Registering: message: [blockshard blockbeacon bft peerstate crossshard blkshdtobcn tx txprivacytok]
+2020-06-29 09:26:02.245 submanager.go:254 [INF] Peerv2 log: Registering: nodeMode: auto
+2020-06-29 09:26:02.245 submanager.go:255 [INF] Peerv2 log: Registering: layer: shard
+2020-06-29 09:26:02.245 submanager.go:256 [INF] Peerv2 log: Registering: role: committee
+2020-06-29 09:26:02.245 submanager.go:257 [INF] Peerv2 log: Registering: shardID: [1]
+2020-06-29 09:26:02.245 submanager.go:258 [INF] Peerv2 log: Registering: peerID: QmbCdapUsVdoiEXHQxQzafAAL2wpQEXjwtT7ZGYgBs6y8k
+2020-06-29 09:26:02.245 submanager.go:259 [INF] Peerv2 log: Registering: pubkey: 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:26:02.245 connmanager.go:320 [ERR] Peerv2 log: Subscribe failed: forced = false hwID =  err = requester still not ready
+github.com/incognitochain/incognito-chain/peerv2.(*BlockRequester).Register
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/blockrequester.go:142
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).registerToProxy
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:261
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).Subscribe
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:93
+github.com/incognitochain/incognito-chain/peerv2.(*ConnManager).manageRoleSubscription
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/connmanager.go:318
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1333
+2020-06-29 09:26:03.248 submanager.go:79 [INF] Peerv2 log: role committee shard 1, key 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:26:03.251 submanager.go:88 [INF] Peerv2 log: Role changed: {dummyLayer dummyRole -1000} -> {shard committee 1}
+2020-06-29 09:26:03.251 submanager.go:253 [INF] Peerv2 log: Registering: message: [blockshard blockbeacon bft peerstate crossshard blkshdtobcn tx txprivacytok]
+2020-06-29 09:26:03.251 submanager.go:254 [INF] Peerv2 log: Registering: nodeMode: auto
+2020-06-29 09:26:03.251 submanager.go:255 [INF] Peerv2 log: Registering: layer: shard
+2020-06-29 09:26:03.251 submanager.go:256 [INF] Peerv2 log: Registering: role: committee
+2020-06-29 09:26:03.251 submanager.go:257 [INF] Peerv2 log: Registering: shardID: [1]
+2020-06-29 09:26:03.251 submanager.go:258 [INF] Peerv2 log: Registering: peerID: QmbCdapUsVdoiEXHQxQzafAAL2wpQEXjwtT7ZGYgBs6y8k
+2020-06-29 09:26:03.251 submanager.go:259 [INF] Peerv2 log: Registering: pubkey: 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:26:03.251 connmanager.go:320 [ERR] Peerv2 log: Subscribe failed: forced = false hwID =  err = requester still not ready
+github.com/incognitochain/incognito-chain/peerv2.(*BlockRequester).Register
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/blockrequester.go:142
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).registerToProxy
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:261
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).Subscribe
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:93
+github.com/incognitochain/incognito-chain/peerv2.(*ConnManager).manageRoleSubscription
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/connmanager.go:318
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1333
+2020-06-29 09:26:04.243 submanager.go:79 [INF] Peerv2 log: role committee shard 1, key 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:26:04.243 submanager.go:88 [INF] Peerv2 log: Role changed: {dummyLayer dummyRole -1000} -> {shard committee 1}
+2020-06-29 09:26:04.244 submanager.go:253 [INF] Peerv2 log: Registering: message: [blockshard blockbeacon bft peerstate crossshard blkshdtobcn tx txprivacytok]
+2020-06-29 09:26:04.244 submanager.go:254 [INF] Peerv2 log: Registering: nodeMode: auto
+2020-06-29 09:26:04.244 submanager.go:255 [INF] Peerv2 log: Registering: layer: shard
+2020-06-29 09:26:04.244 submanager.go:256 [INF] Peerv2 log: Registering: role: committee
+2020-06-29 09:26:04.244 submanager.go:257 [INF] Peerv2 log: Registering: shardID: [1]
+2020-06-29 09:26:04.244 submanager.go:258 [INF] Peerv2 log: Registering: peerID: QmbCdapUsVdoiEXHQxQzafAAL2wpQEXjwtT7ZGYgBs6y8k
+2020-06-29 09:26:04.244 submanager.go:259 [INF] Peerv2 log: Registering: pubkey: 1BGH6f1GujHC3fJfv16RB4ytye4Uizm4P5ydzghzLAbnK2GchkdnVatwXARmr2jmYLXQCHb8Wd37Jb6ND3ozCSDgrdegSB2qNKnFVkS7uDPiQNJT9Pu39cetMBaSJVUvRQ5wGtp3u3MrYMbQo3iGXtqyshcsJmcDrgx3oK78VNzgLuErA1Adw
+2020-06-29 09:26:04.244 connmanager.go:320 [ERR] Peerv2 log: Subscribe failed: forced = false hwID =  err = requester still not ready
+github.com/incognitochain/incognito-chain/peerv2.(*BlockRequester).Register
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/blockrequester.go:142
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).registerToProxy
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:261
+github.com/incognitochain/incognito-chain/peerv2.(*SubManager).Subscribe
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/submanager.go:93
+github.com/incognitochain/incognito-chain/peerv2.(*ConnManager).manageRoleSubscription
+	/Users/autonomous/co-go/src/github.com/incognitochain/incognito-chain/peerv2/connmanager.go:318
+runtime.goexit
+	/usr/local/go/src/runtime/asm_amd64.s:1333
+2020-06-29 09:26:04.247 blockrequester.go:73 [WRN] Peerv2 log: BlockRequester is not ready, dialing
+2020-06-29 09:26:04.247 addrkeeper.go:164 [INF] Peerv2 log: Full RPC address list: [{ 0.0.0.0:9330}]
+2020-06-29 09:26:04.247 addrkeeper.go:172 [INF] Peerv2 log: RPCing addr { 0.0.0.0:9330} from list [{ 0.0.0.0:9330}]
+2020-06-29 09:26:04.248 addrkeeper.go:201 [INF] Peerv2 log: Got map[all:[{/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN 0.0.0.0:9330}]] from bootnode
+2020-06-29 09:26:04.248 addrkeeper.go:48 [INF] Peerv2 log: Updated highway addresses: [{Libp2pAddr:/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN RPCUrl:0.0.0.0:9330} {Libp2pAddr: RPCUrl:0.0.0.0:9330}]
+2020-06-29 09:26:04.248 addrkeeper.go:111 [INF] Peerv2 log: Full known addrs: [{/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN 0.0.0.0:9330}]
+2020-06-29 09:26:04.248 addrkeeper.go:118 [INF] Peerv2 log: Choosing highway to connect from non-ignored list [{/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN 0.0.0.0:9330}]
+2020-06-29 09:26:04.249 addrkeeper.go:55 [INF] Peerv2 log: Chosen address: {Libp2pAddr:/ip4/0.0.0.0/tcp/7337/ipfs/QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN RPCUrl:0.0.0.0:9330}
+2020-06-29 09:26:04.249 connmanager.go:277 [INF] Peerv2 log: Not connected to highway, connecting
+2020-06-29 09:26:04.252 connmanager.go:292 [INF] Peerv2 log: Connected to highway, sending register request
+2020-06-29 09:26:04.252 connmanager.go:326 [INF] Peerv2 log: Received request to register
+2020-06-29 09:26:05.247 connmanager.go:314 [ERR] Peerv2 log: Waiting to establish connection to highway: new highway = QmNwaG1MyyuAkroNyeuJ51kFBZ88M9ErXHLrMU9pDw5DMN, current = 
+2020-06-29 09:26:05.477 signal.go:29 [WRN] Server log: Received signal (interrupt).  Shutting down...
+2020-06-29 09:26:05.478 incognito.go:167 [WRN] Server log: Gracefully shutting down the server...
+2020-06-29 09:26:05.478 websocket.go:88 [INF] RPC log: RPC server shutting down
+2020-06-29 09:26:05.478 websocket.go:95 [WRN] RPC log: RPC server shutdown complete
+2020-06-29 09:26:05.478 http.go:135 [INF] RPC log: RPC server shutting down
+<nil>
+2020-06-29 09:26:05.478 http.go:120 [ERR] RPC log: Close Http Listener accept tcp4 0.0.0.0:9339: use of closed network connection
+2020-06-29 09:26:05.478 http.go:143 [WRN] RPC log: RPC server shutdown complete
+2020-06-29 09:26:05.479 engine.go:207 [INF] Consensus log: CONSENSUS: Stop
+2020-06-29 09:26:05.479 bftactorv2.go:72 [INF] Consensus log: stop bls-bft2 consensus for chain shard-1
+2020-06-29 09:26:05.479 incognito.go:170 [WRN] Server log: Server shutdown complete
+2020-06-29 09:26:05.479 incognito.go:144 [WRN] Server log: Gracefully shutting down the btc database...
+2020-06-29 09:26:05.481 incognito.go:185 [WRN] Server log: Shutdown complete

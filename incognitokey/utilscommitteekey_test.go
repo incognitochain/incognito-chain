@@ -7,7 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/key"
 )
 
 func TestConvertCommitteePublicKeyBetweenStringAndStruct(t *testing.T) {
@@ -104,7 +104,7 @@ func TestUnmarshallkey(t *testing.T) {
 
 func TestCommitteePublicKey_IsValid(t *testing.T) {
 	type fields struct {
-		IncPubKey    privacy.PublicKey
+		IncPubKey    key.PublicKey
 		MiningPubKey map[string][]byte
 	}
 	type args struct {

@@ -1,17 +1,17 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 // TODO: Update error type to correct one
@@ -23,6 +23,9 @@ type PDECrossPoolTradeRequest struct {
 	MinAcceptableAmount uint64
 	TradingFee          uint64
 	TraderAddressStr    string
+	TxRandomStr         string `json:"TxRandomStr,omitempty"`
+	SubTraderAddressStr string `json:"SubTraderAddressStr,omitempty"`
+	SubTxRandomStr		string `json:"SubTxRandomStr,omitempty"`
 	MetadataBase
 }
 
@@ -34,6 +37,7 @@ type PDECrossPoolTradeRequestAction struct {
 
 type PDECrossPoolTradeAcceptedContent struct {
 	TraderAddressStr         string
+	TxRandomStr              string `json:"TxRandomStr,omitempty"`
 	TokenIDToBuyStr          string
 	ReceiveAmount            uint64
 	Token1IDStr              string
@@ -47,6 +51,7 @@ type PDECrossPoolTradeAcceptedContent struct {
 
 type PDERefundCrossPoolTrade struct {
 	TraderAddressStr string
+	TxRandomStr      string `json:"TxRandomStr,omitempty"`
 	TokenIDStr       string
 	Amount           uint64
 	ShardID          byte
@@ -60,6 +65,9 @@ func NewPDECrossPoolTradeRequest(
 	minAcceptableAmount uint64,
 	tradingFee uint64,
 	traderAddressStr string,
+	txRandomStr string,
+	subTraderAddressStr string,
+	subTxRandomStr string,
 	metaType int,
 ) (*PDECrossPoolTradeRequest, error) {
 	metadataBase := MetadataBase{
@@ -72,6 +80,9 @@ func NewPDECrossPoolTradeRequest(
 		MinAcceptableAmount: minAcceptableAmount,
 		TradingFee:          tradingFee,
 		TraderAddressStr:    traderAddressStr,
+		TxRandomStr:         txRandomStr,
+		SubTraderAddressStr: subTraderAddressStr,
+		SubTxRandomStr: subTxRandomStr,
 	}
 	pdeCrossPoolTradeRequest.MetadataBase = metadataBase
 	return pdeCrossPoolTradeRequest, nil
@@ -88,20 +99,22 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 		return true, true, nil
 	}
 
-	keyWallet, err := wallet.Base58CheckDeserialize(pc.TraderAddressStr)
+	// check ota address string and tx random is valid
+	_, err, ver := checkIncognitoAddress(pc.TraderAddressStr, pc.TxRandomStr)
 	if err != nil {
-		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TraderAddressStr incorrect"))
+		return false, false, fmt.Errorf("trader address string or txrandom is not corrrect format")
 	}
-	traderAddr := keyWallet.KeySet.PaymentAddress
-
-	if len(traderAddr.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's trader address")
+	if int8(ver) != tx.GetVersion() {
+		return false, false, fmt.Errorf("payment address version (%v) and tx version (%v) mismatch", ver, tx.GetVersion())
+	}
+	if ver == 2 {
+		_, errSub, verSub := checkIncognitoAddress(pc.SubTraderAddressStr, pc.SubTxRandomStr)
+		if errSub != nil || verSub == 1 {
+			return false, false, fmt.Errorf("trader address string or txrandom is not corrrect format")
+		}
 	}
 
-	if !bytes.Equal(tx.GetSigPubKey()[:], traderAddr.Pk[:]) {
-		return false, false, errors.New("TraderAddress incorrect")
-	}
-
+	// check token ids
 	_, err = common.Hash{}.NewHashFromStr(pc.TokenIDToBuyStr)
 	if err != nil {
 		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenIDToBuyStr incorrect"))
@@ -111,56 +124,54 @@ func (pc PDECrossPoolTradeRequest) ValidateSanityData(chainRetriever ChainRetrie
 		return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenIDToSellStr should be different from TokenIDToBuyStr"))
 	}
 
+	// check burn data
+	isBurn, burnedPrv, burnedCoin, burnedToken, err := tx.GetTxFullBurnData()
+	if err != nil || !isBurn {
+		return false, false, fmt.Errorf("this is not burn tx. Error %v", err)
+	}
+
 	if tx.GetType() == common.TxNormalType {
-		if pc.TokenIDToSellStr != common.PRVCoinID.String() {
-			return false, false, errors.New("With tx normal privacy, the tokenIDStr should be PRV, not custom token")
+		if burnedPrv == nil || common.PRVIDStr != pc.TokenIDToSellStr {
+			return false, false, fmt.Errorf("token to sell must be PRV")
 		}
-		if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-			return false, false, errors.New("Must send coin to burning address")
+
+		if (pc.SellAmount + pc.TradingFee) != burnedPrv.GetValue() {
+			return false, false, fmt.Errorf("total of selling amount and trading fee should be equal to the tx value")
 		}
-		txValue := tx.CalculateTxValue()
-		if pc.SellAmount > txValue || pc.TradingFee > txValue {
-			return false, false, errors.New("Neither selling amount nor trading fee allows to be larger than the tx value")
+		if pc.SellAmount > burnedPrv.GetValue() || pc.TradingFee > burnedPrv.GetValue() {
+			return false, false, errors.New("neither selling amount nor trading fee allows to be larger than the tx value")
 		}
-		if (pc.SellAmount + pc.TradingFee) != txValue {
-			return false, false, errors.New("Total of selling amount and trading fee should be equal to the tx value")
+		if (pc.SellAmount + pc.TradingFee) != burnedPrv.GetValue() {
+			return false, false, errors.New("total of selling amount and trading fee should be equal to the tx value")
 		}
 	}
 
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		if pc.TokenIDToSellStr == common.PRVCoinID.String() {
-			return false, false, errors.New("With custom token privacy tx, the tokenIDStr should not be PRV, but custom token")
+		if burnedCoin == nil {
+			return false, false, fmt.Errorf("this is not burn token tx")
 		}
-		tokenIDToSell, err := common.Hash{}.NewHashFromStr(pc.TokenIDToSellStr)
-		if err != nil {
-			return false, false, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("TokenIDToSellStr incorrect"))
+		if pc.TokenIDToSellStr == common.PRVIDStr {
+			return false, false, fmt.Errorf("with tx token, the token to sell should not be PRV")
 		}
-		if !bytes.Equal(tx.GetTokenID()[:], tokenIDToSell[:]) {
-			return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id")
+
+		if pc.TokenIDToSellStr != burnedToken.String() {
+			return false, false, fmt.Errorf("the token to sell should be equal to token in tx")
 		}
 
 		if pc.TradingFee == 0 {
-			if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-				return false, false, errors.New("Must send custom coin to burning address")
+			if burnedCoin.GetValue() != pc.SellAmount {
+				return false, false, fmt.Errorf("sell amount should be equal to the burned pToken amount")
 			}
-			pTokenAmt := tx.CalculateTxValue()
-			if pTokenAmt != pc.SellAmount {
-				return false, false, errors.New("Sell amount should be equal to the burned pToken amount")
-			}
+
 		} else {
-			if !tx.IsFullBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-				return false, false, errors.New("Must send coins to burning address")
+			if burnedPrv.GetValue() != pc.TradingFee {
+				return false, false, fmt.Errorf("trading fee should be equal to the burned prv amount")
 			}
-			prvAmt, pTokenAmt := tx.GetFullTxValues()
-			if prvAmt != pc.TradingFee {
-				return false, false, errors.New("Trading fee should be equal to the burned prv amount")
-			}
-			if pTokenAmt != pc.SellAmount {
-				return false, false, errors.New("Sell amount should be equal to the burned pToken amount")
+			if burnedCoin.GetValue() != pc.SellAmount {
+				return false, false, fmt.Errorf("sell amount should be equal to the burned pToken amount")
 			}
 		}
 	}
-
 	return true, true, nil
 }
 
@@ -173,6 +184,15 @@ func (pc PDECrossPoolTradeRequest) Hash() *common.Hash {
 	record += pc.TokenIDToBuyStr
 	record += pc.TokenIDToSellStr
 	record += pc.TraderAddressStr
+	if len(pc.TxRandomStr) > 0 {
+		record += pc.TxRandomStr
+	}
+	if len(pc.SubTraderAddressStr) > 0 {
+		record += pc.SubTraderAddressStr
+	}
+	if len(pc.SubTxRandomStr) > 0 {
+		record += pc.SubTxRandomStr
+	}
 	record += strconv.FormatUint(pc.SellAmount, 10)
 	record += strconv.FormatUint(pc.MinAcceptableAmount, 10)
 	record += strconv.FormatUint(pc.TradingFee, 10)
@@ -199,3 +219,21 @@ func (pc *PDECrossPoolTradeRequest) BuildReqActions(tx Transaction, chainRetriev
 func (pc *PDECrossPoolTradeRequest) CalculateSize() uint64 {
 	return calculateSize(pc)
 }
+
+func (pc *PDECrossPoolTradeRequest) GetOTADeclarations() []OTADeclaration {
+	result := []OTADeclaration{}
+	pk, _, err := coin.ParseOTAInfoFromString(pc.TraderAddressStr, pc.TxRandomStr)
+	sellingToken := common.ConfidentialAssetID
+	if pc.TokenIDToSellStr == common.PRVIDStr {
+		sellingToken = common.PRVCoinID
+	}
+	if err == nil {
+		result = append(result, OTADeclaration{PublicKey: pk.ToBytes(), TokenID: sellingToken})
+	}
+	pk, _, err = coin.ParseOTAInfoFromString(pc.SubTraderAddressStr, pc.SubTxRandomStr)
+	if err == nil {
+		result = append(result, OTADeclaration{PublicKey: pk.ToBytes(), TokenID: common.PRVCoinID})
+	}
+	return result
+}
+

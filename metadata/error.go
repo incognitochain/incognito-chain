@@ -64,11 +64,30 @@ const (
 	// eth utils
 	VerifyProofAndParseReceiptError
 
+	// init privacy custom token
+	InitTokenRequestDecodeInstructionError
+	InitTokenRequestUnmarshalJsonError
+	InitTokenRequestNewInitPTokenRequestFromMapError
+	InitTokenRequestValidateTxWithBlockChainError
+	InitTokenRequestValidateSanityDataError
+	InitTokenRequestBuildReqActionsError
+
+	InitTokenResponseValidateSanityDataError
+
 	// portal v3
 	PortalCustodianDepositV3ValidateWithBCError
 	PortalCustodianDepositV3ValidateSanityDataError
 	NewPortalCustodianDepositV3MetaFromMapError
 	PortalUnlockOverRateCollateralsError
+
+	// portal v4
+	PortalV4ShieldRequestValidateSanityDataError
+	PortalV4UnshieldRequestValidateSanityDataError
+	PortalV4FeeReplacementRequestMetaError
+	PortalV4SubmitConfirmedTxRequestMetaError
+
+	// relaying header
+	RelayingHeaderMetaError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -133,11 +152,30 @@ var ErrCodeMessage = map[int]struct {
 	// eth utils
 	VerifyProofAndParseReceiptError: {-8001, "Verify proof and parse receipt eth error"},
 
+	// init privacy custom token
+	InitTokenRequestDecodeInstructionError:           {-8002, "Cannot decode instruction"},
+	InitTokenRequestUnmarshalJsonError:               {-8003, "Cannot unmarshall json"},
+	InitTokenRequestNewInitPTokenRequestFromMapError: {-8004, "Cannot new InitPToken eth request from map"},
+	InitTokenRequestValidateTxWithBlockChainError:    {-8005, "Validate tx with block chain error"},
+	InitTokenRequestValidateSanityDataError:          {-8006, "Validate sanity data error"},
+	InitTokenRequestBuildReqActionsError:             {-8007, "Build request action error"},
+
+	InitTokenResponseValidateSanityDataError: {-8008, "Validate sanity data error"},
+
 	// portal v3
 	PortalCustodianDepositV3ValidateWithBCError:     {-9001, "Validate with blockchain tx portal custodian deposit v3 error"},
 	PortalCustodianDepositV3ValidateSanityDataError: {-9002, "Validate sanity data tx portal custodian deposit v3 error"},
 	NewPortalCustodianDepositV3MetaFromMapError:     {-9003, "New portal custodian deposit v3 metadata from map error"},
 	PortalUnlockOverRateCollateralsError:            {-9004, "Validate with blockchain tx portal custodian unlock over rate v3 error"},
+
+	// portal v4
+	PortalV4ShieldRequestValidateSanityDataError:   {-10001, "Validate sanity data portal v4 shielding request error"},
+	PortalV4UnshieldRequestValidateSanityDataError: {-10002, "Validate sanity data portal v4 unshielding request error"},
+	PortalV4FeeReplacementRequestMetaError:         {-10003, "Portal batch unshield request metadata error"},
+	PortalV4SubmitConfirmedTxRequestMetaError:      {-10004, "Portal submit external confirmed tx metadata error"},
+
+	// relaying header
+	RelayingHeaderMetaError: {-11005, " relaying header metadata error"},
 }
 
 type MetadataTxError struct {

@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -413,6 +415,9 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 				return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError, fmt.Errorf("Shard %+v best height not found in beacon best state", shardID))
 			}
 		} else {
+			if bestShardHeight == 0 {
+				bestShardHeight = 1
+			}
 			if len(shardStates) > 0 {
 				if bestShardHeight > shardStates[0].Height {
 					return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError, fmt.Errorf("Expect Shard %+v has state greater than to %+v but get %+v", shardID, bestShardHeight, shardStates[0].Height))
@@ -831,6 +836,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
+	// execute, store token init instructions
+	blockchain.processTokenInitInstructions(newBestState.featureStateDB, beaconBlock)
 	// execute, store PDE instruction
 	newBestState.pdeState, err = blockchain.processPDEInstructions(newBestState, beaconBlock)
 	if err != nil {
@@ -867,12 +874,22 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	// execute, store Portal Instruction
 	// execute, store Ralaying Instruction
-	//if (blockchain.config.ChainParams.Net == Mainnet) || (blockchain.config.ChainParams.Net == Testnet && beaconBlock.Header.Height > 1500000) {
-	err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
+	newBestState.portalStateV4, err = blockchain.processPortalInstructions(newBestState.featureStateDB, beaconBlock)
 	if err != nil {
 		return NewBlockChainError(ProcessPortalInstructionError, err)
 	}
-	//}
+	// optimize storing PortalV4 state
+	if newBestState.portalStateV4 != nil {
+		if !reflect.DeepEqual(curView.portalStateV4, newBestState.portalStateV4) {
+			// check updated field in portalStateV4 and store these field into statedb
+			diffState := getDiffPortalStateV4(curView.portalStateV4, newBestState.portalStateV4)
+			err = portalprocessv4.StorePortalV4StateToDB(newBestState.featureStateDB, diffState)
+			if err != nil {
+				Logger.log.Error(err)
+				return err
+			}
+		}
+	}
 
 	//store beacon block hash by index to consensus state db => mark this block hash is for this view at this height
 	//if err := statedb.StoreBeaconBlockHashByIndex(newBestState.consensusStateDB, blockHeight, blockHash); err != nil {

@@ -1,6 +1,8 @@
 package base58
 
 import (
+	"bytes"
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -19,7 +21,8 @@ func TestBase58CheckChecksumFirst4Bytes(t *testing.T) {
 	}
 
 	for _, item := range data {
-		checkSum := ChecksumFirst4Bytes(item)
+		isNewCheckSum := (common.RandInt() % 2) == 1
+		checkSum := ChecksumFirst4Bytes(item, isNewCheckSum)
 		assert.Equal(t, common.CheckSumLen, len(checkSum))
 	}
 }
@@ -63,11 +66,39 @@ func TestBase58CheckDecode(t *testing.T) {
 
 	base58 := new(Base58Check)
 	for _, item := range data {
-		encodedData := base58.Encode(item.input, item.version)
+		encodedData := base58.NewEncode(item.input, item.version)
 
 		data, version, err := base58.Decode(encodedData)
 		assert.Equal(t, item.input, data)
 		assert.Equal(t, item.version, version)
 		assert.Equal(t, nil, err)
+	}
+}
+
+func TestNewEncodingAndCheckSum(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		data := common.RandBytes(common.RandIntInterval(0, 1000))
+		expectedEncoding := base58.CheckEncode(data, 0)
+
+		actualEncoded := Base58Check{}.NewEncode(data, common.ZeroByte)
+
+		assert.Equal(t, expectedEncoding, actualEncoded, "encodings not equals: %v, %v", expectedEncoding, actualEncoded)
+	}
+}
+
+func TestNewOldEncodeDecode(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		data := common.RandBytes(common.RandIntInterval(0, 1000))
+		oldEncoding := Base58Check{}.Encode(data, 0x00)
+		newEncoding := Base58Check{}.NewEncode(data, 0x00)
+
+		oldDecode, _, err := Base58Check{}.Decode(oldEncoding)
+		assert.Equal(t, nil, err, "base58Check old-decode returns an error: %v\n", err)
+
+		newDecode, _, err := Base58Check{}.Decode(newEncoding)
+		assert.Equal(t, nil, err, "base58Check new-decode returns an error: %v\n", err)
+
+		assert.Equal(t, true, bytes.Equal(oldDecode, data), "encodings not equals: %v, %v\n", oldDecode, data)
+		assert.Equal(t, true, bytes.Equal(newDecode, data), "encodings not equals: %v, %v\n", newDecode, data)
 	}
 }

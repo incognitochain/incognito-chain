@@ -3,17 +3,16 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/incdb"
-
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/pkg/errors"
 )
 
@@ -30,6 +29,7 @@ type swapProof struct {
 
 type ConsensusEngine interface {
 	ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
+	ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error)
 }
 
 // handleGetLatestBeaconSwapProof returns the latest proof of a change in bridge's committee
@@ -145,6 +145,7 @@ type block interface {
 	InstructionMerkleRoot() []byte
 	MetaHash() []byte
 	Sig(ce ConsensusEngine) ([][]byte, []int, error)
+	PortalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error)
 }
 
 // buildProofForBlock builds a swapProof for an instruction in a block (beacon or shard)
@@ -313,6 +314,10 @@ func (bb *beaconBlock) Sig(ce ConsensusEngine) ([][]byte, []int, error) {
 	return ce.ExtractBridgeValidationData(bb)
 }
 
+func (bb *beaconBlock) PortalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error) {
+	return ce.ExtractPortalV4ValidationData(bb)
+}
+
 type shardBlock struct {
 	*types.ShardBlock
 }
@@ -328,6 +333,10 @@ func (sb *shardBlock) MetaHash() []byte {
 
 func (sb *shardBlock) Sig(ce ConsensusEngine) ([][]byte, []int, error) {
 	return ce.ExtractBridgeValidationData(sb)
+}
+
+func (sb *shardBlock) PortalV4Sigs(ce ConsensusEngine) ([]*portalprocessv4.PortalSig, error) {
+	return ce.ExtractPortalV4ValidationData(sb)
 }
 
 // findBeaconBlockWithInst finds a beacon block with a specific instruction and the instruction's index; nil if not found

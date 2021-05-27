@@ -24,6 +24,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
 )
 
 type ShardChain struct {
@@ -291,7 +292,7 @@ func (chain *ShardChain) getDataBeforeBlockProducing(buildView *ShardBestState, 
 	}
 
 	//cross shard
-	tempPrivateKey := blockchain.config.BlockGen.createTempKeyset(startTime)
+	tempPrivateKey := blockchain.config.BlockGen.createTempKeyset()
 	createFlow.crossTransactions = blockchain.config.BlockGen.getCrossShardData(curView)
 
 	// Get Transaction for new block
@@ -436,6 +437,8 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 	flow.newBlock.BuildShardBlockBody(shardInstructions, flow.crossTransactions, flow.transactionsForNewBlock)
 	totalTxsFee := curView.shardCommitteeEngine.BuildTotalTxsFeeFromTxs(flow.newBlock.Body.Transactions)
 
+	bitmap, _ := CreateCrossShardByteArray(flow.newBlock.Body.Transactions, shardID)
+
 	flow.newBlock.Header = types.ShardHeader{
 		Producer:           flow.proposer, //committeeMiningKeys[producerPosition],
 		ProducerPubKeyStr:  flow.proposer,
@@ -445,7 +448,7 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 		Height:             curView.ShardHeight + 1,
 		Round:              flow.round,
 		Epoch:              flow.processBeaconBlock.GetCurrentEpoch(),
-		CrossShardBitMap:   CreateCrossShardByteArray(flow.newBlock.Body.Transactions, shardID),
+		CrossShardBitMap:   bitmap,
 		BeaconHeight:       beaconProcessHeight,
 		BeaconHash:         *beaconProcessHash,
 		TotalTxsFee:        totalTxsFee,
@@ -1047,6 +1050,10 @@ func (chain *ShardChain) ValidateAndProcessBlock(block types.BlockInterface, val
 
 func (chain *ShardChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS(chain.multiView.GetFinalView())
+}
+
+func (chain *ShardChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
+	return chain.Blockchain.GetPortalParamsV4(beaconHeight)
 }
 
 //CommitteesV2 get committees by block for shardChain

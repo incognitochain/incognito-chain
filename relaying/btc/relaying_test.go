@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/btcsuite/btcutil"
+
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -268,31 +270,20 @@ func TestCreateAndSendBTCTxToCypher(t *testing.T) {
 	// bc := gobcy.API{"029727206f7e4c8fb19301e4629c5793", "bcy", "test"}
 	bc := getBlockCypherAPI("test3")
 
-	inAddr := "n4UtqQiW3qYjtiEUMscwPoBtUuYAK1AqKJ"
-	outAddr := "mgLFmRTFRakf5zs23YHB4Pcd8JF7TWCy6E"
-	amount := int(100)
+	inAddr := "msTYtu7nsMiwFUtNgCSQBk26JeBf9q3GTM"
+	outAddr := "tb1qg24nv270gyaurnwcfcdjw55jm94ws70as2ffzlr9nxww77tgu4lstcgqdh"
+	amount := int(12000)
 	trans := gobcy.TX{}
-	trans.Fees = int(5000)
+	trans.Fees = int(500)
 	trans.Inputs = make([]gobcy.TXInput, 1)
 	trans.Inputs[0].Addresses = make([]string, 1)
 	trans.Inputs[0].Addresses[0] = inAddr
 
-	trans.Outputs = make([]gobcy.TXOutput, 2)
-	trans.Outputs[0].ScriptType = "null-data"
-	script := []byte{
-		txscript.OP_RETURN,
-		0x10,
-	}
+	trans.Outputs = make([]gobcy.TXOutput, 1)
 
-	uniquePortingID := "btcporting2"
-	msg := HashAndEncodeBase58(uniquePortingID)
-	fmt.Println("hashed msg: ", msg)
-	script = append(script, []byte(msg)...)
-	trans.Outputs[0].Script = hex.EncodeToString(script)
-
-	trans.Outputs[1].Addresses = make([]string, 1)
-	trans.Outputs[1].Addresses[0] = outAddr
-	trans.Outputs[1].Value = amount
+	trans.Outputs[0].Addresses = make([]string, 1)
+	trans.Outputs[0].Addresses[0] = outAddr
+	trans.Outputs[0].Value = amount
 
 	// bc := getBlockCypherAPI("test3")
 	skelTx, err := bc.NewTX(trans, false)
@@ -300,8 +291,15 @@ func TestCreateAndSendBTCTxToCypher(t *testing.T) {
 		t.Errorf("Could not init btc tx by using cypher api - with err: %v", err)
 		return
 	}
-
-	privateKeys := []string{"abc440d4db1e72008343231abcfde64f3e5c09df3927e52317435981bab90bfa"}
+	wifDecoded, err := btcutil.DecodeWIF("cSoBn9ayvDT1WsxmArCxq2Deot5sYswSqtxu4UTuAbSTHBsDdTCm")
+	if err != nil {
+		t.Errorf("Could not decode wif - with err: %v", err)
+		return
+	}
+	privateKeys := []string{}
+	for idx := 0; idx < len(skelTx.ToSign); idx++ {
+		privateKeys = append(privateKeys, wifDecoded.PrivKey.D.Text(16))
+	}
 	err = skelTx.Sign(privateKeys)
 	if err != nil {
 		t.Errorf("Could not sign btc tx by using cypher api - with err: %v", err)

@@ -25,6 +25,7 @@ const (
 
 	getMiningInfo                 = "getmininginfo"
 	getRawMempool                 = "getrawmempool"
+	getMempoolInfoDetails         = "getmempoolinfodetails"
 	getNumberOfTxsInMempool       = "getnumberoftxsinmempool"
 	getMempoolEntry               = "getmempoolentry"
 	removeTxInMempool             = "removetxinmempool"
@@ -52,58 +53,69 @@ const (
 	getBlockCount               = "getblockcount"
 	getBlockHash                = "getblockhash"
 
-	listOutputCoins                              = "listoutputcoins"
-	createRawTransaction                         = "createtransaction"
-	sendRawTransaction                           = "sendtransaction"
-	createAndSendTransaction                     = "createandsendtransaction"
+	listOutputCoins                            = "listoutputcoins"
+	listOutputCoinsFromCache                   = "listoutputcoinsfromcache"
+	listOutputTokens                           = "listoutputtokens"
+	createRawTransaction                       = "createtransaction"
+	sendRawTransaction                         = "sendtransaction"
+	createAndSendTransaction                   = "createandsendtransaction"
+	createConvertCoinVer1ToVer2Transaction     = "createconvertcoinver1tover2transaction"
+	createAndSendCustomTokenTransaction        = "createandsendcustomtokentransaction"
+	sendRawCustomTokenTransaction              = "sendrawcustomtokentransaction"
+	createRawCustomTokenTransaction            = "createrawcustomtokentransaction"
+	createConvertCoinVer1ToVer2TxToken         = "createconvertcoinver1tover2txtoken"
+	createRawPrivacyCustomTokenTransaction     = "createrawprivacycustomtokentransaction"
+	sendRawPrivacyCustomTokenTransaction       = "sendrawprivacycustomtokentransaction"
+	createAndSendPrivacyCustomTokenTransaction = "createandsendprivacycustomtokentransaction"
+	getMempoolInfo                             = "getmempoolinfo"
+	getPendingTxsInBlockgen                    = "getpendingtxsinblockgen"
+	getCandidateList                           = "getcandidatelist"
+	getCommitteeList                           = "getcommitteelist"
+	canPubkeyStake                             = "canpubkeystake"
+	getTotalTransaction                        = "gettotaltransaction"
+	listUnspentCustomToken                     = "listunspentcustomtoken"
+	getBalanceCustomToken                      = "getbalancecustomtoken"
+	getTransactionByHash                       = "gettransactionbyhash"
+	gettransactionhashbyreceiver               = "gettransactionhashbyreceiver"
+	gettransactionhashbyreceiverv2             = "gettransactionhashbyreceiverv2"
+	gettransactionbyreceiver                   = "gettransactionbyreceiver"
+	gettransactionbyreceiverv2                 = "gettransactionbyreceiverv2"
+	gettransactionbyserialnumber               = "gettransactionbyserialnumber"
+	gettransactionbypublickey                  = "gettransactionbypublickey"
+	listCustomToken                            = "listcustomtoken"
+	listPrivacyCustomToken                     = "listprivacycustomtoken"
+	getPrivacyCustomToken                      = "getprivacycustomtoken"
+	listPrivacyCustomTokenByShard              = "listprivacycustomtokenbyshard"
+	getBalancePrivacyCustomToken               = "getbalanceprivacycustomtoken"
+	listUnspentOutputTokens                    = "listunspentoutputtokens"
+	getOTACoinsByIndices                       = "getotacoinsbyindices"
+	customTokenTxs                             = "customtoken"
+	listCustomTokenHolders                     = "customtokenholder"
+	privacyCustomTokenTxs                      = "privacycustomtoken"
+	checkHashValue                             = "checkhashvalue"
+	getListCustomTokenBalance                  = "getlistcustomtokenbalance"
+	getListPrivacyCustomTokenBalance           = "getlistprivacycustomtokenbalance"
+	getBlockHeader                             = "getheader"
+	getCrossShardBlock                         = "getcrossshardblock"
+	randomCommitments                          = "randomcommitments"
+	hasSerialNumbers                           = "hasserialnumbers"
+	hasSnDerivators                            = "hassnderivators"
+	listSnDerivators                           = "listsnderivators"
+	listSerialNumbers                          = "listserialnumbers"
+	listCommitments                            = "listcommitments"
+	listCommitmentIndices                      = "listcommitmentindices"
+	createAndSendStakingTransaction            = "createandsendstakingtransaction"
+	createAndSendStopAutoStakingTransaction    = "createandsendstopautostakingtransaction"
+	createAndSendTokenInitTransaction          = "createandsendtokeninittransaction"
+	decryptoutputcoinbykeyoftransaction        = "decryptoutputcoinbykeyoftransaction"
+	randomCommitmentsAndPublicKeys             = "randomcommitmentsandpublickeys"
+
 	createAndSendTransactionV2                   = "createandsendtransactionv2"
-	createAndSendCustomTokenTransaction          = "createandsendcustomtokentransaction"
-	sendRawCustomTokenTransaction                = "sendrawcustomtokentransaction"
-	createRawCustomTokenTransaction              = "createrawcustomtokentransaction"
-	createRawPrivacyCustomTokenTransaction       = "createrawprivacycustomtokentransaction"
-	sendRawPrivacyCustomTokenTransaction         = "sendrawprivacycustomtokentransaction"
-	createAndSendPrivacyCustomTokenTransaction   = "createandsendprivacycustomtokentransaction"
 	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"
-	getMempoolInfo                               = "getmempoolinfo"
-	getPendingTxsInBlockgen                      = "getpendingtxsinblockgen"
-	getCandidateList                             = "getcandidatelist"
-	getCommitteeList                             = "getcommitteelist"
-	canPubkeyStake                               = "canpubkeystake"
-	getTotalTransaction                          = "gettotaltransaction"
-	listUnspentCustomToken                       = "listunspentcustomtoken"
-	getBalanceCustomToken                        = "getbalancecustomtoken"
-	getTransactionByHash                         = "gettransactionbyhash"
-	gettransactionhashbyreceiver                 = "gettransactionhashbyreceiver"
-	gettransactionhashbyreceiverv2               = "gettransactionhashbyreceiverv2"
-	gettransactionbyreceiver                     = "gettransactionbyreceiver"
-	gettransactionbyreceiverv2                   = "gettransactionbyreceiverv2"
-	listCustomToken                              = "listcustomtoken"
-	listPrivacyCustomToken                       = "listprivacycustomtoken"
-	getPrivacyCustomToken                        = "getprivacycustomtoken"
-	listPrivacyCustomTokenByShard                = "listprivacycustomtokenbyshard"
-	getBalancePrivacyCustomToken                 = "getbalanceprivacycustomtoken"
-	customTokenTxs                               = "customtoken"
-	listCustomTokenHolders                       = "customtokenholder"
-	privacyCustomTokenTxs                        = "privacycustomtoken"
-	checkHashValue                               = "checkhashvalue"
-	getListCustomTokenBalance                    = "getlistcustomtokenbalance"
-	getListPrivacyCustomTokenBalance             = "getlistprivacycustomtokenbalance"
-	getBlockHeader                               = "getheader"
-	getCrossShardBlock                           = "getcrossshardblock"
 	getBlocksFromHeight                          = "getblocksfromheight"
-	randomCommitments                            = "randomcommitments"
-	hasSerialNumbers                             = "hasserialnumbers"
 	hasSerialNumbersInMempool                    = "hasserialnumbersinmempool"
-	hasSnDerivators                              = "hassnderivators"
-	listSnDerivators                             = "listsnderivators"
-	listSerialNumbers                            = "listserialnumbers"
-	listCommitments                              = "listcommitments"
-	listCommitmentIndices                        = "listcommitmentindices"
-	createAndSendStakingTransaction              = "createandsendstakingtransaction"
 	createAndSendStakingTransactionV2            = "createandsendstakingtransactionv2"
-	createAndSendStopAutoStakingTransaction      = "createandsendstopautostakingtransaction"
 	createAndSendStopAutoStakingTransactionV2    = "createandsendstopautostakingtransactionv2"
-	decryptoutputcoinbykeyoftransaction          = "decryptoutputcoinbykeyoftransaction"
 
 	//===========For Testing and Benchmark==============
 	getAndSendTxsFromFile      = "getandsendtxsfromfile"
@@ -112,10 +124,10 @@ const (
 	handleGetConsensusInfoV3   = "getconsensusinfov3"
 	getAutoStakingByHeight     = "getautostakingbyheight"
 	getCommitteeState          = "getcommitteestate"
+	convertPaymentAddress      = "convertpaymentaddress"
 	getCommitteeStateByShard   = "getcommitteestatebyshard"
 	getSlashingCommittee       = "getslashingcommittee"
 	getSlashingCommitteeDetail = "getslashingcommitteedetail"
-	getRewardAmountByEpoch     = "getrewardamountbyepoch"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
@@ -124,19 +136,21 @@ const (
 	getBeaconBestStateDetail = "getbeaconbeststatedetail"
 
 	// Wallet rpc cmd
-	listAccounts               = "listaccounts"
-	getAccount                 = "getaccount"
-	getAddressesByAccount      = "getaddressesbyaccount"
-	getAccountAddress          = "getaccountaddress"
-	dumpPrivkey                = "dumpprivkey"
-	importAccount              = "importaccount"
-	removeAccount              = "removeaccount"
-	listUnspentOutputCoins     = "listunspentoutputcoins"
-	getBalance                 = "getbalance"
-	getBalanceByPrivatekey     = "getbalancebyprivatekey"
-	getBalanceByPaymentAddress = "getbalancebypaymentaddress"
-	getReceivedByAccount       = "getreceivedbyaccount"
-	setTxFee                   = "settxfee"
+	listAccounts                    = "listaccounts"
+	getAccount                      = "getaccount"
+	getAddressesByAccount           = "getaddressesbyaccount"
+	getAccountAddress               = "getaccountaddress"
+	dumpPrivkey                     = "dumpprivkey"
+	importAccount                   = "importaccount"
+	removeAccount                   = "removeaccount"
+	listUnspentOutputCoins          = "listunspentoutputcoins"
+	listUnspentOutputCoinsFromCache = "listunspentoutputcoinsfromcache"
+	getBalance                      = "getbalance"
+	getBalanceByPrivatekey          = "getbalancebyprivatekey"
+	getBalanceByPaymentAddress      = "getbalancebypaymentaddress"
+	getReceivedByAccount            = "getreceivedbyaccount"
+	setTxFee                        = "settxfee"
+	submitKey                       = "submitkey"
 
 	// walletsta
 	getPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
@@ -163,6 +177,7 @@ const (
 	createAndSendTxWithIssuingETHReqV2 = "createandsendtxwithissuingethreqv2"
 	checkETHHashIssued                 = "checkethhashissued"
 	getAllBridgeTokens                 = "getallbridgetokens"
+	getAllBridgeTokensByHeight         = "getallbridgetokensbyheight"
 	getETHHeaderByHash                 = "getethheaderbyhash"
 	getBridgeReqWithStatus             = "getbridgereqwithstatus"
 
@@ -294,6 +309,20 @@ const (
 	//validator state
 	getValKeyState = "getvalkeystate"
 
+	// portal v4
+	getPortalV4State                           = "getportalv4state"
+	createAndSendTxWithShieldingRequest        = "createandsendtxshieldingrequest"
+	getPortalShieldingRequestStatus            = "getportalshieldingrequeststatus"
+	createAndSendTxWithPortalV4UnshieldRequest = "createandsendtxwithportalv4unshieldrequest"
+	getPortalUnshieldingRequestStatus          = "getportalunshieldrequeststatus"
+	getPortalBatchUnshieldingRequestStatus     = "getportalbatchunshieldrequeststatus"
+	getSignedRawTransactionByBatchID           = "getportalsignedrawtransaction"
+	createAndSendTxWithPortalReplacementFee    = "createandsendtxwithportalreplacebyfee"
+	getPortalReplacementFeeStatus              = "getportalreplacebyfeestatus"
+	createAndSendTxWithPortalSubmitConfirmedTx = "createandsendtxwithportalsubmitconfirmedtx"
+	getPortalSubmitConfirmedTx                 = "getportalsubmitconfirmedtxstatus"
+	getSignedRawReplaceFeeTransaction          = "getportalsignedrawreplacebyfeetransaction"
+
 	// stake
 	unstake = "createunstaketransaction"
 )
@@ -378,4 +407,19 @@ var PortalRelayingRPCs = []string{
 	getBTCRelayingBestState,
 	getBTCBlockByHash,
 	getLatestBNBHeaderBlockHeight,
+}
+
+var PortalV4RPCs = []string{
+	getPortalV4State,
+	createAndSendTxWithShieldingRequest,
+	getPortalShieldingRequestStatus,
+	createAndSendTxWithPortalV4UnshieldRequest,
+	getPortalUnshieldingRequestStatus,
+	getPortalBatchUnshieldingRequestStatus,
+	getSignedRawTransactionByBatchID,
+	createAndSendTxWithPortalReplacementFee,
+	getPortalReplacementFeeStatus,
+	createAndSendTxWithPortalSubmitConfirmedTx,
+	getPortalSubmitConfirmedTx,
+	getSignedRawReplaceFeeTransaction,
 }

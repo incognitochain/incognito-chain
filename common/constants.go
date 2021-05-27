@@ -46,9 +46,11 @@ const (
 
 // For all Transaction information
 const (
-	TxNormalType        = "n"  // normal tx(send and receive coin)
-	TxRewardType        = "s"  // reward tx
-	TxReturnStakingType = "rs" //
+	TxNormalType          = "n"   // normal tx(send and receive coin)
+	TxRewardType          = "s"   // reward tx
+	TxReturnStakingType   = "rs"  //
+	TxConversionType      = "cv"  // Convert 1 - 2 normal tx
+	TxTokenConversionType = "tcv" // Convert 1 - 2 token tx
 	//TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
 )
@@ -70,9 +72,11 @@ var (
 
 // special token ids (aka. PropertyID in custom token)
 var (
-	PRVCoinID      = Hash{4} // To send PRV in custom token
-	PRVCoinName    = "PRV"   // To send PRV in custom token
-	MaxShardNumber = 8       //programmatically config based on networkID
+	PRVCoinID             = Hash{4} // To send PRV in custom token
+	PRVCoinName           = "PRV"   // To send PRV in custom token
+	ConfidentialAssetID   = Hash{5}
+	ConfidentialAssetName = "CA"
+	MaxShardNumber        = 8 //programmatically config based on networkID
 )
 
 // CONSENSUS
@@ -187,6 +191,12 @@ const (
 	HexEmptyRoot = "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
 )
 
+// burning addresses
+const (
+	BurningAddress  = "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"
+	BurningAddress2 = "12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA"
+)
+
 var (
 	EmptyRoot = HexToHash(HexEmptyRoot)
 )
@@ -197,6 +207,11 @@ var TIMESLOT = uint64(0) //need to be set when init chain
 const (
 	PortalRelayingFlag = 0
 	PortalV3Flag       = 1
+	PortalV4Flag       = 2
+)
+const (
+	PortalVersion3 = 3
+	PortalVersion4 = 4
 )
 
 const (
