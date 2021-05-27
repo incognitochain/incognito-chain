@@ -64,6 +64,7 @@ type Params struct {
 	StakingFlowV2Height              uint64
 	EnableSlashingStakingFlowV2      uint64
 	Timeslot                         uint64
+	Blockv4Checkpoint                int64 ///produce time that block v4 will be applied (epoch unix time https://www.epochconverter.com/)
 	BeaconHeightBreakPointBurnAddr   uint64
 	PortalParams                     portal.PortalParams
 	EpochBreakPointSwapNewKey        []uint64
@@ -218,6 +219,7 @@ func SetupParam() {
 		StakingFlowV2Height:            2051863,
 		EnableSlashingStakingFlowV2:    2087789,
 		Timeslot:                       10,
+		Blockv4Checkpoint:              1e10, //produce time that block v4 will applied
 		BeaconHeightBreakPointBurnAddr: 1,
 		PortalParams: portal.PortalParams{
 			PortalParamsV3: map[uint64]portalv3.PortalParams{
@@ -323,6 +325,7 @@ func SetupParam() {
 		StakingFlowV2Height:            2051863,
 		EnableSlashingStakingFlowV2:    2087789,
 		Timeslot:                       10,
+		Blockv4Checkpoint:              1e10, //produce time that block v4 will applied
 		BeaconHeightBreakPointBurnAddr: 1,
 		PortalParams: portal.PortalParams{
 			PortalParamsV3: map[uint64]portalv3.PortalParams{
@@ -426,6 +429,7 @@ func SetupParam() {
 		StakingFlowV2Height:            1207793,
 		EnableSlashingStakingFlowV2:    1e12,
 		Timeslot:                       40,
+		Blockv4Checkpoint:              1e10, //produce time that block v4 will applied
 		BeaconHeightBreakPointBurnAddr: 150500,
 		PortalParams: portal.PortalParams{
 			PortalParamsV3: map[uint64]portalv3.PortalParams{

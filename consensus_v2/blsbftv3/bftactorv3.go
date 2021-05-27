@@ -24,8 +24,9 @@ import (
 
 const (
 	BEACON_CHAIN_ID = -1
-	BLOCK_VERSION   = 3
 )
+
+var BLOCK_VERSION = 3 //default is 3
 
 type BLSBFT_V3 struct {
 	CommitteeChain CommitteeChainHandler
@@ -296,6 +297,9 @@ func (e *BLSBFT_V3) run() error {
 						}
 					}
 
+					if e.currentTime > time.Unix(e.Node.GetChainParam().Blockv4Checkpoint, 0).Unix() {
+						BLOCK_VERSION = 4
+					}
 					if createdBlk, err := e.proposeBlock(userProposeKey, proposerPk, proposeBlock, committees, committeeViewHash); err != nil {
 						e.Logger.Critical(UnExpectedError, errors.New("can't propose block"))
 						e.Logger.Critical(err)
@@ -713,13 +717,13 @@ func (e *BLSBFT_V3) proposeBeaconBlock(
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
-		e.Logger.Info("CreateNewBlock")
+		e.Logger.Infof("CreateNewBlock beacon version %v\n", BLOCK_VERSION)
 		block, err = e.Chain.CreateNewBlock(BLOCK_VERSION, b58Str, 1, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
 	} else {
-		e.Logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v")
+		e.Logger.Infof("CreateNewBlockFromOldBlock, Block %+v %+v\n", block.GetHeight(), block.Hash().String())
 		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
@@ -753,13 +757,13 @@ func (e *BLSBFT_V3) proposeShardBlock(
 		ctx := context.Background()
 		ctx, cancel := context.WithTimeout(ctx, (time.Duration(common.TIMESLOT)*time.Second)/2)
 		defer cancel()
-		e.Logger.Info("CreateNewBlock")
+		e.Logger.Infof("CreateNewBlock shard %v version %v\n", e.Chain.GetShardID(), BLOCK_VERSION)
 		block, err = e.Chain.CreateNewBlock(BLOCK_VERSION, b58Str, 1, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)
 		}
 	} else {
-		e.Logger.Infof("CreateNewBlockFromOldBlock, Block Height %+v")
+		e.Logger.Infof("CreateNewBlockFromOldBlock, Block %+v %+v\n", block.GetHeight(), block.Hash().String())
 		block, err = e.Chain.CreateNewBlockFromOldBlock(block, b58Str, e.currentTime, committees, committeeViewHash)
 		if err != nil {
 			return nil, NewConsensusError(BlockCreationError, err)

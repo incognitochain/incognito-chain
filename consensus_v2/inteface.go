@@ -25,6 +25,7 @@ type NodeInterface interface {
 	GetPubkeyMiningState(*incognitokey.CommitteePublicKey) (role string, chainID int)
 	RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error)
 	GetSelfPeerID() peer.ID
+	GetChainParam() *blockchain.Params
 }
 
 type ConsensusInterface interface {

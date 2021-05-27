@@ -1,6 +1,7 @@
 package blsbftv3
 
 import (
+	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"time"
 
@@ -20,6 +21,7 @@ type NodeInterface interface {
 	GetUserMiningState() (role string, chainID int)
 	RequestMissingViewViaStream(peerID string, hashes [][]byte, fromCID int, chainName string) (err error)
 	GetSelfPeerID() peer.ID
+	GetChainParam() *blockchain.Params
 }
 
 type ChainInterface interface {
