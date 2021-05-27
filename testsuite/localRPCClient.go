@@ -11,6 +11,36 @@ type LocalRPCClient struct {
 	rpcServer *rpcserver.RpcServer
 }
 
+func (r *LocalRPCClient) GetMempoolInfo() (res *jsonresult.GetMempoolInfo, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getmempoolinfo"]
+	resI, rpcERR := c(httpServer, []interface{}{}, nil)
+	if rpcERR != nil {
+		return res, errors.New(rpcERR.Error())
+	}
+	return resI.(*jsonresult.GetMempoolInfo), nil
+}
+
+func (r *LocalRPCClient) SubmitKey(privateKey string) (err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.LimitedHttpHandler["submitkey"]
+	_, rpcERR := c(httpServer, []interface{}{privateKey}, nil)
+	if rpcERR != nil {
+		return errors.New(rpcERR.Error())
+	}
+	return nil
+}
+
+func (r *LocalRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey string) (err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["createconvertcoinver1tover2transaction"]
+	_, rpcERR := c(httpServer, []interface{}{privateKey, float64(-1)}, nil)
+	if rpcERR != nil {
+		return errors.New(rpcERR.Error())
+	}
+	return nil
+}
+
 func (r *LocalRPCClient) GetBalanceByPrivateKey(privateKey string) (res uint64, err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.LimitedHttpHandler["getbalancebyprivatekey"]

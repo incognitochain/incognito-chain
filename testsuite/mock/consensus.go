@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
 )
 
 type BlockValidation interface {
@@ -22,6 +23,10 @@ type ConsensusInterface interface {
 
 type Consensus struct {
 	consensusEngine *consensus_v2.Engine
+}
+
+func (c *Consensus) ExtractPortalV4ValidationData(block types.BlockInterface) ([]*portalprocessv4.PortalSig, error) {
+	return c.consensusEngine.ExtractPortalV4ValidationData(block)
 }
 
 func (c *Consensus) GetCurrentMiningPublicKey() (string, string) {

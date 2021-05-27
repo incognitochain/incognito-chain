@@ -35,7 +35,7 @@ func InitSimTestnetv2() *testsuite.NodeEngine {
 	chainParam.ActiveShards = 2
 	chainParam.BCHeightBreakPointNewZKP = 1
 	chainParam.BeaconHeightBreakPointBurnAddr = 1
-	chainParam.StakingFlowV2Height = 1e9
+	chainParam.StakingFlowV2Height = 1
 	chainParam.Epoch = 20
 	chainParam.RandomTime = 10
 	common.TIMESLOT = chainParam.Timeslot
@@ -124,6 +124,7 @@ func Test_CrossShard() {
 		panic("Cannot receive prv")
 	}
 }
+
 func Test_Swap_v3() {
 	node := InitSimMainnet()
 

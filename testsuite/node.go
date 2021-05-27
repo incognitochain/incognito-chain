@@ -3,7 +3,7 @@ package devframework
 import (
 	"encoding/json"
 	"fmt"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"net"
 	"os"
 	"path/filepath"
@@ -30,14 +30,13 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/base58"
+
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver"
-	"github.com/incognitochain/incognito-chain/transaction"
 
 	lvdbErrors "github.com/syndtr/goleveldb/leveldb/errors"
 
@@ -128,7 +127,7 @@ func (sim *NodeEngine) EnableDebug() {
 }
 
 func (sim *NodeEngine) init() {
-	os.Setenv("TXPOOL_VERSION", "1")
+	os.Setenv("TXPOOL_VERSION", "0")
 	simName := sim.simName
 	InitLogRotator(filepath.Join(sim.config.DataDir, simName+".log"))
 	activeNetParams := sim.config.ChainParam.GetParamData()
@@ -288,22 +287,24 @@ func (sim *NodeEngine) init() {
 		ps,
 		time.Duration(15*60)*time.Second,
 	)
+	otadb, _ := incdb.Open("leveldb", "/tmp/database/ota")
 	err = bc.Init(&blockchain.Config{
-		BTCChain:        btcChain,
-		BNBChainState:   bnbChainState,
-		ChainParams:     activeNetParams,
-		DataBase:        db,
-		MemCache:        memcache.New(),
-		BlockGen:        blockgen,
-		TxPool:          &txpoolV1,
-		TempTxPool:      &temppool,
-		Server:          &server,
-		Syncker:         sync,
-		PubSubManager:   ps,
-		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
-		ConsensusEngine: &cs,
-		GenesisParams:   blockchain.GenesisParam,
-		PoolManager:     poolManager,
+		BTCChain:          btcChain,
+		BNBChainState:     bnbChainState,
+		ChainParams:       activeNetParams,
+		DataBase:          db,
+		OutcoinByOTAKeyDb: &otadb,
+		MemCache:          memcache.New(),
+		BlockGen:          blockgen,
+		TxPool:            &txpoolV1,
+		TempTxPool:        &temppool,
+		Server:            &server,
+		Syncker:           sync,
+		PubSubManager:     ps,
+		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
+		ConsensusEngine:   &cs,
+		GenesisParams:     blockchain.GenesisParam,
+		PoolManager:       poolManager,
 	})
 	if err != nil {
 		panic(err)
@@ -551,20 +552,20 @@ func (sim *NodeEngine) NextRound() {
 	sim.timer.Forward(int64(common.TIMESLOT))
 }
 
-func (sim *NodeEngine) InjectTx(txBase58 string) error {
-	rawTxBytes, _, err := base58.Base58Check{}.Decode(txBase58)
-	if err != nil {
-		return err
-	}
-	var tx transaction.Tx
-	err = json.Unmarshal(rawTxBytes, &tx)
-	if err != nil {
-		return err
-	}
-	sim.cPendingTxs <- &tx
-
-	return nil
-}
+//func (sim *NodeEngine) InjectTx(txBase58 string) error {
+//	rawTxBytes, _, err := base58.Base58Check{}.Decode(txBase58)
+//	if err != nil {
+//		return err
+//	}
+//	var tx transaction.Tx
+//	err = json.Unmarshal(rawTxBytes, &tx)
+//	if err != nil {
+//		return err
+//	}
+//	sim.cPendingTxs <- &tx
+//
+//	return nil
+//}
 
 func (sim *NodeEngine) GetBlockchain() *blockchain.BlockChain {
 	return sim.bc
@@ -589,12 +590,12 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 			miningKeys = append(miningKeys, miningKey)
 		}
 		for _, committeeID := range committeeIndex {
-			vote, _ := blsbftv2.CreateVote(miningKeys[committeeID], block, committeePubKey)
+			vote, _ := blsbftv2.CreateVote(miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))
 			vote.IsValid = 1
 			votes[vote.Validator] = vote
 		}
 		committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committeePubKey, common.BlsConsensus)
-		aggSig, brigSigs, validatorIdx, err := blsbftv2.CombineVotes(votes, committeeBLSString)
+		aggSig, brigSigs, validatorIdx, portalSigs, err := blsbftv2.CombineVotes(votes, committeeBLSString)
 
 		valData, err := blsbftv2.DecodeValidationData(block.GetValidationField())
 		if err != nil {
@@ -603,6 +604,7 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 		valData.AggSig = aggSig
 		valData.BridgeSig = brigSigs
 		valData.ValidatiorsIdx = validatorIdx
+		valData.PortalSig = portalSigs
 		validationDataString, _ := blsbftv2.EncodeValidationData(*valData)
 		block.AddValidationField(validationDataString)
 	}
