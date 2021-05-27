@@ -1,9 +1,10 @@
 package syncker
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"

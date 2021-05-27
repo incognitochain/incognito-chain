@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/pkg/errors"
 )
@@ -83,6 +84,23 @@ func (pm *PoolManager) GetShardTxsPool(shardID byte) (TxPool, error) {
 		return nil, errors.Errorf("Can not get tx pool for this shard ID %v", shardID)
 	}
 	return pm.ShardTxsPool[shardID], nil
+}
+
+func (pm *PoolManager) FilterMemPoolOutcoinsToSpent(outCoins []*privacy.OutputCoin, sID int) []*privacy.OutputCoin {
+	if sID < len(pm.ShardTxsPool) {
+		sPool := pm.ShardTxsPool[sID]
+		if sPool.IsRunning() {
+			res := []*privacy.OutputCoin{}
+			mapPoolOutcoins := sPool.snapshotPoolOutCoin()
+			for _, out := range outCoins {
+				if _, ok := mapPoolOutcoins[common.HashH(out.CoinDetails.GetSerialNumber().ToBytesS())]; !ok {
+					res = append(res, out)
+				}
+			}
+			return res
+		}
+	}
+	return outCoins
 }
 
 func (pm *PoolManager) GetMempoolInfo() MempoolInfo {

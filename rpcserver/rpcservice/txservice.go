@@ -47,7 +47,7 @@ type MempoolInterface interface {
 	TriggerCRemoveTxs(tx metadata.Transaction)
 	MarkForwardedTransaction(txHash common.Hash)
 	MaxFee() uint64
-	ListTxsDetail() []metadata.Transaction
+	ListTxsDetail() ([]common.Hash, []metadata.Transaction)
 	Count() int
 	Size() uint64
 	SendTransactionToBlockGen()
@@ -191,9 +191,17 @@ func (txService TxService) chooseBestOutCoinsToSpent(outCoins []*privacy.OutputC
 
 func (txService TxService) filterMemPoolOutcoinsToSpent(outCoins []*privacy.OutputCoin) ([]*privacy.OutputCoin, error) {
 	remainOutputCoins := make([]*privacy.OutputCoin, 0)
-	for _, outCoin := range outCoins {
-		if txService.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
-			remainOutputCoins = append(remainOutputCoins, outCoin)
+	if txService.BlockChain.UsingNewPool() {
+		if len(outCoins) == 0 {
+			return outCoins, nil
+		}
+		sID := common.GetShardIDFromLastByte(outCoins[0].CoinDetails.GetPubKeyLastByte())
+		remainOutputCoins = txService.BlockChain.GetPoolManager().FilterMemPoolOutcoinsToSpent(outCoins, int(sID))
+	} else {
+		for _, outCoin := range outCoins {
+			if txService.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
+				remainOutputCoins = append(remainOutputCoins, outCoin)
+			}
 		}
 	}
 	return remainOutputCoins, nil
