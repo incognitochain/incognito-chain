@@ -964,7 +964,6 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 			return NewBlockChainError(TransactionFromNewBlockError, err)
 		}
 	} else {
-		Logger.log.Info("[config] Using old mempool to validate")
 		isEmpty := blockchain.config.TempTxPool.EmptyPool()
 		if !isEmpty {
 			panic("TempTxPool Is not Empty")

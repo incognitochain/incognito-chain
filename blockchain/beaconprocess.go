@@ -699,16 +699,12 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 		return nil
 	}
 
-	Logger.log.Infof("Add Missing Signature | ShardState %+v", shardState)
-	Logger.log.Infof("Add Missing Signature | Shard ID %+v , committee from height %+v", shardID, shardState.Height)
-
 	committees, err := getOneShardCommitteeFromShardDB(bc.GetShardChainDatabase(shardID), shardID, shardBlock.Header.PreviousBlockHash)
 	if err != nil {
 		return nil
 	}
 
-	logCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
-	Logger.log.Infof("Add Missing Signature | Shard %+v, Validation Data: %+v, \n Committees: %+v", shardID, shardState.ValidationData, logCommittees)
+	Logger.log.Infof("Add Missing Signature | Shard %+v, Validation Data: %+v", shardID, shardState.ValidationData)
 
 	err = curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
 	if err != nil {
