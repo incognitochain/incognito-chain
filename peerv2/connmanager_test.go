@@ -125,7 +125,7 @@ func TestCheckConnectionAfterMaxedOut(t *testing.T) {
 	h.On("Connect", mock.Anything, mock.Anything).Return(err)
 
 	cm := ConnManager{
-		DiscoverPeersAddress: testHighwayAddress,
+		DiscoverPeersAddress: []string{testHighwayAddress},
 		LocalHost:            &Host{Host: h},
 		registerRequests:     make(chan peer.ID, 5),
 		keeper:               NewAddrKeeper(),
@@ -154,7 +154,7 @@ func TestReconnect(t *testing.T) {
 	h.On("Connect", mock.Anything, mock.Anything).Return(err)
 
 	cm := ConnManager{
-		DiscoverPeersAddress: testHighwayAddress,
+		DiscoverPeersAddress: []string{testHighwayAddress},
 		LocalHost:            &Host{Host: h},
 		registerRequests:     make(chan peer.ID, 5),
 		keeper:               NewAddrKeeper(),
@@ -207,6 +207,11 @@ func TestForcedSub(t *testing.T) {
 type subscribeCounter struct {
 	normal int
 	forced int
+	syncM  string
+}
+
+func (subCounter *subscribeCounter) SetSyncMode(s string) {
+	subCounter.syncM = s
 }
 
 func (subCounter *subscribeCounter) Subscribe(forced bool) error {

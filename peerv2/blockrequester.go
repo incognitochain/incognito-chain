@@ -21,6 +21,8 @@ type BlockRequester struct {
 	prtc    GRPCDialer
 	stop    chan int
 	sync.RWMutex
+
+	disconnectNoti chan bool
 }
 
 type GRPCDialer interface {
@@ -34,9 +36,88 @@ func NewRequester(prtc GRPCDialer) *BlockRequester {
 		conn:    nil,
 		stop:    make(chan int, 1),
 		RWMutex: sync.RWMutex{},
+
+		disconnectNoti: make(chan bool, 10),
 	}
 	go req.keepConnection()
 	return req
+}
+
+func NewRequesterV2(prtc GRPCDialer) *BlockRequester {
+	req := &BlockRequester{
+		prtc:    prtc,
+		peerIDs: make(chan peer.ID, 100),
+		conn:    nil,
+		stop:    make(chan int, 1),
+		RWMutex: sync.RWMutex{},
+
+		disconnectNoti: make(chan bool, 10),
+	}
+	return req
+}
+
+func (c *BlockRequester) closeConnection() {
+	c.Lock()
+	defer c.Unlock()
+	if c.conn == nil {
+		return
+	}
+	Logger.Info("Closing old requester connection")
+	err := c.conn.Close()
+	if err != nil {
+		Logger.Errorf("Failed closing old requester connection: %+v", err)
+	}
+	c.conn = nil
+}
+
+func (c *BlockRequester) tryToDial(hwAddrInfo *peer.AddrInfo) (conn *grpc.ClientConn, err error) {
+	for i := 0; i < MaxConnectionRetry; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
+		if conn, err = c.prtc.Dial(
+			ctx,
+			hwAddrInfo.ID,
+			grpc.WithInsecure(),
+			grpc.WithBlock(),
+			grpc.WithKeepaliveParams(keepalive.ClientParameters{
+				Time:    RequesterKeepaliveTime,
+				Timeout: RequesterKeepaliveTimeout,
+			}),
+		); err != nil {
+			Logger.Error("Could not dial to highway grpc server:", err, hwAddrInfo.ID)
+		}
+		cancel()
+
+		if (conn != nil) && (conn.GetState() != connectivity.Ready) {
+			time.Sleep(2 * time.Second)
+		}
+		if (conn != nil) && (conn.GetState() == connectivity.Ready) {
+			return conn, nil
+		}
+	}
+	Logger.Error("Could not dial to highway grpc server:", err, hwAddrInfo.ID)
+	return nil, err
+}
+
+// keepConnection dials highway to establish gRPC connection if it isn't available
+func (c *BlockRequester) watchConnection(ctx context.Context, currentHW peer.ID) {
+	for {
+		Logger.Infof("Watch connection to HW %v", currentHW.String())
+		c.RLock()
+		res := c.conn.WaitForStateChange(ctx, connectivity.Ready)
+		c.RUnlock()
+		c.closeConnection()
+		conn, err := c.tryToDial(&peer.AddrInfo{ID: currentHW})
+		if (err != nil) || (conn == nil) {
+			if c.disconnectNoti != nil {
+				c.disconnectNoti <- res
+			}
+			return
+		} else {
+			c.Lock()
+			c.conn = conn
+			c.Unlock()
+		}
+	}
 }
 
 // keepConnection dials highway to establish gRPC connection if it isn't available

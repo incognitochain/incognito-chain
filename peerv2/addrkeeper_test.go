@@ -1,14 +1,22 @@
 package peerv2
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/peerv2/mocks"
 	"github.com/incognitochain/incognito-chain/peerv2/rpcclient"
 	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
+	cache "github.com/patrickmn/go-cache"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	swarmt "github.com/libp2p/go-libp2p-swarm/testing"
+	bhost "github.com/libp2p/go-libp2p/p2p/host/basic"
 )
 
 // Checks if ignored addresses are skipped when choosing one to connect
@@ -191,4 +199,77 @@ func TestGetAllHighways(t *testing.T) {
 	hws, err := getAllHighways(discoverer, "")
 	assert.Nil(t, err)
 	assert.Equal(t, addresses(hwAddrs["all"]), hws)
+}
+
+func TestAddrKeeper_UpdateRTTData(t *testing.T) {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	h1 := bhost.New(swarmt.GenSwarm(t, ctx))
+	h2 := bhost.New(swarmt.GenSwarm(t, ctx))
+	ReEstimatedRTTTimestep = 1 * time.Second
+	fmt.Println(h2.ID())
+	fmt.Println(h2.Addrs())
+	ps1 := ping.NewPingService(h1)
+	_ = ping.NewPingService(h2)
+
+	keeper := &AddrKeeper{
+		currentHW: rpcclient.HighwayAddr{Libp2pAddr: h1.Addrs()[0].String() + "/p2p/" + h1.ID().String() + "/"},
+		addrs: addresses{
+			rpcclient.HighwayAddr{Libp2pAddr: h2.Addrs()[0].String() + "/p2p/" + h2.ID().String() + "/"},
+		},
+		addrsByRPCUrl:  map[string]*rpcclient.HighwayAddr{},
+		locker:         &sync.RWMutex{},
+		ignoreRPCUntil: map[rpcclient.HighwayAddr]time.Time{},
+		ignoreHWUntil:  map[rpcclient.HighwayAddr]time.Time{},
+		ignoreHW:       &cache.Cache{},
+		lastRTT:        map[rpcclient.HighwayAddr]*RTTInfo{},
+	}
+	stopCh := make(chan interface{})
+	go func() {
+		time.Sleep(10 * time.Second)
+		stopCh <- nil
+	}()
+	keeper.UpdateRTTData(&Host{Host: h1}, ps1, stopCh)
+}
+
+func TestPing(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	h1 := bhost.New(swarmt.GenSwarm(t, ctx))
+	h2 := bhost.New(swarmt.GenSwarm(t, ctx))
+
+	err := h1.Connect(ctx, peer.AddrInfo{
+		ID:    h2.ID(),
+		Addrs: h2.Addrs(),
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ps1 := ping.NewPingService(h1)
+	_ = ping.NewPingService(h2)
+
+	testPing(t, ps1, h2.ID())
+	// testPing(t, ps2, h1.ID())
+}
+
+func testPing(t *testing.T, ps *ping.PingService, p peer.ID) {
+	pctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ts := ps.Ping(pctx, p)
+
+	for i := 0; i < 5; i++ {
+		select {
+		case res := <-ts:
+			if res.Error != nil {
+				t.Fatal(res.Error)
+			}
+			t.Log("ping took: ", res.RTT)
+		case <-time.After(time.Second * 4):
+			t.Fatal("failed to receive ping")
+		}
+	}
+
 }

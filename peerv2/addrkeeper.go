@@ -1,9 +1,15 @@
 package peerv2
 
 import (
+	"context"
+	"fmt"
 	"math/rand"
 	"sort"
+	"sync"
 	"time"
+
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
+	cache "github.com/patrickmn/go-cache"
 
 	"github.com/incognitochain/incognito-chain/peerv2/rpcclient"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -13,6 +19,13 @@ import (
 )
 
 type addresses []rpcclient.HighwayAddr // short alias
+const MAX_RTT_STORE = 5
+
+type RTTInfo struct {
+	lastNcall [MAX_RTT_STORE]time.Duration
+	avgRTT    time.Duration
+	lastIdx   int
+}
 
 // AddrKeeper stores all highway addresses for ConnManager to choose from.
 // The address can be used to:
@@ -22,17 +35,55 @@ type addresses []rpcclient.HighwayAddr // short alias
 // for some time so that the next few calls will be more likely to succeed.
 // For the 2nd type, caller can manually ignore the chosen address.
 type AddrKeeper struct {
+	currentHW      rpcclient.HighwayAddr
 	addrs          addresses
+	addrsByRPCUrl  map[string]*rpcclient.HighwayAddr
+	locker         *sync.RWMutex
 	ignoreRPCUntil map[rpcclient.HighwayAddr]time.Time // ignored for RPC call until this time
 	ignoreHWUntil  map[rpcclient.HighwayAddr]time.Time // ignored for making connection until this time
+	ignoreHW       *cache.Cache
+	lastRTT        map[rpcclient.HighwayAddr]*RTTInfo
 }
 
 func NewAddrKeeper() *AddrKeeper {
 	return &AddrKeeper{
 		addrs:          addresses{},
+		addrsByRPCUrl:  map[string]*rpcclient.HighwayAddr{},
+		locker:         &sync.RWMutex{},
 		ignoreRPCUntil: map[rpcclient.HighwayAddr]time.Time{},
 		ignoreHWUntil:  map[rpcclient.HighwayAddr]time.Time{},
+		ignoreHW:       cache.New(MaxTimeIgnoreHW, MaxTimeIgnoreHW),
+		lastRTT:        map[rpcclient.HighwayAddr]*RTTInfo{},
 	}
+}
+
+func (keeper *AddrKeeper) Start(
+	host *Host,
+	ps *ping.PingService,
+	discoverer HighwayDiscoverer,
+	// ourPID peer.ID,
+) {
+	for {
+		err := keeper.updateListHighwayAddrs(discoverer)
+		if err != nil {
+			Logger.Error(err)
+			time.Sleep(2 * time.Second)
+		} else {
+			go keeper.UpdateRTTData(host, ps, make(chan interface{}))
+			break
+		}
+	}
+	go func() {
+		Logger.Infof("[newpeerv2] updateListHighwayAddrs")
+		refreshTimestep := time.NewTicker(UpdateHighwayListTimestep)
+		for range refreshTimestep.C {
+			Logger.Infof("[newpeerv2] updateListHighwayAddrs")
+			err := keeper.updateListHighwayAddrs(discoverer)
+			if err != nil {
+				Logger.Error(err)
+			}
+		}
+	}()
 }
 
 // ChooseHighway refreshes the list of highways by asking a random one and choose a (consistently) random highway to connect
@@ -56,41 +107,170 @@ func (keeper *AddrKeeper) ChooseHighway(discoverer HighwayDiscoverer, ourPID pee
 	return chosenAddr, nil
 }
 
+func (keeper *AddrKeeper) GetHighway(selfPeerID *peer.ID) (*rpcclient.HighwayAddr, error) {
+	cst := consistent.New()
+	cst.NumberOfReplicas = 2000
+	for rpcUrl, addr := range keeper.addrsByRPCUrl {
+		Logger.Infof("%v %v", rpcUrl, addr)
+		if _, ok := keeper.ignoreHWUntil[*addr]; !ok {
+			cst.Add(rpcUrl)
+		}
+	}
+
+	closest, err := cst.Get(selfPeerID.Pretty())
+	if err != nil {
+		return &rpcclient.HighwayAddr{}, errors.Errorf("could not get consistent-hashing peer %v %v", cst.Members(), selfPeerID)
+	}
+	if hwAddr, ok := keeper.addrsByRPCUrl[closest]; ok {
+		return hwAddr, nil
+	}
+	return nil, errors.Errorf("Can not get new HW")
+}
+
+func (keeper *AddrKeeper) updateRTT(
+	lastCallRTT time.Duration,
+	hwAddr rpcclient.HighwayAddr,
+) {
+	if info, ok := keeper.lastRTT[hwAddr]; ok {
+		firstId := (info.lastIdx + 1) % MAX_RTT_STORE
+		if info.lastNcall[firstId] == 0 {
+			avgNano := ((info.lastIdx+1)*int(info.avgRTT.Nanoseconds()) + int(lastCallRTT.Nanoseconds())) / (info.lastIdx + 2)
+			avg, errParse := time.ParseDuration(fmt.Sprintf("%vns", avgNano))
+			if errParse == nil {
+				info.avgRTT = avg
+				info.lastIdx = firstId
+				info.lastNcall[info.lastIdx] = lastCallRTT
+			} else {
+				info.lastIdx = firstId
+				info.lastNcall[info.lastIdx] = info.avgRTT
+			}
+		} else {
+			info.avgRTT = info.avgRTT - info.lastNcall[firstId]/MAX_RTT_STORE + lastCallRTT/MAX_RTT_STORE
+		}
+		info.lastNcall[firstId] = lastCallRTT
+		info.lastIdx = firstId
+		keeper.lastRTT[hwAddr] = info
+	} else {
+		info := &RTTInfo{
+			lastNcall: [MAX_RTT_STORE]time.Duration{},
+			lastIdx:   0,
+			avgRTT:    lastCallRTT,
+		}
+		for j := 0; j < MAX_RTT_STORE; j++ {
+			info.lastNcall[j] = 0
+		}
+		info.lastNcall[info.lastIdx] = lastCallRTT
+		keeper.lastRTT[hwAddr] = info
+	}
+}
+
+func (keeper *AddrKeeper) UpdateRTTData(
+	host *Host,
+	ps *ping.PingService,
+	stopCh chan interface{},
+) {
+	reEstimatedTimestep := time.NewTicker(ReEstimatedRTTTimestep)
+	defer reEstimatedTimestep.Stop()
+	for {
+		ignoreList := []rpcclient.HighwayAddr{}
+		for _, hwAddr := range keeper.addrs {
+			if len(hwAddr.Libp2pAddr) == 0 {
+				Logger.Infof("[RTT] hwAddr.Libp2pAddr %v is empty", hwAddr.Libp2pAddr)
+				fmt.Printf("[RTT] hwAddr.Libp2pAddr %v is empty\n", hwAddr.Libp2pAddr)
+				continue
+			}
+			addrInfo, err := getAddressInfo(hwAddr.Libp2pAddr)
+			if err != nil {
+				fmt.Printf("[RTT] cannot get getAddressInfo of hwAddr.Libp2pAddr %v\n", hwAddr.Libp2pAddr)
+				continue
+			}
+			fmt.Println(hwAddr.Libp2pAddr, addrInfo.ID)
+			fmt.Println(addrInfo.Addrs)
+			ctx, cancel := context.WithTimeout(context.Background(), DialTimeout)
+			if err := host.Host.Connect(ctx, *addrInfo); err != nil {
+				fmt.Printf("Could not connect to highway: %v %v\n", err, addrInfo)
+				ignoreList = append(ignoreList, hwAddr)
+				cancel()
+			} else {
+				ctxPing, cancelPing := context.WithTimeout(context.Background(), PingTimeout)
+				ts := ps.Ping(ctxPing, addrInfo.ID)
+				s, err := getAvgRTT(ctxPing, ts)
+				if err == nil {
+					fmt.Printf("[RTT] AVG RTT to HW %v: %v\n", hwAddr.Libp2pAddr, s)
+					keeper.updateRTT(s, hwAddr)
+				} else {
+					ignoreList = append(ignoreList, hwAddr)
+					fmt.Printf("Can not get RTT infor to HW %v, error: %v\n", hwAddr, err)
+				}
+				cancelPing()
+				cancel()
+			}
+		}
+		for _, addr := range ignoreList {
+			keeper.IgnoreAddress(addr)
+		}
+		select {
+		case <-reEstimatedTimestep.C:
+			continue
+		case <-stopCh:
+			return
+		}
+	}
+	// return []rpcclient.HighwayAddr{}, nil
+}
+
 // Add saves a highway address; should only be used at the start for bootnode
 // since there's no usage of mutex
 func (keeper *AddrKeeper) Add(addr rpcclient.HighwayAddr) {
-	keeper.addrs = append(keeper.addrs, addr)
+	keeper.locker.Lock()
+	if _, existed := keeper.addrsByRPCUrl[addr.RPCUrl]; !existed {
+		keeper.addrsByRPCUrl[addr.RPCUrl] = &addr
+		keeper.addrs = append(keeper.addrs, addr)
+	}
+	keeper.locker.Unlock()
 }
 
 func (keeper *AddrKeeper) IgnoreAddress(addr rpcclient.HighwayAddr) {
-	keeper.ignoreHWUntil[addr] = time.Now().Add(IgnoreHWDuration)
-	Logger.Infof("Ignoring address %v until %s", addr, keeper.ignoreHWUntil[addr].Format(time.RFC3339))
+	keeper.ignoreHW.Add(addr.RPCUrl, addr, MaxTimeIgnoreHW)
+	// Logger.Infof("Ignoring address %v in %v", addr, MaxTimeIgnoreHW)
+	// keeper.ignoreHWUntil[addr] = time.Now().Add(IgnoreHWDuration)
+	// Logger.Infof("Ignoring address %v until %s", addr, keeper.ignoreHWUntil[addr].Format(time.RFC3339))
 }
 
 // updateAddrs saves the new list of highway addresses
 // Address that aren't in the new list will have their ignore timing reset
 // => the next time it appears we will reconnect to it
 func (keeper *AddrKeeper) updateAddrs(newAddrs addresses) {
-	for _, oldAddr := range keeper.addrs {
-		found := false
-		for _, newAddr := range newAddrs {
-			if newAddr == oldAddr {
-				found = true
-				break
+	for _, newAddr := range newAddrs {
+		if addr, existed := keeper.addrsByRPCUrl[newAddr.RPCUrl]; existed {
+			if (len(addr.Libp2pAddr) == 0) && (len(newAddr.Libp2pAddr) != 0) {
+				addr.Libp2pAddr = newAddr.Libp2pAddr
 			}
-		}
-
-		if len(oldAddr.Libp2pAddr) == 0 {
-			newAddrs = append(newAddrs, oldAddr) // Save the bootnode address
-		} else if !found {
-			delete(keeper.ignoreRPCUntil, oldAddr)
-			delete(keeper.ignoreHWUntil, oldAddr)
-			Logger.Infof("Resetting ignore time of %v", oldAddr)
+		} else {
+			keeper.addrsByRPCUrl[newAddr.RPCUrl] = &newAddr
 		}
 	}
 
-	// Save the new list
-	keeper.addrs = newAddrs
+	// for _, oldAddr := range keeper.addrs {
+	// 	found := false
+	// 	for _, newAddr := range newAddrs {
+	// 		if newAddr == oldAddr {
+	// 			found = true
+	// 			break
+	// 		}
+	// 	}
+
+	// 	if len(oldAddr.Libp2pAddr) == 0 {
+	// 		newAddrs = append(newAddrs, oldAddr) // Save the bootnode address
+	// 	} else if !found {
+	// 		delete(keeper.ignoreRPCUntil, oldAddr)
+	// 		delete(keeper.ignoreHWUntil, oldAddr)
+	// 		Logger.Infof("Resetting ignore time of %v", oldAddr)
+	// 	}
+	// }
+
+	// // Save the new list
+	// keeper.addrs = newAddrs
 }
 
 // chooseHighwayFromList returns a random highway address from the known list using consistent hashing; ourPID is the anchor of the hashing
@@ -101,12 +281,15 @@ func (keeper *AddrKeeper) chooseHighwayFromList(ourPID peer.ID) (rpcclient.Highw
 
 	// Filter out bootnode address (address with only rpcUrl)
 	filterAddrs := addresses{}
+
+	Logger.Infof("[testHW] %v", len(keeper.addrs))
 	for _, addr := range keeper.addrs {
+		Logger.Infof("[testHW] %v", addr.Libp2pAddr)
 		if len(addr.Libp2pAddr) != 0 {
 			filterAddrs = append(filterAddrs, addr)
 		}
 	}
-
+	// panic("a")
 	// Filter out ignored address
 	Logger.Infof("Full known addrs: %v", filterAddrs)
 	if addrs := getNonIgnoredAddrs(filterAddrs, keeper.ignoreHWUntil); len(addrs) > 0 {
@@ -151,6 +334,24 @@ func choosePeer(peers addresses, id peer.ID) (rpcclient.HighwayAddr, error) {
 		}
 	}
 	return rpcclient.HighwayAddr{}, errors.Errorf("could not find closest peer %v %v %v", peers, id, closest)
+}
+
+// getHighwayAddrs picks a random highway, makes an RPC call to get an updated list of highways
+// If fails, the picked address will be ignore for some time.
+func (keeper *AddrKeeper) updateListHighwayAddrs(discoverer HighwayDiscoverer) error {
+	if len(keeper.addrs) == 0 {
+		return errors.New("No peer to get list of highways")
+	}
+
+	Logger.Infof("Full RPC address list: %v", keeper.addrs)
+	for _, addr := range keeper.addrs {
+		Logger.Infof("RPCing addr %v from list", addr)
+		newAddrs, err := getAllHighways(discoverer, addr.RPCUrl)
+		if err == nil {
+			keeper.updateAddrs(newAddrs)
+		}
+	}
+	return nil
 }
 
 // getHighwayAddrs picks a random highway, makes an RPC call to get an updated list of highways
