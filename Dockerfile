@@ -24,10 +24,7 @@ ENV commit=$commit
 COPY --from=builder /incognitochain/incognito /incognitochain
 COPY --from=builder /incognitochain/priv2.json /incognitochain/
 COPY --from=builder /incognitochain/whitelist.json /incognitochain/
-COPY --from=builder /incognitochain/config/local/ /incognitochain/config/local/
-COPY --from=builder /incognitochain/config/testnet-1/ /incognitochain/config/testnet-1/
-COPY --from=builder /incognitochain/config/testnet-2/ /incognitochain/config/testnet-2/
-COPY --from=builder /incognitochain/config/mainnet/ /incognitochain/config/mainnet/
+COPY --from=builder /incognitochain/config/ /incognitochain/config/
 COPY --from=builder /incognitochain/run_incognito.sh /incognitochain/
 
 RUN chmod +x /incognitochain/run_incognito.sh
