@@ -1,9 +1,11 @@
 package tx_ver2
 
 import (
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
 func (txToken *TxToken) LoadCommitment(*statedb.StateDB) error {
@@ -31,13 +33,40 @@ func (txToken *TxToken) VerifySigTx() (bool, error) {
 }
 
 func (txToken *TxToken) initEnv() metadata.ValidationEnviroment {
-	return tx_generic.DefaultValEnv()
+
+	valEnv := tx_generic.DefaultValEnv()
+	// if txCustomTokenPrivacy.IsSalaryTx() {
+	valEnv = tx_generic.WithAct(valEnv, common.TxActTranfer)
+	// }
+	if txToken.IsPrivacy() {
+		valEnv = tx_generic.WithPrivacy(valEnv)
+	} else {
+		valEnv = tx_generic.WithNoPrivacy(valEnv)
+	}
+
+	valEnv = tx_generic.WithType(valEnv, txToken.GetType())
+	sID := common.GetShardIDFromLastByte(txToken.GetSenderAddrLastByte())
+	valEnv = tx_generic.WithShardID(valEnv, int(sID))
+	txToken.SetValidationEnv(valEnv)
+	txNormalValEnv := valEnv.Clone()
+	if txToken.GetTxTokenData().Type == utils.CustomTokenInit {
+		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActInit)
+	} else {
+		txNormalValEnv = tx_generic.WithAct(txNormalValEnv, common.TxActTranfer)
+	}
+	if txToken.GetTxTokenData().TxNormal.IsPrivacy() {
+		txNormalValEnv = tx_generic.WithPrivacy(txNormalValEnv)
+	} else {
+		txNormalValEnv = tx_generic.WithNoPrivacy(txNormalValEnv)
+	}
+	txToken.GetTxTokenData().TxNormal.SetValidationEnv(txNormalValEnv)
+	return valEnv
 }
 
 func (txToken *TxToken) GetValidationEnv() metadata.ValidationEnviroment {
-	return tx_generic.DefaultValEnv()
+	return txToken.Tx.GetValidationEnv()
 }
 
-func (txToken *TxToken) SetValidationEnv(metadata.ValidationEnviroment) {
-	return
+func (txToken *TxToken) SetValidationEnv(valEnv metadata.ValidationEnviroment) {
+	txToken.Tx.SetValidationEnv(valEnv)
 }

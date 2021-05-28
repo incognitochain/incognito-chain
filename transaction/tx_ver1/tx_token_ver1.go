@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"math"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/privacy"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -60,7 +61,8 @@ func (tx *TxToken) Init(paramsInterface interface{}) error {
 	tx.TxTokenData.SetPropertySymbol(params.TokenParams.PropertySymbol)
 
 	switch params.TokenParams.TokenTxType {
-		case utils.CustomTokenInit: {
+	case utils.CustomTokenInit:
+		{
 			// case init a new privacy custom token
 			handled = true
 			tx.TxTokenData.SetAmount(params.TokenParams.Amount)
@@ -137,7 +139,8 @@ func (tx *TxToken) Init(paramsInterface interface{}) error {
 				utils.Logger.Log.Debugf("A new token privacy wil be issued with ID: %+v", tx.TxTokenData.PropertyID.String())
 			}
 		}
-		case utils.CustomTokenTransfer: {
+	case utils.CustomTokenTransfer:
+		{
 			handled = true
 			// make a transfering for privacy custom token
 			// fee always 0 and reuse function of normal tx for custom token ID
@@ -219,7 +222,7 @@ func (tx TxToken) ValidateTransaction(boolParams map[string]bool, transactionSta
 	if !ok {
 		afterUpgrade = false
 	}
-	if afterUpgrade && !isMint{
+	if afterUpgrade && !isMint {
 		return false, nil, utils.NewTransactionErr(utils.RejectTxVersion, errors.New("old version is no longer supported"))
 	}
 	ok, batchedProof, err := tx.Tx.ValidateTransaction(boolParams, transactionStateDB, bridgeStateDB, shardID, nil)
@@ -257,10 +260,10 @@ func (tx TxToken) ValidateTransaction(boolParams map[string]bool, transactionSta
 }
 
 func (tx TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	if tx.GetType() != common.TxCustomTokenPrivacyType{
+	if tx.GetType() != common.TxCustomTokenPrivacyType {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.Tx should have type tp"))
 	}
-	if tx.TxTokenData.TxNormal.GetType() != common.TxNormalType{
+	if tx.TxTokenData.TxNormal.GetType() != common.TxNormalType {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.TxNormal should have type n"))
 	}
 	// validate metadata
@@ -268,7 +271,7 @@ func (tx TxToken) ValidateSanityData(chainRetriever metadata.ChainRetriever, sha
 	if !check || err != nil {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, err)
 	}
-	if tx.GetTokenID().String() == common.PRVCoinID.String(){
+	if tx.GetTokenID().String() == common.PRVCoinID.String() {
 		return false, utils.NewTransactionErr(utils.InvalidSanityDataPrivacyTokenError, errors.New("cannot transfer PRV via txtoken"))
 	}
 	// validate sanity for tx pToken + metadata
@@ -322,6 +325,7 @@ func (tx *TxToken) UnmarshalJSON(data []byte) error {
 			tx.TxTokenData.Amount = 37772966455153487
 		}
 	}
+	tx.initEnv()
 	return nil
 }
 
