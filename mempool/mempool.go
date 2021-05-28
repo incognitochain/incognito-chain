@@ -343,7 +343,7 @@ func (tp *TxPool) MaybeAcceptSalaryTransactionForBlockProducing(shardID byte, tx
 	}
 
 	//Validate sanity
-	isValid, err := tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, 0)
+	isValid, err := tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, beaconView.BeaconHeight)
 	if !isValid {
 		return nil, fmt.Errorf("validate sanity tx %v FAILED: %v", tx.Hash().String(), err)
 	}
@@ -570,10 +570,9 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 		if ok := whiteListTxs[tx.Hash().String()]; ok {
 			return nil
 		}
-		validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, uint64(beaconHeight))
-	} else {
-		validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, 0)
 	}
+	validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, uint64(beaconHeight))
+
 	if !validated {
 		// try parse to TransactionError
 		sanityError, ok := err.(*transaction.TransactionError)
