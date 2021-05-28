@@ -58,11 +58,15 @@ func SetupPortalParam(newPortalParam *PortalParams) {
 
 func SetupParam() {
 	p = new(PortalParams)
+
 	if config.Config().IsLocal {
 		*p = localPortalParam
 	}
 	if config.Config().IsTestNet {
-		if config.Config().TestNetVersion == config.TestNetVersion2Number {
+		switch config.Config().TestNetVersion {
+		case config.TestNetVersion1Number:
+			*p = testnet1PortalParams
+		case config.TestNetVersion2Number:
 			*p = testnet2PortalParams
 		}
 	}
@@ -72,6 +76,39 @@ func SetupParam() {
 }
 
 var localPortalParam = PortalParams{
+	PortalParamsV3: map[uint64]portalv3.PortalParams{
+		0: {
+			TimeOutCustodianReturnPubToken:       15 * time.Minute,
+			TimeOutWaitingPortingRequest:         15 * time.Minute,
+			TimeOutWaitingRedeemRequest:          10 * time.Minute,
+			MaxPercentLiquidatedCollateralAmount: 105,
+			MaxPercentCustodianRewards:           10, // todo: need to be updated before deploying
+			MinPercentCustodianRewards:           1,
+			MinLockCollateralAmountInEpoch:       10000 * 1e9, // 10000 usd
+			MinPercentLockedCollateral:           150,
+			TP120:                                120,
+			TP130:                                130,
+			MinPercentPortingFee:                 0.01,
+			MinPercentRedeemFee:                  0.01,
+			SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet(), // todo: need to be updated before deploying
+			MinPortalFee:                         100,
+			PortalTokens:                         initPortalTokensV3ForTestNet(),
+			PortalFeederAddress:                  TestnetPortalFeeder,
+			PortalETHContractAddressStr:          "0x6D53de7aFa363F779B5e125876319695dC97171E", // todo: update sc address,
+			MinUnlockOverRateCollaterals:         25,
+		},
+	},
+	RelayingParam: portalrelaying.RelayingParams{
+		BNBRelayingHeaderChainID: TestnetBNBChainID,
+		BTCRelayingHeaderChainID: TestnetBTCChainID,
+		BTCDataFolderName:        TestnetBTCDataFolderName,
+		BNBFullNodeProtocol:      TestnetBNBFullNodeProtocol,
+		BNBFullNodeHost:          TestnetBNBFullNodeHost,
+		BNBFullNodePort:          TestnetBNBFullNodePort,
+	},
+}
+
+var testnet1PortalParams = PortalParams{
 	PortalParamsV3: map[uint64]portalv3.PortalParams{
 		0: {
 			TimeOutCustodianReturnPubToken:       15 * time.Minute,
@@ -121,7 +158,7 @@ var testnet2PortalParams = PortalParams{
 			MinPercentRedeemFee:                  0.01,
 			SupportedCollateralTokens:            getSupportedPortalCollateralsTestnet2(), // todo: need to be updated before deploying
 			MinPortalFee:                         100,
-			PortalTokens:                         initPortalTokensV3ForTestNet(),
+			PortalTokens:                         initPortalTokensV3ForTestNet2(),
 			PortalFeederAddress:                  Testnet2PortalFeeder,
 			PortalETHContractAddressStr:          "0xF7befD2806afD96D3aF76471cbCa1cD874AA1F46", // todo: update sc address,
 			MinUnlockOverRateCollaterals:         25,
