@@ -5,11 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
-	"strconv"
 )
 
 type PortalLiquidationCustodianDepositV2 struct {
@@ -73,9 +73,9 @@ func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateTxWithBlockC
 
 func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	// if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+	// 	return true, true, nil
+	// }
 
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(custodianDeposit.IncogAddressStr)
@@ -91,7 +91,7 @@ func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateSanityData(c
 		return false, false, errors.New("Error This is not Tx Burn")
 	}
 	// validate amount deposit
-	if custodianDeposit.DepositedAmount == 0 || custodianDeposit.DepositedAmount != burnCoin.GetValue(){
+	if custodianDeposit.DepositedAmount == 0 || custodianDeposit.DepositedAmount != burnCoin.GetValue() {
 		return false, false, errors.New("deposit amount should be larger than 0 and equal burn value")
 	}
 	// check tx type and token burn

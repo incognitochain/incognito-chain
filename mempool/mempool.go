@@ -246,20 +246,20 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	if tx.GetType() == common.TxReturnStakingType {
 		return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a return staking tx", tx.Hash().String()))
 	}
-	if tx.GetType() == common.TxCustomTokenPrivacyType{
+	if tx.GetType() == common.TxCustomTokenPrivacyType {
 		tempTx, ok := tx.(*transaction.TxTokenVersion1)
 		if !ok {
 			tempTxToken2, ok := tx.(*transaction.TxTokenVersion2)
-			if !ok{
+			if !ok {
 				return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("cannot detect transaction type for tx %+v", tx.Hash().String()))
 			}
-			if tempTxToken2.TokenData.Mintable{
+			if tempTxToken2.TokenData.Mintable {
 				return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
 			}
 			if tempTxToken2.TokenData.Type == transaction.CustomTokenInit {
 				return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("tx %v used a deprecated method for initialize a token, consider use a metadata tx instead", tx.Hash().String()))
 			}
-		}else if tempTx.TxTokenData.Mintable{
+		} else if tempTx.TxTokenData.Mintable {
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("%+v is a minteable tx", tx.Hash().String()))
 		}
 	}
@@ -343,15 +343,14 @@ func (tp *TxPool) MaybeAcceptSalaryTransactionForBlockProducing(shardID byte, tx
 	}
 
 	//Validate sanity
-	isValid, err := tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, 0)
+	isValid, err := tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, beaconView.BeaconHeight)
 	if !isValid {
 		return nil, fmt.Errorf("validate sanity tx %v FAILED: %v", tx.Hash().String(), err)
 	}
 
-
 	//Validate with current mempool
 	err = tx.ValidateTxWithCurrentMempool(tp)
-	if err != nil{
+	if err != nil {
 		return nil, fmt.Errorf("validate tx %v with current mempool FAILED: %v", tx.Hash().String(), err)
 	}
 
@@ -362,7 +361,7 @@ func (tp *TxPool) MaybeAcceptSalaryTransactionForBlockProducing(shardID byte, tx
 	}
 
 	err = tx.ValidateTxWithBlockChain(tp.config.BlockChain, shardView, beaconView, shardID, shardView.GetCopiedTransactionStateDB())
-	if err != nil{
+	if err != nil {
 		return nil, fmt.Errorf("validate tx %v with blockchain FAILED: %v", tx.Hash().String(), err)
 	}
 
@@ -571,10 +570,9 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 		if ok := whiteListTxs[tx.Hash().String()]; ok {
 			return nil
 		}
-		validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, uint64(beaconHeight))
-	} else {
-		validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, 0)
 	}
+	validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, uint64(beaconHeight))
+
 	if !validated {
 		// try parse to TransactionError
 		sanityError, ok := err.(*transaction.TransactionError)
@@ -1257,7 +1255,7 @@ func (tp TxPool) GetTxsInMem() map[common.Hash]metadata.TxDesc {
 	return txsInMem
 }
 
-func (tp TxPool) GetOTAHashH() map[common.Hash][]common.Hash{
+func (tp TxPool) GetOTAHashH() map[common.Hash][]common.Hash {
 	declKey := common.Hash{}
 	res := make(map[common.Hash][]common.Hash)
 	res[declKey] = []common.Hash{}

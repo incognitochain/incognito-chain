@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -59,9 +58,9 @@ func (cReq ContractingRequest) ValidateTxWithBlockChain(tx Transaction, chainRet
 func (cReq ContractingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if reflect.TypeOf(tx).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	// if reflect.TypeOf(tx).String() == "*transaction.Tx" {
+	// 	return true, true, nil
+	// }
 
 	if cReq.Type != ContractingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")

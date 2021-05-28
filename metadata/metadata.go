@@ -182,7 +182,6 @@ type Transaction interface {
 	IsCoinsBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
 
 	// =================== FUNCTIONS THAT VALIDATE STUFFS ===================
-	ValidateTxReturnStaking(stateDB *statedb.StateDB) bool
 	ValidateTxSalary(*statedb.StateDB) (bool, error)
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateSanityData(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) (bool, error)

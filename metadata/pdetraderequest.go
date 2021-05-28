@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
-	"reflect"
-	"strconv"
 )
 
 // PDETradeRequest - privacy dex trade
@@ -82,9 +82,9 @@ func (pc PDETradeRequest) ValidateTxWithBlockChain(tx Transaction, chainRetrieve
 
 func (pc PDETradeRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	// if tx.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(tx).String() == "*transaction.Tx" {
+	// 	return true, true, nil
+	// }
 
 	_, err, ver := checkIncognitoAddress(pc.TraderAddressStr, pc.TxRandomStr)
 	if err != nil {
@@ -181,4 +181,3 @@ func (pc *PDETradeRequest) GetOTADeclarations() []OTADeclaration {
 	result := OTADeclaration{PublicKey: pk.ToBytes(), TokenID: sellingToken}
 	return []OTADeclaration{result}
 }
-

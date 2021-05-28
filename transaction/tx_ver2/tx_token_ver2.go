@@ -3,10 +3,16 @@ package tx_ver2
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
+
+	"github.com/pkg/errors"
+
 	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/wallet"
+
+	"math"
+	"sort"
+	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -16,9 +22,6 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/privacy_v2/mlsag"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"github.com/incognitochain/incognito-chain/transaction/utils"
-	"math"
-	"sort"
-	"strconv"
 )
 
 // TxTokenDataVersion2 contains the token data
@@ -125,7 +128,9 @@ func (txToken *TxToken) Hash() *common.Hash {
 	return &result
 }
 
-func (txToken TxToken) HashWithoutMetadataSig() *common.Hash { return txToken.Tx.HashWithoutMetadataSig(); }
+func (txToken TxToken) HashWithoutMetadataSig() *common.Hash {
+	return txToken.Tx.HashWithoutMetadataSig()
+}
 
 // ToCompatTokenData uses the data from TxToken to construct a TxTokenData of the previous version
 // (for compatibility).
@@ -159,6 +164,7 @@ func decomposeTokenData(td tx_generic.TxTokenData) (*TxTokenDataVersion2, *Tx, e
 func (txToken *TxToken) GetTxBase() metadata.Transaction {
 	return &txToken.Tx
 }
+
 // SetTxBase tries to set the Tx field to inTx. It can fail when inTx has the wrong version.
 func (txToken *TxToken) SetTxBase(inTx metadata.Transaction) error {
 	temp, ok := inTx.(*Tx)
@@ -168,6 +174,7 @@ func (txToken *TxToken) SetTxBase(inTx metadata.Transaction) error {
 	txToken.Tx = *temp
 	return nil
 }
+
 // GetTxNormal returns a Transaction describing the "token" part of this TxToken.
 func (txToken *TxToken) GetTxNormal() metadata.Transaction {
 	if txToken.cachedTxNormal != nil {
@@ -177,6 +184,7 @@ func (txToken *TxToken) GetTxNormal() metadata.Transaction {
 	// tx.cachedTxNormal = result
 	return result
 }
+
 // SetTxNormal extracts the data in inTx
 // & puts it in the TokenData of this TxToken
 func (txToken *TxToken) SetTxNormal(inTx metadata.Transaction) error {
@@ -810,27 +818,36 @@ func (txToken *TxToken) SetInfo(info []byte) { txToken.Tx.Info = info }
 
 // not supported
 func (txToken TxToken) GetSigPubKey() []byte { return []byte{} }
+
 // not supported
 func (txToken *TxToken) SetSigPubKey(sigPubkey []byte) {}
+
 // not supported
 func (txToken TxToken) GetSig() []byte { return []byte{} }
+
 // not supported
 func (txToken *TxToken) SetSig(sig []byte) {}
+
 // not supported
 func (txToken TxToken) GetProof() privacy.Proof { return txToken.Tx.Proof }
+
 // not supported
 func (txToken *TxToken) SetProof(proof privacy.Proof) {}
+
 // not supported
 func (txToken TxToken) GetCachedActualSize() *uint64 {
 	return nil
 }
 func (txToken *TxToken) SetCachedActualSize(sz *uint64) {}
+
 // not supported
 func (txToken TxToken) GetCachedHash() *common.Hash {
 	return nil
 }
+
 // not supported
 func (txToken *TxToken) SetCachedHash(h *common.Hash) {}
+
 // Verify is the sub-function for ValidateTransaction. This is in the verification flow of most TXs (excluding some special types).
 func (txToken *TxToken) Verify(boolParams map[string]bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte, tokenID *common.Hash) (bool, error) {
 	return false, nil
@@ -843,6 +860,7 @@ func (txToken TxToken) GetTokenID() *common.Hash { return &txToken.TokenData.Pro
 func (txToken TxToken) GetMetadata() metadata.Metadata { return txToken.Tx.Metadata }
 
 func (txToken *TxToken) SetMetadata(meta metadata.Metadata) { txToken.Tx.Metadata = meta }
+
 // GetPrivateKey returns the private key being used to sign this TxToken.
 // The private key is always cleared after signing.
 func (txToken TxToken) GetPrivateKey() []byte {
@@ -937,7 +955,7 @@ func (txToken TxToken) CheckTxVersion(maxTxVersion int8) bool {
 // - no input token
 // - only output token
 func (txToken TxToken) IsSalaryTx() bool {
-	if !txToken.TokenData.Mintable || txToken.TokenData.Type != utils.CustomTokenInit{
+	if !txToken.TokenData.Mintable || txToken.TokenData.Type != utils.CustomTokenInit {
 		return false
 	}
 	if txToken.GetTxBase().GetProof() != nil {
@@ -1075,7 +1093,7 @@ func (txToken *TxToken) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map
 	declaredOTAHash := make(map[common.Hash][32]byte)
 	for _, outputCoin := range txToken.GetTxBase().GetProof().GetOutputCoins() {
 		//Skip coins sent to the burning address
-		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -1088,7 +1106,7 @@ func (txToken *TxToken) validateDuplicateOTAsWithCurrentMempool(poolOTAHashH map
 
 	for _, outputCoin := range txToken.GetTxNormal().GetProof().GetOutputCoins() {
 		//Skip coins sent to the burning address
-		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+		if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 			continue
 		}
 		hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -1160,7 +1178,7 @@ func (txToken *TxToken) GetTxBurnData() (bool, privacy.Coin, *common.Hash, error
 }
 
 func (txToken *TxToken) GetTxFullBurnData() (bool, privacy.Coin, privacy.Coin, *common.Hash, error) {
-	isBurnToken, burnToken, burnedTokenID, errToken :=  txToken.GetTxBurnData()
+	isBurnToken, burnToken, burnedTokenID, errToken := txToken.GetTxBurnData()
 	isBurnPrv, burnPrv, _, errPrv := txToken.GetTxBase().GetTxBurnData()
 
 	if errToken != nil && errPrv != nil {
@@ -1176,36 +1194,32 @@ func (txToken *TxToken) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB 
 	if err != nil {
 		return err
 	}
-	if tokenID != nil {
-		err := prvCoinID.SetBytes(tokenID.GetBytes())
-		if err != nil {
-			return err
-		}
-	}
 	if txToken.Tx.Proof == nil {
 		return nil
 	}
-	err = txToken.Tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, nil)
+	err = txToken.Tx.ValidateDoubleSpendWithBlockchain(shardID, stateDB, prvCoinID)
 	if err != nil {
 		return err
 	}
 	if txToken.GetTxNormal().GetProof() == nil {
 		return nil
 	}
-	err = txToken.GetTxNormal().ValidateDoubleSpendWithBlockchain(shardID, stateDB, prvCoinID)
+	err = txToken.GetTxNormal().ValidateDoubleSpendWithBlockchain(shardID, stateDB, tokenID)
 	return err
 }
 
 func (txToken *TxToken) ValidateTxWithBlockChain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
 	err := tx_generic.MdValidateWithBlockChain(txToken, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
-	if err!=nil{
+	if err != nil {
 		return err
 	}
-	err = txToken.ValidateDoubleSpendWithBlockchain(shardID, stateDB, txToken.GetTokenID())
+	tokenID := txToken.GetTokenID()
+	if tokenID == nil {
+		return errors.Errorf("Can not get TokenID from tx %v", txToken.Hash().String())
+	}
+	err = txToken.ValidateDoubleSpendWithBlockchain(shardID, stateDB, tokenID)
 	return err
 }
-
-func (txToken *TxToken) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { return true }
 
 func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	var err error
@@ -1247,6 +1261,7 @@ func (txToken *TxToken) UnmarshalJSON(data []byte) error {
 	// proof := txToken.TokenData.Proof.(*privacy.ProofV2).GetAggregatedRangeProof().(*privacy.AggregatedRangeProofV2)
 	// fmt.Printf("Unmarshalled proof into token data: %v\n", agg)
 	txToken.cachedTxNormal = makeTxToken(&txToken.Tx, txToken.TokenData.SigPubKey, txToken.TokenData.Sig, txToken.TokenData.Proof)
+	txToken.initEnv()
 	return nil
 }
 
@@ -1257,7 +1272,7 @@ func (txToken TxToken) ListOTAHashH() []common.Hash {
 	if txToken.GetTxBase().GetProof() != nil {
 		for _, outputCoin := range txToken.GetTxBase().GetProof().GetOutputCoins() {
 			//Discard coins sent to the burning address
-			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 				continue
 			}
 			hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -1269,7 +1284,7 @@ func (txToken TxToken) ListOTAHashH() []common.Hash {
 	if txToken.GetTxNormal().GetProof() != nil {
 		for _, outputCoin := range txToken.GetTxNormal().GetProof().GetOutputCoins() {
 			//Discard coins sent to the burning address
-			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()){
+			if wallet.IsPublicKeyBurningAddress(outputCoin.GetPublicKey().ToBytesS()) {
 				continue
 			}
 			hash := common.HashH(outputCoin.GetPublicKey().ToBytesS())
@@ -1282,4 +1297,3 @@ func (txToken TxToken) ListOTAHashH() []common.Hash {
 	})
 	return result
 }
-

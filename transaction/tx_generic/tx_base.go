@@ -22,7 +22,7 @@ import (
 
 type TxBase struct {
 	// Basic data, required
-	valEnv *ValidationEnv
+	valEnv   *ValidationEnv
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
 	LockTime int64  `json:"LockTime"`
@@ -53,7 +53,7 @@ type TxPrivacyInitParams struct {
 	TokenID     *common.Hash // default is nil -> use for prv coin
 	MetaData    metadata.Metadata
 	Info        []byte // 512 bytes
-	Kvargs		map[string]interface{}
+	Kvargs      map[string]interface{}
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
@@ -67,7 +67,7 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	info []byte) *TxPrivacyInitParams {
 	// make sure info is not nil ; zero value for it is []byte{}
 
-	if info==nil{
+	if info == nil {
 		info = []byte{}
 	}
 	params := &TxPrivacyInitParams{
@@ -80,7 +80,7 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 		PaymentInfo: paymentInfo,
 		SenderSK:    senderSK,
 		Info:        info,
-		Kvargs:		 nil,
+		Kvargs:      nil,
 	}
 	return params
 }
@@ -212,7 +212,7 @@ func (tx *TxBase) UnmarshalJSON(data []byte) error {
 	}
 
 	proofType := tx.Type
-	if proofType == common.TxTokenConversionType{
+	if proofType == common.TxTokenConversionType {
 		proofType = common.TxNormalType
 	}
 
@@ -282,27 +282,27 @@ func (tx TxBase) GetMetadata() metadata.Metadata { return tx.Metadata }
 
 func (tx *TxBase) SetMetadata(meta metadata.Metadata) { tx.Metadata = meta }
 
-func (tx TxBase) GetPrivateKey() []byte{
+func (tx TxBase) GetPrivateKey() []byte {
 	return tx.sigPrivKey
 }
 
-func (tx *TxBase) SetPrivateKey(sk []byte){
+func (tx *TxBase) SetPrivateKey(sk []byte) {
 	tx.sigPrivKey = sk
 }
 
-func (tx TxBase) GetCachedActualSize() *uint64{
+func (tx TxBase) GetCachedActualSize() *uint64 {
 	return tx.cachedActualSize
 }
 
-func (tx *TxBase) SetCachedActualSize(sz *uint64){
+func (tx *TxBase) SetCachedActualSize(sz *uint64) {
 	tx.cachedActualSize = sz
 }
 
-func (tx TxBase) GetCachedHash() *common.Hash{
+func (tx TxBase) GetCachedHash() *common.Hash {
 	return tx.cachedHash
 }
 
-func (tx *TxBase) SetCachedHash(h *common.Hash){
+func (tx *TxBase) SetCachedHash(h *common.Hash) {
 	tx.cachedHash = h
 }
 
@@ -568,16 +568,16 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 	for i := 0; i < len(inputCoins); i++ {
 		serialNumber := inputCoins[i].GetKeyImage().ToBytesS()
 		ok, err := statedb.HasSerialNumber(stateDB, *prvCoinID, serialNumber, shardID)
-		if err != nil{
+		if err != nil {
 			return err
 		}
 		if ok {
 			return errors.New("double spend")
 		}
 	}
-	for _, outCoin := range tx.GetProof().GetOutputCoins(){
+	for _, outCoin := range tx.GetProof().GetOutputCoins() {
 		otaPublicKey := outCoin.GetPublicKey().ToBytesS()
-		if wallet.IsPublicKeyBurningAddress(otaPublicKey){
+		if wallet.IsPublicKeyBurningAddress(otaPublicKey) {
 			continue
 		}
 
@@ -599,7 +599,7 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 					return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New(fmt.Sprintf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status)))
 				}
 			default:
-				return  utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New("invalid onetimeaddress status in database"))
+				return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New("invalid onetimeaddress status in database"))
 			}
 		}
 	}
@@ -644,8 +644,6 @@ func GetOTADeclarationsFromTx(tx metadataGetter) []metadata.OTADeclaration {
 func (tx TxBase) ValidateType() bool {
 	return tx.Type == common.TxNormalType || tx.Type == common.TxRewardType || tx.Type == common.TxReturnStakingType
 }
-
-func (tx TxBase) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool { return true }
 
 func (tx TxBase) ListOTAHashH() []common.Hash {
 	return []common.Hash{}

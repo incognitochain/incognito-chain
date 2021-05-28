@@ -5,11 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
-	"strconv"
 )
 
 type PortalLiquidationCustodianDeposit struct {
@@ -73,9 +73,9 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateTxWithBlockCha
 
 func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	// if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+	// 	return true, true, nil
+	// }
 
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(custodianDeposit.IncogAddressStr)
@@ -96,7 +96,7 @@ func (custodianDeposit PortalLiquidationCustodianDeposit) ValidateSanityData(cha
 		return false, false, errors.New("deposit amount should be equal to the tx value")
 	}
 	// check tx type
-	if txr.GetType() != common.TxNormalType || !bytes.Equal(burnedTokenID.Bytes(), common.PRVCoinID[:]){
+	if txr.GetType() != common.TxNormalType || !bytes.Equal(burnedTokenID.Bytes(), common.PRVCoinID[:]) {
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 

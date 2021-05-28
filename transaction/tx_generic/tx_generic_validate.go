@@ -3,8 +3,9 @@ package tx_generic
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -14,7 +15,7 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-func VerifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error)  {
+func VerifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData, shardID byte, bcr metadata.ChainRetriever, accumulatedValues *metadata.AccumulatedValues, retriever metadata.ShardViewRetriever, viewRetriever metadata.BeaconViewRetriever) (bool, error) {
 	if tx.IsPrivacy() {
 		return true, nil
 	}
@@ -37,7 +38,7 @@ func VerifyTxCreatedByMiner(tx metadata.Transaction, mintdata *metadata.MintData
 	}
 
 	//if type is reward and not have metadata
-	if tx.GetType() == common.TxRewardType && meta == nil  {
+	if tx.GetType() == common.TxRewardType && meta == nil {
 		return false, nil
 	}
 	//if type is return staking and not have metadata
@@ -89,9 +90,9 @@ func GetTxBurnData(tx metadata.Transaction) (bool, privacy.Coin, *common.Hash, e
 }
 
 func MdValidateWithBlockChain(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error {
-	if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
-		return nil
-	}
+	// if tx.GetType() == common.TxRewardType || tx.GetType() == common.TxReturnStakingType {
+	// 	return nil
+	// }
 	meta := tx.GetMetadata()
 	if meta != nil {
 		isContinued, err := meta.ValidateTxWithBlockChain(tx, chainRetriever, shardViewRetriever, beaconViewRetriever, shardID, stateDB)
@@ -110,7 +111,7 @@ func MdValidateWithBlockChain(tx metadata.Transaction, chainRetriever metadata.C
 func MdValidate(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *statedb.StateDB, bridgeStateDB *statedb.StateDB, shardID byte) (bool, error) {
 	meta := tx.GetMetadata()
 	if meta != nil {
-		if hasPrivacy && tx.GetVersion() <= 1{
+		if hasPrivacy && tx.GetVersion() <= 1 {
 			return false, errors.New("Metadata can only exist in non-privacy tx")
 		}
 		validateMetadata := meta.ValidateMetadataByItself()
@@ -136,10 +137,10 @@ func MdValidate(tx metadata.Transaction, hasPrivacy bool, transactionStateDB *st
 // 	return tx.Verify(hasPrivacy, transactionStateDB, bridgeStateDB, shardID, tokenID, isBatch, isNewTransaction)
 // }
 
-func MdValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) ( bool, error) {
+func MdValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
 	meta := tx.GetMetadata()
 	if meta != nil {
-		isValid, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, tx )
+		isValid, ok, err := meta.ValidateSanityData(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight, tx)
 		if err != nil || !ok || !isValid {
 			return ok, err
 		}
@@ -168,12 +169,12 @@ func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetrie
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
 		additionalData := make(map[string]interface{})
 
-		if tx.GetVersion() <= 1{
+		if tx.GetVersion() <= 1 {
 			if chainRetriever != nil {
 				additionalData["isNewZKP"] = chainRetriever.IsAfterNewZKPCheckPoint(beaconHeight)
 				additionalData["v2Only"] = chainRetriever.IsAfterPrivacyV2CheckPoint(beaconHeight)
 			}
-			sigPubKey, err :=  new(operation.Point).FromBytesS(tx.GetSigPubKey())
+			sigPubKey, err := new(operation.Point).FromBytesS(tx.GetSigPubKey())
 			if err != nil {
 				return false, errors.New("SigPubKey is invalid")
 			}
@@ -209,7 +210,7 @@ func ValidateSanity(tx metadata.Transaction, chainRetriever metadata.ChainRetrie
 	return true, nil
 }
 
-func GetTxActualSizeInBytes(tx metadata.Transaction) uint64{
+func GetTxActualSizeInBytes(tx metadata.Transaction) uint64 {
 	if tx == nil {
 		return uint64(0)
 	}
@@ -233,16 +234,16 @@ func GetTxActualSizeInBytes(tx metadata.Transaction) uint64{
 		}
 
 		return sizeTx
-	}else{ //TxBase
-		sizeTx += uint64(1) //version
+	} else { //TxBase
+		sizeTx += uint64(1)                     //version
 		sizeTx += uint64(len(tx.GetType()) + 1) //type string
-		sizeTx += uint64(8) //locktime
-		sizeTx += uint64(8) //fee
-		sizeTx += uint64(len(tx.GetInfo())) //info
+		sizeTx += uint64(8)                     //locktime
+		sizeTx += uint64(8)                     //fee
+		sizeTx += uint64(len(tx.GetInfo()))     //info
 
 		sizeTx += uint64(len(tx.GetSigPubKey())) //sigpubkey
-		sizeTx += uint64(len(tx.GetSig())) //signature
-		sizeTx += uint64(1) //pubkeylastbytesender
+		sizeTx += uint64(len(tx.GetSig()))       //signature
+		sizeTx += uint64(1)                      //pubkeylastbytesender
 
 		//paymentproof
 		if tx.GetProof() != nil {
