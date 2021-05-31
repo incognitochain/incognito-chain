@@ -3,10 +3,12 @@ package syncker
 import (
 	"context"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"os"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
+
+	"github.com/incognitochain/incognito-chain/utils"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -174,7 +176,7 @@ func (s *ShardSyncProcess) insertShardBlockFromPool() {
 				continue
 			} else {
 				previousValidationData := s.shardPool.GetPreviousValidationData(block.GetPrevHash())
-				if previousValidationData == common.EmptyString {
+				if previousValidationData == utils.EmptyString {
 					continue
 				}
 				_, err := consensustypes.DecodeValidationData(previousValidationData)

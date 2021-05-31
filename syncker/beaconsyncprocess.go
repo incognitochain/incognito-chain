@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"os"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -248,6 +249,7 @@ func (s *BeaconSyncProcess) insertBeaconBlockFromPool() {
 			insertBeaconTimeCache.Add(viewHash.String(), time.Now())
 			insertCnt++
 			//must validate this block when insert
+
 			if err := s.chain.InsertBlock(blk.(types.BlockInterface), true); err != nil {
 				Logger.Error("Insert beacon block from pool fail", blk.GetHeight(), blk.Hash(), err)
 				continue
@@ -355,6 +357,11 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 				insertBlkCnt := 0
 				for {
 					time1 := time.Now()
+
+					/*for _, v := range blockBuffer {*/
+					//Logger.Infof("[config] v height %v proposetime %v", v.GetHeight(), v.GetProposeTime())
+					/*}*/
+
 					if successBlk, err := InsertBatchBlock(s.chain, blockBuffer); err != nil {
 						if successBlk == 0 {
 							fmt.Println(err)
