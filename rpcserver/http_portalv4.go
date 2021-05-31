@@ -23,6 +23,14 @@ func (httpServer *HttpServer) isPortalV4RPC(methodName string) bool {
 	return result
 }
 
+type CurrentPortalState struct {
+	UTXOs                     map[string]map[string]*statedb.UTXO
+	ShieldingExternalTx       map[string]map[string]*statedb.ShieldingRequest
+	WaitingUnshieldRequests   map[string]map[string]*statedb.WaitingUnshieldRequest
+	ProcessedUnshieldRequests map[string]map[string]*statedb.ProcessedUnshieldRequestBatch
+	BeaconTimeStamp           int64
+}
+
 /*
 ===== Get Portal State
 */
@@ -60,14 +68,6 @@ func (httpServer *HttpServer) handleGetPortalV4State(params interface{}, closeCh
 		return nil, rpcservice.NewRPCError(rpcservice.GetPortalStateError, err)
 	}
 	beaconBlock := beaconBlocks[0]
-
-	type CurrentPortalState struct {
-		UTXOs                     map[string]map[string]*statedb.UTXO
-		ShieldingExternalTx       map[string]map[string]*statedb.ShieldingRequest
-		WaitingUnshieldRequests   map[string]map[string]*statedb.WaitingUnshieldRequest
-		ProcessedUnshieldRequests map[string]map[string]*statedb.ProcessedUnshieldRequestBatch
-		BeaconTimeStamp           int64
-	}
 
 	result := CurrentPortalState{
 		BeaconTimeStamp:           beaconBlock.Header.Timestamp,
@@ -356,7 +356,7 @@ func (httpServer *HttpServer) handleGetPortalSignedExtTxWithBatchID(
 	return getRawSignedTxByHeight(httpServer, unshieldBatch.BeaconHeight, unshieldBatch.RawExternalTx, unshieldBatch.UTXOs)
 }
 
-type getSignedTxResult struct {
+type GetSignedTxResult struct {
 	SignedTx     string
 	BeaconHeight uint64
 	TxID         string
@@ -447,7 +447,7 @@ func getRawSignedTxByHeight(
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
 	hexSignedTx := hex.EncodeToString(signedTx.Bytes())
-	return getSignedTxResult{
+	return GetSignedTxResult{
 		SignedTx:     hexSignedTx,
 		BeaconHeight: height,
 		TxID:         externalTx.TxHash().String(),

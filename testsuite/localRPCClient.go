@@ -65,6 +65,62 @@ func (r *LocalRPCClient) GetPortalShieldingRequestStatus(tx string) (res *metada
 	return resI.(*metadata.PortalShieldingRequestStatus), nil
 }
 
+func (r *LocalRPCClient) CreateAndSendTxWithPortalV4UnshieldRequest(privatekey string, tokenID string, amount string, paymentAddress string, remoteAddress string) (res jsonresult.CreateTransactionTokenResult, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["createandsendtxwithportalv4unshieldrequest"]
+	resI, rpcERR := c(httpServer, []interface{}{privatekey, nil, float64(5000), float64(-1), map[string]interface{}{
+		"Privacy":     true,
+		"TokenID":     tokenID,
+		"TokenTxType": float64(1),
+		"TokenName":   "",
+		"TokenSymbol": "",
+		"TokenAmount": amount,
+		"TokenReceivers": map[string]interface{}{
+			"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": amount,
+		},
+		"TokenFee":       "0",
+		"PortalTokenID":  tokenID,
+		"UnshieldAmount": amount,
+		"IncAddressStr":  paymentAddress,
+		"RemoteAddress":  remoteAddress,
+	}}, nil)
+
+	if rpcERR != nil {
+		return jsonresult.CreateTransactionTokenResult{}, errors.New(rpcERR.Error())
+	}
+	return resI.(jsonresult.CreateTransactionTokenResult), nil
+}
+
+func (r *LocalRPCClient) GetPortalUnshieldRequestStatus(tx string) (res *metadata.PortalUnshieldRequestStatus, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getportalunshieldrequeststatus"]
+	resI, rpcERR := c(httpServer, []interface{}{map[string]interface{}{"UnshieldID": tx}}, nil)
+	if rpcERR != nil {
+		return nil, errors.New(rpcERR.Error())
+	}
+	return resI.(*metadata.PortalUnshieldRequestStatus), nil
+}
+
+func (r *LocalRPCClient) GetPortalV4State(beaconheight string) (rpcserver.CurrentPortalState, error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getportalv4state"]
+	resI, rpcERR := c(httpServer, []interface{}{map[string]interface{}{"BeaconHeight": beaconheight}}, nil)
+	if rpcERR != nil {
+		return rpcserver.CurrentPortalState{}, errors.New(rpcERR.Error())
+	}
+	return resI.(rpcserver.CurrentPortalState), nil
+}
+
+func (r *LocalRPCClient) GetPortalSignedRawTransaction(batchID string) (rpcserver.GetSignedTxResult, error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getportalsignedrawtransaction"]
+	resI, rpcERR := c(httpServer, []interface{}{map[string]interface{}{"BatchID": batchID}}, nil)
+	if rpcERR != nil {
+		return rpcserver.GetSignedTxResult{}, errors.New(rpcERR.Error())
+	}
+	return resI.(rpcserver.GetSignedTxResult), nil
+}
+
 func (r *LocalRPCClient) GetBalanceByPrivateKey(privateKey string) (res uint64, err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.LimitedHttpHandler["getbalancebyprivatekey"]

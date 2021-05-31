@@ -231,15 +231,16 @@ func (sim *NodeEngine) init() {
 	//}
 
 	rpcConfig := rpcserver.RpcServerConfig{
-		HttpListenters: []net.Listener{nil},
-		RPCMaxClients:  1,
-		DisableAuth:    true,
-		ChainParams:    activeNetParams,
-		BlockChain:     &bc,
-		Blockgen:       blockgen,
-		TxMemPool:      &txpoolV1,
-		Server:         &server,
-		Database:       db,
+		HttpListenters:  []net.Listener{nil},
+		RPCMaxClients:   1,
+		DisableAuth:     true,
+		ChainParams:     activeNetParams,
+		BlockChain:      &bc,
+		Blockgen:        blockgen,
+		TxMemPool:       &txpoolV1,
+		Server:          &server,
+		Database:        db,
+		ConsensusEngine: &cs,
 	}
 	rpcServer := &rpcserver.RpcServer{}
 	rpclocal := &LocalRPCClient{rpcServer}
