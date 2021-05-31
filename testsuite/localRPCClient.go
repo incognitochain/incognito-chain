@@ -3,6 +3,7 @@ package devframework
 import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
@@ -39,6 +40,29 @@ func (r *LocalRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey strin
 		return errors.New(rpcERR.Error())
 	}
 	return nil
+}
+
+func (r *LocalRPCClient) CreateAndSendTXShieldingRequest(privateKey string, incAddr string, tokenID string, proof string) (res jsonresult.CreateTransactionResult, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["createandsendtxshieldingrequest"]
+	resI, rpcERR := c(httpServer, []interface{}{privateKey, nil, float64(9876), float64(0), map[string]interface{}{
+		"IncogAddressStr": incAddr,
+		"TokenID":         tokenID,
+		"ShieldingProof":  proof}}, nil)
+	if rpcERR != nil {
+		return jsonresult.CreateTransactionResult{}, errors.New(rpcERR.Error())
+	}
+	return resI.(jsonresult.CreateTransactionResult), nil
+}
+
+func (r *LocalRPCClient) GetPortalShieldingRequestStatus(tx string) (res *metadata.PortalShieldingRequestStatus, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getportalshieldingrequeststatus"]
+	resI, rpcERR := c(httpServer, []interface{}{map[string]interface{}{"ReqTxID": tx}}, nil)
+	if rpcERR != nil {
+		return nil, errors.New(rpcERR.Error())
+	}
+	return resI.(*metadata.PortalShieldingRequestStatus), nil
 }
 
 func (r *LocalRPCClient) GetBalanceByPrivateKey(privateKey string) (res uint64, err error) {

@@ -1,26 +1,75 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
+	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
+	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
+	"github.com/incognitochain/incognito-chain/testsuite"
+	"github.com/incognitochain/incognito-chain/testsuite/account"
+)
 
 func Test_PortalV4() {
-	node := InitSimTestnetv2()
-	node.RPC.ShowBalance(node.GenesisAccount)
+	//sed -i s"|return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, .*|return putGenesisBlockIntoChainParams\(genesisHash, genesisBlock, chaincfg.RegressionNetParams\)|" relaying/btc/relayinggenesis.go
+	chainParam := devframework.NewChainParam(devframework.ID_TESTNET)
+	chainParam.ActiveShards = 2
+	chainParam.BCHeightBreakPointNewZKP = 1
+	chainParam.BeaconHeightBreakPointBurnAddr = 1
+	chainParam.StakingFlowV2Height = 1
+	chainParam.Epoch = 20
+	chainParam.RandomTime = 10
+	common.TIMESLOT = chainParam.Timeslot
+	chainParam.PortalParams.PortalParamsV4[0].PortalTokens[portalcommonv4.PortalBTCIDStr] = portaltokensv4.PortalBTCTokenProcessor{
+		PortalToken: &portaltokensv4.PortalToken{
+			ChainID:             blockchain.TestnetBTCChainID,
+			MinTokenAmount:      10,
+			MultipleTokenAmount: 10,
+			ExternalInputSize:   130,
+			ExternalOutputSize:  43,
+			ExternalTxMaxSize:   2048,
+		},
+		ChainParam: &chaincfg.RegressionNetParams,
+	}
+
+	node := devframework.NewStandaloneSimulation("newsim", devframework.Config{
+		ChainParam: chainParam,
+		ResetDB:    true,
+	})
+	for i := 0; i < 5; i++ {
+		node.GenerateBlock().NextRound()
+	}
+
+	acc0, _ := account.NewAccountFromPrivatekey("112t8rnX6USJnBzswUeuuanesuEEUGsxE8Pj3kkxkqvGRedUUPyocmtsqETX2WMBSvfBCwwsmMpxonhfQm2N5wy3SrNk11eYx6pMsmsic4Vz")
+
 	node.RPC.API_SubmitKey(node.GenesisAccount.PrivateKey)
+	node.RPC.API_SubmitKey(acc0.PrivateKey)
 	err := node.RPC.API_CreateConvertCoinVer1ToVer2Transaction(node.GenesisAccount.PrivateKey)
 	if err != nil {
 		fmt.Println(err)
 	}
-	node.RPC.ShowBalance(node.GenesisAccount)
-	mempool, err := node.RPC.Client.GetMempoolInfo()
-	fmt.Printf("%+v\n", mempool)
-	node.GenerateBlock().NextRound()
-	node.GetBlockchain().GetConfig().TxPool.EmptyPool()
-	fmt.Printf("%+v\n", mempool)
-	node.GenerateBlock().NextRound()
-	fmt.Printf("%+v\n", mempool)
 
-	//node.GenerateBlock().NextRound()
-	//node.RPC.ShowBalance(node.GenesisAccount)
-	//node.GenerateBlock().NextRound()
-	//node.RPC.ShowBalance(node.GenesisAccount)
+	node.GenerateBlock().NextRound()
+	node.RPC.SendPRV(node.GenesisAccount, acc0, 888*1e9)
+	node.GenerateBlock().NextRound()
+	node.RPC.ShowBalance(node.GenesisAccount)
+
+	proof := "eyJNZXJrbGVQcm9vZnMiOlt7IlByb29mSGFzaCI6WzMsMTk3LDExNiw2NCwxNTQsMjAzLDIyNiwyMTMsMTUsODQsODEsNjEsMTUwLDEwNSwxNjIsOCwxNjMsMjQ3LDYwLDM2LDE3NCwyMjcsNTgsNDgsODUsMzcsNzcsMTcsMjI3LDIxMSw5MCw0OV0sIklzTGVmdCI6dHJ1ZX1dLCJCVENUeCI6eyJWZXJzaW9uIjoyLCJUeEluIjpbeyJQcmV2aW91c091dFBvaW50Ijp7Ikhhc2giOlsyMywyMDMsNTAsMTczLDE5NywyMzMsMTgyLDM0LDMxLDEwNiwxNzQsMjE1LDQxLDE4MywzMCwyNTEsMjMxLDE4MywxODYsMTgsMTA2LDIyNywxOTQsNywxMDgsOTMsMjA2LDg3LDgsOTYsMjQyLDIwOF0sIkluZGV4IjoxfSwiU2lnbmF0dXJlU2NyaXB0IjoiU0RCRkFpRUF0QmcrWTlTMHdiMWM5Q0hWN1NyczF1K1A3QndRQUFXQklJRStmbENibmljQ0lIa3lOc3RCMDhVUUpMRXZNdFRtTlFuSUlLMkpvY1lEMnJCUFJxVk1PNXIvQVNNaEFuajNxZVhtWE5UUWNPTU16dXJNazkwbGRJZGFyamtWcHArdXlUcHdxdW11ckE9PSIsIldpdG5lc3MiOm51bGwsIlNlcXVlbmNlIjo0Mjk0OTY3Mjk1fV0sIlR4T3V0IjpbeyJWYWx1ZSI6MTU1NTUwMDAwLCJQa1NjcmlwdCI6IkFDQWlDM0dPZktOTXg2UTR4KzhNQktsWnVGUFltMGdWYklzaEFnbWZhdm56aHc9PSJ9LHsiVmFsdWUiOjg0Mzk1MDAwMCwiUGtTY3JpcHQiOiJxUlNKc0IwZ1lyNDRDTW1BMlcwcGswcGh5cVFEZkljPSJ9XSwiTG9ja1RpbWUiOjB9LCJCbG9ja0hhc2giOls4NCwxODgsMjI2LDIxOCw2NiwxNiwxNSwyMTgsOTEsMjQwLDQyLDE4MSwyMzAsMTIyLDcyLDMzLDAsMTQ2LDM2LDIwMSwxNjUsMjE2LDE1NiwyNDksMTEsMTc3LDE4LDk1LDg0LDI0MCwyMTYsODJdfQ=="
+
+	resTx, err := node.RPC.Client.CreateAndSendTXShieldingRequest(node.GenesisAccount.PrivateKey, acc0.PaymentAddress, "ef5947f70ead81a76a53c7c8b7317dd5245510c665d3a13921dc9a581188728b", proof)
+	fmt.Println("=========", resTx.TxID, err)
+
+	for i := 0; i < 10; i++ {
+		node.GenerateBlock().NextRound()
+		resReq, _ := node.RPC.Client.GetPortalShieldingRequestStatus(resTx.TxID)
+		if resReq != nil {
+			fmt.Printf("Response request shield %v - Mint Amount: %+v - Error: %+v\n", resReq.TxReqID, resReq.MintingAmount, resReq.Error)
+			break
+		}
+	}
+
+	node.RPC.ShowBalance(acc0)
+	node.Pause()
+
 }
