@@ -2,11 +2,13 @@ package rpcserver
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"github.com/pkg/errors"
 	"io"
 	"net"
 	"os"
+
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/pkg/errors"
 )
 
 func (httpServer *HttpServer) handleSetBackup(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
@@ -16,7 +18,7 @@ func (httpServer *HttpServer) handleSetBackup(params interface{}, closeChan <-ch
 		if !ok {
 			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("set backup is invalid"))
 		}
-		httpServer.config.ChainParams.IsBackup = setBackup
+		config.Param().IsBackup = setBackup
 		return setBackup, nil
 	}
 	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("no param"))

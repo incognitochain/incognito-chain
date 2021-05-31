@@ -2,7 +2,6 @@ package connmanager
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"math"
 	"net"
 	"net/rpc"
@@ -10,6 +9,9 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/utils"
 
 	"github.com/pkg/errors"
 
@@ -183,17 +185,17 @@ func (connManager *ConnManager) GetPeerId(addr string) (string, error) {
 	ipfsAddr, err := ma.NewMultiaddr(addr)
 	if err != nil {
 		Logger.log.Error(err)
-		return common.EmptyString, NewConnManagerError(GetPeerIdError, err)
+		return utils.EmptyString, NewConnManagerError(GetPeerIdError, err)
 	}
 	pid, err := ipfsAddr.ValueForProtocol(ma.P_IPFS)
 	if err != nil {
 		Logger.log.Error(err)
-		return common.EmptyString, NewConnManagerError(GetPeerIdError, err)
+		return utils.EmptyString, NewConnManagerError(GetPeerIdError, err)
 	}
 	peerId, err := libpeer.IDB58Decode(pid)
 	if err != nil {
 		Logger.log.Error(err)
-		return common.EmptyString, NewConnManagerError(GetPeerIdError, err)
+		return utils.EmptyString, NewConnManagerError(GetPeerIdError, err)
 	}
 	return peerId.Pretty(), nil
 }
@@ -248,7 +250,7 @@ func (connManager *ConnManager) Connect(addr string, publicKey string, publicKey
 	peer.SetConfig(listeningPeer.GetConfig())
 
 	// if we can get an pubbic key from params?
-	if publicKey != common.EmptyString {
+	if publicKey != utils.EmptyString {
 		// use public key to detect role in network
 		peer.SetPublicKey(publicKey, publicKeyType)
 	}
@@ -281,7 +283,7 @@ func (connManager *ConnManager) Start(discoverPeerAddress string) error {
 		go connManager.listenHandler(listenner)
 		connManager.listeningPeer = listenner
 
-		if connManager.config.DiscoverPeers && connManager.config.DiscoverPeersAddress != common.EmptyString {
+		if connManager.config.DiscoverPeers && connManager.config.DiscoverPeersAddress != utils.EmptyString {
 			Logger.log.Debugf("DiscoverPeers: true\n----------------------------------------------------------------"+
 				"\n|               Discover peer url: %s               |"+
 				"\n----------------------------------------------------------------",
@@ -363,7 +365,7 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 	discoverPeerAddress := connManager.discoverPeerAddress
 	fmt.Println("CONN: processDiscoverPeers")
 	monitor.SetGlobalParam("Bootnode", discoverPeerAddress)
-	if discoverPeerAddress == common.EmptyString {
+	if discoverPeerAddress == utils.EmptyString {
 		// we dont have config to make discover peer
 		// so we dont need to do anything here
 		Logger.log.Error("Not config discovery peer")
@@ -395,19 +397,19 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// remove later
 		rawAddress := listener.GetRawAddress()
 		rawPort := listener.GetPort()
-		if externalAddress == common.EmptyString {
+		if externalAddress == utils.EmptyString {
 			externalAddress = os.Getenv("EXTERNAL_ADDRESS")
 		}
-		if externalAddress != common.EmptyString {
+		if externalAddress != utils.EmptyString {
 			host, port, err := net.SplitHostPort(externalAddress)
-			if err == nil && host != common.EmptyString {
+			if err == nil && host != utils.EmptyString {
 				rawAddress = strings.Replace(rawAddress, "127.0.0.1", host, 1)
 				rawAddress = strings.Replace(rawAddress, "0.0.0.0", host, 1)
 				rawAddress = strings.Replace(rawAddress, "localhost", host, 1)
 				rawAddress = strings.Replace(rawAddress, fmt.Sprintf("/%s/", rawPort), fmt.Sprintf("/%s/", port), 1)
 			}
 		} else {
-			rawAddress = common.EmptyString
+			rawAddress = utils.EmptyString
 		}
 
 		// In case WE run a node look like  committee of shard or beacon
@@ -786,7 +788,7 @@ func (connManager *ConnManager) GetPeerConnOfBeacon() []*peer.PeerConn {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
 			pk, _ := peerConn.GetRemotePeer().GetPublicKey()
-			if pk != common.EmptyString && connManager.checkBeaconOfPbk(pk) {
+			if pk != utils.EmptyString && connManager.checkBeaconOfPbk(pk) {
 				peerConns = append(peerConns, peerConn)
 			}
 		}
@@ -797,7 +799,7 @@ func (connManager *ConnManager) GetPeerConnOfBeacon() []*peer.PeerConn {
 // GetPeerConnOfPublicKey - return PeerConn from public key
 func (connManager *ConnManager) GetPeerConnOfPublicKey(publicKey string) []*peer.PeerConn {
 	peerConns := make([]*peer.PeerConn, 0)
-	if publicKey == common.EmptyString {
+	if publicKey == utils.EmptyString {
 		return peerConns
 	}
 	listener := connManager.config.ListenerPeer
@@ -831,7 +833,7 @@ func (connManager *ConnManager) GetConnOfRelayNode() []*peer.PeerConn {
 		allPeers := listener.GetPeerConnOfAll()
 		for _, peerConn := range allPeers {
 			pk, _ := peerConn.GetRemotePeer().GetPublicKey()
-			if pk != common.EmptyString && common.IndexOfStr(pk, relayNode) != -1 {
+			if pk != utils.EmptyString && common.IndexOfStr(pk, relayNode) != -1 {
 				peerConns = append(peerConns, peerConn)
 			}
 		}
