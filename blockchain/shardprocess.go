@@ -973,7 +973,6 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 
 func (blockchain *BlockChain) verifyTransactionIndividuallyFromNewBlock(shardID byte, txs []metadata.Transaction, bView *BeaconBestState, curView *ShardBestState) error {
 	if blockchain.config.usingNewPool {
-	if blockchain.config.usingNewPool {
 		ok, err := blockchain.ShardChain[shardID].TxsVerifier.FullValidateTransactions(
 			blockchain,
 			curView,
