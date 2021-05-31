@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/config"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"

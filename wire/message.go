@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/utils"
 	peer "github.com/libp2p/go-libp2p-peer"
 )

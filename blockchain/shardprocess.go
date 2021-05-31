@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/instruction"
-	"os"
 	"sort"
 	"strconv"
 	"time"
@@ -969,9 +968,6 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 		Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
 		return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
 	}
-	if false {
-		//TODO: @tin uncomment here
-		//if blockchain.config.usingNewPool {
 	return nil
 }
 

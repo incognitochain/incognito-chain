@@ -308,7 +308,7 @@ func (blockchain *BlockChain) BuildResponseTransactionFromTxsWithMetadata(view *
 //If there is a ReadonlyKey, return decrypted coins; otherwise, just return raw coins
 func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, upToHeight uint64, versionsIncluded map[int]bool) ([]privacy.PlainCoin, []privacy.Coin, uint64, error) {
 	var outCoins []privacy.Coin
-	var lowestHeightForV2 uint64 = blockchain.GetConfig().ChainParams.CoinVersion2LowestHeight
+	var lowestHeightForV2 uint64 = config.Param().CoinVersion2LowestHeight
 	var fromHeight uint64
 	if keyset == nil {
 		return nil, nil, 0, NewBlockChainError(GetListDecryptedOutputCoinsByKeysetError, fmt.Errorf("invalid key set, got keyset %+v", keyset))

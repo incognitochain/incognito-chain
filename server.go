@@ -8,7 +8,6 @@ import (
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -195,7 +194,6 @@ func (serverObj *Server) NewServer(
 	db map[int]incdb.Database,
 	dbmp databasemp.DatabaseInterface,
 	dboc *incdb.Database,
-	chainParams *blockchain.Params,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
 	bnbChainState *bnbrelaying.BNBChainState,
@@ -319,7 +317,6 @@ func (serverObj *Server) NewServer(
 		PubSubManager:   pubsubManager,
 		ConsensusEngine: serverObj.consensusEngine,
 		Highway:         serverObj.highway,
-		GenesisParams:   blockchain.GenesisParam,
 		OutcoinByOTAKeyDb: dboc,
 		PoolManager:     poolManager,
 	})

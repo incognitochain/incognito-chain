@@ -123,17 +123,6 @@ func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeCha
 		return nil, err
 	}
 
-	result := jsonresult.NewCreateTransactionResult(txHash, utils.EmptyString, txBytes, txShardID)
-	return result, nil
-}
-
-// handleCreateAndSendTx - RPC creates transaction and send to network
-func (httpServer *HttpServer) handleCreateAndSendTxV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	var err error
-	data, err := httpServer.handleCreateRawTransactionV2(params, closeChan)
-	if err.(*rpcservice.RPCError) != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
-	}
 	tx := data.(jsonresult.CreateTransactionResult)
 	base58CheckData := tx.Base58CheckData
 	newParam := make([]interface{}, 0)

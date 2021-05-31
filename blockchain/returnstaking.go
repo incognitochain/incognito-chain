@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -101,7 +102,7 @@ func (blockchain *BlockChain) ValidateReturnStakingTxFromBeaconInstructions(
 			if err != nil || !isMinted {
 				return errors.Errorf("this is not tx mint for return staking. Error %v", err)
 			}
-			if ok := mintCoin.CheckCoinValid(returnMeta.StakerAddress, returnMeta.SharedRandom, MainNetStakingAmountShard); !ok {
+			if ok := mintCoin.CheckCoinValid(returnMeta.StakerAddress, returnMeta.SharedRandom, config.Param().StakingAmountShard); !ok {
 				return errors.Errorf("mint data is invalid: Address %v; Amount %v", returnMeta.StakerAddress, mintCoin.GetValue())
 			}
 			if coinID.String() != common.PRVIDStr {

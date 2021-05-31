@@ -804,7 +804,7 @@ func (blockchain *BlockChain) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool 
 		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
 	}
 
-	return beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP
+	return beaconHeight >= config.Param().BCHeightBreakPointNewZKP
 }
 
 func (blockchain *BlockChain) IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bool {
@@ -812,15 +812,7 @@ func (blockchain *BlockChain) IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bo
 		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
 	}
 
-	return beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointPrivacyV2
-}
-
-func (blockchain *BlockChain) GetWhiteListTxs() map[string]bool {
-	return blockchain.config.ChainParams.WhiteListTxs
-}
-
-func (s *BlockChain) GetChainParams() *Params {
-	return s.config.ChainParams
+	return beaconHeight >= config.Param().BCHeightBreakPointPrivacyV2
 }
 
 func (s *BlockChain) AddRelayShard(sid int) error {
