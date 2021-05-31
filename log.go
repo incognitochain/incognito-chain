@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
@@ -180,19 +181,20 @@ var subsystemLoggers = map[string]common.Logger{
 // create roll files in the same directory.  It must be called before the
 // package-global log rotater variables are used.
 func initLogRotator(logFile string) {
-	logDir, _ := filepath.Split(logFile)
-	err := os.MkdirAll(logDir, 0700)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
-		os.Exit(common.ExitByLogging)
-	}
-	r, err := rotator.New(logFile, 10*1024, false, 3)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
-		os.Exit(common.ExitByLogging)
-	}
+	/*logDir, _ := filepath.Split(logFile)*/
+	//err := os.MkdirAll(logDir, 0700)
+	//if err != nil {
+	//fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
+	//os.Exit(utils.ExitByLogging)
+	//}
+	//r, err := rotator.New(logFile, 10*1024, false, 3)
+	//if err != nil {
+	//fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
+	//os.Exit(utils.ExitByLogging)
+	/*}*/
 
-	logRotator = r
+	//logRotator = r
+	logRotator = &rotator.Rotator{}
 }
 
 // setLogLevel sets the logging level for provided subsystem.  Invalid
@@ -231,3 +233,84 @@ func (mainLogger *MainLogger) Init(inst common.Logger) {
 
 // Global instant to use
 var Logger = MainLogger{}
+
+// supportedSubsystems returns a sorted slice of the supported subsystems for
+// logging purposes.
+func supportedSubsystems() []string {
+	// Convert the subsystemLoggers map keys to a slice.
+	subsystems := make([]string, 0, len(subsystemLoggers))
+	for subsysID := range subsystemLoggers {
+		subsystems = append(subsystems, subsysID)
+	}
+
+	// Sort the subsystems for stable display.
+	sort.Strings(subsystems)
+	return subsystems
+}
+
+// validLogLevel returns whether or not logLevel is a valid debug log level.
+func validLogLevel(logLevel string) bool {
+	switch logLevel {
+	case "trace":
+		fallthrough
+	case "debug":
+		fallthrough
+	case "info":
+		fallthrough
+	case "warn":
+		fallthrough
+	case "error":
+		fallthrough
+	case "critical":
+		return true
+	}
+	return false
+}
+
+// parseAndSetDebugLevels attempts to parse the specified debug level and set
+// the levels accordingly.  An appropriate error is returned if anything is
+// invalid.
+func parseAndSetDebugLevels(debugLevel string) error {
+	// When the specified string doesn't have any delimters, treat it as
+	// the log level for all subsystems.
+	if !strings.Contains(debugLevel, ",") && !strings.Contains(debugLevel, "=") {
+		// ValidateTransaction debug log level.
+		if !validLogLevel(debugLevel) {
+			str := "the specified debug level [%v] is invalid"
+			return fmt.Errorf(str, debugLevel)
+		}
+
+		// Change the logging level for all subsystems.
+		setLogLevels(debugLevel)
+
+		return nil
+	}
+
+	// Split the specified string into subsystem/level pairs while detecting
+	// issues and update the log levels accordingly.
+	for _, logLevelPair := range strings.Split(debugLevel, ",") {
+		if !strings.Contains(logLevelPair, "=") {
+			str := "the specified debug level contains an invalid subsystem/level pair [%v]"
+			return fmt.Errorf(str, logLevelPair)
+		}
+
+		// Extract the specified subsystem and log level.
+		fields := strings.Split(logLevelPair, "=")
+		subsysID, logLevel := fields[0], fields[1]
+
+		// ValidateTransaction subsystem.
+		if _, exists := subsystemLoggers[subsysID]; !exists {
+			str := "the specified subsystem [%v] is invalid -- supported subsytems %v"
+			return fmt.Errorf(str, subsysID, supportedSubsystems())
+		}
+
+		// ValidateTransaction log level.
+		if !validLogLevel(logLevel) {
+			str := "the specified debug level [%v] is invalid"
+			return fmt.Errorf(str, logLevel)
+		}
+
+		setLogLevel(subsysID, logLevel)
+	}
+	return nil
+}

@@ -8,11 +8,13 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -32,7 +34,7 @@ func (httpServer *HttpServer) handleCreateRawTransaction(params interface{}, clo
 		return nil, err
 	}
 
-	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, txBytes, txShardID)
+	result := jsonresult.NewCreateTransactionResult(txHash, utils.EmptyString, txBytes, txShardID)
 	return result, nil
 }
 
@@ -89,7 +91,7 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 		Logger.log.Errorf("handleSendRawTransaction broadcast message to all with error %+v", err2)
 	}
 
-	result := jsonresult.NewCreateTransactionResult(txHash, common.EmptyString, nil, common.GetShardIDFromLastByte(LastBytePubKeySender))
+	result := jsonresult.NewCreateTransactionResult(txHash, utils.EmptyString, nil, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	return result, nil
 }
 
@@ -117,6 +119,19 @@ func (httpServer *HttpServer) handleCreateConvertCoinVer1ToVer2Transaction(param
 func (httpServer *HttpServer) handleCreateAndSendTx(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTransaction(params, closeChan)
 	if err != nil {
+		// return hex for a new tx
+		return nil, err
+	}
+
+	result := jsonresult.NewCreateTransactionResult(txHash, utils.EmptyString, txBytes, txShardID)
+	return result, nil
+}
+
+// handleCreateAndSendTx - RPC creates transaction and send to network
+func (httpServer *HttpServer) handleCreateAndSendTxV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	var err error
+	data, err := httpServer.handleCreateRawTransactionV2(params, closeChan)
+	if err.(*rpcservice.RPCError) != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
 	}
 	tx := data.(jsonresult.CreateTransactionResult)
@@ -1222,7 +1237,7 @@ func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface
 
 	stakingMetadata, err := metadata.NewStakingMetadata(
 		int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
-		httpServer.config.ChainParams.StakingAmountShard,
+		config.Param().StakingAmountShard,
 		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
@@ -1276,6 +1291,102 @@ func (httpServer *HttpServer) handleCreateAndSendStakingTx(params interface{}, c
 	return result, nil
 }
 
+// handleCreateRawStakingTransaction handles create staking
+func (httpServer *HttpServer) handleCreateRawStakingTransactionV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	// get component
+
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 element"))
+	}
+
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	keyWallet := new(wallet.KeyWallet)
+	keyWallet.KeySet = *createRawTxParam.SenderKeySet
+	funderPaymentAddress := keyWallet.Base58CheckSerialize(wallet.PaymentAddressType)
+
+	// prepare meta data
+	data, ok := paramsArray[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Data For Staking Transaction %+v", paramsArray[4]))
+	}
+
+	stakingType, ok := data["StakingType"].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Staking Type For Staking Transaction %+v", data["StakingType"]))
+	}
+
+	candidatePaymentAddress, ok := data["CandidatePaymentAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Producer Payment Address for Staking Transaction %+v", data["CandidatePaymentAddress"]))
+	}
+
+	// Get private seed, a.k.a mining key
+	privateSeed, ok := data["PrivateSeed"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Private Seed For Staking Transaction %+v", data["PrivateSeed"]))
+	}
+	privateSeedBytes, ver, errDecode := base58.Base58Check{}.Decode(privateSeed)
+	if (errDecode != nil) || (ver != common.ZeroByte) {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, errors.New("Decode privateseed failed!"))
+	}
+
+	//Get RewardReceiver Payment Address
+	rewardReceiverPaymentAddress, ok := data["RewardReceiverPaymentAddress"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid Reward Receiver Payment Address For Staking Transaction %+v", data["RewardReceiverPaymentAddress"]))
+	}
+
+	//Get auto staking flag
+	autoReStaking, ok := data["AutoReStaking"].(bool)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("Invalid auto restaking flag %+v", data["AutoReStaking"]))
+	}
+
+	// Get candidate publickey
+	candidateWallet, err := wallet.Base58CheckDeserialize(candidatePaymentAddress)
+	if err != nil || candidateWallet == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Base58CheckDeserialize candidate Payment Address failed"))
+	}
+	pk := candidateWallet.KeySet.PaymentAddress.Pk
+
+	committeePK, err := incognitokey.NewCommitteeKeyFromSeed(privateSeedBytes, pk)
+	if err != nil {
+		Logger.log.Critical(err)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Cannot get payment address"))
+	}
+
+	committeePKBytes, err := committeePK.Bytes()
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Cannot import key set"))
+	}
+
+	stakingMetadata, err := metadata.NewStakingMetadata(
+		int(stakingType), funderPaymentAddress, rewardReceiverPaymentAddress,
+		config.Param().StakingAmountShard,
+		base58.Base58Check{}.Encode(committeePKBytes, common.ZeroByte), autoReStaking)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, err)
+	}
+
+	txID, txBytes, txShardID, err := httpServer.txService.CreateRawTransaction(createRawTxParam, stakingMetadata)
+	if err.(*rpcservice.RPCError) != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.CreateTxDataError, err)
+	}
+
+	result := jsonresult.CreateTransactionResult{
+		TxID:            txID.String(),
+		Base58CheckData: base58.Base58Check{}.Encode(txBytes, common.ZeroByte),
+		ShardID:         txShardID,
+	}
+	return result, nil
+}
+
+// handleCreateAndSendStakingTx - RPC creates staking transaction and send to network
 func (httpServer *HttpServer) handleCreateAndSendStakingTxV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.handleCreateAndSendStakingTx(params, closeChan)
 }

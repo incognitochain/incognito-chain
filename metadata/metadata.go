@@ -62,11 +62,7 @@ type MempoolRetriever interface {
 }
 
 type ChainRetriever interface {
-	GetETHRemoveBridgeSigEpoch() uint64
-	GetBCHeightBreakPointPortalV3() uint64
-	GetStakingAmountShard() uint64
 	GetCentralizedWebsitePaymentAddress(uint64) string
-	GetBeaconHeightBreakPointBurnAddr() uint64
 	GetBurningAddress(blockHeight uint64) string
 	GetTransactionByHash(common.Hash) (byte, common.Hash, uint64, int, Transaction, error)
 	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)

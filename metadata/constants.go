@@ -1,7 +1,5 @@
 package metadata
 
-import "github.com/incognitochain/incognito-chain/common"
-
 const (
 	InvalidMeta = 1
 
@@ -153,29 +151,15 @@ const (
 	BeaconOnly = -2
 )
 
-var (
-	// if the blockchain is running in Docker container
-	// then using GETH_NAME env's value (aka geth container name)
-	// otherwise using localhost
-	//EthereumLightNodeHost     = common.GetENV("GETH_NAME", "127.0.0.1")
-	//EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "http")
-	//EthereumLightNodePort     = common.GetENV("GETH_PORT", "8545")
-)
+/*var (*/
+//// if the blockchain is running in Docker container
+//// then using GETH_NAME env's value (aka geth container name)
+//// otherwise using localhost
+//EthereumLightNodeHost     = utils.GetEnv("GETH_NAME", "127.0.0.1")
+//EthereumLightNodeProtocol = utils.GetEnv("GETH_PROTOCOL", "http")
+//EthereumLightNodePort     = utils.GetEnv("GETH_PORT", "8545")
+/*)*/
 
-// Kovan testnet
-var (
-//	// if the blockchain is running in Docker container
-//	// then using GETH_NAME env's value (aka geth container name)
-//	// otherwise using localhost
-	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "https://kovan.infura.io/v3/155e4050bb3b49448145a4daffa8bd7c")
-	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "")
-	EthereumLightNodePort     = common.GetENV("GETH_PORT", "")
-)
-
-//const (
-//	EthereumLightNodeProtocol = "http"
-//	EthereumLightNodePort     = "8545"
-//)
 const (
 	StopAutoStakingAmount = 0
 	ETHConfirmationBlocks = 15

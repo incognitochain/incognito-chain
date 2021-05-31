@@ -1,0 +1,1 @@
+1 1 * * * find /data/*.log  -atime +2 -type f -exec rm {} \;

@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -120,8 +122,8 @@ func (redeemReq PortalRedeemLiquidateExchangeRates) ValidateSanityData(chainRetr
 	}
 
 	// reject Redeem Request from Liquidation pool from BCHeightBreakPointPortalV3
-	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() {
-		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, fmt.Errorf("Should create redeem request from liquidation pool v3 after epoch %v", chainRetriever.GetBCHeightBreakPointPortalV3()))
+	if beaconHeight >= config.Param().BCHeightBreakPointPortalV3 {
+		return false, false, NewMetadataTxError(PortalRedeemLiquidateExchangeRatesParamError, fmt.Errorf("Should create redeem request from liquidation pool v3 after epoch %v", config.Param().BCHeightBreakPointPortalV3))
 	}
 	return true, true, nil
 }

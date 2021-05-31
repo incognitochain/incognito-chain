@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/config"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -222,7 +224,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromBeaconInstructions(
 	shardID byte,
 ) error {
 	//mainnet have two block return double when height < REPLACE_STAKINGTX
-	if len(beaconBlocks) > 0 && beaconBlocks[0].GetHeight() < blockchain.config.ChainParams.ReplaceStakingTxHeight {
+	if len(beaconBlocks) > 0 && beaconBlocks[0].GetHeight() < config.Param().ReplaceStakingTxHeight {
 		return nil
 	}
 	return blockchain.ValidateReturnStakingTxFromBeaconInstructions(

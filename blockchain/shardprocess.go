@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -127,15 +128,13 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(
 // InsertShardBlock Insert Shard Block into blockchain
 // this block must have full information (complete block)
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, shouldValidate bool) error {
-	fullValidation := os.Getenv("FULL_VALIDATION")
-
 	//startTimeInsertShardBlock := time.Now()
 	blockHash := shardBlock.Header.Hash()
 	blockHeight := shardBlock.Header.Height
 	shardID := shardBlock.Header.ShardID
 	preHash := shardBlock.Header.PreviousBlockHash
 
-	if fullValidation == "1" {
+	if config.Config().IsFullValidation {
 		shouldValidate = true
 	}
 
@@ -189,7 +188,8 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 
 	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, committees); err != nil {
-		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committees, err)
+		committeesStr, _ := incognitokey.CommitteeKeyListToString(committees)
+		Logger.log.Errorf("Validate block %v shard %v with committee %v committeeFromBlock %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr, shardBlock.Header.CommitteeFromBlock.String(), err)
 		return err
 	}
 
@@ -214,7 +214,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	Logger.log.Debugf("SHARD %+v | Update ShardBestState, block height %+v with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 
 	//only validate all tx if we have env variable FULL_VALIDATION = 1
-	if fullValidation == "1" {
+	if config.Config().IsFullValidation {
 		Logger.log.Infof("SHARD %+v | Verify Transaction From Block 🔍 %+v, total %v txs, block height %+v with hash %+v, beaconHash %+v", shardID, len(shardBlock.Body.Transactions), shardBlock.Header.Height, shardBlock.Hash().String(), shardBlock.Header.BeaconHash)
 		st := time.Now()
 		if err := blockchain.verifyTransactionFromNewBlock(shardID, shardBlock.Body.Transactions, curView.BestBeaconHash, curView); err != nil {
@@ -358,8 +358,8 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(curView *ShardBestSt
 	if len(txMerkleTree) > 0 {
 		txRoot = txMerkleTree[len(txMerkleTree)-1]
 	}
-
-	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) && (blockchain.config.ChainParams.Net != Testnet || (shardBlock.Header.Height != 487260 && shardBlock.Header.Height != 487261 && shardBlock.Header.Height != 494144)) {
+	if !bytes.Equal(shardBlock.Header.TxRoot.GetBytes(), txRoot.GetBytes()) &&
+		(config.Param().Net == config.LocalNet || config.Param().Net != config.TestnetNet || (shardBlock.Header.Height != 487260 && shardBlock.Header.Height != 487261 && shardBlock.Header.Height != 494144)) {
 		return NewBlockChainError(TransactionRootHashError, fmt.Errorf("Expect transaction root hash %+v but get %+v", shardBlock.Header.TxRoot, txRoot))
 	}
 
@@ -552,7 +552,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 		NewShardEnvBuilder().
 		BuildShardID(curView.ShardID).
 		BuildBeaconInstructions(beaconInstructions).
-		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfFixedBlockValidators).
+		BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
 		BuildShardHeight(curView.ShardHeight).
 		Build()
 
@@ -800,17 +800,17 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		NewShardEnvBuilder().
 		BuildBeaconHeight(shardBestState.BeaconHeight).
 		BuildEpoch(blockchain.GetEpochByHeight(shardBestState.BeaconHeight)).
-		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
+		BuildEpochBreakPointSwapNewKey(config.Param().ConsensusParam.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(beaconInstructions).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
-		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfFixedBlockValidators).
+		BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
-		BuildOffset(blockchain.config.ChainParams.Offset).
+		BuildOffset(config.Param().SwapCommitteeParam.Offset).
 		BuildShardBlockHash(shardBestState.BestBlockHash).
 		BuildShardHeight(shardBestState.ShardHeight).
 		BuildShardID(shardID).
 		BuildStakingTx(make(map[string]string)).
-		BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
+		BuildSwapOffset(config.Param().SwapCommitteeParam.SwapOffset).
 		BuildTxs(shardBlock.Body.Transactions).
 		BuildShardInstructions(shardBlock.Body.Instructions).
 		BuildCommitteesFromBlock(shardBlock.Header.CommitteeFromBlock).
@@ -854,17 +854,17 @@ func (shardBestState *ShardBestState) initShardBestState(blockchain *BlockChain,
 		NewShardEnvBuilder().
 		BuildBeaconHeight(shardBestState.BeaconHeight).
 		BuildEpoch(shardBestState.Epoch).
-		BuildEpochBreakPointSwapNewKey(blockchain.config.ChainParams.EpochBreakPointSwapNewKey).
+		BuildEpochBreakPointSwapNewKey(config.Param().ConsensusParam.EpochBreakPointSwapNewKey).
 		BuildBeaconInstructions(instructions).
-		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfFixedBlockValidators).
+		BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
 		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
 		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
-		BuildOffset(blockchain.config.ChainParams.Offset).
+		BuildOffset(config.Param().SwapCommitteeParam.Offset).
 		BuildShardBlockHash(shardBestState.BestBlockHash).
 		BuildShardHeight(shardBestState.ShardHeight).
 		BuildShardID(shardBestState.ShardID).
 		BuildStakingTx(make(map[string]string)).
-		BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
+		BuildSwapOffset(config.Param().SwapCommitteeParam.SwapOffset).
 		BuildTxs(genesisShardBlock.Body.Transactions).
 		Build()
 
@@ -939,7 +939,12 @@ func (shardBestState *ShardBestState) verifyPostProcessingShardBlock(shardBlock 
 //	9. Not accept a salary tx
 //	10. Check duplicate staker public key in block
 //	11. Check duplicate Init Custom Token in block
-func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []metadata.Transaction, beaconHash common.Hash, curView *ShardBestState) error {
+func (blockchain *BlockChain) verifyTransactionFromNewBlock(
+	shardID byte,
+	txs []metadata.Transaction,
+	beaconHash common.Hash,
+	curView *ShardBestState,
+) error {
 	if len(txs) == 0 {
 		return nil
 	}
@@ -964,6 +969,9 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(shardID byte, txs []
 		Logger.log.Errorf("Batching verify transactions from new block err: %+v\n Trying verify one by one", err)
 		return blockchain.verifyTransactionIndividuallyFromNewBlock(shardID, txs, bView, curView)
 	}
+	if false {
+		//TODO: @tin uncomment here
+		//if blockchain.config.usingNewPool {
 	return nil
 }
 
@@ -1219,7 +1227,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if newShardState.BeaconHeight == blockchain.config.ChainParams.StakingFlowV2Height {
+	if newShardState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
 		err := newShardState.upgradeCommitteeEngineV2(blockchain)
 		if err != nil {
 			panic(NewBlockChainError(-11111, fmt.Errorf("Upgrade Committe Engine Error, %+v", err)))
@@ -1263,7 +1271,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if !blockchain.config.ChainParams.IsBackup {
+	if !config.Config().ForceBackup {
 		return nil
 	}
 

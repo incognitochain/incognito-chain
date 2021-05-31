@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -39,11 +40,10 @@ type Config struct {
 	BlockChain        *blockchain.BlockChain       // Block chain of node
 	DataBase          map[int]incdb.Database       // main database of blockchain
 	DataBaseMempool   databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
-	ChainParams       *blockchain.Params
-	FeeEstimator      map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
-	TxLifeTime        uint                   // Transaction life time in pool
-	MaxTx             uint64                 //Max transaction pool may have
-	IsLoadFromMempool bool                   //Reset mempool database when run node
+	FeeEstimator      map[byte]*FeeEstimator       // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
+	TxLifeTime        uint                         // Transaction life time in pool
+	MaxTx             uint64                       //Max transaction pool may have
+	IsLoadFromMempool bool                         //Reset mempool database when run node
 	PersistMempool    bool
 	RelayShards       []byte
 	// UserKeyset            *incognitokey.KeySet
@@ -236,7 +236,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
 	if tx.GetMetadata() != nil {
-		currentEpoch := common.GetEpochFromBeaconHeight(uint64(beaconHeight), tp.config.BlockChain.GetChainParams().Epoch)
+		currentEpoch := common.GetEpochFromBeaconHeight(uint64(beaconHeight), config.Param().EpochParam.NumberOfBlockInEpoch)
 		isFeatureFlag, isEnable := tp.checkEnableFeatureFlagMetadata(tx.GetMetadataType(), currentEpoch)
 		if isFeatureFlag && !isEnable {
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("This tx %v with metadata %v is disable", tx.Hash().String(), tx.GetMetadataType()))
@@ -566,10 +566,14 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	validated := false
 	if !isNewTransaction {
 		// need to use beacon height from
-		whiteListTxs := tp.config.BlockChain.GetWhiteListTxs()
+		whiteListTxs := tp.config.BlockChain.WhiteListTx()
 		if ok := whiteListTxs[tx.Hash().String()]; ok {
 			return nil
 		}
+		// need to use beacon height from
+		validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, uint64(beaconHeight))
+	} else {
+		validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, 0)
 	}
 	validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, uint64(beaconHeight))
 

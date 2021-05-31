@@ -1,7 +1,10 @@
 package transaction
 
 import (
-	"github.com/incognitochain/incognito-chain/transaction/utils"
+	"fmt"
+
+	"github.com/incognitochain/incognito-chain/utils"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -77,5 +80,13 @@ var ErrCodeMessage = utils.ErrCodeMessage
 type TransactionError = utils.TransactionError
 
 func NewTransactionErr(key int, err error, params ...interface{}) *TransactionError {
-	return utils.NewTransactionErr(key, err, params)
+	e := &TransactionError{
+		err:  errors.Wrap(err, utils.EmptyString),
+		Code: ErrCodeMessage[key].Code,
+	}
+	e.Message = ErrCodeMessage[key].Message
+	if len(params) > 0 {
+		e.Message = fmt.Sprintf(ErrCodeMessage[key].Message, params)
+	}
+	return e
 }
