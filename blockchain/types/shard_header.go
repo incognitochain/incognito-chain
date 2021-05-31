@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/utils"
 	"sort"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -53,7 +54,7 @@ func (shardHeader *ShardHeader) Hash() common.Hash {
 }
 
 func (shardHeader *ShardHeader) String() string {
-	res := common.EmptyString
+	res := utils.EmptyString
 	// res += shardHeader.ProducerAddress.String()
 	res += string(shardHeader.ShardID)
 	res += fmt.Sprintf("%v", shardHeader.Version)
@@ -87,14 +88,14 @@ func (shardHeader *ShardHeader) String() string {
 		res += string(value)
 	}
 
-	if shardHeader.Version >= MULTI_VIEW_VERSION {
+	if shardHeader.Version >= 2 {
 		res += shardHeader.Proposer
 		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
 
-	if shardHeader.Version >= DCS_SLASHING_V2_VERSION {
+
+	if shardHeader.Version >= 3 {
 		res += shardHeader.CommitteeFromBlock.String()
 	}
-
 	return res
 }
