@@ -951,9 +951,7 @@ func (blockchain *BlockChain) verifyTransactionFromNewBlock(
 	if err != nil {
 		return NewBlockChainError(CloneBeaconBestStateError, err)
 	}
-	if false {
-		//TODO: @tin uncomment here
-		//if blockchain.config.usingNewPool {
+	if blockchain.config.usingNewPool {
 		ok, err := blockchain.ShardChain[shardID].TxsVerifier.FullValidateTransactions(
 			blockchain,
 			curView,
