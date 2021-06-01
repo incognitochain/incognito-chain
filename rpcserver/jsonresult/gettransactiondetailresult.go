@@ -25,6 +25,7 @@ type TransactionDetail struct {
 	Version     int8   `json:"Version"`
 	Type        string `json:"Type"` // Transaction type
 	LockTime    string `json:"LockTime"`
+	RawLockTime int64  `json:"RawLockTime,omitempty"`
 	Fee         uint64 `json:"Fee"` // Fee applies: always consant
 	Image       string `json:"Image"`
 
@@ -33,6 +34,7 @@ type TransactionDetail struct {
 	ProofDetail     ProofDetail   `json:"ProofDetail"`
 	InputCoinPubKey string        `json:"InputCoinPubKey"`
 	SigPubKey       string        `json:"SigPubKey,omitempty"` // 64 bytes
+	RawSigPubKey    []byte        `json:"RawSigPubKey,omitempty"`
 	Sig             string        `json:"Sig,omitempty"`       // 64 bytes
 
 	Metadata                      string      `json:"Metadata"`
@@ -77,6 +79,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				}
 			}
 
+
 			result = &TransactionDetail{
 				BlockHash:   blockHashStr,
 				BlockHeight: blockHeight,
@@ -87,10 +90,12 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				Version:     tx.GetVersion(),
 				Type:        tx.GetType(),
 				LockTime:    time.Unix(tx.GetLockTime(), 0).Format(common.DateOutputFormat),
+				RawLockTime: tx.GetLockTime(),
 				Fee:         tx.GetTxFee(),
 				IsPrivacy:   tx.IsPrivacy(),
 				Proof:       tx.GetProof(),
 				SigPubKey:   sigPubKeyStr,
+				RawSigPubKey: tx.GetSigPubKey(),
 				Sig:         base58.Base58Check{}.Encode(tx.GetSig(), 0x0),
 				Info:        string(tx.GetInfo()),
 			}
@@ -126,10 +131,12 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				Version:                  tx.GetVersion(),
 				Type:                     tx.GetType(),
 				LockTime:                 time.Unix(tx.GetLockTime(), 0).Format(common.DateOutputFormat),
+				RawLockTime: 			  tx.GetLockTime(),
 				Fee:                      tx.GetTxFee(),
 				Proof:                    txToken.GetTxBase().GetProof(),
-				SigPubKey:                base58.Base58Check{}.Encode(tx.GetSigPubKey(), 0x0),
-				Sig:                      base58.Base58Check{}.Encode(tx.GetSig(), 0x0),
+				SigPubKey:                base58.Base58Check{}.Encode(txToken.GetTxBase().GetSigPubKey(), 0x0),
+				RawSigPubKey:             txToken.GetTxBase().GetSigPubKey(),
+				Sig:                      base58.Base58Check{}.Encode(txToken.GetTxBase().GetSig(), 0x0),
 				Info:                     string(tx.GetInfo()),
 				IsPrivacy:                tx.IsPrivacy(),
 				PrivacyCustomTokenSymbol: txTokenData.PropertySymbol,
@@ -137,7 +144,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				PrivacyCustomTokenID:     txTokenData.PropertyID.String(),
 				PrivacyCustomTokenFee:    txTokenData.TxNormal.GetTxFee(),
 			}
-			
+
 			if result.Proof != nil {
 				inputCoins := result.Proof.GetInputCoins()
 				if len(inputCoins) > 0 && inputCoins[0].GetPublicKey() != nil {

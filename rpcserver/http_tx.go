@@ -391,18 +391,25 @@ func (httpServer *HttpServer) handleGetTransactionHashPublicKey(params interface
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError,fmt.Errorf("paramList %v is not a map[string]interface{}", arrayParams[0]))
 	}
 
-	//Get snList
-	publicKey := "PublicKey"
+	//Get publicKey list
+	publicKey := "PublicKeys"
 	if _, ok = paramList[publicKey]; !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("%v not found in %v", publicKey, paramList))
 	}
-	publicKeyString, ok := paramList[publicKey].(string)
+	publicKeyInterfaces, ok := paramList[publicKey].([]interface{})
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse paymentaddress, not a string: %v", paramList[publicKey]))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse public keys, not a []interface{}: %v", paramList[publicKey]))
+	}
+	publicKeys := make([]string, 0)
+	for _, pk := range publicKeyInterfaces {
+		if tmp, ok := pk.(string); !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, fmt.Errorf("cannot parse public keys, %v is not a string", pk))
+		} else {
+			publicKeys = append(publicKeys, tmp)
+		}
 	}
 
-
-	result, err := httpServer.txService.GetTransactionHashByPublicKey(publicKeyString)
+	result, err := httpServer.txService.GetTransactionHashByPublicKey(publicKeys)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
