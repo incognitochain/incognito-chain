@@ -900,7 +900,7 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode 
 	}
 
 	Logger.log.Infof("SHARD %+v | Finish insert shard block height %+v - hash %+v", shardID, blockHeight, blockHash)
-
+	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
 	//broadcast after successfully insert
 	blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, validationFlow.nextView))
