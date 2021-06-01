@@ -291,3 +291,7 @@ func (blockchain *BlockChain) GetPortalV4GeneralMultiSigAddress(tokenIDStr strin
 func (blockchain *BlockChain) GetPortalV4MultipleTokenAmount(tokenIDStr string, beaconHeight uint64) uint64 {
 	return blockchain.GetPortalParamsV4(beaconHeight).PortalTokens[tokenIDStr].GetMinTokenAmount()
 }
+
+func (blockchain *BlockChain) GetFinalBeaconHeight() uint64 {
+	return blockchain.BeaconChain.GetFinalViewHeight()
+}

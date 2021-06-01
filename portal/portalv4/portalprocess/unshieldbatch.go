@@ -111,8 +111,9 @@ func (p *PortalUnshieldBatchingProcessor) BuildNewInsts(
 
 		// only process for waiting unshield request has enough minimum confirmation incognito blocks (avoid fork beacon chain)
 		wReqForProcess := map[string]*statedb.WaitingUnshieldRequest{}
+		finalBeaconHeight := bc.GetFinalBeaconHeight()
 		for key, wR := range wReqs {
-			if wR.GetBeaconHeight()+uint64(portalParams.MinConfirmationIncBlockNum) > beaconHeight {
+			if wR.GetBeaconHeight() > finalBeaconHeight {
 				continue
 			}
 			wReqForProcess[key] = statedb.NewWaitingUnshieldRequestStateWithValue(
