@@ -3,9 +3,10 @@ package types
 import (
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
+
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -266,7 +267,7 @@ func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
 	if shardBlock.Body.Transactions == nil {
 		return false, fmt.Errorf("Expect Shard Block Transactions is not nil")
 	}
-	if len(shardBlock.Body.Transactions) != 0 && shardBlock.Header.TxRoot.IsEqual(&common.Hash{}) {
+	if (shardBlock.Header.Height != 1) && (len(shardBlock.Body.Transactions) != 0) && (shardBlock.Header.TxRoot.IsEqual(&common.Hash{})) {
 		return false, fmt.Errorf("Expect Shard Block Tx Root have Non-Zero Hash Value because Transactions List is not empty")
 	}
 	return true, nil
@@ -290,8 +291,21 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	shardBlock.Header = tempShardBlock.Header
+	shardBlock.Body = blkBody
 	if shardBlock.Body.Transactions == nil {
 		shardBlock.Body.Transactions = []metadata.Transaction{}
+	}
+	for _, tx := range shardBlock.Body.Transactions {
+		valEnv := updateTxEnvWithBlock(shardBlock, tx)
+		tx.SetValidationEnv(valEnv)
+		if tx.GetType() == common.TxCustomTokenPrivacyType {
+			txCustom, ok := tx.(*transaction.TxCustomTokenPrivacy)
+			if !ok {
+				return errors.Errorf("Can not parse this tx %v to tx custom token privacy", tx.Hash().String())
+			}
+			valEnvCustom := updateTxEnvWithBlock(shardBlock, &txCustom.TxPrivacyTokenData.TxNormal)
+			txCustom.TxPrivacyTokenData.TxNormal.SetValidationEnv(valEnvCustom)
+		}
 	}
 	if shardBlock.Body.Instructions == nil {
 		shardBlock.Body.Instructions = [][]string{}
@@ -306,7 +320,6 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		// panic(string(data) + err.Error())
 		return err
 	}
-	shardBlock.Body = blkBody
 	return nil
 }
 
@@ -358,7 +371,7 @@ func (shardHeader *ShardHeader) String() string {
 		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
 
-	if shardHeader.Version == 3 {
+	if shardHeader.Version >= 3 {
 		res += shardHeader.CommitteeFromBlock.String()
 	}
 
@@ -648,4 +661,11 @@ func CloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxPriva
 	}
 	newContentCrossTokenPrivacyData.OutputCoin = []privacy.OutputCoin{}
 	return newContentCrossTokenPrivacyData
+}
+
+func updateTxEnvWithBlock(sBlk *ShardBlock, tx metadata.Transaction) metadata.ValidationEnviroment {
+	valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), sBlk.GetHeight())
+	valEnv = transaction.WithBeaconHeight(valEnv, sBlk.Header.BeaconHeight)
+	valEnv = transaction.WithConfirmedTime(valEnv, sBlk.GetProduceTime())
+	return valEnv
 }

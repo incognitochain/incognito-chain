@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/txpool"
 )
 
 type GetMempoolInfo struct {
@@ -15,6 +16,30 @@ type GetMempoolInfo struct {
 	MempoolMinFee uint64             `json:"MempoolMinFee"`
 	MempoolMaxFee uint64             `json:"MempoolMaxFee"`
 	ListTxs       []GetMempoolInfoTx `json:"ListTxs"`
+}
+
+func NewGetMempoolInfoV2(info txpool.MempoolInfo) *GetMempoolInfo {
+	result := &GetMempoolInfo{
+		Size:          info.GetSize(),
+		Bytes:         info.GetBytes(),
+		MempoolMaxFee: info.GetMaxMempool(),
+	}
+	// get list data from mempool
+	listTxs := info.GetListTxs()
+	if len(listTxs) > 0 {
+		result.ListTxs = make([]GetMempoolInfoTx, 0)
+		for _, tx := range listTxs {
+			item := NewGetMempoolInfoTxV2(tx)
+			result.ListTxs = append(result.ListTxs, *item)
+		}
+	}
+	// sort for time
+	if len(result.ListTxs) > 0 {
+		sort.Slice(result.ListTxs, func(i, j int) bool {
+			return result.ListTxs[i].LockTime >= result.ListTxs[j].LockTime
+		})
+	}
+	return result
 }
 
 func NewGetMempoolInfo(txMempool interface {
@@ -50,6 +75,14 @@ type GetMempoolInfoTx struct {
 	TxID     string `json:"TxID"`
 	LockTime int64  `json:"LockTime"`
 	TpKey    string `json:"TpKey"`
+}
+
+func NewGetMempoolInfoTxV2(infoTx txpool.MempoolInfoTx) *GetMempoolInfoTx {
+	result := &GetMempoolInfoTx{
+		LockTime: infoTx.GetLockTime(),
+		TxID:     infoTx.GetTxID(),
+	}
+	return result
 }
 
 func NewGetMempoolInfoTx(tpKey common.Hash, tx metadata.Transaction) *GetMempoolInfoTx {

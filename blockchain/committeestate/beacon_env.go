@@ -39,6 +39,7 @@ type BeaconCommitteeStateEnvironment struct {
 	DAOPercent                         int
 	NumberOfFixedShardBlockValidator   int
 	MissingSignaturePenalty            map[string]signaturecounter.Penalty
+	PreviousBlockHashes                *BeaconCommitteeStateHash
 }
 
 type BeaconCommitteeStateHash struct {
@@ -47,6 +48,66 @@ type BeaconCommitteeStateHash struct {
 	ShardCandidateHash              common.Hash
 	ShardCommitteeAndValidatorHash  common.Hash
 	AutoStakeHash                   common.Hash
+}
+
+func NewBeaconCommitteeStateHash() *BeaconCommitteeStateHash {
+	return &BeaconCommitteeStateHash{
+		BeaconCommitteeAndValidatorHash: common.Hash{},
+		BeaconCandidateHash:             common.Hash{},
+		ShardCandidateHash:              common.Hash{},
+		ShardCommitteeAndValidatorHash:  common.Hash{},
+		AutoStakeHash:                   common.Hash{},
+	}
+}
+
+func isNilOrBeaconCommitteeAndValidatorHash(h *BeaconCommitteeStateHash) bool {
+	if h == nil {
+		return true
+	}
+	if h.BeaconCommitteeAndValidatorHash.IsEqual(&common.Hash{}) {
+		return true
+	}
+	return false
+}
+
+func isNilOrBeaconCandidateHash(h *BeaconCommitteeStateHash) bool {
+	if h == nil {
+		return true
+	}
+	if h.BeaconCandidateHash.IsEqual(&common.Hash{}) {
+		return true
+	}
+	return false
+}
+
+func isNilOrShardCandidateHash(h *BeaconCommitteeStateHash) bool {
+	if h == nil {
+		return true
+	}
+	if h.ShardCandidateHash.IsEqual(&common.Hash{}) {
+		return true
+	}
+	return false
+}
+
+func isNilOrShardCommitteeAndValidatorHash(h *BeaconCommitteeStateHash) bool {
+	if h == nil {
+		return true
+	}
+	if h.ShardCommitteeAndValidatorHash.IsEqual(&common.Hash{}) {
+		return true
+	}
+	return false
+}
+
+func isNilOrAutoStakeHash(h *BeaconCommitteeStateHash) bool {
+	if h == nil {
+		return true
+	}
+	if h.AutoStakeHash.IsEqual(&common.Hash{}) {
+		return true
+	}
+	return false
 }
 
 func NewBeaconCommitteeStateEnvironmentForUpdateDB(

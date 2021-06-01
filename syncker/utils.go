@@ -1,8 +1,10 @@
 package syncker
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"reflect"
+	"time"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
@@ -60,6 +62,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		}
 	}
 
+	//check block height is sequential
 	for i, blk := range sameCommitteeBlock {
 		if i == len(sameCommitteeBlock)-1 {
 			break
@@ -69,8 +72,18 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 			break
 		}
 	}
+
 	//validate the last block for batching
-	epochCommittee := chain.GetCommittee()
+	//get block has same committee
+	epochCommittee := []incognitokey.CommitteePublicKey{}
+	if len(sameCommitteeBlock) != 0 {
+		var err error
+		epochCommittee, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
+		if err != nil {
+			return 0, err
+		}
+	}
+
 	validBlockForInsert := sameCommitteeBlock[:]
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
 		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], epochCommittee); err != nil {
@@ -81,17 +94,22 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	}
 
 	batchingValidate := true
+	if time.Now().Unix()-chain.GetBestView().GetBlock().GetProduceTime() < 24*60*60 { //only batching insert when block is created more than 1 day ago
+		batchingValidate = false
+	}
+
 	//if no valid block, this could be a fork chain, or the chunks that have old committee (current best block have swap) => try to insert all with full validation
 	if len(validBlockForInsert) == 0 {
 		validBlockForInsert = sameCommitteeBlock[:]
 		batchingValidate = false
 	}
-
-	for i, v := range validBlockForInsert {
+	firstInsert := true
+	for _, v := range validBlockForInsert {
 		if !chain.CheckExistedBlk(v) {
 			var err error
-			if i == 0 {
+			if firstInsert { //always validate the first block even in batch mode
 				err = chain.InsertBlock(v, true)
+				firstInsert = false
 			} else {
 				err = chain.InsertBlock(v, batchingValidate == false)
 			}

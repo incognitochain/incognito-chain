@@ -14,6 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"github.com/incognitochain/incognito-chain/wire"
 )
 
 // handleCreateTransaction handles createtransaction commands.
@@ -54,11 +55,13 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	if err != nil {
 		return nil, err
 	}
-
-	err2 := httpServer.config.Server.PushMessageToAll(txMsg)
+	httpServer.config.Server.OnTx(nil, txMsg.(*wire.MessageTx))
+	err2 := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	if err2 == nil {
 		Logger.log.Info("handleSendRawTransaction broadcast message to all successfully")
-		httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
+		if !httpServer.txService.BlockChain.UsingNewPool() {
+			httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
+		}
 	} else {
 		Logger.log.Errorf("handleSendRawTransaction broadcast message to all with error %+v", err2)
 	}
@@ -174,8 +177,8 @@ func (httpServer *HttpServer) handleGetTransactionHashByReceiverV2(params interf
 		txHashs = append(txHashs, txHashsByShard...)
 	}
 	result := struct {
-		Skip uint
-		Limit uint
+		Skip    uint
+		Limit   uint
 		TxHashs []common.Hash
 	}{
 		uint(skip),
@@ -281,9 +284,9 @@ func (httpServer *HttpServer) handleGetTransactionByReceiverV2(params interface{
 		return nil, err
 	}
 	result := struct {
-		Total uint
-		Skip uint
-		Limit uint
+		Total                uint
+		Skip                 uint
+		Limit                uint
 		ReceivedTransactions []jsonresult.ReceivedTransactionV2
 	}{
 		total,
@@ -715,8 +718,9 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 	if err1 != nil {
 		return nil, err1
 	}
-
-	err := httpServer.config.Server.PushMessageToAll(txMsg)
+	httpServer.config.Server.OnTxPrivacyToken(nil, txMsg.(*wire.MessageTxPrivacyToken))
+	LastBytePubKeySender := tx.GetSenderAddrLastByte()
+	err := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	//Mark forwarded message
 	if err == nil {
 		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
@@ -793,7 +797,6 @@ func (httpServer *HttpServer) handleCreateAndSendPrivacyCustomTokenTransactionV2
 	}
 	return tx, nil
 }
-
 
 // handleCreateRawStakingTransaction handles create staking
 func (httpServer *HttpServer) handleCreateRawStakingTransaction(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {

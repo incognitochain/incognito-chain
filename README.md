@@ -85,7 +85,7 @@ There is more than 1 million lines of code in the Incognito codebase. Below is a
 
     * **RingCT**. For privacy, Incognito implements RingCT (Ring Confidential Transaction) with ring signatures, stealth addresses, and confidential transactions. Its code is in the [privacy](https://github.com/incognitochain/incognito-chain/tree/production/privacy) package.
 
-    * **Confidential Asset**. RingCT hides the amount of the transaction, but it doesn't hide the type of asset being sent. Confidential Asset solves that. It's under development under the [privacy-v2](https://github.com/incognitochain/incognito-chain/tree/dev/master-consensus-privacy-v2-portal-payment-fix) branch and will be merged into the master branch in April 2021.
+    * **Confidential Asset**. RingCT hides the amount of the transaction, but it doesn't hide the type of asset being sent. Confidential Asset solves that. It's under development under the [new-privacy-dev](https://github.com/incognitochain/incognito-chain/tree/new-privacy-dev) branch and will be merged into the master branch in April 2021.
 
     * **Mobile ZKP**. Incognito implements Zero-Knowledge Proofs (ZKP) Generation on mobile. Private transactions can be sent on any regular phone under 15 seconds. Its code is in the [wasm](https://github.com/incognitochain/incognito-chain/tree/production/privacy/wasm) package and the [zeroknowledge](https://github.com/incognitochain/incognito-chain/tree/production/privacy/zeroknowledge) package.
 
