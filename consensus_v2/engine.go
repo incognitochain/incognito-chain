@@ -199,7 +199,7 @@ func (engine *Engine) WatchCommitteeChange() {
 			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
 		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
-		s.NotifyNewRole(chainID, common.CommitteeRole)
+		engine.NotifyNewRole(chainID, common.CommitteeRole)
 		miningProc = engine.bftProcess[chainID]
 		if shouldRun {
 			err := engine.bftProcess[chainID].Run()
@@ -252,7 +252,7 @@ func (engine *Engine) updateVersion(chainID int) {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
 	}
 	engine.version[chainID] = blsbft.BftVersion
-	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
+	if chainEpoch >= config.Param().ConsensusParam.ConsensusV2Epoch {
 		engine.version[chainID] = blsbft.MultiViewsVersion
 	}
 }
@@ -346,11 +346,11 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
 	}
 
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.StakingFlowV2Height {
+	if chainHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
 		return blsbft.SlashingVersion
 	}
 
-	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
+	if chainEpoch >= config.Param().ConsensusParam.ConsensusV2Epoch {
 		return blsbft.MultiViewsVersion
 	}
 
@@ -365,7 +365,7 @@ func (engine *Engine) getVersion(chainID int) int {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
 	}
 
-	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
+	if chainEpoch >= config.Param().ConsensusParam.ConsensusV2Epoch {
 		return blsbft.MultiViewsVersion
 	}
 
