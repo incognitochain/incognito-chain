@@ -476,3 +476,11 @@ func NewActorV1WithValue(
 func (actorV1 *actorV1) BlockVersion() int {
 	return BftVersion
 }
+
+func (actorV1) sendVote() error {
+	panic("not implement")
+}
+
+func (actorV1) makeBFTProposeMsg(blockData []byte, chainKey string, keyset *signatureschemes2.MiningKey) (wire.Message, error) {
+	panic("not implement")
+}
