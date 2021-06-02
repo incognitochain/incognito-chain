@@ -2,7 +2,9 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -123,7 +125,7 @@ func (httpServer *HttpServer) handleGetStakingAmount(params interface{}, closeCh
 	}
 	stakingType := int(stakingTypeParam)
 
-	amount := rpcservice.GetStakingAmount(stakingType, httpServer.config.ChainParams.StakingAmountShard)
+	amount := rpcservice.GetStakingAmount(stakingType, config.Param().StakingAmountShard)
 	return amount, nil
 }
 

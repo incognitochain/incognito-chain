@@ -1532,25 +1532,30 @@ func (txService TxService) GetTransactionBySerialNumber(snList []string, shardID
 	}
 }
 
-func (txService TxService) GetTransactionHashByPublicKey(publicKeyStr string) (map[byte][]common.Hash, error) {
-	txList := make(map[byte][]common.Hash, 0)
-	publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKeyStr)
-	if err != nil {
-		return nil, fmt.Errorf("cannot deserialize public key %v: %v", publicKeyStr, err)
-	}
-
-	for i := 0; i < common.MaxShardNumber; i++ {
-		shardID := byte(i)
-		resultTmp, err := rawdbv2.GetTxByPublicKey(txService.BlockChain.GetShardChainDatabase(shardID), publicKeyBytes)
-		if err == nil {
-			if resultTmp == nil || len(resultTmp) == 0 {
-				continue
-			}
-			txList[shardID] = resultTmp[shardID]
+func (txService TxService) GetTransactionHashByPublicKey(publicKeyStrList []string) (map[string]map[byte][]common.Hash, error) {
+	res := make(map[string]map[byte][]common.Hash)
+	for _, publicKeyStr := range publicKeyStrList {
+		txList := make(map[byte][]common.Hash, 0)
+		publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKeyStr)
+		if err != nil {
+			return nil, fmt.Errorf("cannot deserialize public key %v: %v", publicKeyStr, err)
 		}
+
+		for i := 0; i < common.MaxShardNumber; i++ {
+			shardID := byte(i)
+			resultTmp, err := rawdbv2.GetTxByPublicKey(txService.BlockChain.GetShardChainDatabase(shardID), publicKeyBytes)
+			if err == nil {
+				if resultTmp == nil || len(resultTmp) == 0 {
+					continue
+				}
+				txList[shardID] = resultTmp[shardID]
+			}
+		}
+
+		res[publicKeyStr] = txList
 	}
 
-	return txList, nil
+	return res, nil
 }
 
 func (txService TxService) ListPrivacyCustomToken() (map[common.Hash]*statedb.TokenState, error) {

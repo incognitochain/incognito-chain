@@ -5,6 +5,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
@@ -29,7 +30,7 @@ func (blockchain *BlockChain) handlePortalInsts(
 		shardHeights[byte(i)] = blockchain.ShardChain[i].multiView.GetBestView().GetHeight()
 	}
 
-	epochBlocks := blockchain.config.ChainParams.Epoch
+	epochBlocks := config.Param().EpochParam.NumberOfBlockInEpoch
 
 	return portal.HandlePortalInsts(
 		blockchain, stateDB, beaconHeight, shardHeights, currentPortalState, currentPortalStateV4, relayingState,
@@ -42,7 +43,7 @@ func (blockchain *BlockChain) processPortalInstructions(
 ) (*portalprocessv4.CurrentPortalStateV4, error) {
 	// Note: should comment this code if you need to create local chain.
 	isSkipPortalV3Ints := false
-	if (blockchain.config.ChainParams.Net == Testnet || blockchain.config.ChainParams.Net == Testnet2) && block.Header.Height < 1580600 {
+	if (config.Param().Net == config.LocalNet || config.Param().Net == config.TestnetNet) && block.Header.Height < 1580600 {
 		isSkipPortalV3Ints = true
 	}
 	// get the last portalv4 state
@@ -58,14 +59,13 @@ func (blockchain *BlockChain) processPortalInstructions(
 		Logger.log.Error(err)
 		return lastPortalV4State, nil
 	}
-	portalParams := blockchain.GetPortalParams()
+	portalParams := portal.GetPortalParams()
 	pm := portal.NewPortalManager()
-	epoch := blockchain.config.ChainParams.Epoch
+	epoch := config.Param().EpochParam.NumberOfBlockInEpoch
 
 	newPortalV4State, err := portal.ProcessPortalInsts(
-		blockchain, lastPortalV4State, portalStateDB, relayingState, portalParams, beaconHeight,
-		block.Body.Instructions, pm, epoch, isSkipPortalV3Ints,
-	)
+		blockchain, lastPortalV4State, portalStateDB, relayingState, *portalParams, beaconHeight,
+		block.Body.Instructions, pm, epoch, isSkipPortalV3Ints)
 	if err != nil {
 		Logger.log.Error(err)
 	}

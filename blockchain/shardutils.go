@@ -83,14 +83,13 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 }
 
 func createShardSwapActionForKeyListV2(
-	genesisParam *GenesisParams,
 	shardCommittees []string,
 	minCommitteeSize int,
 	activeShard int,
 	shardID byte,
 	epoch uint64,
 ) ([]string, []string) {
-	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(genesisParam, epoch, minCommitteeSize, activeShard)
+	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(epoch, minCommitteeSize, activeShard)
 	remainShardCommittees := shardCommittees[minCommitteeSize:]
 	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)
 }

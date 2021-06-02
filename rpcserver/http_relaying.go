@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalrelaying"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
@@ -190,7 +191,7 @@ func (httpServer *HttpServer) handleGetLatestBNBHeaderBlockHeight(params interfa
 	bc := httpServer.config.BlockChain
 	result, err := portalrelaying.GetLatestBNBBlockHeight(bc.GetBNBHeaderChain())
 	if err != nil {
-		result, _ = bnbrelaying.GetGenesisBNBHeaderBlockHeight(bc.GetConfig().ChainParams.PortalParams.RelayingParam.BTCRelayingHeaderChainID)
+		result, _ = bnbrelaying.GetGenesisBNBHeaderBlockHeight(portal.GetPortalParams().RelayingParam.BTCRelayingHeaderChainID)
 	}
 	return result, nil
 }

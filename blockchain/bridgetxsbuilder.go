@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
@@ -166,7 +167,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	logMap, err := metadata.PickAndParseLogMapFromReceipt(ethReceipt, blockchain.config.ChainParams.EthContractAddressStr)
+	logMap, err := metadata.PickAndParseLogMapFromReceipt(ethReceipt, config.Param().EthContractAddressStr)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while parsing log map from receipt: ", err)
 		return append(instructions, rejectedInst), nil

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -118,10 +119,10 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 		return false, false, errors.New("Error Staking tx should transfer PRV only")
 	}
 	amount := burnCoin.GetValue()
-	if stakingMetadata.Type == ShardStakingMeta && amount != chainRetriever.GetStakingAmountShard() {
+	if stakingMetadata.Type == ShardStakingMeta && amount != config.Param().StakingAmountShard {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
-	if stakingMetadata.Type == BeaconStakingMeta && amount != chainRetriever.GetStakingAmountShard()*3 {
+	if stakingMetadata.Type == BeaconStakingMeta && amount != config.Param().StakingAmountShard*3 {
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 

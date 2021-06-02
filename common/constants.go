@@ -36,14 +36,6 @@ const (
 	MaxPSMsgSize = 1 << 23 //4Mb
 )
 
-// for exit code
-const (
-	ExitCodeUnknow = iota
-	ExitByOs
-	ExitByLogging
-	ExitCodeForceUpdate
-)
-
 // For all Transaction information
 const (
 	TxNormalType          = "n"   // normal tx(send and receive coin)
@@ -76,7 +68,7 @@ var (
 	PRVCoinName           = "PRV"   // To send PRV in custom token
 	ConfidentialAssetID   = Hash{5}
 	ConfidentialAssetName = "CA"
-	MaxShardNumber        = 8 //programmatically config based on networkID
+	MaxShardNumber        = 0
 )
 
 // CONSENSUS
@@ -201,8 +193,6 @@ var (
 	EmptyRoot = HexToHash(HexEmptyRoot)
 )
 
-var TIMESLOT = uint64(0) //need to be set when init chain
-
 /* ================ Feature Flags ================ */
 const (
 	PortalRelayingFlag = 0
@@ -213,3 +203,5 @@ const (
 	PortalVersion3 = 3
 	PortalVersion4 = 4
 )
+
+var TIMESLOT = uint64(0) //need to be set when init chain
