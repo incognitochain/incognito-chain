@@ -1,30 +1,33 @@
 #!/usr/bin/env bash
+echo "Start Install Dependencies Package"
+GO111MODULE=on go get -v
+
+cd ./blockchain/committeestate/ && mockery --name=BeaconCommitteeState --outpkg=externalmocks --output=./externalmocks && cd -
+cd ./blockchain/committeestate/ && mockery --name=SplitRewardRuleProcessor --outpkg=externalmocks --output=./externalmocks && cd -
+cd ./metadata/ && mockery --name=ChainRetriever && mockery --name=BeaconViewRetriever && mockery --name=ShardViewRetriever && mockery --name=Transaction && cd -
+cd ./consensus_v2/blsbft/ && mockery --name=NodeInterface && cd -
+echo "Start Unit-Test"
+echo "package committeestate"
+GO111MODULE=on go test -cover ./blockchain/committeestate/*.go
+echo "package finishsync"
+GO111MODULE=on go test -cover ./blockchain/committeestate/finishsync/*.go
+echo "package statedb"
+GO111MODULE=on go test -cover ./dataaccessobject/statedb/*.go
+echo "package instruction"
+GO111MODULE=on go test -cover ./instruction/*.go
+echo "package blockchain"
+GO111MODULE=on go test -cover ./blockchain/*.go
+echo "package metadata"
+GO111MODULE=on go test -cover ./metadata/*.go
+echo "package signaturecounter"
+GO111MODULE=on go test -cover ./blockchain/signaturecounter/*.go
+echo "package blsbft"
+GO111MODULE=on go test -cover ./consensus_v2/blsbft/*.go
+
+
 echo "Start build Incognito"
-if [ "$1" == "y" ]; then
-  rm -rfv data/*
-fi
-#git pull
-
-echo "Package install"
-dep ensure -v
-
 APP_NAME="incognito"
-
-cp blockchain/params.go blockchain/testparams/params
-cp blockchain/testparams/paramstest blockchain/params.go
-cp blockchain/constants.go blockchain/testparams/constants
-cp blockchain/testparams/constantstest blockchain/constants.go
-
 echo "go build -o $APP_NAME"
-go build -o $APP_NAME
-
-echo "cp ./$APP_NAME $GOPATH/bin/$APP_NAME"
-cp ./$APP_NAME $GOPATH/bin/$APP_NAME
-
-cp blockchain/testparams/params blockchain/params.go
-cp blockchain/testparams/constants blockchain/constants.go
-
-rm blockchain/testparams/params
-rm blockchain/testparams/constants
+GO111MODULE=on go build -o $APP_NAME
 
 echo "Build Incognito success!"

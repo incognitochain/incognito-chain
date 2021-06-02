@@ -3,6 +3,7 @@ package blsbft
 import (
 	"encoding/json"
 	"errors"
+	"github.com/incognitochain/incognito-chain/consensus_v2"
 	"reflect"
 	"testing"
 	"time"
@@ -1629,7 +1630,6 @@ func Test_actorV2_processWithEnoughVotes(t *testing.T) {
 		},
 		ValidationData: validationDataStr,
 	}
-
 	errReplaceValidationDataShardChain := &mockchain.Chain{}
 	errReplaceValidationDataShardChain.On("ReplacePreviousValidationData", *prevHash)
 
@@ -1683,7 +1683,7 @@ func Test_actorV2_processWithEnoughVotes(t *testing.T) {
 					signingCommittes: []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
 					votes: map[string]*BFTVote{
 						incKey0.GetMiningKeyBase58(common.BlsConsensus): &BFTVote{
-							Validator: miningKey0.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus),
+							Validator: incKey0.GetMiningKeyBase58(common.BlsConsensus),
 							IsValid:   1,
 						},
 					},
@@ -1742,7 +1742,7 @@ func Test_createVote(t *testing.T) {
 		{
 			name: "Valid Input",
 			args: args{
-				userKey:    miningKey0,
+				userKey:    nil,
 				block:      block,
 				committees: committees,
 			},
@@ -1750,7 +1750,7 @@ func Test_createVote(t *testing.T) {
 				RoundKey:      "",
 				PrevBlockHash: prevHash.String(),
 				BlockHash:     hash.String(),
-				Validator:     miningKey0.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus),
+				Validator:     incKey0.GetMiningKeyBase58(common.BlsConsensus),
 				IsValid:       0,
 				TimeSlot:      0,
 				Bls: []byte{
@@ -1844,7 +1844,7 @@ func Test_actorV2_createBLSAggregatedSignatures(t *testing.T) {
 						RoundKey:      "",
 						PrevBlockHash: prevHash.String(),
 						BlockHash:     shardBlock.Hash().String(),
-						Validator:     miningKey0.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus),
+						Validator:     incKey0.GetMiningKeyBase58(common.BlsConsensus),
 						IsValid:       1,
 						TimeSlot:      10,
 						Bls: []byte{

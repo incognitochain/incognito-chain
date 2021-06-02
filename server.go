@@ -15,23 +15,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	"github.com/incognitochain/incognito-chain/peerv2"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
-	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
-	"github.com/incognitochain/incognito-chain/syncker"
-	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/txpool"
-	"github.com/incognitochain/incognito-chain/utils"
-	"github.com/incognitochain/incognito-chain/wallet"
-
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/addrmanager"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/connmanager"
 	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -46,9 +36,17 @@ import (
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/peerv2"
+	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
+	"github.com/incognitochain/incognito-chain/syncker"
+	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/txpool"
+	"github.com/incognitochain/incognito-chain/utils"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/incognitochain/incognito-chain/wire"
 	libp2p "github.com/libp2p/go-libp2p-peer"
 
@@ -558,7 +556,7 @@ func (serverObj *Server) NewServer(
 	//	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
 	//	metrics.InitMetricTool(&grafana)
 	//}
-	stats.IsEnableBPV3Stats = cfg.IsEnableBPV3Stats
+	stats.IsEnableBPV3Stats = config.Param().IsEnableBPV3Stats
 
 	return nil
 }

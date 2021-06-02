@@ -20,6 +20,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var (
@@ -695,8 +696,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 		{
 			name: "Year 1 - V2",
 			args: args{
-				blockchain:    &BlockChain{},
-				blkHeight:     20,
+				beaconHeight:  20,
 				epoch:         1,
 				rewardStateDB: sDBs[0],
 			},
@@ -738,8 +738,7 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 		{
 			name: "Year 1 - V1",
 			args: args{
-				blockchain:    &BlockChain{},
-				blkHeight:     20,
+				beaconHeight:  20,
 				epoch:         1,
 				rewardStateDB: sDBs[1],
 			},

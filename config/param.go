@@ -46,6 +46,7 @@ type param struct {
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
 	GethParam                        gethParam          `mapstructure:"geth_param"`
+	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
 }
 
