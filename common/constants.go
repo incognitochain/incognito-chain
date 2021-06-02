@@ -99,6 +99,7 @@ const (
 
 const (
 	BeaconChainID                = -1
+	BeaconChainSyncID            = 255
 	BeaconChainDatabaseDirectory = "beacon"
 	ShardChainDatabaseDirectory  = "shard"
 )

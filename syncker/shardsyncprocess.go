@@ -235,7 +235,7 @@ func (s *ShardSyncProcess) syncShardProcess() {
 								CommitteePublicKey: syncingValidators,
 								ShardID:            byte(s.shardID),
 							}
-							s.Network.PublishMessageToShard(msg, common.BeaconChainID)
+							s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID)
 						}
 					}
 				}
