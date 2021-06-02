@@ -104,7 +104,7 @@ func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
 	return beaconBestState
 }
-func NewBeaconBestStateWithConfig(beaconCommitteeEngine committeestate.BeaconCommitteeState) *BeaconBestState {
+func NewBeaconBestStateWithConfig(beaconCommitteeState committeestate.BeaconCommitteeState) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
@@ -120,7 +120,7 @@ func NewBeaconBestStateWithConfig(beaconCommitteeEngine committeestate.BeaconCom
 	beaconBestState.LastCrossShardState = make(map[byte]map[byte]uint64)
 	beaconBestState.BlockInterval = config.Param().BlockTime.MinBeaconBlockInterval
 	beaconBestState.BlockMaxCreateTime = config.Param().BlockTime.MaxBeaconBlockCreation
-	beaconBestState.beaconCommitteeState = beaconCommitteeEngine
+	beaconBestState.beaconCommitteeState = beaconCommitteeState
 	return beaconBestState
 }
 

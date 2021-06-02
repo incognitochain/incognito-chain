@@ -3,12 +3,10 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
-	"math"
 	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 )

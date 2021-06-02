@@ -699,7 +699,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 		committees = GetSigningCommitteeV3(
 			committees,
 			shardState.ProposerTime,
-			bc.config.ChainParams.GetNumberOfShardFixedBlockValidators(curView.BeaconHeight),
+			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
 		)
 	}
 
@@ -958,8 +958,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if beaconBlock.Header.Height == blockchain.config.ChainParams.StakingFlowV2Height ||
-		beaconBlock.Header.Height == blockchain.config.ChainParams.StakingFlowV3Height {
+	if beaconBlock.Header.Height == config.Param().ConsensusParam.StakingFlowV2Height ||
+		beaconBlock.Header.Height == config.Param().ConsensusParam.StakingFlowV3Height {
 		newBestState.upgradeCommitteeState(blockchain)
 	}
 

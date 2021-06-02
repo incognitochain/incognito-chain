@@ -124,7 +124,7 @@ func NewShardBestState() *ShardBestState {
 func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
 	return &ShardBestState{ShardID: shardID}
 }
-func NewBestStateShardWithConfig(shardID byte, shardCommitteeEngine committeestate.ShardCommitteeEngine) *ShardBestState {
+func NewBestStateShardWithConfig(shardID byte, shardCommitteeState committeestate.ShardCommitteeState) *ShardBestState {
 	bestStateShard := NewShardBestStateWithShardID(shardID)
 	err := bestStateShard.BestBlockHash.SetBytes(make([]byte, 32))
 	if err != nil {
@@ -143,7 +143,7 @@ func NewBestStateShardWithConfig(shardID byte, shardCommitteeEngine committeesta
 	bestStateShard.BeaconHeight = 1
 	bestStateShard.BlockInterval = config.Param().BlockTime.MinShardBlockInterval
 	bestStateShard.BlockMaxCreateTime = config.Param().BlockTime.MaxShardBlockCreation
-	bestStateShard.shardCommitteeEngine = shardCommitteeEngine
+	bestStateShard.shardCommitteeState = shardCommitteeState
 	return bestStateShard
 }
 

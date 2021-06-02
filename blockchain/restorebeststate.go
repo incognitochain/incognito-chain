@@ -20,21 +20,21 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	beaconBestState.BeaconHeight = block.GetHeight()
 	beaconBestState.Epoch = block.GetCurrentEpoch()
 	beaconBestState.BestBlockHash = *block.Hash()
-	beaconBestState.PreviousBestBlockHash = block.PreviousBestBlockHash()
+	beaconBestState.PreviousBestBlockHash = block.GetPrevHash()
 
 	if includeCommittee {
-		var beaconCommitteeEngine committeestate.BeaconCommitteeEngine
+		var beaconCommitteeEngine committeestate.BeaconCommitteeState
 		if beaconBestState.BeaconHeight > config.Param().ConsensusParam.StakingFlowV2Height {
-			beaconCommitteeEngine = initBeaconCommitteeEngineV2(
+			beaconCommitteeEngine = InitBeaconCommitteeEngineV2(
 				beaconBestState,
 				blockchain,
 			)
 		} else {
-			beaconCommitteeEngine = initBeaconCommitteeEngineV1(
+			beaconCommitteeEngine = InitBeaconCommitteeEngineV1(
 				beaconBestState,
 			)
 		}
-		beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine
+		beaconBestState.beaconCommitteeState = beaconCommitteeEngine
 		if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
 			beaconBestState.upgradeCommitteeEngineV2(blockchain)
 		}

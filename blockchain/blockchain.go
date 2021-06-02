@@ -220,7 +220,7 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	initShardBlockHeight := initShardBlock.Header.Height
 	var shardCommitteeState committeestate.ShardCommitteeState
 
-	initShardState := NewBestStateShardWithConfig(shardID, blockchain, shardCommitteeState)
+	initShardState := NewBestStateShardWithConfig(shardID, shardCommitteeState)
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
@@ -244,9 +244,9 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 
 func (blockchain *BlockChain) initBeaconState() error {
 	initBlock := genesisBeaconBlock
-	var committeeEngine committeestate.BeaconCommitteeEngine
+	var committeeState committeestate.BeaconCommitteeState
 
-	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeeState)
+	initBeaconBestState := NewBeaconBestStateWithConfig(committeeState)
 	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
@@ -579,8 +579,8 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		}
 
 		var shardCommitteeState committeestate.ShardCommitteeState
-		if v.BeaconHeight >= blockchain.config.ChainParams.StakingFlowV2Height ||
-			v.BeaconHeight >= blockchain.config.ChainParams.StakingFlowV3Height {
+		if v.BeaconHeight >= config.Param().ConsensusParam.StakingFlowV2Height ||
+			v.BeaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
 			shardCommitteeState = InitShardCommitteeStateV2(
 				v.consensusStateDB,
 				v.ShardHeight, v.ShardID,
@@ -590,7 +590,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 				v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
 		}
 		v.shardCommitteeState = shardCommitteeState
-		if v.BeaconHeight == blockchain.config.ChainParams.StakingFlowV2Height {
+		if v.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
 			err := v.upgradeCommitteeEngineV2(blockchain)
 			if err != nil {
 				panic(err)
@@ -940,18 +940,18 @@ func (blockchain *BlockChain) getCommitteesForSigning(
 	case common.ShardChainKey:
 		shardBlock := block.(*types.ShardBlock)
 		beaconHeight := blockchain.BeaconChain.GetFinalView().GetHeight()
-		if beaconHeight >= blockchain.config.ChainParams.StakingFlowV2Height {
+		if beaconHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
 			tempCommitteeInfo, err := blockchain.getTempCommitteeInfoByHash(block.CommitteeFromBlock(), shardBlock.Header.ShardID)
 			if err != nil {
 				return res, err
 			}
 			beaconHeight = tempCommitteeInfo.BeaconHeight()
 		}
-		if beaconHeight >= blockchain.config.ChainParams.StakingFlowV3Height {
+		if beaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
 			res = GetSigningCommitteeV3(
 				committees,
 				block.GetProposeTime(),
-				blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(beaconHeight))
+				config.Param().CommitteeSize.NumberOfFixedShardBlockValidator)
 		} else {
 			res = committees
 		}
@@ -1044,7 +1044,7 @@ func (blockchain *BlockChain) storeAllShardSubstitutesValidator(
 	beaconCurView *BeaconBestState,
 	addedValidators map[byte][]incognitokey.CommitteePublicKey,
 ) error {
-	if beaconCurView.BeaconHeight < blockchain.config.ChainParams.StakingFlowV3Height {
+	if beaconCurView.BeaconHeight < config.Param().ConsensusParam.StakingFlowV3Height {
 		return statedb.StoreAllShardSubstitutesValidator(beaconCurView.consensusStateDB, addedValidators)
 	}
 	for shardID, v := range addedValidators {

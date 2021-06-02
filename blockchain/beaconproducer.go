@@ -334,10 +334,10 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 	shardBlock *types.ShardBlock,
 	blockchain *BlockChain,
 ) []string {
-	if shardBlock.Header.BeaconHeight >= blockchain.config.ChainParams.StakingFlowV3Height {
+	if shardBlock.Header.BeaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
 		subsetID := GetSubsetID(
 			shardBlock.GetProposeTime(),
-			blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(curView.BeaconHeight),
+			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
 		)
 		acceptedRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(
 			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
@@ -414,7 +414,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 		if curView.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 			env := committeestate.NewBeaconCommitteeStateEnvironmentForAssigningToPendingList(
 				randomNumber,
-			config.Param().SwapCommitteeParam.AssignOffset,
+				config.Param().SwapCommitteeParam.AssignOffset,
 				newBeaconHeight,
 			)
 			assignInstructionGenerator := curView.beaconCommitteeState.(*committeestate.BeaconCommitteeStateV1)
