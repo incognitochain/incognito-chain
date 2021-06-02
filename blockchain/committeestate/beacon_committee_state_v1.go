@@ -64,6 +64,12 @@ func (b *BeaconCommitteeStateV1) clone() *BeaconCommitteeStateV1 {
 	return newB
 }
 
+func (b *BeaconCommitteeStateV1) reset() {
+	b.beaconCommitteeStateBase.reset()
+	b.currentEpochShardCandidate = []string{}
+	b.nextEpochShardCandidate = []string{}
+}
+
 func (b BeaconCommitteeStateV1) GetCandidateShardWaitingForNextRandom() []incognitokey.CommitteePublicKey {
 	res, _ := incognitokey.CommitteeBase58KeyListToStruct(b.nextEpochShardCandidate)
 	return res
@@ -128,7 +134,6 @@ func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateE
 
 	incurredInstructions := [][]string{}
 	committeeChange := NewCommitteeChange()
-	newShardCandidates := []string{}
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -161,17 +166,21 @@ func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateE
 			stopAutoStakeInstruction, err := instruction.ValidateAndImportStopAutoStakeInstructionFromString(inst)
 			if err != nil {
 				Logger.log.Errorf("SKIP stop auto stake instruction %+v, error %+v", inst, err)
+				continue
 			}
 			b.processStopAutoStakeInstruction(stopAutoStakeInstruction, env, committeeChange)
 		}
 		if len(tempNewShardCandidates) > 0 {
-			newShardCandidates = append(newShardCandidates, tempNewShardCandidates...)
+			b.nextEpochShardCandidate = append(b.nextEpochShardCandidate, tempNewShardCandidates...)
+			newShardCandidates, err := incognitokey.CommitteeBase58KeyListToStruct(tempNewShardCandidates)
+			if err != nil {
+				Logger.log.Error(err)
+				continue
+			}
+			committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, newShardCandidates...)
 		}
-	}
 
-	b.nextEpochShardCandidate = append(b.nextEpochShardCandidate, newShardCandidates...)
-	newShardCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(newShardCandidates)
-	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, newShardCandidateStructs...)
+	}
 	if env.IsBeaconRandomTime {
 		committeeChange.CurrentEpochShardCandidateAdded, _ = incognitokey.CommitteeBase58KeyListToStruct(b.nextEpochShardCandidate)
 		b.currentEpochShardCandidate = b.nextEpochShardCandidate

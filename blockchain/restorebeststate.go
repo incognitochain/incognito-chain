@@ -1,7 +1,7 @@
 package blockchain
 
 //RestoreBeaconViewStateFromHash ...
-func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchain *BlockChain) error {
+func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchain *BlockChain, includeCommittee bool) error {
 	err := beaconBestState.InitStateRootHash(blockchain)
 	if err != nil {
 		return err
@@ -16,13 +16,20 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	beaconBestState.Epoch = block.GetCurrentEpoch()
 	beaconBestState.BestBlockHash = *block.Hash()
 	beaconBestState.PreviousBestBlockHash = block.PreviousBestBlockHash()
-	beaconBestState.initCommitteeEngine(blockchain)
 
-	if blockchain.BeaconChain.GetBestView() != nil || beaconBestState.BeaconHeight == 1 {
-		err = initMissingSignatureCounter(blockchain, beaconBestState, block)
-		if err != nil {
-			return err
+	if includeCommittee {
+		beaconBestState.initCommitteeState(blockchain)
+		if beaconBestState.BeaconHeight == blockchain.config.ChainParams.StakingFlowV2Height ||
+			beaconBestState.BeaconHeight == blockchain.config.ChainParams.StakingFlowV3Height {
+			beaconBestState.upgradeCommitteeState(blockchain)
+		}
+		if blockchain.BeaconChain.GetBestView() != nil {
+			err = beaconBestState.initMissingSignatureCounter(blockchain, block)
+			if err != nil {
+				return err
+			}
 		}
 	}
+
 	return nil
 }

@@ -35,6 +35,7 @@ var HttpHandler = map[string]httpHandler{
 	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
 	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
 	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
+	getMempoolInfoDetails:   (*HttpServer).handleGetMempoolInfoDetails,
 	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
@@ -80,7 +81,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendStopAutoStakingTransactionV2: (*HttpServer).handleCreateAndSendStopAutoStakingTransactionV2,
 	randomCommitments:                         (*HttpServer).handleRandomCommitments,
 	hasSerialNumbers:                          (*HttpServer).handleHasSerialNumbers,
-	hasSerialNumbersInMempool:               	 (*HttpServer).handleHasSerialNumbersInMempool,
+	hasSerialNumbersInMempool:                 (*HttpServer).handleHasSerialNumbersInMempool,
 	hasSnDerivators:                           (*HttpServer).handleHasSnDerivators,
 	listSerialNumbers:                         (*HttpServer).handleListSerialNumbers,
 	listCommitments:                           (*HttpServer).handleListCommitments,
@@ -91,8 +92,11 @@ var HttpHandler = map[string]httpHandler{
 	getAndSendTxsFromFile:      (*HttpServer).handleGetAndSendTxsFromFile,
 	getAndSendTxsFromFileV2:    (*HttpServer).handleGetAndSendTxsFromFileV2,
 	unlockMempool:              (*HttpServer).handleUnlockMempool,
+	handleGetConsensusInfoV3:   (*HttpServer).handleGetConsensusInfoV3,
 	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
 	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
+	getTotalBlockInEpoch:       (*HttpServer).handleGetTotalBlockInEpoch,
+	getDetailBlocksOfEpoch:     (*HttpServer).handleGetDetailBlocksOfEpoch,
 	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
 	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
 	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,
@@ -261,6 +265,7 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningForDepositToSCRequestV2: (*HttpServer).handleCreateAndSendBurningForDepositToSCRequestV2,
 
 	//new pool info
+	getSyncStats:          (*HttpServer).hanldeGetSyncStats,
 	getBeaconPoolInfo:     (*HttpServer).hanldeGetBeaconPoolInfo,
 	getShardPoolInfo:      (*HttpServer).hanldeGetShardPoolInfo,
 	getCrossShardPoolInfo: (*HttpServer).hanldeGetCrossShardPoolInfo,

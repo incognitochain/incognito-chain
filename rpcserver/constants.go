@@ -65,6 +65,7 @@ const (
 	createAndSendPrivacyCustomTokenTransaction   = "createandsendprivacycustomtokentransaction"
 	createAndSendPrivacyCustomTokenTransactionV2 = "createandsendprivacycustomtokentransactionv2"
 	getMempoolInfo                               = "getmempoolinfo"
+	getMempoolInfoDetails                        = "getmempoolinfodetails"
 	getPendingTxsInBlockgen                      = "getpendingtxsinblockgen"
 	getCandidateList                             = "getcandidatelist"
 	getCommitteeList                             = "getcommitteelist"
@@ -108,8 +109,11 @@ const (
 	getAndSendTxsFromFile      = "getandsendtxsfromfile"
 	getAndSendTxsFromFileV2    = "getandsendtxsfromfilev2"
 	unlockMempool              = "unlockmempool"
+	handleGetConsensusInfoV3   = "getconsensusinfov3"
 	getAutoStakingByHeight     = "getautostakingbyheight"
 	getCommitteeState          = "getcommitteestate"
+	getTotalBlockInEpoch       = "gettotalblockinepoch"
+	getDetailBlocksOfEpoch     = "getdetailblocksofepoch"
 	getCommitteeStateByShard   = "getcommitteestatebyshard"
 	getSlashingCommittee       = "getslashingcommittee"
 	getSlashingCommitteeDetail = "getslashingcommitteedetail"
@@ -277,6 +281,7 @@ const (
 	createAndSendBurningForDepositToSCRequest   = "createandsendburningfordeposittoscrequest"
 	createAndSendBurningForDepositToSCRequestV2 = "createandsendburningfordeposittoscrequestv2"
 
+	getSyncStats          = "getsyncstats"
 	getBeaconPoolInfo     = "getbeaconpoolinfo"
 	getShardPoolInfo      = "getshardpoolinfo"
 	getCrossShardPoolInfo = "getcrossshardpoolinfo"
@@ -316,3 +321,63 @@ const (
 	subcribeBeaconPoolBeststate                 = "subcribebeaconpoolbeststate"
 	subcribeShardPoolBeststate                  = "subcribeshardpoolbeststate"
 )
+
+var PortalV3RPCs = []string{
+	createAndSendTxWithCustodianDeposit,
+	createAndSendTxWithReqPToken,
+	getPortalState,
+	getPortalCustodianDepositStatus,
+	createAndSendRegisterPortingPublicTokens,
+	createAndSendPortalExchangeRates,
+	getPortalFinalExchangeRates,
+	getPortalPortingRequestByKey,
+	getPortalPortingRequestByPortingId,
+	convertExchangeRates,
+	getPortalReqPTokenStatus,
+	getPortingRequestFees,
+	createAndSendTxWithRedeemReq,
+	createAndSendTxWithReqUnlockCollateral,
+	getPortalReqUnlockCollateralStatus,
+	getPortalReqRedeemStatus,
+	createAndSendCustodianWithdrawRequest,
+	getCustodianWithdrawByTxId,
+	getCustodianLiquidationStatus,
+	createAndSendTxWithReqWithdrawRewardPortal,
+	createAndSendTxRedeemFromLiquidationPoolV3,
+	createAndSendCustodianTopup,
+	createAndSendTopUpWaitingPorting,
+	createAndSendCustodianTopupV3,
+	createAndSendTopUpWaitingPortingV3,
+	getTopupAmountForCustodian,
+	getLiquidationExchangeRatesPool,
+	getPortalReward,
+	getRequestWithdrawPortalRewardStatus,
+	createAndSendTxWithReqMatchingRedeem,
+	getReqMatchingRedeemStatus,
+	getPortalCustodianTopupStatus,
+	getPortalCustodianTopupStatusV3,
+	getPortalCustodianTopupWaitingPortingStatus,
+	getPortalCustodianTopupWaitingPortingStatusV3,
+	getAmountTopUpWaitingPorting,
+	getPortalReqRedeemByTxIDStatus,
+	getReqRedeemFromLiquidationPoolByTxIDStatus,
+	getReqRedeemFromLiquidationPoolByTxIDStatusV3,
+	getPortalCustodianDepositStatusV3,
+	checkPortalExternalHashSubmitted,
+	createAndSendTxWithCustodianWithdrawRequestV3,
+	getCustodianWithdrawRequestStatusV3ByTxId,
+	getPortalWithdrawCollateralProof,
+	createAndSendUnlockOverRateCollaterals,
+	getPortalUnlockOverRateCollateralsStatus,
+	getRewardFeature,
+}
+
+var PortalRelayingRPCs = []string{
+	createAndSendTxWithRelayingBNBHeader,
+	createAndSendTxWithRelayingBTCHeader,
+	getRelayingBNBHeaderState,
+	getRelayingBNBHeaderByBlockHeight,
+	getBTCRelayingBestState,
+	getBTCBlockByHash,
+	getLatestBNBHeaderBlockHeight,
+}

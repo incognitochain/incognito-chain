@@ -101,11 +101,11 @@ func NewBeaconCommitteeState(
 }
 
 //VersionByBeaconHeight get version of committee engine by beaconHeight and config of blockchain
-func VersionByBeaconHeight(beaconHeight, consensusV3Height, stakingV3Height uint64) int {
+func VersionByBeaconHeight(beaconHeight, stakingV2Height, stakingV3Height uint64) int {
 	if beaconHeight >= stakingV3Height {
 		return DCS_VERSION
 	}
-	if beaconHeight >= consensusV3Height {
+	if beaconHeight >= stakingV2Height {
 		return SLASHING_VERSION
 	}
 	return SELF_SWAP_SHARD_VERSION
@@ -177,6 +177,15 @@ func (b beaconCommitteeStateBase) clone() *beaconCommitteeStateBase {
 	}
 
 	return newB
+}
+
+func (b *beaconCommitteeStateBase) reset() {
+	b.beaconCommittee = []string{}
+	b.shardCommittee = make(map[byte][]string)
+	b.shardSubstitute = make(map[byte][]string)
+	b.autoStake = make(map[string]bool)
+	b.rewardReceiver = make(map[string]privacy.PaymentAddress)
+	b.stakingTx = make(map[string]common.Hash)
 }
 
 func (b beaconCommitteeStateBase) Version() int {
@@ -364,8 +373,13 @@ func (b *beaconCommitteeStateBase) initCommitteeState(env *BeaconCommitteeStateE
 	}
 	b.beaconCommittee = []string{}
 	b.beaconCommittee = append(b.beaconCommittee, newBeaconCandidates...)
+	Logger.log.Info("[dcs] newShardCandidates:", newShardCandidates)
 	for shardID := 0; shardID < env.ActiveShards; shardID++ {
-		b.shardCommittee[byte(shardID)] = append(b.shardCommittee[byte(shardID)], newShardCandidates[shardID*env.MinShardCommitteeSize:(shardID+1)*env.MinShardCommitteeSize]...)
+		Logger.log.Info("[dcs] env.MinShardCommitteeSize:", env.MinShardCommitteeSize)
+		b.shardCommittee[byte(shardID)] = append(
+			b.shardCommittee[byte(shardID)],
+			newShardCandidates[shardID*env.MinShardCommitteeSize:(shardID+1)*env.MinShardCommitteeSize]...,
+		)
 	}
 }
 
@@ -452,7 +466,7 @@ func (b *beaconCommitteeStateBase) processStopAutoStakeInstruction(
 	env *BeaconCommitteeStateEnvironment,
 	committeeChange *CommitteeChange,
 ) *CommitteeChange {
-	return b.turnOffAutoStake(env.newValidators, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange)
+	return b.turnOffAutoStake(env.newAllRoles, stopAutoStakeInstruction.CommitteePublicKeys, committeeChange)
 }
 
 //SplitReward ...

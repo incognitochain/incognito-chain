@@ -49,10 +49,11 @@ const (
 	DefaultLimitFee     = uint64(1) // 1 nano PRV = 10^-9 PRV
 	//DefaultLimitFee = uint64(100000) // 100000 nano PRV = 100000 * 10^-9 PRV
 	// For wallet
-	DefaultWalletName     = "wallet"
-	DefaultPersistMempool = false
-	DefaultBtcClient      = 0
-	DefaultBtcClientPort  = "8332"
+	DefaultWalletName        = "wallet"
+	DefaultPersistMempool    = false
+	DefaultBtcClient         = 0
+	DefaultBtcClientPort     = "8332"
+	DefaultIsEnableBPV3Stats = false
 )
 
 var (
@@ -154,8 +155,9 @@ type config struct {
 	Libp2pPrivateKey string `long:"libp2pprivatekey" description:"Private key used to create node's PeerID, empty to generate random key each run"`
 
 	//backup
-	PreloadAddress string `long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
-	ForceBackup    bool   `long:"forcebackup" description:"Force node to backup"`
+	PreloadAddress    string `long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
+	ForceBackup       bool   `long:"forcebackup" description:"Force node to backup"`
+	IsEnableBPV3Stats bool   `long:"enablebpv3stats" description:"Enable Block Producing V3 Stats"`
 }
 
 func (cfg config) IsTestnet() bool {
@@ -334,17 +336,18 @@ func loadConfig() (*config, []string, error) {
 		TestNet:                     "true",
 		DiscoverPeersAddress:        "127.0.0.1:9330", //"35.230.8.182:9339",
 		// NodeMode:                    DefaultNodeMode,
-		MiningKeys:     common.EmptyString,
-		PrivateKey:     common.EmptyString,
-		FastStartup:    DefaultFastStartup,
-		TxPoolTTL:      DefaultTxPoolTTL,
-		TxPoolMaxTx:    DefaultTxPoolMaxTx,
-		PersistMempool: DefaultPersistMempool,
-		LimitFee:       DefaultLimitFee,
-		MetricUrl:      DefaultMetricUrl,
-		BtcClient:      DefaultBtcClient,
-		BtcClientPort:  DefaultBtcClientPort,
-		EnableMining:   DefaultEnableMining,
+		MiningKeys:        common.EmptyString,
+		PrivateKey:        common.EmptyString,
+		FastStartup:       DefaultFastStartup,
+		TxPoolTTL:         DefaultTxPoolTTL,
+		TxPoolMaxTx:       DefaultTxPoolMaxTx,
+		PersistMempool:    DefaultPersistMempool,
+		LimitFee:          DefaultLimitFee,
+		MetricUrl:         DefaultMetricUrl,
+		BtcClient:         DefaultBtcClient,
+		BtcClientPort:     DefaultBtcClientPort,
+		EnableMining:      DefaultEnableMining,
+		IsEnableBPV3Stats: DefaultIsEnableBPV3Stats,
 	}
 
 	// Service options which are only added on Windows.

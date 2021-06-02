@@ -1,10 +1,7 @@
 package committeestate
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -56,63 +53,6 @@ type SplitRewardRuleProcessor interface {
 	SplitReward(environment *SplitRewardEnvironment) (map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, map[common.Hash]uint64, error)
 }
 
-type BeaconCommitteeStateEnvironment struct {
-	BeaconHeight                     uint64
-	Epoch                            uint64
-	EpochLengthV1                    uint64
-	BeaconHash                       common.Hash
-	BestShardHash                    map[byte]common.Hash
-	BeaconInstructions               [][]string
-	EpochBreakPointSwapNewKey        []uint64
-	RandomNumber                     int64
-	IsFoundRandomNumber              bool
-	IsBeaconRandomTime               bool
-	AssignOffset                     int
-	ActiveShards                     int
-	MinShardCommitteeSize            int
-	MaxShardCommitteeSize            int
-	ConsensusStateDB                 *statedb.StateDB
-	ShardID                          byte
-	NumberOfFixedShardBlockValidator int
-	MissingSignaturePenalty          map[string]signaturecounter.Penalty
-	StakingV3Height                  uint64
-	LatestShardsState                map[byte][]types.ShardState
-
-	newValidators              []string
-	newUnassignedCommonPool    []string
-	newAllSubstituteCommittees []string
-	shardCommittee             map[byte][]string
-	shardSubstitute            map[byte][]string
-	numberOfValidator          []int
-}
-
-func NewBeaconCommitteeStateEnvironment() *BeaconCommitteeStateEnvironment {
-	return &BeaconCommitteeStateEnvironment{}
-}
-
-func NewBeaconCommitteeStateEnvironmentForSwapRule(currentHeight, stakingV3Height uint64) *BeaconCommitteeStateEnvironment {
-	return &BeaconCommitteeStateEnvironment{
-		BeaconHeight:    currentHeight,
-		StakingV3Height: stakingV3Height,
-	}
-}
-
-func NewBeaconCommitteeStateEnvironmentForAssigningToPendingList(randomNumber int64, assignOffset int, beaconHeight uint64) *BeaconCommitteeStateEnvironment {
-	return &BeaconCommitteeStateEnvironment{
-		RandomNumber: randomNumber,
-		AssignOffset: assignOffset,
-		BeaconHeight: beaconHeight,
-	}
-}
-
-func NewBeaconCommitteeStateEnvironmentForUpgrading(currentHeight, stakingV3Height uint64, beaconBlockHash common.Hash) *BeaconCommitteeStateEnvironment {
-	return &BeaconCommitteeStateEnvironment{
-		BeaconHeight:    currentHeight,
-		StakingV3Height: stakingV3Height,
-		BeaconHash:      beaconBlockHash,
-	}
-}
-
 type SplitRewardEnvironment struct {
 	ShardID                   byte
 	SubsetID                  byte
@@ -161,13 +101,4 @@ func NewSplitRewardEnvironmentV1(
 		DAOPercent:                DAOPercent,
 		ActiveShards:              activeShards,
 	}
-}
-
-type BeaconCommitteeStateHash struct {
-	BeaconCommitteeAndValidatorHash common.Hash
-	BeaconCandidateHash             common.Hash
-	ShardCandidateHash              common.Hash
-	ShardCommitteeAndValidatorHash  common.Hash
-	AutoStakeHash                   common.Hash
-	ShardSyncValidatorsHash         common.Hash
 }

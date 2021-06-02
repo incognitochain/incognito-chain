@@ -9,6 +9,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
+	"github.com/incognitochain/incognito-chain/portal"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 )
 
 type duplicateKeyStakeInstruction struct {
@@ -73,7 +75,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 
 	BLogger.log.Infof("Producing block: %d (epoch %d)", newBeaconBlock.Header.Height, newBeaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
-	portalParams := blockchain.GetPortalParams(newBeaconBlock.GetHeight())
+	portalParams := blockchain.GetPortalParams()
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
 
 	instructions, shardStates, err := blockchain.GenerateBeaconBlockBody(
@@ -137,7 +139,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	newBeaconBlock *types.BeaconBlock,
 	curView *BeaconBestState,
-	portalParams PortalParams,
+	portalParams portal.PortalParams,
 	allShardBlocks map[byte][]*types.ShardBlock,
 ) ([][]string, map[byte][]types.ShardState, error) {
 	bridgeInstructions := [][]string{}
@@ -153,15 +155,16 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 
 	if blockchain.IsLastBeaconHeightInEpoch(curView.BeaconHeight) {
 		featureStateDB := curView.GetBeaconFeatureStateDB()
-		totalLockedCollateral, err := getTotalLockedCollateralInEpoch(featureStateDB)
+		totalLockedCollateral, err := portalprocessv3.GetTotalLockedCollateralInEpoch(featureStateDB)
 		if err != nil {
 			return nil, nil, NewBlockChainError(GetTotalLockedCollateralError, err)
 		}
 
+		portalParamsV3 := portalParams.GetPortalParamsV3(newBeaconBlock.GetHeight())
 		isSplitRewardForCustodian := totalLockedCollateral > 0
-		percentCustodianRewards := portalParams.MaxPercentCustodianRewards
-		if totalLockedCollateral < portalParams.MinLockCollateralAmountInEpoch {
-			percentCustodianRewards = portalParams.MinPercentCustodianRewards
+		percentCustodianRewards := portalParamsV3.MaxPercentCustodianRewards
+		if totalLockedCollateral < portalParamsV3.MinLockCollateralAmountInEpoch {
+			percentCustodianRewards = portalParamsV3.MinPercentCustodianRewards
 		}
 		rewardByEpochInstruction, rewardForCustodianByEpoch, err = blockchain.buildRewardInstructionByEpoch(
 			curView,
@@ -330,10 +333,11 @@ func (curView *BeaconBestState) getAcceptBlockRewardInstruction(
 	shardBlock *types.ShardBlock,
 	blockchain *BlockChain,
 ) []string {
-
-	if shardBlock.Header.BeaconHeight >= blockchain.config.ChainParams.ConsensusV4Height {
-
-		subsetID := GetSubsetID(shardBlock.GetProposeTime(), blockchain.config.ChainParams.NumberOfShardFixedBlockValidators)
+	if shardBlock.Header.BeaconHeight >= blockchain.config.ChainParams.StakingFlowV3Height {
+		subsetID := GetSubsetID(
+			shardBlock.GetProposeTime(),
+			blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(curView.BeaconHeight),
+		)
 		acceptedRewardInstruction := instruction.NewAcceptBlockRewardV3WithValue(
 			byte(subsetID), shardID, shardBlock.Header.TotalTxsFee, shardBlock.Header.Height)
 
@@ -421,6 +425,11 @@ func (curView *BeaconBestState) GenerateInstruction(
 		}
 	}
 
+	// Unstake
+	for _, unstakeInstruction := range shardInstruction.unstakeInstructions {
+		instructions = append(instructions, unstakeInstruction.ToString())
+	}
+
 	// Generate swap shard instruction at block height %chainParamEpoch == 0
 	if curView.CommitteeStateVersion() == committeestate.SELF_SWAP_SHARD_VERSION {
 		if blockchain.IsLastBeaconHeightInEpoch(newBeaconHeight) {
@@ -463,11 +472,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 	// Stop Auto Stake
 	for _, stopAutoStakeInstruction := range shardInstruction.stopAutoStakeInstructions {
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())
-	}
-
-	// Unstake
-	for _, unstakeInstruction := range shardInstruction.unstakeInstructions {
-		instructions = append(instructions, unstakeInstruction.ToString())
 	}
 
 	// Finish Sync Instructions
@@ -688,7 +692,6 @@ func (beaconBestState *BeaconBestState) processUnstakeInstructionFromShardBlock(
 
 	for _, unstakeInstruction := range shardInstructions.unstakeInstructions {
 		for _, tempUnstakePublicKey := range unstakeInstruction.CommitteePublicKeys {
-			// TODO: @hung check why only one transaction but it said duplicate unstake instruction
 			if _, ok := validUnstakePublicKeys[tempUnstakePublicKey]; ok {
 				Logger.log.Errorf("SHARD %v | UNSTAKE duplicated unstake instruction %+v ", shardID, tempUnstakePublicKey)
 				continue

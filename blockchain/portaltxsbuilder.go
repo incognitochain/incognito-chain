@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -78,7 +79,7 @@ func (curView *ShardBestState) buildPortalRejectedTopUpWaitingPortingTx(
 	}
 
 	meta := metadata.NewPortalTopUpWaitingPortingResponse(
-		common.PortalCustodianTopupRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		topUpInfo.TxReqID,
 		metadata.PortalTopUpWaitingPortingResponseMeta,
 	)
@@ -124,7 +125,7 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositReject(
 	}
 
 	meta := metadata.NewPortalLiquidationCustodianDepositResponse(
-		common.PortalCustodianTopupRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		refundDeposit.TxReqID,
 		refundDeposit.IncogAddressStr,
 		refundDeposit.DepositedAmount,
@@ -174,7 +175,7 @@ func (curView *ShardBestState) buildPortalLiquidationCustodianDepositRejectV2(
 	}
 
 	meta := metadata.NewPortalLiquidationCustodianDepositResponseV2(
-		common.PortalCustodianTopupRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		refundDeposit.TxReqID,
 		refundDeposit.IncogAddressStr,
 		refundDeposit.DepositedAmount,
@@ -308,7 +309,7 @@ func (curView *ShardBestState) buildPortalCustodianWithdrawRequest(
 	}
 
 	meta := metadata.NewPortalCustodianWithdrawResponse(
-		common.PortalCustodianWithdrawRequestAcceptedChainStatus,
+		pCommon.PortalRequestAcceptedChainStatus,
 		custodianWithdrawRequest.TxReqID,
 		custodianWithdrawRequest.PaymentAddress,
 		custodianWithdrawRequest.Amount,
@@ -360,7 +361,7 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTx(
 	}
 
 	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
-		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
+		pCommon.PortalProducerInstSuccessChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
@@ -418,7 +419,7 @@ func (curView *ShardBestState) buildPortalRedeemLiquidateExchangeRatesRequestTxV
 	}
 
 	meta := metadata.NewPortalRedeemFromLiquidationPoolResponseV3(
-		common.PortalRedeemFromLiquidationPoolSuccessChainStatus,
+		pCommon.PortalProducerInstSuccessChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
@@ -708,7 +709,7 @@ func (curView *ShardBestState) buildPortalRefundPortingFeeTx(
 	}
 
 	meta := metadata.NewPortalFeeRefundResponse(
-		common.PortalPortingRequestRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		portalPortingRequest.TxReqID,
 		metadata.PortalPortingResponseMeta,
 	)
@@ -759,7 +760,7 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTx(
 	}
 
 	meta := metadata.NewPortalRedeemLiquidateExchangeRatesResponse(
-		common.PortalRedeemFromLiquidationPoolRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,
@@ -843,7 +844,7 @@ func (curView *ShardBestState) buildPortalRefundRedeemLiquidateExchangeRatesTxV3
 	}
 
 	meta := metadata.NewPortalRedeemFromLiquidationPoolResponseV3(
-		common.PortalRedeemFromLiquidationPoolRejectedChainStatus,
+		pCommon.PortalRequestRejectedChainStatus,
 		redeemReqContent.TxReqID,
 		redeemReqContent.RedeemerIncAddressStr,
 		redeemReqContent.RedeemAmount,

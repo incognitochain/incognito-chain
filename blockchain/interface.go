@@ -6,6 +6,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -31,6 +32,14 @@ type ConsensusEngine interface {
 	ValidateProducerPosition(blk types.BlockInterface, lastProposerIdx int, committee []incognitokey.CommitteePublicKey, minCommitteeSize int) error
 	ValidateProducerSig(block types.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	GetCurrentMiningPublicKey() (string, string)
+	// GetCurrentValidators() []*consensus.Validator
+	// GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
+	// GetMiningPublicKeyByConsensus(consensusName string) (string, error)
+	GetAllMiningPublicKeys() []string
+	ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
+	GetAllValidatorKeyState() map[string]consensus.MiningState
+	GetUserRole() (string, string, int)
 	// CommitteeChange(chainName string)
 }
 

@@ -1,6 +1,8 @@
 package committeestate
 
 import (
+	"sync"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
@@ -13,6 +15,21 @@ type BeaconCommitteeStateV2 struct {
 func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
 	return &BeaconCommitteeStateV2{
 		beaconCommitteeStateSlashingBase: *newBeaconCommitteeStateSlashingBase(),
+	}
+}
+func NewBeaconCommitteeStateV2WithMu(mu *sync.RWMutex) *BeaconCommitteeStateV2 {
+
+	return &BeaconCommitteeStateV2{
+		beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
+			beaconCommitteeStateBase: beaconCommitteeStateBase{
+				shardCommittee:  make(map[byte][]string),
+				shardSubstitute: make(map[byte][]string),
+				autoStake:       make(map[string]bool),
+				rewardReceiver:  make(map[string]privacy.PaymentAddress),
+				stakingTx:       make(map[string]common.Hash),
+				mu:              mu,
+			},
+		},
 	}
 }
 
@@ -37,20 +54,21 @@ func NewBeaconCommitteeStateV2WithValue(
 	}
 }
 
-func (b BeaconCommitteeStateV2) Version() int {
+//shallowCopy maintain dst mutex value
+func (b *BeaconCommitteeStateV2) shallowCopy(newB *BeaconCommitteeStateV2) {
+	newB.beaconCommittee = b.beaconCommittee
+	newB.shardCommittee = b.shardCommittee
+	newB.shardSubstitute = b.shardSubstitute
+	newB.shardCommonPool = b.shardCommonPool
+	newB.numberOfAssignedCandidates = b.numberOfAssignedCandidates
+	newB.autoStake = b.autoStake
+	newB.rewardReceiver = b.rewardReceiver
+	newB.stakingTx = b.stakingTx
+}
+
+//Version :
+func (b *BeaconCommitteeStateV2) Version() int {
 	return SLASHING_VERSION
-}
-
-func (b *BeaconCommitteeStateV2) Clone() BeaconCommitteeState {
-	b.mu.RLock()
-	defer b.mu.RUnlock()
-	return b.clone()
-}
-
-func (b *BeaconCommitteeStateV2) clone() *BeaconCommitteeStateV2 {
-	res := NewBeaconCommitteeStateV2()
-	res.beaconCommitteeStateSlashingBase = *b.beaconCommitteeStateSlashingBase.clone()
-	return res
 }
 
 func InitGenesisBeaconCommitteeStateV2(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV2 {
@@ -265,7 +283,7 @@ func (b *BeaconCommitteeStateV2) SplitReward(
 func (b *beaconCommitteeStateSlashingBase) addData(env *BeaconCommitteeStateEnvironment) {
 	env.newUnassignedCommonPool = common.DeepCopyString(b.shardCommonPool[b.numberOfAssignedCandidates:])
 	env.newAllSubstituteCommittees, _ = b.getAllSubstituteCommittees()
-	env.newValidators = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
+	env.newAllRoles = append(env.newUnassignedCommonPool, env.newAllSubstituteCommittees...)
 	env.shardCommittee = make(map[byte][]string)
 	for shardID, committees := range b.shardCommittee {
 		env.shardCommittee[shardID] = common.DeepCopyString(committees)
@@ -279,4 +297,16 @@ func (b *beaconCommitteeStateSlashingBase) addData(env *BeaconCommitteeStateEnvi
 		env.numberOfValidator[i] += len(b.shardCommittee[byte(i)])
 		env.numberOfValidator[i] += len(b.shardSubstitute[byte(i)])
 	}
+}
+
+func (b *BeaconCommitteeStateV2) Clone() BeaconCommitteeState {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.clone()
+}
+
+func (b *BeaconCommitteeStateV2) clone() *BeaconCommitteeStateV2 {
+	res := NewBeaconCommitteeStateV2()
+	res.beaconCommitteeStateSlashingBase = *b.beaconCommitteeStateSlashingBase.clone()
+	return res
 }

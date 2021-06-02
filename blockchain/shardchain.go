@@ -177,7 +177,6 @@ func (chain *ShardChain) CreateNewBlock(
 		Logger.log.Error(err)
 		return nil, err
 	}
-
 	if version >= 2 {
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
@@ -345,12 +344,16 @@ func (chain *ShardChain) GetProposerByTimeSlot(
 	committeeViewHash common.Hash, shardID byte, ts int64,
 	committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int, error) {
 	lenProposers := 0
-	tempCommitteeInfo, err := chain.Blockchain.getTempCommitteeInfoByHash(committeeViewHash, shardID)
-	if err != nil {
-		return incognitokey.CommitteePublicKey{}, -1, err
+	beaconHeight := chain.Blockchain.BeaconChain.GetFinalView().GetHeight()
+	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV2Height {
+		tempCommitteeInfo, err := chain.Blockchain.getTempCommitteeInfoByHash(committeeViewHash, shardID)
+		if err != nil {
+			return incognitokey.CommitteePublicKey{}, -1, err
+		}
+		beaconHeight = tempCommitteeInfo.BeaconHeight()
 	}
-	if tempCommitteeInfo.BeaconHeight() >= chain.Blockchain.config.ChainParams.ConsensusV4Height {
-		lenProposers = chain.Blockchain.config.ChainParams.NumberOfShardFixedBlockValidators
+	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV3Height {
+		lenProposers = chain.Blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(beaconHeight)
 	} else {
 		lenProposers = chain.Blockchain.GetBestStateShard(shardID).MinShardCommitteeSize
 	}
@@ -362,12 +365,16 @@ func (chain *ShardChain) SigningCommittees(
 	committeeViewHash common.Hash, proposerIndex int, committees []incognitokey.CommitteePublicKey, shardID byte,
 ) []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
-	tempCommitteeInfo, err := chain.Blockchain.getTempCommitteeInfoByHash(committeeViewHash, shardID)
-	if err != nil {
-		return []incognitokey.CommitteePublicKey{}
+	beaconHeight := chain.Blockchain.BeaconChain.GetFinalView().GetHeight()
+	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV2Height {
+		tempCommitteeInfo, err := chain.Blockchain.getTempCommitteeInfoByHash(committeeViewHash, shardID)
+		if err != nil {
+			return []incognitokey.CommitteePublicKey{}
+		}
+		beaconHeight = tempCommitteeInfo.BeaconHeight()
 	}
 
-	if tempCommitteeInfo.BeaconHeight() >= chain.Blockchain.config.ChainParams.ConsensusV4Height {
+	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV3Height {
 		for i, v := range committees {
 			if (i % MaxSubsetCommittees) == (proposerIndex % MaxSubsetCommittees) {
 				res = append(res, v)

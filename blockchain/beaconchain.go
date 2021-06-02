@@ -187,7 +187,7 @@ func (chain *BeaconChain) CreateNewBlock(
 	if err != nil {
 		return nil, err
 	}
-	if version != 1 {
+	if version >= 2 {
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}

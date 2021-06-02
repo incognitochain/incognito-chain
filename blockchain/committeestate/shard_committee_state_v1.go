@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/pkg/errors"
 )
 
 //ShardCommitteeStateHash
@@ -254,24 +255,11 @@ func extractAssignInstruction(listInstructions [][]string, shardID byte) []strin
 //		+ At this moment, there will be only swap action for this function
 //	- After process all instructions, we will updatew commitee change variable
 //	- Only call once in new or insert block process
-func (s *ShardCommitteeStateV1) processShardBlockInstruction(
+func (committeeState *ShardCommitteeStateV1) processShardBlockInstruction(
 	env ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
-	var err error
 	newCommitteeChange := committeeChange
 	shardID := env.ShardID()
-	shardPendingValidator := common.DeepCopyString(s.shardSubstitute)
-	if err != nil {
-		return nil, err
-	}
-	shardCommittee := common.DeepCopyString(s.shardCommittee)
-	if err != nil {
-		return nil, err
-	}
-	fixedProducerShardValidators := shardCommittee[:env.NumberOfFixedBlockValidators()]
-	shardCommittee = shardCommittee[env.NumberOfFixedBlockValidators():]
-	shardSwappedCommittees := []string{}
-	shardNewCommittees := []string{}
 	if len(env.ShardInstructions()) != 0 {
 		Logger.log.Debugf("Shard Process/processShardBlockInstruction: Shard Instruction %+v", env.ShardInstructions())
 	}
@@ -279,6 +267,12 @@ func (s *ShardCommitteeStateV1) processShardBlockInstruction(
 	for _, ins := range env.ShardInstructions() {
 		swapInstruction, err := instruction.ValidateAndImportSwapInstructionFromString(ins)
 		if err == nil {
+			shardPendingValidator := committeeState.shardSubstitute
+			shardCommittee := committeeState.shardCommittee
+			fixedProducerShardValidators := shardCommittee[:env.NumberOfFixedBlockValidators()]
+			shardCommittee = shardCommittee[env.NumberOfFixedBlockValidators():]
+			shardSwappedCommittees := []string{}
+			shardNewCommittees := []string{}
 			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
 			maxShardCommitteeSize := env.MaxShardCommitteeSize() - env.NumberOfFixedBlockValidators()
 			var minShardCommitteeSize int
@@ -300,13 +294,13 @@ func (s *ShardCommitteeStateV1) processShardBlockInstruction(
 
 			if !reflect.DeepEqual(swapInstruction.OutPublicKeys, shardSwappedCommittees) {
 				return nil, NewCommitteeStateError(ErrUpdateCommitteeState,
-					fmt.Errorf("Expect swapped committees to be %+v but get %+v",
+					errors.Errorf("Expect swapped committees to be %+v but get %+v",
 						swapInstruction.OutPublicKeys, shardSwappedCommittees))
 			}
 
 			if !reflect.DeepEqual(swapInstruction.InPublicKeys, shardNewCommittees) {
 				return nil, NewCommitteeStateError(ErrUpdateCommitteeState,
-					fmt.Errorf("Expect new committees to be %+v but get %+v",
+					errors.Errorf("Expect new committees to be %+v but get %+v",
 						swapInstruction.InPublicKeys, shardNewCommittees))
 			}
 
@@ -349,18 +343,24 @@ func (s *ShardCommitteeStateV1) processShardBlockInstruction(
 					filteredShardSubstituteRemoved = append(filteredShardSubstituteRemoved, newShardCommitteeAdded)
 				}
 			}
+			committeeState.shardSubstitute = shardPendingValidator
+			if err != nil {
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
 
+			committeeState.shardCommittee = append(fixedProducerShardValidators, shardCommittee...)
+			if err != nil {
+				return nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
+			}
 			newCommitteeChange.ShardCommitteeAdded[shardID] = shardNewCommitteesStruct
 			newCommitteeChange.ShardCommitteeRemoved[shardID] = shardSwappedCommitteesStruct
 			newCommitteeChange.ShardSubstituteRemoved[shardID] = filteredShardSubstituteRemoved
 			newCommitteeChange.ShardSubstituteAdded[shardID] = filteredShardSubstituteAdded
 			Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", shardID, shardSwappedCommittees)
 			Logger.log.Infof("SHARD %+v | Swap: In committee %+v", shardID, shardNewCommittees)
+			break
 		}
 	}
-
-	s.shardSubstitute = common.DeepCopyString(shardPendingValidator)
-	s.shardCommittee = common.DeepCopyString(append(fixedProducerShardValidators, shardCommittee...))
 
 	return newCommitteeChange, nil
 }
@@ -384,9 +384,9 @@ func (s *ShardCommitteeStateV1) processShardBlockInstructionForKeyListV2(
 			removedCommitteeSize := len(swapInstruction.InPublicKeys)
 			remainedShardCommittees := common.DeepCopyString(s.shardCommittee[removedCommitteeSize:])
 			tempShardSwappedCommittees := common.DeepCopyString(s.shardCommittee[:env.MinShardCommitteeSize()])
-			if !reflect.DeepEqual(swapInstruction.OutPublicKeyStructs, tempShardSwappedCommittees) {
+			if !reflect.DeepEqual(swapInstruction.OutPublicKeys, tempShardSwappedCommittees) {
 				return nil, NewCommitteeStateError(ErrUpdateCommitteeState,
-					fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeyStructs))
+					fmt.Errorf("expect swapped committe %+v but got %+v", tempShardSwappedCommittees, swapInstruction.OutPublicKeys))
 			}
 			s.shardCommittee = common.DeepCopyString(append(swapInstruction.InPublicKeys, remainedShardCommittees...))
 			committeeReplace := [2][]incognitokey.CommitteePublicKey{}

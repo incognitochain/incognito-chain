@@ -2218,63 +2218,6 @@ func TestBeaconCommitteeStateV2_processUnstakeInstruction(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "[Subtitute List] Invalid Format Of Committee Public Key In Unstake Instruction",
-			fields: fields{
-				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-					beaconCommitteeStateBase:   beaconCommitteeStateBase{},
-					shardCommonPool:            []string{key},
-					numberOfAssignedCandidates: 0,
-				},
-			},
-			args: args{
-				unstakeInstruction: &instruction.UnstakeInstruction{
-					CommitteePublicKeys: []string{"123"},
-				},
-				env: &BeaconCommitteeStateEnvironment{
-					newUnassignedCommonPool: []string{"123"},
-				},
-				committeeChange:           &CommitteeChange{},
-				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-			},
-			want:    &CommitteeChange{},
-			want1:   &instruction.ReturnStakeInstruction{},
-			wantErr: true,
-		},
-		{
-			name: "[Subtitute List] Can't find staker info in database",
-			fields: fields{
-				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
-					beaconCommitteeStateBase: beaconCommitteeStateBase{
-						autoStake: map[string]bool{
-							key: true,
-						},
-						rewardReceiver: map[string]privacy.PaymentAddress{
-							rewardReceiverkey: paymentAddress,
-						},
-						stakingTx: map[string]common.Hash{
-							key: *hash,
-						},
-					},
-					shardCommonPool: []string{key},
-				},
-			},
-			args: args{
-				unstakeInstruction: &instruction.UnstakeInstruction{
-					CommitteePublicKeys:       []string{key2},
-					CommitteePublicKeysStruct: []incognitokey.CommitteePublicKey{*incKey2},
-				},
-				env: &BeaconCommitteeStateEnvironment{
-					newUnassignedCommonPool: []string{key2},
-					ConsensusStateDB:        validSDB1,
-				},
-				committeeChange:           &CommitteeChange{},
-				returnStakingInstructions: new(instruction.ReturnStakeInstruction),
-			},
-			want:    &CommitteeChange{},
-			want1:   new(instruction.ReturnStakeInstruction),
-			wantErr: true,
-		},
-		{
 			name: "Valid Input Key In Candidates List",
 			fields: fields{
 				beaconCommitteeStateSlashingBase: beaconCommitteeStateSlashingBase{
@@ -2481,7 +2424,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					newValidators: []string{key2},
+					newAllRoles: []string{key2},
 				},
 				committeeChange: &CommitteeChange{},
 			},
@@ -2512,7 +2455,7 @@ func TestBeaconCommitteeStateV2_processStopAutoStakeInstruction(t *testing.T) {
 					CommitteePublicKeys: []string{key},
 				},
 				env: &BeaconCommitteeStateEnvironment{
-					newValidators: []string{key},
+					newAllRoles: []string{key},
 				},
 				committeeChange: &CommitteeChange{},
 			},

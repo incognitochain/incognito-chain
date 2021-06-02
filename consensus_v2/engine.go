@@ -290,6 +290,13 @@ func (engine *Engine) Start() error {
 			})
 		}
 		engine.validators = engine.validators[:1] //allow only 1 key
+
+		//set monitor pubkey
+		pubkeys := []string{}
+		for _, val := range engine.validators {
+			pubkeys = append(pubkeys, val.MiningKey.GetPublicKey().GetMiningKeyBase58("bls"))
+		}
+		monitor.SetGlobalParam("MINING_PUBKEY", strings.Join(pubkeys, ","))
 	}
 	engine.IsEnabled = 1
 	return nil
@@ -338,7 +345,7 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
 	}
 
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.StakingFlowV2 {
+	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.StakingFlowV2Height {
 		return blsbft.SlashingVersion
 	}
 
@@ -362,4 +369,9 @@ func (engine *Engine) getVersion(chainID int) int {
 	}
 
 	return blsbft.BftVersion
+}
+
+//BFTProcess for testing only
+func (engine *Engine) BFTProcess() map[int]blsbft.Actor {
+	return engine.bftProcess
 }

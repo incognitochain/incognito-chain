@@ -123,7 +123,10 @@ func NewShardBestState() *ShardBestState {
 func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
 	return &ShardBestState{ShardID: shardID}
 }
-func NewBestStateShardWithConfig(shardID byte, netparam *Params, shardCommitteeEngine committeestate.ShardCommitteeState) *ShardBestState {
+func NewBestStateShardWithConfig(
+	shardID byte, blockchain *BlockChain,
+	shardCommitteeEngine committeestate.ShardCommitteeState,
+) *ShardBestState {
 	bestStateShard := NewShardBestStateWithShardID(shardID)
 	err := bestStateShard.BestBlockHash.SetBytes(make([]byte, 32))
 	if err != nil {
@@ -134,14 +137,14 @@ func NewBestStateShardWithConfig(shardID byte, netparam *Params, shardCommitteeE
 		panic(err)
 	}
 	bestStateShard.BestBlock = nil
-	bestStateShard.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
-	bestStateShard.MinShardCommitteeSize = netparam.MinShardCommitteeSize
-	bestStateShard.ActiveShards = netparam.ActiveShards
+	bestStateShard.MaxShardCommitteeSize = blockchain.config.ChainParams.MaxShardCommitteeSize
+	bestStateShard.MinShardCommitteeSize = blockchain.config.ChainParams.GetMinShardCommitteeSize(1)
+	bestStateShard.ActiveShards = blockchain.config.ChainParams.ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
-	bestStateShard.BlockInterval = netparam.MinShardBlockInterval
-	bestStateShard.BlockMaxCreateTime = netparam.MaxShardBlockCreation
+	bestStateShard.BlockInterval = blockchain.config.ChainParams.MinShardBlockInterval
+	bestStateShard.BlockMaxCreateTime = blockchain.config.ChainParams.MaxShardBlockCreation
 	bestStateShard.shardCommitteeState = shardCommitteeEngine
 	return bestStateShard
 }

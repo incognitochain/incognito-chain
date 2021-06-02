@@ -17,8 +17,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/metrics"
-
 	"cloud.google.com/go/storage"
 	p2ppubsub "github.com/incognitochain/go-libp2p-pubsub"
 	"github.com/incognitochain/incognito-chain/addrmanager"
@@ -29,12 +27,14 @@ import (
 	"github.com/incognitochain/incognito-chain/connmanager"
 	consensus "github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	stats "github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/databasemp"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/netsync"
 	"github.com/incognitochain/incognito-chain/peer"
@@ -557,6 +557,8 @@ func (serverObj *Server) NewServer(
 	//	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
 	//	metrics.InitMetricTool(&grafana)
 	//}
+	stats.IsEnableBPV3Stats = cfg.IsEnableBPV3Stats
+
 	return nil
 }
 
@@ -1616,6 +1618,7 @@ func (serverObj *Server) PublishNodeState() error {
 		currentMiningKey := validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
 		msg.(*wire.MessagePeerState).SenderMiningPublicKey = currentMiningKey
 		msg.SetSenderID(serverObj.highway.LocalHost.Host.ID())
+
 		if chainID != -1 {
 			sBestState := serverObj.blockChain.GetBestStateShard(byte(chainID))
 			msg.(*wire.MessagePeerState).Shards[byte(chainID)] = wire.ChainState{
@@ -1623,6 +1626,16 @@ func (serverObj *Server) PublishNodeState() error {
 				sBestState.ShardHeight,
 				sBestState.BestBlockHash,
 				sBestState.Hash(),
+			}
+		} else {
+			for i := 0; i < len(serverObj.blockChain.ShardChain); i++ {
+				sBestState := serverObj.blockChain.GetBestStateShard(byte(i))
+				msg.(*wire.MessagePeerState).Shards[byte(i)] = wire.ChainState{
+					sBestState.BestBlock.Header.Timestamp,
+					sBestState.ShardHeight,
+					sBestState.BestBlockHash,
+					sBestState.Hash(),
+				}
 			}
 		}
 

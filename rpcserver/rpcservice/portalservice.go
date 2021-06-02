@@ -2,6 +2,8 @@ package rpcservice
 
 import (
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
+	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -102,11 +104,11 @@ func (s *PortalService) GetFinalExchangeRates(stateDB *statedb.StateDB, beaconHe
 }
 
 func (s *PortalService) ConvertExchangeRates(
-	finalExchangeRates *statedb.FinalExchangeRatesState, portalParams blockchain.PortalParams,
+	finalExchangeRates *statedb.FinalExchangeRatesState, portalParams portalv3.PortalParams,
 	amount uint64, tokenIDFrom string, tokenIDTo string) (uint64, error) {
 	result := uint64(0)
 	var err error
-	exchangeTool := blockchain.NewPortalExchangeRateTool(finalExchangeRates, portalParams.SupportedCollateralTokens)
+	exchangeTool := portalprocessv3.NewPortalExchangeRateTool(finalExchangeRates, portalParams)
 	if tokenIDTo != "" && tokenIDFrom != "" {
 		result, err = exchangeTool.Convert(tokenIDFrom, tokenIDTo, amount)
 	} else if tokenIDTo == "" {
@@ -118,8 +120,8 @@ func (s *PortalService) ConvertExchangeRates(
 	return result, err
 }
 
-func (s *PortalService) GetPortingFees(finalExchangeRates *statedb.FinalExchangeRatesState, tokenID string, valuePToken uint64, portalParam blockchain.PortalParams) (uint64, error) {
-	return blockchain.CalMinPortingFee(valuePToken, tokenID, finalExchangeRates, portalParam)
+func (s *PortalService) GetPortingFees(finalExchangeRates *statedb.FinalExchangeRatesState, tokenID string, valuePToken uint64, portalParam portalv3.PortalParams) (uint64, error) {
+	return portalprocessv3.CalMinPortingFee(valuePToken, tokenID, finalExchangeRates, portalParam)
 }
 
 func (s *PortalService) CalculateTopupAmountForCustodianState(
@@ -127,7 +129,7 @@ func (s *PortalService) CalculateTopupAmountForCustodianState(
 	custodianAddress string,
 	portalTokenID string,
 	collateralTokenID string,
-	portalParam blockchain.PortalParams) (uint64, error) {
+	portalParam portalv3.PortalParams) (uint64, error) {
 	custodian, err := statedb.GetCustodianByIncAddress(stateDB, custodianAddress)
 	if err != nil {
 		return 0, err
@@ -138,12 +140,12 @@ func (s *PortalService) CalculateTopupAmountForCustodianState(
 		return 0, err
 	}
 
-	currentPortalState, err := blockchain.InitCurrentPortalStateFromDB(stateDB)
+	currentPortalState, err := portalprocessv3.InitCurrentPortalStateFromDB(stateDB)
 	if err != nil {
 		return 0, err
 	}
 
-	topupAmount, err := blockchain.CalTopupAmountForCustodianState(currentPortalState, custodian, finalExchangeRates, portalTokenID, collateralTokenID, portalParam)
+	topupAmount, err := portalprocessv3.CalTopupAmountForCustodianState(currentPortalState, custodian, finalExchangeRates, portalTokenID, collateralTokenID, portalParam)
 
 	return topupAmount, nil
 }

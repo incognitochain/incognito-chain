@@ -13,7 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/pkg/errors"
 	"math/big"
-	"strconv"
 	"strings"
 )
 
@@ -61,7 +60,7 @@ func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs 
 	constructedReceipt := new(types.Receipt)
 	err = rlp.DecodeBytes(val, constructedReceipt)
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, err)
+		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
 	}
 
 	if constructedReceipt.Status != types.ReceiptStatusSuccessful {
@@ -104,10 +103,4 @@ func ParseETHLogDataByEventName(data []byte, name string) (map[string]interface{
 		return nil, NewMetadataTxError(UnexpectedError, err)
 	}
 	return dataMap, nil
-}
-
-func GetUniqExternalTxID(chainName string, blockHash eCommon.Hash, txIndex uint) []byte {
-	uniqExternalID := append([]byte(chainName), blockHash[:]...)
-	uniqExternalID = append(uniqExternalID, []byte(strconv.Itoa(int(txIndex)))...)
-	return uniqExternalID
 }
