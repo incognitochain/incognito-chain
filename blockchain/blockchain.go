@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"strconv"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
 
@@ -19,6 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	configpkg "github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -53,8 +54,6 @@ type Config struct {
 	DataBase      map[int]incdb.Database
 	MemCache      *memcache.MemoryCache
 	Interrupt     <-chan struct{}
-	ChainParams   *Params
-	GenesisParams *GenesisParams
 	RelayShards   []byte
 	// NodeMode          string
 	BlockGen          *BlockGenerator
@@ -76,7 +75,6 @@ type Config struct {
 
 func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc := &BlockChain{}
-	bc.config = *config
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
 	bc.beaconViewCache, _ = lru.New(100)
@@ -93,9 +91,6 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	if config.DataBase == nil {
 		return NewBlockChainError(UnExpectedError, errors.New("Database is not config"))
 	}
-	if config.ChainParams == nil {
-		return NewBlockChainError(UnExpectedError, errors.New("Chain parameters is not config"))
-	}
 	blockchain.config = *config
 	blockchain.config.IsBlockGenStarted = false
 	blockchain.IsTest = false
@@ -104,12 +99,12 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	// Initialize the chain state from the passed database.  When the db
 	// does not yet contain any chain state, both it and the chain state
 	// will be initialized to contain only the genesis block.
-	newTxPool := os.Getenv("TXPOOL_VERSION")
-	if newTxPool == "1" {
-		blockchain.config.usingNewPool = true
-	} else {
+	if configpkg.Param().TxPoolVersion == 0 {
 		blockchain.config.usingNewPool = false
+	} else {
+		blockchain.config.usingNewPool = true
 	}
+
 	if err := blockchain.InitChainState(); err != nil {
 		return err
 	}
@@ -145,6 +140,10 @@ func (blockchain *BlockChain) InitChainState() error {
 	wl, err := blockchain.GetWhiteList()
 	if err != nil {
 		Logger.log.Errorf("Can not get whitelist txs, error %v", err)
+	}
+	whiteListTx = make(map[string]bool)
+	for k, _ := range wl {
+		whiteListTx[k] = true
 	}
 	blockchain.ShardChain = make([]*ShardChain, blockchain.GetBeaconBestState().ActiveShards)
 	for shardID := byte(0); int(shardID) < blockchain.GetBeaconBestState().ActiveShards; shardID++ {
@@ -182,10 +181,12 @@ func (blockchain *BlockChain) InitChainState() error {
 	return nil
 }
 
+var whiteListTx map[string]bool
+
 func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
-	netID := blockchain.config.ChainParams.Name
+	netID := config.Param().Name
 	res := map[string]interface{}{}
-	whitelistData, err := ioutil.ReadFile("whitelist.json")
+	whitelistData, err := ioutil.ReadFile("./whitelist.json")
 	if err != nil {
 		return nil, err
 	}
@@ -196,10 +197,14 @@ func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
 	}
 	if wlByNetID, ok := whiteList[netID]; ok {
 		for _, txHash := range wlByNetID {
-			res[txHash] = nil
+			res[txHash] = true
 		}
 	}
 	return res, nil
+}
+
+func (blockchain *BlockChain) WhiteListTx() map[string]bool {
+	return whiteListTx
 }
 
 /*
@@ -210,18 +215,18 @@ func (blockchain *BlockChain) GetWhiteList() (map[string]interface{}, error) {
 func (blockchain *BlockChain) InitShardState(shardID byte) error {
 	// Create a new block from genesis block and set it as best block of chain
 	initShardBlock := types.ShardBlock{}
-	initShardBlock = *blockchain.config.ChainParams.GenesisShardBlock
+	initShardBlock = *genesisShardBlock
 	initShardBlock.Header.ShardID = shardID
 	initShardBlockHeight := initShardBlock.Header.Height
 	var committeeEngine committeestate.ShardCommitteeEngine
 
-	if blockchain.config.ChainParams.StakingFlowV2Height == 1 {
+	if config.Param().ConsensusParam.StakingFlowV2Height == 1 {
 		committeeEngine = committeestate.NewShardCommitteeEngineV2(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV2())
 	} else {
 		committeeEngine = committeestate.NewShardCommitteeEngineV1(1, initShardBlock.Header.Hash(), shardID, committeestate.NewShardCommitteeStateV1())
 	}
 
-	initShardState := NewBestStateShardWithConfig(shardID, blockchain.config.ChainParams, committeeEngine)
+	initShardState := NewBestStateShardWithConfig(shardID, committeeEngine)
 	beaconBlocks, err := blockchain.GetBeaconBlockByHeight(initShardBlockHeight)
 	if err != nil {
 		return NewBlockChainError(FetchBeaconBlockError, err)
@@ -244,10 +249,10 @@ func (blockchain *BlockChain) InitShardState(shardID byte) error {
 }
 
 func (blockchain *BlockChain) initBeaconState() error {
-	initBlock := blockchain.config.ChainParams.GenesisBeaconBlock
+	initBlock := genesisBeaconBlock
 	var committeeEngine committeestate.BeaconCommitteeEngine
 
-	if blockchain.config.ChainParams.StakingFlowV2Height == 1 {
+	if config.Param().ConsensusParam.StakingFlowV2Height == 1 {
 		committeeEngine = committeestate.
 			NewBeaconCommitteeEngineV2(1, initBlock.Header.Hash(),
 				committeestate.NewBeaconCommitteeStateV2())
@@ -257,7 +262,7 @@ func (blockchain *BlockChain) initBeaconState() error {
 				1, initBlock.Header.Hash(),
 				committeestate.NewBeaconCommitteeStateV1())
 	}
-	initBeaconBestState := NewBeaconBestStateWithConfig(blockchain.config.ChainParams, committeeEngine)
+	initBeaconBestState := NewBeaconBestStateWithConfig(committeeEngine)
 	err := initBeaconBestState.initBeaconBestState(initBlock, blockchain, blockchain.GetBeaconChainDatabase())
 	if err != nil {
 		return err
@@ -520,7 +525,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 		return err
 	}
 	sID := []int{}
-	for i := 0; i < blockchain.config.ChainParams.ActiveShards; i++ {
+	for i := 0; i < config.Param().ActiveShards; i++ {
 		sID = append(sID, i)
 	}
 
@@ -541,7 +546,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 			if err != nil {
 				return err
 			}
-			Logger.log.Infof("Init Missing Signature Counter, %+v, height %+v", beaconState.missingSignatureCounter, beaconState.BeaconHeight)
 		}
 	}
 	return nil
@@ -590,7 +594,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 		var shardCommitteeEngine committeestate.ShardCommitteeEngine
-		if v.BeaconHeight > blockchain.config.ChainParams.StakingFlowV2Height {
+		if v.BeaconHeight > config.Param().ConsensusParam.StakingFlowV2Height {
 			shardCommitteeEngine = InitShardCommitteeEngineV2(
 				v.consensusStateDB,
 				v.ShardHeight, v.ShardID, v.BestBlockHash,
@@ -600,7 +604,7 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 				v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
 		}
 		v.shardCommitteeEngine = shardCommitteeEngine
-		if v.BeaconHeight == blockchain.config.ChainParams.StakingFlowV2Height {
+		if v.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
 			err := v.upgradeCommitteeEngineV2(blockchain)
 			if err != nil {
 				panic(err)
@@ -671,7 +675,7 @@ func (blockchain *BlockChain) GetShardStakingTx(shardID byte, beaconHeight uint6
 func (blockchain *BlockChain) GetWantedShard(isBeaconCommittee bool) map[byte]struct{} {
 	res := map[byte]struct{}{}
 	if isBeaconCommittee {
-		for sID := byte(0); sID < byte(blockchain.config.ChainParams.ActiveShards); sID++ {
+		for sID := byte(0); sID < byte(config.Param().ActiveShards); sID++ {
 			res[sID] = struct{}{}
 		}
 	} else {
@@ -689,13 +693,8 @@ func (blockchain *BlockChain) GetConfig() *Config {
 	return &blockchain.config
 }
 
-// GetPortalParams returns portal params in beaconheight
-func (blockchain *BlockChain) GetPortalParams() portal.PortalParams {
-	return blockchain.GetConfig().ChainParams.PortalParams
-}
-
 func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.PortalParams {
-	return blockchain.GetConfig().ChainParams.PortalParams.GetPortalParamsV3(beaconHeight)
+	return portal.GetPortalParams().GetPortalParamsV3(beaconHeight)
 }
 
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {
@@ -724,7 +723,7 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 
 	beaconView := &BeaconBestState{
 		BestBlockHash:            blockHash,
-		ActiveShards:             blockchain.config.ChainParams.ActiveShards, //we assume active shard not change (if not, we must store active shard in db)
+		ActiveShards:             config.Param().ActiveShards, //we assume active shard not change (if not, we must store active shard in db)
 		ConsensusStateDBRootHash: bRH.ConsensusStateDBRootHash,
 		FeatureStateDBRootHash:   bRH.FeatureStateDBRootHash,
 		RewardStateDBRootHash:    bRH.RewardStateDBRootHash,
@@ -736,7 +735,7 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 		Logger.log.Error(err)
 	}
 	sID := []int{}
-	for i := 0; i < blockchain.config.ChainParams.ActiveShards; i++ {
+	for i := 0; i < config.Param().ActiveShards; i++ {
 		sID = append(sID, i)
 	}
 	return beaconView, err
@@ -749,7 +748,7 @@ func (blockchain *BlockChain) GetFixedRandomForShardIDCommitment(beaconHeight ui
 	if beaconHeight == 0 {
 		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
 	}
-	if beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP {
+	if beaconHeight >= config.Param().BCHeightBreakPointNewZKP {
 		return privacy.FixedRandomnessShardID
 	}
 
@@ -761,11 +760,7 @@ func (blockchain *BlockChain) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool 
 		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
 	}
 
-	return beaconHeight >= blockchain.GetConfig().ChainParams.BCHeightBreakPointNewZKP
-}
-
-func (s *BlockChain) GetChainParams() *Params {
-	return s.config.ChainParams
+	return beaconHeight >= config.Param().BCHeightBreakPointNewZKP
 }
 
 func (s *BlockChain) AddRelayShard(sid int) error {
@@ -796,35 +791,35 @@ func (s *BlockChain) RemoveRelayShard(sid int) {
 // GetEpochLength return the current length of epoch
 // it depends on current final view height
 func (bc *BlockChain) GetCurrentEpochLength(beaconHeight uint64) uint64 {
-	params := bc.config.ChainParams
-	if params.EpochV2BreakPoint == 0 {
-		return params.Epoch
+	params := config.Param()
+	if params.EpochParam.EpochV2BreakPoint == 0 {
+		return params.EpochParam.NumberOfBlockInEpoch
 	}
-	changeEpochBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	changeEpochBreakPoint := params.EpochParam.NumberOfBlockInEpoch * (params.EpochParam.EpochV2BreakPoint - 1)
 	if beaconHeight > changeEpochBreakPoint {
-		return params.EpochV2
+		return params.EpochParam.NumberOfBlockInEpochV2
 	} else {
-		return params.Epoch
+		return params.EpochParam.NumberOfBlockInEpoch
 	}
 }
 
 func (bc *BlockChain) GetEpochByHeight(beaconHeight uint64) uint64 {
-	params := bc.config.ChainParams
-	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	params := config.Param()
+	totalBlockBeforeBreakPoint := params.EpochParam.NumberOfBlockInEpoch * (params.EpochParam.EpochV2BreakPoint - 1)
 	newEpochBlockHeight := totalBlockBeforeBreakPoint + 1
 	if beaconHeight < newEpochBlockHeight {
-		if beaconHeight%params.Epoch == 0 {
-			return beaconHeight / params.Epoch
+		if beaconHeight%params.EpochParam.NumberOfBlockInEpoch == 0 {
+			return beaconHeight / params.EpochParam.NumberOfBlockInEpoch
 		} else {
-			return beaconHeight/params.Epoch + 1
+			return beaconHeight/params.EpochParam.NumberOfBlockInEpoch + 1
 		}
 	} else {
 		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
-		numberOfNewEpochs := newEpochBlocks / params.EpochV2
-		if newEpochBlocks%params.EpochV2 != 0 {
+		numberOfNewEpochs := newEpochBlocks / params.EpochParam.NumberOfBlockInEpochV2
+		if newEpochBlocks%params.EpochParam.NumberOfBlockInEpochV2 != 0 {
 			numberOfNewEpochs++
 		}
-		return (totalBlockBeforeBreakPoint / params.Epoch) +
+		return (totalBlockBeforeBreakPoint / params.EpochParam.NumberOfBlockInEpoch) +
 			numberOfNewEpochs
 	}
 }
@@ -835,19 +830,19 @@ func (bc *BlockChain) GetEpochNextHeight(beaconHeight uint64) (uint64, bool) {
 }
 
 func (bc *BlockChain) getEpochAndIsFistHeightInEpoch(beaconHeight uint64) (uint64, bool) {
-	params := bc.config.ChainParams
-	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	params := config.Param()
+	totalBlockBeforeBreakPoint := params.EpochParam.NumberOfBlockInEpoch * (params.EpochParam.EpochV2BreakPoint - 1)
 	newEpochBlockHeight := totalBlockBeforeBreakPoint + 1
 	if beaconHeight < newEpochBlockHeight {
-		newEpoch := beaconHeight/params.Epoch + 1
-		if beaconHeight%params.Epoch == 1 {
+		newEpoch := beaconHeight/params.EpochParam.NumberOfBlockInEpoch + 1
+		if beaconHeight%params.EpochParam.NumberOfBlockInEpoch == 1 {
 			if beaconHeight == 1 {
 				return newEpoch, false
 			} else {
 				return newEpoch, true
 			}
 		} else {
-			if beaconHeight%params.Epoch == 0 {
+			if beaconHeight%params.EpochParam.NumberOfBlockInEpoch == 0 {
 				return newEpoch - 1, false
 			} else {
 				return newEpoch, false
@@ -855,12 +850,12 @@ func (bc *BlockChain) getEpochAndIsFistHeightInEpoch(beaconHeight uint64) (uint6
 		}
 	} else {
 		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
-		numberOfNewEpochs := newEpochBlocks / params.EpochV2
-		numberOfOldEpochs := params.EpochV2BreakPoint - 1
-		if newEpochBlocks%params.EpochV2 != 0 {
+		numberOfNewEpochs := newEpochBlocks / params.EpochParam.NumberOfBlockInEpochV2
+		numberOfOldEpochs := params.EpochParam.EpochV2BreakPoint - 1
+		if newEpochBlocks%params.EpochParam.NumberOfBlockInEpochV2 != 0 {
 			numberOfNewEpochs++
 		}
-		if newEpochBlocks%params.EpochV2 == 1 {
+		if newEpochBlocks%params.EpochParam.NumberOfBlockInEpochV2 == 1 {
 			return numberOfOldEpochs + numberOfNewEpochs, true
 		} else {
 			return numberOfOldEpochs + numberOfNewEpochs, false
@@ -879,72 +874,72 @@ func (bc *BlockChain) IsLastBeaconHeightInEpoch(beaconHeight uint64) bool {
 }
 
 func (bc *BlockChain) GetRandomTimeInEpoch(epoch uint64) uint64 {
-	params := bc.config.ChainParams
-	if epoch < params.EpochV2BreakPoint {
-		return (epoch-1)*params.Epoch + params.RandomTime
+	params := config.Param()
+	if epoch < params.EpochParam.EpochV2BreakPoint {
+		return (epoch-1)*params.EpochParam.NumberOfBlockInEpoch + params.EpochParam.RandomTime
 	} else {
-		totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
-		numberOfNewEpoch := epoch - params.EpochV2BreakPoint
-		beaconHeightRandomTimeAfterBreakPoint := numberOfNewEpoch*params.EpochV2 + params.RandomTimeV2
+		totalBlockBeforeBreakPoint := params.EpochParam.NumberOfBlockInEpoch * (params.EpochParam.EpochV2BreakPoint - 1)
+		numberOfNewEpoch := epoch - params.EpochParam.EpochV2BreakPoint
+		beaconHeightRandomTimeAfterBreakPoint := numberOfNewEpoch*params.EpochParam.NumberOfBlockInEpochV2 + params.EpochParam.RandomTimeV2
 		res := totalBlockBeforeBreakPoint + beaconHeightRandomTimeAfterBreakPoint
 		return res
 	}
 }
 
 func (bc *BlockChain) GetFirstBeaconHeightInEpoch(epoch uint64) uint64 {
-	params := bc.config.ChainParams
-	if epoch < params.EpochV2BreakPoint {
-		return (epoch-1)*params.Epoch + 1
+	params := config.Param()
+	if epoch < params.EpochParam.EpochV2BreakPoint {
+		return (epoch-1)*params.EpochParam.NumberOfBlockInEpoch + 1
 	} else {
-		totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
-		numberOfNewEpoch := epoch - params.EpochV2BreakPoint
-		lastBeaconHeightAfterBreakPoint := numberOfNewEpoch*params.EpochV2 + 1
+		totalBlockBeforeBreakPoint := params.EpochParam.NumberOfBlockInEpoch * (params.EpochParam.EpochV2BreakPoint - 1)
+		numberOfNewEpoch := epoch - params.EpochParam.EpochV2BreakPoint
+		lastBeaconHeightAfterBreakPoint := numberOfNewEpoch*params.EpochParam.NumberOfBlockInEpochV2 + 1
 		return totalBlockBeforeBreakPoint + lastBeaconHeightAfterBreakPoint
 	}
 }
 
 func (bc *BlockChain) GetLastBeaconHeightInEpoch(epoch uint64) uint64 {
-	params := bc.config.ChainParams
-	if epoch < params.EpochV2BreakPoint {
-		return epoch * params.Epoch
+	params := config.Param()
+	if epoch < params.EpochParam.EpochV2BreakPoint {
+		return epoch * params.EpochParam.NumberOfBlockInEpoch
 	} else {
-		totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
-		numberOfNewEpoch := epoch - params.EpochV2BreakPoint + 1
-		lastBeaconHeightAfterBreakPoint := numberOfNewEpoch * params.EpochV2
+		totalBlockBeforeBreakPoint := params.EpochParam.NumberOfBlockInEpoch * (params.EpochParam.EpochV2BreakPoint - 1)
+		numberOfNewEpoch := epoch - params.EpochParam.EpochV2BreakPoint + 1
+		lastBeaconHeightAfterBreakPoint := numberOfNewEpoch * params.EpochParam.NumberOfBlockInEpochV2
 		return totalBlockBeforeBreakPoint + lastBeaconHeightAfterBreakPoint
 	}
 }
 
 func (bc *BlockChain) GetBeaconBlockOrderInEpoch(beaconHeight uint64) (uint64, uint64) {
-	params := bc.config.ChainParams
-	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	params := config.Param()
+	totalBlockBeforeBreakPoint := params.EpochParam.NumberOfBlockInEpoch * (params.EpochParam.EpochV2BreakPoint - 1)
 	if beaconHeight < totalBlockBeforeBreakPoint {
-		return beaconHeight % params.Epoch, params.Epoch - beaconHeight%params.Epoch
+		return beaconHeight % params.EpochParam.NumberOfBlockInEpoch, params.EpochParam.NumberOfBlockInEpoch - beaconHeight%params.EpochParam.NumberOfBlockInEpoch
 	} else {
 		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
-		return newEpochBlocks % params.EpochV2, params.EpochV2 - newEpochBlocks%params.EpochV2
+		return newEpochBlocks % params.EpochParam.NumberOfBlockInEpochV2, params.EpochParam.NumberOfBlockInEpochV2 - newEpochBlocks%params.EpochParam.NumberOfBlockInEpochV2
 	}
 }
 
 func (bc *BlockChain) IsGreaterThanRandomTime(beaconHeight uint64) bool {
-	params := bc.config.ChainParams
-	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	params := config.Param()
+	totalBlockBeforeBreakPoint := params.EpochParam.NumberOfBlockInEpoch * (params.EpochParam.EpochV2BreakPoint - 1)
 	if beaconHeight < totalBlockBeforeBreakPoint {
-		return beaconHeight%params.Epoch > params.RandomTime
+		return beaconHeight%params.EpochParam.NumberOfBlockInEpoch > params.EpochParam.RandomTime
 	} else {
 		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
-		return newEpochBlocks%params.EpochV2 > params.RandomTimeV2
+		return newEpochBlocks%params.EpochParam.NumberOfBlockInEpochV2 > params.EpochParam.RandomTimeV2
 	}
 }
 
 func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
-	params := bc.config.ChainParams
-	totalBlockBeforeBreakPoint := params.Epoch * (params.EpochV2BreakPoint - 1)
+	params := config.Param()
+	totalBlockBeforeBreakPoint := params.EpochParam.NumberOfBlockInEpoch * (params.EpochParam.EpochV2BreakPoint - 1)
 	if beaconHeight < totalBlockBeforeBreakPoint {
-		return beaconHeight%params.Epoch == params.RandomTime
+		return beaconHeight%params.EpochParam.NumberOfBlockInEpoch == params.EpochParam.RandomTime
 	} else {
 		newEpochBlocks := beaconHeight - totalBlockBeforeBreakPoint
-		return newEpochBlocks%params.EpochV2 == params.RandomTimeV2
+		return newEpochBlocks%params.EpochParam.NumberOfBlockInEpochV2 == params.EpochParam.RandomTimeV2
 	}
 }
 
