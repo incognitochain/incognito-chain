@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"reflect"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -46,44 +45,43 @@ func NewContractingRequest(
 }
 
 func (cReq ContractingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), cReq.TokenID, true)
-	if err != nil {
-		return false, err
-	}
-	if !bridgeTokenExisted {
-		return false, errors.New("the burning token is not existed in bridge tokens")
-	}
+	//bridgeTokenExisted, err := statedb.IsBridgeTokenExistedByType(beaconViewRetriever.GetBeaconFeatureStateDB(), cReq.TokenID, true)
+	//if err != nil {
+	//	return false, err
+	//}
+	//if !bridgeTokenExisted {
+	//	return false, errors.New("the burning token is not existed in bridge tokens")
+	//}
 	return true, nil
 }
 
 func (cReq ContractingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
 
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if reflect.TypeOf(tx).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	// if reflect.TypeOf(tx).String() == "*transaction.Tx" {
+	// 	return true, true, nil
+	// }
 
 	if cReq.Type != ContractingRequestMeta {
 		return false, false, errors.New("Wrong request info's meta type")
 	}
-	if len(cReq.BurnerAddress.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's burner address")
+	if _, err := AssertPaymentAddressAndTxVersion(cReq.BurnerAddress, tx.GetVersion()); err != nil {
+		return false, false, err
 	}
-	if cReq.BurnedAmount == 0 {
+
+	isBurned, burnCoin, burnedTokenID, err := tx.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, false, errors.New("Error This is not Tx Burn")
+	}
+
+	if cReq.BurnedAmount == 0 || cReq.BurnedAmount != burnCoin.GetValue() {
 		return false, false, errors.New("Wrong request info's burned amount")
 	}
-	if !tx.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-		return false, false, errors.New("Must send coin to burning address")
-	}
-	if cReq.BurnedAmount != tx.CalculateTxValue() {
-		return false, false, errors.New("BurnedAmount incorrect")
-	}
-	if !bytes.Equal(tx.GetTokenID()[:], cReq.TokenID[:]) {
+
+	if !bytes.Equal(burnedTokenID[:], cReq.TokenID[:]) {
 		return false, false, errors.New("Wrong request info's token id, it should be equal to tx's token id.")
 	}
-	if !bytes.Equal(tx.GetSigPubKey()[:], cReq.BurnerAddress.Pk[:]) {
-		return false, false, errors.New("BurnerAddress incorrect")
-	}
+
 	return true, true, nil
 }
 

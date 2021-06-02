@@ -1,10 +1,10 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -19,7 +19,7 @@ type IssuingRequest struct {
 	DepositedAmount uint64
 	TokenID         common.Hash
 	TokenName       string
-	MetadataBase
+	MetadataBaseWithSignature
 }
 
 type IssuingReqAction struct {
@@ -49,6 +49,19 @@ func ParseIssuingInstContent(instContentStr string) (*IssuingReqAction, error) {
 	return &issuingReqAction, nil
 }
 
+func ParseIssuingInstAcceptedContent(instAcceptedContentStr string) (*IssuingAcceptedInst, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(instAcceptedContentStr)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingEthRequestDecodeInstructionError, err)
+	}
+	var issuingAcceptedInst IssuingAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingEthRequestUnmarshalJsonError, err)
+	}
+	return &issuingAcceptedInst, nil
+}
+
 func NewIssuingRequest(
 	receiverAddress privacy.PaymentAddress,
 	depositedAmount uint64,
@@ -56,16 +69,14 @@ func NewIssuingRequest(
 	tokenName string,
 	metaType int,
 ) (*IssuingRequest, error) {
-	metadataBase := MetadataBase{
-		Type: metaType,
-	}
+	metadataBase := NewMetadataBaseWithSignature(metaType)
 	issuingReq := &IssuingRequest{
 		ReceiverAddress: receiverAddress,
 		DepositedAmount: depositedAmount,
 		TokenID:         tokenID,
 		TokenName:       tokenName,
 	}
-	issuingReq.MetadataBase = metadataBase
+	issuingReq.MetadataBaseWithSignature = *metadataBase
 	return issuingReq, nil
 }
 
@@ -94,13 +105,34 @@ func NewIssuingRequestFromMap(data map[string]interface{}) (Metadata, error) {
 		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ReceiveAddress incorrect"))
 	}
 
-	return NewIssuingRequest(
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("txVersion must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
+	md, err := NewIssuingRequest(
 		keyWallet.KeySet.PaymentAddress,
 		depositedAmt,
 		*tokenID,
 		tokenName,
 		IssuingRequestMeta,
 	)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, err)
+	}
+
+	if txVersion == 1 {
+		md.ReceiverAddress.OTAPublic = nil
+	}
+
+	return md, nil
 }
 
 func NewIssuingRequestFromMapV2(data map[string]interface{}) (Metadata, error) {
@@ -124,27 +156,52 @@ func NewIssuingRequestFromMapV2(data map[string]interface{}) (Metadata, error) {
 		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("ReceiveAddress incorrect"))
 	}
 
-	return NewIssuingRequest(
+	var txVersion int8
+	tmpVersionParam, ok := data["TxVersion"]
+	if !ok {
+		txVersion = 2
+	} else {
+		tmpVersion, ok := tmpVersionParam.(float64)
+		if !ok {
+			return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, errors.New("txVersion must be a float64"))
+		}
+		txVersion = int8(tmpVersion)
+	}
+
+	md, err := NewIssuingRequest(
 		keyWallet.KeySet.PaymentAddress,
 		depositedAmt,
 		*tokenID,
 		tokenName,
 		IssuingRequestMeta,
 	)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingRequestNewIssuingRequestFromMapEror, err)
+	}
+
+	if txVersion == 1 {
+		md.ReceiverAddress.OTAPublic = nil
+	}
+
+	return md, nil
 }
 
 func (iReq IssuingRequest) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
 	shardBlockBeaconHeight := shardViewRetriever.GetBeaconHeight()
 	keySet, err := wallet.Base58CheckDeserialize(chainRetriever.GetCentralizedWebsitePaymentAddress(shardBlockBeaconHeight))
-	if err != nil || !bytes.Equal(tx.GetSigPubKey(), keySet.KeySet.PaymentAddress.Pk) {
+	if err != nil {
+		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("cannot get centralized website payment address"))
+	}
+	if ok, err := iReq.MetadataBaseWithSignature.VerifyMetadataSignature(keySet.KeySet.PaymentAddress.Pk, tx); err != nil || !ok {
+		fmt.Println("Check authorized sender fail:", ok, err)
 		return false, NewMetadataTxError(IssuingRequestValidateTxWithBlockChainError, errors.New("the issuance request must be called by centralized website"))
 	}
 	return true, nil
 }
 
 func (iReq IssuingRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if len(iReq.ReceiverAddress.Pk) == 0 {
-		return false, false, NewMetadataTxError(IssuingRequestValidateSanityDataError, errors.New("Wrong request info's receiver address"))
+	if _, err := AssertPaymentAddressAndTxVersion(iReq.ReceiverAddress, tx.GetVersion()); err != nil {
+		return false, false, err
 	}
 	if iReq.DepositedAmount == 0 {
 		return false, false, errors.New("Wrong request info's deposited amount")
@@ -168,7 +225,21 @@ func (iReq IssuingRequest) Hash() *common.Hash {
 	// TODO: @hung change to record += fmt.Sprint(iReq.DepositedAmount)
 	record += string(iReq.DepositedAmount)
 	record += iReq.TokenName
-	record += iReq.MetadataBase.Hash().String()
+	record += iReq.MetadataBaseWithSignature.Hash().String()
+	if iReq.Sig != nil && len(iReq.Sig) != 0 {
+		record += string(iReq.Sig)
+	}
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (iReq IssuingRequest) HashWithoutSig() *common.Hash {
+	record := iReq.ReceiverAddress.String()
+	record += iReq.TokenID.String()
+	record += string(iReq.DepositedAmount)
+	record += iReq.TokenName
+	record += iReq.MetadataBaseWithSignature.Hash().String()
 
 	// final hash
 	hash := common.HashH([]byte(record))

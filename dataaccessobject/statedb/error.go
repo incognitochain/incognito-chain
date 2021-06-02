@@ -11,7 +11,6 @@ const (
 	ErrInvalidHashType                        = "invalid hash type"
 	ErrInvalidBigIntType                      = "invalid big int type"
 	ErrInvalidCommitteeStateType              = "invalid committee state type"
-	ErrInvalidSlasingCommitteeStateType       = "invalid slashing committee state type"
 	ErrInvalidStakerInfoType                  = "invalid staker info type"
 	ErrInvalidPaymentAddressType              = "invalid payment address type"
 	ErrInvalidIncognitoPublicKeyType          = "invalid incognito public key type"
@@ -22,6 +21,8 @@ const (
 	ErrInvalidCommitmentStateType             = "invalid commitment state type"
 	ErrInvalidSNDerivatorStateType            = "invalid snderivator state type"
 	ErrInvalidOutputCoinStateType             = "invalid output coin state type"
+	ErrInvalidOTACoinStateType                = "invalid ota coin state type"
+	ErrInvalidOnetimeAddressStateType         = "invalid onetime address state type"
 	ErrInvalidTokenStateType                  = "invalid token state type"
 	ErrInvalidWaitingPDEContributionStateType = "invalid waiting pde contribution state type"
 	ErrInvalidPDEPoolPairStateType            = "invalid pde pool pair state type"
@@ -44,10 +45,11 @@ const (
 	ErrInvalidPortalLockedCollateralStateType    = "invalid portal locked collateral state type"
 	ErrInvalidRewardFeatureStateType             = "invalid feature reward state type"
 	ErrInvalidPDETradingFeeStateType             = "invalid pde trading fee state type"
+	ErrInvalidBlockHashType                      = "invalid block hash type"
 	ErrInvalidUnlockOverRateCollateralsStateType = "invalid unlock over rate collaterals state type"
+	ErrInvalidSlasingCommitteeStateType       = "invalid slashing committee state type"
 	ErrInvalidPortalExternalTxStateType          = "invalid portal external tx state type"
 	ErrInvalidPortalConfirmProofStateType        = "invalid portal confirm proof state type"
-	ErrInvalidBlockHashType                      = "invalid block hash type"
 )
 const (
 	InvalidByteArrayTypeError = iota
@@ -76,6 +78,12 @@ const (
 	GetCommitmentLengthError
 	StoreOutputCoinError
 	GetOutputCoinError
+	StoreOTACoinError
+	GetOTACoinIndexError
+	StoreOTACoinIndexError
+	StoreOTACoinLengthError
+	GetOTACoinLengthError
+	StoreOnetimeAddressError
 	StoreSNDerivatorError
 	GetSNDerivatorError
 	StorePrivacyTokenError

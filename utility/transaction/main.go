@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"path/filepath"
@@ -36,7 +37,9 @@ func initGenesisTx(db incdb.Database) {
 		testUserKey.KeySet.InitFromPrivateKey(&testUserKey.KeySet.PrivateKey)
 
 		testSalaryTX := transaction.Tx{}
-		testSalaryTX.InitTxSalary(initAmount, &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey, db, nil)
+
+		// TODO Privacy
+		testSalaryTX.InitTxSalary(initAmount, coin.NewTxRandom(), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey, db, nil)
 		initTx, _ := json.MarshalIndent(testSalaryTX, "", "  ")
 		initTxs = append(initTxs, string(initTx))
 	}
@@ -54,7 +57,9 @@ func initThankTx(db incdb.Database) {
 		testUserKey.KeySet.InitFromPrivateKey(&testUserKey.KeySet.PrivateKey)
 
 		testSalaryTX := transaction.Tx{}
-		testSalaryTX.InitTxSalary(0, &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey, db, nil)
+
+		// TODO Privacy
+		testSalaryTX.InitTxSalary(0, coin.NewTxRandom(), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey, db, nil)
 		testSalaryTX.Info = []byte(info)
 		initTx, _ := json.MarshalIndent(testSalaryTX, "", "  ")
 		initTxs = append(initTxs, string(initTx))

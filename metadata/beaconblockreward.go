@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"encoding/json"
-	"errors"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -77,15 +76,10 @@ func (sbsRes BeaconBlockSalaryRes) ValidateTxWithBlockChain(tx Transaction, chai
 }
 
 func (sbsRes BeaconBlockSalaryRes) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if len(sbsRes.ProducerAddress.Pk) == 0 {
-		return false, false, errors.New("Wrong request info's producer address")
+	_, err := AssertPaymentAddressAndTxVersion(sbsRes.ProducerAddress, tx.GetVersion())
+	if err != nil {
+		return false, false, err
 	}
-	if len(sbsRes.ProducerAddress.Tk) == 0 {
-		return false, false, errors.New("Wrong request info's producer address")
-	}
-	// if sbsRes.ShardBlockHeight == 0 {
-	// 	return false, false, errors.New("Wrong request info's shard block height")
-	// }
 	return false, true, nil
 }
 

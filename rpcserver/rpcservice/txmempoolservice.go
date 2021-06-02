@@ -5,7 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 )
 
 type TxMemPoolService struct {
@@ -16,11 +16,12 @@ func (txMemPoolService TxMemPoolService) GetPoolCandidate() map[common.Hash]stri
 	return txMemPoolService.TxMemPool.GetClonedPoolCandidate()
 }
 
-func (txMemPoolService TxMemPoolService) FilterMemPoolOutcoinsToSpent(outCoins []*privacy.OutputCoin) ([]*privacy.OutputCoin, error) {
-	remainOutputCoins := make([]*privacy.OutputCoin, 0)
+
+func (txMemPoolService TxMemPoolService) FilterMemPoolPlainCoinsToSpent(outCoins []coin.PlainCoin) ([]coin.PlainCoin, error) {
+	remainOutputCoins := make([]coin.PlainCoin, 0)
 
 	for _, outCoin := range outCoins {
-		if txMemPoolService.TxMemPool.ValidateSerialNumberHashH(outCoin.CoinDetails.GetSerialNumber().ToBytesS()) == nil {
+		if txMemPoolService.TxMemPool.ValidateSerialNumberHashH(outCoin.GetKeyImage().ToBytesS()) == nil {
 			remainOutputCoins = append(remainOutputCoins, outCoin)
 		}
 	}

@@ -88,6 +88,17 @@ const (
 	StoreRelayingBNBHeaderError
 	GetRelayingBNBHeaderError
 	GetBNBDataHashError
+
+	// output coins by OTA key
+	StoreOutcoinByOTAKeyError
+	GetOutcoinByOTAKeyError
+	StoreOTAKeyError
+	GetOTAKeyError
+	//Tx by input or output
+	StoreTxByCoinIndexError
+	GetTxByCoinIndexError
+	StoreTxBySerialNumberError
+	GetTxBySerialNumberError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -117,7 +128,7 @@ var ErrCodeMessage = map[int]struct {
 	StoreCrossShardNextHeightError: {-2005, "Store Cross Shard Next Height Error"},
 	FetchCrossShardNextHeightError: {-2006, "Fetch Cross Shard Next Height Error"},
 	StoreShardBlockIndexError:      {-2007, "Store Shard Block Index Error"},
-	GetIndexOfBlockError:           {-2008, "Get Index Of Shard Block Error"},
+	GetIndexOfBlockError:           {-2008, "Get GetIndex Of Shard Block Error"},
 	StoreShardBestStateError:       {-2009, "Store Shard Best State Error"},
 	StoreFeeEstimatorError:         {-2010, "Store Fee Estimator Error"},
 	GetFeeEstimatorError:           {-2011, "Get Fee Estimator Error"},
@@ -173,6 +184,11 @@ var ErrCodeMessage = map[int]struct {
 	StoreRelayingBNBHeaderError: {-5001, "Store relaying header bnb error"},
 	GetRelayingBNBHeaderError:   {-5002, "Get relaying header bnb error"},
 	GetBNBDataHashError:         {-5003, "Get bnb data hash by block height error"},
+
+	StoreOutcoinByOTAKeyError: 	 {-6001, "Store output coin by OTA key error"},
+	GetOutcoinByOTAKeyError: 	 {-6002, "Get output coin by OTA key error"},
+	StoreOTAKeyError: 	 {-6003, "Store OTA key error"},
+	GetOTAKeyError: 	 {-6004, "Get OTA keys error"},
 }
 
 type RawdbError struct {

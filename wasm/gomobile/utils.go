@@ -7,6 +7,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v1/hybridencryption"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/pkg/errors"
 	"strconv"
@@ -168,8 +169,8 @@ func HybridEncryptionASM(dataB64Encode string) (string, error) {
 
 	msgBytes := data[privacy.Ed25519KeySize:]
 
-	ciphertext, err := privacy.HybridEncrypt(msgBytes, publicKeyPoint)
-	if err != nil {
+	ciphertext, err := hybridencryption.HybridEncrypt(msgBytes, publicKeyPoint)
+	if err != nil{
 		return "", err
 	}
 	res := base64.StdEncoding.EncodeToString(ciphertext.Bytes())
@@ -191,8 +192,8 @@ func HybridDecryptionASM(dataB64Encode string) (string, error) {
 	ciphertext := new(privacy.HybridCipherText)
 	ciphertext.SetBytes(ciphertextBytes)
 
-	plaintextBytes, err := privacy.HybridDecrypt(ciphertext, privateKeyScalar)
-	if err != nil {
+	plaintextBytes, err := hybridencryption.HybridDecrypt(ciphertext, privateKeyScalar)
+	if err != nil{
 		return "", err
 	}
 	res := base64.StdEncoding.EncodeToString(plaintextBytes)

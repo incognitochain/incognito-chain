@@ -1,8 +1,16 @@
 package common
 
 import (
+	"crypto/sha256"
 	"golang.org/x/crypto/sha3"
 )
+
+// SHA256 calculates SHA256-256 hashing of input b
+// and returns the result in bytes array.
+func SHA256(b []byte) []byte {
+	hash := sha256.Sum256(b)
+	return hash[:]
+}
 
 // HashB calculates SHA3-256 hashing of input b
 // and returns the result in bytes array.
