@@ -121,7 +121,6 @@ func (s *PortalTestSuiteV4) SetupTest() {
 			portalcommonv4.PortalBTCIDStr: 1e9, // in nano pBTC - 1e8 satoshi
 		},
 		BatchNumBlks:                45,
-		MinConfirmationIncBlockNum:  3,
 		PortalReplacementAddress:    "",
 		MaxFeePercentageForEachStep: 20,
 		TimeSpaceForFeeReplacement:  2 * time.Minute,

@@ -163,7 +163,6 @@ var localPortalParam = PortalParams{
 				portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
 			},
 			BatchNumBlks:                15, // ~ 2.5 mins
-			MinConfirmationIncBlockNum:  3,
 			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
 			MaxFeePercentageForEachStep: 20, // ~ 20% from previous fee
 			TimeSpaceForFeeReplacement:  5 * time.Minute,
@@ -227,7 +226,6 @@ var testnet1PortalParams = PortalParams{
 				portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
 			},
 			BatchNumBlks:                15, // ~ 2.5 mins
-			MinConfirmationIncBlockNum:  3,
 			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
 			MaxFeePercentageForEachStep: 20, // ~ 20% from previous fee
 			TimeSpaceForFeeReplacement:  5 * time.Minute,
@@ -291,7 +289,6 @@ var testnet2PortalParams = PortalParams{
 				portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
 			},
 			BatchNumBlks:                15, // ~ 2.5 mins
-			MinConfirmationIncBlockNum:  3,
 			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
 			MaxFeePercentageForEachStep: 20, // ~ 20% from previous fee
 			TimeSpaceForFeeReplacement:  5 * time.Minute,
@@ -349,7 +346,6 @@ var mainnetPortalParam = PortalParams{
 				portalcommonv4.PortalBTCIDStr: 1000000, // 1000000 nano pbtc = 100000 satoshi
 			},
 			BatchNumBlks:                15, // ~ 2.5 mins
-			MinConfirmationIncBlockNum:  3,
 			PortalReplacementAddress:    "12svfkP6w5UDJDSCwqH978PvqiqBxKmUnA9em9yAYWYJVRv7wuXY1qhhYpPAm4BDz2mLbFrRmdK3yRhnTqJCZXKHUmoi7NV83HCH2YFpctHNaDdkSiQshsjw2UFUuwdEvcidgaKmF3VJpY5f8RdN",
 			MaxFeePercentageForEachStep: 20, // ~ 20% from previous fee
 			TimeSpaceForFeeReplacement:  5 * time.Minute,
