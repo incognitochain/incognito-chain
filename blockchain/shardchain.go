@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"sync"
@@ -248,8 +249,8 @@ func (chain *ShardChain) getDataBeforeBlockProducing(buildView *ShardBestState, 
 		if err != nil {
 			return nil, err
 		}
-		if beaconProcessHeight > blockchain.config.ChainParams.StakingFlowV2Height {
-			beaconProcessHeight = blockchain.config.ChainParams.StakingFlowV2Height
+		if beaconProcessHeight > config.Param().ConsensusParam.StakingFlowV2Height {
+			beaconProcessHeight = config.Param().ConsensusParam.StakingFlowV2Height
 		}
 	}
 
@@ -398,7 +399,7 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 		NewShardEnvBuilder().
 		BuildBeaconInstructions(beaconInstructions).
 		BuildShardID(curView.ShardID).
-		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfFixedBlockValidators).
+		BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
 		BuildShardHeight(curView.ShardHeight).
 		Build()
 
@@ -656,7 +657,7 @@ func (chain *ShardChain) validateBlockBody(flow *ShardValidationFlow) error {
 		NewShardEnvBuilder().
 		BuildShardID(curView.ShardID).
 		BuildBeaconInstructions(beaconInstructions).
-		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfFixedBlockValidators).
+		BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
 		BuildShardHeight(curView.ShardHeight).
 		Build()
 

@@ -1,22 +1,44 @@
 package devframework
 
 import (
-	"os"
-	"time"
-
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/testsuite/account"
+	"os"
 )
 
-func NewStandaloneSimulation(name string, config Config) *NodeEngine {
-	if config.DataDir == "" {
-		config.DataDir = "/tmp/database"
+const (
+	ID_MAINNET = iota
+	ID_TESTNET
+	ID_TESTNET2
+	ID_CUSTOM
+)
+
+func NewStandaloneSimulation(name string, conf Config) *NodeEngine {
+	if conf.DataDir == "" {
+		conf.DataDir = "/tmp/database"
 	}
-	if config.ResetDB {
-		os.RemoveAll(config.DataDir)
+	if conf.ResetDB {
+		os.RemoveAll(conf.DataDir)
 	}
 
+	switch conf.Network {
+	case ID_CUSTOM:
+		os.Setenv(config.NetworkKey, config.TestNetNetwork)
+		os.Setenv(config.NetworkVersionKey, config.TestNetVersion1)
+	case ID_TESTNET:
+		os.Setenv(config.NetworkKey, config.TestNetNetwork)
+		os.Setenv(config.NetworkVersionKey, config.TestNetVersion1)
+	case ID_TESTNET2:
+		os.Setenv(config.NetworkKey, config.TestNetNetwork)
+		os.Setenv(config.NetworkVersionKey, config.TestNetVersion2)
+	case ID_MAINNET:
+		os.Setenv(config.NetworkKey, config.MainnetNetwork)
+	}
+
+	config.LoadConfig()
+
 	sim := &NodeEngine{
-		config:            config,
+		config:            conf,
 		simName:           name,
 		timer:             NewTimeEngine(),
 		accountSeed:       "master_account",
@@ -25,7 +47,5 @@ func NewStandaloneSimulation(name string, config Config) *NodeEngine {
 		listennerRegister: make(map[int][]func(msg interface{})),
 	}
 
-	sim.init()
-	time.Sleep(1 * time.Second)
 	return sim
 }

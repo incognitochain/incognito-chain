@@ -6,19 +6,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"sort"
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -133,7 +130,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, val
 	preHash := shardBlock.Header.PreviousBlockHash
 
 	if config.Config().IsFullValidation {
-		shouldValidate = true
+		validationMode = common.FULL_VALIDATION
 	}
 
 	Logger.log.Infof("SHARD %+v | InsertShardBlock %+v with hash %+v Prev hash: %+v", shardID, blockHeight, blockHash, preHash)

@@ -107,10 +107,10 @@ func main() {
 	flag.Parse()
 
 	node := devframework.NewStandaloneSimulation("regression", devframework.Config{
-		ChainParam: devframework.NewChainParam(devframework.ID_MAINNET),
-		DataDir:    *dir,
-		ResetDB:    false,
-		AppNode:    true,
+		Network: devframework.ID_MAINNET,
+		DataDir: *dir,
+		ResetDB: false,
+		AppNode: true,
 	})
 	beaconCh, shardCh := streamblock(*fullnode, node)
 

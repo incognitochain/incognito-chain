@@ -125,7 +125,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 	preHash := beaconBlock.Header.PreviousBlockHash
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if config.Config().IsFullValidation {
-		shouldValidate = true
+		validationMode = common.FULL_VALIDATION
 	}
 	blockchain.BeaconChain.insertLock.Lock()
 	defer blockchain.BeaconChain.insertLock.Unlock()
@@ -338,7 +338,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 		beaconBlock,
 		curView,
 		*portalParams,
-		allShardBlocks,
+		confirmShardBlocks,
 	)
 
 	if len(incurredInstructions) != 0 {

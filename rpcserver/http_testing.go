@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbftv3"
 	"io/ioutil"
@@ -152,11 +153,11 @@ func (httpServer *HttpServer) handleGetCommitteeState(params interface{}, closeC
 				nextEpochShardCandidate,
 				snapshotShardCommittee,
 				snapshotShardSubstitute,
-				httpServer.config.BlockChain.GetChainParams().NumberOfFixedBlockValidators,
-				httpServer.config.BlockChain.GetChainParams().MinShardCommitteeSize,
+				config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+				config.Param().CommitteeSize.MinShardCommitteeSize,
 			)
-			currentEpochShardCandidateStr = append([]string{},nextEpochShardCandidateStr[:numberOfAssignedCandidate]...)
-			nextEpochShardCandidateStr = append([]string{},nextEpochShardCandidateStr[numberOfAssignedCandidate:]...)
+			currentEpochShardCandidateStr = append([]string{}, nextEpochShardCandidateStr[:numberOfAssignedCandidate]...)
+			nextEpochShardCandidateStr = append([]string{}, nextEpochShardCandidateStr[numberOfAssignedCandidate:]...)
 		}
 	}
 	tempStakingTx := make(map[string]string)
