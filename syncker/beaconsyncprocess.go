@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -426,6 +428,11 @@ func (s *BeaconSyncProcess) streamFromPeer(peerID string, pState BeaconPeerState
 				insertBlkCnt := 0
 				for {
 					time1 := time.Now()
+
+					/*for _, v := range blockBuffer {*/
+					//Logger.Infof("[config] v height %v proposetime %v", v.GetHeight(), v.GetProposeTime())
+					/*}*/
+
 					if successBlk, err := InsertBatchBlock(s.chain, blockBuffer); err != nil {
 						if successBlk == 0 {
 							fmt.Println(err)

@@ -5,9 +5,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/common"
-
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/utils"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
 
@@ -182,6 +181,6 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 	case reflect.TypeOf(&MessageBFT{}):
 		return CmdBFT, nil
 	default:
-		return common.EmptyString, fmt.Errorf("unhandled this message type [%s]", msgType)
+		return utils.EmptyString, fmt.Errorf("unhandled this message type [%s]", msgType)
 	}
 }

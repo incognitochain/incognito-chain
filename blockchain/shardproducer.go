@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/config"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -95,8 +96,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	if shardBestState.shardCommitteeEngine.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		currentCommitteePublicKeysStructs = shardBestState.GetShardCommittee()
-		if beaconProcessHeight > blockchain.config.ChainParams.StakingFlowV2Height {
-			beaconProcessHeight = blockchain.config.ChainParams.StakingFlowV2Height
+		if beaconProcessHeight > config.Param().ConsensusParam.StakingFlowV2Height {
+			beaconProcessHeight = config.Param().ConsensusParam.StakingFlowV2Height
 		}
 	} else if shardBestState.shardCommitteeEngine.Version() == committeestate.SLASHING_VERSION {
 		if beaconProcessHeight <= shardBestState.BeaconHeight {
@@ -204,7 +205,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		NewShardEnvBuilder().
 		BuildBeaconInstructions(beaconInstructions).
 		BuildShardID(shardBestState.ShardID).
-		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfFixedBlockValidators).
+		BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
 		BuildShardHeight(shardBestState.ShardHeight).
 		Build()
 
@@ -358,8 +359,13 @@ func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
 	txsToAdd := []metadata.Transaction{}
 	if !blockGenerator.chain.config.usingNewPool {
 		txToRemove := []metadata.Transaction{}
-
-		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreationLeftOver.Nanoseconds(), bView.BeaconHeight, curView)
+		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(
+			shardID,
+			beaconBlocks,
+			blockCreationLeftOver.Nanoseconds(),
+			bView.BeaconHeight,
+			curView,
+		)
 		if len(txsToAdd) == 0 {
 			Logger.log.Info("Creating empty block...")
 		}
@@ -568,7 +574,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 		Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 		Logger.log.Info("ShardID", shardID)
 
-		numberOfFixedShardBlockValidators := blockchain.config.ChainParams.NumberOfFixedBlockValidators
+		numberOfFixedShardBlockValidators := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 		maxShardCommitteeSize := view.MaxShardCommitteeSize - numberOfFixedShardBlockValidators
 		var minShardCommitteeSize int
 		if view.MinShardCommitteeSize-numberOfFixedShardBlockValidators < 0 {
@@ -577,12 +583,11 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			minShardCommitteeSize = view.MinShardCommitteeSize - numberOfFixedShardBlockValidators
 		}
 		epoch := blockchain.GetEpochByHeight(beaconHeight)
-		if common.IndexOfUint64(epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
+		if common.IndexOfUint64(epoch, config.Param().ConsensusParam.EpochBreakPointSwapNewKey) > -1 {
 			swapOrConfirmShardSwapInstruction, shardCommittees = createShardSwapActionForKeyListV2(
-				blockchain.config.GenesisParams,
 				shardCommittees,
 				numberOfFixedShardBlockValidators,
-				blockchain.config.ChainParams.ActiveShards,
+				config.Param().ActiveShards,
 				shardID,
 				epoch,
 			)
@@ -593,8 +598,8 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 				BuildMinShardCommitteeSize(minShardCommitteeSize).
 				BuildShardID(shardID).
 				BuildShardHeight(view.ShardHeight).
-				BuildOffset(blockchain.config.ChainParams.Offset).
-				BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
+				BuildOffset(config.Param().SwapCommitteeParam.Offset).
+				BuildSwapOffset(config.Param().SwapCommitteeParam.SwapOffset).
 				BuildNumberOfFixedBlockValidators(numberOfFixedShardBlockValidators).
 				Build()
 			tempSwapInstruction, shardPendingValidators, shardCommittees, err = view.shardCommitteeEngine.GenerateSwapInstruction(env)
@@ -653,7 +658,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 func (blockGenerator *BlockGenerator) getCrossShardData(curView *ShardBestState) map[byte][]types.CrossTransaction {
 	crossTransactions := make(map[byte][]types.CrossTransaction)
 	// get cross shard block
-	var allCrossShardBlock = make([][]*types.CrossShardBlock, blockGenerator.chain.config.ChainParams.ActiveShards)
+	var allCrossShardBlock = make([][]*types.CrossShardBlock, config.Param().ActiveShards)
 	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(curView, nil) {
 		heightList := make([]uint64, len(v))
 		for i, b := range v {

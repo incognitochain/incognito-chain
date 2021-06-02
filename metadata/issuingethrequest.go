@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/pkg/errors"
@@ -273,10 +274,12 @@ func GetETHHeader(
 	rpcClient := rpccaller.NewRPCClient()
 	getETHHeaderByHashParams := []interface{}{ethBlockHash, false}
 	var getETHHeaderByHashRes GetETHHeaderByHashRes
+	gethParam := config.Param().GethParam
+	gethParam.GetFromEnv()
 	err := rpcClient.RPCCall(
-		EthereumLightNodeProtocol,
-		EthereumLightNodeHost,
-		EthereumLightNodePort,
+		gethParam.Protocol,
+		gethParam.Host,
+		gethParam.Port,
 		"eth_getBlockByHash",
 		getETHHeaderByHashParams,
 		&getETHHeaderByHashRes,
@@ -300,9 +303,9 @@ func GetETHHeader(
 	getETHHeaderByNumberParams := []interface{}{fmt.Sprintf("0x%x", headerNum), false}
 	var getETHHeaderByNumberRes GetETHHeaderByNumberRes
 	err = rpcClient.RPCCall(
-		EthereumLightNodeProtocol,
-		EthereumLightNodeHost,
-		EthereumLightNodePort,
+		gethParam.Protocol,
+		gethParam.Host,
+		gethParam.Port,
 		"eth_getBlockByNumber",
 		getETHHeaderByNumberParams,
 		&getETHHeaderByNumberRes,
@@ -320,7 +323,6 @@ func GetETHHeader(
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: result is nil"))
 	}
 
-
 	ethHeaderByNum := getETHHeaderByNumberRes.Result
 	if ethHeaderByNum.Hash().String() != ethHeaderByHash.Hash().String() {
 		return nil, errors.New(fmt.Sprintf("The requested eth BlockHash is being on fork branch, rejected!"))
@@ -333,10 +335,12 @@ func GetMostRecentETHBlockHeight() (*big.Int, error) {
 	rpcClient := rpccaller.NewRPCClient()
 	params := []interface{}{}
 	var getETHBlockNumRes GetETHBlockNumRes
+	gethParam := config.Param().GethParam
+	gethParam.GetFromEnv()
 	err := rpcClient.RPCCall(
-		EthereumLightNodeProtocol,
-		EthereumLightNodeHost,
-		EthereumLightNodePort,
+		gethParam.Protocol,
+		gethParam.Host,
+		gethParam.Port,
 		"eth_blockNumber",
 		params,
 		&getETHBlockNumRes,
