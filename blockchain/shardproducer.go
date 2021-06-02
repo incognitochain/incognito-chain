@@ -206,7 +206,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 			NewShardEnvBuilder().
 			BuildBeaconInstructions(beaconInstructions).
 			BuildShardID(shardBestState.ShardID).
-			BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfShardFixedBlockValidators).
+			BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
 			BuildShardHeight(shardBestState.ShardHeight).
 			Build()
 
@@ -571,7 +571,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 			Logger.log.Info("MaxShardCommitteeSize", view.MaxShardCommitteeSize)
 			Logger.log.Info("ShardID", shardID)
 
-			numberOfFixedShardBlockValidators := blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(beaconHeight)
+			numberOfFixedShardBlockValidators := config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 
 			maxShardCommitteeSize := view.MaxShardCommitteeSize - numberOfFixedShardBlockValidators
 			var minShardCommitteeSize int
@@ -581,12 +581,11 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 				minShardCommitteeSize = view.MinShardCommitteeSize - numberOfFixedShardBlockValidators
 			}
 			epoch := blockchain.GetEpochByHeight(beaconHeight)
-			if common.IndexOfUint64(epoch, blockchain.config.ChainParams.EpochBreakPointSwapNewKey) > -1 {
+			if common.IndexOfUint64(epoch, config.Param().ConsensusParam.EpochBreakPointSwapNewKey) > -1 {
 				swapOrConfirmShardSwapInstruction, shardCommittees = createShardSwapActionForKeyListV2(
-					blockchain.config.GenesisParams,
 					shardCommittees,
 					numberOfFixedShardBlockValidators,
-					blockchain.config.ChainParams.ActiveShards,
+					config.Param().ActiveShards,
 					shardID,
 					epoch,
 				)
@@ -597,8 +596,8 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 					BuildMinShardCommitteeSize(minShardCommitteeSize).
 					BuildShardID(shardID).
 					BuildShardHeight(view.ShardHeight).
-					BuildOffset(blockchain.config.ChainParams.Offset).
-					BuildSwapOffset(blockchain.config.ChainParams.SwapOffset).
+					BuildOffset(config.Param().SwapCommitteeParam.Offset).
+					BuildSwapOffset(config.Param().SwapCommitteeParam.SwapOffset).
 					BuildNumberOfFixedBlockValidators(numberOfFixedShardBlockValidators).
 					Build()
 				swapInstructionGenerator := view.shardCommitteeState.(committeestate.SwapInstructionGenerator)
