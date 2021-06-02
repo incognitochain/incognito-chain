@@ -929,6 +929,7 @@ func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
 	}
 }
 
+// TODO: @hung refactor this function, its caller already retrieve the right committees list
 func (blockchain *BlockChain) getCommitteesForSigning(
 	committees []incognitokey.CommitteePublicKey, block types.BlockInterface,
 ) ([]incognitokey.CommitteePublicKey, error) {

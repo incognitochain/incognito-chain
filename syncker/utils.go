@@ -114,7 +114,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 				err = chain.InsertBlock(v, true)
 				firstInsert = false
 			} else {
-				err = chain.InsertBlock(v, false)
+				err = chain.InsertBlock(v, batchingValidate == false)
 			}
 			if err != nil {
 				committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)
