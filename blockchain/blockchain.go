@@ -10,23 +10,23 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate/finishsync"
-	"github.com/incognitochain/incognito-chain/portal"
-	"github.com/incognitochain/incognito-chain/portal/portalv3"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate/finishsync"
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	configpkg "github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
 	"github.com/incognitochain/incognito-chain/privacy"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
@@ -65,6 +65,7 @@ type Config struct {
 	IsBlockGenStarted bool
 	PubSubManager     Pubsub
 	Syncker           Syncker
+	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
 	PoolManager       *txpool.PoolManager

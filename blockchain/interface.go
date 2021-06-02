@@ -45,6 +45,10 @@ type ConsensusEngine interface {
 	// CommitteeChange(chainName string)
 }
 
+type Server interface {
+	PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error
+}
+
 type Highway interface {
 	BroadcastCommittee(uint64, []incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey)
 }

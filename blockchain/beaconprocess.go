@@ -176,11 +176,6 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, 
 		Logger.log.Debugf("BEACON | SKIP Verify Post Processing Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 
-	Logger.log.Infof("BEACON | Update Committee State Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if err2 := newBestState.beaconCommitteeEngine.Commit(hashes, committeeChange); err2 != nil {
-		return err2
-	}
-
 	Logger.log.Infof("BEACON | Process Store Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	if err2 := blockchain.processStoreBeaconBlock(curView, newBestState, beaconBlock, committeeChange); err2 != nil {
 		return err2
@@ -633,13 +628,12 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 
-	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false))
-
+	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false)
 	var committeeState committeestate.BeaconCommitteeState
 	switch genesisBeaconBlock.Header.Height {
-	case blockchain.config.ChainParams.StakingFlowV3Height:
+	case config.Param().ConsensusParam.StakingFlowV3Height:
 		committeeState = committeestate.InitGenesisBeaconCommitteeStateV3(beaconCommitteeStateEnv)
-	case blockchain.config.ChainParams.StakingFlowV2Height:
+	case config.Param().ConsensusParam.StakingFlowV2Height:
 		committeeState = committeestate.InitGenesisBeaconCommitteeStateV2(beaconCommitteeStateEnv)
 	default:
 		committeeState = committeestate.InitGenesisBeaconCommitteeStateV1(beaconCommitteeStateEnv)
@@ -701,7 +695,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	} else {
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
-	if curView.BeaconHeight >= bc.config.ChainParams.StakingFlowV3Height {
+	if curView.BeaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
 		committees = GetSigningCommitteeV3(
 			committees,
 			shardState.ProposerTime,
