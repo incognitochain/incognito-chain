@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"sync"
 	"time"
 
@@ -366,15 +367,15 @@ func (chain *ShardChain) GetProposerByTimeSlot(
 	committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int, error) {
 	lenProposers := 0
 	beaconHeight := chain.Blockchain.BeaconChain.GetFinalView().GetHeight()
-	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV2Height {
+	if beaconHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
 		tempCommitteeInfo, err := chain.Blockchain.getTempCommitteeInfoByHash(committeeViewHash, shardID)
 		if err != nil {
 			return incognitokey.CommitteePublicKey{}, -1, err
 		}
 		beaconHeight = tempCommitteeInfo.BeaconHeight()
 	}
-	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV3Height {
-		lenProposers = chain.Blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(beaconHeight)
+	if beaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
+		lenProposers = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 	} else {
 		lenProposers = chain.Blockchain.GetBestStateShard(shardID).MinShardCommitteeSize
 	}
@@ -387,7 +388,7 @@ func (chain *ShardChain) SigningCommittees(
 ) []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
 	beaconHeight := chain.Blockchain.BeaconChain.GetFinalView().GetHeight()
-	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV2Height {
+	if beaconHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
 		tempCommitteeInfo, err := chain.Blockchain.getTempCommitteeInfoByHash(committeeViewHash, shardID)
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}
@@ -395,7 +396,7 @@ func (chain *ShardChain) SigningCommittees(
 		beaconHeight = tempCommitteeInfo.BeaconHeight()
 	}
 
-	if beaconHeight >= chain.Blockchain.config.ChainParams.StakingFlowV3Height {
+	if beaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
 		for i, v := range committees {
 			if (i % MaxSubsetCommittees) == (proposerIndex % MaxSubsetCommittees) {
 				res = append(res, v)

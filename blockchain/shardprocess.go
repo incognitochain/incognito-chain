@@ -9,22 +9,19 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
-
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/stats"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/pkg/errors"
 )
 
 // VerifyPreSignShardBlock Verify Shard Block Before Signing
@@ -689,10 +686,8 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	//verify producer via index
 
 	lenProducer := 0
-	if blockchain.BeaconChain.GetFinalView().GetHeight() >= blockchain.config.ChainParams.StakingFlowV3Height {
-		lenProducer = blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(
-			blockchain.BeaconChain.GetFinalViewHeight(),
-		)
+	if blockchain.BeaconChain.GetFinalView().GetHeight() >= config.Param().ConsensusParam.StakingFlowV3Height {
+		lenProducer = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 	} else {
 		lenProducer = shardBestState.MinShardCommitteeSize
 	}
@@ -868,10 +863,10 @@ func (shardBestState *ShardBestState) initShardBestState(
 		BuildTxs(genesisShardBlock.Body.Transactions).
 		Build()
 
-	if blockchain.config.ChainParams.StakingFlowV3Height == 1 {
+	if config.Param().ConsensusParam.StakingFlowV3Height == 1 {
 		shardBestState.shardCommitteeState = committeestate.InitGenesisShardCommitteeStateV2(env)
 	} else {
-		if blockchain.config.ChainParams.StakingFlowV2Height == 1 {
+		if config.Param().ConsensusParam.StakingFlowV2Height == 1 {
 			shardBestState.shardCommitteeState = committeestate.InitGenesisShardCommitteeStateV2(env)
 		} else {
 			shardBestState.shardCommitteeState = committeestate.InitGenesisShardCommitteeStateV1(env)
@@ -1229,7 +1224,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			err2 := stats.UpdateBPV3Stats(
 				blockchain.GetShardChainDatabase(shardID),
 				storeBlock.(*types.ShardBlock),
-				GetSubsetID(shardBlock.GetProposeTime(), blockchain.config.ChainParams.GetNumberOfShardFixedBlockValidators(newShardState.BeaconHeight)),
+				GetSubsetID(shardBlock.GetProposeTime(), config.Param().CommitteeSize.NumberOfFixedShardBlockValidator),
 				committeesStoreBlock,
 			)
 			if err2 != nil {

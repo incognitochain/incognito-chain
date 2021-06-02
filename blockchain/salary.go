@@ -5,13 +5,10 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/instruction"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -330,7 +327,7 @@ func calculateReward(
 ) {
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
 	blkPerYear := getNoBlkPerYear(uint64(config.Param().BlockTime.MaxBeaconBlockCreation.Seconds()))
-	percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
+	percentForIncognitoDAO := getPercentForIncognitoDAO(beaconHeight, blkPerYear)
 	totalRewardForShard := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewardForBeacon := map[common.Hash]uint64{}
@@ -401,13 +398,13 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForCustodian := make(map[common.Hash]uint64)
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 
-	if curView.BeaconHeight >= blockchain.config.ChainParams.StakingFlowV3Height {
+	if curView.BeaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
 		totalRewardForBeacon,
 			totalRewardForShardSubset,
 			totalRewardForIncDAO,
 			totalRewardForCustodian,
 			err = calculateRewardV3(
-			uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()),
+			uint64(config.Param().BlockTime.MaxBeaconBlockCreation.Seconds()),
 			curView.beaconCommitteeState.(committeestate.SplitRewardRuleProcessor),
 			curView.ActiveShards,
 			MaxSubsetCommittees,
@@ -426,7 +423,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			totalRewardForShard,
 			totalRewardForIncDAO,
 			totalRewardForCustodian,
-			err = calculateReward(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()),
+			err = calculateReward(uint64(config.Param().BlockTime.MaxBeaconBlockCreation.Seconds()),
 			curView.beaconCommitteeState.(committeestate.SplitRewardRuleProcessor),
 			curView.ActiveShards, blkHeight, epoch,
 			curView.GetBeaconRewardStateDB(),
