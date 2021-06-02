@@ -409,7 +409,7 @@ func (tp *TxPool) checkFees(
 	txType := tx.GetType()
 	if txType == common.TxCustomTokenPrivacyType {
 		limitFee := tp.config.FeeEstimator[shardID].GetLimitFeeForNativeToken()
-		beaconStateDB, err := tp.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), tp.config.DataBase[common.BeaconChainDataBaseID])
+		beaconStateDB, err := tp.config.BlockChain.GetBestStateBeaconFeatureStateDBByHeight(uint64(beaconHeight), tp.config.DataBase[common.BeaconChainID])
 		if err != nil {
 			Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 				fmt.Errorf("transaction %+v - cannot get beacon state db at height: %d",

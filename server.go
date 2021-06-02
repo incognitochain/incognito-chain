@@ -2094,7 +2094,7 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 }
 
 func (s *Server) GetBeaconChainDatabase() incdb.Database {
-	return s.dataBase[common.BeaconChainDataBaseID]
+	return s.dataBase[common.BeaconChainID]
 }
 
 func (s *Server) GetShardChainDatabase(shardID byte) incdb.Database {

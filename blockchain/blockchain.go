@@ -684,7 +684,7 @@ func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.Po
 }
 
 func (blockchain *BlockChain) GetBeaconChainDatabase() incdb.Database {
-	return blockchain.config.DataBase[common.BeaconChainDataBaseID]
+	return blockchain.config.DataBase[common.BeaconChainID]
 }
 
 func (blockchain *BlockChain) GetShardChainDatabase(shardID byte) incdb.Database {

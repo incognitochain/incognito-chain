@@ -98,7 +98,7 @@ const (
 )
 
 const (
-	BeaconChainDataBaseID        = -1
+	BeaconChainID                = -1
 	BeaconChainDatabaseDirectory = "beacon"
 	ShardChainDatabaseDirectory  = "shard"
 )
