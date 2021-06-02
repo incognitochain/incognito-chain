@@ -1322,7 +1322,3 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 		go blockchain.config.TxPool.RemoveTx(shardBlock.Body.Transactions, true)
 	}()
 }
-
-func (blockchain *BlockChain) UsingNewPool() bool {
-	return blockchain.config.usingNewPool
-}

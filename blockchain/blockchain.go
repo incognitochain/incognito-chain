@@ -1078,3 +1078,11 @@ func (blockchain *BlockChain) storeAllShardSubstitutesValidator(
 	}
 	return nil
 }
+
+func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {
+	return blockchain.config.PoolManager
+}
+
+func (blockchain *BlockChain) UsingNewPool() bool {
+	return blockchain.config.usingNewPool
+}
