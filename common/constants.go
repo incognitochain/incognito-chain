@@ -183,8 +183,6 @@ var (
 )
 
 /* ================ Feature Flags ================ */
-)
-
 const (
 	PortalRelayingFlag = 0
 	PortalV3Flag       = 1
