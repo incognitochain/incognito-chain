@@ -10,8 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate/finishsync"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/incdb"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -106,7 +104,7 @@ func NewBeaconBestState() *BeaconBestState {
 	beaconBestState := new(BeaconBestState)
 	return beaconBestState
 }
-func NewBeaconBestStateWithConfig(beaconCommitteeEngine committeestate.BeaconCommitteeEngine) *BeaconBestState {
+func NewBeaconBestStateWithConfig(beaconCommitteeEngine committeestate.BeaconCommitteeState) *BeaconBestState {
 	beaconBestState := NewBeaconBestState()
 	beaconBestState.BestBlockHash.SetBytes(make([]byte, 32))
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
@@ -122,7 +120,7 @@ func NewBeaconBestStateWithConfig(beaconCommitteeEngine committeestate.BeaconCom
 	beaconBestState.LastCrossShardState = make(map[byte]map[byte]uint64)
 	beaconBestState.BlockInterval = config.Param().BlockTime.MinBeaconBlockInterval
 	beaconBestState.BlockMaxCreateTime = config.Param().BlockTime.MaxBeaconBlockCreation
-	beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine
+	beaconBestState.beaconCommitteeState = beaconCommitteeEngine
 	return beaconBestState
 }
 
@@ -687,13 +685,13 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *com
 		MaxShardCommitteeSize:            config.Param().CommitteeSize.MaxShardCommitteeSize,
 		NumberOfFixedShardBlockValidator: config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
 		MissingSignaturePenalty:          slashingPenalty,
-		StakingV3Height:                  params.StakingFlowV3Height,
-		EpochLengthV1:                    params.Epoch,
+		StakingV3Height:                  config.Param().ConsensusParam.StakingFlowV3Height,
 	}
 }
 
 func (beaconBestState *BeaconBestState) initCommitteeState(bc *BlockChain) {
 	Logger.log.Infof("Init Beacon Committee State %+v", beaconBestState.BeaconHeight)
+	numberOfAssignedCandidate := 0
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
@@ -716,8 +714,8 @@ func (beaconBestState *BeaconBestState) initCommitteeState(bc *BlockChain) {
 	//init version of committeeState here
 	version := committeestate.VersionByBeaconHeight(
 		beaconBestState.BeaconHeight,
-		bc.config.ChainParams.StakingFlowV2Height,
-		bc.config.ChainParams.StakingFlowV3Height)
+		config.Param().ConsensusParam.StakingFlowV2Height,
+		config.Param().ConsensusParam.StakingFlowV3Height)
 
 	shardCommonPool := []incognitokey.CommitteePublicKey{}
 	numberOfAssignedCandidates := 0
@@ -726,7 +724,7 @@ func (beaconBestState *BeaconBestState) initCommitteeState(bc *BlockChain) {
 	if version != committeestate.SELF_SWAP_SHARD_VERSION {
 		shardCommonPool = nextEpochShardCandidate
 		swapRuleEnv := committeestate.NewBeaconCommitteeStateEnvironmentForSwapRule(
-			beaconBestState.BeaconHeight, bc.config.ChainParams.StakingFlowV3Height,
+			beaconBestState.BeaconHeight, config.Param().ConsensusParam.StakingFlowV3Height,
 		)
 		swapRule = committeestate.SwapRuleByEnv(swapRuleEnv)
 
@@ -760,6 +758,7 @@ func (beaconBestState *BeaconBestState) initCommitteeState(bc *BlockChain) {
 			snapshotShardSubstitute,
 			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
 			config.Param().CommitteeSize.MinShardCommitteeSize,
+			swapRule,
 		)
 	}
 	committeeState := committeestate.NewBeaconCommitteeState(

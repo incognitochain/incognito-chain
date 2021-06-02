@@ -64,7 +64,6 @@ func (b *BeaconCommitteeStateV2) shallowCopy(newB *BeaconCommitteeStateV2) {
 	newB.autoStake = b.autoStake
 	newB.rewardReceiver = b.rewardReceiver
 	newB.stakingTx = b.stakingTx
-	newB.hashes = b.hashes
 }
 
 //Version :

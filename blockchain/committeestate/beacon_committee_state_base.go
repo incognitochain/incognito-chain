@@ -22,7 +22,7 @@ type beaconCommitteeStateBase struct {
 	autoStake      map[string]bool                   // committee public key => true or false
 	rewardReceiver map[string]privacy.PaymentAddress // incognito public key => reward receiver payment address
 	stakingTx      map[string]common.Hash            // committee public key => reward receiver payment address
-
+	//TODO: @hung add hashes
 	mu *sync.RWMutex // beware of this, any class extend this class need to use this mutex carefully
 }
 
