@@ -73,10 +73,10 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 
 	//validate the last block for batching
 	//get block has same committee
-	epochCommittee := []incognitokey.CommitteePublicKey{}
+	committees := []incognitokey.CommitteePublicKey{}
 	if len(sameCommitteeBlock) != 0 {
 		var err error
-		epochCommittee, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
+		committees, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
 		if err != nil {
 			return 0, err
 		}
