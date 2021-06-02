@@ -272,3 +272,11 @@ func (block ShardBlock) GetRoundKey() string {
 func (block ShardBlock) GetInstructions() [][]string {
 	return block.Body.Instructions
 }
+
+func (block ShardBlock) Type() string {
+	return common.ShardChainKey
+}
+
+func (block ShardBlock) BodyHash() common.Hash {
+	return block.Body.Hash()
+}

@@ -104,3 +104,11 @@ func (beaconBlock BeaconBlock) GetProducerPubKeyStr() string {
 func (beaconBlock BeaconBlock) GetConsensusType() string {
 	return beaconBlock.Header.ConsensusType
 }
+
+func (beaconBlock BeaconBlock) Type() string {
+	return common.BeaconChainKey
+}
+
+func (beaconBlock BeaconBlock) BodyHash() common.Hash {
+	return beaconBlock.Body.Hash()
+}
