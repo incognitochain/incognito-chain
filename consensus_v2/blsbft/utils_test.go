@@ -3,12 +3,17 @@ package blsbft
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/blsmultisig"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/incognitochain/incognito-chain/utils"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jrick/logrotate/rotator"
 	"io/ioutil"
 	"os"
@@ -137,123 +142,147 @@ var (
 	key118 = "121VhftSAygpEJZ6i9jGk4uzK9HGUunn3THJ9B6y7vXrKo3Ec8DviACL9NNbYxmHq42nrcskcRxsH7Adw5dZrLaHXZCu7NrDpAuzettqXsLZD1oCBGc5Hwdvg334Q7KpSXEKYPjAuLisBA54AAchRSi1VE1tYMSkDyctRPLGzD6k2gUxg32K3QAsr385fchdJ7ia9BTTuh1xkDbbUCdGDrHnSgJwXJxQMEWAjUiikoRgy9Pw5nzEQqwLSgG7CX1YwhPqF9EiiFE8y4rz2NqY1NkR9mmwTkteYiAi4UyVJqs4ipgZhnkLyXLrkkEKzESoR1RbKH1EGgYix2S2gbUQtarcnZmgCDcXkhoWDy23KBckorrbUE8SiW4Ttcagq5bHSVBafEqYenuGLPbv5AoLUBtFcrm2EuqdfRtb3fpT4GT5qvzK"
 	key119 = "121VhftSAygpEJZ6i9jGkDhyYSi9cmMB7S3pZHnAQdV9BEWxrTpmDko5dEW52RtWkjeVKsH6HzYiQEAYPr7PEdHT6RNG79Wgr3P5iTK7SXnMraQBG1FQwdsJaw83nuAMGC3qE3MJpymxbdx6XcAD8ExsiCPFLtYsLpjerD6Cy8fK4mdvUW1zmVzPmhN189yyCvsaRfx6xRj6TY4dke1rUn5ddbKyXfYNF4nb3zB7Zij8xdBmVzPSvfwKxSTf4TmwX4hBGYz6Mso7q1GjvoSGjMpDs8vxnDLMjHJaFAy61xirDzGZmCtesZk658gKtbe91KLuE1nPqBGoMK5fsazwNwwLMdUrjfSqh3hW7QgQyDdq68vUqQRah97nXiGuUxWA53Y7sckeLdJzUXacdJ7LEK3zeYgapbdjCcPJXPi5E2oK99Dh"
 
-	incKey0, incKey, incKey2, incKey3, incKey4 *incognitokey.CommitteePublicKey
-	incKey5, incKey6, incKey7, incKey8         *incognitokey.CommitteePublicKey
-	incKey9, incKey10, incKey11, incKey12      *incognitokey.CommitteePublicKey
-	incKey13, incKey14, incKey15, incKey16     *incognitokey.CommitteePublicKey
-	incKey17, incKey18, incKey19               *incognitokey.CommitteePublicKey
-	incKey20                                   *incognitokey.CommitteePublicKey
-	incKey21                                   *incognitokey.CommitteePublicKey
-	incKey22                                   *incognitokey.CommitteePublicKey
-	incKey23                                   *incognitokey.CommitteePublicKey
-	incKey24                                   *incognitokey.CommitteePublicKey
-	incKey25                                   *incognitokey.CommitteePublicKey
-	incKey26                                   *incognitokey.CommitteePublicKey
-	incKey27                                   *incognitokey.CommitteePublicKey
-	incKey28                                   *incognitokey.CommitteePublicKey
-	incKey29                                   *incognitokey.CommitteePublicKey
-	incKey30                                   *incognitokey.CommitteePublicKey
-	incKey31                                   *incognitokey.CommitteePublicKey
-	incKey32                                   *incognitokey.CommitteePublicKey
-	incKey33                                   *incognitokey.CommitteePublicKey
-	incKey34                                   *incognitokey.CommitteePublicKey
-	incKey35                                   *incognitokey.CommitteePublicKey
-	incKey36                                   *incognitokey.CommitteePublicKey
-	incKey37                                   *incognitokey.CommitteePublicKey
-	incKey38                                   *incognitokey.CommitteePublicKey
-	incKey39                                   *incognitokey.CommitteePublicKey
-	incKey40                                   *incognitokey.CommitteePublicKey
-	incKey41                                   *incognitokey.CommitteePublicKey
-	incKey42                                   *incognitokey.CommitteePublicKey
-	incKey43                                   *incognitokey.CommitteePublicKey
-	incKey44                                   *incognitokey.CommitteePublicKey
-	incKey45                                   *incognitokey.CommitteePublicKey
-	incKey46                                   *incognitokey.CommitteePublicKey
-	incKey47                                   *incognitokey.CommitteePublicKey
-	incKey48                                   *incognitokey.CommitteePublicKey
-	incKey49                                   *incognitokey.CommitteePublicKey
-	incKey50                                   *incognitokey.CommitteePublicKey
-	incKey51                                   *incognitokey.CommitteePublicKey
-	incKey52                                   *incognitokey.CommitteePublicKey
-	incKey53                                   *incognitokey.CommitteePublicKey
-	incKey54                                   *incognitokey.CommitteePublicKey
-	incKey55                                   *incognitokey.CommitteePublicKey
-	incKey56                                   *incognitokey.CommitteePublicKey
-	incKey57                                   *incognitokey.CommitteePublicKey
-	incKey58                                   *incognitokey.CommitteePublicKey
-	incKey59                                   *incognitokey.CommitteePublicKey
-	incKey60                                   *incognitokey.CommitteePublicKey
-	incKey61                                   *incognitokey.CommitteePublicKey
-	incKey62                                   *incognitokey.CommitteePublicKey
-	incKey63                                   *incognitokey.CommitteePublicKey
-	incKey64                                   *incognitokey.CommitteePublicKey
-	incKey65                                   *incognitokey.CommitteePublicKey
-	incKey66                                   *incognitokey.CommitteePublicKey
-	incKey67                                   *incognitokey.CommitteePublicKey
-	incKey68                                   *incognitokey.CommitteePublicKey
-	incKey69                                   *incognitokey.CommitteePublicKey
-	incKey70                                   *incognitokey.CommitteePublicKey
-	incKey71                                   *incognitokey.CommitteePublicKey
-	incKey72                                   *incognitokey.CommitteePublicKey
-	incKey73                                   *incognitokey.CommitteePublicKey
-	incKey74                                   *incognitokey.CommitteePublicKey
-	incKey75                                   *incognitokey.CommitteePublicKey
-	incKey76                                   *incognitokey.CommitteePublicKey
-	incKey77                                   *incognitokey.CommitteePublicKey
-	incKey78                                   *incognitokey.CommitteePublicKey
-	incKey79                                   *incognitokey.CommitteePublicKey
-	incKey80                                   *incognitokey.CommitteePublicKey
-	incKey81                                   *incognitokey.CommitteePublicKey
-	incKey82                                   *incognitokey.CommitteePublicKey
-	incKey83                                   *incognitokey.CommitteePublicKey
-	incKey84                                   *incognitokey.CommitteePublicKey
-	incKey85                                   *incognitokey.CommitteePublicKey
-	incKey86                                   *incognitokey.CommitteePublicKey
-	incKey87                                   *incognitokey.CommitteePublicKey
-	incKey88                                   *incognitokey.CommitteePublicKey
-	incKey89                                   *incognitokey.CommitteePublicKey
-	incKey90                                   *incognitokey.CommitteePublicKey
-	incKey91                                   *incognitokey.CommitteePublicKey
-	incKey92                                   *incognitokey.CommitteePublicKey
-	incKey93                                   *incognitokey.CommitteePublicKey
-	incKey94                                   *incognitokey.CommitteePublicKey
-	incKey95                                   *incognitokey.CommitteePublicKey
-	incKey96                                   *incognitokey.CommitteePublicKey
-	incKey97                                   *incognitokey.CommitteePublicKey
-	incKey98                                   *incognitokey.CommitteePublicKey
-	incKey99                                   *incognitokey.CommitteePublicKey
-	incKey100                                  *incognitokey.CommitteePublicKey
-	incKey101                                  *incognitokey.CommitteePublicKey
-	incKey102                                  *incognitokey.CommitteePublicKey
-	incKey103                                  *incognitokey.CommitteePublicKey
-	incKey104                                  *incognitokey.CommitteePublicKey
-	incKey105                                  *incognitokey.CommitteePublicKey
-	incKey106                                  *incognitokey.CommitteePublicKey
-	incKey107                                  *incognitokey.CommitteePublicKey
-	incKey108                                  *incognitokey.CommitteePublicKey
-	incKey109                                  *incognitokey.CommitteePublicKey
-	incKey110                                  *incognitokey.CommitteePublicKey
-	incKey111                                  *incognitokey.CommitteePublicKey
-	incKey112                                  *incognitokey.CommitteePublicKey
-	incKey113                                  *incognitokey.CommitteePublicKey
-	incKey114                                  *incognitokey.CommitteePublicKey
-	incKey115                                  *incognitokey.CommitteePublicKey
-	incKey116                                  *incognitokey.CommitteePublicKey
-	incKey117                                  *incognitokey.CommitteePublicKey
-	incKey118                                  *incognitokey.CommitteePublicKey
-	incKey119                                  *incognitokey.CommitteePublicKey
-
-	wrarperDB           statedb.DatabaseAccessWarper
-	emptyRoot           = common.HexToHash(common.HexEmptyRoot)
-	diskDB              incdb.Database
-	paymentAddreessKey0 string
+	incKey0                                incognitokey.CommitteePublicKey
+	incKey, incKey2, incKey3, incKey4      *incognitokey.CommitteePublicKey
+	incKey5, incKey6, incKey7, incKey8     *incognitokey.CommitteePublicKey
+	incKey9, incKey10, incKey11, incKey12  *incognitokey.CommitteePublicKey
+	incKey13, incKey14, incKey15, incKey16 *incognitokey.CommitteePublicKey
+	incKey17, incKey18, incKey19           *incognitokey.CommitteePublicKey
+	incKey20                               *incognitokey.CommitteePublicKey
+	incKey21                               *incognitokey.CommitteePublicKey
+	incKey22                               *incognitokey.CommitteePublicKey
+	incKey23                               *incognitokey.CommitteePublicKey
+	incKey24                               *incognitokey.CommitteePublicKey
+	incKey25                               *incognitokey.CommitteePublicKey
+	incKey26                               *incognitokey.CommitteePublicKey
+	incKey27                               *incognitokey.CommitteePublicKey
+	incKey28                               *incognitokey.CommitteePublicKey
+	incKey29                               *incognitokey.CommitteePublicKey
+	incKey30                               *incognitokey.CommitteePublicKey
+	incKey31                               *incognitokey.CommitteePublicKey
+	incKey32                               *incognitokey.CommitteePublicKey
+	incKey33                               *incognitokey.CommitteePublicKey
+	incKey34                               *incognitokey.CommitteePublicKey
+	incKey35                               *incognitokey.CommitteePublicKey
+	incKey36                               *incognitokey.CommitteePublicKey
+	incKey37                               *incognitokey.CommitteePublicKey
+	incKey38                               *incognitokey.CommitteePublicKey
+	incKey39                               *incognitokey.CommitteePublicKey
+	incKey40                               *incognitokey.CommitteePublicKey
+	incKey41                               *incognitokey.CommitteePublicKey
+	incKey42                               *incognitokey.CommitteePublicKey
+	incKey43                               *incognitokey.CommitteePublicKey
+	incKey44                               *incognitokey.CommitteePublicKey
+	incKey45                               *incognitokey.CommitteePublicKey
+	incKey46                               *incognitokey.CommitteePublicKey
+	incKey47                               *incognitokey.CommitteePublicKey
+	incKey48                               *incognitokey.CommitteePublicKey
+	incKey49                               *incognitokey.CommitteePublicKey
+	incKey50                               *incognitokey.CommitteePublicKey
+	incKey51                               *incognitokey.CommitteePublicKey
+	incKey52                               *incognitokey.CommitteePublicKey
+	incKey53                               *incognitokey.CommitteePublicKey
+	incKey54                               *incognitokey.CommitteePublicKey
+	incKey55                               *incognitokey.CommitteePublicKey
+	incKey56                               *incognitokey.CommitteePublicKey
+	incKey57                               *incognitokey.CommitteePublicKey
+	incKey58                               *incognitokey.CommitteePublicKey
+	incKey59                               *incognitokey.CommitteePublicKey
+	incKey60                               *incognitokey.CommitteePublicKey
+	incKey61                               *incognitokey.CommitteePublicKey
+	incKey62                               *incognitokey.CommitteePublicKey
+	incKey63                               *incognitokey.CommitteePublicKey
+	incKey64                               *incognitokey.CommitteePublicKey
+	incKey65                               *incognitokey.CommitteePublicKey
+	incKey66                               *incognitokey.CommitteePublicKey
+	incKey67                               *incognitokey.CommitteePublicKey
+	incKey68                               *incognitokey.CommitteePublicKey
+	incKey69                               *incognitokey.CommitteePublicKey
+	incKey70                               *incognitokey.CommitteePublicKey
+	incKey71                               *incognitokey.CommitteePublicKey
+	incKey72                               *incognitokey.CommitteePublicKey
+	incKey73                               *incognitokey.CommitteePublicKey
+	incKey74                               *incognitokey.CommitteePublicKey
+	incKey75                               *incognitokey.CommitteePublicKey
+	incKey76                               *incognitokey.CommitteePublicKey
+	incKey77                               *incognitokey.CommitteePublicKey
+	incKey78                               *incognitokey.CommitteePublicKey
+	incKey79                               *incognitokey.CommitteePublicKey
+	incKey80                               *incognitokey.CommitteePublicKey
+	incKey81                               *incognitokey.CommitteePublicKey
+	incKey82                               *incognitokey.CommitteePublicKey
+	incKey83                               *incognitokey.CommitteePublicKey
+	incKey84                               *incognitokey.CommitteePublicKey
+	incKey85                               *incognitokey.CommitteePublicKey
+	incKey86                               *incognitokey.CommitteePublicKey
+	incKey87                               *incognitokey.CommitteePublicKey
+	incKey88                               *incognitokey.CommitteePublicKey
+	incKey89                               *incognitokey.CommitteePublicKey
+	incKey90                               *incognitokey.CommitteePublicKey
+	incKey91                               *incognitokey.CommitteePublicKey
+	incKey92                               *incognitokey.CommitteePublicKey
+	incKey93                               *incognitokey.CommitteePublicKey
+	incKey94                               *incognitokey.CommitteePublicKey
+	incKey95                               *incognitokey.CommitteePublicKey
+	incKey96                               *incognitokey.CommitteePublicKey
+	incKey97                               *incognitokey.CommitteePublicKey
+	incKey98                               *incognitokey.CommitteePublicKey
+	incKey99                               *incognitokey.CommitteePublicKey
+	incKey100                              *incognitokey.CommitteePublicKey
+	incKey101                              *incognitokey.CommitteePublicKey
+	incKey102                              *incognitokey.CommitteePublicKey
+	incKey103                              *incognitokey.CommitteePublicKey
+	incKey104                              *incognitokey.CommitteePublicKey
+	incKey105                              *incognitokey.CommitteePublicKey
+	incKey106                              *incognitokey.CommitteePublicKey
+	incKey107                              *incognitokey.CommitteePublicKey
+	incKey108                              *incognitokey.CommitteePublicKey
+	incKey109                              *incognitokey.CommitteePublicKey
+	incKey110                              *incognitokey.CommitteePublicKey
+	incKey111                              *incognitokey.CommitteePublicKey
+	incKey112                              *incognitokey.CommitteePublicKey
+	incKey113                              *incognitokey.CommitteePublicKey
+	incKey114                              *incognitokey.CommitteePublicKey
+	incKey115                              *incognitokey.CommitteePublicKey
+	incKey116                              *incognitokey.CommitteePublicKey
+	incKey117                              *incognitokey.CommitteePublicKey
+	incKey118                              *incognitokey.CommitteePublicKey
+	incKey119                              *incognitokey.CommitteePublicKey
+	testUserKey                            *signatureschemes2.MiningKey
+	wrarperDB                              statedb.DatabaseAccessWarper
+	emptyRoot                              = common.HexToHash(common.HexEmptyRoot)
+	diskDB                                 incdb.Database
+	paymentAddreessKey0                    string
 )
+
+func getMiningKeyFromPrivateSeed(privateSeed string) (*signatureschemes2.MiningKey, error) {
+	var miningKey signatureschemes2.MiningKey
+	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
+	if err != nil {
+		return nil, NewConsensusError(LoadKeyError, err)
+	}
+	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)
+	miningKey.PriKey = map[string][]byte{}
+	miningKey.PubKey = map[string][]byte{}
+	miningKey.PriKey[common.BlsConsensus] = blsmultisig.SKBytes(blsPriKey)
+	miningKey.PubKey[common.BlsConsensus] = blsmultisig.PKBytes(blsPubKey)
+	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateSeedBytes)
+	miningKey.PriKey[common.BridgeConsensus] = bridgesig.SKBytes(&bridgePriKey)
+	miningKey.PubKey[common.BridgeConsensus] = bridgesig.PKBytes(&bridgePubKey)
+	return &miningKey, nil
+}
 
 //initTestParams init incognito public key for testing by base 58 string
 func initTestParams() {
-	MAX_SWAP_OR_ASSIGN_PERCENT_V2 = 3
+	testUserKey, _ = getMiningKeyFromPrivateSeed("112t8rq19Uu7UGbTApZzZwCAvVszAgRNAzHzr3p8Cu75jPH3h5AUtRXMKiqF3hw8NbEfeLcjtbpeUvJfw4tGj7pbqwDYngc8wB13Gf77o33f")
+	testPaymentAddress := "12S42qYc9pzsfWoxPZ21sVihEHJxYfNzEp1SXNnxvr7CGYMHNWX12ZaQkzcwvTYKAnhiVsDWwSqz5jFo6xuwzXZmz7QX1TnJaWnwEyX"
+	testPrivteSeed := "15pABFiJVeh9D5uiQEhQX4SVibGGbdAVipQxBdxkmDqAJaoG1EdFKHBrNfs"
+	privateSeedBytes, _, _ := base58.Base58Check{}.Decode(testPrivteSeed)
+	candidateWallet, _ := wallet.Base58CheckDeserialize(testPaymentAddress)
+	pk := candidateWallet.KeySet.PaymentAddress.Pk
+	incKey0, _ = incognitokey.NewCommitteeKeyFromSeed(privateSeedBytes, pk)
+
 	paymentAddreessKey0 = "12Rs8bHvYZELqHrv28bYezBQQpteZUEbYjUf2oqV9pJm6Gx4sD4n9mr4UgQe5cDeP9A2x1DsB4mbJ9LT8x2ShaY41cZJWrL7RpFpp2v"
-	incKey0 = new(incognitokey.CommitteePublicKey)
 	incKey = new(incognitokey.CommitteePublicKey)
 	incKey2 = new(incognitokey.CommitteePublicKey)
 	incKey3 = new(incognitokey.CommitteePublicKey)

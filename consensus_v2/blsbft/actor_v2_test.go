@@ -3,7 +3,6 @@ package blsbft
 import (
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/consensus_v2"
 	"reflect"
 	"testing"
 	"time"
@@ -60,7 +59,7 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 			"GetProposerByTimeSlot",
 			*hash1, byte(1),
 			int64(10),
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 		).
 		Return(
 			incognitokey.CommitteePublicKey{},
@@ -72,15 +71,15 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 			"SigningCommittees",
 			*hash1,
 			2,
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 			byte(1),
 		).
-		Return([]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3})
+		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
 
 	validCommitteeChain := &mockchain.Chain{}
 	validCommitteeChain.On("CommitteesFromViewHashForShard", *hash1, byte(1)).
 		Return(
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 			nil,
 		)
 
@@ -101,7 +100,7 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 			"GetProposerByTimeSlot",
 			*hash1, byte(1),
 			int64(10),
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 		).
 		Return(
 			incognitokey.CommitteePublicKey{},
@@ -113,10 +112,10 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 			"SigningCommittees",
 			*hash1,
 			2,
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 			byte(1),
 		).
-		Return([]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3})
+		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
 
 	shardBestState := &blockchain.ShardBestState{}
 
@@ -131,7 +130,7 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 			"GetProposerByTimeSlot",
 			*hash1, byte(1),
 			int64(10),
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 		).
 		Return(
 			incognitokey.CommitteePublicKey{},
@@ -143,10 +142,10 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 			"SigningCommittees",
 			*hash1,
 			2,
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 			byte(1),
 		).
-		Return([]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3})
+		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
 
 	type fields struct {
 		actorBase            actorBase
@@ -350,7 +349,7 @@ func Test_actorV2_handleVoteMsg(t *testing.T) {
 					blockHash.String(): &ProposeBlockInfo{
 						votes: map[string]*BFTVote{},
 						signingCommittes: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3,
+							incKey0, *incKey, *incKey2, *incKey3,
 						},
 					},
 				},
@@ -374,7 +373,7 @@ func Test_actorV2_handleVoteMsg(t *testing.T) {
 					blockHash.String(): &ProposeBlockInfo{
 						votes: map[string]*BFTVote{},
 						signingCommittes: []incognitokey.CommitteePublicKey{
-							*incKey0, *incKey, *incKey2, *incKey3,
+							incKey0, *incKey, *incKey2, *incKey3,
 						},
 					},
 				},
@@ -429,7 +428,7 @@ func Test_actorV2_proposeBeaconBlock(t *testing.T) {
 		"CreateNewBlock",
 		4, key0, 1, int64(10),
 		[]incognitokey.CommitteePublicKey{
-			*incKey0, *incKey, *incKey2, *incKey3,
+			incKey0, *incKey, *incKey2, *incKey3,
 		},
 		*hash,
 	).Return(nil, errors.New("Error"))
@@ -438,7 +437,7 @@ func Test_actorV2_proposeBeaconBlock(t *testing.T) {
 		"CreateNewBlockFromOldBlock",
 		block, key0, int64(10),
 		[]incognitokey.CommitteePublicKey{
-			*incKey0, *incKey, *incKey2, *incKey3,
+			incKey0, *incKey, *incKey2, *incKey3,
 		},
 		*hash,
 	).Return(nil, errors.New("Error"))
@@ -448,7 +447,7 @@ func Test_actorV2_proposeBeaconBlock(t *testing.T) {
 		"CreateNewBlock",
 		4, key0, 1, int64(10),
 		[]incognitokey.CommitteePublicKey{
-			*incKey0, *incKey, *incKey2, *incKey3,
+			incKey0, *incKey, *incKey2, *incKey3,
 		},
 		*hash,
 	).Return(block, nil)
@@ -457,7 +456,7 @@ func Test_actorV2_proposeBeaconBlock(t *testing.T) {
 		"CreateNewBlockFromOldBlock",
 		block, key0, int64(10),
 		[]incognitokey.CommitteePublicKey{
-			*incKey0, *incKey, *incKey2, *incKey3,
+			incKey0, *incKey, *incKey2, *incKey3,
 		},
 		*hash,
 	).Return(block, nil)
@@ -501,7 +500,7 @@ func Test_actorV2_proposeBeaconBlock(t *testing.T) {
 			args: args{
 				b58Str: key0,
 				committees: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3,
+					incKey0, *incKey, *incKey2, *incKey3,
 				},
 				committeeViewHash: *hash,
 			},
@@ -521,7 +520,7 @@ func Test_actorV2_proposeBeaconBlock(t *testing.T) {
 				block:  block,
 				b58Str: key0,
 				committees: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3,
+					incKey0, *incKey, *incKey2, *incKey3,
 				},
 				committeeViewHash: *hash,
 			},
@@ -541,7 +540,7 @@ func Test_actorV2_proposeBeaconBlock(t *testing.T) {
 			args: args{
 				b58Str: key0,
 				committees: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3,
+					incKey0, *incKey, *incKey2, *incKey3,
 				},
 				committeeViewHash: *hash,
 			},
@@ -562,7 +561,7 @@ func Test_actorV2_proposeBeaconBlock(t *testing.T) {
 				block:  block,
 				b58Str: key0,
 				committees: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3,
+					incKey0, *incKey, *incKey2, *incKey3,
 				},
 				committeeViewHash: *hash,
 			},
@@ -614,7 +613,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 		"CreateNewBlock",
 		4, key0, 1, int64(10),
 		[]incognitokey.CommitteePublicKey{
-			*incKey0, *incKey, *incKey2, *incKey3,
+			incKey0, *incKey, *incKey2, *incKey3,
 		},
 		*hash,
 	).Return(nil, errors.New("Error"))
@@ -623,7 +622,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 		"CreateNewBlockFromOldBlock",
 		block, key0, int64(10),
 		[]incognitokey.CommitteePublicKey{
-			*incKey0, *incKey, *incKey2, *incKey3,
+			incKey0, *incKey, *incKey2, *incKey3,
 		},
 		*hash,
 	).Return(nil, errors.New("Error"))
@@ -634,7 +633,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 		"CreateNewBlock",
 		4, key0, 1, int64(10),
 		[]incognitokey.CommitteePublicKey{
-			*incKey0, *incKey, *incKey2, *incKey3,
+			incKey0, *incKey, *incKey2, *incKey3,
 		},
 		*hash,
 	).Return(block, nil)
@@ -643,7 +642,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 		"CreateNewBlockFromOldBlock",
 		block, key0, int64(10),
 		[]incognitokey.CommitteePublicKey{
-			*incKey0, *incKey, *incKey2, *incKey3,
+			incKey0, *incKey, *incKey2, *incKey3,
 		},
 		*hash,
 	).Return(block, nil)
@@ -665,7 +664,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 			"GetProposerByTimeSlot",
 			*hash, byte(1),
 			int64(10),
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 		).
 		Return(
 			incognitokey.CommitteePublicKey{},
@@ -677,13 +676,13 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 			"SigningCommittees",
 			*hash,
 			2,
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 			byte(1),
 		).
-		Return([]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3})
+		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
 
 	validCommitteeChain.On("CommitteesFromViewHashForShard", *hash, byte(1)).Return(
-		[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+		[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 		nil,
 	)
 	validChain.
@@ -691,7 +690,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 			"GetProposerByTimeSlot",
 			*hash, byte(1),
 			int64(10),
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 		).
 		Return(
 			incognitokey.CommitteePublicKey{},
@@ -703,10 +702,10 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 			"SigningCommittees",
 			*hash,
 			2,
-			[]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 			byte(1),
 		).
-		Return([]incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3})
+		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
 
 	type fields struct {
 		actorBase            actorBase
@@ -768,7 +767,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 			args: args{
 				b58Str:            key0,
 				block:             nil,
-				committees:        []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+				committees:        []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 				committeeViewHash: *hash,
 			},
 			want:    nil,
@@ -789,7 +788,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 			args: args{
 				b58Str:            key0,
 				block:             block,
-				committees:        []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+				committees:        []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 				committeeViewHash: *hash,
 			},
 			want:    nil,
@@ -810,7 +809,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 			args: args{
 				b58Str:            key0,
 				block:             nil,
-				committees:        []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+				committees:        []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 				committeeViewHash: *hash,
 			},
 			want:    block,
@@ -831,7 +830,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 			args: args{
 				b58Str:            key0,
 				block:             block,
-				committees:        []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+				committees:        []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 				committeeViewHash: *hash,
 			},
 			want:    block,
@@ -1680,7 +1679,7 @@ func Test_actorV2_processWithEnoughVotes(t *testing.T) {
 			args: args{
 				v: &ProposeBlockInfo{
 					block:            errShardBlock,
-					signingCommittes: []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+					signingCommittes: []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 					votes: map[string]*BFTVote{
 						incKey0.GetMiningKeyBase58(common.BlsConsensus): &BFTVote{
 							Validator: incKey0.GetMiningKeyBase58(common.BlsConsensus),
@@ -1726,8 +1725,7 @@ func Test_createVote(t *testing.T) {
 	block.On("GetPrevHash").Return(*prevHash)
 	block.On("GetInstructions").Return([][]string{})
 
-	committees := []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3}
-
+	committees := []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3}
 	type args struct {
 		userKey    *signatureschemes2.MiningKey
 		block      types.BlockInterface
@@ -1742,7 +1740,7 @@ func Test_createVote(t *testing.T) {
 		{
 			name: "Valid Input",
 			args: args{
-				userKey:    nil,
+				userKey:    testUserKey,
 				block:      block,
 				committees: committees,
 			},
@@ -1856,7 +1854,7 @@ func Test_actorV2_createBLSAggregatedSignatures(t *testing.T) {
 						},
 					},
 				},
-				committees:         []incognitokey.CommitteePublicKey{*incKey0, *incKey, *incKey2, *incKey3},
+				committees:         []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 				tempValidationData: validationDataStr,
 			},
 			want:    string(wantValidationDataBytes),
