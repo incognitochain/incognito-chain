@@ -9,6 +9,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	"github.com/incognitochain/incognito-chain/utils"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -393,6 +394,32 @@ func (blockService BlockService) RetrieveBeaconBlockByHeight(blockHeight uint64)
 	return result, nil
 }
 
+func (blockService BlockService) GetBlocksFromHeight(chainID int, fromHeight int, numBlocks int) (interface{}, *RPCError) {
+	resultShard := make([]*types.ShardBlock, 0)
+	resultBeacon := make([]*types.BeaconBlock, 0)
+	if chainID == -1 {
+		for i := fromHeight; i < numBlocks+fromHeight; i++ {
+			blk, err := blockService.BlockChain.GetBeaconBlockByHeightV1(uint64(i))
+			if err != nil {
+				break
+			}
+			resultBeacon = append(resultBeacon, blk)
+		}
+		return resultBeacon, nil
+	} else {
+		for i := fromHeight; i < numBlocks+fromHeight; i++ {
+			blk, err := blockService.BlockChain.GetShardBlockByHeightV1(uint64(i), byte(chainID))
+			if err != nil {
+				break
+			}
+			resultShard = append(resultShard, blk)
+		}
+
+		return resultShard, nil
+	}
+
+}
+
 func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (interface{}, *RPCError) {
 	resultShard := make([]jsonresult.GetShardBlockResult, 0)
 	resultBeacon := make([]jsonresult.GetBeaconBlockResult, 0)
@@ -437,7 +464,7 @@ func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (inte
 					Logger.log.Debugf("handleGetBlocks resultShard: %+v, err: %+v", nil, errD)
 					return nil, NewRPCError(GetShardBlockByHashError, errD)
 				}
-				blockResult := jsonresult.NewGetBlockResult(block, size, common.EmptyString)
+				blockResult := jsonresult.NewGetBlockResult(block, size, utils.EmptyString)
 				resultShard = append(resultShard, *blockResult)
 				previousHash = &block.Header.PreviousBlockHash
 				if previousHash.String() == (common.Hash{}).String() {
@@ -470,7 +497,7 @@ func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (inte
 				if errD != nil {
 					return nil, NewRPCError(GetBeaconBlockByHashError, errD)
 				}
-				blockResult := jsonresult.NewGetBlocksBeaconResult(block, size, common.EmptyString)
+				blockResult := jsonresult.NewGetBlocksBeaconResult(block, size, utils.EmptyString)
 				resultBeacon = append(resultBeacon, *blockResult)
 				previousHash = &block.Header.PreviousBlockHash
 				if previousHash.String() == (common.Hash{}).String() {

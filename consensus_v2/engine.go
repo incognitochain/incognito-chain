@@ -5,10 +5,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/pubsub"
+
+	"github.com/incognitochain/incognito-chain/common/consensus"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/common/consensus"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -195,10 +198,9 @@ func (engine *Engine) WatchCommitteeChange() {
 		for _, validator := range validators {
 			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
-
 		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
+		s.NotifyNewRole(chainID, common.CommitteeRole)
 		miningProc = engine.bftProcess[chainID]
-
 		if shouldRun {
 			err := engine.bftProcess[chainID].Run()
 			if err != nil {
@@ -207,7 +209,6 @@ func (engine *Engine) WatchCommitteeChange() {
 			}
 		}
 	}
-
 	engine.currentMiningProcess = miningProc
 }
 
@@ -374,4 +375,13 @@ func (engine *Engine) getVersion(chainID int) int {
 //BFTProcess for testing only
 func (engine *Engine) BFTProcess() map[int]blsbft.Actor {
 	return engine.bftProcess
+}
+
+func (engine *Engine) NotifyNewRole(newCID int, newRole string) {
+	engine.config.PubSubManager.PublishMessage(
+		pubsub.NewMessage(pubsub.NodeRoleDetailTopic, &pubsub.NodeRole{
+			CID:  newCID,
+			Role: newRole,
+		}),
+	)
 }

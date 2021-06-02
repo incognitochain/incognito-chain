@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/config"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -207,7 +208,7 @@ func (blockchain *BlockChain) ValidateResponseTransactionFromBeaconInstructions(
 	shardID byte,
 ) error {
 	//mainnet have two block return double when height < REPLACE_STAKINGTX
-	if len(beaconBlocks) > 0 && beaconBlocks[0].GetHeight() < blockchain.config.ChainParams.ReplaceStakingTxHeight {
+	if len(beaconBlocks) > 0 && beaconBlocks[0].GetHeight() < config.Param().ReplaceStakingTxHeight {
 		return nil
 	}
 	return blockchain.ValidateReturnStakingTxFromBeaconInstructions(
@@ -315,7 +316,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.Ke
 				// cache 1 day for result
 				cachedData, err = json.Marshal(outCointsInBytes)
 				if err == nil {
-					blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 1*24*60*60*time.Millisecond)
+					blockchain.config.MemCache.PutExpired(cachedKey, cachedData, 5*time.Second)
 				}
 			}
 		}

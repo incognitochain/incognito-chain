@@ -11,6 +11,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -123,10 +124,7 @@ func NewShardBestState() *ShardBestState {
 func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
 	return &ShardBestState{ShardID: shardID}
 }
-func NewBestStateShardWithConfig(
-	shardID byte, blockchain *BlockChain,
-	shardCommitteeEngine committeestate.ShardCommitteeState,
-) *ShardBestState {
+func NewBestStateShardWithConfig(shardID byte, shardCommitteeEngine committeestate.ShardCommitteeEngine) *ShardBestState {
 	bestStateShard := NewShardBestStateWithShardID(shardID)
 	err := bestStateShard.BestBlockHash.SetBytes(make([]byte, 32))
 	if err != nil {
@@ -137,15 +135,15 @@ func NewBestStateShardWithConfig(
 		panic(err)
 	}
 	bestStateShard.BestBlock = nil
-	bestStateShard.MaxShardCommitteeSize = blockchain.config.ChainParams.MaxShardCommitteeSize
-	bestStateShard.MinShardCommitteeSize = blockchain.config.ChainParams.GetMinShardCommitteeSize(1)
-	bestStateShard.ActiveShards = blockchain.config.ChainParams.ActiveShards
+	bestStateShard.MaxShardCommitteeSize = config.Param().CommitteeSize.MaxShardCommitteeSize
+	bestStateShard.MinShardCommitteeSize = config.Param().CommitteeSize.MinShardCommitteeSize
+	bestStateShard.ActiveShards = config.Param().ActiveShards
 	bestStateShard.BestCrossShard = make(map[byte]uint64)
 	bestStateShard.ShardHeight = 1
 	bestStateShard.BeaconHeight = 1
-	bestStateShard.BlockInterval = blockchain.config.ChainParams.MinShardBlockInterval
-	bestStateShard.BlockMaxCreateTime = blockchain.config.ChainParams.MaxShardBlockCreation
-	bestStateShard.shardCommitteeState = shardCommitteeEngine
+	bestStateShard.BlockInterval = config.Param().BlockTime.MinShardBlockInterval
+	bestStateShard.BlockMaxCreateTime = config.Param().BlockTime.MaxShardBlockCreation
+	bestStateShard.shardCommitteeEngine = shardCommitteeEngine
 	return bestStateShard
 }
 

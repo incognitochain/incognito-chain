@@ -2,8 +2,10 @@ package rpcserver
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
@@ -182,9 +184,9 @@ getblockchaininfo RPC return information for blockchain node
 */
 func (httpServer *HttpServer) handleGetBlockChainInfo(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	result := jsonresult.GetBlockChainInfoResult{
-		ChainName:    httpServer.config.ChainParams.Name,
+		ChainName:    config.Param().Name,
 		BestBlocks:   make(map[int]jsonresult.GetBestBlockItem),
-		ActiveShards: httpServer.config.ChainParams.ActiveShards,
+		ActiveShards: config.Param().ActiveShards,
 	}
 	shardsBestState := httpServer.blockService.GetShardBestStates()
 	for shardID, bestState := range shardsBestState {
@@ -368,6 +370,38 @@ func (httpServer *HttpServer) handleGetCrossShardBlock(params interface{}, close
 			res.HasCrossShard = flag
 		}
 		result[shardBlock.Header.Hash()] = res
+	}
+	return result, nil
+}
+
+// handleGetBlocks - get n blocks from specific height
+func (httpServer *HttpServer) handleGetBlocksFromHeight(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) != 3 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Number of parameter is invalid"))
+	}
+
+	chainIDTemp, ok := arrayParams[0].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("chainID is invalid"))
+	}
+	chainID := int(chainIDTemp)
+
+	fromHeightTemp, ok := arrayParams[1].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("fromHeightTemp is invalid"))
+	}
+	fromHeight := int(fromHeightTemp)
+
+	numBlockTemp, ok := arrayParams[2].(float64)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("numblock is invalid"))
+	}
+	numBlock := int(numBlockTemp)
+
+	result, err := httpServer.blockService.GetBlocksFromHeight(chainID, fromHeight, numBlock)
+	if err != nil {
+		return nil, err
 	}
 	return result, nil
 }

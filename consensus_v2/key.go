@@ -126,7 +126,7 @@ func (engine *Engine) ValidateProducerPosition(
 ) error {
 	//check producer,proposer,agg sig with this version
 	producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
-	if blk.GetVersion() == 1 {
+	if blk.GetVersion() == types.BFT_VERSION {
 		tempProducer, err := committee[producerPosition].ToBase58()
 		if err != nil {
 			return fmt.Errorf("Cannot base58 a committee")

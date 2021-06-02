@@ -2,9 +2,11 @@ package incognitokey
 
 import (
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 // KeySet is real raw data of wallet account, which user can use to
@@ -106,7 +108,7 @@ func (keySet KeySet) GetPublicKeyInBase58CheckEncode() string {
 func (keySet KeySet) SignDataInBase58CheckEncode(data []byte) (string, error) {
 	signatureByte, err := keySet.Sign(data)
 	if err != nil {
-		return common.EmptyString, NewCashecError(SignDataB58Err, err)
+		return utils.EmptyString, NewCashecError(SignDataB58Err, err)
 	}
 	return base58.Base58Check{}.Encode(signatureByte, common.ZeroByte), nil
 }

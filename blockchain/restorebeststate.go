@@ -1,5 +1,10 @@
 package blockchain
 
+import (
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/config"
+)
+
 //RestoreBeaconViewStateFromHash ...
 func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchain *BlockChain, includeCommittee bool) error {
 	err := beaconBestState.InitStateRootHash(blockchain)
@@ -18,10 +23,20 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	beaconBestState.PreviousBestBlockHash = block.PreviousBestBlockHash()
 
 	if includeCommittee {
-		beaconBestState.initCommitteeState(blockchain)
-		if beaconBestState.BeaconHeight == blockchain.config.ChainParams.StakingFlowV2Height ||
-			beaconBestState.BeaconHeight == blockchain.config.ChainParams.StakingFlowV3Height {
-			beaconBestState.upgradeCommitteeState(blockchain)
+		var beaconCommitteeEngine committeestate.BeaconCommitteeEngine
+		if beaconBestState.BeaconHeight > config.Param().ConsensusParam.StakingFlowV2Height {
+			beaconCommitteeEngine = initBeaconCommitteeEngineV2(
+				beaconBestState,
+				blockchain,
+			)
+		} else {
+			beaconCommitteeEngine = initBeaconCommitteeEngineV1(
+				beaconBestState,
+			)
+		}
+		beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine
+		if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
+			beaconBestState.upgradeCommitteeEngineV2(blockchain)
 		}
 		if blockchain.BeaconChain.GetBestView() != nil {
 			err = beaconBestState.initMissingSignatureCounter(blockchain, block)

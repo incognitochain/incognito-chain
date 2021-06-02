@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/config"
 	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
@@ -93,8 +94,8 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 
 	if shardBestState.shardCommitteeState.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
 		currentCommitteePublicKeysStructs = shardBestState.GetShardCommittee()
-		if beaconProcessHeight > blockchain.config.ChainParams.StakingFlowV2Height {
-			beaconProcessHeight = blockchain.config.ChainParams.StakingFlowV2Height
+		if beaconProcessHeight > config.Param().ConsensusParam.StakingFlowV2Height {
+			beaconProcessHeight = config.Param().ConsensusParam.StakingFlowV2Height
 		}
 	} else {
 		if beaconProcessHeight <= shardBestState.BeaconHeight {
@@ -171,8 +172,15 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	Logger.log.Critical("Cross Transaction: ", crossTransactions)
 	// Get Transaction for new block
 	// // startStep = time.Now()
-	blockCreationLeftOver := curView.BlockMaxCreateTime.Nanoseconds() - time.Since(newShardBlockBeginTime).Nanoseconds()
-	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(curView, &tempPrivateKey, shardID, beaconBlocks, blockCreationLeftOver, beaconBlock.Header.Height)
+	blockCreationLeftOver := curView.BlockMaxCreateTime - time.Since(newShardBlockBeginTime)
+	txsToAddFromBlock, err := blockchain.config.BlockGen.getTransactionForNewBlock(
+		curView,
+		&tempPrivateKey,
+		shardID,
+		beaconBlocks,
+		blockCreationLeftOver,
+		beaconProcessHeight,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +264,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 	//============Build Header=============
 	// Build Root Hash for Header
-	merkleRoots := Merkle{}.BuildMerkleTreeStore(newShardBlock.Body.Transactions)
+	merkleRoots := types.Merkle{}.BuildMerkleTreeStore(newShardBlock.Body.Transactions)
 	merkleRoot := &common.Hash{}
 	if len(merkleRoots) > 0 {
 		merkleRoot = merkleRoots[len(merkleRoots)-1]
@@ -292,9 +300,9 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 		return nil, NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Instruction from block body: %+v", err))
 	}
 	insts := append(flattenTxInsts, flattenInsts...) // Order of instructions must be preserved in shardprocess
-	instMerkleRoot := GetKeccak256MerkleRoot(insts)
+	instMerkleRoot := types.GetKeccak256MerkleRoot(insts)
 	// shard tx root
-	_, shardTxMerkleData := CreateShardTxRoot(newShardBlock.Body.Transactions)
+	_, shardTxMerkleData := types.CreateShardTxRoot(newShardBlock.Body.Transactions)
 	// Add Root Hash To Header
 	newShardBlock.Header.TxRoot = *merkleRoot
 	newShardBlock.Header.ShardTxRoot = shardTxMerkleData[len(shardTxMerkleData)-1]
@@ -315,31 +323,61 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 // 3. Build response Transaction For Shard
 // 4. Build response Transaction For Beacon
 // 5. Return valid transaction from pending, response transactions from shard and beacon
-func (blockGenerator *BlockGenerator) getTransactionForNewBlock(curView *ShardBestState, privatekey *privacy.PrivateKey, shardID byte, beaconBlocks []*types.BeaconBlock, blockCreation int64, beaconHeight uint64) ([]metadata.Transaction, error) {
-	txsToAdd, txToRemove, _ := blockGenerator.getPendingTransaction(shardID, beaconBlocks, blockCreation, beaconHeight, curView)
-	if len(txsToAdd) == 0 {
-		Logger.log.Info("Creating empty block...")
-	}
-	go blockGenerator.txPool.RemoveTx(txToRemove, false)
+func (blockGenerator *BlockGenerator) getTransactionForNewBlock(
+	curView *ShardBestState,
+	privatekey *privacy.PrivateKey,
+	shardID byte,
+	beaconBlocks []*types.BeaconBlock,
+	blockCreationLeftOver time.Duration,
+	beaconHeight uint64,
+) (
+	[]metadata.Transaction,
+	error,
+) {
+	var err error
+	st := time.Now()
+	chain := blockGenerator.chain.ShardChain[shardID]
+	maxSize := uint64(4096) //kB
 	var responseTxsBeacon []metadata.Transaction
 	var errInstructions [][]string
-	var cError chan error
-	cError = make(chan error)
-	go func() {
-		var err error
-		responseTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(curView, beaconBlocks, privatekey, shardID)
-		cError <- err
-	}()
-	nilCount := 0
-	for {
-		err := <-cError
-		if err != nil {
-			return nil, err
+	responseTxsBeacon, errInstructions, err = blockGenerator.buildResponseTxsFromBeaconInstructions(curView, beaconBlocks, privatekey, shardID)
+	if err != nil {
+		return nil, err
+	}
+	bView := &BeaconBestState{}
+	bView, err = blockGenerator.chain.GetBeaconViewStateDataFromBlockHash(curView.BestBeaconHash, true)
+
+	if err != nil {
+		return nil, NewBlockChainError(CloneBeaconBestStateError, err)
+	}
+	blockCreationLeftOver = blockCreationLeftOver - time.Now().Sub(st)
+	st = time.Now()
+	txsToAdd := []metadata.Transaction{}
+	if !blockGenerator.chain.config.usingNewPool {
+		txToRemove := []metadata.Transaction{}
+		txsToAdd, txToRemove, _ = blockGenerator.getPendingTransaction(
+			shardID,
+			beaconBlocks,
+			blockCreationLeftOver.Nanoseconds(),
+			bView.BeaconHeight,
+			curView,
+		)
+		if len(txsToAdd) == 0 {
+			Logger.log.Info("Creating empty block...")
 		}
-		nilCount++
-		if nilCount == 1 {
-			break
-		}
+		go blockGenerator.txPool.RemoveTx(txToRemove, false)
+	} else {
+		txsToAdd = chain.TxPool.GetTxsTranferForNewBlock(
+			blockGenerator.chain,
+			curView,
+			bView,
+			maxSize,
+			24*time.Second,
+			blockCreationLeftOver,
+		)
+	}
+	if len(txsToAdd) > 0 {
+		Logger.log.Infof("SHARD %v | Crawling %v txs for block %v cost %v", shardID, len(txsToAdd), curView.ShardHeight+1, time.Since(st))
 	}
 	txsToAdd = append(txsToAdd, responseTxsBeacon...)
 	if len(errInstructions) > 0 {
@@ -622,7 +660,7 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeaconHeight uint64, currentBeaconHeight uint64) map[byte][]types.CrossTransaction {
 	crossTransactions := make(map[byte][]types.CrossTransaction)
 	// get cross shard block
-	var allCrossShardBlock = make([][]*types.CrossShardBlock, blockGenerator.chain.config.ChainParams.ActiveShards)
+	var allCrossShardBlock = make([][]*types.CrossShardBlock, config.Param().ActiveShards)
 	for sid, v := range blockGenerator.syncker.GetCrossShardBlocksForShardProducer(toShard, nil) {
 		heightList := make([]uint64, len(v))
 		for i, b := range v {
