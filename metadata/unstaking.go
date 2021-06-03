@@ -50,7 +50,6 @@ func (unStakingMetadata UnStakingMetadata) ValidateTxWithBlockChain(tx Transacti
 	shardID byte,
 	transactionStateDB *statedb.StateDB,
 ) (bool, error) {
-
 	requestedPublicKey := unStakingMetadata.CommitteePublicKey
 	committees, err := beaconViewRetriever.GetAllCommitteeValidatorCandidateFlattenListFromDatabase()
 	if err != nil {
