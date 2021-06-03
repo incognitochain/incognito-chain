@@ -719,7 +719,7 @@ func (intermediateWriter *IntermediateWriter) Commit(node common.Hash, report bo
 	//memcacheCommitSizeMeter.Mark(int64(storage - iw.dirtiesSize))
 	//memcacheCommitNodesMeter.Mark(int64(nodes - len(iw.dirties)))
 
-	Logger.log.Info("New Data Commit Size", (storage - intermediateWriter.dirtiesSize).String())
+	Logger.log.Info("[DATA-SIZE] Data store by statedb", (storage - intermediateWriter.dirtiesSize).String())
 	Logger.log.Info("Persisted trie from memory database", "nodes", nodes-len(intermediateWriter.dirties)+int(intermediateWriter.flushnodes), "size", storage-intermediateWriter.dirtiesSize+intermediateWriter.flushsize,
 		"gcnodes", intermediateWriter.gcnodes, "gcsize", intermediateWriter.gcsize, "gctime", intermediateWriter.gctime, "livenodes", len(intermediateWriter.dirties), "livesize", intermediateWriter.dirtiesSize)
 

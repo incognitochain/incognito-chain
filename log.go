@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"os"
 	"sort"
 	"strings"
@@ -29,6 +30,7 @@ import (
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
+	"github.com/incognitochain/incognito-chain/privacy"
 	//privacy "github.com/incognitochain/incognito-chain/privacy/errorhandler"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcRelaying "github.com/incognitochain/incognito-chain/relaying/btc"
@@ -39,7 +41,6 @@ import (
 	"github.com/incognitochain/incognito-chain/trie"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jrick/logrotate/rotator"
-	"github.com/incognitochain/incognito-chain/privacy"
 )
 
 var (
@@ -68,6 +69,7 @@ var (
 	bridgeLogger           = backendLog.Logger("DeBridge log", false)
 	metadataLogger         = backendLog.Logger("Metadata log", false)
 	trieLogger             = backendLog.Logger("Trie log", false)
+	rawdbLogger            = backendLog.Logger("RawDB log", false)
 	peerv2Logger           = backendLog.Logger("Peerv2 log", false)
 	relayingLogger         = backendLog.Logger("Relaying log", false)
 	wrapperLogger          = backendLog.Logger("Wrapper log", false)
@@ -121,6 +123,7 @@ func init() {
 	rpcserver.BLogger.Init(bridgeLogger)
 	metadata.Logger.Init(metadataLogger)
 	trie.Logger.Init(trieLogger)
+	lvdb.Logger.Init(rawdbLogger)
 	peerv2.Logger.Init(peerv2Logger)
 	relaying.Logger.Init(relayingLogger)
 	wrapper.Logger.Init(wrapperLogger)
@@ -164,6 +167,7 @@ var subsystemLoggers = map[string]common.Logger{
 	"DEBR":              bridgeLogger,
 	"META":              metadataLogger,
 	"TRIE":              trieLogger,
+	"RAWDB":             rawdbLogger,
 	"PEERV2":            peerv2Logger,
 	"DAO":               daov2Logger,
 	"BTCRELAYING":       btcRelayingLogger,

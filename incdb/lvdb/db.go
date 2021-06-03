@@ -186,6 +186,16 @@ type batch struct {
 
 // Put inserts the given value into the batch for later committing.
 func (b *batch) Put(key, value []byte) error {
+	size := float64(len(key) + len(value))
+	printSize := ""
+	if size > 1000000 {
+		printSize = fmt.Sprintf("%.2f mB", size/1000000)
+	} else if size > 1000 {
+		printSize = fmt.Sprintf("%.2f kB", size/1000)
+	} else {
+		printSize = fmt.Sprintf("%.2f B", size)
+	}
+	Logger.log.Info("[DATA-SIZE] Data store from rawdb batching: ", printSize)
 	b.b.Put(key, value)
 	b.size += len(value)
 	return nil
