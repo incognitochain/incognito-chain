@@ -48,7 +48,7 @@ func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPC
 	return result, nil
 }
 
-func (walletService WalletService) SubmitKey(keyStr string) (struct{}, *RPCError) {
+func (walletService WalletService) SubmitKey(keyStr string, accessToken string) (struct{}, *RPCError) {
 	// this function accepts a private key or a hex-encoded OTA key
 	var otaKey privacy.OTAKey
 	keySet, _, err := GetKeySetFromPrivateKeyParams(keyStr)
@@ -59,7 +59,7 @@ func (walletService WalletService) SubmitKey(keyStr string) (struct{}, *RPCError
 	}
 	result := struct{}{}
 
-	err = walletService.BlockChain.SubmitOTAKey(otaKey)
+	err = walletService.BlockChain.SubmitOTAKey(otaKey, accessToken)
 	if err != nil {
 		return struct{}{}, NewRPCError(UnexpectedError, err)
 	}

@@ -347,7 +347,7 @@ func (blockchain *BlockChain) getOutputCoins(keyset *incognitokey.KeySet, shardI
 					//indexer supports v2 only
 					coinsToStore = append(coinsToStore, c)
 				}
-				coinIndexer.StoreReindexedOutputCoins(keyset.OTAKey, coinsToStore, shardID)
+				coinIndexer.StoreIndexedOutputCoins(keyset.OTAKey, coinsToStore, shardID)
 			}
 		}
 		outCoins = append(outCoins, results...)
@@ -393,10 +393,15 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 	return blockchain.getOutputCoins(keyset, shardID, tokenID, shardHeight, map[int]bool{1:true, 2:true})
 }
 
-func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey) error{
+func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, accessToken string) error{
 	if !EnableIndexingCoinByOTAKey{
 		return errors.New("OTA key submission not supported by this node configuration")
 	}
+	isAuthorized := outcoinIndexer.IsAuthorizedUser(accessToken, theKey)
+	if isAuthorized {
+		//do something
+	}
+
 	Logger.log.Infof("OTA Key Submission %v", theKey)
 	return outcoinIndexer.AddOTAKey(theKey)
 }
@@ -410,7 +415,7 @@ func (blockchain *BlockChain) GetAllOutputCoinsByKeyset(keyset *incognitokey.Key
 		// results, _, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, bss.ShardHeight, map[int]bool{1:withVersion1, 2:true})
 		// return results, err
 	}
-	outCoins, state, err := outcoinIndexer.GetReindexedOutcoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
+	outCoins, state, err := outcoinIndexer.GetIndexedOutCoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
 	switch state{
 	case 2:
 		var decryptedResults []privacy.PlainCoin
@@ -676,7 +681,7 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 						ks.OTAKey = otaKey
 						belongs, _ := outputCoin.DoesCoinBelongToKeySet(ks)
 						if belongs{
-							outcoinIndexer.StoreReindexedOutputCoins(otaKey, []privacy.Coin{outputCoin}, shardID)
+							outcoinIndexer.StoreIndexedOutputCoins(otaKey, []privacy.Coin{outputCoin}, shardID)
 						}
 						return true
 					}

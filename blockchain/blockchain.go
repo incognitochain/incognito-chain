@@ -115,7 +115,7 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb!=nil)
 	if EnableIndexingCoinByOTAKey{
 		var err error
-		outcoinIndexer, err = txutils.NewOutcoinReindexer(*config.OutcoinByOTAKeyDb)
+		outcoinIndexer, err = txutils.NewOutCoinIndexer(*config.OutcoinByOTAKeyDb)
 		return err
 	}
 	return nil

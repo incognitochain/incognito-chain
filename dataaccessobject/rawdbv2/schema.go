@@ -352,24 +352,24 @@ const (
 	txBySerialNumberPrefixKeyLength     = 20
 )
 
-func getReindexedOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []byte {
+func getIndexedOutputCoinPrefix(tokenID common.Hash, shardID byte, publicKey []byte) []byte {
 	h := common.HashH(append(reindexedOutputCoinPrefix, append(tokenID[:], append(publicKey, shardID)...)...))
 	return h[:][:outcoinPrefixHashKeyLength]
 }
 
-func getReindexedKeysPrefix() []byte {
+func getIndexedKeysPrefix() []byte {
 	h := common.HashH(reindexedKeysPrefix)
 	return h[:][:outcoinPrefixHashKeyLength]
 }
 
-func generateReindexedOutputCoinObjectKey(tokenID common.Hash, shardID byte, publicKey []byte, outputCoin []byte) []byte {
-	prefixHash := getReindexedOutputCoinPrefix(tokenID, shardID, publicKey)
+func generateIndexedOutputCoinObjectKey(tokenID common.Hash, shardID byte, publicKey []byte, outputCoin []byte) []byte {
+	prefixHash := getIndexedOutputCoinPrefix(tokenID, shardID, publicKey)
 	valueHash := common.HashH(outputCoin)
 	return append(prefixHash, valueHash[:][:outcoinPrefixKeyLength]...)
 }
 
-func generateReindexedOTAKeyObjectKey(theKey []byte) []byte {
-	prefixHash := getReindexedKeysPrefix()
+func generateIndexedOTAKeyObjectKey(theKey []byte) []byte {
+	prefixHash := getIndexedKeysPrefix()
 	valueHash := common.HashH(theKey)
 	return append(prefixHash, valueHash[:][:outcoinPrefixKeyLength]...)
 }

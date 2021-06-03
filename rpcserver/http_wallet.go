@@ -38,14 +38,23 @@ Result—success or error
 */
 func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if arrayParams==nil || len(arrayParams)!=1 {
+	if arrayParams==nil || len(arrayParams) < 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array with 1 element"))
 	}
 	key, ok := arrayParams[0].(string)
 	if !ok{
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OTA key is invalid"))
 	}
-	result, err := httpServer.walletService.SubmitKey(key)
+
+	var accessToken string
+	if len(arrayParams) == 2 {
+		var ok bool
+		accessToken, ok = arrayParams[1].(string)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("access token is invalid"))
+		}
+	}
+	result, err := httpServer.walletService.SubmitKey(key, accessToken)
 	if err != nil {
 		return nil, err
 	}
