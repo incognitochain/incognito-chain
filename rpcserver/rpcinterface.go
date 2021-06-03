@@ -30,12 +30,12 @@ var HttpHandler = map[string]httpHandler{
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
 
 	//tx pool
-	getRawMempool:             (*HttpServer).handleGetRawMempool,
-	getNumberOfTxsInMempool:   (*HttpServer).handleGetNumberOfTxsInMempool,
-	getMempoolEntry:           (*HttpServer).handleMempoolEntry,
-	removeTxInMempool:         (*HttpServer).handleRemoveTxInMempool,
-	getMempoolInfo:            (*HttpServer).handleGetMempoolInfo,
-	getPendingTxsInBlockgen:   (*HttpServer).handleGetPendingTxsInBlockgen,
+	getRawMempool:           (*HttpServer).handleGetRawMempool,
+	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
+	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
+	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
+	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
 	// getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
@@ -151,6 +151,8 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendBurningRequestV2:      (*HttpServer).handleCreateAndSendBurningRequestV2,
 	createAndSendTxWithIssuingETHReq:   (*HttpServer).handleCreateAndSendTxWithIssuingETHReq,
 	createAndSendTxWithIssuingETHReqV2: (*HttpServer).handleCreateAndSendTxWithIssuingETHReqV2,
+	createAndSendTxWithIssuingBSCReq:   (*HttpServer).handleCreateAndSendTxWithIssuingBSCReq,
+	createAndSendBurningBSCRequest:     (*HttpServer).handleCreateAndSendBurningBSCRequest,
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof:       (*HttpServer).handleGetBeaconSwapProof,
@@ -158,6 +160,7 @@ var HttpHandler = map[string]httpHandler{
 	getBridgeSwapProof:       (*HttpServer).handleGetBridgeSwapProof,
 	getLatestBridgeSwapProof: (*HttpServer).handleGetLatestBridgeSwapProof,
 	getBurnProof:             (*HttpServer).handleGetBurnProof,
+	getBSCBurnProof:          (*HttpServer).handleGetBSCBurnProof,
 
 	//reward
 	CreateRawWithDrawTransaction: (*HttpServer).handleCreateAndSendWithDrawTransaction,

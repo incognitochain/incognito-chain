@@ -614,7 +614,6 @@ func (httpServer *HttpServer) handleCreateAndSendBurningForDepositToSCRequest(pa
 	return sendResult, nil
 }
 
-
 func (httpServer *HttpServer) handleCreateAndSendBurningForDepositToSCRequestV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	data, err := httpServer.handleCreateRawTxWithBurningForDepositToSCReqV2(params, closeChan)
 	if err != nil {
@@ -628,5 +627,91 @@ func (httpServer *HttpServer) handleCreateAndSendBurningForDepositToSCRequestV2(
 	if err1 != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
 	}
+	return sendResult, nil
+}
+
+func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingBSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithIssuingBSCReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err := httpServer.handleSendRawTransaction(newParam, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithIssuingBSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 5 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
+	}
+
+	// get meta data from params
+	data, ok := arrayParams[4].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
+	}
+	meta, err := metadata.NewIssuingBSCRequestFromMap(data)
+	if err != nil {
+		rpcErr := rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		Logger.log.Error(rpcErr)
+		return nil, rpcErr
+	}
+
+	// create new param to build raw tx from param interface
+	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
+	if errNewParam != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
+	}
+
+	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
+	if err1 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
+	byteArrays, err2 := json.Marshal(tx)
+	if err2 != nil {
+		Logger.log.Error(err1)
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
+	}
+	result := jsonresult.CreateTransactionResult{
+		TxID:            tx.Hash().String(),
+		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
+	}
+	return result, nil
+}
+
+func (httpServer *HttpServer) handleCreateRawTxWithBurningBSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	return processBurningReqV2(
+		metadata.BurningPBSCRequestMeta,
+		params,
+		closeChan,
+		httpServer,
+	)
+}
+
+func (httpServer *HttpServer) handleCreateAndSendBurningBSCRequest(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	data, err := httpServer.handleCreateRawTxWithBurningBSCReq(params, closeChan)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+
+	tx := data.(jsonresult.CreateTransactionResult)
+	base58CheckData := tx.Base58CheckData
+	newParam := make([]interface{}, 0)
+	newParam = append(newParam, base58CheckData)
+	sendResult, err1 := httpServer.handleSendRawPrivacyCustomTokenTransaction(newParam, closeChan)
+	if err1 != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
+	}
+
 	return sendResult, nil
 }

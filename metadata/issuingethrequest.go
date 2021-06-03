@@ -194,7 +194,9 @@ func (iReq *IssuingETHRequest) CalculateSize() uint64 {
 }
 
 func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
-	ethHeader, err := GetETHHeader(iReq.BlockHash)
+	gethParam := config.Param().GethParam
+	gethParam.GetFromEnv()
+	ethHeader, err := GetETHHeader(iReq.BlockHash, gethParam.Protocol, gethParam.Host, gethParam.Port)
 	if err != nil {
 		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, err)
 	}
@@ -203,7 +205,7 @@ func (iReq *IssuingETHRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: Could not find out the ETH block header with the hash: %s", iReq.BlockHash.String()))
 	}
 
-	mostRecentBlkNum, err := GetMostRecentETHBlockHeight()
+	mostRecentBlkNum, err := GetMostRecentETHBlockHeight(gethParam.Protocol, gethParam.Host, gethParam.Port)
 	if err != nil {
 		Logger.log.Info("WARNING: Could not find the most recent block height on Ethereum")
 		return nil, NewMetadataTxError(IssuingEthRequestVerifyProofAndParseReceipt, err)
@@ -270,16 +272,17 @@ func IsETHTxHashUsedInBlock(uniqETHTx []byte, uniqETHTxsUsed [][]byte) bool {
 
 func GetETHHeader(
 	ethBlockHash rCommon.Hash,
+	protocol string,
+	host string,
+	port string,
 ) (*types.Header, error) {
 	rpcClient := rpccaller.NewRPCClient()
 	getETHHeaderByHashParams := []interface{}{ethBlockHash, false}
 	var getETHHeaderByHashRes GetETHHeaderByHashRes
-	gethParam := config.Param().GethParam
-	gethParam.GetFromEnv()
 	err := rpcClient.RPCCall(
-		gethParam.Protocol,
-		gethParam.Host,
-		gethParam.Port,
+		protocol,
+		host,
+		port,
 		"eth_getBlockByHash",
 		getETHHeaderByHashParams,
 		&getETHHeaderByHashRes,
@@ -303,9 +306,9 @@ func GetETHHeader(
 	getETHHeaderByNumberParams := []interface{}{fmt.Sprintf("0x%x", headerNum), false}
 	var getETHHeaderByNumberRes GetETHHeaderByNumberRes
 	err = rpcClient.RPCCall(
-		gethParam.Protocol,
-		gethParam.Host,
-		gethParam.Port,
+		protocol,
+		host,
+		port,
 		"eth_getBlockByNumber",
 		getETHHeaderByNumberParams,
 		&getETHHeaderByNumberRes,
@@ -331,16 +334,14 @@ func GetETHHeader(
 }
 
 // GetMostRecentETHBlockHeight get most recent block height on Ethereum
-func GetMostRecentETHBlockHeight() (*big.Int, error) {
+func GetMostRecentETHBlockHeight(protocol string, host string, port string) (*big.Int, error) {
 	rpcClient := rpccaller.NewRPCClient()
 	params := []interface{}{}
 	var getETHBlockNumRes GetETHBlockNumRes
-	gethParam := config.Param().GethParam
-	gethParam.GetFromEnv()
 	err := rpcClient.RPCCall(
-		gethParam.Protocol,
-		gethParam.Host,
-		gethParam.Port,
+		protocol,
+		host,
+		port,
 		"eth_blockNumber",
 		params,
 		&getETHBlockNumRes,

@@ -69,6 +69,15 @@ const (
 	PortalCustodianDepositV3ValidateSanityDataError
 	NewPortalCustodianDepositV3MetaFromMapError
 	PortalUnlockOverRateCollateralsError
+
+	// bsc bridge
+	IssuingBscRequestNewIssuingBSCRequestFromMapError
+	IssuingBscRequestVerifyProofAndParseReceipt
+	IssuingBSCRequestBuildReqActionsError
+	IssuingBSCRequestValidateSanityDataError
+	IssuingBSCRequestValidateTxWithBlockChainError
+	IssuingBSCRequestDecodeInstructionError
+	IssuingBSCRequestUnmarshalJsonError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -85,6 +94,15 @@ var ErrCodeMessage = map[int]struct {
 	IssuingEthRequestValidateSanityDataError:         {-1005, "Validate sanity data error"},
 	IssuingEthRequestBuildReqActionsError:            {-1006, "Build request action error"},
 	IssuingEthRequestVerifyProofAndParseReceipt:      {-1007, "Verify proof and parse receipt"},
+
+	// bsc bridge
+	IssuingBscRequestNewIssuingBSCRequestFromMapError: {-1008, "BSC Can not new issuing bsc request from map"},
+	IssuingBscRequestVerifyProofAndParseReceipt:       {-1009, "BSC Verify proof and parse receipt"},
+	IssuingBSCRequestBuildReqActionsError:             {-1010, "BSC Build request action error"},
+	IssuingBSCRequestValidateSanityDataError:          {-1011, "BSC Validate sanity data error"},
+	IssuingBSCRequestValidateTxWithBlockChainError:    {-1012, "BSC Validate tx with block chain error"},
+	IssuingBSCRequestDecodeInstructionError:           {-1013, "BSC Can not decode instruction"},
+	IssuingBSCRequestUnmarshalJsonError:               {-1014, "BSC Can not unmarshall json"},
 
 	// -2xxx issuing eth request
 	IssuingRequestDecodeInstructionError:        {-2001, "Can not decode instruction"},

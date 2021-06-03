@@ -39,6 +39,7 @@ func (blockchain *BlockChain) collectStatefulActions(
 		switch metaType {
 		case metadata.IssuingRequestMeta,
 			metadata.IssuingETHRequestMeta,
+			metadata.IssuingBSCRequestMeta,
 			metadata.PDEContributionMeta,
 			metadata.PDETradeRequestMeta,
 			metadata.PDEWithdrawalRequestMeta,
@@ -119,6 +120,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	accumulatedValues := &metadata.AccumulatedValues{
 		UniqETHTxsUsed:   [][]byte{},
+		UniqBSCTxsUsed:   [][]byte{},
 		DBridgeTokenPair: map[string][]byte{},
 		CBridgeTokens:    []*common.Hash{},
 	}
@@ -160,6 +162,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 			case metadata.IssuingETHRequestMeta:
 				newInst, err = blockchain.buildInstructionsForIssuingETHReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
+
+			case metadata.IssuingBSCRequestMeta:
+				newInst, err = blockchain.buildInstructionsForIssuingBSCReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(
