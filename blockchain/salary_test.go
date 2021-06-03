@@ -906,7 +906,6 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 				CurrentRandomNumber:      tt.fields.CurrentRandomNumber,
 				CurrentRandomTimeStamp:   tt.fields.CurrentRandomTimeStamp,
 				IsGetRandomNumber:        tt.fields.IsGetRandomNumber,
-				Params:                   tt.fields.Params,
 				MaxBeaconCommitteeSize:   tt.fields.MaxBeaconCommitteeSize,
 				MinBeaconCommitteeSize:   tt.fields.MinBeaconCommitteeSize,
 				MaxShardCommitteeSize:    tt.fields.MaxShardCommitteeSize,

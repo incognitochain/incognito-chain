@@ -79,7 +79,6 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc.IsTest = isTest
 	bc.beaconViewCache, _ = lru.New(100)
 	bc.cQuitSync = make(chan struct{})
-	bc.GetBeaconBestState().Params = make(map[string]string)
 	return bc
 }
 

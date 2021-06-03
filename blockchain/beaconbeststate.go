@@ -49,7 +49,6 @@ type BeaconBestState struct {
 	CurrentRandomNumber     int64                `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp  int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber       bool                 `json:"IsGetRandomNumber"`
-	Params                  map[string]string    `json:"Params,omitempty"`
 	MaxBeaconCommitteeSize  int                  `json:"MaxBeaconCommitteeSize"`
 	MinBeaconCommitteeSize  int                  `json:"MinBeaconCommitteeSize"`
 	MaxShardCommitteeSize   int                  `json:"MaxShardCommitteeSize"`
@@ -110,7 +109,6 @@ func NewBeaconBestStateWithConfig(beaconCommitteeEngine committeestate.BeaconCom
 	beaconBestState.BestShardHeight = make(map[byte]uint64)
 	beaconBestState.BestShardHash = make(map[byte]common.Hash)
 	beaconBestState.BeaconHeight = 0
-	beaconBestState.Params = make(map[string]string)
 	beaconBestState.CurrentRandomNumber = -1
 	beaconBestState.MaxBeaconCommitteeSize = config.Param().CommitteeSize.MaxBeaconCommitteeSize
 	beaconBestState.MinBeaconCommitteeSize = config.Param().CommitteeSize.MinBeaconCommitteeSize
