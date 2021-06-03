@@ -1,6 +1,7 @@
 package txpool
 
 import (
+	"fmt"
 	"log"
 	"runtime"
 	"sync"
@@ -38,6 +39,9 @@ type TxInfoDetail struct {
 type TxsData struct {
 	TxByHash map[string]metadata.Transaction
 	TxInfos  map[string]TxInfo
+
+	TxHashByCoin  map[string]string
+	CoinsByTxHash map[string][]string
 }
 
 type txInfoTemp struct {
@@ -144,16 +148,112 @@ func (tp *TxsPool) Start() {
 			f(tp)
 			Logger.Debugf("Total txs in pool %v after func\n", len(tp.Data.TxInfos))
 		case validTx := <-cValidTxs:
-			total++
-			txH := validTx.tx.Hash().String()
-			tp.Data.TxByHash[txH] = validTx.tx
-			tp.Data.TxInfos[txH] = TxInfo{
-				Fee:   validTx.tx.GetTxFee(),
-				Size:  validTx.tx.GetTxActualSize(),
-				VTime: validTx.vt,
+			isDoubleSpend, needToRemove, txToRemove, listKeyCoin := tp.CheckDoubleSpendWithCurMem(validTx.tx)
+			if isDoubleSpend {
+				if needToRemove {
+					tp.removeDoubleSpendTx(txToRemove)
+					tp.addTx(validTx, listKeyCoin)
+				}
+			} else {
+				tp.addTx(validTx, listKeyCoin)
 			}
+			total++
+
 		}
 	}
+}
+
+func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool, bool, string, []string) {
+	listkey := []string{}
+	isDoubleSpend := false
+	neededToReplace := true
+	txHash := ""
+	prf := target.GetProof()
+	if prf != nil {
+		for _, iCoin := range prf.GetInputCoins() {
+			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
+			if h, ok := tp.Data.TxHashByCoin[key]; ok {
+				isDoubleSpend = true
+				tx := tp.Data.TxByHash[h]
+				txHash = tx.Hash().String()
+				if tp.better(tx, target) {
+					neededToReplace = false
+					return isDoubleSpend, neededToReplace, txHash, listkey
+				}
+			}
+			listkey = append(listkey, key)
+		}
+		for _, oCoin := range prf.GetOutputCoins() {
+			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
+			if h, ok := tp.Data.TxHashByCoin[key]; ok {
+				isDoubleSpend = true
+				tx := tp.Data.TxByHash[h]
+				txHash = tx.Hash().String()
+				if tp.better(tx, target) {
+					neededToReplace = false
+					return isDoubleSpend, neededToReplace, txHash, listkey
+				}
+			}
+			listkey = append(listkey, key)
+		}
+	}
+	if target.GetType() == common.TxCustomTokenPrivacyType {
+		txNormal := target.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
+		tokenID := target.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.PropertyID
+		normalPrf := txNormal.GetProof()
+		for _, iCoin := range normalPrf.GetInputCoins() {
+			key := fmt.Sprintf("%v-%v", tokenID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
+			if h, ok := tp.Data.TxHashByCoin[key]; ok {
+				isDoubleSpend = true
+				tx := tp.Data.TxByHash[h]
+				txHash = tx.Hash().String()
+				if tp.better(tx, target) {
+					neededToReplace = false
+					return isDoubleSpend, neededToReplace, txHash, listkey
+				}
+			}
+			listkey = append(listkey, key)
+		}
+		for _, oCoin := range normalPrf.GetOutputCoins() {
+			key := fmt.Sprintf("%v-%v", tokenID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
+			if h, ok := tp.Data.TxHashByCoin[key]; ok {
+				isDoubleSpend = true
+				tx := tp.Data.TxByHash[h]
+				txHash = tx.Hash().String()
+				if tp.better(tx, target) {
+					neededToReplace = false
+					return isDoubleSpend, neededToReplace, txHash, listkey
+				}
+			}
+			listkey = append(listkey, key)
+		}
+	}
+	return isDoubleSpend, neededToReplace, txHash, listkey
+}
+
+func (tp *TxsPool) addTx(validTx txInfoTemp, listCoinKey []string) {
+	txH := validTx.tx.Hash().String()
+	tp.Data.TxByHash[txH] = validTx.tx
+	tp.Data.TxInfos[txH] = TxInfo{
+		Fee:   validTx.tx.GetTxFee(),
+		Size:  validTx.tx.GetTxActualSize(),
+		VTime: validTx.vt,
+	}
+	tp.Data.CoinsByTxHash[validTx.tx.Hash().String()] = listCoinKey
+	for _, v := range listCoinKey {
+		tp.Data.TxHashByCoin[v] = validTx.tx.Hash().String()
+	}
+}
+
+func (tp *TxsPool) removeDoubleSpendTx(txH string) {
+	delete(tp.Data.TxByHash, txH)
+	delete(tp.Data.TxInfos, txH)
+	if keyList, ok := tp.Data.CoinsByTxHash[txH]; ok {
+		for _, key := range keyList {
+			delete(tp.Data.TxHashByCoin, key)
+		}
+	}
+	delete(tp.Data.CoinsByTxHash, txH)
 }
 
 func (tp *TxsPool) Stop() {
