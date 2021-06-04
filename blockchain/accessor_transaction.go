@@ -393,20 +393,47 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 	return blockchain.getOutputCoins(keyset, shardID, tokenID, shardHeight, map[int]bool{1:true, 2:true})
 }
 
-func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, accessToken string) error{
+func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, accessToken string, isReset bool, heightToSyncFrom uint64) error {
 	if !EnableIndexingCoinByOTAKey{
 		return errors.New("OTA key submission not supported by this node configuration")
 	}
 	isAuthorized := outcoinIndexer.IsAuthorizedUser(accessToken, theKey)
 	if isAuthorized {
-		//do something
+		if outcoinIndexer.IsQueueFull() {
+			return fmt.Errorf("the current authorized queue is full, please check back later")
+		}
+
+		pkb := theKey.GetPublicSpend().ToBytesS()
+		shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
+		bss := blockchain.GetBestStateShard(shardID)
+		transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
+
+		lowestHeightForV2 := config.Param().CoinVersion2LowestHeight
+		if !isReset {
+			heightToSyncFrom = bss.ShardHeight + 1
+		} else if heightToSyncFrom < lowestHeightForV2 {
+			heightToSyncFrom = lowestHeightForV2
+		}
+
+		idxParams := txutils.IndexParams{
+			FromHeight: heightToSyncFrom,
+			ToHeight:   bss.ShardHeight,
+			OTAKey:     theKey,
+			TxDb:       transactionStateDB,
+			ShardID:    shardID,
+			IsReset:    isReset,
+		}
+
+		outcoinIndexer.IdxChan <- idxParams
 	}
 
 	Logger.log.Infof("OTA Key Submission %v", theKey)
 	return outcoinIndexer.AddOTAKey(theKey)
 }
 
-// any coins that failed to decrypt are returned as privacy.Coin
+// GetAllOutputCoinsByKeyset retrieves and tries to decrypt all output coins of a key-set.
+//
+// Any coins that failed to decrypt are returned as privacy.Coin
 func (blockchain *BlockChain) GetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin, []privacy.Coin,  error) {
 	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
