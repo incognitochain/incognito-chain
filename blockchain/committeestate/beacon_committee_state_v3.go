@@ -303,6 +303,7 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 
 	// process slashing after normal swap out
 	returnStakingInstruction, newCommitteeChange, err = b.processSlashing(
+		shardID,
 		env,
 		slashingCommittees,
 		returnStakingInstruction,
@@ -311,7 +312,6 @@ func (b *BeaconCommitteeStateV3) processSwapShardInstruction(
 	if err != nil {
 		return nil, returnStakingInstruction, err
 	}
-	newCommitteeChange.AddSlashingCommittees(shardID, slashingCommittees)
 
 	return newCommitteeChange, returnStakingInstruction, nil
 }

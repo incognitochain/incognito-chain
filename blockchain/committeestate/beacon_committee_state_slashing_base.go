@@ -327,6 +327,7 @@ func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 
 	//process slashing after normal swap out
 	returnStakingInstruction, newCommitteeChange, err = b.processSlashing(
+		shardID,
 		env,
 		slashingCommittees,
 		returnStakingInstruction,
@@ -335,7 +336,6 @@ func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 	if err != nil {
 		return nil, returnStakingInstruction, err
 	}
-	newCommitteeChange.SlashingCommittee[shardID] = append(committeeChange.SlashingCommittee[shardID], slashingCommittees...)
 
 	return newCommitteeChange, returnStakingInstruction, nil
 }
@@ -394,6 +394,7 @@ func (b *beaconCommitteeStateSlashingBase) processAfterNormalSwap(
 // processSlashing process slashing committee public key
 // force unstake and return staking amount for slashed committee
 func (b *beaconCommitteeStateSlashingBase) processSlashing(
+	shardID byte,
 	env *BeaconCommitteeStateEnvironment,
 	slashingPublicKeys []string,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
@@ -416,6 +417,7 @@ func (b *beaconCommitteeStateSlashingBase) processSlashing(
 			committeeChange,
 		)
 	}
+	committeeChange.AddSlashingCommittees(shardID, slashingPublicKeys)
 
 	return returnStakingInstruction, committeeChange, nil
 }
