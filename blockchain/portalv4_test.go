@@ -18,6 +18,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -125,20 +126,18 @@ func (s *PortalTestSuiteV4) SetupTest() {
 		MaxFeePercentageForEachStep: 20,
 		TimeSpaceForFeeReplacement:  2 * time.Minute,
 	}
-	s.blockChain = &BlockChain{
-		config: Config{
-			ChainParams: &Params{
-				MinBeaconBlockInterval: 40 * time.Second,
-				MinShardBlockInterval:  40 * time.Second,
-				Epoch:                  100,
-				PortalParams: portal.PortalParams{
-					PortalParamsV4: map[uint64]portalv4.PortalParams{
-						0: s.portalParams,
-					},
-				},
-			},
+
+	tempPortalParam := &portal.PortalParams{
+		PortalParamsV4: map[uint64]portalv4.PortalParams{
+			0: s.portalParams,
 		},
 	}
+
+	config.AbortParam()
+	config.Param().BlockTime.MinBeaconBlockInterval = 40 * time.Second
+	config.Param().BlockTime.MinShardBlockInterval = 40 * time.Second
+	config.Param().EpochParam.NumberOfBlockInEpoch = 100
+	portal.SetupPortalParam(tempPortalParam)
 }
 
 type portalV4InstForProducer struct {
