@@ -18,6 +18,7 @@ type IssuingETHResponse struct {
 	RequestedTxID   common.Hash
 	UniqETHTx       []byte
 	ExternalTokenID []byte
+	SharedRandom       []byte `json:"SharedRandom,omitempty"`
 }
 
 type IssuingETHResAction struct {
@@ -66,7 +67,9 @@ func (iRes IssuingETHResponse) Hash() *common.Hash {
 	record += string(iRes.UniqETHTx)
 	record += string(iRes.ExternalTokenID)
 	record += iRes.MetadataBase.Hash().String()
-
+	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
+		record += string(iRes.SharedRandom)
+	}
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
@@ -76,14 +79,14 @@ func (iRes *IssuingETHResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	for i, inst := range insts {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not IssuingETHRequest instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(IssuingETHRequestMeta) {
 			continue
 		}
@@ -113,10 +116,12 @@ func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlo
 			Logger.log.Info("WARNING - VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
-		_, pk, paidAmount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			issuingETHAcceptedInst.IssuingAmount != paidAmount ||
-			!bytes.Equal(issuingETHAcceptedInst.IncTokenID[:], assetID[:]) {
+
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || coinID.String() != issuingETHAcceptedInst.IncTokenID.String() {
+			continue
+		}
+		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, issuingETHAcceptedInst.IssuingAmount); !ok {
 			continue
 		}
 		idx = i
@@ -125,6 +130,10 @@ func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlo
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, errors.New(fmt.Sprintf("no IssuingETHRequest tx found for IssuingETHResponse tx %s", tx.Hash().String()))
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *IssuingETHResponse) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }

@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/operation"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 func main() {
 	for j := 0; j < 1000; j++ {
 		for i := 0; ; i++ {
-			burnPubKeyE := privacy.HashToPointFromIndex(int64(i), privacy.CStringBurnAddress)
+			burnPubKeyE := operation.HashToPointFromIndex(int64(i), privacy.CStringBurnAddress)
 			burnPubKey := burnPubKeyE.ToBytesS()
 			if burnPubKey[len(burnPubKey)-1] == 0 {
 				// generate public viewing key Vk = H(Pk)

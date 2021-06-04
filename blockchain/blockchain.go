@@ -26,10 +26,11 @@ import (
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/multiview"
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/transaction"
+	txutils "github.com/incognitochain/incognito-chain/transaction/utils"
 	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/pkg/errors"
 )
@@ -67,6 +68,7 @@ type Config struct {
 	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
+	OutcoinByOTAKeyDb *incdb.Database
 	PoolManager       *txpool.PoolManager
 
 	relayShardLck sync.Mutex
@@ -108,6 +110,13 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		return err
 	}
 	blockchain.cQuitSync = make(chan struct{})
+
+	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb!=nil)
+	if EnableIndexingCoinByOTAKey{
+		var err error
+		outcoinIndexer, err = txutils.NewOutcoinReindexer(*config.OutcoinByOTAKeyDb)
+		return err
+	}
 	return nil
 }
 
@@ -352,9 +361,58 @@ func (blockchain *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
 	return blockchain.GetBeaconBestState().BestBlock.Header.Height
 }
 
-func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
+func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []coin.PlainCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
+	if int(shardID) >= common.MaxShardNumber {
+		return nil, nil, nil
+	}
 	param := transaction.NewRandomCommitmentsProcessParam(usableInputCoins, randNum, blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB(), shardID, tokenID)
 	return transaction.RandomCommitmentsProcess(param)
+}
+
+func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs int, shardID byte, tokenID *common.Hash) ([]uint64, [][]byte, [][]byte, [][]byte, error) {
+	if int(shardID) >= common.MaxShardNumber {
+		return nil, nil, nil, nil, fmt.Errorf("shardID %v is out of range, maxShardNumber is %v", shardID, common.MaxShardNumber)
+	}
+	db := blockchain.GetBestStateShard(shardID).GetCopiedTransactionStateDB()
+	lenOTA, err := statedb.GetOTACoinLength(db, *tokenID, shardID)
+	if err != nil || lenOTA == nil {
+		return nil, nil, nil, nil, err
+	}
+
+	indices := make([]uint64, 0)
+	publicKeys := make([][]byte, 0)
+	commitments := make([][]byte, 0)
+	assetTags := make([][]byte, 0)
+	// these coins either all have asset tags or none does
+	var hasAssetTags bool = true
+	for i:=0;i<numOutputs;i++{
+		idx, _ := common.RandBigIntMaxRange(lenOTA)
+		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx.Uint64(), shardID)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+		coinDB := new(coin.CoinV2)
+		if err := coinDB.SetBytes(coinBytes); err != nil {
+			return nil, nil, nil, nil , err
+		}
+		publicKey := coinDB.GetPublicKey()
+		commitment := coinDB.GetCommitment()
+
+		indices = append(indices, idx.Uint64())
+		publicKeys = append(publicKeys, publicKey.ToBytesS())
+		commitments = append(commitments, commitment.ToBytesS())
+
+		if hasAssetTags{
+			assetTag := coinDB.GetAssetTag()
+			if assetTag!=nil{
+				assetTags = append(assetTags, assetTag.ToBytesS())
+			}else{
+				hasAssetTags = false
+			}
+		}
+	}
+
+	return indices, publicKeys, commitments, assetTags, nil
 }
 
 func (blockchain *BlockChain) GetActiveShardNumber() int {
@@ -740,26 +798,20 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 	return beaconView, err
 }
 
-// GetFixedRandomForShardIDCommitment returns the fixed randomness for shardID commitments
-// if bc height is greater than or equal to BCHeightBreakPointFixRandShardCM
-// otherwise, return nil
-func (blockchain *BlockChain) GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar {
-	if beaconHeight == 0 {
-		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
-	}
-	if beaconHeight >= config.Param().BCHeightBreakPointNewZKP {
-		return privacy.FixedRandomnessShardID
-	}
-
-	return nil
-}
-
 func (blockchain *BlockChain) IsAfterNewZKPCheckPoint(beaconHeight uint64) bool {
 	if beaconHeight == 0 {
 		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
 	}
 
 	return beaconHeight >= config.Param().BCHeightBreakPointNewZKP
+}
+
+func (blockchain *BlockChain) IsAfterPrivacyV2CheckPoint(beaconHeight uint64) bool {
+	if beaconHeight == 0 {
+		beaconHeight = blockchain.GetBeaconBestState().GetHeight()
+	}
+
+	return beaconHeight >= config.Param().BCHeightBreakPointPrivacyV2
 }
 
 func (s *BlockChain) AddRelayShard(sid int) error {

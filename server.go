@@ -5,6 +5,9 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"log"
 	"net"
 	"os"
@@ -18,10 +21,8 @@ import (
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"github.com/incognitochain/incognito-chain/peerv2"
-	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	"github.com/incognitochain/incognito-chain/syncker"
-	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/txpool"
 	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -192,6 +193,7 @@ func (serverObj *Server) NewServer(
 	listenAddrs string,
 	db map[int]incdb.Database,
 	dbmp databasemp.DatabaseInterface,
+	dboc *incdb.Database,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
 	bnbChainState *bnbrelaying.BNBChainState,
@@ -315,6 +317,7 @@ func (serverObj *Server) NewServer(
 		PubSubManager:   pubsubManager,
 		ConsensusEngine: serverObj.consensusEngine,
 		Highway:         serverObj.highway,
+		OutcoinByOTAKeyDb: dboc,
 		PoolManager:     poolManager,
 	})
 	if err != nil {
@@ -758,27 +761,25 @@ func (serverObj *Server) TransactionPoolBroadcastLoop() {
 			if !txDesc.IsFowardMessage {
 				tx := txDesc.Desc.Tx
 				switch tx.GetType() {
-				case common.TxNormalType:
+				case common.TxNormalType, common.TxConversionType:
 					{
 						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
 						if err != nil {
 							continue
 						}
-						normalTx := tx.(*transaction.Tx)
-						txMsg.(*wire.MessageTx).Transaction = normalTx
+						txMsg.(*wire.MessageTx).Transaction = tx
 						err = serverObj.PushMessageToAll(txMsg)
 						if err == nil {
 							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
 						}
 					}
-				case common.TxCustomTokenPrivacyType:
+				case common.TxCustomTokenPrivacyType, common.TxTokenConversionType:
 					{
 						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
 						if err != nil {
 							continue
 						}
-						customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
+						txMsg.(*wire.MessageTxPrivacyToken).Transaction = tx
 						err = serverObj.PushMessageToAll(txMsg)
 						if err == nil {
 							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
@@ -994,9 +995,9 @@ func (serverObj *Server) OnGetCrossShard(_ *peer.PeerConn, msg *wire.MessageGetC
 }
 
 func updateTxEnvWithSView(sView *blockchain.ShardBestState, tx metadata.Transaction) metadata.ValidationEnviroment {
-	valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), sView.GetHeight())
-	valEnv = transaction.WithBeaconHeight(valEnv, sView.GetBeaconHeight())
-	valEnv = transaction.WithConfirmedTime(valEnv, sView.GetBlockTime())
+	valEnv := tx_generic.WithShardHeight(tx.GetValidationEnv(), sView.GetHeight())
+	valEnv = tx_generic.WithBeaconHeight(valEnv, sView.GetBeaconHeight())
+	valEnv = tx_generic.WithConfirmedTime(valEnv, sView.GetBlockTime())
 	return valEnv
 }
 
@@ -1026,12 +1027,12 @@ func (serverObj *Server) OnTxPrivacyToken(peer *peer.PeerConn, msg *wire.Message
 	valEnv := updateTxEnvWithSView(sView, tx)
 	tx.SetValidationEnv(valEnv)
 	if tx.GetType() == common.TxCustomTokenPrivacyType {
-		txCustom, ok := tx.(*transaction.TxCustomTokenPrivacy)
+		txCustom, ok := tx.(transaction.TransactionToken)
 		if !ok {
 			return
 		}
-		valEnvCustom := updateTxEnvWithSView(sView, &txCustom.TxPrivacyTokenData.TxNormal)
-		txCustom.TxPrivacyTokenData.TxNormal.SetValidationEnv(valEnvCustom)
+		valEnvCustom := updateTxEnvWithSView(sView, txCustom.GetTxNormal())
+		txCustom.GetTxNormal().SetValidationEnv(valEnvCustom)
 	}
 	serverObj.netSync.QueueTxPrivacyToken(nil, msg, txProcessed)
 	//<-txProcessed

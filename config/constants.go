@@ -76,6 +76,7 @@ const (
 	MainnetNet            = 0x01
 	KeyListFileName       = "keylist.json"
 	KeyListV2FileName     = "keylist-v2.json"
+	DefaultOutcoinDirname = "_coins_"
 )
 
 var (
