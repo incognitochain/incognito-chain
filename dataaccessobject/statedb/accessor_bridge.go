@@ -47,14 +47,14 @@ func InsertBSCTxHashIssued(stateDB *StateDB, uniqueBSCTx []byte) error {
 
 func IsBSCTxHashIssued(stateDB *StateDB, uniqueBSCTx []byte) (bool, error) {
 	key := GenerateBridgeBSCTxObjectKey(uniqueBSCTx)
-	ethTxState, has, err := stateDB.getBridgeBSCTxState(key)
+	bscTxState, has, err := stateDB.getBridgeBSCTxState(key)
 	if err != nil {
 		return false, NewStatedbError(IsBSCTxHashIssuedError, err)
 	}
 	if !has {
 		return false, nil
 	}
-	if bytes.Compare(ethTxState.UniqueBSCTx(), uniqueBSCTx) != 0 {
+	if bytes.Compare(bscTxState.UniqueBSCTx(), uniqueBSCTx) != 0 {
 		panic("same key wrong value")
 	}
 	return true, nil
