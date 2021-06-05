@@ -55,6 +55,14 @@ type TxPool interface {
 		valid []metadata.Transaction,
 		needValidate []metadata.Transaction,
 	)
+	CheckDoubleSpendWithCurMem(
+		target metadata.Transaction,
+	) (
+		bool,
+		bool,
+		string,
+		[]string,
+	)
 	snapshotPool() TxsData
 	snapshotPoolOutCoin() map[common.Hash]interface{}
 	getTxByHash(txID string) metadata.Transaction
