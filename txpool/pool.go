@@ -39,7 +39,10 @@ type TxInfoDetail struct {
 type TxsData struct {
 	TxByHash map[string]metadata.Transaction
 	TxInfos  map[string]TxInfo
+}
 
+type CoinsData struct {
+	locker        *sync.RWMutex
 	TxHashByCoin  map[string]string
 	CoinsByTxHash map[string][]string
 }
@@ -60,6 +63,7 @@ type TxsPool struct {
 	cQuit     chan bool
 	better    func(txA, txB metadata.Transaction) bool
 	ttl       time.Duration
+	CData     CoinsData
 }
 
 func NewTxsPool(
@@ -80,15 +84,32 @@ func NewTxsPool(
 		sttLock:   &sync.RWMutex{},
 		cQuit:     make(chan bool),
 		better: func(txA, txB metadata.Transaction) bool {
-			return txA.GetTxFee() > txB.GetTxFee()
+			if txA.GetTxFee() > 0 {
+				return txA.GetTxFee() >= txB.GetTxFee()
+			} else {
+				return txA.GetTxFeeToken() >= txB.GetTxFeeToken()
+			}
 		},
 		ttl: ttl,
+		CData: CoinsData{
+			locker:        &sync.RWMutex{},
+			TxHashByCoin:  map[string]string{},
+			CoinsByTxHash: map[string][]string{},
+		},
 	}
 	removeTx := func(txHash string, arg interface{}) {
 		go func(txPool *TxsPool, target string) {
 			if txPool.IsRunning() {
 				tp.RemoveTx(target)
 			}
+			txPool.CData.locker.Lock()
+			if listCoins, ok := txPool.CData.CoinsByTxHash[txHash]; ok {
+				for _, coin := range listCoins {
+					delete(txPool.CData.TxHashByCoin, coin)
+				}
+			}
+			delete(txPool.CData.CoinsByTxHash, txHash)
+			txPool.CData.locker.Unlock()
 		}(tp, txHash)
 	}
 	tp.Cacher.OnEvicted(removeTx)
@@ -164,6 +185,8 @@ func (tp *TxsPool) Start() {
 }
 
 func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool, bool, string, []string) {
+	tp.CData.locker.RLock()
+	defer tp.CData.locker.RUnlock()
 	listkey := []string{}
 	isDoubleSpend := false
 	neededToReplace := true
@@ -172,7 +195,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 	if prf != nil {
 		for _, iCoin := range prf.GetInputCoins() {
 			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
-			if h, ok := tp.Data.TxHashByCoin[key]; ok {
+			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				tx := tp.Data.TxByHash[h]
 				txHash = tx.Hash().String()
@@ -185,7 +208,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 		}
 		for _, oCoin := range prf.GetOutputCoins() {
 			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
-			if h, ok := tp.Data.TxHashByCoin[key]; ok {
+			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				tx := tp.Data.TxByHash[h]
 				txHash = tx.Hash().String()
@@ -203,7 +226,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 		normalPrf := txNormal.GetProof()
 		for _, iCoin := range normalPrf.GetInputCoins() {
 			key := fmt.Sprintf("%v-%v", tokenID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
-			if h, ok := tp.Data.TxHashByCoin[key]; ok {
+			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				tx := tp.Data.TxByHash[h]
 				txHash = tx.Hash().String()
@@ -216,7 +239,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 		}
 		for _, oCoin := range normalPrf.GetOutputCoins() {
 			key := fmt.Sprintf("%v-%v", tokenID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
-			if h, ok := tp.Data.TxHashByCoin[key]; ok {
+			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				tx := tp.Data.TxByHash[h]
 				txHash = tx.Hash().String()
@@ -232,6 +255,8 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 }
 
 func (tp *TxsPool) addTx(validTx txInfoTemp, listCoinKey []string) {
+	tp.CData.locker.Lock()
+	tp.CData.locker.Unlock()
 	txH := validTx.tx.Hash().String()
 	tp.Data.TxByHash[txH] = validTx.tx
 	tp.Data.TxInfos[txH] = TxInfo{
@@ -239,21 +264,23 @@ func (tp *TxsPool) addTx(validTx txInfoTemp, listCoinKey []string) {
 		Size:  validTx.tx.GetTxActualSize(),
 		VTime: validTx.vt,
 	}
-	tp.Data.CoinsByTxHash[validTx.tx.Hash().String()] = listCoinKey
+	tp.CData.CoinsByTxHash[validTx.tx.Hash().String()] = listCoinKey
 	for _, v := range listCoinKey {
-		tp.Data.TxHashByCoin[v] = validTx.tx.Hash().String()
+		tp.CData.TxHashByCoin[v] = validTx.tx.Hash().String()
 	}
 }
 
 func (tp *TxsPool) removeDoubleSpendTx(txH string) {
+	tp.CData.locker.Lock()
+	tp.CData.locker.Unlock()
 	delete(tp.Data.TxByHash, txH)
 	delete(tp.Data.TxInfos, txH)
-	if keyList, ok := tp.Data.CoinsByTxHash[txH]; ok {
+	if keyList, ok := tp.CData.CoinsByTxHash[txH]; ok {
 		for _, key := range keyList {
-			delete(tp.Data.TxHashByCoin, key)
+			delete(tp.CData.TxHashByCoin, key)
 		}
 	}
-	delete(tp.Data.CoinsByTxHash, txH)
+	delete(tp.CData.CoinsByTxHash, txH)
 }
 
 func (tp *TxsPool) Stop() {
