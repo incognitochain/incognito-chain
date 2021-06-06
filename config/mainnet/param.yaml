@@ -1,0 +1,59 @@
+name: "mainnet"
+net: 0x01
+genesis_param:
+  fee_per_tx_kb: 0
+  consensus_algorithm: "bls"
+  block_timestamp: "2019-10-29T00:00:00.000Z"
+  tx_stake: "d0e731f55fa6c49f602807a6686a7ac769de4e04882bb5eaf8f4fe209f46535d"
+
+committee_size:
+  max_shard_committee_size: 32
+  min_shard_committee_size: 22
+  min_beacon_committee_size: 7
+  max_beacon_committee_size: 32
+  init_shard_committee_size: 22
+  init_beacon_committee_size: 7
+  shard_committee_size_key_list_v2: 22
+  beacon_committee_size_key_list_v2: 7
+  number_of_fixed_shard_block_validators: 22
+block_time:
+  min_beacon_block_interval: 40s
+  max_beacon_block_creation: 10s
+  min_shard_block_interval: 40s
+  max_shard_block_creation: 10s
+staking_amount_shard: 1750000000000
+active_shards: 8
+basic_reward: 1386666000
+epoch_param:
+  number_of_block_in_epoch: 350
+  number_of_block_in_epoch_v2: 1000000000000
+  epoch_v2_break_point: 1000000000000
+  random_time: 175
+  random_time_v2: 1000000000000
+eth_contract_address: "0x43D037A562099A4C2c95b1E2120cc43054450629"
+dao_address: "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" # community fund
+centralized_website_payment_address: "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
+swap_committee_param:
+  offset: 4
+  swap_offset: 4
+  assign_offset: 8
+consensus_param:
+  consensus_v2_epoch: 3071
+  staking_flow_v2_height: 1207793
+  enable_slashing_height: 1000000000000
+  timeslot: 40
+  epoch_break_point_swap_new_key:
+    - 1917
+beacon_height_break_point_burn_addr: 150500
+eth_remove_bridge_sig_epoch: 1973
+replace_staking_tx_height: 559380
+bc_height_break_point_new_zkp: 934858
+enable_feature_flags:
+  - 0: 1
+  - 1: 0
+portal_v3_height: 10000000
+tx_pool_version: 0
+geth_param:
+  host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
+  protocol: "https"
+  port: ""

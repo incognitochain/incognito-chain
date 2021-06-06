@@ -4,14 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+
+	"time"
+
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
-	"time"
 )
 
 // Interface for all types of metadata in tx
@@ -55,17 +58,14 @@ type MempoolRetriever interface {
 }
 
 type ChainRetriever interface {
-	GetETHRemoveBridgeSigEpoch() uint64
-	GetBCHeightBreakPointPortalV3() uint64
-	GetStakingAmountShard() uint64
 	GetCentralizedWebsitePaymentAddress(uint64) string
-	GetBeaconHeightBreakPointBurnAddr() uint64
 	GetBurningAddress(blockHeight uint64) string
 	GetTransactionByHash(common.Hash) (byte, common.Hash, uint64, int, Transaction, error)
 	ListPrivacyTokenAndBridgeTokenAndPRVByShardID(byte) ([]common.Hash, error)
 	GetBNBChainID() string
 	GetBTCChainID() string
 	GetBTCHeaderChain() *btcrelaying.BlockChain
+	GetShardStakingTx(shardID byte, beaconHeight uint64) (map[string]string, error)
 	GetPortalFeederAddress(beaconHeight uint64) string
 	GetFixedRandomForShardIDCommitment(beaconHeight uint64) *privacy.Scalar
 	IsSupportedTokenCollateralV3(beaconHeight uint64, externalTokenID string) bool
@@ -82,23 +82,41 @@ type ChainRetriever interface {
 }
 
 type BeaconViewRetriever interface {
+	GetHeight() uint64
 	GetAllCommitteeValidatorCandidate() (map[byte][]incognitokey.CommitteePublicKey, map[byte][]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error)
 	GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error)
 	GetAutoStakingList() map[string]bool
-	GetAllBridgeTokens() ([]common.Hash, error)
+	// GetAllBridgeTokens() ([]common.Hash, error)
 	GetBeaconFeatureStateDB() *statedb.StateDB
 	GetBeaconRewardStateDB() *statedb.StateDB
 	GetBeaconSlashStateDB() *statedb.StateDB
+	GetStakerInfo(string) (*statedb.StakerInfo, bool, error)
+	GetBeaconConsensusStateDB() *statedb.StateDB
+	CandidateWaitingForNextRandom() []incognitokey.CommitteePublicKey
 }
 
 type ShardViewRetriever interface {
 	GetEpoch() uint64
 	GetBeaconHeight() uint64
+	GetShardID() byte
 	GetStakingTx() map[string]string
 	ListShardPrivacyTokenAndPRV() []common.Hash
 	GetShardRewardStateDB() *statedb.StateDB
 	GetCopiedFeatureStateDB() *statedb.StateDB
+	GetCopiedTransactionStateDB() *statedb.StateDB
 	GetHeight() uint64
+}
+
+type ValidationEnviroment interface {
+	IsPrivacy() bool
+	IsConfimed() bool
+	TxType() string
+	TxAction() int
+	ShardID() int
+	ShardHeight() uint64
+	BeaconHeight() uint64
+	ConfirmedTime() int64
+	Version() int
 }
 
 // Interface for all type of transaction
@@ -134,6 +152,21 @@ type Transaction interface {
 	// CheckTransactionFee(minFeePerKbTx uint64) bool
 	ValidateTxWithCurrentMempool(MempoolRetriever) error
 	ValidateSanityData(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) (bool, error)
+
+	ValidateSanityDataByItSelf() (bool, error)
+	ValidateTxCorrectness() (bool, error)
+	LoadCommitment(db *statedb.StateDB) error
+	ValidateSanityDataWithBlockchain(
+		chainRetriever ChainRetriever,
+		shardViewRetriever ShardViewRetriever,
+		beaconViewRetriever BeaconViewRetriever,
+		beaconHeight uint64,
+	) (
+		bool,
+		error,
+	)
+	ValidateDoubleSpendWithBlockChain(stateDB *statedb.StateDB) (bool, error)
+
 	ValidateTxWithBlockChain(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, stateDB *statedb.StateDB) error
 	ValidateDoubleSpendWithBlockchain(byte, *statedb.StateDB, *common.Hash) error
 	ValidateTxByItself(map[string]bool, *statedb.StateDB, *statedb.StateDB, ChainRetriever, byte, ShardViewRetriever, BeaconViewRetriever) (bool, error)
@@ -147,6 +180,10 @@ type Transaction interface {
 	IsSalaryTx() bool
 	GetFullTxValues() (uint64, uint64)
 	IsFullBurning(ChainRetriever, ShardViewRetriever, BeaconViewRetriever, uint64) bool
+	VerifySigTx() (bool, error)
+	GetValidationEnv() ValidationEnviroment
+	SetValidationEnv(ValidationEnviroment)
+	UnmarshalJSON(data []byte) error
 }
 
 func getPDEPoolPair(

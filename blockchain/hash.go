@@ -3,13 +3,14 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"math"
 	"sort"
 	"strconv"
 
-	"github.com/incognitochain/incognito-chain/metadata"
-
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 // BuildKeccak256MerkleTree creates a merkle tree using Keccak256 hash func.
@@ -345,31 +346,6 @@ func generateHashFromStringArray(strs []string) (common.Hash, error) {
 	return hash, nil
 }
 
-func generateHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string) (common.Hash, error) {
-	var keys1 []int
-	for k := range maps1 {
-		keys1 = append(keys1, int(k))
-	}
-	sort.Ints(keys1)
-	shardPendingValidator := []string{}
-	// To perform the opertion you want
-	for _, k := range keys1 {
-		shardPendingValidator = append(shardPendingValidator, maps1[byte(k)]...)
-	}
-
-	var keys2 []int
-	for k := range maps2 {
-		keys2 = append(keys2, int(k))
-	}
-	sort.Ints(keys2)
-	shardValidator := []string{}
-	// To perform the opertion you want
-	for _, k := range keys2 {
-		shardValidator = append(shardValidator, maps2[byte(k)]...)
-	}
-	return generateHashFromStringArray(append(shardPendingValidator, shardValidator...))
-}
-
 func generateHashFromMapStringString(maps1 map[string]string) (common.Hash, error) {
 	var keys []string
 	var res []string
@@ -384,25 +360,7 @@ func generateHashFromMapStringString(maps1 map[string]string) (common.Hash, erro
 	return generateHashFromStringArray(res)
 }
 
-func generateHashFromMapStringBool(maps1 map[string]bool) (common.Hash, error) {
-	var keys []string
-	var res []string
-	for k := range maps1 {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		res = append(res, key)
-		if maps1[key] {
-			res = append(res, "true")
-		} else {
-			res = append(res, "false")
-		}
-	}
-	return generateHashFromStringArray(res)
-}
-
-func generateHashFromShardState(allShardState map[byte][]ShardState) (common.Hash, error) {
+func generateHashFromShardState(allShardState map[byte][]types.ShardState, version uint) (common.Hash, error) {
 	allShardStateStr := []string{}
 	var keys []int
 	for k := range allShardState {
@@ -416,6 +374,10 @@ func generateHashFromShardState(allShardState map[byte][]ShardState) (common.Has
 			res += shardState.Hash.String()
 			crossShard, _ := json.Marshal(shardState.CrossShard)
 			res += string(crossShard)
+			if version == committeestate.SLASHING_VERSION {
+				res += shardState.ValidationData
+				res += shardState.CommitteeFromBlock.String()
+			}
 		}
 		allShardStateStr = append(allShardStateStr, res)
 	}
@@ -430,34 +392,10 @@ func verifyHashFromStringArray(strs []string, hash common.Hash) (common.Hash, bo
 	return res, bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
-func verifyHashFromMapByteString(maps1 map[byte][]string, maps2 map[byte][]string, hash common.Hash) bool {
-	res, err := generateHashFromMapByteString(maps1, maps2)
+func verifyHashFromShardState(allShardState map[byte][]types.ShardState, hash common.Hash, version uint) bool {
+	res, err := generateHashFromShardState(allShardState, version)
 	if err != nil {
 		return false
 	}
 	return bytes.Equal(res.GetBytes(), hash.GetBytes())
-}
-
-func verifyHashFromShardState(allShardState map[byte][]ShardState, hash common.Hash) bool {
-	res, err := generateHashFromShardState(allShardState)
-	if err != nil {
-		return false
-	}
-	return bytes.Equal(res.GetBytes(), hash.GetBytes())
-}
-
-func verifyHashFromMapStringString(maps1 map[string]string, targetHash common.Hash) (common.Hash, bool) {
-	hash, err := generateHashFromMapStringString(maps1)
-	if err != nil {
-		return hash, false
-	}
-	return hash, hash.IsEqual(&targetHash)
-}
-
-func verifyHashFromMapStringBool(maps1 map[string]bool, targetHash common.Hash) (common.Hash, bool) {
-	hash, err := generateHashFromMapStringBool(maps1)
-	if err != nil {
-		return hash, false
-	}
-	return hash, hash.IsEqual(&targetHash)
 }

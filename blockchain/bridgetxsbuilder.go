@@ -2,12 +2,14 @@ package blockchain
 
 import (
 	"bytes"
-	"errors"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"errors"
 	"math/big"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	rCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
@@ -165,7 +167,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	logMap, err := metadata.PickAndParseLogMapFromReceipt(ethReceipt, blockchain.config.ChainParams.EthContractAddressStr)
+	logMap, err := metadata.PickAndParseLogMapFromReceipt(ethReceipt, config.Param().EthContractAddressStr)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while parsing log map from receipt: ", err)
 		return append(instructions, rejectedInst), nil
@@ -255,7 +257,13 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 	return append(instructions, acceptedInst), nil
 }
 
-func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) buildIssuanceTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	featureStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
 	Logger.log.Info("[Centralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -309,7 +317,7 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 			false,
 			shardID,
 			nil,
-			beaconView.GetBeaconFeatureStateDB()))
+			featureStateDB))
 
 	if initErr != nil {
 		Logger.log.Warn("WARNING: an error occured while initializing response tx: ", initErr)
@@ -319,7 +327,13 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(contentStr string, produce
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, producerPrivateKey *privacy.PrivateKey, shardID byte, shardView *ShardBestState, beaconView *BeaconBestState) (metadata.Transaction, error) {
+func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
+	contentStr string,
+	producerPrivateKey *privacy.PrivateKey,
+	shardID byte,
+	shardView *ShardBestState,
+	featureStateDB *statedb.StateDB,
+) (metadata.Transaction, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -378,7 +392,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(contentStr string, prod
 			false,
 			false,
 			shardID, nil,
-			beaconView.GetBeaconFeatureStateDB()))
+			featureStateDB))
 
 	if initErr != nil {
 		Logger.log.Warn("WARNING: an error occured while initializing response tx: ", initErr)

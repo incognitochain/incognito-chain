@@ -6,7 +6,7 @@ fi
 if [ -f ./bootnode ]; then
     rm -rf ./bootnode
 fi
-env CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o incognito ../*.go
+env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o incognito ../*.go
 env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 ENV=testnet go build -ldflags '-w' -o incognito-test ../tests/*.go
 cp ../keylist.json .
 cp ../keylist-v2.json .

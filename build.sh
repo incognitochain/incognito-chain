@@ -1,17 +1,45 @@
 #!/usr/bin/env bash
-echo "Start build Incognito"
 
-git pull
+# if [ -z "$env" ]; then
+#     env="testnet";
+# fi
 
-echo "Package install"
-dep ensure -v
+# commit=`git show --summary --oneline | cut -d ' ' -f 1`
 
-APP_NAME="incognito"
+# if [[ $env == "testnet" ]]; then
+#     docker build --build-arg commit=$commit . -t incognitochaintestnet/incognito:${tag} && docker push incognitochaintestnet/incognito:${tag} && echo "Commit: $commit"
+# elif [ $env == "mainnet" ]; then
+#     docker build --build-arg commit=$commit . -t incognitochain/incognito-mainnet:${tag} && docker push incognitochain/incognito-mainnet:${tag} && echo "Commit: $commit"
+# fi
 
-echo "go build -o $APP_NAME"
-go build -o $APP_NAME
+# docker rmi -f $(docker images --filter "dangling=true" -q)
 
-echo "cp ./$APP_NAME $GOPATH/bin/$APP_NAME"
-mv ./$APP_NAME $GOPATH/bin/$APP_NAME
 
-echo "Build Incognito success!"
+
+#!/usr/bin/env bash
+
+if [ -f ./incognito ]; then
+    rm -rf ./incognito
+fi
+if [ -f ./bootnode ]; then
+    rm -rf ./bootnode
+fi
+
+env CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-w' -o incognito
+
+echo "build execuable file successfully"
+
+if [ -z "$env" ]; then
+    env="testnet";
+fi
+
+commit=`git show --summary --oneline | cut -d ' ' -f 1`
+
+if [[ $env == "testnet" ]]; then
+    docker build --build-arg commit=$commit . -t incognitochaintestnet/incognito:${tag} && docker push incognitochaintestnet/incognito:${tag} && echo "Commit: $commit"
+elif [ $env == "mainnet" ]; then
+    docker build --build-arg commit=$commit . -t incognitochain/incognito-mainnet:${tag} && docker push incognitochain/incognito-mainnet:${tag} && echo "Commit: $commit"
+fi
+
+docker rmi -f $(docker images --filter "dangling=true" -q)
+

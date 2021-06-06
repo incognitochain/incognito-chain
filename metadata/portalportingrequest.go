@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -157,7 +158,7 @@ func (portalUserRegister PortalUserRegister) ValidateSanityData(chainRetriever C
 	}
 
 	// validate metadata type
-	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() && portalUserRegister.Type != PortalRequestPortingMetaV3 {
+	if beaconHeight >= config.Param().BCHeightBreakPointPortalV3 && portalUserRegister.Type != PortalRequestPortingMetaV3 {
 		return false, false, fmt.Errorf("Metadata type should be %v", PortalRequestPortingMetaV3)
 	}
 

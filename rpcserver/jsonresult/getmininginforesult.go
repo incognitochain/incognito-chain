@@ -2,6 +2,7 @@ package jsonresult
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/config"
 )
 
 type GetMiningInfoResult struct {
@@ -17,11 +18,15 @@ type GetMiningInfoResult struct {
 	IsEnableMining      bool   `json:"IsEnableMining"`
 }
 
-func NewGetMiningInfoResult(txMemPoolSize int, blChain blockchain.BlockChain, consensus blockchain.ConsensusEngine, param blockchain.Params, isEnableMining bool) *GetMiningInfoResult {
+func NewGetMiningInfoResult(
+	txMemPoolSize int,
+	blChain blockchain.BlockChain,
+	consensus blockchain.ConsensusEngine,
+) *GetMiningInfoResult {
 	result := &GetMiningInfoResult{}
 	result.PoolSize = txMemPoolSize
-	result.Chain = param.Name
-	result.IsEnableMining = isEnableMining
+	result.Chain = config.Param().Name
+	result.IsEnableMining = config.Config().EnableMining
 	result.BeaconHeight = blChain.GetBeaconBestState().BeaconHeight
 
 	// role, shardID := httpServer.config.BlockChain.BestState.Beacon.GetPubkeyRole(httpServer.config.MiningPubKeyB58, 0)

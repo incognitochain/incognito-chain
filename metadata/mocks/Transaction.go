@@ -454,6 +454,22 @@ func (_m *Transaction) GetUniqueReceiver() (bool, []byte, uint64) {
 	return r0, r1, r2
 }
 
+// GetValidationEnv provides a mock function with given fields:
+func (_m *Transaction) GetValidationEnv() metadata.ValidationEnviroment {
+	ret := _m.Called()
+
+	var r0 metadata.ValidationEnviroment
+	if rf, ok := ret.Get(0).(func() metadata.ValidationEnviroment); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(metadata.ValidationEnviroment)
+		}
+	}
+
+	return r0
+}
+
 // Hash provides a mock function with given fields:
 func (_m *Transaction) Hash() *common.Hash {
 	ret := _m.Called()
@@ -558,9 +574,63 @@ func (_m *Transaction) ListSerialNumbersHashH() []common.Hash {
 	return r0
 }
 
+// LoadCommitment provides a mock function with given fields: db
+func (_m *Transaction) LoadCommitment(db *statedb.StateDB) error {
+	ret := _m.Called(db)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*statedb.StateDB) error); ok {
+		r0 = rf(db)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // SetMetadata provides a mock function with given fields: _a0
 func (_m *Transaction) SetMetadata(_a0 metadata.Metadata) {
 	_m.Called(_a0)
+}
+
+// SetValidationEnv provides a mock function with given fields: _a0
+func (_m *Transaction) SetValidationEnv(_a0 metadata.ValidationEnviroment) {
+	_m.Called(_a0)
+}
+
+// UnmarshalJSON provides a mock function with given fields: data
+func (_m *Transaction) UnmarshalJSON(data []byte) error {
+	ret := _m.Called(data)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func([]byte) error); ok {
+		r0 = rf(data)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// ValidateDoubleSpendWithBlockChain provides a mock function with given fields: stateDB
+func (_m *Transaction) ValidateDoubleSpendWithBlockChain(stateDB *statedb.StateDB) (bool, error) {
+	ret := _m.Called(stateDB)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(*statedb.StateDB) bool); ok {
+		r0 = rf(stateDB)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*statedb.StateDB) error); ok {
+		r1 = rf(stateDB)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // ValidateDoubleSpendWithBlockchain provides a mock function with given fields: _a0, _a1, _a2
@@ -591,6 +661,48 @@ func (_m *Transaction) ValidateSanityData(_a0 metadata.ChainRetriever, _a1 metad
 	var r1 error
 	if rf, ok := ret.Get(1).(func(metadata.ChainRetriever, metadata.ShardViewRetriever, metadata.BeaconViewRetriever, uint64) error); ok {
 		r1 = rf(_a0, _a1, _a2, _a3)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ValidateSanityDataByItSelf provides a mock function with given fields:
+func (_m *Transaction) ValidateSanityDataByItSelf() (bool, error) {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ValidateSanityDataWithBlockchain provides a mock function with given fields: chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight
+func (_m *Transaction) ValidateSanityDataWithBlockchain(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
+	ret := _m.Called(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(metadata.ChainRetriever, metadata.ShardViewRetriever, metadata.BeaconViewRetriever, uint64) bool); ok {
+		r0 = rf(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(metadata.ChainRetriever, metadata.ShardViewRetriever, metadata.BeaconViewRetriever, uint64) error); ok {
+		r1 = rf(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -633,6 +745,27 @@ func (_m *Transaction) ValidateTxByItself(_a0 map[string]bool, _a1 *statedb.Stat
 	var r1 error
 	if rf, ok := ret.Get(1).(func(map[string]bool, *statedb.StateDB, *statedb.StateDB, metadata.ChainRetriever, byte, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) error); ok {
 		r1 = rf(_a0, _a1, _a2, _a3, _a4, _a5, _a6)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// ValidateTxCorrectness provides a mock function with given fields:
+func (_m *Transaction) ValidateTxCorrectness() (bool, error) {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -696,6 +829,27 @@ func (_m *Transaction) VerifyMinerCreatedTxBeforeGettingInBlock(_a0 []metadata.T
 	var r1 error
 	if rf, ok := ret.Get(1).(func([]metadata.Transaction, []int, [][]string, []int, byte, metadata.ChainRetriever, *metadata.AccumulatedValues, metadata.ShardViewRetriever, metadata.BeaconViewRetriever) error); ok {
 		r1 = rf(_a0, _a1, _a2, _a3, _a4, _a5, _a6, _a7, _a8)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// VerifySigTx provides a mock function with given fields:
+func (_m *Transaction) VerifySigTx() (bool, error) {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}

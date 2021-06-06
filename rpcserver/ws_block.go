@@ -3,12 +3,14 @@ package rpcserver
 import (
 	"encoding/json"
 	"errors"
-	"github.com/incognitochain/incognito-chain/blockchain"
+	"reflect"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"reflect"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
@@ -35,7 +37,7 @@ func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcr
 		select {
 		case msg := <-subChan:
 			{
-				shardBlock, ok := msg.Value.(*blockchain.ShardBlock)
+				shardBlock, ok := msg.Value.(*types.ShardBlock)
 				if !ok {
 					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.ShardBlock, have %+v", reflect.TypeOf(msg.Value))
 					continue
@@ -48,7 +50,7 @@ func (wsServer *WsServer) handleSubscribeNewShardBlock(params interface{}, subcr
 					cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.UnexpectedError, err)}
 					return
 				}
-				blockResult := jsonresult.NewGetBlockResult(shardBlock, uint64(len(blockBytes)), common.EmptyString)
+				blockResult := jsonresult.NewGetBlockResult(shardBlock, uint64(len(blockBytes)), utils.EmptyString)
 				cResult <- RpcSubResult{Result: blockResult, Error: nil}
 			}
 		case <-closeChan:
@@ -83,7 +85,7 @@ func (wsServer *WsServer) handleSubscribeNewBeaconBlock(params interface{}, subc
 		select {
 		case msg := <-subChan:
 			{
-				beaconBlock, ok := msg.Value.(*blockchain.BeaconBlock)
+				beaconBlock, ok := msg.Value.(*types.BeaconBlock)
 				if !ok {
 					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BeaconBlock, have %+v", reflect.TypeOf(msg.Value))
 					continue
@@ -93,7 +95,7 @@ func (wsServer *WsServer) handleSubscribeNewBeaconBlock(params interface{}, subc
 					cResult <- RpcSubResult{Error: rpcservice.NewRPCError(rpcservice.UnexpectedError, err)}
 					return
 				}
-				blockBeaconResult := jsonresult.NewGetBlocksBeaconResult(beaconBlock, uint64(len(blockBytes)), common.EmptyString)
+				blockBeaconResult := jsonresult.NewGetBlocksBeaconResult(beaconBlock, uint64(len(blockBytes)), utils.EmptyString)
 				cResult <- RpcSubResult{Result: blockBeaconResult, Error: nil}
 			}
 		case <-closeChan:

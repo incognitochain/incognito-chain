@@ -30,12 +30,12 @@ var HttpHandler = map[string]httpHandler{
 	getMaxShardsNumber:       (*HttpServer).handleGetMaxShardsNumber,
 
 	//tx pool
-	getRawMempool:           (*HttpServer).handleGetRawMempool,
-	getNumberOfTxsInMempool: (*HttpServer).handleGetNumberOfTxsInMempool,
-	getMempoolEntry:         (*HttpServer).handleMempoolEntry,
-	removeTxInMempool:       (*HttpServer).handleRemoveTxInMempool,
-	getMempoolInfo:          (*HttpServer).handleGetMempoolInfo,
-	getPendingTxsInBlockgen: (*HttpServer).handleGetPendingTxsInBlockgen,
+	getRawMempool:             (*HttpServer).handleGetRawMempool,
+	getNumberOfTxsInMempool:   (*HttpServer).handleGetNumberOfTxsInMempool,
+	getMempoolEntry:           (*HttpServer).handleMempoolEntry,
+	removeTxInMempool:         (*HttpServer).handleRemoveTxInMempool,
+	getMempoolInfo:            (*HttpServer).handleGetMempoolInfo,
+	getPendingTxsInBlockgen:   (*HttpServer).handleGetPendingTxsInBlockgen,
 
 	// block pool ver.2
 	// getCrossShardPoolStateV2:    (*HttpServer).handleGetCrossShardPoolStateV2,
@@ -62,7 +62,7 @@ var HttpHandler = map[string]httpHandler{
 	checkHashValue:              (*HttpServer).handleCheckHashValue, // get data in blockchain from hash value
 	getBlockHeader:              (*HttpServer).handleGetBlockHeader, // Current committee, next block committee and candidate is included in block header
 	getCrossShardBlock:          (*HttpServer).handleGetCrossShardBlock,
-
+	getBlocksFromHeight:         (*HttpServer).handleGetBlocksFromHeight,
 	// transaction
 	listOutputCoins:                           (*HttpServer).handleListOutputCoins,
 	createRawTransaction:                      (*HttpServer).handleCreateRawTransaction,
@@ -88,12 +88,16 @@ var HttpHandler = map[string]httpHandler{
 	decryptoutputcoinbykeyoftransaction:       (*HttpServer).handleDecryptOutputCoinByKeyOfTransaction,
 
 	//======Testing and Benchmark======
-	getAndSendTxsFromFile:   (*HttpServer).handleGetAndSendTxsFromFile,
-	getAndSendTxsFromFileV2: (*HttpServer).handleGetAndSendTxsFromFileV2,
-	unlockMempool:           (*HttpServer).handleUnlockMempool,
-	getAutoStakingByHeight:  (*HttpServer).handleGetAutoStakingByHeight,
-	getCommitteeState:       (*HttpServer).handleGetCommitteeState,
-	getRewardAmountByEpoch:  (*HttpServer).handleGetRewardAmountByEpoch,
+	getAndSendTxsFromFile:      (*HttpServer).handleGetAndSendTxsFromFile,
+	getAndSendTxsFromFileV2:    (*HttpServer).handleGetAndSendTxsFromFileV2,
+	unlockMempool:              (*HttpServer).handleUnlockMempool,
+	handleGetConsensusInfoV3:   (*HttpServer).handleGetConsensusInfoV3,
+	getAutoStakingByHeight:     (*HttpServer).handleGetAutoStakingByHeight,
+	getCommitteeState:          (*HttpServer).handleGetCommitteeState,
+	getCommitteeStateByShard:   (*HttpServer).handleGetCommitteeStateByShard,
+	getSlashingCommittee:       (*HttpServer).handleGetSlashingCommittee,
+	getSlashingCommitteeDetail: (*HttpServer).handleGetSlashingCommitteeDetail,
+	getRewardAmountByEpoch:     (*HttpServer).handleGetRewardAmountByEpoch,
 
 	//=================================
 
@@ -170,8 +174,6 @@ var HttpHandler = map[string]httpHandler{
 	getRoleByValidatorKey:       (*HttpServer).handleGetValidatorKeyRole,
 	getIncognitoPublicKeyRole:   (*HttpServer).handleGetIncognitoPublicKeyRole,
 	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
-	getProducersBlackList:       (*HttpServer).handleGetProducersBlackList,
-	getProducersBlackListDetail: (*HttpServer).handleGetProducersBlackListDetail,
 
 	// pde
 	getPDEState:                                (*HttpServer).handleGetPDEState,
@@ -276,6 +278,9 @@ var HttpHandler = map[string]httpHandler{
 
 	//validators state
 	getValKeyState: (*HttpServer).handleGetValKeyState,
+
+	// unstake
+	unstake: (*HttpServer).handleCreateUnstakeTransaction,
 }
 
 // Commands that are available to a limited user
@@ -314,6 +319,7 @@ var WsHandler = map[string]wsHandler{
 	subcribeCrossCustomTokenPrivacyByPrivateKey: (*WsServer).handleSubcribeCrossCustomTokenPrivacyByPrivateKey,
 	subcribeShardBestState:                      (*WsServer).handleSubscribeShardBestState,
 	subcribeBeaconBestState:                     (*WsServer).handleSubscribeBeaconBestState,
+	subcribeBeaconBestStateFromMem:              (*WsServer).handleSubscribeBeaconBestStateFromMem,
 	subcribeBeaconPoolBeststate:                 (*WsServer).handleSubscribeBeaconPoolBestState,
 	subcribeShardPoolBeststate:                  (*WsServer).handleSubscribeShardPoolBeststate,
 }

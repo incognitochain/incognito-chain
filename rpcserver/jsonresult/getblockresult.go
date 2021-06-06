@@ -1,7 +1,8 @@
 package jsonresult
 
 import (
-	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -20,34 +21,37 @@ type GetBeaconBlockResult struct {
 	Instructions      [][]string  `json:"Instructions"`
 	Size              uint64      `json:"Size"`
 	ShardStates       interface{} `json:"ShardStates"`
+	ProposeTime       int64       `json:"ProposeTime"`
 }
 
 type GetShardBlockResult struct {
-	Hash              string             `json:"Hash"`
-	ShardID           byte               `json:"ShardID"`
-	Height            uint64             `json:"Height"`
-	Confirmations     int64              `json:"Confirmations"`
-	Version           int                `json:"Version"`
-	TxRoot            string             `json:"TxRoot"`
-	Time              int64              `json:"Time"`
-	PreviousBlockHash string             `json:"PreviousBlockHash"`
-	NextBlockHash     string             `json:"NextBlockHash"`
-	TxHashes          []string           `json:"TxHashes"`
-	Txs               []GetBlockTxResult `json:"Txs"`
-	BlockProducer     string             `json:"BlockProducer"`
-	ValidationData    string             `json:"ValidationData"`
-	ConsensusType     string             `json:"ConsensusType"`
-	Data              string             `json:"Data"`
-	BeaconHeight      uint64             `json:"BeaconHeight"`
-	BeaconBlockHash   string             `json:"BeaconBlockHash"`
-	Round             int                `json:"Round"`
-	Epoch             uint64             `json:"Epoch"`
-	Reward            uint64             `json:"Reward"`
-	RewardBeacon      uint64             `json:"RewardBeacon"`
-	Fee               uint64             `json:"Fee"`
-	Size              uint64             `json:"Size"`
-	Instruction       [][]string         `json:"Instruction"`
-	CrossShardBitMap  []int              `json:"CrossShardBitMap"`
+	Hash               string             `json:"Hash"`
+	ShardID            byte               `json:"ShardID"`
+	Height             uint64             `json:"Height"`
+	Confirmations      int64              `json:"Confirmations"`
+	Version            int                `json:"Version"`
+	TxRoot             string             `json:"TxRoot"`
+	Time               int64              `json:"Time"`
+	PreviousBlockHash  string             `json:"PreviousBlockHash"`
+	NextBlockHash      string             `json:"NextBlockHash"`
+	TxHashes           []string           `json:"TxHashes"`
+	Txs                []GetBlockTxResult `json:"Txs"`
+	BlockProducer      string             `json:"BlockProducer"`
+	ValidationData     string             `json:"ValidationData"`
+	ConsensusType      string             `json:"ConsensusType"`
+	Data               string             `json:"Data"`
+	BeaconHeight       uint64             `json:"BeaconHeight"`
+	BeaconBlockHash    string             `json:"BeaconBlockHash"`
+	Round              int                `json:"Round"`
+	Epoch              uint64             `json:"Epoch"`
+	Reward             uint64             `json:"Reward"`
+	RewardBeacon       uint64             `json:"RewardBeacon"`
+	Fee                uint64             `json:"Fee"`
+	Size               uint64             `json:"Size"`
+	CommitteeFromBlock common.Hash        `json:"CommitteeFromBlock"`
+	Instruction        [][]string         `json:"Instruction"`
+	CrossShardBitMap   []int              `json:"CrossShardBitMap"`
+	ProposeTime        int64              `json:"ProposeTime"`
 }
 
 type GetBlockTxResult struct {
@@ -56,7 +60,7 @@ type GetBlockTxResult struct {
 	HexData  string `json:"HexData"`
 }
 
-func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64, nextBlockHash string) *GetBeaconBlockResult {
+func NewGetBlocksBeaconResult(block *types.BeaconBlock, size uint64, nextBlockHash string) *GetBeaconBlockResult {
 	getBlockResult := &GetBeaconBlockResult{}
 	getBlockResult.Version = block.Header.Version
 	getBlockResult.Hash = block.Hash().String()
@@ -72,10 +76,11 @@ func NewGetBlocksBeaconResult(block *blockchain.BeaconBlock, size uint64, nextBl
 	getBlockResult.Size = size
 	getBlockResult.NextBlockHash = nextBlockHash
 	getBlockResult.ShardStates = block.Body.ShardState
+	getBlockResult.ProposeTime = block.Header.ProposeTime
 	return getBlockResult
 }
 
-func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash string) *GetShardBlockResult {
+func NewGetBlockResult(block *types.ShardBlock, size uint64, nextBlockHash string) *GetShardBlockResult {
 	getBlockResult := &GetShardBlockResult{}
 	getBlockResult.BlockProducer = block.Header.Producer
 	getBlockResult.ValidationData = block.ValidationData
@@ -113,6 +118,8 @@ func NewGetBlockResult(block *blockchain.ShardBlock, size uint64, nextBlockHash 
 		}
 	}
 	getBlockResult.NextBlockHash = nextBlockHash
+	getBlockResult.CommitteeFromBlock = block.Header.CommitteeFromBlock
+	getBlockResult.ProposeTime = block.Header.ProposeTime
 	return getBlockResult
 }
 

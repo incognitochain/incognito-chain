@@ -90,6 +90,7 @@ const (
 	getListPrivacyCustomTokenBalance             = "getlistprivacycustomtokenbalance"
 	getBlockHeader                               = "getheader"
 	getCrossShardBlock                           = "getcrossshardblock"
+	getBlocksFromHeight                          = "getblocksfromheight"
 	randomCommitments                            = "randomcommitments"
 	hasSerialNumbers                             = "hasserialnumbers"
 	hasSerialNumbersInMempool                    = "hasserialnumbersinmempool"
@@ -105,12 +106,16 @@ const (
 	decryptoutputcoinbykeyoftransaction          = "decryptoutputcoinbykeyoftransaction"
 
 	//===========For Testing and Benchmark==============
-	getAndSendTxsFromFile   = "getandsendtxsfromfile"
-	getAndSendTxsFromFileV2 = "getandsendtxsfromfilev2"
-	unlockMempool           = "unlockmempool"
-	getAutoStakingByHeight  = "getautostakingbyheight"
-	getCommitteeState       = "getcommitteestate"
-	getRewardAmountByEpoch  = "getrewardamountbyepoch"
+	getAndSendTxsFromFile      = "getandsendtxsfromfile"
+	getAndSendTxsFromFileV2    = "getandsendtxsfromfilev2"
+	unlockMempool              = "unlockmempool"
+	handleGetConsensusInfoV3   = "getconsensusinfov3"
+	getAutoStakingByHeight     = "getautostakingbyheight"
+	getCommitteeState          = "getcommitteestate"
+	getCommitteeStateByShard   = "getcommitteestatebyshard"
+	getSlashingCommittee       = "getslashingcommittee"
+	getSlashingCommitteeDetail = "getslashingcommitteedetail"
+	getRewardAmountByEpoch     = "getrewardamountbyepoch"
 	//==================================================
 
 	getShardBestState        = "getshardbeststate"
@@ -184,10 +189,6 @@ const (
 	getRoleByValidatorKey       = "getrolebyvalidatorkey"
 	getIncognitoPublicKeyRole   = "getincognitopublickeyrole"
 	getMinerRewardFromMiningKey = "getminerrewardfromminingkey"
-
-	// slash
-	getProducersBlackList       = "getproducersblacklist"
-	getProducersBlackListDetail = "getproducersblacklistdetail"
 
 	// pde
 	getPDEState                                = "getpdestate"
@@ -292,6 +293,9 @@ const (
 
 	//validator state
 	getValKeyState = "getvalkeystate"
+
+	// stake
+	unstake = "createunstaketransaction"
 )
 
 const (
@@ -311,6 +315,7 @@ const (
 	subcribeMempoolInfo                         = "subcribemempoolinfo"
 	subcribeShardBestState                      = "subcribeshardbeststate"
 	subcribeBeaconBestState                     = "subcribebeaconbeststate"
+	subcribeBeaconBestStateFromMem              = "subcribebeaconbeststatefrommem"
 	subcribeBeaconPoolBeststate                 = "subcribebeaconpoolbeststate"
 	subcribeShardPoolBeststate                  = "subcribeshardpoolbeststate"
 )

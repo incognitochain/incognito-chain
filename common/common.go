@@ -17,6 +17,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/pkg/errors"
 )
 
@@ -166,7 +167,7 @@ func ParseListener(addr string, netType string) (*SimpleAddr, error) {
 
 	var netAddr *SimpleAddr
 	// Empty host or host of * on plan9 is both IPv4 and IPv6.
-	if host == EmptyString || (host == "*" && runtime.GOOS == "plan9") {
+	if host == utils.EmptyString || (host == "*" && runtime.GOOS == "plan9") {
 		netAddr = &SimpleAddr{Net: netType + "4", Addr: addr}
 		return netAddr, nil
 	}
@@ -439,15 +440,6 @@ func CheckError(errs ...error) error {
 	return errSaver.Save(errs...)
 }
 
-// GetENV to get environment variable by key
-func GetENV(key, fallback string) string {
-	value, ok := os.LookupEnv(key)
-	if !ok {
-		return fallback
-	}
-	return value
-}
-
 func GetValidStaker(committees []string, stakers []string) []string {
 	validStaker := []string{}
 	for _, staker := range stakers {
@@ -496,7 +488,7 @@ func Remove0xPrefix(str string) string {
 // Add0xPrefix adds 0x prefix (if there) from string
 func Add0xPrefix(str string) string {
 	if !Has0xPrefix(str) {
-		return "0x"+str
+		return "0x" + str
 	}
 	return str
 }
@@ -553,5 +545,15 @@ func DecodeETHAddr(addr string) ([]byte, error) {
 }
 
 func GetEpochFromBeaconHeight(beaconHeight uint64, epochNumBlocksPerEpoch uint64) uint64 {
-	return (beaconHeight - 1) / epochNumBlocksPerEpoch + 1
+	return (beaconHeight-1)/epochNumBlocksPerEpoch + 1
+}
+
+//FilesExists reports whether the named file or directory exists.
+func FileExists(name string) bool {
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
 }

@@ -5,8 +5,8 @@ if [ -f ./incognito ]; then
 fi
 
 # testnet-2 need to have a prefix on tagging
-if [[ $tag != "testnet2-"* ]]; then
-  tag="testnet2-${tag}"
+if [[ $tag != "testnet2"* ]]; then
+  tag="testnet2_${tag}"
 fi
 
 echo "Deploy docker tag ${tag}"

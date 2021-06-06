@@ -61,18 +61,19 @@ bin/incognito-test
 bin/bootnode
 bin/sample-config.conf
 incognito
-config
 
 mempool/testdatabase
 cmd/incognito
 blockchain/testparams/*
 tmp/*
 bin/data
-
 # vim
 *.swp   
 *.swo
 *~
 tags
+run_new_local.sh
 *.txt
 *.log
+logs/
+log/

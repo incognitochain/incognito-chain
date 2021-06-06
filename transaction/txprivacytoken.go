@@ -30,6 +30,36 @@ type TxCustomTokenPrivacy struct {
 	cachedHash *common.Hash // cached hash data of tx
 }
 
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) initEnv() metadata.ValidationEnviroment {
+	valEnv := DefaultValEnv()
+	// if txCustomTokenPrivacy.IsSalaryTx() {
+	valEnv = WithAct(valEnv, common.TxActTranfer)
+	// }
+	if txCustomTokenPrivacy.IsPrivacy() {
+		valEnv = WithPrivacy(valEnv)
+	} else {
+		valEnv = WithNoPrivacy(valEnv)
+	}
+
+	valEnv = WithType(valEnv, txCustomTokenPrivacy.GetType())
+	sID := common.GetShardIDFromLastByte(txCustomTokenPrivacy.GetSenderAddrLastByte())
+	valEnv = WithShardID(valEnv, int(sID))
+	txCustomTokenPrivacy.SetValidationEnv(valEnv)
+	txNormalValEnv := valEnv.Clone()
+	if txCustomTokenPrivacy.TxPrivacyTokenData.Type == CustomTokenInit {
+		txNormalValEnv = WithAct(txNormalValEnv, common.TxActInit)
+	} else {
+		txNormalValEnv = WithAct(txNormalValEnv, common.TxActTranfer)
+	}
+	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.IsPrivacy() {
+		txNormalValEnv = WithPrivacy(txNormalValEnv)
+	} else {
+		txNormalValEnv = WithNoPrivacy(txNormalValEnv)
+	}
+	txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.SetValidationEnv(txNormalValEnv)
+	return valEnv
+}
+
 func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) error {
 	tx := Tx{}
 	err := json.Unmarshal(data, &tx)
@@ -63,7 +93,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) UnmarshalJSON(data []byte) err
 			txCustomTokenPrivacy.TxPrivacyTokenData.Amount = 37772966455153487
 		}
 	}
-
+	txCustomTokenPrivacy.initEnv()
 	return nil
 }
 
@@ -492,10 +522,10 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateTxWithBlockChain(chainR
 
 // ValidateSanityData - validate sanity data of PRV and pToken
 func (txCustomTokenPrivacy TxCustomTokenPrivacy) ValidateSanityData(chainRetriever metadata.ChainRetriever, shardViewRetriever metadata.ShardViewRetriever, beaconViewRetriever metadata.BeaconViewRetriever, beaconHeight uint64) (bool, error) {
-	if txCustomTokenPrivacy.GetType() != common.TxCustomTokenPrivacyType{
+	if txCustomTokenPrivacy.GetType() != common.TxCustomTokenPrivacyType {
 		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.Tx should have type tp"))
 	}
-	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.GetType() != common.TxNormalType{
+	if txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.GetType() != common.TxNormalType {
 		return false, NewTransactionErr(InvalidSanityDataPrivacyTokenError, errors.New("txCustomTokenPrivacy.TxNormal should have type n"))
 	}
 	meta := txCustomTokenPrivacy.Tx.Metadata
@@ -1044,4 +1074,14 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) IsFullBurning(
 	beaconHeight uint64,
 ) bool {
 	return txCustomTokenPrivacy.Tx.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight) && txCustomTokenPrivacy.IsCoinsBurning(bcr, retriever, viewRetriever, beaconHeight)
+}
+
+func (txCustomTokenPrivacy *TxCustomTokenPrivacy) VerifySigTx() (bool, error) {
+	ok, err := txCustomTokenPrivacy.Tx.VerifySigTx()
+	if ok {
+		if txCustomTokenPrivacy.TxPrivacyTokenData.Type != CustomTokenInit {
+			return txCustomTokenPrivacy.TxPrivacyTokenData.TxNormal.VerifySigTx()
+		}
+	}
+	return ok, err
 }

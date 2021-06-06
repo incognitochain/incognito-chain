@@ -5,9 +5,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/common"
-
 	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/utils"
 	peer "github.com/libp2p/go-libp2p-peer"
 )
 
@@ -91,36 +90,6 @@ func MakeEmptyMessage(messageType string) (Message, error) {
 	case CmdVerack:
 		msg = &MessageVerAck{}
 		break
-	// case CmdBFTReq:
-	// 	msg = &MessageBFTReq{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTReady:
-	// 	msg = &MessageBFTReady{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTPropose:
-	// 	msg = &MessageBFTProposeV2{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTPrepare:
-	// 	msg = &MessageBFTPrepareV2{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTAgree:
-	// 	msg = &MessageBFTAgree{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
-	// case CmdBFTCommit:
-	// 	msg = &MessageBFTCommit{
-	// 		Timestamp: time.Now().Unix(),
-	// 	}
-	// 	break
 	case CmdPeerState:
 		msg = &MessagePeerState{
 			Timestamp:      time.Now().Unix(),
@@ -212,6 +181,6 @@ func GetCmdType(msgType reflect.Type) (string, error) {
 	case reflect.TypeOf(&MessageBFT{}):
 		return CmdBFT, nil
 	default:
-		return common.EmptyString, fmt.Errorf("unhandled this message type [%s]", msgType)
+		return utils.EmptyString, fmt.Errorf("unhandled this message type [%s]", msgType)
 	}
 }

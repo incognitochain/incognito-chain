@@ -30,9 +30,8 @@ run()
   fi
 
   docker rm -f inc_mainnet
-  docker rm -f eth_mainnet
-  if [ "$current_tag" != "" ]
-  then
+
+  if [ "$current_tag" != "" ]; then
     docker image rm -f incognitochain/incognito-mainnet:${current_tag}
   fi
 
@@ -58,30 +57,27 @@ run()
     docker run --restart=always -d --name inc_logshipper -e RAW_LOG_PATHS=/tmp/*.txt -e JSON_LOG_PATHS=/tmp/*.json -e LOGSTASH_ADDRESSES=34.94.14.147:5000 --mount type=bind,source=$PWD/${data_dir},target=/tmp --mount type=bind,source=$PWD/${logshipper_data_dir},target=/usr/share/filebeat/data incognitochain/logshipper:1.0.0
   fi
 
-  if [ $backup_log -eq 1 ]
-  then
+  if [ $backup_log -eq 1 ]; then
     mv $data_dir/log.txt $data_dir/log_$(date "+%Y%m%d_%H%M%S").txt
     mv $data_dir/error_log.txt $data_dir/error_log_$(date "+%Y%m%d_%H%M%S").txt
   fi
 }
 
 # kill existing run.sh processes
-ps aux | grep '[r]un.sh' | awk '{ print $2}' | grep -v "^$$\$" | xargs kill -9
+ps aux | grep $(basename $0) | awk '{ print $2}' | grep -v "^$$\$" | xargs kill -9
 
 current_latest_tag=""
-while [ 1 = 1 ]
-do
+while [ 1 = 1 ]; do
   tags=`curl -X GET https://registry.hub.docker.com/v1/repositories/incognitochain/incognito-mainnet/tags  | sed -e 's/[][]//g' -e 's/"//g' -e 's/ //g' | tr '}' '\n'  | awk -F: '{print $3}' | sed -e 's/\n/;/g'`
 
   sorted_tags=($(echo ${tags[*]}| tr " " "\n" | sort -rn))
   latest_tag=${sorted_tags[0]}
 
-  if [ "$current_latest_tag" != "$latest_tag" ]
-  then
+  if [ "$current_latest_tag" != "$latest_tag" ]; then
     run $latest_tag $current_latest_tag
     current_latest_tag=$latest_tag
   fi
 
-  sleep 3600s
+  sleep 1h
 
 done &

@@ -1,10 +1,6 @@
 package main
 
 import (
-	"github.com/incognitochain/incognito-chain/consensus"
-	"github.com/incognitochain/incognito-chain/dataaccessobject"
-	"github.com/incognitochain/incognito-chain/peerv2"
-	"github.com/incognitochain/incognito-chain/trie"
 	"io"
 	"log"
 	"os"
@@ -12,6 +8,12 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/dataaccessobject"
+	"github.com/incognitochain/incognito-chain/peerv2"
+	"github.com/incognitochain/incognito-chain/trie"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -159,7 +161,7 @@ func RestoreShardChain(bc *blockchain.BlockChain, filename string) error {
 				return err
 			}
 		}
-		block := &blockchain.ShardBlock{}
+		block := &types.ShardBlock{}
 		err = block.UnmarshalJSON(blockBytes)
 		if err != nil {
 			return err
@@ -241,7 +243,7 @@ func restoreBeaconChain(bc *blockchain.BlockChain, filename string) error {
 				return err
 			}
 		}
-		block := &blockchain.BeaconBlock{}
+		block := &types.BeaconBlock{}
 		err = block.UnmarshalJSON(blockBytes)
 		if err != nil {
 			return err

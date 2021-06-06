@@ -3,7 +3,9 @@ package metadata
 import (
 	"bytes"
 	"errors"
+
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wallet"
@@ -16,7 +18,7 @@ type StakingMetadata struct {
 	StakingAmountShard           uint64
 	AutoReStaking                bool
 	CommitteePublicKey           string
-	// CommitteePublicKey PublicKeys of a candidate who join consensus, base58CheckEncode
+	// CommitteePublicKey CommitteePublicKeys of a candidate who join consensus, base58CheckEncode
 	// CommitteePublicKey string <= encode byte <= mashal struct
 }
 
@@ -120,10 +122,10 @@ func (stakingMetadata StakingMetadata) ValidateSanityData(chainRetriever ChainRe
 		return false, false, errors.New("receiver Should be Burning Address")
 	}
 
-	if stakingMetadata.Type == ShardStakingMeta && amount != chainRetriever.GetStakingAmountShard() {
+	if stakingMetadata.Type == ShardStakingMeta && amount != config.Param().StakingAmountShard {
 		return false, false, errors.New("invalid Stake Shard Amount")
 	}
-	if stakingMetadata.Type == BeaconStakingMeta && amount != chainRetriever.GetStakingAmountShard()*3 {
+	if stakingMetadata.Type == BeaconStakingMeta && amount != config.Param().StakingAmountShard*3 {
 		return false, false, errors.New("invalid Stake Beacon Amount")
 	}
 

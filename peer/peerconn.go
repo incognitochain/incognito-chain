@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/patrickmn/go-cache"
@@ -150,7 +151,7 @@ func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBy
 	for {
 		b, err := rw.ReadByte()
 		if err != nil {
-			return common.EmptyString, NewPeerError(ReadStringMessageError, err, nil)
+			return utils.EmptyString, NewPeerError(ReadStringMessageError, err, nil)
 		}
 		// break byte buf after get a delim
 		if b == delim {
@@ -160,7 +161,7 @@ func (peerConn *PeerConn) readString(rw *bufio.ReadWriter, delim byte, maxReadBy
 		buf = append(buf, b)
 		bufL++
 		if bufL > maxReadBytes {
-			return common.EmptyString, NewPeerError(LimitByteForMessageError, errors.New("limit bytes for message"), nil)
+			return utils.EmptyString, NewPeerError(LimitByteForMessageError, errors.New("limit bytes for message"), nil)
 		}
 	}
 

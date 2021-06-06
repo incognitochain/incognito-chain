@@ -4,8 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"math/big"
+
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -15,6 +16,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/serialnumbernoprivacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/serialnumberprivacy"
 	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
+	basicutils "github.com/incognitochain/incognito-chain/utils"
 )
 
 // PaymentProof contains all of PoK for spending coin
@@ -109,11 +111,11 @@ func (paymentProof *PaymentProof) SetOutputCoins(v []*privacy.OutputCoin) {
 	paymentProof.outputCoins = v
 }
 
-func (paymentProof *PaymentProof) SetAggregatedRangeProof(p *aggregaterange.AggregatedRangeProof ) {
+func (paymentProof *PaymentProof) SetAggregatedRangeProof(p *aggregaterange.AggregatedRangeProof) {
 	paymentProof.aggregatedRangeProof = p
 }
 
-func (paymentProof *PaymentProof) SetSerialNumberProof(p []*serialnumberprivacy.SNPrivacyProof)  {
+func (paymentProof *PaymentProof) SetSerialNumberProof(p []*serialnumberprivacy.SNPrivacyProof) {
 	paymentProof.serialNumberProof = p
 }
 
@@ -121,10 +123,9 @@ func (paymentProof *PaymentProof) SetOneOfManyProof(p []*oneoutofmany.OneOutOfMa
 	paymentProof.oneOfManyProof = p
 }
 
-func (paymentProof *PaymentProof) SetSerialNumberNoPrivacyProof(p []*serialnumbernoprivacy.SNNoPrivacyProof)  {
+func (paymentProof *PaymentProof) SetSerialNumberNoPrivacyProof(p []*serialnumbernoprivacy.SNNoPrivacyProof) {
 	paymentProof.serialNumberNoPrivacyProof = p
 }
-
 
 // End GET/SET function
 
@@ -159,7 +160,7 @@ func (proof PaymentProof) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON - override function
 func (proof *PaymentProof) UnmarshalJSON(data []byte) error {
-	dataStr := common.EmptyString
+	dataStr := basicutils.EmptyString
 	errJson := json.Unmarshal(data, &dataStr)
 	if errJson != nil {
 		return errJson
@@ -660,19 +661,19 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 	}
 
 	for i := 0; i < len(proof.inputCoins); i++ {
-		if isNewZKP{
+		if isNewZKP {
 			// Check input coins' Serial number is created from input coins' input and sender's spending key
 			valid, err := proof.serialNumberNoPrivacyProof[i].Verify(nil)
 			if !valid {
 				privacy.Logger.Log.Errorf("Verify serial number no privacy proof failed")
 				return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err)
 			}
-		}else{
+		} else {
 			// Check input coins' Serial number is created from input coins' input and sender's spending key
 			valid, err := proof.serialNumberNoPrivacyProof[i].VerifyOld(nil)
 			if !valid {
 				valid, err = proof.serialNumberNoPrivacyProof[i].Verify(nil)
-				if !valid{
+				if !valid {
 					privacy.Logger.Log.Errorf("Verify serial number no privacy proof failed")
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberNoPrivacyProofFailedErr, err)
 				}
@@ -758,7 +759,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		isBatch = false
 	}
 	isNewZKP, ok := boolParams["isNewZKP"]
-	if !ok{
+	if !ok {
 		isNewZKP = true
 	}
 
@@ -802,7 +803,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 
 		proof.oneOfManyProof[i].Statement.Commitments = commitments
 
-		if isNewZKP{
+		if isNewZKP {
 			valid, err := proof.oneOfManyProof[i].Verify()
 			if !valid {
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
@@ -814,11 +815,11 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
 				return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
 			}
-		}else{
+		} else {
 			valid, err := proof.oneOfManyProof[i].VerifyOld()
 			if !valid {
 				valid, err = proof.oneOfManyProof[i].Verify()
-				if !valid{
+				if !valid {
 					privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: One out of many failed")
 					return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 				}
@@ -827,7 +828,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 			valid, err = proof.serialNumberProof[i].VerifyOld(nil)
 			if !valid {
 				valid, err = proof.serialNumberProof[i].Verify(nil)
-				if !valid{
+				if !valid {
 					privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Serial number privacy failed")
 					return false, privacy.NewPrivacyErr(privacy.VerifySerialNumberPrivacyProofFailedErr, err)
 				}

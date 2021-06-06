@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -60,21 +61,20 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateTxWithBlockChain(
 	if !(common.IndexOfStr(requestedPublicKey, committees) > -1) {
 		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, fmt.Errorf("Committee Publickey %+v not found in any committee list of current beacon beststate", requestedPublicKey))
 	}
-	stakingTx := shardViewRetriever.GetStakingTx()
-	if tempStakingTxHash, ok := stakingTx[requestedPublicKey]; !ok {
+	stakerInfo, has, err := beaconViewRetriever.GetStakerInfo(requestedPublicKey)
+	if err != nil {
+		return false, NewMetadataTxError(StopAutoStakingRequestNotInCommitteeListError, err)
+	}
+	if !has {
 		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, fmt.Errorf("No Committe Publickey %+v found in StakingTx of Shard %+v", requestedPublicKey, shardID))
-	} else {
-		stakingTxHash, err := common.Hash{}.NewHashFromStr(tempStakingTxHash)
-		if err != nil {
-			return false, err
-		}
-		_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(*stakingTxHash)
-		if err != nil {
-			return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, err)
-		}
-		if !bytes.Equal(stakingTx.GetSender(), tx.GetSender()) {
-			return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send stop auto staking request but get %+v", stakingTx.GetSender(), tx.GetSender()))
-		}
+	}
+	stakingTxHash := stakerInfo.TxStakingID()
+	_, _, _, _, stakingTx, err := chainRetriever.GetTransactionByHash(stakingTxHash)
+	if err != nil {
+		return false, NewMetadataTxError(StopAutoStakingRequestStakingTransactionNotFoundError, err)
+	}
+	if !bytes.Equal(stakingTx.GetSender(), tx.GetSender()) {
+		return false, NewMetadataTxError(StopAutoStakingRequestInvalidTransactionSenderError, fmt.Errorf("Expect %+v to send stop auto staking request but get %+v", stakingTx.GetSender(), tx.GetSender()))
 	}
 	autoStakingList := beaconViewRetriever.GetAutoStakingList()
 	if isAutoStaking, ok := autoStakingList[stopStakingMetadata.CommitteePublicKey]; !ok {

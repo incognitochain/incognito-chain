@@ -1,8 +1,8 @@
 package jsonresult
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/peer"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -29,7 +29,7 @@ func NewGetInOutMessageResult(paramsArray []interface{}) (*GetInOutMessageResult
 	}
 	peerID, ok := paramsArray[0].(string)
 	if !ok {
-		peerID = common.EmptyString
+		peerID = utils.EmptyString
 	}
 
 	for messageType, messagePeers := range inboundMessages {

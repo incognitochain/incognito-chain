@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -195,7 +196,7 @@ func (redeemReq PortalRedeemRequestV3) ValidateSanityData(chainRetriever ChainRe
 		return false, false, fmt.Errorf("Remote address %v is not a valid address of tokenID %v - Error %v", redeemReq.RemoteAddress, redeemReq.TokenID, err)
 	}
 
-	if beaconHeight >= chainRetriever.GetBCHeightBreakPointPortalV3() {
+	if beaconHeight >= config.Param().BCHeightBreakPointPortalV3 {
 		// validate metadata type
 		if redeemReq.Type != PortalRedeemRequestMetaV3 {
 			return false, false, fmt.Errorf("Metadata type should be %v", PortalRedeemRequestMetaV3)
