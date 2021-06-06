@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	finishsync2 "github.com/incognitochain/incognito-chain/blockchain/finishsync"
 	"reflect"
 	"sort"
 	"strconv"
@@ -15,7 +16,6 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate/finishsync"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -640,7 +640,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	}
 	beaconBestState.beaconCommitteeState = committeeState
 
-	beaconBestState.finishSyncManager = finishsync.NewFinishManager()
+	beaconBestState.finishSyncManager = finishsync2.NewFinishManager()
 	beaconBestState.Epoch = 1
 	return nil
 }
