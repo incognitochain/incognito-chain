@@ -578,21 +578,14 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 			panic(err)
 		}
 
-		var shardCommitteeState committeestate.ShardCommitteeState
 		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
 			config.Param().ConsensusParam.StakingFlowV2Height,
 			config.Param().ConsensusParam.StakingFlowV3Height,
 		)
-		if version == committeestate.DCS_VERSION || version == committeestate.SLASHING_VERSION {
-			shardCommitteeState = InitShardCommitteeStateV2(
-				v.consensusStateDB,
-				v.ShardHeight, v.ShardID,
-				block, blockchain)
-		} else {
-			shardCommitteeState = InitShardCommitteeEngineV1(
-				v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
-		}
-		v.shardCommitteeState = shardCommitteeState
+		v.shardCommitteeState = InitShardCommitteeState(version,
+			v.consensusStateDB,
+			v.ShardHeight, v.ShardID,
+			block, blockchain)
 		err = v.tryUpgradeCommitteeState(blockchain)
 		if err != nil {
 			panic(err)
@@ -930,80 +923,52 @@ func (bc *BlockChain) IsEqualToRandomTime(beaconHeight uint64) bool {
 	}
 }
 
-// TODO: @hung refactor this function, its caller already retrieve the right committees list
-func (blockchain *BlockChain) getCommitteesForSigning(
-	committees []incognitokey.CommitteePublicKey, block types.BlockInterface,
-) ([]incognitokey.CommitteePublicKey, error) {
-	res := []incognitokey.CommitteePublicKey{}
-
-	switch block.Type() {
-	case common.BeaconChainKey:
-		res = committees
-	case common.ShardChainKey:
-		shardBlock := block.(*types.ShardBlock)
-		beaconHeight := blockchain.BeaconChain.GetFinalView().GetHeight()
-		if beaconHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
-			tempCommitteeInfo, err := blockchain.getTempCommitteeInfoByHash(block.CommitteeFromBlock(), shardBlock.Header.ShardID)
-			if err != nil {
-				return res, err
-			}
-			beaconHeight = tempCommitteeInfo.BeaconHeight()
-		}
-		if beaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
-			res = GetSigningCommitteeV3(
-				committees,
-				block.GetProposeTime(),
-				config.Param().CommitteeSize.NumberOfFixedShardBlockValidator)
-		} else {
-			res = committees
-		}
-	}
-	return res, nil
-}
-
 func (blockchain *BlockChain) getShardCommitteeFromBeaconHash(
 	hash common.Hash, shardID byte,
 ) (
 	[]incognitokey.CommitteePublicKey, error,
 ) {
 	Logger.log.Info("[dcs] hash:", hash.String())
-	tempCommitteeInfo, err := blockchain.getTempCommitteeInfoByHash(hash, shardID)
-	return tempCommitteeInfo.Committees(), err
+	tempCommitteeInfo, err := blockchain.getShardCommitteeForBlockProducing(hash, shardID)
+	if err != nil {
+		return []incognitokey.CommitteePublicKey{}, err
+	}
+	return tempCommitteeInfo.Committees(), nil
 }
 
-func (blockchain *BlockChain) getTempCommitteeInfoByHash(
+func (blockchain *BlockChain) getShardCommitteeForBlockProducing(
 	hash common.Hash, shardID byte,
-) (*committeestate.TempCommitteeInfo, error) {
-	tempCommitteeInfo := committeestate.NewTempCommitteeInfo()
+) (*committeestate.ShardCommitteeForBlockProducing, error) {
+	shardCommitteeForBlockProducing := committeestate.NewTempCommitteeInfo()
 	res, has := blockchain.BeaconChain.committeesInfoCache.Get(getCommitteeCacheKey(hash, shardID))
 	if !has {
 		beaconBlock, _, err := blockchain.GetBeaconBlockByHash(hash)
 		if err != nil {
-			return tempCommitteeInfo, err
+			return shardCommitteeForBlockProducing, err
 		}
 
 		bRH, err := GetBeaconRootsHashByBlockHash(blockchain.GetBeaconChainDatabase(), hash)
 		if err != nil {
-			return tempCommitteeInfo, err
+			return shardCommitteeForBlockProducing, err
 		}
 
 		stateDB, err := statedb.NewWithPrefixTrie(
 			bRH.ConsensusStateDBRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
 		if err != nil {
-			return tempCommitteeInfo, err
+			return shardCommitteeForBlockProducing, err
 		}
 		committees := statedb.GetOneShardCommittee(stateDB, shardID)
 		committeesStr, _ := incognitokey.CommitteeKeyListToString(committees)
 		Logger.log.Info("[dcs] committeesStr:", committeesStr)
 
-		tempCommitteeInfo = committeestate.NewTempCommitteeInfoWithValue(
+		shardCommitteeForBlockProducing = committeestate.NewTempCommitteeInfoWithValue(
 			hash, committees, shardID, beaconBlock.Header.Height)
-		blockchain.BeaconChain.committeesInfoCache.Add(getCommitteeCacheKey(hash, shardID), tempCommitteeInfo)
+		blockchain.BeaconChain.committeesInfoCache.Add(getCommitteeCacheKey(hash, shardID), shardCommitteeForBlockProducing)
 	} else {
-		tempCommitteeInfo = res.(*committeestate.TempCommitteeInfo)
+		shardCommitteeForBlockProducing = res.(*committeestate.ShardCommitteeForBlockProducing)
 	}
 
-	return tempCommitteeInfo, nil
+	return shardCommitteeForBlockProducing, nil
 }
 
 // AddFinishedSyncValidators add finishedSyncValidators from message to all current beacon views

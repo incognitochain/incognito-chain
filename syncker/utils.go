@@ -81,10 +81,10 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 			return 0, err
 		}
 	}
-
+	//TODO: @hung blocks can have the same full committee but different signing committee
 	validBlockForInsert := sameCommitteeBlock[:]
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
-		signingCommittees, err := chain.GetSigningCommittees(committees, sameCommitteeBlock[i])
+		signingCommittees, err := chain.GetCommitteeV2(sameCommitteeBlock[i])
 		if err != nil {
 			return 0, err
 		}

@@ -20,8 +20,10 @@ func InitGenesisShardCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 u
 	switch version {
 	case SELF_SWAP_SHARD_VERSION:
 		return initGenesisShardCommitteeStateV1(env)
-	case SLASHING_VERSION, DCS_VERSION:
+	case SLASHING_VERSION:
 		return initGenesisShardCommitteeStateV2(env)
+	case DCS_VERSION:
+		return initGenesisShardCommitteeStateV3(env)
 	default:
 		panic("not a valid shard committee state version")
 	}

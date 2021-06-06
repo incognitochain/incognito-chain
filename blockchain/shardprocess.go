@@ -171,39 +171,29 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 	signingCommittees := []incognitokey.CommitteePublicKey{}
 	committees := []incognitokey.CommitteePublicKey{}
+	committees, signingCommittees, err = curView.getSigningCommittee(shardBlock, blockchain)
 
-	if curView.shardCommitteeState.Version() == committeestate.SELF_SWAP_SHARD_VERSION || shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
-		committees = curView.GetShardCommittee()
-		signingCommittees = committees
-	} else {
+	if err != nil {
+		return err
+	}
+	if curView.CommitteeStateVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
 		beaconHeight := curView.BeaconHeight
 		for _, v := range beaconBlocks {
 			if v.GetHeight() >= beaconHeight {
 				beaconHeight = v.GetHeight()
 			}
 		}
-		if curView.CommitteeStateVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
-			if beaconHeight <= curView.BeaconHeight {
-				Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v curView.BeaconHeight %+v",
-					beaconHeight, curView.BeaconHeight)
-				return NewBlockChainError(WrongBlockHeightError, errors.New("Waiting For Beacon Produce Block"))
-			}
-		}
-		committees, err = blockchain.getShardCommitteeFromBeaconHash(shardBlock.Header.CommitteeFromBlock, shardID)
-		if err != nil {
-			return err
-		}
-		signingCommittees, err = blockchain.getCommitteesForSigning(committees, shardBlock)
-		if err != nil {
-			return err
+		if beaconHeight <= curView.BeaconHeight {
+			Logger.log.Info("Waiting For Beacon Produce Block beaconHeight %+v curView.BeaconHeight %+v",
+				beaconHeight, curView.BeaconHeight)
+			return NewBlockChainError(WrongBlockHeightError, errors.New("Waiting For Beacon Produce Block"))
 		}
 		if err := curView.verifyCommitteeFromBlock(blockchain, shardBlock, committees); err != nil {
 			return err
 		}
 	}
-
 	if err := blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(shardBlock, signingCommittees); err != nil {
-		committeesStr, _ := incognitokey.CommitteeKeyListToString(committees)
+		committeesStr, _ := incognitokey.CommitteeKeyListToString(signingCommittees)
 		Logger.log.Errorf("Validate block %v shard %v with committee %v return error %v", shardBlock.GetHeight(), shardBlock.GetShardID(), committeesStr, err)
 		return err
 	}

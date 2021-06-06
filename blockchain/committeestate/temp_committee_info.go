@@ -5,15 +5,15 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
-type TempCommitteeInfo struct {
+type ShardCommitteeForBlockProducing struct {
 	hash         common.Hash
 	beaconHeight uint64
 	committees   []incognitokey.CommitteePublicKey
 	shardID      byte
 }
 
-func NewTempCommitteeInfo() *TempCommitteeInfo {
-	return &TempCommitteeInfo{}
+func NewTempCommitteeInfo() *ShardCommitteeForBlockProducing {
+	return &ShardCommitteeForBlockProducing{}
 }
 
 func NewTempCommitteeInfoWithValue(
@@ -21,8 +21,8 @@ func NewTempCommitteeInfoWithValue(
 	committees []incognitokey.CommitteePublicKey,
 	shardID byte,
 	beaconHeight uint64,
-) *TempCommitteeInfo {
-	return &TempCommitteeInfo{
+) *ShardCommitteeForBlockProducing {
+	return &ShardCommitteeForBlockProducing{
 		hash:         hash,
 		beaconHeight: beaconHeight,
 		committees:   committees,
@@ -30,18 +30,18 @@ func NewTempCommitteeInfoWithValue(
 	}
 }
 
-func (tempCommitteeInfo *TempCommitteeInfo) ShardID() byte {
+func (tempCommitteeInfo *ShardCommitteeForBlockProducing) ShardID() byte {
 	return tempCommitteeInfo.shardID
 }
 
-func (tempCommitteeInfo *TempCommitteeInfo) BeaconHeight() uint64 {
+func (tempCommitteeInfo *ShardCommitteeForBlockProducing) BeaconHeight() uint64 {
 	return tempCommitteeInfo.beaconHeight
 }
 
-func (tempCommitteeInfo *TempCommitteeInfo) Committees() []incognitokey.CommitteePublicKey {
+func (tempCommitteeInfo *ShardCommitteeForBlockProducing) Committees() []incognitokey.CommitteePublicKey {
 	return tempCommitteeInfo.committees
 }
 
-func (tempCommitteeInfo *TempCommitteeInfo) Hash() common.Hash {
+func (tempCommitteeInfo *ShardCommitteeForBlockProducing) Hash() common.Hash {
 	return tempCommitteeInfo.hash
 }

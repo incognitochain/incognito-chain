@@ -55,7 +55,6 @@ type Chain interface {
 	CheckExistedBlk(block types.BlockInterface) bool
 	GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error)
 	GetCommitteeV2(types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC
-	GetSigningCommittees([]incognitokey.CommitteePublicKey, types.BlockInterface) ([]incognitokey.CommitteePublicKey, error)
 	CommitteeStateVersion() int
 }
 

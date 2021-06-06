@@ -691,7 +691,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
 	if curView.BeaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
-		committees = GetSigningCommitteeV3(
+		committees = FilterSigningCommitteeV3(
 			committees,
 			shardState.ProposerTime,
 			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,

@@ -403,12 +403,6 @@ func (chain *BeaconChain) CommitteesFromViewHashForShard(
 	return chain.Blockchain.getShardCommitteeFromBeaconHash(committeeHash, shardID)
 }
 
-func (chain *BeaconChain) GetSigningCommittees(
-	committees []incognitokey.CommitteePublicKey, block types.BlockInterface,
-) ([]incognitokey.CommitteePublicKey, error) {
-	return chain.Blockchain.getCommitteesForSigning(committees, block)
-}
-
 func getCommitteeCacheKey(hash common.Hash, shardID byte) string {
 	return fmt.Sprintf("%s-%d", hash.String(), shardID)
 }

@@ -354,7 +354,7 @@ func GetSubsetID(proposerTime int64, fixedValidator int) int {
 	return subsetID
 }
 
-func GetSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, proposerTime int64, fixedValidator int) []incognitokey.CommitteePublicKey {
+func FilterSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, proposerTime int64, fixedValidator int) []incognitokey.CommitteePublicKey {
 	signingCommittees := []incognitokey.CommitteePublicKey{}
 	subsetID := GetSubsetID(proposerTime, fixedValidator)
 	for i, v := range fullCommittees {
@@ -396,62 +396,40 @@ func (blockchain *BlockChain) GetShardRootsHash(shardBestState *ShardBestState, 
 	return sRH, err
 }
 
-//InitShardCommitteeEngineV1 : Init shard committee engine for every time restore process
-//Pre-conditions: Already blocks, best view have been initialized before
-//Input:
-// + consensusStateDB: instance of statedb -> query shard committees and shard pending validators
-// + shardHeight, shardID, shardHash: Basic data for shard committee engine
-//Output: [Interface] ShardCommitteeState
-func InitShardCommitteeEngineV1(
-	consensusStateDB *statedb.StateDB,
-	shardHeight uint64,
-	shardID byte,
-	shardHash common.Hash) committeestate.ShardCommitteeState {
-	Logger.log.Infof("SHARDID %+v | Shard Height %+v, Init Shard Committee Engine V1", shardID, shardHeight)
-	shardCommittees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
-	shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
-
-	shardCommitteeState := committeestate.NewShardCommitteeStateV1WithValue(shardCommittees, shardPendingValidators)
-
-	return shardCommitteeState
-}
-
-//InitShardCommitteeStateV2 : Init shard committee engine for every time restore process
-//Pre-conditions: Already blocks, best view have been initialized before
-//Input:
-// + consensusStateDB: instance of statedb -> query shard committees and shard pending validators
-// + shardHeight, shardID, shardHash: Basic data for shard committee engine
-//Output: [Interface] ShardCommitteeState
-func InitShardCommitteeStateV2(
+func InitShardCommitteeState(
+	version int,
 	consensusStateDB *statedb.StateDB,
 	shardHeight uint64,
 	shardID byte,
 	block *types.ShardBlock,
-	bc *BlockChain) *committeestate.ShardCommitteeStateV2 {
-	Logger.log.Infof("SHARDID %+v | Shard Height %+v, Init Shard Committee Engine V2", shardID, shardHeight)
-	signingCommittees := []incognitokey.CommitteePublicKey{}
-	//committees := []incognitokey.CommitteePublicKey{}
-	if shardHeight == 1 {
-		signingCommittees = statedb.GetOneShardCommittee(consensusStateDB, shardID)
-		//committees = signingCommittes
-	} else {
-		committees, err := bc.getShardCommitteeFromBeaconHash(block.Header.CommitteeFromBlock, shardID)
-		if err != nil {
-			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
-			panic(err)
-		}
-		signingCommittees, err = bc.getCommitteesForSigning(committees, block)
-		if err != nil {
-			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
-			panic(err)
-		}
-	}
-	shardCommitteeState := committeestate.NewShardCommitteeStateV2WithValue(
-		signingCommittees,
-		block.Header.CommitteeFromBlock,
-	)
+	bc *BlockChain) committeestate.ShardCommitteeState {
+	if version == committeestate.SELF_SWAP_SHARD_VERSION || shardHeight == 1 {
+		shardCommittees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
+		shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
 
-	return shardCommitteeState
+		shardCommitteeState := committeestate.NewShardCommitteeStateV1WithValue(shardCommittees, shardPendingValidators)
+		return shardCommitteeState
+	}
+	//committees := []incognitokey.CommitteePublicKey{}
+	committees, err := bc.getShardCommitteeFromBeaconHash(block.Header.CommitteeFromBlock, shardID)
+	if err != nil {
+		Logger.log.Error(NewBlockChainError(InitShardStateError, err))
+		panic(err)
+	}
+	switch version {
+	case committeestate.SLASHING_VERSION:
+		return committeestate.NewShardCommitteeStateV2WithValue(
+			committees,
+			block.Header.CommitteeFromBlock,
+		)
+	case committeestate.DCS_VERSION:
+		return committeestate.NewShardCommitteeStateV3WithValue(
+			committees,
+			block.Header.CommitteeFromBlock,
+		)
+	default:
+		panic("shardBestState.CommitteeState not a valid version to init")
+	}
 }
 
 //ShardCommitteeEngine : getter of shardCommitteeState ...
@@ -466,32 +444,50 @@ func (shardBestState *ShardBestState) CommitteeStateVersion() int {
 
 // tryUpgradeCommitteeState only allow
 // Upgrade to v2 if and only if current version is 1 and beacon height == staking flow v2 height
+// Upgrade to v3 if and only if current version is 2 and beacon height == staking flow v3 height
 // @NOTICE: DO NOT UPDATE IN BLOCK WITH SWAP INSTRUCTION
 func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) error {
-	if shardBestState.CommitteeStateVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
+	if shardBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height &&
+		shardBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV3Height {
 		return nil
 	}
-	if shardBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height {
-		return nil
+	if shardBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
+		if shardBestState.CommitteeStateVersion() != committeestate.SLASHING_VERSION {
+			return nil
+		}
+		if shardBestState.CommitteeStateVersion() == committeestate.DCS_VERSION {
+			return nil
+		}
+	}
+	if shardBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
+		if shardBestState.CommitteeStateVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
+			return nil
+		}
+		if shardBestState.CommitteeStateVersion() == committeestate.SLASHING_VERSION {
+			return nil
+		}
 	}
 
-	tempBlock := &types.ShardBlock{}
-	tempBlock.Header.CommitteeFromBlock = shardBestState.shardCommitteeState.GetCommitteeFromBlock()
-	committees, err := bc.getShardCommitteeFromBeaconHash(tempBlock.Header.CommitteeFromBlock, shardBestState.ShardID)
+	committeeFromBlock := shardBestState.shardCommitteeState.GetCommitteeFromBlock()
+	committees, err := bc.getShardCommitteeFromBeaconHash(committeeFromBlock, shardBestState.ShardID)
 	if err != nil {
 		return err
 	}
-	signingCommittees, err := bc.getCommitteesForSigning(committees, tempBlock)
-	if err != nil {
-		Logger.log.Error(NewBlockChainError(InitShardStateError, err))
-		panic(err)
-	}
-	newShardCommitteeStateV2 := committeestate.NewShardCommitteeStateV2WithValue(
-		signingCommittees,
-		tempBlock.CommitteeFromBlock(),
-	)
 
-	shardBestState.shardCommitteeState = newShardCommitteeStateV2
+	if shardBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
+		shardBestState.shardCommitteeState = committeestate.NewShardCommitteeStateV2WithValue(
+			committees,
+			committeeFromBlock,
+		)
+	}
+
+	if shardBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
+		shardBestState.shardCommitteeState = committeestate.NewShardCommitteeStateV3WithValue(
+			committees,
+			committeeFromBlock,
+		)
+	}
+
 	Logger.log.Infof("SHARDID %+v | Shard Height %+v, UPGRADE Shard Committee State from V1 to V2", shardBestState.ShardID, shardBestState.ShardHeight)
 	return nil
 }
@@ -523,4 +519,39 @@ func (shardBestState *ShardBestState) verifyCommitteeFromBlock(
 		}
 	}
 	return nil
+}
+
+// Output:
+// 1. Full committee
+// 2. signing committee
+// 3. error
+func (shardBestState *ShardBestState) getSigningCommittee(
+	shardBlock *types.ShardBlock, bc *BlockChain,
+) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
+	if shardBlock.Header.CommitteeFromBlock.IsZeroValue() {
+		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
+	}
+	switch shardBestState.CommitteeStateVersion() {
+	case committeestate.SELF_SWAP_SHARD_VERSION:
+		return shardBestState.GetShardCommittee(), shardBestState.GetShardCommittee(), nil
+	case committeestate.SLASHING_VERSION:
+		shardCommitteeForBlockProducing, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
+		if err != nil {
+			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+		}
+		return shardCommitteeForBlockProducing.Committees(), shardCommitteeForBlockProducing.Committees(), nil
+	case committeestate.DCS_VERSION:
+		shardCommitteeForBlockProducing, err := bc.getShardCommitteeForBlockProducing(shardBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
+		if err != nil {
+			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
+		}
+		res := FilterSigningCommitteeV3(
+			shardCommitteeForBlockProducing.Committees(),
+			shardBlock.GetProposeTime(),
+			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator)
+		return shardCommitteeForBlockProducing.Committees(), res, nil
+	default:
+		panic("shardBestState.CommitteeState is not a valid version")
+	}
+	return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
 }
