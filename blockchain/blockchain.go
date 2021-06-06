@@ -579,8 +579,11 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		}
 
 		var shardCommitteeState committeestate.ShardCommitteeState
-		if v.BeaconHeight >= config.Param().ConsensusParam.StakingFlowV2Height ||
-			v.BeaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
+		version := committeestate.VersionByBeaconHeight(v.BeaconHeight,
+			config.Param().ConsensusParam.StakingFlowV2Height,
+			config.Param().ConsensusParam.StakingFlowV3Height,
+		)
+		if version == committeestate.DCS_VERSION || version == committeestate.SLASHING_VERSION {
 			shardCommitteeState = InitShardCommitteeStateV2(
 				v.consensusStateDB,
 				v.ShardHeight, v.ShardID,
@@ -590,11 +593,9 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 				v.consensusStateDB, v.ShardHeight, v.ShardID, v.BestBlockHash)
 		}
 		v.shardCommitteeState = shardCommitteeState
-		if v.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
-			err := v.upgradeCommitteeEngineV2(blockchain)
-			if err != nil {
-				panic(err)
-			}
+		err = v.tryUpgradeCommitteeState(blockchain)
+		if err != nil {
+			panic(err)
 		}
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			panic("Restart shard views fail")

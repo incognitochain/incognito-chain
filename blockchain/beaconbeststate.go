@@ -767,10 +767,7 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) {
 		swapRule, nextEpochShardCandidate, currentEpochShardCandidate,
 	)
 	beaconBestState.beaconCommitteeState = committeeState
-	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height ||
-		beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
-		beaconBestState.upgradeCommitteeState()
-	}
+	beaconBestState.tryUpgradeCommitteeState()
 }
 
 func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockChain, beaconBlock *types.BeaconBlock) error {
@@ -819,13 +816,26 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }
 
-func (beaconBestState *BeaconBestState) upgradeCommitteeState() {
+// tryUpgradeCommitteeState only allow
+// Upgrade to v2 if current version is 1 and beacon height == staking flow v2 height
+// Upgrade to v3 if current version is 2 and beacon height == staking flow v3 height
+func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() {
+	if beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV3Height &&
+		beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height {
+		return
+	}
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
+		if beaconBestState.beaconCommitteeState.Version() != committeestate.SLASHING_VERSION {
+			return
+		}
 		if beaconBestState.beaconCommitteeState.Version() == committeestate.DCS_VERSION {
 			return
 		}
 	}
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
+		if beaconBestState.beaconCommitteeState.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
+			return
+		}
 		if beaconBestState.beaconCommitteeState.Version() == committeestate.SLASHING_VERSION {
 			return
 		}

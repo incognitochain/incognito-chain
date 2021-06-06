@@ -464,9 +464,14 @@ func (shardBestState *ShardBestState) CommitteeStateVersion() int {
 	return shardBestState.shardCommitteeState.Version()
 }
 
+// tryUpgradeCommitteeState only allow
+// Upgrade to v2 if and only if current version is 1 and beacon height == staking flow v2 height
 // @NOTICE: DO NOT UPDATE IN BLOCK WITH SWAP INSTRUCTION
-func (shardBestState *ShardBestState) upgradeCommitteeEngineV2(bc *BlockChain) error {
+func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) error {
 	if shardBestState.CommitteeStateVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
+		return nil
+	}
+	if shardBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height {
 		return nil
 	}
 

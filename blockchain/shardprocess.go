@@ -863,15 +863,11 @@ func (shardBestState *ShardBestState) initShardBestState(
 		BuildTxs(genesisShardBlock.Body.Transactions).
 		Build()
 
-	if config.Param().ConsensusParam.StakingFlowV3Height == 1 {
-		shardBestState.shardCommitteeState = committeestate.InitGenesisShardCommitteeStateV2(env)
-	} else {
-		if config.Param().ConsensusParam.StakingFlowV2Height == 1 {
-			shardBestState.shardCommitteeState = committeestate.InitGenesisShardCommitteeStateV2(env)
-		} else {
-			shardBestState.shardCommitteeState = committeestate.InitGenesisShardCommitteeStateV1(env)
-		}
-	}
+	shardBestState.shardCommitteeState = committeestate.InitGenesisShardCommitteeState(
+		1,
+		config.Param().ConsensusParam.StakingFlowV2Height,
+		config.Param().ConsensusParam.StakingFlowV3Height,
+		env)
 
 	//statedb===========================START
 	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)
@@ -1182,11 +1178,9 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
 
-	if newShardState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
-		err := newShardState.upgradeCommitteeEngineV2(blockchain)
-		if err != nil {
-			panic(NewBlockChainError(-11111, fmt.Errorf("Upgrade Committe Engine Error, %+v", err)))
-		}
+	err = newShardState.tryUpgradeCommitteeState(blockchain)
+	if err != nil {
+		panic(NewBlockChainError(-11111, fmt.Errorf("Upgrade Committe Engine Error, %+v", err)))
 	}
 
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()

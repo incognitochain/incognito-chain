@@ -75,10 +75,10 @@ func (s *ShardCommitteeStateV2) GetCommitteeFromBlock() common.Hash {
 	return s.committeeFromBlock
 }
 
-//InitGenesisShardCommitteeStateV2 init committee state at genesis block or anytime restore program
+//initGenesisShardCommitteeStateV2 init committee state at genesis block or anytime restore program
 //	- call function processInstructionFromBeacon for process instructions received from beacon
 //	- call function processShardBlockInstruction for process shard block instructions
-func InitGenesisShardCommitteeStateV2(env ShardCommitteeStateEnvironment) *ShardCommitteeStateV2 {
+func initGenesisShardCommitteeStateV2(env ShardCommitteeStateEnvironment) *ShardCommitteeStateV2 {
 	s := NewShardCommitteeStateV2()
 
 	committeeChange := NewCommitteeChange()

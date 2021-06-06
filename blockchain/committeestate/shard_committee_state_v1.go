@@ -14,6 +14,19 @@ import (
 	"github.com/pkg/errors"
 )
 
+func InitGenesisShardCommitteeState(beaconHeight, stakingFlowV2, stakingFlowV3 uint64,
+	env ShardCommitteeStateEnvironment) ShardCommitteeState {
+	version := VersionByBeaconHeight(beaconHeight, stakingFlowV2, stakingFlowV3)
+	switch version {
+	case SELF_SWAP_SHARD_VERSION:
+		return initGenesisShardCommitteeStateV1(env)
+	case SLASHING_VERSION, DCS_VERSION:
+		return initGenesisShardCommitteeStateV2(env)
+	default:
+		panic("not a valid shard committee state version")
+	}
+}
+
 //ShardCommitteeStateHash
 type ShardCommitteeStateHash struct {
 	ShardCommitteeHash        common.Hash
@@ -90,10 +103,10 @@ func (s *ShardCommitteeStateV1) SubsetCommitteesFromBlock() common.Hash {
 	return common.Hash{}
 }
 
-//InitGenesisShardCommitteeStateV1 init committee state at genesis block or anytime restore program
+//initGenesisShardCommitteeStateV1 init committee state at genesis block or anytime restore program
 //	- call function processInstructionFromBeacon for process instructions received from beacon
 //	- call function processShardBlockInstruction for process shard block instructions
-func InitGenesisShardCommitteeStateV1(env ShardCommitteeStateEnvironment) *ShardCommitteeStateV1 {
+func initGenesisShardCommitteeStateV1(env ShardCommitteeStateEnvironment) *ShardCommitteeStateV1 {
 	s := NewShardCommitteeStateV1()
 
 	shardPendingValidator := []string{}

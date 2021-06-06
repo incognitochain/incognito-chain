@@ -629,10 +629,11 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 
 	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false)
-	version := committeestate.VersionByBeaconHeight(beaconBestState.BeaconHeight,
+	beaconBestState.beaconCommitteeState = committeestate.InitBeaconCommitteeState(
+		beaconBestState.BeaconHeight,
 		config.Param().ConsensusParam.StakingFlowV2Height,
-		config.Param().ConsensusParam.StakingFlowV3Height)
-	beaconBestState.beaconCommitteeState = committeestate.InitBeaconCommitteeState(version, beaconCommitteeStateEnv)
+		config.Param().ConsensusParam.StakingFlowV3Height,
+		beaconCommitteeStateEnv)
 
 	beaconBestState.finishSyncManager = finishsync2.NewFinishManager()
 	beaconBestState.Epoch = 1
@@ -948,10 +949,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if beaconBlock.Header.Height == config.Param().ConsensusParam.StakingFlowV2Height ||
-		beaconBlock.Header.Height == config.Param().ConsensusParam.StakingFlowV3Height {
-		newBestState.upgradeCommitteeState()
-	}
+	newBestState.tryUpgradeCommitteeState()
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 	blockchain.BeaconChain.multiView.AddView(newBestState)
