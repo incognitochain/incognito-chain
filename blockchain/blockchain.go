@@ -1041,44 +1041,6 @@ func (bc *BlockChain) GetAllCommitteeStakeInfoByEpoch(epoch uint64) (map[int][]*
 	return statedb.GetAllCommitteeStakeInfoV2(beaconConsensusStateDB, allCommitteeState), nil
 }
 
-func (blockchain *BlockChain) storeAllShardSubstitutesValidator(
-	beaconCurView *BeaconBestState,
-	addedValidators map[byte][]incognitokey.CommitteePublicKey,
-) error {
-	if beaconCurView.BeaconHeight < config.Param().ConsensusParam.StakingFlowV3Height {
-		return statedb.StoreAllShardSubstitutesValidator(beaconCurView.consensusStateDB, addedValidators)
-	}
-	for shardID, v := range addedValidators {
-		newSubstituteValidators := make(map[string]bool)
-		for _, validator := range v {
-			key, err := validator.ToBase58()
-			if err != nil {
-				return err
-			}
-			newSubstituteValidators[key] = true
-		}
-		substituteValidatorList := beaconCurView.beaconCommitteeState.GetOneShardSubstitute(shardID)
-		for i, substituteValidator := range substituteValidatorList {
-			key, err := substituteValidator.ToBase58()
-			if err != nil {
-				return err
-			}
-			if newSubstituteValidators[key] {
-				err = statedb.StoreOneShardSubstitutesValidator(
-					beaconCurView.consensusStateDB,
-					shardID,
-					substituteValidatorList[i:],
-				)
-				if err != nil {
-					return err
-				}
-				break
-			}
-		}
-	}
-	return nil
-}
-
 func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {
 	return blockchain.config.PoolManager
 }

@@ -689,14 +689,14 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *com
 	}
 }
 
-func (beaconBestState *BeaconBestState) initCommitteeState(bc *BlockChain) {
+func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) {
 	Logger.log.Infof("Init Beacon Committee State %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
 		shardIDs = append(shardIDs, i)
 	}
-	currentValidator, substituteValidator, nextEpochShardCandidate, currentEpochShardCandidate,
-		_, _, syncingValidators,
+	currentValidator, substituteValidator, nextEpochShardCandidate,
+		currentEpochShardCandidate, _, _, syncingValidators,
 		rewardReceivers, autoStaking, stakingTx := statedb.GetAllCandidateSubstituteCommittee(beaconBestState.consensusStateDB, shardIDs)
 	beaconCommittee := currentValidator[statedb.BeaconChainID]
 	delete(currentValidator, statedb.BeaconChainID)
@@ -767,6 +767,10 @@ func (beaconBestState *BeaconBestState) initCommitteeState(bc *BlockChain) {
 		swapRule, nextEpochShardCandidate, currentEpochShardCandidate,
 	)
 	beaconBestState.beaconCommitteeState = committeeState
+	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height ||
+		beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
+		beaconBestState.upgradeCommitteeState()
+	}
 }
 
 func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockChain, beaconBlock *types.BeaconBlock) error {
@@ -815,7 +819,7 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }
 
-func (beaconBestState *BeaconBestState) upgradeCommitteeState(bc *BlockChain) {
+func (beaconBestState *BeaconBestState) upgradeCommitteeState() {
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
 		if beaconBestState.beaconCommitteeState.Version() == committeestate.DCS_VERSION {
 			return

@@ -10,7 +10,7 @@ echo "Start Unit-Test"
 echo "package committeestate"
 GO111MODULE=on go test -cover ./blockchain/committeestate/*.go
 echo "package finishsync"
-GO111MODULE=on go test -cover ./blockchain/committeestate/finishsync/*.go
+GO111MODULE=on go test -cover ./blockchain/finishsync/*.go
 echo "package statedb"
 GO111MODULE=on go test -cover ./dataaccessobject/statedb/*.go
 echo "package instruction"
@@ -21,8 +21,8 @@ echo "package metadata"
 GO111MODULE=on go test -cover ./metadata/*.go
 echo "package signaturecounter"
 GO111MODULE=on go test -cover ./blockchain/signaturecounter/*.go
-echo "package blsbft"
-GO111MODULE=on go test -cover ./consensus_v2/blsbft/*.go
+#echo "package blsbft"
+#GO111MODULE=on go test -cover ./consensus_v2/blsbft/*.go
 
 
 echo "Start build Incognito"

@@ -312,7 +312,6 @@ func calculateRewardV3(
 }
 
 func calculateReward(
-	maxBeaconBlockCreation uint64,
 	splitRewardRuleProcessor committeestate.SplitRewardRuleProcessor,
 	numberOfActiveShards int,
 	beaconHeight uint64,
@@ -398,7 +397,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 	totalRewardForCustodian := make(map[common.Hash]uint64)
 	totalRewardForIncDAO := make(map[common.Hash]uint64)
 
-	if curView.BeaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
+	if curView.CommitteeStateVersion() == committeestate.DCS_VERSION {
 		totalRewardForBeacon,
 			totalRewardForShardSubset,
 			totalRewardForIncDAO,
@@ -423,7 +422,7 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 			totalRewardForShard,
 			totalRewardForIncDAO,
 			totalRewardForCustodian,
-			err = calculateReward(uint64(config.Param().BlockTime.MaxBeaconBlockCreation.Seconds()),
+			err = calculateReward(
 			curView.beaconCommitteeState.(committeestate.SplitRewardRuleProcessor),
 			curView.ActiveShards, blkHeight, epoch,
 			curView.GetBeaconRewardStateDB(),

@@ -629,16 +629,10 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 
 	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false)
-	var committeeState committeestate.BeaconCommitteeState
-	switch genesisBeaconBlock.Header.Height {
-	case config.Param().ConsensusParam.StakingFlowV3Height:
-		committeeState = committeestate.InitGenesisBeaconCommitteeStateV3(beaconCommitteeStateEnv)
-	case config.Param().ConsensusParam.StakingFlowV2Height:
-		committeeState = committeestate.InitGenesisBeaconCommitteeStateV2(beaconCommitteeStateEnv)
-	default:
-		committeeState = committeestate.InitGenesisBeaconCommitteeStateV1(beaconCommitteeStateEnv)
-	}
-	beaconBestState.beaconCommitteeState = committeeState
+	version := committeestate.VersionByBeaconHeight(beaconBestState.BeaconHeight,
+		config.Param().ConsensusParam.StakingFlowV2Height,
+		config.Param().ConsensusParam.StakingFlowV3Height)
+	beaconBestState.beaconCommitteeState = committeestate.InitBeaconCommitteeState(version, beaconCommitteeStateEnv)
 
 	beaconBestState.finishSyncManager = finishsync2.NewFinishManager()
 	beaconBestState.Epoch = 1
@@ -829,7 +823,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = blockchain.storeAllShardSubstitutesValidator(newBestState, committeeChange.ShardSubstituteAdded)
+	err = newBestState.storeAllShardSubstitutesValidator(committeeChange.ShardSubstituteAdded)
 	if err != nil {
 		return err
 	}
@@ -870,10 +864,6 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		newBestState.pdeState.DeletedWaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
 		//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
 		newBestState.pdeState = newBestState.pdeState.transformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
-	}
-
-	if err != nil {
-		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
 	// Save result of BurningConfirm instruction to get proof later
 	metas := []string{ // Burning v2: sig on beacon only
@@ -960,7 +950,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 
 	if beaconBlock.Header.Height == config.Param().ConsensusParam.StakingFlowV2Height ||
 		beaconBlock.Header.Height == config.Param().ConsensusParam.StakingFlowV3Height {
-		newBestState.upgradeCommitteeState(blockchain)
+		newBestState.upgradeCommitteeState()
 	}
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
@@ -1125,6 +1115,43 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 	err := statedb.StoreSyncingValidators(beaconBestState.consensusStateDB, committeeChange.SyncingPoolAdded)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (beaconCurView *BeaconBestState) storeAllShardSubstitutesValidator(
+	addedValidators map[byte][]incognitokey.CommitteePublicKey,
+) error {
+	if beaconCurView.BeaconHeight < config.Param().ConsensusParam.StakingFlowV3Height {
+		return statedb.StoreAllShardSubstitutesValidator(beaconCurView.consensusStateDB, addedValidators)
+	}
+	for shardID, v := range addedValidators {
+		newSubstituteValidators := make(map[string]bool)
+		for _, validator := range v {
+			key, err := validator.ToBase58()
+			if err != nil {
+				return err
+			}
+			newSubstituteValidators[key] = true
+		}
+		substituteValidatorList := beaconCurView.beaconCommitteeState.GetOneShardSubstitute(shardID)
+		for i, substituteValidator := range substituteValidatorList {
+			key, err := substituteValidator.ToBase58()
+			if err != nil {
+				return err
+			}
+			if newSubstituteValidators[key] {
+				err = statedb.StoreOneShardSubstitutesValidator(
+					beaconCurView.consensusStateDB,
+					shardID,
+					substituteValidatorList[i:],
+				)
+				if err != nil {
+					return err
+				}
+				break
+			}
+		}
 	}
 	return nil
 }

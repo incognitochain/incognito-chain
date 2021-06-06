@@ -634,8 +634,8 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 	hash, _ := common.Hash{}.NewHashFromStr("123")
 
 	rewards := []uint64{1093995, 1093995}
-	beaconReward := []uint64{51054, 196919}
-	shardReward := []uint64{933543, 787677}
+	beaconReward := []uint64{196919, 51054}
+	shardReward := []uint64{787677, 933543}
 	daoReward := []uint64{109399, 109399}
 	sDBs := []*statedb.StateDB{}
 	splitRewardRuleProcessors := []*mocks.SplitRewardRuleProcessor{}
@@ -694,53 +694,13 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Year 1 - V2",
-			args: args{
-				beaconHeight:  20,
-				epoch:         1,
-				rewardStateDB: sDBs[0],
-			},
-			want: map[common.Hash]uint64{
-				*hash: 51054 * 8,
-			},
-			want1: []map[common.Hash]uint64{
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-			},
-			want2: map[common.Hash]uint64{
-				*hash: 109399 * 8,
-			},
-			want3:   map[common.Hash]uint64{},
-			wantErr: false,
-		},
-		{
 			name: "Year 1 - V1",
 			args: args{
-				beaconHeight:  20,
-				epoch:         1,
-				rewardStateDB: sDBs[1],
+				beaconHeight:             20,
+				epoch:                    1,
+				rewardStateDB:            sDBs[1],
+				numberOfActiveShards:     8,
+				splitRewardRuleProcessor: splitRewardRuleProcessors[0],
 			},
 			want: map[common.Hash]uint64{
 				*hash: 1575352,
@@ -777,10 +737,55 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 			want3:   map[common.Hash]uint64{},
 			wantErr: false,
 		},
+		// @NOICE: No use split rule reward v2
+		/*
+			{
+				name: "Year 1 - V2",
+				args: args{
+					beaconHeight:  20,
+					epoch:         1,
+					rewardStateDB: sDBs[0],
+				},
+				want: map[common.Hash]uint64{
+					*hash: 51054 * 8,
+				},
+				want1: []map[common.Hash]uint64{
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+				},
+				want2: map[common.Hash]uint64{
+					*hash: 109399 * 8,
+				},
+				want3:   map[common.Hash]uint64{},
+				wantErr: false,
+			},
+		*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, got2, got3, err := calculateReward(tt.args.maxBeaconBlockCreation, tt.args.splitRewardRuleProcessor, tt.args.numberOfActiveShards, tt.args.beaconHeight, tt.args.epoch, tt.args.rewardStateDB, tt.args.isSplitRewardForCustodian, tt.args.percentCustodianRewards)
+			got, got1, got2, got3, err := calculateReward(tt.args.splitRewardRuleProcessor, tt.args.numberOfActiveShards, tt.args.beaconHeight, tt.args.epoch, tt.args.rewardStateDB, tt.args.isSplitRewardForCustodian, tt.args.percentCustodianRewards)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("calculateReward() error = %v, wantErr %v", err, tt.wantErr)
 				return

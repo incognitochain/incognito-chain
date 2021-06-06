@@ -120,7 +120,7 @@ func (b *BeaconCommitteeStateV1) Hash() (*BeaconCommitteeStateHash, error) {
 	return res, nil
 }
 
-func InitGenesisBeaconCommitteeStateV1(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV1 {
+func initGenesisBeaconCommitteeStateV1(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV1 {
 	beaconCommitteeStateV1 := NewBeaconCommitteeStateV1()
 	beaconCommitteeStateV1.initCommitteeState(env)
 	return beaconCommitteeStateV1

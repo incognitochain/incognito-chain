@@ -26,6 +26,19 @@ type beaconCommitteeStateBase struct {
 	mu *sync.RWMutex // beware of this, any class extend this class need to use this mutex carefully
 }
 
+func InitBeaconCommitteeState(version int, env *BeaconCommitteeStateEnvironment) BeaconCommitteeState {
+	switch version {
+	case SELF_SWAP_SHARD_VERSION:
+		return initGenesisBeaconCommitteeStateV1(env)
+	case SLASHING_VERSION:
+		return initGenesisBeaconCommitteeStateV2(env)
+	case DCS_VERSION:
+		return initGenesisBeaconCommitteeStateV3(env)
+	default:
+		panic("not valid committee state version")
+	}
+}
+
 //NewBeaconCommitteeState constructor for BeaconCommitteeState by version
 func NewBeaconCommitteeState(
 	version int,
