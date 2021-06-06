@@ -417,7 +417,6 @@ func (e *BLSBFT_V3) processIfBlockGetEnoughVote(
 	if v.block == nil {
 		return
 	}
-	e.Logger.Infof("Process Block IF enough votes, %+v, %+v", *v.block.Hash(), v.block.GetHeight())
 	//already in chain
 	bestView := e.Chain.GetBestView()
 	view := e.Chain.GetViewByHash(*v.block.Hash())

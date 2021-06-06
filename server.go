@@ -5,9 +5,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
-	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"log"
 	"net"
 	"os"
@@ -17,6 +14,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/transaction"
+	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metrics/monitor"
@@ -313,12 +314,12 @@ func (serverObj *Server) NewServer(
 		Syncker:     serverObj.syncker,
 		// UserKeySet:        serverObj.userKeySet,
 		// NodeMode:        cfg.NodeMode,
-		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
-		PubSubManager:   pubsubManager,
-		ConsensusEngine: serverObj.consensusEngine,
-		Highway:         serverObj.highway,
+		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
+		PubSubManager:     pubsubManager,
+		ConsensusEngine:   serverObj.consensusEngine,
+		Highway:           serverObj.highway,
 		OutcoinByOTAKeyDb: dboc,
-		PoolManager:     poolManager,
+		PoolManager:       poolManager,
 	})
 	if err != nil {
 		return err
@@ -2068,8 +2069,6 @@ func (s *Server) GetUserMiningState() (role string, chainID int) {
 		//check if in committee or pending committee in beacon
 		for _, chain := range s.blockChain.ShardChain {
 			for _, v := range shardPendingCommiteeFromBeaconView[byte(chain.GetShardID())] { //if in pending commitee in beacon state
-				key, _ := v.ToBase58()
-				Logger.log.Info("[slashing] key:", key)
 				if v.IsEqualMiningPubKey(common.BlsConsensus, userPk) {
 					return common.PendingRole, chain.GetShardID()
 				}

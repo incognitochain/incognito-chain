@@ -41,6 +41,8 @@ For example:
 
 - While Alice has put down 5.44x as much capital as Bob, they earn the same amount of fees, as long as the ETH/DAI price stays within the 1,000 to 2,250 range.
 
+<img src="https://i.ibb.co/Y8dRkbh/Screen-Shot-2021-06-04-at-4-45-32-PM.png" alt="drawing">
+
 ### Active Liquidity
 
 If market prices move outside an LP’s specified price range, their liquidity is effectively removed from the pool and is no longer earning fees
@@ -50,6 +52,8 @@ If market prices move outside an LP’s specified price range, their liquidity i
 LPs can deposit a single token in a custom price range above or below the current price: if the market price enters into their specified range, they sell one asset for another along a smooth curve while earning swap fees in the process.
 
 ## How to trade on pDEX?
+
+`Below is trading process if only new price P won't cross to new initialized tick`
 
 [![1-gh35s-RDa-Nmn-VY7-S5avb42-A.png](https://i.postimg.cc/sfKZK5sv/1-gh35s-RDa-Nmn-VY7-S5avb42-A.png)](https://postimg.cc/V5r6krS8)
 
@@ -80,6 +84,8 @@ Note that:
 
 * The price has shifted. If a buyer makes a trade in the same direction, they will get a slightly worse pBTC/pDAI rate. However, if a buyer makes a trade in the opposite direction, they will get a slightly better pDAI/pBTC rate.
 
+`In the case trading cross to new initialized tick, we need to calculate the liquidity and trading fee by the new tick`
+
 ## Trading fees 
 
 1. Trading fees will be calcualted by trading volume in a period of time (But user can set it greater than the calculated value)
@@ -109,12 +115,6 @@ Deposit process in a nutshell
 Trade process in a nutshell
 <img src="https://i.ibb.co/2gZPWzr/pdex-v3-trade-2.png" alt="drawing"/>
 
-### Range Order
-
-Range order process in a nutshell
-
-<img src="https://i.ibb.co/5MJ3CPd/pdex-v3-range-order.png" alt="drawing"/>
-
 ### Withdraw
 
 Withdraw process in a nutshell
@@ -125,12 +125,11 @@ Withdraw process in a nutshell
 
 ### Overview
 
-
 <img src="https://i.ibb.co/KFLPTJg/pdex-v3-architect.png" alt="drawing"/>
 
 ### Detail
 
-<img src="https://i.ibb.co/KFLPTJg/pdex-v3-architect.png" alt="drawing"/>
+<img src="https://i.ibb.co/PzKzMty/pdex-v3-class-diagram.png" alt="drawing"/>
 
 ## References
 
