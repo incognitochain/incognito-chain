@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -153,4 +154,53 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, 
 		}
 	}
 	return outCoins, nil
+}
+
+func QueryBatchDbCoinVer2(otaKeys []privacy.OTAKey, shardID byte, tokenID *common.Hash, shardHeight, destHeight uint64, db *statedb.StateDB, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
+	// avoid overlap; unless lower height is 0
+	start := shardHeight + 1
+	if shardHeight == 0 {
+		start = 0
+	}
+
+	res := make(map[string][]privacy.Coin)
+	for _, otaKey := range otaKeys {
+		res[fmt.Sprintf("%x", OTAKeyToRaw(otaKey))] = make([]privacy.Coin, 0)
+	}
+
+	for height := start; height <= destHeight; height += 1 {
+		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
+		if err != nil {
+			Logger.Log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
+			return nil, err
+		}
+		for _, coinBytes := range currentHeightCoins {
+			cv2 := &privacy.CoinV2{}
+			err := cv2.SetBytes(coinBytes)
+			if err != nil {
+				Logger.Log.Error("Get outcoins ver 2 from bytes", err)
+				return nil, err
+			}
+			for _, otaKey := range otaKeys {
+				params := make(map[string]interface{})
+				params["otaKey"] = otaKey
+				params["db"] = db
+				params["tokenID"] = tokenID
+
+				pass := true
+				for _, f := range filters {
+					if !f(cv2, params) {
+						pass = false
+					}
+				}
+				if pass {
+					otaStr := fmt.Sprintf("%x", OTAKeyToRaw(otaKey))
+					res[otaStr] = append(res[otaStr], cv2)
+					break
+				}
+			}
+
+		}
+	}
+	return res, nil
 }

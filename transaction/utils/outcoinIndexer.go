@@ -319,7 +319,7 @@ func (ci *CoinIndexer) StoreIndexedOutputCoins(otaKey privacy.OTAKey, outputCoin
 		ocBytes = append(ocBytes, c.Bytes())
 	}
 	vkb := OTAKeyToRaw(otaKey)
-	Logger.Log.Infof("Store %d indexed coins to db %v", len(ocBytes), ci.db)
+	Logger.Log.Infof("Store %d indexed coins to db %x", len(ocBytes), vkb)
 	// all token and PRV coins are grouped together; match them to desired tokenID upon retrieval
 	err := rawdbv2.StoreIndexedOutCoins(ci.db, common.ConfidentialAssetID, vkb[:], ocBytes, shardID)
 	if err != nil {
@@ -350,26 +350,27 @@ func (ci *CoinIndexer) Start() {
 		select {
 		case status := <-ci.statusChan:
 			numWorking--
+			otaKeyBytes := OTAKeyToRaw(status.otaKey)
 			if status.err != nil {
-				Logger.Log.Errorf("IndexOutCoin for otaKey %v failed: %v\n", status.otaKey, status.err)
+				Logger.Log.Errorf("IndexOutCoin for otaKey %x failed: %v\n", otaKeyBytes, status.err)
 				err = ci.RemoveOTAKey(status.otaKey)
 				if err != nil {
-					Logger.Log.Errorf("Remove OTAKey %v error: %v\n", status.otaKey, err)
+					Logger.Log.Errorf("Remove OTAKey %v error: %v\n", otaKeyBytes, err)
 				}
 			} else {
-				Logger.Log.Infof("Finished indexing output coins for otaKey: %v\n", status.otaKey)
+				Logger.Log.Infof("Finished indexing output coins for otaKey: %v\n", otaKeyBytes)
 			}
 
 		case idxParams := <-ci.IdxChan:
-			Logger.Log.Infof("New authorized OTAKey received: %v\n", idxParams.OTAKey)
-			//do something
+			otaKeyBytes := OTAKeyToRaw(idxParams.OTAKey)
+			Logger.Log.Infof("New authorized OTAKey received: %x\n", otaKeyBytes)
 			ci.idxQueue = append(ci.idxQueue, idxParams)
 
 		case <-ci.quitChan:
 			ci.mtx.Lock()
 			ci.isAuthorizedRunning = false
 			ci.mtx.Unlock()
-			Logger.Log.Infof("Stopped coinIndexer\n")
+			Logger.Log.Infof("Stopped coinIndexer!!\n")
 			return
 		default:
 			if numWorking < ci.numWorkers && len(ci.idxQueue) > 0 {
@@ -377,12 +378,16 @@ func (ci *CoinIndexer) Start() {
 				idxParams := ci.idxQueue[0]
 				ci.idxQueue = ci.idxQueue[1:]
 
-				Logger.Log.Infof("Re-index for new OTAKey %v, fromHeight %v, toHeight %v, isReset %v\n",
-					idxParams.OTAKey, idxParams.FromHeight, idxParams.ToHeight, idxParams.IsReset)
+				otaKeyBytes := OTAKeyToRaw(idxParams.OTAKey)
+				Logger.Log.Infof("Re-index for new OTAKey %x, fromHeight %v, toHeight %v, isReset %v\n",
+					otaKeyBytes, idxParams.FromHeight, idxParams.ToHeight, idxParams.IsReset)
 
 				go ci.ReIndexOutCoin(idxParams)
+			} else {
+				Logger.Log.Infof("no OTA keys found in queue\n")
+				time.Sleep(5 * time.Second)
 			}
-			time.Sleep(5 * time.Second)
+
 		}
 	}
 }
