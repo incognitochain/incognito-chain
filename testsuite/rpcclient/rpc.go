@@ -15,12 +15,12 @@ import (
 )
 
 type RPCClient struct {
-	client ClientInterface
+	Client ClientInterface
 }
 
 func NewRPCClient(client ClientInterface) *RPCClient {
 	rpc := &RPCClient{
-		client: client,
+		Client: client,
 	}
 	return rpc
 }
@@ -32,13 +32,25 @@ func mapUintToInterface(m map[string]uint64) map[string]interface{} {
 	}
 	return mfl
 }
+func (r *RPCClient) API_SubmitKey(privateKey string) error {
+	err := r.Client.SubmitKey(privateKey)
+	time.Sleep(time.Millisecond)
+	return err
+}
+
+func (r *RPCClient) API_CreateConvertCoinVer1ToVer2Transaction(privateKey string) error {
+	err := r.Client.CreateConvertCoinVer1ToVer2Transaction(privateKey)
+	time.Sleep(time.Millisecond)
+	return err
+}
+
 func (r *RPCClient) API_SendTxPRV(privateKey string, receivers map[string]uint64, fee int64, privacy bool) (*jsonresult.CreateTransactionResult, error) {
 	privacyTx := float64(0)
 	if privacy {
 		privacyTx = 1
 	}
 
-	result, err := r.client.CreateAndSendTransaction(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx)
+	result, err := r.Client.CreateAndSendTransaction(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx)
 	time.Sleep(time.Millisecond)
 	return &result, err
 }
@@ -48,7 +60,7 @@ func (r *RPCClient) API_SendTxCreateCustomToken(privateKey string, receiverPayme
 	if privacy {
 		privacyTx = 1
 	}
-	result, err := r.client.CreateAndSendPrivacyCustomTokenTransaction(privateKey, nil, -1, privacyTx, map[string]interface{}{
+	result, err := r.Client.CreateAndSendPrivacyCustomTokenTransaction(privateKey, nil, -1, privacyTx, map[string]interface{}{
 		"Privacy":     true,
 		"TokenID":     "",
 		"TokenName":   tokenName,
@@ -68,7 +80,7 @@ func (r *RPCClient) API_SendTxCustomToken(privateKey string, tokenID string, rec
 	if privacy {
 		privacyTx = 1
 	}
-	result, err := r.client.CreateAndSendPrivacyCustomTokenTransaction(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx, map[string]interface{}{
+	result, err := r.Client.CreateAndSendPrivacyCustomTokenTransaction(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx, map[string]interface{}{
 		"Privacy":        true,
 		"TokenID":        tokenID,
 		"TokenName":      "",
@@ -86,7 +98,7 @@ func (r *RPCClient) API_SendTxWithWithdrawalReqV2(privateKey string, receivers m
 	if privacy {
 		privacyTx = 1
 	}
-	result, err := r.client.CreateAndSendTxWithWithdrawalReqV2(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx, reqInfo)
+	result, err := r.Client.CreateAndSendTxWithWithdrawalReqV2(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx, reqInfo)
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPDEFeeWithdrawalReq(privateKey string, receivers map[string]uint64, fee int64, privacy bool, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
@@ -94,7 +106,7 @@ func (r *RPCClient) API_SendTxWithPDEFeeWithdrawalReq(privateKey string, receive
 	if privacy {
 		privacyTx = 1
 	}
-	result, err := r.client.CreateAndSendTxWithPDEFeeWithdrawalReq(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx, reqInfo)
+	result, err := r.Client.CreateAndSendTxWithPDEFeeWithdrawalReq(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx, reqInfo)
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPTokenTradeReq(privateKey string, receivers map[string]uint64, fee int64, privacy bool, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionTokenResult, error) {
@@ -102,11 +114,11 @@ func (r *RPCClient) API_SendTxWithPTokenTradeReq(privateKey string, receivers ma
 	if privacy {
 		privacyTx = 1
 	}
-	result, err := r.client.CreateAndSendTxWithPTokenTradeReq(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx, reqInfo, "", 0)
+	result, err := r.Client.CreateAndSendTxWithPTokenTradeReq(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx, reqInfo, "", 0)
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPTokenCrossPoolTradeReq(acount account.Account, tokenID string, buyTokenID string, sellAmount int, miniumBuyAmount int) (*jsonresult.CreateTransactionTokenResult, error) {
-	burnAddr, err := r.client.GetBurningAddress(float64(0))
+	burnAddr, err := r.Client.GetBurningAddress(float64(0))
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +140,7 @@ func (r *RPCClient) API_SendTxWithPTokenCrossPoolTradeReq(acount account.Account
 		"TradingFee":          "1",
 		"TraderAddressStr":    acount.PaymentAddress,
 	}
-	result, err := r.client.CreateAndSendTxWithPTokenCrossPoolTradeReq(acount.PrivateKey, map[string]interface{}{burnAddr: "1"}, -1, 0, reqInfo, "", 0)
+	result, err := r.Client.CreateAndSendTxWithPTokenCrossPoolTradeReq(acount.PrivateKey, map[string]interface{}{burnAddr: "1"}, -1, 0, reqInfo, "", 0)
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPRVTradeReq(privateKey string, receivers map[string]uint64, fee int64, privacy bool, reqInfo map[string]interface{}) (*jsonresult.CreateTransactionResult, error) {
@@ -136,11 +148,11 @@ func (r *RPCClient) API_SendTxWithPRVTradeReq(privateKey string, receivers map[s
 	if privacy {
 		privacyTx = 1
 	}
-	result, err := r.client.CreateAndSendTxWithPRVTradeReq(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx, reqInfo)
+	result, err := r.Client.CreateAndSendTxWithPRVTradeReq(privateKey, mapUintToInterface(receivers), float64(fee), privacyTx, reqInfo)
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPRVCrossPoolTradeReq(account account.Account, buyTokenID string, sellAmount int, miniumBuyAmount int) (*jsonresult.CreateTransactionResult, error) {
-	burnAddr, err := r.client.GetBurningAddress(float64(0))
+	burnAddr, err := r.Client.GetBurningAddress(float64(0))
 	if err != nil {
 		return nil, err
 	}
@@ -152,13 +164,13 @@ func (r *RPCClient) API_SendTxWithPRVCrossPoolTradeReq(account account.Account, 
 		"TradingFee":          "0",
 		"TraderAddressStr":    account.PaymentAddress,
 	}
-	result, err := r.client.CreateAndSendTxWithPRVCrossPoolTradeReq(account.PrivateKey, map[string]interface{}{
+	result, err := r.Client.CreateAndSendTxWithPRVCrossPoolTradeReq(account.PrivateKey, map[string]interface{}{
 		burnAddr: strconv.Itoa(sellAmount),
 	}, -1, -1, reqInfo)
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPTokenContributionV2(account account.Account, tokenID string, tokenAmount int, pairID string) (*jsonresult.CreateTransactionTokenResult, error) {
-	burnAddr, err := r.client.GetBurningAddress(float64(0))
+	burnAddr, err := r.Client.GetBurningAddress(float64(0))
 	if err != nil {
 		return nil, err
 	}
@@ -178,11 +190,11 @@ func (r *RPCClient) API_SendTxWithPTokenContributionV2(account account.Account, 
 		"ContributedAmount":     strconv.Itoa(tokenAmount),
 		"TokenIDStr":            tokenID,
 	}
-	result, err := r.client.CreateAndSendTxWithPTokenContributionV2(account.PrivateKey, nil, -1, 0, reqInfo, "", 0)
+	result, err := r.Client.CreateAndSendTxWithPTokenContributionV2(account.PrivateKey, nil, -1, 0, reqInfo, "", 0)
 	return &result, err
 }
 func (r *RPCClient) API_SendTxWithPRVContributionV2(account account.Account, prvAmount int, pairID string) (*jsonresult.CreateTransactionResult, error) {
-	burnAddr, err := r.client.GetBurningAddress(float64(0))
+	burnAddr, err := r.Client.GetBurningAddress(float64(0))
 	if err != nil {
 		return nil, err
 	}
@@ -192,11 +204,11 @@ func (r *RPCClient) API_SendTxWithPRVContributionV2(account account.Account, prv
 		"ContributedAmount":     strconv.Itoa(prvAmount),
 		"TokenIDStr":            "0000000000000000000000000000000000000000000000000000000000000004",
 	}
-	result, err := r.client.CreateAndSendTxWithPRVContributionV2(account.PrivateKey, map[string]interface{}{burnAddr: strconv.Itoa(prvAmount)}, -1, 0, reqInfo)
+	result, err := r.Client.CreateAndSendTxWithPRVContributionV2(account.PrivateKey, map[string]interface{}{burnAddr: strconv.Itoa(prvAmount)}, -1, 0, reqInfo)
 	return &result, err
 }
 func (r *RPCClient) API_GetPDEState(beaconHeight float64) (jsonresult.CurrentPDEState, error) {
-	result, err := r.client.GetPDEState(map[string]interface{}{"BeaconHeight": beaconHeight})
+	result, err := r.Client.GetPDEState(map[string]interface{}{"BeaconHeight": beaconHeight})
 	return result, err
 }
 
@@ -237,31 +249,31 @@ func (sim *RPCClient) ShowBalance(acc account.Account) {
 }
 
 func (r *RPCClient) API_GetBeaconBestState() (jsonresult.GetBeaconBestState, error) {
-	result, err := r.client.GetBeaconBestState()
+	result, err := r.Client.GetBeaconBestState()
 	return result, err
 }
 
 func (r *RPCClient) API_GetShardBestState(sid int) (jsonresult.GetShardBestState, error) {
-	result, err := r.client.GetShardBestState(sid)
+	result, err := r.Client.GetShardBestState(sid)
 	return result, err
 }
 
 func (r *RPCClient) API_GetTransactionHash(h string) (jsonresult.TransactionDetail, error) {
-	result, err := r.client.GetTransactionByHash(h)
+	result, err := r.Client.GetTransactionByHash(h)
 	return *result, err
 }
 
 func (r *RPCClient) API_GetPrivacyCustomToken(h string) (*jsonresult.GetCustomToken, error) {
-	result, err := r.client.GetPrivacyCustomToken(h)
+	result, err := r.Client.GetPrivacyCustomToken(h)
 	return result, err
 }
 
 func (r *RPCClient) API_GetBalance(acc account.Account) (map[string]uint64, error) {
 	tokenList := make(map[string]uint64)
-	prv, _ := r.client.GetBalanceByPrivateKey(acc.PrivateKey)
+	prv, _ := r.Client.GetBalanceByPrivateKey(acc.PrivateKey)
 	tokenList["PRV"] = prv
 
-	tokenBL, _ := r.client.GetListPrivacyCustomTokenBalance(acc.PrivateKey)
+	tokenBL, _ := r.Client.GetListPrivacyCustomTokenBalance(acc.PrivateKey)
 	for _, token := range tokenBL.ListCustomTokenBalance {
 		tokenList[token.Name] = token.Amount
 
@@ -348,7 +360,7 @@ func (r *RPCClient) API_SendTxStaking(stakeMeta StakingTxParam) (*jsonresult.Cre
 	//fmt.Println(stakeMeta.RewardAddr)
 	//fmt.Println(stakeMeta.AutoRestake)
 
-	txResp, err := r.client.CreateAndSendStakingTransaction(stakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(stakeAmount)}, 1, 0, map[string]interface{}{
+	txResp, err := r.Client.CreateAndSendStakingTransaction(stakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(stakeAmount)}, 1, 0, map[string]interface{}{
 		"StakingType":                  float64(stakingType),
 		"CandidatePaymentAddress":      minerPayment,
 		"PrivateSeed":                  privateSeed,
@@ -376,7 +388,7 @@ func (r *RPCClient) API_SendTxStopAutoStake(stopStakeMeta StopStakingParam) (*js
 
 	burnAddr := stopStakeMeta.BurnAddr
 
-	txResp, err := r.client.CreateAndSendStopAutoStakingTransaction(stopStakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
+	txResp, err := r.Client.CreateAndSendStopAutoStakingTransaction(stopStakeMeta.StakerPrk, map[string]interface{}{burnAddr: float64(0)}, 1, 0, map[string]interface{}{
 		"StopAutoStakingType":     float64(127),
 		"CandidatePaymentAddress": minerPayment,
 		"PrivateSeed":             privateSeed,
@@ -389,7 +401,7 @@ func (r *RPCClient) API_SendTxStopAutoStake(stopStakeMeta StopStakingParam) (*js
 
 func (r *RPCClient) API_GetRewardAmount(paymentAddress string) (map[string]float64, error) {
 	result := make(map[string]float64)
-	rs, err := r.client.GetRewardAmount(paymentAddress)
+	rs, err := r.Client.GetRewardAmount(paymentAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +413,7 @@ func (r *RPCClient) API_GetRewardAmount(paymentAddress string) (map[string]float
 
 func (r *RPCClient) API_SendTxWithdrawReward(privateKey string, paymentAddress string) (*jsonresult.CreateTransactionResult, error) {
 
-	txResp, err := r.client.WithdrawReward(privateKey, nil, 0, 0, map[string]interface{}{
+	txResp, err := r.Client.WithdrawReward(privateKey, nil, 0, 0, map[string]interface{}{
 		"PaymentAddress": paymentAddress, "TokenID": "0000000000000000000000000000000000000000000000000000000000000004", "Version": 0,
 	})
 	if err != nil {
@@ -411,7 +423,7 @@ func (r *RPCClient) API_SendTxWithdrawReward(privateKey string, paymentAddress s
 }
 
 func (r *RPCClient) API_GetPublicKeyRole(miningPublicKey string) (role string, chainID int) {
-	result, err := r.client.GetPublicKeyRole("bls:"+miningPublicKey, true)
+	result, err := r.Client.GetPublicKeyRole("bls:"+miningPublicKey, true)
 	if err != nil {
 		return "", -2
 	}
@@ -439,7 +451,7 @@ func (r *RPCClient) API_GetPublicKeyRole(miningPublicKey string) (role string, c
 }
 
 func (r *RPCClient) API_GetBlockChainInfo() (*jsonresult.GetBlockChainInfoResult, error) {
-	result, err := r.client.GetBlockChainInfo()
+	result, err := r.Client.GetBlockChainInfo()
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +459,7 @@ func (r *RPCClient) API_GetBlockChainInfo() (*jsonresult.GetBlockChainInfoResult
 }
 
 func (r *RPCClient) API_GetCandidateList() (*jsonresult.CandidateListsResult, error) {
-	result, err := r.client.GetCandidateList()
+	result, err := r.Client.GetCandidateList()
 	if err != nil {
 		return nil, err
 	}
@@ -455,7 +467,7 @@ func (r *RPCClient) API_GetCandidateList() (*jsonresult.CandidateListsResult, er
 }
 
 func (r *RPCClient) API_GetCommitteeList() (*jsonresult.CommitteeListsResult, error) {
-	result, err := r.client.GetCommitteeList()
+	result, err := r.Client.GetCommitteeList()
 	if err != nil {
 		return nil, err
 	}
@@ -463,7 +475,7 @@ func (r *RPCClient) API_GetCommitteeList() (*jsonresult.CommitteeListsResult, er
 }
 
 func (r *RPCClient) API_GetBlockHash(chainID int, height uint64) ([]common.Hash, error) {
-	result, err := r.client.GetBlockHash(float64(chainID), float64(height))
+	result, err := r.Client.GetBlockHash(float64(chainID), float64(height))
 	if err != nil {
 		return nil, err
 	}
@@ -471,7 +483,7 @@ func (r *RPCClient) API_GetBlockHash(chainID int, height uint64) ([]common.Hash,
 }
 func (r *RPCClient) API_RetrieveShardBlock(hash string, verbosity string) (*jsonresult.GetShardBlockResult, error) {
 	// var result *jsonresult.GetShardBlockResult
-	result, err := r.client.RetrieveBlock(hash, verbosity)
+	result, err := r.Client.RetrieveBlock(hash, verbosity)
 	if err != nil {
 		return nil, err
 	}
@@ -479,7 +491,7 @@ func (r *RPCClient) API_RetrieveShardBlock(hash string, verbosity string) (*json
 }
 func (r *RPCClient) API_RetrieveShardBlockByHeight(shardID byte, height uint64, verbosity string) ([]*jsonresult.GetShardBlockResult, error) {
 	result := []*jsonresult.GetShardBlockResult{}
-	result, err := r.client.RetrieveBlockByHeight(float64(shardID), float64(height), verbosity)
+	result, err := r.Client.RetrieveBlockByHeight(float64(shardID), float64(height), verbosity)
 	if err != nil {
 		return nil, err
 	}
@@ -487,7 +499,7 @@ func (r *RPCClient) API_RetrieveShardBlockByHeight(shardID byte, height uint64, 
 }
 func (r *RPCClient) API_RetrieveBeaconBlock(hash string) (*jsonresult.GetBeaconBlockResult, error) {
 	var result *jsonresult.GetBeaconBlockResult
-	result, err := r.client.RetrieveBeaconBlock(hash)
+	result, err := r.Client.RetrieveBeaconBlock(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -495,14 +507,14 @@ func (r *RPCClient) API_RetrieveBeaconBlock(hash string) (*jsonresult.GetBeaconB
 }
 func (r *RPCClient) API_RetrieveBeaconBlockByHeight(height uint64) ([]*jsonresult.GetBeaconBlockResult, error) {
 	result := []*jsonresult.GetBeaconBlockResult{}
-	result, err := r.client.RetrieveBeaconBlockByHeight(float64(height))
+	result, err := r.Client.RetrieveBeaconBlockByHeight(float64(height))
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 func (r *RPCClient) API_GetRewardAmountByEpoch(shardID byte, epoch uint64) (uint64, error) {
-	return r.client.GetRewardAmountByEpoch(float64(shardID), float64(epoch))
+	return r.Client.GetRewardAmountByEpoch(float64(shardID), float64(epoch))
 }
 func (r *RPCClient) API_DefragmentAccountPRV(privateKey string, maxValue uint64, fee uint64, privacy bool) (*jsonresult.CreateTransactionResult, error) {
 	var result jsonresult.CreateTransactionResult
@@ -510,7 +522,7 @@ func (r *RPCClient) API_DefragmentAccountPRV(privateKey string, maxValue uint64,
 	if privacy {
 		privacyTx = 1
 	}
-	result, err := r.client.DefragmentAccount(privateKey, float64(maxValue), float64(fee), privacyTx)
+	result, err := r.Client.DefragmentAccount(privateKey, float64(maxValue), float64(fee), privacyTx)
 	if err != nil {
 		return nil, err
 	}
@@ -522,7 +534,7 @@ func (r *RPCClient) API_DefragmentAccountToken(privateKey string, tokenID string
 	if privacy {
 		privacyTx = 1
 	}
-	result, err := r.client.DefragmentAccountToken(privateKey, map[string]interface{}{}, float64(fee), privacyTx, map[string]interface{}{
+	result, err := r.Client.DefragmentAccountToken(privateKey, map[string]interface{}{}, float64(fee), privacyTx, map[string]interface{}{
 		"Privacy":     true,
 		"TokenID":     tokenID,
 		"TokenName":   "",

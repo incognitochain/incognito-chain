@@ -10,7 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/portal"
 	"io"
 	"log"
-	"math"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -70,11 +69,12 @@ func createGenesisTx(accounts []account.Account) []config.InitialIncognito {
 		panic(err)
 	}
 	stateDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, statedb.NewDatabaseAccessWarper(db))
-	initPRV := int(1000000000000 * math.Pow(10, 9))
+	initPRV := 1e18
 	for _, account := range accounts {
-		txs := initSalaryTx(strconv.Itoa(initPRV), account.PrivateKey, stateDB)
+		txs := initSalaryTx(strconv.Itoa(int(initPRV)), account.PrivateKey, stateDB)
 		transactions = append(transactions, txs[0])
 	}
+	fmt.Println(strconv.Itoa(int(initPRV)), transactions)
 	return transactions
 }
 
@@ -86,7 +86,7 @@ func initSalaryTx(amount string, privateKey string, stateDB *statedb.StateDB) []
 	}
 	for _, val := range testUserkeyList {
 		testUserKey, _ := wallet.Base58CheckDeserialize(val)
-		testSalaryTX := transaction.Tx{}
+		testSalaryTX := transaction.TxVersion1{}
 		testSalaryTX.InitTxSalary(uint64(initAmount), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
 			stateDB,
 			nil,

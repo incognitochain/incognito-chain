@@ -2,6 +2,7 @@ package devframework
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/privacy/privacy_v2"
 	"os"
 	"path/filepath"
 
@@ -28,7 +29,6 @@ import (
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/peerv2"
 	"github.com/incognitochain/incognito-chain/peerv2/wrapper"
-	"github.com/incognitochain/incognito-chain/privacy"
 	relaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcRelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/incognitochain/incognito-chain/rpcserver"
@@ -110,7 +110,7 @@ func init() {
 	consensus.Logger.Init(consensusLogger)
 	mempool.Logger.Init(mempoolLogger)
 	transaction.Logger.Init(transactionLogger)
-	privacy.Logger.Init(privacyLogger)
+	privacy_v2.Logger.Init(privacyLogger)
 	databasemp.Logger.Init(dbmpLogger)
 	blockchain.BLogger.Init(bridgeLogger)
 	rpcserver.BLogger.Init(bridgeLogger)
