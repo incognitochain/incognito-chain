@@ -112,6 +112,9 @@ fi
 if [ "$1" == "fullnode" ]; then
 INCOGNITO_NETWORK_KEY=local INCOGNITO_CONFIG_MODE_KEY=flag INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworker=100 --discoverpeersaddress "127.0.0.1:9330" GETH_NAME="http://127.0.0.1:8545" GETH_PORT="" GETH_PROTOCOL="" --relayshards "all" --datadir "data" --listen "0.0.0.0:9433" --externaladdress "0.0.0.0:9433" --norpcauth --rpclisten "0.0.0.0:8334" --rpcwslisten 0.0.0.0:18334 --txpoolmaxtx 100000
 fi
+if [ "$1" == "fullnode-devnet" ]; then
+INCOGNITO_NETWORK_KEY=local INCOGNITO_CONFIG_MODE_KEY=flag INCOGNITO_NETWORK_KEY=local ./incognito --usecoindata --coindatapre="__coins__" --numindexerworker=100 --discoverpeersaddress "139.162.55.124:9330" GETH_NAME="https://kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361" GETH_PORT="" GETH_PROTOCOL="" --relayshards "all" --datadir "data" --listen "0.0.0.0:9433" --externaladdress "0.0.0.0:9433" --norpcauth --rpclisten "0.0.0.0:8334" --rpcwslisten 0.0.0.0:18334 --txpoolmaxtx 100000
+fi
 if [ "$1" == "fullnode-testnet-b" ]; then
 GO111MODULE--usecoindata --coindatapre="__coins__" =on GETH_NAME=kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361 GETH_PROTOCOL=https GETH_PORT="" INCOGNITO_NETWORK_KEY=local INCOGNITO_CONFIG_MODE_KEY=flag INCOGNITO_NETWORK_KEY=local ./incognito --testnet true --nodemode "relay" --relayshards "[0]" --externaladdress "127.0.0.1:9433" --enablewallet --wallet "wallet" --walletpassphrase "12345678" --walletautoinit --norpcauth --datadir "../testnet/fullnode" --discoverpeersaddress "testnet-bootnode.incognito.org:9330" --norpcauth --rpclisten "0.0.0.0:8334" --rpcwslisten "127.0.0.1:18338" > ../testnet/log.txt 2> ../testnet/error_log.txt &
 fi
