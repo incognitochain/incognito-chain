@@ -604,6 +604,7 @@ func (actorV2 *actorV2) preValidateVote(blockHash []byte, vote *BFTVote, candida
 	return err
 }
 
+// getCommitteeForBlock base on the block version to retrieve the right committee list
 func (actorV2 *actorV2) getCommitteeForBlock(
 	v types.BlockInterface,
 ) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
@@ -621,17 +622,19 @@ func (actorV2 *actorV2) getCommitteeForBlock(
 			return signingCommittees, committees, err
 		}
 		_, proposerIndex, err = actorV2.chain.GetProposerByTimeSlot(
-			v.CommitteeFromBlock(),
 			byte(actorV2.chainID),
 			common.CalculateTimeSlot(v.GetProposeTime()),
 			committees,
+			v.GetVersion(),
 		)
 		if err != nil {
 			return signingCommittees, committees, err
 		}
 	}
 
-	signingCommittees = actorV2.chain.SigningCommittees(v.CommitteeFromBlock(), proposerIndex, committees, byte(actorV2.chainID))
+	signingCommittees = actorV2.chain.GetSigningCommittees(
+		proposerIndex, committees, v.GetVersion())
+
 	return signingCommittees, committees, err
 }
 
@@ -700,19 +703,20 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 	}
 
 	proposerPk, proposerIndex, err := actorV2.chain.GetProposerByTimeSlot(
-		committeeViewHash,
 		byte(actorV2.chainID),
 		actorV2.currentTimeSlot,
 		committees,
+		actorV2.blockVersion,
 	)
-
 	if err != nil {
 		return []incognitokey.CommitteePublicKey{},
 			[]incognitokey.CommitteePublicKey{},
 			incognitokey.CommitteePublicKey{},
 			committeeViewHash, err
 	}
-	signingCommittees = actorV2.chain.SigningCommittees(committeeViewHash, proposerIndex, committees, byte(actorV2.chainID))
+
+	signingCommittees = actorV2.chain.GetSigningCommittees(
+		proposerIndex, committees, actorV2.blockVersion)
 
 	return signingCommittees, committees, proposerPk, committeeViewHash, err
 }

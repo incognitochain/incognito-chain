@@ -138,6 +138,7 @@ func (engine *Engine) ValidateProducerPosition(
 		//validate producer
 		producer := blk.GetProducer()
 		produceTime := blk.GetProduceTime()
+		// TODO: @hung check get producerID again
 		tempProducerID := blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), lenProposers)
 		tempProducer := committee[tempProducerID]
 		b58Str, _ := tempProducer.ToBase58()

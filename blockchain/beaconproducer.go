@@ -282,6 +282,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		shardBlock.Header.Hash(),
 		shardBlock.Header.CrossShardBitMap,
 		shardBlock.Header.ProposeTime,
+		shardBlock.Header.Version,
 	)
 
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(

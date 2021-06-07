@@ -354,45 +354,24 @@ func (chain *ShardChain) CommitteeEngineVersion() int {
 
 //ProposerByTimeSlot ...
 func (chain *ShardChain) GetProposerByTimeSlot(
-	committeeViewHash common.Hash, shardID byte, ts int64,
-	committees []incognitokey.CommitteePublicKey) (incognitokey.CommitteePublicKey, int, error) {
-	lenProposers := 0
-	beaconHeight := chain.Blockchain.BeaconChain.GetFinalView().GetHeight()
-	if beaconHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
-		tempCommitteeInfo, err := chain.Blockchain.getShardCommitteeForBlockProducing(committeeViewHash, shardID)
-		if err != nil {
-			return incognitokey.CommitteePublicKey{}, -1, err
-		}
-		beaconHeight = tempCommitteeInfo.BeaconHeight()
-	}
-	if beaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
-		lenProposers = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
-	} else {
-		lenProposers = chain.Blockchain.GetBestStateShard(shardID).MinShardCommitteeSize
-	}
-	id := GetProposerByTimeSlot(ts, lenProposers)
-	return committees[id], id, nil
+	shardID byte, ts int64,
+	committees []incognitokey.CommitteePublicKey,
+	blockVersion int) (incognitokey.CommitteePublicKey, int, error) {
+	proposer, proposerIndex := GetProposerIndexWithBlockVersion(
+		ts, committees,
+		chain.Blockchain.GetBestStateShard(shardID).MinShardCommitteeSize,
+		config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+		blockVersion,
+	)
+	return proposer, proposerIndex, nil
 }
 
-func (chain *ShardChain) SigningCommittees(
-	committeeViewHash common.Hash, proposerIndex int, committees []incognitokey.CommitteePublicKey, shardID byte,
+func (chain *ShardChain) GetSigningCommittees(
+	proposerIndex int, committees []incognitokey.CommitteePublicKey, blockVersion int,
 ) []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
-	beaconHeight := chain.Blockchain.BeaconChain.GetFinalView().GetHeight()
-	if beaconHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
-		tempCommitteeInfo, err := chain.Blockchain.getShardCommitteeForBlockProducing(committeeViewHash, shardID)
-		if err != nil {
-			return []incognitokey.CommitteePublicKey{}
-		}
-		beaconHeight = tempCommitteeInfo.BeaconHeight()
-	}
-
-	if beaconHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
-		for i, v := range committees {
-			if (i % MaxSubsetCommittees) == (proposerIndex % MaxSubsetCommittees) {
-				res = append(res, v)
-			}
-		}
+	if blockVersion == types.DCS_VERSION {
+		res = filterSigningCommitteeV3(committees, proposerIndex)
 	} else {
 		res = committees
 	}

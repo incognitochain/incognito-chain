@@ -37,25 +37,26 @@ type BeaconRootHash struct {
 }
 
 type BeaconBestState struct {
-	BestBlockHash           common.Hash          `json:"BestBlockHash"`         // The hash of the block.
-	PreviousBestBlockHash   common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
-	BestBlock               types.BeaconBlock    `json:"BestBlock"`             // The block.
-	BestShardHash           map[byte]common.Hash `json:"BestShardHash"`
-	BestShardHeight         map[byte]uint64      `json:"BestShardHeight"`
-	Epoch                   uint64               `json:"Epoch"`
-	BeaconHeight            uint64               `json:"BeaconHeight"`
-	BeaconProposerIndex     int                  `json:"BeaconProposerIndex"`
-	CurrentRandomNumber     int64                `json:"CurrentRandomNumber"`
-	CurrentRandomTimeStamp  int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
-	IsGetRandomNumber       bool                 `json:"IsGetRandomNumber"`
-	Params                  map[string]string    `json:"Params,omitempty"`
-	MaxBeaconCommitteeSize  int                  `json:"MaxBeaconCommitteeSize"`
-	MinBeaconCommitteeSize  int                  `json:"MinBeaconCommitteeSize"`
-	MaxShardCommitteeSize   int                  `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize   int                  `json:"MinShardCommitteeSize"`
-	ActiveShards            int                  `json:"ActiveShards"`
-	ConsensusAlgorithm      string               `json:"ConsensusAlgorithm"`
-	ShardConsensusAlgorithm map[byte]string      `json:"ShardConsensusAlgorithm"`
+	BestBlockHash          common.Hash          `json:"BestBlockHash"`         // The hash of the block.
+	PreviousBestBlockHash  common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
+	BestBlock              types.BeaconBlock    `json:"BestBlock"`             // The block.
+	BestShardHash          map[byte]common.Hash `json:"BestShardHash"`
+	BestShardHeight        map[byte]uint64      `json:"BestShardHeight"`
+	Epoch                  uint64               `json:"Epoch"`
+	BeaconHeight           uint64               `json:"BeaconHeight"`
+	BeaconProposerIndex    int                  `json:"BeaconProposerIndex"`
+	CurrentRandomNumber    int64                `json:"CurrentRandomNumber"`
+	CurrentRandomTimeStamp int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
+	IsGetRandomNumber      bool                 `json:"IsGetRandomNumber"`
+	Params                 map[string]string    `json:"Params,omitempty"`
+	MaxBeaconCommitteeSize int                  `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize int                  `json:"MinBeaconCommitteeSize"`
+	MaxShardCommitteeSize  int                  `json:"MaxShardCommitteeSize"`
+	//TODO: @hung update min shard committee size of beacon state and shard state simultaneously
+	MinShardCommitteeSize   int             `json:"MinShardCommitteeSize"`
+	ActiveShards            int             `json:"ActiveShards"`
+	ConsensusAlgorithm      string          `json:"ConsensusAlgorithm"`
+	ShardConsensusAlgorithm map[byte]string `json:"ShardConsensusAlgorithm"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter

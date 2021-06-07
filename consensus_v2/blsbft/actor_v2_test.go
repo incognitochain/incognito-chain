@@ -68,7 +68,7 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 		)
 	errorGetBestViewHeight.
 		On(
-			"SigningCommittees",
+			"GetSigningCommittees",
 			*hash1,
 			2,
 			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
@@ -109,7 +109,7 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 		)
 	syncProposeViewChain.
 		On(
-			"SigningCommittees",
+			"GetSigningCommittees",
 			*hash1,
 			2,
 			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
@@ -139,7 +139,7 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 		)
 	normalChain.
 		On(
-			"SigningCommittees",
+			"GetSigningCommittees",
 			*hash1,
 			2,
 			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
@@ -673,7 +673,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 		)
 	invalidChain.
 		On(
-			"SigningCommittees",
+			"GetSigningCommittees",
 			*hash,
 			2,
 			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
@@ -699,7 +699,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 		)
 	validChain.
 		On(
-			"SigningCommittees",
+			"GetSigningCommittees",
 			*hash,
 			2,
 			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},

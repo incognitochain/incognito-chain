@@ -74,25 +74,35 @@ type Chain interface {
 	GetViewByHash(hash common.Hash) multiview.View
 	CommitteeEngineVersion() int
 	GetProposerByTimeSlot(
-		committeeViewHash common.Hash,
 		shardID byte,
 		ts int64,
 		committees []incognitokey.CommitteePublicKey,
+		blockVersion int,
 	) (incognitokey.CommitteePublicKey, int, error)
 	CommitteesFromViewHashForShard(committeeHash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
 	ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error
-	SigningCommittees(
-		committeeViewHash common.Hash,
+	// GetSigningCommitteesFromBestView must be retrieve from a shard view, because it's based on the committee state version
+	GetSigningCommittees(
 		proposerIndex int,
 		committees []incognitokey.CommitteePublicKey,
-		shardID byte,
+		blockVersion int,
 	) []incognitokey.CommitteePublicKey
 }
 
 // TODO: @hung consider split interface
 type CommitteeChainHandler interface {
-	CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
-	ProposerByTimeSlot(byte, int64, []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey
+	CommitteesFromViewHashForShard(committeeHash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
+	GetProposerByTimeSlot(
+		shardID byte,
+		ts int64,
+		committees []incognitokey.CommitteePublicKey,
+		blockVersion int,
+	) (incognitokey.CommitteePublicKey, int, error)
+	GetSigningCommittees(
+		proposerIndex int,
+		committees []incognitokey.CommitteePublicKey,
+		blockVersion int,
+	) []incognitokey.CommitteePublicKey
 	FinalView() multiview.View
 }
 

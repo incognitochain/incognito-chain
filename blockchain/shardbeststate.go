@@ -333,13 +333,14 @@ func (shardBestState *ShardBestState) GetCommittee() []incognitokey.CommitteePub
 	return append(result, shardBestState.shardCommitteeState.GetShardCommittee()...)
 }
 
+// GetProposerByTimeSlot return proposer by timeslot from current committee of shard view
 func (shardBestState *ShardBestState) GetProposerByTimeSlot(
 	ts int64,
 	version int,
 ) (incognitokey.CommitteePublicKey, int) {
 	numberOfProposers := 0
 	if shardBestState.CommitteeStateVersion() == committeestate.DCS_VERSION {
-		numberOfProposers = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator / MaxSubsetCommittees
+		numberOfProposers = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 	} else {
 		numberOfProposers = shardBestState.MinShardCommitteeSize
 	}
@@ -349,29 +350,6 @@ func (shardBestState *ShardBestState) GetProposerByTimeSlot(
 
 func (shardBestState *ShardBestState) GetBlock() types.BlockInterface {
 	return shardBestState.BestBlock
-}
-
-func GetProposerByTimeSlot(ts int64, committeeLen int) int {
-	id := int(ts) % committeeLen
-	return id
-}
-
-//GetSubsetID for block producing v3 only
-func GetSubsetID(proposerTime int64, fixedValidator int) int {
-	proposerIndex := GetProposerByTimeSlot(common.CalculateTimeSlot(proposerTime), fixedValidator)
-	subsetID := proposerIndex % MaxSubsetCommittees
-	return subsetID
-}
-
-func FilterSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, proposerTime int64, fixedValidator int) []incognitokey.CommitteePublicKey {
-	signingCommittees := []incognitokey.CommitteePublicKey{}
-	subsetID := GetSubsetID(proposerTime, fixedValidator)
-	for i, v := range fullCommittees {
-		if (i % MaxSubsetCommittees) == subsetID {
-			signingCommittees = append(signingCommittees, v)
-		}
-	}
-	return signingCommittees
 }
 
 func (shardBestState *ShardBestState) GetShardCommittee() []incognitokey.CommitteePublicKey {
@@ -554,13 +532,56 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
-		res := FilterSigningCommitteeV3(
+		fullCommittees := shardCommitteeForBlockProducing.Committees()
+		ts := common.CalculateTimeSlot(shardBlock.Header.ProposeTime)
+		_, proposerIndex := GetProposerIndexWithBlockVersion(
+			ts, fullCommittees,
+			shardBestState.MinShardCommitteeSize,
+			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+			shardBlock.GetVersion(),
+		)
+		res := filterSigningCommitteeV3(
 			shardCommitteeForBlockProducing.Committees(),
-			shardBlock.GetProposeTime(),
-			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator)
+			proposerIndex)
 		return shardCommitteeForBlockProducing.Committees(), res, nil
 	default:
 		panic("shardBestState.CommitteeState is not a valid version")
 	}
 	return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
+}
+
+func GetProposerIndexWithBlockVersion(
+	ts int64, committees []incognitokey.CommitteePublicKey,
+	minShardCommitteeSize, numberOfFixedShardBlockValidator int,
+	blockVersion int) (incognitokey.CommitteePublicKey, int) {
+	lenProposers := 0
+	if blockVersion == types.DCS_VERSION {
+		lenProposers = numberOfFixedShardBlockValidator
+	} else {
+		lenProposers = minShardCommitteeSize
+	}
+	id := GetProposerByTimeSlot(ts, lenProposers)
+	return committees[id], id
+}
+
+func GetProposerByTimeSlot(ts int64, committeeLen int) int {
+	id := int(ts) % committeeLen
+	return id
+}
+
+//GetSubsetID for block producing v3 only
+func GetSubsetID(proposerTime int64, validators int) int {
+	proposerIndex := GetProposerByTimeSlot(common.CalculateTimeSlot(proposerTime), validators)
+	subsetID := proposerIndex % MaxSubsetCommittees
+	return subsetID
+}
+
+func filterSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, proposerIndex int) []incognitokey.CommitteePublicKey {
+	signingCommittees := []incognitokey.CommitteePublicKey{}
+	for i, v := range fullCommittees {
+		if (i % MaxSubsetCommittees) == (proposerIndex % MaxSubsetCommittees) {
+			signingCommittees = append(signingCommittees, v)
+		}
+	}
+	return signingCommittees
 }
