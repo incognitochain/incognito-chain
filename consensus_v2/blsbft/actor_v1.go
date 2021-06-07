@@ -633,7 +633,7 @@ func (actorV1 *actorV1) initRoundData() {
 }
 
 func NewActorWithValue(
-	chain, committeeChain Chain, version int,
+	chain Chain, committeeChain CommitteeChainHandler, version int,
 	chainID, blockVersion int, chainName string,
 	node NodeInterface, logger common.Logger,
 ) Actor {
@@ -641,7 +641,7 @@ func NewActorWithValue(
 	switch version {
 	case types.BFT_VERSION:
 		res = NewActorV1WithValue(chain, chainName, chainID, node, logger)
-	case types.MULTI_VIEW_VERSION:
+	case types.MULTI_VIEW_VERSION, types.SLASHING_VERSION, types.DCS_VERSION:
 		res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
 	default:
 		panic("Bft version is not valid")

@@ -24,7 +24,7 @@ import (
 
 type actorV2 struct {
 	actorBase
-	committeeChain  Chain
+	committeeChain  CommitteeChainHandler
 	currentTime     int64
 	currentTimeSlot int64
 	proposeHistory  *lru.Cache
@@ -43,7 +43,7 @@ func NewActorV2() *actorV2 {
 
 func NewActorV2WithValue(
 	chain Chain,
-	committeeChain Chain,
+	committeeChain CommitteeChainHandler,
 	chainKey string, blockVersion, chainID int,
 	node NodeInterface, logger common.Logger,
 ) *actorV2 {
@@ -690,7 +690,7 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 	if actorV2.blockVersion == types.MULTI_VIEW_VERSION || actorV2.chain.IsBeaconChain() {
 		committees = actorV2.chain.GetBestView().GetCommittee()
 	} else {
-		committeeViewHash = *actorV2.committeeChain.GetFinalView().GetHash()
+		committeeViewHash = *actorV2.chain.GetFinalView().GetHash()
 		committees, err = actorV2.
 			committeeChain.
 			CommitteesFromViewHashForShard(committeeViewHash, byte(actorV2.chainID))

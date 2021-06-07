@@ -92,17 +92,6 @@ type Chain interface {
 // TODO: @hung consider split interface
 type CommitteeChainHandler interface {
 	CommitteesFromViewHashForShard(committeeHash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
-	GetProposerByTimeSlot(
-		shardID byte,
-		ts int64,
-		committees []incognitokey.CommitteePublicKey,
-		blockVersion int,
-	) (incognitokey.CommitteePublicKey, int, error)
-	GetSigningCommittees(
-		proposerIndex int,
-		committees []incognitokey.CommitteePublicKey,
-		blockVersion int,
-	) []incognitokey.CommitteePublicKey
 	FinalView() multiview.View
 }
 
