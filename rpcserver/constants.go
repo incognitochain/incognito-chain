@@ -91,6 +91,7 @@ const (
 	getListPrivacyCustomTokenBalance             = "getlistprivacycustomtokenbalance"
 	getBlockHeader                               = "getheader"
 	getCrossShardBlock                           = "getcrossshardblock"
+	getBlocksFromHeight                          = "getblocksfromheight"
 	randomCommitments                            = "randomcommitments"
 	hasSerialNumbers                             = "hasserialnumbers"
 	hasSerialNumbersInMempool                    = "hasserialnumbersinmempool"

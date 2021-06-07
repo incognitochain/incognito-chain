@@ -3,9 +3,10 @@ package types
 import (
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
+
+	"github.com/pkg/errors"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -295,11 +296,16 @@ func (shardBlock *ShardBlock) UnmarshalJSON(data []byte) error {
 		shardBlock.Body.Transactions = []metadata.Transaction{}
 	}
 	for _, tx := range shardBlock.Body.Transactions {
-		valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), shardBlock.GetHeight())
-		valEnv = transaction.WithBeaconHeight(valEnv, shardBlock.Header.BeaconHeight)
-		valEnv = transaction.WithConfirmedTime(valEnv, shardBlock.GetProduceTime())
+		valEnv := updateTxEnvWithBlock(shardBlock, tx)
 		tx.SetValidationEnv(valEnv)
-		// fmt.Printf("[testNewPool] Unmarshal ShardBlk %v, tx %v, env %v\n", shardBlock.Header.Height, tx.Hash().String(), tx.GetValidationEnv())
+		if tx.GetType() == common.TxCustomTokenPrivacyType {
+			txCustom, ok := tx.(*transaction.TxCustomTokenPrivacy)
+			if !ok {
+				return errors.Errorf("Can not parse this tx %v to tx custom token privacy", tx.Hash().String())
+			}
+			valEnvCustom := updateTxEnvWithBlock(shardBlock, &txCustom.TxPrivacyTokenData.TxNormal)
+			txCustom.TxPrivacyTokenData.TxNormal.SetValidationEnv(valEnvCustom)
+		}
 	}
 	if shardBlock.Body.Instructions == nil {
 		shardBlock.Body.Instructions = [][]string{}
@@ -365,7 +371,7 @@ func (shardHeader *ShardHeader) String() string {
 		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
 
-	if shardHeader.Version == 3 {
+	if shardHeader.Version >= 3 {
 		res += shardHeader.CommitteeFromBlock.String()
 	}
 
@@ -655,4 +661,11 @@ func CloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxPriva
 	}
 	newContentCrossTokenPrivacyData.OutputCoin = []privacy.OutputCoin{}
 	return newContentCrossTokenPrivacyData
+}
+
+func updateTxEnvWithBlock(sBlk *ShardBlock, tx metadata.Transaction) metadata.ValidationEnviroment {
+	valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), sBlk.GetHeight())
+	valEnv = transaction.WithBeaconHeight(valEnv, sBlk.Header.BeaconHeight)
+	valEnv = transaction.WithConfirmedTime(valEnv, sBlk.GetProduceTime())
+	return valEnv
 }
