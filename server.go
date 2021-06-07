@@ -194,6 +194,7 @@ func (serverObj *Server) NewServer(
 	db map[int]incdb.Database,
 	dbmp databasemp.DatabaseInterface,
 	dboc *incdb.Database,
+	indexerWorkers int64,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
 	bnbChainState *bnbrelaying.BNBChainState,
@@ -313,12 +314,13 @@ func (serverObj *Server) NewServer(
 		Syncker:     serverObj.syncker,
 		// UserKeySet:        serverObj.userKeySet,
 		// NodeMode:        cfg.NodeMode,
-		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
-		PubSubManager:   pubsubManager,
-		ConsensusEngine: serverObj.consensusEngine,
-		Highway:         serverObj.highway,
-		OutcoinByOTAKeyDb: dboc,
-		PoolManager:     poolManager,
+		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
+		PubSubManager:     pubsubManager,
+		ConsensusEngine:   serverObj.consensusEngine,
+		Highway:           serverObj.highway,
+		OutCoinByOTAKeyDb: dboc,
+		IndexerWorkers:    indexerWorkers,
+		PoolManager:       poolManager,
 	})
 	if err != nil {
 		return err

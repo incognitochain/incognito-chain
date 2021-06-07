@@ -113,6 +113,7 @@ type config struct {
 
 	// Optional : db to store coin by OTA key (for v2)
 	OutcoinDatabaseDir string `mapstructure:"coin_data_pre" long:"coindatapre" description:"Output coins by OTA key database dir"`
+	NumIndexerWorkers  int64  `mapstructure:"num_indexer_worker" long:"numIndexerWorker" description:"Number of workers for caching output coins"`
 	UseOutcoinDatabase []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
 }
 
@@ -393,7 +394,7 @@ func LoadConfig() *config {
 		LimitFee:                    DefaultLimitFee,
 		EnableMining:                DefaultEnableMining,
 		LogFileName:                 DefaultLogFilename,
-		OutcoinDatabaseDir: 		 DefaultOutcoinDirname,
+		OutcoinDatabaseDir:          DefaultOutcoinDirname,
 	}
 
 	//get network
