@@ -20,6 +20,11 @@ type TxPool interface {
 	EmptyPool() bool
 	MaybeAcceptTransactionForBlockProducing(metadata.Transaction, int64, *ShardBestState) (*metadata.TxDesc, error)
 	MaybeAcceptBatchTransactionForBlockProducing(byte, []metadata.Transaction, int64, *ShardBestState) ([]*metadata.TxDesc, error)
+	MaybeAcceptSalaryTransactionForBlockProducing(byte, metadata.Transaction, int64, *ShardBestState) (*metadata.TxDesc, error)
+	//CheckTransactionFee
+	// CheckTransactionFee(tx metadata.Transaction) (uint64, error)
+	// Check tx validate by it self
+	// ValidateTxByItSelf(tx metadata.Transaction) bool
 }
 
 type FeeEstimator interface {

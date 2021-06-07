@@ -449,6 +449,15 @@ func (blockchain *BlockChain) buildInstsForSortedTradableActions(
 				},
 			}
 		}
+
+		//Work-around solution for the sake of syncing mainnet
+		//Todo: find better solution
+		if _, err := metadata.AssertPaymentAddressAndTxVersion(tradeAction.Meta.TraderAddressStr, 1); err == nil {
+			if len(tradeAction.Meta.SubTraderAddressStr) == 0 {
+				tradeAction.Meta.SubTraderAddressStr = tradeAction.Meta.TraderAddressStr
+			}
+		}
+
 		newInsts, err := blockchain.buildInstructionsForPDECrossPoolTrade(
 			sequentialTrades,
 			tradeMeta.MinAcceptableAmount,
@@ -458,6 +467,9 @@ func (blockchain *BlockChain) buildInstsForSortedTradableActions(
 			currentPDEState,
 			beaconHeight,
 			tradeAction.Meta.TraderAddressStr,
+			tradeAction.Meta.TxRandomStr,
+			tradeAction.Meta.SubTraderAddressStr,
+			tradeAction.Meta.SubTxRandomStr,
 			tradeAction.TxReqID,
 			tradingFeeByPair,
 		)
@@ -477,8 +489,17 @@ func (blockchain *BlockChain) buildInstsForUntradableActions(
 ) [][]string {
 	untradableInsts := [][]string{}
 	for _, tradeAction := range untradableActions {
+		//Work-around solution for the sake of syncing mainnet
+		//Todo: find better solution
+		if _, err := metadata.AssertPaymentAddressAndTxVersion(tradeAction.Meta.TraderAddressStr, 1); err == nil {
+			if len(tradeAction.Meta.SubTraderAddressStr) == 0 {
+				tradeAction.Meta.SubTraderAddressStr = tradeAction.Meta.TraderAddressStr
+			}
+		}
+
 		refundTradingFeeInst := buildCrossPoolTradeRefundInst(
-			tradeAction.Meta.TraderAddressStr,
+			tradeAction.Meta.SubTraderAddressStr,
+			tradeAction.Meta.SubTxRandomStr,
 			common.PRVCoinID.String(),
 			tradeAction.Meta.TradingFee,
 			metadata.PDECrossPoolTradeRequestMeta,
@@ -492,6 +513,7 @@ func (blockchain *BlockChain) buildInstsForUntradableActions(
 
 		refundSellingTokenInst := buildCrossPoolTradeRefundInst(
 			tradeAction.Meta.TraderAddressStr,
+			tradeAction.Meta.TxRandomStr,
 			tradeAction.Meta.TokenIDToSellStr,
 			tradeAction.Meta.SellAmount,
 			metadata.PDECrossPoolTradeRequestMeta,
@@ -508,6 +530,7 @@ func (blockchain *BlockChain) buildInstsForUntradableActions(
 
 func buildCrossPoolTradeRefundInst(
 	traderAddressStr string,
+	txRandomStr string,
 	tokenIDStr string,
 	amount uint64,
 	metaType int,
@@ -520,6 +543,7 @@ func buildCrossPoolTradeRefundInst(
 	}
 	refundCrossPoolTrade := metadata.PDERefundCrossPoolTrade{
 		TraderAddressStr: traderAddressStr,
+		TxRandomStr: txRandomStr,
 		TokenIDStr:       tokenIDStr,
 		Amount:           amount,
 		ShardID:          shardID,
@@ -539,14 +563,18 @@ func buildCrossPoolTradeRefundInst(
 func refundForCrossPoolTrade(
 	sequentialTrades []*tradeInfo,
 	traderAddressStr string,
+	txRandomStr string,
+	subTraderAddressStr string,
+	subTxRandomStr string,
 	tradingFee uint64,
 	metaType int,
 	shardID byte,
 	txReqID common.Hash,
 ) ([][]string, error) {
 	refundTradingFeeInst := buildCrossPoolTradeRefundInst(
-		traderAddressStr,
-		common.PRVCoinID.String(),
+		subTraderAddressStr,
+		subTxRandomStr,
+		common.PRVIDStr,
 		tradingFee,
 		metaType,
 		common.PDECrossPoolTradeFeeRefundChainStatus,
@@ -555,6 +583,7 @@ func refundForCrossPoolTrade(
 	)
 	refundSellingTokenInst := buildCrossPoolTradeRefundInst(
 		traderAddressStr,
+		txRandomStr,
 		sequentialTrades[0].tokenIDToSellStr,
 		sequentialTrades[0].sellAmount,
 		metaType,
@@ -581,6 +610,9 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 	currentPDEState *CurrentPDEState,
 	beaconHeight uint64,
 	traderAddressStr string,
+	txRandomStr string,
+	subTraderAddressStr string,
+	subTxRandomStr string,
 	txReqID common.Hash,
 	tradingFeeByPair map[string]uint64,
 ) ([][]string, error) {
@@ -589,6 +621,9 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 		return refundForCrossPoolTrade(
 			sequentialTrades,
 			traderAddressStr,
+			txRandomStr,
+			subTraderAddressStr,
+			subTxRandomStr,
 			tradingFee,
 			metaType,
 			shardID,
@@ -609,14 +644,37 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 	}
 
 	if minAcceptableAmount > amt {
-		return refundForCrossPoolTrade(
-			sequentialTrades,
-			traderAddressStr,
+		refundTradingFeeInst := buildCrossPoolTradeRefundInst(
+			subTraderAddressStr,
+			subTxRandomStr,
+			common.PRVIDStr,
 			tradingFee,
 			metaType,
+			common.PDECrossPoolTradeFeeRefundChainStatus,
 			shardID,
 			txReqID,
 		)
+
+		refundSellingTokenInst := buildCrossPoolTradeRefundInst(
+			traderAddressStr,
+			txRandomStr,
+			sequentialTrades[0].tokenIDToSellStr,
+			sequentialTrades[0].sellAmount,
+			metaType,
+			common.PDECrossPoolTradeSellingTokenRefundChainStatus,
+			shardID,
+			txReqID,
+		)
+
+		untradableInsts := make([][]string, 0)
+		if len(refundTradingFeeInst) > 0 {
+			untradableInsts = append(untradableInsts, refundTradingFeeInst)
+		}
+		if len(refundSellingTokenInst) > 0 {
+			untradableInsts = append(untradableInsts, refundSellingTokenInst)
+		}
+
+		return untradableInsts, nil
 	}
 
 	tradeAcceptedContents := []metadata.PDECrossPoolTradeAcceptedContent{}
@@ -636,6 +694,7 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 		// build trade accepted contents
 		pdeTradeAcceptedContent := metadata.PDECrossPoolTradeAcceptedContent{
 			TraderAddressStr: traderAddressStr,
+			TxRandomStr:      txRandomStr,
 			TokenIDToBuyStr:  tradeInf.tokenIDToBuyStr,
 			ReceiveAmount:    tradeInf.receiveAmount,
 			Token1IDStr:      pdePoolPair.Token1IDStr,
@@ -667,7 +726,13 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 			addingFee = tradingFee - uint64(len(sequentialTrades)-1)*proportionalFee
 		}
 		pdeTradeAcceptedContent.AddingFee = addingFee
-		sKey := string(rawdbv2.BuildPDESharesKeyV2(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr, ""))
+		sKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr, "")
+		if err != nil{
+			Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
+			return nil, err
+		}
+
+		sKey := string(sKeyBytes)
 		tradingFeeByPair[sKey] += addingFee
 		tradeAcceptedContents = append(tradeAcceptedContents, pdeTradeAcceptedContent)
 	}
@@ -777,6 +842,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 
 	pdeTradeAcceptedContent := metadata.PDETradeAcceptedContent{
 		TraderAddressStr: pdeTradeReqAction.Meta.TraderAddressStr,
+		TxRandomStr:      pdeTradeReqAction.Meta.TxRandomStr,
 		TokenIDToBuyStr:  pdeTradeReqAction.Meta.TokenIDToBuyStr,
 		ReceiveAmount:    receiveAmt,
 		Token1IDStr:      pdePoolPair.Token1IDStr,
@@ -862,20 +928,33 @@ func deductPDEAmountsV2(
 	if !found || pdePoolPair == nil {
 		return deductingAmounts
 	}
-	shareForWithdrawerKey := string(rawdbv2.BuildPDESharesKeyV2(
+	shareForWithdrawerKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, wdMeta.WithdrawerAddressStr,
-	))
+	)
+	if err != nil{
+		Logger.log.Errorf("cannot build PDESharesKeyV2 for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
+		return deductingAmounts
+	}
+
+	shareForWithdrawerKey := string(shareForWithdrawerKeyBytes)
 	currentSharesForWithdrawer, found := currentPDEState.PDEShares[shareForWithdrawerKey]
 	if !found || currentSharesForWithdrawer == 0 {
 		return deductingAmounts
 	}
 
-	totalSharesForPairPrefix := string(rawdbv2.BuildPDESharesKeyV2(
+	totalSharesForPairPrefixBytes, err := rawdbv2.BuildPDESharesKeyV2(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, "",
-	))
+	)
+	if err != nil{
+		Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
+		return deductingAmounts
+	}
+
+	totalSharesForPairPrefix := string(totalSharesForPairPrefixBytes)
 	totalSharesForPair := big.NewInt(0)
+
 	for shareKey, shareAmt := range currentPDEState.PDEShares {
 		if strings.Contains(shareKey, totalSharesForPairPrefix) {
 			totalSharesForPair.Add(totalSharesForPair, new(big.Int).SetUint64(shareAmt))
@@ -921,6 +1000,7 @@ func deductPDEAmountsV2(
 		currentPDEState.PDEShares[shareForWithdrawerKey] -= wdSharesForWithdrawer
 	}
 	deductingAmounts.Shares = wdSharesForWithdrawer
+
 	return deductingAmounts
 }
 
@@ -1107,12 +1187,18 @@ func (blockchain *BlockChain) buildInstructionsForPDEFeeWithdrawal(
 	}
 	wdMeta := pdeFeeWithdrawalRequestAction.Meta
 	pdeTradingFees := currentPDEState.PDETradingFees
-	tradingFeeKey := string(rawdbv2.BuildPDETradingFeeKey(
+	tradingFeeKeyBytes, err := rawdbv2.BuildPDETradingFeeKey(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr,
 		wdMeta.WithdrawalToken2IDStr,
 		wdMeta.WithdrawerAddressStr,
-	))
+	)
+	if err != nil {
+		Logger.log.Errorf("cannot build PDETradingFeeKey for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
+		return nil, err
+	}
+
+	tradingFeeKey := string(tradingFeeKeyBytes)
 	withdrawableFee, found := pdeTradingFees[tradingFeeKey]
 	if !found || withdrawableFee < wdMeta.WithdrawalFeeAmt {
 		rejectedInst := []string{

@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
@@ -26,6 +27,7 @@ func parseTradeRefundContent(
 		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade refund content: %+v", err)
 		return nil, err
 	}
+
 	return &pdeTradeRequestAction, nil
 }
 
@@ -70,80 +72,38 @@ func parseCrossPoolTradeAcceptedContent(
 
 func buildTradeResTx(
 	receiverAddressStr string,
+	txRandomStr string,
 	receiveAmt uint64,
 	tokenIDStr string,
 	producerPrivateKey *privacy.PrivateKey,
-	shardID byte,
 	transactionStateDB *statedb.StateDB,
-	stateDB *statedb.StateDB,
 	meta metadata.Metadata,
 ) (metadata.Transaction, error) {
+
 	tokenID, err := common.Hash{}.NewHashFromStr(tokenIDStr)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
 		return nil, err
 	}
-	keyWallet, err := wallet.Base58CheckDeserialize(receiverAddressStr)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while deserializing trader address string: %+v", err)
-		return nil, err
-	}
-	receiverAddr := keyWallet.KeySet.PaymentAddress
-	// the returned currency is PRV
-	if tokenIDStr == common.PRVCoinID.String() {
-		resTx := new(transaction.Tx)
-		err = resTx.InitTxSalary(
-			receiveAmt,
-			&receiverAddr,
-			producerPrivateKey,
-			transactionStateDB,
-			meta,
-		)
+
+	var txParam transaction.TxSalaryOutputParams
+	if len(txRandomStr) > 0 {
+		publicKey, txRandom, err := coin.ParseOTAInfoFromString(receiverAddressStr, txRandomStr)
 		if err != nil {
-			return nil, NewBlockChainError(InitPDETradeResponseTransactionError, err)
+			return nil, err
 		}
-		return resTx, nil
+		txParam = transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: nil, PublicKey: publicKey, TxRandom: txRandom, TokenID: tokenID, Info: []byte{}}
+	} else {
+		paymentAddress, err := wallet.Base58CheckDeserialize(receiverAddressStr)
+		if err != nil {
+			return nil, err
+		}
+		txParam = transaction.TxSalaryOutputParams{Amount: receiveAmt, ReceiverAddress: &paymentAddress.KeySet.PaymentAddress, TokenID: tokenID, Info: []byte{}}
 	}
-	// in case the returned currency is privacy custom token
-	receiver := &privacy.PaymentInfo{
-		Amount:         receiveAmt,
-		PaymentAddress: receiverAddr,
-	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], tokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID: propID.String(),
-		// PropertyName:   issuingAcceptedInst.IncTokenName,
-		// PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:      receiveAmt,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
-	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			transactionStateDB,
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			stateDB,
-		),
-	)
-	if initErr != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing trade response tx: %+v", initErr)
-		return nil, initErr
-	}
-	return resTx, nil
+
+	return txParam.BuildTxSalary(producerPrivateKey, transactionStateDB, func(c privacy.Coin) metadata.Metadata{
+		return meta
+	})
 }
 
 func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeRefundTx(
@@ -158,6 +118,7 @@ func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeRefundTx(
 	if err != nil {
 		return nil, nil
 	}
+
 	if shardID != crossPoolTradeRefundContent.ShardID {
 		return nil, nil
 	}
@@ -166,14 +127,14 @@ func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeRefundTx(
 		crossPoolTradeRefundContent.TxReqID,
 		metadata.PDECrossPoolTradeResponseMeta,
 	)
+
 	resTx, err := buildTradeResTx(
 		crossPoolTradeRefundContent.TraderAddressStr,
+		crossPoolTradeRefundContent.TxRandomStr,
 		crossPoolTradeRefundContent.Amount,
 		crossPoolTradeRefundContent.TokenIDStr,
 		producerPrivateKey,
-		shardID,
 		shardView.GetCopiedTransactionStateDB(),
-		featureStateDB,
 		meta,
 	)
 	if err != nil {
@@ -196,22 +157,24 @@ func (blockGenerator *BlockGenerator) buildPDETradeRefundTx(
 	if err != nil {
 		return nil, nil
 	}
+
 	if shardID != pdeTradeRequestAction.ShardID {
 		return nil, nil
 	}
+
 	meta := metadata.NewPDETradeResponse(
 		instStatus,
 		pdeTradeRequestAction.TxReqID,
 		metadata.PDETradeResponseMeta,
 	)
+
 	resTx, err := buildTradeResTx(
 		pdeTradeRequestAction.Meta.TraderAddressStr,
+		pdeTradeRequestAction.Meta.TxRandomStr,
 		pdeTradeRequestAction.Meta.SellAmount+pdeTradeRequestAction.Meta.TradingFee,
 		pdeTradeRequestAction.Meta.TokenIDToSellStr,
 		producerPrivateKey,
-		shardID,
 		shardView.GetCopiedTransactionStateDB(),
-		featureStateDB,
 		meta,
 	)
 	if err != nil {
@@ -239,23 +202,26 @@ func (blockGenerator *BlockGenerator) buildPDECrossPoolTradeAcceptedTx(
 		Logger.log.Warn("WARNING: cross pool trade contents is empty.")
 		return nil, nil
 	}
-	finalCrossPoolTradeAcceptedContent := crossPoolTradeAcceptedContents[len-1]
+
+	finalCrossPoolTradeAcceptedContent := crossPoolTradeAcceptedContents[len - 1]
+
 	if shardID != finalCrossPoolTradeAcceptedContent.ShardID {
 		return nil, nil
 	}
+
 	meta := metadata.NewPDECrossPoolTradeResponse(
 		instStatus,
 		finalCrossPoolTradeAcceptedContent.RequestedTxID,
 		metadata.PDECrossPoolTradeResponseMeta,
 	)
+
 	resTx, err := buildTradeResTx(
 		finalCrossPoolTradeAcceptedContent.TraderAddressStr,
+		finalCrossPoolTradeAcceptedContent.TxRandomStr,
 		finalCrossPoolTradeAcceptedContent.ReceiveAmount,
 		finalCrossPoolTradeAcceptedContent.TokenIDToBuyStr,
 		producerPrivateKey,
-		shardID,
 		shardView.GetCopiedTransactionStateDB(),
-		featureStateDB,
 		meta,
 	)
 	if err != nil {
@@ -278,22 +244,24 @@ func (blockGenerator *BlockGenerator) buildPDETradeAcceptedTx(
 	if err != nil {
 		return nil, nil
 	}
+
 	if shardID != pdeTradeAcceptedContent.ShardID {
 		return nil, nil
 	}
+
 	meta := metadata.NewPDETradeResponse(
 		instStatus,
 		pdeTradeAcceptedContent.RequestedTxID,
 		metadata.PDETradeResponseMeta,
 	)
+
 	resTx, err := buildTradeResTx(
 		pdeTradeAcceptedContent.TraderAddressStr,
+		pdeTradeAcceptedContent.TxRandomStr,
 		pdeTradeAcceptedContent.ReceiveAmount,
 		pdeTradeAcceptedContent.TokenIDToBuyStr,
 		producerPrivateKey,
-		shardID,
 		shardView.GetCopiedTransactionStateDB(),
-		featureStateDB,
 		meta,
 	)
 	if err != nil {
@@ -398,64 +366,15 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	// the returned currency is PRV
-	if withdrawalTokenIDStr == common.PRVCoinID.String() {
-		resTx := new(transaction.Tx)
-		err = resTx.InitTxSalary(
-			wdAcceptedContent.DeductingPoolValue,
-			&receiverAddr,
-			producerPrivateKey,
-			shardView.GetCopiedTransactionStateDB(),
-			meta,
-		)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while initializing withdrawal (normal) tx: %+v", err)
-			return nil, nil
+
+	txParam := transaction.TxSalaryOutputParams{Amount: wdAcceptedContent.DeductingPoolValue, ReceiverAddress: &receiverAddr, TokenID: tokenID}
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
 		}
-		//modify the type of the salary transaction
-		// resTx.Type = common.TxBlockProducerCreatedType
-		return resTx, nil
+		return meta
 	}
-	// in case the returned currency is privacy custom token
-	receiver := &privacy.PaymentInfo{
-		Amount:         wdAcceptedContent.DeductingPoolValue,
-		PaymentAddress: receiverAddr,
-	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], tokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID: propID.String(),
-		// PropertyName:   tokeName,
-		// PropertySymbol: tokenSymbol,
-		Amount:      wdAcceptedContent.DeductingPoolValue,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
-	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			shardView.GetCopiedTransactionStateDB(),
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			featureStateDB,
-		),
-	)
-	if initErr != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing withdrawal response (privacy custom token) tx: %+v", initErr)
-		return nil, nil
-	}
-	return resTx, nil
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
@@ -495,65 +414,16 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	// the returned currency is PRV
-	if refundTokenIDStr == common.PRVCoinID.String() {
-		resTx := new(transaction.Tx)
-		err = resTx.InitTxSalary(
-			refundContribution.ContributedAmount,
-			&receiverAddr,
-			producerPrivateKey,
-			shardView.GetCopiedTransactionStateDB(),
-			meta,
-		)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while initializing refund contribution (normal) tx: %+v", err)
-			return nil, nil
+	// create ota coin
+	txParam := transaction.TxSalaryOutputParams{Amount: refundContribution.ContributedAmount, ReceiverAddress: &receiverAddr, TokenID: tokenID}
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
 		}
-		//modify the type of the salary transaction
-		// resTx.Type = common.TxBlockProducerCreatedType
-		return resTx, nil
+		return meta
 	}
-
-	// in case the returned currency is privacy custom token
-	receiver := &privacy.PaymentInfo{
-		Amount:         refundContribution.ContributedAmount,
-		PaymentAddress: receiverAddr,
-	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], tokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID: propID.String(),
-		// PropertyName:   issuingAcceptedInst.IncTokenName,
-		// PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:      refundContribution.ContributedAmount,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
-	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			shardView.GetCopiedTransactionStateDB(),
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			featureStateDB,
-		),
-	)
-	if initErr != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing refund contribution response (privacy custom token) tx: %+v", initErr)
-		return nil, nil
-	}
-	return resTx, nil
+	// set shareRandom for metadata
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
@@ -596,63 +466,16 @@ func (blockGenerator *BlockGenerator) buildPDEMatchedNReturnedContributionTx(
 		return nil, nil
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
-	// the returned currency is PRV
-	if tokenIDStr == common.PRVCoinID.String() {
-		resTx := new(transaction.Tx)
-		err = resTx.InitTxSalary(
-			matchedNReturnedContribution.ReturnedContributedAmount,
-			&receiverAddr,
-			producerPrivateKey,
-			shardView.GetCopiedTransactionStateDB(),
-			meta,
-		)
-		if err != nil {
-			Logger.log.Errorf("ERROR: an error occured while initializing refund contribution (normal) tx: %+v", err)
-			return nil, nil
+	// create ota coin
+	txParam := transaction.TxSalaryOutputParams{Amount: matchedNReturnedContribution.ReturnedContributedAmount, ReceiverAddress: &receiverAddr, TokenID: tokenID}
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
 		}
-		return resTx, nil
+		return meta
 	}
-
-	// in case the returned currency is privacy custom token
-	receiver := &privacy.PaymentInfo{
-		Amount:         matchedNReturnedContribution.ReturnedContributedAmount,
-		PaymentAddress: receiverAddr,
-	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], tokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID: propID.String(),
-		// PropertyName:   issuingAcceptedInst.IncTokenName,
-		// PropertySymbol: issuingAcceptedInst.IncTokenName,
-		Amount:      matchedNReturnedContribution.ReturnedContributedAmount,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
-	}
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(
-			producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			shardView.GetCopiedTransactionStateDB(),
-			meta,
-			false,
-			false,
-			shardID,
-			nil,
-			featureStateDB,
-		),
-	)
-	if initErr != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing matched and returned contribution response (privacy custom token) tx: %+v", initErr)
-		return nil, nil
-	}
-	return resTx, nil
+	// set shareRandom for metadata
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
 
 func (blockGenerator *BlockGenerator) buildPDEFeeWithdrawalTx(
@@ -691,17 +514,16 @@ func (blockGenerator *BlockGenerator) buildPDEFeeWithdrawalTx(
 	}
 	receiverAddr := keyWallet.KeySet.PaymentAddress
 
-	resTx := new(transaction.Tx)
-	err = resTx.InitTxSalary(
-		pdeFeeWithdrawalRequestAction.Meta.WithdrawalFeeAmt,
-		&receiverAddr,
-		producerPrivateKey,
-		shardView.GetCopiedTransactionStateDB(),
-		meta,
-	)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while initializing trading fee withdrawal (normal) tx: %+v", err)
-		return nil, nil
+
+	txParam := transaction.TxSalaryOutputParams{
+		Amount: pdeFeeWithdrawalRequestAction.Meta.WithdrawalFeeAmt,
+		ReceiverAddress: &receiverAddr,
+		TokenID: &common.PRVCoinID}
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			meta.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return meta
 	}
-	return resTx, nil
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }

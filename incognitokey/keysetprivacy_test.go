@@ -1,10 +1,11 @@
 package incognitokey
 
 import (
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy/key"
+	"github.com/stretchr/testify/assert"
 )
 
 /*
@@ -35,7 +36,7 @@ func TestKeySetGenerateKey(t *testing.T) {
 */
 
 func TestKeySetImportFromPrivateKeyByte(t *testing.T) {
-	privateKey := privacy.RandBytes(common.PrivateKeySize)
+	privateKey := common.RandBytes(common.PrivateKeySize)
 
 	keySet := new(KeySet)
 	err := keySet.InitFromPrivateKeyByte(privateKey)
@@ -61,7 +62,7 @@ func TestKeySetImportFromPrivateKeyByteWithInvalidPrivKey(t *testing.T) {
 */
 
 func TestKeySetImportFromPrivateKey(t *testing.T) {
-	privateKey := privacy.GeneratePrivateKey([]byte{1, 2, 3})
+	privateKey := key.GeneratePrivateKey([]byte{1, 2, 3})
 
 	keySet := new(KeySet)
 	err := keySet.InitFromPrivateKey(&privateKey)
@@ -77,7 +78,7 @@ func TestKeySetImportFromPrivateKeyWithInvalidPrivKey(t *testing.T) {
 	keySet := new(KeySet)
 
 	// private is not enough length
-	privateKey := privacy.PrivateKey(privacy.RandBytes(10))
+	privateKey := key.PrivateKey(common.RandBytes(10))
 	err := keySet.InitFromPrivateKey(&privateKey)
 	assert.Equal(t, NewCashecError(InvalidPrivateKeyErr, nil), err)
 

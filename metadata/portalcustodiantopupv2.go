@@ -5,11 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"reflect"
-	"strconv"
 )
 
 type PortalLiquidationCustodianDepositV2 struct {
@@ -73,36 +73,34 @@ func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateTxWithBlockC
 
 func (custodianDeposit PortalLiquidationCustodianDepositV2) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, txr Transaction) (bool, bool, error) {
 	// Note: the metadata was already verified with *transaction.TxCustomToken level so no need to verify with *transaction.Tx level again as *transaction.Tx is embedding property of *transaction.TxCustomToken
-	if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
-		return true, true, nil
-	}
+	// if txr.GetType() == common.TxCustomTokenPrivacyType && reflect.TypeOf(txr).String() == "*transaction.Tx" {
+	// 	return true, true, nil
+	// }
 
 	// validate IncogAddressStr
 	keyWallet, err := wallet.Base58CheckDeserialize(custodianDeposit.IncogAddressStr)
 	if err != nil {
 		return false, false, errors.New("IncogAddressStr of custodian incorrect")
 	}
-	incogAddr := keyWallet.KeySet.PaymentAddress
-	if len(incogAddr.Pk) == 0 {
+	if len(keyWallet.KeySet.PaymentAddress.Pk) == 0 {
 		return false, false, errors.New("wrong custodian incognito address")
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-		return false, false, errors.New("custodian incognito address is not signer tx")
+	// check burning tx
+	isBurned, burnCoin, burnedTokenID, err := txr.GetTxBurnData()
+	if err != nil || !isBurned {
+		return false, false, errors.New("Error This is not Tx Burn")
 	}
-
-	// check tx type
-	if txr.GetType() != common.TxNormalType {
+	// validate amount deposit
+	if custodianDeposit.DepositedAmount == 0 || custodianDeposit.DepositedAmount != burnCoin.GetValue() {
+		return false, false, errors.New("deposit amount should be larger than 0 and equal burn value")
+	}
+	// check tx type and token burn
+	if txr.GetType() != common.TxNormalType || !bytes.Equal(burnedTokenID.Bytes(), common.PRVCoinID[:]) {
 		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
-
-	// check burning tx
-	if !txr.IsCoinsBurning(chainRetriever, shardViewRetriever, beaconViewRetriever, beaconHeight) {
-		return false, false, errors.New("must send coin to burning address")
-	}
-
-	// validate amount deposit
-	if custodianDeposit.DepositedAmount != txr.CalculateTxValue() {
-		return false, false, errors.New("deposit amount should be equal to the tx value")
+	// check tx type
+	if txr.GetType() != common.TxNormalType || !bytes.Equal(burnedTokenID.Bytes(), common.PRVCoinID[:]) {
+		return false, false, errors.New("tx custodian deposit must be TxNormalType")
 	}
 
 	if custodianDeposit.DepositedAmount == 0 && custodianDeposit.FreeCollateralAmount == 0 {

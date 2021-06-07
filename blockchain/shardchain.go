@@ -292,7 +292,7 @@ func (chain *ShardChain) getDataBeforeBlockProducing(buildView *ShardBestState, 
 	}
 
 	//cross shard
-	tempPrivateKey := blockchain.config.BlockGen.createTempKeyset(startTime)
+	tempPrivateKey := blockchain.config.BlockGen.createTempKeyset()
 	createFlow.crossTransactions = blockchain.config.BlockGen.getCrossShardData(curView)
 
 	// Get Transaction for new block
@@ -437,6 +437,10 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 	flow.newBlock.BuildShardBlockBody(shardInstructions, flow.crossTransactions, flow.transactionsForNewBlock)
 	totalTxsFee := curView.shardCommitteeEngine.BuildTotalTxsFeeFromTxs(flow.newBlock.Body.Transactions)
 
+	crossBitMap, err := CreateCrossShardByteArray(flow.newBlock.Body.Transactions, shardID)
+	if err != nil {
+		return err
+	}
 	flow.newBlock.Header = types.ShardHeader{
 		Producer:           flow.proposer, //committeeMiningKeys[producerPosition],
 		ProducerPubKeyStr:  flow.proposer,
@@ -446,7 +450,7 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 		Height:             curView.ShardHeight + 1,
 		Round:              flow.round,
 		Epoch:              flow.processBeaconBlock.GetCurrentEpoch(),
-		CrossShardBitMap:   CreateCrossShardByteArray(flow.newBlock.Body.Transactions, shardID),
+		CrossShardBitMap:   crossBitMap,
 		BeaconHeight:       beaconProcessHeight,
 		BeaconHash:         *beaconProcessHash,
 		TotalTxsFee:        totalTxsFee,
