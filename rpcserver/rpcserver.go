@@ -62,7 +62,6 @@ type RpcServerConfig struct {
 	HttpListenters  []net.Listener
 	WsListenters    []net.Listener
 	ProtocolVersion string
-	ChainParams     *blockchain.Params
 	BlockChain      *blockchain.BlockChain
 	Blockgen        *blockchain.BlockGenerator
 	MemCache        *memcache.MemoryCache

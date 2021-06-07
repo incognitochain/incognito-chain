@@ -185,12 +185,12 @@ func InitLogRotator(logFile string) {
 	err := os.MkdirAll(logDir, 0700)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
-		os.Exit(common.ExitByLogging)
+		os.Exit(-1)
 	}
 	r, err := rotator.New(logFile, 100*1024*1024, false, 3)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
-		os.Exit(common.ExitByLogging)
+		os.Exit(-1)
 	}
 
 	logRotator = r

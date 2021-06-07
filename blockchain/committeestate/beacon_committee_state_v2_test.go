@@ -2,11 +2,12 @@ package committeestate
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"reflect"
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -616,6 +617,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		*incKey6,
 	}
 	committeeChangeValidInputSwapOut.RemovedStaker = []string{key6}
+	committeeChangeValidInputSwapOut.SlashingCommittee[0] = nil
 
 	committeeChangeValidInputSwapOut2 := NewCommitteeChange()
 	committeeChangeValidInputSwapOut2.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
@@ -628,6 +630,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 		*incKey6,
 	}
 	committeeChangeValidInputSwapOut2.RemovedStaker = []string{key6}
+	committeeChangeValidInputSwapOut2.SlashingCommittee[0] = nil
 
 	committeeChangeValidInputBackToSub := NewCommitteeChange()
 	committeeChangeValidInputBackToSub.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
@@ -642,6 +645,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 	committeeChangeValidInputBackToSub.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
 		*incKey,
 	}
+	committeeChangeValidInputBackToSub.SlashingCommittee[0] = nil
 
 	committeeChangeValidInputBackToSub2 := NewCommitteeChange()
 	committeeChangeValidInputBackToSub2.ShardSubstituteAdded[1] = []incognitokey.CommitteePublicKey{
@@ -656,6 +660,7 @@ func TestBeaconCommitteeStateV2_processSwapShardInstruction(t *testing.T) {
 	committeeChangeValidInputBackToSub2.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
 		*incKey,
 	}
+	committeeChangeValidInputBackToSub2.SlashingCommittee[0] = nil
 
 	committeeChangeSlashingForceSwapOut := NewCommitteeChange()
 	committeeChangeSlashingForceSwapOut.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
@@ -1344,6 +1349,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 	committeeChangeProcessSwapShardInstruction.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
 		*incKey0,
 	}
+	committeeChangeProcessSwapShardInstruction.SlashingCommittee[0] = nil
 
 	committeeChangeProcessSwapShardInstruction2KeysIn := NewCommitteeChange()
 	committeeChangeProcessSwapShardInstruction2KeysIn.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
@@ -1352,6 +1358,8 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 	committeeChangeProcessSwapShardInstruction2KeysIn.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
 		*incKey0, *incKey,
 	}
+	committeeChangeProcessSwapShardInstruction2KeysIn.SlashingCommittee[0] = nil
+	committeeChangeProcessSwapShardInstruction2KeysIn.ShardCommitteeRemoved[0] = nil
 
 	committeeChangeProcessSwapShardInstruction2KeysOut := NewCommitteeChange()
 	committeeChangeProcessSwapShardInstruction2KeysOut.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
@@ -1360,6 +1368,9 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 	committeeChangeProcessSwapShardInstruction2KeysOut.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
 		*incKey, *incKey4,
 	}
+	committeeChangeProcessSwapShardInstruction2KeysOut.SlashingCommittee[0] = nil
+	committeeChangeProcessSwapShardInstruction2KeysOut.ShardSubstituteRemoved[0] = nil
+	committeeChangeProcessSwapShardInstruction2KeysOut.ShardCommitteeAdded[0] = nil
 
 	committeeChangeProcessSwapShardInstruction2Keys := NewCommitteeChange()
 	committeeChangeProcessSwapShardInstruction2Keys.ShardCommitteeAdded[0] = []incognitokey.CommitteePublicKey{
@@ -1375,6 +1386,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState(t *testing.T) {
 	committeeChangeProcessSwapShardInstruction2Keys.ShardSubstituteAdded[0] = []incognitokey.CommitteePublicKey{
 		*incKey0, *incKey,
 	}
+	committeeChangeProcessSwapShardInstruction2Keys.SlashingCommittee[0] = nil
 
 	committeeChangeProcessUnstakeInstruction := NewCommitteeChange()
 	committeeChangeProcessUnstakeInstruction.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{*incKey0}
@@ -3293,6 +3305,7 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	committeeChangeUnstakeSwap.StopAutoStake = []string{
 		key0,
 	}
+	committeeChangeUnstakeSwap.SlashingCommittee[0] = nil
 
 	committeeChangeUnstakeSwapOut := NewCommitteeChange()
 	committeeChangeUnstakeSwapOut.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{
@@ -3307,10 +3320,12 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	committeeChangeUnstakeSwapOut.ShardSubstituteRemoved[0] = []incognitokey.CommitteePublicKey{
 		*incKey,
 	}
+	committeeChangeUnstakeSwap.SlashingCommittee[0] = nil
 
 	committeeChangeUnstakeSwapOut.StopAutoStake = []string{
 		key0,
 	}
+	committeeChangeUnstakeSwapOut.SlashingCommittee[0] = nil
 
 	committeeChangeUnstakeAndRandomTime := NewCommitteeChange()
 	committeeChangeUnstakeAndRandomTime.NextEpochShardCandidateRemoved = []incognitokey.CommitteePublicKey{
@@ -3349,6 +3364,8 @@ func TestBeaconCommitteeEngineV2_UpdateCommitteeState_MultipleInstructions(t *te
 	committeeChangeTwoSwapOut.ShardSubstituteRemoved[1] = []incognitokey.CommitteePublicKey{
 		*incKey11,
 	}
+	committeeChangeTwoSwapOut.SlashingCommittee[0] = nil
+	committeeChangeTwoSwapOut.SlashingCommittee[1] = nil
 
 	committeeChangeTwoSlashing := NewCommitteeChange()
 	committeeChangeTwoSlashing.ShardCommitteeRemoved[0] = []incognitokey.CommitteePublicKey{

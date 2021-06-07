@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"sort"
 	"sync"
@@ -249,8 +250,8 @@ func (chain *ShardChain) getDataBeforeBlockProducing(buildView *ShardBestState, 
 		if err != nil {
 			return nil, err
 		}
-		if beaconProcessHeight > blockchain.config.ChainParams.StakingFlowV2Height {
-			beaconProcessHeight = blockchain.config.ChainParams.StakingFlowV2Height
+		if beaconProcessHeight > config.Param().ConsensusParam.StakingFlowV2Height {
+			beaconProcessHeight = config.Param().ConsensusParam.StakingFlowV2Height
 		}
 	}
 
@@ -399,7 +400,7 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 		NewShardEnvBuilder().
 		BuildBeaconInstructions(beaconInstructions).
 		BuildShardID(curView.ShardID).
-		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfFixedBlockValidators).
+		BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
 		BuildShardHeight(curView.ShardHeight).
 		Build()
 
@@ -437,8 +438,10 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 	flow.newBlock.BuildShardBlockBody(shardInstructions, flow.crossTransactions, flow.transactionsForNewBlock)
 	totalTxsFee := curView.shardCommitteeEngine.BuildTotalTxsFeeFromTxs(flow.newBlock.Body.Transactions)
 
-	bitmap, _ := CreateCrossShardByteArray(flow.newBlock.Body.Transactions, shardID)
-
+	crossBitMap, err := CreateCrossShardByteArray(flow.newBlock.Body.Transactions, shardID)
+	if err != nil {
+		return err
+	}
 	flow.newBlock.Header = types.ShardHeader{
 		Producer:           flow.proposer, //committeeMiningKeys[producerPosition],
 		ProducerPubKeyStr:  flow.proposer,
@@ -448,7 +451,7 @@ func (chain *ShardChain) buildBlockWithoutHeaderRootHash(flow *ShardProducingFlo
 		Height:             curView.ShardHeight + 1,
 		Round:              flow.round,
 		Epoch:              flow.processBeaconBlock.GetCurrentEpoch(),
-		CrossShardBitMap:   bitmap,
+		CrossShardBitMap:   crossBitMap,
 		BeaconHeight:       beaconProcessHeight,
 		BeaconHash:         *beaconProcessHash,
 		TotalTxsFee:        totalTxsFee,
@@ -659,7 +662,7 @@ func (chain *ShardChain) validateBlockBody(flow *ShardValidationFlow) error {
 		NewShardEnvBuilder().
 		BuildShardID(curView.ShardID).
 		BuildBeaconInstructions(beaconInstructions).
-		BuildNumberOfFixedBlockValidators(blockchain.config.ChainParams.NumberOfFixedBlockValidators).
+		BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
 		BuildShardHeight(curView.ShardHeight).
 		Build()
 
@@ -903,7 +906,7 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, validationMode 
 	}
 
 	Logger.log.Infof("SHARD %+v | Finish insert shard block height %+v - hash %+v", shardID, blockHeight, blockHash)
-
+	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
 	//broadcast after successfully insert
 	blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
 	blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, validationFlow.nextView))

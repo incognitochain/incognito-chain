@@ -528,6 +528,7 @@ func (txToken *TxToken) InitTxTokenSalary(otaCoin *privacy.CoinV2, privKey *priv
 	if err := tx.InitializeTxAndParams(txPrivacyParams); err != nil {
 		return err
 	}
+	tx.PubKeyLastByteSender = common.GetShardIDFromLastByte(publicKeyBytes[len(publicKeyBytes) - 1])
 	tx.SetType(common.TxCustomTokenPrivacyType)
 	tx.SetPrivateKey(*txPrivacyParams.SenderSK)
 	temp := makeTxToken(tx, []byte{}, []byte{}, proof)

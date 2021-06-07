@@ -3,6 +3,8 @@ package devframework
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/portal"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"net"
 	"os"
@@ -44,14 +46,15 @@ import (
 )
 
 type Config struct {
-	ChainParam *ChainParam
-	DataDir    string
-	ResetDB    bool
-	AppNode    bool
+	Network int
+	DataDir string
+	ResetDB bool
+	AppNode bool
 }
 
 type NodeEngine struct {
 	config      Config
+	param       blockchain.Config
 	appNodeMode string
 	simName     string
 	timer       *TimeEngine
@@ -65,7 +68,6 @@ type NodeEngine struct {
 	GenesisAccount account.Account
 
 	//blockchain dependency object
-	param       *blockchain.Params
 	bc          *blockchain.BlockChain
 	ps          *pubsub.PubSubManager
 	consensus   mock.ConsensusInterface
@@ -126,71 +128,48 @@ func (sim *NodeEngine) EnableDebug() {
 	mempoolLogger.SetLevel(common.LevelTrace)
 }
 
-func (sim *NodeEngine) init() {
+func (sim *NodeEngine) Init() {
 	os.Setenv("TXPOOL_VERSION", "0")
 	simName := sim.simName
 	InitLogRotator(filepath.Join(sim.config.DataDir, simName+".log"))
-	activeNetParams := sim.config.ChainParam.GetParamData()
-	if sim.config.AppNode {
-		switch activeNetParams.Net {
-		case blockchain.Mainnet:
-			blockchain.IsTestNet = false
-			blockchain.IsTestNet2 = false
-			blockchain.ReadKey(MainnetKeylist, Mainnetv2Keylist)
-			blockchain.SetupParam()
-			activeNetParams = &blockchain.ChainMainParam
-			break
-		case blockchain.Testnet:
-			blockchain.IsTestNet = true
-			blockchain.IsTestNet2 = false
-			blockchain.ReadKey(TestnetKeylist, Testnetv2Keylist)
-			blockchain.SetupParam()
-			activeNetParams = &blockchain.ChainTestParam
-			break
-		case blockchain.Testnet2:
-			blockchain.IsTestNet = true
-			blockchain.IsTestNet2 = true
-			blockchain.ReadKey(Testnet2Keylist, Testnet2v2Keylist)
-			blockchain.SetupParam()
-			break
-		default:
-			blockchain.IsTestNet = true
-			blockchain.IsTestNet2 = true
-			blockchain.ReadKey(Testnet2Keylist, Testnet2v2Keylist)
-			blockchain.SetupParam()
-			activeNetParams = &blockchain.ChainTest2Param
-			break
-		}
-
-	} else {
+	activeNetParams := sim.param
+	if !sim.config.AppNode {
 		sim.GenesisAccount = sim.NewAccount()
-		for i := 0; i < activeNetParams.MinBeaconCommitteeSize; i++ {
+		for i := 0; i < config.Param().CommitteeSize.MinBeaconCommitteeSize; i++ {
 			acc := sim.NewAccountFromShard(-1)
 			sim.committeeAccount[-1] = append(sim.committeeAccount[-1], acc)
-			activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPubkey, acc.SelfCommitteePubkey)
-			activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectBeaconNodeSerializedPaymentAddress, acc.PaymentAddress)
+			config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey = append(config.Param().GenesisParam.PreSelectBeaconNodeSerializedPubkey, acc.SelfCommitteePubkey)
+			config.Param().GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress = append(config.Param().GenesisParam.PreSelectBeaconNodeSerializedPaymentAddress, acc.PaymentAddress)
 		}
-		for i := 0; i < activeNetParams.ActiveShards; i++ {
-			for a := 0; a < activeNetParams.MinShardCommitteeSize; a++ {
+		for i := 0; i < config.Param().ActiveShards; i++ {
+			for a := 0; a < config.Param().CommitteeSize.MinShardCommitteeSize; a++ {
 				acc := sim.NewAccountFromShard(i)
 				sim.committeeAccount[i] = append(sim.committeeAccount[i], acc)
-				activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPubkey, acc.SelfCommitteePubkey)
-				activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress = append(activeNetParams.GenesisParams.PreSelectShardNodeSerializedPaymentAddress, acc.PaymentAddress)
+				config.Param().GenesisParam.PreSelectShardNodeSerializedPubkey = append(config.Param().GenesisParam.PreSelectShardNodeSerializedPubkey, acc.SelfCommitteePubkey)
+				config.Param().GenesisParam.PreSelectShardNodeSerializedPaymentAddress = append(config.Param().GenesisParam.PreSelectShardNodeSerializedPaymentAddress, acc.PaymentAddress)
 			}
 		}
-
 		initTxs := createGenesisTx([]account.Account{sim.GenesisAccount})
-		activeNetParams.GenesisParams.InitialIncognito = initTxs
+		config.Param().GenesisParam.InitialIncognito = initTxs
+	} else {
+		config.Param().LoadKey()
+		//TODO: add privatekey
 	}
 
-	zkp.InitCheckpoint(activeNetParams.BCHeightBreakPointNewZKP)
-	common.MaxShardNumber = activeNetParams.ActiveShards
-	common.TIMESLOT = activeNetParams.Timeslot
-	activeNetParams.CreateGenesisBlocks()
+	zkp.InitCheckpoint(config.Param().BCHeightBreakPointNewZKP)
+	common.MaxShardNumber = config.Param().ActiveShards
+	common.TIMESLOT = config.Param().ConsensusParam.Timeslot
+	portal.SetupParam()
+	blockchain.CreateGenesisBlocks()
+
+	//init time
+	layout := "2006-01-02T15:04:05.000Z"
+	str := config.Param().GenesisParam.BlockTimestamp
+	genesisTime, err := time.Parse(layout, str)
+	sim.timer.init(int64(genesisTime.Second() + 10))
+
 	//init blockchain
 	bc := blockchain.BlockChain{}
-
-	sim.timer.init(activeNetParams.GenesisBeaconBlock.Header.Timestamp + 10)
 
 	cs := mock.Consensus{}
 	txpoolV1 := mempool.TxPool{}
@@ -203,7 +182,7 @@ func (sim *NodeEngine) init() {
 	ps := pubsub.NewPubSubManager()
 	fees := make(map[byte]*mempool.FeeEstimator)
 	relayShards := []byte{}
-	for i := byte(0); i < byte(activeNetParams.ActiveShards); i++ {
+	for i := byte(0); i < byte(config.Param().ActiveShards); i++ {
 		relayShards = append(relayShards, i)
 		fees[i] = mempool.NewFeeEstimator(
 			mempool.DefaultEstimateFeeMaxRollback,
@@ -234,7 +213,6 @@ func (sim *NodeEngine) init() {
 		HttpListenters:  []net.Listener{nil},
 		RPCMaxClients:   1,
 		DisableAuth:     true,
-		ChainParams:     activeNetParams,
 		BlockChain:      &bc,
 		Blockgen:        blockgen,
 		TxMemPool:       &txpoolV1,
@@ -245,11 +223,11 @@ func (sim *NodeEngine) init() {
 	rpcServer := &rpcserver.RpcServer{}
 	rpclocal := &LocalRPCClient{rpcServer}
 
-	btcChain, err := getBTCRelayingChain(activeNetParams.PortalParams.RelayingParam.BTCRelayingHeaderChainID, "btcchain", sim.config.DataDir)
+	btcChain, err := getBTCRelayingChain(portal.GetPortalParams().RelayingParam.BTCRelayingHeaderChainID, "btcchain", sim.config.DataDir)
 	if err != nil {
 		panic(err)
 	}
-	bnbChainState, err := getBNBRelayingChainState(activeNetParams.PortalParams.RelayingParam.BNBRelayingHeaderChainID, sim.config.DataDir)
+	bnbChainState, err := getBNBRelayingChainState(portal.GetPortalParams().RelayingParam.BNBRelayingHeaderChainID, sim.config.DataDir)
 	if err != nil {
 		panic(err)
 	}
@@ -258,7 +236,6 @@ func (sim *NodeEngine) init() {
 		ConsensusEngine: &cs,
 		BlockChain:      &bc,
 		DataBase:        db,
-		ChainParams:     activeNetParams,
 		FeeEstimator:    fees,
 		TxLifeTime:      100,
 		MaxTx:           1000,
@@ -275,7 +252,6 @@ func (sim *NodeEngine) init() {
 	temppool.Init(&mempool.Config{
 		BlockChain:    &bc,
 		DataBase:      db,
-		ChainParams:   activeNetParams,
 		FeeEstimator:  fees,
 		MaxTx:         1000,
 		PubSubManager: ps,
@@ -292,7 +268,6 @@ func (sim *NodeEngine) init() {
 	err = bc.Init(&blockchain.Config{
 		BTCChain:          btcChain,
 		BNBChainState:     bnbChainState,
-		ChainParams:       activeNetParams,
 		DataBase:          db,
 		OutcoinByOTAKeyDb: &otadb,
 		MemCache:          memcache.New(),
@@ -304,7 +279,6 @@ func (sim *NodeEngine) init() {
 		PubSubManager:     ps,
 		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
 		ConsensusEngine:   &cs,
-		GenesisParams:     blockchain.GenesisParam,
 		PoolManager:       poolManager,
 	})
 	if err != nil {
@@ -422,7 +396,7 @@ func (sim *NodeEngine) PrintBlockChainInfo() {
 func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 	time.Sleep(time.Nanosecond)
 	var chainArray = []int{-1}
-	for i := 0; i < sim.config.ChainParam.ActiveShards; i++ {
+	for i := 0; i < config.Param().ActiveShards; i++ {
 		chainArray = append(chainArray, i)
 	}
 	//beacon
@@ -453,7 +427,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 		committeeFromBlock := common.Hash{}
 		committees := curView.GetCommittee()
 		version := 2
-		if sim.bc.GetChainParams().StakingFlowV2Height <= curView.GetBeaconHeight() {
+		if config.Param().ConsensusParam.StakingFlowV2Height <= curView.GetBeaconHeight() {
 			version = 3
 		}
 		switch version {
@@ -535,7 +509,7 @@ func (sim *NodeEngine) GenerateBlock(args ...interface{}) *NodeEngine {
 			if err != nil {
 				panic(err)
 			} else {
-				crossX := blockchain.CreateAllCrossShardBlock(block.(*types.ShardBlock), sim.config.ChainParam.ActiveShards)
+				crossX := blockchain.CreateAllCrossShardBlock(block.(*types.ShardBlock), config.Param().ActiveShards)
 				//log.Printf("SHARD %v | Produced block %v hash %v", chainID, block.GetHeight(), block.Hash().String())
 				for _, blk := range crossX {
 					sim.syncker.InsertCrossShardBlock(blk)

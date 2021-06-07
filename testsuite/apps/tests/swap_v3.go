@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	testsuite "github.com/incognitochain/incognito-chain/testsuite"
@@ -12,18 +13,20 @@ import (
 )
 
 func InitSimMainnet() *testsuite.NodeEngine {
-	chainParam := testsuite.NewChainParam(testsuite.ID_MAINNET)
-	chainParam.ActiveShards = 2
-	chainParam.BCHeightBreakPointNewZKP = 1
-	chainParam.BeaconHeightBreakPointBurnAddr = 1
-	chainParam.StakingFlowV2Height = 1
-	chainParam.Epoch = 20
-	chainParam.RandomTime = 10
-	common.TIMESLOT = chainParam.Timeslot
+
 	node := testsuite.NewStandaloneSimulation("newsim", testsuite.Config{
-		ChainParam: chainParam,
-		ResetDB:    true,
+		Network: testsuite.ID_MAINNET,
+		ResetDB: true,
 	})
+	config.Param().ActiveShards = 2
+	config.Param().BCHeightBreakPointNewZKP = 1
+	config.Param().BeaconHeightBreakPointBurnAddr = 2
+	config.Param().ConsensusParam.StakingFlowV2Height = 1
+	config.Param().EpochParam.NumberOfBlockInEpoch = 20
+	config.Param().EpochParam.RandomTime = 10
+
+	node.Init()
+
 	for i := 0; i < 10; i++ {
 		node.GenerateBlock().NextRound()
 	}
@@ -31,18 +34,17 @@ func InitSimMainnet() *testsuite.NodeEngine {
 }
 
 func InitSimTestnet() *testsuite.NodeEngine {
-	chainParam := testsuite.NewChainParam(testsuite.ID_TESTNET)
-	chainParam.ActiveShards = 2
-	chainParam.BCHeightBreakPointNewZKP = 1
-	chainParam.BeaconHeightBreakPointBurnAddr = 1
-	chainParam.StakingFlowV2Height = 1
-	chainParam.Epoch = 20
-	chainParam.RandomTime = 10
-	common.TIMESLOT = chainParam.Timeslot
+
 	node := testsuite.NewStandaloneSimulation("newsim", testsuite.Config{
-		ChainParam: chainParam,
-		ResetDB:    true,
+		Network: testsuite.ID_TESTNET,
+		ResetDB: true,
 	})
+	config.Param().ActiveShards = 2
+	config.Param().BCHeightBreakPointNewZKP = 1
+	config.Param().BeaconHeightBreakPointBurnAddr = 2
+	config.Param().ConsensusParam.StakingFlowV2Height = 1
+	config.Param().EpochParam.NumberOfBlockInEpoch = 20
+	config.Param().EpochParam.RandomTime = 10
 	for i := 0; i < 10; i++ {
 		node.GenerateBlock().NextRound()
 	}
@@ -50,18 +52,19 @@ func InitSimTestnet() *testsuite.NodeEngine {
 }
 
 func InitSimTestnetv2() *testsuite.NodeEngine {
-	chainParam := testsuite.NewChainParam(testsuite.ID_TESTNET2)
-	chainParam.ActiveShards = 2
-	chainParam.BCHeightBreakPointNewZKP = 1
-	chainParam.BeaconHeightBreakPointBurnAddr = 1
-	chainParam.StakingFlowV2Height = 1
-	chainParam.Epoch = 20
-	chainParam.RandomTime = 10
-	common.TIMESLOT = chainParam.Timeslot
 	node := testsuite.NewStandaloneSimulation("newsim", testsuite.Config{
-		ChainParam: chainParam,
-		ResetDB:    true,
+		Network: testsuite.ID_TESTNET2,
+		ResetDB: true,
 	})
+	config.Param().ActiveShards = 2
+	config.Param().BCHeightBreakPointNewZKP = 1
+	config.Param().BeaconHeightBreakPointBurnAddr = 2
+	config.Param().ConsensusParam.StakingFlowV2Height = 1
+	config.Param().EpochParam.NumberOfBlockInEpoch = 20
+	config.Param().EpochParam.RandomTime = 10
+
+	node.Init()
+
 	for i := 0; i < 10; i++ {
 		node.GenerateBlock().NextRound()
 	}

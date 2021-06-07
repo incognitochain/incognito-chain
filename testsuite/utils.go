@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/multiview"
+	"github.com/incognitochain/incognito-chain/portal"
 	"io"
 	"log"
 	"net/http"
@@ -29,14 +31,14 @@ import (
 
 func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, dataFolder string) (*btcrelaying.BlockChain, error) {
 	relayingChainParams := map[string]*chaincfg.Params{
-		blockchain.TestnetBTCChainID:  btcrelaying.GetTestNet3Params(),
-		blockchain.Testnet2BTCChainID: btcrelaying.GetTestNet3ParamsForInc2(),
-		blockchain.MainnetBTCChainID:  btcrelaying.GetMainNetParams(),
+		portal.TestnetBTCChainID:  btcrelaying.GetTestNet3Params(),
+		portal.Testnet2BTCChainID: btcrelaying.GetTestNet3ParamsForInc2(),
+		portal.MainnetBTCChainID:  btcrelaying.GetMainNetParams(),
 	}
 	relayingChainGenesisBlkHeight := map[string]int32{
-		blockchain.TestnetBTCChainID:  int32(1896910),
-		blockchain.Testnet2BTCChainID: int32(1863675),
-		blockchain.MainnetBTCChainID:  int32(634140),
+		portal.TestnetBTCChainID:  int32(1896910),
+		portal.Testnet2BTCChainID: int32(1863675),
+		portal.MainnetBTCChainID:  int32(634140),
 	}
 	return btcrelaying.GetChainV2(
 		filepath.Join(dataFolder, btcDataFolderName),
@@ -58,8 +60,8 @@ func getBNBRelayingChainState(bnbRelayingChainID string, dataFolder string) (*bn
 	return bnbChainState, nil
 }
 
-func createGenesisTx(accounts []account.Account) []string {
-	transactions := []string{}
+func createGenesisTx(accounts []account.Account) []config.InitialIncognito {
+	transactions := []config.InitialIncognito{}
 	db, err := incdb.Open("leveldb", "/tmp/"+time.Now().UTC().String())
 	if err != nil {
 		fmt.Print("could not open connection to leveldb")
@@ -75,22 +77,32 @@ func createGenesisTx(accounts []account.Account) []string {
 	return transactions
 }
 
-func initSalaryTx(amount string, privateKey string, stateDB *statedb.StateDB) []string {
-	var initTxs []string
+func initSalaryTx(amount string, privateKey string, stateDB *statedb.StateDB) []config.InitialIncognito {
+	var initTxs = []config.InitialIncognito{}
 	var initAmount, _ = strconv.Atoi(amount) // amount init
 	testUserkeyList := []string{
 		privateKey,
 	}
 	for _, val := range testUserkeyList {
-
 		testUserKey, _ := wallet.Base58CheckDeserialize(val)
 		testSalaryTX := transaction.TxVersion1{}
 		testSalaryTX.InitTxSalary(uint64(initAmount), &testUserKey.KeySet.PaymentAddress, &testUserKey.KeySet.PrivateKey,
 			stateDB,
 			nil,
 		)
-		initTx, _ := json.Marshal(testSalaryTX)
-		initTxs = append(initTxs, string(initTx))
+		initTx := config.InitialIncognito{
+			Version:              int(testSalaryTX.Version),
+			Type:                 testSalaryTX.Type,
+			LockTime:             uint64(testSalaryTX.LockTime),
+			Fee:                  int(testSalaryTX.Fee),
+			Info:                 string(testSalaryTX.Info),
+			SigPubKey:            string(testSalaryTX.SigPubKey),
+			Sig:                  string(testSalaryTX.Sig),
+			Proof:                string(testSalaryTX.Proof.Bytes()),
+			PubKeyLastByteSender: int(testSalaryTX.PubKeyLastByteSender),
+			Metadata:             nil,
+		}
+		initTxs = append(initTxs, initTx)
 	}
 	return initTxs
 }

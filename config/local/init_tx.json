@@ -1,0 +1,16 @@
+{
+    "initial_incognito": [
+        {
+            "Version": 1,
+            "Type": "s",
+            "LockTime": 1570159128,
+            "Fee": 0,
+            "Info": null,
+            "SigPubKey": "5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA=",
+            "Sig": "oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA==",
+            "Proof": "AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA=",
+            "PubKeyLastByteSender": 0,
+            "Metadata": null
+        }
+    ]
+}

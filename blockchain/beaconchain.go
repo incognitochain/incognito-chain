@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"reflect"
 	"sort"
@@ -242,11 +243,11 @@ func (chain *BeaconChain) buildBlock(createFlow *BeaconProducingFlow) error {
 		createFlow.producer,
 	)
 
-	portalParams := blockchain.GetPortalParams()
+	portalParams := portal.GetPortalParams()
 	instructions, shardStates, err := blockchain.GenerateBeaconBlockBody(
 		newBeaconBlock,
 		curView,
-		portalParams,
+		*portalParams,
 		createFlow.confirmShardBlocks,
 	)
 	if err != nil {

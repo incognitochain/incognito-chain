@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"fmt"
 	"strings"
+
+	"github.com/incognitochain/incognito-chain/config"
 )
 
 // semanticAlphabet
@@ -48,7 +50,7 @@ func version() string {
 	// Start with the major, minor, and patch versions.
 
 	version := fmt.Sprintf("%d.%d.%d", appMajor, appMinor, appPatch)
-	if activeNetParams.Net == mainNetParams.Net {
+	if config.Param().Net == config.MainnetNet {
 		version = fmt.Sprintf("%d.%d.%d", appMainMajor, appMainMinor, appMainPatch)
 	}
 
@@ -57,7 +59,7 @@ func version() string {
 	// not be contained in the pre-release string.  The pre-release version
 	// is not appended if it contains invalid characters.
 	preRelease := normalizeVerString(appPreRelease)
-	if activeNetParams.Net == mainNetParams.Net {
+	if config.Param().Net == config.MainnetNet {
 		preRelease = normalizeVerString(appMainPreRelease)
 	}
 	if preRelease != "" {

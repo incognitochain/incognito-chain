@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/pkg/errors"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"sort"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 type ShardBlock struct {
@@ -358,7 +359,7 @@ func (shardBlock *ShardBlock) AddTransaction(tx metadata.Transaction) error {
 }
 
 func (shardHeader *ShardHeader) String() string {
-	res := common.EmptyString
+	res := utils.EmptyString
 	// res += shardHeader.ProducerAddress.String()
 	res += string(shardHeader.ShardID)
 	res += fmt.Sprintf("%v", shardHeader.Version)
