@@ -409,6 +409,10 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 			return fmt.Errorf("the current authorized queue is full, please check back later")
 		}
 
+		if !outcoinIndexer.IsAuthorizedRunning() {
+			return fmt.Errorf("enhanced caching not supported by this node configuration")
+		}
+
 		pkb := otaKey.GetPublicSpend().ToBytesS()
 		shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
 		bss := blockchain.GetBestStateShard(shardID)
@@ -477,8 +481,16 @@ func (blockchain *BlockChain) GetAllOutputCoinsByKeyset(keyset *incognitokey.Key
 	case 1:
 		return nil, nil, err
 	case 0:
-		// err := blockchain.SubmitOTAKey(keyset.OTAKey)
-		return nil, nil, err
+		if !withVersion1 {
+			return nil, nil, err
+		} else {
+			decryptedResults, otherResults, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
+			if err != nil {
+				return nil, nil, err
+			}
+
+			return decryptedResults, otherResults, nil
+		}
 	default:
 		return nil, nil, errors.New("OTA Key indexing state is corrupted")
 	}
