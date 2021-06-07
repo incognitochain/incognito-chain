@@ -93,7 +93,7 @@ func (shardHeader *ShardHeader) String() string {
 		res += fmt.Sprintf("%v", shardHeader.ProposeTime)
 	}
 
-	if shardHeader.Version >= SHARD_SFV2_VERSION {
+	if shardHeader.Version >= SLASHING_VERSION {
 		res += shardHeader.CommitteeFromBlock.String()
 	}
 	return res

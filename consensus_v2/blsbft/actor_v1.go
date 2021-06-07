@@ -477,7 +477,7 @@ func NewActorV1WithValue(
 }
 
 func (actorV1 *actorV1) BlockVersion() int {
-	return BftVersion
+	return types.BFT_VERSION
 }
 
 func (actorV1) sendVote() error {
@@ -639,9 +639,9 @@ func NewActorWithValue(
 ) Actor {
 	var res Actor
 	switch version {
-	case BftVersion:
+	case types.BFT_VERSION:
 		res = NewActorV1WithValue(chain, chainName, chainID, node, logger)
-	case MultiViewsVersion:
+	case types.MULTI_VIEW_VERSION:
 		res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
 	default:
 		panic("Bft version is not valid")

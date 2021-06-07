@@ -612,7 +612,7 @@ func (actorV2 *actorV2) getCommitteeForBlock(
 	signingCommittees := []incognitokey.CommitteePublicKey{}
 	var err error
 	proposerIndex := -1
-	if actorV2.blockVersion == MultiViewsVersion || actorV2.chain.IsBeaconChain() {
+	if actorV2.blockVersion == types.MULTI_VIEW_VERSION || actorV2.chain.IsBeaconChain() {
 		committees = actorV2.chain.GetBestView().GetCommittee()
 	} else {
 		committees, err = actorV2.
@@ -685,7 +685,7 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 	committees := []incognitokey.CommitteePublicKey{}
 	var err error
 	signingCommittees := []incognitokey.CommitteePublicKey{}
-	if actorV2.blockVersion == MultiViewsVersion || actorV2.chain.IsBeaconChain() {
+	if actorV2.blockVersion == types.MULTI_VIEW_VERSION || actorV2.chain.IsBeaconChain() {
 		committees = actorV2.chain.GetBestView().GetCommittee()
 	} else {
 		committeeViewHash = *actorV2.committeeChain.GetFinalView().GetHash()

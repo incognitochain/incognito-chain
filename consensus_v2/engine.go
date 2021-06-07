@@ -2,19 +2,18 @@ package consensus_v2
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/config"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
-	"github.com/incognitochain/incognito-chain/pubsub"
-
-	"github.com/incognitochain/incognito-chain/common/consensus"
-
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/consensus"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -251,9 +250,9 @@ func (engine *Engine) updateVersion(chainID int) {
 	} else {
 		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
 	}
-	engine.version[chainID] = blsbft.BftVersion
+	engine.version[chainID] = types.BFT_VERSION
 	if chainEpoch >= config.Param().ConsensusParam.ConsensusV2Epoch {
-		engine.version[chainID] = blsbft.MultiViewsVersion
+		engine.version[chainID] = types.MULTI_VIEW_VERSION
 	}
 }
 
@@ -346,30 +345,19 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
 	}
 
+	if chainHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
+		return types.DCS_VERSION
+	}
+
 	if chainHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
-		return blsbft.SlashingVersion
+		return types.SLASHING_VERSION
 	}
 
 	if chainEpoch >= config.Param().ConsensusParam.ConsensusV2Epoch {
-		return blsbft.MultiViewsVersion
+		return types.MULTI_VIEW_VERSION
 	}
 
-	return blsbft.BftVersion
-}
-
-func (engine *Engine) getVersion(chainID int) int {
-	chainEpoch := uint64(1)
-	if chainID == -1 {
-		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
-	} else {
-		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
-	}
-
-	if chainEpoch >= config.Param().ConsensusParam.ConsensusV2Epoch {
-		return blsbft.MultiViewsVersion
-	}
-
-	return blsbft.BftVersion
+	return types.BFT_VERSION
 }
 
 //BFTProcess for testing only

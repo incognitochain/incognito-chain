@@ -19,13 +19,3 @@ const (
 	timeout             = 40 * time.Second       // must be at least twice the time of block interval
 	maxNetworkDelayTime = 150 * time.Millisecond // in ms
 )
-
-const (
-	BftVersion = iota + 1
-	MultiViewsVersion
-	SlashingVersion
-)
-
-const (
-	BEACON_CHAIN_ID = -1
-)
