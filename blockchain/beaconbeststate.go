@@ -375,7 +375,10 @@ func (beaconBestState *BeaconBestState) GetCommittee() []incognitokey.CommitteeP
 	return append(result, committee...)
 }
 
-func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int) {
+func (beaconBestState *BeaconBestState) GetProposerByTimeSlot(
+	ts int64,
+	version int,
+) (incognitokey.CommitteePublicKey, int) {
 	id := GetProposerByTimeSlot(ts, beaconBestState.MinBeaconCommitteeSize)
 	return beaconBestState.GetBeaconCommittee()[id], id
 }

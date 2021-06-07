@@ -65,7 +65,7 @@ func VerifyCrossShardBlock(crossShardBlock *types.CrossShardBlock, blockchain *B
 	tempShardBlock := types.NewShardBlock()
 	tempShardBlock.Header.CommitteeFromBlock = crossShardBlock.Header.CommitteeFromBlock
 	tempShardBlock.Header.ProposeTime = crossShardBlock.Header.ProposeTime
-	_, committeesForSigning, err := shardBestState.getSigningCommittee(tempShardBlock, blockchain)
+	_, committeesForSigning, err := shardBestState.getSigningCommittees(tempShardBlock, blockchain)
 	if err != nil {
 		return err
 	}

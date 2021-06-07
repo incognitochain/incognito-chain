@@ -328,7 +328,7 @@ func (chain *ShardChain) GetCommitteeV2(block types.BlockInterface) ([]incognito
 	if !isShardBlock {
 		return []incognitokey.CommitteePublicKey{}, fmt.Errorf("Shard Chain NOT insert Shard Block Types")
 	}
-	_, signingCommittees, err := shardView.getSigningCommittee(shardBlock, chain.Blockchain)
+	_, signingCommittees, err := shardView.getSigningCommittees(shardBlock, chain.Blockchain)
 	if err != nil {
 		return []incognitokey.CommitteePublicKey{}, err
 	}

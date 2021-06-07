@@ -171,7 +171,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *types.ShardBlock, sho
 	}
 	signingCommittees := []incognitokey.CommitteePublicKey{}
 	committees := []incognitokey.CommitteePublicKey{}
-	committees, signingCommittees, err = curView.getSigningCommittee(shardBlock, blockchain)
+	committees, signingCommittees, err = curView.getSigningCommittees(shardBlock, blockchain)
 
 	if err != nil {
 		return err

@@ -333,8 +333,17 @@ func (shardBestState *ShardBestState) GetCommittee() []incognitokey.CommitteePub
 	return append(result, shardBestState.shardCommitteeState.GetShardCommittee()...)
 }
 
-func (shardBestState *ShardBestState) GetProposerByTimeSlot(ts int64, version int) (incognitokey.CommitteePublicKey, int) {
-	id := GetProposerByTimeSlot(ts, shardBestState.MinShardCommitteeSize)
+func (shardBestState *ShardBestState) GetProposerByTimeSlot(
+	ts int64,
+	version int,
+) (incognitokey.CommitteePublicKey, int) {
+	numberOfProposers := 0
+	if shardBestState.CommitteeStateVersion() == committeestate.DCS_VERSION {
+		numberOfProposers = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator / MaxSubsetCommittees
+	} else {
+		numberOfProposers = shardBestState.MinShardCommitteeSize
+	}
+	id := GetProposerByTimeSlot(ts, numberOfProposers)
 	return shardBestState.GetShardCommittee()[id], id
 }
 
@@ -525,7 +534,7 @@ func (shardBestState *ShardBestState) verifyCommitteeFromBlock(
 // 1. Full committee
 // 2. signing committee
 // 3. error
-func (shardBestState *ShardBestState) getSigningCommittee(
+func (shardBestState *ShardBestState) getSigningCommittees(
 	shardBlock *types.ShardBlock, bc *BlockChain,
 ) ([]incognitokey.CommitteePublicKey, []incognitokey.CommitteePublicKey, error) {
 	if shardBlock.Header.CommitteeFromBlock.IsZeroValue() {

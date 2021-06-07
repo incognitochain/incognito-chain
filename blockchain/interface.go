@@ -33,14 +33,10 @@ type ConsensusEngine interface {
 	ValidateProducerSig(block types.BlockInterface, consensusType string) error
 	ValidateBlockCommitteSig(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	GetCurrentMiningPublicKey() (string, string)
-	// GetCurrentValidators() []*consensus.Validator
-	// GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator
-	// GetMiningPublicKeyByConsensus(consensusName string) (string, error)
 	GetAllMiningPublicKeys() []string
 	ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error)
 	GetAllValidatorKeyState() map[string]consensus.MiningState
 	GetUserRole() (string, string, int)
-	// CommitteeChange(chainName string)
 }
 
 type Server interface {
