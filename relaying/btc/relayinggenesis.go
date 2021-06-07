@@ -77,15 +77,15 @@ func putGenesisBlockIntoChainParams(
 
 func GetMainNetParams() *chaincfg.Params {
 	genesisBlock, genesisHash := getHardcodedMainNetGenesisBlock()
-	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, chaincfg.MainNetParams)
+	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, chaincfg.RegressionNetParams)
 }
 
 func GetTestNet3Params() *chaincfg.Params {
 	genesisBlock, genesisHash := getHardcodedTestNet3GenesisBlock()
-	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, chaincfg.TestNet3Params)
+	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, chaincfg.RegressionNetParams)
 }
 
 func GetTestNet3ParamsForInc2() *chaincfg.Params {
 	genesisBlock, genesisHash := getHardcodedTestNet3GenesisBlockForInc2()
-	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, chaincfg.TestNet3Params)
+	return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, chaincfg.RegressionNetParams)
 }

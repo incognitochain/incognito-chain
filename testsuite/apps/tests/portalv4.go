@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
@@ -15,6 +16,17 @@ import (
 func Test_PortalV4() {
 	//sed -i s"|return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, .*|return putGenesisBlockIntoChainParams\(genesisHash, genesisBlock, chaincfg.RegressionNetParams\)|" relaying/btc/relayinggenesis.go
 
+	node := devframework.NewStandaloneSimulation("newsim", devframework.Config{
+		Network: devframework.ID_TESTNET,
+		ResetDB: true,
+	})
+	config.Param().ActiveShards = 2
+	config.Param().BCHeightBreakPointNewZKP = 1
+	config.Param().BeaconHeightBreakPointBurnAddr = 2
+	config.Param().ConsensusParam.StakingFlowV2Height = 1
+	config.Param().EpochParam.NumberOfBlockInEpoch = 20
+	config.Param().EpochParam.RandomTime = 10
+	config.Param().EnableFeatureFlags[2] = 1
 	portal.GetPortalParams().PortalParamsV4[0].PortalTokens[portalcommonv4.PortalBTCIDStr] = portaltokensv4.PortalBTCTokenProcessor{
 		PortalToken: &portaltokensv4.PortalToken{
 			ChainID:             portal.TestnetBTCChainID,
@@ -27,10 +39,7 @@ func Test_PortalV4() {
 		ChainParam: &chaincfg.RegressionNetParams,
 	}
 
-	node := devframework.NewStandaloneSimulation("newsim", devframework.Config{
-		Network: devframework.ID_TESTNET,
-		ResetDB: true,
-	})
+	node.Init()
 	for i := 0; i < 5; i++ {
 		node.GenerateBlock().NextRound()
 	}

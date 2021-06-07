@@ -3,6 +3,7 @@ package devframework
 import (
 	"errors"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/rpcserver"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 )
@@ -31,6 +32,16 @@ func (r *LocalRPCClient) SubmitKey(privateKey string) (err error) {
 	return nil
 }
 
+func (r *LocalRPCClient) GetPortalShieldingRequestStatus(tx string) (res *metadata.PortalShieldingRequestStatus, err error) {
+	httpServer := r.rpcServer.HttpServer
+	c := rpcserver.HttpHandler["getportalshieldingrequeststatus"]
+	resI, rpcERR := c(httpServer, []interface{}{map[string]interface{}{"ReqTxID": tx}}, nil)
+	if rpcERR != nil {
+		return nil, errors.New(rpcERR.Error())
+	}
+	return resI.(*metadata.PortalShieldingRequestStatus), nil
+}
+
 func (r *LocalRPCClient) CreateConvertCoinVer1ToVer2Transaction(privateKey string) (err error) {
 	httpServer := r.rpcServer.HttpServer
 	c := rpcserver.HttpHandler["createconvertcoinver1tover2transaction"]
@@ -52,32 +63,6 @@ func (r *LocalRPCClient) CreateAndSendTXShieldingRequest(privateKey string, incA
 		return jsonresult.CreateTransactionResult{}, errors.New(rpcERR.Error())
 	}
 	return resI.(jsonresult.CreateTransactionResult), nil
-}
-
-func (r *LocalRPCClient) CreateAndSendTxWithPortalV4UnshieldRequest(privatekey string, tokenID string, amount string, paymentAddress string, remoteAddress string) (res jsonresult.CreateTransactionTokenResult, err error) {
-	httpServer := r.rpcServer.HttpServer
-	c := rpcserver.HttpHandler["createandsendtxwithportalv4unshieldrequest"]
-	resI, rpcERR := c(httpServer, []interface{}{privatekey, nil, float64(5000), float64(-1), map[string]interface{}{
-		"Privacy":     true,
-		"TokenID":     tokenID,
-		"TokenTxType": float64(1),
-		"TokenName":   "",
-		"TokenSymbol": "",
-		"TokenAmount": amount,
-		"TokenReceivers": map[string]interface{}{
-			"12RxahVABnAVCGP3LGwCn8jkQxgw7z1x14wztHzn455TTVpi1wBq9YGwkRMQg3J4e657AbAnCvYCJSdA9czBUNuCKwGSRQt55Xwz8WA": amount,
-		},
-		"TokenFee":       "0",
-		"PortalTokenID":  tokenID,
-		"UnshieldAmount": amount,
-		"IncAddressStr":  paymentAddress,
-		"RemoteAddress":  remoteAddress,
-	}}, nil)
-
-	if rpcERR != nil {
-		return jsonresult.CreateTransactionTokenResult{}, errors.New(rpcERR.Error())
-	}
-	return resI.(jsonresult.CreateTransactionTokenResult), nil
 }
 
 func (r *LocalRPCClient) CreateAndSendTxWithPortalV4UnshieldRequest(privatekey string, tokenID string, amount string, paymentAddress string, remoteAddress string) (res jsonresult.CreateTransactionTokenResult, err error) {

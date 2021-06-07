@@ -62,6 +62,7 @@ coin_v2_lowest_height: 8640
 enable_feature_flags:
   - 0: 1
   - 1: 0
+  - 2: 0
 portal_v3_height: 1328816
 tx_pool_version: 0
 geth_param:
