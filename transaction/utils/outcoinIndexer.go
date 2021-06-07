@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"context"
 	"encoding/hex"
 	"fmt"
 	"golang.org/x/sync/semaphore"
@@ -211,17 +210,17 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams IndexParams) {
 	for height := idxParams.FromHeight; height <= idxParams.ToHeight; {
 		nextHeight := height + MaxOutcoinQueryInterval
 
-		ctx, cancel := context.WithTimeout(context.Background(), OutcoinReindexerTimeout*time.Second)
-		defer cancel()
-
-		err := ci.sem.Acquire(ctx, 1)
-		if err != nil {
-			Logger.Log.Errorf("[CoinIndexer] semaphore acquiring error: %v\n", err)
-
-			status.err = err
-			ci.statusChan <- status
-			return
-		}
+		//ctx, cancel := context.WithTimeout(context.Background(), OutcoinReindexerTimeout*time.Second)
+		//defer cancel()
+		//
+		//err := ci.sem.Acquire(ctx, 1)
+		//if err != nil {
+		//	Logger.Log.Errorf("[CoinIndexer] semaphore acquiring error: %v\n", err)
+		//
+		//	status.err = err
+		//	ci.statusChan <- status
+		//	return
+		//}
 
 		// query token output coins
 		currentOutputCoinsToken, err := QueryDbCoinVer2(idxParams.OTAKey, idxParams.ShardID, &common.ConfidentialAssetID, height, nextHeight-1, idxParams.TxDb, getCoinFilterByOTAKey())
@@ -243,7 +242,7 @@ func (ci *CoinIndexer) ReIndexOutCoin(idxParams IndexParams) {
 			return
 		}
 
-		ci.sem.Release(1)
+		//ci.sem.Release(1)
 
 		Logger.Log.Infof("[CoinIndexer] Key %x - %d to %d : found %d PRV + %d pToken coins\n", vkb, height, nextHeight-1, len(currentOutputCoinsPRV), len(currentOutputCoinsToken))
 
