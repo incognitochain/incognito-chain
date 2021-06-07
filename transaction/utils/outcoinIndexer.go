@@ -18,14 +18,17 @@ import (
 var usedSig map[string]bool
 
 type CoinIndexer struct {
-	sem            *semaphore.Weighted
-	numWorkers     int
-	ManagedOTAKeys *sync.Map
-	db             incdb.Database
-	accessTokens   map[string]bool
-	idxQueue       []IndexParams
-	IdxChan        chan IndexParams
-	statusChan     chan JobStatus
+	numWorkers          int
+	sem                 *semaphore.Weighted
+	mtx                 *sync.RWMutex
+	ManagedOTAKeys      *sync.Map
+	db                  incdb.Database
+	accessTokens        map[string]bool
+	idxQueue            []IndexParams
+	IdxChan             chan IndexParams
+	statusChan          chan JobStatus
+	quitChan            chan bool
+	isAuthorizedRunning bool
 }
 
 // NewOutCoinIndexer creates a new full node's caching instance for faster output coin retrieval.
@@ -36,14 +39,16 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database) (*CoinIndexer, error
 	// viewKey map will be loaded from db
 	usedSig = make(map[string]bool)
 
-	if numWorkers == 0 {
-		numWorkers = NumWorkers
+	var sem *semaphore.Weighted
+	accessTokens := make(map[string]bool)
+	if numWorkers != 0 {
+		sem = semaphore.NewWeighted(numWorkers)
+		accessTokens[DefaultAccessToken] = true
 	}
 	Logger.Log.Infof("NewOutCoinIndexer with %v workers\n", numWorkers)
 
-	sem := semaphore.NewWeighted(numWorkers)
+	mtx := new(sync.RWMutex)
 	m := &sync.Map{}
-
 	// load from db once after startup
 	loadedKeysRaw, err := rawdbv2.GetIndexedOTAKeys(db)
 	if err == nil {
@@ -54,22 +59,13 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database) (*CoinIndexer, error
 		}
 	}
 
-	accessTokens := make(map[string]bool)
-	accessTokens[DefaultAccessToken] = true
-
-	idxQueue := make([]IndexParams, 0)
-	idxChan := make(chan IndexParams, 1024)
-	statusChan := make(chan JobStatus, 1024)
-
 	ci := &CoinIndexer{
-		sem:            sem,
 		numWorkers:     int(numWorkers),
+		sem:            sem,
+		mtx:            mtx,
 		ManagedOTAKeys: m,
 		db:             db,
 		accessTokens:   accessTokens,
-		idxQueue:       idxQueue,
-		IdxChan:        idxChan,
-		statusChan:     statusChan,
 	}
 
 	return ci, nil
@@ -78,6 +74,11 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database) (*CoinIndexer, error
 // IsValidAccessToken checks if a user is authorized to use the enhanced cache.
 func (ci *CoinIndexer) IsValidAccessToken(accessToken string) bool {
 	return ci.accessTokens[accessToken]
+}
+
+// IsAuthorizedRunning checks if the current cache supports the enhanced mode.
+func (ci *CoinIndexer) IsAuthorizedRunning() bool {
+	return ci.isAuthorizedRunning
 }
 
 //// IsValidAdminSignature checks if data is signed by a valid admin privateKey.
@@ -329,8 +330,23 @@ func (ci *CoinIndexer) StoreIndexedOutputCoins(otaKey privacy.OTAKey, outputCoin
 }
 
 func (ci *CoinIndexer) Start() {
-	numWorking := 0
+	ci.mtx.Lock()
+	if ci.isAuthorizedRunning {
+		ci.mtx.Unlock()
+		return
+	}
+
+	ci.idxQueue = make([]IndexParams, 0)
+	ci.IdxChan = make(chan IndexParams, 2*ci.numWorkers)
+	ci.statusChan = make(chan JobStatus, 2*ci.numWorkers)
+	ci.quitChan = make(chan bool)
+
+	Logger.Log.Infof("Start CoinIndexer....\n")
+	ci.isAuthorizedRunning = true
+	ci.mtx.Unlock()
+
 	var err error
+	numWorking := 0
 	for {
 		select {
 		case status := <-ci.statusChan:
@@ -349,6 +365,13 @@ func (ci *CoinIndexer) Start() {
 			Logger.Log.Infof("New authorized OTAKey received: %v\n", idxParams.OTAKey)
 			//do something
 			ci.idxQueue = append(ci.idxQueue, idxParams)
+
+		case <-ci.quitChan:
+			ci.mtx.Lock()
+			ci.isAuthorizedRunning = false
+			ci.mtx.Unlock()
+			Logger.Log.Infof("Stopped coinIndexer\n")
+			return
 		default:
 			if numWorking < ci.numWorkers && len(ci.idxQueue) > 0 {
 				numWorking++
@@ -360,7 +383,14 @@ func (ci *CoinIndexer) Start() {
 
 				go ci.ReIndexOutCoin(idxParams)
 			}
+			time.Sleep(5 * time.Second)
 		}
+	}
+}
+
+func (ci *CoinIndexer) Stop() {
+	if ci.isAuthorizedRunning {
+		ci.quitChan <- true
 	}
 }
 
