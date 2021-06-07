@@ -3,6 +3,8 @@ package devframework
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/portal"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"net"
 	"os"
@@ -126,7 +128,7 @@ func (sim *NodeEngine) EnableDebug() {
 	mempoolLogger.SetLevel(common.LevelTrace)
 }
 
-func (sim *NodeEngine) init() {
+func (sim *NodeEngine) Init() {
 	os.Setenv("TXPOOL_VERSION", "0")
 	simName := sim.simName
 	InitLogRotator(filepath.Join(sim.config.DataDir, simName+".log"))
@@ -208,14 +210,15 @@ func (sim *NodeEngine) init() {
 	//}
 
 	rpcConfig := rpcserver.RpcServerConfig{
-		HttpListenters: []net.Listener{nil},
-		RPCMaxClients:  1,
-		DisableAuth:    true,
-		BlockChain:     &bc,
-		Blockgen:       blockgen,
-		TxMemPool:      &txpoolV1,
-		Server:         &server,
-		Database:       db,
+		HttpListenters:  []net.Listener{nil},
+		RPCMaxClients:   1,
+		DisableAuth:     true,
+		BlockChain:      &bc,
+		Blockgen:        blockgen,
+		TxMemPool:       &txpoolV1,
+		Server:          &server,
+		Database:        db,
+		ConsensusEngine: &cs,
 	}
 	rpcServer := &rpcserver.RpcServer{}
 	rpclocal := &LocalRPCClient{rpcServer}
@@ -265,7 +268,6 @@ func (sim *NodeEngine) init() {
 	err = bc.Init(&blockchain.Config{
 		BTCChain:          btcChain,
 		BNBChainState:     bnbChainState,
-		ChainParams:       activeNetParams,
 		DataBase:          db,
 		OutcoinByOTAKeyDb: &otadb,
 		MemCache:          memcache.New(),
@@ -277,7 +279,6 @@ func (sim *NodeEngine) init() {
 		PubSubManager:     ps,
 		FeeEstimator:      make(map[byte]blockchain.FeeEstimator),
 		ConsensusEngine:   &cs,
-		GenesisParams:     blockchain.GenesisParam,
 		PoolManager:       poolManager,
 	})
 	if err != nil {
@@ -564,12 +565,12 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 			miningKeys = append(miningKeys, miningKey)
 		}
 		for _, committeeID := range committeeIndex {
-			vote, _ := blsbftv2.CreateVote(miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))
+			vote, _ := blsbftv2.CreateVote(miningKeys[committeeID], block, committeePubKey)
 			vote.IsValid = 1
 			votes[vote.Validator] = vote
 		}
 		committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committeePubKey, common.BlsConsensus)
-		aggSig, brigSigs, validatorIdx, portalSigs, err := blsbftv2.CombineVotes(votes, committeeBLSString)
+		aggSig, brigSigs, validatorIdx, err := blsbftv2.CombineVotes(votes, committeeBLSString)
 
 		valData, err := blsbftv2.DecodeValidationData(block.GetValidationField())
 		if err != nil {
@@ -578,7 +579,6 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 		valData.AggSig = aggSig
 		valData.BridgeSig = brigSigs
 		valData.ValidatiorsIdx = validatorIdx
-		valData.PortalSig = portalSigs
 		validationDataString, _ := blsbftv2.EncodeValidationData(*valData)
 		block.AddValidationField(validationDataString)
 	}
