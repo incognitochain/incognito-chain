@@ -393,32 +393,36 @@ func (blockchain *BlockChain) GetListDecryptedOutputCoinsByKeyset(keyset *incogn
 	return blockchain.getOutputCoins(keyset, shardID, tokenID, shardHeight, map[int]bool{1:true, 2:true})
 }
 
-func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, accessToken string, isReset bool, heightToSyncFrom uint64) error {
-	if !EnableIndexingCoinByOTAKey{
-		return errors.New("OTA key submission not supported by this node configuration")
+func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken string, isReset bool, heightToSyncFrom uint64) error {
+	if !EnableIndexingCoinByOTAKey {
+		return fmt.Errorf("OTA key submission not supported by this node configuration")
 	}
-	isAuthorized := outcoinIndexer.IsAuthorizedUser(accessToken, theKey)
-	if isAuthorized {
+
+	otaBytes := txutils.OTAKeyToRaw(otaKey)
+	keyExists, processing := outcoinIndexer.HasOTAKey(otaBytes)
+	if keyExists && !isReset {
+		return fmt.Errorf("OTAKey %v has been submitted and status = %v", otaKey, processing)
+	}
+
+	if outcoinIndexer.IsValidAccessToken(accessToken) {//if the token is authorized
 		if outcoinIndexer.IsQueueFull() {
 			return fmt.Errorf("the current authorized queue is full, please check back later")
 		}
 
-		pkb := theKey.GetPublicSpend().ToBytesS()
+		pkb := otaKey.GetPublicSpend().ToBytesS()
 		shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
 		bss := blockchain.GetBestStateShard(shardID)
 		transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
 		lowestHeightForV2 := config.Param().CoinVersion2LowestHeight
-		if !isReset {
-			heightToSyncFrom = bss.ShardHeight + 1
-		} else if heightToSyncFrom < lowestHeightForV2 {
+		if heightToSyncFrom < lowestHeightForV2 {
 			heightToSyncFrom = lowestHeightForV2
 		}
 
 		idxParams := txutils.IndexParams{
 			FromHeight: heightToSyncFrom,
 			ToHeight:   bss.ShardHeight,
-			OTAKey:     theKey,
+			OTAKey:     otaKey,
 			TxDb:       transactionStateDB,
 			ShardID:    shardID,
 			IsReset:    isReset,
@@ -427,8 +431,8 @@ func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, accessToken st
 		outcoinIndexer.IdxChan <- idxParams
 	}
 
-	Logger.log.Infof("OTA Key Submission %v", theKey)
-	return outcoinIndexer.AddOTAKey(theKey)
+	Logger.log.Infof("OTA Key Submission %v", otaKey)
+	return outcoinIndexer.AddOTAKey(otaKey)
 }
 
 // GetAllOutputCoinsByKeyset retrieves and tries to decrypt all output coins of a key-set.
