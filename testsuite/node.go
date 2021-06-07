@@ -131,9 +131,12 @@ func (sim *NodeEngine) EnableDebug() {
 func (sim *NodeEngine) Init() {
 	os.Setenv("TXPOOL_VERSION", "0")
 	simName := sim.simName
+	common.MaxShardNumber = config.Param().ActiveShards
+	common.TIMESLOT = config.Param().ConsensusParam.Timeslot
 	InitLogRotator(filepath.Join(sim.config.DataDir, simName+".log"))
 	activeNetParams := sim.param
 	if !sim.config.AppNode {
+
 		sim.GenesisAccount = sim.NewAccount()
 		for i := 0; i < config.Param().CommitteeSize.MinBeaconCommitteeSize; i++ {
 			acc := sim.NewAccountFromShard(-1)
@@ -157,16 +160,14 @@ func (sim *NodeEngine) Init() {
 	}
 
 	zkp.InitCheckpoint(config.Param().BCHeightBreakPointNewZKP)
-	common.MaxShardNumber = config.Param().ActiveShards
-	common.TIMESLOT = config.Param().ConsensusParam.Timeslot
-	portal.SetupParam()
+
 	blockchain.CreateGenesisBlocks()
 
 	//init time
 	layout := "2006-01-02T15:04:05.000Z"
 	str := config.Param().GenesisParam.BlockTimestamp
 	genesisTime, err := time.Parse(layout, str)
-	sim.timer.init(int64(genesisTime.Second() + 10))
+	sim.timer.init(int64(genesisTime.Unix() + 10))
 
 	//init blockchain
 	bc := blockchain.BlockChain{}
@@ -565,12 +566,12 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 			miningKeys = append(miningKeys, miningKey)
 		}
 		for _, committeeID := range committeeIndex {
-			vote, _ := blsbftv2.CreateVote(miningKeys[committeeID], block, committeePubKey, s.bc.GetChain(-1).(*blockchain.BeaconChain).GetPortalParamsV4(0))
+			vote, _ := blsbftv2.CreateVote(miningKeys[committeeID], block, committeePubKey)
 			vote.IsValid = 1
 			votes[vote.Validator] = vote
 		}
 		committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(committeePubKey, common.BlsConsensus)
-		aggSig, brigSigs, validatorIdx, portalSigs, err := blsbftv2.CombineVotes(votes, committeeBLSString)
+		aggSig, brigSigs, validatorIdx, err := blsbftv2.CombineVotes(votes, committeeBLSString)
 
 		valData, err := blsbftv2.DecodeValidationData(block.GetValidationField())
 		if err != nil {
@@ -579,7 +580,6 @@ func (s *NodeEngine) SignBlockWithCommittee(block types.BlockInterface, committe
 		valData.AggSig = aggSig
 		valData.BridgeSig = brigSigs
 		valData.ValidatiorsIdx = validatorIdx
-		valData.PortalSig = portalSigs
 		validationDataString, _ := blsbftv2.EncodeValidationData(*valData)
 		block.AddValidationField(validationDataString)
 	}
