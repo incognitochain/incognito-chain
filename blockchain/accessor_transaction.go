@@ -437,10 +437,17 @@ func (blockchain *BlockChain) SubmitOTAKey(theKey privacy.OTAKey, accessToken st
 func (blockchain *BlockChain) GetAllOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, withVersion1 bool) ([]privacy.PlainCoin, []privacy.Coin,  error) {
 	transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
-	if !EnableIndexingCoinByOTAKey{
-		return nil, nil, errors.New("Getting all coins not supported by this node configuration")
-		// results, _, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, bss.ShardHeight, map[int]bool{1:withVersion1, 2:true})
-		// return results, err
+	if !EnableIndexingCoinByOTAKey {
+		if !withVersion1 {
+			return nil, nil, errors.New("Getting all coins not supported by this node configuration")
+		} else {
+			decryptedResults, otherResults, _, err := blockchain.getOutputCoins(keyset, shardID, tokenID, 0, map[int]bool{1:true})
+			if err != nil {
+				return nil, nil, err
+			}
+
+			return decryptedResults, otherResults, nil
+		}
 	}
 	outCoins, state, err := outcoinIndexer.GetIndexedOutCoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
 	switch state{
