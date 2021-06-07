@@ -120,7 +120,9 @@ func (blockchain *BlockChain) Init(config *Config) error {
 		if err != nil {
 			return err
 		}
-		outcoinIndexer.Start()
+		if config.IndexerWorkers > 0 {
+			go outcoinIndexer.Start()
+		}
 	}
 	return nil
 }
