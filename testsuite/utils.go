@@ -36,9 +36,9 @@ func getBTCRelayingChain(btcRelayingChainID string, btcDataFolderName string, da
 		portal.MainnetBTCChainID:  btcrelaying.GetMainNetParams(),
 	}
 	relayingChainGenesisBlkHeight := map[string]int32{
-		portal.TestnetBTCChainID:  int32(1833130),
-		portal.Testnet2BTCChainID: int32(1833130),
-		portal.MainnetBTCChainID:  int32(634140),
+		blockchain.TestnetBTCChainID:  int32(1896910),
+		blockchain.Testnet2BTCChainID: int32(1863675),
+		blockchain.MainnetBTCChainID:  int32(634140),
 	}
 	return btcrelaying.GetChainV2(
 		filepath.Join(dataFolder, btcDataFolderName),
@@ -74,7 +74,6 @@ func createGenesisTx(accounts []account.Account) []config.InitialIncognito {
 		txs := initSalaryTx(strconv.Itoa(int(initPRV)), account.PrivateKey, stateDB)
 		transactions = append(transactions, txs[0])
 	}
-	fmt.Println(strconv.Itoa(int(initPRV)), transactions)
 	return transactions
 }
 

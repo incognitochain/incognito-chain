@@ -33,6 +33,25 @@ func InitSimMainnet() *testsuite.NodeEngine {
 	return node
 }
 
+func InitSimTestnet() *testsuite.NodeEngine {
+	chainParam := testsuite.NewChainParam(testsuite.ID_TESTNET)
+	chainParam.ActiveShards = 2
+	chainParam.BCHeightBreakPointNewZKP = 1
+	chainParam.BeaconHeightBreakPointBurnAddr = 1
+	chainParam.StakingFlowV2Height = 1
+	chainParam.Epoch = 20
+	chainParam.RandomTime = 10
+	common.TIMESLOT = chainParam.Timeslot
+	node := testsuite.NewStandaloneSimulation("newsim", testsuite.Config{
+		ChainParam: chainParam,
+		ResetDB:    true,
+	})
+	for i := 0; i < 10; i++ {
+		node.GenerateBlock().NextRound()
+	}
+	return node
+}
+
 func InitSimTestnetv2() *testsuite.NodeEngine {
 	chainParam := testsuite.NewChainParam(testsuite.ID_TESTNET2)
 	chainParam.ActiveShards = 2
