@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
@@ -17,7 +16,7 @@ import (
 )
 
 type actorBase struct {
-	chain    blockchain.Chain
+	chain    Chain
 	node     NodeInterface
 	chainKey string
 	chainID  int
@@ -38,7 +37,7 @@ func NewActorBase() *actorBase {
 }
 
 func NewActorBaseWithValue(
-	chain blockchain.Chain,
+	chain Chain,
 	chainKey string, chainID int,
 	node NodeInterface, logger common.Logger,
 ) *actorBase {

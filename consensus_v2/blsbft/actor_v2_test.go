@@ -149,7 +149,7 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 
 	type fields struct {
 		actorBase            actorBase
-		committeeChain       blockchain.Chain
+		committeeChain       Chain
 		currentTime          int64
 		currentTimeSlot      int64
 		proposeHistory       *lru.Cache
@@ -301,7 +301,7 @@ func Test_actorV2_handleVoteMsg(t *testing.T) {
 
 	type fields struct {
 		actorBase            actorBase
-		committeeChain       blockchain.Chain
+		committeeChain       Chain
 		currentTime          int64
 		currentTimeSlot      int64
 		proposeHistory       *lru.Cache
@@ -463,7 +463,7 @@ func Test_actorV2_proposeBeaconBlock(t *testing.T) {
 
 	type fields struct {
 		actorBase            actorBase
-		committeeChain       blockchain.Chain
+		committeeChain       Chain
 		currentTime          int64
 		currentTimeSlot      int64
 		proposeHistory       *lru.Cache
@@ -709,7 +709,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 
 	type fields struct {
 		actorBase            actorBase
-		committeeChain       blockchain.Chain
+		committeeChain       Chain
 		currentTime          int64
 		currentTimeSlot      int64
 		proposeHistory       *lru.Cache
@@ -911,7 +911,7 @@ func Test_actorV2_getValidProposeBlocks(t *testing.T) {
 
 	type fields struct {
 		actorBase            actorBase
-		committeeChain       blockchain.Chain
+		committeeChain       Chain
 		currentTime          int64
 		currentTimeSlot      int64
 		proposeHistory       *lru.Cache
@@ -1340,7 +1340,7 @@ func Test_actorV2_validateBlock(t *testing.T) {
 
 	type fields struct {
 		actorBase            actorBase
-		committeeChain       blockchain.Chain
+		committeeChain       Chain
 		currentTime          int64
 		currentTimeSlot      int64
 		proposeHistory       *lru.Cache
@@ -1570,7 +1570,7 @@ func Test_actorV2_validateBlock(t *testing.T) {
 func Test_actorV2_processIfBlockGetEnoughVote(t *testing.T) {
 	type fields struct {
 		actorBase            actorBase
-		committeeChain       blockchain.Chain
+		committeeChain       Chain
 		currentTime          int64
 		currentTimeSlot      int64
 		proposeHistory       *lru.Cache
@@ -1634,7 +1634,7 @@ func Test_actorV2_processWithEnoughVotes(t *testing.T) {
 
 	type fields struct {
 		actorBase            actorBase
-		committeeChain       blockchain.Chain
+		committeeChain       Chain
 		currentTime          int64
 		currentTimeSlot      int64
 		proposeHistory       *lru.Cache
@@ -1806,7 +1806,7 @@ func Test_actorV2_createBLSAggregatedSignatures(t *testing.T) {
 
 	type fields struct {
 		actorBase            actorBase
-		committeeChain       blockchain.Chain
+		committeeChain       Chain
 		currentTime          int64
 		currentTimeSlot      int64
 		proposeHistory       *lru.Cache

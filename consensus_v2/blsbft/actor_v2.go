@@ -10,7 +10,6 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
@@ -25,7 +24,7 @@ import (
 
 type actorV2 struct {
 	actorBase
-	committeeChain  blockchain.Chain
+	committeeChain  Chain
 	currentTime     int64
 	currentTimeSlot int64
 	proposeHistory  *lru.Cache
@@ -43,8 +42,8 @@ func NewActorV2() *actorV2 {
 }
 
 func NewActorV2WithValue(
-	chain blockchain.Chain,
-	committeeChain blockchain.Chain,
+	chain Chain,
+	committeeChain Chain,
 	chainKey string, blockVersion, chainID int,
 	node NodeInterface, logger common.Logger,
 ) *actorV2 {

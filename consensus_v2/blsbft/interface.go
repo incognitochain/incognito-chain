@@ -4,9 +4,12 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
+	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/multiview"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer "github.com/libp2p/go-libp2p-peer"
+	"time"
 )
 
 //Used interfaces
@@ -23,9 +26,75 @@ type NodeInterface interface {
 	GetSelfPeerID() peer.ID
 }
 
-///
+type Chain interface {
+	BestViewCommitteeFromBlock() common.Hash
+	GetFinalView() multiview.View
+	GetBestView() multiview.View
+	GetEpoch() uint64
+	GetChainName() string
+	GetConsensusType() string
+	GetLastBlockTimeStamp() int64
+	GetMinBlkInterval() time.Duration
+	GetMaxBlkCreateTime() time.Duration
+	IsReady() bool
+	SetReady(bool)
+	GetActiveShardNumber() int
+	CurrentHeight() uint64
+	GetCommitteeSize() int
+	IsBeaconChain() bool
+	GetCommittee() []incognitokey.CommitteePublicKey
+	GetPendingCommittee() []incognitokey.CommitteePublicKey
+	GetPubKeyCommitteeIndex(string) int
+	GetLastProposerIndex() int
+	UnmarshalBlock(blockString []byte) (types.BlockInterface, error)
+	CreateNewBlock(
+		version int,
+		proposer string,
+		round int,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (types.BlockInterface, error)
+	CreateNewBlockFromOldBlock(
+		oldBlock types.BlockInterface,
+		proposer string,
+		startTime int64,
+		committees []incognitokey.CommitteePublicKey,
+		hash common.Hash) (types.BlockInterface, error)
+	InsertBlock(block types.BlockInterface, shouldValidate bool) error
+	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
+	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error
+	GetShardID() int
+	GetChainDatabase() incdb.Database
 
-//Exported interfaces
+	//for new syncker
+	GetBestViewHeight() uint64
+	GetFinalViewHeight() uint64
+	GetBestViewHash() string
+	GetFinalViewHash() string
+	GetViewByHash(hash common.Hash) multiview.View
+	CommitteeEngineVersion() int
+	GetProposerByTimeSlot(
+		committeeViewHash common.Hash,
+		shardID byte,
+		ts int64,
+		committees []incognitokey.CommitteePublicKey,
+	) (incognitokey.CommitteePublicKey, int, error)
+	CommitteesFromViewHashForShard(committeeHash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
+	ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error
+	SigningCommittees(
+		committeeViewHash common.Hash,
+		proposerIndex int,
+		committees []incognitokey.CommitteePublicKey,
+		shardID byte,
+	) []incognitokey.CommitteePublicKey
+}
+
+// TODO: @hung consider split interface
+type CommitteeChainHandler interface {
+	CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
+	ProposerByTimeSlot(byte, int64, []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey
+	FinalView() multiview.View
+}
 
 //Actor
 type Actor interface {

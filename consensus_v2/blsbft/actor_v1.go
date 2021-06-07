@@ -463,7 +463,7 @@ func (actorV1 *actorV1) createNewBlock(userKey *signatureschemes2.MiningKey) (ty
 }
 
 func NewActorV1WithValue(
-	chain blockchain.Chain,
+	chain Chain,
 	chainKey string, chainID int,
 	node NodeInterface, logger common.Logger,
 ) *actorV1 {
@@ -633,7 +633,7 @@ func (actorV1 *actorV1) initRoundData() {
 }
 
 func NewActorWithValue(
-	chain, committeeChain blockchain.Chain, version int,
+	chain, committeeChain Chain, version int,
 	chainID, blockVersion int, chainName string,
 	node NodeInterface, logger common.Logger,
 ) Actor {
