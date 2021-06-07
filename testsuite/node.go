@@ -131,9 +131,12 @@ func (sim *NodeEngine) EnableDebug() {
 func (sim *NodeEngine) Init() {
 	os.Setenv("TXPOOL_VERSION", "0")
 	simName := sim.simName
+	common.MaxShardNumber = config.Param().ActiveShards
+	common.TIMESLOT = config.Param().ConsensusParam.Timeslot
 	InitLogRotator(filepath.Join(sim.config.DataDir, simName+".log"))
 	activeNetParams := sim.param
 	if !sim.config.AppNode {
+
 		sim.GenesisAccount = sim.NewAccount()
 		for i := 0; i < config.Param().CommitteeSize.MinBeaconCommitteeSize; i++ {
 			acc := sim.NewAccountFromShard(-1)
@@ -157,16 +160,14 @@ func (sim *NodeEngine) Init() {
 	}
 
 	zkp.InitCheckpoint(config.Param().BCHeightBreakPointNewZKP)
-	common.MaxShardNumber = config.Param().ActiveShards
-	common.TIMESLOT = config.Param().ConsensusParam.Timeslot
-	portal.SetupParam()
+
 	blockchain.CreateGenesisBlocks()
 
 	//init time
 	layout := "2006-01-02T15:04:05.000Z"
 	str := config.Param().GenesisParam.BlockTimestamp
 	genesisTime, err := time.Parse(layout, str)
-	sim.timer.init(int64(genesisTime.Second() + 10))
+	sim.timer.init(int64(genesisTime.Unix() + 10))
 
 	//init blockchain
 	bc := blockchain.BlockChain{}

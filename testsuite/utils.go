@@ -2,6 +2,7 @@ package devframework
 
 import (
 	"bytes"
+	b64 "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/config"
@@ -90,15 +91,19 @@ func initSalaryTx(amount string, privateKey string, stateDB *statedb.StateDB) []
 			stateDB,
 			nil,
 		)
+
+		proofByte := b64.StdEncoding.EncodeToString([]byte(testSalaryTX.Proof.Bytes()))
+		sig := b64.StdEncoding.EncodeToString([]byte(testSalaryTX.Sig))
+		sigPub := b64.StdEncoding.EncodeToString([]byte(testSalaryTX.SigPubKey))
 		initTx := config.InitialIncognito{
 			Version:              int(testSalaryTX.Version),
 			Type:                 testSalaryTX.Type,
 			LockTime:             uint64(testSalaryTX.LockTime),
 			Fee:                  int(testSalaryTX.Fee),
 			Info:                 string(testSalaryTX.Info),
-			SigPubKey:            string(testSalaryTX.SigPubKey),
-			Sig:                  string(testSalaryTX.Sig),
-			Proof:                string(testSalaryTX.Proof.Bytes()),
+			SigPubKey:            string(sigPub),
+			Sig:                  string(sig),
+			Proof:                string(proofByte),
 			PubKeyLastByteSender: int(testSalaryTX.PubKeyLastByteSender),
 			Metadata:             nil,
 		}

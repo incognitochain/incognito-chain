@@ -2,6 +2,7 @@ package devframework
 
 import (
 	"github.com/incognitochain/incognito-chain/config"
+	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/testsuite/account"
 	"os"
 )
@@ -46,6 +47,9 @@ func NewStandaloneSimulation(name string, conf Config) *NodeEngine {
 		committeeAccount:  make(map[int][]account.Account),
 		listennerRegister: make(map[int][]func(msg interface{})),
 	}
+
+	config.LoadParam()
+	portal.SetupParam()
 
 	return sim
 }

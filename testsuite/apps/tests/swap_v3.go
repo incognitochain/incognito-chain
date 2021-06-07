@@ -41,10 +41,11 @@ func InitSimTestnet() *testsuite.NodeEngine {
 	})
 	config.Param().ActiveShards = 2
 	config.Param().BCHeightBreakPointNewZKP = 1
-	config.Param().BeaconHeightBreakPointBurnAddr = 2
+	config.Param().BeaconHeightBreakPointBurnAddr = 1
 	config.Param().ConsensusParam.StakingFlowV2Height = 1
 	config.Param().EpochParam.NumberOfBlockInEpoch = 20
 	config.Param().EpochParam.RandomTime = 10
+	node.Init()
 	for i := 0; i < 10; i++ {
 		node.GenerateBlock().NextRound()
 	}
@@ -201,8 +202,13 @@ func Test_Swap_v3() {
 	}
 }
 func Test_PDE() {
-	sim := InitSimMainnet()
+	sim := InitSimTestnet()
 	acc1 := sim.NewAccountFromShard(0)
+	sim.RPC.API_SubmitKey(sim.GenesisAccount.PrivateKey)
+	sim.RPC.API_SubmitKey(acc1.PrivateKey)
+	sim.GenerateBlock().NextRound()
+	sim.GenerateBlock().NextRound()
+
 	_, err := sim.RPC.API_SendTxPRV(sim.GenesisAccount.PrivateKey, map[string]uint64{
 		acc1.PaymentAddress: 100000000,
 	}, -1, false)
@@ -211,6 +217,10 @@ func Test_PDE() {
 	}
 	// for i := 0; i < 2; i++ {
 	sim.GenerateBlock().NextRound()
+	sim.GenerateBlock().NextRound()
+	sim.RPC.ShowBalance(sim.GenesisAccount)
+	sim.RPC.ShowBalance(acc1)
+	sim.Pause()
 	// }
 	// blx, _ := sim.RPC.API_GetBalance(acc1)
 	// fmt.Println("ACC1", blx)

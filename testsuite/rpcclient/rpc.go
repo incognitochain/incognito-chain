@@ -276,7 +276,6 @@ func (r *RPCClient) API_GetBalance(acc account.Account) (map[string]uint64, erro
 	tokenBL, _ := r.Client.GetListPrivacyCustomTokenBalance(acc.PrivateKey)
 	for _, token := range tokenBL.ListCustomTokenBalance {
 		tokenList[token.TokenID] = token.Amount
-
 	}
 	return tokenList, nil
 }
