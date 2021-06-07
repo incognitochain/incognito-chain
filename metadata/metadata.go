@@ -88,6 +88,7 @@ type ChainRetriever interface {
 	GetPortalReplacementAddress(beaconHeight uint64) string
 	CheckBlockTimeIsReachedByBeaconHeight(recentBeaconHeight, beaconHeight uint64, duration time.Duration) bool
 	GetPortalV4MultipleTokenAmount(tokenIDStr string, beaconHeight uint64) uint64
+	GetFinalBeaconHeight() uint64
 }
 
 type BeaconViewRetriever interface {

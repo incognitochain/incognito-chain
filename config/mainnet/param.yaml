@@ -51,6 +51,7 @@ bc_height_break_point_new_zkp: 934858
 enable_feature_flags:
   - 0: 1
   - 1: 0
+  - 2: 0
 portal_v3_height: 10000000
 tx_pool_version: 0
 geth_param:

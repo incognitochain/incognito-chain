@@ -146,7 +146,7 @@ func TestChooseUnshieldIDsFromCandidates(t *testing.T) {
 	insertUTXOIntoStateDB(utxos, "utxo_26", 500)
 	insertUTXOIntoStateDB(utxos, "utxo_27", 500)
 
-	broadcastTxs = p.ChooseUnshieldIDsFromCandidates(utxos, waitingUnshieldState, dustAmount)
+	broadcastTxs = p.MatchUTXOsAndUnshieldIDs(utxos, waitingUnshieldState, dustAmount)
 	printBroadcastTxs(t, broadcastTxs)
 }
 

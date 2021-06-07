@@ -10,17 +10,16 @@ import (
 )
 
 type PortalParams struct {
-	MasterPubKeys                  map[string][][]byte
-	NumRequiredSigs                uint
-	GeneralMultiSigAddresses       map[string]string   // used to received change output coins
-	PortalTokens                   map[string]portaltokensv4.PortalTokenProcessor
+	MasterPubKeys            map[string][][]byte
+	NumRequiredSigs          uint
+	GeneralMultiSigAddresses map[string]string // used to received change output coins
+	PortalTokens             map[string]portaltokensv4.PortalTokenProcessor
 
 	// for unshielding
-	DefaultFeeUnshields        map[string]uint64 // in nano ptokens
-	MinUnshieldAmts            map[string]uint64 // in nano ptokens
-	BatchNumBlks               uint
-	MinConfirmationIncBlockNum uint
-	DustValueThreshold         map[string]uint64 // in nano ptokens
+	DefaultFeeUnshields map[string]uint64 // in nano ptokens
+	MinUnshieldAmts     map[string]uint64 // in nano ptokens
+	BatchNumBlks        uint
+	DustValueThreshold  map[string]uint64 // in nano ptokens
 
 	// for replacement
 	PortalReplacementAddress    string

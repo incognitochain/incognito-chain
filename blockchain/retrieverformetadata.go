@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/metadata/rpccaller"
 	"github.com/incognitochain/incognito-chain/portal"
+	"github.com/incognitochain/incognito-chain/portal/portalv3"
+	"github.com/incognitochain/incognito-chain/portal/portalv4"
+	bnbrelaying "github.com/incognitochain/incognito-chain/relaying/bnb"
 	btcrelaying "github.com/incognitochain/incognito-chain/relaying/btc"
 	"github.com/tendermint/tendermint/rpc/client"
 	"github.com/tendermint/tendermint/types"
@@ -33,6 +37,14 @@ func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress(beaconHeight u
 	return ""
 }
 
+// func (blockchain *BlockChain) GetBeaconHeightBreakPointBurnAddr() uint64 {
+// 	return blockchain.config.ChainParams.BeaconHeightBreakPointBurnAddr
+// }
+//
+// func (blockchain *BlockChain) GetETHRemoveBridgeSigEpoch() uint64 {
+// 	return blockchain.config.ChainParams.ETHRemoveBridgeSigEpoch
+// }
+
 func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 	breakPoint := config.Param().BeaconHeightBreakPointBurnAddr
 	if beaconHeight == 0 {
@@ -47,16 +59,17 @@ func (blockchain *BlockChain) GetBurningAddress(beaconHeight uint64) string {
 }
 
 /* ================== Retriever for portal v3 ================== */
-func (blockchain *BlockChain) GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64) (uint64, error) {
-	return portal.GetPortalParams().GetPortalParamsV3(beaconHeight).GetMinAmountPortalToken(tokenIDStr)
+// GetPortalParams returns portal params in beaconheight
+func (blockchain *BlockChain) GetPortalParams() portal.PortalParams {
+	return *portal.GetPortalParams()
 }
 
 func (blockchain *BlockChain) GetPortalParamsV3(beaconHeight uint64) portalv3.PortalParams {
-	return blockchain.GetConfig().ChainParams.PortalParams.GetPortalParamsV3(beaconHeight)
+	return portal.GetPortalParams().GetPortalParamsV3(beaconHeight)
 }
 
 func (blockchain *BlockChain) GetPortalParamsV4(beaconHeight uint64) portalv4.PortalParams {
-	return blockchain.GetConfig().ChainParams.PortalParams.GetPortalParamsV4(beaconHeight)
+	return portal.GetPortalParams().GetPortalParamsV4(beaconHeight)
 }
 
 func (blockchain *BlockChain) GetMinAmountPortalToken(tokenIDStr string, beaconHeight uint64, version uint) (uint64, error) {
@@ -71,11 +84,19 @@ func (blockchain *BlockChain) GetMinAmountPortalToken(tokenIDStr string, beaconH
 }
 
 // IsPortalToken check tokenIDStr is the valid portal token on portal v3 or not
-func (blockchain *BlockChain) IsPortalToken(beaconHeight uint64, tokenIDStr string) bool {
-	return portal.GetPortalParams().GetPortalParamsV3(beaconHeight).IsPortalToken(tokenIDStr)
+func (blockchain *BlockChain) IsPortalToken(beaconHeight uint64, tokenIDStr string, version uint) (bool, error) {
+	switch version {
+	case common.PortalVersion3:
+		return blockchain.GetPortalParamsV3(beaconHeight).IsPortalToken(tokenIDStr), nil
+	case common.PortalVersion4:
+		return blockchain.GetPortalParamsV4(beaconHeight).IsPortalToken(tokenIDStr), nil
+	default:
+		return false, errors.New("Invalid portal version")
+	}
 }
 
-func (blockchain *BlockChain) IsValidPortalRemoteAddress(tokenIDStr string, remoteAddr string, beaconHeight uint64, version uint) (bool, error) {
+func (blockchain *BlockChain) IsValidPortalRemoteAddress(
+	tokenIDStr string, remoteAddr string, beaconHeight uint64, version uint) (bool, error) {
 	if len(remoteAddr) == 0 {
 		return false, errors.New("Remote address is empty string")
 	}
@@ -259,4 +280,8 @@ func (blockchain *BlockChain) GetPortalV4GeneralMultiSigAddress(tokenIDStr strin
 
 func (blockchain *BlockChain) GetPortalV4MultipleTokenAmount(tokenIDStr string, beaconHeight uint64) uint64 {
 	return blockchain.GetPortalParamsV4(beaconHeight).PortalTokens[tokenIDStr].GetMinTokenAmount()
+}
+
+func (blockchain *BlockChain) GetFinalBeaconHeight() uint64 {
+	return blockchain.BeaconChain.GetFinalViewHeight()
 }

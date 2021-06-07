@@ -18,6 +18,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -121,25 +122,22 @@ func (s *PortalTestSuiteV4) SetupTest() {
 			portalcommonv4.PortalBTCIDStr: 1e9, // in nano pBTC - 1e8 satoshi
 		},
 		BatchNumBlks:                45,
-		MinConfirmationIncBlockNum:  3,
 		PortalReplacementAddress:    "",
 		MaxFeePercentageForEachStep: 20,
 		TimeSpaceForFeeReplacement:  2 * time.Minute,
 	}
-	s.blockChain = &BlockChain{
-		config: Config{
-			ChainParams: &Params{
-				MinBeaconBlockInterval: 40 * time.Second,
-				MinShardBlockInterval:  40 * time.Second,
-				Epoch:                  100,
-				PortalParams: portal.PortalParams{
-					PortalParamsV4: map[uint64]portalv4.PortalParams{
-						0: s.portalParams,
-					},
-				},
-			},
+
+	tempPortalParam := &portal.PortalParams{
+		PortalParamsV4: map[uint64]portalv4.PortalParams{
+			0: s.portalParams,
 		},
 	}
+
+	config.AbortParam()
+	config.Param().BlockTime.MinBeaconBlockInterval = 40 * time.Second
+	config.Param().BlockTime.MinShardBlockInterval = 40 * time.Second
+	config.Param().EpochParam.NumberOfBlockInEpoch = 100
+	portal.SetupPortalParam(tempPortalParam)
 }
 
 type portalV4InstForProducer struct {
@@ -912,8 +910,10 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultBatchUnshieldProcess()
 	// build expected results
 	// batch unshielding process
 	currentBeaconHeight := uint64(45)
-	externalFee := map[uint64]uint{
-		currentBeaconHeight: 100000,
+	externalFee := map[uint64]statedb.ExternalFeeInfo{
+		currentBeaconHeight: {
+			100000, "",
+		},
 	}
 
 	batchDatas := []struct {
@@ -922,8 +922,9 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultBatchUnshieldProcess()
 	}{
 		{[]string{wUnshieldReqs[0].value.GetUnshieldID()}, []*statedb.UTXO{utxos[0].value}},
 		{[]string{wUnshieldReqs[0].value.GetUnshieldID()}, []*statedb.UTXO{utxos[0].value, utxos[1].value}},
-		{[]string{wUnshieldReqs[0].value.GetUnshieldID(), wUnshieldReqs[1].value.GetUnshieldID(), wUnshieldReqs[2].value.GetUnshieldID()}, []*statedb.UTXO{utxos[0].value, utxos[2].value}},
-		{[]string{wUnshieldReqs[3].value.GetUnshieldID()}, []*statedb.UTXO{utxos[1].value}},
+		{[]string{wUnshieldReqs[0].value.GetUnshieldID(), wUnshieldReqs[1].value.GetUnshieldID(),
+			wUnshieldReqs[2].value.GetUnshieldID(), wUnshieldReqs[3].value.GetUnshieldID()},
+			[]*statedb.UTXO{utxos[0].value, utxos[1].value}},
 		{[]string{wUnshieldReqs[4].value.GetUnshieldID(), wUnshieldReqs[0].value.GetUnshieldID()}, []*statedb.UTXO{utxos[0].value, utxos[1].value}},
 		{[]string{wUnshieldReqs[0].value.GetUnshieldID()}, []*statedb.UTXO{utxos[0].value}},
 	}
@@ -977,13 +978,14 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultBatchUnshieldProcess()
 			batchUnshieldProcesses: map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{
 				portalcommonv4.PortalBTCIDStr: {
 					batchUnshields[2].key: batchUnshields[2].value,
-					batchUnshields[3].key: batchUnshields[3].value,
 				},
 			},
 			utxos: map[string]map[string]*statedb.UTXO{
-				portalcommonv4.PortalBTCIDStr: {},
+				portalcommonv4.PortalBTCIDStr: {
+					utxos[2].key: utxos[2].value,
+				},
 			},
-			numBeaconInsts: 2,
+			numBeaconInsts: 1,
 		},
 		{
 			waitingUnshieldReqs: map[string]map[string]*statedb.WaitingUnshieldRequest{
@@ -993,7 +995,7 @@ func (s *PortalTestSuiteV4) buildTestCaseAndExpectedResultBatchUnshieldProcess()
 			},
 			batchUnshieldProcesses: map[string]map[string]*statedb.ProcessedUnshieldRequestBatch{
 				portalcommonv4.PortalBTCIDStr: {
-					batchUnshields[4].key: batchUnshields[4].value,
+					batchUnshields[3].key: batchUnshields[3].value,
 				},
 			},
 			utxos: map[string]map[string]*statedb.UTXO{
@@ -1042,6 +1044,7 @@ func (s *PortalTestSuiteV4) TestBatchUnshieldProcess() {
 	// mock test
 	bc := new(mocks.ChainRetriever)
 	bc.On("GetBTCChainParams").Return(&chaincfg.TestNet3Params)
+	bc.On("GetFinalBeaconHeight").Return(uint64(42))
 	tokenID := portalcommonv4.PortalBTCIDStr
 	bcH := uint64(0)
 	bc.On("GetPortalV4GeneralMultiSigAddress", tokenID, bcH).Return(s.portalParams.GeneralMultiSigAddresses[portalcommonv4.PortalBTCIDStr])
@@ -1148,8 +1151,10 @@ func (s *PortalTestSuiteV4) SetupTestFeeReplacement() {
 			statedb.NewUTXOWithValue(otm2, "49491148bd2f7b5432a26472af97724e114f22a74d9d2fb20c619b4f79f19fd9", 0, 2000000, PORTALV4_USER_INC_ADDRESS_2),
 			statedb.NewUTXOWithValue(otm3, "b751ff30df21ad84ce3f509ee3981c348143bd6a5aa30f4256ecb663fab14fd1", 1, 3000000, PORTALV4_USER_INC_ADDRESS_3),
 		},
-		map[uint64]uint{
-			900: 100000,
+		map[uint64]statedb.ExternalFeeInfo{
+			900: {
+				100000, "",
+			},
 		},
 	)
 
@@ -1159,8 +1164,10 @@ func (s *PortalTestSuiteV4) SetupTestFeeReplacement() {
 		[]*statedb.UTXO{
 			statedb.NewUTXOWithValue(otm4, "163a6cc24df4efbd5c997aa623d4e319f1b7671be83a86bb0fa27bc701ae4a76", 1, 1000000, PORTALV4_USER_INC_ADDRESS_4),
 		},
-		map[uint64]uint{
-			1000: 100000,
+		map[uint64]statedb.ExternalFeeInfo{
+			1000: {
+				100000, "",
+			},
 		},
 	)
 
@@ -1346,9 +1353,13 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 			statedb.NewUTXOWithValue(otm2, "49491148bd2f7b5432a26472af97724e114f22a74d9d2fb20c619b4f79f19fd9", 0, 2000000, PORTALV4_USER_INC_ADDRESS_2),
 			statedb.NewUTXOWithValue(otm3, "b751ff30df21ad84ce3f509ee3981c348143bd6a5aa30f4256ecb663fab14fd1", 1, 3000000, PORTALV4_USER_INC_ADDRESS_3),
 		},
-		map[uint64]uint{
-			900:  100000,
-			1501: 102000,
+		map[uint64]statedb.ExternalFeeInfo{
+			900: {
+				100000, "",
+			},
+			1501: {
+				102000, common.Hash{}.String(),
+			},
 		},
 	)
 
@@ -1358,9 +1369,13 @@ func buildExpectedResultFeeReplacement(s *PortalTestSuiteV4) ([]TestCaseFeeRepla
 		[]*statedb.UTXO{
 			statedb.NewUTXOWithValue(otm4, "163a6cc24df4efbd5c997aa623d4e319f1b7671be83a86bb0fa27bc701ae4a76", 1, 1000000, PORTALV4_USER_INC_ADDRESS_4),
 		},
-		map[uint64]uint{
-			1000: 100000,
-			1501: 110000,
+		map[uint64]statedb.ExternalFeeInfo{
+			1000: {
+				100000, "",
+			},
+			1501: {
+				110000, common.Hash{}.String(),
+			},
 		},
 	)
 
@@ -1526,8 +1541,10 @@ func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 		[]*statedb.UTXO{
 			statedb.NewUTXOWithValue(otm1, "eaa6fcb6acf2786638ce68f1253742ecc0115a44c961f3612ff4c81c6f5572c1", 0, 200000, PORTALV4_USER_INC_ADDRESS_1),
 		},
-		map[uint64]uint{
-			900: 100000,
+		map[uint64]statedb.ExternalFeeInfo{
+			900: {
+				100000, "",
+			},
 		},
 	)
 
@@ -1537,8 +1554,10 @@ func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 		[]*statedb.UTXO{
 			statedb.NewUTXOWithValue(otm1, "3bfbe6c04e2063d81ccb35ef4a4ad1aadaf4ba8869fb75f570ba2adb92e28f95", 1, 1000000, PORTALV4_USER_INC_ADDRESS_1),
 		},
-		map[uint64]uint{
-			900: 100000,
+		map[uint64]statedb.ExternalFeeInfo{
+			900: {
+				100000, "",
+			},
 		},
 	)
 
@@ -1549,8 +1568,10 @@ func (s *PortalTestSuiteV4) SetupTestSubmitConfirmedTx() {
 			statedb.NewUTXOWithValue(otm1, "bdcbea41251172638f32226bcca1da1985297843d6279cb580d537aff6ae0fe8", 0, 1000000, PORTALV4_USER_INC_ADDRESS_1),
 			statedb.NewUTXOWithValue(otm2, "48b68d4d874803b159aaa1cb82b17a0bb904593073e96e623eb747b0efe7fffc", 0, 1000000, PORTALV4_USER_INC_ADDRESS_2),
 		},
-		map[uint64]uint{
-			900: 100000,
+		map[uint64]statedb.ExternalFeeInfo{
+			900: {
+				100000, "",
+			},
 		},
 	)
 

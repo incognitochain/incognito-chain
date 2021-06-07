@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/portal"
 	portalcommonv4 "github.com/incognitochain/incognito-chain/portal/portalv4/common"
 	portaltokensv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portaltokens"
 	"github.com/incognitochain/incognito-chain/testsuite"
@@ -15,17 +14,10 @@ import (
 
 func Test_PortalV4() {
 	//sed -i s"|return putGenesisBlockIntoChainParams(genesisHash, genesisBlock, .*|return putGenesisBlockIntoChainParams\(genesisHash, genesisBlock, chaincfg.RegressionNetParams\)|" relaying/btc/relayinggenesis.go
-	chainParam := devframework.NewChainParam(devframework.ID_TESTNET)
-	chainParam.ActiveShards = 2
-	chainParam.BCHeightBreakPointNewZKP = 1
-	chainParam.BeaconHeightBreakPointBurnAddr = 1
-	chainParam.StakingFlowV2Height = 1
-	chainParam.Epoch = 20
-	chainParam.RandomTime = 10
-	common.TIMESLOT = chainParam.Timeslot
-	chainParam.PortalParams.PortalParamsV4[0].PortalTokens[portalcommonv4.PortalBTCIDStr] = portaltokensv4.PortalBTCTokenProcessor{
+
+	portal.GetPortalParams().PortalParamsV4[0].PortalTokens[portalcommonv4.PortalBTCIDStr] = portaltokensv4.PortalBTCTokenProcessor{
 		PortalToken: &portaltokensv4.PortalToken{
-			ChainID:             blockchain.TestnetBTCChainID,
+			ChainID:             portal.TestnetBTCChainID,
 			MinTokenAmount:      10,
 			MultipleTokenAmount: 10,
 			ExternalInputSize:   130,
@@ -36,8 +28,8 @@ func Test_PortalV4() {
 	}
 
 	node := devframework.NewStandaloneSimulation("newsim", devframework.Config{
-		ChainParam: chainParam,
-		ResetDB:    true,
+		Network: devframework.ID_TESTNET,
+		ResetDB: true,
 	})
 	for i := 0; i < 5; i++ {
 		node.GenerateBlock().NextRound()
