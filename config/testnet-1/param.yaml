@@ -57,7 +57,7 @@ beacon_height_break_point_burn_addr: 1
 eth_remove_bridge_sig_epoch: 2085
 replace_staking_tx_height: 1
 bc_height_break_point_new_zkp: 1148608
-bc_height_break_point_privacy_v2: 10000000
+bc_height_break_point_privacy_v2: 2624524
 coin_v2_lowest_height: 8640
 enable_feature_flags:
   - 0: 1
