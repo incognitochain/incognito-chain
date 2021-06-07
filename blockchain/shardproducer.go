@@ -788,6 +788,18 @@ func (blockGenerator *BlockGenerator) createTempKeyset(seedNumber int64) privacy
 	return privacy.GeneratePrivateKey(seed)
 }
 
+func createShardSwapActionForKeyListV2(
+	shardCommittees []string,
+	minCommitteeSize int,
+	activeShard int,
+	shardID byte,
+	epoch uint64,
+) ([]string, []string) {
+	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(epoch, minCommitteeSize, activeShard)
+	remainShardCommittees := shardCommittees[minCommitteeSize:]
+	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)
+}
+
 //extractInstructionsFromBeacon : preprcess for beacon instructions before move to handle it in committee state
 // Store stakingtx address and return it back to outside
 // Only process for instruction not stake instruction

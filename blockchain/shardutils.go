@@ -71,18 +71,6 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 	return crossIDs
 }
 
-func createShardSwapActionForKeyListV2(
-	shardCommittees []string,
-	minCommitteeSize int,
-	activeShard int,
-	shardID byte,
-	epoch uint64,
-) ([]string, []string) {
-	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(epoch, minCommitteeSize, activeShard)
-	remainShardCommittees := shardCommittees[minCommitteeSize:]
-	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)
-}
-
 func checkReturnStakingTxExistence(txId string, shardBlock *types.ShardBlock) bool {
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadata() != nil {

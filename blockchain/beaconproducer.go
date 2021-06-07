@@ -442,7 +442,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 			}
 			epoch := blockchain.GetEpochByHeight(newBeaconHeight)
 			if common.IndexOfUint64(epoch, config.Param().ConsensusParam.EpochBreakPointSwapNewKey) > -1 {
-				swapBeaconInstructions, beaconCommittee := CreateBeaconSwapActionForKeyListV2(beaconCommitteeStr, curView.MinBeaconCommitteeSize, epoch)
+				swapBeaconInstructions, beaconCommittee := createBeaconSwapActionForKeyListV2(beaconCommitteeStr, curView.MinBeaconCommitteeSize, epoch)
 				instructions = append(instructions, swapBeaconInstructions)
 				beaconRootInst, _ := buildBeaconSwapConfirmInstruction(beaconCommittee, newBeaconHeight)
 				instructions = append(instructions, beaconRootInst)
@@ -486,7 +486,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 	return instructions, nil
 }
 
-func CreateBeaconSwapActionForKeyListV2(
+func createBeaconSwapActionForKeyListV2(
 	beaconCommittees []string,
 	minCommitteeSize int,
 	epoch uint64,
