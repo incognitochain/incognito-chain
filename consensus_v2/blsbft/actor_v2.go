@@ -621,7 +621,7 @@ func (actorV2 *actorV2) getCommitteeForBlock(
 		if err != nil {
 			return signingCommittees, committees, err
 		}
-		_, proposerIndex, err = actorV2.chain.GetProposerByTimeSlot(
+		_, proposerIndex, err = actorV2.chain.GetProposerByTimeSlotFromCommitteeList(
 			byte(actorV2.chainID),
 			common.CalculateTimeSlot(v.GetProposeTime()),
 			committees,
@@ -702,7 +702,7 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 		}
 	}
 
-	proposerPk, proposerIndex, err := actorV2.chain.GetProposerByTimeSlot(
+	proposerPk, proposerIndex, err := actorV2.chain.GetProposerByTimeSlotFromCommitteeList(
 		byte(actorV2.chainID),
 		actorV2.currentTimeSlot,
 		committees,

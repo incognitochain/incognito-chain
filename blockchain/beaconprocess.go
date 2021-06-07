@@ -691,12 +691,11 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
 	if shardState.Version == types.DCS_VERSION {
-		ts := common.CalculateTimeSlot(shardState.ProposerTime)
-		_, proposerIndex := GetProposerIndexWithBlockVersion(
-			ts, committees,
-			curView.MinShardCommitteeSize,
-			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
-			shardState.Version,
+		timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
+		_, proposerIndex := GetProposer(
+			timeSlot,
+			committees,
+			getProposerLength(),
 		)
 		committees = filterSigningCommitteeV3(
 			committees,

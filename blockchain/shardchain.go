@@ -3,7 +3,6 @@ package blockchain
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/config"
 	"sync"
 	"time"
 
@@ -353,15 +352,14 @@ func (chain *ShardChain) CommitteeEngineVersion() int {
 }
 
 //ProposerByTimeSlot ...
-func (chain *ShardChain) GetProposerByTimeSlot(
-	shardID byte, ts int64,
+func (chain *ShardChain) GetProposerByTimeSlotFromCommitteeList(
+	timeslot int64,
 	committees []incognitokey.CommitteePublicKey,
-	blockVersion int) (incognitokey.CommitteePublicKey, int, error) {
-	proposer, proposerIndex := GetProposerIndexWithBlockVersion(
-		ts, committees,
-		chain.Blockchain.GetBestStateShard(shardID).MinShardCommitteeSize,
-		config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
-		blockVersion,
+) (incognitokey.CommitteePublicKey, int, error) {
+	proposer, proposerIndex := GetProposer(
+		timeslot,
+		committees,
+		getProposerLength(),
 	)
 	return proposer, proposerIndex, nil
 }

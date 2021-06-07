@@ -354,9 +354,9 @@ func (chain *BeaconChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
 }
 
-func (chain *BeaconChain) GetProposerByTimeSlot(
-	shardID byte, ts int64,
-	committees []incognitokey.CommitteePublicKey, blockVersion int,
+func (chain *BeaconChain) GetProposerByTimeSlotFromCommitteeList(
+	ts int64,
+	committees []incognitokey.CommitteePublicKey,
 ) (incognitokey.CommitteePublicKey, int, error) {
 	id := GetProposerByTimeSlot(ts, chain.GetBestView().(*BeaconBestState).MinBeaconCommitteeSize)
 	return committees[id], id, nil

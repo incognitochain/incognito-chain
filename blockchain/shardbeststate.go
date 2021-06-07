@@ -338,13 +338,7 @@ func (shardBestState *ShardBestState) GetProposerByTimeSlot(
 	ts int64,
 	version int,
 ) (incognitokey.CommitteePublicKey, int) {
-	numberOfProposers := 0
-	if shardBestState.CommitteeStateVersion() == committeestate.DCS_VERSION {
-		numberOfProposers = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
-	} else {
-		numberOfProposers = shardBestState.MinShardCommitteeSize
-	}
-	id := GetProposerByTimeSlot(ts, numberOfProposers)
+	id := GetProposerByTimeSlot(ts, getProposerLength())
 	return shardBestState.GetShardCommittee()[id], id
 }
 
@@ -532,13 +526,12 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 		if err != nil {
 			return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, err
 		}
-		fullCommittees := shardCommitteeForBlockProducing.Committees()
-		ts := common.CalculateTimeSlot(shardBlock.Header.ProposeTime)
-		_, proposerIndex := GetProposerIndexWithBlockVersion(
-			ts, fullCommittees,
-			shardBestState.MinShardCommitteeSize,
-			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
-			shardBlock.GetVersion(),
+		committees := shardCommitteeForBlockProducing.Committees()
+		timeSlot := common.CalculateTimeSlot(shardBlock.Header.ProposeTime)
+		_, proposerIndex := GetProposer(
+			timeSlot,
+			committees,
+			getProposerLength(),
 		)
 		res := filterSigningCommitteeV3(
 			shardCommitteeForBlockProducing.Committees(),
@@ -550,16 +543,10 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 	return []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
 }
 
-func GetProposerIndexWithBlockVersion(
+func GetProposer(
 	ts int64, committees []incognitokey.CommitteePublicKey,
-	minShardCommitteeSize, numberOfFixedShardBlockValidator int,
-	blockVersion int) (incognitokey.CommitteePublicKey, int) {
-	lenProposers := 0
-	if blockVersion == types.DCS_VERSION {
-		lenProposers = numberOfFixedShardBlockValidator
-	} else {
-		lenProposers = minShardCommitteeSize
-	}
+	numberOfFixedShardBlockValidator int) (incognitokey.CommitteePublicKey, int) {
+	lenProposers := numberOfFixedShardBlockValidator
 	id := GetProposerByTimeSlot(ts, lenProposers)
 	return committees[id], id
 }
@@ -569,8 +556,8 @@ func GetProposerByTimeSlot(ts int64, committeeLen int) int {
 	return id
 }
 
-//GetSubsetID for block producing v3 only
-func GetSubsetID(proposerTime int64, validators int) int {
+//GetSubsetIDFromProposerTime for block producing v3 only
+func GetSubsetIDFromProposerTime(proposerTime int64, validators int) int {
 	proposerIndex := GetProposerByTimeSlot(common.CalculateTimeSlot(proposerTime), validators)
 	subsetID := proposerIndex % MaxSubsetCommittees
 	return subsetID
@@ -584,4 +571,8 @@ func filterSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, 
 		}
 	}
 	return signingCommittees
+}
+
+func getProposerLength() int {
+	return config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 }

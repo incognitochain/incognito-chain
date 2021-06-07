@@ -675,15 +675,8 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	Logger.log.Debugf("SHARD %+v | Begin VerifyBestStateWithShardBlock Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
 	//verify producer via index
 
-	lenProducer := 0
-	if blockchain.BeaconChain.GetFinalView().GetHeight() >= config.Param().ConsensusParam.StakingFlowV3Height {
-		lenProducer = config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
-	} else {
-		lenProducer = shardBestState.MinShardCommitteeSize
-	}
-
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
-		shardBestState.ShardProposerIdx, committees, lenProducer); err != nil {
+		shardBestState.ShardProposerIdx, committees, getProposerLength()); err != nil {
 		return err
 	}
 	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(shardBlock, common.BlsConsensus); err != nil {
@@ -1208,7 +1201,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			err2 := stats.UpdateBPV3Stats(
 				blockchain.GetShardChainDatabase(shardID),
 				storeBlock.(*types.ShardBlock),
-				GetSubsetID(shardBlock.GetProposeTime(), config.Param().CommitteeSize.NumberOfFixedShardBlockValidator),
+				GetSubsetIDFromProposerTime(shardBlock.GetProposeTime(), getProposerLength()),
 				committeesStoreBlock,
 			)
 			if err2 != nil {

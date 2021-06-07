@@ -73,11 +73,9 @@ type Chain interface {
 	GetFinalViewHash() string
 	GetViewByHash(hash common.Hash) multiview.View
 	CommitteeEngineVersion() int
-	GetProposerByTimeSlot(
-		shardID byte,
+	GetProposerByTimeSlotFromCommitteeList(
 		ts int64,
 		committees []incognitokey.CommitteePublicKey,
-		blockVersion int,
 	) (incognitokey.CommitteePublicKey, int, error)
 	CommitteesFromViewHashForShard(committeeHash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
 	ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error

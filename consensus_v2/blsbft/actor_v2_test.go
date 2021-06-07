@@ -56,7 +56,7 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 	errorGetBestViewHeight.On("GetShardID").Return(1)
 	errorGetBestViewHeight.
 		On(
-			"GetProposerByTimeSlot",
+			"GetProposerByTimeSlotFromCommitteeList",
 			*hash1, byte(1),
 			int64(10),
 			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
@@ -97,7 +97,7 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 	syncProposeViewChain.On("GetViewByHash", *hash1).Return(nil)
 	syncProposeViewChain.
 		On(
-			"GetProposerByTimeSlot",
+			"GetProposerByTimeSlotFromCommitteeList",
 			*hash1, byte(1),
 			int64(10),
 			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
@@ -127,7 +127,7 @@ func Test_actorV2_handleProposeMsg(t *testing.T) {
 	normalChain.On("GetViewByHash", *hash1).Return(shardBestState)
 	normalChain.
 		On(
-			"GetProposerByTimeSlot",
+			"GetProposerByTimeSlotFromCommitteeList",
 			*hash1, byte(1),
 			int64(10),
 			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
@@ -661,7 +661,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 
 	invalidChain.
 		On(
-			"GetProposerByTimeSlot",
+			"GetProposerByTimeSlotFromCommitteeList",
 			*hash, byte(1),
 			int64(10),
 			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
@@ -687,7 +687,7 @@ func Test_actorV2_proposeShardBlock(t *testing.T) {
 	)
 	validChain.
 		On(
-			"GetProposerByTimeSlot",
+			"GetProposerByTimeSlotFromCommitteeList",
 			*hash, byte(1),
 			int64(10),
 			[]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
