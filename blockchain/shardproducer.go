@@ -208,13 +208,12 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	}
 
 	if shardBestState.shardCommitteeState.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
-		env := committeestate.
-			NewShardEnvBuilder().
-			BuildBeaconInstructions(beaconInstructions).
-			BuildShardID(shardBestState.ShardID).
-			BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
-			BuildShardHeight(shardBestState.ShardHeight).
-			Build()
+		env := committeestate.NewShardCommitteeStateEnvironmentForAssignInstruction(
+			beaconInstructions,
+			curView.ShardID,
+			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+			shardBestState.ShardHeight+1,
+		)
 
 		assignInstructionProcessor := shardBestState.shardCommitteeState.(committeestate.AssignInstructionProcessor)
 		addedSubstitutes := assignInstructionProcessor.ProcessAssignInstructions(env)
@@ -597,15 +596,15 @@ func (blockchain *BlockChain) generateInstruction(view *ShardBestState,
 				)
 			} else {
 				tempSwapInstruction := instruction.NewSwapInstruction()
-				env := committeestate.NewShardEnvBuilder().
-					BuildMaxShardCommitteeSize(maxShardCommitteeSize).
-					BuildMinShardCommitteeSize(minShardCommitteeSize).
-					BuildShardID(shardID).
-					BuildShardHeight(view.ShardHeight).
-					BuildOffset(config.Param().SwapCommitteeParam.Offset).
-					BuildSwapOffset(config.Param().SwapCommitteeParam.SwapOffset).
-					BuildNumberOfFixedBlockValidators(numberOfFixedShardBlockValidators).
-					Build()
+				env := committeestate.NewShardCommitteeStateEnvironmentForSwapInstruction(
+					view.ShardHeight,
+					shardID,
+					maxShardCommitteeSize,
+					minShardCommitteeSize,
+					config.Param().SwapCommitteeParam.Offset,
+					config.Param().SwapCommitteeParam.SwapOffset,
+					numberOfFixedShardBlockValidators,
+				)
 				swapInstructionGenerator := view.shardCommitteeState.(committeestate.SwapInstructionGenerator)
 				tempSwapInstruction, shardPendingValidators, shardCommittees, err =
 					swapInstructionGenerator.GenerateSwapInstructions(env)

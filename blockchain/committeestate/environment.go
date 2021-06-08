@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 type BeaconCommitteeStateEnvironment struct {
@@ -44,7 +45,7 @@ type BeaconCommitteeStateEnvironment struct {
 	shardCommittee                   map[byte][]string
 	shardSubstitute                  map[byte][]string
 	numberOfValidator                []int
-	PreviousBlockHashes                *BeaconCommitteeStateHash
+	PreviousBlockHashes              *BeaconCommitteeStateHash
 }
 
 type BeaconCommitteeStateHash struct {
@@ -148,5 +149,62 @@ func NewBeaconCommitteeStateEnvironmentForUpgrading(beaconHeight, stakingV3Heigh
 		StakingV3Height: stakingV3Height,
 		BeaconHash:      beaconBlockHash,
 		BeaconHeight:    beaconHeight,
+	}
+}
+
+//ShardCommitteeStateEnvironment :
+type ShardCommitteeStateEnvironment struct {
+	ShardHeight                  uint64
+	ShardBlockHash               common.Hash
+	BeaconBlockHash              common.Hash
+	ShardInstructions            [][]string
+	BeaconInstructions           [][]string
+	Txs                          []metadata.Transaction
+	BeaconHeight                 uint64
+	Epoch                        uint64
+	EpochBreakPointSwapNewKey    []uint64
+	ShardID                      byte
+	MaxShardCommitteeSize        int
+	MinShardCommitteeSize        int
+	Offset                       int
+	SwapOffset                   int
+	StakingTx                    map[string]string
+	NumberOfFixedBlockValidators int
+	CommitteesFromBlock          common.Hash
+	CommitteesFromBeaconView     []string
+}
+
+func NewShardCommitteeStateEnvironment(shardHeight uint64, shardID byte, maxShardCommitteeSize int, minShardCommitteeSize int, offset int, swapOffset int, numberOfFixedBlockValidators int) *ShardCommitteeStateEnvironment {
+	return &ShardCommitteeStateEnvironment{ShardHeight: shardHeight, ShardID: shardID, MaxShardCommitteeSize: maxShardCommitteeSize, MinShardCommitteeSize: minShardCommitteeSize, Offset: offset, SwapOffset: swapOffset, NumberOfFixedBlockValidators: numberOfFixedBlockValidators}
+}
+
+func NewShardCommitteeStateEnvironmentForAssignInstruction(
+	beaconInstructions [][]string,
+	shardID byte,
+	numberOfFixedBlockValidators int,
+	shardHeight uint64) *ShardCommitteeStateEnvironment {
+	return &ShardCommitteeStateEnvironment{
+		BeaconInstructions:           beaconInstructions,
+		ShardID:                      shardID,
+		NumberOfFixedBlockValidators: numberOfFixedBlockValidators,
+		ShardHeight:                  shardHeight,
+	}
+}
+
+func NewShardCommitteeStateEnvironmentForSwapInstruction(
+	shardHeight uint64,
+	shardID byte,
+	maxShardCommitteeSize int,
+	minShardCommitteeSize int,
+	offset int, swapOffset int,
+	numberOfFixedBlockValidators int) *ShardCommitteeStateEnvironment {
+	return &ShardCommitteeStateEnvironment{
+		ShardHeight:                  shardHeight,
+		ShardID:                      shardID,
+		MaxShardCommitteeSize:        maxShardCommitteeSize,
+		MinShardCommitteeSize:        minShardCommitteeSize,
+		Offset:                       offset,
+		SwapOffset:                   swapOffset,
+		NumberOfFixedBlockValidators: numberOfFixedBlockValidators,
 	}
 }

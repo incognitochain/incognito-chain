@@ -423,6 +423,32 @@ func (shardBestState *ShardBestState) CommitteeStateVersion() int {
 	return shardBestState.shardCommitteeState.Version()
 }
 
+func (shardBestState *ShardBestState) NewShardCommitteeStateEnvironmentWithValue(
+	shardBlock *types.ShardBlock,
+	bc *BlockChain,
+	beaconInstructions [][]string,
+	tempCommittees []string) *committeestate.ShardCommitteeStateEnvironment {
+	return &committeestate.ShardCommitteeStateEnvironment{
+		BeaconHeight:                 shardBestState.BeaconHeight,
+		Epoch:                        bc.GetEpochByHeight(shardBestState.BeaconHeight),
+		EpochBreakPointSwapNewKey:    config.Param().ConsensusParam.EpochBreakPointSwapNewKey,
+		BeaconInstructions:           beaconInstructions,
+		MaxShardCommitteeSize:        shardBestState.MaxShardCommitteeSize,
+		NumberOfFixedBlockValidators: config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+		MinShardCommitteeSize:        shardBestState.MinShardCommitteeSize,
+		Offset:                       config.Param().SwapCommitteeParam.Offset,
+		ShardBlockHash:               shardBestState.BestBlockHash,
+		ShardHeight:                  shardBestState.ShardHeight,
+		ShardID:                      shardBestState.ShardID,
+		StakingTx:                    make(map[string]string),
+		SwapOffset:                   config.Param().SwapCommitteeParam.SwapOffset,
+		Txs:                          shardBlock.Body.Transactions,
+		ShardInstructions:            shardBlock.Body.Instructions,
+		CommitteesFromBlock:          shardBlock.Header.CommitteeFromBlock,
+		CommitteesFromBeaconView:     tempCommittees,
+	}
+}
+
 // tryUpgradeCommitteeState only allow
 // Upgrade to v2 if and only if current version is 1 and beacon height == staking flow v2 height
 // Upgrade to v3 if and only if current version is 2 and beacon height == staking flow v3 height

@@ -38,7 +38,7 @@ func NewShardCommitteeStateV3WithValue(
 //initGenesisShardCommitteeStateV3 init committee state at genesis block or anytime restore program
 //	- call function processInstructionFromBeacon for process instructions received from beacon
 //	- call function processShardBlockInstruction for process shard block instructions
-func initGenesisShardCommitteeStateV3(env ShardCommitteeStateEnvironment) *ShardCommitteeStateV3 {
+func initGenesisShardCommitteeStateV3(env *ShardCommitteeStateEnvironment) *ShardCommitteeStateV3 {
 	s2 := initGenesisShardCommitteeStateV2(env)
 	s3 := &ShardCommitteeStateV3{
 		ShardCommitteeStateV2: *s2,

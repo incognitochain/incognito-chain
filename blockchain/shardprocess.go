@@ -552,11 +552,12 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(curView *S
 	}
 
 	if curView.shardCommitteeState.Version() == committeestate.SELF_SWAP_SHARD_VERSION {
-		env := committeestate.
-			NewShardEnvBuilder().
-			BuildBeaconInstructions(beaconInstructions).
-			BuildShardID(curView.ShardID).
-			Build()
+		env := committeestate.NewShardCommitteeStateEnvironmentForAssignInstruction(
+			beaconInstructions,
+			curView.ShardID,
+			config.Param().CommitteeSize.NumberOfFixedShardBlockValidator,
+			shardBlock.Header.Height,
+		)
 
 		assignInstructionProcessor := curView.shardCommitteeState.(committeestate.AssignInstructionProcessor)
 		addedSubstitutes := assignInstructionProcessor.ProcessAssignInstructions(env)
@@ -722,8 +723,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	committees []incognitokey.CommitteePublicKey) (
 	*ShardBestState, *committeestate.ShardCommitteeStateHash, *committeestate.CommitteeChange, error) {
 	var (
-		err     error
-		shardID = shardBlock.Header.ShardID
+		err error
 	)
 	startTimeUpdateShardBestState := time.Now()
 	Logger.log.Debugf("SHARD %+v | Begin update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash().String())
@@ -770,27 +770,12 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 	}
 
 	tempCommittees, _ := incognitokey.CommitteeKeyListToString(committees)
-	env := committeestate.
-		NewShardEnvBuilder().
-		BuildBeaconHeight(shardBestState.BeaconHeight).
-		BuildEpoch(blockchain.GetEpochByHeight(shardBestState.BeaconHeight)).
-		BuildEpochBreakPointSwapNewKey(config.Param().ConsensusParam.EpochBreakPointSwapNewKey).
-		BuildBeaconInstructions(beaconInstructions).
-		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
-		BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
-		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
-		BuildOffset(config.Param().SwapCommitteeParam.Offset).
-		BuildShardBlockHash(shardBestState.BestBlockHash).
-		BuildShardHeight(shardBestState.ShardHeight).
-		BuildShardID(shardID).
-		BuildStakingTx(make(map[string]string)).
-		BuildSwapOffset(config.Param().SwapCommitteeParam.SwapOffset).
-		BuildTxs(shardBlock.Body.Transactions).
-		BuildShardInstructions(shardBlock.Body.Instructions).
-		BuildCommitteesFromBlock(shardBlock.Header.CommitteeFromBlock).
-		BuildCommitteesFromBeaconView(tempCommittees).
-		BuildShardHeight(shardBlock.Header.Height).
-		Build()
+	env := shardBestState.NewShardCommitteeStateEnvironmentWithValue(
+		shardBlock,
+		blockchain,
+		beaconInstructions,
+		tempCommittees,
+	)
 
 	hashes, committeeChange, err := shardBestState.shardCommitteeState.UpdateCommitteeState(env)
 	if err != nil {
@@ -821,30 +806,19 @@ func (shardBestState *ShardBestState) initShardBestState(
 	shardBestState.ConsensusAlgorithm = common.BlsConsensus
 	shardBestState.NumOfBlocksByProducers = make(map[string]uint64)
 
-	// Get all instructions from beacon here
-	instructions, _, err := blockchain.
+	// Get all beaconInstructions from beacon here
+	beaconInstructions, _, err := blockchain.
 		extractInstructionsFromBeacon([]*types.BeaconBlock{genesisBeaconBlock}, shardBestState.ShardID)
 	if err != nil {
 		return err
 	}
 
-	env := committeestate.
-		NewShardEnvBuilder().
-		BuildBeaconHeight(shardBestState.BeaconHeight).
-		BuildEpoch(shardBestState.Epoch).
-		BuildEpochBreakPointSwapNewKey(config.Param().ConsensusParam.EpochBreakPointSwapNewKey).
-		BuildBeaconInstructions(instructions).
-		BuildNumberOfFixedBlockValidators(config.Param().CommitteeSize.NumberOfFixedShardBlockValidator).
-		BuildMaxShardCommitteeSize(shardBestState.MaxShardCommitteeSize).
-		BuildMinShardCommitteeSize(shardBestState.MinShardCommitteeSize).
-		BuildOffset(config.Param().SwapCommitteeParam.Offset).
-		BuildShardBlockHash(shardBestState.BestBlockHash).
-		BuildShardHeight(shardBestState.ShardHeight).
-		BuildShardID(shardBestState.ShardID).
-		BuildStakingTx(make(map[string]string)).
-		BuildSwapOffset(config.Param().SwapCommitteeParam.SwapOffset).
-		BuildTxs(genesisShardBlock.Body.Transactions).
-		Build()
+	env := shardBestState.NewShardCommitteeStateEnvironmentWithValue(
+		genesisShardBlock,
+		blockchain,
+		beaconInstructions,
+		[]string{},
+	)
 
 	shardBestState.shardCommitteeState = committeestate.InitGenesisShardCommitteeState(
 		1,
