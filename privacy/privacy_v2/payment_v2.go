@@ -307,6 +307,11 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 // This is not a tight classifier between "privacy" and "non-privacy",
 // and should not be called before sanity check.
 func (proof *PaymentProofV2) IsPrivacy() bool {
+	for _, outCoin := range proof.GetOutputCoins() {
+		if !outCoin.IsEncrypted() {
+			return false
+		}
+	}
 	return true
 }
 
