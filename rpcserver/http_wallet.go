@@ -84,7 +84,7 @@ func (httpServer *HttpServer) handleAuthorizedSubmitKey(params interface{}, clos
 		}
 	}
 
-	isReset := true
+	isReset := false
 	if len(arrayParams) > 3 {
 		var ok bool
 		isReset, ok = arrayParams[3].(bool)
