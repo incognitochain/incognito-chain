@@ -307,7 +307,7 @@ func (proof *PaymentProofV2) SetBytes(proofbytes []byte) *errhandler.PrivacyErro
 // This is not a tight classifier between "privacy" and "non-privacy",
 // and should not be called before sanity check.
 func (proof *PaymentProofV2) IsPrivacy() bool {
-	return proof.GetOutputCoins()[0].IsEncrypted()
+	return true
 }
 
 // IsConfidentialAsset returns true if this is a Confidential Asset transaction (all coins in it must have asset tag field).
