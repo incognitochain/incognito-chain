@@ -34,7 +34,7 @@ type BeaconCommitteeState interface {
 		[][]string,
 		error)
 	Upgrade(*BeaconCommitteeStateEnvironment) BeaconCommitteeState
-	Hash() (*BeaconCommitteeStateHash, error)
+	Hash(*CommitteeChange) (*BeaconCommitteeStateHash, error)
 }
 
 type AssignInstructionsGenerator interface {

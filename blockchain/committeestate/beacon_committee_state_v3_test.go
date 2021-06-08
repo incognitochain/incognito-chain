@@ -1507,7 +1507,8 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 							key2: *txHash,
 							key3: *txHash,
 						},
-						mu: mutex,
+						hashes: NewBeaconCommitteeStateHash(),
+						mu:     mutex,
 					},
 					shardCommonPool: []string{
 						key, key0, key2, key3,
@@ -1572,7 +1573,8 @@ func TestBeaconCommitteeStateV3_clone(t *testing.T) {
 							key2: *txHash,
 							key3: *txHash,
 						},
-						mu: mutex,
+						hashes: NewBeaconCommitteeStateHash(),
+						mu:     mutex,
 					},
 					shardCommonPool: []string{
 						key, key0, key2, key3,

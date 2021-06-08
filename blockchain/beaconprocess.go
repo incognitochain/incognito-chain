@@ -474,6 +474,11 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	if !hashes.AutoStakeHash.IsEqual(&beaconBlock.Header.AutoStakingRoot) {
 		return NewBlockChainError(AutoStakingRootHashError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))
 	}
+
+	if !hashes.ShardSyncValidatorsHash.IsEqual(&beaconBlock.Header.ShardSyncValidatorRoot) {
+		return NewBlockChainError(ShardSyncValidatorHashError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardSyncValidatorRoot, hashes.ShardSyncValidatorsHash))
+	}
+
 	beaconVerifyPostProcessingTimer.UpdateSince(startTimeVerifyPostProcessingBeaconBlock)
 	return nil
 }

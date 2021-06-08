@@ -47,6 +47,12 @@ func (b *BeaconCommitteeStateV3) Version() int {
 	return DCS_VERSION
 }
 
+//shallowCopy maintain dst mutex value
+func (b *BeaconCommitteeStateV3) shallowCopy(newB *BeaconCommitteeStateV3) {
+	newB.beaconCommitteeStateSlashingBase = b.beaconCommitteeStateSlashingBase
+	newB.syncPool = b.syncPool
+}
+
 func (b *BeaconCommitteeStateV3) Clone() BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -74,31 +80,29 @@ func (b BeaconCommitteeStateV3) GetSyncingValidators() map[byte][]incognitokey.C
 	return res
 }
 
-func (b BeaconCommitteeStateV3) Hash() (*BeaconCommitteeStateHash, error) {
+func (b BeaconCommitteeStateV3) Hash(committeeChange *CommitteeChange) (*BeaconCommitteeStateHash, error) {
 	if b.isEmpty() {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
 	}
 
-	hashes, err := b.beaconCommitteeStateSlashingBase.Hash()
+	hashes, err := b.beaconCommitteeStateSlashingBase.Hash(committeeChange)
 	if err != nil {
 		return nil, err
 	}
 
-	tempShardCandidateHash, err := common.GenerateHashFromStringArray(b.shardCommonPool)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	var tempSyncPoolHash common.Hash
+	if !isNilOrShardCandidateHash(b.hashes) &&
+		len(committeeChange.SyncingPoolAdded) == 0 &&
+		len(committeeChange.SyncingPoolRemoved) == 0 &&
+		len(committeeChange.FinishedSyncValidators) == 0 {
+		tempSyncPoolHash = b.hashes.ShardSyncValidatorsHash
+	} else {
+		tempSyncPoolHash, err = common.GenerateHashFromMapByteString(b.syncPool)
+		if err != nil {
+			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+		}
 	}
-	hashes.ShardCandidateHash = tempShardCandidateHash
 
-	syncPool := make(map[byte][]string)
-	for shardID, keys := range b.syncPool {
-		syncPool[shardID] = keys
-	}
-
-	tempSyncPoolHash, err := common.GenerateHashFromMapByteString(syncPool)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
 	hashes.ShardSyncValidatorsHash = tempSyncPoolHash
 
 	return hashes, nil
@@ -137,6 +141,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 	}
 
 	b.addData(env)
+	b.setHashes(env.PreviousBlockHashes)
 
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
@@ -199,7 +204,7 @@ func (b *BeaconCommitteeStateV3) UpdateCommitteeState(env *BeaconCommitteeStateE
 		}
 	}
 
-	hashes, err := b.Hash()
+	hashes, err := b.Hash(committeeChange)
 	if err != nil {
 		return hashes, committeeChange, incurredInstructions, err
 	}

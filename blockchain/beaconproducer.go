@@ -131,6 +131,7 @@ func (blockchain *BlockChain) NewBlockBeacon(
 		hashes.ShardCandidateHash,
 		hashes.ShardCommitteeAndValidatorHash,
 		hashes.AutoStakeHash,
+		hashes.ShardSyncValidatorsHash,
 	)
 
 	return newBeaconBlock, nil

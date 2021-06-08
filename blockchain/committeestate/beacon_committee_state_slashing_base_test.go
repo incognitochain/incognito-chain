@@ -63,7 +63,8 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 						key:  *hash,
 						key6: *hash6,
 					},
-					mu: mutex,
+					hashes: NewBeaconCommitteeStateHash(),
+					mu:     mutex,
 				},
 				numberOfAssignedCandidates: 1,
 				shardCommonPool: []string{
@@ -96,7 +97,8 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 						key:  *hash,
 						key6: *hash6,
 					},
-					mu: mutex,
+					hashes: NewBeaconCommitteeStateHash(),
+					mu:     mutex,
 				},
 				numberOfAssignedCandidates: 1,
 				shardCommonPool: []string{

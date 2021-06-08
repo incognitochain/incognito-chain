@@ -64,6 +64,7 @@ func NewBeaconCommitteeStateHash() *BeaconCommitteeStateHash {
 		ShardCandidateHash:              common.Hash{},
 		ShardCommitteeAndValidatorHash:  common.Hash{},
 		AutoStakeHash:                   common.Hash{},
+		ShardSyncValidatorsHash:         common.Hash{},
 	}
 }
 
@@ -112,6 +113,16 @@ func isNilOrAutoStakeHash(h *BeaconCommitteeStateHash) bool {
 		return true
 	}
 	if h.AutoStakeHash.IsEqual(&common.Hash{}) {
+		return true
+	}
+	return false
+}
+
+func isNilOrShardSyncValidatorsHash(h *BeaconCommitteeStateHash) bool {
+	if h == nil {
+		return true
+	}
+	if h.ShardSyncValidatorsHash.IsEqual(&common.Hash{}) {
 		return true
 	}
 	return false

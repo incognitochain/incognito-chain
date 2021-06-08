@@ -655,6 +655,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironmentWithVal
 			ShardCandidateHash:              beaconBestState.BestBlock.Header.ShardCandidateRoot,
 			ShardCommitteeAndValidatorHash:  beaconBestState.BestBlock.Header.ShardCommitteeAndValidatorRoot,
 			AutoStakeHash:                   beaconBestState.BestBlock.Header.AutoStakingRoot,
+			ShardSyncValidatorsHash:         beaconBestState.BestBlock.Header.ShardSyncValidatorRoot,
 		},
 	}
 }

@@ -56,14 +56,7 @@ func NewBeaconCommitteeStateV2WithValue(
 
 //shallowCopy maintain dst mutex value
 func (b *BeaconCommitteeStateV2) shallowCopy(newB *BeaconCommitteeStateV2) {
-	newB.beaconCommittee = b.beaconCommittee
-	newB.shardCommittee = b.shardCommittee
-	newB.shardSubstitute = b.shardSubstitute
-	newB.shardCommonPool = b.shardCommonPool
-	newB.numberOfAssignedCandidates = b.numberOfAssignedCandidates
-	newB.autoStake = b.autoStake
-	newB.rewardReceiver = b.rewardReceiver
-	newB.stakingTx = b.stakingTx
+	newB.beaconCommitteeStateSlashingBase = b.beaconCommitteeStateSlashingBase
 }
 
 //Version :
@@ -88,7 +81,6 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 	committeeChange := NewCommitteeChange()
 	b.mu.Lock()
 	defer b.mu.Unlock()
-
 	// snapshot shard common pool in beacon random time
 	if env.IsBeaconRandomTime {
 		b.numberOfAssignedCandidates = SnapshotShardCommonPoolV2(
@@ -102,7 +94,10 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 
 		Logger.log.Infof("Block %+v, Number of Snapshot to Assign Candidate %+v", env.BeaconHeight, b.numberOfAssignedCandidates)
 	}
+
 	b.addData(env)
+	b.setHashes(env.PreviousBlockHashes)
+
 	for _, inst := range env.BeaconInstructions {
 		if len(inst) == 0 {
 			continue
@@ -157,7 +152,7 @@ func (b *BeaconCommitteeStateV2) UpdateCommitteeState(env *BeaconCommitteeStateE
 		}
 	}
 
-	hashes, err := b.Hash()
+	hashes, err := b.Hash(committeeChange)
 	if err != nil {
 		return hashes, committeeChange, incurredInstructions, err
 	}
