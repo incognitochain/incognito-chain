@@ -590,6 +590,11 @@ func (blockchain *BlockChain) RestoreShardViews(shardID byte) error {
 		if err != nil {
 			panic(err)
 		}
+		if v.BeaconHeight > config.Param().ConsensusParam.StakingFlowV3Height {
+			if err := v.checkAndUpgradeStakingFlowV3Config(); err != nil {
+				return err
+			}
+		}
 		if !blockchain.ShardChain[shardID].multiView.AddView(v) {
 			panic("Restart shard views fail")
 		}

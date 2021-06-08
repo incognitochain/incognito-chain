@@ -794,7 +794,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 
 	hashes, committeeChange, err := shardBestState.shardCommitteeState.UpdateCommitteeState(env)
 	if err != nil {
-		return nil, nil, nil, NewBlockChainError(UpdateShardCommitteeStateError, err)
+		return nil, nil, nil, NewBlockChainError(UpgradeShardCommitteeStateError, err)
 	}
 	shardUpdateBestStateTimer.UpdateSince(startTimeUpdateShardBestState)
 	Logger.log.Debugf("SHARD %+v | Finish update Beststate with new Block with height %+v at hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, shardBlock.Hash())
@@ -851,6 +851,12 @@ func (shardBestState *ShardBestState) initShardBestState(
 		config.Param().ConsensusParam.StakingFlowV2Height,
 		config.Param().ConsensusParam.StakingFlowV3Height,
 		env)
+
+	if config.Param().ConsensusParam.StakingFlowV3Height == shardBestState.BeaconHeight {
+		if err := shardBestState.checkAndUpgradeStakingFlowV3Config(); err != nil {
+			return err
+		}
+	}
 
 	//statedb===========================START
 	dbAccessWarper := statedb.NewDatabaseAccessWarper(db)

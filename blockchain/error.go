@@ -180,8 +180,8 @@ const (
 	GetShardBlockHeightByHashError
 	GetShardBlockByHashError
 	ResponsedTransactionFromBeaconInstructionsError
-	UpdateBeaconCommitteeStateError
-	UpdateShardCommitteeStateError
+	UpgradeBeaconCommitteeStateError
+	UpgradeShardCommitteeStateError
 	BuildIncurredInstructionError
 	ReturnStakingInstructionHandlerError
 	CountMissingSignatureError
@@ -364,8 +364,8 @@ var ErrCodeMessage = map[int]struct {
 	GetListOutputCoinsByKeysetError:                   {-2000, "Get List Output Coins By Keyset Error"},
 	GetTotalLockedCollateralError:                     {-3000, "Get Total Locked Collateral Error"},
 	ResponsedTransactionFromBeaconInstructionsError:   {-3100, "Build Transaction Response From Beacon Instructions Error"},
-	UpdateBeaconCommitteeStateError:                   {-4000, "Update Beacon Committee State Error"},
-	UpdateShardCommitteeStateError:                    {-4001, "Update Shard Committee State Error"},
+	UpgradeBeaconCommitteeStateError:                  {-4000, "Upgrade Beacon Committee State Error"},
+	UpgradeShardCommitteeStateError:                   {-4001, "Upgrade Shard Committee State Error"},
 }
 
 type BlockChainError struct {

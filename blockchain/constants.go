@@ -26,6 +26,7 @@ const (
 	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
 	Duration                      = 1000000
 	MaxSubsetCommittees           = 2
+	SFV3_MinShardCommitteeSize    = 8
 )
 
 // burning addresses

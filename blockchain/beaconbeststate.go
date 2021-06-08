@@ -37,26 +37,25 @@ type BeaconRootHash struct {
 }
 
 type BeaconBestState struct {
-	BestBlockHash          common.Hash          `json:"BestBlockHash"`         // The hash of the block.
-	PreviousBestBlockHash  common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
-	BestBlock              types.BeaconBlock    `json:"BestBlock"`             // The block.
-	BestShardHash          map[byte]common.Hash `json:"BestShardHash"`
-	BestShardHeight        map[byte]uint64      `json:"BestShardHeight"`
-	Epoch                  uint64               `json:"Epoch"`
-	BeaconHeight           uint64               `json:"BeaconHeight"`
-	BeaconProposerIndex    int                  `json:"BeaconProposerIndex"`
-	CurrentRandomNumber    int64                `json:"CurrentRandomNumber"`
-	CurrentRandomTimeStamp int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
-	IsGetRandomNumber      bool                 `json:"IsGetRandomNumber"`
-	Params                 map[string]string    `json:"Params,omitempty"`
-	MaxBeaconCommitteeSize int                  `json:"MaxBeaconCommitteeSize"`
-	MinBeaconCommitteeSize int                  `json:"MinBeaconCommitteeSize"`
-	MaxShardCommitteeSize  int                  `json:"MaxShardCommitteeSize"`
-	//TODO: @hung update min shard committee size of beacon state and shard state simultaneously
-	MinShardCommitteeSize   int             `json:"MinShardCommitteeSize"`
-	ActiveShards            int             `json:"ActiveShards"`
-	ConsensusAlgorithm      string          `json:"ConsensusAlgorithm"`
-	ShardConsensusAlgorithm map[byte]string `json:"ShardConsensusAlgorithm"`
+	BestBlockHash           common.Hash          `json:"BestBlockHash"`         // The hash of the block.
+	PreviousBestBlockHash   common.Hash          `json:"PreviousBestBlockHash"` // The hash of the block.
+	BestBlock               types.BeaconBlock    `json:"BestBlock"`             // The block.
+	BestShardHash           map[byte]common.Hash `json:"BestShardHash"`
+	BestShardHeight         map[byte]uint64      `json:"BestShardHeight"`
+	Epoch                   uint64               `json:"Epoch"`
+	BeaconHeight            uint64               `json:"BeaconHeight"`
+	BeaconProposerIndex     int                  `json:"BeaconProposerIndex"`
+	CurrentRandomNumber     int64                `json:"CurrentRandomNumber"`
+	CurrentRandomTimeStamp  int64                `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
+	IsGetRandomNumber       bool                 `json:"IsGetRandomNumber"`
+	Params                  map[string]string    `json:"Params,omitempty"`
+	MaxBeaconCommitteeSize  int                  `json:"MaxBeaconCommitteeSize"`
+	MinBeaconCommitteeSize  int                  `json:"MinBeaconCommitteeSize"`
+	MaxShardCommitteeSize   int                  `json:"MaxShardCommitteeSize"`
+	MinShardCommitteeSize   int                  `json:"MinShardCommitteeSize"`
+	ActiveShards            int                  `json:"ActiveShards"`
+	ConsensusAlgorithm      string               `json:"ConsensusAlgorithm"`
+	ShardConsensusAlgorithm map[byte]string      `json:"ShardConsensusAlgorithm"`
 	// key: public key of committee, value: payment address reward receiver
 	beaconCommitteeState    committeestate.BeaconCommitteeState
 	missingSignatureCounter signaturecounter.IMissingSignatureCounter
@@ -685,7 +684,7 @@ func (beaconBestState BeaconBestState) NewBeaconCommitteeStateEnvironment() *com
 	}
 }
 
-func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) {
+func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) error {
 	Logger.log.Infof("Init Beacon Committee State %+v", beaconBestState.BeaconHeight)
 	shardIDs := []int{statedb.BeaconChainID}
 	for i := 0; i < beaconBestState.ActiveShards; i++ {
@@ -763,7 +762,10 @@ func (beaconBestState *BeaconBestState) restoreCommitteeState(bc *BlockChain) {
 		swapRule, nextEpochShardCandidate, currentEpochShardCandidate,
 	)
 	beaconBestState.beaconCommitteeState = committeeState
-	beaconBestState.tryUpgradeCommitteeState()
+	if err := beaconBestState.tryUpgradeCommitteeState(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (beaconBestState *BeaconBestState) initMissingSignatureCounter(bc *BlockChain, beaconBlock *types.BeaconBlock) error {
@@ -815,25 +817,28 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 // tryUpgradeCommitteeState only allow
 // Upgrade to v2 if current version is 1 and beacon height == staking flow v2 height
 // Upgrade to v3 if current version is 2 and beacon height == staking flow v3 height
-func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() {
+func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() error {
 	if beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV3Height &&
 		beaconBestState.BeaconHeight != config.Param().ConsensusParam.StakingFlowV2Height {
-		return
+		return nil
 	}
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
+		if err := beaconBestState.checkStakingFlowV3Config(); err != nil {
+			return err
+		}
 		if beaconBestState.beaconCommitteeState.Version() != committeestate.SLASHING_VERSION {
-			return
+			return nil
 		}
 		if beaconBestState.beaconCommitteeState.Version() == committeestate.DCS_VERSION {
-			return
+			return nil
 		}
 	}
 	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
 		if beaconBestState.beaconCommitteeState.Version() != committeestate.SELF_SWAP_SHARD_VERSION {
-			return
+			return nil
 		}
 		if beaconBestState.beaconCommitteeState.Version() == committeestate.SLASHING_VERSION {
-			return
+			return nil
 		}
 	}
 	env := committeestate.NewBeaconCommitteeStateEnvironmentForUpgrading(
@@ -842,9 +847,59 @@ func (beaconBestState *BeaconBestState) tryUpgradeCommitteeState() {
 		beaconBestState.BestBlockHash,
 	)
 
+	if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
+		if err := beaconBestState.upgradeStakingFlowV3Config(); err != nil {
+			return err
+		}
+	}
+
 	committeeState := beaconBestState.beaconCommitteeState.Upgrade(env)
 	beaconBestState.beaconCommitteeState = committeeState
 
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) checkAndUpgradeStakingFlowV3Config() error {
+
+	if err := beaconBestState.checkStakingFlowV3Config(); err != nil {
+		return NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
+	}
+
+	if err := beaconBestState.upgradeStakingFlowV3Config(); err != nil {
+		return NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
+	}
+
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) checkStakingFlowV3Config() error {
+
+	for shardID, shardCommittee := range beaconBestState.GetShardCommittee() {
+		shardCommitteeSize := len(shardCommittee)
+		if shardCommitteeSize < SFV3_MinShardCommitteeSize {
+			return fmt.Errorf("shard %+v | current committee length %+v can not upgrade to staking flow v3, "+
+				"minimum required committee size is 8", shardID, shardCommitteeSize)
+		}
+	}
+
+	return nil
+}
+
+func (beaconBestState *BeaconBestState) upgradeStakingFlowV3Config() error {
+
+	if beaconBestState.MinShardCommitteeSize < SFV3_MinShardCommitteeSize {
+		beaconBestState.MinShardCommitteeSize = SFV3_MinShardCommitteeSize
+		Logger.log.Infof("BEACON | Set beaconBestState.MinShardCommitteeSize from %+v to %+v ",
+			beaconBestState.MinShardCommitteeSize, SFV3_MinShardCommitteeSize)
+	}
+
+	if beaconBestState.MaxShardCommitteeSize < SFV3_MinShardCommitteeSize {
+		beaconBestState.MaxShardCommitteeSize = SFV3_MinShardCommitteeSize
+		Logger.log.Infof("BEACON | Set beaconBestState.MaxShardCommitteeSize from %+v to %+v ",
+			beaconBestState.MaxShardCommitteeSize, SFV3_MinShardCommitteeSize)
+	}
+
+	return nil
 }
 
 func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePublicKeys []string, shardID byte) bool {

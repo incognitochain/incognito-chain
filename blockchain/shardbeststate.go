@@ -433,6 +433,9 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 		return nil
 	}
 	if shardBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
+		if err := shardBestState.checkStakingFlowV3Config(); err != nil {
+			return err
+		}
 		if shardBestState.CommitteeStateVersion() != committeestate.SLASHING_VERSION {
 			return nil
 		}
@@ -463,6 +466,9 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 	}
 
 	if shardBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV3Height {
+		if err := shardBestState.upgradeStakingFlowV3Config(); err != nil {
+			return err
+		}
 		shardBestState.shardCommitteeState = committeestate.NewShardCommitteeStateV3WithValue(
 			committees,
 			committeeFromBlock,
@@ -470,6 +476,47 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 	}
 
 	Logger.log.Infof("SHARDID %+v | Shard Height %+v, UPGRADE Shard Committee State from V1 to V2", shardBestState.ShardID, shardBestState.ShardHeight)
+	return nil
+}
+
+func (ShardBestState *ShardBestState) checkAndUpgradeStakingFlowV3Config() error {
+
+	if err := ShardBestState.checkStakingFlowV3Config(); err != nil {
+		return NewBlockChainError(UpgradeShardCommitteeStateError, err)
+	}
+
+	if err := ShardBestState.upgradeStakingFlowV3Config(); err != nil {
+		return NewBlockChainError(UpgradeShardCommitteeStateError, err)
+	}
+
+	return nil
+}
+
+func (shardBestState *ShardBestState) checkStakingFlowV3Config() error {
+
+	shardCommitteeSize := len(shardBestState.GetShardCommittee())
+	if shardCommitteeSize < SFV3_MinShardCommitteeSize {
+		return fmt.Errorf("shard %+v | current committee length %+v can not upgrade to staking flow v3, "+
+			"minimum required committee size is 8", shardBestState.ShardID, shardCommitteeSize)
+	}
+
+	return nil
+}
+
+func (shardBestState *ShardBestState) upgradeStakingFlowV3Config() error {
+
+	if shardBestState.MinShardCommitteeSize < SFV3_MinShardCommitteeSize {
+		shardBestState.MinShardCommitteeSize = SFV3_MinShardCommitteeSize
+		Logger.log.Infof("SHARD %+v | Set shardBestState.MinShardCommitteeSize from %+v to %+v ",
+			shardBestState.ShardID, shardBestState.MinShardCommitteeSize, SFV3_MinShardCommitteeSize)
+	}
+
+	if shardBestState.MaxShardCommitteeSize < SFV3_MinShardCommitteeSize {
+		shardBestState.MaxShardCommitteeSize = SFV3_MinShardCommitteeSize
+		Logger.log.Infof("SHARD %+v | Set shardBestState.MaxShardCommitteeSize from %+v to %+v ",
+			shardBestState.ShardID, shardBestState.MaxShardCommitteeSize, SFV3_MinShardCommitteeSize)
+	}
+
 	return nil
 }
 

@@ -557,7 +557,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 
 	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
 	if err != nil {
-		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+		return nil, nil, nil, nil, NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
 	}
 	Logger.log.Debugf("UpdateCommitteeState | hashes %+v", hashes)
 
@@ -570,7 +570,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 	err = beaconBestState.countMissingSignature(blockchain, beaconBlock.Body.ShardState)
 	if err != nil {
-		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+		return nil, nil, nil, nil, NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
 	}
 
 	beaconBestState.removeFinishedSyncValidators(committeeChange)
@@ -635,8 +635,15 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		config.Param().ConsensusParam.StakingFlowV3Height,
 		beaconCommitteeStateEnv)
 
+	if config.Param().ConsensusParam.StakingFlowV3Height == beaconBestState.BeaconHeight {
+		if err := beaconBestState.checkAndUpgradeStakingFlowV3Config(); err != nil {
+			return err
+		}
+	}
+
 	beaconBestState.finishSyncManager = finishsync2.NewFinishManager()
 	beaconBestState.Epoch = 1
+
 	return nil
 }
 
@@ -954,7 +961,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	newBestState.tryUpgradeCommitteeState()
+	err2 := newBestState.tryUpgradeCommitteeState()
+	if err2 != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err2)
+	}
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
 	blockchain.BeaconChain.multiView.AddView(newBestState)

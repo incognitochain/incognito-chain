@@ -1,5 +1,7 @@
 package blockchain
 
+import "github.com/incognitochain/incognito-chain/config"
+
 //RestoreBeaconViewStateFromHash ...
 func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchain *BlockChain, includeCommittee bool) error {
 	err := beaconBestState.InitStateRootHash(blockchain)
@@ -18,7 +20,16 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 	beaconBestState.PreviousBestBlockHash = block.GetPrevHash()
 
 	if includeCommittee {
-		beaconBestState.restoreCommitteeState(blockchain)
+		err := beaconBestState.restoreCommitteeState(blockchain)
+		if err != nil {
+			return err
+		}
+	}
+
+	if beaconBestState.BeaconHeight > config.Param().ConsensusParam.StakingFlowV3Height {
+		if err := beaconBestState.checkAndUpgradeStakingFlowV3Config(); err != nil {
+			return err
+		}
 	}
 
 	return nil
