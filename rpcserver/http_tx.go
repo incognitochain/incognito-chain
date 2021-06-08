@@ -58,7 +58,7 @@ func (httpServer *HttpServer) handleSendRawTransaction(params interface{}, close
 	httpServer.config.Server.OnTx(nil, txMsg.(*wire.MessageTx))
 	err2 := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	if err2 == nil {
-		Logger.log.Info("handleSendRawTransaction broadcast message to all successfully")
+		Logger.log.Infof("handleSendRawTransaction broadcast tx %v to shard %v successfully", txHash.String(), common.GetShardIDFromLastByte(LastBytePubKeySender))
 		if !httpServer.txService.BlockChain.UsingNewPool() {
 			httpServer.config.TxMemPool.MarkForwardedTransaction(*txHash)
 		}
@@ -723,7 +723,12 @@ func (httpServer *HttpServer) handleSendRawPrivacyCustomTokenTransaction(params 
 	err := httpServer.config.Server.PushMessageToShard(txMsg, common.GetShardIDFromLastByte(LastBytePubKeySender))
 	//Mark forwarded message
 	if err == nil {
-		httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
+		Logger.log.Infof("handleSendRawPrivacyCustomTokenTransaction broadcast tx %v to shard %v successfully", tx.Hash().String(), common.GetShardIDFromLastByte(LastBytePubKeySender))
+		if !httpServer.txService.BlockChain.UsingNewPool() {
+			httpServer.config.TxMemPool.MarkForwardedTransaction(*tx.Hash())
+		}
+	} else {
+		Logger.log.Errorf("handleSendRawPrivacyCustomTokenTransaction broadcast tx %v to shard %v with error %+v", tx.Hash().String(), common.GetShardIDFromLastByte(LastBytePubKeySender), err)
 	}
 	result := jsonresult.CreateTransactionTokenResult{
 		TxID:        tx.Hash().String(),
