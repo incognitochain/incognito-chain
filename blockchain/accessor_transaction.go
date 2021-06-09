@@ -401,11 +401,15 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 	otaBytes := txutils.OTAKeyToRaw(otaKey)
 	keyExists, processing := outcoinIndexer.HasOTAKey(otaBytes)
 	if keyExists && !isReset {
-		return fmt.Errorf("OTAKey %v has been submitted and status = %v", otaKey, processing)
+		return fmt.Errorf("OTAKey %x has been submitted and status = %v", otaBytes, processing)
 	}
 
+	Logger.log.Infof("[SubmitOTAKey] otaKey %x, keyExist %v, status %v, isReset %v\n", otaBytes, keyExists, processing, isReset)
+
+	pkb := otaKey.GetPublicSpend().ToBytesS()
+	shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
 	if outcoinIndexer.IsValidAccessToken(accessToken) {//if the token is authorized
-		if outcoinIndexer.IsQueueFull() {
+		if outcoinIndexer.IsQueueFull(shardID) {
 			return fmt.Errorf("the current authorized queue is full, please check back later")
 		}
 
@@ -413,8 +417,6 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 			return fmt.Errorf("enhanced caching not supported by this node configuration")
 		}
 
-		pkb := otaKey.GetPublicSpend().ToBytesS()
-		shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
 		bss := blockchain.GetBestStateShard(shardID)
 		transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
@@ -423,7 +425,7 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 			heightToSyncFrom = lowestHeightForV2
 		}
 
-		idxParams := txutils.IndexParams{
+		idxParams := txutils.IndexParam{
 			FromHeight: heightToSyncFrom,
 			ToHeight:   bss.ShardHeight,
 			OTAKey:     otaKey,
@@ -435,7 +437,7 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 		outcoinIndexer.IdxChan <- idxParams
 	}
 
-	Logger.log.Infof("OTA Key Submission %v", otaKey)
+	Logger.log.Infof("OTA Key Submission %x", otaKey)
 	return outcoinIndexer.AddOTAKey(otaKey)
 }
 

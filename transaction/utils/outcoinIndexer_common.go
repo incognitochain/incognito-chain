@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -9,8 +8,10 @@ import (
 )
 
 const (
-	NumWorkers = 100
+	NumWorkers         = 100
 	DefaultAccessToken = "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11"
+	BatchWaitingTime   = float64(15)
+	IndexingBatchSize  = 10
 )
 
 type JobStatus struct {
@@ -18,7 +19,7 @@ type JobStatus struct {
 	err    error
 }
 
-type IndexParams struct {
+type IndexParam struct {
 	FromHeight uint64
 	ToHeight   uint64
 	OTAKey     privacy.OTAKey
@@ -156,7 +157,7 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, 
 	return outCoins, nil
 }
 
-func QueryBatchDbCoinVer2(otaKeys []privacy.OTAKey, shardID byte, tokenID *common.Hash, shardHeight, destHeight uint64, db *statedb.StateDB, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
+func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID *common.Hash, shardHeight, destHeight uint64, db *statedb.StateDB, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
 	// avoid overlap; unless lower height is 0
 	start := shardHeight + 1
 	if shardHeight == 0 {
@@ -164,8 +165,8 @@ func QueryBatchDbCoinVer2(otaKeys []privacy.OTAKey, shardID byte, tokenID *commo
 	}
 
 	res := make(map[string][]privacy.Coin)
-	for _, otaKey := range otaKeys {
-		res[fmt.Sprintf("%x", OTAKeyToRaw(otaKey))] = make([]privacy.Coin, 0)
+	for otaStr, _ := range idxParams {
+		res[otaStr] = make([]privacy.Coin, 0)
 	}
 
 	for height := start; height <= destHeight; height += 1 {
@@ -181,7 +182,12 @@ func QueryBatchDbCoinVer2(otaKeys []privacy.OTAKey, shardID byte, tokenID *commo
 				Logger.Log.Error("Get outcoins ver 2 from bytes", err)
 				return nil, err
 			}
-			for _, otaKey := range otaKeys {
+			for otaStr, idxParam := range idxParams {
+				if height < idxParam.FromHeight || height > idxParam.ToHeight {
+					continue
+				}
+
+				otaKey := idxParam.OTAKey
 				params := make(map[string]interface{})
 				params["otaKey"] = otaKey
 				params["db"] = db
@@ -194,7 +200,6 @@ func QueryBatchDbCoinVer2(otaKeys []privacy.OTAKey, shardID byte, tokenID *commo
 					}
 				}
 				if pass {
-					otaStr := fmt.Sprintf("%x", OTAKeyToRaw(otaKey))
 					res[otaStr] = append(res[otaStr], cv2)
 					break
 				}
@@ -203,4 +208,47 @@ func QueryBatchDbCoinVer2(otaKeys []privacy.OTAKey, shardID byte, tokenID *commo
 		}
 	}
 	return res, nil
+}
+
+// splitWorkers chooses the number of workers for each shard queue based on the current size.
+func (ci *CoinIndexer) splitWorkers(totalWorker int) map[byte]int {
+	res := make(map[byte]int)
+	for i := 0; i < common.MaxShardNumber; i++ {
+		res[byte(i)] = 0
+	}
+
+	numForEach := totalWorker/common.MaxShardNumber
+	if totalWorker == 0 {
+		return res
+	}
+
+	totalChosen := 0
+	remaining := totalWorker
+	for shard := 0; shard < common.MaxShardNumber; shard++ {
+		shardID := byte(shard)
+		tmpNumForShard := numForEach
+		if totalWorker > ci.queueSize {
+			tmpNumForShard = len(ci.idxQueue[shardID])
+		} else if numForEach <= len(ci.idxQueue[shardID]) {
+			tmpNumForShard = numForEach
+		} else {
+			tmpNumForShard = len(ci.idxQueue[shardID])
+		}
+
+		res[shardID] = tmpNumForShard
+		remaining -= tmpNumForShard
+		totalChosen += tmpNumForShard
+	}
+
+	for remaining > 0 && totalWorker < ci.queueSize && totalChosen < ci.queueSize {
+		r := common.RandInt() % common.MaxShardNumber
+		shardID := byte(r)
+		if len(ci.idxQueue[shardID]) > res[shardID] {
+			res[shardID]++
+			remaining--
+			totalChosen++
+		}
+	}
+
+	return res
 }
