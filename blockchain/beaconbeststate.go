@@ -903,7 +903,7 @@ func (beaconBestState *BeaconBestState) upgradeStakingFlowV3Config() error {
 	return nil
 }
 
-func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(validatorFromUserKeys []string, shardID byte) []string {
+func (beaconBestState *BeaconBestState) ExtractFinishSyncingValidators(validatorFromUserKeys []string, shardID byte) []string {
 	if len(validatorFromUserKeys) == 0 {
 		return []string{}
 	}

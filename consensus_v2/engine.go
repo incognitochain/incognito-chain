@@ -49,7 +49,7 @@ func (s *Engine) GetCurrentValidators() []*consensus.Validator {
 
 func (s *Engine) SyncingValidatorsByShardID(shardID int) []string {
 	res := []string{}
-	for _, validator := range s.syncingValidators[shardID] {
+	for _, validator := range s.validators {
 		res = append(res, validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus))
 	}
 	return res
@@ -74,8 +74,7 @@ func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensu
 			if validator.State.ChainID != -2 {
 				_, ok := chainValidator[validator.State.ChainID]
 				if ok {
-					if validator.State.Role == common.CommitteeRole ||
-						validator.State.Role == common.SyncingRole {
+					if validator.State.Role == common.CommitteeRole {
 						chainValidator[validator.State.ChainID] = validator
 						pubkey = validator.MiningKey.GetPublicKeyBase58()
 						role = validator.State.Role
@@ -139,23 +138,9 @@ func (engine *Engine) WatchCommitteeChange() {
 			validator.State = consensus.MiningState{role, common.BeaconChainKey, common.BeaconChainID}
 		} else if chainID > common.BeaconChainID {
 			validator.State = consensus.MiningState{role, common.ShardChainKey, chainID}
-			//TODO: @hung why pending role but still add to sync validators list
-			if role == common.PendingRole {
-				if len(engine.syncingValidators[chainID]) != 0 {
-					engine.syncingValidators[chainID] = append(
-						engine.syncingValidators[chainID][:engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]],
-						engine.syncingValidators[chainID][engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]+1:]...)
-				}
-			}
-			if role == common.SyncingRole {
-				if _, ok := engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]; !ok {
-					engine.syncingValidators[chainID] = append(engine.syncingValidators[chainID], *validator)
-					engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()] = len(engine.syncingValidators[chainID]) - 1
-				}
-			}
 		} else {
 			if role != "" {
-				validator.State = consensus.MiningState{role, "shard", -2}
+				validator.State = consensus.MiningState{role, common.ShardChainKey, -2}
 			} else {
 				validator.State = consensus.MiningState{role, "", -2}
 			}

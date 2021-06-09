@@ -238,7 +238,7 @@ func (s *ShardSyncProcess) trySendFinishSyncMessage() {
 		if s.finalBeaconBlockHeight < committeeView.BeaconHeight {
 			s.finalBeaconBlockHeight = committeeView.BeaconHeight
 			validatorFromUserKeys := s.consensus.SyncingValidatorsByShardID(s.shardID)
-			finishedSyncValidator := committeeView.ShouldSendFinishSyncMessage(validatorFromUserKeys, byte(s.shardID))
+			finishedSyncValidator := committeeView.ExtractFinishSyncingValidators(validatorFromUserKeys, byte(s.shardID))
 			msg := wire.NewMessageFinishSync(finishedSyncValidator, byte(s.shardID))
 			s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID)
 		}
