@@ -620,7 +620,9 @@ func (serverObj *Server) Stop() error {
 	}
 
 	//Stop the output coin indexer
-	blockchain.GetCoinIndexer().Stop()
+	if blockchain.GetCoinIndexer() != nil {
+		blockchain.GetCoinIndexer().Stop()
+	}
 
 	// Signal the remaining goroutines to cQuit.
 	close(serverObj.cQuit)

@@ -26,7 +26,7 @@ type CoinIndexer struct {
 	db                  incdb.Database
 	accessTokens        map[string]bool
 	idxQueue            map[byte][]IndexParam
-	queueSize 			int
+	queueSize           int
 	IdxChan             chan IndexParam
 	statusChan          chan JobStatus
 	quitChan            chan bool
@@ -62,12 +62,12 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database) (*CoinIndexer, error
 	}
 
 	ci := &CoinIndexer{
-		numWorkers:     int(numWorkers),
-		sem:            sem,
-		mtx:            mtx,
-		ManagedOTAKeys: m,
-		db:             db,
-		accessTokens:   accessTokens,
+		numWorkers:          int(numWorkers),
+		sem:                 sem,
+		mtx:                 mtx,
+		ManagedOTAKeys:      m,
+		db:                  db,
+		accessTokens:        accessTokens,
 	}
 
 	return ci, nil
@@ -414,7 +414,6 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 
 		ci.sem.Release(1)
 
-
 		//Add output coins to maps
 		for otaStr, listOutputCoins := range mapOutputCoins {
 			listOutputCoins = append(listOutputCoins, currentOutputCoinsToken[otaStr]...)
@@ -574,7 +573,7 @@ func (ci *CoinIndexer) Start() {
 			return
 		default:
 			if numWorking < ci.numWorkers && ci.queueSize > 0 {
-				if time.Since(start).Seconds() < BatchWaitingTime {//wait for an amount of time for batching request
+				if time.Since(start).Seconds() < BatchWaitingTime { //wait for an amount of time for batching request
 					continue
 				}
 				remainingWorker := ci.numWorkers - numWorking
