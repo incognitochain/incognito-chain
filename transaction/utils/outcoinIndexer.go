@@ -564,7 +564,7 @@ func (ci *CoinIndexer) Start() {
 			ci.mtx.Lock()
 			ci.idxQueue[idxParams.ShardID] = append(ci.idxQueue[idxParams.ShardID], idxParams)
 			ci.queueSize++
-			ci.mtx.Lock()
+			ci.mtx.Unlock()
 
 		case <-ci.quitChan:
 			ci.mtx.Lock()
