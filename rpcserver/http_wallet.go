@@ -96,7 +96,7 @@ func (httpServer *HttpServer) handleAuthorizedSubmitKey(params interface{}, clos
 
 	result, err := httpServer.walletService.SubmitKey(key, accessToken, isReset, &syncFrom)
 	if err != nil {
-		return nil, err
+		return nil, rpcservice.NewRPCError(rpcservice.CacheQueueError, err)
 	}
 
 	return result, nil

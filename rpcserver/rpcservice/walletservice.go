@@ -66,7 +66,7 @@ func (walletService WalletService) SubmitKey(keyStr string, accessToken string, 
 
 	err = walletService.BlockChain.SubmitOTAKey(otaKey, accessToken, isReset, heightToSyncFrom)
 	if err != nil {
-		return struct{}{}, NewRPCError(UnexpectedError, err)
+		return struct{}{}, NewRPCError(CacheQueueError, err)
 	}
 
 	return result, nil
