@@ -933,7 +933,6 @@ func (blockchain *BlockChain) getShardCommitteeFromBeaconHash(
 ) (
 	[]incognitokey.CommitteePublicKey, error,
 ) {
-	Logger.log.Info("[dcs] hash:", hash.String())
 	tempCommitteeInfo, err := blockchain.getShardCommitteeForBlockProducing(hash, shardID)
 	if err != nil {
 		return []incognitokey.CommitteePublicKey{}, err

@@ -384,18 +384,19 @@ func InitShardCommitteeState(
 	shardID byte,
 	block *types.ShardBlock,
 	bc *BlockChain) committeestate.ShardCommitteeState {
-	if version == committeestate.SELF_SWAP_SHARD_VERSION || shardHeight == 1 {
-		shardCommittees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
+	var err error
+	committees := statedb.GetOneShardCommittee(consensusStateDB, shardID)
+	if version == committeestate.SELF_SWAP_SHARD_VERSION {
 		shardPendingValidators := statedb.GetOneShardSubstituteValidator(consensusStateDB, shardID)
-
-		shardCommitteeState := committeestate.NewShardCommitteeStateV1WithValue(shardCommittees, shardPendingValidators)
+		shardCommitteeState := committeestate.NewShardCommitteeStateV1WithValue(committees, shardPendingValidators)
 		return shardCommitteeState
 	}
-	//committees := []incognitokey.CommitteePublicKey{}
-	committees, err := bc.getShardCommitteeFromBeaconHash(block.Header.CommitteeFromBlock, shardID)
-	if err != nil {
-		Logger.log.Error(NewBlockChainError(InitShardStateError, err))
-		panic(err)
+	if shardHeight != 1 {
+		committees, err = bc.getShardCommitteeFromBeaconHash(block.Header.CommitteeFromBlock, shardID)
+		if err != nil {
+			Logger.log.Error(NewBlockChainError(InitShardStateError, err))
+			panic(err)
+		}
 	}
 	switch version {
 	case committeestate.SLASHING_VERSION:
