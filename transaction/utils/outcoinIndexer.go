@@ -434,7 +434,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		if err == nil {
 			err = ci.StoreIndexedOutputCoins(idxParam.OTAKey, allOutputCoins, shardID)
 			if err != nil {
-				Logger.Log.Errorf("[CoinIndexer] StoreIndexedOutCoins error: %v\n", err)
+				Logger.Log.Errorf("[CoinIndexer] StoreIndexedOutCoins for OTA key %x error: %v\n", vkb, err)
 
 				status := mapStatuses[otaStr]
 				status.err = err
@@ -442,9 +442,10 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 				delete(mapIdxParams, otaStr)
 				delete(mapStatuses, otaStr)
 				delete(mapOutputCoins, otaStr)
+				continue
 			}
 		} else {
-			Logger.Log.Errorf("[CoinIndexer] StoreIndexedOTAKey error: %v\n", err)
+			Logger.Log.Errorf("[CoinIndexer] StoreIndexedOTAKey %x, error: %v\n", vkb, err)
 
 			status := mapStatuses[otaStr]
 			status.err = err
@@ -452,10 +453,11 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 			delete(mapIdxParams, otaStr)
 			delete(mapStatuses, otaStr)
 			delete(mapOutputCoins, otaStr)
+			continue
 		}
 
 		ci.ManagedOTAKeys.Store(vkb, 2)
-		Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, timeElapsed: %v\n", vkb, time.Since(start).Seconds())
+		Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, found %v coins, timeElapsed: %v\n", vkb, time.Since(start).Seconds())
 
 		ci.statusChan <- mapStatuses[otaStr]
 		delete(mapIdxParams, otaStr)
