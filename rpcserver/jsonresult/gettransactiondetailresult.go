@@ -59,6 +59,12 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 	if blockHash != nil {
 		blockHashStr = blockHash.String()
 	}
+	var info string
+	if tx.GetInfo() == nil {
+		info = "null"
+	} else {
+		info = string(tx.GetInfo())
+	}
 	switch tx.GetType() {
 	case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType, common.TxConversionType:
 		{
@@ -97,7 +103,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				SigPubKey:   sigPubKeyStr,
 				RawSigPubKey: tx.GetSigPubKey(),
 				Sig:         base58.Base58Check{}.Encode(tx.GetSig(), 0x0),
-				Info:        string(tx.GetInfo()),
+				Info:        info,
 			}
 			if result.Proof != nil {
 				inputCoins := result.Proof.GetInputCoins()
@@ -137,7 +143,7 @@ func NewTransactionDetail(tx metadata.Transaction, blockHash *common.Hash, block
 				SigPubKey:                base58.Base58Check{}.Encode(txToken.GetTxBase().GetSigPubKey(), 0x0),
 				RawSigPubKey:             txToken.GetTxBase().GetSigPubKey(),
 				Sig:                      base58.Base58Check{}.Encode(txToken.GetTxBase().GetSig(), 0x0),
-				Info:                     string(tx.GetInfo()),
+				Info:                     info,
 				IsPrivacy:                tx.IsPrivacy(),
 				PrivacyCustomTokenSymbol: txTokenData.PropertySymbol,
 				PrivacyCustomTokenName:   txTokenData.PropertyName,
@@ -243,6 +249,18 @@ func OperationScalarPtrToBase58(scalar *operation.Scalar) string {
 	}
 }
 
+type CoinRPCV1 struct {
+	Version              uint8
+	PublicKey            string
+	Commitment           string
+	SNDerivator          string
+	KeyImage             string
+	Randomness           string
+	Value                uint64
+	Info                 string
+	CoinDetailsEncrypted string
+}
+
 func (c *CoinRPCV1) SetInputCoin(inputCoin coin.PlainCoin) CoinRPC {
 	coinv1 := inputCoin.(*coin.PlainCoinV1)
 
@@ -253,7 +271,7 @@ func (c *CoinRPCV1) SetInputCoin(inputCoin coin.PlainCoin) CoinRPC {
 	c.KeyImage = OperationPointPtrToBase58(coinv1.GetKeyImage())
 	c.Randomness = OperationScalarPtrToBase58(coinv1.GetRandomness())
 	c.Value = coinv1.GetValue()
-	c.Info = EncodeBase58Check(coinv1.GetInfo())
+	c.Info = EncodeBase58Check([]byte{})
 	return c
 }
 
@@ -267,13 +285,25 @@ func (c *CoinRPCV1) SetOutputCoin(inputCoin coin.Coin) CoinRPC {
 	c.KeyImage = OperationPointPtrToBase58(coinv1.GetKeyImage())
 	c.Randomness = OperationScalarPtrToBase58(coinv1.GetRandomness())
 	c.Value = coinv1.CoinDetails.GetValue()
-	c.Info = EncodeBase58Check(coinv1.GetInfo())
+	c.Info = EncodeBase58Check([]byte{})
 	if coinv1.CoinDetailsEncrypted != nil {
 		c.CoinDetailsEncrypted = EncodeBase58Check(coinv1.CoinDetailsEncrypted.Bytes())
 	} else {
 		c.CoinDetailsEncrypted = ""
 	}
 	return c
+}
+
+type CoinRPCV2 struct {
+	Version    uint8
+	Index      uint32
+	Info       string
+	PublicKey  string
+	Commitment string
+	KeyImage   string
+	TxRandom   string
+	Value 		 string
+	Randomness   string
 }
 
 func (c *CoinRPCV2) SetInputCoin(inputCoin coin.PlainCoin) CoinRPC {
@@ -291,34 +321,6 @@ func (c *CoinRPCV2) SetOutputCoin(outputCoin coin.Coin) CoinRPC {
 	c.TxRandom = EncodeBase58Check(coinv2.GetTxRandom().Bytes())
 	c.Value = strconv.FormatUint(coinv2.GetValue(), 10)
 	c.Randomness = OperationScalarPtrToBase58(coinv2.GetRandomness())
-	//txRandomPoint, index, _ := coinv2.GetTxRandomDetail()
-	//c.TxRandom = OperationPointPtrToBase58(txRandomPoint)
-	//c.Index = index
 
 	return c
-}
-
-type CoinRPCV1 struct {
-	Version              uint8
-	PublicKey            string
-	Commitment           string
-	SNDerivator          string
-	KeyImage             string
-	Randomness           string
-	Value                uint64
-	Info                 string
-	CoinDetailsEncrypted string
-}
-
-type CoinRPCV2 struct {
-	Version    uint8
-	Index      uint32
-	Info       string
-	PublicKey  string
-	Commitment string
-	KeyImage   string
-	TxRandom   string
-
-	Value 		 string
-	Randomness   string
 }
