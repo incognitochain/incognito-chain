@@ -261,10 +261,16 @@ func (actorV2 *actorV2) processIfBlockGetEnoughVote(
 	v = actorV2.validateVotes(v)
 
 	if !v.isCommitted {
-		if v.validVotes > 2*len(v.signingCommittes)/3 {
+		if v.validVotes > 2*len(v.signingCommittees)/3 {
 			v.isCommitted = true
 			actorV2.logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
-			err := actorV2.processWithEnoughVotes(v)
+			var err error
+			if actorV2.chain.IsBeaconChain() {
+				err = actorV2.processWithEnoughVotesBeaconChain(v)
+
+			} else {
+				err = actorV2.processWithEnoughVotesShardChain(v)
+			}
 			if err != nil {
 				actorV2.logger.Error(err)
 				return
@@ -279,7 +285,7 @@ func (actorV2 *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
 
 	committees := make(map[string]int)
 	if len(v.votes) != 0 {
-		for i, v := range v.signingCommittes {
+		for i, v := range v.signingCommittees {
 			committees[v.GetMiningKeyBase58(common.BlsConsensus)] = i
 		}
 	}
@@ -288,7 +294,7 @@ func (actorV2 *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
 		dsaKey := []byte{}
 		if vote.IsValid == 0 {
 			if value, ok := committees[vote.Validator]; ok {
-				dsaKey = v.signingCommittes[value].MiningPubKey[common.BridgeConsensus]
+				dsaKey = v.signingCommittees[value].MiningPubKey[common.BridgeConsensus]
 			} else {
 				actorV2.logger.Error("Receive vote from nonCommittee member")
 				continue
@@ -324,7 +330,7 @@ func (actorV2 *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
 	v.addBlockInfo(
 		v.block,
 		v.committees,
-		v.signingCommittes,
+		v.signingCommittees,
 		v.userKeySet,
 		v.proposerMiningKeyBase58,
 		validVote, errVote,
@@ -332,51 +338,72 @@ func (actorV2 *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
 
 	return v
 }
-
-func (actorV2 *actorV2) processWithEnoughVotes(v *ProposeBlockInfo) error {
-	validationData, err := actorV2.createBLSAggregatedSignatures(v.signingCommittes, v.block.GetValidationField(), v.votes)
+func (actorV2 *actorV2) processWithEnoughVotesBeaconChain(
+	v *ProposeBlockInfo,
+) error {
+	validationData, err := actorV2.createBLSAggregatedSignatures(v.signingCommittees, v.block.GetValidationField(), v.votes)
 	if err != nil {
 		actorV2.logger.Error(err)
 		return err
 	}
 	v.block.(blockValidation).AddValidationField(validationData)
 
-	newPreviousValidationData := ""
-	isBeacon := false
-
-	if actorV2.chain.IsBeaconChain() {
-		isBeacon = true
-		delete(actorV2.receiveBlockByHash, v.block.GetPrevHash().String())
-	} else {
-		// validate and previous block
-		if previousProposeBlockInfo, ok := actorV2.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
-			previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
-			previousValidationData, err := actorV2.createBLSAggregatedSignatures(
-				previousProposeBlockInfo.signingCommittes,
-				previousProposeBlockInfo.block.GetValidationField(),
-				previousProposeBlockInfo.votes)
-			if err != nil {
-				actorV2.logger.Error(err)
-				return err
-			}
-			previousProposeBlockInfo = actorV2.validateVotes(previousProposeBlockInfo)
-			newPreviousValidationData = previousValidationData
-
-			previousProposeBlockInfo.block.(blockValidation).AddValidationField(previousValidationData)
-			if err := actorV2.chain.ReplacePreviousValidationData(v.block.GetPrevHash(), previousValidationData); err != nil {
-				return err
-			}
-
-			delete(actorV2.receiveBlockByHash, previousProposeBlockInfo.block.GetPrevHash().String())
-		}
+	go actorV2.node.PushBlockToAll(v.block, "", true)
+	if err := actorV2.chain.InsertBlock(v.block, false); err != nil {
+		return err
 	}
 
-	if len(v.userKeySet) != 0 {
-		go actorV2.node.PushBlockToAll(v.block, newPreviousValidationData, isBeacon)
+	delete(actorV2.receiveBlockByHash, v.block.GetPrevHash().String())
+
+	return nil
+}
+
+func (actorV2 *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
+	var newPreviousValidationData string
+
+	validationData, err := actorV2.createBLSAggregatedSignatures(v.signingCommittees, v.block.GetValidationField(), v.votes)
+	if err != nil {
+		actorV2.logger.Error(err)
+		return err
+	}
+	v.block.(blockValidation).AddValidationField(validationData)
+
+	// validate and previous block
+	if previousProposeBlockInfo, ok := actorV2.receiveBlockByHash[v.block.GetPrevHash().String()]; ok &&
+		previousProposeBlockInfo != nil && previousProposeBlockInfo.block != nil {
+
+		previousProposeBlockInfo = actorV2.validateVotes(previousProposeBlockInfo)
+
+		previousValidationData, err := actorV2.createBLSAggregatedSignatures(
+			previousProposeBlockInfo.signingCommittees,
+			previousProposeBlockInfo.block.GetValidationField(),
+			previousProposeBlockInfo.votes)
+		if err != nil {
+			actorV2.logger.Error(err)
+			return err
+		}
+
+		newPreviousValidationData = previousValidationData
+
+		previousProposeBlockInfo.block.(blockValidation).AddValidationField(previousValidationData)
+		if err := actorV2.chain.ReplacePreviousValidationData(v.block.GetPrevHash(), previousValidationData); err != nil {
+			return err
+		}
+
+		delete(actorV2.receiveBlockByHash, previousProposeBlockInfo.block.GetPrevHash().String())
 	}
 
 	if err := actorV2.chain.InsertBlock(v.block, false); err != nil {
 		return err
+	} else {
+		loggedCommittee, _ := incognitokey.CommitteeKeyListToString(v.signingCommittees)
+		actorV2.logger.Infof("Successfully Insert Block \n "+
+			"ChainID %+v | Height %+v, Hash %+v, Version %+v \n"+
+			"Committee %+v", actorV2.chain, v.block.GetHeight(), *v.block.Hash(), v.block.GetVersion(), loggedCommittee)
+	}
+
+	if len(v.userKeySet) != 0 {
+		go actorV2.node.PushBlockToAll(v.block, newPreviousValidationData, false)
 	}
 
 	return nil
@@ -413,7 +440,7 @@ func (actorV2 *actorV2) voteForBlock(
 	v *ProposeBlockInfo,
 ) error {
 	for _, userKey := range v.userKeySet {
-		Vote, err := createVote(&userKey, v.block, v.signingCommittes)
+		Vote, err := createVote(&userKey, v.block, v.signingCommittees)
 		if err != nil {
 			actorV2.logger.Error(err)
 			return NewConsensusError(UnExpectedError, err)
@@ -770,7 +797,7 @@ func (actorV2 *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 	if b, ok := actorV2.receiveBlockByHash[voteMsg.BlockHash]; ok { //if receiveblock is already initiated
 		if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
 			b.votes[voteMsg.Validator] = &voteMsg // store it
-			vid, v := actorV2.getValidatorIndex(b.signingCommittes, voteMsg.Validator)
+			vid, v := actorV2.getValidatorIndex(b.signingCommittees, voteMsg.Validator)
 			if v != nil {
 				vbase58, _ := v.ToBase58()
 				actorV2.logger.Infof("%v Receive vote (%d) for block %s from validator %d %v", actorV2.chainKey, len(actorV2.receiveBlockByHash[voteMsg.BlockHash].votes), voteMsg.BlockHash, vid, vbase58)
@@ -796,7 +823,7 @@ func (actorV2 *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 					if err == nil {
 						bestViewHeight := actorV2.chain.GetBestView().GetHeight()
 						if b.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
-							err := actorV2.sendVote(&userKey, b.block, b.signingCommittes) // => send vote
+							err := actorV2.sendVote(&userKey, b.block, b.signingCommittees) // => send vote
 							if err != nil {
 								actorV2.logger.Error(err)
 							} else {
@@ -916,7 +943,7 @@ func (actorV2 *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo 
 			defer cancel()
 
 			actorV2.logger.Infof("validate block: %+v \n", proposeBlockInfo.block.Hash().String())
-			if err := actorV2.chain.ValidatePreSignBlock(proposeBlockInfo.block, proposeBlockInfo.signingCommittes, proposeBlockInfo.committees); err != nil {
+			if err := actorV2.chain.ValidatePreSignBlock(proposeBlockInfo.block, proposeBlockInfo.signingCommittees, proposeBlockInfo.committees); err != nil {
 				actorV2.logger.Error(err)
 				return err
 			}

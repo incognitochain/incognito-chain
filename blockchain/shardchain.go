@@ -359,7 +359,7 @@ func (chain *ShardChain) GetProposerByTimeSlotFromCommitteeList(
 	proposer, proposerIndex := GetProposer(
 		timeslot,
 		committees,
-		getProposerLength(),
+		GetProposerLength(),
 	)
 	return proposer, proposerIndex, nil
 }
@@ -369,7 +369,7 @@ func (chain *ShardChain) GetSigningCommittees(
 ) []incognitokey.CommitteePublicKey {
 	res := []incognitokey.CommitteePublicKey{}
 	if blockVersion == types.DCS_VERSION {
-		res = filterSigningCommitteeV3(committees, proposerIndex)
+		res = FilterSigningCommitteeV3(committees, proposerIndex)
 	} else {
 		res = committees
 	}

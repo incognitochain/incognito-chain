@@ -962,8 +962,6 @@ func (blockchain *BlockChain) getShardCommitteeForBlockProducing(
 			return shardCommitteeForBlockProducing, err
 		}
 		committees := statedb.GetOneShardCommittee(stateDB, shardID)
-		committeesStr, _ := incognitokey.CommitteeKeyListToString(committees)
-		Logger.log.Info("[dcs] committeesStr:", committeesStr)
 
 		shardCommitteeForBlockProducing = committeestate.NewTempCommitteeInfoWithValue(
 			hash, committees, shardID, beaconBlock.Header.Height)

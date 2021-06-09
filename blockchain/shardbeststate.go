@@ -338,7 +338,7 @@ func (shardBestState *ShardBestState) GetProposerByTimeSlot(
 	ts int64,
 	version int,
 ) (incognitokey.CommitteePublicKey, int) {
-	id := GetProposerByTimeSlot(ts, getProposerLength())
+	id := GetProposerByTimeSlot(ts, GetProposerLength())
 	return shardBestState.GetShardCommittee()[id], id
 }
 
@@ -428,7 +428,8 @@ func (shardBestState *ShardBestState) NewShardCommitteeStateEnvironmentWithValue
 	shardBlock *types.ShardBlock,
 	bc *BlockChain,
 	beaconInstructions [][]string,
-	tempCommittees []string) *committeestate.ShardCommitteeStateEnvironment {
+	tempCommittees []string,
+	genesisBeaconHash common.Hash) *committeestate.ShardCommitteeStateEnvironment {
 	return &committeestate.ShardCommitteeStateEnvironment{
 		BeaconHeight:                 shardBestState.BeaconHeight,
 		Epoch:                        bc.GetEpochByHeight(shardBestState.BeaconHeight),
@@ -447,6 +448,7 @@ func (shardBestState *ShardBestState) NewShardCommitteeStateEnvironmentWithValue
 		ShardInstructions:            shardBlock.Body.Instructions,
 		CommitteesFromBlock:          shardBlock.Header.CommitteeFromBlock,
 		CommitteesFromBeaconView:     tempCommittees,
+		GenesisBeaconHash:            genesisBeaconHash,
 	}
 }
 
@@ -605,9 +607,9 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 		_, proposerIndex := GetProposer(
 			timeSlot,
 			committees,
-			getProposerLength(),
+			GetProposerLength(),
 		)
-		res := filterSigningCommitteeV3(
+		res := FilterSigningCommitteeV3(
 			shardCommitteeForBlockProducing.Committees(),
 			proposerIndex)
 		return shardCommitteeForBlockProducing.Committees(), res, nil
@@ -637,7 +639,7 @@ func GetSubsetIDFromProposerTime(proposerTime int64, validators int) int {
 	return subsetID
 }
 
-func filterSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, proposerIndex int) []incognitokey.CommitteePublicKey {
+func FilterSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, proposerIndex int) []incognitokey.CommitteePublicKey {
 	signingCommittees := []incognitokey.CommitteePublicKey{}
 	for i, v := range fullCommittees {
 		if (i % MaxSubsetCommittees) == (proposerIndex % MaxSubsetCommittees) {
@@ -647,6 +649,6 @@ func filterSigningCommitteeV3(fullCommittees []incognitokey.CommitteePublicKey, 
 	return signingCommittees
 }
 
-func getProposerLength() int {
+func GetProposerLength() int {
 	return config.Param().CommitteeSize.NumberOfFixedShardBlockValidator
 }

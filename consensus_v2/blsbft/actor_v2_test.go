@@ -11,7 +11,7 @@ package blsbft
 //	shardBlock := &types.ShardBlock{
 //		Header: types.ShardHeader{
 //			Height:             10,
-//			CommitteeFromBlock: *hash1,
+//			GenesisBeaconHash: *hash1,
 //			Producer:           key0,
 //			ProposeTime:        10,
 //			Version:            4,
@@ -326,7 +326,7 @@ package blsbft
 //				receiveBlockByHash: map[string]*ProposeBlockInfo{
 //					blockHash.String(): &ProposeBlockInfo{
 //						votes: map[string]*BFTVote{},
-//						signingCommittes: []incognitokey.CommitteePublicKey{
+//						signingCommittees: []incognitokey.CommitteePublicKey{
 //							incKey0, *incKey, *incKey2, *incKey3,
 //						},
 //					},
@@ -350,7 +350,7 @@ package blsbft
 //				receiveBlockByHash: map[string]*ProposeBlockInfo{
 //					blockHash.String(): &ProposeBlockInfo{
 //						votes: map[string]*BFTVote{},
-//						signingCommittes: []incognitokey.CommitteePublicKey{
+//						signingCommittees: []incognitokey.CommitteePublicKey{
 //							incKey0, *incKey, *incKey2, *incKey3,
 //						},
 //					},
@@ -581,7 +581,7 @@ package blsbft
 //	hash, _ := common.Hash{}.NewHashFromStr("123456")
 //	block := &types.ShardBlock{
 //		Header: types.ShardHeader{
-//			CommitteeFromBlock: *hash,
+//			GenesisBeaconHash: *hash,
 //			ProposeTime:        10,
 //		},
 //	}
@@ -925,7 +925,7 @@ package blsbft
 //						block:            nil,
 //						receiveTime:      time.Now(),
 //						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittes: []incognitokey.CommitteePublicKey{},
+//						signingCommittees: []incognitokey.CommitteePublicKey{},
 //						userKeySet:       []signatureschemes.MiningKey{},
 //						votes:            map[string]*BFTVote{},
 //						isValid:          false,
@@ -960,7 +960,7 @@ package blsbft
 //						block:            &blockHeightGreaterThanValidView,
 //						receiveTime:      time.Now(),
 //						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittes: []incognitokey.CommitteePublicKey{},
+//						signingCommittees: []incognitokey.CommitteePublicKey{},
 //						userKeySet:       []signatureschemes.MiningKey{},
 //						votes:            map[string]*BFTVote{},
 //						isValid:          false,
@@ -995,7 +995,7 @@ package blsbft
 //						block:            &blockHashDifFromCurHash,
 //						receiveTime:      time.Now(),
 //						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittes: []incognitokey.CommitteePublicKey{},
+//						signingCommittees: []incognitokey.CommitteePublicKey{},
 //						userKeySet:       []signatureschemes.MiningKey{},
 //						votes:            map[string]*BFTVote{},
 //						isValid:          false,
@@ -1030,7 +1030,7 @@ package blsbft
 //						block:            &blockOutOfValidateTime,
 //						receiveTime:      time.Now(),
 //						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittes: []incognitokey.CommitteePublicKey{},
+//						signingCommittees: []incognitokey.CommitteePublicKey{},
 //						userKeySet:       []signatureschemes.MiningKey{},
 //						votes:            map[string]*BFTVote{},
 //						isValid:          false,
@@ -1065,7 +1065,7 @@ package blsbft
 //						block:            &blockProposerTimeDifCurrTimeSlot,
 //						receiveTime:      time.Now().Add(-time.Second * 3),
 //						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittes: []incognitokey.CommitteePublicKey{},
+//						signingCommittees: []incognitokey.CommitteePublicKey{},
 //						userKeySet:       []signatureschemes.MiningKey{},
 //						votes:            map[string]*BFTVote{},
 //						isValid:          false,
@@ -1100,7 +1100,7 @@ package blsbft
 //						block:            &blockProposeTimeSmallerProduceTime,
 //						receiveTime:      time.Now().Add(-time.Second * 3),
 //						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittes: []incognitokey.CommitteePublicKey{},
+//						signingCommittees: []incognitokey.CommitteePublicKey{},
 //						userKeySet:       []signatureschemes.MiningKey{},
 //						votes:            map[string]*BFTVote{},
 //						isValid:          false,
@@ -1137,7 +1137,7 @@ package blsbft
 //						block:            &blockTimeSlotHasBeenVoted,
 //						receiveTime:      time.Now().Add(-time.Second * 3),
 //						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittes: []incognitokey.CommitteePublicKey{},
+//						signingCommittees: []incognitokey.CommitteePublicKey{},
 //						userKeySet:       []signatureschemes.MiningKey{},
 //						votes:            map[string]*BFTVote{},
 //						isValid:          false,
@@ -1177,7 +1177,7 @@ package blsbft
 //						block:            &validBlock,
 //						receiveTime:      receiveTime,
 //						committees:       []incognitokey.CommitteePublicKey{},
-//						signingCommittes: []incognitokey.CommitteePublicKey{},
+//						signingCommittees: []incognitokey.CommitteePublicKey{},
 //						userKeySet:       []signatureschemes.MiningKey{},
 //						votes:            map[string]*BFTVote{},
 //						isValid:          false,
@@ -1201,7 +1201,7 @@ package blsbft
 //					block:            &validBlock,
 //					receiveTime:      receiveTime,
 //					committees:       []incognitokey.CommitteePublicKey{},
-//					signingCommittes: []incognitokey.CommitteePublicKey{},
+//					signingCommittees: []incognitokey.CommitteePublicKey{},
 //					userKeySet:       []signatureschemes.MiningKey{},
 //					votes:            map[string]*BFTVote{},
 //					isValid:          false,
@@ -1257,7 +1257,7 @@ package blsbft
 //	lastVotedBlk := &mocktypes.BlockInterface{}
 //	lastVotedBlk.On("GetProduceTime").Return(int64(3))
 //	lastVotedBlk.On("GetProposeTime").Return(int64(3))
-//	lastVotedBlk.On("CommitteeFromBlock").Return(*hash1)
+//	lastVotedBlk.On("GenesisBeaconHash").Return(*hash1)
 //
 //	view := &mockmultiview.View{}
 //	view.On("GetHeight").Return(uint64(5))
@@ -1281,7 +1281,7 @@ package blsbft
 //	blkWithDifCommittees := &mocktypes.BlockInterface{}
 //	blkWithDifCommittees.On("GetProduceTime").Return(int64(4))
 //	blkWithDifCommittees.On("GetProposeTime").Return(int64(4))
-//	blkWithDifCommittees.On("CommitteeFromBlock").Return(*hash2)
+//	blkWithDifCommittees.On("GenesisBeaconHash").Return(*hash2)
 //	blkWithDifCommittees.On("GetPrevHash").Return(*hash2)
 //	blkWithDifCommittees.On("GetHeight").Return(uint64(6))
 //	blkWithDifCommittees.On("BodyHash").Return(*blockHash1)
@@ -1298,7 +1298,7 @@ package blsbft
 //	inValidBlock := &mocktypes.BlockInterface{}
 //	inValidBlock.On("GetProduceTime").Return(int64(4))
 //	inValidBlock.On("GetProposeTime").Return(int64(4))
-//	inValidBlock.On("CommitteeFromBlock").Return(*hash1)
+//	inValidBlock.On("GenesisBeaconHash").Return(*hash1)
 //	inValidBlock.On("GetHeight").Return(uint64(6))
 //	inValidBlock.On("Hash").Return(blockHash1)
 //
@@ -1490,7 +1490,7 @@ package blsbft
 //					isVoted:          false,
 //					isValid:          false,
 //					committees:       []incognitokey.CommitteePublicKey{},
-//					signingCommittes: []incognitokey.CommitteePublicKey{},
+//					signingCommittees: []incognitokey.CommitteePublicKey{},
 //				},
 //			},
 //			wantErr: true,
@@ -1517,7 +1517,7 @@ package blsbft
 //					isVoted:          false,
 //					isValid:          false,
 //					committees:       []incognitokey.CommitteePublicKey{},
-//					signingCommittes: []incognitokey.CommitteePublicKey{},
+//					signingCommittees: []incognitokey.CommitteePublicKey{},
 //				},
 //			},
 //			wantErr: false,
@@ -1657,7 +1657,7 @@ package blsbft
 //			args: args{
 //				v: &ProposeBlockInfo{
 //					block:            errShardBlock,
-//					signingCommittes: []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
+//					signingCommittees: []incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3},
 //					votes: map[string]*BFTVote{
 //						incKey0.GetMiningKeyBase58(common.BlsConsensus): &BFTVote{
 //							Validator: incKey0.GetMiningKeyBase58(common.BlsConsensus),
@@ -1684,8 +1684,8 @@ package blsbft
 //				votedTimeslot:        tt.fields.votedTimeslot,
 //				blockVersion:         tt.fields.blockVersion,
 //			}
-//			if err := actorV2.processWithEnoughVotes(tt.args.v); (err != nil) != tt.wantErr {
-//				t.Errorf("actorV2.processWithEnoughVotes() error = %v, wantErr %v", err, tt.wantErr)
+//			if err := actorV2.processWithEnoughVotesShardChain(tt.args.v); (err != nil) != tt.wantErr {
+//				t.Errorf("actorV2.processWithEnoughVotesShardChain() error = %v, wantErr %v", err, tt.wantErr)
 //			}
 //		})
 //	}

@@ -84,6 +84,7 @@ func initGenesisShardCommitteeStateV2(env *ShardCommitteeStateEnvironment) *Shar
 	committeeChange := NewCommitteeChange()
 	candidates := []string{}
 
+	s.committeeFromBlock = env.GenesisBeaconHash
 	for _, beaconInstruction := range env.BeaconInstructions {
 		if beaconInstruction[0] == instruction.STAKE_ACTION {
 			stakeInstruction := instruction.ImportStakeInstructionFromString(beaconInstruction)

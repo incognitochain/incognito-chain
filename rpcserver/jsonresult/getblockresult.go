@@ -41,17 +41,19 @@ type GetShardBlockResult struct {
 	ConsensusType      string             `json:"ConsensusType"`
 	Data               string             `json:"Data"`
 	BeaconHeight       uint64             `json:"BeaconHeight"`
-	BeaconBlockHash    string             `json:"BeaconBlockHash"`
+	BeaconBlockHash    string             `json:"GenesisBeaconHash"`
 	Round              int                `json:"Round"`
 	Epoch              uint64             `json:"Epoch"`
 	Reward             uint64             `json:"Reward"`
 	RewardBeacon       uint64             `json:"RewardBeacon"`
 	Fee                uint64             `json:"Fee"`
 	Size               uint64             `json:"Size"`
-	CommitteeFromBlock common.Hash        `json:"CommitteeFromBlock"`
+	CommitteeFromBlock common.Hash        `json:"GenesisBeaconHash"`
 	Instruction        [][]string         `json:"Instruction"`
 	CrossShardBitMap   []int              `json:"CrossShardBitMap"`
 	ProposeTime        int64              `json:"ProposeTime"`
+	SubsetID           int                `json:"SubsetID"`
+	Committee          []string           `json:"Committee"`
 }
 
 type GetBlockTxResult struct {
@@ -120,6 +122,8 @@ func NewGetBlockResult(block *types.ShardBlock, size uint64, nextBlockHash strin
 	getBlockResult.NextBlockHash = nextBlockHash
 	getBlockResult.CommitteeFromBlock = block.Header.CommitteeFromBlock
 	getBlockResult.ProposeTime = block.Header.ProposeTime
+	if block.Header.Version != types.DCS_VERSION {
+	}
 	return getBlockResult
 }
 

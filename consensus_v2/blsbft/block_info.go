@@ -12,7 +12,7 @@ type ProposeBlockInfo struct {
 	block                   types.BlockInterface
 	receiveTime             time.Time
 	committees              []incognitokey.CommitteePublicKey
-	signingCommittes        []incognitokey.CommitteePublicKey
+	signingCommittees       []incognitokey.CommitteePublicKey
 	userKeySet              []signatureschemes2.MiningKey
 	votes                   map[string]*BFTVote //pk->BFTVote
 	isValid                 bool
@@ -39,7 +39,7 @@ func newProposeBlockForProposeMsg(
 		block:                   block,
 		votes:                   make(map[string]*BFTVote),
 		committees:              incognitokey.DeepCopy(committees),
-		signingCommittes:        incognitokey.DeepCopy(signingCommittes),
+		signingCommittees:       incognitokey.DeepCopy(signingCommittes),
 		userKeySet:              signatureschemes2.DeepCopyMiningKeyArray(userKeySet),
 		proposerMiningKeyBase58: proposerMiningKeyBase58,
 	}
@@ -55,7 +55,7 @@ func (proposeBlockInfo *ProposeBlockInfo) addBlockInfo(
 ) {
 	proposeBlockInfo.block = block
 	proposeBlockInfo.committees = incognitokey.DeepCopy(committees)
-	proposeBlockInfo.signingCommittes = incognitokey.DeepCopy(signingCommittes)
+	proposeBlockInfo.signingCommittees = incognitokey.DeepCopy(signingCommittes)
 	proposeBlockInfo.userKeySet = signatureschemes2.DeepCopyMiningKeyArray(userKeySet)
 	proposeBlockInfo.validVotes = validVotes
 	proposeBlockInfo.errVotes = errVotes

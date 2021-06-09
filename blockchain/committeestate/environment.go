@@ -167,7 +167,7 @@ func NewBeaconCommitteeStateEnvironmentForUpgrading(beaconHeight, stakingV3Heigh
 type ShardCommitteeStateEnvironment struct {
 	ShardHeight                  uint64
 	ShardBlockHash               common.Hash
-	BeaconBlockHash              common.Hash
+	GenesisBeaconHash            common.Hash
 	ShardInstructions            [][]string
 	BeaconInstructions           [][]string
 	Txs                          []metadata.Transaction

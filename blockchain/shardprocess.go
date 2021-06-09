@@ -677,7 +677,7 @@ func (shardBestState *ShardBestState) verifyBestStateWithShardBlock(blockchain *
 	//verify producer via index
 
 	if err := blockchain.config.ConsensusEngine.ValidateProducerPosition(shardBlock,
-		shardBestState.ShardProposerIdx, committees, getProposerLength()); err != nil {
+		shardBestState.ShardProposerIdx, committees, GetProposerLength()); err != nil {
 		return err
 	}
 	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(shardBlock, common.BlsConsensus); err != nil {
@@ -775,6 +775,7 @@ func (oldBestState *ShardBestState) updateShardBestState(blockchain *BlockChain,
 		blockchain,
 		beaconInstructions,
 		tempCommittees,
+		common.Hash{},
 	)
 
 	hashes, committeeChange, err := shardBestState.shardCommitteeState.UpdateCommitteeState(env)
@@ -818,6 +819,7 @@ func (shardBestState *ShardBestState) initShardBestState(
 		blockchain,
 		beaconInstructions,
 		[]string{},
+		genesisBeaconBlock.Header.Hash(),
 	)
 
 	shardBestState.shardCommitteeState = committeestate.InitGenesisShardCommitteeState(
@@ -1181,7 +1183,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 			err2 := stats.UpdateBPV3Stats(
 				blockchain.GetShardChainDatabase(shardID),
 				storeBlock.(*types.ShardBlock),
-				GetSubsetIDFromProposerTime(shardBlock.GetProposeTime(), getProposerLength()),
+				GetSubsetIDFromProposerTime(shardBlock.GetProposeTime(), GetProposerLength()),
 				committeesStoreBlock,
 			)
 			if err2 != nil {

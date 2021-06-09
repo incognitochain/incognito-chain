@@ -707,9 +707,9 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 		_, proposerIndex := GetProposer(
 			timeSlot,
 			committees,
-			getProposerLength(),
+			GetProposerLength(),
 		)
-		committees = filterSigningCommitteeV3(
+		committees = FilterSigningCommitteeV3(
 			committees,
 			proposerIndex,
 		)
