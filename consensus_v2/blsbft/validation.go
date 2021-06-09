@@ -23,7 +23,7 @@ type blockValidation interface {
 	AddValidationField(validationData string)
 }
 
-func ValidateProducerSig(block types.BlockInterface) error {
+func ValidateProducerSigV1(block types.BlockInterface) error {
 	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
@@ -34,6 +34,26 @@ func ValidateProducerSig(block types.BlockInterface) error {
 
 	producerKey := incognitokey.CommitteePublicKey{}
 	err = producerKey.FromBase58(block.GetProducer())
+	if err != nil {
+		return NewConsensusError(UnExpectedError, err)
+	}
+	//start := time.Now()
+	if err := validateSingleBriSig(block.Hash(), valData.ProducerBLSSig, producerKey.MiningPubKey[common.BridgeConsensus]); err != nil {
+		return NewConsensusError(UnExpectedError, err)
+	}
+	//end := time.Now().Sub(start)
+	//fmt.Printf("ConsLog just verify %v\n", end.Seconds())
+	return nil
+}
+
+func ValidateProducerSigV2(block types.BlockInterface) error {
+	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return NewConsensusError(UnExpectedError, err)
+	}
+
+	producerKey := incognitokey.CommitteePublicKey{}
+	err = producerKey.FromBase58(block.GetProposer())
 	if err != nil {
 		return NewConsensusError(UnExpectedError, err)
 	}

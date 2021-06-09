@@ -161,7 +161,11 @@ func (engine *Engine) ValidateProducerPosition(
 }
 
 func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusType string) error {
-	return blsbft.ValidateProducerSig(block)
+	if block.GetVersion() == types.BFT_VERSION {
+		return blsbft.ValidateProducerSigV1(block)
+	} else {
+		return blsbft.ValidateProducerSigV2(block)
+	}
 }
 
 func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
