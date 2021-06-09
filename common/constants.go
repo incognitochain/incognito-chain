@@ -76,12 +76,9 @@ const (
 	BeaconRole    = "beacon"
 	ShardRole     = "shard"
 	CommitteeRole = "committee"
-	ProposerRole  = "proposer"
-	ValidatorRole = "validator"
 	PendingRole   = "pending"
 	SyncingRole   = "syncing" //this is for shard case - when beacon tell it is committee, but its state not
 	WaitingRole   = "waiting"
-	UnstakeRole   = "unstake" // for unstake node
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"

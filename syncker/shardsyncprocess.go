@@ -3,6 +3,7 @@ package syncker
 import (
 	"context"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/common"
 	"os"
 	"sync"
@@ -10,7 +11,6 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/peerv2"
@@ -225,22 +225,22 @@ func (s *ShardSyncProcess) syncShardProcess() {
 		} else {
 			if len(s.shardPeerState) > 0 {
 				s.isCatchUp = true
-				committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
-				if s.finalBeaconBlockHeight < committeeView.BeaconHeight {
-					s.finalBeaconBlockHeight = committeeView.BeaconHeight
-					if committeeView.CommitteeStateVersion() == committeestate.DCS_VERSION {
-						syncingValidators := s.consensus.SyncingValidatorsByShardID(s.shardID)
-						if committeeView.ShouldSendFinishSyncMessage(syncingValidators, byte(s.shardID)) {
-							msg := &wire.MessageFinishSync{
-								CommitteePublicKey: syncingValidators,
-								ShardID:            byte(s.shardID),
-							}
-							s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID)
-						}
-					}
-				}
+				s.trySendFinishSyncMessage()
 			}
 			time.Sleep(time.Second * 5)
+		}
+	}
+}
+
+func (s *ShardSyncProcess) trySendFinishSyncMessage() {
+	committeeView := s.blockchain.BeaconChain.GetBestView().(*blockchain.BeaconBestState)
+	if committeeView.CommitteeStateVersion() == committeestate.DCS_VERSION {
+		if s.finalBeaconBlockHeight < committeeView.BeaconHeight {
+			s.finalBeaconBlockHeight = committeeView.BeaconHeight
+			validatorFromUserKeys := s.consensus.SyncingValidatorsByShardID(s.shardID)
+			finishedSyncValidator := committeeView.ShouldSendFinishSyncMessage(validatorFromUserKeys, byte(s.shardID))
+			msg := wire.NewMessageFinishSync(finishedSyncValidator, byte(s.shardID))
+			s.Network.PublishMessageToShard(msg, common.BeaconChainSyncID)
 		}
 	}
 }

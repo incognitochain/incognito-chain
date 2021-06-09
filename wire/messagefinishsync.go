@@ -14,6 +14,10 @@ type MessageFinishSync struct {
 	ShardID            byte
 }
 
+func NewMessageFinishSync(committeePublicKey []string, shardID byte) *MessageFinishSync {
+	return &MessageFinishSync{CommitteePublicKey: committeePublicKey, ShardID: shardID}
+}
+
 func (msg *MessageFinishSync) Hash() string {
 	rawBytes, err := msg.JsonSerialize()
 	if err != nil {

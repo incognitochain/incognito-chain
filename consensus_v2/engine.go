@@ -74,7 +74,8 @@ func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensu
 			if validator.State.ChainID != -2 {
 				_, ok := chainValidator[validator.State.ChainID]
 				if ok {
-					if validator.State.Role == common.CommitteeRole {
+					if validator.State.Role == common.CommitteeRole ||
+						validator.State.Role == common.SyncingRole {
 						chainValidator[validator.State.ChainID] = validator
 						pubkey = validator.MiningKey.GetPublicKeyBase58()
 						role = validator.State.Role
@@ -89,8 +90,11 @@ func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensu
 					layer = validator.State.Layer
 				}
 
+				//TODO: @hung how a node in validator.State.Role == common.syncrole but not added to sync validator list
 				if _, ok = syncingValidators[validator.State.ChainID]; !ok {
 					if validator.State.Role == common.SyncingRole {
+						Logger.Log.Info("[SoH] debug validator.State.Role == common.SyncingRole",
+							chainValidator, pubkey, role, chainID, layer)
 						chainValidator[validator.State.ChainID] = validator
 						pubkey = validator.MiningKey.GetPublicKeyBase58()
 						role = validator.State.Role
@@ -131,10 +135,11 @@ func (engine *Engine) WatchCommitteeChange() {
 		engine.userKeyListString = validator.PrivateSeed
 		role, chainID := engine.config.Node.GetPubkeyMiningState(validator.MiningKey.GetPublicKey())
 		//Logger.Log.Info("validator key", validator.MiningKey.GetPublicKeyBase58())
-		if chainID == -1 {
-			validator.State = consensus.MiningState{role, "beacon", -1}
-		} else if chainID > -1 {
-			validator.State = consensus.MiningState{role, "shard", chainID}
+		if chainID == common.BeaconChainID {
+			validator.State = consensus.MiningState{role, common.BeaconChainKey, common.BeaconChainID}
+		} else if chainID > common.BeaconChainID {
+			validator.State = consensus.MiningState{role, common.ShardChainKey, chainID}
+			//TODO: @hung why pending role but still add to sync validators list
 			if role == common.PendingRole {
 				if len(engine.syncingValidators[chainID]) != 0 {
 					engine.syncingValidators[chainID] = append(
@@ -265,41 +270,49 @@ func (engine *Engine) Start() error {
 	defer Logger.Log.Infof("CONSENSUS: Start")
 
 	if engine.config.Node.GetPrivateKey() != "" {
-		privateSeed, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
-		if err != nil {
-			panic(err)
-		}
-		miningKey, err := GetMiningKeyFromPrivateSeed(privateSeed)
-		if err != nil {
-			panic(err)
-		}
-		engine.validators = []*consensus.Validator{
-			&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey},
-		}
-
+		engine.loadKeysFromPrivateKey()
 	} else if engine.config.Node.GetMiningKeys() != "" {
-		keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
-		engine.validators = []*consensus.Validator{}
-		for _, key := range keys {
-			miningKey, err := GetMiningKeyFromPrivateSeed(key)
-			if err != nil {
-				panic(err)
-			}
-			engine.validators = append(engine.validators, &consensus.Validator{
-				PrivateSeed: key, MiningKey: *miningKey,
-			})
-		}
-		engine.validators = engine.validators[:1] //allow only 1 key
-
-		//set monitor pubkey
-		pubkeys := []string{}
-		for _, val := range engine.validators {
-			pubkeys = append(pubkeys, val.MiningKey.GetPublicKey().GetMiningKeyBase58("bls"))
-		}
-		monitor.SetGlobalParam("MINING_PUBKEY", strings.Join(pubkeys, ","))
+		engine.loadKeysFromMiningKey()
 	}
 	engine.IsEnabled = 1
 	return nil
+}
+
+func (engine *Engine) loadKeysFromPrivateKey() {
+	privateSeed, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
+	if err != nil {
+		panic(err)
+	}
+	miningKey, err := GetMiningKeyFromPrivateSeed(privateSeed)
+	if err != nil {
+		panic(err)
+	}
+	engine.validators = []*consensus.Validator{
+		&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey},
+	}
+}
+
+func (engine *Engine) loadKeysFromMiningKey() {
+	keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
+	engine.validators = []*consensus.Validator{}
+	for _, key := range keys {
+		miningKey, err := GetMiningKeyFromPrivateSeed(key)
+		if err != nil {
+			panic(err)
+		}
+		engine.validators = append(engine.validators, &consensus.Validator{
+			PrivateSeed: key, MiningKey: *miningKey,
+		})
+	}
+	// @NOTICE: hack code, only allow one key
+	engine.validators = engine.validators[:1] //allow only 1 key
+
+	//set monitor pubkey
+	pubkeys := []string{}
+	for _, val := range engine.validators {
+		pubkeys = append(pubkeys, val.MiningKey.GetPublicKey().GetMiningKeyBase58("bls"))
+	}
+	monitor.SetGlobalParam("MINING_PUBKEY", strings.Join(pubkeys, ","))
 }
 
 func (engine *Engine) Stop() error {

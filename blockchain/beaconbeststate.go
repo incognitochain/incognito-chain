@@ -903,31 +903,25 @@ func (beaconBestState *BeaconBestState) upgradeStakingFlowV3Config() error {
 	return nil
 }
 
-func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(committeePublicKeys []string, shardID byte) bool {
-	if len(committeePublicKeys) == 0 {
-		return false
+func (beaconBestState *BeaconBestState) ShouldSendFinishSyncMessage(validatorFromUserKeys []string, shardID byte) []string {
+	if len(validatorFromUserKeys) == 0 {
+		return []string{}
 	}
 	syncingValidators := beaconBestState.beaconCommitteeState.GetSyncingValidators()[shardID]
-	currentSelfSyncingValidators := make(map[string]bool)
-	count := 0
-	for _, committeePublicKey := range committeePublicKeys {
-		currentSelfSyncingValidators[committeePublicKey] = true
-	}
+	syncingValidatorsString, _ := incognitokey.CommitteeKeyListToString(syncingValidators)
+	finishedSyncValidator := []string{}
 
-	for _, v := range syncingValidators {
-		if count == len(committeePublicKeys) {
-			return true
-		}
-		key := v.GetMiningKeyBase58(common.BlsConsensus)
-		if currentSelfSyncingValidators[key] {
-			count++
+	for i, v := range syncingValidators {
+		blsKey := v.GetMiningKeyBase58(common.BlsConsensus)
+		for _, userKey := range validatorFromUserKeys {
+			if blsKey == userKey {
+				finishedSyncValidator = append(finishedSyncValidator, syncingValidatorsString[i])
+				break
+			}
 		}
 	}
 
-	if count == len(committeePublicKeys) {
-		return true
-	}
-	return false
+	return finishedSyncValidator
 }
 
 func (beaconBestState *BeaconBestState) removeFinishedSyncValidators(committeeChange *committeestate.CommitteeChange) {
