@@ -457,7 +457,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		}
 
 		ci.ManagedOTAKeys.Store(vkb, 2)
-		Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, found %v coins, timeElapsed: %v\n", vkb, time.Since(start).Seconds())
+		Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, found %v coins, timeElapsed: %v\n", vkb, len(allOutputCoins), time.Since(start).Seconds())
 
 		ci.statusChan <- mapStatuses[otaStr]
 		delete(mapIdxParams, otaStr)
