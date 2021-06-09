@@ -322,6 +322,7 @@ const (
 	createAndSendTxWithPortalSubmitConfirmedTx = "createandsendtxwithportalsubmitconfirmedtx"
 	getPortalSubmitConfirmedTx                 = "getportalsubmitconfirmedtxstatus"
 	getSignedRawReplaceFeeTransaction          = "getportalsignedrawreplacebyfeetransaction"
+	createAndSendTxPortalConvertVaultRequest   = "createandsendtxportalconvertvault"
 
 	// stake
 	unstake = "createunstaketransaction"
@@ -422,4 +423,5 @@ var PortalV4RPCs = []string{
 	createAndSendTxWithPortalSubmitConfirmedTx,
 	getPortalSubmitConfirmedTx,
 	getSignedRawReplaceFeeTransaction,
+	createAndSendTxPortalConvertVaultRequest,
 }

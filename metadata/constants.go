@@ -122,6 +122,7 @@ const (
 	PortalV4UnshieldBatchingMeta      = 254
 	PortalV4FeeReplacementRequestMeta = 255
 	PortalV4SubmitConfirmedTxMeta     = 256
+	PortalV4ConvertVaultRequestMeta   = 257
 
 	InitTokenRequestMeta  = 244
 	InitTokenResponseMeta = 245
@@ -242,4 +243,5 @@ var portalV4MetaTypes = []int{
 	PortalV4UnshieldBatchingMeta,
 	PortalV4FeeReplacementRequestMeta,
 	PortalV4SubmitConfirmedTxMeta,
+	PortalV4ConvertVaultRequestMeta,
 }
