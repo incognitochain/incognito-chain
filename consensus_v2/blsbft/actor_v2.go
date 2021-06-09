@@ -688,7 +688,7 @@ func (actorV2 *actorV2) getCommitteesAndCommitteeViewHash() (
 	if actorV2.blockVersion == types.MULTI_VIEW_VERSION || actorV2.chain.IsBeaconChain() {
 		committees = actorV2.chain.GetBestView().GetCommittee()
 	} else {
-		committeeViewHash = *actorV2.chain.GetFinalView().GetHash()
+		committeeViewHash = *actorV2.committeeChain.FinalView().GetHash()
 		committees, err = actorV2.
 			committeeChain.
 			CommitteesFromViewHashForShard(committeeViewHash, byte(actorV2.chainID))
