@@ -169,9 +169,9 @@ func (ci *CoinIndexer) AddOTAKey(otaKey privacy.OTAKey) error {
 
 // IsQueueFull checks if the current indexing queue is full.
 //
-// The idxQueue size is 2 times larger than the number of workers.
+// The idxQueue size for each shard is as large as the number of workers.
 func (ci *CoinIndexer) IsQueueFull(shardID byte) bool {
-	return len(ci.idxQueue[shardID]) >= 2*ci.numWorkers
+	return len(ci.idxQueue[shardID]) >= ci.numWorkers
 }
 
 // ReIndexOutCoin re-scans all output coins from idxParams.FromHeight to idxParams.ToHeight and adds them to the cache if the belongs to idxParams.OTAKey.
@@ -573,7 +573,7 @@ func (ci *CoinIndexer) Start() {
 			return
 		default:
 			if numWorking < ci.numWorkers && ci.queueSize > 0 {
-				if time.Since(start).Seconds() < BatchWaitingTime { //wait for an amount of time for batching request
+				if time.Since(start).Seconds() < BatchWaitingTime { //collect indexing params by intervals to (possibly) reduce the number of go routines
 					continue
 				}
 				remainingWorker := ci.numWorkers - numWorking

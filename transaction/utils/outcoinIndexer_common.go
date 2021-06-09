@@ -10,7 +10,7 @@ import (
 const (
 	NumWorkers         = 100
 	DefaultAccessToken = "0c3d46946bbf99c8213dd7f6c640ed6433bdc056a5b68e7e80f5525311b0ca11"
-	BatchWaitingTime   = float64(15)
+	BatchWaitingTime   = float64(30)
 	IndexingBatchSize  = 10
 )
 

@@ -733,7 +733,10 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 						ks.OTAKey = otaKey
 						belongs, _ := outputCoin.DoesCoinBelongToKeySet(ks)
 						if belongs{
-							outcoinIndexer.StoreIndexedOutputCoins(otaKey, []privacy.Coin{outputCoin}, shardID)
+							err = outcoinIndexer.StoreIndexedOutputCoins(otaKey, []privacy.Coin{outputCoin}, shardID)
+							if err != nil {
+								Logger.log.Errorf("StoreIndexedOutputCoins in viewpoint for OTAKey %x error: %v\n", vkArr, err)
+							}
 						}
 						return true
 					}
