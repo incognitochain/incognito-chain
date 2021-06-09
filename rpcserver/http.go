@@ -318,8 +318,6 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 				} else {
 					result, jsonErr = command(httpServer, request.Params, closeChan)
 				}
-			} else {
-				jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, errors.New("Method not found: "+request.Method))
 			}
 		}
 	}
