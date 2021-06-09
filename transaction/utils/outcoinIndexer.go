@@ -419,8 +419,9 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		for otaStr, listOutputCoins := range mapOutputCoins {
 			listOutputCoins = append(listOutputCoins, currentOutputCoinsToken[otaStr]...)
 			listOutputCoins = append(listOutputCoins, currentOutputCoinsPRV[otaStr]...)
-			Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d PRV + %d pToken coins, timeElapsed %v\n", otaStr, height, nextHeight-1, len(currentOutputCoinsPRV[otaStr]), len(currentOutputCoinsToken[otaStr]), time.Since(tmpStart).Seconds())
 
+			Logger.Log.Infof("[CoinIndexer] Key %v, %d to %d: found %d PRV + %d pToken coins, current #coins %v, timeElapsed %v\n", otaStr, height, nextHeight-1, len(currentOutputCoinsPRV[otaStr]), len(currentOutputCoinsToken[otaStr]), len(listOutputCoins), time.Since(tmpStart).Seconds())
+			mapOutputCoins[otaStr] = listOutputCoins
 		}
 
 		height = nextHeight
@@ -432,6 +433,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		allOutputCoins := mapOutputCoins[otaStr]
 		err := rawdbv2.StoreIndexedOTAKey(ci.db, vkb[:])
 		if err == nil {
+			Logger.Log.Infof("[CoinIndexer] About to store %v output coins for OTAKey %x\n", len(allOutputCoins), vkb)
 			err = ci.StoreIndexedOutputCoins(idxParam.OTAKey, allOutputCoins, shardID)
 			if err != nil {
 				Logger.Log.Errorf("[CoinIndexer] StoreIndexedOutCoins for OTA key %x error: %v\n", vkb, err)
@@ -584,7 +586,7 @@ func (ci *CoinIndexer) Start() {
 						idxParams := ci.idxQueue[shard][:numWorkers]
 						ci.idxQueue[shard] = ci.idxQueue[shard][numWorkers:]
 
-						Logger.Log.Infof("Re-index for %v new OTA keys, shard %v\n", numWorking, shard)
+						Logger.Log.Infof("Re-index for %v new OTA keys, shard %v\n", numWorkers, shard)
 						go ci.ReIndexOutCoinBatch(idxParams, idxParams[0].TxDb)
 					}
 				}
