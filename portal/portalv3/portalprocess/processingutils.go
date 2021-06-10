@@ -1,63 +1,14 @@
 package portalprocess
 
 import (
+	"sort"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal/portalv3"
-	"sort"
-	"strconv"
 )
-
-func CollectPortalV3Insts(pv3 map[int]PortalInstructionProcessorV3, metaType int, action []string, shardID byte) {
-	switch metaType {
-	case metadata.PortalCustodianDepositMeta:
-		pv3[metadata.PortalCustodianDepositMeta].PutAction(action, shardID)
-
-	// off this metatype in portal v3
-	//case metadata.PortalRequestPortingMeta:
-	//	pm.PortalInstProcessorsV3[metadata.PortalRequestPortingMeta].PutAction(action, shardID)
-	case metadata.PortalRequestPortingMetaV3:
-		pv3[metadata.PortalRequestPortingMetaV3].PutAction(action, shardID)
-	case metadata.PortalUserRequestPTokenMeta:
-		pv3[metadata.PortalUserRequestPTokenMeta].PutAction(action, shardID)
-	case metadata.PortalExchangeRatesMeta:
-		pv3[metadata.PortalExchangeRatesMeta].PutAction(action, shardID)
-	case metadata.PortalCustodianWithdrawRequestMeta:
-		pv3[metadata.PortalCustodianWithdrawRequestMeta].PutAction(action, shardID)
-	// off this metatype in portal v3
-	//case metadata.PortalRedeemRequestMeta:
-	//	pm.PortalInstProcessorsV3[metadata.PortalRedeemRequestMeta].PutAction(action, shardID)
-	case metadata.PortalRedeemRequestMetaV3:
-		pv3[metadata.PortalRedeemRequestMetaV3].PutAction(action, shardID)
-	// off this metatype in portal v3
-	//case metadata.PortalRequestUnlockCollateralMeta:
-	//	pm.PortalInstProcessorsV3[metadata.PortalRequestUnlockCollateralMeta].PutAction(action, shardID)
-	case metadata.PortalRequestUnlockCollateralMetaV3:
-		pv3[metadata.PortalRequestUnlockCollateralMetaV3].PutAction(action, shardID)
-	case metadata.PortalRequestWithdrawRewardMeta:
-		pv3[metadata.PortalRequestWithdrawRewardMeta].PutAction(action, shardID)
-	case metadata.PortalRedeemFromLiquidationPoolMetaV3:
-		pv3[metadata.PortalRedeemFromLiquidationPoolMetaV3].PutAction(action, shardID)
-	case metadata.PortalCustodianTopupMetaV2:
-		pv3[metadata.PortalCustodianTopupMetaV2].PutAction(action, shardID)
-	case metadata.PortalReqMatchingRedeemMeta:
-		pv3[metadata.PortalReqMatchingRedeemMeta].PutAction(action, shardID)
-	case metadata.PortalTopUpWaitingPortingRequestMeta:
-		pv3[metadata.PortalTopUpWaitingPortingRequestMeta].PutAction(action, shardID)
-	case metadata.PortalCustodianTopupMetaV3:
-		pv3[metadata.PortalCustodianTopupMetaV3].PutAction(action, shardID)
-	case metadata.PortalTopUpWaitingPortingRequestMetaV3:
-		pv3[metadata.PortalTopUpWaitingPortingRequestMetaV3].PutAction(action, shardID)
-
-	case metadata.PortalCustodianDepositMetaV3:
-		pv3[metadata.PortalCustodianDepositMetaV3].PutAction(action, shardID)
-	case metadata.PortalCustodianWithdrawRequestMetaV3:
-		pv3[metadata.PortalCustodianWithdrawRequestMetaV3].PutAction(action, shardID)
-	default:
-		return
-	}
-}
 
 // auto check and liquidate
 func autoCheckAndCreatePortalLiquidationInsts(
@@ -239,7 +190,7 @@ func HandlePortalInstsV3(
 	var pickCustodiansForRedeemReqInsts [][]string
 
 	pickCustodiansProcessor := pv3[metadata.PortalPickMoreCustodianForRedeemMeta]
-	pickCustodiansForRedeemReqInsts, err = pickCustodiansProcessor.BuildNewInsts(bc, "", 0,  currentPortalState,beaconHeight, shardHeights,
+	pickCustodiansForRedeemReqInsts, err = pickCustodiansProcessor.BuildNewInsts(bc, "", 0, currentPortalState, beaconHeight, shardHeights,
 		portalParams, nil)
 	if err != nil {
 		Logger.log.Error(err)

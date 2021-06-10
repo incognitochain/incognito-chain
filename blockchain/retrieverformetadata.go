@@ -258,7 +258,7 @@ func (blockchain *BlockChain) ValidatePortalRemoteAddresses(remoteAddresses map[
 	return true, nil
 }
 
-func (blockchain *BlockChain) IsEnableFeature(featureFlag int, epoch uint64) bool {
+func (blockchain *BlockChain) IsEnableFeature(featureFlag string, epoch uint64) bool {
 	enableFeatureFlags := config.Param().EnableFeatureFlags
 	if enableFeatureFlags[featureFlag] == 0 {
 		return false
