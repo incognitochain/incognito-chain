@@ -191,13 +191,13 @@ func (ci *CoinIndexer) HasOTAKey(k [64]byte) (bool, int) {
 	return ok, result
 }
 
-func (ci *CoinIndexer) AddCoinHash(coinHash [32]byte) error {
+func (ci *CoinIndexer) AddCoinHash(coinHash common.Hash) error {
 	err := rawdbv2.StoreCachedCoinHash(ci.db, coinHash[:])
 	if err != nil {
 		return err
 	}
-	ci.cachedCoins[fmt.Sprintf("%x", coinHash)] = true
-	Logger.Log.Infof("Add coinHash %x success\n", coinHash)
+	ci.cachedCoins[coinHash.String()] = true
+	Logger.Log.Infof("Add coinHash %v success\n", coinHash, coinHash.String())
 	return nil
 }
 

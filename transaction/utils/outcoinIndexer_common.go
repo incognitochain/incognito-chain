@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -177,9 +176,9 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 			return nil, err
 		}
 		for _, coinBytes := range currentHeightCoins {
-			coinHash := fmt.Sprintf("%x", common.HashH(coinBytes))
+			coinHash := common.HashH(coinBytes).String()
 			if _, ok := cachedCoins[coinHash]; ok {
-				Logger.Log.Infof("coinHash %x has been indexed\n", coinHash)
+				Logger.Log.Infof("[SKIP] coinHash %v has been indexed\n", coinHash)
 				continue
 			}
 
