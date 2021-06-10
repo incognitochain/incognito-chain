@@ -179,6 +179,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 		for _, coinBytes := range currentHeightCoins {
 			coinHash := fmt.Sprintf("%x", common.HashH(coinBytes))
 			if _, ok := cachedCoins[coinHash]; ok {
+				Logger.Log.Infof("coinHash %x has been indexed\n", coinHash)
 				continue
 			}
 
