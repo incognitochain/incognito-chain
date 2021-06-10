@@ -428,7 +428,6 @@ func (actorV2 *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
 	}
 	actorV2.logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
 	v.hasNewVote = false
-	//TODO: @tin/0xkumi check here again
 	for key, value := range v.votes {
 		if value.IsValid == -1 {
 			delete(v.votes, key)
