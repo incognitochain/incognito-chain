@@ -171,8 +171,7 @@ func (engine *Engine) WatchCommitteeChange() {
 			engine.initProcess(chainID, chainName)
 			shouldRun = true
 		} else {
-			if engine.version[chainID] != currActorVersion ||
-				engine.bftProcess[chainID].BlockVersion() != engine.getBlockVersion(chainID) {
+			if engine.version[chainID] != currActorVersion {
 				err := engine.bftProcess[chainID].Stop()
 				if err != nil {
 					Logger.Log.Error(err)
@@ -198,6 +197,16 @@ func (engine *Engine) WatchCommitteeChange() {
 			}
 		}
 	}
+
+	for chainID, proc := range engine.bftProcess {
+		if _, ok := ValidatorGroup[chainID]; !ok {
+			if proc.IsStarted() {
+				proc.Stop()
+				engine.NotifyNewRole(chainID, common.WaitingRole)
+			}
+		}
+	}
+
 	engine.currentMiningProcess = miningProc
 }
 
