@@ -155,9 +155,9 @@ func (engine *Engine) WatchCommitteeChange() {
 
 	miningProc := blsbft.Actor(nil)
 	for chainID, validators := range ValidatorGroup {
-		chainName := "beacon"
+		chainName := common.BeaconChainKey
 		if chainID >= 0 {
-			chainName = fmt.Sprintf("shard-%d", chainID)
+			chainName = fmt.Sprintf("%s-%d", common.ShardChainKey, chainID)
 		}
 
 		currActorVersion := 0
@@ -215,7 +215,7 @@ func NewConsensusEngine() *Engine {
 
 func (engine *Engine) initProcess(chainID int, chainName string) {
 	var bftActor blsbft.Actor
-	blockVersion := engine.getBlockVersion(chainID)
+	blockVersion := engine.version[chainID]
 	if chainID == -1 {
 		bftActor = blsbft.NewActorWithValue(
 			engine.config.Blockchain.BeaconChain,
@@ -234,16 +234,7 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 }
 
 func (engine *Engine) updateVersion(chainID int) {
-	chainEpoch := uint64(1)
-	if chainID == -1 {
-		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
-	} else {
-		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
-	}
-	engine.version[chainID] = types.BFT_VERSION
-	if chainEpoch >= config.Param().ConsensusParam.ConsensusV2Epoch {
-		engine.version[chainID] = types.MULTI_VIEW_VERSION
-	}
+	engine.version[chainID] = engine.getBlockVersion(chainID)
 }
 
 func (engine *Engine) Init(config *EngineConfig) {
