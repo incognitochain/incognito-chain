@@ -404,7 +404,8 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 		return fmt.Errorf("OTAKey %x has been submitted and status = %v", otaBytes, processing)
 	}
 
-	Logger.log.Infof("[SubmitOTAKey] otaKey %x, keyExist %v, status %v, isReset %v\n", otaBytes, keyExists, processing, isReset)
+	otaKeyStr := fmt.Sprintf("%x", otaBytes)
+	Logger.log.Infof("[SubmitOTAKey] otaKey %x, keyExist %v, status %v, isReset %v\n", otaKeyStr, keyExists, processing, isReset)
 
 	pkb := otaKey.GetPublicSpend().ToBytesS()
 	shardID := common.GetShardIDFromLastByte(pkb[len(pkb)-1])
