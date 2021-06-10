@@ -75,6 +75,25 @@ func (chain *ShardChain) GetBestState() *ShardBestState {
 	return chain.multiView.GetBestView().(*ShardBestState)
 }
 
+func (chain *ShardChain) AddView(view multiview.View) bool {
+	curBestView := chain.multiView.GetBestView().GetHash().String()
+	added := chain.multiView.AddView(view)
+	if added {
+		go func(chain *ShardChain) {
+			sBestView := chain.GetBestState()
+			if (curBestView != sBestView.GetHash().String()) && (chain.TxPool != nil) {
+				bcHash := sBestView.GetBeaconHash()
+				bcView, err := chain.Blockchain.GetBeaconViewStateDataFromBlockHash(bcHash, true)
+				if err != nil {
+					Logger.log.Infof("Can not get beacon view from hash %, sView Hash %v, err %v", bcHash.String(), sBestView.GetHash().String(), err)
+				}
+				chain.TxPool.FilterWithNewView(chain.Blockchain, sBestView, bcView)
+			}
+		}(chain)
+	}
+	return added
+}
+
 func (s *ShardChain) GetEpoch() uint64 {
 	return s.GetBestState().Epoch
 }

@@ -49,6 +49,11 @@ type TxPool interface {
 		maxTime time.Duration,
 		getTxsDuration time.Duration,
 	) []metadata.Transaction
+	FilterWithNewView(
+		cView metadata.ChainRetriever,
+		sView metadata.ShardViewRetriever,
+		bcView metadata.BeaconViewRetriever,
+	)
 	CheckValidatedTxs(
 		txs []metadata.Transaction,
 	) (
