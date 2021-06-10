@@ -1178,7 +1178,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 		if stats.IsEnableBPV3Stats {
 			committeesStoreBlock, err := blockchain.getShardCommitteeFromBeaconHash(storeBlock.CommitteeFromBlock(), shardBlock.Header.ShardID)
 			if err != nil {
-				Logger.log.Error(NewBlockChainError(StoreShardBlockError, err))
+				Logger.log.Error(NewBlockChainError(UpdateBFTV3StatsError, err))
 			}
 			err2 := stats.UpdateBPV3Stats(
 				blockchain.GetShardChainDatabase(shardID),
@@ -1187,7 +1187,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 				committeesStoreBlock,
 			)
 			if err2 != nil {
-				Logger.log.Error(NewBlockChainError(StoreShardBlockError, err))
+				Logger.log.Error(NewBlockChainError(UpdateBFTV3StatsError, err))
 			}
 		}
 	}

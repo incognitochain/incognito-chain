@@ -190,6 +190,7 @@ const (
 	CommitteeFromBlockNotFoundError
 	ShardBlockAlreadyExist
 	PDEStateDBError
+	UpdateBFTV3StatsError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -368,6 +369,7 @@ var ErrCodeMessage = map[int]struct {
 	ResponsedTransactionFromBeaconInstructionsError:   {-3100, "Build Transaction Response From Beacon Instructions Error"},
 	UpgradeBeaconCommitteeStateError:                  {-4000, "Upgrade Beacon Committee State Error"},
 	UpgradeShardCommitteeStateError:                   {-4001, "Upgrade Shard Committee State Error"},
+	UpdateBFTV3StatsError:                             {-4002, "Update BFT V3 Stats Error, This Error Won't effect Store Shard Block"},
 }
 
 type BlockChainError struct {
