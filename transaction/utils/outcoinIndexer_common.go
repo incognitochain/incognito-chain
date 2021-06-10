@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -157,7 +158,7 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, 
 	return outCoins, nil
 }
 
-func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID *common.Hash, shardHeight, destHeight uint64, db *statedb.StateDB, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
+func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID *common.Hash, shardHeight, destHeight uint64, db *statedb.StateDB, cachedCoins map[string]interface{}, filters ...CoinMatcher) (map[string][]privacy.Coin, error) {
 	// avoid overlap; unless lower height is 0
 	start := shardHeight + 1
 	if shardHeight == 0 {
@@ -176,6 +177,11 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 			return nil, err
 		}
 		for _, coinBytes := range currentHeightCoins {
+			coinHash := fmt.Sprintf("%x", common.HashH(coinBytes))
+			if _, ok := cachedCoins[coinHash]; ok {
+				continue
+			}
+
 			cv2 := &privacy.CoinV2{}
 			err := cv2.SetBytes(coinBytes)
 			if err != nil {

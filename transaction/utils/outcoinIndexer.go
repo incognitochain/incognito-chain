@@ -31,6 +31,7 @@ type CoinIndexer struct {
 	statusChan          chan JobStatus
 	quitChan            chan bool
 	isAuthorizedRunning bool
+	cachedCoins			map[string]interface{}
 }
 
 // NewOutCoinIndexer creates a new full node's caching instance for faster output coin retrieval.
@@ -61,13 +62,24 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database) (*CoinIndexer, error
 		}
 	}
 
+	cachedCoins := make(map[string]interface{})
+	loadRawCachedCoinHashes, err := rawdbv2.GetCachedCoinHashes(db)
+	if err == nil {
+		for _, coinHash := range loadRawCachedCoinHashes {
+			var temp [32]byte
+			copy(temp[:], coinHash[:32])
+			cachedCoins[fmt.Sprintf("%x", temp)] = true
+		}
+	}
+
 	ci := &CoinIndexer{
-		numWorkers:          int(numWorkers),
-		sem:                 sem,
-		mtx:                 mtx,
-		ManagedOTAKeys:      m,
-		db:                  db,
-		accessTokens:        accessTokens,
+		numWorkers:     int(numWorkers),
+		sem:            sem,
+		mtx:            mtx,
+		ManagedOTAKeys: m,
+		db:             db,
+		accessTokens:   accessTokens,
+		cachedCoins:    cachedCoins,
 	}
 
 	return ci, nil
@@ -164,6 +176,24 @@ func (ci *CoinIndexer) AddOTAKey(otaKey privacy.OTAKey) error {
 		return err
 	}
 	ci.ManagedOTAKeys.Store(keyBytes, 2)
+	return nil
+}
+
+func (ci *CoinIndexer) HasOTAKey(k [64]byte) (bool, int) {
+	var result int
+	val, ok := ci.ManagedOTAKeys.Load(k)
+	if ok {
+		result, ok = val.(int)
+	}
+	return ok, result
+}
+
+func (ci *CoinIndexer) AddCoinHash(coinHash [32]byte) error {
+	err := rawdbv2.StoreCachedCoinHash(ci.db, coinHash[:])
+	if err != nil {
+		return err
+	}
+	ci.cachedCoins[fmt.Sprintf("%x", coinHash)] = true
 	return nil
 }
 
@@ -381,7 +411,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		}
 
 		// query token output coins
-		currentOutputCoinsToken, err := QueryBatchDbCoinVer2(mapIdxParams, shardID, &common.ConfidentialAssetID, height, nextHeight-1, txDb, getCoinFilterByOTAKey())
+		currentOutputCoinsToken, err := QueryBatchDbCoinVer2(mapIdxParams, shardID, &common.ConfidentialAssetID, height, nextHeight-1, txDb, ci.cachedCoins, getCoinFilterByOTAKey())
 		if err != nil {
 			Logger.Log.Errorf("[CoinIndexer] Error while querying token coins from db - %v\n", err)
 
@@ -397,7 +427,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		}
 
 		// query PRV output coins
-		currentOutputCoinsPRV, err := QueryBatchDbCoinVer2(mapIdxParams, shardID, &common.PRVCoinID, height, nextHeight-1, txDb, getCoinFilterByOTAKey())
+		currentOutputCoinsPRV, err := QueryBatchDbCoinVer2(mapIdxParams, shardID, &common.PRVCoinID, height, nextHeight-1, txDb, ci.cachedCoins, getCoinFilterByOTAKey())
 		if err != nil {
 			Logger.Log.Errorf("[CoinIndexer] Error while querying PRV coins from db - %v\n", err)
 
@@ -505,6 +535,8 @@ func (ci *CoinIndexer) GetIndexedOutCoin(otaKey privacy.OTAKey, tokenID *common.
 	return result, 2, nil
 }
 
+// StoreIndexedOutputCoins stores output coins that have been indexed into the cache db. It also keep tracks of each
+// output coin hash to boost up the retrieval process.
 func (ci *CoinIndexer) StoreIndexedOutputCoins(otaKey privacy.OTAKey, outputCoins []privacy.Coin, shardID byte) error {
 	var ocBytes [][]byte
 	for _, c := range outputCoins {
@@ -517,7 +549,16 @@ func (ci *CoinIndexer) StoreIndexedOutputCoins(otaKey privacy.OTAKey, outputCoin
 	if err != nil {
 		return err
 	}
-	return err
+
+	// cache the coin's hash to reduce the number of checks
+	for _, c := range outputCoins {
+		err = ci.AddCoinHash(common.HashH(c.Bytes()))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (ci *CoinIndexer) Start() {
@@ -604,11 +645,3 @@ func (ci *CoinIndexer) Stop() {
 	}
 }
 
-func (ci *CoinIndexer) HasOTAKey(k [64]byte) (bool, int) {
-	var result int
-	val, ok := ci.ManagedOTAKeys.Load(k)
-	if ok {
-		result, ok = val.(int)
-	}
-	return ok, result
-}

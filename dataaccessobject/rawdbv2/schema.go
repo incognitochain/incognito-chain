@@ -41,6 +41,7 @@ var (
 	// this will use its own separate folder
 	reindexedOutputCoinPrefix = []byte("reindexed-output-coin" + string(splitter))
 	reindexedKeysPrefix       = []byte("reindexed-key" + string(splitter))
+	coinHashKeysPrefix        = []byte("coinhash-key" + string(splitter))
 	txByCoinIndexPrefix       = []byte("tx-index" + string(splitter))
 	txBySerialNumberPrefix    = []byte("tx-sn" + string(splitter))
 )
@@ -346,6 +347,7 @@ func getShardPendingValidatorsKey(hash common.Hash) []byte {
 const (
 	outcoinPrefixHashKeyLength          = 12
 	outcoinPrefixKeyLength              = 20
+	coinHashPrefixKeyLength             = 20
 	txByCoinIndexPrefixHashKeyLength    = 12
 	txByCoinIndexPrefixKeyLength        = 20
 	txBySerialNumberPrefixHashKeyLength = 12
@@ -362,6 +364,11 @@ func getIndexedKeysPrefix() []byte {
 	return h[:][:outcoinPrefixHashKeyLength]
 }
 
+func getCoinHashKeysPrefix() []byte {
+	h := common.HashH(coinHashKeysPrefix)
+	return h[:][:coinHashPrefixKeyLength]
+}
+
 func generateIndexedOutputCoinObjectKey(tokenID common.Hash, shardID byte, publicKey []byte, outputCoin []byte) []byte {
 	prefixHash := getIndexedOutputCoinPrefix(tokenID, shardID, publicKey)
 	valueHash := common.HashH(outputCoin)
@@ -372,6 +379,12 @@ func generateIndexedOTAKeyObjectKey(theKey []byte) []byte {
 	prefixHash := getIndexedKeysPrefix()
 	valueHash := common.HashH(theKey)
 	return append(prefixHash, valueHash[:][:outcoinPrefixKeyLength]...)
+}
+
+func generateCachedCoinHashObjectKey(theCoinHash []byte) []byte {
+	prefixHash := getCoinHashKeysPrefix()
+	valueHash := common.HashH(theCoinHash)
+	return append(prefixHash, valueHash[:][:coinHashPrefixKeyLength]...)
 }
 
 func getTxByCoinIndexPrefix() []byte {
