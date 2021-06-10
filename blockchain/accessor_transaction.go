@@ -440,6 +440,7 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 		}
 
 		outcoinIndexer.IdxChan <- idxParams
+		return nil
 	}
 
 	Logger.log.Infof("OTA Key Submission %x", otaKey)
@@ -465,8 +466,9 @@ func (blockchain *BlockChain) GetAllOutputCoinsByKeyset(keyset *incognitokey.Key
 		}
 	}
 	outCoins, state, err := outcoinIndexer.GetIndexedOutCoin(keyset.OTAKey, tokenID, transactionStateDB, shardID)
-	switch state{
-	case 2:
+	Logger.log.Infof("current cache state: %v\n", state)
+	switch state {
+	case 2, 3:
 		var decryptedResults []privacy.PlainCoin
 		var otherResults []privacy.Coin
 		if withVersion1{

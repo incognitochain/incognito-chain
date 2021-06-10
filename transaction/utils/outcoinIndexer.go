@@ -364,8 +364,8 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 				delete(mapOutputCoins, otaStr)
 			}
 			// resetting entries for this key is reserved for debugging RPCs
-			if processing == 2 && !idxParam.IsReset {
-				Logger.Log.Errorf("[CoinIndexer] ota key %v has been processed and isReset = false", idxParam.OTAKey)
+			if processing == 3 && !idxParam.IsReset {
+				Logger.Log.Errorf("[CoinIndexer] ota key %v has been processed with status %v and isReset = false", idxParam.OTAKey, processing)
 
 				ci.statusChan <- mapStatuses[otaStr]
 				delete(mapIdxParams, otaStr)
@@ -375,17 +375,25 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		}
 		ci.ManagedOTAKeys.Store(vkb, 1)
 
-		func() {
+		defer func() {
 			if r := recover(); r != nil {
 				Logger.Log.Errorf("[CoinIndexer] Recovered from: %v\n", r)
 			}
-			if exists, processing := ci.HasOTAKey(vkb); exists && processing == 1 {
+			if exists, tmpProcessing := ci.HasOTAKey(vkb); exists && tmpProcessing == 1 {
 				ci.ManagedOTAKeys.Delete(vkb)
 			}
 		}()
 	}
 
+	if len(mapIdxParams) == 0 {
+		Logger.Log.Infof("[CoinIndexer] No indexParam to proceed")
+		return
+	}
+
 	// in case minHeight > maxHeight, all indexing params will fail
+	if minHeight == 0 {
+		minHeight = 1
+	}
 	Logger.Log.Infof("fromHeight: %v, toHeight %v\n", minHeight, maxHeight)
 	if minHeight > maxHeight {
 		err := fmt.Errorf("minHeight (%v) > maxHeight (%v) when re-indexing outcoins", minHeight, maxHeight)
@@ -404,6 +412,8 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 	for height := minHeight; height <= maxHeight; {
 		tmpStart := time.Now()
 		nextHeight := height + MaxOutcoinQueryInterval
+
+		Logger.Log.Infof("Currently processing height: %v, %v\n", height, nextHeight)
 
 		ctx, cancel := context.WithTimeout(context.Background(), OutcoinReindexerTimeout*time.Second)
 		defer cancel()
@@ -500,7 +510,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 			continue
 		}
 
-		ci.ManagedOTAKeys.Store(vkb, 2)
+		ci.ManagedOTAKeys.Store(vkb, 3)
 		Logger.Log.Infof("[CoinIndexer] Indexing complete for key %x, found %v coins, timeElapsed: %v\n", vkb, len(allOutputCoins), time.Since(start).Seconds())
 
 		ci.statusChan <- mapStatuses[otaStr]
