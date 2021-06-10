@@ -184,7 +184,7 @@ func (actorV1 *actorV1) combineVotes(votes map[string]vote, committee []string) 
 	return
 }
 
-func (actorV1 *actorV1) Run() error {
+func (actorV1 *actorV1) run() error {
 	if actorV1.isStarted {
 		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(actorV1.chainKey))
 	}
@@ -607,7 +607,16 @@ func NewActorV1WithValue(
 	actorV1.chainID = chainID
 	actorV1.node = node
 	actorV1.logger = logger
+	actorV1.run()
 	return &actorV1
+}
+
+func (a *actorV1) Start() error {
+	if !a.isStarted {
+		a.logger.Info("start bls-bftv3 consensus for chain", a.chainKey)
+	}
+	a.isStarted = true
+	return nil
 }
 
 func (actorV1 *actorV1) BlockVersion() int {

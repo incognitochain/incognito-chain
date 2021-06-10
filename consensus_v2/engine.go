@@ -165,11 +165,9 @@ func (engine *Engine) WatchCommitteeChange() {
 			currActorVersion = engine.version[chainID]
 		}
 
-		shouldRun := false
 		engine.updateVersion(chainID)
 		if _, ok := engine.bftProcess[chainID]; !ok {
 			engine.initProcess(chainID, chainName)
-			shouldRun = true
 		} else {
 			if engine.version[chainID] != currActorVersion {
 				err := engine.bftProcess[chainID].Stop()
@@ -178,7 +176,6 @@ func (engine *Engine) WatchCommitteeChange() {
 					return
 				}
 				engine.initProcess(chainID, chainName)
-				shouldRun = true
 			}
 		}
 
@@ -187,15 +184,9 @@ func (engine *Engine) WatchCommitteeChange() {
 			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
 		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
+		engine.bftProcess[chainID].Start()
 		engine.NotifyNewRole(chainID, common.CommitteeRole)
 		miningProc = engine.bftProcess[chainID]
-		if shouldRun {
-			err := engine.bftProcess[chainID].Run()
-			if err != nil {
-				Logger.Log.Error(err)
-				return
-			}
-		}
 	}
 
 	for chainID, proc := range engine.bftProcess {

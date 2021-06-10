@@ -17,7 +17,7 @@ type Actor interface {
 	// GetUserPublicKey - get user public key of loaded mining key
 	GetUserPublicKey() *incognitokey.CommitteePublicKey
 	// Start - start consensus
-	Run() error
+	Start() error
 	// Stop - stop consensus
 	Stop() error
 	// IsOngoing - check whether consensus is currently voting on a block
