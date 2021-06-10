@@ -1,4 +1,4 @@
-name: "local"
+name: "local-dcs"
 net: 0x02
 genesis_param: 
   fee_per_tx_kb: 0

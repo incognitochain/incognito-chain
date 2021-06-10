@@ -53,6 +53,40 @@ type actorV2 struct {
 	blockVersion         int
 }
 
+func NewActorV2() *actorV2 {
+	return &actorV2{}
+}
+
+func NewActorV2WithValue(
+	chain Chain,
+	committeeChain CommitteeChainHandler,
+	chainKey string, blockVersion, chainID int,
+	node NodeInterface, logger common.Logger,
+) *actorV2 {
+	var err error
+	actor := NewActorV2()
+	actor.chain = chain
+	actor.chainKey = chainKey
+	actor.chainID = chainID
+	actor.node = node
+	actor.logger = logger
+	actor.destroyCh = make(chan struct{})
+	actor.proposeMessageCh = make(chan BFTPropose)
+	actor.voteMessageCh = make(chan BFTVote)
+	actor.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
+	actor.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
+	actor.voteHistory = make(map[uint64]types.BlockInterface)
+	actor.bodyHashes = make(map[uint64]map[string]bool)
+	actor.votedTimeslot = make(map[int64]bool)
+	actor.committeeChain = committeeChain
+	actor.blockVersion = blockVersion
+	actor.proposeHistory, err = lru.New(1000)
+	if err != nil {
+		panic(err) //must not error
+	}
+	return actor
+}
+
 func (actorV2 actorV2) GetConsensusName() string {
 	return common.BlsConsensus
 }
@@ -76,10 +110,10 @@ func (actorV2 actorV2) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 func (actorV2 *actorV2) Stop() error {
 	if actorV2.isStarted {
 		actorV2.logger.Info("stop bls-bftv3 consensus for chain", actorV2.chainKey)
+		actorV2.isStarted = false
 		actorV2.destroyCh <- struct{}{}
 	}
-	actorV2.isStarted = false
-	return nil
+	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(actorV2.chainKey))
 }
 
 func (actorV2 actorV2) IsStarted() bool {
@@ -141,39 +175,6 @@ func (actorV2 *actorV2) SignData(data []byte) (string, error) {
 	return base58.Base58Check{}.Encode(result, common.Base58Version), nil
 }
 
-func NewActorV2() *actorV2 {
-	return &actorV2{}
-}
-
-func NewActorV2WithValue(
-	chain Chain,
-	committeeChain CommitteeChainHandler,
-	chainKey string, blockVersion, chainID int,
-	node NodeInterface, logger common.Logger,
-) *actorV2 {
-	var err error
-	actor := NewActorV2()
-	actor.chain = chain
-	actor.chainKey = chainKey
-	actor.chainID = chainID
-	actor.node = node
-	actor.logger = logger
-	actor.proposeMessageCh = make(chan BFTPropose)
-	actor.voteMessageCh = make(chan BFTVote)
-	actor.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
-	actor.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
-	actor.voteHistory = make(map[uint64]types.BlockInterface)
-	actor.bodyHashes = make(map[uint64]map[string]bool)
-	actor.votedTimeslot = make(map[int64]bool)
-	actor.committeeChain = committeeChain
-	actor.blockVersion = blockVersion
-	actor.proposeHistory, err = lru.New(1000)
-	if err != nil {
-		panic(err) //must not error
-	}
-	return actor
-}
-
 func (actorV2 *actorV2) Run() error {
 	actorV2.isStarted = true
 	go func() {
@@ -186,6 +187,7 @@ func (actorV2 *actorV2) Run() error {
 			select {
 			case <-actorV2.destroyCh:
 				actorV2.logger.Infof("exit bls-bft-%+v consensus for chain %+v", actorV2.blockVersion, actorV2.chainKey)
+				close(actorV2.destroyCh)
 				return
 			case proposeMsg := <-actorV2.proposeMessageCh:
 				err := actorV2.handleProposeMsg(proposeMsg)

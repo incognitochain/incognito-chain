@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,7 +25,21 @@ import (
 )
 
 type actorV1 struct {
-	actorBase
+	chain    Chain
+	node     NodeInterface
+	chainKey string
+	chainID  int
+	peerID   string
+
+	userKeySet       []signatureschemes2.MiningKey
+	bftMessageCh     chan wire.MessageBFT
+	proposeMessageCh chan BFTPropose
+	voteMessageCh    chan BFTVote
+
+	isStarted bool
+	destroyCh chan struct{}
+	logger    common.Logger
+
 	roundData struct {
 		timeStart         time.Time
 		block             types.BlockInterface
@@ -50,12 +66,122 @@ type actorV1 struct {
 }
 
 func (actorV1 *actorV1) Stop() error {
-	err := actorV1.actorBase.Stop()
-	if err != nil {
-		return NewConsensusError(ConsensusAlreadyStoppedError, err)
+	if actorV1.isStarted {
+		actorV1.logger.Info("stop bls-bft consensus for chain", actorV1.chainKey)
+		actorV1.isStarted = false
+		actorV1.destroyCh <- struct{}{}
+		return nil
 	}
 	actorV1.isOngoing = false
 	return nil
+}
+
+func (actorV1 *actorV1) IsStarted() bool {
+	return actorV1.isStarted
+}
+
+func (actorV1 *actorV1) GetConsensusName() string {
+	return consensusName
+}
+
+func (actorV1 *actorV1) GetChainKey() string {
+	return actorV1.chainKey
+}
+func (actorV1 *actorV1) GetChainID() int {
+	return actorV1.chainID
+}
+
+func (actorV1 *actorV1) processBFTMsg(msg *wire.MessageBFT) {
+	switch msg.Type {
+	case MSG_PROPOSE:
+		var msgPropose BFTPropose
+		err := json.Unmarshal(msg.Content, &msgPropose)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		actorV1.proposeMessageCh <- msgPropose
+	case MSG_VOTE:
+		var msgVote BFTVote
+		err := json.Unmarshal(msg.Content, &msgVote)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		actorV1.voteMessageCh <- msgVote
+	default:
+		actorV1.logger.Critical("???")
+		return
+	}
+}
+
+func (actorV1 *actorV1) preValidateVote(blockHash []byte, Vote *vote, candidate []byte) error {
+	data := []byte{}
+	data = append(data, blockHash...)
+	data = append(data, Vote.BLS...)
+	data = append(data, Vote.BRI...)
+	dataHash := common.HashH(data)
+	err := validateSingleBriSig(&dataHash, Vote.Confirmation, candidate)
+	return err
+}
+
+func (actorV1 *actorV1) LoadUserKeys(miningKey []signatureschemes2.MiningKey) {
+	actorV1.userKeySet = miningKey
+	return
+}
+
+func (actorV1 *actorV1) GetUserPublicKey() *incognitokey.CommitteePublicKey {
+	if actorV1.userKeySet != nil {
+		key := actorV1.userKeySet[0].GetPublicKey()
+		return key
+	}
+	return nil
+}
+
+func (actorV1 *actorV1) SignData(data []byte) (string, error) {
+	result, err := actorV1.userKeySet[0].BriSignData(data) //, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
+	if err != nil {
+		return "", NewConsensusError(SignDataError, err)
+	}
+
+	return base58.Base58Check{}.Encode(result, common.Base58Version), nil
+}
+
+func (actorV1 *actorV1) ValidateData(data []byte, sig string, publicKey string) error {
+	sigByte, _, err := base58.Base58Check{}.Decode(sig)
+	if err != nil {
+		return NewConsensusError(UnExpectedError, err)
+	}
+	publicKeyByte := []byte(publicKey)
+	// if err != nil {
+	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	// }
+	//fmt.Printf("ValidateData data %v, sig %v, publicKey %v\n", data, sig, publicKeyByte)
+	dataHash := new(common.Hash)
+	dataHash.NewHash(data)
+	_, err = bridgesig.Verify(publicKeyByte, dataHash.GetBytes(), sigByte) //blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
+	if err != nil {
+		return NewConsensusError(UnExpectedError, err)
+	}
+	return nil
+}
+
+func (actorV1 *actorV1) combineVotes(votes map[string]vote, committee []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
+	var blsSigList [][]byte
+	for validator, _ := range votes {
+		validatorIdx = append(validatorIdx, common.IndexOfStr(validator, committee))
+	}
+	sort.Ints(validatorIdx)
+	for _, idx := range validatorIdx {
+		blsSigList = append(blsSigList, votes[committee[idx]].BLS)
+		brigSigs = append(brigSigs, votes[committee[idx]].BRI)
+	}
+
+	aggSig, err = blsmultisig.Combine(blsSigList)
+	if err != nil {
+		return nil, nil, nil, NewConsensusError(CombineSignatureError, err)
+	}
+	return
 }
 
 func (actorV1 *actorV1) Run() error {
@@ -467,13 +593,21 @@ func NewActorV1WithValue(
 	chainKey string, chainID int,
 	node NodeInterface, logger common.Logger,
 ) *actorV1 {
-	var newInstance actorV1
-	newInstance.chain = chain
-	newInstance.chainKey = chainKey
-	newInstance.chainID = chainID
-	newInstance.node = node
-	newInstance.logger = logger
-	return &newInstance
+	var actorV1 actorV1
+	actorV1.chain = chain
+	actorV1.chainKey = chainKey
+	actorV1.chainID = chainID
+	actorV1.node = node
+	actorV1.logger = logger
+	actorV1.destroyCh = make(chan struct{})
+	actorV1.proposeMessageCh = make(chan BFTPropose)
+	actorV1.voteMessageCh = make(chan BFTVote)
+	actorV1.chain = chain
+	actorV1.chainKey = chainKey
+	actorV1.chainID = chainID
+	actorV1.node = node
+	actorV1.logger = logger
+	return &actorV1
 }
 
 func (actorV1 *actorV1) BlockVersion() int {
@@ -630,21 +764,4 @@ func (actorV1 *actorV1) initRoundData() {
 	actorV1.roundData.lastProposerIndex = actorV1.chain.GetLastProposerIndex()
 	actorV1.UpdateCommitteeBLSList()
 	actorV1.setState(newround)
-}
-
-func NewActorWithValue(
-	chain Chain, committeeChain CommitteeChainHandler, version int,
-	chainID, blockVersion int, chainName string,
-	node NodeInterface, logger common.Logger,
-) Actor {
-	var res Actor
-	switch version {
-	case types.BFT_VERSION:
-		res = NewActorV1WithValue(chain, chainName, chainID, node, logger)
-	case types.MULTI_VIEW_VERSION, types.SLASHING_VERSION, types.DCS_VERSION:
-		res = NewActorV2WithValue(chain, committeeChain, chainName, chainID, blockVersion, node, logger)
-	default:
-		panic("Bft version is not valid")
-	}
-	return res
 }

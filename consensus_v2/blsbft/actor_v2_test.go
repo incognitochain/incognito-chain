@@ -126,7 +126,7 @@ package blsbft
 //		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
 //
 //	type fields struct {
-//		actorBase            actorBase
+//		actorV1            actorV1
 //		committeeChain       Chain
 //		currentTime          int64
 //		currentTimeSlot      int64
@@ -150,7 +150,7 @@ package blsbft
 //		{
 //			name: "Block is nil",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //					chain:  errorUnmarshalChain,
 //				},
@@ -167,7 +167,7 @@ package blsbft
 //		{
 //			name: "Can not get committees from block",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					chain:   errorGetBestViewHeight,
 //					logger:  logger,
 //					chainID: 1,
@@ -186,7 +186,7 @@ package blsbft
 //		{
 //			name: "Receive block from old view",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					chain:   errorGetBestViewHeight,
 //					logger:  logger,
 //					chainID: 1,
@@ -207,7 +207,7 @@ package blsbft
 //		{
 //			name: "Sync blocks to current proposed block",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					chain:   syncProposeViewChain,
 //					logger:  logger,
 //					node:    node,
@@ -229,7 +229,7 @@ package blsbft
 //		{
 //			name: "Normal Work",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					chain:   normalChain,
 //					logger:  logger,
 //					chainID: 1,
@@ -251,7 +251,7 @@ package blsbft
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			actorV2 := &actorV2{
-//				actorBase:            tt.fields.actorBase,
+//				actorV1:            tt.fields.actorV1,
 //				committeeChain:       tt.fields.committeeChain,
 //				currentTime:          tt.fields.currentTime,
 //				currentTimeSlot:      tt.fields.currentTimeSlot,
@@ -278,7 +278,7 @@ package blsbft
 //	blockHash, _ := common.Hash{}.NewHashFromStr("123456")
 //
 //	type fields struct {
-//		actorBase            actorBase
+//		actorV1            actorV1
 //		committeeChain       Chain
 //		currentTime          int64
 //		currentTimeSlot      int64
@@ -303,7 +303,7 @@ package blsbft
 //		{
 //			name: "Receive vote before receive block",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //				},
 //				receiveBlockByHash: map[string]*ProposeBlockInfo{},
@@ -320,7 +320,7 @@ package blsbft
 //		{
 //			name: "Receive wrong vote after receive block",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //				},
 //				receiveBlockByHash: map[string]*ProposeBlockInfo{
@@ -344,7 +344,7 @@ package blsbft
 //		{
 //			name: "Receive right vote after block and this node is proposer and not send vote",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //				},
 //				receiveBlockByHash: map[string]*ProposeBlockInfo{
@@ -369,7 +369,7 @@ package blsbft
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			actorV2 := &actorV2{
-//				actorBase:            tt.fields.actorBase,
+//				actorV1:            tt.fields.actorV1,
 //				committeeChain:       tt.fields.committeeChain,
 //				currentTime:          tt.fields.currentTime,
 //				currentTimeSlot:      tt.fields.currentTimeSlot,
@@ -440,7 +440,7 @@ package blsbft
 //	).Return(block, nil)
 //
 //	type fields struct {
-//		actorBase            actorBase
+//		actorV1            actorV1
 //		committeeChain       Chain
 //		currentTime          int64
 //		currentTimeSlot      int64
@@ -469,7 +469,7 @@ package blsbft
 //			name: "Invalid Create New block",
 //			fields: fields{
 //				blockVersion: 4,
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //					chain:  invalidChain,
 //				},
@@ -488,7 +488,7 @@ package blsbft
 //		{
 //			name: "Invalid Create New Block From Old Block",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //					chain:  invalidChain,
 //				},
@@ -508,7 +508,7 @@ package blsbft
 //		{
 //			name: "Create new valid block",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //					chain:  validChain,
 //				},
@@ -528,7 +528,7 @@ package blsbft
 //		{
 //			name: "Create new valid block from old block",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //					chain:  validChain,
 //				},
@@ -550,7 +550,7 @@ package blsbft
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			actorV2 := &actorV2{
-//				actorBase:            tt.fields.actorBase,
+//				actorV1:            tt.fields.actorV1,
 //				committeeChain:       tt.fields.committeeChain,
 //				currentTime:          tt.fields.currentTime,
 //				currentTimeSlot:      tt.fields.currentTimeSlot,
@@ -686,7 +686,7 @@ package blsbft
 //		Return([]incognitokey.CommitteePublicKey{incKey0, *incKey, *incKey2, *incKey3})
 //
 //	type fields struct {
-//		actorBase            actorBase
+//		actorV1            actorV1
 //		committeeChain       Chain
 //		currentTime          int64
 //		currentTimeSlot      int64
@@ -714,7 +714,7 @@ package blsbft
 //		{
 //			name: "Can't get committees for current block",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					chain:   invalidChain,
 //					logger:  logger,
 //					chainID: 1,
@@ -733,7 +733,7 @@ package blsbft
 //		{
 //			name: "CreateNewBlock invalid",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					chain:   invalidChain,
 //					logger:  logger,
 //					chainID: 1,
@@ -754,7 +754,7 @@ package blsbft
 //		{
 //			name: "CreateNewBlockFromOldBlock invalid",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					chain:   invalidChain,
 //					logger:  logger,
 //					chainID: 1,
@@ -775,7 +775,7 @@ package blsbft
 //		{
 //			name: "CreateNewBlock valid",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					chain:   validChain,
 //					logger:  logger,
 //					chainID: 1,
@@ -796,7 +796,7 @@ package blsbft
 //		{
 //			name: "CreateNewBlockFromOldBlock valid",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					chain:   validChain,
 //					logger:  logger,
 //					chainID: 1,
@@ -818,7 +818,7 @@ package blsbft
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			actorV2 := &actorV2{
-//				actorBase:            tt.fields.actorBase,
+//				actorV1:            tt.fields.actorV1,
 //				committeeChain:       tt.fields.committeeChain,
 //				currentTime:          tt.fields.currentTime,
 //				currentTimeSlot:      tt.fields.currentTimeSlot,
@@ -888,7 +888,7 @@ package blsbft
 //	lastValidateTime := time.Now().Add(-time.Second * 2)
 //
 //	type fields struct {
-//		actorBase            actorBase
+//		actorV1            actorV1
 //		committeeChain       Chain
 //		currentTime          int64
 //		currentTimeSlot      int64
@@ -914,7 +914,7 @@ package blsbft
 //		{
 //			name: "Block is nil",
 //			fields: fields{
-//				actorBase:            actorBase{},
+//				actorV1:            actorV1{},
 //				committeeChain:       nil,
 //				currentTime:          1,
 //				currentTimeSlot:      1,
@@ -949,7 +949,7 @@ package blsbft
 //		{
 //			name: "blockHeight is larger than validViewHeight",
 //			fields: fields{
-//				actorBase:            actorBase{},
+//				actorV1:            actorV1{},
 //				committeeChain:       nil,
 //				currentTime:          1,
 //				currentTimeSlot:      1,
@@ -984,7 +984,7 @@ package blsbft
 //		{
 //			name: "blockHeight == currentBestViewHeight && blockHash != currentBestViewHash",
 //			fields: fields{
-//				actorBase:            actorBase{},
+//				actorV1:            actorV1{},
 //				committeeChain:       nil,
 //				currentTime:          1,
 //				currentTimeSlot:      1,
@@ -1019,7 +1019,7 @@ package blsbft
 //		{
 //			name: "block is out of validate time",
 //			fields: fields{
-//				actorBase:            actorBase{},
+//				actorV1:            actorV1{},
 //				committeeChain:       nil,
 //				currentTime:          1,
 //				currentTimeSlot:      1,
@@ -1054,7 +1054,7 @@ package blsbft
 //		{
 //			name: "block proposer time is different from current time slot",
 //			fields: fields{
-//				actorBase:            actorBase{},
+//				actorV1:            actorV1{},
 //				committeeChain:       nil,
 //				currentTime:          1,
 //				currentTimeSlot:      4,
@@ -1089,7 +1089,7 @@ package blsbft
 //		{
 //			name: "Block propose time is smaller than produce time",
 //			fields: fields{
-//				actorBase:            actorBase{},
+//				actorV1:            actorV1{},
 //				committeeChain:       nil,
 //				currentTime:          1,
 //				currentTimeSlot:      3,
@@ -1124,7 +1124,7 @@ package blsbft
 //		{
 //			name: "Block Time Slot Has Been Voted",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					chain: &tempChain,
 //				},
 //				committeeChain:       nil,
@@ -1164,7 +1164,7 @@ package blsbft
 //		{
 //			name: "Valid Block",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					chain: &tempChain,
 //				},
 //				committeeChain:       nil,
@@ -1220,7 +1220,7 @@ package blsbft
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			actorV2 := &actorV2{
-//				actorBase:            tt.fields.actorBase,
+//				actorV1:            tt.fields.actorV1,
 //				committeeChain:       tt.fields.committeeChain,
 //				currentTime:          tt.fields.currentTime,
 //				currentTimeSlot:      tt.fields.currentTimeSlot,
@@ -1317,7 +1317,7 @@ package blsbft
 //		[]incognitokey.CommitteePublicKey{}).Return(nil)
 //
 //	type fields struct {
-//		actorBase            actorBase
+//		actorV1            actorV1
 //		committeeChain       Chain
 //		currentTime          int64
 //		currentTimeSlot      int64
@@ -1342,7 +1342,7 @@ package blsbft
 //		{
 //			name: "Proposetime and Producetime is not valid for voting",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //				},
 //				voteHistory: map[uint64]types.BlockInterface{
@@ -1360,7 +1360,7 @@ package blsbft
 //		{
 //			name: "sendVote == true",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //				},
 //				voteHistory: map[uint64]types.BlockInterface{
@@ -1379,7 +1379,7 @@ package blsbft
 //		{
 //			name: "isVoted == true",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //				},
 //				voteHistory: map[uint64]types.BlockInterface{
@@ -1399,7 +1399,7 @@ package blsbft
 //		{
 //			name: "proposeBlockInfo is valid",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //				},
 //				voteHistory: map[uint64]types.BlockInterface{
@@ -1420,7 +1420,7 @@ package blsbft
 //		{
 //			name: "prev hash of block is not valid",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //					chain:  tempChain,
 //				},
@@ -1442,7 +1442,7 @@ package blsbft
 //		{
 //			name: "Body block has been verified",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //					chain:  tempChain,
 //				},
@@ -1469,7 +1469,7 @@ package blsbft
 //		{
 //			name: "Verify valid block FAIL",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //					chain:  tempChain,
 //				},
@@ -1498,7 +1498,7 @@ package blsbft
 //		{
 //			name: "Verify valid block SUCCESS",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //					chain:  tempChain,
 //				},
@@ -1526,7 +1526,7 @@ package blsbft
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			actorV2 := &actorV2{
-//				actorBase:            tt.fields.actorBase,
+//				actorV1:            tt.fields.actorV1,
 //				committeeChain:       tt.fields.committeeChain,
 //				currentTime:          tt.fields.currentTime,
 //				currentTimeSlot:      tt.fields.currentTimeSlot,
@@ -1547,7 +1547,7 @@ package blsbft
 //
 //func Test_actorV2_processIfBlockGetEnoughVote(t *testing.T) {
 //	type fields struct {
-//		actorBase            actorBase
+//		actorV1            actorV1
 //		committeeChain       Chain
 //		currentTime          int64
 //		currentTimeSlot      int64
@@ -1573,7 +1573,7 @@ package blsbft
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			actorV2 := &actorV2{
-//				actorBase:            tt.fields.actorBase,
+//				actorV1:            tt.fields.actorV1,
 //				committeeChain:       tt.fields.committeeChain,
 //				currentTime:          tt.fields.currentTime,
 //				currentTimeSlot:      tt.fields.currentTimeSlot,
@@ -1611,7 +1611,7 @@ package blsbft
 //	errReplaceValidationDataShardChain.On("ReplacePreviousValidationData", *prevHash)
 //
 //	type fields struct {
-//		actorBase            actorBase
+//		actorV1            actorV1
 //		committeeChain       Chain
 //		currentTime          int64
 //		currentTimeSlot      int64
@@ -1635,7 +1635,7 @@ package blsbft
 //		{
 //			name: "Err in create bls",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //				},
 //			},
@@ -1649,7 +1649,7 @@ package blsbft
 //		{
 //			name: "Fail to replace previous validation data",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //					chain:  errReplaceValidationDataShardChain,
 //				},
@@ -1672,7 +1672,7 @@ package blsbft
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			actorV2 := &actorV2{
-//				actorBase:            tt.fields.actorBase,
+//				actorV1:            tt.fields.actorV1,
 //				committeeChain:       tt.fields.committeeChain,
 //				currentTime:          tt.fields.currentTime,
 //				currentTimeSlot:      tt.fields.currentTimeSlot,
@@ -1783,7 +1783,7 @@ package blsbft
 //	}
 //
 //	type fields struct {
-//		actorBase            actorBase
+//		actorV1            actorV1
 //		committeeChain       Chain
 //		currentTime          int64
 //		currentTimeSlot      int64
@@ -1810,7 +1810,7 @@ package blsbft
 //		{
 //			name: "Valid Input",
 //			fields: fields{
-//				actorBase: actorBase{
+//				actorV1: actorV1{
 //					logger: logger,
 //				},
 //			},
@@ -1842,7 +1842,7 @@ package blsbft
 //	for _, tt := range tests {
 //		t.Run(tt.name, func(t *testing.T) {
 //			actorV2 := &actorV2{
-//				actorBase:            tt.fields.actorBase,
+//				actorV1:            tt.fields.actorV1,
 //				committeeChain:       tt.fields.committeeChain,
 //				currentTime:          tt.fields.currentTime,
 //				currentTimeSlot:      tt.fields.currentTimeSlot,
