@@ -394,7 +394,6 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 	if minHeight == 0 {
 		minHeight = 1
 	}
-	Logger.Log.Infof("fromHeight: %v, toHeight %v\n", minHeight, maxHeight)
 	if minHeight > maxHeight {
 		err := fmt.Errorf("minHeight (%v) > maxHeight (%v) when re-indexing outcoins", minHeight, maxHeight)
 		for otaStr, _ := range mapStatuses {
@@ -408,12 +407,13 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		return
 	}
 
+	//Clone the current cachedCoins to avoid collisions
+	cachedCoins := ci.CloneCachedCoins()
+
 	start := time.Now()
 	for height := minHeight; height <= maxHeight; {
-		tmpStart := time.Now()
+		tmpStart := time.Now() //measure time for each round
 		nextHeight := height + MaxOutcoinQueryInterval
-
-		Logger.Log.Infof("Currently processing height: %v, %v\n", height, nextHeight)
 
 		ctx, cancel := context.WithTimeout(context.Background(), OutcoinReindexerTimeout*time.Second)
 		defer cancel()
@@ -433,8 +433,10 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 			return
 		}
 
+
+
 		// query token output coins
-		currentOutputCoinsToken, err := QueryBatchDbCoinVer2(mapIdxParams, shardID, &common.ConfidentialAssetID, height, nextHeight-1, txDb, ci.cachedCoins, getCoinFilterByOTAKey())
+		currentOutputCoinsToken, err := QueryBatchDbCoinVer2(mapIdxParams, shardID, &common.ConfidentialAssetID, height, nextHeight-1, txDb, cachedCoins, getCoinFilterByOTAKey())
 		if err != nil {
 			Logger.Log.Errorf("[CoinIndexer] Error while querying token coins from db - %v\n", err)
 
@@ -450,7 +452,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		}
 
 		// query PRV output coins
-		currentOutputCoinsPRV, err := QueryBatchDbCoinVer2(mapIdxParams, shardID, &common.PRVCoinID, height, nextHeight-1, txDb, ci.cachedCoins, getCoinFilterByOTAKey())
+		currentOutputCoinsPRV, err := QueryBatchDbCoinVer2(mapIdxParams, shardID, &common.PRVCoinID, height, nextHeight-1, txDb, cachedCoins, getCoinFilterByOTAKey())
 		if err != nil {
 			Logger.Log.Errorf("[CoinIndexer] Error while querying PRV coins from db - %v\n", err)
 
