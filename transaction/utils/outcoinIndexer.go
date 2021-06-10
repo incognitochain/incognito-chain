@@ -22,16 +22,17 @@ type CoinIndexer struct {
 	numWorkers          int
 	sem                 *semaphore.Weighted
 	mtx                 *sync.RWMutex
-	ManagedOTAKeys      *sync.Map
 	db                  incdb.Database
 	accessTokens        map[string]bool
 	idxQueue            map[byte][]IndexParam
 	queueSize           int
-	IdxChan             chan IndexParam
 	statusChan          chan JobStatus
 	quitChan            chan bool
 	isAuthorizedRunning bool
-	cachedCoins			map[string]interface{}
+	cachedCoins         map[string]interface{}
+
+	ManagedOTAKeys *sync.Map
+	IdxChan        chan IndexParam
 }
 
 // NewOutCoinIndexer creates a new full node's caching instance for faster output coin retrieval.
@@ -76,20 +77,27 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database) (*CoinIndexer, error
 	Logger.Log.Infof("Number of cached coins: %v\n", len(cachedCoins))
 
 	ci := &CoinIndexer{
-		numWorkers:     int(numWorkers),
-		sem:            sem,
-		mtx:            mtx,
-		ManagedOTAKeys: m,
-		db:             db,
-		accessTokens:   accessTokens,
-		cachedCoins:    cachedCoins,
+		numWorkers:          int(numWorkers),
+		sem:                 sem,
+		mtx:                 mtx,
+		ManagedOTAKeys:      m,
+		db:                  db,
+		accessTokens:        accessTokens,
+		cachedCoins:         cachedCoins,
+		isAuthorizedRunning: false,
 	}
 
 	return ci, nil
 }
 
 // IsValidAccessToken checks if a user is authorized to use the enhanced cache.
+//
+// An access token is said to be valid if it is a hex-string of length 64.
 func (ci *CoinIndexer) IsValidAccessToken(accessToken string) bool {
+	atBytes, err := hex.DecodeString(accessToken)
+	if err != nil || len(atBytes) != 32 {
+		return false
+	}
 	return ci.accessTokens[accessToken]
 }
 
@@ -120,42 +128,42 @@ func (ci *CoinIndexer) IsAuthorizedRunning() bool {
 //
 //	return isValid, nil
 //}
+//
+//// AddAccessToken adds an access token to the list.
+//func (ci *CoinIndexer) AddAccessToken(accessToken string, signature []byte) error {
+//	isValid, err := ci.IsValidAdminSignature([]byte(accessToken), signature)
+//	if err != nil || !isValid {
+//		Logger.Log.Errorf("Cannot add access token %v, sig %v: isValid = %v, err = %v\n", accessToken, signature, isValid, err)
+//		return fmt.Errorf("cannot add access token")
+//	}
+//
+//	accessTokenBytes, err := hex.DecodeString(accessToken)
+//	if err != nil {
+//		return err
+//	}
+//	if len(accessTokenBytes) != 32 {
+//		return fmt.Errorf("access token is invalid")
+//	}
+//
+//	ci.accessTokens[accessToken] = true
+//
+//	return nil
+//}
 
-// AddAccessToken adds an access token to the list.
-func (ci *CoinIndexer) AddAccessToken(accessToken string, signature []byte) error {
-	//isValid, err := ci.IsValidAdminSignature([]byte(accessToken), signature)
-	//if err != nil || !isValid {
-	//	Logger.Log.Errorf("Cannot add access token %v, sig %v: isValid = %v, err = %v\n", accessToken, signature, isValid, err)
-	//	return fmt.Errorf("cannot add access token")
-	//}
-
-	accessTokenBytes, err := hex.DecodeString(accessToken)
-	if err != nil {
-		return err
-	}
-	if len(accessTokenBytes) != 32 {
-		return fmt.Errorf("access token is invalid")
-	}
-
-	ci.accessTokens[accessToken] = true
-
-	return nil
-}
-
-// DeleteAccessToken deletes an access token from the list.
-func (ci *CoinIndexer) DeleteAccessToken(accessToken string, signature []byte) error {
-	//isValid, err := ci.IsValidAdminSignature([]byte(accessToken), signature)
-	//if err != nil || !isValid {
-	//	Logger.Log.Errorf("Cannot delete access token %v, sig %v: isValid = %v, err = %v\n", accessToken, signature, isValid, err)
-	//	return fmt.Errorf("cannot delete access token")
-	//}
-
-	if ci.accessTokens[accessToken] {
-		delete(ci.accessTokens, accessToken)
-	}
-
-	return nil
-}
+//// DeleteAccessToken deletes an access token from the list.
+//func (ci *CoinIndexer) DeleteAccessToken(accessToken string, signature []byte) error {
+//	//isValid, err := ci.IsValidAdminSignature([]byte(accessToken), signature)
+//	//if err != nil || !isValid {
+//	//	Logger.Log.Errorf("Cannot delete access token %v, sig %v: isValid = %v, err = %v\n", accessToken, signature, isValid, err)
+//	//	return fmt.Errorf("cannot delete access token")
+//	//}
+//
+//	if ci.accessTokens[accessToken] {
+//		delete(ci.accessTokens, accessToken)
+//	}
+//
+//	return nil
+//}
 
 // RemoveOTAKey removes an OTAKey from the cached database.
 //
@@ -349,7 +357,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		keyExists, processing := ci.HasOTAKey(vkb)
 		if keyExists {
 			if processing == 1 {
-				Logger.Log.Errorf("[CoinIndexer] ota key %v is being processed", idxParam.OTAKey)
+				Logger.Log.Errorf("[CoinIndexer] ota key %x is being processed", idxParam.OTAKey)
 				ci.statusChan <- mapStatuses[otaStr]
 				delete(mapIdxParams, otaStr)
 				delete(mapStatuses, otaStr)
@@ -636,7 +644,7 @@ func (ci *CoinIndexer) Start() {
 				}
 				start = time.Now()
 			} else {
-				Logger.Log.Infof("CoinIndexer is full or no OTA keys found in queue, numWorking %v, queueSize %v\n", numWorking, ci.queueSize)
+				Logger.Log.Infof("CoinIndexer is full or no OTA key is found in queue, numWorking %v, queueSize %v\n", numWorking, ci.queueSize)
 				time.Sleep(10 * time.Second)
 			}
 		}
@@ -648,4 +656,3 @@ func (ci *CoinIndexer) Stop() {
 		ci.quitChan <- true
 	}
 }
-

@@ -404,6 +404,10 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 		return fmt.Errorf("OTAKey %x has been submitted and status = %v", otaBytes, processing)
 	}
 
+	if accessToken != "" && !outcoinIndexer.IsAuthorizedRunning() {
+		return fmt.Errorf("enhanced caching not supported by this node configuration")
+	}
+
 	otaKeyStr := fmt.Sprintf("%x", otaBytes)
 	Logger.log.Infof("[SubmitOTAKey] otaKey %x, keyExist %v, status %v, isReset %v\n", otaKeyStr, keyExists, processing, isReset)
 
@@ -414,16 +418,16 @@ func (blockchain *BlockChain) SubmitOTAKey(otaKey privacy.OTAKey, accessToken st
 			return fmt.Errorf("the current authorized queue is full, please check back later")
 		}
 
-		if !outcoinIndexer.IsAuthorizedRunning() {
-			return fmt.Errorf("enhanced caching not supported by this node configuration")
-		}
-
 		bss := blockchain.GetBestStateShard(shardID)
 		transactionStateDB := blockchain.GetBestStateTransactionStateDB(shardID)
 
 		lowestHeightForV2 := config.Param().CoinVersion2LowestHeight
 		if heightToSyncFrom < lowestHeightForV2 {
 			heightToSyncFrom = lowestHeightForV2
+		}
+
+		if heightToSyncFrom > bss.ShardHeight {
+			return fmt.Errorf("fromHeight (%v) is larger than the current shard height (%v)", heightToSyncFrom, bss.ShardHeight)
 		}
 
 		idxParams := txutils.IndexParam{
