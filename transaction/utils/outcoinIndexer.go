@@ -61,6 +61,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database) (*CoinIndexer, error
 			m.Store(temp, 2)
 		}
 	}
+	Logger.Log.Infof("Number of cached OTA keys: %v\n", len(loadedKeysRaw))
 
 	cachedCoins := make(map[string]interface{})
 	loadRawCachedCoinHashes, err := rawdbv2.GetCachedCoinHashes(db)
@@ -71,6 +72,8 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database) (*CoinIndexer, error
 			cachedCoins[fmt.Sprintf("%x", temp)] = true
 		}
 	}
+
+	Logger.Log.Infof("Number of cached coins: %v\n", len(cachedCoins))
 
 	ci := &CoinIndexer{
 		numWorkers:     int(numWorkers),
@@ -194,6 +197,7 @@ func (ci *CoinIndexer) AddCoinHash(coinHash [32]byte) error {
 		return err
 	}
 	ci.cachedCoins[fmt.Sprintf("%x", coinHash)] = true
+	Logger.Log.Infof("Add coinHash %x success\n", coinHash)
 	return nil
 }
 
