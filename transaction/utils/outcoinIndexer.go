@@ -386,6 +386,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 	}
 
 	// in case minHeight > maxHeight, all indexing params will fail
+	Logger.Log.Infof("fromHeight: %v, toHeight %v\n", minHeight, maxHeight)
 	if minHeight > maxHeight {
 		err := fmt.Errorf("minHeight (%v) > maxHeight (%v) when re-indexing outcoins", minHeight, maxHeight)
 		for otaStr, _ := range mapStatuses {

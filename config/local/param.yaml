@@ -58,7 +58,7 @@ eth_remove_bridge_sig_epoch: 0
 replace_staking_tx_height: 1
 bc_height_break_point_new_zkp: 2
 bc_height_break_point_privacy_v2: 52300
-coin_v2_lowest_height: 10
+coin_v2_lowest_height: 0
 enable_feature_flags:
   - 0: 1
   - 1: 0
