@@ -80,7 +80,7 @@ func (actorBase *actorBase) Stop() error {
 
 func (actorBase *actorBase) processBFTMsg(msg *wire.MessageBFT) {
 	switch msg.Type {
-	case MsgPropose:
+	case MSG_PROPOSE:
 		var msgPropose BFTPropose
 		err := json.Unmarshal(msg.Content, &msgPropose)
 		if err != nil {
@@ -88,7 +88,7 @@ func (actorBase *actorBase) processBFTMsg(msg *wire.MessageBFT) {
 			return
 		}
 		actorBase.proposeMessageCh <- msgPropose
-	case MsgVote:
+	case MSG_VOTE:
 		var msgVote BFTVote
 		err := json.Unmarshal(msg.Content, &msgVote)
 		if err != nil {

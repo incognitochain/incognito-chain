@@ -77,7 +77,6 @@ type Chain interface {
 		ts int64,
 		committees []incognitokey.CommitteePublicKey,
 	) (incognitokey.CommitteePublicKey, int, error)
-	CommitteesFromViewHashForShard(committeeHash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
 	ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error
 	// GetSigningCommitteesFromBestView must be retrieve from a shard view, because it's based on the committee state version
 	GetSigningCommittees(
@@ -87,7 +86,6 @@ type Chain interface {
 	) []incognitokey.CommitteePublicKey
 }
 
-// TODO: @hung consider split interface
 type CommitteeChainHandler interface {
 	CommitteesFromViewHashForShard(committeeHash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error)
 	FinalView() multiview.View

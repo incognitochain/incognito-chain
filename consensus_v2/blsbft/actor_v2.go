@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/common/base58"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
 	"reflect"
 	"sort"
 	"time"
@@ -23,7 +25,21 @@ import (
 )
 
 type actorV2 struct {
-	actorBase
+	chain    Chain
+	node     NodeInterface
+	chainKey string
+	chainID  int
+	peerID   string
+
+	userKeySet       []signatureschemes2.MiningKey
+	bftMessageCh     chan wire.MessageBFT
+	proposeMessageCh chan BFTPropose
+	voteMessageCh    chan BFTVote
+
+	isStarted bool
+	destroyCh chan struct{}
+	logger    common.Logger
+
 	committeeChain  CommitteeChainHandler
 	currentTime     int64
 	currentTimeSlot int64
@@ -37,6 +53,94 @@ type actorV2 struct {
 	blockVersion         int
 }
 
+func (actorV2 actorV2) GetConsensusName() string {
+	return common.BlsConsensus
+}
+
+func (actorV2 actorV2) GetChainKey() string {
+	return actorV2.chainKey
+}
+
+func (actorV2 actorV2) GetChainID() int {
+	return actorV2.chainID
+}
+
+func (actorV2 actorV2) GetUserPublicKey() *incognitokey.CommitteePublicKey {
+	if actorV2.userKeySet != nil {
+		key := actorV2.userKeySet[0].GetPublicKey()
+		return key
+	}
+	return nil
+}
+
+func (actorV2 *actorV2) Stop() error {
+	if actorV2.isStarted {
+		actorV2.logger.Info("stop bls-bftv3 consensus for chain", actorV2.chainKey)
+		actorV2.destroyCh <- struct{}{}
+	}
+	actorV2.isStarted = false
+	return nil
+}
+
+func (actorV2 actorV2) IsStarted() bool {
+	return actorV2.isStarted
+}
+
+func (actorV2 *actorV2) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
+	switch msgBFT.Type {
+	case MSG_PROPOSE:
+		var msgPropose BFTPropose
+		err := json.Unmarshal(msgBFT.Content, &msgPropose)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		msgPropose.PeerID = msgBFT.PeerID
+		actorV2.proposeMessageCh <- msgPropose
+	case MSG_VOTE:
+		var msgVote BFTVote
+		err := json.Unmarshal(msgBFT.Content, &msgVote)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		actorV2.voteMessageCh <- msgVote
+	default:
+		actorV2.logger.Criticalf("Unknown BFT message type %+v", msgBFT)
+		return
+	}
+}
+
+func (actorV2 *actorV2) LoadUserKeys(miningKey []signatureschemes2.MiningKey) {
+	actorV2.userKeySet = miningKey
+	return
+}
+
+func (actorV2 actorV2) ValidateData(data []byte, sig string, publicKey string) error {
+	sigByte, _, err := base58.Base58Check{}.Decode(sig)
+	if err != nil {
+		return NewConsensusError(UnExpectedError, err)
+	}
+	publicKeyByte := []byte(publicKey)
+	dataHash := new(common.Hash)
+	dataHash.NewHash(data)
+	_, err = bridgesig.Verify(publicKeyByte, dataHash.GetBytes(), sigByte) //blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
+	if err != nil {
+		return NewConsensusError(UnExpectedError, err)
+	}
+	return nil
+}
+
+func (actorV2 *actorV2) SignData(data []byte) (string, error) {
+	//, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
+	result, err := actorV2.userKeySet[0].BriSignData(data)
+	if err != nil {
+		return "", NewConsensusError(SignDataError, err)
+	}
+
+	return base58.Base58Check{}.Encode(result, common.Base58Version), nil
+}
+
 func NewActorV2() *actorV2 {
 	return &actorV2{}
 }
@@ -48,22 +152,26 @@ func NewActorV2WithValue(
 	node NodeInterface, logger common.Logger,
 ) *actorV2 {
 	var err error
-	res := NewActorV2()
-	res.actorBase = *NewActorBaseWithValue(chain, chainKey, chainID, node, logger)
-	res.proposeMessageCh = make(chan BFTPropose)
-	res.voteMessageCh = make(chan BFTVote)
-	res.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
-	res.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
-	res.voteHistory = make(map[uint64]types.BlockInterface)
-	res.bodyHashes = make(map[uint64]map[string]bool)
-	res.votedTimeslot = make(map[int64]bool)
-	res.committeeChain = committeeChain
-	res.blockVersion = blockVersion
-	res.proposeHistory, err = lru.New(1000)
+	actor := NewActorV2()
+	actor.chain = chain
+	actor.chainKey = chainKey
+	actor.chainID = chainID
+	actor.node = node
+	actor.logger = logger
+	actor.proposeMessageCh = make(chan BFTPropose)
+	actor.voteMessageCh = make(chan BFTVote)
+	actor.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
+	actor.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
+	actor.voteHistory = make(map[uint64]types.BlockInterface)
+	actor.bodyHashes = make(map[uint64]map[string]bool)
+	actor.votedTimeslot = make(map[int64]bool)
+	actor.committeeChain = committeeChain
+	actor.blockVersion = blockVersion
+	actor.proposeHistory, err = lru.New(1000)
 	if err != nil {
 		panic(err) //must not error
 	}
-	return res
+	return actor
 }
 
 func (actorV2 *actorV2) Run() error {
@@ -456,7 +564,7 @@ func (actorV2 *actorV2) voteForBlock(
 		actorV2.voteHistory[v.block.GetHeight()] = v.block
 		actorV2.votedTimeslot[common.CalculateTimeSlot(v.block.GetProposeTime())] = true
 		actorV2.logger.Info(actorV2.chainKey, "sending vote...")
-		go actorV2.processBFTMsg(msg.(*wire.MessageBFT))
+		go actorV2.ProcessBFTMsg(msg.(*wire.MessageBFT))
 		go actorV2.node.PushMessageToChain(msg, actorV2.chain)
 	}
 
@@ -550,7 +658,7 @@ func (actorV2 *actorV2) proposeBlock(
 	proposeCtn.Block = blockData
 	proposeCtn.PeerID = actorV2.node.GetSelfPeerID().String()
 	msg, _ := actorV2.makeBFTProposeMsg(proposeCtn, actorV2.chainKey, actorV2.currentTimeSlot, block.GetHeight())
-	go actorV2.processBFTMsg(msg.(*wire.MessageBFT))
+	go actorV2.ProcessBFTMsg(msg.(*wire.MessageBFT))
 	go actorV2.node.PushMessageToChain(msg, actorV2.chain)
 
 	return block, nil
@@ -1001,7 +1109,7 @@ func (actorV2 *actorV2) makeBFTProposeMsg(proposeCtn *BFTPropose, chainKey strin
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
 	msg.(*wire.MessageBFT).ChainKey = chainKey
 	msg.(*wire.MessageBFT).Content = proposeCtnBytes
-	msg.(*wire.MessageBFT).Type = MsgPropose
+	msg.(*wire.MessageBFT).Type = MSG_PROPOSE
 	msg.(*wire.MessageBFT).TimeSlot = ts
 	msg.(*wire.MessageBFT).Timestamp = time.Now().UnixNano() / int64(time.Millisecond)
 	msg.(*wire.MessageBFT).PeerID = proposeCtn.PeerID
@@ -1016,7 +1124,7 @@ func (actorV2 *actorV2) makeBFTVoteMsg(vote *BFTVote, chainKey string, ts int64,
 	msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
 	msg.(*wire.MessageBFT).ChainKey = chainKey
 	msg.(*wire.MessageBFT).Content = voteCtnBytes
-	msg.(*wire.MessageBFT).Type = MsgVote
+	msg.(*wire.MessageBFT).Type = MSG_VOTE
 	msg.(*wire.MessageBFT).TimeSlot = ts
 	msg.(*wire.MessageBFT).Timestamp = time.Now().UnixNano() / int64(time.Millisecond)
 	return msg, nil

@@ -155,7 +155,7 @@ func (actorV1 *actorV1) Run() error {
 									msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
 									msg.(*wire.MessageBFT).ChainKey = actorV1.chainKey
 									msg.(*wire.MessageBFT).Content = voteCtnBytes
-									msg.(*wire.MessageBFT).Type = MsgVote
+									msg.(*wire.MessageBFT).Type = MSG_VOTE
 									// TODO uncomment here when switch to non-highway mode
 									// e.Node.PushMessageToChain(msg, e.Chain)
 								}()

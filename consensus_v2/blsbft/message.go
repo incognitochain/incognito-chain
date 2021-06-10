@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	MsgPropose    = "propose"
-	MsgVote       = "vote"
+	MSG_PROPOSE   = "propose"
+	MSG_VOTE      = "vote"
 	MsgRequestBlk = "getblk"
 )
 
@@ -60,7 +60,7 @@ func (s *BFTVote) validateVoteOwner(ownerPk []byte) error {
 
 func (actorBase *actorBase) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 	switch msgBFT.Type {
-	case MsgPropose:
+	case MSG_PROPOSE:
 		var msgPropose BFTPropose
 		err := json.Unmarshal(msgBFT.Content, &msgPropose)
 		if err != nil {
@@ -69,7 +69,7 @@ func (actorBase *actorBase) ProcessBFTMsg(msgBFT *wire.MessageBFT) {
 		}
 		msgPropose.PeerID = msgBFT.PeerID
 		actorBase.proposeMessageCh <- msgPropose
-	case MsgVote:
+	case MSG_VOTE:
 		var msgVote BFTVote
 		err := json.Unmarshal(msgBFT.Content, &msgVote)
 		if err != nil {
