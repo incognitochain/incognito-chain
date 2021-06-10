@@ -109,7 +109,7 @@ func setup() {
 		panic(err)
 	}
 	// use only 1 worker for benchmark
-	coinReindexer, err = utils.NewOutcoinReindexer(1, featureStorage)
+	coinReindexer, err = utils.NewOutCoinIndexer(1, featureStorage)
 	if err != nil {
 		panic(err)
 	}
@@ -386,7 +386,7 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 			ks := keySets[(reindexFrom + loop) % numOfPrivateKeys]
 			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 			otaKey := ks.OTAKey
-			err := coinReindexer.ReindexOutcoin(uint64(0), maxHeight, otaKey, coinDB, shardID, false)
+			err := coinReindexer.ReIndexOutCoin(uint64(0), maxHeight, otaKey, coinDB, shardID, false)
 			// assert.Equal(b, len(results), numOfCoinsPerKey)
 			if err != nil {
 				panic(err)
@@ -402,7 +402,7 @@ func BenchmarkQueryCoinV2(b *testing.B) {
 			ks := keySets[(reindexFrom + loop) % numOfPrivateKeys]
 			// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 			otaKey := ks.OTAKey
-			results, _, err := coinReindexer.GetReindexedOutcoin(otaKey, &common.PRVCoinID, coinDB, shardID)
+			results, _, err := coinReindexer.GetIndexedOutCoin(otaKey, &common.PRVCoinID, coinDB, shardID)
 			assert.Equal(b, len(results), numOfCoinsPerKey)
 			if err != nil {
 				panic(err)
@@ -467,7 +467,7 @@ func BenchmarkReindexCoinV2(b *testing.B) {
 		ks := keySets[(chosenIndex + loop) % numOfPrivateKeys]
 		// fmt.Printf("Get coin by key %x\n", ks.OTAKey)
 		otaKey := ks.OTAKey
-		err := coinReindexer.ReindexOutcoin(uint64(0), uint64(1), otaKey, coinDB, shardID, false)
+		err := coinReindexer.ReIndexOutCoin(uint64(0), uint64(1), otaKey, coinDB, shardID, false)
 		// assert.Equal(b, len(results), numOfCoinsPerKey)
 		if err != nil {
 			panic(err)

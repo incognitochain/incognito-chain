@@ -68,7 +68,8 @@ type Config struct {
 	Server            Server
 	ConsensusEngine   ConsensusEngine
 	Highway           Highway
-	OutcoinByOTAKeyDb *incdb.Database
+	OutCoinByOTAKeyDb *incdb.Database
+	IndexerWorkers    int64
 	PoolManager       *txpool.PoolManager
 
 	relayShardLck sync.Mutex
@@ -112,11 +113,16 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	blockchain.cQuitSync = make(chan struct{})
 
-	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb!=nil)
-	if EnableIndexingCoinByOTAKey{
+	EnableIndexingCoinByOTAKey = config.OutCoinByOTAKeyDb != nil
+	if EnableIndexingCoinByOTAKey {
 		var err error
-		outcoinIndexer, err = txutils.NewOutcoinReindexer(*config.OutcoinByOTAKeyDb)
-		return err
+		outcoinIndexer, err = txutils.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb)
+		if err != nil {
+			return err
+		}
+		if config.IndexerWorkers > 0 {
+			go outcoinIndexer.Start()
+		}
 	}
 	return nil
 }
@@ -386,7 +392,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 	assetTags := make([][]byte, 0)
 	// these coins either all have asset tags or none does
 	var hasAssetTags bool = true
-	for i:=0;i<numOutputs;i++{
+	for i := 0; i < numOutputs; i++ {
 		idx, _ := common.RandBigIntMaxRange(lenOTA)
 		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx.Uint64(), shardID)
 		if err != nil {
@@ -394,7 +400,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		}
 		coinDB := new(coin.CoinV2)
 		if err := coinDB.SetBytes(coinBytes); err != nil {
-			return nil, nil, nil, nil , err
+			return nil, nil, nil, nil, err
 		}
 		publicKey := coinDB.GetPublicKey()
 		commitment := coinDB.GetCommitment()
@@ -403,11 +409,11 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		publicKeys = append(publicKeys, publicKey.ToBytesS())
 		commitments = append(commitments, commitment.ToBytesS())
 
-		if hasAssetTags{
+		if hasAssetTags {
 			assetTag := coinDB.GetAssetTag()
-			if assetTag!=nil{
+			if assetTag != nil {
 				assetTags = append(assetTags, assetTag.ToBytesS())
-			}else{
+			} else {
 				hasAssetTags = false
 			}
 		}

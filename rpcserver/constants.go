@@ -151,6 +151,7 @@ const (
 	getReceivedByAccount            = "getreceivedbyaccount"
 	setTxFee                        = "settxfee"
 	submitKey                       = "submitkey"
+	authorizedSubmitKey             = "authorizedsubmitkey"
 
 	// walletsta
 	getPublicKeyFromPaymentAddress = "getpublickeyfrompaymentaddress"
