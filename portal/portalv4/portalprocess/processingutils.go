@@ -1,12 +1,13 @@
 package portalprocess
 
 import (
+	"sort"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
-	"sort"
-	"strconv"
 )
 
 func CollectPortalV4Insts(ppv4 map[int]PortalInstructionProcessorV4, metaType int, action []string, shardID byte) {
@@ -23,6 +24,10 @@ func CollectPortalV4Insts(ppv4 map[int]PortalInstructionProcessorV4, metaType in
 	// submit confirmed tx
 	case metadata.PortalV4SubmitConfirmedTxMeta:
 		ppv4[metadata.PortalV4SubmitConfirmedTxMeta].PutAction(action, shardID)
+		// submit confirmed tx
+	case metadata.PortalV4ConvertVaultRequestMeta:
+		Logger.log.Errorf("Collect convert tx")
+		ppv4[metadata.PortalV4ConvertVaultRequestMeta].PutAction(action, shardID)
 
 	default:
 		return
@@ -155,6 +160,9 @@ func hasPortalV4Instruction(instructions [][]string) bool {
 			hasPortalV4Instruction = true
 			break
 		case strconv.Itoa(metadata.PortalV4SubmitConfirmedTxMeta):
+			hasPortalV4Instruction = true
+			break
+		case strconv.Itoa(metadata.PortalV4ConvertVaultRequestMeta):
 			hasPortalV4Instruction = true
 			break
 		}

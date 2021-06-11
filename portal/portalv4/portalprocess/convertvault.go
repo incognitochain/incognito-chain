@@ -119,6 +119,7 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 	portalParams portalv4.PortalParams,
 	optionalData map[string]interface{},
 ) ([][]string, error) {
+	Logger.log.Errorf("Converting Request Producing ...")
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -205,7 +206,7 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 	for _, utxo := range listUTXO {
 		convertingAmountInExtAmt += utxo.GetOutputAmount()
 	}
-	centralizedBridgeVault, ok := optionalData["centralizedBridgeVault"].(float64)
+	centralizedBridgeVault, ok := optionalData["centralizedBridgeVault"].(uint64)
 	if !ok {
 		Logger.log.Errorf("Converting Request: optionalData centralizedBridgeVault is invalid")
 		return [][]string{rejectInst}, nil
@@ -243,69 +244,68 @@ func (p *PortalConvertVaultRequestProcessor) ProcessInsts(
 	portalParams portalv4.PortalParams,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 ) error {
+	Logger.log.Errorf("Converting Request Processing ...")
 	if currentPortalState == nil {
-		Logger.log.Errorf("Shielding Request: Current Portal state is nil")
+		Logger.log.Errorf("Converting Request: Current Portal state is nil")
 		return nil
 	}
 
 	if len(instructions) != 5 {
-		Logger.log.Errorf("Shielding Request: Instructions are in wrong format")
+		Logger.log.Errorf("Converting Request: Instructions are in wrong format")
 		return nil // skip the instruction
 	}
 
 	// unmarshal instructions content
-	var actionData metadata.PortalShieldingRequestContent
+	var actionData metadata.PortalConvertVaultRequestContent
 	err := json.Unmarshal([]byte(instructions[3]), &actionData)
 	if err != nil {
-		Logger.log.Errorf("Shielding Request: Could not unmarshal instruction content %v - Error: %v\n", instructions[3], err)
+		Logger.log.Errorf("Converting Request: Could not unmarshal instruction content %v - Error: %v\n", instructions[3], err)
 		return nil
 	}
 
-	var shieldStatus byte
+	// var shieldStatus byte
 	reqStatus := instructions[2]
 	if reqStatus == portalcommonv4.PortalV4RequestAcceptedChainStatus {
-		shieldStatus = portalcommonv4.PortalV4RequestAcceptedStatus
+		// shieldStatus = portalcommonv4.PortalV4RequestAcceptedStatus
 
-		shieldingExternalTxHash := actionData.ShieldingUTXO[0].GetTxHash()
-		shieldingAmount := uint64(0)
-		for _, utxo := range actionData.ShieldingUTXO {
-			shieldingAmount += utxo.GetOutputAmount()
-		}
-
-		currentPortalState.AddUTXOs(actionData.ShieldingUTXO, actionData.TokenID)
-		currentPortalState.AddShieldingExternalTx(actionData.TokenID, actionData.ProofHash,
-			shieldingExternalTxHash, actionData.IncogAddressStr, shieldingAmount)
+		currentPortalState.AddUTXOs(actionData.ConvertingUTXO, actionData.TokenID)
 
 		// update bridge token info
-		err := metadata.UpdateBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.MintingAmount, false)
+		tokenIDHash, _ := common.Hash{}.NewHashFromStr(actionData.TokenID)
+		err = statedb.UpdateBridgeTokenInfo(stateDB, *tokenIDHash, nil, true, actionData.ConvertingAmount, statedb.BridgeMinusOperator)
 		if err != nil {
-			Logger.log.Errorf("Shielding Request: Update Portal token info for UnshieldID - Error %v\n", actionData.TxReqID.String(), err)
+			Logger.log.Errorf("Converting Request: Update Centralized bridge token info - Error %v\n", err)
+			return nil
+		}
+		err = statedb.UpdateBridgeTokenInfo(stateDB, *tokenIDHash, nil, false, actionData.ConvertingAmount, statedb.BridgePlusOperator)
+		if err != nil {
+			Logger.log.Errorf("Converting Request: Update Decentralized bridge token info - Error %v\n", err)
 			return nil
 		}
 	} else if reqStatus == portalcommonv4.PortalV4RequestRejectedChainStatus {
-		shieldStatus = portalcommonv4.PortalV4RequestRejectedStatus
+		// shieldStatus = portalcommonv4.PortalV4RequestRejectedStatus
 	}
 
-	// track shieldingReq status by txID into DB
-	shieldingReqTrackData := metadata.PortalShieldingRequestStatus{
-		Status:          shieldStatus,
-		Error:           instructions[4],
-		TokenID:         actionData.TokenID,
-		IncogAddressStr: actionData.IncogAddressStr,
-		ProofHash:       actionData.ProofHash,
-		ShieldingUTXO:   actionData.ShieldingUTXO,
-		MintingAmount:   actionData.MintingAmount,
-		TxReqID:         actionData.TxReqID,
-	}
-	shieldingReqTrackDataBytes, _ := json.Marshal(shieldingReqTrackData)
-	err = statedb.StoreShieldingRequestStatus(
-		stateDB,
-		actionData.TxReqID.String(),
-		shieldingReqTrackDataBytes,
-	)
-	if err != nil {
-		Logger.log.Errorf("Shielding Request: An error occurred while tracking shielding request tx - Error: %v", err)
-	}
+	// // track shieldingReq status by txID into DB
+	// shieldingReqTrackData := metadata.PortalShieldingRequestStatus{
+	// 	Status:          shieldStatus,
+	// 	Error:           instructions[4],
+	// 	TokenID:         actionData.TokenID,
+	// 	IncogAddressStr: actionData.IncogAddressStr,
+	// 	ProofHash:       actionData.ProofHash,
+	// 	ShieldingUTXO:   actionData.ShieldingUTXO,
+	// 	MintingAmount:   actionData.MintingAmount,
+	// 	TxReqID:         actionData.TxReqID,
+	// }
+	// shieldingReqTrackDataBytes, _ := json.Marshal(shieldingReqTrackData)
+	// err = statedb.StoreShieldingRequestStatus(
+	// 	stateDB,
+	// 	actionData.TxReqID.String(),
+	// 	shieldingReqTrackDataBytes,
+	// )
+	// if err != nil {
+	// 	Logger.log.Errorf("Shielding Request: An error occurred while tracking shielding request tx - Error: %v", err)
+	// }
 
 	return nil
 }

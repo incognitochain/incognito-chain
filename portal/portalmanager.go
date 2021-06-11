@@ -176,7 +176,7 @@ func NewPortalManager() *PortalManager {
 				Actions: map[byte][][]string{},
 			},
 		},
-		metadata.PortalV4ConvertVaultRequestMeta: &portalprocessv4.PortalSubmitConfirmedTxProcessor{
+		metadata.PortalV4ConvertVaultRequestMeta: &portalprocessv4.PortalConvertVaultRequestProcessor{
 			PortalInstProcessorV4: &portalprocessv4.PortalInstProcessorV4{
 				Actions: map[byte][][]string{},
 			},
