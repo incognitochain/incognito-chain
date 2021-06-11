@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -12,13 +14,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/bean"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"strings"
 )
-
-func (httpServer *HttpServer) isPortalV3RPC(methodName string) bool {
-	result, _ := common.SliceExists(PortalV3RPCs, methodName)
-	return result
-}
 
 /*
 ====== Portal state

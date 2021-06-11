@@ -318,8 +318,6 @@ func (httpServer *HttpServer) ProcessRpcRequest(w http.ResponseWriter, r *http.R
 				} else {
 					result, jsonErr = command(httpServer, request.Params, closeChan)
 				}
-			} else {
-				jsonErr = rpcservice.NewRPCError(rpcservice.RPCMethodNotFoundError, errors.New("Method not found: "+request.Method))
 			}
 		}
 	}
@@ -655,12 +653,15 @@ func (httpServer *HttpServer) GetBlockchain() *blockchain.BlockChain {
 func (httpServer *HttpServer) checkEnableFeatureFlagRPC(methodName string) (bool, bool) {
 	bc := httpServer.GetBlockchain()
 	epoch := bc.GetBeaconBestState().Epoch
-	if httpServer.isPortalRelayingRPC(methodName) {
-		return true, bc.IsEnableFeature(common.PortalRelayingFlag, epoch)
-	} else if httpServer.isPortalV3RPC(methodName) {
-		return true, bc.IsEnableFeature(common.PortalV3Flag, epoch)
-	} else if httpServer.isPortalV4RPC(methodName) {
-		return true, bc.IsEnableFeature(common.PortalV4Flag, epoch)
+
+	for featureFlag, methods := range FeatureFlagWithMethodNames {
+		for _, m := range methods {
+			if methodName != m {
+				continue
+			}
+			return true, bc.IsEnableFeature(featureFlag, epoch)
+		}
 	}
+
 	return false, false
 }

@@ -119,7 +119,7 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 	portalParams portalv4.PortalParams,
 	optionalData map[string]interface{},
 ) ([][]string, error) {
-	Logger.log.Errorf("Converting Request Producing ...")
+	Logger.log.Infof("Converting Vault Request Producing ...")
 	// parse instruction
 	actionContentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
@@ -244,7 +244,7 @@ func (p *PortalConvertVaultRequestProcessor) ProcessInsts(
 	portalParams portalv4.PortalParams,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
 ) error {
-	Logger.log.Errorf("Converting Request Processing ...")
+	Logger.log.Infof("Converting Vault Request Processing ...")
 	if currentPortalState == nil {
 		Logger.log.Errorf("Converting Request: Current Portal state is nil")
 		return nil

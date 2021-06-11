@@ -18,11 +18,6 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 )
 
-func (httpServer *HttpServer) isPortalV4RPC(methodName string) bool {
-	result, _ := common.SliceExists(PortalV4RPCs, methodName)
-	return result
-}
-
 /*
 ===== Get Portal State
 */
@@ -98,10 +93,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithShieldingReq(params interface
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
-	//tokenIDHash, err := new(common.Hash).NewHashFromStr(tokenID)
-	//if err != nil {
-	//	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata Can not new TokenIDHash from TokenID"))
-	//}
+
 	incognitoAddress, ok := data["IncogAddressStr"].(string)
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncogAddressStr is invalid"))

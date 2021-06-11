@@ -1224,14 +1224,14 @@ func (tp *TxPool) calPoolSize() uint64 {
 
 func (tp *TxPool) checkEnableFeatureFlagMetadata(metaType int, epoch uint64) (bool, bool) {
 	bc := tp.config.BlockChain
-	if metadata.IsPortalRelayingMetaType(metaType) {
-		return true, bc.IsEnableFeature(common.PortalRelayingFlag, epoch)
-	} else if metadata.IsPortalMetaTypeV3(metaType) {
-		return true, bc.IsEnableFeature(common.PortalV3Flag, epoch)
-	} else if metadata.IsPortalMetaTypeV4(metaType) {
-		return true, bc.IsEnableFeature(common.PortalV4Flag, epoch)
+	for featureFlag, metaTypes := range metadata.FeatureFlagWithMetaTypes {
+		for _, m := range metaTypes {
+			if metaType != m {
+				continue
+			}
+			return true, bc.IsEnableFeature(featureFlag, epoch)
+		}
 	}
-
 	return false, false
 }
 

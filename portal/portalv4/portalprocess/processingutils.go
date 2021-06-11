@@ -10,30 +10,6 @@ import (
 	"github.com/incognitochain/incognito-chain/portal/portalv4"
 )
 
-func CollectPortalV4Insts(ppv4 map[int]PortalInstructionProcessorV4, metaType int, action []string, shardID byte) {
-	switch metaType {
-	// shield
-	case metadata.PortalV4ShieldingRequestMeta:
-		ppv4[metadata.PortalV4ShieldingRequestMeta].PutAction(action, shardID)
-	// unshield
-	case metadata.PortalV4UnshieldingRequestMeta:
-		ppv4[metadata.PortalV4UnshieldingRequestMeta].PutAction(action, shardID)
-	// replacement fee
-	case metadata.PortalV4FeeReplacementRequestMeta:
-		ppv4[metadata.PortalV4FeeReplacementRequestMeta].PutAction(action, shardID)
-	// submit confirmed tx
-	case metadata.PortalV4SubmitConfirmedTxMeta:
-		ppv4[metadata.PortalV4SubmitConfirmedTxMeta].PutAction(action, shardID)
-		// submit confirmed tx
-	case metadata.PortalV4ConvertVaultRequestMeta:
-		Logger.log.Errorf("Collect convert tx")
-		ppv4[metadata.PortalV4ConvertVaultRequestMeta].PutAction(action, shardID)
-
-	default:
-		return
-	}
-}
-
 func buildNewPortalV4InstsFromActions(
 	p PortalInstructionProcessorV4,
 	bc metadata.ChainRetriever,

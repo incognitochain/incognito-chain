@@ -60,9 +60,9 @@ bc_height_break_point_new_zkp: 1148608
 bc_height_break_point_privacy_v2: 2624524
 coin_v2_lowest_height: 8640
 enable_feature_flags:
-  - 0: 1
-  - 1: 0
-  - 2: 0
+  - PortalRelaying: 1
+  - PortalV3: 0
+  - PortalV4: 0
 portal_v3_height: 1328816
 tx_pool_version: 0
 geth_param:

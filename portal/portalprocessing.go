@@ -12,11 +12,11 @@ import (
 func CollectPortalInstructions(pm *PortalManager, metaType int, action []string, shardID byte) bool {
 	isCollected := true
 	if metadata.IsPortalRelayingMetaType(metaType) {
-		portalrelaying.CollectPortalRelayingInsts(pm.RelayingChainsProcessors, metaType, action, shardID)
+		pm.RelayingChainsProcessors[metaType].PutAction(action)
 	} else if metadata.IsPortalMetaTypeV3(metaType) {
-		portalprocessv3.CollectPortalV3Insts(pm.PortalInstProcessorsV3, metaType, action, shardID)
+		pm.PortalInstProcessorsV3[metaType].PutAction(action, shardID)
 	} else if metadata.IsPortalMetaTypeV4(metaType) {
-		portalprocessv4.CollectPortalV4Insts(pm.PortalInstProcessorsV4, metaType, action, shardID)
+		pm.PortalInstProcessorsV4[metaType].PutAction(action, shardID)
 	} else {
 		isCollected = false
 	}

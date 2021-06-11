@@ -78,7 +78,6 @@ func (blockchain *BlockChain) collectStatefulActions(
 			metadata.PortalV4FeeReplacementRequestMeta,
 			metadata.PortalV4SubmitConfirmedTxMeta,
 			metadata.PortalV4ConvertVaultRequestMeta:
-			Logger.log.Errorf("Collect action metaTypes %v", metaType)
 			statefulInsts = append(statefulInsts, inst)
 
 		default:

@@ -195,9 +195,9 @@ var (
 
 /* ================ Feature Flags ================ */
 const (
-	PortalRelayingFlag = 0
-	PortalV3Flag       = 1
-	PortalV4Flag       = 2
+	PortalRelayingFlag = "PortalRelaying"
+	PortalV3Flag       = "PortalV3"
+	PortalV4Flag       = "PortalV4"
 )
 const (
 	PortalVersion3 = 3

@@ -1,5 +1,7 @@
 package metadata
 
+import "github.com/incognitochain/incognito-chain/common"
+
 const (
 	InvalidMeta = 1
 
@@ -244,4 +246,11 @@ var portalV4MetaTypes = []int{
 	PortalV4FeeReplacementRequestMeta,
 	PortalV4SubmitConfirmedTxMeta,
 	PortalV4ConvertVaultRequestMeta,
+}
+
+// NOTE: add new records when add new feature flags
+var FeatureFlagWithMetaTypes = map[string][]int{
+	common.PortalRelayingFlag: portalRelayingMetaTypes,
+	common.PortalV3Flag:       portalMetaTypesV3,
+	common.PortalV4Flag:       portalV4MetaTypes,
 }
