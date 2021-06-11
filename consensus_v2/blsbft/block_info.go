@@ -17,7 +17,6 @@ type ProposeBlockInfo struct {
 	votes                   map[string]*BFTVote //pk->BFTVote
 	isValid                 bool
 	hasNewVote              bool
-	sendVote                bool
 	isVoted                 bool
 	isCommitted             bool
 	validVotes              int
