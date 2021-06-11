@@ -169,6 +169,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 		res[otaStr] = make([]privacy.Coin, 0)
 	}
 
+	countSkipped := 0
 	for height := start; height <= destHeight; height += 1 {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
@@ -176,17 +177,19 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 			return nil, err
 		}
 		for _, coinBytes := range currentHeightCoins {
-			coinHash := common.HashH(coinBytes).String()
-			if _, ok := cachedCoins[coinHash]; ok {
-				continue
-			}
-
 			cv2 := &privacy.CoinV2{}
 			err := cv2.SetBytes(coinBytes)
 			if err != nil {
 				Logger.Log.Error("Get outcoins ver 2 from bytes", err)
 				return nil, err
 			}
+
+			if _, ok := cachedCoins[cv2.GetPublicKey().String()]; ok {
+				countSkipped++
+				continue
+			}
+
+
 			for otaStr, idxParam := range idxParams {
 				if height < idxParam.FromHeight || height > idxParam.ToHeight {
 					continue
@@ -212,6 +215,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 
 		}
 	}
+	Logger.Log.Infof("#skipped for heights %v to %v: %v\n", start, destHeight, countSkipped)
 	return res, nil
 }
 
@@ -260,9 +264,9 @@ func (ci *CoinIndexer) splitWorkers(totalWorker int) map[byte]int {
 
 func (ci *CoinIndexer) CloneCachedCoins() map[string]interface{} {
 	res := make(map[string]interface{})
-	if len(ci.cachedCoins) != 0 {
+	if len(ci.cachedCoinPubKeys) != 0 {
 		ci.mtx.Lock()
-		for otaStr := range ci.cachedCoins {
+		for otaStr := range ci.cachedCoinPubKeys {
 			res[otaStr] = true
 		}
 		ci.mtx.Unlock()

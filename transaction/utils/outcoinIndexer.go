@@ -29,7 +29,7 @@ type CoinIndexer struct {
 	statusChan          chan JobStatus
 	quitChan            chan bool
 	isAuthorizedRunning bool
-	cachedCoins         map[string]interface{}
+	cachedCoinPubKeys   map[string]interface{}
 
 	ManagedOTAKeys *sync.Map
 	IdxChan        chan IndexParam
@@ -83,7 +83,7 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database) (*CoinIndexer, error
 		ManagedOTAKeys:      m,
 		db:                  db,
 		accessTokens:        accessTokens,
-		cachedCoins:         cachedCoins,
+		cachedCoinPubKeys:   cachedCoins,
 		isAuthorizedRunning: false,
 	}
 
@@ -199,13 +199,13 @@ func (ci *CoinIndexer) HasOTAKey(k [64]byte) (bool, int) {
 	return ok, result
 }
 
-func (ci *CoinIndexer) AddCoinHash(coinHash common.Hash) error {
-	err := rawdbv2.StoreCachedCoinHash(ci.db, coinHash[:])
+func (ci *CoinIndexer) CacheCoinPublicKey(coinPublicKey *privacy.Point) error {
+	err := rawdbv2.StoreCachedCoinHash(ci.db, coinPublicKey.ToBytesS())
 	if err != nil {
 		return err
 	}
-	ci.cachedCoins[coinHash.String()] = true
-	Logger.Log.Infof("Add coinHash %v success\n", coinHash, coinHash.String())
+	ci.cachedCoinPubKeys[coinPublicKey.String()] = true
+	Logger.Log.Infof("Add coinPublicKey %v success\n", coinPublicKey.String())
 	return nil
 }
 
@@ -407,8 +407,9 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 		return
 	}
 
-	//Clone the current cachedCoins to avoid collisions
+	//Clone the current cachedCoinPubKeys to avoid collisions
 	cachedCoins := ci.CloneCachedCoins()
+	Logger.Log.Infof("len(clonedCachedCoins) = %v, cachedCoinPubKeys: %v\n", len(cachedCoins), cachedCoins)
 
 	start := time.Now()
 	for height := minHeight; height <= maxHeight; {
@@ -577,7 +578,7 @@ func (ci *CoinIndexer) StoreIndexedOutputCoins(otaKey privacy.OTAKey, outputCoin
 
 	// cache the coin's hash to reduce the number of checks
 	for _, c := range outputCoins {
-		err = ci.AddCoinHash(common.HashH(c.Bytes()))
+		err = ci.CacheCoinPublicKey(c.GetPublicKey())
 		if err != nil {
 			return err
 		}
