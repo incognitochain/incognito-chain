@@ -257,3 +257,16 @@ func (ci *CoinIndexer) splitWorkers(totalWorker int) map[byte]int {
 
 	return res
 }
+
+func (ci *CoinIndexer) CloneCachedCoins() map[string]interface{} {
+	res := make(map[string]interface{})
+	if len(ci.cachedCoins) != 0 {
+		ci.mtx.Lock()
+		for otaStr := range ci.cachedCoins {
+			res[otaStr] = true
+		}
+		ci.mtx.Unlock()
+	}
+
+	return res
+}

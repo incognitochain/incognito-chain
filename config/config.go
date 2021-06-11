@@ -395,6 +395,7 @@ func LoadConfig() *config {
 		EnableMining:                DefaultEnableMining,
 		LogFileName:                 DefaultLogFilename,
 		OutcoinDatabaseDir:          DefaultOutcoinDirname,
+		NumIndexerWorkers: 			 DefaultNumCIWorkers,
 	}
 
 	//get network

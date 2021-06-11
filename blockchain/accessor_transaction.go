@@ -732,7 +732,7 @@ func (blockchain *BlockChain) StoreOnetimeAddressesFromTxViewPoint(stateDB *stat
 						if !ok{
 							return false
 						}
-						if processing!=1 && processing!=2{
+						if processing == 0 {
 							return false
 						}
 						otaKey := txutils.OTAKeyFromRaw(vkArr)
