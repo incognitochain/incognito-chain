@@ -325,6 +325,7 @@ const (
 	getPortalSubmitConfirmedTx                 = "getportalsubmitconfirmedtxstatus"
 	getSignedRawReplaceFeeTransaction          = "getportalsignedrawreplacebyfeetransaction"
 	createAndSendTxPortalConvertVaultRequest   = "createandsendtxportalconvertvault"
+	getPortalConvertVaultTxStatus              = "getportalconvertvaultstatus"
 
 	// stake
 	unstake = "createunstaketransaction"

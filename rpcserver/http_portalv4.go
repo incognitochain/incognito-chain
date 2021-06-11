@@ -743,3 +743,23 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithPortalConvertVault(params
 	result := jsonresult.NewCreateTransactionResult(nil, sendResult.(jsonresult.CreateTransactionResult).TxID, nil, sendResult.(jsonresult.CreateTransactionResult).ShardID)
 	return result, nil
 }
+
+func (httpServer *HttpServer) handleGetPortalConvertVaultTxStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param array must be at least one"))
+	}
+	data, ok := arrayParams[0].(map[string]interface{})
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payload data is invalid"))
+	}
+	reqTxID, ok := data["ReqTxID"].(string)
+	if !ok {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Param ReqTxID is invalid"))
+	}
+	status, err := httpServer.blockService.GetPortalConvertVaultTxStatus(reqTxID)
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.GetPortalV4ConvertVaultTxStatusError, err)
+	}
+	return status, nil
+}

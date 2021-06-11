@@ -259,3 +259,26 @@ func GetPortalV4Status(stateDB *StateDB, statusType []byte, statusSuffix []byte)
 	}
 	return s.statusContent, nil
 }
+
+// ================= Portal v4 Convert Vault =================
+func StorePortalConvertVaultRequestStatus(stateDB *StateDB, txID string, statusContent []byte) error {
+	statusType := PortaConvertVaultRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	err := StorePortalV4Status(stateDB, statusType, statusSuffix, statusContent)
+	if err != nil {
+		return NewStatedbError(StorePortalV4ConvertVaultRequestStatusError, err)
+	}
+
+	return nil
+}
+
+func GetPortalConvertVaultRequestStatus(stateDB *StateDB, txID string) ([]byte, error) {
+	statusType := PortaConvertVaultRequestStatusPrefix()
+	statusSuffix := []byte(txID)
+	data, err := GetPortalV4Status(stateDB, statusType, statusSuffix)
+	if err != nil {
+		return []byte{}, NewStatedbError(GetPortalV4ConvertVaultRequestStatusError, err)
+	}
+
+	return data, nil
+}

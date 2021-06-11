@@ -87,3 +87,19 @@ func (blockService BlockService) GetPortalSubmitConfirmedTxStatus(reqTxID string
 
 	return &status, nil
 }
+
+func (blockService BlockService) GetPortalConvertVaultTxStatus(reqTxID string) (*metadata.PortalConvertVaultRequestStatus, error) {
+	stateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
+	data, err := statedb.GetPortalConvertVaultRequestStatus(stateDB, reqTxID)
+	if err != nil {
+		return nil, err
+	}
+
+	var status metadata.PortalConvertVaultRequestStatus
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}

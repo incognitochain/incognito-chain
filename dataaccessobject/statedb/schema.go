@@ -111,6 +111,7 @@ var (
 	portalBatchUnshieldRequestStatusPrefix       = []byte("batchunshield-")
 	portalUnshielFeeReplacementBatchStatusPrefix = []byte("unshieldrequestbatchfeereplacementprocessed-")
 	portalUnshielSubmitConfirmedTxStatusPrefix   = []byte("unshieldrequestsubmitconfirmedtx-")
+	portalConvertVaultRequestPrefix              = []byte("portalconvertvaultrequest-")
 )
 
 func GetCommitteePrefixWithRole(role int, shardID int) []byte {
@@ -553,6 +554,10 @@ func PortalUnshieldRequestStatusPrefix() []byte {
 
 func PortalBatchUnshieldRequestStatusPrefix() []byte {
 	return portalBatchUnshieldRequestStatusPrefix
+}
+
+func PortaConvertVaultRequestStatusPrefix() []byte {
+	return portalConvertVaultRequestPrefix
 }
 
 // Portal v4 prefix hash of the key

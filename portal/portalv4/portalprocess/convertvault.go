@@ -50,29 +50,14 @@ func (p *PortalConvertVaultRequestProcessor) PrepareDataForBlockProducer(stateDB
 	}
 
 	proofHash := hashProof(actionData.Meta.ConvertProof, actionData.Meta.IncognitoAddress)
-
-	// avoid converting double time on the same proof
 	isExistProofTxHash, err := statedb.IsExistsShieldingRequest(stateDB, actionData.Meta.TokenID, proofHash)
 	if err != nil {
 		Logger.log.Errorf("Converting request: an error occurred while get converting vault request proof from DB - Error: %v", err)
 		return nil, fmt.Errorf("Converting request: an error occurred while get converting vault request proof from DB - Error: %v", err)
 	}
 
-	// get amount of the corresponding centralized bridge token
-	tokenIDHash, _ := common.Hash{}.NewHashFromStr(actionData.Meta.TokenID)
-	centralizedBridgeToken, has, err := statedb.GetBridgeTokenByType(stateDB, *tokenIDHash, true)
-	if err != nil {
-		Logger.log.Errorf("Converting request: an error occurred while get centralized bridge token from DB - Error: %v", err)
-		return nil, fmt.Errorf("Converting request: an error occurred while get centralized bridge token from DB - Error: %v", err)
-	}
-	if !has {
-		Logger.log.Errorf("Converting request: The centralized bridge token is not exist")
-		return nil, fmt.Errorf("Converting request: The centralized bridge token is not exist")
-	}
-
 	optionalData := make(map[string]interface{})
 	optionalData["isExistProofTxHash"] = isExistProofTxHash
-	optionalData["centralizedBridgeVault"] = centralizedBridgeToken.Amount()
 
 	return optionalData, nil
 }
@@ -164,7 +149,6 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	// todo: make sure converting vault is calling only one time.
 	// check unique external proof from optionalData which get from statedb
 	if optionalData == nil {
 		Logger.log.Errorf("Converting Request: optionalData is null")
@@ -206,27 +190,20 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 	for _, utxo := range listUTXO {
 		convertingAmountInExtAmt += utxo.GetOutputAmount()
 	}
-	centralizedBridgeVault, ok := optionalData["centralizedBridgeVault"].(uint64)
-	if !ok {
-		Logger.log.Errorf("Converting Request: optionalData centralizedBridgeVault is invalid")
-		return [][]string{rejectInst}, nil
-	}
-	centralizedBridgeVaultInExtAmt := portalTokenProcessor.ConvertIncToExternalAmount(uint64(centralizedBridgeVault))
-	if convertingAmountInExtAmt != centralizedBridgeVaultInExtAmt {
-		Logger.log.Errorf("Converting Request: Converting amount is not matched to the amount of centralized bridge token")
-		return [][]string{rejectInst}, nil
-	}
+	convertingAmount := portalTokenProcessor.ConvertExternalToIncAmount(convertingAmountInExtAmt)
 
 	// update portal state
-	// add utxos for portal v4
+	// add utxos for portal v4 and shielding external tx
 	currentPortalState.AddUTXOs(listUTXO, meta.TokenID)
+	currentPortalState.AddShieldingExternalTx(meta.TokenID, proofHash,
+		listUTXO[0].GetTxHash(), meta.IncognitoAddress, convertingAmountInExtAmt)
 
 	inst := buildPortalConvertVaultRequestInstV4(
 		actionData.Meta.TokenID,
 		actionData.Meta.IncognitoAddress,
 		proofHash,
 		listUTXO,
-		uint64(centralizedBridgeVault),
+		convertingAmount,
 		actionData.Meta.Type,
 		shardID,
 		actionData.TxReqID,
@@ -263,49 +240,39 @@ func (p *PortalConvertVaultRequestProcessor) ProcessInsts(
 		return nil
 	}
 
-	// var shieldStatus byte
+	var shieldStatus byte
 	reqStatus := instructions[2]
 	if reqStatus == portalcommonv4.PortalV4RequestAcceptedChainStatus {
-		// shieldStatus = portalcommonv4.PortalV4RequestAcceptedStatus
+		shieldStatus = portalcommonv4.PortalV4RequestAcceptedStatus
 
+		convertingAmountInExtAmt := portalParams.PortalTokens[actionData.TokenID].ConvertIncToExternalAmount(actionData.ConvertingAmount)
 		currentPortalState.AddUTXOs(actionData.ConvertingUTXO, actionData.TokenID)
-
-		// update bridge token info
-		tokenIDHash, _ := common.Hash{}.NewHashFromStr(actionData.TokenID)
-		err = statedb.UpdateBridgeTokenInfo(stateDB, *tokenIDHash, nil, true, actionData.ConvertingAmount, statedb.BridgeMinusOperator)
-		if err != nil {
-			Logger.log.Errorf("Converting Request: Update Centralized bridge token info - Error %v\n", err)
-			return nil
-		}
-		err = statedb.UpdateBridgeTokenInfo(stateDB, *tokenIDHash, nil, false, actionData.ConvertingAmount, statedb.BridgePlusOperator)
-		if err != nil {
-			Logger.log.Errorf("Converting Request: Update Decentralized bridge token info - Error %v\n", err)
-			return nil
-		}
+		currentPortalState.AddShieldingExternalTx(actionData.TokenID, actionData.ConvertProofHash,
+			actionData.ConvertingUTXO[0].GetTxHash(), actionData.IncognitoAddress, convertingAmountInExtAmt)
 	} else if reqStatus == portalcommonv4.PortalV4RequestRejectedChainStatus {
-		// shieldStatus = portalcommonv4.PortalV4RequestRejectedStatus
+		shieldStatus = portalcommonv4.PortalV4RequestRejectedStatus
 	}
 
-	// // track shieldingReq status by txID into DB
-	// shieldingReqTrackData := metadata.PortalShieldingRequestStatus{
-	// 	Status:          shieldStatus,
-	// 	Error:           instructions[4],
-	// 	TokenID:         actionData.TokenID,
-	// 	IncogAddressStr: actionData.IncogAddressStr,
-	// 	ProofHash:       actionData.ProofHash,
-	// 	ShieldingUTXO:   actionData.ShieldingUTXO,
-	// 	MintingAmount:   actionData.MintingAmount,
-	// 	TxReqID:         actionData.TxReqID,
-	// }
-	// shieldingReqTrackDataBytes, _ := json.Marshal(shieldingReqTrackData)
-	// err = statedb.StoreShieldingRequestStatus(
-	// 	stateDB,
-	// 	actionData.TxReqID.String(),
-	// 	shieldingReqTrackDataBytes,
-	// )
-	// if err != nil {
-	// 	Logger.log.Errorf("Shielding Request: An error occurred while tracking shielding request tx - Error: %v", err)
-	// }
+	// track shieldingReq status by txID into DB
+	shieldingReqTrackData := metadata.PortalConvertVaultRequestStatus{
+		Status:           shieldStatus,
+		ErrorMsg:         instructions[4],
+		TokenID:          actionData.TokenID,
+		IncognitoAddress: actionData.IncognitoAddress,
+		ConvertProofHash: actionData.ConvertProofHash,
+		ConvertingUTXO:   actionData.ConvertingUTXO,
+		ConvertingAmount: actionData.ConvertingAmount,
+		TxReqID:          actionData.TxReqID,
+	}
+	shieldingReqTrackDataBytes, _ := json.Marshal(shieldingReqTrackData)
+	err = statedb.StorePortalConvertVaultRequestStatus(
+		stateDB,
+		actionData.TxReqID.String(),
+		shieldingReqTrackDataBytes,
+	)
+	if err != nil {
+		Logger.log.Errorf("Converting Request: An error occurred while tracking convert vault request tx - Error: %v", err)
+	}
 
 	return nil
 }

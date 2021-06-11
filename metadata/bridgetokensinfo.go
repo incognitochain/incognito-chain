@@ -10,10 +10,10 @@ type UpdatingInfo struct {
 	IsCentralized   bool
 }
 
-func UpdateBridgeTokenInfo(tokenInfos map[common.Hash]UpdatingInfo, tokenID string, amount uint64, isDeduct bool) error {
+func UpdatePortalBridgeTokenInfo(tokenInfos map[common.Hash]UpdatingInfo, tokenID string, amount uint64, isDeduct bool) error {
 	incTokenID, err := common.Hash{}.NewHashFromStr(tokenID)
 	if err != nil {
-		Logger.log.Errorf("[UpdateBridgeTokenInfo]: Can not new hash from incTokenID: %+v", err)
+		Logger.log.Errorf("[UpdatePortalBridgeTokenInfo]: Can not new hash from incTokenID: %+v", err)
 		return nil
 	}
 	updatingInfo, found := tokenInfos[*incTokenID]
@@ -23,7 +23,7 @@ func UpdateBridgeTokenInfo(tokenInfos map[common.Hash]UpdatingInfo, tokenID stri
 			DeductAmt:       0,
 			TokenID:         *incTokenID,
 			ExternalTokenID: nil,
-			IsCentralized:   false,
+			IsCentralized:   true,
 		}
 	}
 

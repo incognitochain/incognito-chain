@@ -406,16 +406,12 @@ func (httpServer *HttpServer) handleListPrivacyCustomToken(params interface{}, c
 			result.ListCustomToken[index].ListTxs = []string{}
 		}
 		result.ListCustomToken[index].Image = common.Render([]byte(result.ListCustomToken[index].ID))
-		// update amount for bridge tokens
-		amountBridgeToken := uint64(0)
 		for _, bridgeToken := range allBridgeTokens {
 			if result.ListCustomToken[index].ID == bridgeToken.TokenID.String() {
-				amountBridgeToken += bridgeToken.Amount
+				result.ListCustomToken[index].Amount = bridgeToken.Amount
+				result.ListCustomToken[index].IsBridgeToken = true
+				break
 			}
-		}
-		if amountBridgeToken > 0 {
-			result.ListCustomToken[index].Amount = amountBridgeToken
-			result.ListCustomToken[index].IsBridgeToken = true
 		}
 	}
 	return result, nil

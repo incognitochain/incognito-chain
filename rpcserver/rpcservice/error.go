@@ -138,6 +138,7 @@ const (
 	GetPortalV4BatchUnshieldReqStatusError
 	GetPortalV4FeeReplacementReqStatusError
 	GetPortalV4SubmitConfirmedTxStatusError
+	GetPortalV4ConvertVaultTxStatusError
 )
 
 // Standard JSON-RPC 2.0 errors.
@@ -174,7 +175,7 @@ var ErrCodeMessage = map[int]struct {
 	GetListPrivacyCustomTokenBalanceError: {-1020, "Get List Privacy Custom Token Balance Error"},
 	GetPrivacyTokenError:                  {-1021, "Get Privacy Token Error"},
 	GetOutputCoinsVer1Error:               {-1022, "Get output coins of ver 1 in database error"},
-	GetOutputCoinsVer2Error:			   {-1023, "Get output coins of ver 2 in database error"},
+	GetOutputCoinsVer2Error:               {-1023, "Get output coins of ver 2 in database error"},
 	// for block -2xxx
 	GetShardBlockByHeightError:        {-2000, "Get shard block by height error"},
 	GetShardBlockByHashError:          {-2001, "Get shard block by hash error"},
@@ -276,6 +277,7 @@ var ErrCodeMessage = map[int]struct {
 	GetPortalV4BatchUnshieldReqStatusError:  {-12503, "Get portal v4 batch unshielding request status error"},
 	GetPortalV4FeeReplacementReqStatusError: {-12504, "Get portal v4 fee replacement request status error"},
 	GetPortalV4SubmitConfirmedTxStatusError: {-12505, "Get portal v4 submit external confirmed tx request status error"},
+	GetPortalV4ConvertVaultTxStatusError:    {-12506, "Get portal v4 convert vault tx request status error"},
 }
 
 // RPCError represents an error that is used as a part of a JSON-RPC JsonResponse
