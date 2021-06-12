@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"strconv"
 
@@ -122,7 +123,16 @@ func (blockchain *BlockChain) buildInstructionsForIssuingReq(
 	return append(instructions, returnedInst), nil
 }
 
-func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
+type BridgeReqActionInfo struct {
+	BlockHash  rCommon.Hash
+	TxIndex    uint
+	ProofStrs  []string
+	IncTokenID common.Hash
+	TxReqID    common.Hash
+	TxReceipt  *types.Receipt
+}
+
+func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	beaconBestState *BeaconBestState,
 	stateDB *statedb.StateDB,
 	contentStr string,
@@ -132,42 +142,80 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 ) ([][]string, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
 	instructions := [][]string{}
-	issuingETHReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
-	if err != nil {
-		Logger.log.Warn("WARNING: an issue occured while parsing issuing action content: ", err)
+	var issuingBridgeReqAction *BridgeReqActionInfo
+	var listTxUsed [][]byte
+	var contractAdddress string
+	if metaType == metadata.IssuingETHRequestMeta {
+		issuingETHBridgeReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
+		if err != nil {
+			Logger.log.Warn("WARNING: an issue occured while parsing issuing action content: ", err)
+			return nil, nil
+		}
+		issuingBridgeReqAction = &BridgeReqActionInfo{
+			BlockHash:  issuingETHBridgeReqAction.Meta.BlockHash,
+			TxIndex:    issuingETHBridgeReqAction.Meta.TxIndex,
+			ProofStrs:  issuingETHBridgeReqAction.Meta.ProofStrs,
+			IncTokenID: issuingETHBridgeReqAction.Meta.IncTokenID,
+			TxReqID:    issuingETHBridgeReqAction.TxReqID,
+			TxReceipt:  issuingETHBridgeReqAction.ETHReceipt,
+		}
+		listTxUsed = ac.UniqETHTxsUsed
+		contractAdddress = config.Param().EthContractAddressStr
+	} else if metaType == metadata.IssuingBSCRequestMeta {
+		issuingBSCBridgeReqAction, err := metadata.ParseBSCIssuingInstContent(contentStr)
+		if err != nil {
+			Logger.log.Warn("WARNING: an issue occured while parsing issuing action content: ", err)
+			return nil, nil
+		}
+		issuingBridgeReqAction = &BridgeReqActionInfo{
+			BlockHash:  issuingBSCBridgeReqAction.Meta.BlockHash,
+			TxIndex:    issuingBSCBridgeReqAction.Meta.TxIndex,
+			ProofStrs:  issuingBSCBridgeReqAction.Meta.ProofStrs,
+			IncTokenID: issuingBSCBridgeReqAction.Meta.IncTokenID,
+			TxReqID:    issuingBSCBridgeReqAction.TxReqID,
+			TxReceipt:  issuingBSCBridgeReqAction.BSCReceipt,
+		}
+		listTxUsed = ac.UniqBSCTxsUsed
+		contractAdddress = config.Param().BscContractAddressStr
+	} else {
 		return nil, nil
 	}
 
-	Logger.log.Infof("[Decentralized bridge token issuance] Processing for tx: %s, tokenid: %s", issuingETHReqAction.TxReqID.String(), issuingETHReqAction.Meta.IncTokenID.String())
+	Logger.log.Infof("[Decentralized bridge token issuance] Processing for tx: %s, tokenid: %s", issuingBridgeReqAction.TxReqID.String(), issuingBridgeReqAction.IncTokenID.String())
 
-	md := issuingETHReqAction.Meta
-	rejectedInst := buildInstruction(metaType, shardID, "rejected", issuingETHReqAction.TxReqID.String())
+	rejectedInst := buildInstruction(metaType, shardID, "rejected", issuingBridgeReqAction.TxReqID.String())
 
-	ethReceipt := issuingETHReqAction.ETHReceipt
-	if ethReceipt == nil {
-		Logger.log.Warn("WARNING: eth receipt is null.")
+	txReceipt := issuingBridgeReqAction.TxReceipt
+	if txReceipt == nil {
+		Logger.log.Warn("WARNING: bridge tx receipt is null.")
 		return append(instructions, rejectedInst), nil
 	}
 
 	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
 	// so must build unique eth tx as combination of block hash and tx index.
-	uniqETHTx := append(md.BlockHash[:], []byte(strconv.Itoa(int(md.TxIndex)))...)
-	isUsedInBlock := metadata.IsETHTxHashUsedInBlock(uniqETHTx, ac.UniqETHTxsUsed)
+	uniqTx := append(issuingBridgeReqAction.BlockHash[:], []byte(strconv.Itoa(int(issuingBridgeReqAction.TxIndex)))...)
+	isUsedInBlock := IsBridgeTxHashUsedInBlock(uniqTx, listTxUsed)
 	if isUsedInBlock {
-		Logger.log.Warn("WARNING: already issued for the hash in current block: ", uniqETHTx)
+		Logger.log.Warn("WARNING: already issued for the hash in current block: ", uniqTx)
 		return append(instructions, rejectedInst), nil
 	}
-	isIssued, err := statedb.IsETHTxHashIssued(stateDB, uniqETHTx)
+	var isIssued bool
+	var err error
+	if metaType == metadata.IssuingETHRequestMeta {
+		isIssued, err = statedb.IsETHTxHashIssued(stateDB, uniqTx)
+	} else {
+		isIssued, err = statedb.IsBSCTxHashIssued(stateDB, uniqTx)
+	}
 	if err != nil {
-		Logger.log.Warn("WARNING: an issue occured while checking the eth tx hash is issued or not: ", err)
+		Logger.log.Warn("WARNING: an issue occured while checking the bridge tx hash is issued or not: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	if isIssued {
-		Logger.log.Warn("WARNING: already issued for the hash in previous blocks: ", uniqETHTx)
+		Logger.log.Warn("WARNING: already issued for the hash in previous blocks: ", uniqTx)
 		return append(instructions, rejectedInst), nil
 	}
 
-	logMap, err := metadata.PickAndParseLogMapFromReceipt(ethReceipt, config.Param().EthContractAddressStr)
+	logMap, err := metadata.PickAndParseLogMapFromReceipt(txReceipt, contractAdddress)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while parsing log map from receipt: ", err)
 		return append(instructions, rejectedInst), nil
@@ -180,52 +228,52 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 	logMapBytes, _ := json.Marshal(logMap)
 	Logger.log.Warn("INFO: eth logMap json - ", string(logMapBytes))
 
-	// the token might be ETH/ERC20
-	ethereumAddr, ok := logMap["token"].(rCommon.Address)
+	// the token might be ETH/ERC20 BNB/BEP20
+	tokenAddr, ok := logMap["token"].(rCommon.Address)
 	if !ok {
 		Logger.log.Warn("WARNING: could not parse eth token id from log map.")
 		return append(instructions, rejectedInst), nil
 	}
-	ethereumToken := ethereumAddr.Bytes()
-	canProcess, err := ac.CanProcessTokenPair(ethereumToken, md.IncTokenID)
+	token := tokenAddr.Bytes()
+	canProcess, err := ac.CanProcessTokenPair(token, issuingBridgeReqAction.IncTokenID)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while checking it can process for token pair on the current block or not: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	if !canProcess {
-		Logger.log.Warn("WARNING: pair of incognito token id & ethereum's id is invalid in current block")
+		Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid in current block")
 		return append(instructions, rejectedInst), nil
 	}
-	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, md.IncTokenID)
+	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, issuingBridgeReqAction.IncTokenID)
 	if err != nil {
 		Logger.log.Warn("WARNING: an issue occured while checking it can process for the incognito token or not: ", err)
 		return append(instructions, rejectedInst), nil
 	}
-	isValid, err := statedb.CanProcessTokenPair(stateDB, ethereumToken, md.IncTokenID, privacyTokenExisted)
+	isValid, err := statedb.CanProcessTokenPair(stateDB, token, issuingBridgeReqAction.IncTokenID, privacyTokenExisted)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while checking it can process for token pair on the previous blocks or not: ", err)
 		return append(instructions, rejectedInst), nil
 	}
 	if !isValid {
-		Logger.log.Warn("WARNING: pair of incognito token id & ethereum's id is invalid with previous blocks")
+		Logger.log.Warn("WARNING: pair of incognito token id & bridge's id is invalid with previous blocks")
 		return append(instructions, rejectedInst), nil
 	}
 
 	addressStr, ok := logMap["incognitoAddress"].(string)
 	if !ok {
-		Logger.log.Warn("WARNING: could not parse incognito address from eth log map.")
+		Logger.log.Warn("WARNING: could not parse incognito address from bridge log map.")
 		return append(instructions, rejectedInst), nil
 	}
 	amt, ok := logMap["amount"].(*big.Int)
 	if !ok {
-		Logger.log.Warn("WARNING: could not parse amount from eth log map.")
+		Logger.log.Warn("WARNING: could not parse amount from bridge log map.")
 		return append(instructions, rejectedInst), nil
 	}
 	amount := uint64(0)
-	if bytes.Equal(rCommon.HexToAddress(common.EthAddrStr).Bytes(), ethereumToken) {
+	if bytes.Equal(rCommon.HexToAddress(common.NativeToken).Bytes(), token) {
 		// convert amt from wei (10^18) to nano eth (10^9)
 		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
-	} else { // ERC20
+	} else { // ERC20 / BEP20
 		amount = amt.Uint64()
 	}
 
@@ -235,24 +283,43 @@ func (blockchain *BlockChain) buildInstructionsForIssuingETHReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	issuingETHAcceptedInst := metadata.IssuingETHAcceptedInst{
-		ShardID:         receivingShardID,
-		IssuingAmount:   amount,
-		ReceiverAddrStr: addressStr,
-		IncTokenID:      md.IncTokenID,
-		TxReqID:         issuingETHReqAction.TxReqID,
-		UniqETHTx:       uniqETHTx,
-		ExternalTokenID: ethereumToken,
+	var issuingAcceptedInstBytes []byte
+	if metaType == metadata.IssuingETHRequestMeta {
+		issuingETHAcceptedInst := metadata.IssuingETHAcceptedInst{
+			ShardID:         receivingShardID,
+			IssuingAmount:   amount,
+			ReceiverAddrStr: addressStr,
+			IncTokenID:      issuingBridgeReqAction.IncTokenID,
+			TxReqID:         issuingBridgeReqAction.TxReqID,
+			UniqETHTx:       uniqTx,
+			ExternalTokenID: token,
+		}
+		issuingAcceptedInstBytes, err = json.Marshal(issuingETHAcceptedInst)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occured while marshaling issuingBridgeAccepted instruction: ", err)
+			return append(instructions, rejectedInst), nil
+		}
+		ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqTx)
+	} else {
+		issuingBSCAcceptedInst := metadata.IssuingBSCAcceptedInst{
+			ShardID:         receivingShardID,
+			IssuingAmount:   amount,
+			ReceiverAddrStr: addressStr,
+			IncTokenID:      issuingBridgeReqAction.IncTokenID,
+			TxReqID:         issuingBridgeReqAction.TxReqID,
+			UniqBSCTx:       uniqTx,
+			ExternalTokenID: token,
+		}
+		issuingAcceptedInstBytes, err = json.Marshal(issuingBSCAcceptedInst)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occured while marshaling issuingBridgeAccepted instruction: ", err)
+			return append(instructions, rejectedInst), nil
+		}
+		ac.UniqBSCTxsUsed = append(ac.UniqBSCTxsUsed, uniqTx)
 	}
-	issuingETHAcceptedInstBytes, err := json.Marshal(issuingETHAcceptedInst)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while marshaling issuingETHAccepted instruction: ", err)
-		return append(instructions, rejectedInst), nil
-	}
-	ac.UniqETHTxsUsed = append(ac.UniqETHTxsUsed, uniqETHTx)
-	ac.DBridgeTokenPair[md.IncTokenID.String()] = ethereumToken
+	ac.DBridgeTokenPair[issuingBridgeReqAction.IncTokenID.String()] = token
 
-	acceptedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(issuingETHAcceptedInstBytes))
+	acceptedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(issuingAcceptedInstBytes))
 	Logger.log.Info("[Decentralized bridge token issuance] Process finished without error...")
 	return append(instructions, acceptedInst), nil
 }
@@ -327,59 +394,107 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 	return resTx, nil
 }
 
-func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
-	contentStr string,
+type BridgeIssuanceTxInfo struct {
+	ShardID         byte
+	IssuingAmount   uint64
+	ReceiverAddrStr string
+	IncTokenID      common.Hash
+	TxReqID         common.Hash
+	UniqTx          []byte
+	ExternalTokenID []byte
+}
+
+func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
+	instruction []string,
 	producerPrivateKey *privacy.PrivateKey,
 	shardID byte,
 	shardView *ShardBestState,
 	featureStateDB *statedb.StateDB,
 ) (metadata.Transaction, error) {
 	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+	if len(instruction) < 4 {
+		return nil, nil // skip the instruction
+	}
+	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while decoding content string of ETH accepted issuance instruction: ", err)
 		return nil, nil
 	}
-	var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
-	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while unmarshaling ETH accepted issuance instruction: ", err)
+	var bridgeIssuanceTxInfo *BridgeIssuanceTxInfo
+	var issuingRes metadata.Metadata
+	if instruction[0] == strconv.Itoa(metadata.IssuingETHRequestMeta) {
+		var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
+		err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+			return nil, nil
+		}
+		bridgeIssuanceTxInfo = &BridgeIssuanceTxInfo{
+			ShardID:         issuingETHAcceptedInst.ShardID,
+			ReceiverAddrStr: issuingETHAcceptedInst.ReceiverAddrStr,
+			IncTokenID:      issuingETHAcceptedInst.IncTokenID,
+			TxReqID:         issuingETHAcceptedInst.TxReqID,
+			ExternalTokenID: issuingETHAcceptedInst.ExternalTokenID,
+			UniqTx:          issuingETHAcceptedInst.UniqETHTx,
+			IssuingAmount:   issuingETHAcceptedInst.IssuingAmount,
+		}
+		issuingRes = metadata.NewIssuingETHResponse(
+			bridgeIssuanceTxInfo.TxReqID,
+			bridgeIssuanceTxInfo.UniqTx,
+			bridgeIssuanceTxInfo.ExternalTokenID,
+			metadata.IssuingETHResponseMeta,
+		)
+	} else if instruction[0] == strconv.Itoa(metadata.IssuingBSCRequestMeta) {
+		var issuingBSCAcceptedInst metadata.IssuingBSCAcceptedInst
+		err = json.Unmarshal(contentBytes, &issuingBSCAcceptedInst)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+			return nil, nil
+		}
+		bridgeIssuanceTxInfo = &BridgeIssuanceTxInfo{
+			ShardID:         issuingBSCAcceptedInst.ShardID,
+			ReceiverAddrStr: issuingBSCAcceptedInst.ReceiverAddrStr,
+			IncTokenID:      issuingBSCAcceptedInst.IncTokenID,
+			TxReqID:         issuingBSCAcceptedInst.TxReqID,
+			ExternalTokenID: issuingBSCAcceptedInst.ExternalTokenID,
+			UniqTx:          issuingBSCAcceptedInst.UniqBSCTx,
+			IssuingAmount:   issuingBSCAcceptedInst.IssuingAmount,
+		}
+		issuingRes = metadata.NewIssuingBSCResponse(
+			bridgeIssuanceTxInfo.TxReqID,
+			bridgeIssuanceTxInfo.UniqTx,
+			bridgeIssuanceTxInfo.ExternalTokenID,
+			metadata.IssuingBSCResponseMeta,
+		)
+	} else {
 		return nil, nil
 	}
 
-	if shardID != issuingETHAcceptedInst.ShardID {
-		Logger.log.Infof("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, issuingETHAcceptedInst.ShardID)
+	if shardID != bridgeIssuanceTxInfo.ShardID {
+		Logger.log.Infof("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, bridgeIssuanceTxInfo.ShardID)
 		return nil, nil
 	}
-	key, err := wallet.Base58CheckDeserialize(issuingETHAcceptedInst.ReceiverAddrStr)
+	key, err := wallet.Base58CheckDeserialize(bridgeIssuanceTxInfo.ReceiverAddrStr)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while deserializing receiver address string: ", err)
 		return nil, nil
 	}
 	receiver := &privacy.PaymentInfo{
-		Amount:         issuingETHAcceptedInst.IssuingAmount,
+		Amount:         bridgeIssuanceTxInfo.IssuingAmount,
 		PaymentAddress: key.KeySet.PaymentAddress,
 	}
 	var propertyID [common.HashSize]byte
-	copy(propertyID[:], issuingETHAcceptedInst.IncTokenID[:])
+	copy(propertyID[:], bridgeIssuanceTxInfo.IncTokenID[:])
 	propID := common.Hash(propertyID)
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID: propID.String(),
-		// PropertyName:   common.PETHTokenName,
-		// PropertySymbol: common.PETHTokenName,
-		Amount:      issuingETHAcceptedInst.IssuingAmount,
+		PropertyID:  propID.String(),
+		Amount:      bridgeIssuanceTxInfo.IssuingAmount,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},
 		TokenInput:  []*privacy.InputCoin{},
 		Mintable:    true,
 	}
 
-	issuingETHRes := metadata.NewIssuingETHResponse(
-		issuingETHAcceptedInst.TxReqID,
-		issuingETHAcceptedInst.UniqETHTx,
-		issuingETHAcceptedInst.ExternalTokenID,
-		metadata.IssuingETHResponseMeta,
-	)
 	resTx := &transaction.TxCustomTokenPrivacy{}
 	initErr := resTx.Init(
 		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
@@ -388,7 +503,7 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
 			0,
 			tokenParams,
 			shardView.GetCopiedTransactionStateDB(),
-			issuingETHRes,
+			issuingRes,
 			false,
 			false,
 			shardID, nil,
@@ -396,218 +511,6 @@ func (blockGenerator *BlockGenerator) buildETHIssuanceTx(
 
 	if initErr != nil {
 		Logger.log.Warn("WARNING: an error occured while initializing response tx: ", initErr)
-		return nil, nil
-	}
-	Logger.log.Infof("[Decentralized bridge token issuance] Create tx ok: %s", resTx.Hash().String())
-	return resTx, nil
-}
-
-/*
-	Build inst for BSC
-*/
-
-func (blockchain *BlockChain) buildInstructionsForIssuingBSCReq(
-	beaconBestState *BeaconBestState,
-	stateDB *statedb.StateDB,
-	contentStr string,
-	shardID byte,
-	metaType int,
-	ac *metadata.AccumulatedValues,
-) ([][]string, error) {
-	Logger.log.Info("[Decentralized bridge token issuance] Starting...")
-	instructions := [][]string{}
-	issuingBSCReqAction, err := metadata.ParseBSCIssuingInstContent(contentStr)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an issue occured while parsing issuing action content: ", err)
-		return nil, nil
-	}
-
-	Logger.log.Infof("[Decentralized bridge token issuance] Processing for tx: %s, tokenid: %s", issuingBSCReqAction.TxReqID.String(), issuingBSCReqAction.Meta.IncTokenID.String())
-
-	md := issuingBSCReqAction.Meta
-	rejectedInst := buildInstruction(metaType, shardID, "rejected", issuingBSCReqAction.TxReqID.String())
-
-	bscReceipt := issuingBSCReqAction.BSCReceipt
-	if bscReceipt == nil {
-		Logger.log.Warn("WARNING BSC: bsc receipt is null.")
-		return append(instructions, rejectedInst), nil
-	}
-
-	// NOTE: since TxHash from constructedReceipt is always '0x0000000000000000000000000000000000000000000000000000000000000000'
-	// so must build unique bsc tx as combination of block hash and tx index.
-	uniqBSCTx := append(md.BlockHash[:], []byte(strconv.Itoa(int(md.TxIndex)))...)
-	isUsedInBlock := metadata.IsBSCTxHashUsedInBlock(uniqBSCTx, ac.UniqBSCTxsUsed)
-	if isUsedInBlock {
-		Logger.log.Warn("WARNING BSC: already issued for the hash in current block: ", uniqBSCTx)
-		return append(instructions, rejectedInst), nil
-	}
-	isIssued, err := statedb.IsBSCTxHashIssued(stateDB, uniqBSCTx)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an issue occured while checking the bsc tx hash is issued or not: ", err)
-		return append(instructions, rejectedInst), nil
-	}
-	if isIssued {
-		Logger.log.Warn("WARNING BSC: already issued for the hash in previous blocks: ", uniqBSCTx)
-		return append(instructions, rejectedInst), nil
-	}
-
-	logMap, err := metadata.PickAndParseLogMapFromReceipt(bscReceipt, config.Param().BscContractAddressStr)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while parsing log map from receipt: ", err)
-		return append(instructions, rejectedInst), nil
-	}
-	if logMap == nil {
-		Logger.log.Warn("WARNING BSC: could not find log map out from receipt")
-		return append(instructions, rejectedInst), nil
-	}
-
-	logMapBytes, _ := json.Marshal(logMap)
-	Logger.log.Warn("INFO BSC: bsc logMap json - ", string(logMapBytes))
-
-	// the token might be BNB/BEP20
-	binanceAddr, ok := logMap["token"].(rCommon.Address)
-	if !ok {
-		Logger.log.Warn("WARNING BSC: could not parse bsc token id from log map.")
-		return append(instructions, rejectedInst), nil
-	}
-	binanceToken := binanceAddr.Bytes()
-	canProcess, err := ac.CanProcessTokenPair(binanceToken, md.IncTokenID)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occurred while checking it can process for token pair on the current block or not: ", err)
-		return append(instructions, rejectedInst), nil
-	}
-	if !canProcess {
-		Logger.log.Warn("WARNING BSC: pair of incognito token id & binance's id is invalid in current block")
-		return append(instructions, rejectedInst), nil
-	}
-	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, md.IncTokenID)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an issue occurred while checking it can process for the incognito token or not: ", err)
-		return append(instructions, rejectedInst), nil
-	}
-	isValid, err := statedb.CanProcessTokenPair(stateDB, binanceToken, md.IncTokenID, privacyTokenExisted)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occurred while checking it can process for token pair on the previous blocks or not: ", err)
-		return append(instructions, rejectedInst), nil
-	}
-	if !isValid {
-		Logger.log.Warn("WARNING: pair of incognito token id & binance's id is invalid with previous blocks")
-		return append(instructions, rejectedInst), nil
-	}
-
-	addressStr, ok := logMap["incognitoAddress"].(string)
-	if !ok {
-		Logger.log.Warn("WARNING: could not parse incognito address from bsc log map.")
-		return append(instructions, rejectedInst), nil
-	}
-	amt, ok := logMap["amount"].(*big.Int)
-	if !ok {
-		Logger.log.Warn("WARNING: could not parse amount from bsc log map.")
-		return append(instructions, rejectedInst), nil
-	}
-	amount := uint64(0)
-	if bytes.Equal(rCommon.HexToAddress(common.BSCAddrStr).Bytes(), binanceToken) {
-		// convert amt from wei (10^18) to nano bnb (10^9)
-		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
-	} else { // ERC20
-		amount = amt.Uint64()
-	}
-
-	receivingShardID, err := getShardIDFromPaymentAddress(addressStr)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while getting shard id from payment address: ", err)
-		return append(instructions, rejectedInst), nil
-	}
-
-	issuingBSCAcceptedInst := metadata.IssuingBSCAcceptedInst{
-		ShardID:         receivingShardID,
-		IssuingAmount:   amount,
-		ReceiverAddrStr: addressStr,
-		IncTokenID:      md.IncTokenID,
-		TxReqID:         issuingBSCReqAction.TxReqID,
-		UniqBSCTx:       uniqBSCTx,
-		ExternalTokenID: binanceToken,
-	}
-	issuingBSCAcceptedInstBytes, err := json.Marshal(issuingBSCAcceptedInst)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while marshaling issuingBSCAccepted instruction: ", err)
-		return append(instructions, rejectedInst), nil
-	}
-	ac.UniqBSCTxsUsed = append(ac.UniqBSCTxsUsed, uniqBSCTx)
-	ac.DBridgeTokenPair[md.IncTokenID.String()] = binanceToken
-
-	acceptedInst := buildInstruction(metaType, shardID, "accepted", base64.StdEncoding.EncodeToString(issuingBSCAcceptedInstBytes))
-	Logger.log.Info("[Decentralized bridge bsc token issuance] Process finished without error...")
-	return append(instructions, acceptedInst), nil
-}
-
-func (blockGenerator *BlockGenerator) buildBSCIssuanceTx(
-	contentStr string,
-	producerPrivateKey *privacy.PrivateKey,
-	shardID byte,
-	shardView *ShardBestState,
-	featureStateDB *statedb.StateDB,
-) (metadata.Transaction, error) {
-	Logger.log.Info("[Decentralized bridge bsc token issuance] Starting...")
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while decoding content string of BSC accepted issuance instruction: ", err)
-		return nil, nil
-	}
-	var issuingBSCAcceptedInst metadata.IssuingBSCAcceptedInst
-	err = json.Unmarshal(contentBytes, &issuingBSCAcceptedInst)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while unmarshaling BSC accepted issuance instruction: ", err)
-		return nil, nil
-	}
-
-	if shardID != issuingBSCAcceptedInst.ShardID {
-		Logger.log.Infof("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, issuingBSCAcceptedInst.ShardID)
-		return nil, nil
-	}
-	key, err := wallet.Base58CheckDeserialize(issuingBSCAcceptedInst.ReceiverAddrStr)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while deserializing receiver address string: ", err)
-		return nil, nil
-	}
-	receiver := &privacy.PaymentInfo{
-		Amount:         issuingBSCAcceptedInst.IssuingAmount,
-		PaymentAddress: key.KeySet.PaymentAddress,
-	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], issuingBSCAcceptedInst.IncTokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID:  propID.String(),
-		Amount:      issuingBSCAcceptedInst.IssuingAmount,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
-	}
-
-	issuingBSCRes := metadata.NewIssuingBSCResponse(
-		issuingBSCAcceptedInst.TxReqID,
-		issuingBSCAcceptedInst.UniqBSCTx,
-		issuingBSCAcceptedInst.ExternalTokenID,
-		metadata.IssuingBSCResponseMeta,
-	)
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			shardView.GetCopiedTransactionStateDB(),
-			issuingBSCRes,
-			false,
-			false,
-			shardID, nil,
-			featureStateDB))
-
-	if initErr != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while initializing response tx: ", initErr)
 		return nil, nil
 	}
 	Logger.log.Infof("[Decentralized bridge token issuance] Create tx ok: %s", resTx.Hash().String())

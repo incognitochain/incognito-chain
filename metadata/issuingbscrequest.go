@@ -56,15 +56,6 @@ func ParseBSCIssuingInstContent(instContentStr string) (*IssuingBSCReqAction, er
 	return &issuingBSCReqAction, nil
 }
 
-func IsBSCTxHashUsedInBlock(uniqBSCTx []byte, uniqBSCTxsUsed [][]byte) bool {
-	for _, item := range uniqBSCTxsUsed {
-		if bytes.Equal(uniqBSCTx, item) {
-			return true
-		}
-	}
-	return false
-}
-
 func NewIssuingBSCRequest(
 	blockHash rCommon.Hash,
 	txIndex uint,

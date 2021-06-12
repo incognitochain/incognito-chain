@@ -31,11 +31,8 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 		}
 		var err error
 		switch inst[0] {
-		case strconv.Itoa(metadata.IssuingETHRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingETHReq(bridgeStateDB, inst, updatingInfoByTokenID)
-
-		case strconv.Itoa(metadata.IssuingBSCRequestMeta):
-			updatingInfoByTokenID, err = blockchain.processIssuingBSCReq(bridgeStateDB, inst, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.IssuingETHRequestMeta), strconv.Itoa(metadata.IssuingBSCRequestMeta):
+			updatingInfoByTokenID, err = blockchain.processIssuingBridgeReq(bridgeStateDB, inst, updatingInfoByTokenID)
 
 		case strconv.Itoa(metadata.IssuingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processIssuingReq(bridgeStateDB, inst, updatingInfoByTokenID)
@@ -77,7 +74,7 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 	return nil
 }
 
-func (blockchain *BlockChain) processIssuingETHReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo) (map[common.Hash]metadata.UpdatingInfo, error) {
+func (blockchain *BlockChain) processIssuingBridgeReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo) (map[common.Hash]metadata.UpdatingInfo, error) {
 	if len(instruction) != 4 {
 		return updatingInfoByTokenID, nil // skip the instruction
 	}
@@ -98,78 +95,55 @@ func (blockchain *BlockChain) processIssuingETHReq(bridgeStateDB *statedb.StateD
 		Logger.log.Warn("WARNING: an error occured while decoding content string of accepted issuance instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
-	var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
-	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
-		return updatingInfoByTokenID, nil
-	}
-	err = statedb.InsertETHTxHashIssued(bridgeStateDB, issuingETHAcceptedInst.UniqETHTx)
-	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while inserting ETH tx hash issued to leveldb: ", err)
-		return updatingInfoByTokenID, nil
-	}
-	updatingInfo, found := updatingInfoByTokenID[issuingETHAcceptedInst.IncTokenID]
-	if found {
-		updatingInfo.CountUpAmt += issuingETHAcceptedInst.IssuingAmount
-	} else {
-		updatingInfo = metadata.UpdatingInfo{
-			CountUpAmt:      issuingETHAcceptedInst.IssuingAmount,
-			DeductAmt:       0,
-			TokenID:         issuingETHAcceptedInst.IncTokenID,
-			ExternalTokenID: issuingETHAcceptedInst.ExternalTokenID,
-			IsCentralized:   false,
-		}
-	}
-	updatingInfoByTokenID[issuingETHAcceptedInst.IncTokenID] = updatingInfo
-	return updatingInfoByTokenID, nil
-}
-
-func (blockchain *BlockChain) processIssuingBSCReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo) (map[common.Hash]metadata.UpdatingInfo, error) {
-	if len(instruction) != 4 {
-		return updatingInfoByTokenID, nil // skip the instruction
-	}
-	if instruction[2] == "rejected" {
-		txReqID, err := common.Hash{}.NewHashFromStr(instruction[3])
+	var issuingAmount uint64
+	var externalTokenID []byte
+	var incTokenID common.Hash
+	if instruction[0] == strconv.Itoa(metadata.IssuingETHRequestMeta) {
+		var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
+		err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
 		if err != nil {
-			Logger.log.Warn("WARNING BSC: an error occured while building tx request id in bytes from string: ", err)
+			Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
 			return updatingInfoByTokenID, nil
 		}
-		err = statedb.TrackBridgeReqWithStatus(bridgeStateDB, *txReqID, common.BridgeRequestRejectedStatus)
+		err = statedb.InsertETHTxHashIssued(bridgeStateDB, issuingETHAcceptedInst.UniqETHTx)
 		if err != nil {
-			Logger.log.Warn("WARNING BSC: an error occured while tracking bridge request with rejected status to leveldb: ", err)
+			Logger.log.Warn("WARNING: an error occured while inserting bridge tx hash issued to leveldb: ", err)
+			return updatingInfoByTokenID, nil
 		}
+		issuingAmount = issuingETHAcceptedInst.IssuingAmount
+		externalTokenID = issuingETHAcceptedInst.ExternalTokenID
+		incTokenID = issuingETHAcceptedInst.IncTokenID
+	} else if instruction[0] == strconv.Itoa(metadata.IssuingBSCRequestMeta) {
+		var issuingBSCAcceptedInst metadata.IssuingBSCAcceptedInst
+		err = json.Unmarshal(contentBytes, &issuingBSCAcceptedInst)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
+			return updatingInfoByTokenID, nil
+		}
+		err = statedb.InsertBSCTxHashIssued(bridgeStateDB, issuingBSCAcceptedInst.UniqBSCTx)
+		if err != nil {
+			Logger.log.Warn("WARNING: an error occured while inserting bridge tx hash issued to leveldb: ", err)
+			return updatingInfoByTokenID, nil
+		}
+		issuingAmount = issuingBSCAcceptedInst.IssuingAmount
+		externalTokenID = issuingBSCAcceptedInst.ExternalTokenID
+		incTokenID = issuingBSCAcceptedInst.IncTokenID
+	} else {
 		return updatingInfoByTokenID, nil
 	}
-	contentBytes, err := base64.StdEncoding.DecodeString(instruction[3])
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while decoding content string of accepted issuance instruction: ", err)
-		return updatingInfoByTokenID, nil
-	}
-	var issuingBSCAcceptedInst metadata.IssuingBSCAcceptedInst
-	err = json.Unmarshal(contentBytes, &issuingBSCAcceptedInst)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while unmarshaling accepted issuance instruction: ", err)
-		return updatingInfoByTokenID, nil
-	}
-	err = statedb.InsertBSCTxHashIssued(bridgeStateDB, issuingBSCAcceptedInst.UniqBSCTx)
-	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while inserting ETH tx hash issued to leveldb: ", err)
-		return updatingInfoByTokenID, nil
-	}
-	updatingInfo, found := updatingInfoByTokenID[issuingBSCAcceptedInst.IncTokenID]
+	updatingInfo, found := updatingInfoByTokenID[incTokenID]
 	if found {
-		updatingInfo.CountUpAmt += issuingBSCAcceptedInst.IssuingAmount
+		updatingInfo.CountUpAmt += issuingAmount
 	} else {
 		updatingInfo = metadata.UpdatingInfo{
-			CountUpAmt:      issuingBSCAcceptedInst.IssuingAmount,
+			CountUpAmt:      issuingAmount,
 			DeductAmt:       0,
-			TokenID:         issuingBSCAcceptedInst.IncTokenID,
-			ExternalTokenID: issuingBSCAcceptedInst.ExternalTokenID,
+			TokenID:         incTokenID,
+			ExternalTokenID: externalTokenID,
 			IsCentralized:   false,
 		}
 	}
-	updatingInfoByTokenID[issuingBSCAcceptedInst.IncTokenID] = updatingInfo
+	updatingInfoByTokenID[incTokenID] = updatingInfo
 	return updatingInfoByTokenID, nil
 }
 
