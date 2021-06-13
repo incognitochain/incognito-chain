@@ -375,9 +375,3 @@ func (chain *ShardChain) GetSigningCommittees(
 	}
 	return res
 }
-
-func (chain *ShardChain) CommitteesFromViewHashForShard(
-	committeeHash common.Hash, shardID byte,
-) ([]incognitokey.CommitteePublicKey, error) {
-	return []incognitokey.CommitteePublicKey{}, nil
-}

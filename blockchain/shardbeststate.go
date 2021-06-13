@@ -621,8 +621,7 @@ func (shardBestState *ShardBestState) getSigningCommittees(
 
 func GetProposer(
 	ts int64, committees []incognitokey.CommitteePublicKey,
-	numberOfFixedShardBlockValidator int) (incognitokey.CommitteePublicKey, int) {
-	lenProposers := numberOfFixedShardBlockValidator
+	lenProposers int) (incognitokey.CommitteePublicKey, int) {
 	id := GetProposerByTimeSlot(ts, lenProposers)
 	return committees[id], id
 }

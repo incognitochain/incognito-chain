@@ -48,8 +48,8 @@ type actorV2 struct {
 	receiveBlockByHeight map[uint64][]*ProposeBlockInfo  //blockHeight -> blockInfo
 	receiveBlockByHash   map[string]*ProposeBlockInfo    //blockHash -> blockInfo
 	voteHistory          map[uint64]types.BlockInterface // bestview height (previsous height )-> block
-	votedTimeslot        map[int64]bool
-	blockVersion         int
+	//votedTimeslot        map[int64]bool
+	blockVersion int
 }
 
 func NewActorV2() *actorV2 {
@@ -96,7 +96,7 @@ func newActorV2WithValue(
 	a.receiveBlockByHash = make(map[string]*ProposeBlockInfo)
 	a.receiveBlockByHeight = make(map[uint64][]*ProposeBlockInfo)
 	a.voteHistory = make(map[uint64]types.BlockInterface)
-	a.votedTimeslot = make(map[int64]bool)
+	//a.votedTimeslot = make(map[int64]bool)
 	a.committeeChain = committeeChain
 	a.blockVersion = blockVersion
 	a.proposeHistory, err = lru.New(1000)
@@ -235,25 +235,8 @@ func (a *actorV2) run() error {
 				}
 
 			case <-cleanMemTicker:
-
-				for h, _ := range a.receiveBlockByHeight {
-					if h <= a.chain.GetFinalView().GetHeight() {
-						delete(a.receiveBlockByHeight, h)
-					}
-				}
-
-				for h, _ := range a.voteHistory {
-					if h <= a.chain.GetFinalView().GetHeight() {
-						delete(a.voteHistory, h)
-					}
-				}
-
-				for h, proposeBlk := range a.receiveBlockByHash {
-					if time.Now().Sub(proposeBlk.receiveTime) > time.Minute {
-						delete(a.votedTimeslot, proposeBlk.block.GetProposeTime())
-						delete(a.receiveBlockByHash, h)
-					}
-				}
+				a.handleCleanMem()
+				continue
 
 			case <-ticker:
 				if !a.chain.IsReady() {
@@ -272,12 +255,7 @@ func (a *actorV2) run() error {
 
 				//set round for monitor
 				round := a.currentTimeSlot - common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime())
-
 				monitor.SetGlobalParam("RoundKey", fmt.Sprintf("%d_%d", bestView.GetHeight(), round))
-
-				var userProposeKey signatureschemes2.MiningKey
-				shouldPropose := false
-				shouldListen := true
 
 				signingCommittees, committees, proposerPk, committeeViewHash, err := a.getCommitteesAndCommitteeViewHash()
 				if err != nil {
@@ -286,19 +264,11 @@ func (a *actorV2) run() error {
 				}
 
 				userKeySet := a.getUserKeySetForSigning(signingCommittees, a.userKeySet)
-				for _, userKey := range userKeySet {
-					userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
-					if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk {
-						shouldListen = false
-						if common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()) != a.currentTimeSlot { // current timeslot is not add to view, and this user is proposer of this timeslot
-							//using block hash as key of best view -> check if this best view we propose or not
-							if _, ok := a.proposeHistory.Get(fmt.Sprintf("%d", a.currentTimeSlot)); !ok {
-								shouldPropose = true
-								userProposeKey = userKey
-							}
-						}
-					}
-				}
+				shouldListen, shouldPropose, userProposeKey := a.isUserKeyProposer(
+					common.CalculateTimeSlot(bestView.GetBlock().GetProposeTime()),
+					proposerPk,
+					userKeySet,
+				)
 
 				if newTimeSlot { //for logging
 					a.logger.Info("")
@@ -314,7 +284,8 @@ func (a *actorV2) run() error {
 
 				if shouldPropose {
 					a.proposeHistory.Add(fmt.Sprintf("%d", a.currentTimeSlot), 1)
-					//Proposer Rule: check propose block connected to bestview(longest chain rule 1) and re-propose valid block with smallest timestamp (including already propose in the past) (rule 2)
+					// Proposer Rule: check propose block connected to bestview (longest chain rule 1)
+					// and re-propose valid block with smallest timestamp (including already propose in the past) (rule 2)
 					sort.Slice(a.receiveBlockByHeight[bestView.GetHeight()+1], func(i, j int) bool {
 						return a.receiveBlockByHeight[bestView.GetHeight()+1][i].block.GetProduceTime() < a.receiveBlockByHeight[bestView.GetHeight()+1][j].block.GetProduceTime()
 					})
@@ -338,7 +309,7 @@ func (a *actorV2) run() error {
 				validProposeBlocks := a.getValidProposeBlocks(bestView)
 				for _, v := range validProposeBlocks {
 					if err := a.validateBlock(bestView, v); err == nil {
-						err = a.voteBlock(v)
+						err = a.voteValidBlock(v)
 						if err != nil {
 							a.logger.Debug(err)
 						}
@@ -355,6 +326,33 @@ func (a *actorV2) run() error {
 		}
 	}()
 	return nil
+}
+
+func (a *actorV2) isUserKeyProposer(
+	bestViewTimeSlot int64,
+	proposerPk incognitokey.CommitteePublicKey,
+	userKeySet []signatureschemes2.MiningKey) (bool, bool, signatureschemes2.MiningKey) {
+
+	var userProposeKey signatureschemes2.MiningKey
+	shouldPropose := false
+	shouldListen := true
+
+	for _, userKey := range userKeySet {
+		userPk := userKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus)
+		if proposerPk.GetMiningKeyBase58(common.BlsConsensus) == userPk {
+			shouldListen = false
+			// current timeslot is not add to view, and this user is proposer of this timeslot
+			if bestViewTimeSlot != a.currentTimeSlot {
+				//using block hash as key of best view -> check if this best view we propose or not
+				if _, ok := a.proposeHistory.Get(fmt.Sprintf("%d", a.currentTimeSlot)); !ok {
+					shouldPropose = true
+					userProposeKey = userKey
+				}
+			}
+		}
+	}
+
+	return shouldListen, shouldPropose, userProposeKey
 }
 
 func (a *actorV2) getValidatorIndex(committees []incognitokey.CommitteePublicKey, validator string) (int, *incognitokey.CommitteePublicKey) {
@@ -570,26 +568,28 @@ func (a *actorV2) createBLSAggregatedSignatures(
 	return validationData, err
 }
 
-func (a *actorV2) voteBlock(
-	v *ProposeBlockInfo,
+//voteValidBlock this function should be use to vote for valid block only
+func (a *actorV2) voteValidBlock(
+	proposeBlockInfo *ProposeBlockInfo,
 ) error {
 	//if valid then vote
-	committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(v.signingCommittees, common.BlsConsensus)
-	for _, userKey := range v.userKeySet {
+	committeeBLSString, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(proposeBlockInfo.signingCommittees, common.BlsConsensus)
+	for _, userKey := range proposeBlockInfo.userKeySet {
 		pubKey := userKey.GetPublicKey()
+		//TODO: @hung will this trick has bad effect on other vote cases
 		// When node is not connect to highway (drop connection/startup), propose and vote a block will prevent voting for any other blocks having same height but larger timestamp (rule1)
 		// In case number of validator is 22, we need to make 22 turn to propose the old smallest timestamp block
 		// To prevent this, proposer will not vote unless receiving at least one vote (look at receive vote event)
-		if pubKey.GetMiningKeyBase58(a.GetConsensusName()) == v.proposerMiningKeyBase58 {
+		if pubKey.GetMiningKeyBase58(a.GetConsensusName()) == proposeBlockInfo.proposerMiningKeyBase58 {
 			continue
 		}
 		if common.IndexOfStr(pubKey.GetMiningKeyBase58(a.GetConsensusName()), committeeBLSString) != -1 {
-			err := a.sendVote(&userKey, v.block, v.signingCommittees)
+			err := a.sendVote(&userKey, proposeBlockInfo.block, proposeBlockInfo.signingCommittees)
 			if err != nil {
 				a.logger.Error(err)
 				return NewConsensusError(UnExpectedError, err)
 			} else {
-				v.isVoted = true
+				proposeBlockInfo.isVoted = true
 			}
 		}
 	}
@@ -812,7 +812,7 @@ func (a *actorV2) sendVote(userKey *signatureschemes2.MiningKey, block types.Blo
 	}
 
 	a.voteHistory[block.GetHeight()] = block
-	a.votedTimeslot[common.CalculateTimeSlot(block.GetProposeTime())] = true
+	//a.votedTimeslot[common.CalculateTimeSlot(block.GetProposeTime())] = true
 
 	a.logger.Info(a.chainKey, "sending vote...")
 
@@ -936,6 +936,7 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 	voteMsg.IsValid = 0
 	if b, ok := a.receiveBlockByHash[voteMsg.BlockHash]; ok { //if received block is already initiated
 		if _, ok := b.votes[voteMsg.Validator]; !ok { // and not receive validatorA vote
+			//TODO: @hung only store vote from known validator?
 			b.votes[voteMsg.Validator] = &voteMsg // store it
 			vid, v := a.getValidatorIndex(b.signingCommittees, voteMsg.Validator)
 			if v != nil {
@@ -953,13 +954,14 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 				if b.block != nil && pubKey.GetMiningKeyBase58(a.GetConsensusName()) == b.proposerMiningKeyBase58 { // if this node is proposer and not sending vote
 					var err error
 					if err = a.validateBlock(a.chain.GetBestView(), b); err != nil {
-						err = a.voteBlock(b)
+						err = a.voteValidBlock(b)
 						if err != nil {
 							a.logger.Debug(err)
 						}
 					} else {
 						a.logger.Debug(err)
 					}
+					//TODO: @hung only send vote if userKey in proposeBlockInfo.UserKeySet list?
 					if err == nil {
 						bestViewHeight := a.chain.GetBestView().GetHeight()
 						if b.block.GetHeight() == bestViewHeight+1 { // and if the propose block is still connected to bestview
@@ -968,6 +970,7 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 								a.logger.Error(err)
 							} else {
 								b.proposerSendVote = true
+								b.isVoted = true
 							}
 						}
 					}
@@ -982,6 +985,35 @@ func (a *actorV2) handleVoteMsg(voteMsg BFTVote) error {
 	return nil
 }
 
+func (a *actorV2) handleCleanMem() {
+
+	for h, _ := range a.receiveBlockByHeight {
+		if h <= a.chain.GetFinalView().GetHeight() {
+			delete(a.receiveBlockByHeight, h)
+		}
+	}
+
+	for h, _ := range a.voteHistory {
+		if h <= a.chain.GetFinalView().GetHeight() {
+			delete(a.voteHistory, h)
+		}
+	}
+
+	for h, proposeBlk := range a.receiveBlockByHash {
+		if time.Now().Sub(proposeBlk.receiveTime) > time.Minute {
+			//delete(a.votedTimeslot, proposeBlk.block.GetProposeTime())
+			delete(a.receiveBlockByHash, h)
+		}
+	}
+
+}
+
+// getValidProposeBlocks validate received proposed block and return valid proposed block
+// Special case: in case block is already inserted, try to send vote (avoid slashing)
+// 1. by pass nil block
+// 2. just validate recently
+// 3. not in current time slot
+// 4. not connect to best view
 func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlockInfo {
 	//Check for valid block to vote
 	validProposeBlock := []*ProposeBlockInfo{}
@@ -992,13 +1024,23 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 			continue
 		}
 
-		if proposeBlockInfo.block.GetHeight() != bestViewHeight+1 {
-			if proposeBlockInfo.block.GetHeight() != bestViewHeight {
-				continue
+		//// check if this time slot has been voted
+		//if a.votedTimeslot[common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
+		//	continue
+		//}
+
+		//special case: if we insert block too quick, before voting
+		//=> vote for this block (within TS,but block is inserted into bestview)
+		//this special case by pass validate with consensus rules
+		if proposeBlockInfo.block.GetHeight() == bestViewHeight && !proposeBlockInfo.isVoted {
+			//already validate and vote for this proposed block
+			if !proposeBlockInfo.isValid {
+				if err := a.validatePreSignBlock(proposeBlockInfo); err != nil {
+					continue
+				}
 			}
-			if proposeBlockInfo.block.Hash().String() != bestView.GetHash().String() {
-				continue
-			}
+			a.voteValidBlock(proposeBlockInfo)
+			continue
 		}
 
 		//not validate if we do it recently
@@ -1011,18 +1053,18 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 			continue
 		}
 
+		//if the block height is not next height or current height
+		if proposeBlockInfo.block.GetHeight() != bestViewHeight+1 {
+			continue
+		}
+
 		// check if producer time > proposer time
 		if common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime()) > a.currentTimeSlot {
 			continue
 		}
 
-		// check if this time slot has been voted
-		if a.votedTimeslot[common.CalculateTimeSlot(proposeBlockInfo.block.GetProposeTime())] {
-			continue
-		}
-
 		if proposeBlockInfo.block.GetHeight() < a.chain.GetFinalView().GetHeight() {
-			delete(a.votedTimeslot, proposeBlockInfo.block.GetProposeTime())
+			//delete(a.votedTimeslot, proposeBlockInfo.block.GetProposeTime())
 			delete(a.receiveBlockByHash, h)
 		}
 
@@ -1036,8 +1078,11 @@ func (a *actorV2) getValidProposeBlocks(bestView multiview.View) []*ProposeBlock
 }
 
 func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *ProposeBlockInfo) error {
-	blkCreateTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
+
+	proposeBlockInfo.lastValidateTime = time.Now()
+
 	bestViewHeight := bestView.GetHeight()
+	blkCreateTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 
 	shouldVote := a.validateConsensusRules(bestViewHeight, proposeBlockInfo)
 
@@ -1053,17 +1098,21 @@ func (a *actorV2) validateBlock(bestView multiview.View, proposeBlockInfo *Propo
 
 	//already validate and vote for this proposed block
 	if !proposeBlockInfo.isValid {
-		//not connected
 		if err := a.validatePreSignBlock(proposeBlockInfo); err != nil {
 			return err
 		}
-
-		proposeBlockInfo.isValid = true
 	}
+
+	proposeBlockInfo.isValid = true
 
 	return nil
 }
 
+//validateConsensusRules validate block, block is valid when one of these conditions hold
+// 1. block connect to best view (== bestViewHeight + 1) and first time receive this height
+// 2. blockHeight = lastVoteBlockHeight && blockCreationTime < lastVoteBlockCreationTime
+// 3. blockCreationTime = lastVoteBlockCreationTime && blockProposeTime > lastVoteBlockProposeTime
+// 4. block has new committees (assign from beacon) than lastVoteBlock
 func (a *actorV2) validateConsensusRules(bestViewHeight uint64, proposeBlockInfo *ProposeBlockInfo) bool {
 	blkCreateTimeSlot := common.CalculateTimeSlot(proposeBlockInfo.block.GetProduceTime())
 	if lastVotedBlk, ok := a.voteHistory[bestViewHeight+1]; ok {
