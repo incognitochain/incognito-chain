@@ -312,6 +312,7 @@ func (serverObj *Server) NewServer(
 		Interrupt:   interrupt,
 		RelayShards: relayShards,
 		Syncker:     serverObj.syncker,
+		Server:      serverObj,
 		// UserKeySet:        serverObj.userKeySet,
 		// NodeMode:        cfg.NodeMode,
 		FeeEstimator:    make(map[byte]blockchain.FeeEstimator),
