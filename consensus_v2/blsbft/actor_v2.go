@@ -391,11 +391,11 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 		//e.Logger.Infof("Get Previous View By Hash Fail, %+v, %+v", v.block.GetPrevHash(), v.block.GetHeight()-1)
 		return
 	}
+
 	v = a.validateVotes(v)
 
 	if !v.isCommitted {
 		if v.validVotes > 2*len(v.signingCommittees)/3 {
-			v.isCommitted = true
 			a.logger.Infof("Commit block %v , height: %v", blockHash, v.block.GetHeight())
 			var err error
 			if a.chain.IsBeaconChain() {
@@ -408,6 +408,7 @@ func (a *actorV2) processIfBlockGetEnoughVote(
 				a.logger.Error(err)
 				return
 			}
+			v.isCommitted = true
 		}
 	}
 }
@@ -451,6 +452,7 @@ func (a *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
 			validVote++
 		}
 	}
+
 	a.logger.Info("Number of Valid Vote", validVote, "| Number Of Error Vote", errVote)
 	v.hasNewVote = false
 	for key, value := range v.votes {
@@ -465,7 +467,8 @@ func (a *actorV2) validateVotes(v *ProposeBlockInfo) *ProposeBlockInfo {
 		v.signingCommittees,
 		v.userKeySet,
 		v.proposerMiningKeyBase58,
-		validVote, errVote,
+		validVote,
+		errVote,
 	)
 
 	return v
@@ -480,8 +483,7 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 	}
 	v.block.(blockValidation).AddValidationField(validationData)
 
-	go a.node.PushBlockToAll(v.block, "", true)
-	if err := a.chain.InsertBlock(v.block, false); err != nil {
+	if err := a.chain.InsertAndBroadcastBlock(v.block); err != nil {
 		return err
 	}
 
@@ -491,7 +493,6 @@ func (a *actorV2) processWithEnoughVotesBeaconChain(
 }
 
 func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
-	var newPreviousValidationData string
 
 	validationData, err := a.createBLSAggregatedSignatures(v.signingCommittees, v.block.GetValidationField(), v.votes)
 	if err != nil {
@@ -515,28 +516,22 @@ func (a *actorV2) processWithEnoughVotesShardChain(v *ProposeBlockInfo) error {
 			return err
 		}
 
-		newPreviousValidationData = previousValidationData
-
 		previousProposeBlockInfo.block.(blockValidation).AddValidationField(previousValidationData)
-		if err := a.chain.ReplacePreviousValidationData(v.block.GetPrevHash(), previousValidationData); err != nil {
+		if err := a.chain.InsertAndBroadcastBlockWithPrevValidationData(v.block, previousValidationData); err != nil {
 			return err
 		}
 
 		delete(a.receiveBlockByHash, previousProposeBlockInfo.block.GetPrevHash().String())
 	}
 
-	if err := a.chain.InsertBlock(v.block, false); err != nil {
+	if err := a.chain.InsertAndBroadcastBlock(v.block); err != nil {
 		return err
-	} else {
-		loggedCommittee, _ := incognitokey.CommitteeKeyListToString(v.signingCommittees)
-		a.logger.Infof("Successfully Insert Block \n "+
-			"ChainID %+v | Height %+v, Hash %+v, Version %+v \n"+
-			"Committee %+v", a.chain, v.block.GetHeight(), *v.block.Hash(), v.block.GetVersion(), loggedCommittee)
 	}
 
-	if len(v.userKeySet) != 0 {
-		go a.node.PushBlockToAll(v.block, newPreviousValidationData, false)
-	}
+	loggedCommittee, _ := incognitokey.CommitteeKeyListToString(v.signingCommittees)
+	a.logger.Infof("Successfully Insert Block \n "+
+		"ChainID %+v | Height %+v, Hash %+v, Version %+v \n"+
+		"Committee %+v", a.chain, v.block.GetHeight(), *v.block.Hash(), v.block.GetVersion(), loggedCommittee)
 
 	return nil
 }

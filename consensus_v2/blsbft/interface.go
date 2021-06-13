@@ -59,7 +59,8 @@ type Chain interface {
 		startTime int64,
 		committees []incognitokey.CommitteePublicKey,
 		hash common.Hash) (types.BlockInterface, error)
-	InsertBlock(block types.BlockInterface, shouldValidate bool) error
+	InsertAndBroadcastBlock(block types.BlockInterface) error
+	InsertAndBroadcastBlockWithPrevValidationData(types.BlockInterface, string) error
 	ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error
 	GetShardID() int

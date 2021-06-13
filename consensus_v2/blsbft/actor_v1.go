@@ -387,12 +387,7 @@ func (actorV1 *actorV1) run() error {
 							continue
 						}
 
-						isBeacon := false
-						if actorV1.chain.IsBeaconChain() {
-							isBeacon = true
-						}
-						go actorV1.node.PushBlockToAll(actorV1.roundData.block, "", isBeacon)
-						if err := actorV1.chain.InsertBlock(actorV1.roundData.block, false); err != nil {
+						if err := actorV1.chain.InsertAndBroadcastBlock(actorV1.roundData.block); err != nil {
 							actorV1.logger.Error(err)
 							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {

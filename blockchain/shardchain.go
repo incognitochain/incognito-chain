@@ -262,6 +262,32 @@ func (chain *ShardChain) InsertBlock(block types.BlockInterface, shouldValidate 
 	return nil
 }
 
+func (chain *ShardChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
+
+	go chain.Blockchain.config.Server.PushBlockToAll(block, "", false)
+
+	if err := chain.InsertBlock(block, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (chain *ShardChain) InsertAndBroadcastBlockWithPrevValidationData(block types.BlockInterface, newValidationData string) error {
+
+	go chain.Blockchain.config.Server.PushBlockToAll(block, newValidationData, false)
+
+	if err := chain.InsertBlock(block, false); err != nil {
+		return err
+	}
+
+	if err := chain.ReplacePreviousValidationData(block.GetPrevHash(), newValidationData); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (chain *ShardChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
 	if err := chain.Blockchain.ReplacePreviousValidationData(previousBlockHash, newValidationData); err != nil {
 		Logger.log.Error(err)
