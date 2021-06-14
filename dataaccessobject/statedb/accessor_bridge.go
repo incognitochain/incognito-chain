@@ -69,7 +69,7 @@ func IsBridgeTokenExistedByType(stateDB *StateDB, incTokenID common.Hash, isCent
 	return has, nil
 }
 
-func GetBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralized bool) (*BridgeTokenInfoState, bool, error) {
+func getBridgeTokenByType(stateDB *StateDB, incTokenID common.Hash, isCentralized bool) (*BridgeTokenInfoState, bool, error) {
 	key := GenerateBridgeTokenInfoObjectKey(isCentralized, incTokenID)
 	tokenInfoState, has, err := stateDB.getBridgeTokenInfoState(key)
 	if err != nil {
@@ -106,7 +106,7 @@ func CanProcessTokenPair(stateDB *StateDB, externalTokenID []byte, incTokenID co
 		log.Println("WARNING: failed at condition 1: ", dBridgeTokenExisted, privacyTokenExisted)
 		return false, nil
 	}
-	bridgeTokenInfoState, has, err := GetBridgeTokenByType(stateDB, incTokenID, false)
+	bridgeTokenInfoState, has, err := getBridgeTokenByType(stateDB, incTokenID, false)
 	if err != nil {
 		return false, NewStatedbError(CanProcessTokenPairError, err)
 	}
@@ -131,7 +131,7 @@ func CanProcessTokenPair(stateDB *StateDB, externalTokenID []byte, incTokenID co
 
 func UpdateBridgeTokenInfo(stateDB *StateDB, incTokenID common.Hash, externalTokenID []byte, isCentralized bool, updatingAmount uint64, updateType string) error {
 	dataaccessobject.Logger.Log.Infof("Update bridge token %v, isCentralized %v, amount %v\n", incTokenID.String(), isCentralized, updatingAmount)
-	bridgeTokenInfoState, has, err := GetBridgeTokenByType(stateDB, incTokenID, isCentralized)
+	bridgeTokenInfoState, has, err := getBridgeTokenByType(stateDB, incTokenID, isCentralized)
 	if err != nil {
 		return NewStatedbError(UpdateBridgeTokenInfoError, err)
 	}
