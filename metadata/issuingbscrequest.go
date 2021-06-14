@@ -173,7 +173,7 @@ func (iReq *IssuingBSCRequest) CalculateSize() uint64 {
 func (iReq *IssuingBSCRequest) verifyProofAndParseReceipt() (*types.Receipt, error) {
 	bscParam := config.Param().BSCParam
 	bscParam.GetFromEnv()
-	bscHeader, err := GetETHHeader(iReq.BlockHash, bscParam.Protocol, bscParam.Host, bscParam.Port)
+	bscHeader, err := GetETHHeader(iReq.BlockHash, "", bscParam.Host, "")
 	if err != nil {
 		return nil, NewMetadataTxError(IssuingBscRequestVerifyProofAndParseReceipt, err)
 	}
@@ -182,7 +182,7 @@ func (iReq *IssuingBSCRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		return nil, NewMetadataTxError(IssuingBscRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: Could not find out the BSC block header with the hash: %s", iReq.BlockHash.String()))
 	}
 
-	mostRecentBlkNum, err := GetMostRecentETHBlockHeight(bscParam.Protocol, bscParam.Host, bscParam.Port)
+	mostRecentBlkNum, err := GetMostRecentETHBlockHeight("", bscParam.Host, "")
 	if err != nil {
 		Logger.log.Info("WARNING: Could not find the most recent block height on Binance smart chain")
 		return nil, NewMetadataTxError(IssuingBscRequestVerifyProofAndParseReceipt, err)

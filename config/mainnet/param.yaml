@@ -60,5 +60,3 @@ geth_param:
   port: ""
 bsc_param:
   host: ""
-  protocol: ""
-  port: ""
