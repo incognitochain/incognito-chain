@@ -2,9 +2,10 @@ package multiview
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/incdb"
-	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -141,7 +142,7 @@ func (multiView *MultiView) updateViewState(newView View) {
 		multiView.bestView = newView
 	}
 
-	if newView.GetBlock().GetVersion() == 1 {
+	if newView.GetBlock().GetVersion() == types.BFT_VERSION {
 		//update finalView: consensus 1
 		prev1Hash := multiView.bestView.GetPreviousHash()
 		if prev1Hash == nil {
@@ -152,7 +153,7 @@ func (multiView *MultiView) updateViewState(newView View) {
 			return
 		}
 		multiView.finalView = prev1View
-	} else if newView.GetBlock().GetVersion() == 2 {
+	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION {
 		////update finalView: consensus 2
 		prev1Hash := multiView.bestView.GetPreviousHash()
 		prev1View := multiView.viewByHash[*prev1Hash]

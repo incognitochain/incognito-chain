@@ -1,10 +1,10 @@
 package blockchain
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/instruction"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -58,8 +58,6 @@ func (blockchain *BlockChain) addShardRewardRequestToBeacon(beaconBlock *types.B
 
 func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.StateDB, beaconBlocks []*types.BeaconBlock, shardID byte) error {
 	cInfos := make(map[int][]*statedb.StakerInfo)
-	isInit := false
-	epoch := uint64(0)
 	for _, beaconBlock := range beaconBlocks {
 		for _, l := range beaconBlock.Body.Instructions {
 			if l[0] == instruction.STAKE_ACTION || l[0] == instruction.RANDOM_ACTION {
@@ -97,7 +95,7 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
-					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(blockchain.config.ChainParams.IncognitoDAOAddress)
+					keyWalletDevAccount, err := wallet.Base58CheckDeserialize(config.Param().IncognitoDAOAddress)
 					if err != nil {
 						return NewBlockChainError(ProcessSalaryInstructionsError, err)
 					}
@@ -118,19 +116,23 @@ func (blockchain *BlockChain) processSalaryInstructions(rewardStateDB *statedb.S
 				if err != nil {
 					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
-				if (!isInit) || (epoch != shardRewardInfo.Epoch) {
-					isInit = true
-					height := blockchain.GetLastBeaconHeightInEpoch(shardRewardInfo.Epoch)
-					var beaconConsensusRootHash common.Hash
-					beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), height)
-					if err != nil {
-						return NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
-					}
-					beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
-					if err != nil {
-						return NewBlockChainError(ProcessSalaryInstructionsError, err)
-					}
-					cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
+				// if (!isInit) || (epoch != shardRewardInfo.Epoch) {
+				// 	isInit = true
+				// 	height := blockchain.GetLastBeaconHeightInEpoch(shardRewardInfo.Epoch)
+				// 	var beaconConsensusRootHash common.Hash
+				// 	beaconConsensusRootHash, err = blockchain.GetBeaconConsensusRootHash(blockchain.GetBeaconBestState(), height)
+				// 	if err != nil {
+				// 		return NewBlockChainError(ProcessSalaryInstructionsError, fmt.Errorf("Beacon Consensus Root Hash of Height %+v not found ,error %+v", height, err))
+				// 	}
+				// 	beaconConsensusStateDB, err := statedb.NewWithPrefixTrie(beaconConsensusRootHash, statedb.NewDatabaseAccessWarper(blockchain.GetBeaconChainDatabase()))
+				// 	if err != nil {
+				// 		return NewBlockChainError(ProcessSalaryInstructionsError, err)
+				// 	}
+				// 	cInfos = statedb.GetAllCommitteeStakeInfo(beaconConsensusStateDB, blockchain.GetShardIDs())
+				// }
+				cInfos, err = blockchain.GetAllCommitteeStakeInfoByEpoch(shardRewardInfo.Epoch)
+				if err != nil {
+					return NewBlockChainError(ProcessSalaryInstructionsError, err)
 				}
 				err = blockchain.addShardCommitteeRewardV2(rewardStateDB, shardID, shardRewardInfo, cInfos[int(shardToProcess)])
 				if err != nil {
@@ -180,7 +182,7 @@ func (beaconBestState *BeaconBestState) calculateReward(
 ) {
 	numberOfActiveShards := beaconBestState.beaconCommitteeEngine.ActiveShards()
 	allCoinID := statedb.GetAllTokenIDForReward(rewardStateDB, epoch)
-	blkPerYear := getNoBlkPerYear(uint64(blockchain.config.ChainParams.MaxBeaconBlockCreation.Seconds()))
+	blkPerYear := getNoBlkPerYear(uint64(config.Param().BlockTime.MaxBeaconBlockCreation.Seconds()))
 	percentForIncognitoDAO := getPercentForIncognitoDAO(blkHeight, blkPerYear)
 	totalRewardForShard := make([]map[common.Hash]uint64, numberOfActiveShards)
 	totalRewards := make([]map[common.Hash]uint64, numberOfActiveShards)
@@ -248,7 +250,14 @@ func (blockchain *BlockChain) buildRewardInstructionByEpoch(
 		totalRewardForShard,
 		totalRewardForIncDAO,
 		totalRewardForCustodian,
-		err := curView.calculateReward(blockchain, blkHeight, epoch, curView.GetBeaconRewardStateDB(), isSplitRewardForCustodian, percentCustodianRewards)
+		err := curView.calculateReward(
+		blockchain,
+		blkHeight,
+		epoch,
+		curView.GetBeaconRewardStateDB(),
+		isSplitRewardForCustodian,
+		percentCustodianRewards,
+	)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -297,7 +306,7 @@ func (beaconBestState *BeaconBestState) buildInstRewardForBeacons(epoch uint64, 
 
 func (blockchain *BlockChain) buildInstRewardForIncDAO(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
-	devRewardInst, err := metadata.BuildInstForIncDAOReward(totalReward, blockchain.config.ChainParams.IncognitoDAOAddress)
+	devRewardInst, err := metadata.BuildInstForIncDAOReward(totalReward, config.Param().IncognitoDAOAddress)
 	if err != nil {
 		Logger.log.Errorf("buildInstRewardForIncDAO error %+v\n Totalreward: %+v, epoch: %+v\n", err, totalReward, epoch)
 		return nil, err
@@ -347,10 +356,10 @@ func (blockchain *BlockChain) buildWithDrawTransactionResponse(view *ShardBestSt
 }
 
 func (blockchain *BlockChain) getRewardAmount(blkHeight uint64) uint64 {
-	blockBeaconInterval := blockchain.config.ChainParams.MinBeaconBlockInterval.Seconds()
+	blockBeaconInterval := config.Param().BlockTime.MinBeaconBlockInterval.Seconds()
 	blockInYear := getNoBlkPerYear(uint64(blockBeaconInterval))
 	n := (blkHeight - 1) / blockInYear
-	reward := uint64(blockchain.config.ChainParams.BasicReward)
+	reward := uint64(config.Param().BasicReward)
 	for ; n > 0; n-- {
 		reward *= 91
 		reward /= 100

@@ -13,6 +13,7 @@ import (
 	"github.com/incognitochain/incognito-chain/memcache"
 	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/netsync"
+	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/syncker"
@@ -61,7 +62,6 @@ type RpcServerConfig struct {
 	HttpListenters  []net.Listener
 	WsListenters    []net.Listener
 	ProtocolVersion string
-	ChainParams     *blockchain.Params
 	BlockChain      *blockchain.BlockChain
 	Blockgen        *blockchain.BlockGenerator
 	MemCache        *memcache.MemoryCache
@@ -75,6 +75,7 @@ type RpcServerConfig struct {
 	Server  interface {
 		// Push TxNormal Message
 		PushMessageToAll(message wire.Message) error
+		PushMessageToShard(msg wire.Message, shard byte) error
 		PushMessageToPeer(message wire.Message, id peer2.ID) error
 		GetNodeRole() string
 		// GetUserKeySet() *incognitokey.KeySet
@@ -84,6 +85,8 @@ type RpcServerConfig struct {
 		GetPublicKeyRole(publicKey string, keyType string) (int, int)
 		GetIncognitoPublicKeyRole(publicKey string) (int, bool, int)
 		GetMinerIncognitoPublickey(publicKey string, keyType string) []byte
+		OnTx(p *peer.PeerConn, msg *wire.MessageTx)
+		OnTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken)
 	}
 	ConsensusEngine blockchain.ConsensusEngine
 

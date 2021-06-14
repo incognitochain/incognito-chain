@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -24,7 +25,8 @@ type BeaconChain struct {
 	ChainName   string
 	Ready       bool //when has peerstate
 
-	insertLock sync.Mutex
+	committeeCache *lru.Cache
+	insertLock     sync.Mutex
 }
 
 func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
@@ -179,7 +181,7 @@ func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
 	if err != nil {
 		return nil, err
 	}
-	if version == 2 {
+	if version >= 2 {
 		newBlock.Header.Proposer = proposer
 		newBlock.Header.ProposeTime = startTime
 	}
@@ -205,7 +207,7 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(
 // TODO: change name
 func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), shouldValidate); err != nil {
-		Logger.log.Info(err)
+		Logger.log.Error(err)
 		return err
 	}
 	return nil
@@ -220,7 +222,7 @@ func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
 	go chain.Blockchain.config.Server.PushBlockToAll(block, "", true)
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), true); err != nil {
-		Logger.log.Info(err)
+		Logger.log.Error(err)
 		return err
 	}
 	return nil
@@ -348,7 +350,23 @@ func (chain *BeaconChain) GetAllView() []multiview.View {
 
 //CommitteesByShardID ...
 func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
-	return chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
+	var committees []incognitokey.CommitteePublicKey
+	var err error
+	res, has := chain.committeeCache.Get(getCommitteeCacheKey(hash, shardID))
+	if !has {
+		committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
+		if err != nil {
+			return committees, err
+		}
+		chain.committeeCache.Add(getCommitteeCacheKey(hash, shardID), committees)
+	} else {
+		committees = res.([]incognitokey.CommitteePublicKey)
+	}
+	return committees, nil
+}
+
+func getCommitteeCacheKey(hash common.Hash, shardID byte) string {
+	return fmt.Sprintf("%s-%d", hash.String(), shardID)
 }
 
 //ProposerByTimeSlot ...

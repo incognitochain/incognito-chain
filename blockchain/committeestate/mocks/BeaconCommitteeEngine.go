@@ -55,13 +55,13 @@ func (_m *BeaconCommitteeEngine) Clone() committeestate.BeaconCommitteeEngine {
 	return r0
 }
 
-// Commit provides a mock function with given fields: _a0
-func (_m *BeaconCommitteeEngine) Commit(_a0 *committeestate.BeaconCommitteeStateHash) error {
-	ret := _m.Called(_a0)
+// Commit provides a mock function with given fields: _a0, _a1
+func (_m *BeaconCommitteeEngine) Commit(_a0 *committeestate.BeaconCommitteeStateHash, _a1 *committeestate.CommitteeChange) error {
+	ret := _m.Called(_a0, _a1)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*committeestate.BeaconCommitteeStateHash) error); ok {
-		r0 = rf(_a0)
+	if rf, ok := ret.Get(0).(func(*committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange) error); ok {
+		r0 = rf(_a0, _a1)
 	} else {
 		r0 = ret.Error(0)
 	}

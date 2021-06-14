@@ -3,13 +3,14 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"math/big"
+	"sort"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
-	"math/big"
-	"sort"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -100,7 +101,8 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	beaconHeight uint64,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams portal.PortalParams) [][]string {
-	currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconHeight-1)
+
+	currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconBestState.pdeState, beaconHeight-1)
 	if err != nil {
 		Logger.log.Error(err)
 	}
@@ -598,4 +600,3 @@ func (blockchain *BlockChain) handlePDEInsts(
 	}
 	return instructions, nil
 }
-

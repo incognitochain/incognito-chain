@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/incognitochain/incognito-chain/consensus/consensustypes"
+	"github.com/incognitochain/incognito-chain/consensus_v2/consensustypes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 

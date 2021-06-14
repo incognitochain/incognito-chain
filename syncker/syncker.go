@@ -5,17 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
 	"sync"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/peerv2"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
+	"github.com/incognitochain/incognito-chain/common"
+	configpkg "github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -53,7 +54,7 @@ func (synckerManager *SynckerManager) Init(config *SynckerManagerConfig) {
 	synckerManager.config = config
 
 	//check preload beacon
-	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
+	preloadAddr := configpkg.Config().PreloadAddress
 	if preloadAddr != "" {
 		if err := preloadDatabase(-1, int(config.Blockchain.BeaconChain.GetEpoch()), preloadAddr, config.Blockchain.GetBeaconChainDatabase(), config.Blockchain.GetBTCHeaderChain()); err != nil {
 			fmt.Println(err)
@@ -115,7 +116,7 @@ func (synckerManager *SynckerManager) manageSyncProcess() {
 		synckerManager.BeaconSyncProcess.isCommittee = (beaconChain.State.Role == common.CommitteeRole)
 	}
 
-	preloadAddr := synckerManager.config.Blockchain.GetConfig().ChainParams.PreloadAddress
+	preloadAddr := configpkg.Config().PreloadAddress
 	synckerManager.BeaconSyncProcess.start()
 
 	wg := sync.WaitGroup{}

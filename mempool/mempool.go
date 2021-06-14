@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/incdb"
 
 	"github.com/incognitochain/incognito-chain/pubsub"
@@ -39,11 +40,10 @@ type Config struct {
 	BlockChain        *blockchain.BlockChain       // Block chain of node
 	DataBase          map[int]incdb.Database       // main database of blockchain
 	DataBaseMempool   databasemp.DatabaseInterface // database is used for storage data in mempool into lvdb
-	ChainParams       *blockchain.Params
-	FeeEstimator      map[byte]*FeeEstimator // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
-	TxLifeTime        uint                   // Transaction life time in pool
-	MaxTx             uint64                 //Max transaction pool may have
-	IsLoadFromMempool bool                   //Reset mempool database when run node
+	FeeEstimator      map[byte]*FeeEstimator       // FeeEstimatator provides a feeEstimator. If it is not nil, the mempool records all new transactions it observes into the feeEstimator.
+	TxLifeTime        uint                         // Transaction life time in pool
+	MaxTx             uint64                       //Max transaction pool may have
+	IsLoadFromMempool bool                         //Reset mempool database when run node
 	PersistMempool    bool
 	RelayShards       []byte
 	// UserKeyset            *incognitokey.KeySet
@@ -236,7 +236,7 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 		return nil, nil, NewMempoolTxError(MaxPoolSizeError, errors.New("Pool reach max number of transaction"))
 	}
 	if tx.GetMetadata() != nil {
-		currentEpoch := common.GetEpochFromBeaconHeight(uint64(beaconHeight), tp.config.BlockChain.GetChainParams().Epoch)
+		currentEpoch := common.GetEpochFromBeaconHeight(uint64(beaconHeight), config.Param().EpochParam.NumberOfBlockInEpoch)
 		isFeatureFlag, isEnable := tp.checkEnableFeatureFlagMetadata(tx.GetMetadataType(), currentEpoch)
 		if isFeatureFlag && !isEnable {
 			return &common.Hash{}, &TxDesc{}, NewMempoolTxError(RejectInvalidTx, fmt.Errorf("This tx %v with metadata %v is disable", tx.Hash().String(), tx.GetMetadataType()))
@@ -273,13 +273,25 @@ func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight i
 	return hash, txDesc, err
 }
 
+func hasCommitteeRelatedTx(txs ...metadata.Transaction) bool {
+	for _, tx := range txs {
+		if tx.GetMetadata() != nil {
+			switch tx.GetMetadata().GetType() {
+			case metadata.BeaconStakingMeta, metadata.ShardStakingMeta, metadata.StopAutoStakingMeta, metadata.UnStakingMeta:
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // This function is safe for concurrent access.
 func (tp *TxPool) MaybeAcceptTransactionForBlockProducing(tx metadata.Transaction, beaconHeight int64, shardView *blockchain.ShardBestState) (*metadata.TxDesc, error) {
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(tx))
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -298,7 +310,7 @@ func (tp *TxPool) MaybeAcceptBatchTransactionForBlockProducing(shardID byte, txs
 	defer tp.mtx.Unlock()
 	bHeight := shardView.BestBlock.Header.BeaconHeight
 	beaconBlockHash := shardView.BestBlock.Header.BeaconHash
-	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash)
+	beaconView, err := tp.config.BlockChain.GetBeaconViewStateDataFromBlockHash(beaconBlockHash, hasCommitteeRelatedTx(txs...))
 	if err != nil {
 		Logger.log.Error(err)
 		return nil, err
@@ -496,6 +508,11 @@ func (tp *TxPool) validateTransaction(shardView *blockchain.ShardBestState, beac
 	// Condition 1: sanity data
 	validated := false
 	if !isNewTransaction {
+		// need to use beacon height from
+		whiteListTxs := tp.config.BlockChain.WhiteListTx()
+		if ok := whiteListTxs[tx.Hash().String()]; ok {
+			return nil
+		}
 		// need to use beacon height from
 		validated, err = tx.ValidateSanityData(tp.config.BlockChain, shardView, beaconView, uint64(beaconHeight))
 	} else {
@@ -1098,14 +1115,16 @@ func (tp *TxPool) listTxs() []string {
 /*
 List all tx ids in mempool
 */
-func (tp *TxPool) ListTxsDetail() []metadata.Transaction {
+func (tp *TxPool) ListTxsDetail() ([]common.Hash, []metadata.Transaction) {
 	tp.mtx.RLock()
 	defer tp.mtx.RUnlock()
-	result := make([]metadata.Transaction, 0)
-	for _, tx := range tp.pool {
-		result = append(result, tx.Desc.Tx)
+	tpKeys := make([]common.Hash, 0)
+	txs := make([]metadata.Transaction, 0)
+	for key, tx := range tp.pool {
+		tpKeys = append(tpKeys, key)
+		txs = append(txs, tx.Desc.Tx)
 	}
-	return result
+	return tpKeys, txs
 }
 
 // ValidateSerialNumberHashH - check serialNumberHashH which is
