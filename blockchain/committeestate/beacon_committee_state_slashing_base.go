@@ -93,7 +93,8 @@ func (b beaconCommitteeStateSlashingBase) Hash(committeeChange *CommitteeChange)
 
 	var tempShardCandidateHash common.Hash
 	if !isNilOrShardCandidateHash(b.hashes) &&
-		len(committeeChange.NextEpochShardCandidateRemoved) == 0 && len(committeeChange.NextEpochShardCandidateAdded) == 0 {
+		len(committeeChange.NextEpochShardCandidateRemoved) == 0 && len(committeeChange.NextEpochShardCandidateAdded) == 0 &&
+		len(committeeChange.CurrentEpochShardCandidateRemoved) == 0 && len(committeeChange.CurrentEpochShardCandidateAdded) == 0 {
 		tempShardCandidateHash = b.hashes.ShardCandidateHash
 	} else {
 		tempShardCandidateHash, err = common.GenerateHashFromStringArray(b.shardCommonPool)
