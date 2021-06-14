@@ -122,7 +122,8 @@ func (b *BeaconCommitteeStateV1) Hash(committeeChange *CommitteeChange) (*Beacon
 
 	var tempShardCandidateHash common.Hash
 	if !isNilOrShardCandidateHash(b.hashes) &&
-		len(committeeChange.NextEpochShardCandidateRemoved) == 0 && len(committeeChange.NextEpochShardCandidateAdded) == 0 {
+		len(committeeChange.NextEpochShardCandidateRemoved) == 0 && len(committeeChange.NextEpochShardCandidateAdded) == 0 &&
+		len(committeeChange.CurrentEpochShardCandidateAdded) == 0 && len(committeeChange.CurrentEpochShardCandidateRemoved) == 0 {
 		tempShardCandidateHash = b.hashes.ShardCandidateHash
 	} else {
 		shardCandidateArr := append([]string{}, b.currentEpochShardCandidate...)
