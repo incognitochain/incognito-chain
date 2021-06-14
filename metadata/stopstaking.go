@@ -121,6 +121,7 @@ func (stopAutoStakingMetadata StopAutoStakingMetadata) ValidateSanityData(chainR
 	}
 	return true, true, nil
 }
+
 func (stopAutoStakingMetadata StopAutoStakingMetadata) GetType() int {
 	return stopAutoStakingMetadata.Type
 }

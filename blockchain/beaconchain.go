@@ -19,18 +19,25 @@ import (
 type BeaconChain struct {
 	multiView *multiview.MultiView
 
-	BlockGen    *BlockGenerator
-	Blockchain  *BlockChain
-	hashHistory *lru.Cache
-	ChainName   string
-	Ready       bool //when has peerstate
+	BlockGen            *BlockGenerator
+	Blockchain          *BlockChain
+	hashHistory         *lru.Cache
+	ChainName           string
+	Ready               bool //when has peerstate
+	committeesInfoCache *lru.Cache
 
-	committeeCache *lru.Cache
-	insertLock     sync.Mutex
+	insertLock sync.Mutex
 }
 
 func NewBeaconChain(multiView *multiview.MultiView, blockGen *BlockGenerator, blockchain *BlockChain, chainName string) *BeaconChain {
-	return &BeaconChain{multiView: multiView, BlockGen: blockGen, Blockchain: blockchain, ChainName: chainName}
+	committeeInfoCache, _ := lru.New(100)
+	return &BeaconChain{
+		multiView:           multiView,
+		BlockGen:            blockGen,
+		Blockchain:          blockchain,
+		ChainName:           chainName,
+		committeesInfoCache: committeeInfoCache,
+	}
 }
 
 func (chain *BeaconChain) GetAllViewHash() (res []common.Hash) {
@@ -72,7 +79,6 @@ func (s *BeaconChain) GetShardBestViewHeight() map[byte]uint64 {
 }
 
 func (s *BeaconChain) GetCurrentCrossShardHeightToShard(sid byte) map[byte]uint64 {
-
 	res := make(map[byte]uint64)
 	for fromShard, toShardStatus := range s.GetBestView().(*BeaconBestState).LastCrossShardState {
 		for toShard, currentHeight := range toShardStatus {
@@ -172,8 +178,8 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 	return chain.multiView.GetBestView().(*BeaconBestState).BeaconProposerIndex
 }
 
-func (chain *BeaconChain) CreateNewBlock(version int, proposer string,
-	round int, startTime int64,
+func (chain *BeaconChain) CreateNewBlock(
+	version int, proposer string, round int, startTime int64,
 	committees []incognitokey.CommitteePublicKey,
 	committeeViewHash common.Hash,
 ) (types.BlockInterface, error) {
@@ -245,7 +251,7 @@ func (chain *BeaconChain) GetChainName() string {
 	return chain.ChainName
 }
 
-func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
+func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, signingCommittees, committees []incognitokey.CommitteePublicKey) error {
 	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*types.BeaconBlock), true)
 }
 
@@ -265,13 +271,13 @@ func (chain *BeaconChain) ValidatePreSignBlock(block types.BlockInterface, commi
 // 	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
 // }
 
-func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
-
+func (chain *BeaconChain) ValidateBlockSignatures(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
+		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
-
-	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committee); err != nil {
+	if err := chain.Blockchain.config.ConsensusEngine.ValidateBlockCommitteSig(block, committees); err != nil {
+		Logger.log.Info("[dcs] err:", err)
 		return err
 	}
 	return nil
@@ -348,51 +354,29 @@ func (chain *BeaconChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
 }
 
-//CommitteesByShardID ...
-func (chain *BeaconChain) CommitteesFromViewHashForShard(hash common.Hash, shardID byte) ([]incognitokey.CommitteePublicKey, error) {
-	var committees []incognitokey.CommitteePublicKey
-	var err error
-	res, has := chain.committeeCache.Get(getCommitteeCacheKey(hash, shardID))
-	if !has {
-		committees, err = chain.Blockchain.GetShardCommitteeFromBeaconHash(hash, shardID)
-		if err != nil {
-			return committees, err
-		}
-		chain.committeeCache.Add(getCommitteeCacheKey(hash, shardID), committees)
-	} else {
-		committees = res.([]incognitokey.CommitteePublicKey)
-	}
-	return committees, nil
+func (chain *BeaconChain) GetProposerByTimeSlotFromCommitteeList(
+	ts int64,
+	committees []incognitokey.CommitteePublicKey,
+) (incognitokey.CommitteePublicKey, int, error) {
+	id := GetProposerByTimeSlot(ts, chain.GetBestView().(*BeaconBestState).MinBeaconCommitteeSize)
+	return committees[id], id, nil
 }
 
-func getCommitteeCacheKey(hash common.Hash, shardID byte) string {
-	return fmt.Sprintf("%s-%d", hash.String(), shardID)
-}
-
-//ProposerByTimeSlot ...
-func (chain *BeaconChain) ProposerByTimeSlot(
-	shardID byte, ts int64,
-	committees []incognitokey.CommitteePublicKey) incognitokey.CommitteePublicKey {
-
-	//TODO: add recalculate proposer index here when swap committees
-	// chainParamEpoch := chain.Blockchain.config.ChainParams.Epoch
-	// id := -1
-	// if ok, err := finalView.HasSwappedCommittee(shardID, chainParamEpoch); err == nil && ok {
-	// 	id = 0
-	// } else {
-	// 	id = GetProposerByTimeSlot(ts, finalView.MinShardCommitteeSize)
-	// }
-
-	id := GetProposerByTimeSlot(ts, chain.Blockchain.GetBestStateShard(shardID).MinShardCommitteeSize)
-	return committees[id]
+func (chain *BeaconChain) GetSigningCommittees(
+	proposerIndex int,
+	committees []incognitokey.CommitteePublicKey,
+	blockVersion int,
+) []incognitokey.CommitteePublicKey {
+	return committees
 }
 
 func (chain *BeaconChain) GetCommitteeV2(block types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) {
-	return chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee(), nil
+	committees := chain.multiView.GetBestView().(*BeaconBestState).GetBeaconCommittee()
+	return committees, nil
 }
 
-func (chain *BeaconChain) CommitteeStateVersion() uint {
-	return chain.GetBestView().(*BeaconBestState).beaconCommitteeEngine.Version()
+func (chain *BeaconChain) CommitteeStateVersion() int {
+	return chain.GetBestView().(*BeaconBestState).beaconCommitteeState.Version()
 }
 
 func (chain *BeaconChain) FinalView() multiview.View {
@@ -408,6 +392,16 @@ func (chain *BeaconChain) GetChainDatabase() incdb.Database {
 	return chain.Blockchain.GetBeaconChainDatabase()
 }
 
-func (chain *BeaconChain) CommitteeEngineVersion() uint {
-	return chain.multiView.GetBestView().CommitteeEngineVersion()
+func (chain *BeaconChain) CommitteeEngineVersion() int {
+	return chain.multiView.GetBestView().CommitteeStateVersion()
+}
+
+func (chain *BeaconChain) CommitteesFromViewHashForShard(
+	committeeHash common.Hash, shardID byte,
+) ([]incognitokey.CommitteePublicKey, error) {
+	return chain.Blockchain.getShardCommitteeFromBeaconHash(committeeHash, shardID)
+}
+
+func getCommitteeCacheKey(hash common.Hash, shardID byte) string {
+	return fmt.Sprintf("%s-%d", hash.String(), shardID)
 }

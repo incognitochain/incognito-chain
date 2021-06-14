@@ -71,18 +71,6 @@ func CreateCrossShardByteArray(txList []metadata.Transaction, fromShardID byte) 
 	return crossIDs
 }
 
-func createShardSwapActionForKeyListV2(
-	shardCommittees []string,
-	minCommitteeSize int,
-	activeShard int,
-	shardID byte,
-	epoch uint64,
-) ([]string, []string) {
-	swapInstruction, newShardCommittees := GetShardSwapInstructionKeyListV2(epoch, minCommitteeSize, activeShard)
-	remainShardCommittees := shardCommittees[minCommitteeSize:]
-	return swapInstruction[shardID], append(newShardCommittees[shardID], remainShardCommittees...)
-}
-
 func checkReturnStakingTxExistence(txId string, shardBlock *types.ShardBlock) bool {
 	for _, tx := range shardBlock.Body.Transactions {
 		if tx.GetMetadata() != nil {
@@ -175,20 +163,12 @@ func VerifyMerkleCrossTransaction(crossTransactions map[byte][]types.CrossTransa
 	return newHash.IsEqual(res)
 }
 
-//updateCommiteesWithAddedAndRemovedListValidator :
-func updateCommiteesWithAddedAndRemovedListValidator(
+//updateCommitteesWithAddedAndRemovedListValidator :
+func updateCommitteesWithAddedAndRemovedListValidator(
 	source,
-	addedCommittees,
-	removedCommittees []incognitokey.CommitteePublicKey) ([]incognitokey.CommitteePublicKey, error) {
+	addedCommittees []incognitokey.CommitteePublicKey) ([]incognitokey.CommitteePublicKey, error) {
 	newShardPendingValidator := []incognitokey.CommitteePublicKey{}
 	m := make(map[string]bool)
-	for _, v := range removedCommittees {
-		str, err := v.ToBase58()
-		if err != nil {
-			return nil, err
-		}
-		m[str] = true
-	}
 	for _, v := range source {
 		str, err := v.ToBase58()
 		if err != nil {

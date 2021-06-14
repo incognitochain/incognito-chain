@@ -11,6 +11,7 @@ const (
 	CommitteeObjectType
 	CommitteeRewardObjectType
 	RewardRequestObjectType
+	RewardRequestV3ObjectType
 	BlackListProducerObjectType
 	SerialNumberObjectType
 	CommitmentObjectType
@@ -46,7 +47,9 @@ const (
 	// PDEX v2
 	PDETradingFeeObjectType
 
+	// Committee State
 	StakerObjectType
+	CommitteeTermObjectType
 
 	// Portal v3
 	PortalExternalTxObjectType
@@ -54,6 +57,7 @@ const (
 	PortalUnlockOverRateCollaterals
 
 	SlashingCommitteeObjectType
+	ValidatorsObjectType
 )
 
 // Prefix length
@@ -76,6 +80,7 @@ const (
 	ShardPool
 	BeaconCommittee
 	ShardCommittee
+	SyncingValidators
 )
 const (
 	BeaconChainID    = -1

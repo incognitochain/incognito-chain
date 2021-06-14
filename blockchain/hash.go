@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 )
@@ -52,7 +51,7 @@ func generateHashFromMapStringString(maps1 map[string]string) (common.Hash, erro
 	return generateHashFromStringArray(res)
 }
 
-func generateHashFromShardState(allShardState map[byte][]types.ShardState, version uint) (common.Hash, error) {
+func generateHashFromShardState(allShardState map[byte][]types.ShardState, version int) (common.Hash, error) {
 	allShardStateStr := []string{}
 	var keys []int
 	for k := range allShardState {
@@ -66,7 +65,7 @@ func generateHashFromShardState(allShardState map[byte][]types.ShardState, versi
 			res += shardState.Hash.String()
 			crossShard, _ := json.Marshal(shardState.CrossShard)
 			res += string(crossShard)
-			if version == committeestate.SLASHING_VERSION {
+			if version != committeestate.SELF_SWAP_SHARD_VERSION {
 				res += shardState.ValidationData
 				res += shardState.CommitteeFromBlock.String()
 			}
@@ -84,7 +83,7 @@ func verifyHashFromStringArray(strs []string, hash common.Hash) (common.Hash, bo
 	return res, bytes.Equal(res.GetBytes(), hash.GetBytes())
 }
 
-func verifyHashFromShardState(allShardState map[byte][]types.ShardState, hash common.Hash, version uint) bool {
+func verifyHashFromShardState(allShardState map[byte][]types.ShardState, hash common.Hash, version int) bool {
 	res, err := generateHashFromShardState(allShardState, version)
 	if err != nil {
 		return false

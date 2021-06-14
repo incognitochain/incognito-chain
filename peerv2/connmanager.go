@@ -70,6 +70,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 					err := broadcastMessage(msg, topic, cm.ps)
 					if err != nil {
 						Logger.Errorf("Broadcast to topic %v error %v", topic, err)
+						Logger.Infof("Broadcast to topic %v error %v", topic, err)
 						return err
 					}
 				}

@@ -3,7 +3,6 @@ package committeestate
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"sync"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -13,27 +12,12 @@ import (
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
-//ShardCommitteeStateHash
-type ShardCommitteeStateHashV2 struct {
-	ShardCommitteeHash  common.Hash
-	ShardSubstituteHash common.Hash
-}
-
 //ShardCommitteeStateV2
 type ShardCommitteeStateV2 struct {
-	shardCommittee     []incognitokey.CommitteePublicKey
+	shardCommittee     []string
 	committeeFromBlock common.Hash //Committees From Beacon Block Hash
 
 	mu *sync.RWMutex
-}
-
-//ShardCommitteeEngineV2
-type ShardCommitteeEngineV2 struct {
-	shardHeight                      uint64
-	shardHash                        common.Hash
-	shardID                          byte
-	shardCommitteeStateV2            *ShardCommitteeStateV2
-	uncommittedShardCommitteeStateV2 *ShardCommitteeStateV2
 }
 
 //NewShardCommitteeStateV2 is default constructor for ShardCommitteeStateV2 ...
@@ -50,146 +34,71 @@ func NewShardCommitteeStateV2WithValue(
 	shardCommittee []incognitokey.CommitteePublicKey,
 	committeeFromBlockHash common.Hash,
 ) *ShardCommitteeStateV2 {
+	res, _ := incognitokey.CommitteeKeyListToString(shardCommittee)
 	return &ShardCommitteeStateV2{
-		shardCommittee:     incognitokey.DeepCopy(shardCommittee),
+		shardCommittee:     res,
 		committeeFromBlock: committeeFromBlockHash,
 		mu:                 new(sync.RWMutex),
 	}
 }
 
-//NewShardCommitteeEngineV1 is default constructor for ShardCommitteeEngineV2
-//Output: pointer of ShardCommitteeEngineV2
-func NewShardCommitteeEngineV2(shardHeight uint64,
-	shardHash common.Hash, shardID byte, shardCommitteeStateV2 *ShardCommitteeStateV2) *ShardCommitteeEngineV2 {
-	return &ShardCommitteeEngineV2{
-		shardHeight:                      shardHeight,
-		shardHash:                        shardHash,
-		shardID:                          shardID,
-		shardCommitteeStateV2:            shardCommitteeStateV2,
-		uncommittedShardCommitteeStateV2: NewShardCommitteeStateV2(),
-	}
-}
-
 //Clone ...
-func (engine *ShardCommitteeEngineV2) Clone() ShardCommitteeEngine {
-	finalCommitteeState := NewShardCommitteeStateV2()
-	engine.shardCommitteeStateV2.clone(finalCommitteeState)
-	engine.uncommittedShardCommitteeStateV2 = NewShardCommitteeStateV2()
-
-	res := NewShardCommitteeEngineV2(
-		engine.shardHeight,
-		engine.shardHash,
-		engine.shardID,
-		finalCommitteeState,
-	)
-	return res
+func (s *ShardCommitteeStateV2) Clone() ShardCommitteeState {
+	newS := NewShardCommitteeStateV2()
+	s.clone(newS)
+	return newS
 }
 
 //clone ShardCommitteeStateV2 to new instance
 func (s ShardCommitteeStateV2) clone(newCommitteeState *ShardCommitteeStateV2) {
-	newCommitteeState.reset()
-	newCommitteeState.shardCommittee = incognitokey.DeepCopy(s.shardCommittee)
+	newCommitteeState.shardCommittee = common.DeepCopyString(s.shardCommittee)
 	newCommitteeState.committeeFromBlock = s.committeeFromBlock
 }
 
-//reset : reset ShardCommitteeStateV2 to default value
-func (s *ShardCommitteeStateV2) reset() {
-	s.shardCommittee = make([]incognitokey.CommitteePublicKey, 0)
-	s.committeeFromBlock = common.Hash{}
-}
-
 //Version ...
-func (engine *ShardCommitteeEngineV2) Version() uint {
+func (s *ShardCommitteeStateV2) Version() int {
 	return SLASHING_VERSION
 }
 
 //GetShardCommittee get shard committees
-func (engine *ShardCommitteeEngineV2) GetShardCommittee() []incognitokey.CommitteePublicKey {
-	return incognitokey.DeepCopy(engine.shardCommitteeStateV2.shardCommittee)
+func (s *ShardCommitteeStateV2) GetShardCommittee() []incognitokey.CommitteePublicKey {
+	res, _ := incognitokey.CommitteeBase58KeyListToStruct(s.shardCommittee)
+	return res
 }
 
 //GetShardSubstitute get shard pending validators
-func (engine *ShardCommitteeEngineV2) GetShardSubstitute() []incognitokey.CommitteePublicKey {
+func (s *ShardCommitteeStateV2) GetShardSubstitute() []incognitokey.CommitteePublicKey {
 	return []incognitokey.CommitteePublicKey{}
 }
 
-func (engine *ShardCommitteeEngineV2) CommitteeFromBlock() common.Hash {
-	return engine.shardCommitteeStateV2.committeeFromBlock
+func (s *ShardCommitteeStateV2) GetCommitteeFromBlock() common.Hash {
+	return s.committeeFromBlock
 }
 
-//Commit commit committee state change in uncommittedShardCommitteeStateV2 struct
-//	- Generate hash from uncommiteed
-//	- Check validations of input hash
-//	- clone uncommitted to commit
-//	- reset uncommitted
-func (engine *ShardCommitteeEngineV2) Commit(hashes *ShardCommitteeStateHash) error {
-	if reflect.DeepEqual(engine.uncommittedShardCommitteeStateV2, NewShardCommitteeStateV2()) {
-		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("%+v", engine.uncommittedShardCommitteeStateV2))
-	}
-	engine.uncommittedShardCommitteeStateV2.mu.Lock()
-	defer engine.uncommittedShardCommitteeStateV2.mu.Unlock()
-	engine.shardCommitteeStateV2.mu.Lock()
-	defer engine.shardCommitteeStateV2.mu.Unlock()
-	comparedHashes, err := engine.generateUncommittedCommitteeHashes()
-	if err != nil {
-		return NewCommitteeStateError(ErrCommitShardCommitteeState, err)
-	}
-
-	if !comparedHashes.ShardCommitteeHash.IsEqual(&hashes.ShardCommitteeHash) {
-		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("Uncommitted ShardCommitteeHash want value %+v but have %+v",
-			comparedHashes.ShardCommitteeHash, hashes.ShardCommitteeHash))
-	}
-
-	if !comparedHashes.ShardSubstituteHash.IsEqual(&hashes.ShardSubstituteHash) {
-		return NewCommitteeStateError(ErrCommitShardCommitteeState, fmt.Errorf("Uncommitted ShardSubstituteHash want value %+v but have %+v",
-			comparedHashes.ShardSubstituteHash, hashes.ShardSubstituteHash))
-	}
-
-	engine.uncommittedShardCommitteeStateV2.clone(engine.shardCommitteeStateV2)
-	engine.uncommittedShardCommitteeStateV2.reset()
-	return nil
-}
-
-//AbortUncommittedShardState reset data in uncommittedShardCommitteeStateV2 struct
-func (engine *ShardCommitteeEngineV2) AbortUncommittedShardState() {
-	engine.uncommittedShardCommitteeStateV2.mu.Lock()
-	defer engine.uncommittedShardCommitteeStateV2.mu.Unlock()
-	engine.uncommittedShardCommitteeStateV2.reset()
-}
-
-//InitCommitteeState init committee state at genesis block or anytime restore program
+//initGenesisShardCommitteeStateV2 init committee state at genesis block or anytime restore program
 //	- call function processInstructionFromBeacon for process instructions received from beacon
 //	- call function processShardBlockInstruction for process shard block instructions
-func (engine *ShardCommitteeEngineV2) InitCommitteeState(env ShardCommitteeStateEnvironment) {
-	engine.shardCommitteeStateV2.mu.Lock()
-	defer engine.shardCommitteeStateV2.mu.Unlock()
+func initGenesisShardCommitteeStateV2(env *ShardCommitteeStateEnvironment) *ShardCommitteeStateV2 {
+	s := NewShardCommitteeStateV2()
 
 	committeeChange := NewCommitteeChange()
 	candidates := []string{}
 
-	for _, beaconInstruction := range env.BeaconInstructions() {
+	s.committeeFromBlock = env.GenesisBeaconHash
+	for _, beaconInstruction := range env.BeaconInstructions {
 		if beaconInstruction[0] == instruction.STAKE_ACTION {
-			candidates = strings.Split(beaconInstruction[1], ",")
+			stakeInstruction := instruction.ImportStakeInstructionFromString(beaconInstruction)
+			candidates = append(candidates, stakeInstruction.PublicKeys...)
 		}
 	}
 
-	newShardCandidateStructs := []incognitokey.CommitteePublicKey{}
-	for _, candidate := range candidates {
-		key := incognitokey.CommitteePublicKey{}
-		err := key.FromBase58(candidate)
-		if err != nil {
-			panic(err)
-		}
-		newShardCandidateStructs = append(newShardCandidateStructs, key)
-	}
+	s.shardCommittee = append(s.shardCommittee, candidates[int(env.ShardID)*
+		env.MinShardCommitteeSize:(int(env.ShardID)*env.MinShardCommitteeSize)+env.MinShardCommitteeSize]...)
 
-	addedCommittees := []incognitokey.CommitteePublicKey{}
-	addedCommittees = append(addedCommittees, newShardCandidateStructs[int(env.ShardID())*
-		env.MinShardCommitteeSize():(int(env.ShardID())*env.MinShardCommitteeSize())+env.MinShardCommitteeSize()]...)
+	addedCommittees, _ := incognitokey.CommitteeBase58KeyListToStruct(s.shardCommittee)
+	committeeChange.ShardCommitteeAdded[env.ShardID] = addedCommittees
 
-	engine.shardCommitteeStateV2.shardCommittee = incognitokey.DeepCopy(addedCommittees)
-	committeeChange.ShardCommitteeAdded[env.ShardID()] = addedCommittees
-
+	return s
 }
 
 //UpdateCommitteeState update committeState from valid data before
@@ -199,20 +108,16 @@ func (engine *ShardCommitteeEngineV2) InitCommitteeState(env ShardCommitteeState
 //			+ process shard block instructions normally
 //	- hash for checking commit later
 //	- Only call once in new or insert block process
-func (engine *ShardCommitteeEngineV2) UpdateCommitteeState(
-	env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
-	engine.uncommittedShardCommitteeStateV2.mu.Lock()
-	defer engine.uncommittedShardCommitteeStateV2.mu.Unlock()
-	engine.shardCommitteeStateV2.mu.RLock()
-	engine.shardCommitteeStateV2.clone(engine.uncommittedShardCommitteeStateV2)
-	engine.shardCommitteeStateV2.mu.RUnlock()
+func (s *ShardCommitteeStateV2) UpdateCommitteeState(
+	env *ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	newCommitteeState := engine.uncommittedShardCommitteeStateV2
-	committeeChange, err := newCommitteeState.forceUpdateCommitteesFromBeacon(env, NewCommitteeChange())
+	committeeChange, err := s.forceUpdateCommitteesFromBeacon(env, NewCommitteeChange())
 	if err != nil {
 		return nil, NewCommitteeChange(), NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-	hashes, err := engine.generateUncommittedCommitteeHashes()
+	hashes, err := s.hash()
 	if err != nil {
 		return nil, NewCommitteeChange(), NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
@@ -225,38 +130,11 @@ func getNewShardCommittees(
 ) ([]string, error) {
 	return shardCommittees, nil
 }
-func (engine *ShardCommitteeEngineV2) GenerateSwapInstruction(env ShardCommitteeStateEnvironment) (*instruction.SwapInstruction, []string, []string, error) {
-	shardCommittees, _ := incognitokey.CommitteeKeyListToString(engine.shardCommitteeStateV2.shardCommittee)
-	return instruction.NewSwapInstruction(), []string{}, shardCommittees, nil
-}
-
-// processSwapShardInstruction: process swap shard instruction
-func (s *ShardCommitteeStateV2) processSwapShardInstruction(
-	swapShardInstruction *instruction.SwapShardInstruction,
-	env ShardCommitteeStateEnvironment,
-	committeeChange *CommitteeChange) (*CommitteeChange, error) {
-
-	newCommitteeChange := committeeChange
-	chainID := byte(swapShardInstruction.ChainID)
-	tempSwapOutPublicKeys := swapShardInstruction.OutPublicKeyStructs
-	tempSwapInPublicKeys := swapShardInstruction.InPublicKeyStructs
-	numberFixedValidators := env.NumberOfFixedBlockValidators()
-
-	// process list shard committees
-	for _, v := range tempSwapOutPublicKeys {
-		s.shardCommittee = append(s.shardCommittee[:numberFixedValidators], s.shardCommittee[numberFixedValidators+1:]...)
-		newCommitteeChange.ShardCommitteeRemoved[chainID] = append(newCommitteeChange.ShardCommitteeRemoved[chainID], v)
-	}
-	s.shardCommittee = append(s.shardCommittee, tempSwapInPublicKeys...)
-	newCommitteeChange.ShardCommitteeAdded[chainID] = append(newCommitteeChange.ShardCommitteeAdded[chainID], tempSwapInPublicKeys...)
-
-	return newCommitteeChange, nil
-}
 
 func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
-	env ShardCommitteeStateEnvironment,
+	env *ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
-	for _, newShardCommittee := range env.CommitteesFromBeaconView() {
+	for _, newShardCommittee := range env.CommitteesFromBeaconView {
 		flag := false
 		for _, oldShardCommittee := range s.shardCommittee {
 			if reflect.DeepEqual(newShardCommittee, oldShardCommittee) {
@@ -265,49 +143,35 @@ func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 			}
 		}
 		if !flag {
-			committeeChange.ShardCommitteeAdded[env.ShardID()] = append(committeeChange.ShardCommitteeAdded[env.ShardID()], newShardCommittee)
+			newShardCommitteeStruct, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{newShardCommittee})
+			committeeChange.ShardCommitteeAdded[env.ShardID] = append(committeeChange.ShardCommitteeAdded[env.ShardID], newShardCommitteeStruct[0])
 		}
 	}
 
 	for _, oldShardCommittee := range s.shardCommittee {
 		flag := false
-		for _, newShardCommittee := range env.CommitteesFromBeaconView() {
+		for _, newShardCommittee := range env.CommitteesFromBeaconView {
 			if reflect.DeepEqual(oldShardCommittee, newShardCommittee) {
 				flag = true
 				break
 			}
 		}
 		if !flag {
-			committeeChange.ShardCommitteeRemoved[env.ShardID()] = append(committeeChange.ShardCommitteeRemoved[env.ShardID()], oldShardCommittee)
+			oldShardCommitteeStruct, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{oldShardCommittee})
+			committeeChange.ShardCommitteeRemoved[env.ShardID] = append(committeeChange.ShardCommitteeRemoved[env.ShardID], oldShardCommitteeStruct[0])
 		}
 	}
 
-	s.shardCommittee = incognitokey.DeepCopy(env.CommitteesFromBeaconView())
-	s.committeeFromBlock = env.CommitteesFromBlock()
+	s.shardCommittee = common.DeepCopyString(env.CommitteesFromBeaconView)
+	s.committeeFromBlock = env.CommitteesFromBlock
 	return committeeChange, nil
 }
 
-//ProcessInstructionFromBeacon : process instrucction from beacon
-func (engine *ShardCommitteeEngineV2) ProcessInstructionFromBeacon(
-	env ShardCommitteeStateEnvironment) (*CommitteeChange, error) {
-	return NewCommitteeChange(), nil
-}
-
-//generateUncommittedCommitteeHashes generate hashes relate to uncommitted committees of struct ShardCommitteeEngineV2
+//hash generate hashes relate to uncommitted committees of struct ShardCommitteeStateV2
 //	append committees and subtitutes to struct and hash it
-func (engine ShardCommitteeEngineV2) generateUncommittedCommitteeHashes() (*ShardCommitteeStateHash, error) {
-	if reflect.DeepEqual(engine.uncommittedShardCommitteeStateV2, NewBeaconCommitteeStateV1()) {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
-	}
+func (s ShardCommitteeStateV2) hash() (*ShardCommitteeStateHash, error) {
 
-	newCommitteeState := engine.uncommittedShardCommitteeStateV2
-
-	committeesStr, err := incognitokey.CommitteeKeyListToString(newCommitteeState.shardCommittee)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
-	}
-
-	committeeHash, err := common.GenerateHashFromStringArray(committeesStr)
+	committeeHash, err := common.GenerateHashFromStringArray(s.shardCommittee)
 	if err != nil {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
 	}
@@ -325,11 +189,11 @@ func (engine ShardCommitteeEngineV2) generateUncommittedCommitteeHashes() (*Shar
 	return &ShardCommitteeStateHash{
 		ShardCommitteeHash:  committeeHash,
 		ShardSubstituteHash: substituteHash,
-		CommitteeFromBlock:  newCommitteeState.committeeFromBlock,
+		CommitteeFromBlock:  s.committeeFromBlock,
 	}, nil
 }
 
-func (ShardCommitteeEngineV2 ShardCommitteeEngineV2) BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64 {
+func (s ShardCommitteeStateV2) BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64 {
 	totalTxsFee := make(map[common.Hash]uint64)
 	for _, tx := range txs {
 		switch tx.GetType() {

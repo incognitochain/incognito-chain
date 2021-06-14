@@ -24,6 +24,9 @@ const (
 	TransactionBatchSize          = 30
 	SpareTime                     = 1000             // in mili-second
 	DefaultMaxBlockSyncTime       = 30 * time.Second // in second
+	Duration                      = 1000000
+	MaxSubsetCommittees           = 2
+	SFV3_MinShardCommitteeSize    = 8
 )
 
 // burning addresses
@@ -48,8 +51,4 @@ var (
 	beaconVerifyPostProcessingTimer         = metrics.NewRegisteredTimer("beacon/verify/postprocessing", nil)
 	beaconStoreBlockTimer                   = metrics.NewRegisteredTimer("beacon/storeblock", nil)
 	beaconUpdateBestStateTimer              = metrics.NewRegisteredTimer("beacon/updatebeststate", nil)
-)
-
-const (
-	Duration = 1000000
 )

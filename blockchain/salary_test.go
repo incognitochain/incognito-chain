@@ -1,14 +1,8 @@
 package blockchain
 
 import (
-	"io/ioutil"
-	"os"
-	"reflect"
-	"testing"
-	"time"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate/mocks"
+	mocks "github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -17,9 +11,16 @@ import (
 	"github.com/incognitochain/incognito-chain/incdb"
 	_ "github.com/incognitochain/incognito-chain/incdb/lvdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/trie"
+	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"os"
+	"reflect"
+	"testing"
+	"time"
 )
 
 var (
@@ -467,13 +468,13 @@ func TestBlockChain_addShardRewardRequestToBeacon(t *testing.T) {
 	config.Param().BlockTime.MinBeaconBlockInterval = 40 * time.Second
 
 	sDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, wrarperDB)
-	acceptedBlockRewardInfoBase := metadata.NewAcceptedBlockRewardInfo(0, make(map[common.Hash]uint64), 2)
-	acceptedBlockRewardInfoBaseInst, _ := acceptedBlockRewardInfoBase.GetStringFormat()
+	acceptedBlockRewardInfoBase := instruction.NewAcceptBlockRewardV1WithValue(0, make(map[common.Hash]uint64), 2)
+	acceptedBlockRewardInfoBaseInst, _ := acceptedBlockRewardInfoBase.String()
 	txFee := make(map[common.Hash]uint64)
 	txFee1 := uint64(10000)
 	txFee[common.PRVCoinID] = txFee1
-	acceptedBlockRewardInfo1 := metadata.NewAcceptedBlockRewardInfo(0, txFee, 2)
-	acceptedBlockRewardInfo1Inst, _ := acceptedBlockRewardInfo1.GetStringFormat()
+	acceptedBlockRewardInfo1 := instruction.NewAcceptBlockRewardV1WithValue(0, txFee, 2)
+	acceptedBlockRewardInfo1Inst, _ := acceptedBlockRewardInfo1.String()
 	type fields struct {
 	}
 	type args struct {
@@ -589,8 +590,8 @@ func TestBlockChain_buildInstRewardForShards(t *testing.T) {
 	totalRewardShard0_1[common.PRVCoinID] = 1000
 	totalRewardShard1_1 := make(map[common.Hash]uint64)
 	totalRewardShard1_1[common.PRVCoinID] = 1123
-	rewardInstShard0_1, _ := metadata.BuildInstForShardReward(totalRewardShard0_1, 1, 0)
-	rewardInstShard1_1, _ := metadata.BuildInstForShardReward(totalRewardShard1_1, 1, 1)
+	rewardInstShard0_1, _ := instruction.NewShardReceiveRewardV1WithValue(totalRewardShard0_1, 1, 0)
+	rewardInstShard1_1, _ := instruction.NewShardReceiveRewardV1WithValue(totalRewardShard1_1, 1, 1)
 	tests := []struct {
 		name    string
 		args    args
@@ -610,13 +611,13 @@ func TestBlockChain_buildInstRewardForShards(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			blockchain := &BlockChain{}
-			got, err := blockchain.buildInstRewardForShards(tt.args.epoch, tt.args.totalRewards)
+			got, err := blockchain.buildInstructionRewardForShards(tt.args.epoch, tt.args.totalRewards)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("buildInstRewardForShards() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("buildInstructionRewardForShards() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("buildInstRewardForShards() got = %v, want %v", got, tt.want)
+				t.Errorf("buildInstructionRewardForShards() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -633,102 +634,29 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 	hash, _ := common.Hash{}.NewHashFromStr("123")
 
 	rewards := []uint64{1093995, 1093995}
-	beaconReward := []uint64{51054, 196919}
-	shardReward := []uint64{933543, 787677}
+	beaconReward := []uint64{196919, 51054}
+	shardReward := []uint64{787677, 933543}
 	daoReward := []uint64{109399, 109399}
 	sDBs := []*statedb.StateDB{}
-	committeeEngines := []*mocks.BeaconCommitteeEngine{}
+	splitRewardRuleProcessors := []*mocks.SplitRewardRuleProcessor{}
 	for i := 0; i < 2; i++ {
 		sDB, err := statedb.NewWithPrefixTrie(emptyRoot, wrarperDB)
 		assert.Nil(t, err)
 		for j := 0; j < 8; j++ {
 			statedb.AddShardRewardRequest(
-				sDB, 1, byte(j), *hash, rewards[i],
+				sDB, 0, byte(j), *hash, rewards[i],
 			)
 		}
 		sDBs = append(sDBs, sDB)
-		committeeEngine := &mocks.BeaconCommitteeEngine{}
-		committeeEngine.On("ActiveShards").Return(8)
-		committeeEngine.On("GetBeaconCommittee").Return(
-			[]incognitokey.CommitteePublicKey{
-				*incKey0, *incKey, *incKey2, *incKey3, *incKey, *incKey2, *incKey3,
-			},
-		)
-		committeeEngine.On("GetShardCommittee").Return(
-			map[byte][]incognitokey.CommitteePublicKey{
-				0: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				1: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				2: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				3: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				4: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				5: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				6: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-				7: []incognitokey.CommitteePublicKey{
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey0, *incKey, *incKey2, *incKey3, *incKey4, *incKey5,
-					*incKey4, *incKey5,
-				},
-			},
-		)
+		splitRewardRuleProcessor := &mocks.SplitRewardRuleProcessor{}
 		for j := 0; j < 8; j++ {
-			committeeEngine.On("SplitReward", &committeestate.BeaconCommitteeStateEnvironment{
+			splitRewardRuleProcessor.On("SplitReward", &committeestate.SplitRewardEnvironment{
 				ActiveShards:           8,
 				DAOPercent:             10,
 				PercentCustodianReward: 0,
 				ShardID:                byte(j),
 				TotalReward:            make(map[common.Hash]uint64),
+				BeaconHeight:           20,
 			}).Return(
 				map[common.Hash]uint64{
 					*hash: beaconReward[i],
@@ -743,47 +671,14 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 				nil,
 			)
 		}
-		committeeEngines = append(committeeEngines, committeeEngine)
+		splitRewardRuleProcessors = append(splitRewardRuleProcessors, splitRewardRuleProcessor)
 	}
 
-	type fields struct {
-		BestBlockHash            common.Hash
-		PreviousBestBlockHash    common.Hash
-		BestBlock                types.BeaconBlock
-		BestShardHash            map[byte]common.Hash
-		BestShardHeight          map[byte]uint64
-		Epoch                    uint64
-		BeaconHeight             uint64
-		BeaconProposerIndex      int
-		CurrentRandomNumber      int64
-		CurrentRandomTimeStamp   int64
-		IsGetRandomNumber        bool
-		Params                   map[string]string
-		MaxBeaconCommitteeSize   int
-		MinBeaconCommitteeSize   int
-		MaxShardCommitteeSize    int
-		MinShardCommitteeSize    int
-		ActiveShards             int
-		ConsensusAlgorithm       string
-		ShardConsensusAlgorithm  map[byte]string
-		beaconCommitteeEngine    committeestate.BeaconCommitteeEngine
-		LastCrossShardState      map[byte]map[byte]uint64
-		ShardHandle              map[byte]bool
-		NumOfBlocksByProducers   map[string]uint64
-		BlockInterval            time.Duration
-		BlockMaxCreateTime       time.Duration
-		consensusStateDB         *statedb.StateDB
-		ConsensusStateDBRootHash common.Hash
-		rewardStateDB            *statedb.StateDB
-		RewardStateDBRootHash    common.Hash
-		featureStateDB           *statedb.StateDB
-		FeatureStateDBRootHash   common.Hash
-		slashStateDB             *statedb.StateDB
-		SlashStateDBRootHash     common.Hash
-	}
 	type args struct {
-		blockchain                *BlockChain
-		blkHeight                 uint64
+		maxBeaconBlockCreation    uint64
+		splitRewardRuleProcessor  committeestate.SplitRewardRuleProcessor
+		numberOfActiveShards      int
+		beaconHeight              uint64
 		epoch                     uint64
 		rewardStateDB             *statedb.StateDB
 		isSplitRewardForCustodian bool
@@ -791,7 +686,6 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    map[common.Hash]uint64
 		want1   []map[common.Hash]uint64
@@ -800,61 +694,13 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Year 1 - V2",
-			fields: fields{
-				beaconCommitteeEngine: committeeEngines[0],
-			},
-			args: args{
-				blockchain:    &BlockChain{},
-				blkHeight:     20,
-				epoch:         1,
-				rewardStateDB: sDBs[0],
-			},
-			want: map[common.Hash]uint64{
-				*hash: 51054 * 8,
-			},
-			want1: []map[common.Hash]uint64{
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-			},
-			want2: map[common.Hash]uint64{
-				*hash: 109399 * 8,
-			},
-			want3:   map[common.Hash]uint64{},
-			wantErr: false,
-		},
-		{
 			name: "Year 1 - V1",
-			fields: fields{
-				beaconCommitteeEngine: committeeEngines[1],
-			},
 			args: args{
-				blockchain:    &BlockChain{},
-				blkHeight:     20,
-				epoch:         1,
-				rewardStateDB: sDBs[1],
+				beaconHeight:             20,
+				epoch:                    1,
+				rewardStateDB:            sDBs[1],
+				numberOfActiveShards:     8,
+				splitRewardRuleProcessor: splitRewardRuleProcessors[0],
 			},
 			want: map[common.Hash]uint64{
 				*hash: 1575352,
@@ -891,59 +737,148 @@ func TestBeaconBestState_calculateReward(t *testing.T) {
 			want3:   map[common.Hash]uint64{},
 			wantErr: false,
 		},
+		// @NOICE: No use split rule reward v2
+		/*
+			{
+				name: "Year 1 - V2",
+				args: args{
+					beaconHeight:  20,
+					epoch:         1,
+					rewardStateDB: sDBs[0],
+				},
+				want: map[common.Hash]uint64{
+					*hash: 51054 * 8,
+				},
+				want1: []map[common.Hash]uint64{
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+				},
+				want2: map[common.Hash]uint64{
+					*hash: 109399 * 8,
+				},
+				want3:   map[common.Hash]uint64{},
+				wantErr: false,
+			},
+		*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			beaconBestState := &BeaconBestState{
-				BestBlockHash:            tt.fields.BestBlockHash,
-				PreviousBestBlockHash:    tt.fields.PreviousBestBlockHash,
-				BestBlock:                tt.fields.BestBlock,
-				BestShardHash:            tt.fields.BestShardHash,
-				BestShardHeight:          tt.fields.BestShardHeight,
-				Epoch:                    tt.fields.Epoch,
-				BeaconHeight:             tt.fields.BeaconHeight,
-				BeaconProposerIndex:      tt.fields.BeaconProposerIndex,
-				CurrentRandomNumber:      tt.fields.CurrentRandomNumber,
-				CurrentRandomTimeStamp:   tt.fields.CurrentRandomTimeStamp,
-				IsGetRandomNumber:        tt.fields.IsGetRandomNumber,
-				Params:                   tt.fields.Params,
-				MaxBeaconCommitteeSize:   tt.fields.MaxBeaconCommitteeSize,
-				MinBeaconCommitteeSize:   tt.fields.MinBeaconCommitteeSize,
-				MaxShardCommitteeSize:    tt.fields.MaxShardCommitteeSize,
-				MinShardCommitteeSize:    tt.fields.MinShardCommitteeSize,
-				ActiveShards:             tt.fields.ActiveShards,
-				ConsensusAlgorithm:       tt.fields.ConsensusAlgorithm,
-				ShardConsensusAlgorithm:  tt.fields.ShardConsensusAlgorithm,
-				beaconCommitteeEngine:    tt.fields.beaconCommitteeEngine,
-				LastCrossShardState:      tt.fields.LastCrossShardState,
-				ShardHandle:              tt.fields.ShardHandle,
-				BlockInterval:            tt.fields.BlockInterval,
-				BlockMaxCreateTime:       tt.fields.BlockMaxCreateTime,
-				consensusStateDB:         tt.fields.consensusStateDB,
-				ConsensusStateDBRootHash: tt.fields.ConsensusStateDBRootHash,
-				rewardStateDB:            tt.fields.rewardStateDB,
-				RewardStateDBRootHash:    tt.fields.RewardStateDBRootHash,
-				featureStateDB:           tt.fields.featureStateDB,
-				FeatureStateDBRootHash:   tt.fields.FeatureStateDBRootHash,
-				slashStateDB:             tt.fields.slashStateDB,
-				SlashStateDBRootHash:     tt.fields.SlashStateDBRootHash,
-			}
-			got, got1, got2, got3, err := beaconBestState.calculateReward(tt.args.blockchain, tt.args.blkHeight, tt.args.epoch, tt.args.rewardStateDB, tt.args.isSplitRewardForCustodian, tt.args.percentCustodianRewards)
+			got, got1, got2, got3, err := calculateReward(tt.args.splitRewardRuleProcessor, tt.args.numberOfActiveShards, tt.args.beaconHeight, tt.args.epoch, tt.args.rewardStateDB, tt.args.isSplitRewardForCustodian, tt.args.percentCustodianRewards)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("BeaconBestState.calculateReward() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("calculateReward() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("BeaconBestState.calculateReward() got = %v, want %v", got, tt.want)
+				t.Errorf("calculateReward() got = %v, want %v", got, tt.want)
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("BeaconBestState.calculateReward() got1 = %v, want %v", got1, tt.want1)
+				t.Errorf("calculateReward() got1 = %v, want %v", got1, tt.want1)
 			}
 			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("BeaconBestState.calculateReward() got2 = %v, want %v", got2, tt.want2)
+				t.Errorf("calculateReward() got2 = %v, want %v", got2, tt.want2)
 			}
 			if !reflect.DeepEqual(got3, tt.want3) {
-				t.Errorf("BeaconBestState.calculateReward() got3 = %v, want %v", got3, tt.want3)
+				t.Errorf("calculateReward() got3 = %v, want %v", got3, tt.want3)
+			}
+		})
+	}
+}
+
+func Test_getCommitteeToPayRewardV3(t *testing.T) {
+
+	initPublicKey()
+	initLog()
+	wl0, _ := wallet.Base58CheckDeserialize("12RpJeW7vnRPekywx9nhSraaAfANDYaWYYYE7iVhivr5chCo5S9g1YHQFJ6TxHMJz6okHXTmmMEyqaov912ZkxJuyLicEU4QXJeRysY")
+	wl1, _ := wallet.Base58CheckDeserialize("12RxxmjTTzEGm6eCvHhXmNoCjZt9WMAAKECyGu9wpWMKHXD1Pgvh2TZRVM47CiVFG3XjzjdzMRSsSdWE4p1evcyJ6pCS5QCWWNtn5Bk")
+	wl2, _ := wallet.Base58CheckDeserialize("12Ry1WG32b6D2PXnA2AfUfwnfuKJdtExZeZbwszKxTbUaeH8BJBpaHibnJmHTzehKduPDVbRUbv38wrZ4snsX6sKZH5PmUoys7r8KJA")
+	wl3, _ := wallet.Base58CheckDeserialize("12Ry21dYZX8qmrSq9JJkSydwtKrSpvGGJGUqJyJVP491gWtiKA9ya7XSsJ5gYfTSjALMudEn3M5iXTVw3sQ1rouZ3EBnFMf9ojfJwpG")
+	wl4, _ := wallet.Base58CheckDeserialize("12Ry2Tej7dFBy4TrfGeu6hkTDMSTsSSExCiyutSSex4y28stcWLqbFMP2pEVFvgQzuLdPaYS2Gcwwv4wmUtecMYxNkBneEMK1BFELvJ")
+	wl5, _ := wallet.Base58CheckDeserialize("12Ry4s7jtiJ9C61iUmLToDYgVAsc2gA7GsihqRgdyqq9u7DY3qTe3Ns3UPpuhts6qkfXbtqtzRxZp1cE7ULZA2sCttsBYjFVwNcNRw3")
+	stakerInfos := make([]*statedb.StakerInfo, 6)
+	stakerInfos[0] = &statedb.StakerInfo{}
+	stakerInfos[0].SetRewardReceiver(wl0.KeySet.PaymentAddress)
+	stakerInfos[0].SetTxStakingID(common.HashH([]byte{0}))
+	stakerInfos[0].SetAutoStaking(true)
+	stakerInfos[1] = &statedb.StakerInfo{}
+	stakerInfos[1].SetRewardReceiver(wl1.KeySet.PaymentAddress)
+	stakerInfos[1].SetTxStakingID(common.HashH([]byte{1}))
+	stakerInfos[1].SetAutoStaking(false)
+	stakerInfos[2] = &statedb.StakerInfo{}
+	stakerInfos[2].SetRewardReceiver(wl2.KeySet.PaymentAddress)
+	stakerInfos[2].SetTxStakingID(common.HashH([]byte{2}))
+	stakerInfos[2].SetAutoStaking(true)
+	stakerInfos[3] = &statedb.StakerInfo{}
+	stakerInfos[3].SetRewardReceiver(wl3.KeySet.PaymentAddress)
+	stakerInfos[3].SetTxStakingID(common.HashH([]byte{3}))
+	stakerInfos[3].SetAutoStaking(false)
+	stakerInfos[4] = &statedb.StakerInfo{}
+	stakerInfos[4].SetRewardReceiver(wl4.KeySet.PaymentAddress)
+	stakerInfos[4].SetTxStakingID(common.HashH([]byte{4}))
+	stakerInfos[4].SetAutoStaking(true)
+	stakerInfos[5] = &statedb.StakerInfo{}
+	stakerInfos[5].SetRewardReceiver(wl5.KeySet.PaymentAddress)
+	stakerInfos[5].SetTxStakingID(common.HashH([]byte{5}))
+	stakerInfos[5].SetAutoStaking(true)
+	type args struct {
+		committees           []*statedb.StakerInfo
+		shardReceiveRewardV3 *instruction.ShardReceiveRewardV3
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*statedb.StakerInfo
+	}{
+		{
+			name: "subset 0",
+			args: args{
+				committees:           stakerInfos,
+				shardReceiveRewardV3: instruction.NewShardReceiveRewardV3().SetSubsetID(0),
+			},
+			want: []*statedb.StakerInfo{
+				stakerInfos[0],
+				stakerInfos[2],
+				stakerInfos[4],
+			},
+		},
+		{
+			name: "subset 1",
+			args: args{
+				committees:           stakerInfos,
+				shardReceiveRewardV3: instruction.NewShardReceiveRewardV3().SetSubsetID(1),
+			},
+			want: []*statedb.StakerInfo{
+				stakerInfos[1],
+				stakerInfos[3],
+				stakerInfos[5],
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getCommitteeToPayRewardV3(tt.args.committees, tt.args.shardReceiveRewardV3); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getCommitteeToPayRewardV3() = %v, want %v", got, tt.want)
 			}
 		})
 	}

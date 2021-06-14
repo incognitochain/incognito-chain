@@ -42,6 +42,17 @@ func NewGetMempoolInfoV2(info txpool.MempoolInfo) *GetMempoolInfo {
 	return result
 }
 
+// GetTxDetailsFromMempool is to get all txs along with their detailed info from mempool
+func GetTxDetailsFromMempool(txMempool interface {
+	MaxFee() uint64
+	ListTxsDetail() ([]common.Hash, []metadata.Transaction)
+	Count() int
+	Size() uint64
+}) []metadata.Transaction {
+	_, txDetailsInMempool := txMempool.ListTxsDetail()
+	return txDetailsInMempool
+}
+
 func NewGetMempoolInfo(txMempool interface {
 	MaxFee() uint64
 	ListTxsDetail() ([]common.Hash, []metadata.Transaction)

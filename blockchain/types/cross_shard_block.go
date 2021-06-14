@@ -218,3 +218,11 @@ func CalHashOutCoinCrossShard(outCoins []privacy.OutputCoin) common.Hash {
 func CalHashTxTokenDataHashList() common.Hash {
 	return common.HashH([]byte(""))
 }
+
+func (block CrossShardBlock) Type() string {
+	return common.ShardChainKey
+}
+
+func (block CrossShardBlock) BodyHash() common.Hash {
+	return common.Hash{}
+}

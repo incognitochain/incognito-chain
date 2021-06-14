@@ -4,9 +4,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/blockchain/types"
-
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
@@ -18,7 +17,6 @@ const STOP_SYNC = "stop_sync"
 func isNil(v interface{}) bool {
 	return v == nil || (reflect.ValueOf(v).Kind() == reflect.Ptr && reflect.ValueOf(v).IsNil())
 }
-
 func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 	sameCommitteeBlock := blocks
 
@@ -75,19 +73,23 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 
 	//validate the last block for batching
 	//get block has same committee
-	epochCommittee := []incognitokey.CommitteePublicKey{}
+	committees := []incognitokey.CommitteePublicKey{}
 	if len(sameCommitteeBlock) != 0 {
 		var err error
-		epochCommittee, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
+		committees, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
 		if err != nil {
 			return 0, err
 		}
 	}
-
+	//TODO: @hung blocks can have the same full committee but different signing committee
 	validBlockForInsert := sameCommitteeBlock[:]
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
-		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], epochCommittee); err != nil {
-			validBlockForInsert = sameCommitteeBlock[:i]
+		signingCommittees, err := chain.GetCommitteeV2(sameCommitteeBlock[i])
+		if err != nil {
+			return 0, err
+		}
+		if err := chain.ValidateBlockSignatures(sameCommitteeBlock[i], signingCommittees); err != nil {
+			sameCommitteeBlock = sameCommitteeBlock[:i]
 		} else {
 			break
 		}
@@ -115,13 +117,15 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 				err = chain.InsertBlock(v, batchingValidate == false)
 			}
 			if err != nil {
-				committeeStr, _ := incognitokey.CommitteeKeyListToString(epochCommittee)
+				committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)
 				Logger.Errorf("Insert block %v hash %v got error %v, Committee of epoch %v", v.GetHeight(), *v.Hash(), err, committeeStr)
 				return 0, err
 			}
 		}
+
 	}
-	return len(validBlockForInsert), nil
+
+	return len(sameCommitteeBlock), nil
 }
 
 //final block

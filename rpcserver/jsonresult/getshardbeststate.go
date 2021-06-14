@@ -25,8 +25,8 @@ type GetShardBestState struct {
 	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int               `json:"ActiveShards"`
 	MetricBlockHeight      uint64            `json:"MetricBlockHeight"`
-	CommitteeFromBlock     common.Hash       `json:"CommitteeFromBlock"`
-	CommitteeEngineVersion uint              `json:"CommitteeEngineVersion"`
+	CommitteeFromBlock     common.Hash       `json:"GenesisBeaconHash"`
+	CommitteeEngineVersion int               `json:"CommitteeStateVersion"`
 }
 
 func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
@@ -65,7 +65,7 @@ func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
 	copy(result.ShardPendingValidator, shardPendingValidatorStr)
 
 	result.StakingTx = make(map[string]string)
-	result.CommitteeEngineVersion = data.CommitteeEngineVersion()
+	result.CommitteeEngineVersion = data.CommitteeStateVersion()
 
 	return result
 }

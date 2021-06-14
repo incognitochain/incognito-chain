@@ -9,16 +9,16 @@ const (
 	IssuingETHRequestMeta  = 80
 	IssuingETHResponseMeta = 81
 
-	ShardBlockReward             = 36
-	AcceptedBlockRewardInfoMeta  = 37
+	ShardBlockReward = 36
+
 	ShardBlockSalaryResponseMeta = 38
 	BeaconRewardRequestMeta      = 39
 	BeaconSalaryResponseMeta     = 40
 	ReturnStakingMeta            = 41
 	IncDAORewardRequestMeta      = 42
-	ShardBlockRewardRequestMeta  = 43
-	WithDrawRewardRequestMeta    = 44
-	WithDrawRewardResponseMeta   = 45
+
+	WithDrawRewardRequestMeta  = 44
+	WithDrawRewardResponseMeta = 45
 
 	//staking
 	ShardStakingMeta    = 63

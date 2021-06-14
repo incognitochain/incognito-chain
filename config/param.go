@@ -46,6 +46,7 @@ type param struct {
 	BCHeightBreakPointPortalV3       uint64             `mapstructure:"portal_v3_height"`
 	TxPoolVersion                    int                `mapstructure:"tx_pool_version"`
 	GethParam                        gethParam          `mapstructure:"geth_param"`
+	IsEnableBPV3Stats                bool               `mapstructure:"is_enable_bpv3_stats"`
 	IsBackup                         bool
 }
 
@@ -102,6 +103,7 @@ type consensusParam struct {
 	ConsensusV2Epoch          uint64   `mapstructure:"consensus_v2_epoch"`
 	StakingFlowV2Height       uint64   `mapstructure:"staking_flow_v2_height"`
 	EnableSlashingHeight      uint64   `mapstructure:"enable_slashing_height"`
+	StakingFlowV3Height       uint64   `mapstructure:"staking_flow_v3_height"`
 	Timeslot                  uint64   `mapstructure:"timeslot"`
 	EpochBreakPointSwapNewKey []uint64 `mapstructure:"epoch_break_point_swap_new_key"`
 }

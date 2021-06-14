@@ -8,6 +8,8 @@ type ShardState struct {
 	Height             uint64
 	Hash               common.Hash
 	CrossShard         []byte //In this state, shard i send cross shard tx to which shard
+	ProposerTime       int64
+	Version            int
 }
 
 func NewShardState(validationData string,
@@ -15,8 +17,18 @@ func NewShardState(validationData string,
 	height uint64,
 	hash common.Hash,
 	crossShard []byte,
+	proposerTime int64,
+	version int,
 ) ShardState {
 	newCrossShard := make([]byte, len(crossShard))
 	copy(newCrossShard, crossShard)
-	return ShardState{ValidationData: validationData, CommitteeFromBlock: committeeFromBlock, Height: height, Hash: hash, CrossShard: newCrossShard}
+	return ShardState{
+		ValidationData:     validationData,
+		CommitteeFromBlock: committeeFromBlock,
+		Height:             height,
+		Hash:               hash,
+		CrossShard:         newCrossShard,
+		ProposerTime:       proposerTime,
+		Version:            version,
+	}
 }

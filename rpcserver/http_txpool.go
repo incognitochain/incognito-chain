@@ -25,6 +25,14 @@ func (httpServer *HttpServer) handleGetMempoolInfo(params interface{}, closeChan
 }
 
 /*
+handleGetMempoolInfoDetails - RPC to return all txs along with their detailed info from mempool
+*/
+func (httpServer *HttpServer) handleGetMempoolInfoDetails(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	result := jsonresult.GetTxDetailsFromMempool(httpServer.config.TxMemPool)
+	return result, nil
+}
+
+/*
 handleGetRawMempool - RPC returns all transaction ids in memory pool as a json array of string transaction ids
 Hint: use getmempoolentry to fetch a specific transaction from the mempool.
 */
