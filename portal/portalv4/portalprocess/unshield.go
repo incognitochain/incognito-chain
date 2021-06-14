@@ -240,7 +240,7 @@ func (p *PortalUnshieldRequestProcessor) ProcessInsts(
 			actionData.TxReqID.String(), actionData.TokenID, actionData.RemoteAddress, actionData.UnshieldAmount, beaconHeight+1)
 
 		// update bridge token info
-		err := metadata.UpdateBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.UnshieldAmount, true)
+		err := metadata.UpdatePortalBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.UnshieldAmount, true)
 		if err != nil {
 			Logger.log.Errorf("[ProcessUnshieldRequest] Update Portal token info for UnshieldID - Error %v\n", actionData.TxReqID.String(), err)
 			return nil

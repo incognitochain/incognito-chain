@@ -3,12 +3,13 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	ec "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/privacy/coin"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 
 	"github.com/pkg/errors"
 )
@@ -38,8 +39,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 
 	var md Metadata
-	typeFloat,ok := mtTemp["Type"].(float64)
-	if !ok{
+	typeFloat, ok := mtTemp["Type"].(float64)
+	if !ok {
 		return nil, errors.Errorf("Could not parse metadata with type: %v", mtTemp["Type"])
 	}
 	theType := int(typeFloat)
@@ -184,6 +185,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalReplacementFeeRequest{}
 	case PortalV4SubmitConfirmedTxMeta:
 		md = &PortalSubmitConfirmedTxRequest{}
+	case PortalV4ConvertVaultRequestMeta:
+		md = &PortalConvertVaultRequest{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)
@@ -193,7 +196,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return md, nil
 }
 
@@ -669,6 +672,7 @@ func IsPortalMetaTypeV4(metaType int) bool {
 	res, _ := common.SliceExists(portalV4MetaTypes, metaType)
 	return res
 }
+
 //genTokenID generates a (deterministically) random tokenID for the request transaction.
 //From now on, users cannot generate their own tokenID.
 //The generated tokenID is calculated as the hash of the following components:
@@ -682,11 +686,11 @@ func GenTokenIDFromRequest(txHash string, shardID byte) *common.Hash {
 }
 
 type OTADeclaration struct {
-	PublicKey 	[32]byte
-	TokenID 	common.Hash
+	PublicKey [32]byte
+	TokenID   common.Hash
 }
 
-func checkIncognitoAddress(address, txRandom string) (bool, error, int){
+func checkIncognitoAddress(address, txRandom string) (bool, error, int) {
 	version := 0
 	if len(txRandom) > 0 {
 		version = 2

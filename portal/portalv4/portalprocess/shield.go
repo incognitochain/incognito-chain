@@ -264,7 +264,7 @@ func (p *PortalShieldingRequestProcessor) ProcessInsts(
 			shieldingExternalTxHash, actionData.IncogAddressStr, shieldingAmount)
 
 		// update bridge token info
-		err := metadata.UpdateBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.MintingAmount, false)
+		err := metadata.UpdatePortalBridgeTokenInfo(updatingInfoByTokenID, actionData.TokenID, actionData.MintingAmount, false)
 		if err != nil {
 			Logger.log.Errorf("Shielding Request: Update Portal token info for UnshieldID - Error %v\n", actionData.TxReqID.String(), err)
 			return nil

@@ -1,0 +1,169 @@
+package metadata
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"strconv"
+
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	"github.com/incognitochain/incognito-chain/wallet"
+)
+
+// @@NOTE: This tx is created only one time when migration centralized bridge to portal v4
+// PortalConvertVaultRequest
+// metadata - portal centralized incognito address convert vault request - create normal tx with this metadata
+type PortalConvertVaultRequest struct {
+	MetadataBaseWithSignature
+	TokenID          string // pTokenID in incognito chain
+	ConvertProof     string
+	IncognitoAddress string
+}
+
+// PortalConvertVaultRequestAction - shard validator creates instruction that contain this action content
+type PortalConvertVaultRequestAction struct {
+	Meta    PortalConvertVaultRequest
+	TxReqID common.Hash
+	ShardID byte
+}
+
+// PortalConvertVaultRequestContent - Beacon builds a new instruction with this content after receiving a instruction from shard
+// It will be appended to beaconBlock
+// both accepted and rejected status
+type PortalConvertVaultRequestContent struct {
+	TokenID          string // pTokenID in incognito chain
+	IncognitoAddress string
+	ConvertProofHash string
+	ConvertingUTXO   []*statedb.UTXO
+	ConvertingAmount uint64
+	TxReqID          common.Hash
+	ShardID          byte
+}
+
+// PortalConvertVaultRequestStatus - Beacon tracks status of request converting vault into db
+type PortalConvertVaultRequestStatus struct {
+	Status           byte
+	TokenID          string // pTokenID in incognito chain
+	IncognitoAddress string
+	ConvertProofHash string
+	ConvertingUTXO   []*statedb.UTXO
+	ConvertingAmount uint64
+	TxReqID          common.Hash
+	ErrorMsg         string
+}
+
+func NewPortalConvertVaultRequest(
+	metaType int,
+	tokenID string,
+	convertingProof string,
+	incognitoAddress string) (*PortalConvertVaultRequest, error) {
+	metadataBase := MetadataBase{
+		Type: metaType,
+	}
+	convertRequestMeta := &PortalConvertVaultRequest{
+		TokenID:          tokenID,
+		ConvertProof:     convertingProof,
+		IncognitoAddress: incognitoAddress,
+	}
+	convertRequestMeta.MetadataBase = metadataBase
+	return convertRequestMeta, nil
+}
+
+func (convertVaultReq PortalConvertVaultRequest) ValidateTxWithBlockChain(
+	txr Transaction,
+	chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever,
+	shardID byte,
+	db *statedb.StateDB,
+) (bool, error) {
+	return true, nil
+}
+
+func (convertVaultReq PortalConvertVaultRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
+	// validate requester - must be a centralized incognito address
+	centralizedIncAddress := chainRetriever.GetCentralizedWebsitePaymentAddress(beaconHeight)
+	if convertVaultReq.IncognitoAddress != centralizedIncAddress {
+		return false, false, errors.New("Requester is not matched to the centralized incognito address")
+	}
+	keyWallet, err := wallet.Base58CheckDeserialize(convertVaultReq.IncognitoAddress)
+	if err != nil {
+		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError, errors.New("Requester incognito address is invalid"))
+	}
+	incAddr := keyWallet.KeySet.PaymentAddress
+	if len(incAddr.Pk) == 0 {
+		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError, errors.New("Requester incognito address is invalid"))
+	}
+	if ok, err := convertVaultReq.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {
+		return false, false, errors.New("Requester must be a centralized incognito address")
+	}
+
+	// check proof is not empty
+	if convertVaultReq.ConvertProof == "" {
+		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
+			errors.New("Converting proof is empty"))
+	}
+
+	// check tx version and type
+	if tx.GetVersion() != 2 {
+		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
+			errors.New("Tx converting vault request must be version 2"))
+	}
+	if tx.GetType() != common.TxNormalType {
+		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
+			errors.New("Tx converting vault request must be TxNormalType"))
+	}
+
+	// validate tokenID and shielding proof
+	isPortalToken, err := chainRetriever.IsPortalToken(beaconHeight, convertVaultReq.TokenID, common.PortalVersion4)
+	if !isPortalToken || err != nil {
+		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
+			errors.New("TokenID is not supported currently on Portal v4"))
+	}
+
+	return true, true, nil
+}
+
+func (convertVaultReq PortalConvertVaultRequest) ValidateMetadataByItself() bool {
+	return convertVaultReq.Type == PortalV4ConvertVaultRequestMeta
+}
+
+func (convertVaultReq PortalConvertVaultRequest) Hash() *common.Hash {
+	record := convertVaultReq.MetadataBase.Hash().String()
+	record += convertVaultReq.TokenID
+	record += convertVaultReq.ConvertProof
+	if convertVaultReq.Sig != nil && len(convertVaultReq.Sig) != 0 {
+		record += string(convertVaultReq.Sig)
+	}
+
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (convertVaultReq PortalConvertVaultRequest) HashWithoutSig() *common.Hash {
+	record := convertVaultReq.MetadataBaseWithSignature.Hash().String()
+	record += convertVaultReq.TokenID
+	record += convertVaultReq.ConvertProof
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (convertVaultReq *PortalConvertVaultRequest) BuildReqActions(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, shardHeight uint64) ([][]string, error) {
+	actionContent := PortalConvertVaultRequestAction{
+		Meta:    *convertVaultReq,
+		TxReqID: *tx.Hash(),
+		ShardID: shardID,
+	}
+	actionContentBytes, err := json.Marshal(actionContent)
+	if err != nil {
+		return [][]string{}, err
+	}
+	actionContentBase64Str := base64.StdEncoding.EncodeToString(actionContentBytes)
+	action := []string{strconv.Itoa(PortalV4ConvertVaultRequestMeta), actionContentBase64Str}
+	return [][]string{action}, nil
+}
+
+func (convertVaultReq *PortalConvertVaultRequest) CalculateSize() uint64 {
+	return calculateSize(convertVaultReq)
+}

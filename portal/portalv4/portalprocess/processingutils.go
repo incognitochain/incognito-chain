@@ -138,6 +138,9 @@ func hasPortalV4Instruction(instructions [][]string) bool {
 		case strconv.Itoa(metadata.PortalV4SubmitConfirmedTxMeta):
 			hasPortalV4Instruction = true
 			break
+		case strconv.Itoa(metadata.PortalV4ConvertVaultRequestMeta):
+			hasPortalV4Instruction = true
+			break
 		}
 	}
 	return hasPortalV4Instruction

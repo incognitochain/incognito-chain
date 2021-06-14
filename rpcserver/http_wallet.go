@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
@@ -38,11 +39,11 @@ Result—success or error
 */
 func (httpServer *HttpServer) handleSubmitKey(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	arrayParams := common.InterfaceSlice(params)
-	if arrayParams==nil || len(arrayParams)!=1 {
+	if arrayParams == nil || len(arrayParams) != 1 {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array with 1 element"))
 	}
 	key, ok := arrayParams[0].(string)
-	if !ok{
+	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("OTA key is invalid"))
 	}
 	result, err := httpServer.walletService.SubmitKey(key)
