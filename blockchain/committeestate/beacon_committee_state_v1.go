@@ -127,7 +127,7 @@ func (b *BeaconCommitteeStateV1) Hash(committeeChange *CommitteeChange) (*Beacon
 		tempShardCandidateHash = b.hashes.ShardCandidateHash
 	} else {
 		shardCandidateArr := append([]string{}, b.currentEpochShardCandidate...)
-		shardCandidateArr = append([]string{}, b.nextEpochShardCandidate...)
+		shardCandidateArr = append(shardCandidateArr, b.nextEpochShardCandidate...)
 		// Shard candidate root: shard current candidate + shard next candidate
 		tempShardCandidateHash, err = common.GenerateHashFromStringArray(shardCandidateArr)
 		if err != nil {
