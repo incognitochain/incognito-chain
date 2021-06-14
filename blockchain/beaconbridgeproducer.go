@@ -102,9 +102,14 @@ func buildBurningConfirmInst(
 		return nil, err
 	}
 
+	prefix := ""
+	if burningMetaType == metadata.BurningBSCConfirmMeta {
+		prefix = common.BSCPrefix
+	}
+
 	// Convert amount to big.Int to get bytes later
 	amount := big.NewInt(0).SetUint64(md.BurningAmount)
-	if bytes.Equal(tokenID, rCommon.HexToAddress(common.EthAddrStr).Bytes()) {
+	if bytes.Equal(tokenID, append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...)) {
 		// Convert Gwei to Wei for Ether
 		amount = amount.Mul(amount, big.NewInt(1000000000))
 	}
