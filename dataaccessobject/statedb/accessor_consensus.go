@@ -494,7 +494,7 @@ func GetAllCommitteeStakeInfo(stateDB *StateDB, shardIDs []int) map[int][]*Stake
 }
 
 func GetAllCommitteeStakeInfoV2(stateDB *StateDB, allShardCommittee map[int][]*CommitteeState) map[int][]*StakerInfo {
-	return stateDB.getShardsCommitteeInfov2(allShardCommittee)
+	return stateDB.getShardsCommitteeInfoV2(allShardCommittee)
 }
 
 func GetStakingInfo(bcDB *StateDB, shardIDs []int) map[string]bool {

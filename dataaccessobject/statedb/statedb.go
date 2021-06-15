@@ -871,7 +871,7 @@ func (stateDB *StateDB) getShardsCommitteeInfo(sIDs []int) (curValidatorInfo map
 	return curValidatorInfo
 }
 
-func (stateDB *StateDB) getShardsCommitteeInfov2(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfo) {
+func (stateDB *StateDB) getShardsCommitteeInfoV2(curValidator map[int][]*CommitteeState) (curValidatorInfo map[int][]*StakerInfo) {
 	curValidatorInfo = make(map[int][]*StakerInfo)
 	for shardID, listCommittee := range curValidator {
 		tempStakerInfos := []*StakerInfo{}
