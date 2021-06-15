@@ -193,7 +193,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 	prf := target.GetProof()
 	if prf != nil {
 		for _, iCoin := range prf.GetInputCoins() {
-			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(iCoin.GetKeyImage().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
@@ -207,7 +207,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			listkey = append(listkey, key)
 		}
 		for _, oCoin := range prf.GetOutputCoins() {
-			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(oCoin.GetSNDerivator().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
@@ -222,11 +222,11 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 		}
 	}
 	if target.GetType() == common.TxCustomTokenPrivacyType {
-		txNormal := target.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
-		tokenID := target.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.PropertyID
+		txNormal := target.(transaction.TransactionToken).GetTxNormal()
+		tokenID := target.(transaction.TransactionToken).GetTxTokenData().PropertyID
 		normalPrf := txNormal.GetProof()
 		for _, iCoin := range normalPrf.GetInputCoins() {
-			key := fmt.Sprintf("%v-%v", tokenID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", tokenID.String(), string(iCoin.GetKeyImage().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
@@ -240,7 +240,7 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			listkey = append(listkey, key)
 		}
 		for _, oCoin := range normalPrf.GetOutputCoins() {
-			key := fmt.Sprintf("%v-%v", tokenID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
+			key := fmt.Sprintf("%v-%v", tokenID.String(), string(oCoin.GetSNDerivator().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
 				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
