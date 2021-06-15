@@ -38,6 +38,7 @@ privacy/server/verifying\.key
 .env
 datadirs/data**
 data/**
+datatestnet/**
 ethdata/**
 constant-*
 constant_*
@@ -61,7 +62,6 @@ bin/incognito-test
 bin/bootnode
 bin/sample-config.conf
 incognito
-config
 
 mempool/testdatabase
 cmd/incognito
@@ -73,7 +73,8 @@ bin/data
 *.swo
 *~
 tags
-keylist.json
 run_new_local.sh
 *.txt
 *.log
+logs/
+log/

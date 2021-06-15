@@ -4,6 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes/bridgesig"
+	"reflect"
+	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,7 +25,21 @@ import (
 )
 
 type actorV1 struct {
-	actorBase
+	chain    Chain
+	node     NodeInterface
+	chainKey string
+	chainID  int
+	peerID   string
+
+	userKeySet       []signatureschemes2.MiningKey
+	bftMessageCh     chan wire.MessageBFT
+	proposeMessageCh chan BFTPropose
+	voteMessageCh    chan BFTVote
+
+	isStarted bool
+	destroyCh chan struct{}
+	logger    common.Logger
+
 	roundData struct {
 		timeStart         time.Time
 		block             types.BlockInterface
@@ -47,15 +66,125 @@ type actorV1 struct {
 }
 
 func (actorV1 *actorV1) Stop() error {
-	err := actorV1.actorBase.Stop()
-	if err != nil {
-		return NewConsensusError(ConsensusAlreadyStoppedError, err)
+	if actorV1.isStarted {
+		actorV1.logger.Info("stop bls-bft consensus for chain", actorV1.chainKey)
+		actorV1.isStarted = false
+		actorV1.destroyCh <- struct{}{}
+		return nil
 	}
 	actorV1.isOngoing = false
 	return nil
 }
 
-func (actorV1 *actorV1) Run() error {
+func (actorV1 *actorV1) IsStarted() bool {
+	return actorV1.isStarted
+}
+
+func (actorV1 *actorV1) GetConsensusName() string {
+	return consensusName
+}
+
+func (actorV1 *actorV1) GetChainKey() string {
+	return actorV1.chainKey
+}
+func (actorV1 *actorV1) GetChainID() int {
+	return actorV1.chainID
+}
+
+func (actorV1 *actorV1) processBFTMsg(msg *wire.MessageBFT) {
+	switch msg.Type {
+	case MSG_PROPOSE:
+		var msgPropose BFTPropose
+		err := json.Unmarshal(msg.Content, &msgPropose)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		actorV1.proposeMessageCh <- msgPropose
+	case MSG_VOTE:
+		var msgVote BFTVote
+		err := json.Unmarshal(msg.Content, &msgVote)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		actorV1.voteMessageCh <- msgVote
+	default:
+		actorV1.logger.Critical("???")
+		return
+	}
+}
+
+func (actorV1 *actorV1) preValidateVote(blockHash []byte, Vote *vote, candidate []byte) error {
+	data := []byte{}
+	data = append(data, blockHash...)
+	data = append(data, Vote.BLS...)
+	data = append(data, Vote.BRI...)
+	dataHash := common.HashH(data)
+	err := validateSingleBriSig(&dataHash, Vote.Confirmation, candidate)
+	return err
+}
+
+func (actorV1 *actorV1) LoadUserKeys(miningKey []signatureschemes2.MiningKey) {
+	actorV1.userKeySet = miningKey
+	return
+}
+
+func (actorV1 *actorV1) GetUserPublicKey() *incognitokey.CommitteePublicKey {
+	if actorV1.userKeySet != nil {
+		key := actorV1.userKeySet[0].GetPublicKey()
+		return key
+	}
+	return nil
+}
+
+func (actorV1 *actorV1) SignData(data []byte) (string, error) {
+	result, err := actorV1.userKeySet[0].BriSignData(data) //, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
+	if err != nil {
+		return "", NewConsensusError(SignDataError, err)
+	}
+
+	return base58.Base58Check{}.Encode(result, common.Base58Version), nil
+}
+
+func (actorV1 *actorV1) ValidateData(data []byte, sig string, publicKey string) error {
+	sigByte, _, err := base58.Base58Check{}.Decode(sig)
+	if err != nil {
+		return NewConsensusError(UnExpectedError, err)
+	}
+	publicKeyByte := []byte(publicKey)
+	// if err != nil {
+	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	// }
+	//fmt.Printf("ValidateData data %v, sig %v, publicKey %v\n", data, sig, publicKeyByte)
+	dataHash := new(common.Hash)
+	dataHash.NewHash(data)
+	_, err = bridgesig.Verify(publicKeyByte, dataHash.GetBytes(), sigByte) //blsmultisig.Verify(sigByte, data, []int{0}, []blsmultisig.PublicKey{publicKeyByte})
+	if err != nil {
+		return NewConsensusError(UnExpectedError, err)
+	}
+	return nil
+}
+
+func (actorV1 *actorV1) combineVotes(votes map[string]vote, committee []string) (aggSig []byte, brigSigs [][]byte, validatorIdx []int, err error) {
+	var blsSigList [][]byte
+	for validator, _ := range votes {
+		validatorIdx = append(validatorIdx, common.IndexOfStr(validator, committee))
+	}
+	sort.Ints(validatorIdx)
+	for _, idx := range validatorIdx {
+		blsSigList = append(blsSigList, votes[committee[idx]].BLS)
+		brigSigs = append(brigSigs, votes[committee[idx]].BRI)
+	}
+
+	aggSig, err = blsmultisig.Combine(blsSigList)
+	if err != nil {
+		return nil, nil, nil, NewConsensusError(CombineSignatureError, err)
+	}
+	return
+}
+
+func (actorV1 *actorV1) run() error {
 	if actorV1.isStarted {
 		return NewConsensusError(ConsensusAlreadyStartedError, errors.New(actorV1.chainKey))
 	}
@@ -152,7 +281,7 @@ func (actorV1 *actorV1) Run() error {
 									msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
 									msg.(*wire.MessageBFT).ChainKey = actorV1.chainKey
 									msg.(*wire.MessageBFT).Content = voteCtnBytes
-									msg.(*wire.MessageBFT).Type = MsgVote
+									msg.(*wire.MessageBFT).Type = MSG_VOTE
 									// TODO uncomment here when switch to non-highway mode
 									// e.Node.PushMessageToChain(msg, e.Chain)
 								}()
@@ -258,12 +387,7 @@ func (actorV1 *actorV1) Run() error {
 							continue
 						}
 
-						isBeacon := false
-						if actorV1.chain.IsBeaconChain() {
-							isBeacon = true
-						}
-						go actorV1.node.PushBlockToAll(actorV1.roundData.block, "", isBeacon)
-						if err := actorV1.chain.InsertBlock(actorV1.roundData.block, false); err != nil {
+						if err := actorV1.chain.InsertAndBroadcastBlock(actorV1.roundData.block); err != nil {
 							actorV1.logger.Error(err)
 							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
@@ -460,19 +584,188 @@ func (actorV1 *actorV1) createNewBlock(userKey *signatureschemes2.MiningKey) (ty
 }
 
 func NewActorV1WithValue(
-	chain blockchain.Chain,
+	chain Chain,
 	chainKey string, chainID int,
 	node NodeInterface, logger common.Logger,
 ) *actorV1 {
-	var newInstance actorV1
-	newInstance.chain = chain
-	newInstance.chainKey = chainKey
-	newInstance.chainID = chainID
-	newInstance.node = node
-	newInstance.logger = logger
-	return &newInstance
+	var actorV1 actorV1
+	actorV1.chain = chain
+	actorV1.chainKey = chainKey
+	actorV1.chainID = chainID
+	actorV1.node = node
+	actorV1.logger = logger
+	actorV1.destroyCh = make(chan struct{})
+	actorV1.proposeMessageCh = make(chan BFTPropose)
+	actorV1.voteMessageCh = make(chan BFTVote)
+	actorV1.chain = chain
+	actorV1.chainKey = chainKey
+	actorV1.chainID = chainID
+	actorV1.node = node
+	actorV1.logger = logger
+	actorV1.run()
+	return &actorV1
+}
+
+func (a *actorV1) Start() error {
+	if !a.isStarted {
+		a.logger.Info("start bls-bftv3 consensus for chain", a.chainKey)
+	}
+	a.isStarted = true
+	return nil
 }
 
 func (actorV1 *actorV1) BlockVersion() int {
-	return BftVersion
+	return types.BFT_VERSION
+}
+
+func (actorV1) sendVote() error {
+	panic("not implement")
+}
+
+func (actorV1) makeBFTProposeMsg(blockData []byte, chainKey string, keyset *signatureschemes2.MiningKey) (wire.Message, error) {
+	panic("not implement")
+}
+
+func GetProposerIndexByRound(lastId, round, committeeSize int) int {
+	//return (lastId + round) % committeeSize
+	return 0
+}
+
+func (actorV1 *actorV1) getTimeSinceLastBlock() time.Duration {
+	return time.Since(time.Unix(int64(actorV1.chain.GetLastBlockTimeStamp()), 0))
+}
+
+func (actorV1 *actorV1) waitForNextRound() bool {
+	timeSinceLastBlk := actorV1.getTimeSinceLastBlock()
+	if timeSinceLastBlk >= actorV1.chain.GetMinBlkInterval() {
+		return false
+	} else {
+		//fmt.Println("\n\nWait for", e.Chain.GetMinBlkInterval()-timeSinceLastBlk, "\n\n")
+		return true
+	}
+}
+
+func (actorV1 *actorV1) setState(state string) {
+	actorV1.roundData.state = state
+}
+
+func (actorV1 *actorV1) getCurrentRound() int {
+	round := int((actorV1.getTimeSinceLastBlock().Seconds() - float64(actorV1.chain.GetMinBlkInterval().Seconds())) / timeout.Seconds())
+	if round < 0 {
+		return 1
+	}
+
+	return round + 1
+}
+
+func (actorV1 *actorV1) isInTimeFrame() bool {
+	if actorV1.chain.CurrentHeight()+1 != actorV1.roundData.nextHeight {
+		return false
+	}
+
+	if actorV1.getCurrentRound() != actorV1.roundData.round {
+		return false
+	}
+
+	return true
+}
+
+func (actorV1 *actorV1) isHasMajorityVotes() bool {
+	// e.RoundData.lockVotes.Lock()
+	// defer e.RoundData.lockVotes.Unlock()
+	actorV1.lockEarlyVotes.Lock()
+	defer actorV1.lockEarlyVotes.Unlock()
+	roundKey := getRoundKey(actorV1.roundData.nextHeight, actorV1.roundData.round)
+	earlyVote, ok := actorV1.earlyVotes[roundKey]
+	committeeSize := len(actorV1.roundData.committee)
+	if ok {
+		wg := sync.WaitGroup{}
+		blockHashBytes := actorV1.roundData.blockHash.GetBytes()
+		for k, v := range earlyVote {
+			wg.Add(1)
+			go func(validatorKey string, voteData vote) {
+				defer wg.Done()
+				validatorIdx := common.IndexOfStr(validatorKey, actorV1.roundData.committeeBLS.stringList)
+				if err := actorV1.preValidateVote(blockHashBytes, &voteData, actorV1.roundData.committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err == nil {
+					actorV1.roundData.lockVotes.Lock()
+					actorV1.roundData.votes[validatorKey] = voteData
+					actorV1.roundData.lockVotes.Unlock()
+				} else {
+					actorV1.logger.Error(err)
+				}
+			}(k, v)
+		}
+		wg.Wait()
+		if len(actorV1.roundData.votes) > 2*committeeSize/3 {
+			delete(actorV1.earlyVotes, roundKey)
+		}
+	}
+	monitor.SetGlobalParam("NVote", len(actorV1.roundData.votes))
+	if len(actorV1.roundData.votes) > 2*committeeSize/3 {
+		return true
+	}
+	return false
+}
+
+func getRoundKey(nextHeight uint64, round int) string {
+	return fmt.Sprint(nextHeight, "_", round)
+}
+
+func parseRoundKey(roundKey string) (uint64, int) {
+	stringArray := strings.Split(roundKey, "_")
+	if len(stringArray) != 2 {
+		return 0, 0
+	}
+	height, err := strconv.Atoi(stringArray[0])
+	if err != nil {
+		return 0, 0
+	}
+	round, err := strconv.Atoi(stringArray[1])
+	if err != nil {
+		return 0, 0
+	}
+	return uint64(height), round
+}
+
+func ExtractBridgeValidationData(block types.BlockInterface) ([][]byte, []int, error) {
+	valData, err := consensustypes.DecodeValidationData(block.GetValidationField())
+	if err != nil {
+		return nil, nil, NewConsensusError(UnExpectedError, err)
+	}
+	return valData.BridgeSig, valData.ValidatiorsIdx, nil
+}
+
+func (actorV1 *actorV1) UpdateCommitteeBLSList() {
+	committee := actorV1.chain.GetCommittee()
+	if !reflect.DeepEqual(actorV1.roundData.committee, committee) {
+		actorV1.roundData.committee = committee
+		actorV1.roundData.committeeBLS.byteList = []blsmultisig.PublicKey{}
+		actorV1.roundData.committeeBLS.stringList = []string{}
+		for _, member := range actorV1.roundData.committee {
+			actorV1.roundData.committeeBLS.byteList = append(actorV1.roundData.committeeBLS.byteList, member.MiningPubKey[consensusName])
+		}
+		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(actorV1.roundData.committee, consensusName)
+		if err != nil {
+			actorV1.logger.Error(err)
+			return
+		}
+		actorV1.roundData.committeeBLS.stringList = committeeBLSString
+	}
+}
+
+func (actorV1 *actorV1) initRoundData() {
+	roundKey := getRoundKey(actorV1.roundData.nextHeight, actorV1.roundData.round)
+	if _, ok := actorV1.blocks[roundKey]; ok {
+		delete(actorV1.blocks, roundKey)
+	}
+	actorV1.roundData.nextHeight = actorV1.chain.CurrentHeight() + 1
+	actorV1.roundData.round = actorV1.getCurrentRound()
+	actorV1.roundData.votes = make(map[string]vote)
+	actorV1.roundData.block = nil
+	actorV1.roundData.blockHash = common.Hash{}
+	actorV1.roundData.notYetSendVote = true
+	actorV1.roundData.timeStart = time.Now()
+	actorV1.roundData.lastProposerIndex = actorV1.chain.GetLastProposerIndex()
+	actorV1.UpdateCommitteeBLSList()
+	actorV1.setState(newround)
 }

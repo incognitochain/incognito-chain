@@ -126,7 +126,7 @@ func (engine *Engine) ValidateProducerPosition(
 ) error {
 	//check producer,proposer,agg sig with this version
 	producerPosition := blsbft.GetProposerIndexByRound(lastProposerIdx, blk.GetRound(), len(committee))
-	if blk.GetVersion() == 1 {
+	if blk.GetVersion() == types.BFT_VERSION {
 		tempProducer, err := committee[producerPosition].ToBase58()
 		if err != nil {
 			return fmt.Errorf("Cannot base58 a committee")
@@ -136,6 +136,7 @@ func (engine *Engine) ValidateProducerPosition(
 		}
 	} else {
 		//validate producer
+		// TODO: @hung if staking flow v3 accept block produced by another subset, check this again
 		producer := blk.GetProducer()
 		produceTime := blk.GetProduceTime()
 		tempProducerID := blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), lenProposers)
@@ -160,7 +161,11 @@ func (engine *Engine) ValidateProducerPosition(
 }
 
 func (engine *Engine) ValidateProducerSig(block types.BlockInterface, consensusType string) error {
-	return blsbft.ValidateProducerSig(block)
+	if block.GetVersion() == types.BFT_VERSION {
+		return blsbft.ValidateProducerSigV1(block)
+	} else {
+		return blsbft.ValidateProducerSigV2(block)
+	}
 }
 
 func (engine *Engine) ValidateBlockCommitteSig(block types.BlockInterface, committees []incognitokey.CommitteePublicKey) error {

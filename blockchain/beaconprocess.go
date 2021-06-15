@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	finishsync2 "github.com/incognitochain/incognito-chain/blockchain/finishsync"
 	"reflect"
 	"sort"
 	"strconv"
@@ -16,16 +16,18 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
-	"github.com/incognitochain/incognito-chain/blockchain/committeestate/finishsync"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/metadata"
+	"github.com/incognitochain/incognito-chain/portal"
 	"github.com/incognitochain/incognito-chain/pubsub"
+	"github.com/incognitochain/incognito-chain/utils"
 )
 
 // VerifyPreSignBeaconBlock should receives block in consensus round
@@ -87,7 +89,7 @@ CONTINUE_VERIFY:
 	if err != nil {
 		return err
 	}
-	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(curView, beaconBlock, incurredInstructions); err != nil {
+	if err := blockchain.verifyPreProcessingBeaconBlockForSigning(copiedCurView, beaconBlock, incurredInstructions); err != nil {
 		return err
 	}
 	// Post verififcation: verify new beaconstate with corresponding block
@@ -103,12 +105,10 @@ CONTINUE_VERIFY:
 // var bcStart time.Time
 // var bcAllTime time.Duration
 func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *types.BeaconBlock, shouldValidate bool) error {
-	fullValidation := os.Getenv("FULL_VALIDATION")
-
 	blockHash := beaconBlock.Header.Hash()
 	preHash := beaconBlock.Header.PreviousBlockHash
 	Logger.log.Infof("BEACON | InsertBeaconBlock  %+v with hash %+v", beaconBlock.Header.Height, blockHash)
-	if fullValidation == "1" {
+	if config.Config().IsFullValidation {
 		shouldValidate = true
 	}
 	blockchain.BeaconChain.insertLock.Lock()
@@ -238,7 +238,8 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	if beaconBlock.Header.Timestamp <= previousBeaconBlock.Header.Timestamp {
 		return NewBlockChainError(WrongTimestampError, fmt.Errorf("Expect receive beacon block with timestamp %+v greater than previous block timestamp %+v", beaconBlock.Header.Timestamp, previousBeaconBlock.Header.Timestamp))
 	}
-	if beaconBlock.GetVersion() >= 2 && curView.BestBlock.GetProposeTime() > 0 && common.CalculateTimeSlot(beaconBlock.Header.ProposeTime) <= common.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) {
+
+	if beaconBlock.GetVersion() >= 2 && curView.BestBlock.GetProposeTime() > 0 && common.CalculateTimeSlot(beaconBlock.Header.ProposeTime) <= common.CalculateTimeSlot(curView.BestBlock.GetProposeTime()) && beaconBlock.GetVersion() != 3 {
 		return NewBlockChainError(WrongTimeslotError, fmt.Errorf("Propose timeslot must be greater than last propose timeslot (but get %v <= %v) ", common.CalculateTimeSlot(beaconBlock.Header.ProposeTime), common.CalculateTimeSlot(curView.BestBlock.GetProposeTime())))
 	}
 
@@ -267,7 +268,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 	if err != nil {
 		return NewBlockChainError(FlattenAndConvertStringInstError, err)
 	}
-	root := GetKeccak256MerkleRoot(flattenInsts)
+	root := types.GetKeccak256MerkleRoot(flattenInsts)
 
 	if !bytes.Equal(root, beaconBlock.Header.InstructionMerkleRoot[:]) {
 		return NewBlockChainError(FlattenAndConvertStringInstError, fmt.Errorf("Expect Instruction Merkle Root in Beacon Block Header to be %+v but get %+v", string(beaconBlock.Header.InstructionMerkleRoot[:]), string(root)))
@@ -297,8 +298,22 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 //	+ Compare just created Instruction Hash with Instruction Hash In Beacon Header
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
-	var err error
-	portalParams := blockchain.GetPortalParams()
+
+	//check previous pdestate state consistency
+	dbPDEState, err := InitCurrentPDEStateFromDB(curView.featureStateDB, nil, beaconBlock.Header.Height-1) //get from db
+	if err != nil {
+		return NewBlockChainError(PDEStateDBError, fmt.Errorf("Cannot get PDE from DB"))
+	}
+	if curView.pdeState != nil && !reflect.DeepEqual(curView.pdeState, dbPDEState) { //if db and beststate is different => stop produce block
+		mem, _ := json.Marshal(curView.pdeState)
+		db, _ := json.Marshal(dbPDEState)
+		Logger.log.Errorf("Last Beacon Block Instruction %+v", curView.BestBlock.Body.Instructions)
+		Logger.log.Error("Mem", string(mem))
+		Logger.log.Error("DB", string(db))
+		return NewBlockChainError(PDEStateDBError, fmt.Errorf("PDE state in Mem and DB is not consistent! Check before restart."))
+	}
+
+	portalParams := portal.GetPortalParams()
 
 	// get shard to beacon blocks from pool
 	allRequiredShardBlockHeight := make(map[byte][]uint64)
@@ -321,7 +336,7 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *
 	instructions, _, err := blockchain.GenerateBeaconBlockBody(
 		beaconBlock,
 		curView,
-		portalParams,
+		*portalParams,
 		allShardBlocks,
 	)
 
@@ -459,6 +474,11 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 	if !hashes.AutoStakeHash.IsEqual(&beaconBlock.Header.AutoStakingRoot) {
 		return NewBlockChainError(AutoStakingRootHashError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.AutoStakingRoot, hashes.AutoStakeHash))
 	}
+
+	if !hashes.ShardSyncValidatorsHash.IsEqual(&beaconBlock.Header.ShardSyncValidatorRoot) {
+		return NewBlockChainError(ShardSyncValidatorHashError, fmt.Errorf("Expect %+v but get %+v", beaconBlock.Header.ShardSyncValidatorRoot, hashes.ShardSyncValidatorsHash))
+	}
+
 	beaconVerifyPostProcessingTimer.UpdateSince(startTimeVerifyPostProcessingBeaconBlock)
 	return nil
 }
@@ -536,13 +556,13 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 
 	env := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(
-		blockchain.config.ChainParams,
 		beaconBlock.Body.Instructions,
-		isFoundRandomInstruction, isBeginRandom)
+		isFoundRandomInstruction, isBeginRandom,
+	)
 
 	hashes, committeeChange, incurredInstructions, err := beaconBestState.beaconCommitteeState.UpdateCommitteeState(env)
 	if err != nil {
-		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+		return nil, nil, nil, nil, NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
 	}
 	Logger.log.Debugf("UpdateCommitteeState | hashes %+v", hashes)
 
@@ -555,7 +575,7 @@ func (curView *BeaconBestState) updateBeaconBestState(
 	}
 	err = beaconBestState.countMissingSignature(blockchain, beaconBlock.Body.ShardState)
 	if err != nil {
-		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+		return nil, nil, nil, nil, NewBlockChainError(UpgradeBeaconCommitteeStateError, err)
 	}
 
 	beaconBestState.removeFinishedSyncValidators(committeeChange)
@@ -613,24 +633,22 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 
-	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(
-		blockchain.config.ChainParams,
-		genesisBeaconBlock.Body.Instructions,
-		false, false)
+	beaconCommitteeStateEnv := beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false)
+	beaconBestState.beaconCommitteeState = committeestate.InitBeaconCommitteeState(
+		beaconBestState.BeaconHeight,
+		config.Param().ConsensusParam.StakingFlowV2Height,
+		config.Param().ConsensusParam.StakingFlowV3Height,
+		beaconCommitteeStateEnv)
 
-	var committeeState committeestate.BeaconCommitteeState
-	switch genesisBeaconBlock.Header.Height {
-	case blockchain.config.ChainParams.StakingFlowV3Height:
-		committeeState = committeestate.InitGenesisBeaconCommitteeStateV3(beaconCommitteeStateEnv)
-	case blockchain.config.ChainParams.StakingFlowV2Height:
-		committeeState = committeestate.InitGenesisBeaconCommitteeStateV2(beaconCommitteeStateEnv)
-	default:
-		committeeState = committeestate.InitGenesisBeaconCommitteeStateV1(beaconCommitteeStateEnv)
+	if config.Param().ConsensusParam.StakingFlowV3Height == beaconBestState.BeaconHeight {
+		if err := beaconBestState.checkAndUpgradeStakingFlowV3Config(); err != nil {
+			return err
+		}
 	}
-	beaconBestState.beaconCommitteeState = committeeState
 
-	beaconBestState.finishSyncManager = finishsync.NewFinishManager()
+	beaconBestState.finishSyncManager = finishsync2.NewFinishManager()
 	beaconBestState.Epoch = 1
+
 	return nil
 }
 
@@ -668,6 +686,7 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	shardState types.ShardState,
 ) error {
 	beaconHashForCommittee := shardState.CommitteeFromBlock
+
 	if beaconHashForCommittee.IsZeroValue() {
 		return nil
 	}
@@ -683,11 +702,16 @@ func (curView *BeaconBestState) countMissingSignatureV2(
 	} else {
 		committees = tempCommittees.([]incognitokey.CommitteePublicKey)
 	}
-	if curView.BeaconHeight >= bc.config.ChainParams.StakingFlowV3Height {
-		committees = GetSigningCommitteeV3(
+	if shardState.Version == types.DCS_VERSION {
+		timeSlot := common.CalculateTimeSlot(shardState.ProposerTime)
+		_, proposerIndex := GetProposer(
+			timeSlot,
 			committees,
-			shardState.ProposerTime,
-			bc.config.ChainParams.GetNumberOfShardFixedBlockValidators(curView.BeaconHeight),
+			GetProposerLength(),
+		)
+		committees = FilterSigningCommitteeV3(
+			committees,
+			proposerIndex,
 		)
 	}
 
@@ -699,7 +723,7 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 	shardID byte,
 	shardState types.ShardState,
 ) error {
-	if shardState.ValidationData == common.EmptyString {
+	if shardState.ValidationData == utils.EmptyString {
 		return nil
 	}
 
@@ -713,7 +737,14 @@ func (curView *BeaconBestState) countMissingSignatureV1(
 		return nil
 	}
 
-	return curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
+	Logger.log.Infof("Add Missing Signature | Shard %+v, ShardState: %+v", shardID, shardState)
+
+	err = curView.missingSignatureCounter.AddMissingSignature(shardState.ValidationData, committees)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (blockchain *BlockChain) processStoreBeaconBlock(
@@ -810,7 +841,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return err
 	}
-	err = blockchain.storeAllShardSubstitutesValidator(newBestState, committeeChange.ShardSubstituteAdded)
+	err = newBestState.storeAllShardSubstitutesValidator(committeeChange.ShardSubstituteAdded)
 	if err != nil {
 		return err
 	}
@@ -847,12 +878,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 				return err
 			}
 		}
+		//clear DeletedWaitingPDEContributions
+		newBestState.pdeState.DeletedWaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
 		//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
 		newBestState.pdeState = newBestState.pdeState.transformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
-	}
-
-	if err != nil {
-		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
 	// Save result of BurningConfirm instruction to get proof later
 	metas := []string{ // Burning v2: sig on beacon only
@@ -937,9 +966,9 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
 
-	if beaconBlock.Header.Height == blockchain.config.ChainParams.StakingFlowV2Height ||
-		beaconBlock.Header.Height == blockchain.config.ChainParams.StakingFlowV3Height {
-		newBestState.upgradeCommitteeState(blockchain)
+	err2 := newBestState.tryUpgradeCommitteeState()
+	if err2 != nil {
+		return NewBlockChainError(StoreBeaconBlockError, err2)
 	}
 
 	finalView := blockchain.BeaconChain.multiView.GetFinalView()
@@ -987,9 +1016,10 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	beaconStoreBlockTimer.UpdateSince(startTimeProcessStoreBeaconBlock)
 
-	if !blockchain.config.ChainParams.IsBackup {
+	if !config.Config().ForceBackup {
 		return nil
 	}
+
 	if blockchain.IsLastBeaconHeightInEpoch(newBestState.GetHeight() + 1) {
 		err := blockchain.GetBeaconChainDatabase().Backup(fmt.Sprintf("../../backup/beacon/%d", newBestState.Epoch))
 		if err != nil {
@@ -1097,12 +1127,49 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 			beaconBestState.beaconCommitteeState.GetStakingTx(),
 		)
 		if err != nil {
-			return err
+			return NewBlockChainError(StoreBeaconBlockError, err)
 		}
 	}
 	err := statedb.StoreSyncingValidators(beaconBestState.consensusStateDB, committeeChange.SyncingPoolAdded)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (beaconCurView *BeaconBestState) storeAllShardSubstitutesValidator(
+	addedValidators map[byte][]incognitokey.CommitteePublicKey,
+) error {
+	if beaconCurView.BeaconHeight < config.Param().ConsensusParam.StakingFlowV3Height {
+		return statedb.StoreAllShardSubstitutesValidator(beaconCurView.consensusStateDB, addedValidators)
+	}
+	for shardID, v := range addedValidators {
+		newSubstituteValidators := make(map[string]bool)
+		for _, validator := range v {
+			key, err := validator.ToBase58()
+			if err != nil {
+				return err
+			}
+			newSubstituteValidators[key] = true
+		}
+		substituteValidatorList := beaconCurView.beaconCommitteeState.GetOneShardSubstitute(shardID)
+		for i, substituteValidator := range substituteValidatorList {
+			key, err := substituteValidator.ToBase58()
+			if err != nil {
+				return err
+			}
+			if newSubstituteValidators[key] {
+				err = statedb.StoreOneShardSubstitutesValidator(
+					beaconCurView.consensusStateDB,
+					shardID,
+					substituteValidatorList[i:],
+				)
+				if err != nil {
+					return err
+				}
+				break
+			}
+		}
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package syncker
 
 import (
 	"context"
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -35,6 +36,7 @@ type ShardChainInterface interface {
 }
 
 type Chain interface {
+	GetBestView() multiview.View
 	GetDatabase() incdb.Database
 	GetAllViewHash() []common.Hash
 	GetBestViewHeight() uint64
@@ -53,7 +55,6 @@ type Chain interface {
 	CheckExistedBlk(block types.BlockInterface) bool
 	GetCommitteeByHeight(h uint64) ([]incognitokey.CommitteePublicKey, error)
 	GetCommitteeV2(types.BlockInterface) ([]incognitokey.CommitteePublicKey, error) // Using only for stream blocks by gRPC
-	GetSigningCommittees([]incognitokey.CommitteePublicKey, types.BlockInterface) ([]incognitokey.CommitteePublicKey, error)
 	CommitteeStateVersion() int
 }
 

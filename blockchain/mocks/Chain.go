@@ -531,7 +531,7 @@ func (_m *Chain) SetReady(_a0 bool) {
 }
 
 // SigningCommittees provides a mock function with given fields: committeeViewHash, proposerIndex, committees, shardID
-func (_m *Chain) SigningCommittees(committeeViewHash common.Hash, proposerIndex int, committees []incognitokey.CommitteePublicKey, shardID byte) []incognitokey.CommitteePublicKey {
+func (_m *Chain) GetSigningCommitteesFromBestView(committeeViewHash common.Hash, proposerIndex int, committees []incognitokey.CommitteePublicKey, shardID byte) []incognitokey.CommitteePublicKey {
 	ret := _m.Called(committeeViewHash, proposerIndex, committees, shardID)
 
 	var r0 []incognitokey.CommitteePublicKey

@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 )
 
 type CrossShardSyncProcess struct {
@@ -88,7 +89,7 @@ func (s *CrossShardSyncProcess) syncCrossShard() {
 		//get chain crossshard state and collect all missing crossshard block
 		lastRequestCrossShard := s.shardSyncProcess.Chain.GetCrossShardState()
 		missingCrossShardBlock := make(map[byte][][]byte)
-		for i := 0; i < s.blockchain.GetChainParams().ActiveShards; i++ {
+		for i := 0; i < config.Param().ActiveShards; i++ {
 			for {
 				if i == s.shardID {
 					break

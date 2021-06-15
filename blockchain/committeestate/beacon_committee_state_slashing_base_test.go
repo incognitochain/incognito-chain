@@ -63,7 +63,8 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 						key:  *hash,
 						key6: *hash6,
 					},
-					mu: mutex,
+					hashes: NewBeaconCommitteeStateHash(),
+					mu:     mutex,
 				},
 				numberOfAssignedCandidates: 1,
 				shardCommonPool: []string{
@@ -96,7 +97,8 @@ func Test_beaconCommitteeStateSlashingBase_clone(t *testing.T) {
 						key:  *hash,
 						key6: *hash6,
 					},
-					mu: mutex,
+					hashes: NewBeaconCommitteeStateHash(),
+					mu:     mutex,
 				},
 				numberOfAssignedCandidates: 1,
 				shardCommonPool: []string{
@@ -224,6 +226,7 @@ func Test_beaconCommitteeStateSlashingBase_processSlashing(t *testing.T) {
 		swapRule                   SwapRuleProcessor
 	}
 	type args struct {
+		shardID                  byte
 		env                      *BeaconCommitteeStateEnvironment
 		slashingPublicKeys       []string
 		returnStakingInstruction *instruction.ReturnStakeInstruction
@@ -282,6 +285,7 @@ func Test_beaconCommitteeStateSlashingBase_processSlashing(t *testing.T) {
 				},
 			},
 			args: args{
+				shardID: 0,
 				env: &BeaconCommitteeStateEnvironment{
 					ConsensusStateDB: sDB,
 				},
@@ -291,8 +295,10 @@ func Test_beaconCommitteeStateSlashingBase_processSlashing(t *testing.T) {
 				committeeChange:          NewCommitteeChange(),
 				returnStakingInstruction: instruction.NewReturnStakeIns(),
 			},
-			want:    instruction.NewReturnStakeInsWithValue([]string{key6}, []string{hash.String()}),
-			want1:   NewCommitteeChange().AddRemovedStaker(key6),
+			want: instruction.NewReturnStakeInsWithValue([]string{key6}, []string{hash.String()}),
+			want1: NewCommitteeChange().
+				AddRemovedStaker(key6).
+				AddSlashingCommittees(0, []string{key6}),
 			wantErr: false,
 		},
 		{
@@ -336,6 +342,7 @@ func Test_beaconCommitteeStateSlashingBase_processSlashing(t *testing.T) {
 				},
 			},
 			args: args{
+				shardID: 0,
 				env: &BeaconCommitteeStateEnvironment{
 					ConsensusStateDB: sDB,
 				},
@@ -345,8 +352,10 @@ func Test_beaconCommitteeStateSlashingBase_processSlashing(t *testing.T) {
 				committeeChange:          NewCommitteeChange(),
 				returnStakingInstruction: instruction.NewReturnStakeIns(),
 			},
-			want:    instruction.NewReturnStakeInsWithValue([]string{key6, key4}, []string{hash.String(), hash.String()}),
-			want1:   NewCommitteeChange().AddRemovedStaker(key6).AddRemovedStaker(key4),
+			want: instruction.NewReturnStakeInsWithValue([]string{key6, key4}, []string{hash.String(), hash.String()}),
+			want1: NewCommitteeChange().
+				AddRemovedStaker(key6).AddRemovedStaker(key4).
+				AddSlashingCommittees(0, []string{key6, key4}),
 			wantErr: false,
 		},
 		{
@@ -396,6 +405,7 @@ func Test_beaconCommitteeStateSlashingBase_processSlashing(t *testing.T) {
 				},
 			},
 			args: args{
+				shardID: 0,
 				env: &BeaconCommitteeStateEnvironment{
 					ConsensusStateDB: sDB,
 				},
@@ -418,7 +428,7 @@ func Test_beaconCommitteeStateSlashingBase_processSlashing(t *testing.T) {
 				numberOfAssignedCandidates: tt.fields.numberOfAssignedCandidates,
 				swapRule:                   tt.fields.swapRule,
 			}
-			got, got1, err := b.processSlashing(tt.args.env, tt.args.slashingPublicKeys, tt.args.returnStakingInstruction, tt.args.committeeChange)
+			got, got1, err := b.processSlashing(tt.args.shardID, tt.args.env, tt.args.slashingPublicKeys, tt.args.returnStakingInstruction, tt.args.committeeChange)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("processSlashing() error = %v, wantErr %v", err, tt.wantErr)
 				return

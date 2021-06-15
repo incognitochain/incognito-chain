@@ -33,59 +33,89 @@ type CommitteeChange struct {
 }
 
 func (committeeChange *CommitteeChange) AddNextEpochShardCandidateRemoved(nextEpochShardCandidateRemoved []string) *CommitteeChange {
+	if len(nextEpochShardCandidateRemoved) == 0 {
+		return committeeChange
+	}
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(nextEpochShardCandidateRemoved)
 	committeeChange.NextEpochShardCandidateRemoved = append(committeeChange.NextEpochShardCandidateRemoved, temp...)
 	return committeeChange
 }
 
 func (committeeChange *CommitteeChange) AddNextEpochShardCandidateAdded(nextEpochShardCandidateAdded []string) *CommitteeChange {
+	if len(nextEpochShardCandidateAdded) == 0 {
+		return committeeChange
+	}
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(nextEpochShardCandidateAdded)
 	committeeChange.NextEpochShardCandidateAdded = append(committeeChange.NextEpochShardCandidateAdded, temp...)
 	return committeeChange
 }
 
 func (committeeChange *CommitteeChange) AddShardSubstituteAdded(shardID byte, shardSubstituteAdded []string) *CommitteeChange {
+	if len(shardSubstituteAdded) == 0 {
+		return committeeChange
+	}
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstituteAdded)
 	committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], temp...)
 	return committeeChange
 }
 
 func (committeeChange *CommitteeChange) AddShardSubstituteRemoved(shardID byte, shardSubstituteRemoved []string) *CommitteeChange {
+	if len(shardSubstituteRemoved) == 0 {
+		return committeeChange
+	}
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstituteRemoved)
 	committeeChange.ShardSubstituteRemoved[shardID] = append(committeeChange.ShardSubstituteRemoved[shardID], temp...)
 	return committeeChange
 }
 
 func (committeeChange *CommitteeChange) AddShardCommitteeAdded(shardID byte, shardCommitteeAdded []string) *CommitteeChange {
+	if len(shardCommitteeAdded) == 0 {
+		return committeeChange
+	}
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(shardCommitteeAdded)
 	committeeChange.ShardCommitteeAdded[shardID] = append(committeeChange.ShardCommitteeAdded[shardID], temp...)
 	return committeeChange
 }
 
 func (committeeChange *CommitteeChange) AddShardCommitteeRemoved(shardID byte, ShardCommitteeRemoved []string) *CommitteeChange {
+	if len(ShardCommitteeRemoved) == 0 {
+		return committeeChange
+	}
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(ShardCommitteeRemoved)
 	committeeChange.ShardCommitteeRemoved[shardID] = append(committeeChange.ShardCommitteeRemoved[shardID], temp...)
 	return committeeChange
 }
 
 func (committeeChange *CommitteeChange) AddSyncingPoolAdded(shardID byte, syncingPoolAdded []string) *CommitteeChange {
+	if len(syncingPoolAdded) == 0 {
+		return committeeChange
+	}
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(syncingPoolAdded)
 	committeeChange.SyncingPoolAdded[shardID] = append(committeeChange.SyncingPoolAdded[shardID], temp...)
 	return committeeChange
 }
 
 func (committeeChange *CommitteeChange) AddSyncingPoolRemoved(shardID byte, syncingPoolRemoved []string) *CommitteeChange {
+	if len(syncingPoolRemoved) == 0 {
+		return committeeChange
+	}
 	temp, _ := incognitokey.CommitteeBase58KeyListToStruct(syncingPoolRemoved)
 	committeeChange.SyncingPoolRemoved[shardID] = append(committeeChange.SyncingPoolRemoved[shardID], temp...)
 	return committeeChange
 }
 
 func (committeeChange *CommitteeChange) AddFinishedSyncValidators(shardID byte, finishedSyncValidators []string) *CommitteeChange {
+	if len(finishedSyncValidators) == 0 {
+		return committeeChange
+	}
 	committeeChange.FinishedSyncValidators[shardID] = append(committeeChange.FinishedSyncValidators[shardID], finishedSyncValidators...)
 	return committeeChange
 }
 
 func (committeeChange *CommitteeChange) AddSlashingCommittees(shardID byte, slashingVaidators []string) *CommitteeChange {
+	if len(slashingVaidators) == 0 {
+		return committeeChange
+	}
 	committeeChange.SlashingCommittee[shardID] = append(committeeChange.SlashingCommittee[shardID], slashingVaidators...)
 	return committeeChange
 }
@@ -96,6 +126,9 @@ func (committeeChange *CommitteeChange) AddRemovedStaker(removedStaker string) *
 }
 
 func (committeeChange *CommitteeChange) AddRemovedStakers(removedStakers []string) *CommitteeChange {
+	if len(removedStakers) == 0 {
+		return committeeChange
+	}
 	committeeChange.RemovedStaker = append(committeeChange.RemovedStaker, removedStakers...)
 	return committeeChange
 }

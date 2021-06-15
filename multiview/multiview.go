@@ -142,31 +142,26 @@ func (multiView *MultiView) updateViewState(newView View) {
 		multiView.bestView = newView
 	}
 
-	prev1Hash := multiView.bestView.GetPreviousHash()
-	if prev1Hash == nil {
-		return
-	}
-	prev1View := multiView.viewByHash[*prev1Hash]
-	if prev1View == nil {
-		return
-	}
-
-	if newView.GetBlock().GetVersion() == 1 {
+	if newView.GetBlock().GetVersion() == types.BFT_VERSION {
 		//update finalView: consensus 1
+		prev1Hash := multiView.bestView.GetPreviousHash()
+		if prev1Hash == nil {
+			return
+		}
+		prev1View := multiView.viewByHash[*prev1Hash]
+		if prev1View == nil {
+			return
+		}
 		multiView.finalView = prev1View
-	} else if newView.GetBlock().GetVersion() >= 2 {
+	} else if newView.GetBlock().GetVersion() >= types.MULTI_VIEW_VERSION {
 		////update finalView: consensus 2
+		prev1Hash := multiView.bestView.GetPreviousHash()
+		prev1View := multiView.viewByHash[*prev1Hash]
 		if prev1View == nil || multiView.finalView.GetHeight() == prev1View.GetHeight() {
 			return
 		}
 		bestViewTimeSlot := common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProposeTime())
 		prev1TimeSlot := common.CalculateTimeSlot(prev1View.GetBlock().GetProposeTime())
-		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
-			multiView.finalView = prev1View
-			return
-		}
-		bestViewTimeSlot = common.CalculateTimeSlot(multiView.bestView.GetBlock().GetProduceTime())
-		prev1TimeSlot = common.CalculateTimeSlot(prev1View.GetBlock().GetProduceTime())
 		if prev1TimeSlot+1 == bestViewTimeSlot { //three sequential time slot
 			multiView.finalView = prev1View
 		}

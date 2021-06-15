@@ -639,7 +639,7 @@ func (httpServer *HttpServer) IncrementClients() {
 }
 
 func (httpServer *HttpServer) GetBeaconChainDatabase() incdb.Database {
-	return httpServer.config.Database[common.BeaconChainDataBaseID]
+	return httpServer.config.Database[common.BeaconChainID]
 }
 
 func (httpServer *HttpServer) GetShardChainDatabase(shardID byte) incdb.Database {

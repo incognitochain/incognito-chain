@@ -2,16 +2,18 @@ package consensus_v2
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"strings"
 	"time"
 
-	"github.com/incognitochain/incognito-chain/metrics/monitor"
-
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/consensus"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/consensus_v2/blsbft"
 	signatureschemes2 "github.com/incognitochain/incognito-chain/consensus_v2/signatureschemes"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/metrics/monitor"
+	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -47,7 +49,7 @@ func (s *Engine) GetCurrentValidators() []*consensus.Validator {
 
 func (s *Engine) SyncingValidatorsByShardID(shardID int) []string {
 	res := []string{}
-	for _, validator := range s.syncingValidators[shardID] {
+	for _, validator := range s.validators {
 		res = append(res, validator.MiningKey.GetPublicKey().GetMiningKeyBase58(common.BlsConsensus))
 	}
 	return res
@@ -87,8 +89,11 @@ func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensu
 					layer = validator.State.Layer
 				}
 
+				//TODO: @hung how a node in validator.State.Role == common.syncrole but not added to sync validator list
 				if _, ok = syncingValidators[validator.State.ChainID]; !ok {
 					if validator.State.Role == common.SyncingRole {
+						Logger.Log.Info("[SoH] debug validator.State.Role == common.SyncingRole",
+							chainValidator, pubkey, role, chainID, layer)
 						chainValidator[validator.State.ChainID] = validator
 						pubkey = validator.MiningKey.GetPublicKeyBase58()
 						role = validator.State.Role
@@ -129,26 +134,13 @@ func (engine *Engine) WatchCommitteeChange() {
 		engine.userKeyListString = validator.PrivateSeed
 		role, chainID := engine.config.Node.GetPubkeyMiningState(validator.MiningKey.GetPublicKey())
 		//Logger.Log.Info("validator key", validator.MiningKey.GetPublicKeyBase58())
-		if chainID == -1 {
-			validator.State = consensus.MiningState{role, "beacon", -1}
-		} else if chainID > -1 {
-			validator.State = consensus.MiningState{role, "shard", chainID}
-			if role == common.PendingRole {
-				if len(engine.syncingValidators[chainID]) != 0 {
-					engine.syncingValidators[chainID] = append(
-						engine.syncingValidators[chainID][:engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]],
-						engine.syncingValidators[chainID][engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]+1:]...)
-				}
-			}
-			if role == common.SyncingRole {
-				if _, ok := engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()]; !ok {
-					engine.syncingValidators[chainID] = append(engine.syncingValidators[chainID], *validator)
-					engine.syncingValidatorsIndex[validator.MiningKey.GetPublicKeyBase58()] = len(engine.syncingValidators[chainID]) - 1
-				}
-			}
+		if chainID == common.BeaconChainID {
+			validator.State = consensus.MiningState{role, common.BeaconChainKey, common.BeaconChainID}
+		} else if chainID > common.BeaconChainID {
+			validator.State = consensus.MiningState{role, common.ShardChainKey, chainID}
 		} else {
 			if role != "" {
-				validator.State = consensus.MiningState{role, "shard", -2}
+				validator.State = consensus.MiningState{role, common.ShardChainKey, -2}
 			} else {
 				validator.State = consensus.MiningState{role, "", -2}
 			}
@@ -163,9 +155,9 @@ func (engine *Engine) WatchCommitteeChange() {
 
 	miningProc := blsbft.Actor(nil)
 	for chainID, validators := range ValidatorGroup {
-		chainName := "beacon"
+		chainName := common.BeaconChainKey
 		if chainID >= 0 {
-			chainName = fmt.Sprintf("shard-%d", chainID)
+			chainName = fmt.Sprintf("%s-%d", common.ShardChainKey, chainID)
 		}
 
 		currActorVersion := 0
@@ -173,21 +165,17 @@ func (engine *Engine) WatchCommitteeChange() {
 			currActorVersion = engine.version[chainID]
 		}
 
-		shouldRun := false
 		engine.updateVersion(chainID)
 		if _, ok := engine.bftProcess[chainID]; !ok {
 			engine.initProcess(chainID, chainName)
-			shouldRun = true
 		} else {
-			if engine.version[chainID] != currActorVersion ||
-				engine.bftProcess[chainID].BlockVersion() != engine.getBlockVersion(chainID) {
+			if engine.version[chainID] != currActorVersion {
 				err := engine.bftProcess[chainID].Stop()
 				if err != nil {
 					Logger.Log.Error(err)
 					return
 				}
 				engine.initProcess(chainID, chainName)
-				shouldRun = true
 			}
 		}
 
@@ -195,15 +183,17 @@ func (engine *Engine) WatchCommitteeChange() {
 		for _, validator := range validators {
 			validatorMiningKey = append(validatorMiningKey, validator.MiningKey)
 		}
-
 		engine.bftProcess[chainID].LoadUserKeys(validatorMiningKey)
+		engine.bftProcess[chainID].Start()
+		engine.NotifyNewRole(chainID, common.CommitteeRole)
 		miningProc = engine.bftProcess[chainID]
+	}
 
-		if shouldRun {
-			err := engine.bftProcess[chainID].Run()
-			if err != nil {
-				Logger.Log.Error(err)
-				return
+	for chainID, proc := range engine.bftProcess {
+		if _, ok := ValidatorGroup[chainID]; !ok {
+			if proc.IsStarted() {
+				proc.Stop()
+				engine.NotifyNewRole(chainID, common.WaitingRole)
 			}
 		}
 	}
@@ -225,7 +215,7 @@ func NewConsensusEngine() *Engine {
 
 func (engine *Engine) initProcess(chainID int, chainName string) {
 	var bftActor blsbft.Actor
-	blockVersion := engine.getBlockVersion(chainID)
+	blockVersion := engine.version[chainID]
 	if chainID == -1 {
 		bftActor = blsbft.NewActorWithValue(
 			engine.config.Blockchain.BeaconChain,
@@ -244,16 +234,7 @@ func (engine *Engine) initProcess(chainID int, chainName string) {
 }
 
 func (engine *Engine) updateVersion(chainID int) {
-	chainEpoch := uint64(1)
-	if chainID == -1 {
-		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
-	} else {
-		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
-	}
-	engine.version[chainID] = blsbft.BftVersion
-	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
-		engine.version[chainID] = blsbft.MultiViewsVersion
-	}
+	engine.version[chainID] = engine.getBlockVersion(chainID)
 }
 
 func (engine *Engine) Init(config *EngineConfig) {
@@ -265,41 +246,49 @@ func (engine *Engine) Start() error {
 	defer Logger.Log.Infof("CONSENSUS: Start")
 
 	if engine.config.Node.GetPrivateKey() != "" {
-		privateSeed, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
-		if err != nil {
-			panic(err)
-		}
-		miningKey, err := GetMiningKeyFromPrivateSeed(privateSeed)
-		if err != nil {
-			panic(err)
-		}
-		engine.validators = []*consensus.Validator{
-			&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey},
-		}
-
+		engine.loadKeysFromPrivateKey()
 	} else if engine.config.Node.GetMiningKeys() != "" {
-		keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
-		engine.validators = []*consensus.Validator{}
-		for _, key := range keys {
-			miningKey, err := GetMiningKeyFromPrivateSeed(key)
-			if err != nil {
-				panic(err)
-			}
-			engine.validators = append(engine.validators, &consensus.Validator{
-				PrivateSeed: key, MiningKey: *miningKey,
-			})
-		}
-		engine.validators = engine.validators[:1] //allow only 1 key
-
-		//set monitor pubkey
-		pubkeys := []string{}
-		for _, val := range engine.validators {
-			pubkeys = append(pubkeys, val.MiningKey.GetPublicKey().GetMiningKeyBase58("bls"))
-		}
-		monitor.SetGlobalParam("MINING_PUBKEY", strings.Join(pubkeys, ","))
+		engine.loadKeysFromMiningKey()
 	}
 	engine.IsEnabled = 1
 	return nil
+}
+
+func (engine *Engine) loadKeysFromPrivateKey() {
+	privateSeed, err := engine.GenMiningKeyFromPrivateKey(engine.config.Node.GetPrivateKey())
+	if err != nil {
+		panic(err)
+	}
+	miningKey, err := GetMiningKeyFromPrivateSeed(privateSeed)
+	if err != nil {
+		panic(err)
+	}
+	engine.validators = []*consensus.Validator{
+		&consensus.Validator{PrivateSeed: privateSeed, MiningKey: *miningKey},
+	}
+}
+
+func (engine *Engine) loadKeysFromMiningKey() {
+	keys := strings.Split(engine.config.Node.GetMiningKeys(), ",")
+	engine.validators = []*consensus.Validator{}
+	for _, key := range keys {
+		miningKey, err := GetMiningKeyFromPrivateSeed(key)
+		if err != nil {
+			panic(err)
+		}
+		engine.validators = append(engine.validators, &consensus.Validator{
+			PrivateSeed: key, MiningKey: *miningKey,
+		})
+	}
+	// @NOTICE: hack code, only allow one key
+	engine.validators = engine.validators[:1] //allow only 1 key
+
+	//set monitor pubkey
+	pubkeys := []string{}
+	for _, val := range engine.validators {
+		pubkeys = append(pubkeys, val.MiningKey.GetPublicKey().GetMiningKeyBase58("bls"))
+	}
+	monitor.SetGlobalParam("MINING_PUBKEY", strings.Join(pubkeys, ","))
 }
 
 func (engine *Engine) Stop() error {
@@ -345,33 +334,31 @@ func (engine *Engine) getBlockVersion(chainID int) int {
 		chainHeight = engine.config.Blockchain.ShardChain[chainID].GetBestView().GetBeaconHeight()
 	}
 
-	if chainHeight >= engine.config.Blockchain.GetConfig().ChainParams.StakingFlowV2Height {
-		return blsbft.SlashingVersion
+	if chainHeight >= config.Param().ConsensusParam.StakingFlowV3Height {
+		return types.DCS_VERSION
 	}
 
-	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
-		return blsbft.MultiViewsVersion
+	if chainHeight >= config.Param().ConsensusParam.StakingFlowV2Height {
+		return types.SLASHING_VERSION
 	}
 
-	return blsbft.BftVersion
-}
-
-func (engine *Engine) getVersion(chainID int) int {
-	chainEpoch := uint64(1)
-	if chainID == -1 {
-		chainEpoch = engine.config.Blockchain.BeaconChain.GetEpoch()
-	} else {
-		chainEpoch = engine.config.Blockchain.ShardChain[chainID].GetEpoch()
+	if chainEpoch >= config.Param().ConsensusParam.ConsensusV2Epoch {
+		return types.MULTI_VIEW_VERSION
 	}
 
-	if chainEpoch >= engine.config.Blockchain.GetConfig().ChainParams.ConsensusV2Epoch {
-		return blsbft.MultiViewsVersion
-	}
-
-	return blsbft.BftVersion
+	return types.BFT_VERSION
 }
 
 //BFTProcess for testing only
 func (engine *Engine) BFTProcess() map[int]blsbft.Actor {
 	return engine.bftProcess
+}
+
+func (engine *Engine) NotifyNewRole(newCID int, newRole string) {
+	engine.config.PubSubManager.PublishMessage(
+		pubsub.NewMessage(pubsub.NodeRoleDetailTopic, &pubsub.NodeRole{
+			CID:  newCID,
+			Role: newRole,
+		}),
+	)
 }

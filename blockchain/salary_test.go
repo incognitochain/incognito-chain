@@ -5,6 +5,7 @@ import (
 	mocks "github.com/incognitochain/incognito-chain/blockchain/committeestate/externalmocks"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incdb"
@@ -19,6 +20,7 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var (
@@ -94,8 +96,11 @@ func Test_getNoBlkPerYear(t *testing.T) {
 
 func TestBlockChain_getRewardAmount(t *testing.T) {
 	numberOfBlockPerYear := getNoBlkPerYear(40)
+	type param struct {
+		BasicReward            uint64
+		MinBeaconBlockInterval time.Duration
+	}
 	type fields struct {
-		config Config
 	}
 	type args struct {
 		blkHeight uint64
@@ -105,253 +110,212 @@ func TestBlockChain_getRewardAmount(t *testing.T) {
 		fields fields
 		args   args
 		want   uint64
+		param  param
 	}{
 		{
-			name: "Mainnet year 1",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 1",
+			fields: fields{},
 			args: args{
 				1,
 			},
 			want: 1386666000,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 1",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 1",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear,
 			},
 			want: 1386666000,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 2",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 2",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear + 1,
 			},
 			want: 1261866060,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 2",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 2",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear * 2,
 			},
 			want: 1261866060,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 3",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 3",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear*2 + 1,
 			},
 			want: 1148298114,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 3",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 3",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear * 3,
 			},
 			want: 1148298114,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 4",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 4",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear*3 + 1,
 			},
 			want: 1044951283,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 4",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 4",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear * 4,
 			},
 			want: 1044951283,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 5",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 5",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear*4 + 1,
 			},
 			want: 950905667,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 5",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 5",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear * 5,
 			},
 			want: 950905667,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 6",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 6",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear*5 + 1,
 			},
 			want: 865324156,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 6",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 6",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear * 6,
 			},
 			want: 865324156,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 7",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 7",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear*6 + 1,
 			},
 			want: 787444981,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 7",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 7",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear * 7,
 			},
 			want: 787444981,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 8",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 8",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear*7 + 1,
 			},
 			want: 716574932,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 		{
-			name: "Mainnet year 8",
-			fields: fields{
-				config: Config{
-					ChainParams: &Params{
-						MinBeaconBlockInterval: MainnetMinBeaconBlkInterval,
-						BasicReward:            MainnetBasicReward,
-					},
-				},
-			},
+			name:   "Mainnet year 8",
+			fields: fields{},
 			args: args{
 				numberOfBlockPerYear * 8,
 			},
 			want: 716574932,
+			param: param{
+				BasicReward:            1386666000,
+				MinBeaconBlockInterval: time.Second * 40,
+			},
 		},
 	}
+
+	setupParam := func(param param) {
+		config.Param().BasicReward = param.BasicReward
+		config.Param().BlockTime.MinBeaconBlockInterval = param.MinBeaconBlockInterval
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			blockchain := &BlockChain{
-				config: tt.fields.config,
-			}
+			blockchain := &BlockChain{}
+			config.AbortParam()
+			setupParam(tt.param)
 			if got := blockchain.getRewardAmount(tt.args.blkHeight); got != tt.want {
 				t.Errorf("getRewardAmount() = %v, want %v", got, tt.want)
 			}
@@ -499,9 +463,10 @@ func Test_getPercentForIncognitoDAO(t *testing.T) {
 }
 
 func TestBlockChain_addShardRewardRequestToBeacon(t *testing.T) {
-	SetupParam()
-	config := Config{}
-	config.ChainParams = &ChainMainParam
+	config.AbortParam()
+	config.Param().BasicReward = 1386666000
+	config.Param().BlockTime.MinBeaconBlockInterval = 40 * time.Second
+
 	sDB, _ := statedb.NewWithPrefixTrie(common.EmptyRoot, wrarperDB)
 	acceptedBlockRewardInfoBase := instruction.NewAcceptBlockRewardV1WithValue(0, make(map[common.Hash]uint64), 2)
 	acceptedBlockRewardInfoBaseInst, _ := acceptedBlockRewardInfoBase.String()
@@ -511,7 +476,6 @@ func TestBlockChain_addShardRewardRequestToBeacon(t *testing.T) {
 	acceptedBlockRewardInfo1 := instruction.NewAcceptBlockRewardV1WithValue(0, txFee, 2)
 	acceptedBlockRewardInfo1Inst, _ := acceptedBlockRewardInfo1.String()
 	type fields struct {
-		config Config
 	}
 	type args struct {
 		beaconBlock   *types.BeaconBlock
@@ -524,10 +488,8 @@ func TestBlockChain_addShardRewardRequestToBeacon(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "add base reward",
-			fields: fields{
-				config: config,
-			},
+			name:   "add base reward",
+			fields: fields{},
 			args: args{
 				beaconBlock: &types.BeaconBlock{
 					Body: types.BeaconBody{
@@ -541,10 +503,8 @@ func TestBlockChain_addShardRewardRequestToBeacon(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "add base reward + 10000",
-			fields: fields{
-				config: config,
-			},
+			name:   "add base reward + 10000",
+			fields: fields{},
 			args: args{
 				beaconBlock: &types.BeaconBlock{
 					Body: types.BeaconBody{
@@ -560,9 +520,7 @@ func TestBlockChain_addShardRewardRequestToBeacon(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			blockchain := &BlockChain{
-				config: tt.fields.config,
-			}
+			blockchain := &BlockChain{}
 			if err := blockchain.addShardRewardRequestToBeacon(tt.args.beaconBlock, sDB); (err != nil) != tt.wantErr {
 				t.Errorf("addShardRewardRequestToBeacon() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -574,93 +532,32 @@ func TestBlockChain_addShardRewardRequestToBeacon(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	wantReward := MainnetBasicReward*2 + txFee1
+	wantReward := 1386666000*2 + txFee1
 	if reward != wantReward {
 		t.Errorf("addShardRewardRequestToBeacon() got base reward = %v, want %v", reward, wantReward)
 	}
 }
 
-// func TestBlockChain_buildInstRewardForBeacons(t *testing.T) {
-// 	type fields struct {
-// 		BestState *BestState
-// 	}
-// 	fields1 := fields{
-// 		BestState: &BestState{Beacon: &BeaconBestState{BeaconCommittee: committeesKeys}},
-// 	}
-// 	totalReward1 := make(map[common.Hash]uint64)
-// 	totalReward1_1 := make(map[common.Hash]uint64)
-// 	totalReward1[common.PRVCoinID] = 900
-// 	totalReward1_1[common.PRVCoinID] = 300
-// 	rewardInst1_1, _ := metadata.BuildInstForBeaconReward(totalReward1_1, committeesKeys[0].GetNormalKey())
-// 	rewardInst1_2, _ := metadata.BuildInstForBeaconReward(totalReward1_1, committeesKeys[1].GetNormalKey())
-// 	rewardInst1_3, _ := metadata.BuildInstForBeaconReward(totalReward1_1, committeesKeys[2].GetNormalKey())
-// 	type args struct {
-// 		epoch       uint64
-// 		totalReward map[common.Hash]uint64
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		fields  fields
-// 		args    args
-// 		want    [][]string
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name:   "committee len 3",
-// 			fields: fields1,
-// 			args: args{
-// 				epoch:       1,
-// 				totalReward: totalReward1,
-// 			},
-// 			want:    [][]string{rewardInst1_1, rewardInst1_2, rewardInst1_3},
-// 			wantErr: false,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			blockchain := &BlockChain{
-// 				BestState: tt.fields.BestState,
-// 			}
-// 			got, err := blockchain.buildInstRewardForBeacons(tt.args.epoch, tt.args.totalReward)
-// 			if (err != nil) != tt.wantErr {
-// 				t.Errorf("buildInstRewardForBeacons() error = %v, wantErr %v", err, tt.wantErr)
-// 				return
-// 			}
-// 			if !reflect.DeepEqual(got, tt.want) {
-// 				t.Errorf("buildInstRewardForBeacons() got = %v, want %v", got, tt.want)
-// 			}
-// 		})
-// 	}
-// }
-
 func TestBlockChain_buildInstRewardForIncDAO(t *testing.T) {
-	SetupParam()
-	type fields struct {
-		config Config
-	}
-	fields1 := fields{
-		config: Config{
-			ChainParams: &ChainMainParam,
-		},
-	}
+	config.AbortParam()
+	config.Param().IncognitoDAOAddress = "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3"
+	common.MaxShardNumber = 8
 	totalReward1 := make(map[common.Hash]uint64)
 	wantReward1 := uint64(256)
 	totalReward1[common.PRVCoinID] = wantReward1
-	rewardInst1_DAO, _ := metadata.BuildInstForIncDAOReward(totalReward1, ChainMainParam.IncognitoDAOAddress)
+	rewardInst1_DAO, _ := metadata.BuildInstForIncDAOReward(totalReward1, "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3")
 	type args struct {
 		epoch       uint64
 		totalReward map[common.Hash]uint64
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		want    [][]string
 		wantErr bool
 	}{
 		{
-			name:   "build DAO mainnet",
-			fields: fields1,
+			name: "build DAO mainnet",
 			args: args{
 				epoch:       1,
 				totalReward: totalReward1,
@@ -671,9 +568,7 @@ func TestBlockChain_buildInstRewardForIncDAO(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			blockchain := &BlockChain{
-				config: tt.fields.config,
-			}
+			blockchain := &BlockChain{}
 			got, err := blockchain.buildInstRewardForIncDAO(tt.args.epoch, tt.args.totalReward)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("buildInstRewardForIncDAO() error = %v, wantErr %v", err, tt.wantErr)
@@ -728,12 +623,19 @@ func TestBlockChain_buildInstRewardForShards(t *testing.T) {
 	}
 }
 
-func Test_calculateReward(t *testing.T) {
+func TestBeaconBestState_calculateReward(t *testing.T) {
+
+	config.AbortParam()
+	config.Param().BlockTime.MaxBeaconBlockCreation = 8 * time.Second
+
+	initStateDB()
+	initPublicKey()
+
 	hash, _ := common.Hash{}.NewHashFromStr("123")
 
 	rewards := []uint64{1093995, 1093995}
-	beaconReward := []uint64{51054, 196919}
-	shardReward := []uint64{933543, 787677}
+	beaconReward := []uint64{196919, 51054}
+	shardReward := []uint64{787677, 933543}
 	daoReward := []uint64{109399, 109399}
 	sDBs := []*statedb.StateDB{}
 	splitRewardRuleProcessors := []*mocks.SplitRewardRuleProcessor{}
@@ -792,57 +694,13 @@ func Test_calculateReward(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Year 1 - V2",
-			args: args{
-				maxBeaconBlockCreation:   uint64(TestNetMaxBeaconBlkCreation.Seconds()),
-				splitRewardRuleProcessor: splitRewardRuleProcessors[0],
-				numberOfActiveShards:     8,
-				beaconHeight:             20,
-				rewardStateDB:            sDBs[0],
-			},
-			want: map[common.Hash]uint64{
-				*hash: 51054 * 8,
-			},
-			want1: []map[common.Hash]uint64{
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-				map[common.Hash]uint64{
-					*hash: 933543,
-				},
-			},
-			want2: map[common.Hash]uint64{
-				*hash: 109399 * 8,
-			},
-			want3:   map[common.Hash]uint64{},
-			wantErr: false,
-		},
-		{
 			name: "Year 1 - V1",
 			args: args{
-				maxBeaconBlockCreation:   uint64(TestNetMaxBeaconBlkCreation.Seconds()),
-				splitRewardRuleProcessor: splitRewardRuleProcessors[1],
-				numberOfActiveShards:     8,
 				beaconHeight:             20,
-				rewardStateDB:            sDBs[0],
+				epoch:                    1,
+				rewardStateDB:            sDBs[1],
+				numberOfActiveShards:     8,
+				splitRewardRuleProcessor: splitRewardRuleProcessors[0],
 			},
 			want: map[common.Hash]uint64{
 				*hash: 1575352,
@@ -879,10 +737,55 @@ func Test_calculateReward(t *testing.T) {
 			want3:   map[common.Hash]uint64{},
 			wantErr: false,
 		},
+		// @NOICE: No use split rule reward v2
+		/*
+			{
+				name: "Year 1 - V2",
+				args: args{
+					beaconHeight:  20,
+					epoch:         1,
+					rewardStateDB: sDBs[0],
+				},
+				want: map[common.Hash]uint64{
+					*hash: 51054 * 8,
+				},
+				want1: []map[common.Hash]uint64{
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+					map[common.Hash]uint64{
+						*hash: 933543,
+					},
+				},
+				want2: map[common.Hash]uint64{
+					*hash: 109399 * 8,
+				},
+				want3:   map[common.Hash]uint64{},
+				wantErr: false,
+			},
+		*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, got1, got2, got3, err := calculateReward(tt.args.maxBeaconBlockCreation, tt.args.splitRewardRuleProcessor, tt.args.numberOfActiveShards, tt.args.beaconHeight, tt.args.epoch, tt.args.rewardStateDB, tt.args.isSplitRewardForCustodian, tt.args.percentCustodianRewards)
+			got, got1, got2, got3, err := calculateReward(tt.args.splitRewardRuleProcessor, tt.args.numberOfActiveShards, tt.args.beaconHeight, tt.args.epoch, tt.args.rewardStateDB, tt.args.isSplitRewardForCustodian, tt.args.percentCustodianRewards)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("calculateReward() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -48,6 +48,12 @@ func (b *BeaconCommitteeStateV1) Version() int {
 	return SELF_SWAP_SHARD_VERSION
 }
 
+func (b BeaconCommitteeStateV1) shallowCopy(newB *BeaconCommitteeStateV1) {
+	newB.beaconCommitteeStateBase = b.beaconCommitteeStateBase
+	newB.currentEpochShardCandidate = b.currentEpochShardCandidate
+	newB.nextEpochShardCandidate = b.nextEpochShardCandidate
+}
+
 func (b *BeaconCommitteeStateV1) Clone() BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -104,23 +110,37 @@ func (b *BeaconCommitteeStateV1) getAllCandidateSubstituteCommittee() []string {
 	return res
 }
 
-func (b *BeaconCommitteeStateV1) Hash() (*BeaconCommitteeStateHash, error) {
-	res, err := b.beaconCommitteeStateBase.Hash()
+func (b *BeaconCommitteeStateV1) Hash(committeeChange *CommitteeChange) (*BeaconCommitteeStateHash, error) {
+	if b.isEmpty() {
+		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
+	}
+
+	res, err := b.beaconCommitteeStateBase.Hash(committeeChange)
 	if err != nil {
 		return res, err
 	}
-	// Shard candidate root: shard current candidate + shard next candidate
-	shardCandidateArr := append([]string{}, b.currentEpochShardCandidate...)
-	shardCandidateArr = append([]string{}, b.nextEpochShardCandidate...)
-	tempShardCandidateHash, err := common.GenerateHashFromStringArray(shardCandidateArr)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+
+	var tempShardCandidateHash common.Hash
+	if !isNilOrShardCandidateHash(b.hashes) &&
+		len(committeeChange.NextEpochShardCandidateRemoved) == 0 && len(committeeChange.NextEpochShardCandidateAdded) == 0 &&
+		len(committeeChange.CurrentEpochShardCandidateAdded) == 0 && len(committeeChange.CurrentEpochShardCandidateRemoved) == 0 {
+		tempShardCandidateHash = b.hashes.ShardCandidateHash
+	} else {
+		shardCandidateArr := append([]string{}, b.currentEpochShardCandidate...)
+		shardCandidateArr = append(shardCandidateArr, b.nextEpochShardCandidate...)
+		// Shard candidate root: shard current candidate + shard next candidate
+		tempShardCandidateHash, err = common.GenerateHashFromStringArray(shardCandidateArr)
+		if err != nil {
+			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+		}
 	}
+
 	res.ShardCandidateHash = tempShardCandidateHash
+
 	return res, nil
 }
 
-func InitGenesisBeaconCommitteeStateV1(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV1 {
+func initGenesisBeaconCommitteeStateV1(env *BeaconCommitteeStateEnvironment) *BeaconCommitteeStateV1 {
 	beaconCommitteeStateV1 := NewBeaconCommitteeStateV1()
 	beaconCommitteeStateV1.initCommitteeState(env)
 	return beaconCommitteeStateV1
@@ -132,6 +152,7 @@ func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateE
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
+	b.setHashes(env.PreviousBlockHashes)
 	incurredInstructions := [][]string{}
 	committeeChange := NewCommitteeChange()
 
@@ -223,7 +244,7 @@ func (b *BeaconCommitteeStateV1) UpdateCommitteeState(env *BeaconCommitteeStateE
 	if err != nil {
 		return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}
-	hashes, err := b.Hash()
+	hashes, err := b.Hash(committeeChange)
 	if err != nil {
 		return nil, nil, nil, NewCommitteeStateError(ErrUpdateCommitteeState, err)
 	}

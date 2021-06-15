@@ -75,27 +75,28 @@ func (s *ShardCommitteeStateV2) GetCommitteeFromBlock() common.Hash {
 	return s.committeeFromBlock
 }
 
-//InitGenesisShardCommitteeStateV2 init committee state at genesis block or anytime restore program
+//initGenesisShardCommitteeStateV2 init committee state at genesis block or anytime restore program
 //	- call function processInstructionFromBeacon for process instructions received from beacon
 //	- call function processShardBlockInstruction for process shard block instructions
-func InitGenesisShardCommitteeStateV2(env ShardCommitteeStateEnvironment) *ShardCommitteeStateV2 {
+func initGenesisShardCommitteeStateV2(env *ShardCommitteeStateEnvironment) *ShardCommitteeStateV2 {
 	s := NewShardCommitteeStateV2()
 
 	committeeChange := NewCommitteeChange()
 	candidates := []string{}
 
-	for _, beaconInstruction := range env.BeaconInstructions() {
+	s.committeeFromBlock = env.GenesisBeaconHash
+	for _, beaconInstruction := range env.BeaconInstructions {
 		if beaconInstruction[0] == instruction.STAKE_ACTION {
 			stakeInstruction := instruction.ImportStakeInstructionFromString(beaconInstruction)
 			candidates = append(candidates, stakeInstruction.PublicKeys...)
 		}
 	}
 
-	s.shardCommittee = append(s.shardCommittee, candidates[int(env.ShardID())*
-		env.MinShardCommitteeSize():(int(env.ShardID())*env.MinShardCommitteeSize())+env.MinShardCommitteeSize()]...)
+	s.shardCommittee = append(s.shardCommittee, candidates[int(env.ShardID)*
+		env.MinShardCommitteeSize:(int(env.ShardID)*env.MinShardCommitteeSize)+env.MinShardCommitteeSize]...)
 
 	addedCommittees, _ := incognitokey.CommitteeBase58KeyListToStruct(s.shardCommittee)
-	committeeChange.ShardCommitteeAdded[env.ShardID()] = addedCommittees
+	committeeChange.ShardCommitteeAdded[env.ShardID] = addedCommittees
 
 	return s
 }
@@ -108,7 +109,7 @@ func InitGenesisShardCommitteeStateV2(env ShardCommitteeStateEnvironment) *Shard
 //	- hash for checking commit later
 //	- Only call once in new or insert block process
 func (s *ShardCommitteeStateV2) UpdateCommitteeState(
-	env ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
+	env *ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -131,9 +132,9 @@ func getNewShardCommittees(
 }
 
 func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
-	env ShardCommitteeStateEnvironment,
+	env *ShardCommitteeStateEnvironment,
 	committeeChange *CommitteeChange) (*CommitteeChange, error) {
-	for _, newShardCommittee := range env.CommitteesFromBeaconView() {
+	for _, newShardCommittee := range env.CommitteesFromBeaconView {
 		flag := false
 		for _, oldShardCommittee := range s.shardCommittee {
 			if reflect.DeepEqual(newShardCommittee, oldShardCommittee) {
@@ -143,13 +144,13 @@ func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 		}
 		if !flag {
 			newShardCommitteeStruct, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{newShardCommittee})
-			committeeChange.ShardCommitteeAdded[env.ShardID()] = append(committeeChange.ShardCommitteeAdded[env.ShardID()], newShardCommitteeStruct[0])
+			committeeChange.ShardCommitteeAdded[env.ShardID] = append(committeeChange.ShardCommitteeAdded[env.ShardID], newShardCommitteeStruct[0])
 		}
 	}
 
 	for _, oldShardCommittee := range s.shardCommittee {
 		flag := false
-		for _, newShardCommittee := range env.CommitteesFromBeaconView() {
+		for _, newShardCommittee := range env.CommitteesFromBeaconView {
 			if reflect.DeepEqual(oldShardCommittee, newShardCommittee) {
 				flag = true
 				break
@@ -157,12 +158,12 @@ func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 		}
 		if !flag {
 			oldShardCommitteeStruct, _ := incognitokey.CommitteeBase58KeyListToStruct([]string{oldShardCommittee})
-			committeeChange.ShardCommitteeRemoved[env.ShardID()] = append(committeeChange.ShardCommitteeRemoved[env.ShardID()], oldShardCommitteeStruct[0])
+			committeeChange.ShardCommitteeRemoved[env.ShardID] = append(committeeChange.ShardCommitteeRemoved[env.ShardID], oldShardCommitteeStruct[0])
 		}
 	}
 
-	s.shardCommittee = common.DeepCopyString(env.CommitteesFromBeaconView())
-	s.committeeFromBlock = env.CommitteesFromBlock()
+	s.shardCommittee = common.DeepCopyString(env.CommitteesFromBeaconView)
+	s.committeeFromBlock = env.CommitteesFromBlock
 	return committeeChange, nil
 }
 

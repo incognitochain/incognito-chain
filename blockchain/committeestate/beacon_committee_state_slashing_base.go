@@ -52,6 +52,13 @@ func (b *beaconCommitteeStateSlashingBase) Version() int {
 	panic("implement me")
 }
 
+func (b beaconCommitteeStateSlashingBase) shallowCopy(newB *beaconCommitteeStateSlashingBase) {
+	newB.beaconCommitteeStateBase = b.beaconCommitteeStateBase
+	newB.shardCommonPool = b.shardCommonPool
+	newB.numberOfAssignedCandidates = b.numberOfAssignedCandidates
+	newB.swapRule = b.swapRule
+}
+
 func (b *beaconCommitteeStateSlashingBase) Clone() BeaconCommitteeState {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
@@ -74,21 +81,30 @@ func (b *beaconCommitteeStateSlashingBase) reset() {
 	b.shardCommonPool = []string{}
 }
 
-func (b beaconCommitteeStateSlashingBase) Hash() (*BeaconCommitteeStateHash, error) {
+func (b beaconCommitteeStateSlashingBase) Hash(committeeChange *CommitteeChange) (*BeaconCommitteeStateHash, error) {
 	if b.isEmpty() {
 		return nil, fmt.Errorf("Generate Uncommitted Root Hash, empty uncommitted state")
 	}
-	hashes, err := b.beaconCommitteeStateBase.Hash()
+
+	hashes, err := b.beaconCommitteeStateBase.Hash(committeeChange)
 	if err != nil {
 		return nil, err
 	}
 
-	tempShardCandidateHash, err := common.GenerateHashFromStringArray(b.shardCommonPool)
-	if err != nil {
-		return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+	var tempShardCandidateHash common.Hash
+	if !isNilOrShardCandidateHash(b.hashes) &&
+		len(committeeChange.NextEpochShardCandidateRemoved) == 0 && len(committeeChange.NextEpochShardCandidateAdded) == 0 &&
+		len(committeeChange.CurrentEpochShardCandidateRemoved) == 0 && len(committeeChange.CurrentEpochShardCandidateAdded) == 0 {
+		tempShardCandidateHash = b.hashes.ShardCandidateHash
+	} else {
+		tempShardCandidateHash, err = common.GenerateHashFromStringArray(b.shardCommonPool)
+		if err != nil {
+			return nil, fmt.Errorf("Generate Uncommitted Root Hash, error %+v", err)
+		}
 	}
 
 	hashes.ShardCandidateHash = tempShardCandidateHash
+
 	return hashes, nil
 }
 
@@ -327,6 +343,7 @@ func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 
 	//process slashing after normal swap out
 	returnStakingInstruction, newCommitteeChange, err = b.processSlashing(
+		shardID,
 		env,
 		slashingCommittees,
 		returnStakingInstruction,
@@ -335,7 +352,6 @@ func (b *beaconCommitteeStateSlashingBase) processSwapShardInstruction(
 	if err != nil {
 		return nil, returnStakingInstruction, err
 	}
-	newCommitteeChange.SlashingCommittee[shardID] = append(committeeChange.SlashingCommittee[shardID], slashingCommittees...)
 
 	return newCommitteeChange, returnStakingInstruction, nil
 }
@@ -394,6 +410,7 @@ func (b *beaconCommitteeStateSlashingBase) processAfterNormalSwap(
 // processSlashing process slashing committee public key
 // force unstake and return staking amount for slashed committee
 func (b *beaconCommitteeStateSlashingBase) processSlashing(
+	shardID byte,
 	env *BeaconCommitteeStateEnvironment,
 	slashingPublicKeys []string,
 	returnStakingInstruction *instruction.ReturnStakeInstruction,
@@ -416,6 +433,7 @@ func (b *beaconCommitteeStateSlashingBase) processSlashing(
 			committeeChange,
 		)
 	}
+	committeeChange.AddSlashingCommittees(shardID, slashingPublicKeys)
 
 	return returnStakingInstruction, committeeChange, nil
 }

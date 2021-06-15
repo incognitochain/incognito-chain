@@ -2,6 +2,7 @@ package syncker
 
 import (
 	"reflect"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
@@ -59,6 +60,7 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		}
 	}
 
+	//check block height is sequential
 	for i, blk := range sameCommitteeBlock {
 		if i == len(sameCommitteeBlock)-1 {
 			break
@@ -69,17 +71,20 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		}
 	}
 
+	//validate the last block for batching
+	//get block has same committee
 	committees := []incognitokey.CommitteePublicKey{}
-	var err error
 	if len(sameCommitteeBlock) != 0 {
+		var err error
 		committees, err = chain.GetCommitteeV2(sameCommitteeBlock[0])
 		if err != nil {
 			return 0, err
 		}
 	}
-
+	//TODO: @hung blocks can have the same full committee but different signing committee
+	validBlockForInsert := sameCommitteeBlock[:]
 	for i := len(sameCommitteeBlock) - 1; i >= 0; i-- {
-		signingCommittees, err := chain.GetSigningCommittees(committees, sameCommitteeBlock[i])
+		signingCommittees, err := chain.GetCommitteeV2(sameCommitteeBlock[i])
 		if err != nil {
 			return 0, err
 		}
@@ -90,13 +95,26 @@ func InsertBatchBlock(chain Chain, blocks []types.BlockInterface) (int, error) {
 		}
 	}
 
-	for i, v := range sameCommitteeBlock {
+	batchingValidate := true
+	if time.Now().Unix()-chain.GetBestView().GetBlock().GetProduceTime() < 24*60*60 { //only batching insert when block is created more than 1 day ago
+		batchingValidate = false
+	}
+
+	//if no valid block, this could be a fork chain, or the chunks that have old committee (current best block have swap) => try to insert all with full validation
+	if len(validBlockForInsert) == 0 {
+		validBlockForInsert = sameCommitteeBlock[:]
+		batchingValidate = false
+	}
+	firstInsert := true
+	for _, v := range validBlockForInsert {
 		if !chain.CheckExistedBlk(v) {
 			var err error
-			if i == 0 {
+			if firstInsert { //always validate the first block even in batch mode
+				//Logger.Infof("[config] block height %v proposetime %v", v.GetHeight(), v.GetProposeTime())
 				err = chain.InsertBlock(v, true)
+				firstInsert = false
 			} else {
-				err = chain.InsertBlock(v, false)
+				err = chain.InsertBlock(v, batchingValidate == false)
 			}
 			if err != nil {
 				committeeStr, _ := incognitokey.CommitteeKeyListToString(committees)

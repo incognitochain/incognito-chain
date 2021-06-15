@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -12,16 +11,20 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/privacy"
 	zkp "github.com/incognitochain/incognito-chain/privacy/zeroknowledge"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
 type Tx struct {
+	valEnv *ValidationEnv
 	// Basic data, required
 	Version  int8   `json:"Version"`
 	Type     string `json:"Type"` // Transaction type
@@ -41,6 +44,23 @@ type Tx struct {
 	cachedActualSize *uint64      // cached actualsize data for tx
 }
 
+func (tx *Tx) initEnv() metadata.ValidationEnviroment {
+	valEnv := DefaultValEnv()
+	if tx.IsSalaryTx() {
+		valEnv = WithAct(valEnv, common.TxActInit)
+	}
+	if tx.IsPrivacy() {
+		valEnv = WithPrivacy(valEnv)
+	} else {
+		valEnv = WithNoPrivacy(valEnv)
+	}
+	valEnv = WithType(valEnv, tx.GetType())
+	sID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
+	valEnv = WithShardID(valEnv, int(sID))
+	tx.SetValidationEnv(valEnv)
+	return valEnv
+}
+
 func (tx *Tx) UnmarshalJSON(data []byte) error {
 	type Alias Tx
 	temp := &struct {
@@ -54,17 +74,19 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 		Logger.log.Error("UnmarshalJSON tx", string(data))
 		return NewTransactionErr(UnexpectedError, err)
 	}
+
 	if temp.Metadata == nil {
 		tx.SetMetadata(nil)
-		return nil
-	}
 
-	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
-	if parseErr != nil {
-		Logger.log.Error(parseErr)
-		return parseErr
+	} else {
+		meta, parseErr := metadata.ParseMetadata(temp.Metadata)
+		if parseErr != nil {
+			Logger.log.Error(parseErr)
+			return parseErr
+		}
+		tx.SetMetadata(meta)
 	}
-	tx.SetMetadata(meta)
+	tx.initEnv()
 	return nil
 }
 
@@ -327,14 +349,14 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	err = witness.Init(paymentWitnessParam)
 	if err.(*privacy.PrivacyError) != nil {
 		Logger.log.Error(err)
-		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, utils.EmptyString, "  ")
 		return NewTransactionErr(InitWithnessError, err, string(jsonParam))
 	}
 
 	tx.Proof, err = witness.Prove(params.hasPrivacy)
 	if err.(*privacy.PrivacyError) != nil {
 		Logger.log.Error(err)
-		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, utils.EmptyString, "  ")
 		return NewTransactionErr(WithnessProveError, err, params.hasPrivacy, string(jsonParam))
 	}
 
@@ -421,8 +443,8 @@ func (tx *Tx) signTx() error {
 	return nil
 }
 
-// verifySigTx - verify signature on tx
-func (tx *Tx) verifySigTx() (bool, error) {
+// VerifySigTx - verify signature on tx
+func (tx *Tx) VerifySigTx() (bool, error) {
 	// check input transaction
 	if tx.Sig == nil || tx.SigPubKey == nil {
 		return false, NewTransactionErr(UnexpectedError, errors.New("input transaction must be an signed one"))
@@ -457,8 +479,12 @@ func (tx *Tx) verifySigTx() (bool, error) {
 	}
 	Logger.log.Debugf(" VERIFY SIGNATURE ----------- TX meta: %v\n", tx.Metadata)*/
 	res = verifyKey.Verify(signature, tx.Hash()[:])
+	if !res {
+		err = errors.Errorf("Verify signature of tx %v failed", tx.Hash().String())
+		Logger.log.Error(err)
+	}
 
-	return res, nil
+	return res, err
 }
 
 // ValidateTransaction returns true if transaction is valid:
@@ -477,7 +503,7 @@ func (tx *Tx) ValidateTransaction(boolParams map[string]bool, transactionStateDB
 	var valid bool
 	var err error
 
-	valid, err = tx.verifySigTx()
+	valid, err = tx.VerifySigTx()
 	if !valid {
 		if err != nil {
 			Logger.log.Errorf("Error verifying signature with tx hash %s: %+v \n", tx.Hash().String(), err)
@@ -1255,6 +1281,25 @@ func (tx *Tx) SetMetadata(meta metadata.Metadata) {
 	tx.Metadata = meta
 }
 
+func (tx *Tx) GetValidationEnv() metadata.ValidationEnviroment {
+	return tx.valEnv
+}
+
+func (tx *Tx) SetValidationEnv(vEnv metadata.ValidationEnviroment) {
+	if vE, ok := vEnv.(*ValidationEnv); ok {
+		tx.valEnv = vE
+	} else {
+		valEnv := DefaultValEnv()
+		if tx.IsPrivacy() {
+			valEnv = WithPrivacy(valEnv)
+		} else {
+			valEnv = WithNoPrivacy(valEnv)
+		}
+		valEnv = WithType(valEnv, tx.GetType())
+		tx.valEnv = valEnv
+	}
+}
+
 // GetMetadata returns metadata of tx is existed
 func (tx Tx) GetInfo() []byte {
 	return tx.Info
@@ -1429,7 +1474,7 @@ func (tx Tx) ValidateTxReturnStaking(stateDB *statedb.StateDB) bool {
 
 func (tx Tx) ValidateTxSalary(stateDB *statedb.StateDB) (bool, error) {
 	// verify signature
-	valid, err := tx.verifySigTx()
+	valid, err := tx.VerifySigTx()
 	if !valid {
 		if err != nil {
 			Logger.log.Debugf("Error verifying signature of tx: %+v", err)
@@ -1722,14 +1767,14 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM, serverTime int64) er
 	err = witness.Init(paymentWitnessParam)
 	if err.(*privacy.PrivacyError) != nil {
 		Logger.log.Error(err)
-		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, utils.EmptyString, "  ")
 		return NewTransactionErr(InitWithnessError, err, string(jsonParam))
 	}
 
 	tx.Proof, err = witness.Prove(params.txParam.hasPrivacy)
 	if err.(*privacy.PrivacyError) != nil {
 		Logger.log.Error(err)
-		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
+		jsonParam, _ := json.MarshalIndent(paymentWitnessParam, utils.EmptyString, "  ")
 		return NewTransactionErr(WithnessProveError, err, params.txParam.hasPrivacy, string(jsonParam))
 	}
 

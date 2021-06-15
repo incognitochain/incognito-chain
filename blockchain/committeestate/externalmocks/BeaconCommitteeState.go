@@ -304,13 +304,13 @@ func (_m *BeaconCommitteeState) GetSyncingValidators() map[byte][]incognitokey.C
 	return r0
 }
 
-// Hash provides a mock function with given fields:
-func (_m *BeaconCommitteeState) Hash() (*committeestate.BeaconCommitteeStateHash, error) {
-	ret := _m.Called()
+// Hash provides a mock function with given fields: _a0
+func (_m *BeaconCommitteeState) Hash(_a0 *committeestate.CommitteeChange) (*committeestate.BeaconCommitteeStateHash, error) {
+	ret := _m.Called(_a0)
 
 	var r0 *committeestate.BeaconCommitteeStateHash
-	if rf, ok := ret.Get(0).(func() *committeestate.BeaconCommitteeStateHash); ok {
-		r0 = rf()
+	if rf, ok := ret.Get(0).(func(*committeestate.CommitteeChange) *committeestate.BeaconCommitteeStateHash); ok {
+		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*committeestate.BeaconCommitteeStateHash)
@@ -318,8 +318,8 @@ func (_m *BeaconCommitteeState) Hash() (*committeestate.BeaconCommitteeStateHash
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func() error); ok {
-		r1 = rf()
+	if rf, ok := ret.Get(1).(func(*committeestate.CommitteeChange) error); ok {
+		r1 = rf(_a0)
 	} else {
 		r1 = ret.Error(1)
 	}

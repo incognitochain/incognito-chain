@@ -34,20 +34,6 @@ func (_m *ChainRetriever) CheckBlockTimeIsReached(recentBeaconHeight uint64, bea
 	return r0
 }
 
-// GetBCHeightBreakPointPortalV3 provides a mock function with given fields:
-func (_m *ChainRetriever) GetBCHeightBreakPointPortalV3() uint64 {
-	ret := _m.Called()
-
-	var r0 uint64
-	if rf, ok := ret.Get(0).(func() uint64); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(uint64)
-	}
-
-	return r0
-}
-
 // GetBNBChainID provides a mock function with given fields:
 func (_m *ChainRetriever) GetBNBChainID() string {
 	ret := _m.Called()
@@ -115,20 +101,6 @@ func (_m *ChainRetriever) GetBTCHeaderChain() *btcrelaying.BlockChain {
 	return r0
 }
 
-// GetBeaconHeightBreakPointBurnAddr provides a mock function with given fields:
-func (_m *ChainRetriever) GetBeaconHeightBreakPointBurnAddr() uint64 {
-	ret := _m.Called()
-
-	var r0 uint64
-	if rf, ok := ret.Get(0).(func() uint64); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(uint64)
-	}
-
-	return r0
-}
-
 // GetBurningAddress provides a mock function with given fields: blockHeight
 func (_m *ChainRetriever) GetBurningAddress(blockHeight uint64) string {
 	ret := _m.Called(blockHeight)
@@ -152,20 +124,6 @@ func (_m *ChainRetriever) GetCentralizedWebsitePaymentAddress(_a0 uint64) string
 		r0 = rf(_a0)
 	} else {
 		r0 = ret.Get(0).(string)
-	}
-
-	return r0
-}
-
-// GetETHRemoveBridgeSigEpoch provides a mock function with given fields:
-func (_m *ChainRetriever) GetETHRemoveBridgeSigEpoch() uint64 {
-	ret := _m.Called()
-
-	var r0 uint64
-	if rf, ok := ret.Get(0).(func() uint64); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(uint64)
 	}
 
 	return r0
@@ -278,20 +236,6 @@ func (_m *ChainRetriever) GetShardStakingTx(shardID byte, beaconHeight uint64) (
 	}
 
 	return r0, r1
-}
-
-// GetStakingAmountShard provides a mock function with given fields:
-func (_m *ChainRetriever) GetStakingAmountShard() uint64 {
-	ret := _m.Called()
-
-	var r0 uint64
-	if rf, ok := ret.Get(0).(func() uint64); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(uint64)
-	}
-
-	return r0
 }
 
 // GetTransactionByHash provides a mock function with given fields: _a0

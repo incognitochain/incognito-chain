@@ -213,7 +213,7 @@ func (chain *BeaconChain) CreateNewBlockFromOldBlock(
 // TODO: change name
 func (chain *BeaconChain) InsertBlock(block types.BlockInterface, shouldValidate bool) error {
 	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), shouldValidate); err != nil {
-		Logger.log.Info(err)
+		Logger.log.Error(err)
 		return err
 	}
 	return nil
@@ -223,6 +223,16 @@ func (chain *BeaconChain) CheckExistedBlk(block types.BlockInterface) bool {
 	blkHash := block.Hash()
 	_, err := rawdbv2.GetBeaconBlockByHash(chain.Blockchain.GetBeaconChainDatabase(), *blkHash)
 	return err == nil
+}
+
+func (chain *BeaconChain) InsertAndBroadcastBlock(block types.BlockInterface) error {
+	go chain.Blockchain.config.Server.PushBlockToAll(block, "", true)
+	if err := chain.Blockchain.InsertBeaconBlock(block.(*types.BeaconBlock), true); err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+	return nil
+
 }
 
 func (chain *BeaconChain) ReplacePreviousValidationData(previousBlockHash common.Hash, newValidationData string) error {
@@ -344,19 +354,18 @@ func (chain *BeaconChain) GetAllView() []multiview.View {
 	return chain.multiView.GetAllViewsWithBFS()
 }
 
-func (chain *BeaconChain) GetProposerByTimeSlot(
-	committeeViewHash common.Hash, shardID byte, ts int64,
+func (chain *BeaconChain) GetProposerByTimeSlotFromCommitteeList(
+	ts int64,
 	committees []incognitokey.CommitteePublicKey,
 ) (incognitokey.CommitteePublicKey, int, error) {
 	id := GetProposerByTimeSlot(ts, chain.GetBestView().(*BeaconBestState).MinBeaconCommitteeSize)
 	return committees[id], id, nil
 }
 
-func (chain *BeaconChain) SigningCommittees(
-	committeeViewHash common.Hash,
+func (chain *BeaconChain) GetSigningCommittees(
 	proposerIndex int,
 	committees []incognitokey.CommitteePublicKey,
-	shardID byte,
+	blockVersion int,
 ) []incognitokey.CommitteePublicKey {
 	return committees
 }
@@ -391,12 +400,6 @@ func (chain *BeaconChain) CommitteesFromViewHashForShard(
 	committeeHash common.Hash, shardID byte,
 ) ([]incognitokey.CommitteePublicKey, error) {
 	return chain.Blockchain.getShardCommitteeFromBeaconHash(committeeHash, shardID)
-}
-
-func (chain *BeaconChain) GetSigningCommittees(
-	committees []incognitokey.CommitteePublicKey, block types.BlockInterface,
-) ([]incognitokey.CommitteePublicKey, error) {
-	return chain.Blockchain.getCommitteesForSigning(committees, block)
 }
 
 func getCommitteeCacheKey(hash common.Hash, shardID byte) string {

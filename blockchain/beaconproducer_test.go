@@ -17,6 +17,7 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/utils"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"github.com/jrick/logrotate/rotator"
 	"github.com/stretchr/testify/assert"
@@ -30,12 +31,12 @@ func initLogRotator(logFile string) {
 	err := os.MkdirAll(logDir, 0700)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create log directory: %v\n", err)
-		os.Exit(common.ExitByLogging)
+		os.Exit(utils.ExitByLogging)
 	}
 	r, err := rotator.New(logFile, 10*1024, false, 3)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create file rotator: %v\n", err)
-		os.Exit(common.ExitByLogging)
+		os.Exit(utils.ExitByLogging)
 	}
 
 	logRotator = r
