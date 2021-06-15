@@ -70,6 +70,7 @@ type Config struct {
 	Highway           Highway
 	OutCoinByOTAKeyDb *incdb.Database
 	IndexerWorkers    int64
+	IndexerTokens     []string
 	PoolManager       *txpool.PoolManager
 
 	relayShardLck sync.Mutex
@@ -115,8 +116,9 @@ func (blockchain *BlockChain) Init(config *Config) error {
 
 	EnableIndexingCoinByOTAKey = config.OutCoinByOTAKeyDb != nil
 	if EnableIndexingCoinByOTAKey {
+		Logger.log.Infof("Create a new OutCoinIndexer with %v workers, %v access tokens\n", config.IndexerWorkers, len(config.IndexerTokens))
 		var err error
-		outcoinIndexer, err = coin_indexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb)
+		outcoinIndexer, err = coin_indexer.NewOutCoinIndexer(config.IndexerWorkers, *config.OutCoinByOTAKeyDb, config.IndexerTokens)
 		if err != nil {
 			return err
 		}

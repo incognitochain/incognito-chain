@@ -35,7 +35,7 @@ type CoinIndexer struct {
 }
 
 // NewOutCoinIndexer creates a new full node's caching instance for faster output coin retrieval.
-func NewOutCoinIndexer(numWorkers int64, db incdb.Database) (*CoinIndexer, error) {
+func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessTokenList []string) (*CoinIndexer, error) {
 	// view key :-> indexing status
 	// 2 means indexer finished
 	// while < 2 : `balance` & `createTx` RPCs are not available
@@ -43,9 +43,13 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database) (*CoinIndexer, error
 
 	var sem *semaphore.Weighted
 	accessTokens := make(map[string]bool)
-	if numWorkers != 0 {
+	if numWorkers != 0 && len(accessTokenList) > 0 {
 		sem = semaphore.NewWeighted(numWorkers)
-		accessTokens[DefaultAccessToken] = true
+		for _, at := range accessTokenList {
+			accessTokens[at] = true
+		}
+	} else {
+		numWorkers = 0
 	}
 	utils.Logger.Log.Infof("NewOutCoinIndexer with %v workers\n", numWorkers)
 
@@ -431,8 +435,6 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 			}
 			return
 		}
-
-
 
 		// query token output coins
 		currentOutputCoinsToken, err := QueryBatchDbCoinVer2(mapIdxParams, shardID, &common.ConfidentialAssetID, height, nextHeight-1, txDb, cachedCoins, getCoinFilterByOTAKey())
