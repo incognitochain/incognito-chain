@@ -196,11 +196,12 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
-				tx := tp.Data.TxByHash[h]
-				txHash = tx.Hash().String()
-				if tp.better(tx, target) {
-					neededToReplace = false
-					return isDoubleSpend, neededToReplace, txHash, listkey
+				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
+					txHash = tx.Hash().String()
+					if tp.better(tx, target) {
+						neededToReplace = false
+						return isDoubleSpend, neededToReplace, txHash, listkey
+					}
 				}
 			}
 			listkey = append(listkey, key)
@@ -209,11 +210,12 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
-				tx := tp.Data.TxByHash[h]
-				txHash = tx.Hash().String()
-				if tp.better(tx, target) {
-					neededToReplace = false
-					return isDoubleSpend, neededToReplace, txHash, listkey
+				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
+					txHash = tx.Hash().String()
+					if tp.better(tx, target) {
+						neededToReplace = false
+						return isDoubleSpend, neededToReplace, txHash, listkey
+					}
 				}
 			}
 			listkey = append(listkey, key)
@@ -227,11 +229,12 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			key := fmt.Sprintf("%v-%v", tokenID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
-				tx := tp.Data.TxByHash[h]
-				txHash = tx.Hash().String()
-				if tp.better(tx, target) {
-					neededToReplace = false
-					return isDoubleSpend, neededToReplace, txHash, listkey
+				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
+					txHash = tx.Hash().String()
+					if tp.better(tx, target) {
+						neededToReplace = false
+						return isDoubleSpend, neededToReplace, txHash, listkey
+					}
 				}
 			}
 			listkey = append(listkey, key)
@@ -240,11 +243,12 @@ func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool
 			key := fmt.Sprintf("%v-%v", tokenID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
 			if h, ok := tp.CData.TxHashByCoin[key]; ok {
 				isDoubleSpend = true
-				tx := tp.Data.TxByHash[h]
-				txHash = tx.Hash().String()
-				if tp.better(tx, target) {
-					neededToReplace = false
-					return isDoubleSpend, neededToReplace, txHash, listkey
+				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
+					txHash = tx.Hash().String()
+					if tp.better(tx, target) {
+						neededToReplace = false
+						return isDoubleSpend, neededToReplace, txHash, listkey
+					}
 				}
 			}
 			listkey = append(listkey, key)
