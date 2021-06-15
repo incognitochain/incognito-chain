@@ -1,6 +1,7 @@
 package txpool
 
 import (
+	"fmt"
 	"log"
 	"runtime"
 	"sync"
@@ -39,6 +40,12 @@ type TxsData struct {
 	TxInfos  map[string]TxInfo
 }
 
+type CoinsData struct {
+	locker        *sync.RWMutex
+	TxHashByCoin  map[string]string
+	CoinsByTxHash map[string][]string
+}
+
 type txInfoTemp struct {
 	tx metadata.Transaction
 	vt time.Duration
@@ -55,6 +62,7 @@ type TxsPool struct {
 	cQuit     chan bool
 	better    func(txA, txB metadata.Transaction) bool
 	ttl       time.Duration
+	CData     CoinsData
 }
 
 func NewTxsPool(
@@ -75,15 +83,32 @@ func NewTxsPool(
 		sttLock:   &sync.RWMutex{},
 		cQuit:     make(chan bool),
 		better: func(txA, txB metadata.Transaction) bool {
-			return txA.GetTxFee() > txB.GetTxFee()
+			if txA.GetTxFee() > 0 {
+				return txA.GetTxFee() >= txB.GetTxFee()
+			} else {
+				return txA.GetTxFeeToken() >= txB.GetTxFeeToken()
+			}
 		},
 		ttl: ttl,
+		CData: CoinsData{
+			locker:        &sync.RWMutex{},
+			TxHashByCoin:  map[string]string{},
+			CoinsByTxHash: map[string][]string{},
+		},
 	}
 	removeTx := func(txHash string, arg interface{}) {
 		go func(txPool *TxsPool, target string) {
 			if txPool.IsRunning() {
 				tp.RemoveTx(target)
 			}
+			txPool.CData.locker.Lock()
+			if listCoins, ok := txPool.CData.CoinsByTxHash[txHash]; ok {
+				for _, coin := range listCoins {
+					delete(txPool.CData.TxHashByCoin, coin)
+				}
+			}
+			delete(txPool.CData.CoinsByTxHash, txHash)
+			txPool.CData.locker.Unlock()
 		}(tp, txHash)
 	}
 	tp.Cacher.OnEvicted(removeTx)
@@ -143,16 +168,122 @@ func (tp *TxsPool) Start() {
 			f(tp)
 			Logger.Debugf("Total txs in pool %v after func\n", len(tp.Data.TxInfos))
 		case validTx := <-cValidTxs:
-			total++
-			txH := validTx.tx.Hash().String()
-			tp.Data.TxByHash[txH] = validTx.tx
-			tp.Data.TxInfos[txH] = TxInfo{
-				Fee:   validTx.tx.GetTxFee(),
-				Size:  validTx.tx.GetTxActualSize(),
-				VTime: validTx.vt,
+			isDoubleSpend, needToRemove, txToRemove, listKeyCoin := tp.CheckDoubleSpendWithCurMem(validTx.tx)
+			if isDoubleSpend {
+				if needToRemove {
+					tp.removeDoubleSpendTx(txToRemove)
+					tp.addTx(validTx, listKeyCoin)
+				}
+			} else {
+				tp.addTx(validTx, listKeyCoin)
 			}
+			total++
+
 		}
 	}
+}
+
+func (tp *TxsPool) CheckDoubleSpendWithCurMem(target metadata.Transaction) (bool, bool, string, []string) {
+	tp.CData.locker.RLock()
+	defer tp.CData.locker.RUnlock()
+	listkey := []string{}
+	isDoubleSpend := false
+	neededToReplace := true
+	txHash := ""
+	prf := target.GetProof()
+	if prf != nil {
+		for _, iCoin := range prf.GetInputCoins() {
+			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
+			if h, ok := tp.CData.TxHashByCoin[key]; ok {
+				isDoubleSpend = true
+				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
+					txHash = tx.Hash().String()
+					if tp.better(tx, target) {
+						neededToReplace = false
+						return isDoubleSpend, neededToReplace, txHash, listkey
+					}
+				}
+			}
+			listkey = append(listkey, key)
+		}
+		for _, oCoin := range prf.GetOutputCoins() {
+			key := fmt.Sprintf("%v-%v", common.PRVCoinID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
+			if h, ok := tp.CData.TxHashByCoin[key]; ok {
+				isDoubleSpend = true
+				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
+					txHash = tx.Hash().String()
+					if tp.better(tx, target) {
+						neededToReplace = false
+						return isDoubleSpend, neededToReplace, txHash, listkey
+					}
+				}
+			}
+			listkey = append(listkey, key)
+		}
+	}
+	if target.GetType() == common.TxCustomTokenPrivacyType {
+		txNormal := target.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.TxNormal
+		tokenID := target.(*transaction.TxCustomTokenPrivacy).TxPrivacyTokenData.PropertyID
+		normalPrf := txNormal.GetProof()
+		for _, iCoin := range normalPrf.GetInputCoins() {
+			key := fmt.Sprintf("%v-%v", tokenID.String(), string(iCoin.CoinDetails.GetSerialNumber().ToBytesS()))
+			if h, ok := tp.CData.TxHashByCoin[key]; ok {
+				isDoubleSpend = true
+				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
+					txHash = tx.Hash().String()
+					if tp.better(tx, target) {
+						neededToReplace = false
+						return isDoubleSpend, neededToReplace, txHash, listkey
+					}
+				}
+			}
+			listkey = append(listkey, key)
+		}
+		for _, oCoin := range normalPrf.GetOutputCoins() {
+			key := fmt.Sprintf("%v-%v", tokenID.String(), string(oCoin.CoinDetails.GetSNDerivator().ToBytesS()))
+			if h, ok := tp.CData.TxHashByCoin[key]; ok {
+				isDoubleSpend = true
+				if tx, ok := tp.Data.TxByHash[h]; (ok) && (tx != nil) {
+					txHash = tx.Hash().String()
+					if tp.better(tx, target) {
+						neededToReplace = false
+						return isDoubleSpend, neededToReplace, txHash, listkey
+					}
+				}
+			}
+			listkey = append(listkey, key)
+		}
+	}
+	return isDoubleSpend, neededToReplace, txHash, listkey
+}
+
+func (tp *TxsPool) addTx(validTx txInfoTemp, listCoinKey []string) {
+	tp.CData.locker.Lock()
+	tp.CData.locker.Unlock()
+	txH := validTx.tx.Hash().String()
+	tp.Data.TxByHash[txH] = validTx.tx
+	tp.Data.TxInfos[txH] = TxInfo{
+		Fee:   validTx.tx.GetTxFee(),
+		Size:  validTx.tx.GetTxActualSize(),
+		VTime: validTx.vt,
+	}
+	tp.CData.CoinsByTxHash[validTx.tx.Hash().String()] = listCoinKey
+	for _, v := range listCoinKey {
+		tp.CData.TxHashByCoin[v] = validTx.tx.Hash().String()
+	}
+}
+
+func (tp *TxsPool) removeDoubleSpendTx(txH string) {
+	tp.CData.locker.Lock()
+	tp.CData.locker.Unlock()
+	delete(tp.Data.TxByHash, txH)
+	delete(tp.Data.TxInfos, txH)
+	if keyList, ok := tp.CData.CoinsByTxHash[txH]; ok {
+		for _, key := range keyList {
+			delete(tp.CData.TxHashByCoin, key)
+		}
+	}
+	delete(tp.CData.CoinsByTxHash, txH)
 }
 
 func (tp *TxsPool) Stop() {
@@ -232,6 +363,80 @@ func (tp *TxsPool) ValidateNewTx(tx metadata.Transaction) (bool, error, time.Dur
 	}
 }
 
+func (tp *TxsPool) FilterWithNewView(
+	cView metadata.ChainRetriever,
+	sView metadata.ShardViewRetriever,
+	bcView metadata.BeaconViewRetriever,
+) {
+	mapForChkDbSpend := map[[privacy.Ed25519KeySize]byte]struct {
+		Index  uint
+		Detail TxInfoDetail
+	}{}
+	mapForChkDbStake := map[string]interface{}{}
+	if !tp.IsRunning() {
+		return
+	}
+	txsData := tp.snapshotPool()
+	txsToRemove := []string{}
+	txsValid := []metadata.Transaction{}
+	defer func() {
+		Logger.Infof("SHARD %v | Filter mempool with bview %v, sview %v; del %v txs, remaining %v \n", sView.GetShardID(), bcView.GetHeight(), sView.GetHeight(), len(txsToRemove), len(txsValid))
+	}()
+	for txHash, tx := range txsData.TxByHash {
+		if tp.isDoubleStake(mapForChkDbStake, tx) {
+			Logger.Errorf("[txTracing] Tx %v is stake/unstake/stop auto stake twice with sView %v\n", txHash, sView.GetHeight())
+			continue
+		}
+		if ok, err := tp.Verifier.LoadCommitment(tx, sView); !ok || err != nil {
+			Logger.Errorf("[txTracing] Validate tx %v return error %v with sView %v\n", txHash, err, sView.GetHeight())
+			txsToRemove = append(txsToRemove, txHash)
+			continue
+		}
+		ok, err := tp.Verifier.ValidateWithChainState(
+			tx,
+			cView,
+			sView,
+			bcView,
+			sView.GetBeaconHeight(),
+		)
+		if !ok || err != nil {
+			Logger.Errorf("[txTracing] Validate tx %v return error %v with sView %v\n", txHash, err, sView.GetHeight())
+			txsToRemove = append(txsToRemove, txHash)
+			continue
+		}
+		isDoubleSpend, needToReplace, _, removeIdx := tp.CheckDoubleSpend(mapForChkDbSpend, tx, &txsValid)
+		if isDoubleSpend && !needToReplace {
+			txsToRemove = append(txsToRemove, txHash)
+			continue
+		}
+		for k := range removeIdx {
+			txsToRemove = append(txsToRemove, txsValid[k].Hash().String())
+			txsValid[k] = nil
+		}
+		if info, ok := tp.Data.TxInfos[txHash]; ok {
+			txsValid = insertTxIntoList(
+				mapForChkDbSpend,
+				TxInfoDetail{
+					Fee:   info.Fee,
+					Size:  info.Size,
+					Hash:  txHash,
+					VTime: 0,
+					Tx:    tx,
+				},
+				txsValid,
+			)
+		} else {
+			txsToRemove = append(txsToRemove, txHash)
+		}
+	}
+	if tp.IsRunning() {
+		tp.RemoveTxs(txsToRemove)
+	}
+	if len(txsToRemove) > 0 {
+		Logger.Infof("Remove %+v txs when validate with new sView %v bView %v", txsToRemove, sView.GetHeight(), bcView.GetHeight())
+	}
+}
+
 func (tp *TxsPool) GetTxsTranferForNewBlock(
 	cView metadata.ChainRetriever,
 	sView metadata.ShardViewRetriever,
@@ -293,13 +498,16 @@ func (tp *TxsPool) GetTxsTranferForNewBlock(
 				continue
 			}
 			Logger.Debugf("Try to add tx %v into list txs #res %v\n", txDetails.Tx.Hash().String(), len(res))
-			isDoubleSpend, needToReplace, removedInfo := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
+			isDoubleSpend, needToReplace, removedInfo, removeIdx := tp.CheckDoubleSpend(mapForChkDbSpend, txDetails.Tx, &res)
 			if isDoubleSpend && !needToReplace {
 				continue
 			}
 			curSize = curSize - removedInfo.Size + txDetails.Size
 			curTime = curTime - removedInfo.VTime + txDetails.VTime
 			Logger.Debugf("Added tx %v, %v %v\n", txDetails.Tx.Hash().String(), needToReplace, removedInfo)
+			for k := range removeIdx {
+				res[k] = nil
+			}
 			res = insertTxIntoList(mapForChkDbSpend, *txDetails, res)
 		case <-timeOut:
 			stopCh <- nil
@@ -350,6 +558,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 	bool,
 	bool,
 	TxInfo,
+	map[uint]interface{},
 ) {
 	prf := tx.GetProof()
 	removedInfos := TxInfo{
@@ -362,7 +571,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 	if prf != nil {
 		isDoubleSpend, needToReplace, removeIdx, removedInfos = tp.checkPrfDoubleSpend(prf, dataHelper, removeIdx, tx, removedInfos)
 		if isDoubleSpend && !needToReplace {
-			return isDoubleSpend, needToReplace, removedInfos
+			return isDoubleSpend, needToReplace, removedInfos, removeIdx
 		}
 	}
 
@@ -372,7 +581,7 @@ func (tp *TxsPool) CheckDoubleSpend(
 		if normalPrf != nil {
 			isDoubleSpend, needToReplace, removeIdx, removedInfos = tp.checkPrfDoubleSpend(normalPrf, dataHelper, removeIdx, tx, removedInfos)
 			if isDoubleSpend && !needToReplace {
-				return isDoubleSpend, needToReplace, removedInfos
+				return isDoubleSpend, needToReplace, removedInfos, removeIdx
 			}
 		}
 	}
@@ -384,11 +593,8 @@ func (tp *TxsPool) CheckDoubleSpend(
 				delete(dataHelper, k)
 			}
 		}
-		for k := range removeIdx {
-			(*txs)[k] = nil
-		}
 	}
-	return isDoubleSpend, needToReplace, removedInfos
+	return isDoubleSpend, needToReplace, removedInfos, removeIdx
 }
 
 func (tp *TxsPool) checkPrfDoubleSpend(
