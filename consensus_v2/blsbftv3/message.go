@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	portalprocessv4 "github.com/incognitochain/incognito-chain/portal/portalv4/portalprocess"
+
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -29,6 +31,9 @@ type BFTVote struct {
 	Confirmation  []byte
 	IsValid       int // 0 not process, 1 valid, -1 not valid
 	TimeSlot      uint64
+
+	// Portal v4
+	PortalSigs []*portalprocessv4.PortalSig
 }
 
 type BFTRequestBlock struct {
