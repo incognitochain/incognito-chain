@@ -7,7 +7,6 @@ import (
 	"fmt"
 	zkp "github.com/incognitochain/incognito-chain/privacy/privacy_v1/zeroknowledge"
 	"github.com/incognitochain/incognito-chain/transaction"
-	"github.com/incognitochain/incognito-chain/transaction/tx_generic"
 	"log"
 	"net"
 	"os"
