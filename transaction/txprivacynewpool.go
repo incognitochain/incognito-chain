@@ -209,7 +209,7 @@ func (tx *Tx) ValidateTxCorrectness(
 	error,
 ) {
 
-	Logger.log.Debugf("VALIDATING TX........\n")
+	Logger.log.Infof("VALIDATING TX %v; Env: Beacon %v, shard %v, confirmedTime %v\n", tx.Hash().String(), tx.valEnv.BeaconHeight(), tx.valEnv.ShardHeight(), tx.valEnv.ConfirmedTime())
 
 	var valid bool
 	var err error

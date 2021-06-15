@@ -490,9 +490,18 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 		if int(sID) < len(txService.BlockChain.ShardChain) {
 			sChain := txService.BlockChain.ShardChain[sID]
 			if sChain != nil {
+				isDoubleSpend, canReplaceOldTx, oldTx, _ := sChain.TxPool.CheckDoubleSpendWithCurMem(&tx)
+				if isDoubleSpend {
+					if !canReplaceOldTx {
+						return nil, nil, byte(0), NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
+					}
+				}
+
 				sView := sChain.GetBestState()
 				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(&tx))
 				if err == nil {
+					valEnv := blockchain.UpdateTxEnvWithSView(sView, &tx)
+					tx.SetValidationEnv(valEnv)
 					ok, e := sChain.TxsVerifier.FullValidateTransactions(
 						txService.BlockChain,
 						sView,
@@ -1308,6 +1317,8 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 	beaconBestState, err := txService.BlockChain.GetClonedBeaconBestState()
 	if err == nil {
 		beaconHeigh = int64(beaconBestState.BeaconHeight)
+	} else {
+		Logger.log.Errorf("SendRawPrivacyCustomTokenTransaction can not get beacon best state with error %+v", err)
 	}
 
 	hash := tx.Hash()
@@ -1316,8 +1327,19 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 		if int(sID) < len(txService.BlockChain.ShardChain) {
 			sChain := txService.BlockChain.ShardChain[sID]
 			if sChain != nil {
+				isDoubleSpend, canReplaceOldTx, oldTx, _ := sChain.TxPool.CheckDoubleSpendWithCurMem(&tx)
+				if isDoubleSpend {
+					if !canReplaceOldTx {
+						return nil, nil, NewRPCError(RejectDoubleSpendTxError, fmt.Errorf("Tx %v is double spend with tx %v in mempool", tx.Hash().String(), oldTx))
+					}
+				}
+
 				sView := sChain.GetBestState()
 				bcView, err := txService.BlockChain.GetBeaconViewStateDataFromBlockHash(sView.BestBeaconHash, isTxRelateCommittee(&tx))
+				valEnv := blockchain.UpdateTxEnvWithSView(sView, &tx)
+				tx.SetValidationEnv(valEnv)
+				valEnvCustom := blockchain.UpdateTxEnvWithSView(sView, &tx.TxPrivacyTokenData.TxNormal)
+				tx.TxPrivacyTokenData.TxNormal.SetValidationEnv(valEnvCustom)
 				if err == nil {
 					ok, e := sChain.TxsVerifier.FullValidateTransactions(
 						txService.BlockChain,
