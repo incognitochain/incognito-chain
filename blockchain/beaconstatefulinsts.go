@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/incognitochain/incognito-chain/config"
 	"math/big"
 	"sort"
 	"strconv"
@@ -160,9 +161,40 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			case metadata.IssuingRequestMeta:
 				newInst, err = blockchain.buildInstructionsForIssuingReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
 
-			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingBridgeReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
-
+			case metadata.IssuingETHRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqETHTxsUsed,
+					config.Param().EthContractAddressStr,
+					"",
+					statedb.IsETHTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqETHTxsUsed = append(accumulatedValues.UniqETHTxsUsed, uniqTx)
+				}
+			case metadata.IssuingBSCRequestMeta:
+				var uniqTx []byte
+				newInst, uniqTx, err = blockchain.buildInstructionsForIssuingBridgeReq(
+					beaconBestState,
+					featureStateDB,
+					contentStr,
+					shardID,
+					metaType,
+					accumulatedValues,
+					accumulatedValues.UniqBSCTxsUsed,
+					config.Param().BscContractAddressStr,
+					common.BSCPrefix,
+					statedb.IsBSCTxHashIssued,
+				)
+				if uniqTx != nil {
+					accumulatedValues.UniqBSCTxsUsed = append(accumulatedValues.UniqBSCTxsUsed, uniqTx)
+				}
 			case metadata.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(
 					pdeContributionActionsByShardID,
