@@ -481,10 +481,19 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 		}
 	}
 
-	committeeFromBlock := shardBestState.shardCommitteeState.GetCommitteeFromBlock()
-	committees, err := bc.getShardCommitteeFromBeaconHash(committeeFromBlock, shardBestState.ShardID)
-	if err != nil {
-		return err
+	var committeeFromBlock common.Hash
+	var committees []incognitokey.CommitteePublicKey
+	var err error
+
+	if shardBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height &&
+		committeeFromBlock.IsZeroValue() {
+		committees = shardBestState.GetCommittee()
+	} else {
+		committeeFromBlock = shardBestState.shardCommitteeState.GetCommitteeFromBlock()
+		committees, err = bc.getShardCommitteeFromBeaconHash(committeeFromBlock, shardBestState.ShardID)
+		if err != nil {
+			return err
+		}
 	}
 
 	if shardBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
