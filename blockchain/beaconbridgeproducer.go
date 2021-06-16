@@ -108,7 +108,7 @@ func buildBurningConfirmInst(
 	}
 
 	prefixLen := len(prefix)
-	if prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen]) ||
+	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) ||
 		len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
 		return nil, errors.Wrapf(err, "invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID)
 	}
