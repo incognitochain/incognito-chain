@@ -49,11 +49,24 @@ type TxPool interface {
 		maxTime time.Duration,
 		getTxsDuration time.Duration,
 	) []metadata.Transaction
+	FilterWithNewView(
+		cView metadata.ChainRetriever,
+		sView metadata.ShardViewRetriever,
+		bcView metadata.BeaconViewRetriever,
+	)
 	CheckValidatedTxs(
 		txs []metadata.Transaction,
 	) (
 		valid []metadata.Transaction,
 		needValidate []metadata.Transaction,
+	)
+	CheckDoubleSpendWithCurMem(
+		target metadata.Transaction,
+	) (
+		bool,
+		bool,
+		string,
+		[]string,
 	)
 	snapshotPool() TxsData
 	snapshotPoolOutCoin() map[common.Hash]interface{}
