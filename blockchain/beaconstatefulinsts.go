@@ -7,10 +7,12 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
+	"github.com/incognitochain/incognito-chain/utils"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
@@ -101,21 +103,25 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	statefulActionsByShardID map[byte][][]string,
 	beaconHeight uint64,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
-	portalParams portal.PortalParams) [][]string {
+	portalParams portal.PortalParams,
+) ([][]string, error) {
 
-	currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconBestState.pdeState, beaconHeight-1)
-	if err != nil {
-		Logger.log.Error(err)
-	}
+	/*currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconBestState.pdeState, beaconHeight-1)*/
+	//if err != nil {
+	//Logger.log.Error(err)
+	//return utils.EmptyStringMatrix, err
+	/*}*/
 
 	pm := portal.NewPortalManager()
 	currentPortalStateV3, err := portalprocessv3.InitCurrentPortalStateFromDB(featureStateDB)
 	if err != nil {
 		Logger.log.Error(err)
+		return utils.EmptyStringMatrix, err
 	}
 	relayingHeaderState, err := blockchain.InitRelayingHeaderChainStateFromDB()
 	if err != nil {
 		Logger.log.Error(err)
+		return utils.EmptyStringMatrix, err
 	}
 
 	accumulatedValues := &metadata.AccumulatedValues{
@@ -125,18 +131,14 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	}
 	instructions := [][]string{}
 
-	// pde instructions
-	pdeContributionActionsByShardID := map[byte][][]string{}
-	pdePRVRequiredContributionActionsByShardID := map[byte][][]string{}
-	pdeTradeActionsByShardID := map[byte][][]string{}
-	pdeCrossPoolTradeActionsByShardID := map[byte][][]string{}
-	pdeWithdrawalActionsByShardID := map[byte][][]string{}
-	pdeFeeWithdrawalActionsByShardID := map[byte][][]string{}
+	// Start pde instructions handler
+	pdeShardInstructions := [][]string{}
 
 	var keys []int
 	for k := range statefulActionsByShardID {
 		keys = append(keys, int(k))
 	}
+
 	sort.Ints(keys)
 	for _, value := range keys {
 		shardID := byte(value)
@@ -158,52 +160,36 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			switch metaType {
 			case metadata.InitTokenRequestMeta:
 				newInst, err = blockchain.buildInstructionsForTokenInitReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
 			case metadata.IssuingRequestMeta:
 				newInst, err = blockchain.buildInstructionsForIssuingReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
 			case metadata.IssuingETHRequestMeta:
 				newInst, err = blockchain.buildInstructionsForIssuingETHReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
 
 			case metadata.PDEContributionMeta:
-				pdeContributionActionsByShardID = groupPDEActionsByShardID(
-					pdeContributionActionsByShardID,
-					action,
-					shardID,
-				)
+				pdeShardInstructions = append(pdeShardInstructions, action)
 			case metadata.PDEPRVRequiredContributionRequestMeta:
-				pdePRVRequiredContributionActionsByShardID = groupPDEActionsByShardID(
-					pdePRVRequiredContributionActionsByShardID,
-					action,
-					shardID,
-				)
+				pdeShardInstructions = append(pdeShardInstructions, action)
 			case metadata.PDETradeRequestMeta:
-				pdeTradeActionsByShardID = groupPDEActionsByShardID(
-					pdeTradeActionsByShardID,
-					action,
-					shardID,
-				)
+				pdeShardInstructions = append(pdeShardInstructions, action)
 			case metadata.PDECrossPoolTradeRequestMeta:
-				pdeCrossPoolTradeActionsByShardID = groupPDEActionsByShardID(
-					pdeCrossPoolTradeActionsByShardID,
-					action,
-					shardID,
-				)
+				pdeShardInstructions = append(pdeShardInstructions, action)
 			case metadata.PDEWithdrawalRequestMeta:
-				pdeWithdrawalActionsByShardID = groupPDEActionsByShardID(
-					pdeWithdrawalActionsByShardID,
-					action,
-					shardID,
-				)
+				pdeShardInstructions = append(pdeShardInstructions, action)
 			case metadata.PDEFeeWithdrawalRequestMeta:
-				pdeFeeWithdrawalActionsByShardID = groupPDEActionsByShardID(
-					pdeFeeWithdrawalActionsByShardID,
-					action,
-					shardID,
-				)
+				pdeShardInstructions = append(pdeShardInstructions, action)
 			default:
-				continue
-			}
-			if err != nil {
-				Logger.log.Error(err)
 				continue
 			}
 			if len(newInst) > 0 {
@@ -212,23 +198,35 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		}
 	}
 
-	pdeInsts, err := blockchain.handlePDEInsts(
-		beaconHeight-1, currentPDEState,
-		pdeContributionActionsByShardID,
-		pdePRVRequiredContributionActionsByShardID,
-		pdeTradeActionsByShardID,
-		pdeCrossPoolTradeActionsByShardID,
-		pdeWithdrawalActionsByShardID,
-		pdeFeeWithdrawalActionsByShardID,
-	)
+	if beaconBestState.pDEXState.Version() <= pdex.SignleProvideVersion {
+		pdexStateEnv := pdex.
+			NewStateEnvBuilder().
+			BuildShardInstructions(pdeShardInstructions).
+			Build()
 
-	if err != nil {
-		Logger.log.Error(err)
-		return instructions
+		pdeInstructions, err := beaconBestState.pDEXState.Update(pdexStateEnv)
+		if err != nil {
+			Logger.log.Error(err)
+			return utils.EmptyStringMatrix, err
+		}
+		instructions = append(instructions, pdeInstructions...)
 	}
-	if len(pdeInsts) > 0 {
-		instructions = append(instructions, pdeInsts...)
-	}
+
+	// TODO: @tin check here again
+	/*pdeInsts, err := blockchain.handlePDEInsts(*/
+	//beaconHeight-1, currentPDEState,
+	//pdeContributionActionsByShardID,
+	//pdePRVRequiredContributionActionsByShardID,
+	//pdeTradeActionsByShardID,
+	//pdeCrossPoolTradeActionsByShardID,
+	//pdeWithdrawalActionsByShardID,
+	//pdeFeeWithdrawalActionsByShardID,
+	//)
+
+	//if err != nil {
+	//Logger.log.Error(err)
+	//return instructions, err
+	/*}*/
 
 	// handle portal instructions
 	// include portal v3, portal relaying header chain
@@ -244,13 +242,13 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	if err != nil {
 		Logger.log.Error(err)
-		return instructions
+		return instructions, err
 	}
 	if len(portalInsts) > 0 {
 		instructions = append(instructions, portalInsts...)
 	}
 
-	return instructions
+	return instructions, nil
 }
 
 func isTradingFairContainsPRV(

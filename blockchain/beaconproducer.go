@@ -191,6 +191,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	}
 	sort.Ints(keys)
 	//Shard block is a map ShardId -> array of shard block
+
 	for _, v := range keys {
 		shardID := byte(v)
 		shardBlocks := allShardBlocks[shardID]
@@ -217,7 +218,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	}
 
 	// build stateful instructions
-	statefulInsts := blockchain.buildStatefulInstructions(
+	statefulInsts, err := blockchain.buildStatefulInstructions(
 		curView,
 		curView.featureStateDB,
 		statefulActionsByShardID,
@@ -225,6 +226,11 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		rewardForCustodianByEpoch,
 		portalParams,
 	)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
 	bridgeInstructions = append(bridgeInstructions, statefulInsts...)
 
 	shardInstruction.compose()
@@ -237,7 +243,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 	if err != nil {
 		return nil, nil, err
 	}
-	if len(bridgeInstructions) > 0 {
+	if len(instructions) > 0 {
 		BLogger.log.Infof("Producer instructions: %+v", instructions)
 	}
 
@@ -325,6 +331,13 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	// Collect stateful actions
 	statefulActions := collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
+
+	for _, tx := range shardBlock.Body.Transactions {
+		if metadata.IsPDETx(tx.GetMetadata()) {
+			shardState := shardStates[shardID]
+			shardState.AddPDETxHash(*tx.Hash())
+		}
+	}
 
 	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstructions, statefulActions
 }

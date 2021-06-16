@@ -807,7 +807,6 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 
 			switch l[0] {
 			case instruction.STAKE_ACTION:
-
 				if l[2] == "shard" {
 					shard := strings.Split(l[1], ",")
 					newShardCandidates := []string{}
@@ -828,7 +827,6 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 						instructions = append(instructions, l)
 					}
 				}
-
 				if l[2] == "beacon" {
 					beacon := strings.Split(l[1], ",")
 					newBeaconCandidates := []string{}
@@ -899,7 +897,7 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
-			if beaconHeight < config.Param().PDEV3Height || !bc.IsPDETx(metadataValue) {
+			if beaconHeight < config.Param().PDEV3Height || !metadata.IsPDETx(metadataValue) {
 				actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
 				Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
 				if err == nil {

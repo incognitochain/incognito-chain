@@ -11,3 +11,8 @@ const (
 const (
 	EmptyString = ""
 )
+
+var (
+	EmptyStringArray  = []string{}   // DO NOT EDIT
+	EmptyStringMatrix = [][]string{} // DO NOT EDIT
+)

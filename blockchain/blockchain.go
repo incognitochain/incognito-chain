@@ -1022,34 +1022,3 @@ func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {
 func (blockchain *BlockChain) UsingNewPool() bool {
 	return blockchain.config.usingNewPool
 }
-
-func (blockchain *BlockChain) IsPDETx(txMetadata metadata.Metadata) bool {
-	switch txMetadata.GetType() {
-	case metadata.PDEContributionMeta:
-		return true
-	case metadata.PDETradeRequestMeta:
-		return true
-	case metadata.PDETradeResponseMeta:
-		return true
-	case metadata.PDEWithdrawalRequestMeta:
-		return true
-	case metadata.PDEWithdrawalResponseMeta:
-		return true
-	case metadata.PDEContributionResponseMeta:
-		return true
-	case metadata.PDEPRVRequiredContributionRequestMeta:
-		return true
-	case metadata.PDECrossPoolTradeRequestMeta:
-		return true
-	case metadata.PDECrossPoolTradeResponseMeta:
-		return true
-	case metadata.PDEFeeWithdrawalRequestMeta:
-		return true
-	case metadata.PDEFeeWithdrawalResponseMeta:
-		return true
-	case metadata.PDETradingFeesDistributionMeta:
-		return true
-	default:
-		return false
-	}
-}

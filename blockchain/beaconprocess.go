@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/pdex"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/config"
@@ -486,8 +487,13 @@ func (beaconBestState *BeaconBestState) verifyPostProcessingBeaconBlock(beaconBl
 /*
 	Update Beststate with new Block
 */
-func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconBlock, blockchain *BlockChain) (
-	*BeaconBestState, *committeestate.BeaconCommitteeStateHash, *committeestate.CommitteeChange, [][]string, error) {
+func (curView *BeaconBestState) updateBeaconBestState(
+	beaconBlock *types.BeaconBlock, blockchain *BlockChain,
+) (
+	*BeaconBestState, *committeestate.BeaconCommitteeStateHash,
+	*committeestate.CommitteeChange, [][]string,
+	error,
+) {
 	startTimeUpdateBeaconBestState := time.Now()
 	beaconBestState := NewBeaconBestState()
 	if err := beaconBestState.cloneBeaconBestStateFrom(curView); err != nil {
@@ -574,6 +580,25 @@ func (curView *BeaconBestState) updateBeaconBestState(beaconBlock *types.BeaconB
 			return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 		}
 	}
+
+	if beaconBestState.pDEXState.Version() == pdex.RangeProvideVersion {
+		txHashes := map[byte][]common.Hash{}
+		for k, v := range beaconBlock.Body.ShardState {
+			for _, shardState := range v {
+				txHashes[k] = append(txHashes[k], shardState.PDETxHashes()...)
+			}
+		}
+		pdexStateEnv := pdex.
+			NewStateEnvBuilder().
+			BuildTxHashes(txHashes).
+			Build()
+		pdeInstructions, err := beaconBestState.pDEXState.Update(pdexStateEnv)
+		if err != nil {
+			return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
+		}
+		incurredInstructions = append(incurredInstructions, pdeInstructions...)
+	}
+
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)
 
 	return beaconBestState, hashes, committeeChange, incurredInstructions, nil
