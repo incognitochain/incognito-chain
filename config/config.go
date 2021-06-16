@@ -110,6 +110,10 @@ type config struct {
 	PreloadAddress   string `mapstructure:"preload_address" yaml:"preload_address" long:"preloadaddress" description:"Endpoint of fullnode to download backup database"`
 	ForceBackup      bool   `mapstructure:"force_backup" long:"forcebackup" description:"Force node to backup"`
 	IsFullValidation bool   `mapstructure:"is_full_validation" long:"is_full_validation" description:"fully validation data"`
+
+	// Optional : db to store coin by OTA key (for v2)
+	OutcoinDatabaseDir string `mapstructure:"coin_data_pre" long:"coindatapre" description:"Output coins by OTA key database dir"`
+	UseOutcoinDatabase []bool `mapstructure:"use_coin_data" long:"usecoindata" description:"Store output coins by known OTA keys"`
 }
 
 // normalizeAddresses returns a new slice with all the passed peer addresses
@@ -389,6 +393,7 @@ func LoadConfig() *config {
 		LimitFee:                    DefaultLimitFee,
 		EnableMining:                DefaultEnableMining,
 		LogFileName:                 DefaultLogFilename,
+		OutcoinDatabaseDir: 		 DefaultOutcoinDirname,
 	}
 
 	//get network
@@ -410,6 +415,7 @@ func (c *config) loadConfig() {
 		viper.SetConfigName(utils.GetEnv(ConfigFileKey, DefaultConfigFile))         // name of config file (without extension)
 		viper.SetConfigType(utils.GetEnv(ConfigFileTypeKey, DefaultConfigFileType)) // REQUIRED if the config file does not have the extension in the name
 		path := filepath.Join(utils.GetEnv(ConfigDirKey, DefaultConfigDir), network)
+		fmt.Println(path)
 		viper.AddConfigPath(path) // optionally look for config in the working directory
 		if err := viper.ReadInConfig(); err != nil {
 			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

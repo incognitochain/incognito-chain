@@ -2,10 +2,12 @@ package metadata
 
 import (
 	"encoding/json"
-	"strconv"
-
+	"fmt"
 	ec "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/wallet"
+	"strconv"
 
 	"github.com/pkg/errors"
 )
@@ -19,6 +21,7 @@ func calculateSize(meta Metadata) uint64 {
 }
 
 func ParseMetadata(meta interface{}) (Metadata, error) {
+
 	if meta == nil {
 		return nil, nil
 	}
@@ -32,8 +35,18 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var md Metadata
-	switch int(mtTemp["Type"].(float64)) {
+	typeFloat,ok := mtTemp["Type"].(float64)
+	if !ok{
+		return nil, errors.Errorf("Could not parse metadata with type: %v", mtTemp["Type"])
+	}
+	theType := int(typeFloat)
+	switch theType {
+	case InitTokenRequestMeta:
+		md = &InitTokenRequest{}
+	case InitTokenResponseMeta:
+		md = &InitTokenResponse{}
 	case IssuingRequestMeta:
 		md = &IssuingRequest{}
 	case IssuingResponseMeta:
@@ -160,13 +173,14 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalTopUpWaitingPortingRequestV3{}
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
-		return nil, errors.Errorf("Could not parse metadata with type: %d", int(mtTemp["Type"].(float64)))
+		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)
 	}
 
 	err = json.Unmarshal(metaInBytes, &md)
 	if err != nil {
 		return nil, err
 	}
+	
 	return md, nil
 }
 
@@ -586,7 +600,71 @@ func IsPortalMetaTypeV3(metaType int) bool {
 	return res
 }
 
+//Checks if a string payment address is supported by the underlying transaction.
+//
+//TODO: try another approach since the function itself is too complicated.
+func AssertPaymentAddressAndTxVersion(paymentAddress interface{}, version int8) (privacy.PaymentAddress, error) {
+	var addr privacy.PaymentAddress
+	var ok bool
+	//try to parse the payment address
+	if addr, ok = paymentAddress.(privacy.PaymentAddress); !ok {
+		//try the pointer
+		if tmpAddr, ok := paymentAddress.(*privacy.PaymentAddress); !ok {
+			//try the string one
+			addrStr, ok := paymentAddress.(string)
+			if !ok {
+				return privacy.PaymentAddress{}, fmt.Errorf("cannot parse payment address - %v: Not a payment address or string address (txversion %v)", paymentAddress, version)
+			}
+			keyWallet, err := wallet.Base58CheckDeserialize(addrStr)
+			if err != nil {
+				return privacy.PaymentAddress{}, err
+			}
+			addr = keyWallet.KeySet.PaymentAddress
+		} else {
+			addr = *tmpAddr
+		}
+	}
+
+	//Always check public spend and public view keys
+	if addr.GetPublicSpend() == nil || addr.GetPublicView() == nil {
+		return privacy.PaymentAddress{}, errors.New("PublicSpend or PublicView not found")
+	}
+
+	//If tx is in version 1, PublicOTAKey must be nil
+	if version == 1 {
+		if addr.GetOTAPublicKey() != nil {
+			return privacy.PaymentAddress{}, errors.New("PublicOTAKey must be nil")
+		}
+	}
+
+	//If tx is in version 2, PublicOTAKey must not be nil
+	if version == 2 {
+		if addr.GetOTAPublicKey() == nil {
+			return privacy.PaymentAddress{}, errors.New("PublicOTAKey not found")
+		}
+	}
+
+	return addr, nil
+}
+
 func IsPortalRelayingMetaType(metaType int) bool {
 	res, _ := common.SliceExists(portalRelayingMetaTypes, metaType)
 	return res
+}
+
+//genTokenID generates a (deterministically) random tokenID for the request transaction.
+//From now on, users cannot generate their own tokenID.
+//The generated tokenID is calculated as the hash of the following components:
+//	- The Tx hash
+//	- The shardID at which the request is sent
+func GenTokenIDFromRequest(txHash string, shardID byte) *common.Hash {
+	record := txHash + strconv.FormatUint(uint64(shardID), 10)
+
+	tokenID := common.HashH([]byte(record))
+	return &tokenID
+}
+
+type OTADeclaration struct {
+	PublicKey 	[32]byte
+	TokenID 	common.Hash
 }

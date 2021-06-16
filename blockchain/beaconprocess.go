@@ -414,6 +414,9 @@ func (beaconBestState *BeaconBestState) verifyBestStateWithBeaconBlock(blockchai
 				return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError, fmt.Errorf("Shard %+v best height not found in beacon best state", shardID))
 			}
 		} else {
+			if bestShardHeight == 0 {
+				bestShardHeight = 1
+			}
 			if len(shardStates) > 0 {
 				if bestShardHeight > shardStates[0].Height {
 					return NewBlockChainError(BeaconBestStateBestShardHeightNotCompatibleError, fmt.Errorf("Expect Shard %+v has state greater than to %+v but get %+v", shardID, bestShardHeight, shardStates[0].Height))
@@ -824,6 +827,8 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
+	// execute, store token init instructions
+	blockchain.processTokenInitInstructions(newBestState.featureStateDB, beaconBlock)
 	// execute, store PDE instruction
 	newBestState.pdeState, err = blockchain.processPDEInstructions(newBestState, beaconBlock)
 	if err != nil {

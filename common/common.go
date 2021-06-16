@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"log"
 	"math/big"
 	"net"
@@ -287,6 +288,13 @@ func RandBigIntMaxRange(max *big.Int) (*big.Int, error) {
 	return rand.Int(rand.Reader, max)
 }
 
+// RandBytes generates random bytes with length
+func RandBytes(length int) []byte {
+	rbytes := make([]byte, length)
+	rand.Read(rbytes)
+	return rbytes
+}
+
 // CompareStringArray receives 2 arrays of string
 // and check whether 2 arrays is the same or not
 func CompareStringArray(src []string, dst []string) bool {
@@ -461,6 +469,26 @@ func GetShardChainKey(shardID byte) string {
 	return ShardChainKey + "-" + strconv.Itoa(int(shardID))
 }
 
+func Uint16ToBytes(v uint16) [2]byte {
+	var res [2]byte
+	res[0] = uint8(v >> 8)
+	res[1] = uint8(v & 0xff)
+	return res
+}
+
+func BytesToUint16(b [2]byte) uint16 {
+	return uint16(b[0])<<8 + uint16(b[1])
+}
+
+func BytesSToUint16(b []byte) (uint16, error) {
+	if len(b) != 2 {
+		return 0, errors.New("Cannot convert BytesSToUint16: length of byte is not 2")
+	}
+	var bytes [2]byte
+	copy(bytes[:], b[:2])
+	return BytesToUint16(bytes), nil
+}
+
 // CopyBytes returns an exact copy of the provided bytes.
 func CopyBytes(b []byte) (copiedBytes []byte) {
 	if b == nil {
@@ -524,6 +552,18 @@ func AssertAndConvertStrToNumber(numStr interface{}) (uint64, error) {
 	return strconv.ParseUint(assertedNumStr, 10, 64)
 }
 
+// AssertAndConvertStrToNumber asserts and convert a passed input to uint64 number
+func AssertAndConvertNumber(numInt interface{}) (uint64, error) {
+	switch val := numInt.(type) {
+	case float64:
+		return uint64(val), nil
+	case string:
+		return strconv.ParseUint(val, 10, 64)
+	default:
+		return 0, errors.Errorf("cannot assert number interface to uint64")
+	}
+}
+
 func IndexOfUint64(target uint64, arr []uint64) int {
 	for i, v := range arr {
 		if v == target {
@@ -533,6 +573,16 @@ func IndexOfUint64(target uint64, arr []uint64) int {
 	return -1
 }
 
+func TokenHashToString(h *Hash) string {
+	var propertyID [HashSize]byte
+	copy(propertyID[:], h[:])
+	propID := common.Hash(propertyID)
+	return propID.String()
+}
+
+func TokenStringToHash(s string) (*Hash, error) {
+	return Hash{}.NewHashFromStr(s)
+}
 // DecodeETHAddr converts address string (not contain 0x prefix) to 32 bytes slice
 func DecodeETHAddr(addr string) ([]byte, error) {
 	remoteAddr, err := hex.DecodeString(addr)

@@ -78,6 +78,7 @@ func StorePDEShares(stateDB *StateDB, pdeShares map[string]uint64) error {
 		if err != nil {
 			return NewStatedbError(StorePDEShareError, err)
 		}
+
 	}
 	return nil
 }
@@ -102,7 +103,12 @@ func GetPDEShares(stateDB *StateDB, beaconHeight uint64) (map[string]uint64, err
 	pdeShares := make(map[string]uint64)
 	pdeShareStates := stateDB.getAllPDEShareState()
 	for _, sState := range pdeShareStates {
-		key := string(GetPDEShareKey(beaconHeight, sState.Token1ID(), sState.Token2ID(), sState.ContributorAddress()))
+		keyBytes, err := GetPDEShareKey(beaconHeight, sState.Token1ID(), sState.Token2ID(), sState.ContributorAddress())
+		if err != nil {
+			return nil, err
+		}
+
+		key := string(keyBytes)
 		value := sState.Amount()
 		pdeShares[key] = value
 	}
@@ -179,7 +185,12 @@ func GetPDETradingFees(stateDB *StateDB, beaconHeight uint64) (map[string]uint64
 	pdeTradingFees := make(map[string]uint64)
 	pdeTradingFeeStates := stateDB.getAllPDETradingFeeState()
 	for _, tfState := range pdeTradingFeeStates {
-		key := string(GetPDETradingFeeKey(beaconHeight, tfState.Token1ID(), tfState.Token2ID(), tfState.ContributorAddress()))
+		keyBytes, err := GetPDETradingFeeKey(beaconHeight, tfState.Token1ID(), tfState.Token2ID(), tfState.ContributorAddress())
+		if err != nil {
+			return nil, err
+		}
+
+		key := string(keyBytes)
 		value := tfState.Amount()
 		pdeTradingFees[key] = value
 	}

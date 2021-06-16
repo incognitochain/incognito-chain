@@ -3,8 +3,9 @@ package statedb
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/common"
 	"reflect"
+
+	"github.com/incognitochain/incognito-chain/common"
 )
 
 type OutputCoinState struct {
@@ -95,11 +96,11 @@ type OutputCoinObject struct {
 	// Write caches.
 	trie Trie // storage trie, which becomes non-nil on first access
 
-	version          int
-	snDerivatorHash  common.Hash
-	snDerivatorState *OutputCoinState
-	objectType       int
-	deleted          bool
+	version         int
+	outputCoinHash  common.Hash
+	outputCoinState *OutputCoinState
+	objectType      int
+	deleted         bool
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -111,12 +112,12 @@ type OutputCoinObject struct {
 
 func newOutputCoinObject(db *StateDB, hash common.Hash) *OutputCoinObject {
 	return &OutputCoinObject{
-		version:          defaultVersion,
-		db:               db,
-		snDerivatorHash:  hash,
-		snDerivatorState: NewOutputCoinState(),
-		objectType:       OutputCoinObjectType,
-		deleted:          false,
+		version:         defaultVersion,
+		db:              db,
+		outputCoinHash:  hash,
+		outputCoinState: NewOutputCoinState(),
+		objectType:      OutputCoinObjectType,
+		deleted:         false,
 	}
 }
 
@@ -136,12 +137,12 @@ func newOutputCoinObjectWithValue(db *StateDB, key common.Hash, data interface{}
 		}
 	}
 	return &OutputCoinObject{
-		version:          defaultVersion,
-		snDerivatorHash:  key,
-		snDerivatorState: newOutputCoinState,
-		db:               db,
-		objectType:       OutputCoinObjectType,
-		deleted:          false,
+		version:         defaultVersion,
+		outputCoinHash:  key,
+		outputCoinState: newOutputCoinState,
+		db:              db,
+		objectType:      OutputCoinObjectType,
+		deleted:         false,
 	}, nil
 }
 
@@ -171,12 +172,12 @@ func (s *OutputCoinObject) SetValue(data interface{}) error {
 	if !ok {
 		return fmt.Errorf("%+v, got type %+v", ErrInvalidOutputCoinStateType, reflect.TypeOf(data))
 	}
-	s.snDerivatorState = newOutputCoinState
+	s.outputCoinState = newOutputCoinState
 	return nil
 }
 
 func (s OutputCoinObject) GetValue() interface{} {
-	return s.snDerivatorState
+	return s.outputCoinState
 }
 
 func (s OutputCoinObject) GetValueBytes() []byte {
@@ -192,7 +193,7 @@ func (s OutputCoinObject) GetValueBytes() []byte {
 }
 
 func (s OutputCoinObject) GetHash() common.Hash {
-	return s.snDerivatorHash
+	return s.outputCoinHash
 }
 
 func (s OutputCoinObject) GetType() int {
@@ -206,7 +207,7 @@ func (s *OutputCoinObject) MarkDelete() {
 
 // Reset serial number into default
 func (s *OutputCoinObject) Reset() bool {
-	s.snDerivatorState = NewOutputCoinState()
+	s.outputCoinState = NewOutputCoinState()
 	return true
 }
 
@@ -217,5 +218,5 @@ func (s OutputCoinObject) IsDeleted() bool {
 // empty value or not
 func (s OutputCoinObject) IsEmpty() bool {
 	temp := NewOutputCoinState()
-	return reflect.DeepEqual(temp, s.snDerivatorState) || s.snDerivatorState == nil
+	return reflect.DeepEqual(temp, s.outputCoinState) || s.outputCoinState == nil
 }

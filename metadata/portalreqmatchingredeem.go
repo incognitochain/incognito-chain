@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -14,7 +13,7 @@ import (
 // PortalReqMatchingRedeem - portal custodian request matching redeem requests
 // metadata - request matching redeem requests - create normal tx with this metadata
 type PortalReqMatchingRedeem struct {
-	MetadataBase
+	MetadataBaseWithSignature
 	CustodianAddressStr string
 	RedeemID            string
 }
@@ -48,14 +47,12 @@ type PortalReqMatchingRedeemStatus struct {
 }
 
 func NewPortalReqMatchingRedeem(metaType int, custodianAddrStr string, redeemID string) (*PortalReqMatchingRedeem, error) {
-	metadataBase := MetadataBase{
-		Type: metaType,
-	}
+	metadataBase := NewMetadataBaseWithSignature(metaType)
 	custodianDepositMeta := &PortalReqMatchingRedeem{
 		CustodianAddressStr: custodianAddrStr,
 		RedeemID:            redeemID,
 	}
-	custodianDepositMeta.MetadataBase = metadataBase
+	custodianDepositMeta.MetadataBaseWithSignature = *metadataBase
 	return custodianDepositMeta, nil
 }
 
@@ -78,8 +75,9 @@ func (req PortalReqMatchingRedeem) ValidateSanityData(chainRetriever ChainRetrie
 	if len(incogAddr.Pk) == 0 {
 		return false, false, errors.New("wrong custodian incognito address")
 	}
-	if !bytes.Equal(txr.GetSigPubKey()[:], incogAddr.Pk[:]) {
-		return false, false, errors.New("custodian incognito address is not signer tx")
+
+	if ok, err := req.MetadataBaseWithSignature.VerifyMetadataSignature(incogAddr.Pk, txr); err != nil || !ok {
+		return false, false, errors.New("Request matching redeem is unauthorized")
 	}
 
 	// check tx type
@@ -99,9 +97,22 @@ func (req PortalReqMatchingRedeem) ValidateMetadataByItself() bool {
 }
 
 func (req PortalReqMatchingRedeem) Hash() *common.Hash {
-	record := req.MetadataBase.Hash().String()
+	record := req.MetadataBaseWithSignature.Hash().String()
 	record += req.CustodianAddressStr
 	record += req.RedeemID
+	if req.Sig != nil && len(req.Sig) != 0 {
+		record += string(req.Sig)
+	}
+	// final hash
+	hash := common.HashH([]byte(record))
+	return &hash
+}
+
+func (req PortalReqMatchingRedeem) HashWithoutSig() *common.Hash {
+	record := req.MetadataBaseWithSignature.Hash().String()
+	record += req.CustodianAddressStr
+	record += req.RedeemID
+
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash
