@@ -1,6 +1,8 @@
 package finishsync
 
 import (
+	"encoding/json"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"reflect"
 	"sort"
@@ -621,5 +623,19 @@ func TestFinishSyncManager_Instructions(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestJsonMarshal(t *testing.T) {
+	common.MaxShardNumber = 8
+	fm := NewFinishManager()
+	key1 := "key1"
+	fm.FinishedSyncValidators[byte(0)][key1] = true
+	data, _ := json.Marshal(fm)
+	newFm := NewFinishManager()
+	json.Unmarshal(data, newFm)
+
+	if !reflect.DeepEqual(newFm.FinishedSyncValidators, fm.FinishedSyncValidators) {
+		t.Fatal("fail to marshall and unmarshall")
 	}
 }

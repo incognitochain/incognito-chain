@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	finishsync2 "github.com/incognitochain/incognito-chain/blockchain/finishsync"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain/committeestate"
+	"github.com/incognitochain/incognito-chain/blockchain/finishsync"
 	"github.com/incognitochain/incognito-chain/blockchain/signaturecounter"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
@@ -531,7 +531,6 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 				return err
 			}
 		}
-		beaconState.FinishSyncManager = *finishsync2.NewFinishManager()
 	}
 	return nil
 }
@@ -713,6 +712,7 @@ func (blockchain *BlockChain) GetBeaconViewStateDataFromBlockHash(blockHash comm
 		FeatureStateDBRootHash:   bRH.FeatureStateDBRootHash,
 		RewardStateDBRootHash:    bRH.RewardStateDBRootHash,
 		SlashStateDBRootHash:     bRH.SlashStateDBRootHash,
+		FinishSyncManager:        finishsync.NewFinishManager(),
 	}
 
 	err = beaconView.RestoreBeaconViewStateFromHash(blockchain, includeCommittee)

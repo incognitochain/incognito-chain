@@ -12,7 +12,7 @@ import (
 // FinishedSyncValidators must only compatible with sync pool. It must only contain keys that also in sync pool
 // FinishSyncManager could maintain different data in different beacon nodes
 type FinishSyncManager struct {
-	FinishedSyncValidators map[byte]map[string]bool
+	FinishedSyncValidators map[byte]map[string]bool `json:"FinishedSyncValidators"`
 	mu                     *sync.RWMutex
 }
 
@@ -27,23 +27,41 @@ func NewFinishManager() *FinishSyncManager {
 	}
 }
 
-func NewManagerWithValue(validators map[byte]map[string]bool) *FinishSyncManager {
+func NewFinishManagerWithValue(validators map[byte]map[string]bool) *FinishSyncManager {
 	return &FinishSyncManager{
 		FinishedSyncValidators: validators,
 		mu:                     &sync.RWMutex{},
 	}
 }
 
-func (manager *FinishSyncManager) Clone() FinishSyncManager {
+func (manager *FinishSyncManager) Clone() *FinishSyncManager {
+
 	manager.mu.RLock()
 	defer manager.mu.RUnlock()
+
 	res := NewFinishManager()
 	for i, validatorList := range manager.FinishedSyncValidators {
 		for k, _ := range validatorList {
 			res.FinishedSyncValidators[i][k] = true
 		}
 	}
-	return *res
+
+	return res
+}
+
+func (manager *FinishSyncManager) GetFinishedSyncValidators() map[byte][]string {
+
+	manager.mu.RLock()
+	defer manager.mu.RUnlock()
+
+	res := make(map[byte][]string)
+	for shardID, finishedSyncValidators := range manager.FinishedSyncValidators {
+		for k, _ := range finishedSyncValidators {
+			res[shardID] = append(res[shardID], k)
+		}
+	}
+
+	return res
 }
 
 // AddFinishedSyncValidators only add FinishedSyncValidators in sync pool of attached view
@@ -53,6 +71,7 @@ func (manager *FinishSyncManager) AddFinishedSyncValidators(
 	syncPool []string,
 	shardID byte,
 ) {
+
 	manager.mu.Lock()
 	defer manager.mu.Unlock()
 

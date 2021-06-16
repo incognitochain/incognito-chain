@@ -1,6 +1,9 @@
 package blockchain
 
-import "github.com/incognitochain/incognito-chain/config"
+import (
+	"github.com/incognitochain/incognito-chain/blockchain/finishsync"
+	"github.com/incognitochain/incognito-chain/config"
+)
 
 //RestoreBeaconViewStateFromHash ...
 func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchain *BlockChain, includeCommittee bool) error {
@@ -31,6 +34,9 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 			return err
 		}
 	}
+
+	beaconBestState.FinishSyncManager = finishsync.NewFinishManagerWithValue(
+		beaconBestState.FinishSyncManager.FinishedSyncValidators)
 
 	return nil
 }

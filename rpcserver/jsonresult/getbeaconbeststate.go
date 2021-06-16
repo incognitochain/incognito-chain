@@ -177,6 +177,8 @@ func NewGetBeaconBestState(data *blockchain.BeaconBestState) *GetBeaconBestState
 		copy(result.SyncingValidators[k], tempV)
 	}
 
+	result.FinishSyncManager = data.GetFinishSyncValidators()
+
 	return result
 }
 
