@@ -1255,7 +1255,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	if err := batchData.Write(); err != nil {
 		return NewBlockChainError(StoreShardBlockError, err)
 	}
-	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState)
+	blockchain.ShardChain[shardBlock.Header.ShardID].AddView(newShardState)
 
 	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
 	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
