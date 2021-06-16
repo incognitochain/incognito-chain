@@ -72,7 +72,7 @@ func (sm *StakingMetadata) ValidateMetadataByItself() bool {
 }
 
 func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, shardID byte, transactionStateDB *statedb.StateDB) (bool, error) {
-	SC, SPV, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := beaconViewRetriever.GetAllCommitteeValidatorCandidate()
+	SC, SPV, sSP, BC, BPV, CBWFCR, CBWFNR, CSWFCR, CSWFNR, err := beaconViewRetriever.GetAllCommitteeValidatorCandidate()
 	if err != nil {
 		return false, err
 	}
@@ -85,6 +85,9 @@ func (stakingMetadata StakingMetadata) ValidateTxWithBlockChain(tx Transaction, 
 	}
 	for _, validators := range SPV {
 		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(validators, tempStaker)
+	}
+	for _, syncValidators := range sSP {
+		tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(syncValidators, tempStaker)
 	}
 	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BC, tempStaker)
 	tempStaker = incognitokey.GetValidStakeStructCommitteePublicKey(BPV, tempStaker)

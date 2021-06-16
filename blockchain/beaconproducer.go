@@ -291,13 +291,15 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 
 	shardInstruction := curView.preProcessInstructionsFromShardBlock(instructions, shardID)
-	shardInstruction, duplicateKeyStakeInstruction = curView.
-		processStakeInstructionFromShardBlock(shardInstruction, validStakePublicKeys)
 
 	allCommitteeValidatorCandidate := []string{}
-	if len(shardInstruction.stopAutoStakeInstructions) != 0 || len(shardInstruction.unstakeInstructions) != 0 {
+	if len(shardInstruction.stopAutoStakeInstructions) != 0 || len(shardInstruction.unstakeInstructions) != 0 ||
+		len(shardInstruction.stakeInstructions) != 0 {
 		allCommitteeValidatorCandidate = curView.getAllCommitteeValidatorCandidateFlattenList()
 	}
+
+	shardInstruction, duplicateKeyStakeInstruction = curView.
+		processStakeInstructionFromShardBlock(shardInstruction, validStakePublicKeys, allCommitteeValidatorCandidate)
 
 	shardInstruction = curView.processStopAutoStakeInstructionFromShardBlock(shardInstruction, allCommitteeValidatorCandidate)
 	shardInstruction = curView.processUnstakeInstructionFromShardBlock(
@@ -478,7 +480,7 @@ func (curView *BeaconBestState) GenerateInstruction(
 	}
 
 	// Finish Sync Instructions
-	for _, finishSyncInstruction := range curView.finishSyncManager.Instructions() {
+	for _, finishSyncInstruction := range curView.FinishSyncManager.Instructions() {
 		if !finishSyncInstruction.IsEmpty() {
 			instructions = append(instructions, finishSyncInstruction.ToString())
 		}
@@ -585,7 +587,7 @@ func (beaconBestState *BeaconBestState) preProcessInstructionsFromShardBlock(ins
 }
 
 func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
-	shardInstructions *shardInstruction, validStakePublicKeys []string) (
+	shardInstructions *shardInstruction, validStakePublicKeys []string, allCommitteeValidatorCandidate []string) (
 	*shardInstruction, *duplicateKeyStakeInstruction) {
 
 	duplicateKeyStakeInstruction := &duplicateKeyStakeInstruction{}
@@ -608,6 +610,7 @@ func (beaconBestState *BeaconBestState) processStakeInstructionFromShardBlock(
 		tempStakePublicKey = beaconBestState.GetValidStakers(tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(stakeShardPublicKeys, tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(validStakePublicKeys, tempStakePublicKey)
+		tempStakePublicKey = common.GetValidStaker(allCommitteeValidatorCandidate, tempStakePublicKey)
 
 		if len(tempStakePublicKey) > 0 {
 			stakeShardPublicKeys = append(stakeShardPublicKeys, tempStakePublicKey...)

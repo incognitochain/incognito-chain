@@ -531,7 +531,7 @@ func (blockchain *BlockChain) RestoreBeaconViews() error {
 				return err
 			}
 		}
-		beaconState.finishSyncManager = finishsync2.NewFinishManager()
+		beaconState.FinishSyncManager = *finishsync2.NewFinishManager()
 	}
 	return nil
 }
@@ -978,13 +978,11 @@ func (blockchain *BlockChain) AddFinishedSyncValidators(committeePublicKeys []st
 	for _, view := range blockchain.BeaconChain.multiView.GetAllViewsWithBFS() {
 		beaconView := view.(*BeaconBestState)
 		syncPool, _ := incognitokey.CommitteeKeyListToString(beaconView.beaconCommitteeState.GetSyncingValidators()[shardID])
-		go func(syncPool []string) {
-			beaconView.finishSyncManager.AddFinishedSyncValidators(
-				committeePublicKeys,
-				syncPool,
-				shardID,
-			)
-		}(syncPool)
+		beaconView.FinishSyncManager.AddFinishedSyncValidators(
+			committeePublicKeys,
+			syncPool,
+			shardID,
+		)
 	}
 }
 

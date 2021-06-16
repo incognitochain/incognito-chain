@@ -239,7 +239,7 @@ func TestFinishSyncManager_AddFinishedSyncValidators(t *testing.T) {
 			},
 		},
 		{
-			name: "Add > 1 validator 1 shard, some duplicate in finishedSyncValidators",
+			name: "Add > 1 validator 1 shard, some duplicate in FinishedSyncValidators",
 			fields: fields{
 				finishedSyncValidators: map[byte]map[string]bool{
 					0: map[string]bool{
@@ -262,7 +262,7 @@ func TestFinishSyncManager_AddFinishedSyncValidators(t *testing.T) {
 			},
 		},
 		{
-			name: "Add > 1 validator 1 shard, some not in sync pool, some duplicate in finishedSyncValidators",
+			name: "Add > 1 validator 1 shard, some not in sync pool, some duplicate in FinishedSyncValidators",
 			fields: fields{
 				finishedSyncValidators: map[byte]map[string]bool{
 					0: map[string]bool{
@@ -286,7 +286,7 @@ func TestFinishSyncManager_AddFinishedSyncValidators(t *testing.T) {
 			},
 		},
 		{
-			name: "Add > 1 validator 1 shard (data > 1 shard), some not in sync pool, some duplicate in finishedSyncValidators",
+			name: "Add > 1 validator 1 shard (data > 1 shard), some not in sync pool, some duplicate in FinishedSyncValidators",
 			fields: fields{
 				finishedSyncValidators: map[byte]map[string]bool{
 					0: map[string]bool{
@@ -325,12 +325,12 @@ func TestFinishSyncManager_AddFinishedSyncValidators(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			manager := &FinishSyncManager{
-				finishedSyncValidators: tt.fields.finishedSyncValidators,
+				FinishedSyncValidators: tt.fields.finishedSyncValidators,
 				mu:                     tt.fields.mu,
 			}
 			manager.AddFinishedSyncValidators(tt.args.newFinishedSyncValidators, tt.args.syncPool, tt.args.shardID)
-			if !reflect.DeepEqual(manager.finishedSyncValidators, tt.fieldsAfterProcess) {
-				t.Errorf("AddFinishedSyncValidators() = %v, want %v", manager.finishedSyncValidators, tt.fieldsAfterProcess)
+			if !reflect.DeepEqual(manager.FinishedSyncValidators, tt.fieldsAfterProcess) {
+				t.Errorf("AddFinishedSyncValidators() = %v, want %v", manager.FinishedSyncValidators, tt.fieldsAfterProcess)
 			}
 		})
 	}
@@ -501,12 +501,12 @@ func TestFinishSyncManager_RemoveValidators(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			manager := &FinishSyncManager{
-				finishedSyncValidators: tt.fields.finishedSyncValidators,
+				FinishedSyncValidators: tt.fields.finishedSyncValidators,
 				mu:                     tt.fields.mu,
 			}
 			manager.RemoveValidators(tt.args.validators, tt.args.shardID)
-			if !reflect.DeepEqual(manager.finishedSyncValidators, tt.fieldsAfterProcess) {
-				t.Errorf("AddFinishedSyncValidators() = %v, want %v", manager.finishedSyncValidators, tt.fieldsAfterProcess)
+			if !reflect.DeepEqual(manager.FinishedSyncValidators, tt.fieldsAfterProcess) {
+				t.Errorf("AddFinishedSyncValidators() = %v, want %v", manager.FinishedSyncValidators, tt.fieldsAfterProcess)
 			}
 		})
 	}
@@ -607,7 +607,7 @@ func TestFinishSyncManager_Instructions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			manager := &FinishSyncManager{
-				finishedSyncValidators: tt.fields.finishedSyncValidators,
+				FinishedSyncValidators: tt.fields.finishedSyncValidators,
 				mu:                     tt.fields.mu,
 			}
 			got := manager.Instructions()

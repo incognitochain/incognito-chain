@@ -646,7 +646,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 		}
 	}
 
-	beaconBestState.finishSyncManager = finishsync2.NewFinishManager()
+	beaconBestState.FinishSyncManager = *finishsync2.NewFinishManager()
 	beaconBestState.Epoch = 1
 
 	return nil
