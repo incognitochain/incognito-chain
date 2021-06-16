@@ -20,6 +20,7 @@ func Test_PortalV4() {
 		Network: devframework.ID_TESTNET,
 		ResetDB: true,
 	})
+	config.Config().LimitFee = 0
 	config.Param().ActiveShards = 2
 	config.Param().BCHeightBreakPointNewZKP = 1
 	config.Param().BeaconHeightBreakPointBurnAddr = 2
