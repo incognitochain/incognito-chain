@@ -129,10 +129,13 @@ func (a actorV2) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 func (a *actorV2) Stop() error {
 	if a.isStarted {
 		a.logger.Info("stop bls-bftv3 consensus for chain", a.chainKey)
-		a.isStarted = false
-		a.destroyCh <- struct{}{}
 	}
-	return NewConsensusError(ConsensusAlreadyStoppedError, errors.New(a.chainKey))
+	a.isStarted = false
+	return nil
+}
+
+func (a *actorV2) Destroy() {
+	a.destroyCh <- struct{}{}
 }
 
 func (a actorV2) IsStarted() bool {

@@ -20,6 +20,7 @@ type Actor interface {
 	Start() error
 	// Stop - stop consensus
 	Stop() error
+	Destroy()
 	// IsOngoing - check whether consensus is currently voting on a block
 	IsStarted() bool
 	// ProcessBFTMsg - process incoming BFT message

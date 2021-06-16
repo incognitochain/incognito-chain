@@ -769,3 +769,7 @@ func (actorV1 *actorV1) initRoundData() {
 	actorV1.UpdateCommitteeBLSList()
 	actorV1.setState(newround)
 }
+
+func (actorV1) Destroy() {
+
+}
