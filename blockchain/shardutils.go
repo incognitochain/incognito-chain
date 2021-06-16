@@ -391,6 +391,13 @@ func updateCommiteesWithAddedAndRemovedListValidator(
 	return newShardPendingValidator, nil
 }
 
+func UpdateTxEnvWithSView(sView *ShardBestState, tx metadata.Transaction) metadata.ValidationEnviroment {
+	valEnv := transaction.WithShardHeight(tx.GetValidationEnv(), sView.GetHeight())
+	valEnv = transaction.WithBeaconHeight(valEnv, sView.GetBeaconHeight())
+	valEnv = transaction.WithConfirmedTime(valEnv, sView.GetBlockTime())
+	return valEnv
+}
+
 func calHashTxTokenDataHashList() common.Hash {
 	return common.HashH([]byte(""))
 }
