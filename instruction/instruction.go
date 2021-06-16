@@ -2,6 +2,7 @@ package instruction
 
 import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/pkg/errors"
 )
 
@@ -94,4 +95,9 @@ func ValidateAndImportInstructionFromString(inst []string) (
 		return stopAutoStakeInstruction, nil
 	}
 	return nil, nil
+}
+
+func InstructionFromTransaction(txMetadata metadata.Metadata) []string {
+	// TODO: @tin fill here with pde instruction and action
+	return []string{}
 }

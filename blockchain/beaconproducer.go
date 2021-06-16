@@ -80,7 +80,6 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	portalParams := portal.GetPortalParams()
 	allShardBlocks := blockchain.GetShardBlockForBeaconProducer(copiedCurView.BestShardHeight)
 
-
 	instructions, shardStates, err := blockchain.GenerateBeaconBlockBody(
 		newBeaconBlock,
 		copiedCurView,
@@ -286,7 +285,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 		shardBlock.Header.CrossShardBitMap,
 	)
 	instructions, err := CreateShardInstructionsFromTransactionAndInstruction(
-		shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height)
+		shardBlock.Body.Transactions, blockchain, shardID, shardBlock.Header.Height, shardBlock.Header.BeaconHeight)
 	instructions = append(instructions, shardBlock.Body.Instructions...)
 
 	shardInstruction := curView.preProcessInstructionsFromShardBlock(instructions, shardID)
@@ -324,7 +323,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(
 	bridgeInstructions = append(bridgeInstructions, bridgeInstructionForBlock...)
 
 	// Collect stateful actions
-	statefulActions := blockchain.collectStatefulActions(instructions)
+	statefulActions := collectStatefulActions(instructions)
 	Logger.log.Infof("Becon Produce: Got Shard Block %+v Shard %+v \n", shardBlock.Header.Height, shardID)
 
 	return shardStates, shardInstruction, duplicateKeyStakeInstruction, bridgeInstructions, acceptedRewardInstructions, statefulActions
@@ -371,7 +370,6 @@ func (curView *BeaconBestState) GenerateInstruction(
 			instructions = append(instructions, tempSwapInstruction.ToString())
 		}
 	}
-
 
 	// Random number for Assign Instruction
 	if blockchain.IsGreaterThanRandomTime(newBeaconHeight) && !curView.IsGetRandomNumber {

@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+	pCommon "github.com/incognitochain/incognito-chain/portal/portalv3/common"
 
 	"github.com/incognitochain/incognito-chain/config"
 
@@ -283,7 +284,7 @@ func (blockchain *BlockChain) NewBlockShard(curView *ShardBestState,
 	if err != nil {
 		return nil, err
 	}
-	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height)
+	txInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(newShardBlock.Body.Transactions, blockchain, shardID, newShardBlock.Header.Height, newShardBlock.Header.BeaconHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -883,7 +884,10 @@ func (blockchain *BlockChain) preProcessInstructionFromBeacon(
 
 // CreateShardInstructionsFromTransactionAndInstruction create inst from transactions in shard block
 func CreateShardInstructionsFromTransactionAndInstruction(
-	transactions []metadata.Transaction, bc *BlockChain, shardID byte, shardHeight uint64) (instructions [][]string, err error) {
+	transactions []metadata.Transaction,
+	bc *BlockChain, shardID byte,
+	shardHeight, beaconHeight uint64,
+) (instructions [][]string, err error) {
 	// Generate stake action
 	stakeShardPublicKey := []string{}
 	stakeShardTxID := []string{}
@@ -895,12 +899,14 @@ func CreateShardInstructionsFromTransactionAndInstruction(
 	for _, tx := range transactions {
 		metadataValue := tx.GetMetadata()
 		if metadataValue != nil {
-			actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
-			Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
-			if err == nil {
-				instructions = append(instructions, actionPairs...)
-			} else {
-				Logger.log.Errorf("Build Request Action Error %+v", err)
+			if beaconHeight < config.Param().PDEV3Height || !bc.IsPDETx(metadataValue) {
+				actionPairs, err := metadataValue.BuildReqActions(tx, bc, nil, bc.BeaconChain.GetFinalView().(*BeaconBestState), shardID, shardHeight)
+				Logger.log.Infof("Build Request Action Pairs %+v, metadata value %+v", actionPairs, metadataValue)
+				if err == nil {
+					instructions = append(instructions, actionPairs...)
+				} else {
+					Logger.log.Errorf("Build Request Action Error %+v", err)
+				}
 			}
 		}
 		switch tx.GetMetadataType() {

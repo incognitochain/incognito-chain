@@ -3,8 +3,9 @@ package rpcserver
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"strconv"
+
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 
 	"github.com/incognitochain/incognito-chain/incdb"
 
@@ -238,6 +239,7 @@ func extractInstsFromShardBlock(
 		bc,
 		shardBlock.Header.ShardID,
 		shardBlock.Header.Height,
+		shardBlock.Header.BeaconHeight,
 	)
 	if err != nil {
 		return nil, err

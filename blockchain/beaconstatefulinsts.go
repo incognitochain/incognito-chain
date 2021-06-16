@@ -18,7 +18,7 @@ import (
 )
 
 // build instructions at beacon chain before syncing to shards
-func (blockchain *BlockChain) collectStatefulActions(
+func collectStatefulActions(
 	shardBlockInstructions [][]string,
 ) [][]string {
 	// stateful instructions are dependently processed with results of instructioins before them in shards2beacon blocks
@@ -158,7 +158,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 			switch metaType {
 			case metadata.InitTokenRequestMeta:
 				newInst, err = blockchain.buildInstructionsForTokenInitReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
-
 			case metadata.IssuingRequestMeta:
 				newInst, err = blockchain.buildInstructionsForIssuingReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
 			case metadata.IssuingETHRequestMeta:

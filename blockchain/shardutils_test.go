@@ -1,9 +1,10 @@
 package blockchain
 
 import (
-	"github.com/incognitochain/incognito-chain/multiview"
 	"reflect"
 	"testing"
+
+	"github.com/incognitochain/incognito-chain/multiview"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -41,6 +42,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 		bc           *BlockChain
 		shardID      byte
 		shardHeight  uint64
+		beaconHeight uint64
 	}
 
 	validTxHash := []*common.Hash{}
@@ -296,7 +298,7 @@ func TestCreateShardInstructionsFromTransactionAndInstruction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(tt.args.transactions, tt.args.bc, tt.args.shardID, tt.args.shardHeight)
+			gotInstructions, err := CreateShardInstructionsFromTransactionAndInstruction(tt.args.transactions, tt.args.bc, tt.args.shardID, tt.args.shardHeight, tt.args.beaconHeight)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateShardInstructionsFromTransactionAndInstruction() error = %v, wantErr %v", err, tt.wantErr)
 				return

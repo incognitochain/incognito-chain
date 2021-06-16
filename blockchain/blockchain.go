@@ -111,8 +111,8 @@ func (blockchain *BlockChain) Init(config *Config) error {
 	}
 	blockchain.cQuitSync = make(chan struct{})
 
-	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb!=nil)
-	if EnableIndexingCoinByOTAKey{
+	EnableIndexingCoinByOTAKey = (config.OutcoinByOTAKeyDb != nil)
+	if EnableIndexingCoinByOTAKey {
 		var err error
 		outcoinIndexer, err = txutils.NewOutcoinReindexer(*config.OutcoinByOTAKeyDb)
 		return err
@@ -385,7 +385,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 	assetTags := make([][]byte, 0)
 	// these coins either all have asset tags or none does
 	var hasAssetTags bool = true
-	for i:=0;i<numOutputs;i++{
+	for i := 0; i < numOutputs; i++ {
 		idx, _ := common.RandBigIntMaxRange(lenOTA)
 		coinBytes, err := statedb.GetOTACoinByIndex(db, *tokenID, idx.Uint64(), shardID)
 		if err != nil {
@@ -393,7 +393,7 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		}
 		coinDB := new(coin.CoinV2)
 		if err := coinDB.SetBytes(coinBytes); err != nil {
-			return nil, nil, nil, nil , err
+			return nil, nil, nil, nil, err
 		}
 		publicKey := coinDB.GetPublicKey()
 		commitment := coinDB.GetCommitment()
@@ -402,11 +402,11 @@ func (blockchain BlockChain) RandomCommitmentsAndPublicKeysProcess(numOutputs in
 		publicKeys = append(publicKeys, publicKey.ToBytesS())
 		commitments = append(commitments, commitment.ToBytesS())
 
-		if hasAssetTags{
+		if hasAssetTags {
 			assetTag := coinDB.GetAssetTag()
-			if assetTag!=nil{
+			if assetTag != nil {
 				assetTags = append(assetTags, assetTag.ToBytesS())
-			}else{
+			} else {
 				hasAssetTags = false
 			}
 		}
@@ -1021,4 +1021,35 @@ func (blockchain *BlockChain) GetPoolManager() *txpool.PoolManager {
 
 func (blockchain *BlockChain) UsingNewPool() bool {
 	return blockchain.config.usingNewPool
+}
+
+func (blockchain *BlockChain) IsPDETx(txMetadata metadata.Metadata) bool {
+	switch txMetadata.GetType() {
+	case metadata.PDEContributionMeta:
+		return true
+	case metadata.PDETradeRequestMeta:
+		return true
+	case metadata.PDETradeResponseMeta:
+		return true
+	case metadata.PDEWithdrawalRequestMeta:
+		return true
+	case metadata.PDEWithdrawalResponseMeta:
+		return true
+	case metadata.PDEContributionResponseMeta:
+		return true
+	case metadata.PDEPRVRequiredContributionRequestMeta:
+		return true
+	case metadata.PDECrossPoolTradeRequestMeta:
+		return true
+	case metadata.PDECrossPoolTradeResponseMeta:
+		return true
+	case metadata.PDEFeeWithdrawalRequestMeta:
+		return true
+	case metadata.PDEFeeWithdrawalResponseMeta:
+		return true
+	case metadata.PDETradingFeesDistributionMeta:
+		return true
+	default:
+		return false
+	}
 }
