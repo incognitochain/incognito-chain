@@ -16,7 +16,7 @@ const (
 	SPLITTER                       = ","
 	TRUE                           = "true"
 	FALSE                          = "false"
-	FINISH_SYNC_ACTION             = "finish_sync"
+	FINISH_SYNC_ACTION             = "finishsync"
 	ACCEPT_BLOCK_REWARD_V3_ACTION  = "accept_block_reward_v3"
 	SHARD_RECEIVE_REWARD_V3_ACTION = "shard_receive_reward_v3"
 

@@ -18,11 +18,9 @@ import (
 )
 
 type Engine struct {
-	bftProcess             map[int]blsbft.Actor          // chainID -> consensus
-	validators             []*consensus.Validator        // list of validator
-	syncingValidators      map[int][]consensus.Validator // syncing validators
-	syncingValidatorsIndex map[string]int                // syncing validators index
-	version                map[int]int                   // chainID -> version
+	bftProcess map[int]blsbft.Actor   // chainID -> consensus
+	validators []*consensus.Validator // list of validator
+	version    map[int]int            // chainID -> version
 
 	consensusName string
 	config        *EngineConfig
@@ -64,7 +62,6 @@ func (engine *Engine) GetOneValidator() *consensus.Validator {
 
 func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensus.Validator {
 	chainValidator := make(map[int]*consensus.Validator)
-	syncingValidators := make(map[int]*consensus.Validator)
 	role := ""
 	layer := ""
 	chainID := -2
@@ -89,18 +86,6 @@ func (engine *Engine) GetOneValidatorForEachConsensusProcess() map[int]*consensu
 					layer = validator.State.Layer
 				}
 
-				//TODO: @hung how a node in validator.State.Role == common.syncrole but not added to sync validator list
-				if _, ok = syncingValidators[validator.State.ChainID]; !ok {
-					if validator.State.Role == common.SyncingRole {
-						Logger.Log.Info("[SoH] debug validator.State.Role == common.SyncingRole",
-							chainValidator, pubkey, role, chainID, layer)
-						chainValidator[validator.State.ChainID] = validator
-						pubkey = validator.MiningKey.GetPublicKeyBase58()
-						role = validator.State.Role
-						chainID = validator.State.ChainID
-						layer = validator.State.Layer
-					}
-				}
 			} else {
 				if role == "" { //role not set, and userkey in waiting role
 					role = validator.State.Role
@@ -204,11 +189,9 @@ func (engine *Engine) WatchCommitteeChange() {
 func NewConsensusEngine() *Engine {
 	Logger.Log.Infof("CONSENSUS: NewConsensusEngine")
 	engine := &Engine{
-		bftProcess:             make(map[int]blsbft.Actor),
-		syncingValidators:      make(map[int][]consensus.Validator),
-		syncingValidatorsIndex: make(map[string]int),
-		consensusName:          common.BlsConsensus,
-		version:                make(map[int]int),
+		bftProcess:    make(map[int]blsbft.Actor),
+		consensusName: common.BlsConsensus,
+		version:       make(map[int]int),
 	}
 	return engine
 }

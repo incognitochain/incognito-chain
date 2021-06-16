@@ -35,7 +35,7 @@ const (
 	CmdMsgCheckResp = "msgcheckresp"
 
 	// validator state messages
-	CmdMsgFinishSync = "finish_sync"
+	CmdMsgFinishSync = "finishsync"
 )
 
 // Interface for message wire on P2P network

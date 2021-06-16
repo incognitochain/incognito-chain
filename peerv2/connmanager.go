@@ -88,7 +88,15 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 }
 
 func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
-	publishable := []string{wire.CmdPeerState, wire.CmdBlockShard, wire.CmdCrossShard, wire.CmdBFT, wire.CmdTx, wire.CmdPrivacyCustomToken}
+	publishable := []string{
+		wire.CmdPeerState,
+		wire.CmdBlockShard,
+		wire.CmdCrossShard,
+		wire.CmdBFT,
+		wire.CmdTx,
+		wire.CmdPrivacyCustomToken,
+		wire.CmdMsgFinishSync,
+	}
 	msgType := msg.MessageType()
 	subs := cm.Subscriber.GetMsgToTopics()
 	for _, p := range publishable {

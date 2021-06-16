@@ -221,7 +221,6 @@ func (s *ShardSyncProcess) syncShardProcess() {
 
 		if requestCnt > 0 {
 			s.isCatchUp = false
-			// s.syncShardProcess()
 		} else {
 			if len(s.shardPeerState) > 0 {
 				s.isCatchUp = true
