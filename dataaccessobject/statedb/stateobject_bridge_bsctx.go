@@ -12,12 +12,12 @@ type BridgeBSCTxState struct {
 	uniqueBSCTx []byte
 }
 
-func (BSCtx BridgeBSCTxState) UniqueBSCTx() []byte {
-	return BSCtx.uniqueBSCTx
+func (bscTx BridgeBSCTxState) UniqueBSCTx() []byte {
+	return bscTx.uniqueBSCTx
 }
 
-func (BSCtx *BridgeBSCTxState) SetUniqueBSCTx(uniqueBSCTx []byte) {
-	BSCtx.uniqueBSCTx = uniqueBSCTx
+func (bscTx *BridgeBSCTxState) SetUniqueBSCTx(uniqueBSCTx []byte) {
+	bscTx.uniqueBSCTx = uniqueBSCTx
 }
 
 func NewBridgeBSCTxState() *BridgeBSCTxState {
@@ -28,11 +28,11 @@ func NewBridgeBSCTxStateWithValue(uniqueBSCTx []byte) *BridgeBSCTxState {
 	return &BridgeBSCTxState{uniqueBSCTx: uniqueBSCTx}
 }
 
-func (BSCtx BridgeBSCTxState) MarshalJSON() ([]byte, error) {
+func (bscTx BridgeBSCTxState) MarshalJSON() ([]byte, error) {
 	data, err := json.Marshal(struct {
 		UniqueBSCTx []byte
 	}{
-		UniqueBSCTx: BSCtx.uniqueBSCTx,
+		UniqueBSCTx: bscTx.uniqueBSCTx,
 	})
 	if err != nil {
 		return []byte{}, err
@@ -40,7 +40,7 @@ func (BSCtx BridgeBSCTxState) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (BSCtx *BridgeBSCTxState) UnmarshalJSON(data []byte) error {
+func (bscTx *BridgeBSCTxState) UnmarshalJSON(data []byte) error {
 	temp := struct {
 		UniqueBSCTx []byte
 	}{}
@@ -48,7 +48,7 @@ func (BSCtx *BridgeBSCTxState) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	BSCtx.uniqueBSCTx = temp.UniqueBSCTx
+	bscTx.uniqueBSCTx = temp.UniqueBSCTx
 	return nil
 }
 
@@ -113,22 +113,22 @@ func GenerateBridgeBSCTxObjectKey(uniqueBSCTx []byte) common.Hash {
 	return common.BytesToHash(append(prefixHash, valueHash[:][:prefixKeyLength]...))
 }
 
-func (BSCtx BridgeBSCTxObject) GetVersion() int {
-	return BSCtx.version
+func (bscTx BridgeBSCTxObject) GetVersion() int {
+	return bscTx.version
 }
 
 // setError remembers the first non-nil error it is called with.
-func (BSCtx *BridgeBSCTxObject) SetError(err error) {
-	if BSCtx.dbErr == nil {
-		BSCtx.dbErr = err
+func (bscTx *BridgeBSCTxObject) SetError(err error) {
+	if bscTx.dbErr == nil {
+		bscTx.dbErr = err
 	}
 }
 
-func (BSCtx BridgeBSCTxObject) GetTrie(db DatabaseAccessWarper) Trie {
-	return BSCtx.trie
+func (bscTx BridgeBSCTxObject) GetTrie(db DatabaseAccessWarper) Trie {
+	return bscTx.trie
 }
 
-func (BSCtx *BridgeBSCTxObject) SetValue(data interface{}) error {
+func (bscTx *BridgeBSCTxObject) SetValue(data interface{}) error {
 	var newBridgeBSCTxState = NewBridgeBSCTxState()
 	var ok bool
 	var dataBytes []byte
@@ -143,16 +143,16 @@ func (BSCtx *BridgeBSCTxObject) SetValue(data interface{}) error {
 			return fmt.Errorf("%+v, got type %+v", ErrInvalidBridgeBSCTxStateType, reflect.TypeOf(data))
 		}
 	}
-	BSCtx.bridgeBSCTxState = newBridgeBSCTxState
+	bscTx.bridgeBSCTxState = newBridgeBSCTxState
 	return nil
 }
 
-func (BSCtx BridgeBSCTxObject) GetValue() interface{} {
-	return BSCtx.bridgeBSCTxState
+func (bscTx BridgeBSCTxObject) GetValue() interface{} {
+	return bscTx.bridgeBSCTxState
 }
 
-func (BSCtx BridgeBSCTxObject) GetValueBytes() []byte {
-	data := BSCtx.GetValue()
+func (bscTx BridgeBSCTxObject) GetValueBytes() []byte {
+	data := bscTx.GetValue()
 	value, err := json.Marshal(data)
 	if err != nil {
 		panic("failed to marshal bridge BSC tx state")
@@ -160,30 +160,30 @@ func (BSCtx BridgeBSCTxObject) GetValueBytes() []byte {
 	return value
 }
 
-func (BSCtx BridgeBSCTxObject) GetHash() common.Hash {
-	return BSCtx.bridgeBSCTxHash
+func (bscTx BridgeBSCTxObject) GetHash() common.Hash {
+	return bscTx.bridgeBSCTxHash
 }
 
-func (BSCtx BridgeBSCTxObject) GetType() int {
-	return BSCtx.objectType
+func (bscTx BridgeBSCTxObject) GetType() int {
+	return bscTx.objectType
 }
 
 // MarkDelete will delete an object in trie
-func (BSCtx *BridgeBSCTxObject) MarkDelete() {
-	BSCtx.deleted = true
+func (bscTx *BridgeBSCTxObject) MarkDelete() {
+	bscTx.deleted = true
 }
 
-func (BSCtx *BridgeBSCTxObject) Reset() bool {
-	BSCtx.bridgeBSCTxState = NewBridgeBSCTxState()
+func (bscTx *BridgeBSCTxObject) Reset() bool {
+	bscTx.bridgeBSCTxState = NewBridgeBSCTxState()
 	return true
 }
 
-func (BSCtx BridgeBSCTxObject) IsDeleted() bool {
-	return BSCtx.deleted
+func (bscTx BridgeBSCTxObject) IsDeleted() bool {
+	return bscTx.deleted
 }
 
 // value is either default or nil
-func (BSCtx BridgeBSCTxObject) IsEmpty() bool {
+func (bscTx BridgeBSCTxObject) IsEmpty() bool {
 	temp := NewBridgeBSCTxState()
-	return reflect.DeepEqual(temp, BSCtx.bridgeBSCTxState) || BSCtx.bridgeBSCTxState == nil
+	return reflect.DeepEqual(temp, bscTx.bridgeBSCTxState) || bscTx.bridgeBSCTxState == nil
 }
