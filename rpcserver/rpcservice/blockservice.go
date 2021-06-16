@@ -929,39 +929,6 @@ func (blockService BlockService) GetBurningConfirm(txID common.Hash) (uint64, bo
 	return 0, false, fmt.Errorf("Get Burning Confirm of TxID %+v not found", txID)
 }
 
-func (blockService BlockService) GetBSCBridgeReqWithStatus(txID string) (byte, error) {
-	txIDHash, err := common.Hash{}.NewHashFromStr(txID)
-	if err != nil {
-		return byte(0), err
-	}
-	status := byte(common.BridgeRequestNotFoundStatus)
-	for _, i := range blockService.BlockChain.GetShardIDs() {
-		shardID := byte(i)
-		bridgeStateDB := blockService.BlockChain.GetBestStateShard(shardID).GetCopiedFeatureStateDB()
-		newStatus, err := statedb.GetBridgeReqWithStatus(bridgeStateDB, *txIDHash)
-		if err != nil {
-			return status, err
-		}
-		if newStatus == byte(common.BridgeRequestProcessingStatus) {
-			status = newStatus
-		}
-		if newStatus == byte(common.BridgeRequestAcceptedStatus) {
-			return newStatus, nil
-		}
-	}
-	if status == common.BridgeRequestNotFoundStatus || status == common.BridgeRequestProcessingStatus {
-		bridgeStateDB := blockService.BlockChain.GetBeaconBestState().GetBeaconFeatureStateDB()
-		bStatus, err := statedb.GetBridgeReqWithStatus(bridgeStateDB, *txIDHash)
-		if err != nil {
-			return bStatus, err
-		}
-		if bStatus == common.BridgeRequestRejectedStatus {
-			return bStatus, nil
-		}
-	}
-	return status, nil
-}
-
 func (blockService BlockService) CheckBSCHashIssued(data map[string]interface{}) (bool, error) {
 	blockHashParam, ok := data["BlockHash"].(string)
 	if !ok {

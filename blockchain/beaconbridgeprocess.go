@@ -43,9 +43,11 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 		case strconv.Itoa(metadata.ContractingRequestMeta):
 			updatingInfoByTokenID, err = blockchain.processContractingReq(bridgeStateDB, inst, updatingInfoByTokenID)
 
-		case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2), strconv.Itoa(metadata.BurningBSCConfirmMeta):
-			updatingInfoByTokenID, err = blockchain.processBurningReq(bridgeStateDB, inst, updatingInfoByTokenID)
+		case strconv.Itoa(metadata.BurningConfirmMeta), strconv.Itoa(metadata.BurningConfirmForDepositToSCMeta), strconv.Itoa(metadata.BurningConfirmMetaV2), strconv.Itoa(metadata.BurningConfirmForDepositToSCMetaV2):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(bridgeStateDB, inst, updatingInfoByTokenID, "")
 
+		case strconv.Itoa(metadata.BurningBSCConfirmMeta):
+			updatingInfoByTokenID, err = blockchain.processBurningReq(bridgeStateDB, inst, updatingInfoByTokenID, common.BSCPrefix)
 		}
 		if err != nil {
 			return err
@@ -77,7 +79,7 @@ func (blockchain *BlockChain) processBridgeInstructions(bridgeStateDB *statedb.S
 	return nil
 }
 
-func (blockchain *BlockChain) processIssuingBridgeReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo, insertETHTxHashIssued func(*statedb.StateDB, []byte) error) (map[common.Hash]metadata.UpdatingInfo, error) {
+func (blockchain *BlockChain) processIssuingBridgeReq(bridgeStateDB *statedb.StateDB, instruction []string, updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo, insertEVMTxHashIssued func(*statedb.StateDB, []byte) error) (map[common.Hash]metadata.UpdatingInfo, error) {
 	if len(instruction) != 4 {
 		return updatingInfoByTokenID, nil // skip the instruction
 	}
@@ -104,9 +106,9 @@ func (blockchain *BlockChain) processIssuingBridgeReq(bridgeStateDB *statedb.Sta
 		Logger.log.Warn("WARNING: an error occured while unmarshaling accepted issuance instruction: ", err)
 		return updatingInfoByTokenID, nil
 	}
-	err = insertETHTxHashIssued(bridgeStateDB, issuingEVMAcceptedInst.UniqTx)
+	err = insertEVMTxHashIssued(bridgeStateDB, issuingEVMAcceptedInst.UniqTx)
 	if err != nil {
-		Logger.log.Warn("WARNING: an error occured while inserting ETH tx hash issued to leveldb: ", err)
+		Logger.log.Warn("WARNING: an error occured while inserting EVM tx hash issued to leveldb: ", err)
 		return updatingInfoByTokenID, nil
 	}
 	updatingInfo, found := updatingInfoByTokenID[issuingEVMAcceptedInst.IncTokenID]
@@ -221,6 +223,7 @@ func (blockchain *BlockChain) processBurningReq(
 	bridgeStateDB *statedb.StateDB,
 	instruction []string,
 	updatingInfoByTokenID map[common.Hash]metadata.UpdatingInfo,
+	prefix string,
 ) (map[common.Hash]metadata.UpdatingInfo, error) {
 	if len(instruction) < 8 {
 		return updatingInfoByTokenID, nil // skip the instruction
@@ -235,7 +238,7 @@ func (blockchain *BlockChain) processBurningReq(
 	}
 	amt := big.NewInt(0).SetBytes(amountBytes)
 	amount := uint64(0)
-	if bytes.Equal(externalTokenID, rCommon.HexToAddress(common.EthAddrStr).Bytes()) {
+	if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), externalTokenID) {
 		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
 	} else {
 		amount = amt.Uint64()

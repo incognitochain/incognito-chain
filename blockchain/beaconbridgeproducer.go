@@ -102,9 +102,16 @@ func buildBurningConfirmInst(
 		return nil, err
 	}
 
+	if len(tokenID) < common.ExternalBridgeTokenLength {
+		return nil, errors.Wrap(err, "invalid external token id")
+	}
+
 	prefix := ""
 	if burningMetaType == metadata.BurningBSCConfirmMeta {
 		prefix = common.BSCPrefix
+		if len(tokenID) <= common.ExternalBridgeTokenLength || !bytes.Equal([]byte(prefix), tokenID[:3]) {
+			return nil, errors.Wrapf(err, "invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID)
+		}
 	}
 
 	// Convert amount to big.Int to get bytes later
