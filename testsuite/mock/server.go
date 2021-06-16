@@ -4,13 +4,16 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/mempool"
 	"github.com/incognitochain/incognito-chain/peer"
 	"github.com/incognitochain/incognito-chain/wire"
 	peer2 "github.com/libp2p/go-libp2p-peer"
+	"os"
 )
 
 type Server struct {
 	BlockChain *blockchain.BlockChain
+	TxPool     *mempool.TxPool
 }
 
 func (s *Server) PushBlockToAll(block types.BlockInterface, previousValidationData string, isBeacon bool) error {
@@ -52,10 +55,19 @@ func (s *Server) GetMinerIncognitoPublickey(publicKey string, keyType string) []
 }
 
 func (s *Server) OnTx(p *peer.PeerConn, msg *wire.MessageTx) {
-	sid := common.GetShardIDFromLastByte(msg.Transaction.GetSenderAddrLastByte())
-	s.BlockChain.GetChain(int(sid)).(*blockchain.ShardChain).TxPool.GetInbox() <- msg.Transaction
+	if os.Getenv("TXPOOL_VERSION") == "1" {
+		sid := common.GetShardIDFromLastByte(msg.Transaction.GetSenderAddrLastByte())
+		s.BlockChain.GetChain(int(sid)).(*blockchain.ShardChain).TxPool.GetInbox() <- msg.Transaction
+	} else {
+		s.TxPool.MaybeAcceptTransaction(msg.Transaction, int64(s.BlockChain.BeaconChain.GetFinalViewHeight()))
+	}
+
 }
 func (s *Server) OnTxPrivacyToken(p *peer.PeerConn, msg *wire.MessageTxPrivacyToken) {
-	sid := common.GetShardIDFromLastByte(msg.Transaction.GetSenderAddrLastByte())
-	s.BlockChain.GetChain(int(sid)).(*blockchain.ShardChain).TxPool.GetInbox() <- msg.Transaction
+	if os.Getenv("TXPOOL_VERSION") == "1" {
+		sid := common.GetShardIDFromLastByte(msg.Transaction.GetSenderAddrLastByte())
+		s.BlockChain.GetChain(int(sid)).(*blockchain.ShardChain).TxPool.GetInbox() <- msg.Transaction
+	} else {
+		s.TxPool.MaybeAcceptTransaction(msg.Transaction, int64(s.BlockChain.BeaconChain.GetFinalViewHeight()))
+	}
 }

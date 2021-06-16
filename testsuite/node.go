@@ -179,6 +179,7 @@ func (sim *NodeEngine) Init() {
 	sync := syncker.NewSynckerManager()
 	server := mock.Server{
 		BlockChain: &bc,
+		TxPool:     &txpoolV1,
 	}
 	ps := pubsub.NewPubSubManager()
 	fees := make(map[byte]*mempool.FeeEstimator)
