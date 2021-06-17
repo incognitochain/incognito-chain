@@ -59,4 +59,4 @@ geth_param:
   protocol: "https"
   port: ""
 bsc_param:
-  host: ""
+  host: "https://bsc-dataseed.binance.org"
