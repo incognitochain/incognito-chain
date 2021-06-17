@@ -238,19 +238,11 @@ func (gethPram *gethParam) GetFromEnv() {
 }
 
 type bscParam struct {
-	Host     string `mapstructure:"host"`
-	Protocol string `mapstructure:"protocol"`
-	Port     string `mapstructure:"port"`
+	Host string `mapstructure:"host"`
 }
 
 func (bschParam *bscParam) GetFromEnv() {
 	if utils.GetEnv(BSCHostKey, utils.EmptyString) != utils.EmptyString {
 		bschParam.Host = utils.GetEnv(BSCHostKey, utils.EmptyString)
-	}
-	if utils.GetEnv(BSCProtocolKey, utils.EmptyString) != utils.EmptyString {
-		bschParam.Protocol = utils.GetEnv(BSCProtocolKey, utils.EmptyString)
-	}
-	if utils.GetEnv(BSCPortKey, utils.EmptyString) != utils.EmptyString {
-		bschParam.Port = utils.GetEnv(BSCPortKey, utils.EmptyString)
 	}
 }
