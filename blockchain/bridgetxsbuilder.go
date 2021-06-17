@@ -144,7 +144,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 	instructions := [][]string{}
 	var issuingBridgeReqAction *BridgeReqActionInfo
 	var listTxUsed [][]byte
-	var contractAdddress string
+	var contractAddress, prefix string
 	if metaType == metadata.IssuingETHRequestMeta {
 		issuingETHBridgeReqAction, err := metadata.ParseETHIssuingInstContent(contentStr)
 		if err != nil {
@@ -160,7 +160,8 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 			TxReceipt:  issuingETHBridgeReqAction.ETHReceipt,
 		}
 		listTxUsed = ac.UniqETHTxsUsed
-		contractAdddress = config.Param().EthContractAddressStr
+		contractAddress = config.Param().EthContractAddressStr
+		prefix = ""
 	} else if metaType == metadata.IssuingBSCRequestMeta {
 		issuingBSCBridgeReqAction, err := metadata.ParseBSCIssuingInstContent(contentStr)
 		if err != nil {
@@ -176,7 +177,8 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 			TxReceipt:  issuingBSCBridgeReqAction.BSCReceipt,
 		}
 		listTxUsed = ac.UniqBSCTxsUsed
-		contractAdddress = config.Param().BscContractAddressStr
+		contractAddress = config.Param().BscContractAddressStr
+		prefix = common.BSCPrefix
 	} else {
 		return nil, nil
 	}
@@ -215,7 +217,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		return append(instructions, rejectedInst), nil
 	}
 
-	logMap, err := metadata.PickAndParseLogMapFromReceipt(txReceipt, contractAdddress)
+	logMap, err := metadata.PickAndParseLogMapFromReceipt(txReceipt, contractAddress)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while parsing log map from receipt: ", err)
 		return append(instructions, rejectedInst), nil
@@ -234,7 +236,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		Logger.log.Warn("WARNING: could not parse eth token id from log map.")
 		return append(instructions, rejectedInst), nil
 	}
-	token := tokenAddr.Bytes()
+	token := append([]byte(prefix), tokenAddr.Bytes()...)
 	canProcess, err := ac.CanProcessTokenPair(token, issuingBridgeReqAction.IncTokenID)
 	if err != nil {
 		Logger.log.Warn("WARNING: an error occured while checking it can process for token pair on the current block or not: ", err)
@@ -270,7 +272,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBridgeReq(
 		return append(instructions, rejectedInst), nil
 	}
 	amount := uint64(0)
-	if bytes.Equal(rCommon.HexToAddress(common.NativeToken).Bytes(), token) {
+	if bytes.Equal(append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...), token) {
 		// convert amt from wei (10^18) to nano eth (10^9)
 		amount = big.NewInt(0).Div(amt, big.NewInt(1000000000)).Uint64()
 	} else { // ERC20 / BEP20
