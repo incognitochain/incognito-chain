@@ -18,6 +18,7 @@ type IssuingBSCResponse struct {
 	RequestedTxID   common.Hash
 	UniqBSCTx       []byte
 	ExternalTokenID []byte
+	SharedRandom    []byte `json:"SharedRandom,omitempty"`
 }
 
 type IssuingBSCResAction struct {
@@ -66,6 +67,9 @@ func (iRes IssuingBSCResponse) Hash() *common.Hash {
 	record += string(iRes.UniqBSCTx)
 	record += string(iRes.ExternalTokenID)
 	record += iRes.MetadataBase.Hash().String()
+	if iRes.SharedRandom != nil && len(iRes.SharedRandom) > 0 {
+		record += string(iRes.SharedRandom)
+	}
 
 	// final hash
 	hash := common.HashH([]byte(record))
@@ -76,28 +80,27 @@ func (iRes *IssuingBSCResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes IssuingBSCResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes IssuingBSCResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	for i, inst := range insts {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not IssuingBSCRequest instruction
 			continue
 		}
-
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			instMetaType != strconv.Itoa(IssuingBSCRequestMeta) {
 			continue
 		}
 
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			Logger.log.Error("WARNING BSC - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Error("WARNING BSC - VALIDATION: an error occurred while parsing instruction content: ", err)
 			continue
 		}
 		var issuingBSCAcceptedInst IssuingBSCAcceptedInst
 		err = json.Unmarshal(contentBytes, &issuingBSCAcceptedInst)
 		if err != nil {
-			Logger.log.Error("WARNING BSC - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Error("WARNING BSC - VALIDATION: an error occurred while parsing instruction content: ", err)
 			continue
 		}
 
@@ -114,10 +117,12 @@ func (iRes IssuingBSCResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlo
 			Logger.log.Info("WARNING BSC- VALIDATION: an error occured while deserializing receiver address string: ", err)
 			continue
 		}
-		_, pk, paidAmount, assetID := tx.GetTransferData()
-		if !bytes.Equal(key.KeySet.PaymentAddress.Pk[:], pk[:]) ||
-			issuingBSCAcceptedInst.IssuingAmount != paidAmount ||
-			!bytes.Equal(issuingBSCAcceptedInst.IncTokenID[:], assetID[:]) {
+
+		isMinted, mintCoin, coinID, err := tx.GetTxMintData()
+		if err != nil || !isMinted || coinID.String() != issuingBSCAcceptedInst.IncTokenID.String() {
+			continue
+		}
+		if ok := mintCoin.CheckCoinValid(key.KeySet.PaymentAddress, iRes.SharedRandom, issuingBSCAcceptedInst.IssuingAmount); !ok {
 			continue
 		}
 		idx = i
@@ -126,6 +131,10 @@ func (iRes IssuingBSCResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlo
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, errors.New(fmt.Sprintf("no IssuingBSCRequest tx found for IssuingBSCResponse tx %s", tx.Hash().String()))
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *IssuingBSCResponse) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }

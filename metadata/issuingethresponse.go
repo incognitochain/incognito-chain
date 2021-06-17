@@ -18,7 +18,7 @@ type IssuingETHResponse struct {
 	RequestedTxID   common.Hash
 	UniqETHTx       []byte
 	ExternalTokenID []byte
-	SharedRandom       []byte `json:"SharedRandom,omitempty"`
+	SharedRandom    []byte `json:"SharedRandom,omitempty"`
 }
 
 type IssuingETHResAction struct {
@@ -93,13 +93,13 @@ func (iRes IssuingETHResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData
 
 		contentBytes, err := base64.StdEncoding.DecodeString(inst[3])
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Error("WARNING - VALIDATION: an error occurred while parsing instruction content: ", err)
 			continue
 		}
 		var issuingETHAcceptedInst IssuingETHAcceptedInst
 		err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
 		if err != nil {
-			Logger.log.Error("WARNING - VALIDATION: an error occured while parsing instruction content: ", err)
+			Logger.log.Error("WARNING - VALIDATION: an error occurred while parsing instruction content: ", err)
 			continue
 		}
 

@@ -493,7 +493,7 @@ func (httpServer *HttpServer) handleCreateRawTxWithIssuingBSCReq(params interfac
 }
 
 func (httpServer *HttpServer) handleCreateRawTxWithBurningBSCReq(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	return processBurningReqV2(
+	return processBurningReq(
 		metadata.BurningPBSCRequestMeta,
 		params,
 		closeChan,

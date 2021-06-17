@@ -440,7 +440,7 @@ func (blockchain *BlockChain) buildInstructionsForIssuingBSCReq(
 		Logger.log.Warn("WARNING BSC: pair of incognito token id & binance's id is invalid in current block")
 		return append(instructions, rejectedInst), nil
 	}
-	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInAllShards(beaconBestState, md.IncTokenID)
+	privacyTokenExisted, err := blockchain.PrivacyTokenIDExistedInNetwork(beaconBestState, md.IncTokenID)
 	if err != nil {
 		Logger.log.Warn("WARNING BSC: an issue occurred while checking it can process for the incognito token or not: ", err)
 		return append(instructions, rejectedInst), nil
@@ -511,7 +511,7 @@ func (blockGenerator *BlockGenerator) buildBSCIssuanceTx(
 	Logger.log.Info("[Decentralized bridge bsc token issuance] Starting...")
 	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 	if err != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while decoding content string of BSC accepted issuance instruction: ", err)
+		Logger.log.Warn("WARNING BSC: an error occurred while decoding content string of BSC accepted issuance instruction: ", err)
 		return nil, nil
 	}
 	var issuingBSCAcceptedInst metadata.IssuingBSCAcceptedInst
@@ -534,17 +534,6 @@ func (blockGenerator *BlockGenerator) buildBSCIssuanceTx(
 		Amount:         issuingBSCAcceptedInst.IssuingAmount,
 		PaymentAddress: key.KeySet.PaymentAddress,
 	}
-	var propertyID [common.HashSize]byte
-	copy(propertyID[:], issuingBSCAcceptedInst.IncTokenID[:])
-	propID := common.Hash(propertyID)
-	tokenParams := &transaction.CustomTokenPrivacyParamTx{
-		PropertyID:  propID.String(),
-		Amount:      issuingBSCAcceptedInst.IssuingAmount,
-		TokenTxType: transaction.CustomTokenInit,
-		Receiver:    []*privacy.PaymentInfo{receiver},
-		TokenInput:  []*privacy.InputCoin{},
-		Mintable:    true,
-	}
 
 	issuingBSCRes := metadata.NewIssuingBSCResponse(
 		issuingBSCAcceptedInst.TxReqID,
@@ -552,24 +541,18 @@ func (blockGenerator *BlockGenerator) buildBSCIssuanceTx(
 		issuingBSCAcceptedInst.ExternalTokenID,
 		metadata.IssuingBSCResponseMeta,
 	)
-	resTx := &transaction.TxCustomTokenPrivacy{}
-	initErr := resTx.Init(
-		transaction.NewTxPrivacyTokenInitParams(producerPrivateKey,
-			[]*privacy.PaymentInfo{},
-			nil,
-			0,
-			tokenParams,
-			shardView.GetCopiedTransactionStateDB(),
-			issuingBSCRes,
-			false,
-			false,
-			shardID, nil,
-			featureStateDB))
-
-	if initErr != nil {
-		Logger.log.Warn("WARNING BSC: an error occured while initializing response tx: ", initErr)
-		return nil, nil
+	tokenID := issuingBSCAcceptedInst.IncTokenID
+	if tokenID == common.PRVCoinID {
+		Logger.log.Errorf("cannot issue prv in bridge")
+		return nil, errors.New("cannot issue prv in bridge")
 	}
-	Logger.log.Infof("[Decentralized bridge token issuance] Create tx ok: %s", resTx.Hash().String())
-	return resTx, nil
+
+	txParam := transaction.TxSalaryOutputParams{Amount: receiver.Amount, ReceiverAddress: &receiver.PaymentAddress, TokenID: &tokenID}
+	makeMD := func (c privacy.Coin) metadata.Metadata{
+		if c!=nil && c.GetSharedRandom()!=nil{
+			issuingBSCRes.SetSharedRandom(c.GetSharedRandom().ToBytesS())
+		}
+		return issuingBSCRes
+	}
+	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
