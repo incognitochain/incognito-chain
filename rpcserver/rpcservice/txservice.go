@@ -2244,7 +2244,16 @@ func (txService TxService) DecryptOutputCoinByKeyByTransaction(keyParam *incogni
 	if err != nil {
 		// maybe tx is still in tx mempool -> check mempool
 		var errM error
-		tx, errM = txService.TxMemPool.GetTx(txHash)
+		if txService.BlockChain.UsingNewPool() {
+			pM := txService.BlockChain.GetPoolManager()
+			if pM != nil {
+				tx, errM = pM.GetTransactionByHash(txHashStr)
+			} else {
+				errM = errors.New("PoolManager is nil")
+			}
+		} else {
+			tx, errM = txService.TxMemPool.GetTx(txHash)
+		}
 		if errM != nil {
 			return nil, NewRPCError(TxNotExistedInMemAndBLockError, errors.New("Tx is not existed in block or mempool"))
 		}
