@@ -89,6 +89,9 @@ func (blockchain *BlockChain) NewBlockBeacon(
 		return nil, NewBlockChainError(GenerateInstructionError, err)
 	}
 
+	finishSyncInstructions := copiedCurView.generateFinishSyncInstruction()
+	instructions = addFinishInstruction(instructions, finishSyncInstructions)
+
 	newBeaconBlock.Body = types.NewBeaconBody(shardStates, instructions)
 
 	// Process new block with new view
@@ -479,14 +482,44 @@ func (curView *BeaconBestState) GenerateInstruction(
 		instructions = append(instructions, stopAutoStakeInstruction.ToString())
 	}
 
-	// Finish Sync Instructions
+	return instructions, nil
+}
+
+func addFinishInstruction(
+	instructions, res [][]string) [][]string {
+
+	instructions = append(instructions, res...)
+
+	return instructions
+}
+
+func (curView *BeaconBestState) generateFinishSyncInstruction() [][]string {
+
+	instructions := [][]string{}
+
 	for _, finishSyncInstruction := range curView.FinishSyncManager.Instructions() {
 		if !finishSyncInstruction.IsEmpty() {
 			instructions = append(instructions, finishSyncInstruction.ToString())
 		}
 	}
 
-	return instructions, nil
+	return instructions
+}
+
+func (curView *BeaconBestState) filterFinishSyncInstruction(instructions [][]string) ([][]string, [][]string) {
+
+	res := [][]string{}
+	finishSyncInstructions := [][]string{}
+
+	for _, v := range instructions {
+		if v[0] == instruction.FINISH_SYNC_ACTION {
+			finishSyncInstructions = append(finishSyncInstructions, v)
+		} else {
+			res = append(res, v)
+		}
+	}
+
+	return res, finishSyncInstructions
 }
 
 func createBeaconSwapActionForKeyListV2(

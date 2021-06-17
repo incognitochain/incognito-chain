@@ -16,25 +16,25 @@ type FinishSyncManager struct {
 	mu                     *sync.RWMutex
 }
 
-func NewFinishManager() *FinishSyncManager {
+func NewFinishManager() FinishSyncManager {
 	finishedSyncValidators := make(map[byte]map[string]bool)
 	for i := 0; i < common.MaxShardNumber; i++ {
 		finishedSyncValidators[byte(i)] = make(map[string]bool)
 	}
-	return &FinishSyncManager{
+	return FinishSyncManager{
 		FinishedSyncValidators: finishedSyncValidators,
 		mu:                     &sync.RWMutex{},
 	}
 }
 
-func NewFinishManagerWithValue(validators map[byte]map[string]bool) *FinishSyncManager {
-	return &FinishSyncManager{
+func NewFinishManagerWithValue(validators map[byte]map[string]bool) FinishSyncManager {
+	return FinishSyncManager{
 		FinishedSyncValidators: validators,
 		mu:                     &sync.RWMutex{},
 	}
 }
 
-func (manager *FinishSyncManager) Clone() *FinishSyncManager {
+func (manager *FinishSyncManager) Clone() FinishSyncManager {
 
 	manager.mu.RLock()
 	defer manager.mu.RUnlock()
