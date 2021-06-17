@@ -40,6 +40,7 @@ epoch_param:
   random_time: 50
   random_time_v2: 1000000000000
 eth_contract_address: "0x2f6F03F1b43Eab22f7952bd617A24AB46E970dF7"
+bsc_contract_address: ""
 dao_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" # community fund
 centralized_website_payment_address: "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 swap_committee_param:
@@ -68,3 +69,7 @@ geth_param:
   host: "kovan.infura.io/v3/1138a1e99b154b10bae5c382ad894361"
   protocol: "https"
   port: ""
+bsc_param:
+  host: "data-seed-prebsc-1-s1.binance.org"
+  protocol: "https"
+  port: "8545"
