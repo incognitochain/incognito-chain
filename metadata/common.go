@@ -56,7 +56,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	case IssuingETHRequestMeta:
 		md = &IssuingETHRequest{}
 	case IssuingBSCRequestMeta:
-		md = &IssuingETHRequest{}
+		md = &IssuingBSCRequest{}
 	case IssuingETHResponseMeta:
 		md = &IssuingETHResponse{}
 	case IssuingBSCResponseMeta:
