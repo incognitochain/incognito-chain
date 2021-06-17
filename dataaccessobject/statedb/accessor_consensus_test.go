@@ -335,3 +335,248 @@ func TestStoreSlashingCommittee(t *testing.T) {
 		t.Fatalf("epoch %+v, want %+v, got %+v", 4, m4, got4)
 	}
 }
+
+func TestStoreOneShardSubstitutesValidatorV3(t *testing.T) {
+	number := 10
+	limit := 20
+	shardID := byte(0)
+	shardSubstitute := committeePublicKeys[:number]
+	spareIncognitoKey, _ := incognitokey.CommitteeBase58KeyListToStruct(committeePublicKeys[number:limit])
+	wantShardSubstitute1, _ := incognitokey.CommitteeBase58KeyListToStruct(shardSubstitute)
+	rewardReceiver := make(map[string]privacy.PaymentAddress)
+	autoStaking := make(map[string]bool)
+	stakingTx := make(map[string]common.Hash)
+	for index, v := range wantShardSubstitute1 {
+		incPublicKey := v.GetIncKeyBase58()
+		paymentAddress := receiverPaymentAddresses[index]
+		wl, err := wallet.Base58CheckDeserialize(paymentAddress)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rewardReceiver[incPublicKey] = wl.KeySet.PaymentAddress
+		autoStaking[shardSubstitute[index]] = true
+		stakingTx[shardSubstitute[index]] = common.HashH([]byte{0})
+	}
+	sDB, _ := NewWithPrefixTrie(emptyRoot, wrarperDB)
+	err := StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = StoreStakerInfo(sDB, wantShardSubstitute1, rewardReceiver, autoStaking, stakingTx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rootHash, _ := sDB.Commit(true)
+	err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+	if err1 != nil {
+		t.Fatal(err1)
+	}
+
+	gotShardSubstitute1 := GetOneShardSubstituteValidator(sDB, shardID)
+	if !reflect.DeepEqual(gotShardSubstitute1, wantShardSubstitute1) {
+		t.Fatalf("want %+v, got %+v", wantShardSubstitute1, gotShardSubstitute1)
+	}
+
+	t.Run("Store the same shard substitute list", func(t *testing.T) {
+		sDB, _ := NewWithPrefixTrie(emptyRoot, wrarperDB)
+		err := StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rootHash, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+
+		wantShardSubstitute2 := incognitokey.DeepCopy(wantShardSubstitute1)
+		err = StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rootHash, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+
+		gotShardSubstitute2 := GetOneShardSubstituteValidator(sDB, shardID)
+		if !reflect.DeepEqual(gotShardSubstitute2, wantShardSubstitute2) {
+			t.Fatalf("want %+v, got %+v", wantShardSubstitute2, gotShardSubstitute2)
+		}
+	})
+
+	t.Run("Change position but remain the same substitutes", func(t *testing.T) {
+		sDB, _ := NewWithPrefixTrie(emptyRoot, wrarperDB)
+		err := StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rootHash, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+
+		temp := incognitokey.DeepCopy(wantShardSubstitute1)
+		wantShardSubstitute3 := append([]incognitokey.CommitteePublicKey{}, temp[5:]...)
+		wantShardSubstitute3 = append(wantShardSubstitute3, temp[:5]...)
+		err = StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute3)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rootHash, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+		gotShardSubstitute3 := GetOneShardSubstituteValidator(sDB, shardID)
+		if !reflect.DeepEqual(gotShardSubstitute3, wantShardSubstitute3) {
+			t.Fatalf("want %+v, got %+v", gotShardSubstitute3, wantShardSubstitute3)
+		}
+		if reflect.DeepEqual(gotShardSubstitute3, wantShardSubstitute1) {
+			t.Fatalf("want %+v, got %+v", gotShardSubstitute3, wantShardSubstitute1)
+		}
+	})
+
+	t.Run("Add new keys at first position", func(t *testing.T) {
+		sDB, _ := NewWithPrefixTrie(emptyRoot, wrarperDB)
+		err := StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rootHash, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+
+		wantShardSubstitute4 := append([]incognitokey.CommitteePublicKey{}, spareIncognitoKey[:2]...)
+		wantShardSubstitute4 = append(wantShardSubstitute4, wantShardSubstitute1...)
+		err = StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute4)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rootHash, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+		gotShardSubstitute4 := GetOneShardSubstituteValidator(sDB, shardID)
+		if !reflect.DeepEqual(gotShardSubstitute4, wantShardSubstitute4) {
+			t.Fatalf("want %+v, got %+v", gotShardSubstitute4, wantShardSubstitute4)
+		}
+		if reflect.DeepEqual(gotShardSubstitute4, wantShardSubstitute1) {
+			t.Fatalf("want %+v, got %+v", gotShardSubstitute4, wantShardSubstitute1)
+		}
+	})
+
+	t.Run("Add new keys at first position and delete some last position keys", func(t *testing.T) {
+		sDB, _ := NewWithPrefixTrie(emptyRoot, wrarperDB)
+		err := StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rootHash, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+
+		wantShardSubstitute5 := append([]incognitokey.CommitteePublicKey{}, spareIncognitoKey[:2]...)
+		wantShardSubstitute5 = append(wantShardSubstitute5, wantShardSubstitute1[:6]...)
+		removedShardSubstitute := wantShardSubstitute1[6:]
+		err = DeleteOneShardSubstitutesValidator(sDB, shardID, removedShardSubstitute)
+		err = StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute5)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rootHash, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+		gotShardSubstitute5 := GetOneShardSubstituteValidator(sDB, shardID)
+		if !reflect.DeepEqual(gotShardSubstitute5, wantShardSubstitute5) {
+			t.Fatalf("want %+v, got %+v", gotShardSubstitute5, wantShardSubstitute5)
+		}
+		if reflect.DeepEqual(gotShardSubstitute5, wantShardSubstitute1) {
+			t.Fatalf("want %+v, got %+v", gotShardSubstitute5, wantShardSubstitute1)
+		}
+	})
+
+	t.Run("delete some keys and change the remain pos", func(t *testing.T) {
+		sDB, _ := NewWithPrefixTrie(emptyRoot, wrarperDB)
+		err := StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rootHash, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+
+		wantShardSubstitute5 := append([]incognitokey.CommitteePublicKey{}, wantShardSubstitute1[3:6]...)
+		wantShardSubstitute5 = append(wantShardSubstitute5, wantShardSubstitute1[:3]...)
+		removedShardSubstitute := wantShardSubstitute1[6:]
+		err = DeleteOneShardSubstitutesValidator(sDB, shardID, removedShardSubstitute)
+		err = StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute5)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rootHash, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+		gotShardSubstitute5 := GetOneShardSubstituteValidator(sDB, shardID)
+		if !reflect.DeepEqual(gotShardSubstitute5, wantShardSubstitute5) {
+			t.Fatalf("want %+v, got %+v", gotShardSubstitute5, wantShardSubstitute5)
+		}
+		if reflect.DeepEqual(gotShardSubstitute5, wantShardSubstitute1) {
+			t.Fatalf("want %+v, got %+v", gotShardSubstitute5, wantShardSubstitute1)
+		}
+	})
+
+	t.Run("Add new keys at last and middle position", func(t *testing.T) {
+		sDB, _ := NewWithPrefixTrie(emptyRoot, wrarperDB)
+		err := StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rootHash, _ := sDB.Commit(true)
+		err1 := sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+
+		wantShardSubstitute6 := append([]incognitokey.CommitteePublicKey{}, wantShardSubstitute1[:5]...)
+		wantShardSubstitute6 = append(wantShardSubstitute6, spareIncognitoKey[:2]...)
+		wantShardSubstitute6 = append(wantShardSubstitute6, wantShardSubstitute1[5:]...)
+		wantShardSubstitute6 = append(wantShardSubstitute6, spareIncognitoKey[2:4]...)
+		err = StoreOneShardSubstitutesValidatorV3(sDB, shardID, wantShardSubstitute6)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rootHash, _ = sDB.Commit(true)
+		err1 = sDB.Database().TrieDB().Commit(rootHash, false)
+		if err1 != nil {
+			t.Fatal(err1)
+		}
+		gotShardSubstitute6 := GetOneShardSubstituteValidator(sDB, shardID)
+		if !reflect.DeepEqual(gotShardSubstitute6, wantShardSubstitute6) {
+			t.Fatalf("want %+v, got %+v", gotShardSubstitute6, wantShardSubstitute6)
+		}
+		if reflect.DeepEqual(gotShardSubstitute6, wantShardSubstitute1) {
+			t.Fatalf("want %+v, got %+v", gotShardSubstitute6, wantShardSubstitute1)
+		}
+	})
+
+}

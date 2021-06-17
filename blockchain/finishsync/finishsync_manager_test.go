@@ -633,7 +633,7 @@ func TestJsonMarshal(t *testing.T) {
 	fm.FinishedSyncValidators[byte(0)][key1] = true
 	data, _ := json.Marshal(fm)
 	newFm := NewFinishManager()
-	json.Unmarshal(data, newFm)
+	json.Unmarshal(data, &newFm)
 
 	if !reflect.DeepEqual(newFm.FinishedSyncValidators, fm.FinishedSyncValidators) {
 		t.Fatal("fail to marshall and unmarshall")
