@@ -182,6 +182,8 @@ const (
 	getBridgeReqWithStatus             = "getbridgereqwithstatus"
 	createAndSendTxWithIssuingBSCReq   = "createandsendtxwithissuingbscreq"
 	createAndSendBurningBSCRequest     = "createandsendburningbscrequest"
+	checkBSCHashIssued                 = "checkbschashissued"
+	getBridgeBSCReqWithStatus          = "getbridgebscreqwithstatus"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof       = "getbeaconswapproof"

@@ -251,6 +251,20 @@ func (httpServer *HttpServer) handleCheckETHHashIssued(params interface{}, close
 	return issued, nil
 }
 
+func (httpServer *HttpServer) handleCheckBSCHashIssued(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+	data := arrayParams[0].(map[string]interface{})
+
+	issued, err := httpServer.blockService.CheckBSCHashIssued(data)
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return issued, nil
+}
+
 func (httpServer *HttpServer) handleGetAllBridgeTokens(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	allBridgeTokens, err := httpServer.blockService.GetAllBridgeTokens()
 	if err != nil {
@@ -301,6 +315,20 @@ func (httpServer *HttpServer) handleGetBridgeReqWithStatus(params interface{}, c
 	data := arrayParams[0].(map[string]interface{})
 
 	status, err := httpServer.blockService.GetBridgeReqWithStatus(data["TxReqID"].(string))
+	if err != nil {
+		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+	}
+	return status, nil
+}
+
+func (httpServer *HttpServer) handleGetBSCBridgeReqWithStatus(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	arrayParams := common.InterfaceSlice(params)
+	if arrayParams == nil || len(arrayParams) < 1 {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
+	}
+	data := arrayParams[0].(map[string]interface{})
+
+	status, err := httpServer.blockService.GetBSCBridgeReqWithStatus(data["TxReqID"].(string))
 	if err != nil {
 		return false, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
