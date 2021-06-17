@@ -99,41 +99,6 @@ func (blockchain *BlockChain) processIssuingBridgeReq(bridgeStateDB *statedb.Sta
 		return updatingInfoByTokenID, nil
 	}
 
-	var issuingAmount uint64
-	var externalTokenID []byte
-	var incTokenID common.Hash
-	if instruction[0] == strconv.Itoa(metadata.IssuingETHRequestMeta) {
-		var issuingETHAcceptedInst metadata.IssuingETHAcceptedInst
-		err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
-		if err != nil {
-			Logger.log.Warn("WARNING: an error occurred while unmarshalling accepted issuance instruction: ", err)
-			return updatingInfoByTokenID, nil
-		}
-
-		err = statedb.InsertETHTxHashIssued(bridgeStateDB, issuingETHAcceptedInst.UniqETHTx)
-		if err != nil {
-			Logger.log.Warn("WARNING: an error occurred while inserting bridge tx hash issued to leveldb: ", err)
-			return updatingInfoByTokenID, nil
-		}
-		issuingAmount = issuingETHAcceptedInst.IssuingAmount
-		externalTokenID = issuingETHAcceptedInst.ExternalTokenID
-		incTokenID = issuingETHAcceptedInst.IncTokenID
-	} else if instruction[0] == strconv.Itoa(metadata.IssuingBSCRequestMeta) {
-		var issuingBSCAcceptedInst metadata.IssuingBSCAcceptedInst
-		err = json.Unmarshal(contentBytes, &issuingBSCAcceptedInst)
-		if err != nil {
-			Logger.log.Warn("WARNING: an error occurred while unmarshalling accepted issuance instruction: ", err)
-			return updatingInfoByTokenID, nil
-		}
-		err = statedb.InsertBSCTxHashIssued(bridgeStateDB, issuingBSCAcceptedInst.UniqBSCTx)
-		if err != nil {
-			Logger.log.Warn("WARNING: an error occurred while inserting bridge tx hash issued to leveldb: ", err)
-			return updatingInfoByTokenID, nil
-		}
-		issuingAmount = issuingBSCAcceptedInst.IssuingAmount
-		externalTokenID = issuingBSCAcceptedInst.ExternalTokenID
-		incTokenID = issuingBSCAcceptedInst.IncTokenID
-	} else {
 	var issuingEVMAcceptedInst metadata.IssuingEVMAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingEVMAcceptedInst)
 	if err != nil {

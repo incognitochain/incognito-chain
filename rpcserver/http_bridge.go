@@ -234,46 +234,6 @@ func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReq(params inte
 
 func (httpServer *HttpServer) handleCreateAndSendTxWithIssuingETHReqV2 (params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
 	return httpServer.handleCreateAndSendTxWithIssuingETHReq(params, closeChan)
-func (httpServer *HttpServer) handleCreateRawTxWithIssuingETHReqV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	arrayParams := common.InterfaceSlice(params)
-	if arrayParams == nil || len(arrayParams) < 5 {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 5 elements"))
-	}
-
-	// get meta data from params
-	data, ok := arrayParams[4].(map[string]interface{})
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata is invalid"))
-	}
-	meta, err := metadata.NewIssuingEVMRequestFromMap(data, metadata.IssuingETHRequestMeta)
-	if err != nil {
-		rpcErr := rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
-		Logger.log.Error(rpcErr)
-		return nil, rpcErr
-	}
-
-	// create new param to build raw tx from param interface
-	createRawTxParam, errNewParam := bean.NewCreateRawTxParamV2(params)
-	if errNewParam != nil {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errNewParam)
-	}
-
-	tx, err1 := httpServer.txService.BuildRawTransaction(createRawTxParam, meta)
-	if err1 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err1)
-	}
-
-	byteArrays, err2 := json.Marshal(tx)
-	if err2 != nil {
-		Logger.log.Error(err1)
-		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err2)
-	}
-	result := jsonresult.CreateTransactionResult{
-		TxID:            tx.Hash().String(),
-		Base58CheckData: base58.Base58Check{}.Encode(byteArrays, 0x00),
-	}
-	return result, nil
 }
 
 

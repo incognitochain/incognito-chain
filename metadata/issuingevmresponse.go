@@ -18,6 +18,7 @@ type IssuingEVMResponse struct {
 	RequestedTxID   common.Hash
 	UniqTx          []byte
 	ExternalTokenID []byte
+	SharedRandom    []byte `json:"SharedRandom,omitempty"`
 }
 
 type IssuingEVMResAction struct {
@@ -76,14 +77,14 @@ func (iRes *IssuingEVMResponse) CalculateSize() uint64 {
 	return calculateSize(iRes)
 }
 
-func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlock []Transaction, txsUsed []int, insts [][]string, instUsed []int, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
+func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error) {
 	idx := -1
-	for i, inst := range insts {
+	for i, inst := range mintData.Insts {
 		if len(inst) < 4 { // this is not IssuingEVMRequest instruction
 			continue
 		}
 		instMetaType := inst[0]
-		if instUsed[i] > 0 ||
+		if mintData.InstsUsed[i] > 0 ||
 			(instMetaType != strconv.Itoa(IssuingETHRequestMeta) && instMetaType != strconv.Itoa(IssuingBSCRequestMeta)) {
 			continue
 		}
@@ -125,6 +126,10 @@ func (iRes IssuingEVMResponse) VerifyMinerCreatedTxBeforeGettingInBlock(txsInBlo
 	if idx == -1 { // not found the issuance request tx for this response
 		return false, errors.New(fmt.Sprintf("no IssuingETHRequest tx found for IssuingEVMResponse tx %s", tx.Hash().String()))
 	}
-	instUsed[idx] = 1
+	mintData.InstsUsed[idx] = 1
 	return true, nil
+}
+
+func (iRes *IssuingEVMResponse) SetSharedRandom(r []byte) {
+	iRes.SharedRandom = r
 }

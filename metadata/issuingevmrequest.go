@@ -74,6 +74,20 @@ func ParseEVMIssuingInstContent(instContentStr string) (*IssuingEVMReqAction, er
 	return &IssuingEVMReqAction, nil
 }
 
+func ParseEVMIssuingInstAcceptedContent(instAcceptedContentStr string) (*IssuingEVMAcceptedInst, error) {
+	contentBytes, err := base64.StdEncoding.DecodeString(instAcceptedContentStr)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingEvmRequestDecodeInstructionError, err)
+	}
+	var issuingETHAcceptedInst IssuingEVMAcceptedInst
+	err = json.Unmarshal(contentBytes, &issuingETHAcceptedInst)
+	if err != nil {
+		return nil, NewMetadataTxError(IssuingEvmRequestUnmarshalJsonError, err)
+	}
+	return &issuingETHAcceptedInst, nil
+}
+
+
 func NewIssuingEVMRequest(
 	blockHash rCommon.Hash,
 	txIndex uint,
