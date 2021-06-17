@@ -40,27 +40,27 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 
 		case metadata.BurningRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMeta, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMeta, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningRequestMetaV2:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMetaV2, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMetaV2, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningPBSCRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningBSCConfirmMeta, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningBSCConfirmMeta, inst, beaconHeight, common.BSCPrefix)
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningForDepositToSCRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMeta, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMeta, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningForDepositToSCRequestMetaV2:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMetaV2, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMetaV2, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		default:
@@ -84,6 +84,7 @@ func buildBurningConfirmInst(
 	burningMetaType int,
 	inst []string,
 	height uint64,
+	prefix string,
 ) ([]string, error) {
 	BLogger.log.Infof("Build BurningConfirmInst: %s", inst)
 	// Parse action and get metadata
@@ -106,12 +107,10 @@ func buildBurningConfirmInst(
 		return nil, errors.Wrap(err, "invalid external token id")
 	}
 
-	prefix := ""
-	if burningMetaType == metadata.BurningBSCConfirmMeta {
-		prefix = common.BSCPrefix
-		if len(tokenID) <= common.ExternalBridgeTokenLength || !bytes.Equal([]byte(prefix), tokenID[:3]) {
-			return nil, errors.Wrapf(err, "invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID)
-		}
+	prefixLen := len(prefix)
+	if prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen]) ||
+		len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
+		return nil, errors.Wrapf(err, "invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID)
 	}
 
 	// Convert amount to big.Int to get bytes later
