@@ -340,7 +340,7 @@ func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 	}
 
 	if shardID != issuingEVMAcceptedInst.ShardID {
-		Logger.log.Infof("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, issuingEVMAcceptedInst.ShardID)
+		Logger.log.Warnf("Ignore due to shardid difference, current shardid %d, receiver's shardid %d", shardID, issuingEVMAcceptedInst.ShardID)
 		return nil, nil
 	}
 	key, err := wallet.Base58CheckDeserialize(issuingEVMAcceptedInst.ReceiverAddrStr)

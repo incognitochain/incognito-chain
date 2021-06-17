@@ -224,19 +224,19 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 	if evmHeader == nil {
-		Logger.log.Info("WARNING: Could not find out the EVM block header with the hash: ", iReq.BlockHash)
+		Logger.log.Warn("WARNING: Could not find out the EVM block header with the hash: ", iReq.BlockHash)
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.Errorf("WARNING: Could not find out the EVM block header with the hash: %s", iReq.BlockHash.String()))
 	}
 
 	mostRecentBlkNum, err := GetMostRecentEVMBlockHeight(protocol, host, port)
 	if err != nil {
-		Logger.log.Info("WARNING: Could not find the most recent block height on Ethereum")
+		Logger.log.Warn("WARNING: Could not find the most recent block height on Ethereum")
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 
 	if mostRecentBlkNum.Cmp(big.NewInt(0).Add(evmHeader.Number, big.NewInt(EVMConfirmationBlocks))) == -1 {
 		errMsg := fmt.Sprintf("WARNING: It needs 15 confirmation blocks for the process, the requested block (%s) but the latest block (%s)", evmHeader.Number.String(), mostRecentBlkNum.String())
-		Logger.log.Info(errMsg)
+		Logger.log.Warn(errMsg)
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, errors.New(errMsg))
 	}
 
@@ -255,7 +255,8 @@ func (iReq *IssuingEVMRequest) verifyProofAndParseReceipt() (*types.Receipt, err
 	proof := nodeList.NodeSet()
 	val, _, err := trie.VerifyProof(evmHeader.ReceiptHash, keybuf.Bytes(), proof)
 	if err != nil {
-		fmt.Printf("WARNING: EVM issuance proof verification failed: %v", err)
+		errMsg := fmt.Sprintf("WARNING: EVM issuance proof verification failed: %v", err)
+		Logger.log.Warn(errMsg)
 		return nil, NewMetadataTxError(IssuingEvmRequestVerifyProofAndParseReceipt, err)
 	}
 	// Decode value from VerifyProof into Receipt
@@ -305,12 +306,12 @@ func GetEVMHeader(
 		return nil, err
 	}
 	if getEVMHeaderByHashRes.RPCError != nil {
-		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByHash: %s", getEVMHeaderByHashRes.RPCError.Message)
+		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByHash: %s", getEVMHeaderByHashRes.RPCError.Message)
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByHash: %s", getEVMHeaderByHashRes.RPCError.Message))
 	}
 
 	if getEVMHeaderByHashRes.Result == nil {
-		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByHash: result is nil")
+		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByHash: result is nil")
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByHash: result is nil"))
 	}
 
@@ -331,12 +332,12 @@ func GetEVMHeader(
 		return nil, err
 	}
 	if getEVMHeaderByNumberRes.RPCError != nil {
-		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByNumber: %s", getEVMHeaderByNumberRes.RPCError.Message)
+		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByNumber: %s", getEVMHeaderByNumberRes.RPCError.Message)
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: %s", getEVMHeaderByNumberRes.RPCError.Message))
 	}
 
 	if getEVMHeaderByNumberRes.Result == nil {
-		Logger.log.Infof("WARNING: an error occured during calling eth_getBlockByNumber: result is nil")
+		Logger.log.Warnf("WARNING: an error occured during calling eth_getBlockByNumber: result is nil")
 		return nil, errors.New(fmt.Sprintf("An error occured during calling eth_getBlockByNumber: result is nil"))
 	}
 
@@ -379,7 +380,7 @@ func PickAndParseLogMapFromReceipt(constructedReceipt *types.Receipt, contractAd
 	logData := []byte{}
 	logLen := len(constructedReceipt.Logs)
 	if logLen == 0 {
-		Logger.log.Debug("WARNING: LOG data is invalid.")
+		Logger.log.Warn("WARNING: LOG data is invalid.")
 		return nil, nil
 	}
 	for _, log := range constructedReceipt.Logs {
