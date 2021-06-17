@@ -180,6 +180,8 @@ const (
 	getAllBridgeTokensByHeight         = "getallbridgetokensbyheight"
 	getETHHeaderByHash                 = "getethheaderbyhash"
 	getBridgeReqWithStatus             = "getbridgereqwithstatus"
+	createAndSendTxWithIssuingBSCReq   = "createandsendtxwithissuingbscreq"
+	createAndSendBurningBSCRequest     = "createandsendburningbscrequest"
 
 	// Incognito -> Ethereum bridge
 	getBeaconSwapProof       = "getbeaconswapproof"
@@ -187,6 +189,7 @@ const (
 	getBridgeSwapProof       = "getbridgeswapproof"
 	getLatestBridgeSwapProof = "getlatestbridgeswapproof"
 	getBurnProof             = "getburnproof"
+	getBSCBurnProof          = "getbscburnproof"
 
 	// reward
 	CreateRawWithDrawTransaction = "withdrawreward"

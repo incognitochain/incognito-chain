@@ -436,6 +436,10 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildETHIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
 				}
+			case metadata.IssuingBSCRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBSCIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)
+				}
 			case metadata.IssuingRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
 					newTx, err = blockGenerator.buildIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB)

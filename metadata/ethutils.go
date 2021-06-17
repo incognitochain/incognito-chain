@@ -11,13 +11,16 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/pkg/errors"
 	"math/big"
 	"strings"
 )
 
 func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs []string) (*types.Receipt, error) {
-	ethHeader, err := GetETHHeader(blockHash)
+	gethParam := config.Param().GethParam
+	gethParam.GetFromEnv()
+	ethHeader, err := GetETHHeader(blockHash, gethParam.Protocol, gethParam.Host, gethParam.Port)
 	if err != nil {
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
 	}
@@ -26,7 +29,7 @@ func VerifyProofAndParseReceipt(blockHash eCommon.Hash, txIndex uint, proofStrs 
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, errors.Errorf("WARNING: Could not find out the ETH block header with the hash: %s", blockHash.String()))
 	}
 
-	mostRecentBlkNum, err := GetMostRecentETHBlockHeight()
+	mostRecentBlkNum, err := GetMostRecentETHBlockHeight(gethParam.Protocol, gethParam.Host, gethParam.Port)
 	if err != nil {
 		Logger.log.Info("WARNING: Could not find the most recent block height on Ethereum")
 		return nil, NewMetadataTxError(VerifyProofAndParseReceiptError, err)
