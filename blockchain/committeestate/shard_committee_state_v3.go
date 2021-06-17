@@ -66,10 +66,10 @@ func (s ShardCommitteeStateV3) GetShardSubstitute() []incognitokey.CommitteePubl
 	return []incognitokey.CommitteePublicKey{}
 }
 
-func (s ShardCommitteeStateV3) UpdateCommitteeState(env *ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
+func (s *ShardCommitteeStateV3) UpdateCommitteeState(env *ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {
 	return s.ShardCommitteeStateV2.UpdateCommitteeState(env)
 }
 
-func (s ShardCommitteeStateV3) BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64 {
+func (s *ShardCommitteeStateV3) BuildTotalTxsFeeFromTxs(txs []metadata.Transaction) map[common.Hash]uint64 {
 	return s.ShardCommitteeStateV2.BuildTotalTxsFeeFromTxs(txs)
 }
