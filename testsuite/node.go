@@ -108,6 +108,12 @@ func (sim *NodeEngine) NewAccountFromShard(sid int) account.Account {
 	return acc
 }
 
+func (sim *NodeEngine) NewAccountFromPrivateKey(prv string) account.Account {
+	acc, _ := account.NewAccountFromPrivatekey(prv)
+	sim.accounts = append(sim.accounts, &acc)
+	return acc
+}
+
 func (sim *NodeEngine) NewAccount() account.Account {
 	lastID := sim.accountGenHistory[0]
 	lastID++
@@ -136,7 +142,6 @@ func (sim *NodeEngine) Init() {
 	InitLogRotator(filepath.Join(sim.config.DataDir, simName+".log"))
 	activeNetParams := sim.param
 	if !sim.config.AppNode {
-
 		sim.GenesisAccount = sim.NewAccount()
 		for i := 0; i < config.Param().CommitteeSize.MinBeaconCommitteeSize; i++ {
 			acc := sim.NewAccountFromShard(-1)
@@ -156,7 +161,24 @@ func (sim *NodeEngine) Init() {
 		config.Param().GenesisParam.InitialIncognito = initTxs
 	} else {
 		config.Param().LoadKey()
-		//TODO: add privatekey
+		sim.GenesisAccount = sim.NewAccountFromPrivateKey("112t8roafGgHL1rhAP9632Yef3sx5k8xgp8cwK4MCJsCL1UWcxXvpzg97N4dwvcD735iKf31Q2ZgrAvKfVjeSUEvnzKJyyJD3GqqSZdxN4or")
+		oldTestnet := []string{
+			"112t8rnXB47RhSdyVRU41TEf78nxbtWGtmjutwSp9YqsNaCpFxQGXcnwcXTtBkCGDk1KLBRBeWMvb2aXG5SeDUJRHtFV8jTB3weHEkbMJ1AL",
+			"112t8rnXVdfBqBMigSs5fm9NSS8rgsVVURUxArpv6DxYmPZujKqomqUa2H9wh1zkkmDGtDn2woK4NuRDYnYRtVkUhK34TMfbUF4MShSkrCw5",
+			"112t8rnXi8eKJ5RYJjyQYcFMThfbXHgaL6pq5AF5bWsDXwfsw8pqQUreDv6qgWyiABoDdphvqE7NFr9K92aomX7Gi5Nm1e4tEoV3qRLVdfSR",
+			"112t8rnY42xRqJghQX3zvhgEa2ZJBwSzJ46SXyVQEam1yNpN4bfAqJwh1SsobjHAz8wwRvwnqJBfxrbwUuTxqgEbuEE8yMu6F14QmwtwyM43",
+			"112t8rnXBPJQWJTyPdzWsfsUCFTDhcas3y2MYsauKo66euh1udG8dSh2ZszSbfqHwCpYHPRSpFTxYkUcVa619XUM6DjdV7FfUWvYoziWE2Bm",
+			"112t8rnXN2SLxQncPYvFdzEivznKjBxK5byYmPbAhnEEv8TderLG7NUD7nwAEDu7DJ7pnCKw9N5PuTuELCHz8qKc7z9S9jF8QG41u7Vomc6L",
+			"112t8rnXs5os49h71E7utfHatnWGQnirbVF2b5Ua8h1ttidk1S5AFcUqHCDmpMziiFC15BG8W1LQKK5tYcvr2CM7DyYgsfVmAWYh4kQ6f33T",
+			"112t8rnXvcE6sxwt7nQ6mH6KdPMWyQRv6xAd3WWorzS7k26YPjm4mvFtC51bRaU18yubQm1N3gBeDJJyXqWmxi5QdCkqYExCEkSqNpD1Wzpz",
+			"112t8rnXCerQX2RRd8KhPfsFCj2rrBYUx42FZJKgRFcdBfg36Mid3ygKyMn5LSc5LBHsxqapRaN6xMav7bGhA6VtGUzNNYuA9Y78CB5oGkti",
+			"112t8rnXYgxipKvTJJfHg7tQhcdmA2R1jPpCPmXg37Xi1VfgrFzWFuNy4U6828q1yfbD7VEdutD63HfVYAqL6U32joXVjqdkfUP52LnNGXda",
+			"112t8rnXe3Jxg5d1Rejg2fB1NwnqNsr94RCT3PX14h5NNDjrdgLeEWFkqcMNamKCHask1Gx46g5WYZDKHKx7kzLVD7h1cgvU6NxNijkyGmA9",
+			"112t8rnY2gqonwhnhGD6rKeEXkbJDB7DHUtZQKC8SfLci6ABb5eCEj4o7ezWBZWaGbu7CJ1R1mrADGqmRjugg42GeA6jhaXbNDeP2HUr8udw"}
+
+		for _, v := range oldTestnet {
+			sim.NewAccountFromPrivateKey(v)
+		}
 	}
 
 	zkp.InitCheckpoint(config.Param().BCHeightBreakPointNewZKP)

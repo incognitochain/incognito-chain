@@ -11,6 +11,7 @@ const (
 	ID_MAINNET = iota
 	ID_TESTNET
 	ID_TESTNET2
+	ID_LOCAL
 	ID_CUSTOM
 )
 
@@ -23,6 +24,8 @@ func NewStandaloneSimulation(name string, conf Config) *NodeEngine {
 	}
 
 	switch conf.Network {
+	case ID_LOCAL:
+		os.Setenv(config.NetworkKey, config.LocalNetwork)
 	case ID_CUSTOM:
 		os.Setenv(config.NetworkKey, config.TestNetNetwork)
 		os.Setenv(config.NetworkVersionKey, config.TestNetVersion1)
