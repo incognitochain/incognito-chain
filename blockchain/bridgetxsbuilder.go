@@ -308,16 +308,6 @@ func (blockGenerator *BlockGenerator) buildIssuanceTx(
 	return txParam.BuildTxSalary(producerPrivateKey, shardView.GetCopiedTransactionStateDB(), makeMD)
 }
 
-type BridgeIssuanceTxInfo struct {
-	ShardID         byte
-	IssuingAmount   uint64
-	ReceiverAddrStr string
-	IncTokenID      common.Hash
-	TxReqID         common.Hash
-	UniqTx          []byte
-	ExternalTokenID []byte
-}
-
 func (blockGenerator *BlockGenerator) buildBridgeIssuanceTx(
 	contentStr string,
 	producerPrivateKey *privacy.PrivateKey,
