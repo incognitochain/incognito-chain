@@ -163,11 +163,9 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 			case metadata.IssuingRequestMeta:
 				newInst, err = blockchain.buildInstructionsForIssuingReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
-			case metadata.IssuingETHRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingETHReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
 
-			case metadata.IssuingBSCRequestMeta:
-				newInst, err = blockchain.buildInstructionsForIssuingBSCReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
+			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta:
+				newInst, err = blockchain.buildInstructionsForIssuingBridgeReq(beaconBestState, featureStateDB, contentStr, shardID, metaType, accumulatedValues)
 
 			case metadata.PDEContributionMeta:
 				pdeContributionActionsByShardID = groupPDEActionsByShardID(

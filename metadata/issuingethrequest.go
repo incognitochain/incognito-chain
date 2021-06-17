@@ -274,15 +274,6 @@ func ParseETHLogData(data []byte) (map[string]interface{}, error) {
 	return dataMap, nil
 }
 
-func IsETHTxHashUsedInBlock(uniqETHTx []byte, uniqETHTxsUsed [][]byte) bool {
-	for _, item := range uniqETHTxsUsed {
-		if bytes.Equal(uniqETHTx, item) {
-			return true
-		}
-	}
-	return false
-}
-
 func GetETHHeader(
 	ethBlockHash rCommon.Hash,
 	protocol string,
