@@ -169,8 +169,7 @@ const (
 
 const (
 	StopAutoStakingAmount = 0
-	ETHConfirmationBlocks = 15
-	BSCConfirmationBlocks = 15
+	EVMConfirmationBlocks = 15
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}

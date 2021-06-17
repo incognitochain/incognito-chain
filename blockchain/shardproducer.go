@@ -433,8 +433,13 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(cur
 					newTx, err = blockGenerator.buildTokenInitAcceptedTx(inst[3], producerPrivateKey, shardID, curView)
 				}
 			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta:
+			case metadata.IssuingETHRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
-					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst, producerPrivateKey, shardID, curView, featureStateDB)
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingETHResponseMeta)
+				}
+			case metadata.IssuingBSCRequestMeta:
+				if len(inst) >= 4 && inst[2] == "accepted" {
+					newTx, err = blockGenerator.buildBridgeIssuanceTx(inst[3], producerPrivateKey, shardID, curView, featureStateDB, metadata.IssuingBSCResponseMeta)
 				}
 			case metadata.IssuingRequestMeta:
 				if len(inst) >= 4 && inst[2] == "accepted" {
