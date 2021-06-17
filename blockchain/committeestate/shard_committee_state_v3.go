@@ -23,15 +23,13 @@ func NewShardCommitteeStateV3() *ShardCommitteeStateV3 {
 //Output: pointer of ShardCommitteeStateV3 struct with value
 func NewShardCommitteeStateV3WithValue(
 	shardCommittee []incognitokey.CommitteePublicKey,
-	committeeFromBlockHash common.Hash,
 ) *ShardCommitteeStateV3 {
 	res, _ := incognitokey.CommitteeKeyListToString(shardCommittee)
 
 	return &ShardCommitteeStateV3{
 		ShardCommitteeStateV2: ShardCommitteeStateV2{
-			shardCommittee:     res,
-			committeeFromBlock: committeeFromBlockHash,
-			mu:                 new(sync.RWMutex),
+			shardCommittee: res,
+			mu:             new(sync.RWMutex),
 		},
 	}
 }
@@ -55,7 +53,6 @@ func (s ShardCommitteeStateV3) Clone() ShardCommitteeState {
 
 	newS := NewShardCommitteeStateV3()
 	newS.ShardCommitteeStateV2.shardCommittee = common.DeepCopyString(s.shardCommittee)
-	newS.ShardCommitteeStateV2.committeeFromBlock = s.committeeFromBlock
 
 	return newS
 }
@@ -67,10 +64,6 @@ func (s ShardCommitteeStateV3) GetShardCommittee() []incognitokey.CommitteePubli
 
 func (s ShardCommitteeStateV3) GetShardSubstitute() []incognitokey.CommitteePublicKey {
 	return []incognitokey.CommitteePublicKey{}
-}
-
-func (s ShardCommitteeStateV3) GetCommitteeFromBlock() common.Hash {
-	return s.committeeFromBlock
 }
 
 func (s ShardCommitteeStateV3) UpdateCommitteeState(env *ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash, *CommitteeChange, error) {

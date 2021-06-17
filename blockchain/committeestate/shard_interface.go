@@ -13,7 +13,6 @@ type ShardCommitteeState interface {
 	Clone() ShardCommitteeState
 	GetShardCommittee() []incognitokey.CommitteePublicKey
 	GetShardSubstitute() []incognitokey.CommitteePublicKey
-	GetCommitteeFromBlock() common.Hash
 
 	UpdateCommitteeState(env *ShardCommitteeStateEnvironment) (*ShardCommitteeStateHash,
 		*CommitteeChange, error)

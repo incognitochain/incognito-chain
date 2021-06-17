@@ -41,14 +41,14 @@ type GetShardBlockResult struct {
 	ConsensusType      string             `json:"ConsensusType"`
 	Data               string             `json:"Data"`
 	BeaconHeight       uint64             `json:"BeaconHeight"`
-	BeaconBlockHash    string             `json:"GenesisBeaconHash"`
+	BeaconBlockHash    string             `json:"BeaconBlockHash"`
 	Round              int                `json:"Round"`
 	Epoch              uint64             `json:"Epoch"`
 	Reward             uint64             `json:"Reward"`
 	RewardBeacon       uint64             `json:"RewardBeacon"`
 	Fee                uint64             `json:"Fee"`
 	Size               uint64             `json:"Size"`
-	CommitteeFromBlock common.Hash        `json:"GenesisBeaconHash"`
+	CommitteeFromBlock common.Hash        `json:"CommitteeFromBlock"`
 	Instruction        [][]string         `json:"Instruction"`
 	CrossShardBitMap   []int              `json:"CrossShardBitMap"`
 	ProposeTime        int64              `json:"ProposeTime"`

@@ -115,7 +115,7 @@ func (shardBestState *ShardBestState) GetBlockTime() int64 {
 }
 
 func (shardBestState *ShardBestState) CommitteeFromBlock() common.Hash {
-	return shardBestState.shardCommitteeState.GetCommitteeFromBlock()
+	return shardBestState.BestBlock.Header.CommitteeFromBlock
 }
 
 func NewShardBestState() *ShardBestState {
@@ -402,12 +402,10 @@ func InitShardCommitteeState(
 	case committeestate.SLASHING_VERSION:
 		return committeestate.NewShardCommitteeStateV2WithValue(
 			committees,
-			block.Header.CommitteeFromBlock,
 		)
 	case committeestate.DCS_VERSION:
 		return committeestate.NewShardCommitteeStateV3WithValue(
 			committees,
-			block.Header.CommitteeFromBlock,
 		)
 	default:
 		panic("shardBestState.CommitteeState not a valid version to init")
@@ -489,7 +487,7 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 		committeeFromBlock.IsZeroValue() {
 		committees = shardBestState.GetCommittee()
 	} else {
-		committeeFromBlock = shardBestState.shardCommitteeState.GetCommitteeFromBlock()
+		committeeFromBlock = shardBestState.BestBlock.CommitteeFromBlock()
 		committees, err = bc.getShardCommitteeFromBeaconHash(committeeFromBlock, shardBestState.ShardID)
 		if err != nil {
 			return err
@@ -499,7 +497,6 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 	if shardBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
 		shardBestState.shardCommitteeState = committeestate.NewShardCommitteeStateV2WithValue(
 			committees,
-			committeeFromBlock,
 		)
 	}
 
@@ -509,7 +506,6 @@ func (shardBestState *ShardBestState) tryUpgradeCommitteeState(bc *BlockChain) e
 		}
 		shardBestState.shardCommitteeState = committeestate.NewShardCommitteeStateV3WithValue(
 			committees,
-			committeeFromBlock,
 		)
 	}
 

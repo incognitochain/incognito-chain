@@ -14,8 +14,7 @@ import (
 
 //ShardCommitteeStateV2
 type ShardCommitteeStateV2 struct {
-	shardCommittee     []string
-	committeeFromBlock common.Hash //Committees From Beacon Block Hash
+	shardCommittee []string
 
 	mu *sync.RWMutex
 }
@@ -32,13 +31,11 @@ func NewShardCommitteeStateV2() *ShardCommitteeStateV2 {
 //Output: pointer of ShardCommitteeStateV2 struct with value
 func NewShardCommitteeStateV2WithValue(
 	shardCommittee []incognitokey.CommitteePublicKey,
-	committeeFromBlockHash common.Hash,
 ) *ShardCommitteeStateV2 {
 	res, _ := incognitokey.CommitteeKeyListToString(shardCommittee)
 	return &ShardCommitteeStateV2{
-		shardCommittee:     res,
-		committeeFromBlock: committeeFromBlockHash,
-		mu:                 new(sync.RWMutex),
+		shardCommittee: res,
+		mu:             new(sync.RWMutex),
 	}
 }
 
@@ -52,7 +49,6 @@ func (s *ShardCommitteeStateV2) Clone() ShardCommitteeState {
 //clone ShardCommitteeStateV2 to new instance
 func (s ShardCommitteeStateV2) clone(newCommitteeState *ShardCommitteeStateV2) {
 	newCommitteeState.shardCommittee = common.DeepCopyString(s.shardCommittee)
-	newCommitteeState.committeeFromBlock = s.committeeFromBlock
 }
 
 //Version ...
@@ -71,10 +67,6 @@ func (s *ShardCommitteeStateV2) GetShardSubstitute() []incognitokey.CommitteePub
 	return []incognitokey.CommitteePublicKey{}
 }
 
-func (s *ShardCommitteeStateV2) GetCommitteeFromBlock() common.Hash {
-	return s.committeeFromBlock
-}
-
 //initGenesisShardCommitteeStateV2 init committee state at genesis block or anytime restore program
 //	- call function processInstructionFromBeacon for process instructions received from beacon
 //	- call function processShardBlockInstruction for process shard block instructions
@@ -84,7 +76,6 @@ func initGenesisShardCommitteeStateV2(env *ShardCommitteeStateEnvironment) *Shar
 	committeeChange := NewCommitteeChange()
 	candidates := []string{}
 
-	s.committeeFromBlock = env.GenesisBeaconHash
 	for _, beaconInstruction := range env.BeaconInstructions {
 		if beaconInstruction[0] == instruction.STAKE_ACTION {
 			stakeInstruction := instruction.ImportStakeInstructionFromString(beaconInstruction)
@@ -163,7 +154,6 @@ func (s *ShardCommitteeStateV2) forceUpdateCommitteesFromBeacon(
 	}
 
 	s.shardCommittee = common.DeepCopyString(env.CommitteesFromBeaconView)
-	s.committeeFromBlock = env.CommitteesFromBlock
 	return committeeChange, nil
 }
 
@@ -189,7 +179,6 @@ func (s ShardCommitteeStateV2) hash() (*ShardCommitteeStateHash, error) {
 	return &ShardCommitteeStateHash{
 		ShardCommitteeHash:  committeeHash,
 		ShardSubstituteHash: substituteHash,
-		CommitteeFromBlock:  s.committeeFromBlock,
 	}, nil
 }
 

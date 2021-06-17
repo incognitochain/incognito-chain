@@ -25,7 +25,7 @@ type GetShardBestState struct {
 	TotalTxnsExcludeSalary uint64            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int               `json:"ActiveShards"`
 	MetricBlockHeight      uint64            `json:"MetricBlockHeight"`
-	CommitteeFromBlock     common.Hash       `json:"GenesisBeaconHash"`
+	CommitteeFromBlock     common.Hash       `json:"CommitteeFromBlock"`
 	CommitteeEngineVersion int               `json:"CommitteeStateVersion"`
 }
 

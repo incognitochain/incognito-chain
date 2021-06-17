@@ -97,10 +97,6 @@ func (s *ShardCommitteeStateV1) GetShardSubstitute() []incognitokey.CommitteePub
 	return res
 }
 
-func (s *ShardCommitteeStateV1) GetCommitteeFromBlock() common.Hash {
-	return common.Hash{}
-}
-
 func (s *ShardCommitteeStateV1) SubsetCommitteesFromBlock() common.Hash {
 	return common.Hash{}
 }
