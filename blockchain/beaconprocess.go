@@ -1143,36 +1143,38 @@ func (beaconBestState *BeaconBestState) storeCommitteeStateWithCurrentState(
 func (beaconCurView *BeaconBestState) storeAllShardSubstitutesValidator(
 	addedValidators map[byte][]incognitokey.CommitteePublicKey,
 ) error {
-	if beaconCurView.BeaconHeight < config.Param().ConsensusParam.StakingFlowV3Height {
+
+	if beaconCurView.CommitteeStateVersion() < committeestate.DCS_VERSION {
 		return statedb.StoreAllShardSubstitutesValidator(beaconCurView.consensusStateDB, addedValidators)
+	} else if beaconCurView.CommitteeStateVersion() == committeestate.DCS_VERSION {
+		return beaconCurView.storeAllShardSubstitutesValidatorV3(addedValidators)
 	}
-	for shardID, v := range addedValidators {
-		newSubstituteValidators := make(map[string]bool)
-		for _, validator := range v {
-			key, err := validator.ToBase58()
-			if err != nil {
-				return err
-			}
-			newSubstituteValidators[key] = true
+
+	return nil
+}
+
+func (beaconCurView *BeaconBestState) storeAllShardSubstitutesValidatorV3(
+	allAddedValidators map[byte][]incognitokey.CommitteePublicKey,
+) error {
+
+	for shardID, addedValidators := range allAddedValidators {
+
+		if len(addedValidators) == 0 {
+			continue
 		}
+
 		substituteValidatorList := beaconCurView.beaconCommitteeState.GetOneShardSubstitute(shardID)
-		for i, substituteValidator := range substituteValidatorList {
-			key, err := substituteValidator.ToBase58()
-			if err != nil {
-				return err
-			}
-			if newSubstituteValidators[key] {
-				err = statedb.StoreOneShardSubstitutesValidator(
-					beaconCurView.consensusStateDB,
-					shardID,
-					substituteValidatorList[i:],
-				)
-				if err != nil {
-					return err
-				}
-				break
-			}
+
+		err := statedb.StoreOneShardSubstitutesValidatorV3(
+			beaconCurView.consensusStateDB,
+			shardID,
+			substituteValidatorList,
+		)
+		if err != nil {
+			return err
 		}
+
 	}
+
 	return nil
 }

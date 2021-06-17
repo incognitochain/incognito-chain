@@ -39,25 +39,17 @@ func storeCommittee(stateDB *StateDB, shardID int, role int, committees []incogn
 	return nil
 }
 
-func storeSyncingValidators(stateDB *StateDB, shardID byte, role int, validators []incognitokey.CommitteePublicKey, newEnterTime []int64) error {
+func storeCommitteeWithNewValue(stateDB *StateDB, shardID int, role int, committees []incognitokey.CommitteePublicKey, newEnterTime []int64) error {
 	enterTime := time.Now().UnixNano()
-	for id, validator := range validators {
+	for id, committee := range committees {
 		if (len(newEnterTime) != 0) && (id < len(newEnterTime)) {
 			enterTime = newEnterTime[id]
 		}
-		key, err := GenerateCommitteeObjectKeyWithRole(role, int(shardID), validator)
+		key, err := GenerateCommitteeObjectKeyWithRole(role, shardID, committee)
 		if err != nil {
 			return err
 		}
-		value := NewCommitteeState()
-		has := false
-		value, has, err = stateDB.getCommitteeState(key)
-		if err != nil {
-			return err
-		}
-		if !has {
-			value = NewCommitteeStateWithValueAndTime(int(shardID), role, validator, enterTime)
-		}
+		value := NewCommitteeStateWithValueAndTime(shardID, role, committee, enterTime)
 		err = stateDB.SetStateObject(CommitteeObjectType, key, value)
 		if err != nil {
 			return err
@@ -69,7 +61,7 @@ func storeSyncingValidators(stateDB *StateDB, shardID byte, role int, validators
 
 func StoreSyncingValidators(stateDB *StateDB, syncingValidators map[byte][]incognitokey.CommitteePublicKey) error {
 	for shardID, singleChainSyncingValidators := range syncingValidators {
-		err := storeSyncingValidators(stateDB, shardID, SyncingValidators, singleChainSyncingValidators, defaultEnterTime)
+		err := storeCommittee(stateDB, int(shardID), SyncingValidators, singleChainSyncingValidators, defaultEnterTime)
 		if err != nil {
 			return NewStatedbError(StoreSyncingValidatorsError, err)
 		}
@@ -273,6 +265,14 @@ func StoreCurrentEpochBeaconCandidate(stateDB *StateDB, candidate []incognitokey
 
 func StoreOneShardSubstitutesValidator(stateDB *StateDB, shardID byte, shardSubstitutes []incognitokey.CommitteePublicKey) error {
 	err := storeCommittee(stateDB, int(shardID), SubstituteValidator, shardSubstitutes, defaultEnterTime)
+	if err != nil {
+		return NewStatedbError(StoreOneShardSubstitutesValidatorError, err)
+	}
+	return nil
+}
+
+func StoreOneShardSubstitutesValidatorV3(stateDB *StateDB, shardID byte, shardSubstitutes []incognitokey.CommitteePublicKey) error {
+	err := storeCommitteeWithNewValue(stateDB, int(shardID), SubstituteValidator, shardSubstitutes, defaultEnterTime)
 	if err != nil {
 		return NewStatedbError(StoreOneShardSubstitutesValidatorError, err)
 	}

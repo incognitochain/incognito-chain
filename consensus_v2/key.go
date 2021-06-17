@@ -136,7 +136,6 @@ func (engine *Engine) ValidateProducerPosition(
 		}
 	} else {
 		//validate producer
-		// TODO: @hung if staking flow v3 accept block produced by another subset, check this again
 		producer := blk.GetProducer()
 		produceTime := blk.GetProduceTime()
 		tempProducerID := blockchain.GetProposerByTimeSlot(common.CalculateTimeSlot(produceTime), lenProposers)
