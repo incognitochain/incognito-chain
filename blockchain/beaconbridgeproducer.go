@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"math/big"
 	"strconv"
@@ -104,13 +105,13 @@ func buildBurningConfirmInst(
 	}
 
 	if len(tokenID) < common.ExternalBridgeTokenLength {
-		return nil, errors.Wrap(err, "invalid external token id")
+		return nil, errors.New("invalid external token id")
 	}
 
 	prefixLen := len(prefix)
 	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) ||
 		len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
-		return nil, errors.Wrapf(err, "invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID)
+		return nil, errors.New(fmt.Sprintf("invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID))
 	}
 
 	// Convert amount to big.Int to get bytes later
