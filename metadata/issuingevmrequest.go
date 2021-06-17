@@ -174,7 +174,7 @@ func (iReq *IssuingEVMRequest) BuildReqActions(tx Transaction, chainRetriever Ch
 	actionContent := map[string]interface{}{
 		"meta":       *iReq,
 		"txReqId":    txReqID,
-		"evmReceipt": *evmReceipt,
+		"ethReceipt": *evmReceipt,
 	}
 	actionContentBytes, err := json.Marshal(actionContent)
 	if err != nil {
