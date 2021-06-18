@@ -3,9 +3,11 @@ package pdex
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
@@ -30,7 +32,11 @@ func (s *stateV1) Clone() State {
 	return state
 }
 
-func (s *stateV1) Update(env StateEnvironment) ([][]string, error) {
+func (s *stateV1) Update(env StateEnvironment) error {
+	return nil
+}
+
+func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	instructions := [][]string{}
 
 	// handle fee withdrawal
@@ -54,6 +60,14 @@ func (s *stateV1) Update(env StateEnvironment) ([][]string, error) {
 	instructions = append(instructions, tempInstructions...)
 
 	// handle cross pool trade
+	tempInstructions, err = s.buildInstructionsForCrossPoolTrade(
+		env.CrossPoolTradeActions(),
+		env.BeaconHeight(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, tempInstructions...)
 
 	return instructions, nil
 }
@@ -63,7 +77,495 @@ func (s *stateV1) buildInstructionsForCrossPoolTrade(
 	beaconHeight uint64,
 ) ([][]string, error) {
 	res := [][]string{}
+
+	// handle cross pool trade
+	sortedTradableActions, untradableActions := s.categorizeAndSortCrossPoolTradeInstsByFee(
+		actions,
+		beaconHeight,
+	)
+	tradableInsts, tradingFeeByPair := s.buildInstsForSortedTradableActions(sortedTradableActions, beaconHeight)
+	untradableInsts := buildInstsForUntradableActions(untradableActions)
+	res = append(res, tradableInsts...)
+	res = append(res, untradableInsts...)
+
+	// calculate and build instruction for trading fees distribution
+	tradingFeesDistInst := s.buildInstForTradingFeesDist(beaconHeight, tradingFeeByPair)
+	if len(tradingFeesDistInst) > 0 {
+		res = append(res, tradingFeesDistInst)
+	}
+
 	return res, nil
+}
+
+func (s *stateV1) buildInstForTradingFeesDist(
+	beaconHeight uint64,
+	tradingFeeByPair map[string]uint64,
+) []string {
+
+	feesForContributorsByPair := []*tradingFeeForContributorByPair{}
+	shares := s.shares
+
+	var keys []string
+	for k := range tradingFeeByPair {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, sKey := range keys {
+		feeAmt := tradingFeeByPair[sKey]
+		allSharesByPair := []shareInfo{}
+		totalSharesOfPair := big.NewInt(0)
+
+		var shareKeys []string
+		for shareKey := range shares {
+			shareKeys = append(shareKeys, shareKey)
+		}
+		sort.Strings(shareKeys)
+		for _, shareKey := range shareKeys {
+			shareAmt := shares[shareKey]
+			if strings.Contains(shareKey, sKey) {
+				allSharesByPair = append(allSharesByPair, shareInfo{shareKey: shareKey, shareAmt: shareAmt})
+				totalSharesOfPair.Add(totalSharesOfPair, new(big.Int).SetUint64(shareAmt))
+			}
+		}
+
+		accumFees := big.NewInt(0)
+		totalFees := new(big.Int).SetUint64(feeAmt)
+		for idx, sInfo := range allSharesByPair {
+			feeForContributor := big.NewInt(0)
+			if idx == len(allSharesByPair)-1 {
+				feeForContributor.Sub(totalFees, accumFees)
+			} else {
+				if totalSharesOfPair.Cmp(big.NewInt(0)) == 1 {
+					feeForContributor.Mul(totalFees, new(big.Int).SetUint64(sInfo.shareAmt))
+					feeForContributor.Div(feeForContributor, totalSharesOfPair)
+				}
+			}
+
+			parts := strings.Split(sInfo.shareKey, "-")
+			partsLen := len(parts)
+			if partsLen < 5 {
+				continue
+			}
+			feesForContributorsByPair = append(
+				feesForContributorsByPair,
+				&tradingFeeForContributorByPair{
+					ContributorAddressStr: parts[partsLen-1],
+					FeeAmt:                feeForContributor.Uint64(),
+					Token2IDStr:           parts[partsLen-2],
+					Token1IDStr:           parts[partsLen-3],
+				},
+			)
+			accumFees.Add(accumFees, feeForContributor)
+		}
+	}
+	if len(feesForContributorsByPair) == 0 {
+		return []string{}
+	}
+
+	feesForContributorsByPairBytes, err := json.Marshal(feesForContributorsByPair)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while marshaling feesForContributorsByPair: %+v", err)
+		return []string{}
+	}
+	return []string{
+		strconv.Itoa(metadata.PDETradingFeesDistributionMeta),
+		"",
+		"",
+		string(feesForContributorsByPairBytes),
+	}
+}
+
+func buildInstsForUntradableActions(
+	actions []metadata.PDECrossPoolTradeRequestAction,
+) [][]string {
+	untradableInsts := [][]string{}
+	for _, tradeAction := range actions {
+		//Work-around solution for the sake of syncing mainnet
+		//Todo: find better solution
+		if _, err := metadata.AssertPaymentAddressAndTxVersion(tradeAction.Meta.TraderAddressStr, 1); err == nil {
+			if len(tradeAction.Meta.SubTraderAddressStr) == 0 {
+				tradeAction.Meta.SubTraderAddressStr = tradeAction.Meta.TraderAddressStr
+			}
+		}
+
+		refundTradingFeeInst := buildCrossPoolTradeRefundInst(
+			tradeAction.Meta.SubTraderAddressStr,
+			tradeAction.Meta.SubTxRandomStr,
+			common.PRVCoinID.String(),
+			tradeAction.Meta.TradingFee,
+			common.PDECrossPoolTradeFeeRefundChainStatus,
+			tradeAction.ShardID,
+			tradeAction.TxReqID,
+		)
+		if len(refundTradingFeeInst) > 0 {
+			untradableInsts = append(untradableInsts, refundTradingFeeInst)
+		}
+
+		refundSellingTokenInst := buildCrossPoolTradeRefundInst(
+			tradeAction.Meta.TraderAddressStr,
+			tradeAction.Meta.TxRandomStr,
+			tradeAction.Meta.TokenIDToSellStr,
+			tradeAction.Meta.SellAmount,
+			common.PDECrossPoolTradeSellingTokenRefundChainStatus,
+			tradeAction.ShardID,
+			tradeAction.TxReqID,
+		)
+		if len(refundSellingTokenInst) > 0 {
+			untradableInsts = append(untradableInsts, refundSellingTokenInst)
+		}
+	}
+	return untradableInsts
+}
+
+func (s *stateV1) buildInstsForSortedTradableActions(
+	actions []metadata.PDECrossPoolTradeRequestAction,
+	beaconHeight uint64,
+) ([][]string, map[string]uint64) {
+	prvIDStr := common.PRVCoinID.String()
+	tradableInsts := [][]string{}
+	tradingFeeByPair := make(map[string]uint64)
+	for _, action := range actions {
+		tradeMeta := action.Meta
+		var sequentialTrades []*tradeInfo
+		if isTradingPairContainsPRV(tradeMeta.TokenIDToSellStr, tradeMeta.TokenIDToBuyStr) { // direct trade
+			sequentialTrades = []*tradeInfo{
+				&tradeInfo{
+					tokenIDToBuyStr:  tradeMeta.TokenIDToBuyStr,
+					tokenIDToSellStr: tradeMeta.TokenIDToSellStr,
+					sellAmount:       tradeMeta.SellAmount,
+				},
+			}
+		} else { // cross pool trade
+			sequentialTrades = []*tradeInfo{
+				&tradeInfo{
+					tokenIDToBuyStr:  prvIDStr,
+					tokenIDToSellStr: tradeMeta.TokenIDToSellStr,
+					sellAmount:       tradeMeta.SellAmount,
+				},
+				&tradeInfo{
+					tokenIDToBuyStr:  tradeMeta.TokenIDToBuyStr,
+					tokenIDToSellStr: prvIDStr,
+					sellAmount:       uint64(0),
+				},
+			}
+		}
+
+		//Work-around solution for the sake of syncing mainnet
+		//Todo: find better solution
+		if _, err := metadata.AssertPaymentAddressAndTxVersion(action.Meta.TraderAddressStr, 1); err == nil {
+			if len(action.Meta.SubTraderAddressStr) == 0 {
+				action.Meta.SubTraderAddressStr = action.Meta.TraderAddressStr
+			}
+		}
+
+		newInsts, err := s.buildInstructionsCrossPoolTrade(
+			sequentialTrades,
+			action,
+			beaconHeight,
+			tradingFeeByPair,
+		)
+		if err != nil {
+			Logger.log.Error(err)
+			continue
+		}
+		tradableInsts = append(tradableInsts, newInsts...)
+	}
+	return tradableInsts, tradingFeeByPair
+}
+
+func (s *stateV1) buildInstructionsCrossPoolTrade(
+	sequentialTrades []*tradeInfo,
+	action metadata.PDECrossPoolTradeRequestAction,
+	beaconHeight uint64,
+	tradingFeeByPair map[string]uint64,
+) ([][]string, error) {
+	res := [][]string{}
+
+	should, err := s.shouldRefundCrossPoolTrade(sequentialTrades, action, beaconHeight)
+	if err != nil {
+		return res, err
+	}
+	if should {
+		return refundForCrossPoolTrade(sequentialTrades, action)
+	}
+
+	inst, err := s.buildAcceptedCrossPoolTradeInstruction(
+		sequentialTrades,
+		action,
+		beaconHeight,
+		tradingFeeByPair,
+	)
+	if err != nil {
+		return res, err
+	}
+	res = append(res, inst)
+	return res, nil
+}
+
+func (s *stateV1) buildAcceptedCrossPoolTradeInstruction(
+	sequentialTrades []*tradeInfo,
+	action metadata.PDECrossPoolTradeRequestAction,
+	beaconHeight uint64,
+	tradingFeeByPair map[string]uint64,
+) ([]string, error) {
+	tradeAcceptedContents := []metadata.PDECrossPoolTradeAcceptedContent{}
+	proportionalFee := action.Meta.TradingFee / uint64(len(sequentialTrades))
+	for idx, tradeInf := range sequentialTrades {
+		// update current pde state on mem
+		pairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr))
+		poolPair, _ := s.poolPairs[pairKey]
+
+		poolPair.Token1PoolValue = tradeInf.newTokenPoolValueToBuy
+		poolPair.Token2PoolValue = tradeInf.newTokenPoolValueToSell
+		if poolPair.Token1IDStr == tradeInf.tokenIDToSellStr {
+			poolPair.Token1PoolValue = tradeInf.newTokenPoolValueToSell
+			poolPair.Token2PoolValue = tradeInf.newTokenPoolValueToBuy
+		}
+
+		// build trade accepted contents
+		tradeAcceptedContent := metadata.PDECrossPoolTradeAcceptedContent{
+			TraderAddressStr: action.Meta.TraderAddressStr,
+			TxRandomStr:      action.Meta.TxRandomStr,
+			TokenIDToBuyStr:  tradeInf.tokenIDToBuyStr,
+			ReceiveAmount:    tradeInf.receiveAmount,
+			Token1IDStr:      poolPair.Token1IDStr,
+			Token2IDStr:      poolPair.Token2IDStr,
+			ShardID:          action.ShardID,
+			RequestedTxID:    action.TxReqID,
+		}
+		tradeAcceptedContent.Token1PoolValueOperation = metadata.TokenPoolValueOperation{
+			Operator: "-",
+			Value:    tradeInf.receiveAmount,
+		}
+		tradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
+			Operator: "+",
+			Value:    tradeInf.sellAmount,
+		}
+		if poolPair.Token1IDStr == tradeInf.tokenIDToSellStr {
+			tradeAcceptedContent.Token1PoolValueOperation = metadata.TokenPoolValueOperation{
+				Operator: "+",
+				Value:    tradeInf.sellAmount,
+			}
+			tradeAcceptedContent.Token2PoolValueOperation = metadata.TokenPoolValueOperation{
+				Operator: "-",
+				Value:    tradeInf.receiveAmount,
+			}
+		}
+
+		addingFee := proportionalFee
+		if idx == len(sequentialTrades)-1 {
+			addingFee = action.Meta.TradingFee - uint64(len(sequentialTrades)-1)*proportionalFee
+		}
+		tradeAcceptedContent.AddingFee = addingFee
+		sKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr, "")
+		if err != nil {
+			Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
+			return []string{}, err
+		}
+
+		sKey := string(sKeyBytes)
+		tradingFeeByPair[sKey] += addingFee
+		tradeAcceptedContents = append(tradeAcceptedContents, tradeAcceptedContent)
+	}
+
+	tradeAcceptedContentsBytes, err := json.Marshal(tradeAcceptedContents)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while marshaling pdeTradeAcceptedContents: %+v", err)
+		return []string{}, nil
+	}
+	inst := []string{
+		strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta),
+		strconv.Itoa(int(action.ShardID)),
+		common.PDECrossPoolTradeAcceptedChainStatus,
+		string(tradeAcceptedContentsBytes),
+	}
+	return inst, nil
+}
+
+func buildCrossPoolTradeRefundInst(
+	traderAddressStr string,
+	txRandomStr string,
+	tokenIDStr string,
+	amount uint64,
+	status string,
+	shardID byte,
+	txReqID common.Hash,
+) []string {
+	if amount == 0 {
+		return []string{}
+	}
+	refundCrossPoolTrade := metadata.PDERefundCrossPoolTrade{
+		TraderAddressStr: traderAddressStr,
+		TxRandomStr:      txRandomStr,
+		TokenIDStr:       tokenIDStr,
+		Amount:           amount,
+		ShardID:          shardID,
+		TxReqID:          txReqID,
+	}
+	refundCrossPoolTradeBytes, _ := json.Marshal(refundCrossPoolTrade)
+	return []string{
+		strconv.Itoa(metadata.PDECrossPoolTradeRequestMeta),
+		strconv.Itoa(int(shardID)),
+		status,
+		string(refundCrossPoolTradeBytes),
+	}
+}
+
+// build refund instructions for an unsuccessful trade
+// note: only refund if amount > 0
+func refundForCrossPoolTrade(
+	sequentialTrades []*tradeInfo,
+	action metadata.PDECrossPoolTradeRequestAction,
+) ([][]string, error) {
+
+	refundTradingFeeInst := buildCrossPoolTradeRefundInst(
+		action.Meta.SubTraderAddressStr,
+		action.Meta.SubTxRandomStr,
+		common.PRVIDStr,
+		action.Meta.TradingFee,
+		common.PDECrossPoolTradeFeeRefundChainStatus,
+		action.ShardID,
+		action.TxReqID,
+	)
+	refundSellingTokenInst := buildCrossPoolTradeRefundInst(
+		action.Meta.TraderAddressStr,
+		action.Meta.TxRandomStr,
+		sequentialTrades[0].tokenIDToSellStr,
+		sequentialTrades[0].sellAmount,
+		common.PDECrossPoolTradeSellingTokenRefundChainStatus,
+		action.ShardID,
+		action.TxReqID,
+	)
+
+	refundInsts := [][]string{}
+	if len(refundTradingFeeInst) > 0 {
+		refundInsts = append(refundInsts, refundTradingFeeInst)
+	}
+	if len(refundSellingTokenInst) > 0 {
+		refundInsts = append(refundInsts, refundSellingTokenInst)
+	}
+	return refundInsts, nil
+}
+
+func (s *stateV1) categorizeAndSortCrossPoolTradeInstsByFee(
+	actions [][]string,
+	beaconHeight uint64,
+) (
+	[]metadata.PDECrossPoolTradeRequestAction,
+	[]metadata.PDECrossPoolTradeRequestAction,
+) {
+
+	prvIDStr := common.PRVCoinID.String()
+	tradableActions := []metadata.PDECrossPoolTradeRequestAction{}
+	untradableActions := []metadata.PDECrossPoolTradeRequestAction{}
+
+	for _, action := range actions {
+		contentStr := action[1]
+		contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde trade action: %+v", err)
+			continue
+		}
+		var crossPoolTradeRequestAction metadata.PDECrossPoolTradeRequestAction
+		err = json.Unmarshal(contentBytes, &crossPoolTradeRequestAction)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde cross pool trade request action: %+v", err)
+			continue
+		}
+		tradeMeta := crossPoolTradeRequestAction.Meta
+		tokenIDToSell := tradeMeta.TokenIDToSellStr
+		tokenIDToBuy := tradeMeta.TokenIDToBuyStr
+		if (isTradingPairContainsPRV(tokenIDToSell, tokenIDToBuy) &&
+			!s.havePoolPair(beaconHeight, tokenIDToSell, tokenIDToBuy)) ||
+			(!isTradingPairContainsPRV(tokenIDToSell, tokenIDToBuy) &&
+				(!s.havePoolPair(beaconHeight, prvIDStr, tokenIDToSell) ||
+					!s.havePoolPair(beaconHeight, prvIDStr, tokenIDToBuy))) {
+			untradableActions = append(untradableActions, crossPoolTradeRequestAction)
+			continue
+		}
+		tradableActions = append(tradableActions, crossPoolTradeRequestAction)
+	}
+	// sort tradable actions by trading fee
+	sort.SliceStable(tradableActions, func(i, j int) bool {
+		firstTradingFee, firstSellAmount := s.prepareInfoForSorting(
+			beaconHeight,
+			tradableActions[i],
+		)
+		secondTradingFee, secondSellAmount := s.prepareInfoForSorting(
+			beaconHeight,
+			tradableActions[j],
+		)
+		// comparing a/b to c/d is equivalent with comparing a*d to c*b
+		firstItemProportion := big.NewInt(0)
+		firstItemProportion.Mul(
+			new(big.Int).SetUint64(firstTradingFee),
+			new(big.Int).SetUint64(secondSellAmount),
+		)
+		secondItemProportion := big.NewInt(0)
+		secondItemProportion.Mul(
+			new(big.Int).SetUint64(secondTradingFee),
+			new(big.Int).SetUint64(firstSellAmount),
+		)
+		return firstItemProportion.Cmp(secondItemProportion) == 1
+	})
+	return tradableActions, untradableActions
+}
+
+func (s *stateV1) prepareInfoForSorting(
+	beaconHeight uint64,
+	action metadata.PDECrossPoolTradeRequestAction,
+) (uint64, uint64) {
+	prvIDStr := common.PRVCoinID.String()
+	tradeMeta := action.Meta
+	sellAmount := tradeMeta.SellAmount
+	tradingFee := tradeMeta.TradingFee
+	if tradeMeta.TokenIDToSellStr == prvIDStr {
+		return tradingFee, sellAmount
+	}
+	poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, prvIDStr, tradeMeta.TokenIDToSellStr))
+	poolPair, _ := s.poolPairs[poolPairKey]
+	sellAmount, _, _, _ = calcTradeValue(poolPair, tradeMeta.TokenIDToSellStr, sellAmount)
+	return tradingFee, sellAmount
+}
+
+func calcTradeValue(
+	poolPair *rawdbv2.PDEPoolForPair,
+	tokenIDStrToSell string,
+	sellAmount uint64,
+) (uint64, uint64, uint64, error) {
+	tokenPoolValueToBuy := poolPair.Token1PoolValue
+	tokenPoolValueToSell := poolPair.Token2PoolValue
+	if poolPair.Token1IDStr == tokenIDStrToSell {
+		tokenPoolValueToSell = poolPair.Token1PoolValue
+		tokenPoolValueToBuy = poolPair.Token2PoolValue
+	}
+	invariant := big.NewInt(0)
+	invariant.Mul(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(tokenPoolValueToBuy))
+	newTokenPoolValueToSell := big.NewInt(0)
+	newTokenPoolValueToSell.Add(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(sellAmount))
+
+	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, newTokenPoolValueToSell).Uint64()
+	modValue := big.NewInt(0).Mod(invariant, newTokenPoolValueToSell)
+	if modValue.Cmp(big.NewInt(0)) != 0 {
+		newTokenPoolValueToBuy++
+	}
+	if tokenPoolValueToBuy <= newTokenPoolValueToBuy {
+		return uint64(0), uint64(0), uint64(0), errors.New("tokenPoolValueToBuy <= newTokenPoolValueToBuy")
+	}
+	return tokenPoolValueToBuy - newTokenPoolValueToBuy, newTokenPoolValueToBuy, newTokenPoolValueToSell.Uint64(), nil
+}
+
+func (s *stateV1) havePoolPair(
+	beaconHeight uint64,
+	token1IDStr string,
+	token2IDStr string,
+) bool {
+	poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, token1IDStr, token2IDStr))
+	poolPair, found := s.poolPairs[poolPairKey]
+	if !found || poolPair == nil || poolPair.Token1PoolValue == 0 || poolPair.Token2PoolValue == 0 {
+		return false
+	}
+	return true
 }
 
 func (s *stateV1) buildInstructionsForFeeWithdrawal(
@@ -75,13 +577,13 @@ func (s *stateV1) buildInstructionsForFeeWithdrawal(
 		contentStr := action[1]
 		contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 		if err != nil {
-			Logger.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
+			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
 			return utils.EmptyStringMatrix, nil
 		}
 		var feeWithdrawalRequestAction metadata.PDEFeeWithdrawalRequestAction
 		err = json.Unmarshal(contentBytes, &feeWithdrawalRequestAction)
 		if err != nil {
-			Logger.Errorf("ERROR: an error occured while unmarshaling pde fee withdrawal request action: %+v", err)
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde fee withdrawal request action: %+v", err)
 			return utils.EmptyStringMatrix, nil
 		}
 		wdMeta := feeWithdrawalRequestAction.Meta
@@ -92,7 +594,7 @@ func (s *stateV1) buildInstructionsForFeeWithdrawal(
 			wdMeta.WithdrawerAddressStr,
 		)
 		if err != nil {
-			Logger.Errorf("cannot build PDETradingFeeKey for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
+			Logger.log.Errorf("cannot build PDETradingFeeKey for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
 			return utils.EmptyStringMatrix, err
 		}
 		tradingFeeKey := string(tradingFeeKeyBytes)
@@ -126,7 +628,7 @@ func (s *stateV1) buildInstructionsForTrade(
 	res := [][]string{}
 
 	// handle trade
-	sortedTradesActions := s.sortPDETradeInstsByFee(
+	sortedTradesActions := s.sortTradeInstsByFee(
 		actions,
 		beaconHeight,
 	)
@@ -158,6 +660,36 @@ func (s *stateV1) buildInstructionsForTrade(
 	}
 
 	return res, nil
+}
+
+func (s *stateV1) shouldRefundCrossPoolTrade(
+	sequentialTrades []*tradeInfo,
+	action metadata.PDECrossPoolTradeRequestAction,
+	beaconHeight uint64,
+) (bool, error) {
+	if s.poolPairs == nil || len(s.poolPairs) == 0 {
+		return true, nil
+	}
+
+	amt := sequentialTrades[0].sellAmount
+	for _, tradeInf := range sequentialTrades {
+		tradeInf.sellAmount = amt
+		pairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr))
+		pdePoolPair, _ := s.poolPairs[pairKey]
+		newAmt, newTokenPoolValueToBuy, newTokenPoolValueToSell, err := calcTradeValue(pdePoolPair, tradeInf.tokenIDToSellStr, amt)
+		if err != nil {
+			return true, err
+		}
+		amt = newAmt
+		tradeInf.newTokenPoolValueToBuy = newTokenPoolValueToBuy
+		tradeInf.newTokenPoolValueToSell = newTokenPoolValueToSell
+		tradeInf.receiveAmount = amt
+	}
+
+	if action.Meta.MinAcceptableAmount > amt {
+		return true, nil
+	}
+	return false, nil
 }
 
 func (s *stateV1) buildAcceptedTradeInstruction(
@@ -198,7 +730,7 @@ func (s *stateV1) buildAcceptedTradeInstruction(
 	}
 	pdeTradeAcceptedContentBytes, err := json.Marshal(pdeTradeAcceptedContent)
 	if err != nil {
-		Logger.Errorf("ERROR: an error occured while marshaling pdeTradeAcceptedContent: %+v", err)
+		Logger.log.Errorf("ERROR: an error occured while marshaling pdeTradeAcceptedContent: %+v", err)
 		return utils.EmptyStringArray, err
 	}
 	return []string{
@@ -209,7 +741,7 @@ func (s *stateV1) buildAcceptedTradeInstruction(
 	}, nil
 }
 
-func (s *stateV1) sortPDETradeInstsByFee(
+func (s *stateV1) sortTradeInstsByFee(
 	actions [][]string,
 	beaconHeight uint64,
 ) []metadata.PDETradeRequestAction {
@@ -220,13 +752,13 @@ func (s *stateV1) sortPDETradeInstsByFee(
 		contentStr := action[1]
 		contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
 		if err != nil {
-			Logger.Errorf("ERROR: an error occured while decoding content string of pde trade action: %+v", err)
+			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde trade action: %+v", err)
 			continue
 		}
 		pdeTradeReqAction := metadata.PDETradeRequestAction{}
 		err = json.Unmarshal(contentBytes, &pdeTradeReqAction)
 		if err != nil {
-			Logger.Errorf("ERROR: an error occured while unmarshaling pde trade action: %+v", err)
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde trade action: %+v", err)
 			continue
 		}
 		tradeMeta := pdeTradeReqAction.Meta
@@ -285,32 +817,16 @@ func (s *stateV1) shouldRefundTradeAction(
 		return true, 0, nil
 	}
 
-	tokenPoolValueToBuy := poolPair.Token1PoolValue
-	tokenPoolValueToSell := poolPair.Token2PoolValue
-	if poolPair.Token1IDStr == action.Meta.TokenIDToSellStr {
-		tokenPoolValueToSell = poolPair.Token1PoolValue
-		tokenPoolValueToBuy = poolPair.Token2PoolValue
-	}
-	invariant := big.NewInt(0)
-	invariant.Mul(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(tokenPoolValueToBuy))
-	newTokenPoolValueToSell := big.NewInt(0)
-	newTokenPoolValueToSell.Add(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(action.Meta.SellAmount))
-
-	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, newTokenPoolValueToSell).Uint64()
-	modValue := big.NewInt(0).Mod(invariant, newTokenPoolValueToSell)
-	if modValue.Cmp(big.NewInt(0)) != 0 {
-		newTokenPoolValueToBuy++
-	}
-	if tokenPoolValueToBuy <= newTokenPoolValueToBuy {
+	receiveAmt, newTokenPoolValueToBuy, tempNewTokenPoolValueToSell, err := calcTradeValue(poolPair, action.Meta.TokenIDToSellStr, action.Meta.SellAmount)
+	if err != nil {
 		return true, 0, nil
 	}
-
-	receiveAmt := tokenPoolValueToBuy - newTokenPoolValueToBuy
 	if action.Meta.MinAcceptableAmount > receiveAmt {
 		return true, 0, nil
 	}
 
 	// update current pde state on mem
+	newTokenPoolValueToSell := new(big.Int).SetUint64(tempNewTokenPoolValueToSell)
 	fee := action.Meta.TradingFee
 	newTokenPoolValueToSell.Add(newTokenPoolValueToSell, new(big.Int).SetUint64(fee))
 

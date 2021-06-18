@@ -3,11 +3,11 @@ package pdex
 import "github.com/incognitochain/incognito-chain/common"
 
 type PDEXLogger struct {
-	common.Logger
+	log common.Logger
 }
 
 func (pDEXLogger *PDEXLogger) Init(logger common.Logger) {
-	pDEXLogger.Logger = logger
+	pDEXLogger.log = logger
 }
 
 // Global instant to use
