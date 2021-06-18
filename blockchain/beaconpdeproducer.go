@@ -543,7 +543,7 @@ func buildCrossPoolTradeRefundInst(
 	}
 	refundCrossPoolTrade := metadata.PDERefundCrossPoolTrade{
 		TraderAddressStr: traderAddressStr,
-		TxRandomStr: txRandomStr,
+		TxRandomStr:      txRandomStr,
 		TokenIDStr:       tokenIDStr,
 		Amount:           amount,
 		ShardID:          shardID,
@@ -727,7 +727,7 @@ func (blockchain *BlockChain) buildInstructionsForPDECrossPoolTrade(
 		}
 		pdeTradeAcceptedContent.AddingFee = addingFee
 		sKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, tradeInf.tokenIDToBuyStr, tradeInf.tokenIDToSellStr, "")
-		if err != nil{
+		if err != nil {
 			Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
 			return nil, err
 		}
@@ -792,6 +792,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 		return [][]string{inst}, nil
 	}
 	// trade accepted
+	// @tin
 	tokenPoolValueToBuy := pdePoolPair.Token1PoolValue
 	tokenPoolValueToSell := pdePoolPair.Token2PoolValue
 	if pdePoolPair.Token1IDStr == pdeTradeReqAction.Meta.TokenIDToSellStr {
@@ -800,7 +801,6 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	}
 	invariant := big.NewInt(0)
 	invariant.Mul(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(tokenPoolValueToBuy))
-	fee := pdeTradeReqAction.Meta.TradingFee
 	newTokenPoolValueToSell := big.NewInt(0)
 	newTokenPoolValueToSell.Add(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(pdeTradeReqAction.Meta.SellAmount))
 
@@ -831,6 +831,7 @@ func (blockchain *BlockChain) buildInstructionsForPDETrade(
 	}
 
 	// update current pde state on mem
+	fee := pdeTradeReqAction.Meta.TradingFee
 	newTokenPoolValueToSell.Add(newTokenPoolValueToSell, new(big.Int).SetUint64(fee))
 
 	pdePoolPair.Token1PoolValue = newTokenPoolValueToBuy
@@ -932,7 +933,7 @@ func deductPDEAmountsV2(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, wdMeta.WithdrawerAddressStr,
 	)
-	if err != nil{
+	if err != nil {
 		Logger.log.Errorf("cannot build PDESharesKeyV2 for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
 		return deductingAmounts
 	}
@@ -947,7 +948,7 @@ func deductPDEAmountsV2(
 		beaconHeight,
 		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, "",
 	)
-	if err != nil{
+	if err != nil {
 		Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
 		return deductingAmounts
 	}
@@ -1161,60 +1162,4 @@ func (blockchain *BlockChain) buildInstForTradingFeesDist(
 		"",
 		string(feesForContributorsByPairBytes),
 	}
-}
-
-func (blockchain *BlockChain) buildInstructionsForPDEFeeWithdrawal(
-	contentStr string,
-	shardID byte,
-	metaType int,
-	currentPDEState *CurrentPDEState,
-	beaconHeight uint64,
-) ([][]string, error) {
-	if currentPDEState == nil {
-		Logger.log.Warn("WARN - [buildInstructionsForPDEFeeWithdrawal]: Current PDE state is null.")
-		return [][]string{}, nil
-	}
-	contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
-		return [][]string{}, nil
-	}
-	var pdeFeeWithdrawalRequestAction metadata.PDEFeeWithdrawalRequestAction
-	err = json.Unmarshal(contentBytes, &pdeFeeWithdrawalRequestAction)
-	if err != nil {
-		Logger.log.Errorf("ERROR: an error occured while unmarshaling pde fee withdrawal request action: %+v", err)
-		return [][]string{}, nil
-	}
-	wdMeta := pdeFeeWithdrawalRequestAction.Meta
-	pdeTradingFees := currentPDEState.PDETradingFees
-	tradingFeeKeyBytes, err := rawdbv2.BuildPDETradingFeeKey(
-		beaconHeight,
-		wdMeta.WithdrawalToken1IDStr,
-		wdMeta.WithdrawalToken2IDStr,
-		wdMeta.WithdrawerAddressStr,
-	)
-	if err != nil {
-		Logger.log.Errorf("cannot build PDETradingFeeKey for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
-		return nil, err
-	}
-
-	tradingFeeKey := string(tradingFeeKeyBytes)
-	withdrawableFee, found := pdeTradingFees[tradingFeeKey]
-	if !found || withdrawableFee < wdMeta.WithdrawalFeeAmt {
-		rejectedInst := []string{
-			strconv.Itoa(metaType),
-			strconv.Itoa(int(shardID)),
-			common.PDEFeeWithdrawalRejectedChainStatus,
-			contentStr,
-		}
-		return [][]string{rejectedInst}, nil
-	}
-	pdeTradingFees[tradingFeeKey] -= wdMeta.WithdrawalFeeAmt
-	acceptedInst := []string{
-		strconv.Itoa(metaType),
-		strconv.Itoa(int(shardID)),
-		common.PDEFeeWithdrawalAcceptedChainStatus,
-		contentStr,
-	}
-	return [][]string{acceptedInst}, nil
 }

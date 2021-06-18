@@ -83,20 +83,6 @@ func collectStatefulActions(
 	return statefulInsts
 }
 
-func groupPDEActionsByShardID(
-	pdeActionsByShardID map[byte][][]string,
-	action []string,
-	shardID byte,
-) map[byte][][]string {
-	_, found := pdeActionsByShardID[shardID]
-	if !found {
-		pdeActionsByShardID[shardID] = [][]string{action}
-	} else {
-		pdeActionsByShardID[shardID] = append(pdeActionsByShardID[shardID], action)
-	}
-	return pdeActionsByShardID
-}
-
 func (blockchain *BlockChain) buildStatefulInstructions(
 	beaconBestState *BeaconBestState,
 	featureStateDB *statedb.StateDB,
@@ -132,7 +118,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	instructions := [][]string{}
 
 	// Start pde instructions handler
-	pdeShardInstructions := [][]string{}
+	pdeContributionActions := [][]string{}
+	pdePRVRequiredContributionActions := [][]string{}
+	pdeTradeActions := [][]string{}
+	pdeCrossPoolTradeActions := [][]string{}
+	pdeWithdrawalActions := [][]string{}
+	pdeFeeWithdrawalActions := [][]string{}
 
 	var keys []int
 	for k := range statefulActionsByShardID {
@@ -178,17 +169,17 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 				}
 
 			case metadata.PDEContributionMeta:
-				pdeShardInstructions = append(pdeShardInstructions, action)
+				pdeContributionActions = append(pdeContributionActions, action)
 			case metadata.PDEPRVRequiredContributionRequestMeta:
-				pdeShardInstructions = append(pdeShardInstructions, action)
+				pdePRVRequiredContributionActions = append(pdePRVRequiredContributionActions, action)
 			case metadata.PDETradeRequestMeta:
-				pdeShardInstructions = append(pdeShardInstructions, action)
+				pdeTradeActions = append(pdeTradeActions, action)
 			case metadata.PDECrossPoolTradeRequestMeta:
-				pdeShardInstructions = append(pdeShardInstructions, action)
+				pdeCrossPoolTradeActions = append(pdeCrossPoolTradeActions, action)
 			case metadata.PDEWithdrawalRequestMeta:
-				pdeShardInstructions = append(pdeShardInstructions, action)
+				pdeWithdrawalActions = append(pdeWithdrawalActions, action)
 			case metadata.PDEFeeWithdrawalRequestMeta:
-				pdeShardInstructions = append(pdeShardInstructions, action)
+				pdeFeeWithdrawalActions = append(pdeFeeWithdrawalActions, action)
 			default:
 				continue
 			}
@@ -198,10 +189,15 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		}
 	}
 
-	if beaconBestState.pDEXState.Version() <= pdex.SignleProvideVersion {
+	if beaconBestState.pDEXState.Version() <= pdex.ForceWithPrvVersion {
 		pdexStateEnv := pdex.
 			NewStateEnvBuilder().
-			BuildShardInstructions(pdeShardInstructions).
+			BuildContributionActions(pdeContributionActions).
+			BuildPRVRequiredContributionActions(pdePRVRequiredContributionActions).
+			BuildTradeActions(pdeTradeActions).
+			BuildCrossPoolTradeActions(pdeCrossPoolTradeActions).
+			BuildWithdrawalActions(pdeWithdrawalActions).
+			BuildFeeWithdrawalActions(pdeFeeWithdrawalActions).
 			Build()
 
 		pdeInstructions, err := beaconBestState.pDEXState.Update(pdexStateEnv)
@@ -474,28 +470,6 @@ func (blockchain *BlockChain) handlePDEInsts(
 	pdeFeeWithdrawalActionsByShardID map[byte][][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
-
-	// handle fee withdrawal
-	var feeWRKeys []int
-	for k := range pdeFeeWithdrawalActionsByShardID {
-		feeWRKeys = append(feeWRKeys, int(k))
-	}
-	sort.Ints(feeWRKeys)
-	for _, value := range feeWRKeys {
-		shardID := byte(value)
-		actions := pdeFeeWithdrawalActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEFeeWithdrawal(contentStr, shardID, metadata.PDEFeeWithdrawalRequestMeta, currentPDEState, beaconHeight)
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
 
 	// handle trade
 	sortedTradesActions := sortPDETradeInstsByFee(
