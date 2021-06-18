@@ -118,6 +118,11 @@ const (
 
 	InitTokenRequestMeta  = 244
 	InitTokenResponseMeta = 245
+
+	IssuingBSCRequestMeta  = 250
+	IssuingBSCResponseMeta = 251
+	BurningPBSCRequestMeta = 252
+	BurningBSCConfirmMeta  = 253
 )
 
 var minerCreatedMetaTypes = []int{
@@ -154,19 +159,19 @@ const (
 )
 
 var (
-	// if the blockchain is running in Docker container
-	// then using GETH_NAME env's value (aka geth container name)
-	// otherwise using localhost
-	//EthereumLightNodeHost     = common.GetENV("GETH_NAME", "127.0.0.1")
-	//EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "http")
-	//EthereumLightNodePort     = common.GetENV("GETH_PORT", "8545")
+// if the blockchain is running in Docker container
+// then using GETH_NAME env's value (aka geth container name)
+// otherwise using localhost
+//EthereumLightNodeHost     = common.GetENV("GETH_NAME", "127.0.0.1")
+//EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "http")
+//EthereumLightNodePort     = common.GetENV("GETH_PORT", "8545")
 )
 
 // Kovan testnet
 var (
-//	// if the blockchain is running in Docker container
-//	// then using GETH_NAME env's value (aka geth container name)
-//	// otherwise using localhost
+	//	// if the blockchain is running in Docker container
+	//	// then using GETH_NAME env's value (aka geth container name)
+	//	// otherwise using localhost
 	EthereumLightNodeHost     = common.GetENV("GETH_NAME", "https://kovan.infura.io/v3/155e4050bb3b49448145a4daffa8bd7c")
 	EthereumLightNodeProtocol = common.GetENV("GETH_PROTOCOL", "")
 	EthereumLightNodePort     = common.GetENV("GETH_PORT", "")

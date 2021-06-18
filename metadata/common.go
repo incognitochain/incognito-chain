@@ -3,11 +3,12 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	ec "github.com/ethereum/go-ethereum/common"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"strconv"
 
 	"github.com/pkg/errors"
 )
@@ -37,8 +38,8 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	}
 
 	var md Metadata
-	typeFloat,ok := mtTemp["Type"].(float64)
-	if !ok{
+	typeFloat, ok := mtTemp["Type"].(float64)
+	if !ok {
 		return nil, errors.Errorf("Could not parse metadata with type: %v", mtTemp["Type"])
 	}
 	theType := int(typeFloat)
@@ -171,6 +172,14 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 		md = &PortalLiquidationCustodianDepositV3{}
 	case PortalTopUpWaitingPortingRequestMetaV3:
 		md = &PortalTopUpWaitingPortingRequestV3{}
+	case IssuingBSCRequestMeta:
+		return nil, nil
+	case IssuingBSCResponseMeta:
+		return nil, nil
+	case BurningPBSCRequestMeta:
+		return nil, nil
+	case BurningBSCConfirmMeta:
+		return nil, nil
 	default:
 		Logger.log.Debug("[db] parse meta err: %+v\n", meta)
 		return nil, errors.Errorf("Could not parse metadata with type: %d", theType)
@@ -180,7 +189,7 @@ func ParseMetadata(meta interface{}) (Metadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return md, nil
 }
 
@@ -665,6 +674,6 @@ func GenTokenIDFromRequest(txHash string, shardID byte) *common.Hash {
 }
 
 type OTADeclaration struct {
-	PublicKey 	[32]byte
-	TokenID 	common.Hash
+	PublicKey [32]byte
+	TokenID   common.Hash
 }
