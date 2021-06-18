@@ -113,6 +113,12 @@ const (
 	BurningForDepositToSCRequestMetaV2 = 242
 	BurningConfirmForDepositToSCMeta   = 97
 	BurningConfirmForDepositToSCMetaV2 = 243
+
+	// incognito mode for bsc
+	IssuingBSCRequestMeta  = 250
+	IssuingBSCResponseMeta = 251
+	BurningPBSCRequestMeta = 252
+	BurningBSCConfirmMeta  = 253
 )
 
 var minerCreatedMetaTypes = []int{
@@ -120,6 +126,7 @@ var minerCreatedMetaTypes = []int{
 	BeaconSalaryResponseMeta,
 	IssuingResponseMeta,
 	IssuingETHResponseMeta,
+	IssuingBSCResponseMeta,
 	ReturnStakingMeta,
 	WithDrawRewardResponseMeta,
 	PDETradeResponseMeta,
@@ -158,7 +165,7 @@ const (
 
 const (
 	StopAutoStakingAmount = 0
-	ETHConfirmationBlocks = 15
+	EVMConfirmationBlocks = 15
 )
 
 var AcceptedWithdrawRewardRequestVersion = []int{0, 1}

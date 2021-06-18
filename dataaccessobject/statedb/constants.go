@@ -54,6 +54,9 @@ const (
 	PortalUnlockOverRateCollaterals
 
 	SlashingCommitteeObjectType
+
+	// bsc bridge
+	BridgeBSCTxObjectType
 )
 
 // Prefix length

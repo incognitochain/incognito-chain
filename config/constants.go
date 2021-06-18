@@ -13,6 +13,7 @@ const (
 	GethHostKey       = "GETH_NAME"
 	GethPortKey       = "GETH_PORT"
 	GethProtocolKey   = "GETH_PROTOCOL"
+	BSCHostKey        = "BSC_HOST"
 )
 
 // default config

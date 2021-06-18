@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"math/big"
 	"strconv"
@@ -40,22 +41,27 @@ func (blockchain *BlockChain) buildBridgeInstructions(stateDB *statedb.StateDB, 
 
 		case metadata.BurningRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMeta, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMeta, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningRequestMetaV2:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMetaV2, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmMetaV2, inst, beaconHeight, "")
+			newInst = [][]string{burningConfirm}
+
+		case metadata.BurningPBSCRequestMeta:
+			burningConfirm := []string{}
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningBSCConfirmMeta, inst, beaconHeight, common.BSCPrefix)
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningForDepositToSCRequestMeta:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMeta, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMeta, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		case metadata.BurningForDepositToSCRequestMetaV2:
 			burningConfirm := []string{}
-			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMetaV2, inst, beaconHeight)
+			burningConfirm, err = buildBurningConfirmInst(stateDB, metadata.BurningConfirmForDepositToSCMetaV2, inst, beaconHeight, "")
 			newInst = [][]string{burningConfirm}
 
 		default:
@@ -79,6 +85,7 @@ func buildBurningConfirmInst(
 	burningMetaType int,
 	inst []string,
 	height uint64,
+	prefix string,
 ) ([]string, error) {
 	BLogger.log.Infof("Build BurningConfirmInst: %s", inst)
 	// Parse action and get metadata
@@ -97,9 +104,19 @@ func buildBurningConfirmInst(
 		return nil, err
 	}
 
+	if len(tokenID) < common.ExternalBridgeTokenLength {
+		return nil, errors.New("invalid external token id")
+	}
+
+	prefixLen := len(prefix)
+	if (prefixLen > 0 && !bytes.Equal([]byte(prefix), tokenID[:prefixLen])) ||
+		len(tokenID) != (common.ExternalBridgeTokenLength+prefixLen) {
+		return nil, errors.New(fmt.Sprintf("invalid BurningRequestConfirm type %v with external tokeid %v", burningMetaType, tokenID))
+	}
+
 	// Convert amount to big.Int to get bytes later
 	amount := big.NewInt(0).SetUint64(md.BurningAmount)
-	if bytes.Equal(tokenID, rCommon.HexToAddress(common.EthAddrStr).Bytes()) {
+	if bytes.Equal(tokenID, append([]byte(prefix), rCommon.HexToAddress(common.NativeToken).Bytes()...)) {
 		// Convert Gwei to Wei for Ether
 		amount = amount.Mul(amount, big.NewInt(1000000000))
 	}
