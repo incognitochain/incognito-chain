@@ -565,8 +565,10 @@ func (p *PortalSubmitConfirmedTxProcessor) PrepareDataForBlockProducer(stateDB *
 	var processedUnshieldRequestBatch metadata.PortalUnshieldRequestBatchStatus
 	err = json.Unmarshal(unshieldBatchBytes, &processedUnshieldRequestBatch)
 	if err != nil {
-		Logger.log.Errorf("[SubmitConfirmedRequest]: an error occurred while unmarshal processedUnshieldRequestBatch status: %+v", err)
-		return nil, fmt.Errorf("[SubmitConfirmedRequest]: an error occurred while unmarshal processedUnshieldRequestBatch status: %+v", err)
+		Logger.log.Errorf("[SubmitConfirmedRequest]: an error occurred while unmarshal processedUnshieldRequestBatch"+
+			" status batchID: %+v - Error %v", actionData.Meta.BatchID, err)
+		return nil, fmt.Errorf("[SubmitConfirmedRequest]: an error occurred while unmarshal"+
+			" processedUnshieldRequestBatch status batchID: %+v - Error %v", actionData.Meta.BatchID, err)
 	}
 
 	outputs := []*portaltokens.OutputTx{}
