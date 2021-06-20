@@ -69,6 +69,34 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 	}
 	instructions = append(instructions, tempInstructions...)
 
+	// handle withdrawal
+	tempInstructions, err = s.buildInstructionsForWithdrawal(
+		env.WithdrawalActions(),
+		env.BeaconHeight(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, tempInstructions...)
+
+	// handle contribution
+	tempInstructions, err = s.buildInstructionsForContribution(
+		env.ContributionActions(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, tempInstructions...)
+
+	// handle prv required contribution
+	tempInstructions, err = s.buildInstructionsForPRVRequiredContribution(
+		env.PRVRequiredContributionActions(),
+	)
+	if err != nil {
+		return instructions, err
+	}
+	instructions = append(instructions, tempInstructions...)
+
 	return instructions, nil
 }
 
@@ -840,17 +868,192 @@ func (s *stateV1) shouldRefundTradeAction(
 	return false, receiveAmt, nil
 }
 
-func (s *stateV1) buildInstsForCrossPoolTrade(actions [][]string) ([][]string, error) {
+func (s *stateV1) buildInstructionsForWithdrawal(
+	actions [][]string,
+	beaconHeight uint64,
+) ([][]string, error) {
 	res := [][]string{}
+
+	for _, action := range actions {
+		contentStr := action[1]
+		contentBytes, err := base64.StdEncoding.DecodeString(contentStr)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while decoding content string of pde withdrawal action: %+v", err)
+			return utils.EmptyStringMatrix, err
+		}
+		var withdrawalRequestAction metadata.PDEWithdrawalRequestAction
+		err = json.Unmarshal(contentBytes, &withdrawalRequestAction)
+		if err != nil {
+			Logger.log.Errorf("ERROR: an error occured while unmarshaling pde withdrawal request action: %+v", err)
+			return [][]string{}, err
+		}
+		wdMeta := withdrawalRequestAction.Meta
+		deductingAmounts := s.deductAmounts(
+			wdMeta,
+			beaconHeight,
+		)
+
+		if deductingAmounts == nil {
+			inst := []string{
+				strconv.Itoa(metadata.PDEWithdrawalRequestMeta),
+				strconv.Itoa(int(withdrawalRequestAction.ShardID)),
+				common.PDEWithdrawalRejectedChainStatus,
+				contentStr,
+			}
+			return [][]string{inst}, nil
+		}
+
+		inst, err := buildWithdrawalAcceptedInst(
+			withdrawalRequestAction,
+			deductingAmounts.Token1IDStr,
+			deductingAmounts.PoolValue1,
+			deductingAmounts.Shares,
+		)
+		if err != nil {
+			return [][]string{}, nil
+		}
+		res = append(res, inst)
+		inst, err = buildWithdrawalAcceptedInst(
+			withdrawalRequestAction,
+			deductingAmounts.Token2IDStr,
+			deductingAmounts.PoolValue2,
+			0,
+		)
+		if err != nil {
+			return [][]string{}, nil
+		}
+		res = append(res, inst)
+	}
+
 	return res, nil
 }
 
-func (s *stateV1) buildInstructionsForWithdrawal(actions [][]string) ([][]string, error) {
-	res := [][]string{}
-	return res, nil
+func (s *stateV1) deductAmounts(
+	wdMeta metadata.PDEWithdrawalRequest,
+	beaconHeight uint64,
+) *deductingAmountsByWithdrawal {
+	var res *deductingAmountsByWithdrawal
+	pairKey := string(rawdbv2.BuildPDEPoolForPairKey(
+		beaconHeight,
+		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr,
+	))
+	poolPair, found := s.poolPairs[pairKey]
+	if !found || poolPair == nil {
+		return res
+	}
+	shareForWithdrawerKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(
+		beaconHeight,
+		wdMeta.WithdrawalToken1IDStr,
+		wdMeta.WithdrawalToken2IDStr,
+		wdMeta.WithdrawerAddressStr,
+	)
+	if err != nil {
+		Logger.log.Errorf("cannot build PDESharesKeyV2 for address: %v. Error: %v\n", wdMeta.WithdrawerAddressStr, err)
+		return res
+	}
+
+	shareForWithdrawerKey := string(shareForWithdrawerKeyBytes)
+	currentSharesForWithdrawer, found := s.shares[shareForWithdrawerKey]
+	if !found || currentSharesForWithdrawer == 0 {
+		return res
+	}
+
+	totalSharesForPairPrefixBytes, err := rawdbv2.BuildPDESharesKeyV2(
+		beaconHeight,
+		wdMeta.WithdrawalToken1IDStr, wdMeta.WithdrawalToken2IDStr, "",
+	)
+	if err != nil {
+		Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
+		return res
+	}
+
+	totalSharesForPairPrefix := string(totalSharesForPairPrefixBytes)
+	totalSharesForPair := big.NewInt(0)
+
+	for shareKey, shareAmt := range s.shares {
+		if strings.Contains(shareKey, totalSharesForPairPrefix) {
+			totalSharesForPair.Add(totalSharesForPair, new(big.Int).SetUint64(shareAmt))
+		}
+	}
+	if totalSharesForPair.Cmp(big.NewInt(0)) == 0 {
+		return res
+	}
+	wdSharesForWithdrawer := wdMeta.WithdrawalShareAmt
+	if wdSharesForWithdrawer > currentSharesForWithdrawer {
+		wdSharesForWithdrawer = currentSharesForWithdrawer
+	}
+	if wdSharesForWithdrawer == 0 {
+		return res
+	}
+
+	res = &deductingAmountsByWithdrawal{}
+	deductingPoolValueToken1 := big.NewInt(0)
+	deductingPoolValueToken1.Mul(new(big.Int).SetUint64(poolPair.Token1PoolValue), new(big.Int).SetUint64(wdSharesForWithdrawer))
+	deductingPoolValueToken1.Div(deductingPoolValueToken1, totalSharesForPair)
+	if poolPair.Token1PoolValue < deductingPoolValueToken1.Uint64() {
+		poolPair.Token1PoolValue = 0
+	} else {
+		poolPair.Token1PoolValue -= deductingPoolValueToken1.Uint64()
+	}
+	res.Token1IDStr = poolPair.Token1IDStr
+	res.PoolValue1 = deductingPoolValueToken1.Uint64()
+
+	deductingPoolValueToken2 := big.NewInt(0)
+	deductingPoolValueToken2.Mul(new(big.Int).SetUint64(poolPair.Token2PoolValue), new(big.Int).SetUint64(wdSharesForWithdrawer))
+	deductingPoolValueToken2.Div(deductingPoolValueToken2, totalSharesForPair)
+	if poolPair.Token2PoolValue < deductingPoolValueToken2.Uint64() {
+		poolPair.Token2PoolValue = 0
+	} else {
+		poolPair.Token2PoolValue -= deductingPoolValueToken2.Uint64()
+	}
+	res.Token2IDStr = poolPair.Token2IDStr
+	res.PoolValue2 = deductingPoolValueToken2.Uint64()
+
+	if s.shares[shareForWithdrawerKey] < wdSharesForWithdrawer {
+		s.shares[shareForWithdrawerKey] = 0
+	} else {
+		s.shares[shareForWithdrawerKey] -= wdSharesForWithdrawer
+	}
+	res.Shares = wdSharesForWithdrawer
+
+	return res
+}
+
+func buildWithdrawalAcceptedInst(
+	action metadata.PDEWithdrawalRequestAction,
+	withdrawalTokenIDStr string,
+	deductingPoolValue uint64,
+	deductingShares uint64,
+) ([]string, error) {
+	wdAcceptedContent := metadata.PDEWithdrawalAcceptedContent{
+		WithdrawalTokenIDStr: withdrawalTokenIDStr,
+		WithdrawerAddressStr: action.Meta.WithdrawerAddressStr,
+		DeductingPoolValue:   deductingPoolValue,
+		DeductingShares:      deductingShares,
+		PairToken1IDStr:      action.Meta.WithdrawalToken1IDStr,
+		PairToken2IDStr:      action.Meta.WithdrawalToken2IDStr,
+		TxReqID:              action.TxReqID,
+		ShardID:              action.ShardID,
+	}
+	wdAcceptedContentBytes, err := json.Marshal(wdAcceptedContent)
+	if err != nil {
+		Logger.log.Errorf("ERROR: an error occured while marshaling PDEWithdrawalAcceptedContent: %+v", err)
+		return []string{}, nil
+	}
+	return []string{
+		strconv.Itoa(metadata.PDEWithdrawalRequestMeta),
+		strconv.Itoa(int(action.ShardID)),
+		common.PDEWithdrawalAcceptedChainStatus,
+		string(wdAcceptedContentBytes),
+	}, nil
 }
 
 func (s *stateV1) buildInstructionsForContribution(actions [][]string) ([][]string, error) {
+	res := [][]string{}
+	return res, nil
+}
+
+func (s *stateV1) buildInstructionsForPRVRequiredContribution(actions [][]string) ([][]string, error) {
 	res := [][]string{}
 	return res, nil
 }

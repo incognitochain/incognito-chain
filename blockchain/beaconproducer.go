@@ -225,6 +225,7 @@ func (blockchain *BlockChain) GenerateBeaconBlockBody(
 		newBeaconBlock.Header.Height,
 		rewardForCustodianByEpoch,
 		portalParams,
+		shardStates,
 	)
 
 	if err != nil {

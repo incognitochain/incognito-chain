@@ -1,12 +1,11 @@
 package blockchain
 
 import (
-	"math/big"
 	"sort"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/blockchain/pdex"
-	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/instruction"
 	"github.com/incognitochain/incognito-chain/portal"
 	portalprocessv3 "github.com/incognitochain/incognito-chain/portal/portalv3/portalprocess"
@@ -88,6 +87,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	beaconHeight uint64,
 	rewardForCustodianByEpoch map[common.Hash]uint64,
 	portalParams portal.PortalParams,
+	shardStates map[byte][]types.ShardState,
 ) ([][]string, error) {
 
 	/*currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconBestState.pdeState, beaconHeight-1)*/
@@ -187,23 +187,34 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		}
 	}
 
-	if beaconBestState.pDEXState.Version() <= pdex.ForceWithPrvVersion {
-		pdexStateEnv := pdex.
-			NewStateEnvBuilder().
-			BuildContributionActions(pdeContributionActions).
-			BuildPRVRequiredContributionActions(pdePRVRequiredContributionActions).
-			BuildTradeActions(pdeTradeActions).
-			BuildCrossPoolTradeActions(pdeCrossPoolTradeActions).
-			BuildWithdrawalActions(pdeWithdrawalActions).
-			BuildFeeWithdrawalActions(pdeFeeWithdrawalActions).
-			Build()
+	txHashes := make(map[byte][]common.Hash)
 
-		pdeInstructions, err := beaconBestState.pDEXState.Update(pdexStateEnv)
-		if err != nil {
-			Logger.log.Error(err)
-			return utils.EmptyStringMatrix, err
+	for shardID, shardStateEachShard := range shardStates {
+		for _, v := range shardStateEachShard {
+			txHashes[shardID] = append(txHashes[shardID], v.PDETxHashes()...)
 		}
-		instructions = append(instructions, pdeInstructions...)
+	}
+
+	pdexStateEnv := pdex.
+		NewStateEnvBuilder().
+		BuildContributionActions(pdeContributionActions).
+		BuildPRVRequiredContributionActions(pdePRVRequiredContributionActions).
+		BuildTradeActions(pdeTradeActions).
+		BuildCrossPoolTradeActions(pdeCrossPoolTradeActions).
+		BuildWithdrawalActions(pdeWithdrawalActions).
+		BuildFeeWithdrawalActions(pdeFeeWithdrawalActions).
+		BuildTxHashes(txHashes).
+		Build()
+
+	pdeInstructions, err := beaconBestState.pDEXState.BuildInstructions(pdexStateEnv)
+	if err != nil {
+		Logger.log.Error(err)
+		return utils.EmptyStringMatrix, err
+	}
+	instructions = append(instructions, pdeInstructions...)
+
+	if beaconBestState.pDEXState.Version() <= pdex.ForceWithPrvVersion {
+
 	}
 
 	// TODO: @tin check here again
@@ -245,72 +256,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	return instructions, nil
 }
 
-func isTradingFairContainsPRV(
-	tokenIDToSellStr string,
-	tokenIDToBuyStr string,
-) bool {
-	return tokenIDToSellStr == common.PRVCoinID.String() || tokenIDToBuyStr == common.PRVCoinID.String()
-}
-
-func isPoolPairExisting(
-	beaconHeight uint64,
-	currentPDEState *CurrentPDEState,
-	token1IDStr string,
-	token2IDStr string,
-) bool {
-	poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, token1IDStr, token2IDStr))
-	poolPair, found := currentPDEState.PDEPoolPairs[poolPairKey]
-	if !found || poolPair == nil || poolPair.Token1PoolValue == 0 || poolPair.Token2PoolValue == 0 {
-		return false
-	}
-	return true
-}
-
-func calcTradeValue(
-	pdePoolPair *rawdbv2.PDEPoolForPair,
-	tokenIDStrToSell string,
-	sellAmount uint64,
-) (uint64, uint64, uint64) {
-	tokenPoolValueToBuy := pdePoolPair.Token1PoolValue
-	tokenPoolValueToSell := pdePoolPair.Token2PoolValue
-	if pdePoolPair.Token1IDStr == tokenIDStrToSell {
-		tokenPoolValueToSell = pdePoolPair.Token1PoolValue
-		tokenPoolValueToBuy = pdePoolPair.Token2PoolValue
-	}
-	invariant := big.NewInt(0)
-	invariant.Mul(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(tokenPoolValueToBuy))
-	newTokenPoolValueToSell := big.NewInt(0)
-	newTokenPoolValueToSell.Add(new(big.Int).SetUint64(tokenPoolValueToSell), new(big.Int).SetUint64(sellAmount))
-
-	newTokenPoolValueToBuy := big.NewInt(0).Div(invariant, newTokenPoolValueToSell).Uint64()
-	modValue := big.NewInt(0).Mod(invariant, newTokenPoolValueToSell)
-	if modValue.Cmp(big.NewInt(0)) != 0 {
-		newTokenPoolValueToBuy++
-	}
-	if tokenPoolValueToBuy <= newTokenPoolValueToBuy {
-		return uint64(0), uint64(0), uint64(0)
-	}
-	return tokenPoolValueToBuy - newTokenPoolValueToBuy, newTokenPoolValueToBuy, newTokenPoolValueToSell.Uint64()
-}
-
-func prepareInfoForSorting(
-	currentPDEState *CurrentPDEState,
-	beaconHeight uint64,
-	tradeAction metadata.PDECrossPoolTradeRequestAction,
-) (uint64, uint64) {
-	prvIDStr := common.PRVCoinID.String()
-	tradeMeta := tradeAction.Meta
-	sellAmount := tradeMeta.SellAmount
-	tradingFee := tradeMeta.TradingFee
-	if tradeMeta.TokenIDToSellStr == prvIDStr {
-		return tradingFee, sellAmount
-	}
-	poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, prvIDStr, tradeMeta.TokenIDToSellStr))
-	poolPair, _ := currentPDEState.PDEPoolPairs[poolPairKey]
-	sellAmount, _, _ = calcTradeValue(poolPair, tradeMeta.TokenIDToSellStr, sellAmount)
-	return tradingFee, sellAmount
-}
-
 func (blockchain *BlockChain) handlePDEInsts(
 	beaconHeight uint64,
 	currentPDEState *CurrentPDEState,
@@ -322,28 +267,6 @@ func (blockchain *BlockChain) handlePDEInsts(
 	pdeFeeWithdrawalActionsByShardID map[byte][][]string,
 ) ([][]string, error) {
 	instructions := [][]string{}
-
-	// handle withdrawal
-	var wrKeys []int
-	for k := range pdeWithdrawalActionsByShardID {
-		wrKeys = append(wrKeys, int(k))
-	}
-	sort.Ints(wrKeys)
-	for _, value := range wrKeys {
-		shardID := byte(value)
-		actions := pdeWithdrawalActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEWithdrawal(contentStr, shardID, metadata.PDEWithdrawalRequestMeta, currentPDEState, beaconHeight)
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
 
 	// handle contribution
 	var ctKeys []int

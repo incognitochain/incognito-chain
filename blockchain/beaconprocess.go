@@ -581,22 +581,26 @@ func (curView *BeaconBestState) updateBeaconBestState(
 		}
 	}
 
-	if beaconBestState.pDEXState.Version() == pdex.RangeProvideVersion {
-		txHashes := map[byte][]common.Hash{}
-		for k, v := range beaconBlock.Body.ShardState {
-			for _, shardState := range v {
-				txHashes[k] = append(txHashes[k], shardState.PDETxHashes()...)
-			}
-		}
-		pdexStateEnv := pdex.
-			NewStateEnvBuilder().
-			BuildTxHashes(txHashes).
-			Build()
-		pdeInstructions, err := beaconBestState.pDEXState.Update(pdexStateEnv)
-		if err != nil {
-			return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
-		}
-		incurredInstructions = append(incurredInstructions, pdeInstructions...)
+	pdexStateEnv := pdex.
+		NewStateEnvBuilder().
+		Build()
+
+	/*if beaconBestState.pDEXState.Version() == pdex.RangeProvideVersion {*/
+	//txHashes := map[byte][]common.Hash{}
+	//for k, v := range beaconBlock.Body.ShardState {
+	//for _, shardState := range v {
+	//txHashes[k] = append(txHashes[k], shardState.PDETxHashes()...)
+	//}
+	//}
+	//pdexStateEnv = pdexStateEnv.
+	//BuildTxHashes(txHashes).
+	//} else {
+
+	/*}*/
+
+	err = beaconBestState.pDEXState.Update(pdexStateEnv)
+	if err != nil {
+		return nil, nil, nil, nil, NewBlockChainError(UpdateBeaconCommitteeStateError, err)
 	}
 
 	beaconUpdateBestStateTimer.UpdateSince(startTimeUpdateBeaconBestState)

@@ -35,3 +35,11 @@ type shareInfo struct {
 	shareKey string
 	shareAmt uint64
 }
+
+type deductingAmountsByWithdrawal struct {
+	Token1IDStr string
+	PoolValue1  uint64
+	Token2IDStr string
+	PoolValue2  uint64
+	Shares      uint64
+}
