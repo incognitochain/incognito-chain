@@ -1,10 +1,11 @@
-package utils
+package coin_indexer
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/transaction/utils"
 )
 
 const (
@@ -80,8 +81,8 @@ func GetCoinFilterByOTAKeyAndToken() CoinMatcher {
 }
 
 func GetNextLowerHeight(upper, floor uint64) uint64 {
-	if upper > MaxOutcoinQueryInterval+floor {
-		return upper - MaxOutcoinQueryInterval
+	if upper > utils.MaxOutcoinQueryInterval+floor {
+		return upper - utils.MaxOutcoinQueryInterval
 	}
 	return floor
 }
@@ -103,7 +104,7 @@ func OTAKeyFromRaw(b [64]byte) privacy.OTAKey {
 func QueryDbCoinVer1(pubKey []byte, shardID byte, tokenID *common.Hash, db *statedb.StateDB) ([]privacy.Coin, error) {
 	outCoinsBytes, err := statedb.GetOutcoinsByPubkey(db, *tokenID, pubKey, shardID)
 	if err != nil {
-		Logger.Log.Error("GetOutcoinsBytesByKeyset Get by PubKey", err)
+		utils.Logger.Log.Error("GetOutcoinsBytesByKeyset Get by PubKey", err)
 		return nil, err
 	}
 	var outCoins []privacy.Coin
@@ -111,7 +112,7 @@ func QueryDbCoinVer1(pubKey []byte, shardID byte, tokenID *common.Hash, db *stat
 		outCoin := &privacy.CoinV1{}
 		err := outCoin.SetBytes(item)
 		if err != nil {
-			Logger.Log.Errorf("Cannot create coin from byte %v", err)
+			utils.Logger.Log.Errorf("Cannot create coin from byte %v", err)
 			return nil, err
 		}
 		outCoins = append(outCoins, outCoin)
@@ -129,7 +130,7 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, 
 	for height := start; height <= destHeight; height += 1 {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
-			Logger.Log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
+			utils.Logger.Log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
 			return nil, err
 		}
 		params := make(map[string]interface{})
@@ -140,7 +141,7 @@ func QueryDbCoinVer2(otaKey privacy.OTAKey, shardID byte, tokenID *common.Hash, 
 			cv2 := &privacy.CoinV2{}
 			err := cv2.SetBytes(coinBytes)
 			if err != nil {
-				Logger.Log.Error("Get outcoins ver 2 from bytes", err)
+				utils.Logger.Log.Error("Get outcoins ver 2 from bytes", err)
 				return nil, err
 			}
 			pass := true
@@ -173,14 +174,14 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 	for height := start; height <= destHeight; height += 1 {
 		currentHeightCoins, err := statedb.GetOTACoinsByHeight(db, *tokenID, shardID, height)
 		if err != nil {
-			Logger.Log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
+			utils.Logger.Log.Error("Get outcoins ver 2 bytes by keyset get by height", err)
 			return nil, err
 		}
 		for _, coinBytes := range currentHeightCoins {
 			cv2 := &privacy.CoinV2{}
 			err := cv2.SetBytes(coinBytes)
 			if err != nil {
-				Logger.Log.Error("Get outcoins ver 2 from bytes", err)
+				utils.Logger.Log.Error("Get outcoins ver 2 from bytes", err)
 				return nil, err
 			}
 
@@ -215,7 +216,7 @@ func QueryBatchDbCoinVer2(idxParams map[string]IndexParam, shardID byte, tokenID
 
 		}
 	}
-	Logger.Log.Infof("#skipped for heights %v to %v: %v\n", start, destHeight, countSkipped)
+	utils.Logger.Log.Infof("#skipped for heights %v to %v: %v\n", start, destHeight, countSkipped)
 	return res, nil
 }
 
@@ -262,7 +263,7 @@ func (ci *CoinIndexer) splitWorkers(totalWorker int) map[byte]int {
 	return res
 }
 
-func (ci *CoinIndexer) CloneCachedCoins() map[string]interface{} {
+func (ci *CoinIndexer) cloneCachedCoins() map[string]interface{} {
 	res := make(map[string]interface{})
 	if len(ci.cachedCoinPubKeys) != 0 {
 		ci.mtx.Lock()
