@@ -33,7 +33,7 @@ type IssuingEVMRequest struct {
 type IssuingEVMReqAction struct {
 	Meta       IssuingEVMRequest `json:"meta"`
 	TxReqID    common.Hash       `json:"txReqId"`
-	EVMReceipt *types.Receipt    `json:"evmReceipt"`
+	EVMReceipt *types.Receipt    `json:"ethReceipt"` // don't update the jsontag to make it compatible with the old shielding eth tx
 }
 
 type IssuingEVMAcceptedInst struct {
@@ -42,7 +42,7 @@ type IssuingEVMAcceptedInst struct {
 	ReceiverAddrStr string      `json:"receiverAddrStr"`
 	IncTokenID      common.Hash `json:"incTokenId"`
 	TxReqID         common.Hash `json:"txReqId"`
-	UniqTx          []byte      `json:"uniqTx"`
+	UniqTx          []byte      `json:"uniqETHTx"` // don't update the jsontag to make it compatible with the old shielding eth tx
 	ExternalTokenID []byte      `json:"externalTokenId"`
 }
 
@@ -66,12 +66,12 @@ func ParseEVMIssuingInstContent(instContentStr string) (*IssuingEVMReqAction, er
 	if err != nil {
 		return nil, NewMetadataTxError(IssuingEvmRequestDecodeInstructionError, err)
 	}
-	var IssuingEVMReqAction IssuingEVMReqAction
-	err = json.Unmarshal(contentBytes, &IssuingEVMReqAction)
+	var issuingEVMReqAction IssuingEVMReqAction
+	err = json.Unmarshal(contentBytes, &issuingEVMReqAction)
 	if err != nil {
 		return nil, NewMetadataTxError(IssuingEvmRequestUnmarshalJsonError, err)
 	}
-	return &IssuingEVMReqAction, nil
+	return &issuingEVMReqAction, nil
 }
 
 func ParseEVMIssuingInstAcceptedContent(instAcceptedContentStr string) (*IssuingEVMAcceptedInst, error) {

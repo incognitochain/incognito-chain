@@ -15,9 +15,9 @@ import (
 
 type IssuingEVMResponse struct {
 	MetadataBase
-	RequestedTxID   common.Hash
-	UniqTx          []byte
-	ExternalTokenID []byte
+	RequestedTxID   common.Hash `json:"RequestedTxID"`
+	UniqTx          []byte      `json:"UniqETHTx"`
+	ExternalTokenID []byte      `json:"ExternalTokenID"`
 	SharedRandom    []byte `json:"SharedRandom,omitempty"`
 }
 
