@@ -1231,7 +1231,7 @@ func (blockchain *BlockChain) processStoreShardBlock(
 	}
 
 	finalView := blockchain.ShardChain[shardID].multiView.GetFinalView()
-	blockchain.ShardChain[shardBlock.Header.ShardID].multiView.AddView(newShardState)
+	blockchain.ShardChain[shardBlock.Header.ShardID].AddView(newShardState)
 	txDB := blockchain.ShardChain[shardBlock.Header.ShardID].GetBestState().GetCopiedTransactionStateDB()
 
 	blockchain.ShardChain[shardBlock.Header.ShardID].TxsVerifier.UpdateTransactionStateDB(txDB)
@@ -1422,11 +1422,11 @@ func (blockchain *BlockChain) storeTokenInitInstructions(stateDB *statedb.StateD
 					Logger.log.Infof("store init token %v succeeded\n", acceptedContent.TokenID.String())
 				}
 
-			case metadata.IssuingETHRequestMeta:
+			case metadata.IssuingETHRequestMeta, metadata.IssuingBSCRequestMeta:
 				if len(l) >= 4 && l[2] == "accepted" {
-					acceptedContent, err := metadata.ParseETHIssuingInstAcceptedContent(l[3])
+					acceptedContent, err := metadata.ParseEVMIssuingInstAcceptedContent(l[3])
 					if err != nil {
-						Logger.log.Errorf("ParseETHIssuingInstAcceptedContent(%v) error: %v\n", l[3], err)
+						Logger.log.Errorf("ParseEVMIssuingInstAcceptedContent(%v) error: %v\n", l[3], err)
 						return err
 					}
 

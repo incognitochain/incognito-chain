@@ -33,6 +33,7 @@ type Metadata interface {
 	CalculateSize() uint64
 	VerifyMinerCreatedTxBeforeGettingInBlock(mintData *MintData, shardID byte, tx Transaction, chainRetriever ChainRetriever, ac *AccumulatedValues, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever) (bool, error)
 	IsMinerCreatedMetaType() bool
+	SetSharedRandom([]byte)
 }
 
 // This is tx struct which is really saved in tx mempool
