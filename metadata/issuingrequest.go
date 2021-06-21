@@ -52,12 +52,12 @@ func ParseIssuingInstContent(instContentStr string) (*IssuingReqAction, error) {
 func ParseIssuingInstAcceptedContent(instAcceptedContentStr string) (*IssuingAcceptedInst, error) {
 	contentBytes, err := base64.StdEncoding.DecodeString(instAcceptedContentStr)
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEthRequestDecodeInstructionError, err)
+		return nil, NewMetadataTxError(IssuingRequestDecodeInstructionError, err)
 	}
 	var issuingAcceptedInst IssuingAcceptedInst
 	err = json.Unmarshal(contentBytes, &issuingAcceptedInst)
 	if err != nil {
-		return nil, NewMetadataTxError(IssuingEthRequestUnmarshalJsonError, err)
+		return nil, NewMetadataTxError(IssuingRequestUnmarshalJsonError, err)
 	}
 	return &issuingAcceptedInst, nil
 }
