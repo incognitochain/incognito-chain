@@ -418,7 +418,7 @@ func (ci *CoinIndexer) ReIndexOutCoinBatch(idxParams []IndexParam, txDb *statedb
 
 	//Clone the current cachedCoinPubKeys to avoid collisions
 	cachedCoins := ci.cloneCachedCoins()
-	utils.Logger.Log.Infof("len(clonedCachedCoins) = %v, cachedCoinPubKeys: %v\n", len(cachedCoins), cachedCoins)
+	utils.Logger.Log.Infof("len(clonedCachedCoins) = %v\n", len(cachedCoins))
 
 	start := time.Now()
 	for height := minHeight; height <= maxHeight; {
