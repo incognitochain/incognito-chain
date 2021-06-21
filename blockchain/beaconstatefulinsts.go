@@ -90,7 +90,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	shardStates map[byte][]types.ShardState,
 ) ([][]string, error) {
 
-	/*currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconBestState.pdeState, beaconHeight-1)*/
+	/*currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconHeight-1)*/
 	//if err != nil {
 	//Logger.log.Error(err)
 	//return utils.EmptyStringMatrix, err
@@ -187,11 +187,11 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		}
 	}
 
-	txHashes := make(map[byte][]common.Hash)
+	txHashes := []common.Hash{}
 
-	for shardID, shardStateEachShard := range shardStates {
-		for _, v := range shardStateEachShard {
-			txHashes[shardID] = append(txHashes[shardID], v.PDETxHashes()...)
+	for _, key := range keys {
+		for _, shardState := range shardStates[byte(key)] {
+			txHashes = append(txHashes, shardState.PDETxHashes()...)
 		}
 	}
 
@@ -217,22 +217,6 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 
 	}
 
-	// TODO: @tin check here again
-	/*pdeInsts, err := blockchain.handlePDEInsts(*/
-	//beaconHeight-1, currentPDEState,
-	//pdeContributionActionsByShardID,
-	//pdePRVRequiredContributionActionsByShardID,
-	//pdeTradeActionsByShardID,
-	//pdeCrossPoolTradeActionsByShardID,
-	//pdeWithdrawalActionsByShardID,
-	//pdeFeeWithdrawalActionsByShardID,
-	//)
-
-	//if err != nil {
-	//Logger.log.Error(err)
-	//return instructions, err
-	/*}*/
-
 	// handle portal instructions
 	// include portal v3, portal relaying header chain
 	portalInsts, err := blockchain.handlePortalInsts(
@@ -253,63 +237,5 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		instructions = append(instructions, portalInsts...)
 	}
 
-	return instructions, nil
-}
-
-func (blockchain *BlockChain) handlePDEInsts(
-	beaconHeight uint64,
-	currentPDEState *CurrentPDEState,
-	pdeContributionActionsByShardID map[byte][][]string,
-	pdePRVRequiredContributionActionsByShardID map[byte][][]string,
-	pdeTradeActionsByShardID map[byte][][]string,
-	pdeCrossPoolTradeActionsByShardID map[byte][][]string,
-	pdeWithdrawalActionsByShardID map[byte][][]string,
-	pdeFeeWithdrawalActionsByShardID map[byte][][]string,
-) ([][]string, error) {
-	instructions := [][]string{}
-
-	// handle contribution
-	var ctKeys []int
-	for k := range pdeContributionActionsByShardID {
-		ctKeys = append(ctKeys, int(k))
-	}
-	sort.Ints(ctKeys)
-	for _, value := range ctKeys {
-		shardID := byte(value)
-		actions := pdeContributionActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEContributionMeta, currentPDEState, beaconHeight, false)
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
-
-	// handle prv required contribution
-	var prvRequiredContribKeys []int
-	for k := range pdePRVRequiredContributionActionsByShardID {
-		prvRequiredContribKeys = append(prvRequiredContribKeys, int(k))
-	}
-	sort.Ints(prvRequiredContribKeys)
-	for _, value := range prvRequiredContribKeys {
-		shardID := byte(value)
-		actions := pdePRVRequiredContributionActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEPRVRequiredContributionRequestMeta, currentPDEState, beaconHeight, true)
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
-			}
-		}
-	}
 	return instructions, nil
 }

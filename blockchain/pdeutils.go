@@ -101,13 +101,13 @@ func (lastState *CurrentPDEState) transformKeyWithNewBeaconHeight(beaconHeight u
 
 func InitCurrentPDEStateFromDB(
 	stateDB *statedb.StateDB,
-	lastState *CurrentPDEState,
 	beaconHeight uint64,
 ) (*CurrentPDEState, error) {
-	if lastState != nil {
-		newState := lastState.transformKeyWithNewBeaconHeight(beaconHeight)
-		return newState, nil
-	}
+	// TODO: @tin change here with pdexState in beaconBestState
+	/*if lastState != nil {*/
+	//newState := lastState.transformKeyWithNewBeaconHeight(beaconHeight)
+	//return newState, nil
+	/*}*/
 	waitingPDEContributions, err := statedb.GetWaitingPDEContributions(stateDB, beaconHeight)
 	if err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func addShareAmountUpV2(
 	currentPDEState *CurrentPDEState,
 ) {
 	pdeShareOnTokenPrefixBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, "")
-	if err != nil{
+	if err != nil {
 		Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
 		return
 	}

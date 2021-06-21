@@ -3,13 +3,14 @@ package blockchain
 import (
 	"encoding/base64"
 	"encoding/json"
+	"reflect"
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/blockchain/types"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"reflect"
-	"strconv"
 )
 
 func (blockchain *BlockChain) processPDEInstructions(beaconView *BeaconBestState, beaconBlock *types.BeaconBlock) (*CurrentPDEState, error) {
@@ -18,7 +19,8 @@ func (blockchain *BlockChain) processPDEInstructions(beaconView *BeaconBestState
 	}
 	pdexStateDB := beaconView.featureStateDB
 	beaconHeight := beaconBlock.Header.Height - 1
-	currentPDEState, err := InitCurrentPDEStateFromDB(beaconView.featureStateDB, beaconView.pdeState, beaconHeight)
+	currentPDEState, err := InitCurrentPDEStateFromDB(
+		beaconView.featureStateDB, beaconHeight)
 	if err != nil {
 		return nil, err
 	}

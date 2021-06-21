@@ -10,7 +10,7 @@ type StateEnvBuilder interface {
 	BuildWithdrawalActions([][]string) StateEnvBuilder
 	BuildFeeWithdrawalActions([][]string) StateEnvBuilder
 	BuildBeaconHeight(uint64) StateEnvBuilder
-	BuildTxHashes(map[byte][]common.Hash) StateEnvBuilder
+	BuildTxHashes([]common.Hash) StateEnvBuilder
 	BuildBeaconInstructions([][]string) StateEnvBuilder
 	Build() StateEnvironment
 }
@@ -28,7 +28,7 @@ type stateEnvironment struct {
 	feeWithdrawalActions           [][]string
 	beaconHeight                   uint64
 	beaconInstructions             [][]string
-	txHashes                       map[byte][]common.Hash
+	txHashes                       []common.Hash
 }
 
 func (env *stateEnvironment) BuildContributionActions(actions [][]string) StateEnvBuilder {
@@ -71,7 +71,7 @@ func (env *stateEnvironment) BuildBeaconInstructions(beaconInstructions [][]stri
 	return env
 }
 
-func (env *stateEnvironment) BuildTxHashes(txHashes map[byte][]common.Hash) StateEnvBuilder {
+func (env *stateEnvironment) BuildTxHashes(txHashes []common.Hash) StateEnvBuilder {
 	env.txHashes = txHashes
 	return env
 }
@@ -89,7 +89,7 @@ type StateEnvironment interface {
 	FeeWithdrawalActions() [][]string
 	BeaconHeight() uint64
 	BeaconInstructions() [][]string
-	TxHashes() map[byte][]common.Hash
+	TxHashes() []common.Hash
 }
 
 func (env *stateEnvironment) ContributionActions() [][]string {
@@ -120,7 +120,7 @@ func (env *stateEnvironment) BeaconHeight() uint64 {
 	return env.beaconHeight
 }
 
-func (env *stateEnvironment) TxHashes() map[byte][]common.Hash {
+func (env *stateEnvironment) TxHashes() []common.Hash {
 	return env.txHashes
 }
 
