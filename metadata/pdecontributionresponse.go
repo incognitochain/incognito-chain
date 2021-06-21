@@ -47,9 +47,6 @@ func (iRes PDEContributionResponse) ValidateTxWithBlockChain(tx Transaction, cha
 }
 
 func (iRes PDEContributionResponse) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	if chainRetriever.IsAfterPrivacyV2CheckPoint(beaconHeight) && iRes.GetType() == PDEContributionResponseMeta {
-		return false, false, fmt.Errorf("metadata type %v is no longer supported", PDEContributionResponseMeta)
-	}
 	return false, true, nil
 }
 
