@@ -195,7 +195,7 @@ func (serverObj *Server) NewServer(
 	dbmp databasemp.DatabaseInterface,
 	dboc *incdb.Database,
 	indexerWorkers int64,
-	indexerTokens []string,
+	indexerToken string,
 	protocolVer string,
 	btcChain *btcrelaying.BlockChain,
 	bnbChainState *bnbrelaying.BNBChainState,
@@ -321,7 +321,7 @@ func (serverObj *Server) NewServer(
 		Highway:           serverObj.highway,
 		OutCoinByOTAKeyDb: dboc,
 		IndexerWorkers:    indexerWorkers,
-		IndexerTokens:     indexerTokens,
+		IndexerToken:      indexerToken,
 		PoolManager:       poolManager,
 	})
 	if err != nil {

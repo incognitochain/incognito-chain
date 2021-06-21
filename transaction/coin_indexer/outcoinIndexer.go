@@ -35,7 +35,7 @@ type CoinIndexer struct {
 }
 
 // NewOutCoinIndexer creates a new full node's caching instance for faster output coin retrieval.
-func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessTokenList []string) (*CoinIndexer, error) {
+func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessToken string) (*CoinIndexer, error) {
 	// view key :-> indexing status
 	// 2 means indexer finished
 	// while < 2 : `balance` & `createTx` RPCs are not available
@@ -43,10 +43,17 @@ func NewOutCoinIndexer(numWorkers int64, db incdb.Database, accessTokenList []st
 
 	var sem *semaphore.Weighted
 	accessTokens := make(map[string]bool)
-	if numWorkers != 0 && len(accessTokenList) > 0 {
-		sem = semaphore.NewWeighted(numWorkers)
-		for _, at := range accessTokenList {
-			accessTokens[at] = true
+	if numWorkers != 0 && len(accessToken) > 0 {
+		accessTokenBytes, err := hex.DecodeString(accessToken)
+		if err != nil {
+			utils.Logger.Log.Errorf("cannot decode the access token %v\n", accessToken)
+			numWorkers = 0
+		} else if len(accessTokenBytes) != 32 {
+			utils.Logger.Log.Errorf("access token is invalid")
+			numWorkers = 0
+		} else {
+			accessTokens[accessToken] = true
+			sem = semaphore.NewWeighted(numWorkers)
 		}
 	} else {
 		numWorkers = 0

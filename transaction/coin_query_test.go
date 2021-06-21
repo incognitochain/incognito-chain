@@ -111,7 +111,7 @@ func setup() {
 		panic(err)
 	}
 	// use only 1 worker for benchmark
-	coinReindexer, err = coin_indexer.NewOutCoinIndexer(1, featureStorage)
+	coinReindexer, err = coin_indexer.NewOutCoinIndexer(1, featureStorage, "")
 	if err != nil {
 		panic(err)
 	}
