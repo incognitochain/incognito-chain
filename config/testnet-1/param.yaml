@@ -70,5 +70,5 @@ geth_param:
   protocol: "https"
   port: ""
 bsc_param:
-  host: "https://data-seed-prebsc-1-s1.binance.org:8545"
+  host: "https://data-seed-prebsc-2-s1.binance.org:8545"
 
