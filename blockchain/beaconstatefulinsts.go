@@ -596,27 +596,30 @@ func (blockchain *BlockChain) handlePDEInsts(
 		}
 	}
 
-	// handle contribution
-	var ctKeys []int
-	for k := range pdeContributionActionsByShardID {
-		ctKeys = append(ctKeys, int(k))
-	}
-	sort.Ints(ctKeys)
-	for _, value := range ctKeys {
-		shardID := byte(value)
-		actions := pdeContributionActionsByShardID[shardID]
-		for _, action := range actions {
-			contentStr := action[1]
-			newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEContributionMeta, currentPDEState, beaconHeight, false)
-			if err != nil {
-				Logger.log.Error(err)
-				continue
-			}
-			if len(newInst) > 0 {
-				instructions = append(instructions, newInst...)
+	if !blockchain.IsAfterPrivacyV2CheckPoint(beaconHeight) { // disable old pDEX contribution after privacy V2 break point
+		// handle contribution
+		var ctKeys []int
+		for k := range pdeContributionActionsByShardID {
+			ctKeys = append(ctKeys, int(k))
+		}
+		sort.Ints(ctKeys)
+		for _, value := range ctKeys {
+			shardID := byte(value)
+			actions := pdeContributionActionsByShardID[shardID]
+			for _, action := range actions {
+				contentStr := action[1]
+				newInst, err := blockchain.buildInstructionsForPDEContribution(contentStr, shardID, metadata.PDEContributionMeta, currentPDEState, beaconHeight, false)
+				if err != nil {
+					Logger.log.Error(err)
+					continue
+				}
+				if len(newInst) > 0 {
+					instructions = append(instructions, newInst...)
+				}
 			}
 		}
 	}
+
 
 	// handle prv required contribution
 	var prvRequiredContribKeys []int
