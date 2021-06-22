@@ -1,7 +1,7 @@
 package committeestate
 
 var (
-	MAX_SWAP_OR_ASSIGN_PERCENT = 6
+	MAX_SWAP_OR_ASSIGN_PERCENT_V2 = 6
 )
 
 const (

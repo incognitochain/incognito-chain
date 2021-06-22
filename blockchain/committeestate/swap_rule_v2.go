@@ -85,7 +85,7 @@ func removeValidatorV2(validators []string, removedValidators []string) ([]strin
 // #5 number of swap out nodes >= number of swap in nodes
 func getSwapOutOffset(numberOfSubstitutes, numberOfCommittees, numberOfFixedValidator, minCommitteeSize int) int {
 
-	swapOffset := numberOfCommittees / MAX_SWAP_OR_ASSIGN_PERCENT
+	swapOffset := numberOfCommittees / MAX_SWAP_OR_ASSIGN_PERCENT_V2
 	if swapOffset == 0 {
 		return 0
 	}
@@ -259,8 +259,8 @@ func getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators,
 	)
 
 	if assignPerShard == 0 {
-		assignPerShard = lenCommittees / MAX_SWAP_OR_ASSIGN_PERCENT
-		if lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT {
+		assignPerShard = lenCommittees / MAX_SWAP_OR_ASSIGN_PERCENT_V2
+		if lenCommittees < MAX_SWAP_OR_ASSIGN_PERCENT_V2 {
 			assignPerShard = 1
 		}
 	}
