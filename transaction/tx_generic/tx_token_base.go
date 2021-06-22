@@ -1,8 +1,4 @@
-// Because txprivacytoken version 1 had a bug
-// txprivacytoken in later version will not use the same base with txtokenversion1
-// So we duplicate some code from ver1 to ver2 and not use any embedding
-
-package tx_generic
+package tx_generic //nolint:revive
 
 import (
 	"bytes"
@@ -343,7 +339,6 @@ func (txToken TxTokenBase) ValidateTxWithCurrentMempool(mr metadata.MempoolRetri
 		utils.Logger.Log.Error(err)
 		return utils.NewTransactionErr(utils.DoubleSpendError, err)
 	}
-	// TODO: will move this to mempool process
 	if txToken.TxTokenData.Type == utils.CustomTokenInit && txToken.GetMetadata() == nil {
 		initTokenID := txToken.TxTokenData.PropertyID
 		txsInMem := mr.GetTxsInMem()

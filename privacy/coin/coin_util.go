@@ -12,7 +12,7 @@ import (
 
 const (
 	MaxSizeInfoCoin   = 255
-	JsonMarshalFlag   = 34
+	JsonMarshalFlag   = 34 //nolint:revive
 	CoinVersion1      = 1
 	CoinVersion2      = 2
 	TxRandomGroupSize = 68
@@ -38,9 +38,9 @@ func parseScalarForSetBytes(coinBytes *[]byte, offset *int) (*operation.Scalar, 
 	if *offset >= len(b) {
 		return nil, errors.New("Offset is larger than len(bytes), cannot parse scalar")
 	}
-	var sc *operation.Scalar = nil
+	var sc *operation.Scalar
 	lenField := b[*offset]
-	*offset += 1
+	*offset++
 	if lenField != 0 {
 		if *offset+int(lenField) > len(b) {
 			return nil, errors.New("Offset+curLen is larger than len(bytes), cannot parse scalar for set bytes")
@@ -57,10 +57,10 @@ func parsePointForSetBytes(coinBytes *[]byte, offset *int) (*operation.Point, er
 	if *offset >= len(b) {
 		return nil, errors.New("Offset is larger than len(bytes), cannot parse point")
 	}
-	var point *operation.Point = nil
+	var point *operation.Point
 	var err error
 	lenField := b[*offset]
-	*offset += 1
+	*offset++
 	if lenField != 0 {
 		if *offset+int(lenField) > len(b) {
 			return nil, errors.New("Offset+curLen is larger than len(bytes), cannot parse point for set bytes")
@@ -82,7 +82,7 @@ func parseInfoForSetBytes(coinBytes *[]byte, offset *int) ([]byte, error) {
 	}
 	info := []byte{}
 	lenField := b[*offset]
-	*offset += 1
+	*offset++
 	if lenField != 0 {
 		if *offset+int(lenField) > len(b) {
 			return []byte{}, errors.New("Offset+curLen is larger than len(bytes), cannot parse info for set bytes")
@@ -96,7 +96,7 @@ func parseInfoForSetBytes(coinBytes *[]byte, offset *int) ([]byte, error) {
 
 func CreatePaymentInfosFromPlainCoinsAndAddress(c []PlainCoin, paymentAddress key.PaymentAddress, message []byte) []*key.PaymentInfo {
 	sumAmount := uint64(0)
-	for i := 0; i < len(c); i += 1 {
+	for i := 0; i < len(c); i++ {
 		sumAmount += c[i].GetValue()
 	}
 	paymentInfos := make([]*key.PaymentInfo, 1)
@@ -135,7 +135,7 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	c.SetAmount(new(operation.Scalar).FromUint64(info.Amount))
 	c.SetRandomness(operation.RandomScalar())
 	c.SetSharedRandom(operation.RandomScalar()) // shared randomness for creating one-time-address
-	c.SetSharedConcealRandom(operation.RandomScalar()) //shared randomness for concealing amount and blinding asset tag
+	c.SetSharedConcealRandom(operation.RandomScalar()) // shared randomness for concealing amount and blinding asset tag
 	c.SetInfo(info.Message)
 	c.SetCommitment(operation.PedCom.CommitAtIndex(c.GetAmount(), c.GetRandomness(), operation.PedersenValueIndex))
 
@@ -158,7 +158,7 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	publicSpend := info.PaymentAddress.GetPublicSpend()
 	rK := new(operation.Point).ScalarMult(publicOTA, c.GetSharedRandom())
 	for {
-		index += 1
+		index++
 
 		// Get publickey
 		hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))
@@ -180,9 +180,10 @@ func NewCoinFromPaymentInfo(info *key.PaymentInfo) (*CoinV2, error) {
 	return c, nil
 }
 
+//nolint:revive // skip linter for this long function name
 func CoinV2ArrayToCoinArray(coinArray []*CoinV2) []Coin {
 	res := make([]Coin, len(coinArray))
-	for i := 0; i < len(coinArray); i += 1 {
+	for i := 0; i < len(coinArray); i++ {
 		res[i] = coinArray[i]
 	}
 	return res

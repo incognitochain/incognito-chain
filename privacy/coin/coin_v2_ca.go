@@ -9,15 +9,16 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-const MAX_TRIES_OTA int = 50000
+const MaxTriesOTA int = 50000
 
 func (coin *CoinV2) ComputeCommitmentCA() (*operation.Point,error){
 	if coin==nil || coin.GetRandomness()==nil || coin.GetAmount()==nil{
 		return nil, errors.New("missing arguments for committing")
 	}
-	gRan_immutable := operation.PedCom.G[operation.PedersenRandomnessIndex]
+	// must not change gRan
+	gRan := operation.PedCom.G[operation.PedersenRandomnessIndex]
 	commitment := new(operation.Point).ScalarMult(coin.GetAssetTag(),coin.GetAmount())
-	commitment.Add(commitment,new(operation.Point).ScalarMult(gRan_immutable,coin.GetRandomness()))
+	commitment.Add(commitment,new(operation.Point).ScalarMult(gRan,coin.GetRandomness()))
 	return commitment,nil
 }
 
@@ -25,9 +26,10 @@ func ComputeCommitmentCA(assetTag *operation.Point, r, v *operation.Scalar) (*op
 	if assetTag==nil || r==nil || v==nil{
 		return nil, errors.New("missing arguments for committing to CA coin")
 	}
-	gRan_immutable := operation.PedCom.G[operation.PedersenRandomnessIndex]
+	// must not change gRan
+	gRan := operation.PedCom.G[operation.PedersenRandomnessIndex]
 	commitment := new(operation.Point).ScalarMult(assetTag,v)
-	commitment.Add(commitment,new(operation.Point).ScalarMult(gRan_immutable,r))
+	commitment.Add(commitment,new(operation.Point).ScalarMult(gRan,r))
 	return commitment,nil
 }
 
@@ -127,16 +129,16 @@ func NewCoinCA(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation
 
 	// Increase index until have the right shardID
 	index := uint32(0)
-	publicOTA := info.PaymentAddress.GetOTAPublicKey() //For generating one-time-address
+	publicOTA := info.PaymentAddress.GetOTAPublicKey() // For generating one-time-address
 	if publicOTA == nil {
 		return nil, nil, errors.New("public OTA from payment address is nil")
 	}
-	publicSpend := info.PaymentAddress.GetPublicSpend() //General public key
-	//publicView := info.PaymentAddress.GetPublicView() //For generating asset tag and concealing output coin
+	publicSpend := info.PaymentAddress.GetPublicSpend() // General public key
+	// publicView := info.PaymentAddress.GetPublicView() // For generating asset tag and concealing output coin
 
 	rK := new(operation.Point).ScalarMult(publicOTA, c.GetSharedRandom())
-	for i:=MAX_TRIES_OTA;i>0;i--{
-		index += 1
+	for i:=MaxTriesOTA;i>0;i--{
+		index++
 
 		// Get publickey
 		hash := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))
@@ -173,6 +175,6 @@ func NewCoinCA(info *key.PaymentInfo, tokenID *common.Hash) (*CoinV2, *operation
 			return c, rAsset, nil
 		}
 	}
-	// MAX_TRIES_OTA could be exceeded if the OS's RNG or the statedb is corrupted
-	return nil, nil, errors.New(fmt.Sprintf("Cannot create OTA after %d attempts", MAX_TRIES_OTA))
+	// MaxTriesOTA could be exceeded if the OS's RNG or the statedb is corrupted
+	return nil, nil, fmt.Errorf("Cannot create OTA after %d attempts", MaxTriesOTA)
 }

@@ -73,7 +73,7 @@ func validateTxConvertVer1ToVer2Params (params *TxConvertVer1ToVer2InitParams) e
 			return utils.NewTransactionErr(utils.InvalidInputCoinVersionErr, err)
 		}
 
-		//Verify if input coins have been concealed
+		// Verify if input coins have been concealed
 		if c.GetRandomness() == nil || c.GetSNDerivator() == nil || c.GetPublicKey() == nil || c.GetCommitment() == nil {
 			err := errors.New("input coins should not be concealed")
 			return utils.NewTransactionErr(utils.InvalidInputCoinVersionErr, err)
@@ -148,7 +148,7 @@ func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID 
 	isPRV := (tokenID==nil) || (*tokenID==common.PRVCoinID)
 	c := make([]*privacy.CoinV2, len(paymentInfos))
 
-	for i := 0; i < len(paymentInfos); i += 1 {
+	for i := 0; i < len(paymentInfos); i++ {
 		if isPRV{
 			c[i], err = utils.NewCoinUniqueOTABasedOnPaymentInfo(paymentInfos[i], tokenID, db)
 			if err != nil {
@@ -161,7 +161,8 @@ func getOutputcoinsFromPaymentInfo(paymentInfos []*privacy.PaymentInfo, tokenID 
 				utils.Logger.Log.Errorf("TxConversion cannot create new CA coin - %v", err)
 				return nil, err
 			}
-			createdCACoin.SetPlainTokenID(tokenID)
+			// newly created coins are guaranteed to have all valid fields
+			_ = createdCACoin.SetPlainTokenID(tokenID)
 			c[i] = createdCACoin
 		}
 	}
@@ -214,10 +215,10 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 		return false, errors.New("Error casting ConversionProofVer1ToVer2")
 	}
 
-	//Verify that input coins have been created and have not been spent
+	// Verify that input coins have been created and have not been spent
 	inputCoins := proofConversion.GetInputCoins()
 	for i := 0; i < len(inputCoins); i++ {
-		//Check if commitment has existed
+		// Check if commitment has existed
 		if ok, err := statedb.HasCommitment(db, *tokenID, inputCoins[i].GetCommitment().ToBytesS(), shardID); !ok || err != nil {
 			if err != nil {
 				errStr := fmt.Sprintf("TxConversion database inputCommitment got error: %v", err)
@@ -226,7 +227,7 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 			return false, errors.New("TxConversion not found existing inputCommitment in database error")
 		}
 
-		//Check if input coin has not been spent
+		// Check if input coin has not been spent
 		if ok, err := statedb.HasSerialNumber(db, *tokenID, inputCoins[i].GetKeyImage().ToBytesS(), shardID); ok || err != nil {
 			if err != nil {
 				errStr := fmt.Sprintf("TxConversion database serialNumber got error: %v", err)
@@ -236,7 +237,7 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 		}
 	}
 
-	//Verify that output coins' one-time-address has not been obtained + not duplicate OTAs
+	// Verify that output coins' one-time-address has not been obtained + not duplicate OTAs
 	outputCoins := proofConversion.GetOutputCoins()
 	mapOutputCoins := make(map[string]int)
 	for i := 0; i < len(outputCoins); i++ {
@@ -260,7 +261,7 @@ func validateConversionVer1ToVer2(tx metadata.Transaction, db *statedb.StateDB, 
 	boolParams["hasPrivacy"] = false
 	boolParams["isBatch"] = false
 
-	//Verify the conversion proof
+	// Verify the conversion proof
 	valid, err := proofConversion.Verify(boolParams, tx.GetSigPubKey(), tx.GetTxFee(), shardID, tokenID, nil)
 	if !valid {
 		if err != nil {

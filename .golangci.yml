@@ -1,0 +1,42 @@
+linters:
+    enable:
+        - bodyclose
+        - deadcode
+        - errcheck
+        - goconst
+        - gocritic
+        - gocyclo
+        - goprintffuncname
+        - gosec
+        - gosimple
+        - govet
+        - ineffassign
+        - misspell
+        - nakedret
+        - exhaustive
+        - exportloopref
+        - forcetypeassert
+        - godox
+        - revive
+        # - gofmt
+        # - goimports
+        # - lll
+    disable:
+        - typecheck
+run:
+    tests: false
+    skip-dirs:
+        - privacy/operation
+        - privacy/privacy_v1
+        - transaction/benchmark
+        - transaction/tx_ver1
+    skip-files:
+        - coin_v1.go
+linters-settings:
+    gocritic:
+        disabled-checks:
+            - appendAssign
+    revive:
+        rules:
+          - name: error-strings
+            severity: warning

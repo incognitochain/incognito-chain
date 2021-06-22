@@ -1,4 +1,4 @@
-package tx_generic
+package tx_generic //nolint:revive
 
 import (
 	"bytes"
@@ -29,8 +29,8 @@ type TxBase struct {
 	Fee      uint64 `json:"Fee"` // Fee applies: always consant
 	Info     []byte // 512 bytes
 	// Sign and Privacy proof, required
-	SigPubKey            []byte `json:"SigPubKey, omitempty"` // 33 bytes
-	Sig                  []byte `json:"Sig, omitempty"`       //
+	SigPubKey            []byte `json:"SigPubKey,omitempty"` // 33 bytes
+	Sig                  []byte `json:"Sig,omitempty"`       //
 	Proof                privacy.Proof
 	PubKeyLastByteSender byte
 	// Metadata, optional
@@ -108,7 +108,7 @@ func updateParamsWhenOverBalance(params *TxPrivacyInitParams, senderPaymentAddre
 	overBalance := int64(sumInputValue - sumOutputValue - params.Fee)
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
-		return utils.NewTransactionErr(utils.WrongInputError, errors.New(fmt.Sprintf("Sum of inputs less than outputs: sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.Fee)))
+		return utils.NewTransactionErr(utils.WrongInputError, fmt.Errorf("Sum of inputs less than outputs: sumInputValue=%d sumOutputValue=%d fee=%d", sumInputValue, sumOutputValue, params.Fee))
 	}
 	// Create a new payment to sender's pk where amount is overBalance if > 0
 	if overBalance > 0 {
@@ -128,7 +128,7 @@ func GetTxVersionFromCoins(inputCoins []privacy.PlainCoin) (int8, error) {
 		return utils.CurrentTxVersion, nil
 	}
 	check := [3]bool{false, false, false}
-	for i := 0; i < len(inputCoins); i += 1 {
+	for i := 0; i < len(inputCoins); i++ {
 		check[inputCoins[i].GetVersion()] = true
 	}
 
@@ -144,9 +144,8 @@ func GetTxVersionFromCoins(inputCoins []privacy.PlainCoin) (int8, error) {
 
 	if check[2] {
 		return 2, nil
-	} else {
-		return 1, nil
 	}
+	return 1, nil
 }
 
 // InitializeTxAndParams returns bool indicates whether we should continue "Init" function or not
@@ -176,10 +175,7 @@ func (tx *TxBase) InitializeTxAndParams(params *TxPrivacyInitParams) error {
 	}
 
 	// Params: update balance if overbalance
-	if err = updateParamsWhenOverBalance(params, senderKeySet.PaymentAddress); err != nil {
-		return err
-	}
-	return nil
+	return updateParamsWhenOverBalance(params, senderKeySet.PaymentAddress)
 }
 
 // =================== PARSING JSON FUNCTIONS ===================
@@ -309,10 +305,10 @@ func (tx *TxBase) SetCachedHash(h *common.Hash) {
 // =================== FUNCTIONS THAT GET STUFF AND REQUIRE SOME CODING ===================
 
 func (tx TxBase) GetTxActualSize() uint64 {
-	//txBytes, _ := json.Marshal(tx)
-	//txSizeInByte := len(txBytes)
+	// txBytes, _ := json.Marshal(tx)
+	// txSizeInByte := len(txBytes)
 	//
-	//return uint64(math.Ceil(float64(txSizeInByte) / 1024))
+	// return uint64(math.Ceil(float64(txSizeInByte) / 1024))
 	if tx.cachedActualSize != nil {
 		return *tx.cachedActualSize
 	}
@@ -399,19 +395,12 @@ func (tx TxBase) String() string {
 	record += strconv.FormatInt(tx.LockTime, 10)
 	record += strconv.FormatUint(tx.Fee, 10)
 	if tx.Proof != nil {
-		//tmp := base58.Base58Check{}.Encode(tx.Proof.Bytes(), 0x00)
 		record += base64.StdEncoding.EncodeToString(tx.Proof.Bytes())
-		// fmt.Printf("Proof check base 58: %v\n",tmp)
 	}
 	if tx.Metadata != nil {
 		metadataHash := tx.Metadata.Hash()
 		record += metadataHash.String()
-		//Logger.log.Debugf("\n\n\n\n test metadata after hashing: %v\n", metadataHash.GetBytes())
 	}
-
-	// TODO: To be uncomment
-	// record += string(tx.Info)
-
 	return record
 }
 
@@ -437,10 +426,10 @@ func (tx TxBase) CalculateTxValue() uint64 {
 
 	outputCoins := tx.Proof.GetOutputCoins()
 	inputCoins := tx.Proof.GetInputCoins()
-	if outputCoins == nil || len(outputCoins) == 0 {
+	if len(outputCoins) == 0 {
 		return 0
 	}
-	if inputCoins == nil || len(inputCoins) == 0 { // coinbase tx
+	if len(inputCoins) == 0 { // coinbase tx
 		txValue := uint64(0)
 		for _, outCoin := range outputCoins {
 			txValue += outCoin.GetValue()
@@ -468,12 +457,10 @@ func (tx TxBase) CheckTxVersion(maxTxVersion int8) bool {
 
 func (tx *TxBase) IsNonPrivacyNonInput(params *TxPrivacyInitParams) (bool, error) {
 	var err error
-	//Logger.Log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.InputCoins), params.Fee, params.HasPrivacy)
 	if len(params.InputCoins) == 0 && params.Fee == 0 && !params.HasPrivacy {
-		//Logger.Log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
 		tx.sigPrivKey = *params.SenderSK
 		if tx.Sig, tx.SigPubKey, err = SignNoPrivacy(params.SenderSK, tx.Hash()[:]); err != nil {
-			utils.Logger.Log.Error(errors.New(fmt.Sprintf("Cannot signOnMessage tx %v\n", err)))
+			utils.Logger.Log.Error(fmt.Sprintf("Cannot signOnMessage tx %v\n", err))
 			return true, utils.NewTransactionErr(utils.SignTxError, err)
 		}
 		return true, nil
@@ -510,7 +497,7 @@ func (tx TxBase) IsCoinsBurning(bcr metadata.ChainRetriever, retriever metadata.
 	if len(inputCoins) > 0 {
 		senderPKBytes = inputCoins[0].GetPublicKey().ToBytesS()
 	}
-	//get burning address
+	// get burning address
 	burningAddress := bcr.GetBurningAddress(beaconHeight)
 	keyWalletBurningAccount, err := wallet.Base58CheckDeserialize(burningAddress)
 	if err != nil {
@@ -590,13 +577,13 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 			switch status {
 			case statedb.OTA_STATUS_STORED:
 				utils.Logger.Log.Error("ValidateTxSalary got error: found onetimeaddress in database")
-				return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New(fmt.Sprintf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status)))
+				return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, fmt.Errorf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status))
 			case statedb.OTA_STATUS_OCCUPIED:
 				if tx.IsSalaryTx() {
 					utils.Logger.Log.Warnf("Verifier : Accept minted OTA %x since status is %d", otaPublicKey, status)
 				} else {
 					utils.Logger.Log.Error("TX %s rejected due to already existing OTA", tx.Hash().String())
-					return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New(fmt.Sprintf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status)))
+					return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, fmt.Errorf("TX %s : OTA %x in output coin already in database with status %d", tx.Hash().String(), otaPublicKey, status))
 				}
 			default:
 				return utils.NewTransactionErr(utils.OnetimeAddressAlreadyExists, errors.New("invalid onetimeaddress status in database"))
@@ -612,7 +599,7 @@ func (tx TxBase) ValidateDoubleSpendWithBlockchain(shardID byte, stateDB *stated
 			return err
 		}
 		if exists {
-			return errors.New(fmt.Sprintf("TX %s : OTA %x in metadata already in database with status %d", tx.Hash().String(), otaPublicKey, status))
+			return fmt.Errorf("TX %s : OTA %x in metadata already in database with status %d", tx.Hash().String(), otaPublicKey, status)
 		}
 	}
 	return nil

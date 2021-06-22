@@ -1,3 +1,4 @@
+//nolint:revive // skip linter for functions in this file
 // Package bulletproofs manages the creation, proving & verification of Bulletproofs.
 // This is a class of compact-sized range proof that require no trusted setup.
 package bulletproofs
@@ -210,7 +211,6 @@ func (proof *AggregatedRangeProof) SetBytes(bytes []byte) error {
 	proof.innerProductProof = new(InnerProductProof)
 	err = proof.innerProductProof.SetBytes(bytes[offset:])
 	// it's the last check, so we just return it
-	//operation.Logger.Log.Debugf("AFTER SETBYTES ------------ %v\n", proof.Bytes())
 	return err
 }
 
@@ -314,10 +314,8 @@ func (wit AggregatedRangeWitness) Prove() (*AggregatedRangeProof, error) {
 	var r0, r1 []*operation.Scalar
 	if r0, err = vectorAdd(hadaProduct, vectorSum); err != nil {
 		return nil, err
-	} else {
-		if r1, err = hadamardProduct(yVector, sR); err != nil {
-			return nil, err
-		}
+	} else if r1, err = hadamardProduct(yVector, sR); err != nil {
+		return nil, err
 	}
 
 	// t(X) = <l(X), r(X)> = t0 + t1*X + t2*X^2
@@ -789,8 +787,6 @@ func VerifyBatch(proofs []*AggregatedRangeProof) (bool, error, int) {
 	RHS := new(operation.Point).Add(part1, part2)
 	RHS.Add(RHS, new(operation.Point).MultiScalarMult(list_zSquare, list_V))
 	RHSPrime.Add(RHSPrime, RHS)
-	//fmt.Println("Batch Verification ", LHSPrime)
-	//fmt.Println("Batch Verification ", RHSPrime)
 
 	if !operation.IsPointEqual(LHSPrime, RHSPrime) {
 		Logger.Log.Errorf("batch verify aggregated range proof failed")

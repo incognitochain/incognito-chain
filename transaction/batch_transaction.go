@@ -58,9 +58,9 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 			return false, err, i
 		}
 		if tx.GetMetadata() != nil {
-			//if hasPrivacy {
-			//	return false, errors.New("Metadata can not exist in privacy tx"), i
-			//}
+			// if hasPrivacy {
+			// 	return false, errors.New("Metadata can not exist in privacy tx"), i
+			// }
 			validateMetadata := tx.GetMetadata().ValidateMetadataByItself()
 			if !validateMetadata {
 				return validateMetadata, utils.NewTransactionErr(utils.UnexpectedError, errors.New("Metadata is invalid")), i
@@ -80,7 +80,6 @@ func (b *batchTransaction) validateBatchTxsByItself(txList []metadata.Transactio
 			}
 		}
 	}
-	//TODO: add go routine
 	isNewZKP, ok := boolParams["isNewZKP"]
 	if !ok {
 		isNewZKP = true

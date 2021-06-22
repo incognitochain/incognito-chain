@@ -59,7 +59,7 @@ func (t TxRandom) Bytes() []byte {
 
 func (t *TxRandom) SetBytes(b []byte) error {
 	if b == nil || len(b) != TxRandomGroupSize {
-		return errors.New("Cannnot SetByte to TxRandom. Input is invalid")
+		return errors.New("Cannot SetByte to TxRandom. Input is invalid")
 	}
 	_, err := new(operation.Point).FromBytesS(b[:operation.Ed25519KeySize])
 	if err != nil {
@@ -75,6 +75,7 @@ func (t *TxRandom) SetBytes(b []byte) error {
 	return nil
 }
 
+//nolint:revive // skip linter for this struct name
 // CoinV2 is the struct that will be stored to db
 // If not privacy, mask and amount will be the original randomness and value
 // If has privacy, mask and amount will be as paper monero
@@ -100,7 +101,7 @@ type CoinV2 struct {
 	assetTag *operation.Point
 }
 
-//Retrieve the private OTA key of coin from the Master PrivateKey
+// ParsePrivateKeyOfCoin retrieves the private OTA key of coin from the Master PrivateKey
 func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar, error) {
 	keySet := new(incognitokey.KeySet)
 	if err := keySet.InitFromPrivateKey(&privKey); err != nil {
@@ -111,14 +112,14 @@ func (c CoinV2) ParsePrivateKeyOfCoin(privKey key.PrivateKey) (*operation.Scalar
 	if err != nil {
 		return nil, err
 	}
-	rK := new(operation.Point).ScalarMult(txRandomOTAPoint, keySet.OTAKey.GetOTASecretKey()) //(r_ota*G) * k = r_ota * K
+	rK := new(operation.Point).ScalarMult(txRandomOTAPoint, keySet.OTAKey.GetOTASecretKey()) // (r_ota*G) * k = r_ota * K
 	H := operation.HashToScalar(append(rK.ToBytesS(), common.Uint32ToBytes(index)...))     // Hash(r_ota*K, index)
 
 	k := new(operation.Scalar).FromBytesS(privKey)
 	return new(operation.Scalar).Add(H, k), nil // Hash(rK, index) + privSpend
 }
 
-//Retrieve the keyImage of coin from the Master PrivateKey
+// ParseKeyImageWithPrivateKey retrieves the keyImage of coin from the Master PrivateKey
 func (c CoinV2) ParseKeyImageWithPrivateKey(privKey key.PrivateKey) (*operation.Point, error) {
 	k, err := c.ParsePrivateKeyOfCoin(privKey)
 	if err != nil {
@@ -142,14 +143,14 @@ func (c *CoinV2) ConcealOutputCoin(additionalData interface{}) error {
 		return errors.New("Cannot conceal CoinV2 without receiver view key")
 	}
 
-	rK := new(operation.Point).ScalarMult(publicView, c.GetSharedConcealRandom()) //rK = sharedConcealRandom * publicView
+	rK := new(operation.Point).ScalarMult(publicView, c.GetSharedConcealRandom()) // rK = sharedConcealRandom * publicView
 
-	hash := operation.HashToScalar(rK.ToBytesS()) //hash(rK)
+	hash := operation.HashToScalar(rK.ToBytesS()) // hash(rK)
 	hash = operation.HashToScalar(hash.ToBytesS())
-	mask := new(operation.Scalar).Add(c.GetRandomness(), hash) //mask = c.mask + hash
+	mask := new(operation.Scalar).Add(c.GetRandomness(), hash) // mask = c.mask + hash
 
 	hash = operation.HashToScalar(hash.ToBytesS())
-	amount := new(operation.Scalar).Add(c.GetAmount(), hash) //amount = c.amout + hash
+	amount := new(operation.Scalar).Add(c.GetAmount(), hash) // amount = c.amout + hash
 	c.SetRandomness(mask)
 	c.SetAmount(amount)
 	c.SetSharedConcealRandom(nil)
@@ -166,7 +167,7 @@ func (c *CoinV2) ConcealInputCoin() {
 	c.SetTxRandomDetail(new(operation.Point).Identity(), new(operation.Point).Identity(), 0)
 }
 
-//Decrypt a coin using the corresponding KeySet
+// Decrypt a coin using the corresponding KeySet
 func (c *CoinV2) Decrypt(keySet *incognitokey.KeySet) (PlainCoin, error) {
 	if keySet == nil {
 		err := errors.New("Cannot Decrypt CoinV2: Keyset is empty")
@@ -312,7 +313,7 @@ func (c *CoinV2) SetTxRandom(txRandom *TxRandom) {
 		c.txRandom = nil
 	} else {
 		c.txRandom = NewTxRandom()
-		c.txRandom.SetBytes(txRandom.Bytes())
+		_ = c.txRandom.SetBytes(txRandom.Bytes())
 	}
 }
 func (c *CoinV2) SetTxRandomDetail(txConcealRandomPoint, txRandomPoint *operation.Point, index uint32) {
@@ -453,7 +454,7 @@ func (c *CoinV2) SetBytes(coinBytes []byte) error {
 	if coinBytes[offset] != TxRandomGroupSize {
 		return errors.New("SetBytes CoinV2 TxRandomGroup error: length of TxRandomGroup is not correct")
 	}
-	offset += 1
+	offset++
 	if offset+TxRandomGroupSize > len(coinBytes) {
 		return errors.New("SetBytes CoinV2 TxRandomGroup error: length of coinBytes is too small")
 	}
@@ -550,7 +551,7 @@ func (c *CoinV2) DoesCoinBelongToKeySet(keySet *incognitokey.KeySet) (bool, *ope
 		return false, nil
 	}
 
-	//Check if the utxo belong to this one-time-address
+	// Check if the utxo belong to this one-time-address
 	rK := new(operation.Point).ScalarMult(txOTARandomPoint, keySet.OTAKey.GetOTASecretKey())
 
 	hashed := operation.HashToScalar(
@@ -560,11 +561,11 @@ func (c *CoinV2) DoesCoinBelongToKeySet(keySet *incognitokey.KeySet) (bool, *ope
 	HnG := new(operation.Point).ScalarMultBase(hashed)
 	KCheck := new(operation.Point).Sub(c.GetPublicKey(), HnG)
 
-	////Retrieve the sharedConcealRandomPoint for generating the blinded assetTag
-	//var rSharedConcealPoint *operation.Point
-	//if keySet.ReadonlyKey.GetPrivateView() != nil {
-	//	rSharedConcealPoint = new(operation.Point).ScalarMult(txConcealRandomPoint, keySet.ReadonlyKey.GetPrivateView())
-	//}
+	// // Retrieve the sharedConcealRandomPoint for generating the blinded assetTag
+	// var rSharedConcealPoint *operation.Point
+	// if keySet.ReadonlyKey.GetPrivateView() != nil {
+	// 	rSharedConcealPoint = new(operation.Point).ScalarMult(txConcealRandomPoint, keySet.ReadonlyKey.GetPrivateView())
+	// }
 
 	return operation.IsPointEqual(KCheck, keySet.OTAKey.GetPublicSpend()), rK
 }

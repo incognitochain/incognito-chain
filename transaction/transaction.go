@@ -30,8 +30,8 @@ type TxTokenData 		= tx_generic.TxTokenData
 type TxSigPubKeyVer2	= tx_ver2.SigPubKey
 
 // BuildCoinBaseTxByCoinID is used to create a salary transaction. 
-// This is a legacy function; it will be deprecated in the future.
 // It must take its own defined parameter struct.
+// Deprecated: this is not used in v2 code
 func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Transaction, error) {
 	paymentInfo := &privacy.PaymentInfo{
 		PaymentAddress: *params.payToAddress,
@@ -82,12 +82,11 @@ func (pr TxSalaryOutputParams) getVersion() int{
 	if _, err := metadata.AssertPaymentAddressAndTxVersion(*pr.ReceiverAddress, 2); err == nil{
 		return 2
 	}
-	if _, err := metadata.AssertPaymentAddressAndTxVersion(*pr.ReceiverAddress, 1); err == nil{
-		return 1
-	} else {
+	if _, err := metadata.AssertPaymentAddressAndTxVersion(*pr.ReceiverAddress, 1); err != nil{
 		Logger.Log.Errorf("AssertPaymentAddressAndTxVersion error: %v\n", err)
 		return 0
 	}
+	return 1
 }
 
 func (pr TxSalaryOutputParams) generateOutputCoin() (*privacy.CoinV2, error){
@@ -357,7 +356,8 @@ func DeserializeTransactionJSON(data []byte) (*TxChoice, error){
 	_, isTokenTx := holder["TxTokenPrivacyData"]
 	_, hasVersionOutside := holder["Version"]
 	var verHolder txJsonDataVersion
-	json.Unmarshal(data, &verHolder)
+	// unmarshalling error here corresponds to the `else` block below
+	_ = json.Unmarshal(data, &verHolder)
 	if hasVersionOutside {
 		switch verHolder.Version{
 		case utils.TxVersion1Number:
@@ -366,24 +366,22 @@ func DeserializeTransactionJSON(data []byte) (*TxChoice, error){
 				result.TokenVersion1 = &TxTokenVersion1{}
 				err := json.Unmarshal(data, result.TokenVersion1)
 				return result, err
-			}else{
-				// tx ver 1
-				result.Version1 = &TxVersion1{}
-				err := json.Unmarshal(data, result.Version1)
-				return result, err
 			}
+			// tx ver 1
+			result.Version1 = &TxVersion1{}
+			err := json.Unmarshal(data, result.Version1)
+			return result, err
 		case utils.TxVersion2Number: // the same as utils.TxConversionVersion12Number
 			if isTokenTx{
 				// rejected
 				return nil, errors.New("Error unmarshalling TX from JSON : misplaced version")
-			}else{
-				// tx ver 2
-				result.Version2 = &TxVersion2{}
-				err := json.Unmarshal(data, result.Version2)
-				return result, err
 			}
+			// tx ver 2
+			result.Version2 = &TxVersion2{}
+			err := json.Unmarshal(data, result.Version2)
+			return result, err
 		default:
-			return nil, errors.New(fmt.Sprintf("Error unmarshalling TX from JSON : wrong version of %d", verHolder.Version))
+			return nil, fmt.Errorf("Error unmarshalling TX from JSON : wrong version of %d", verHolder.Version)
 		}
 	}else{
 		if isTokenTx{
@@ -391,9 +389,8 @@ func DeserializeTransactionJSON(data []byte) (*TxChoice, error){
 			result.TokenVersion2 = &TxTokenVersion2{}
 			err := json.Unmarshal(data, result.TokenVersion2)
 			return result, err
-		}else{
-			return nil, errors.New("Error unmarshalling TX from JSON")
 		}
+		return nil, errors.New("Error unmarshalling TX from JSON")
 	}
 
 }
@@ -402,7 +399,7 @@ func DeserializeTransactionJSON(data []byte) (*TxChoice, error){
 type BuildCoinBaseTxByCoinIDParams struct {
 	payToAddress       *privacy.PaymentAddress
 	amount             uint64
-	txRandom           *privacy.TxRandom
+	txRandom           *privacy.TxRandom //nolint:structcheck,unused
 	payByPrivateKey    *privacy.PrivateKey
 	transactionStateDB *statedb.StateDB
 	bridgeStateDB      *statedb.StateDB
@@ -502,24 +499,21 @@ func GetFullBurnData(tx metadata.Transaction) (bool, coin.Coin, coin.Coin, *comm
 	switch  tx.GetType() {
 	case common.TxNormalType:
 		isBurned, burnPrv, _, err :=  tx.GetTxBurnData()
-		if err != nil || isBurned == false {
+		if err != nil || !isBurned {
 			return false, nil, nil, nil, err
 		}
 		return true, burnPrv, nil, nil, err
 	case common.TxCustomTokenPrivacyType:
-		if txTmp, ok := tx.(TransactionToken); !ok {
-			return false, nil, nil, nil, fmt.Errorf("tx is not tp")
-		} else {
+		if txTmp, ok := tx.(TransactionToken); ok {
 			isBurnToken, burnToken, burnedTokenID, err1 :=  txTmp.GetTxBurnData()
 			isBurnPrv, burnPrv, _, err2 := txTmp.GetTxBase().GetTxBurnData()
 
 			if err1 != nil && err2 != nil {
 				return false, nil, nil, nil, fmt.Errorf("%v and %v", err1, err2)
 			}
-
 			return isBurnPrv || isBurnToken, burnToken, burnPrv, burnedTokenID, nil
 		}
-
+		return false, nil, nil, nil, fmt.Errorf("tx is not tp")
 	default:
 		return false, nil, nil, nil, nil
 	}

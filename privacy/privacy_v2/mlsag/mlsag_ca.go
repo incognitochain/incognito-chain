@@ -1,3 +1,5 @@
+//nolint:gocritic,revive // skip some linters since this file has some capitalized, underscored
+// variable names to match names in the crypto protocol
 package mlsag
 
 import (
@@ -9,10 +11,10 @@ import (
 )
 
 // SignConfidentialAsset uses the private key in this Mlsag to sign a message (which is the transaction hash).
-// It returns a MlsagSig.
+// It returns a mlsag.Sig.
 //
 // The Ring for Confidential Asset transactions has one extra column; it contains the asset tag sums.
-func (mlsag *Mlsag) SignConfidentialAsset(message []byte) (*MlsagSig, error) {
+func (mlsag *Mlsag) SignConfidentialAsset(message []byte) (*Sig, error) {
 	if len(message) != common.HashSize {
 		return nil, errors.New("Cannot mlsag sign the message because its length is not 32, maybe it has not been hashed")
 	}
@@ -25,13 +27,13 @@ func (mlsag *Mlsag) SignConfidentialAsset(message []byte) (*MlsagSig, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &MlsagSig{
+	return &Sig{
 		c[0], mlsag.keyImages, r,
 	}, nil
 }
 
 // VerifyConfidentialAsset does verification of a (Confidential Asset) ring signature on a message.
-func VerifyConfidentialAsset(sig *MlsagSig, K *Ring, message []byte) (bool, error) {
+func VerifyConfidentialAsset(sig *Sig, K *Ring, message []byte) (bool, error) {
 	if len(message) != common.HashSize {
 		return false, errors.New("Cannot mlsag verify the message because its length is not 32, maybe it has not been hashed")
 	}
@@ -136,7 +138,6 @@ func calculateFirstCCA(digest [common.HashSize]byte, alpha []*operation.Scalar, 
 
 	// Process last column
 	alphaG := new(operation.Point).ScalarMult(
-		// TODO : which g here ?
 		operation.PedCom.G[operation.PedersenRandomnessIndex],
 		alpha[len(K)-2],
 	)
@@ -170,7 +171,7 @@ func (mlsag *Mlsag) calculateCCA(message [common.HashSize]byte, alpha []*operati
 		nextC, err := calculateNextCCA(
 			message,
 			r[i], c[i],
-			(*mlsag.R).keys[i],
+			mlsag.R.keys[i],
 			mlsag.keyImages,
 		)
 		if err != nil {
@@ -190,7 +191,7 @@ func (mlsag *Mlsag) calculateCCA(message [common.HashSize]byte, alpha []*operati
 	return c, nil
 }
 
-func verifyRingCA(sig *MlsagSig, R *Ring, message [common.HashSize]byte) (bool, error) {
+func verifyRingCA(sig *Sig, R *Ring, message [common.HashSize]byte) (bool, error) {
 	c := *sig.c
 	cBefore := *sig.c
 	if len(R.keys) != len(sig.r){

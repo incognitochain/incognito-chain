@@ -49,13 +49,13 @@ const (
 	GetShardIDByPublicKeyError
 
 	NormalTokenPRVJsonError
-	NormalTokenJsonError
+	NormalTokenJsonError //nolint:revive
 
 	PrivacyTokenInitFeeParamsError
 	PrivacyTokenInitPRVError
 	PrivacyTokenInitTokenDataError
 	PrivacyTokenPRVJsonError
-	PrivacyTokenJsonError
+	PrivacyTokenJsonError //nolint:revive
 	PrivacyTokenTxTypeNotHandleError
 
 	ExceedSizeTx

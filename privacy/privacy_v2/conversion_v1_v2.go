@@ -1,3 +1,4 @@
+//nolint:revive // skip linter for this package name
 package privacy_v2
 
 import (
@@ -27,7 +28,7 @@ type ConversionProofVer1ToVer2 struct {
 
 func (proof ConversionProofVer1ToVer2) MarshalJSON() ([]byte, error) {
 	data := proof.Bytes()
-	//temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
+	// temp := base58.Base58Check{}.Encode(data, common.ZeroByte)
 	temp := base64.StdEncoding.EncodeToString(data)
 	return json.Marshal(temp)
 }
@@ -35,10 +36,10 @@ func (proof ConversionProofVer1ToVer2) MarshalJSON() ([]byte, error) {
 func (proof *ConversionProofVer1ToVer2) UnmarshalJSON(data []byte) error {
 	Logger.Log.Infof("Unmarshalling ConversionProof: %v\n", string(data))
 	dataStr := common.EmptyString
-	errJson := json.Unmarshal(data, &dataStr)
-	if errJson != nil {
-		Logger.Log.Errorf("PaymentProofV2 unmarshalling dataStr error: %v\n", errJson)
-		return errJson
+	errJSON := json.Unmarshal(data, &dataStr)
+	if errJSON != nil {
+		Logger.Log.Errorf("PaymentProofV2 unmarshalling dataStr error: %v\n", errJSON)
+		return errJSON
 	}
 	temp, err := base64.StdEncoding.DecodeString(dataStr)
 	if err != nil {
@@ -53,7 +54,7 @@ func (proof *ConversionProofVer1ToVer2) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (proof ConversionProofVer1ToVer2) Init() {
+func (proof *ConversionProofVer1ToVer2) Init() {
 	proof.Version = ConversionProofVersion
 	proof.inputCoins = []*coin.PlainCoinV1{}
 	proof.outputCoins = []*coin.CoinV2{}
@@ -65,14 +66,14 @@ func (proof *ConversionProofVer1ToVer2) SetVersion(uint8) { proof.Version = Conv
 
 func (proof ConversionProofVer1ToVer2) GetInputCoins() []coin.PlainCoin {
 	res := make([]coin.PlainCoin, len(proof.inputCoins))
-	for i := 0; i < len(proof.inputCoins); i += 1 {
+	for i := 0; i < len(proof.inputCoins); i++ {
 		res[i] = proof.inputCoins[i]
 	}
 	return res
 }
 func (proof ConversionProofVer1ToVer2) GetOutputCoins() []coin.Coin {
 	res := make([]coin.Coin, len(proof.outputCoins))
-	for i := 0; i < len(proof.outputCoins); i += 1 {
+	for i := 0; i < len(proof.outputCoins); i++ {
 		res[i] = proof.outputCoins[i]
 	}
 	return res
@@ -81,7 +82,7 @@ func (proof ConversionProofVer1ToVer2) GetOutputCoins() []coin.Coin {
 // InputCoins should be all ver1, else it would crash
 func (proof *ConversionProofVer1ToVer2) SetInputCoins(v []coin.PlainCoin) error {
 	proof.inputCoins = make([]*coin.PlainCoinV1, len(v))
-	for i := 0; i < len(v); i += 1 {
+	for i := 0; i < len(v); i++ {
 		coin, ok := v[i].(*coin.PlainCoinV1)
 		if !ok {
 			return errors.New("Input coins should all be PlainCoinV1")
@@ -94,7 +95,7 @@ func (proof *ConversionProofVer1ToVer2) SetInputCoins(v []coin.PlainCoin) error 
 // v should be all coinv2 or else it would crash
 func (proof *ConversionProofVer1ToVer2) SetOutputCoins(v []coin.Coin) error {
 	proof.outputCoins = make([]*coin.CoinV2, len(v))
-	for i := 0; i < len(v); i += 1 {
+	for i := 0; i < len(v); i++ {
 		coin, ok := v[i].(*coin.CoinV2)
 		if !ok {
 			return errors.New("Output coins should all be CoinV2")
@@ -125,7 +126,7 @@ func (proof ConversionProofVer1ToVer2) Bytes() []byte {
 	for i := 0; i < len(proof.outputCoins); i++ {
 		outputCoins := proof.outputCoins[i].Bytes()
 		lenOutputCoins := len(outputCoins)
-		lenOutputCoinsBytes := []byte{}
+		var lenOutputCoinsBytes []byte
 		if lenOutputCoins < 256 {
 			lenOutputCoinsBytes = []byte{byte(lenOutputCoins)}
 		} else {
@@ -161,13 +162,12 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 	proof.SetVersion(ConversionProofVersion)
 	offset := 1
 
-	//InputCoins  []*coin.PlainCoinV1
 	if offset >= len(proofBytes) {
 		Logger.Log.Errorf("out of range input coin: %v >= %v\n", offset, len(proofBytes))
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 	}
 	lenInputCoinsArray := int(proofBytes[offset])
-	offset += 1
+	offset++
 	proof.inputCoins = make([]*coin.PlainCoinV1, lenInputCoinsArray)
 	for i := 0; i < lenInputCoinsArray; i++ {
 		if offset >= len(proofBytes) {
@@ -175,34 +175,33 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
 		lenInputCoin := int(proofBytes[offset])
-		offset += 1
+		offset++
 
 		if offset+lenInputCoin > len(proofBytes) {
 			Logger.Log.Errorf("out of range input coin: %v + %v >= %v\n", offset, lenInputCoin, len(proofBytes))
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range input coins"))
 		}
 		coinBytes := proofBytes[offset : offset+lenInputCoin]
-		if pc, err := coin.NewPlainCoinFromByte(coinBytes); err != nil {
+		pc, err := coin.NewPlainCoinFromByte(coinBytes)
+		if err != nil {
 			Logger.Log.Errorf("input coin newPlainCoin error: %v\n", err)
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
-		} else {
-			var ok bool
-			if proof.inputCoins[i], ok = pc.(*coin.PlainCoinV1); !ok {
-				Logger.Log.Error("cannot assert type of PlainCoin to PlainCoinV1\n")
-				err := errors.New("Cannot assert type of PlainCoin to PlainCoinV1")
-				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
-			}
+		}
+		var ok bool
+		if proof.inputCoins[i], ok = pc.(*coin.PlainCoinV1); !ok {
+			Logger.Log.Error("cannot assert type of PlainCoin to PlainCoinV1\n")
+			err := errors.New("Cannot assert type of PlainCoin to PlainCoinV1")
+			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, err)
 		}
 		offset += lenInputCoin
 	}
 
-	//OutputCoins  []*coin.CoinV2
 	if offset >= len(proofBytes) {
 		Logger.Log.Errorf("out of range output coin: %v >= %v\n", offset, len(proofBytes))
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 	}
 	lenOutputCoinsArray := int(proofBytes[offset])
-	offset += 1
+	offset++
 	proof.outputCoins = make([]*coin.CoinV2, lenOutputCoinsArray)
 	for i := 0; i < lenOutputCoinsArray; i++ {
 		proof.outputCoins[i] = new(coin.CoinV2)
@@ -212,7 +211,7 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 		}
 		lenOutputCoin := int(proofBytes[offset])
-		offset += 1
+		offset++
 
 		if offset+lenOutputCoin > len(proofBytes) {
 			Logger.Log.Errorf("out of range output coin: %v + %v >= %v\n", offset, lenOutputCoin, len(proofBytes))
@@ -226,7 +225,7 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
 			}
 			lenOutputCoin = common.BytesToInt(proofBytes[offset-1 : offset+1])
-			offset += 1
+			offset++
 
 			if offset+lenOutputCoin > len(proofBytes) {
 				return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range output coins"))
@@ -247,14 +246,14 @@ func (proof *ConversionProofVer1ToVer2) SetBytes(proofBytes []byte) *errhandler.
 		return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range serial number no privacy proof"))
 	}
 	lenSNNoPrivacyProofArray := int(proofBytes[offset])
-	offset += 1
+	offset++
 	proof.serialNumberNoPrivacyProof = make([]*serialnumbernoprivacy.SNNoPrivacyProof, lenSNNoPrivacyProofArray)
 	for i := 0; i < lenSNNoPrivacyProofArray; i++ {
 		if offset >= len(proofBytes) {
 			return errhandler.NewPrivacyErr(errhandler.SetBytesProofErr, errors.New("Out of range serial number no privacy proof"))
 		}
 		lenSNNoPrivacyProof := int(proofBytes[offset])
-		offset += 1
+		offset++
 
 		proof.serialNumberNoPrivacyProof[i] = new(serialnumbernoprivacy.SNNoPrivacyProof).Init()
 		if offset+lenSNNoPrivacyProof > len(proofBytes) {
@@ -282,7 +281,7 @@ func ProveConversion(inputCoins []coin.PlainCoin, outputCoins []*coin.CoinV2, se
 		return nil, err
 	}
 	outputCoinsV2 := make([]coin.Coin, len(outputCoins))
-	for i := 0; i < len(outputCoins); i += 1 {
+	for i := 0; i < len(outputCoins); i++ {
 		outputCoinsV2[i] = outputCoins[i]
 	}
 	if err = proof.SetOutputCoins(outputCoinsV2); err != nil {
@@ -360,7 +359,7 @@ func (proof *ConversionProofVer1ToVer2) ValidateSanity(additionalData interface{
 }
 
 func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey key.PublicKey, fee uint64, shardID byte, tokenID *common.Hash, additionalData interface{}) (bool, error) {
-	//Step to verify ConversionProofVer1ToVer2
+	// Step to verify ConversionProofVer1ToVer2
 	//  - verify if inputCommitments existed
 	//	- verify sumInput = sumOutput + fee
 	//	- verify if serial number of each input coin has been derived correctly
@@ -377,14 +376,14 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 	}
 	sumInput, sumOutput := uint64(0), uint64(0)
 
-	for i := 0; i < len(proof.inputCoins); i += 1 {
+	for i := 0; i < len(proof.inputCoins); i++ {
 		if proof.inputCoins[i].IsEncrypted() {
 			return false, errors.New("ConversionProof input should not be encrypted")
 		}
 		if !bytes.Equal(pubKey, proof.inputCoins[i].GetPublicKey().ToBytesS()) {
 			return false, errors.New("ConversionProof inputCoins.publicKey should equal to pubkey")
 		}
-		//Check the consistency of input coins' commitment
+		// Check the consistency of input coins' commitment
 		commitment := proof.inputCoins[i].GetCommitment()
 		err := proof.inputCoins[i].CommitAll()
 		if err != nil {
@@ -394,7 +393,7 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 			return false, errors.New("ConversionProof inputCoins.commitment is not correct")
 		}
 
-		//Check input overflow (not really necessary)
+		// Check input overflow (not really necessary)
 		inputValue := proof.inputCoins[i].GetValue()
 		tmpInputSum := sumInput + inputValue
 		if tmpInputSum < sumInput || tmpInputSum < inputValue{
@@ -402,11 +401,11 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 		}
 		sumInput += inputValue
 	}
-	for i := 0; i < len(proof.outputCoins); i += 1 {
+	for i := 0; i < len(proof.outputCoins); i++ {
 		if proof.outputCoins[i].IsEncrypted() {
 			return false, errors.New("ConversionProof output should not be encrypted")
 		}
-		//check output commitment
+		// check output commitment
 		outputValue := proof.outputCoins[i].GetValue()
 		randomness := proof.outputCoins[i].GetRandomness()
 		var tmpCommitment *operation.Point
@@ -426,7 +425,7 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 			return false, fmt.Errorf("commitment of coin %v is not valid", i)
 		}
 
-		//Check output overflow
+		// Check output overflow
 		tmpOutputSum := sumOutput + outputValue
 		if tmpOutputSum < sumOutput || tmpOutputSum < outputValue{
 			return false, errors.New("Overflown sumOutput")
@@ -435,7 +434,7 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 	}
 	tmpSum := sumOutput + fee
 	if tmpSum < sumOutput || tmpSum < fee {
-		return false, errors.New(fmt.Sprintf("Overflown sumOutput+fee: output value = %v, fee = %v, sum = %v\n", sumOutput, fee, tmpSum))
+		return false, fmt.Errorf("Overflown sumOutput+fee: output value = %v, fee = %v, sum = %v\n", sumOutput, fee, tmpSum)
 	}
 	if sumInput != tmpSum {
 		return false, errors.New("ConversionProof input should be equal to fee + sum output")
@@ -444,7 +443,7 @@ func (proof ConversionProofVer1ToVer2) Verify(boolParams map[string]bool, pubKey
 		return false, errors.New("The number of input coins should be equal to the number of proofs")
 	}
 
-	for i := 0; i < len(proof.inputCoins); i += 1 {
+	for i := 0; i < len(proof.inputCoins); i++ {
 		valid, err := proof.serialNumberNoPrivacyProof[i].Verify(nil)
 		if !valid {
 			Logger.Log.Errorf("Verify serial number no privacy proof failed")

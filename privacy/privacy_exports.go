@@ -19,7 +19,7 @@ import (
 	"github.com/incognitochain/incognito-chain/privacy/proof/agg_interface"
 )
 
-type PrivacyError = errhandler.PrivacyError
+type PrivacyError = errhandler.PrivacyError //nolint:revive
 
 var ErrCodeMessage = errhandler.ErrCodeMessage
 
@@ -38,7 +38,7 @@ const (
 	PedersenRandomnessIndex = operation.PedersenRandomnessIndex
 
 	RingSize 				= privacy_util.RingSize
-	MAX_TRIES_OTA 			= coin.MAX_TRIES_OTA
+	MaxTriesOTA 			= coin.MaxTriesOTA
 	TxRandomGroupSize		= coin.TxRandomGroupSize
 )
 
@@ -149,7 +149,7 @@ func ArrayScalarFromBytes(b []byte) (*[]*operation.Scalar, error) {
 	}
 	scalarArr := make([]*operation.Scalar, n)
 	offset := 1
-	for i := 0; i < n; i += 1 {
+	for i := 0; i < n; i++ {
 		curByte := b[offset : offset+Ed25519KeySize]
 		scalarArr[i] = new(operation.Scalar).FromBytesS(curByte)
 		offset += Ed25519KeySize

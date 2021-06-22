@@ -25,7 +25,7 @@ func CopyPedersenCommitmentScheme(sch operation.PedersenCommitment) operation.Pe
 // GetFirstAssetTag is a helper that returns the asset tag field of the first coin from the input.
 // That will be used as base when proving.
 func GetFirstAssetTag(coins []*coin.CoinV2) (*operation.Point,error){
-	if coins==nil || len(coins)==0{
+	if len(coins)==0{
 		return nil, errors.New("Cannot get asset tag from empty input")
 	}
 	result := coins[0].GetAssetTag()
@@ -122,10 +122,8 @@ func (wit AggregatedRangeWitness) ProveUsingBase(anAssetTag *operation.Point) (*
 	var r0, r1 []*operation.Scalar
 	if r0, err = vectorAdd(hadaProduct, vectorSum); err != nil {
 		return nil, err
-	} else {
-		if r1, err = hadamardProduct(yVector, sR); err != nil {
-			return nil, err
-		}
+	} else if r1, err = hadamardProduct(yVector, sR); err != nil {
+		return nil, err
 	}
 
 	// t(X) = <l(X), r(X)> = t0 + t1*X + t2*X^2
@@ -557,7 +555,7 @@ func TransformWitnessToCAWitness(wit *AggregatedRangeWitness, assetTagBlinders [
 	}
 	newRands := make([]*operation.Scalar, len(wit.values))
 
-	for i,_ := range wit.values{
+	for i := range wit.values{
 		temp := new(operation.Scalar).Sub(assetTagBlinders[i], assetTagBlinders[0])
 		temp.Mul(temp, new(operation.Scalar).FromUint64(wit.values[i]))
 		temp.Add(temp, wit.rands[i])

@@ -1,10 +1,9 @@
-package tx_generic
+package tx_generic //nolint:revive
 
 import (
 	"errors"
 	"math"
 	"math/big"
-	"math/rand"
 	"strconv"
 
 	"github.com/incognitochain/incognito-chain/privacy/operation"
@@ -70,7 +69,6 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	}
 	// loop to random commitmentIndexs
 	cpRandNum := (len(listUsableCommitments) * param.randNum) - len(listUsableCommitments)
-	//fmt.Printf("cpRandNum: %d\n", cpRandNum)
 	lenCommitment, err1 := statedb.GetCommitmentLength(param.stateDB, *param.tokenID, param.shardID)
 	if err1 != nil {
 		utils.Logger.Log.Error(err1)
@@ -116,8 +114,8 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	for _, commitmentInHash := range listUsableCommitmentsIndices {
 		commitmentValue := listUsableCommitments[commitmentInHash]
 		index := mapIndexCommitmentsInUsableTx[base58.Base58Check{}.Encode(commitmentValue, common.ZeroByte)]
-		randInt := rand.Intn(param.randNum)
-		i := (j * param.randNum) + randInt
+		randInt, _ := common.RandBigIntMaxRange(big.NewInt(int64(param.randNum)))
+		i := (j * param.randNum) + int(randInt.Int64())
 		commitmentIndexs = append(commitmentIndexs[:i], append([]uint64{index.Uint64()}, commitmentIndexs[i:]...)...)
 		commitments = append(commitments[:i], append([][]byte{commitmentValue}, commitments[i:]...)...)
 		myCommitmentIndexs = append(myCommitmentIndexs, uint64(i)) // create myCommitmentIndexs
@@ -235,10 +233,8 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 	sizeProof := uint64(0)
 	if estimateTxSizeParam.numInputCoins != 0 || estimateTxSizeParam.numPayments != 0 {
 		sizeProof = zku.EstimateProofSize(estimateTxSizeParam.numInputCoins, estimateTxSizeParam.numPayments, estimateTxSizeParam.hasPrivacy)
-	} else {
-		if estimateTxSizeParam.limitFee > 0 {
-			sizeProof = zku.EstimateProofSize(1, 1, estimateTxSizeParam.hasPrivacy)
-		}
+	} else if estimateTxSizeParam.limitFee > 0 {
+		sizeProof = zku.EstimateProofSize(1, 1, estimateTxSizeParam.hasPrivacy)
 	}
 
 	sizePubKeyLastByte := uint64(1)
@@ -274,7 +270,7 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 		// Proof
 		customTokenDataSize += zku.EstimateProofSize(len(estimateTxSizeParam.privacyCustomTokenParams.TokenInput), len(estimateTxSizeParam.privacyCustomTokenParams.Receiver), true)
 
-		customTokenDataSize += uint64(1) //PubKeyLastByte
+		customTokenDataSize += uint64(1) // PubKeyLastByte
 
 		sizeTx += customTokenDataSize
 	}
@@ -284,7 +280,7 @@ func EstimateTxSize(estimateTxSizeParam *EstimateTxSizeParam) uint64 {
 
 func CalculateSumOutputsWithFee(outputCoins []coin.Coin, fee uint64) *operation.Point {
 	sumOutputsWithFee := new(operation.Point).Identity()
-	for i := 0; i < len(outputCoins); i += 1 {
+	for i := 0; i < len(outputCoins); i++ {
 		sumOutputsWithFee.Add(sumOutputsWithFee, outputCoins[i].GetCommitment())
 	}
 	feeCommitment := new(operation.Point).ScalarMult(
