@@ -117,14 +117,14 @@ const (
 	BurningConfirmForDepositToSCMetaV2 = 243
 
 	// PORTAL V4
-	PortalV4ShieldingRequestMeta      = 250
-	PortalV4ShieldingResponseMeta     = 251
-	PortalV4UnshieldingRequestMeta    = 252
-	PortalV4UnshieldingResponseMeta   = 253
-	PortalV4UnshieldBatchingMeta      = 254
-	PortalV4FeeReplacementRequestMeta = 255
-	PortalV4SubmitConfirmedTxMeta     = 256
-	PortalV4ConvertVaultRequestMeta   = 257
+	PortalV4ShieldingRequestMeta      = 260
+	PortalV4ShieldingResponseMeta     = 261
+	PortalV4UnshieldingRequestMeta    = 262
+	PortalV4UnshieldingResponseMeta   = 263
+	PortalV4UnshieldBatchingMeta      = 264
+	PortalV4FeeReplacementRequestMeta = 265
+	PortalV4SubmitConfirmedTxMeta     = 266
+	PortalV4ConvertVaultRequestMeta   = 267
 
 	InitTokenRequestMeta  = 244
 	InitTokenResponseMeta = 245

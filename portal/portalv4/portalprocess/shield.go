@@ -63,7 +63,7 @@ func (p *PortalShieldingRequestProcessor) PrepareDataForBlockProducer(stateDB *s
 }
 
 // hashProof returns the hash of shielding proof (include tx proof and user inc address)
-func hashProof(proof string, incAddressStr string) string {
+func hashProof(proof string, chainCode string) string {
 	type shieldingProof struct {
 		Proof      string
 		IncAddress string
@@ -71,7 +71,7 @@ func hashProof(proof string, incAddressStr string) string {
 
 	shieldProof := shieldingProof{
 		Proof:      proof,
-		IncAddress: incAddressStr,
+		IncAddress: chainCode,
 	}
 	shieldProofBytes, _ := json.Marshal(shieldProof)
 	hash := common.HashB(shieldProofBytes)

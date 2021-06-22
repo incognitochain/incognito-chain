@@ -26,3 +26,5 @@ const (
 	PortalBatchUnshieldProcessingStatus = 0
 	PortalBatchUnshieldCompletedStatus  = 1
 )
+
+const PortalConvertVaultChainCode = "portalconvertvault"

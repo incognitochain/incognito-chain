@@ -8,17 +8,15 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
-	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-// @@NOTE: This tx is created only one time when migration centralized bridge to portal v4
+// @@NOTE: This tx is created when migration centralized bridge to portal v4
 // PortalConvertVaultRequest
-// metadata - portal centralized incognito address convert vault request - create normal tx with this metadata
+// metadata - create normal tx with this metadata
 type PortalConvertVaultRequest struct {
-	MetadataBaseWithSignature
-	TokenID          string // pTokenID in incognito chain
-	ConvertProof     string
-	IncognitoAddress string
+	MetadataBase
+	TokenID      string // pTokenID in incognito chain
+	ConvertProof string
 }
 
 // PortalConvertVaultRequestAction - shard validator creates instruction that contain this action content
@@ -33,7 +31,6 @@ type PortalConvertVaultRequestAction struct {
 // both accepted and rejected status
 type PortalConvertVaultRequestContent struct {
 	TokenID          string // pTokenID in incognito chain
-	IncognitoAddress string
 	ConvertProofHash string
 	ConvertingUTXO   []*statedb.UTXO
 	ConvertingAmount uint64
@@ -45,7 +42,6 @@ type PortalConvertVaultRequestContent struct {
 type PortalConvertVaultRequestStatus struct {
 	Status           byte
 	TokenID          string // pTokenID in incognito chain
-	IncognitoAddress string
 	ConvertProofHash string
 	ConvertingUTXO   []*statedb.UTXO
 	ConvertingAmount uint64
@@ -56,15 +52,13 @@ type PortalConvertVaultRequestStatus struct {
 func NewPortalConvertVaultRequest(
 	metaType int,
 	tokenID string,
-	convertingProof string,
-	incognitoAddress string) (*PortalConvertVaultRequest, error) {
+	convertingProof string) (*PortalConvertVaultRequest, error) {
 	metadataBase := MetadataBase{
 		Type: metaType,
 	}
 	convertRequestMeta := &PortalConvertVaultRequest{
-		TokenID:          tokenID,
-		ConvertProof:     convertingProof,
-		IncognitoAddress: incognitoAddress,
+		TokenID:      tokenID,
+		ConvertProof: convertingProof,
 	}
 	convertRequestMeta.MetadataBase = metadataBase
 	return convertRequestMeta, nil
@@ -80,23 +74,6 @@ func (convertVaultReq PortalConvertVaultRequest) ValidateTxWithBlockChain(
 }
 
 func (convertVaultReq PortalConvertVaultRequest) ValidateSanityData(chainRetriever ChainRetriever, shardViewRetriever ShardViewRetriever, beaconViewRetriever BeaconViewRetriever, beaconHeight uint64, tx Transaction) (bool, bool, error) {
-	// validate requester - must be a centralized incognito address
-	centralizedIncAddress := chainRetriever.GetCentralizedWebsitePaymentAddress(beaconHeight)
-	if convertVaultReq.IncognitoAddress != centralizedIncAddress {
-		return false, false, errors.New("Requester is not matched to the centralized incognito address")
-	}
-	keyWallet, err := wallet.Base58CheckDeserialize(convertVaultReq.IncognitoAddress)
-	if err != nil {
-		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError, errors.New("Requester incognito address is invalid"))
-	}
-	incAddr := keyWallet.KeySet.PaymentAddress
-	if len(incAddr.Pk) == 0 {
-		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError, errors.New("Requester incognito address is invalid"))
-	}
-	if ok, err := convertVaultReq.MetadataBaseWithSignature.VerifyMetadataSignature(incAddr.Pk, tx); err != nil || !ok {
-		return false, false, errors.New("Requester must be a centralized incognito address")
-	}
-
 	// check proof is not empty
 	if convertVaultReq.ConvertProof == "" {
 		return false, false, NewMetadataTxError(PortalV4ConvertVaultRequestMetaError,
@@ -131,19 +108,7 @@ func (convertVaultReq PortalConvertVaultRequest) Hash() *common.Hash {
 	record := convertVaultReq.MetadataBase.Hash().String()
 	record += convertVaultReq.TokenID
 	record += convertVaultReq.ConvertProof
-	if convertVaultReq.Sig != nil && len(convertVaultReq.Sig) != 0 {
-		record += string(convertVaultReq.Sig)
-	}
 
-	// final hash
-	hash := common.HashH([]byte(record))
-	return &hash
-}
-
-func (convertVaultReq PortalConvertVaultRequest) HashWithoutSig() *common.Hash {
-	record := convertVaultReq.MetadataBaseWithSignature.Hash().String()
-	record += convertVaultReq.TokenID
-	record += convertVaultReq.ConvertProof
 	// final hash
 	hash := common.HashH([]byte(record))
 	return &hash

@@ -684,10 +684,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalConvertVault(
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata TokenID is invalid"))
 	}
-	incognitoAddress, ok := data["IncognitoAddress"].(string)
-	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("metadata IncognitoAddress param is invalid"))
-	}
 
 	convertingProof, ok := data["ConvertingProof"].(string)
 	if !ok {
@@ -698,7 +694,6 @@ func (httpServer *HttpServer) handleCreateRawTxWithPortalConvertVault(
 		metadata.PortalV4ConvertVaultRequestMeta,
 		tokenID,
 		convertingProof,
-		incognitoAddress,
 	)
 
 	// create new param to build raw tx from param interface

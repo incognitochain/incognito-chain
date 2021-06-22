@@ -49,7 +49,7 @@ func (p *PortalConvertVaultRequestProcessor) PrepareDataForBlockProducer(stateDB
 		return nil, fmt.Errorf("Converting request: an error occurred while unmarshal converting vault request action - Error: %v", err)
 	}
 
-	proofHash := hashProof(actionData.Meta.ConvertProof, actionData.Meta.IncognitoAddress)
+	proofHash := hashProof(actionData.Meta.ConvertProof, portalcommonv4.PortalConvertVaultChainCode)
 	isExistProofTxHash, err := statedb.IsExistsShieldingRequest(stateDB, actionData.Meta.TokenID, proofHash)
 	if err != nil {
 		Logger.log.Errorf("Converting request: an error occurred while get converting vault request proof from DB - Error: %v", err)
@@ -65,7 +65,6 @@ func (p *PortalConvertVaultRequestProcessor) PrepareDataForBlockProducer(stateDB
 // beacon build new instruction from instruction received from ShardToBeaconBlock
 func buildPortalConvertVaultRequestInstV4(
 	tokenID string,
-	incogAddressStr string,
 	proofHash string,
 	shieldingUTXO []*statedb.UTXO,
 	mintingAmt uint64,
@@ -77,7 +76,6 @@ func buildPortalConvertVaultRequestInstV4(
 ) []string {
 	convertingReqContent := metadata.PortalConvertVaultRequestContent{
 		TokenID:          tokenID,
-		IncognitoAddress: incogAddressStr,
 		ConvertProofHash: proofHash,
 		ConvertingUTXO:   shieldingUTXO,
 		ConvertingAmount: mintingAmt,
@@ -121,7 +119,6 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 
 	rejectInst := buildPortalConvertVaultRequestInstV4(
 		meta.TokenID,
-		meta.IncognitoAddress,
 		"",
 		[]*statedb.UTXO{},
 		0,
@@ -143,12 +140,6 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	// verify centralized incognito address
-	if meta.IncognitoAddress != bc.GetCentralizedWebsitePaymentAddress(beaconHeight) {
-		Logger.log.Errorf("Converting Request: Requester is not the centralized incognito address")
-		return [][]string{rejectInst}, nil
-	}
-
 	// check unique external proof from optionalData which get from statedb
 	if optionalData == nil {
 		Logger.log.Errorf("Converting Request: optionalData is null")
@@ -160,7 +151,7 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 		return [][]string{rejectInst}, nil
 	}
 
-	proofHash := hashProof(meta.ConvertProof, meta.IncognitoAddress)
+	proofHash := hashProof(meta.ConvertProof, portalcommonv4.PortalConvertVaultChainCode)
 
 	// check unique external proof from portal state
 	if currentPortalState.IsExistedShieldingExternalTx(meta.TokenID, proofHash) || isExistInStateDB {
@@ -171,7 +162,7 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 
 	// generate expected multisig address from master pubkeys and user payment address
 	_, expectedReceivedMultisigAddress, err := portalTokenProcessor.GenerateOTMultisigAddress(
-		portalParams.MasterPubKeys[meta.TokenID], int(portalParams.NumRequiredSigs), meta.IncognitoAddress)
+		portalParams.MasterPubKeys[meta.TokenID], int(portalParams.NumRequiredSigs), portalcommonv4.PortalConvertVaultChainCode)
 	if err != nil {
 		Logger.log.Error("Converting Request: Could not generate multisig address - Error: %v", err)
 		return [][]string{rejectInst}, nil
@@ -179,7 +170,7 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 
 	// verify shielding proof
 	isValid, listUTXO, err := portalTokenProcessor.ParseAndVerifyShieldProof(
-		meta.ConvertProof, bc, expectedReceivedMultisigAddress, meta.IncognitoAddress)
+		meta.ConvertProof, bc, expectedReceivedMultisigAddress, portalcommonv4.PortalConvertVaultChainCode)
 	if !isValid || err != nil {
 		Logger.log.Error("Converting Request: Parse proof and verify converting proof failed - Error: %v", err)
 		return [][]string{rejectInst}, nil
@@ -196,11 +187,10 @@ func (p *PortalConvertVaultRequestProcessor) BuildNewInsts(
 	// add utxos for portal v4 and shielding external tx
 	currentPortalState.AddUTXOs(listUTXO, meta.TokenID)
 	currentPortalState.AddShieldingExternalTx(meta.TokenID, proofHash,
-		listUTXO[0].GetTxHash(), meta.IncognitoAddress, convertingAmountInExtAmt)
+		listUTXO[0].GetTxHash(), portalcommonv4.PortalConvertVaultChainCode, convertingAmountInExtAmt)
 
 	inst := buildPortalConvertVaultRequestInstV4(
 		actionData.Meta.TokenID,
-		actionData.Meta.IncognitoAddress,
 		proofHash,
 		listUTXO,
 		convertingAmount,
@@ -248,7 +238,7 @@ func (p *PortalConvertVaultRequestProcessor) ProcessInsts(
 		convertingAmountInExtAmt := portalParams.PortalTokens[actionData.TokenID].ConvertIncToExternalAmount(actionData.ConvertingAmount)
 		currentPortalState.AddUTXOs(actionData.ConvertingUTXO, actionData.TokenID)
 		currentPortalState.AddShieldingExternalTx(actionData.TokenID, actionData.ConvertProofHash,
-			actionData.ConvertingUTXO[0].GetTxHash(), actionData.IncognitoAddress, convertingAmountInExtAmt)
+			actionData.ConvertingUTXO[0].GetTxHash(), portalcommonv4.PortalConvertVaultChainCode, convertingAmountInExtAmt)
 	} else if reqStatus == portalcommonv4.PortalV4RequestRejectedChainStatus {
 		shieldStatus = portalcommonv4.PortalV4RequestRejectedStatus
 	}
@@ -258,7 +248,6 @@ func (p *PortalConvertVaultRequestProcessor) ProcessInsts(
 		Status:           shieldStatus,
 		ErrorMsg:         instructions[4],
 		TokenID:          actionData.TokenID,
-		IncognitoAddress: actionData.IncognitoAddress,
 		ConvertProofHash: actionData.ConvertProofHash,
 		ConvertingUTXO:   actionData.ConvertingUTXO,
 		ConvertingAmount: actionData.ConvertingAmount,
