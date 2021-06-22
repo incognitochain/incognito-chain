@@ -1,6 +1,9 @@
 package pdex
 
-import "github.com/incognitochain/incognito-chain/common"
+import (
+	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
+)
 
 type StateEnvBuilder interface {
 	BuildContributionActions([][]string) StateEnvBuilder
@@ -12,6 +15,7 @@ type StateEnvBuilder interface {
 	BuildBeaconHeight(uint64) StateEnvBuilder
 	BuildTxHashes([]common.Hash) StateEnvBuilder
 	BuildBeaconInstructions([][]string) StateEnvBuilder
+	BuildStateDB(*statedb.StateDB) StateEnvBuilder
 	Build() StateEnvironment
 }
 
@@ -29,6 +33,7 @@ type stateEnvironment struct {
 	beaconHeight                   uint64
 	beaconInstructions             [][]string
 	txHashes                       []common.Hash
+	stateDB                        *statedb.StateDB
 }
 
 func (env *stateEnvironment) BuildContributionActions(actions [][]string) StateEnvBuilder {
@@ -76,6 +81,11 @@ func (env *stateEnvironment) BuildTxHashes(txHashes []common.Hash) StateEnvBuild
 	return env
 }
 
+func (env *stateEnvironment) BuildStateDB(stateDB *statedb.StateDB) StateEnvBuilder {
+	env.stateDB = stateDB
+	return env
+}
+
 func (env *stateEnvironment) Build() StateEnvironment {
 	return env
 }
@@ -90,6 +100,7 @@ type StateEnvironment interface {
 	BeaconHeight() uint64
 	BeaconInstructions() [][]string
 	TxHashes() []common.Hash
+	StateDB() *statedb.StateDB
 }
 
 func (env *stateEnvironment) ContributionActions() [][]string {
@@ -126,4 +137,8 @@ func (env *stateEnvironment) TxHashes() []common.Hash {
 
 func (env *stateEnvironment) BeaconInstructions() [][]string {
 	return env.beaconInstructions
+}
+
+func (env *stateEnvironment) StateDB() *statedb.StateDB {
+	return env.stateDB
 }

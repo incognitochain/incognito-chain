@@ -1,6 +1,8 @@
 package pdex
 
 import (
+	"strconv"
+
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -10,7 +12,8 @@ func InitStateV1() *stateV1 {
 
 type stateV1 struct {
 	stateBase
-	producer stateProducerV1
+	producer  stateProducerV1
+	processor stateProcessorV1
 }
 
 func (s *stateV1) Version() uint {
@@ -18,11 +21,89 @@ func (s *stateV1) Version() uint {
 }
 
 func (s *stateV1) Clone() State {
-	var state State
-	return state
+	res := &stateV1{}
+	res.stateBase = *s.stateBase.Clone().(*stateBase)
+	res.producer = s.producer
+	return res
 }
 
 func (s *stateV1) Process(env StateEnvironment) error {
+	for _, inst := range env.BeaconInstructions() {
+		if len(inst) < 2 {
+			continue // Not error, just not PDE instructions
+		}
+		metadataType, err := strconv.Atoi(inst[0])
+		if err != nil {
+			continue // Not error, just not PDE instructions
+		}
+		if !metadata.IsPDEType(metadataType) {
+			continue // Not error, just not PDE instructions
+		}
+		switch metadataType {
+		case metadata.PDEContributionMeta:
+			err = s.processor.processContribution(
+				env.StateDB(),
+				env.BeaconHeight(),
+				inst,
+				s.waitingContributions,
+				s.deletedWaitingContributions,
+				s.poolPairs,
+				s.shares,
+			)
+		case metadata.PDEPRVRequiredContributionRequestMeta:
+			err = s.processor.processContribution(
+				env.StateDB(),
+				env.BeaconHeight(),
+				inst,
+				s.waitingContributions,
+				s.deletedWaitingContributions,
+				s.poolPairs,
+				s.shares,
+			)
+		case metadata.PDETradeRequestMeta:
+			err = s.processor.processTrade(
+				env.StateDB(),
+				env.BeaconHeight(),
+				inst,
+				s.poolPairs,
+			)
+		case metadata.PDECrossPoolTradeRequestMeta:
+			err = s.processor.processCrossPoolTrade(
+				env.StateDB(),
+				env.BeaconHeight(),
+				inst,
+				s.poolPairs,
+			)
+		case metadata.PDEWithdrawalRequestMeta:
+			err = s.processor.processWithdrawal(
+				env.StateDB(),
+				env.BeaconHeight(),
+				inst,
+				s.poolPairs,
+				s.shares,
+			)
+		case metadata.PDEFeeWithdrawalRequestMeta:
+			err = s.processor.processFeeWithdrawal(
+				env.StateDB(),
+				env.BeaconHeight(),
+				inst,
+				s.tradingFees,
+			)
+		case metadata.PDETradingFeesDistributionMeta:
+			err = s.processor.processTradingFeesDistribution(
+				env.StateDB(),
+				env.BeaconHeight(),
+				inst,
+				s.tradingFees,
+			)
+		default:
+			Logger.log.Debug("Can not process this metadata")
+		}
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

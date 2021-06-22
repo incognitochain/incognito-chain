@@ -843,7 +843,11 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		return err
 	}
 
-	pdeStateEnv := pdex.NewStateEnvBuilder().Build()
+	pdeStateEnv := pdex.
+		NewStateEnvBuilder().
+		BuildBeaconInstructions(beaconBlock.Body.Instructions).
+		BuildStateDB(newBestState.featureStateDB).
+		Build()
 	err = newBestState.pDEXState.Process(pdeStateEnv)
 	if err != nil {
 		Logger.log.Error(err)

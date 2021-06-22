@@ -16,23 +16,6 @@ import (
 type stateProducerBase struct {
 }
 
-func (sp *stateProducerBase) storePoolForPair(
-	poolPairs map[string]*rawdbv2.PDEPoolForPair,
-	pdePoolForPairKey string,
-	token1IDStr string,
-	token1PoolValue uint64,
-	token2IDStr string,
-	token2PoolValue uint64,
-) {
-	poolForPair := &rawdbv2.PDEPoolForPair{
-		Token1IDStr:     token1IDStr,
-		Token1PoolValue: token1PoolValue,
-		Token2IDStr:     token2IDStr,
-		Token2PoolValue: token2PoolValue,
-	}
-	poolPairs[pdePoolForPairKey] = poolForPair
-}
-
 func (sp *stateProducerBase) buildInstructionsForFeeWithdrawal(
 	actions [][]string,
 	beaconHeight uint64,

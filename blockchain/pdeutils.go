@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"math/big"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -174,107 +172,4 @@ func replaceNewBCHeightInKeyStr(key string, newBeaconHeight uint64) string {
 		newKey += (part + "-")
 	}
 	return newKey
-}
-
-func addShareAmountUpV2(
-	beaconHeight uint64,
-	token1IDStr string,
-	token2IDStr string,
-	contributedTokenIDStr string,
-	contributorAddrStr string,
-	amt uint64,
-	currentPDEState *CurrentPDEState,
-) {
-	pdeShareOnTokenPrefixBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, "")
-	if err != nil {
-		Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
-		return
-	}
-
-	pdeShareOnTokenPrefix := string(pdeShareOnTokenPrefixBytes)
-	totalSharesOnToken := uint64(0)
-	for key, value := range currentPDEState.PDEShares {
-		if strings.Contains(key, pdeShareOnTokenPrefix) {
-			totalSharesOnToken += value
-		}
-	}
-	pdeShareKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, contributorAddrStr)
-	if err != nil {
-		Logger.log.Errorf("cannot find pdeShareKey for address: %v. Error: %v\n", contributorAddrStr, err)
-		return
-	}
-
-	pdeShareKey := string(pdeShareKeyBytes)
-	if totalSharesOnToken == 0 {
-		currentPDEState.PDEShares[pdeShareKey] = amt
-		return
-	}
-	poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, token1IDStr, token2IDStr))
-	poolPair, found := currentPDEState.PDEPoolPairs[poolPairKey]
-	if !found || poolPair == nil {
-		currentPDEState.PDEShares[pdeShareKey] = amt
-		return
-	}
-	poolValue := poolPair.Token1PoolValue
-	if poolPair.Token2IDStr == contributedTokenIDStr {
-		poolValue = poolPair.Token2PoolValue
-	}
-	if poolValue == 0 {
-		currentPDEState.PDEShares[pdeShareKey] = amt
-		return
-	}
-	increasingAmt := big.NewInt(0)
-
-	increasingAmt.Mul(new(big.Int).SetUint64(totalSharesOnToken), new(big.Int).SetUint64(amt))
-	increasingAmt.Div(increasingAmt, new(big.Int).SetUint64(poolValue))
-
-	currentShare, found := currentPDEState.PDEShares[pdeShareKey]
-	addedUpAmt := increasingAmt.Uint64()
-	if found {
-		addedUpAmt += currentShare
-	}
-	currentPDEState.PDEShares[pdeShareKey] = addedUpAmt
-}
-
-func updateWaitingContributionPairToPoolV2(
-	beaconHeight uint64,
-	waitingContribution1 *rawdbv2.PDEContribution,
-	waitingContribution2 *rawdbv2.PDEContribution,
-	currentPDEState *CurrentPDEState,
-) {
-	addShareAmountUpV2(
-		beaconHeight,
-		waitingContribution1.TokenIDStr,
-		waitingContribution2.TokenIDStr,
-		waitingContribution1.TokenIDStr,
-		waitingContribution1.ContributorAddressStr,
-		waitingContribution1.Amount,
-		currentPDEState,
-	)
-
-	waitingContributions := []*rawdbv2.PDEContribution{waitingContribution1, waitingContribution2}
-	sort.Slice(waitingContributions, func(i, j int) bool {
-		return waitingContributions[i].TokenIDStr < waitingContributions[j].TokenIDStr
-	})
-	pdePoolForPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, waitingContributions[0].TokenIDStr, waitingContributions[1].TokenIDStr))
-	pdePoolForPair, found := currentPDEState.PDEPoolPairs[pdePoolForPairKey]
-	if !found || pdePoolForPair == nil {
-		storePDEPoolForPair(
-			pdePoolForPairKey,
-			waitingContributions[0].TokenIDStr,
-			waitingContributions[0].Amount,
-			waitingContributions[1].TokenIDStr,
-			waitingContributions[1].Amount,
-			currentPDEState,
-		)
-		return
-	}
-	storePDEPoolForPair(
-		pdePoolForPairKey,
-		waitingContributions[0].TokenIDStr,
-		pdePoolForPair.Token1PoolValue+waitingContributions[0].Amount,
-		waitingContributions[1].TokenIDStr,
-		pdePoolForPair.Token2PoolValue+waitingContributions[1].Amount,
-		currentPDEState,
-	)
 }

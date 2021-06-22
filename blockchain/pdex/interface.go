@@ -7,4 +7,5 @@ type State interface {
 	StoreToDB(StateEnvironment) error
 	BuildInstructions(StateEnvironment) ([][]string, error)
 	Upgrade(StateEnvironment) State
+	TransformKeyWithNewBeaconHeight(beaconHeight uint64) State
 }

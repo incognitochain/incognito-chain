@@ -333,7 +333,11 @@ func ConvertPrivacyTokenToNativeToken(
 }
 
 func IsPDETx(metadata Metadata) bool {
-	switch metadata.GetType() {
+	return IsPDEType(metadata.GetType())
+}
+
+func IsPDEType(metadataType int) bool {
+	switch metadataType {
 	case PDEContributionMeta:
 		return true
 	case PDETradeRequestMeta:

@@ -3,7 +3,6 @@ package pdex
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"math/big"
 	"sort"
 	"strconv"
@@ -635,7 +634,7 @@ func (sp *stateProducerV1) buildInstructionsForContribution(
 
 		if !found || poolPair == nil {
 			delete(waitingContributions, waitingContribPairKey)
-			err := sp.updateWaitingContributionPairToPool(
+			err := updateWaitingContributionPairToPool(
 				beaconHeight,
 				waitingContribution,
 				incomingWaitingContribution,
@@ -687,7 +686,7 @@ func (sp *stateProducerV1) buildInstructionsForContribution(
 			Amount:                actualIncomingWaitingContribAmt,
 			TxReqID:               contributionAction.TxReqID,
 		}
-		sp.updateWaitingContributionPairToPool(
+		updateWaitingContributionPairToPool(
 			beaconHeight,
 			actualWaitingContrib,
 			actualIncomingWaitingContrib,
@@ -721,113 +720,4 @@ func (sp *stateProducerV1) buildInstructionsForContribution(
 	}
 
 	return res, nil
-}
-
-func (sp *stateProducerV1) updateWaitingContributionPairToPool(
-	beaconHeight uint64,
-	waitingContribution1 *rawdbv2.PDEContribution,
-	waitingContribution2 *rawdbv2.PDEContribution,
-	poolPairs map[string]*rawdbv2.PDEPoolForPair,
-	shares map[string]uint64,
-) error {
-	err := sp.addShareAmountUp(
-		beaconHeight,
-		waitingContribution1.TokenIDStr,
-		waitingContribution2.TokenIDStr,
-		waitingContribution1.TokenIDStr,
-		waitingContribution1.ContributorAddressStr,
-		waitingContribution1.Amount,
-		poolPairs,
-		shares,
-	)
-	if err != nil {
-		return err
-	}
-
-	waitingContributions := []*rawdbv2.PDEContribution{waitingContribution1, waitingContribution2}
-	sort.Slice(waitingContributions, func(i, j int) bool {
-		return waitingContributions[i].TokenIDStr < waitingContributions[j].TokenIDStr
-	})
-	poolForPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, waitingContributions[0].TokenIDStr, waitingContributions[1].TokenIDStr))
-	poolForPair, found := poolPairs[poolForPairKey]
-	var amountToken1, amountToken2 uint64
-
-	if !found || poolForPair == nil {
-		amountToken1 = waitingContributions[0].Amount
-		amountToken2 = waitingContributions[1].Amount
-	} else {
-		amountToken1 = poolForPair.Token1PoolValue + waitingContributions[0].Amount
-		amountToken2 = poolForPair.Token2PoolValue + waitingContributions[1].Amount
-	}
-	sp.storePoolForPair(
-		poolPairs,
-		poolForPairKey,
-		waitingContributions[0].TokenIDStr,
-		amountToken1,
-		waitingContributions[1].TokenIDStr,
-		amountToken2,
-	)
-	return nil
-}
-
-func (sp *stateProducerV1) addShareAmountUp(
-	beaconHeight uint64,
-	token1IDStr string,
-	token2IDStr string,
-	contributedTokenIDStr string,
-	contributorAddrStr string,
-	amt uint64,
-	poolPairs map[string]*rawdbv2.PDEPoolForPair,
-	shares map[string]uint64,
-) error {
-	shareOnTokenPrefixBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, "")
-	if err != nil {
-		Logger.log.Errorf("cannot build PDESharesKeyV2. Error: %v\n", err)
-		return err
-	}
-
-	shareOnTokenPrefix := string(shareOnTokenPrefixBytes)
-	totalSharesOnToken := uint64(0)
-	for key, value := range shares {
-		if strings.Contains(key, shareOnTokenPrefix) {
-			totalSharesOnToken += value
-		}
-	}
-	shareKeyBytes, err := rawdbv2.BuildPDESharesKeyV2(beaconHeight, token1IDStr, token2IDStr, contributorAddrStr)
-	if err != nil {
-		Logger.log.Errorf("cannot find pdeShareKey for address: %v. Error: %v\n", contributorAddrStr, err)
-		return err
-	}
-
-	shareKey := string(shareKeyBytes)
-	if totalSharesOnToken == 0 {
-		shares[shareKey] = amt
-		return nil
-	}
-	poolPairKey := string(rawdbv2.BuildPDEPoolForPairKey(beaconHeight, token1IDStr, token2IDStr))
-	poolPair, found := poolPairs[poolPairKey]
-	if !found || poolPair == nil {
-		shares[shareKey] = amt
-		return errors.New("poolPair is null")
-	}
-	poolValue := poolPair.Token1PoolValue
-	if poolPair.Token2IDStr == contributedTokenIDStr {
-		poolValue = poolPair.Token2PoolValue
-	}
-	if poolValue == 0 {
-		shares[shareKey] = amt
-		return nil
-	}
-	increasingAmt := big.NewInt(0)
-
-	increasingAmt.Mul(new(big.Int).SetUint64(totalSharesOnToken), new(big.Int).SetUint64(amt))
-	increasingAmt.Div(increasingAmt, new(big.Int).SetUint64(poolValue))
-
-	currentShare, found := shares[shareKey]
-	addedUpAmt := increasingAmt.Uint64()
-	if found {
-		addedUpAmt += currentShare
-	}
-	shares[shareKey] = addedUpAmt
-	return nil
 }
