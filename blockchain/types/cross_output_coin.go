@@ -8,7 +8,7 @@ import (
 type CrossOutputCoin struct {
 	BlockHeight uint64
 	BlockHash   common.Hash
-	OutputCoin  []privacy.OutputCoin
+	OutputCoin  []privacy.Coin
 }
 
 func (crossOutputCoin CrossOutputCoin) Hash() common.Hash {

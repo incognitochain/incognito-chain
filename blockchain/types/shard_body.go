@@ -2,7 +2,6 @@ package types
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 
@@ -24,7 +23,7 @@ because we have many types of block, so we can need to customize data from marsh
 func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 	type Alias ShardBody
 	temp := &struct {
-		Transactions []map[string]*json.RawMessage
+		Transactions []json.RawMessage
 		*Alias
 	}{
 		Alias: (*Alias)(shardBody),
@@ -32,38 +31,24 @@ func (shardBody *ShardBody) UnmarshalJSON(data []byte) error {
 
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
-		return err
+		return fmt.Errorf("unmarshall Json Shard Block Is Failed. Error %v", err)
 	}
 
 	// process tx from tx interface of temp
 	for _, txTemp := range temp.Transactions {
-		txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
+		// txTempJson, _ := json.MarshalIndent(txTemp, "", "\t")
 		var tx metadata.Transaction
 		var parseErr error
-		txType := ""
-		err = json.Unmarshal(*txTemp["Type"], &txType)
-		if err != nil {
-			return err
-		}
-		switch txType {
-		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
-			{
-				tx = &transaction.Tx{}
-				parseErr = json.Unmarshal(txTempJson, &tx)
-			}
-		case common.TxCustomTokenPrivacyType:
-			{
-				tx = &transaction.TxCustomTokenPrivacy{}
-				parseErr = json.Unmarshal(txTempJson, &tx)
-			}
-		default:
-			{
-				return errors.New("can not parse a wrong tx")
-			}
-		}
+		var txChoice *transaction.TxChoice
+		txChoice, parseErr = transaction.DeserializeTransactionJSON(txTemp)
 		if parseErr != nil {
-			return parseErr
+			return fmt.Errorf("unmarshall Json Shard Block Is Failed. Error %v", parseErr)
 		}
+		tx = txChoice.ToTx()
+		if tx == nil {
+			return fmt.Errorf("unmarshall Json Shard Block Is Failed. Corrupted TX")
+		}
+
 		shardBody.Transactions = append(shardBody.Transactions, tx)
 	}
 	return nil

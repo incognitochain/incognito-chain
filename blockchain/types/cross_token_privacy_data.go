@@ -12,7 +12,7 @@ type CrossTokenPrivacyData struct {
 	TokenPrivacyData []ContentCrossShardTokenPrivacyData
 }
 
-func CloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxPrivacyTokenData) ContentCrossShardTokenPrivacyData {
+func CloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxTokenData) ContentCrossShardTokenPrivacyData {
 	newContentCrossTokenPrivacyData := ContentCrossShardTokenPrivacyData{
 		PropertyID:     txTokenPrivacyData.PropertyID,
 		PropertyName:   txTokenPrivacyData.PropertyName,
@@ -21,6 +21,6 @@ func CloneTxTokenPrivacyDataForCrossShard(txTokenPrivacyData transaction.TxPriva
 		Amount:         txTokenPrivacyData.Amount,
 		Type:           transaction.CustomTokenCrossShard,
 	}
-	newContentCrossTokenPrivacyData.OutputCoin = []privacy.OutputCoin{}
+	newContentCrossTokenPrivacyData.OutputCoin = []privacy.Coin{}
 	return newContentCrossTokenPrivacyData
 }

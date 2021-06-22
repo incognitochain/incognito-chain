@@ -8,7 +8,7 @@ import (
 )
 
 type ContentCrossShardTokenPrivacyData struct {
-	OutputCoin     []privacy.OutputCoin
+	OutputCoin     []privacy.Coin
 	PropertyID     common.Hash // = hash of TxCustomTokenprivacy data
 	PropertyName   string
 	PropertySymbol string
@@ -43,7 +43,7 @@ func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Hash(
 	return common.HashH(contentCrossShardTokenPrivacyData.Bytes())
 }
 
-func CalHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList []ContentCrossShardTokenPrivacyData) common.Hash {
+func calHashTxTokenPrivacyDataHashList(txTokenPrivacyDataList []ContentCrossShardTokenPrivacyData) common.Hash {
 	tmpByte := []byte{}
 	if len(txTokenPrivacyDataList) != 0 {
 		for _, txTokenPrivacyData := range txTokenPrivacyDataList {

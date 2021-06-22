@@ -9,7 +9,7 @@ type CrossTransaction struct {
 	BlockHeight      uint64
 	BlockHash        common.Hash
 	TokenPrivacyData []ContentCrossShardTokenPrivacyData
-	OutputCoin       []privacy.OutputCoin
+	OutputCoin       []privacy.Coin
 }
 
 func (crossTransaction CrossTransaction) Bytes() []byte {

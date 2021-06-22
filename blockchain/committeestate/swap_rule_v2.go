@@ -10,6 +10,10 @@ import (
 	"github.com/incognitochain/incognito-chain/instruction"
 )
 
+type AssignRuleProcessor interface {
+	Process(candidates []string, numberOfValidators []int, randomNumber int64) map[byte][]string
+}
+
 // createSwapShardInstructionV3 create swap instruction and new substitutes list with slashing
 // return params
 // #1: swap instruction
@@ -261,4 +265,81 @@ func getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators,
 		}
 	}
 	return assignPerShard
+}
+
+type AssignRuleV3 struct {
+}
+
+func (a AssignRuleV3) Process(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
+
+	sum := 0
+	for _, v := range numberOfValidators {
+		sum += v
+	}
+
+	totalShard := len(numberOfValidators)
+	tempMean := float64(sum) / float64(totalShard)
+	mean := int(tempMean)
+	if tempMean > float64(mean) {
+		mean += 1
+	}
+
+	lowerSet := getOrderedLowerSet(mean, numberOfValidators)
+
+	diff := []int{}
+	totalDiff := 0
+	for _, shardID := range lowerSet {
+		shardDiff := mean - numberOfValidators[shardID]
+
+		// special case: mean == numberOfValidators[shardID] ||
+		// shard committee size is equal among all shard ||
+		// len(numberOfValidators) == 1
+		if shardDiff == 0 {
+			shardDiff = 1
+		}
+
+		diff = append(diff, shardDiff)
+		totalDiff += shardDiff
+	}
+
+	assignedCandidates := make(map[byte][]string)
+	for _, candidate := range candidates {
+		randomPosition := calculateCandidatePosition(candidate, rand, totalDiff)
+		position := 0
+		tempPosition := diff[position]
+		for randomPosition > tempPosition {
+			position++
+			tempPosition += diff[position]
+		}
+		shardID := lowerSet[position]
+		assignedCandidates[byte(shardID)] = append(assignedCandidates[byte(shardID)], candidate)
+	}
+
+	return assignedCandidates
+}
+
+func getOrderedLowerSet(mean int, numberOfValidators []int) []int {
+
+	lowerSet := []int{}
+	totalShard := len(numberOfValidators)
+	sortedShardIDs := sortShardIDByIncreaseOrder(numberOfValidators)
+
+	halfOfShard := totalShard / 2
+	for _, shardID := range sortedShardIDs {
+		if numberOfValidators[shardID] < mean && len(lowerSet) < halfOfShard {
+			lowerSet = append(lowerSet, int(shardID))
+		}
+	}
+
+	//special case: mean == 0 || shard committee size is equal among all shard || len(numberOfValidators) == 1
+	if len(lowerSet) == 0 {
+		for i, _ := range numberOfValidators {
+			if i == halfOfShard {
+				break
+			}
+			lowerSet = append(lowerSet, i)
+		}
+	}
+
+	return lowerSet
 }
