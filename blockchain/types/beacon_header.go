@@ -1,33 +1,10 @@
 package types
 
 import (
-	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/incognitochain/incognito-chain/common"
 )
-
-type BeaconBlock struct {
-	ValidationData string `json:"ValidationData"`
-	Body           BeaconBody
-	Header         BeaconHeader
-}
-
-type BeaconBody struct {
-	// Shard State extract from shard to beacon block
-	// Store all shard state == store content of all shard to beacon block
-	ShardState   map[byte][]ShardState
-	Instructions [][]string
-}
-
-func NewBeaconBody(shardState map[byte][]ShardState, instructions [][]string) BeaconBody {
-	return BeaconBody{ShardState: shardState, Instructions: instructions}
-}
-
-func (b *BeaconBody) SetInstructions(inst [][]string) {
-	b.Instructions = inst
-}
 
 type BeaconHeader struct {
 	Version           int         `json:"Version"`
@@ -71,140 +48,6 @@ func (beaconHeader *BeaconHeader) AddBeaconHeaderHash(instructionHash common.Has
 
 }
 
-type ShardState struct {
-	ValidationData     string
-	CommitteeFromBlock common.Hash
-	Height             uint64
-	Hash               common.Hash
-	CrossShard         []byte //In this state, shard i send cross shard tx to which shard
-}
-
-func NewShardState(validationData string,
-	committeeFromBlock common.Hash,
-	height uint64,
-	hash common.Hash,
-	crossShard []byte,
-) ShardState {
-	newCrossShard := make([]byte, len(crossShard))
-	copy(newCrossShard, crossShard)
-	return ShardState{ValidationData: validationData, CommitteeFromBlock: committeeFromBlock, Height: height, Hash: hash, CrossShard: newCrossShard}
-}
-
-func (beaconBlock *BeaconBlock) GetVersion() int {
-	return beaconBlock.Header.Version
-}
-
-func (beaconBlock *BeaconBlock) GetPrevHash() common.Hash {
-	return beaconBlock.Header.PreviousBlockHash
-}
-
-func NewBeaconBlock() *BeaconBlock {
-	return &BeaconBlock{}
-}
-
-func (beaconBlock *BeaconBlock) GetProposer() string {
-	return beaconBlock.Header.Proposer
-}
-
-func (beaconBlock *BeaconBlock) GetProposeTime() int64 {
-	return beaconBlock.Header.ProposeTime
-}
-
-func (beaconBlock *BeaconBlock) GetProduceTime() int64 {
-	return beaconBlock.Header.Timestamp
-}
-
-func (beaconBlock BeaconBlock) Hash() *common.Hash {
-	hash := beaconBlock.Header.Hash()
-	return &hash
-}
-
-func (beaconBlock BeaconBlock) GetCurrentEpoch() uint64 {
-	return beaconBlock.Header.Epoch
-}
-
-func (beaconBlock BeaconBlock) GetHeight() uint64 {
-	return beaconBlock.Header.Height
-}
-
-func (beaconBlock BeaconBlock) GetShardID() int {
-	return -1
-}
-
-func (beaconBlock BeaconBlock) CommitteeFromBlock() common.Hash {
-	return common.Hash{}
-}
-
-func (beaconBlock *BeaconBlock) UnmarshalJSON(data []byte) error {
-	tempBeaconBlock := &struct {
-		ValidationData string `json:"ValidationData"`
-		Header         BeaconHeader
-		Body           BeaconBody
-	}{}
-	err := json.Unmarshal(data, &tempBeaconBlock)
-	if err != nil {
-		return err
-	}
-	beaconBlock.ValidationData = tempBeaconBlock.ValidationData
-	beaconBlock.Header = tempBeaconBlock.Header
-	beaconBlock.Body = tempBeaconBlock.Body
-	return nil
-}
-
-func (beaconBlock *BeaconBlock) AddValidationField(validationData string) {
-	beaconBlock.ValidationData = validationData
-	return
-}
-func (beaconBlock BeaconBlock) GetValidationField() string {
-	return beaconBlock.ValidationData
-}
-
-func (beaconBlock BeaconBlock) GetRound() int {
-	return beaconBlock.Header.Round
-}
-func (beaconBlock BeaconBlock) GetRoundKey() string {
-	return fmt.Sprint(beaconBlock.Header.Height, "_", beaconBlock.Header.Round)
-}
-
-func (beaconBlock BeaconBlock) GetInstructions() [][]string {
-	return beaconBlock.Body.Instructions
-}
-
-func (beaconBlock BeaconBlock) GetProducer() string {
-	return beaconBlock.Header.Producer
-}
-
-func (beaconBlock BeaconBlock) GetProducerPubKeyStr() string {
-	return beaconBlock.Header.ProducerPubKeyStr
-}
-
-func (beaconBlock BeaconBlock) GetConsensusType() string {
-	return beaconBlock.Header.ConsensusType
-}
-
-func (beaconBlock *BeaconBody) toString() string {
-	res := ""
-	for _, l := range beaconBlock.ShardState {
-		for _, r := range l {
-			res += strconv.Itoa(int(r.Height))
-			res += r.Hash.String()
-			crossShard, _ := json.Marshal(r.CrossShard)
-			res += string(crossShard)
-
-		}
-	}
-	for _, l := range beaconBlock.Instructions {
-		for _, r := range l {
-			res += r
-		}
-	}
-	return res
-}
-
-func (beaconBody BeaconBody) Hash() common.Hash {
-	return common.HashH([]byte(beaconBody.toString()))
-}
-
 func (header *BeaconHeader) toString() string {
 	res := ""
 	// res += beaconHeader.ProducerAddress.String()
@@ -222,12 +65,12 @@ func (header *BeaconHeader) toString() string {
 	res += header.ShardStateHash.String()
 	res += header.InstructionHash.String()
 
+
 	//to compatible with mainnet database, version 3 dont have proposer info
-	if header.Version == 2 || header.Version >= 4 {
+	if header.Version == MULTI_VIEW_VERSION || header.Version >= 4 {
 		res += header.Proposer
 		res += fmt.Sprintf("%v", header.ProposeTime)
 	}
-
 	return res
 }
 

@@ -345,7 +345,7 @@ func CreateMerkleCrossTransaction(crossTransactions map[byte][]types.CrossTransa
 			crossTransactionHashes = append(crossTransactionHashes, &hash)
 		}
 	}
-	merkle := Merkle{}
+	merkle := types.Merkle{}
 	merkleTree := merkle.BuildMerkleTreeOfHashes(crossTransactionHashes, len(crossTransactionHashes))
 	return merkleTree[len(merkleTree)-1], nil
 }

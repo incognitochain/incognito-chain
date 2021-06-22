@@ -45,6 +45,22 @@ func (_m *ShardViewRetriever) GetCopiedFeatureStateDB() *statedb.StateDB {
 	return r0
 }
 
+// GetCopiedTransactionStateDB provides a mock function with given fields:
+func (_m *ShardViewRetriever) GetCopiedTransactionStateDB() *statedb.StateDB {
+	ret := _m.Called()
+
+	var r0 *statedb.StateDB
+	if rf, ok := ret.Get(0).(func() *statedb.StateDB); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*statedb.StateDB)
+		}
+	}
+
+	return r0
+}
+
 // GetEpoch provides a mock function with given fields:
 func (_m *ShardViewRetriever) GetEpoch() uint64 {
 	ret := _m.Called()

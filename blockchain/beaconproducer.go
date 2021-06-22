@@ -127,7 +127,7 @@ func (blockchain *BlockChain) NewBlockBeacon(curView *BeaconBestState, version i
 	newBeaconBlock.Header.AddBeaconHeaderHash(
 		instructionHash,
 		shardStatesHash,
-		GetKeccak256MerkleRoot(flattenInsts),
+		types.GetKeccak256MerkleRoot(flattenInsts),
 		hashes.BeaconCommitteeAndValidatorHash,
 		hashes.BeaconCandidateHash,
 		hashes.ShardCandidateHash,

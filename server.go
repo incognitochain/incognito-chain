@@ -1715,7 +1715,7 @@ func (serverObj *Server) PushBlockToAll(block types.BlockInterface, previousVali
 		msgShard.(*wire.MessageBlockShard).PreviousValidationData = previousValidationData
 		serverObj.PushMessageToShard(msgShard, shardBlock.Header.ShardID)
 
-		crossShardBlks := blockchain.CreateAllCrossShardBlock(shardBlock, serverObj.blockChain.GetBeaconBestState().ActiveShards)
+		crossShardBlks := types.CreateAllCrossShardBlock(shardBlock, serverObj.blockChain.GetBeaconBestState().ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
 			if err != nil {
