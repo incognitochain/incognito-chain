@@ -932,3 +932,8 @@ func (b *BeaconCommitteeStateV1) processAutoStakingChange(committeeChange *Commi
 func (engine *BeaconCommitteeEngineV1) ActiveShards() int {
 	return len(engine.beaconCommitteeStateV1.shardCommittee)
 }
+
+//ActiveShards ...
+func (engine *BeaconCommitteeEngineV1) UpgradeAssignRuleV3() {
+	panic("not implement")
+}

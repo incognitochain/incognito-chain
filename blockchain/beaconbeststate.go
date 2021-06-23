@@ -807,6 +807,10 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, bc *BlockChai
 		)
 	}
 
+	assignRule := committeestate.SFV2VersionAssignRule(
+		beaconBestState.BeaconHeight,
+		config.Param().ConsensusParam.AssignRuleV3Height,
+		config.Param().ConsensusParam.StakingFlowV2Height)
 	beaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
 		beaconCommittee,
 		shardCommittee,
@@ -816,6 +820,7 @@ func initBeaconCommitteeEngineV2(beaconBestState *BeaconBestState, bc *BlockChai
 		autoStaking,
 		rewardReceivers,
 		stakingTx,
+		assignRule,
 	)
 
 	beaconCommitteeEngine := committeestate.NewBeaconCommitteeEngineV2(
@@ -873,7 +878,7 @@ func (bc *BlockChain) GetTotalStaker() (int, error) {
 	return statedb.GetAllStaker(beaconConsensusStateDB, bc.GetShardIDs()), nil
 }
 
-func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain) {
+func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2() {
 	if beaconBestState.CommitteeEngineVersion() != committeestate.SELF_SWAP_SHARD_VERSION {
 		return
 	}
@@ -906,6 +911,10 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		stakingTx[k] = v
 	}
 
+	assignRule := committeestate.SFV2VersionAssignRule(
+		beaconBestState.BeaconHeight,
+		config.Param().ConsensusParam.AssignRuleV3Height,
+		config.Param().ConsensusParam.StakingFlowV2Height)
 	newBeaconCommitteeStateV2 := committeestate.NewBeaconCommitteeStateV2WithValue(
 		beaconCommittee,
 		shardCommittee,
@@ -915,6 +924,7 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		autoStake,
 		rewardReceiver,
 		stakingTx,
+		assignRule,
 	)
 	newCommitteeEngineV2 := committeestate.NewBeaconCommitteeEngineV2(
 		beaconBestState.BeaconHeight,
@@ -934,4 +944,11 @@ func (beaconBestState *BeaconBestState) upgradeCommitteeEngineV2(bc *BlockChain)
 		beaconBestState.missingSignatureCounter.Reset(shardCommitteeFlattenList)
 	}
 	Logger.log.Infof("BEACON | Beacon Height %+v, UPGRADE Beacon Committee Engine from V1 to V2", beaconBestState.BeaconHeight)
+}
+
+func (beaconBestState *BeaconBestState) upgradeAssignRuleV3() {
+	if beaconBestState.CommitteeEngineVersion() != committeestate.SLASHING_VERSION {
+		return
+	}
+	beaconBestState.beaconCommitteeEngine.UpgradeAssignRuleV3()
 }

@@ -33,7 +33,10 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 		}
 		beaconBestState.beaconCommitteeEngine = beaconCommitteeEngine
 		if beaconBestState.BeaconHeight == config.Param().ConsensusParam.StakingFlowV2Height {
-			beaconBestState.upgradeCommitteeEngineV2(blockchain)
+			beaconBestState.upgradeCommitteeEngineV2()
+		}
+		if beaconBestState.BeaconHeight == config.Param().ConsensusParam.AssignRuleV3Height {
+			beaconBestState.upgradeAssignRuleV3()
 		}
 		if blockchain.BeaconChain.GetBestView() != nil {
 			err = initMissingSignatureCounter(blockchain, beaconBestState, block)
