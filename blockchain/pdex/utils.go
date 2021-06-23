@@ -568,6 +568,9 @@ func InitPDEStateFromDB(
 	var state State
 
 	if beaconHeight < config.Param().PDEV3Height {
+		if beaconHeight == 1 {
+			return &stateV1{}, nil
+		}
 		return InitStateV1(stateDB, beaconHeight)
 	}
 

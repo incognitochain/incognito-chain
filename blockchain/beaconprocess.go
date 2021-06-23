@@ -634,11 +634,10 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.SlashStateDBRootHash = common.EmptyRoot
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
-
 	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false))
-
+	beaconBestState.pdeState, err = pdex.InitPDEStateFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 	beaconBestState.Epoch = 1
-	return nil
+	return err
 }
 
 func (curView *BeaconBestState) countMissingSignature(
