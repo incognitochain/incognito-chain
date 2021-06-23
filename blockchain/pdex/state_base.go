@@ -1,11 +1,14 @@
 package pdex
 
 import (
+	"errors"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 )
 
 type stateBase struct {
@@ -57,11 +60,44 @@ func (s *stateBase) Process(env StateEnvironment) error {
 }
 
 func (s *stateBase) StoreToDB(env StateEnvironment) error {
-	return nil
+	var err error
+	statedb.DeleteWaitingPDEContributions(
+		env.StateDB(),
+		s.deletedWaitingContributions,
+	)
+	err = statedb.StoreWaitingPDEContributions(
+		env.StateDB(),
+		s.waitingContributions,
+	)
+	if err != nil {
+		return err
+	}
+	err = statedb.StorePDEPoolPairs(
+		env.StateDB(),
+		s.poolPairs,
+	)
+	if err != nil {
+		return err
+	}
+	err = statedb.StorePDEShares(
+		env.StateDB(),
+		s.shares,
+	)
+	if err != nil {
+		return err
+	}
+	err = statedb.StorePDETradingFees(
+		env.StateDB(),
+		s.tradingFees,
+	)
+	if err != nil {
+		return err
+	}
+	return err
 }
 
 func (s *stateBase) BuildInstructions(env StateEnvironment) ([][]string, error) {
-	return nil, nil
+	panic("Implement this function")
 }
 
 func (s *stateBase) Upgrade(StateEnvironment) State {
@@ -111,4 +147,90 @@ func (s *stateBase) TransformKeyWithNewBeaconHeight(beaconHeight uint64) State {
 	}
 	Logger.log.Infof("Time spent for transforming keys: %f", time.Since(time1).Seconds())
 	return newState
+}
+
+func (s *stateBase) ClearCache() {
+	s.deletedWaitingContributions = make(map[string]*rawdbv2.PDEContribution)
+}
+
+func (s *stateBase) GetDiff(compareState State) (State, error) {
+	if compareState == nil {
+		return nil, errors.New("compareState is nil")
+	}
+
+	res := &stateBase{}
+	compareStateBase := compareState.(*stateBase)
+
+	res.waitingContributions = make(map[string]*rawdbv2.PDEContribution)
+	res.deletedWaitingContributions = make(map[string]*rawdbv2.PDEContribution)
+	res.poolPairs = make(map[string]*rawdbv2.PDEPoolForPair)
+	res.shares = make(map[string]uint64)
+	res.tradingFees = make(map[string]uint64)
+
+	for k, v := range s.waitingContributions {
+		if m, ok := compareStateBase.waitingContributions[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.waitingContributions[k] = v
+		}
+	}
+	for k, v := range s.deletedWaitingContributions {
+		if m, ok := compareStateBase.deletedWaitingContributions[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.deletedWaitingContributions[k] = v
+		}
+	}
+	for k, v := range s.poolPairs {
+		if m, ok := compareStateBase.poolPairs[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.poolPairs[k] = v
+		}
+	}
+	for k, v := range s.shares {
+		if m, ok := compareStateBase.shares[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.shares[k] = v
+		}
+	}
+	for k, v := range s.tradingFees {
+		if m, ok := compareStateBase.tradingFees[k]; !ok || !reflect.DeepEqual(m, v) {
+			res.tradingFees[k] = v
+		}
+	}
+	return res, nil
+}
+
+func (s *stateBase) WaitingContributions() map[string]*rawdbv2.PDEContribution {
+	res := make(map[string]*rawdbv2.PDEContribution, len(s.waitingContributions))
+	for k, v := range s.waitingContributions {
+		*res[k] = *v
+	}
+	return res
+}
+
+func (s *stateBase) DeletedWaitingContributions() map[string]*rawdbv2.PDEContribution {
+	res := make(map[string]*rawdbv2.PDEContribution, len(s.deletedWaitingContributions))
+	for k, v := range s.deletedWaitingContributions {
+		*res[k] = *v
+	}
+	return res
+}
+
+func (s *stateBase) PoolPairs() map[string]*rawdbv2.PDEPoolForPair {
+	res := make(map[string]*rawdbv2.PDEPoolForPair, len(s.poolPairs))
+	for k, v := range s.poolPairs {
+		*res[k] = *v
+	}
+	return res
+}
+
+func (s *stateBase) Shares() map[string]uint64 {
+	res := make(map[string]uint64, len(s.shares))
+	for k, v := range s.shares {
+		res[k] = v
+	}
+	return res
+}
+
+func (s *stateBase) TradingFees() map[string]uint64 {
+	res := make(map[string]uint64, len(s.tradingFees))
+	for k, v := range s.tradingFees {
+		res[k] = v
+	}
+	return res
 }

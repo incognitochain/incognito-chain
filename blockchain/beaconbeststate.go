@@ -79,8 +79,7 @@ type BeaconBestState struct {
 	slashStateDB             *statedb.StateDB
 	SlashStateDBRootHash     common.Hash
 
-	pdeState  *CurrentPDEState
-	pDEXState pdex.State
+	pdeState pdex.State
 }
 
 func (beaconBestState *BeaconBestState) GetBeaconSlashStateDB() *statedb.StateDB {
@@ -448,7 +447,7 @@ func (beaconBestState *BeaconBestState) cloneBeaconBestStateFrom(target *BeaconB
 	beaconBestState.slashStateDB = target.slashStateDB.Copy()
 	beaconBestState.beaconCommitteeEngine = target.beaconCommitteeEngine.Clone()
 	beaconBestState.missingSignatureCounter = target.missingSignatureCounter.Copy()
-	beaconBestState.pDEXState = target.pDEXState.Clone()
+	beaconBestState.pdeState = target.pdeState.Clone()
 
 	return nil
 }

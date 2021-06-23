@@ -303,8 +303,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
 
+	//TODO: @tin check here again
 	//check previous pdestate state consistency
-	dbPDEState, err := InitCurrentPDEStateFromDB(curView.featureStateDB, beaconBlock.Header.Height-1) //get from db
+	dbPDEState, err := pdex.InitPDEStateFromDB(curView.featureStateDB, beaconBlock.Header.Height-1) //get from db
 	if err != nil {
 		return NewBlockChainError(PDEStateDBError, fmt.Errorf("Cannot get PDE from DB"))
 	}
@@ -836,38 +837,38 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	}
 	// execute, store token init instructions
 	blockchain.processTokenInitInstructions(newBestState.featureStateDB, beaconBlock)
+
 	// execute, store PDE instruction
-	newBestState.pdeState, err = blockchain.processPDEInstructions(newBestState, beaconBlock)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
+	newBestState.pdeState = newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height - 1)
 
 	pdeStateEnv := pdex.
 		NewStateEnvBuilder().
 		BuildBeaconInstructions(beaconBlock.Body.Instructions).
 		BuildStateDB(newBestState.featureStateDB).
 		Build()
-	err = newBestState.pDEXState.Process(pdeStateEnv)
+	err = newBestState.pdeState.Process(pdeStateEnv)
 	if err != nil {
 		Logger.log.Error(err)
 		return err
 	}
 
-	if !reflect.DeepEqual(curView.pdeState, newBestState.pdeState) {
-		//check updated field in currentPDEState and store these field into statedb
-		diffState := getDiffPDEState(curView.pdeState, newBestState.pdeState)
-		err = storePDEStateToDB(newBestState.featureStateDB, diffState)
-		//err = diffState.StoreToDB(pdeStateEnv)
+	diffState, err := newBestState.pdeState.GetDiff(curView.pdeState)
+	if err != nil {
+		Logger.log.Error(err)
+		return err
+	}
+	if diffState != nil {
+		err = diffState.StoreToDB(pdeStateEnv)
 		if err != nil {
 			Logger.log.Error(err)
 			return err
 		}
 	}
+
 	//clear DeletedWaitingPDEContributions
-	newBestState.pdeState.DeletedWaitingPDEContributions = make(map[string]*rawdbv2.PDEContribution)
+	newBestState.pdeState.ClearCache()
 	//for legacy logic prefix-currentbeaconheight-tokenid1-tokenid2
-	newBestState.pdeState = newBestState.pdeState.transformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
+	newBestState.pdeState = newBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconBlock.Header.Height)
 
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)

@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/config"
 	"github.com/incognitochain/incognito-chain/dataaccessobject/rawdbv2"
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
@@ -556,4 +558,18 @@ func storePoolForPair(
 		Token2PoolValue: token2PoolValue,
 	}
 	poolPairs[pdePoolForPairKey] = poolForPair
+}
+
+func InitPDEStateFromDB(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+) (State, error) {
+
+	var state State
+
+	if beaconHeight < config.Param().PDEV3Height {
+		return InitStateV1(stateDB, beaconHeight)
+	}
+
+	return state, nil
 }

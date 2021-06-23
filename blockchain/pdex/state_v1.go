@@ -1,13 +1,41 @@
 package pdex
 
 import (
+	"errors"
 	"strconv"
 
+	"github.com/incognitochain/incognito-chain/dataaccessobject/statedb"
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-func InitStateV1() *stateV1 {
-	return nil
+func InitStateV1(
+	stateDB *statedb.StateDB,
+	beaconHeight uint64,
+) (*stateV1, error) {
+	waitingContributions, err := statedb.GetWaitingPDEContributions(stateDB, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	poolPairs, err := statedb.GetPDEPoolPair(stateDB, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	shares, err := statedb.GetPDEShares(stateDB, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	tradingFees, err := statedb.GetPDETradingFees(stateDB, beaconHeight)
+	if err != nil {
+		return nil, err
+	}
+	return &stateV1{
+		stateBase: stateBase{
+			waitingContributions: waitingContributions,
+			poolPairs:            poolPairs,
+			shares:               shares,
+			tradingFees:          tradingFees,
+		},
+	}, nil
 }
 
 type stateV1 struct {
@@ -192,4 +220,27 @@ func (s *stateV1) BuildInstructions(env StateEnvironment) ([][]string, error) {
 func (s *stateV1) Upgrade(env StateEnvironment) State {
 	var state State
 	return state
+}
+
+func (s *stateV1) TransformKeyWithNewBeaconHeight(beaconHeight uint64) State {
+	res := &stateV1{}
+	res.stateBase = *s.TransformKeyWithNewBeaconHeight(beaconHeight).(*stateBase)
+	return res
+}
+
+func (s *stateV1) GetDiff(compareState State) (State, error) {
+	if compareState == nil {
+		return nil, errors.New("compareState is nil")
+	}
+
+	res := &stateV1{}
+	compareStateV1 := compareState.(*stateV1)
+
+	diffStateBase, err := s.stateBase.GetDiff(&compareStateV1.stateBase)
+	if err != nil {
+		return nil, err
+	}
+	res.stateBase = *diffStateBase.(*stateBase)
+
+	return res, nil
 }

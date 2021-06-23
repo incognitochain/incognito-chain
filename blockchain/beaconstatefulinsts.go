@@ -89,12 +89,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 	portalParams portal.PortalParams,
 	shardStates map[byte][]types.ShardState,
 ) ([][]string, error) {
-
-	/*currentPDEState, err := InitCurrentPDEStateFromDB(featureStateDB, beaconHeight-1)*/
-	//if err != nil {
-	//Logger.log.Error(err)
-	//return utils.EmptyStringMatrix, err
-	/*}*/
+	beaconBestState.pdeState = beaconBestState.pdeState.TransformKeyWithNewBeaconHeight(beaconHeight - 1)
 
 	pm := portal.NewPortalManager()
 	currentPortalStateV3, err := portalprocessv3.InitCurrentPortalStateFromDB(featureStateDB)
@@ -195,7 +190,7 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		}
 	}
 
-	pdexStateEnv := pdex.
+	pdeStateEnv := pdex.
 		NewStateEnvBuilder().
 		BuildContributionActions(pdeContributionActions).
 		BuildPRVRequiredContributionActions(pdePRVRequiredContributionActions).
@@ -206,16 +201,12 @@ func (blockchain *BlockChain) buildStatefulInstructions(
 		BuildTxHashes(txHashes).
 		Build()
 
-	pdeInstructions, err := beaconBestState.pDEXState.BuildInstructions(pdexStateEnv)
+	pdeInstructions, err := beaconBestState.pdeState.BuildInstructions(pdeStateEnv)
 	if err != nil {
 		Logger.log.Error(err)
 		return utils.EmptyStringMatrix, err
 	}
 	instructions = append(instructions, pdeInstructions...)
-
-	if beaconBestState.pDEXState.Version() <= pdex.ForceWithPrvVersion {
-
-	}
 
 	// handle portal instructions
 	// include portal v3, portal relaying header chain
