@@ -44,6 +44,6 @@ func (beaconBestState *BeaconBestState) RestoreBeaconViewStateFromHash(blockchai
 		}
 	}
 
-	beaconBestState.pdeState, err = pdex.InitPDEStateFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
+	beaconBestState.pdeState, err = pdex.InitStateFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 	return err
 }

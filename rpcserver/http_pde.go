@@ -703,7 +703,7 @@ func (httpServer *HttpServer) handleGetPDEState(params interface{}, closeChan <-
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := pdex.InitPDEStateFromDB(beaconFeatureStateDB, uint64(beaconHeight))
+	pdeState, err := pdex.InitStateFromDB(beaconFeatureStateDB, uint64(beaconHeight))
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
@@ -1246,7 +1246,7 @@ func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeCh
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}
-	pdeState, err := pdex.InitPDEStateFromDB(beaconFeatureStateDB, latestBeaconHeight)
+	pdeState, err := pdex.InitStateFromDB(beaconFeatureStateDB, latestBeaconHeight)
 	if err != nil || pdeState == nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetPDEStateError, err)
 	}

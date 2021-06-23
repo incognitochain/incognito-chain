@@ -8,7 +8,13 @@ import (
 	"github.com/incognitochain/incognito-chain/metadata"
 )
 
-func InitStateV1(
+func newStateV1() *stateV1 {
+	res := &stateV1{}
+	res.stateBase = *newStateBase()
+	return res
+}
+
+func newStateV1WithValue(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 ) (*stateV1, error) {
@@ -29,12 +35,12 @@ func InitStateV1(
 		return nil, err
 	}
 	return &stateV1{
-		stateBase: stateBase{
-			waitingContributions: waitingContributions,
-			poolPairs:            poolPairs,
-			shares:               shares,
-			tradingFees:          tradingFees,
-		},
+		stateBase: *newStateBaseWithValue(
+			waitingContributions,
+			poolPairs,
+			shares,
+			tradingFees,
+		),
 	}, nil
 }
 
@@ -52,6 +58,7 @@ func (s *stateV1) Clone() State {
 	res := &stateV1{}
 	res.stateBase = *s.stateBase.Clone().(*stateBase)
 	res.producer = s.producer
+	res.processor = s.processor
 	return res
 }
 
@@ -224,10 +231,11 @@ func (s *stateV1) Upgrade(env StateEnvironment) State {
 
 func (s *stateV1) TransformKeyWithNewBeaconHeight(beaconHeight uint64) State {
 	res := &stateV1{}
-	res.stateBase = *s.TransformKeyWithNewBeaconHeight(beaconHeight).(*stateBase)
+	res.stateBase = *s.stateBase.TransformKeyWithNewBeaconHeight(beaconHeight).(*stateBase)
 	return res
 }
 
+//GetDiff need to use 2 state same version
 func (s *stateV1) GetDiff(compareState State) (State, error) {
 	if compareState == nil {
 		return nil, errors.New("compareState is nil")

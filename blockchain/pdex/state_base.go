@@ -19,6 +19,31 @@ type stateBase struct {
 	tradingFees                 map[string]uint64
 }
 
+func newStateBase() *stateBase {
+	return &stateBase{
+		waitingContributions:        make(map[string]*rawdbv2.PDEContribution),
+		deletedWaitingContributions: make(map[string]*rawdbv2.PDEContribution),
+		poolPairs:                   make(map[string]*rawdbv2.PDEPoolForPair),
+		shares:                      make(map[string]uint64),
+		tradingFees:                 make(map[string]uint64),
+	}
+}
+
+func newStateBaseWithValue(
+	waitingContributions map[string]*rawdbv2.PDEContribution,
+	poolPairs map[string]*rawdbv2.PDEPoolForPair,
+	shares map[string]uint64,
+	tradingFees map[string]uint64,
+) *stateBase {
+	return &stateBase{
+		waitingContributions:        waitingContributions,
+		deletedWaitingContributions: make(map[string]*rawdbv2.PDEContribution),
+		poolPairs:                   poolPairs,
+		shares:                      shares,
+		tradingFees:                 tradingFees,
+	}
+}
+
 //Version of state
 func (s *stateBase) Version() uint {
 	panic("Implement this fucntion")

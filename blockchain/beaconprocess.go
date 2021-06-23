@@ -303,13 +303,13 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *types.
 func (blockchain *BlockChain) verifyPreProcessingBeaconBlockForSigning(curView *BeaconBestState, beaconBlock *types.BeaconBlock, incurredInstructions [][]string) error {
 	startTimeVerifyPreProcessingBeaconBlockForSigning := time.Now()
 
-	//TODO: @tin check here again
 	//check previous pdestate state consistency
-	dbPDEState, err := pdex.InitPDEStateFromDB(curView.featureStateDB, beaconBlock.Header.Height-1) //get from db
+	dbPDEState, err := pdex.InitStateFromDB(curView.featureStateDB, beaconBlock.Header.Height-1) //get from db
 	if err != nil {
 		return NewBlockChainError(PDEStateDBError, fmt.Errorf("Cannot get PDE from DB"))
 	}
-	if curView.pdeState != nil && !reflect.DeepEqual(curView.pdeState, dbPDEState) { //if db and beststate is different => stop produce block
+
+	if !reflect.DeepEqual(curView.pdeState, dbPDEState) { //if db and beststate is different => stop produce block
 		mem, _ := json.Marshal(curView.pdeState)
 		db, _ := json.Marshal(dbPDEState)
 		Logger.log.Errorf("Last Beacon Block Instruction %+v", curView.BestBlock.Body.Instructions)
@@ -635,7 +635,7 @@ func (beaconBestState *BeaconBestState) initBeaconBestState(genesisBeaconBlock *
 	beaconBestState.RewardStateDBRootHash = common.EmptyRoot
 	beaconBestState.FeatureStateDBRootHash = common.EmptyRoot
 	beaconBestState.beaconCommitteeEngine.InitCommitteeState(beaconBestState.NewBeaconCommitteeStateEnvironmentWithValue(genesisBeaconBlock.Body.Instructions, false, false))
-	beaconBestState.pdeState, err = pdex.InitPDEStateFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
+	beaconBestState.pdeState, err = pdex.InitStateFromDB(beaconBestState.featureStateDB, beaconBestState.BeaconHeight)
 	beaconBestState.Epoch = 1
 	return err
 }

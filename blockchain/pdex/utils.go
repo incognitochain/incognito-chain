@@ -560,18 +560,16 @@ func storePoolForPair(
 	poolPairs[pdePoolForPairKey] = poolForPair
 }
 
-func InitPDEStateFromDB(
+func InitStateFromDB(
 	stateDB *statedb.StateDB,
 	beaconHeight uint64,
 ) (State, error) {
-
 	var state State
-
 	if beaconHeight < config.Param().PDEV3Height {
-		if beaconHeight == 1 {
-			return &stateV1{}, nil
+		if beaconHeight == 1 || beaconHeight == 0 {
+			return newStateV1(), nil
 		}
-		return InitStateV1(stateDB, beaconHeight)
+		return newStateV1WithValue(stateDB, beaconHeight)
 	}
 
 	return state, nil
