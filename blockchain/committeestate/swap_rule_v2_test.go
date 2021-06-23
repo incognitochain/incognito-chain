@@ -1095,13 +1095,6 @@ func TestAssignRuleV3_Process(t *testing.T) {
 		args args
 		want map[byte][]string
 	}{
-		//TODO: Add test cases.
-		// case: numberOfValidators > 0, mean == all shard (equal committee_size among all shard)
-		// case: numberOfValidators > 0, mean > numberOfValidators of only 1 shard (in 8 shard)
-		// case: only 1 shard
-		// case: assign max half shard while possible more shard is belong to lower half
-		// case: 8 shard, normal case, numberOfValidator are slightly different
-		// case: 8 shard, 2 shard is much lower than other shard
 		{
 			name: "numberOfValidators > 0, mean == all shard (equal committee_size among all shard)",
 			args: args{
