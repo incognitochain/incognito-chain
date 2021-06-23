@@ -174,8 +174,11 @@ func swapInAfterSwapOut(committees, substitutes []string, maxCommitteeSize int) 
 	return committees, substitutes, newCommittees
 }
 
-// assignShardCandidateV2 assign unassignedCommonPool into shard pool with random number
-func assignShardCandidateV2(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
+type AssignRuleV2 struct {
+}
+
+// Process assign unassignedCommonPool into shard pool with random number
+func (AssignRuleV2) Process(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
 	total := 0
 	for _, v := range numberOfValidators {
 		total += v
@@ -270,7 +273,7 @@ func getAssignOffset(lenShardSubstitute, lenCommittees, numberOfFixedValidators,
 type AssignRuleV3 struct {
 }
 
-func (a AssignRuleV3) Process(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
+func (AssignRuleV3) Process(candidates []string, numberOfValidators []int, rand int64) map[byte][]string {
 
 	sum := 0
 	for _, v := range numberOfValidators {

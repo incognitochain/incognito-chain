@@ -404,17 +404,17 @@ func Test_assignShardCandidateV2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := assignShardCandidateV2(tt.args.candidates, tt.args.numberOfValidators, tt.args.rand)
+			got := AssignRuleV2{}.Process(tt.args.candidates, tt.args.numberOfValidators, tt.args.rand)
 			if len(got) != len(tt.want) {
-				t.Errorf("assignShardCandidateV2() = %v, want %v", got, tt.want)
+				t.Errorf("Process() = %v, want %v", got, tt.want)
 			}
 			for k, gotV := range got {
 				wantV, ok := tt.want[k]
 				if !ok {
-					t.Errorf("assignShardCandidateV2() = %v, want %v", got, tt.want)
+					t.Errorf("Process() = %v, want %v", got, tt.want)
 				}
 				if !reflect.DeepEqual(gotV, wantV) {
-					t.Errorf("assignShardCandidateV2() = %v, want %v", got, tt.want)
+					t.Errorf("Process() = %v, want %v", got, tt.want)
 				}
 			}
 		})
@@ -1111,7 +1111,7 @@ func TestAssignRuleV3_SimulationBalanceNumberOfValidator(t *testing.T) {
 			break
 		}
 	}
-	t.Log(counter, numberOfValidators)
+	//t.Log(counter, numberOfValidators)
 }
 
 // Report:
@@ -1127,7 +1127,7 @@ func BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator(b *testing.B) {
 	//2. swap out each shard 5 => 40
 	// repeat until numberOfValidator among all shard is slightly different
 	counters := []int{}
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		counter := 0
 		isBalanced := false
 		numberOfValidators := make([]int, len(initialNumberOfValidators))
@@ -1143,7 +1143,7 @@ func BenchmarkAssignRuleV3_SimulationBalanceNumberOfValidator(b *testing.B) {
 			}
 		}
 		counters = append(counters, counter)
-		b.Log(counter, numberOfValidators)
+		//b.Log(counter, numberOfValidators)
 	}
 
 	sum := 0

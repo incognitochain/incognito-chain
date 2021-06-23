@@ -26,6 +26,8 @@ type BeaconCommitteeStateV2 struct {
 
 	hashes *BeaconCommitteeStateHash
 
+	assignRule AssignRuleProcessor
+
 	mu *sync.RWMutex
 }
 
@@ -60,6 +62,7 @@ func NewBeaconCommitteeStateV2() *BeaconCommitteeStateV2 {
 		rewardReceiver:  make(map[string]privacy.PaymentAddress),
 		stakingTx:       make(map[string]common.Hash),
 		hashes:          NewBeaconCommitteeStateHash(),
+		assignRule:      AssignRuleV2{},
 		mu:              new(sync.RWMutex),
 	}
 }
@@ -70,6 +73,7 @@ func NewBeaconCommitteeStateV2WithMu(mu *sync.RWMutex) *BeaconCommitteeStateV2 {
 		autoStake:       make(map[string]bool),
 		rewardReceiver:  make(map[string]privacy.PaymentAddress),
 		stakingTx:       make(map[string]common.Hash),
+		assignRule:      AssignRuleV2{},
 		mu:              mu,
 	}
 }
@@ -94,6 +98,7 @@ func NewBeaconCommitteeStateV2WithValue(
 		rewardReceiver:             rewardReceiver,
 		stakingTx:                  stakingTx,
 		hashes:                     NewBeaconCommitteeStateHash(),
+		assignRule:                 AssignRuleV2{},
 		mu:                         new(sync.RWMutex),
 	}
 }
@@ -140,6 +145,7 @@ func (b BeaconCommitteeStateV2) clone(newB *BeaconCommitteeStateV2) {
 	for k, v := range b.stakingTx {
 		newB.stakingTx[k] = v
 	}
+	newB.assignRule = b.assignRule
 }
 
 func (b *BeaconCommitteeStateV2) reset() {
@@ -620,7 +626,7 @@ func (b *BeaconCommitteeStateV2) assign(
 		numberOfValidator[byte(i)] += len(oldState.shardCommittee[byte(i)])
 	}
 
-	assignedCandidates := assignShardCandidateV2(candidates, numberOfValidator, rand)
+	assignedCandidates := b.assignRule.Process(candidates, numberOfValidator, rand)
 	for shardID, tempCandidates := range assignedCandidates {
 		tempCandidateStructs, _ := incognitokey.CommitteeBase58KeyListToStruct(tempCandidates)
 		committeeChange.ShardSubstituteAdded[shardID] = append(committeeChange.ShardSubstituteAdded[shardID], tempCandidateStructs...)
